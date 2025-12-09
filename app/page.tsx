@@ -1,65 +1,114 @@
-import Image from "next/image";
+import type { Metadata } from "next";
+import Link from "next/link";
+import "./globals.css";
+import { MainNav } from "@/components/main-nav";
+import { getAllOrte } from "@/lib/data";
 
-export default function Home() {
+export const metadata: Metadata = {
+  title: "Wohnlagencheck24 – Wohnlagen & Standortanalysen",
+  description:
+    "Wohnlagencheck24 bietet strukturierte Informationen zu Wohnlagen, Standorten und Märkten in Deutschland.",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const orte = getAllOrte();
+  const bundeslaender = Array.from(
+    new Set(orte.map((o) => o.bundesland))
+  ).sort();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <html lang="de">
+      <body>
+        <div className="d-flex flex-column min-vh-100 bg-dark text-light">
+          {/* HEADER mit Bootstrap-Navbar */}
+          <header className="border-bottom bg-white text-dark">
+            <nav className="navbar navbar-expand-md navbar-light bg-white">
+              <div className="container">
+                {/* Brand */}
+                <Link href="/" className="navbar-brand d-flex align-items-center gap-2">
+                  <div
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "12px",
+                      backgroundColor: "#0087CC",
+                    }}
+                    className="d-flex align-items-center justify-content-center text-white fw-bold"
+                  >
+                    W
+                  </div>
+                  <div className="d-flex flex-column lh-sm">
+                    <span className="fw-semibold">Wohnlagencheck24</span>
+                    <small className="text-muted">
+                      Immobilienmarkt &amp; Standortprofile
+                    </small>
+                  </div>
+                </Link>
+
+                {/* Toggle-Button für Mobile */}
+                <button
+                  className="navbar-toggler"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#mainNavbar"
+                  aria-controls="mainNavbar"
+                  aria-expanded="false"
+                  aria-label="Navigation umschalten"
+                >
+                  <span className="navbar-toggler-icon"></span>
+                </button>
+
+                {/* Nav-Inhalt (wir nutzen hier deine MainNav-Logik, aber Bootstrap-Styling außenrum) */}
+                <div className="collapse navbar-collapse" id="mainNavbar">
+                  <div className="ms-auto">
+                    <MainNav bundeslaender={bundeslaender} />
+                  </div>
+                </div>
+              </div>
+            </nav>
+          </header>
+
+          {/* CONTENT-BEREICH: zentrale Card */}
+          <main className="flex-grow-1 py-4">
+            <div className="container">
+              <div
+                className="card border-0 shadow-lg"
+                style={{
+                  borderRadius: "1.5rem",
+                  backgroundColor: "var(--brand-bg)",
+                }}
+              >
+                <div className="card-body p-4 p-md-5">{children}</div>
+              </div>
+            </div>
+          </main>
+
+          {/* FOOTER */}
+          <footer className="border-top bg-black text-warning py-3 mt-4">
+            <div className="container d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 small">
+              <span>
+                &copy; {new Date().getFullYear()} Wohnlagencheck24. Alle Rechte
+                vorbehalten.
+              </span>
+              <div className="d-flex flex-wrap gap-3">
+                <Link href="/impressum" className="text-warning text-decoration-none">
+                  Impressum
+                </Link>
+                <Link href="/datenschutz" className="text-warning text-decoration-none">
+                  Datenschutz
+                </Link>
+                <span className="text-warning-50">
+                  Technische Demo · GEO &amp; LLM-optimiert
+                </span>
+              </div>
+            </div>
+          </footer>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </body>
+    </html>
   );
 }

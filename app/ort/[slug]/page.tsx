@@ -1,245 +1,211 @@
-import { getAllOrte, getOrtBySlug } from "@/lib/data";
-import type { Metadata } from "next";
-import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getOrtBySlug } from "@/lib/data";
 
-type Params = {
-  slug: string;
+type OrtPageProps = {
+  params: {
+    slug: string;
+  };
 };
 
-export async function generateStaticParams() {
-  const orte = getAllOrte();
-  return orte.map((ort) => ({ slug: ort.slug }));
-}
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<Params>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const ort = getOrtBySlug(slug);
+export default function OrtPage({ params }: OrtPageProps) {
+  const ort = getOrtBySlug(params.slug);
 
   if (!ort) {
-    return {
-      title: "Ort nicht gefunden – Wohnlagencheck24",
-      description: "Die angefragte Wohnlage konnte nicht gefunden werden.",
-    };
+    notFound();
   }
 
-  const title = `${ort.name} – Wohnlage im Landkreis ${ort.landkreis}`;
-  const description = ort.kurzbeschreibung;
-  const url = `/ort/${ort.slug}`;
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: url,
-    },
-    openGraph: {
-      title,
-      description,
-      url,
-      type: "article",
-      locale: "de_DE",
-    },
-  };
-}
-
-export default async function OrtPage({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
-  const { slug } = await params;
-  const ort = getOrtBySlug(slug);
-
-  if (!ort) {
-    return (
-      <main className="max-w-4xl mx-auto px-4 py-10">
-        <h1 className="text-3xl font-bold mb-4">Ort nicht gefunden</h1>
-        <p className="mb-4">
-          Die angefragte Wohnlage konnte nicht gefunden werden. Bitte prüfen
-          Sie die URL.
-        </p>
-        <Link href="/" className="text-blue-600 underline">
-          Zur Startseite
-        </Link>
-      </main>
-    );
-  }
-
-  // --- JSON-LD-Blöcke für LLMs & Google ---
-
-  const baseUrl = "https://www.wohnlagencheck24.de"; // später anpassen
-
-  const placeLd = {
-    "@type": "Place",
-    name: ort.name,
-    address: {
-      "@type": "PostalAddress",
-      addressLocality: ort.name,
-      postalCode: ort.plz,
-      addressRegion: ort.landkreis,
-      addressCountry: "DE",
-    },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: ort.lat,
-      longitude: ort.lng,
-    },
-  };
-
-  const webPageLd = {
-    "@type": "WebPage",
-    name: `${ort.name} – Wohnlage im Landkreis ${ort.landkreis}`,
-    description: ort.kurzbeschreibung,
-    url: `${baseUrl}/ort/${ort.slug}`,
-  };
-
-  const breadcrumbLd = {
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: "Startseite",
-        item: `${baseUrl}/`,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: `Wohnlagen Landkreis ${ort.landkreis}`,
-        item: `${baseUrl}/landkreis/${encodeURIComponent(
-          ort.landkreis.toLowerCase().replace(/\s+/g, "-")
-        )}`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: ort.name,
-        item: `${baseUrl}/ort/${ort.slug}`,
-      },
-    ],
-  };
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [webPageLd, placeLd, breadcrumbLd],
-  };
+  const {
+    name,
+    bundesland,
+    landkreis,
+    plz,
+    beschreibungKurz,
+    beschreibungLang,
+    lat,
+    lon,
+  } = ort;
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-10">
-      {/* JSON-LD für LLMs & Suchmaschinen */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+    <div className="text-dark">
+      {/* Header / Titelbereich */}
+      <section className="mb-4">
+        <div className="d-inline-flex align-items-center gap-2 rounded-pill border border-warning bg-warning px-3 py-1 text-uppercase small fw-semibold">
+          <span
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              backgroundColor: "#000",
+              display: "inline-block",
+            }}
+          />
+          Standortprofil – Wohnlage
+        </div>
 
-      {/* Breadcrumb-Navigation (auch für Crawler hilfreich) */}
-      <nav className="text-sm text-gray-500 mb-4" aria-label="Breadcrumb">
-        <ol className="flex flex-wrap gap-1">
-          <li>
-            <Link href="/" className="hover:underline">
-              Startseite
-            </Link>{" "}
-            /
-          </li>
-          <li>
-            <Link
-              href={`/landkreis/${ort.landkreis
-                .toLowerCase()
-                .replace(/\s+/g, "-")}`}
-              className="hover:underline"
+        <h1 className="mt-3 mb-1">
+          {name} – Wohnlage im {landkreis}
+        </h1>
+        <p className="small text-muted mb-1">
+          {bundesland} · PLZ {plz}
+        </p>
+        {beschreibungKurz && (
+          <p className="small mb-0">{beschreibungKurz}</p>
+        )}
+      </section>
+
+      {/* Meta-Infos (Tabelle / Faktenbox) */}
+      <section className="mb-4">
+        <div className="row g-3">
+          <div className="col-12 col-md-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <h2 className="h6 mb-3">Steckbrief</h2>
+                <div className="table-responsive">
+                  <table className="table table-sm mb-0 align-middle">
+                    <tbody>
+                      <tr>
+                        <th scope="row" className="small text-muted">
+                          Wohnlage
+                        </th>
+                        <td className="small">{name}</td>
+                      </tr>
+                      <tr>
+                        <th scope="row" className="small text-muted">
+                          Landkreis
+                        </th>
+                        <td className="small">{landkreis}</td>
+                      </tr>
+                      <tr>
+                        <th scope="row" className="small text-muted">
+                          Bundesland
+                        </th>
+                        <td className="small">{bundesland}</td>
+                      </tr>
+                      <tr>
+                        <th scope="row" className="small text-muted">
+                          PLZ
+                        </th>
+                        <td className="small">{plz}</td>
+                      </tr>
+                      {lat && lon && (
+                        <tr>
+                          <th scope="row" className="small text-muted">
+                            Geodaten
+                          </th>
+                          <td className="small">
+                            Lat: {lat}, Lon: {lon}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Kurzbeschreibung / Einordnung */}
+          <div className="col-12 col-md-6">
+            <div
+              className="card h-100 border-0 shadow-sm"
+              style={{ backgroundColor: "#0087CC", color: "#fff" }}
             >
-              Landkreis {ort.landkreis}
-            </Link>{" "}
-            /
-          </li>
-          <li aria-current="page" className="font-semibold">
-            {ort.name}
-          </li>
-        </ol>
-      </nav>
-
-      {/* H1 = Hauptthema der Seite */}
-      <h1 className="text-3xl font-bold mb-2">
-        {ort.name} – Wohnlage im Landkreis {ort.landkreis}
-      </h1>
-
-      <p className="text-gray-600 mb-6">
-        {ort.bundesland} · PLZ {ort.plz}
-      </p>
-
-      {/* Kleine Inhaltsübersicht – hilft Nutzern & LLMs */}
-      <nav className="mb-8 border border-gray-200 rounded-lg p-4 bg-gray-50">
-        <h2 className="text-lg font-semibold mb-2">Inhaltsübersicht</h2>
-        <ul className="list-disc list-inside text-sm space-y-1">
-          <li>
-            <a href="#charakter" className="text-blue-600 hover:underline">
-              Charakter & Lage
-            </a>
-          </li>
-          <li>
-            <a href="#markt" className="text-blue-600 hover:underline">
-              Wohnmarktsituation
-            </a>
-          </li>
-          <li>
-            <a href="#infrastruktur" className="text-blue-600 hover:underline">
-              Infrastruktur & Erreichbarkeit
-            </a>
-          </li>
-          <li>
-            <a href="#geodaten" className="text-blue-600 hover:underline">
-              Geodaten
-            </a>
-          </li>
-        </ul>
-      </nav>
-
-      {/* Abschnitt: Charakter & Lage */}
-      <section id="charakter" className="mb-8">
-        <h2 className="text-2xl font-semibold mb-2">
-          Charakter & Lage von {ort.name}
-        </h2>
-        <p className="mb-3">{ort.beschreibung}</p>
-        <p className="text-sm text-gray-600">
-          Hinweis: Diese Beschreibung kann später automatisiert aus deinen
-          Analyse-Daten (Wohnlage, Struktur, Historie) generiert und erweitert
-          werden.
-        </p>
+              <div className="card-body">
+                <h2 className="h6 mb-3">Einordnung der Wohnlage</h2>
+                <p className="small mb-2">
+                  {beschreibungKurz ||
+                    "Diese Wohnlage ist Teil des regionalen Wohnungsmarktes und steht exemplarisch für die örtlichen Strukturen."}
+                </p>
+                <p className="small mb-0 text-white-75">
+                  Hier können später automatisiert Stichworte zur Nachfrage,
+                  zum Preisniveau oder zur Position im regionalen Markt ergänzt
+                  werden.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Abschnitt: Wohnmarktsituation – aktuell Platzhalter */}
-      <section id="markt" className="mb-8">
-        <h2 className="text-2xl font-semibold mb-2">
-          Wohnmarktsituation in {ort.name}
-        </h2>
-        <p>
-          Hier können später Kennzahlen zu Mieten, Kaufpreisen,
-          Marktanspannung, Leerstandsquoten und weiteren Indikatoren aus deiner
-          Pipeline integriert werden.
-        </p>
+      {/* Text + Bild (Platzhalter für Karte/Bild) */}
+      <section className="mb-4">
+        <div className="row g-4 align-items-center">
+          <div className="col-12 col-md-5">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <h2 className="h6 mb-2">Lage im regionalen Kontext</h2>
+                <p className="small text-muted mb-0">
+                  Hier könnte eine Karte, ein Luftbild oder eine grafische
+                  Darstellung der Lage im Landkreis beziehungsweise in Relation
+                  zu umliegenden Zentren eingebunden werden.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="col-12 col-md-7">
+            <img
+              src="https://via.placeholder.com/800x400?text=Karte+%2F+Luftbild"
+              alt={`Karte oder Luftbild von ${name}`}
+              className="img-fluid rounded shadow-sm"
+            />
+          </div>
+        </div>
       </section>
 
-      {/* Abschnitt: Infrastruktur – aktuell Platzhalter */}
-      <section id="infrastruktur" className="mb-8">
-        <h2 className="text-2xl font-semibold mb-2">
-          Infrastruktur & Erreichbarkeit
-        </h2>
-        <p>
-          In diesem Abschnitt kannst du Informationen zu Verkehrsanbindung,
-          Nahversorgung, Schulen, Kitas und Freizeitangeboten ergänzen.
-        </p>
+      {/* Ausführliche Beschreibung / Textblocke */}
+      <section className="mb-4">
+        <div className="card border-0 shadow-sm">
+          <div className="card-body">
+            <h2 className="h6 mb-3">Beschreibung der Wohnlage</h2>
+            <p className="small mb-2">
+              {beschreibungLang ||
+                "Die detaillierte Beschreibung der Wohnlage kann später automatisiert auf Basis deiner JSON-Daten generiert werden – zum Beispiel zur Bebauungsstruktur, Zielgruppen, Erreichbarkeit und zur Stellung im regionalen Immobilienmarkt."}
+            </p>
+            <p className="small text-muted mb-0">
+              Zusätzlich können Abschnitte zu Infrastruktur, Bildung,
+              Nahversorgung sowie zur Entwicklung von Mieten und Preisen ergänzt
+              werden, um ein vollständiges Standortprofil zu geben.
+            </p>
+          </div>
+        </div>
       </section>
 
-      {/* Abschnitt: Geodaten */}
-      <section id="geodaten" className="mb-8">
-        <h2 className="text-2xl font-semibold mb-2">Geodaten</h2>
-        <p>Latitude: {ort.lat}</p>
-        <p>Longitude: {ort.lng}</p>
+      {/* Platzhalter für Kennzahlen / Charts / Marktindikatoren */}
+      <section>
+        <div className="row g-3">
+          <div className="col-12 col-md-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <h2 className="h6 mb-3">Kennzahlen (Platzhalter)</h2>
+                <p className="small text-muted mb-2">
+                  Hier können später zentrale Kennzahlen zur Wohnlage eingebunden werden, zum Beispiel:
+                </p>
+                <ul className="small text-muted mb-0">
+                  <li>Ø Angebotsmiete und -kaufpreis</li>
+                  <li>Leerstandsquote &amp; Bautätigkeit</li>
+                  <li>Bevölkerungs- und Haushaltsentwicklung</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-12 col-md-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body">
+                <h2 className="h6 mb-3">Chart-Bereich (Platzhalter)</h2>
+                <div
+                  className="bg-light d-flex align-items-center justify-content-center rounded"
+                  style={{ height: "160px" }}
+                >
+                  <span className="small text-muted">
+                    Zeitreihen-Chart (Mieten, Preise, Nachfrage …)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
-    </main>
+    </div>
   );
 }
