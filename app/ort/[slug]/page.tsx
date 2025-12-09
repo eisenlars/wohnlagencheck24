@@ -15,15 +15,16 @@ export default function OrtPage({ params }: OrtPageProps) {
   }
 
   const {
-    name,
-    bundesland,
-    landkreis,
-    plz,
-    beschreibungKurz,
-    beschreibungLang,
-    lat,
-    lon,
-  } = ort;
+      name,
+      bundesland,
+      landkreis,
+      plz,
+      beschreibungKurz,
+      beschreibungLang,
+      lat,
+      lng,
+    } = ort;
+
 
   return (
     <div className="text-dark">
@@ -87,13 +88,13 @@ export default function OrtPage({ params }: OrtPageProps) {
                         </th>
                         <td className="small">{plz}</td>
                       </tr>
-                      {lat && lon && (
+                      {lat && lng && (
                         <tr>
                           <th scope="row" className="small text-muted">
                             Geodaten
                           </th>
                           <td className="small">
-                            Lat: {lat}, Lon: {lon}
+                            Lat: {lat}, Lon: {lng}
                           </td>
                         </tr>
                       )}
