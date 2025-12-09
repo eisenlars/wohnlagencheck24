@@ -10,8 +10,8 @@ export type Ort = {
   lat: number;
   lng: number;
   plz: string;
-  kurzbeschreibung: string;
-  beschreibung: string;
+  beschreibungKurz?: string;
+  beschreibungLang?: string;
   regionalschluessel: string;
 };
 
