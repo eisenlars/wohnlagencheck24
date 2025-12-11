@@ -1,9 +1,12 @@
+// app/layout.tsx
+
 import type { Metadata } from "next";
 import Link from "next/link";
-import "bootstrap/dist/css/bootstrap.min.css"; // Bootstrap-CSS
+import "bootstrap/dist/css/bootstrap.min.css";
 import "./globals.css";
 import { MainNav } from "@/components/main-nav";
-import { getAllOrte } from "@/lib/data";
+import { BootstrapClient } from "@/components/bootstrap-client";
+import { getBundeslaender } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Wohnlagencheck24 – Wohnlagen & Standortanalysen",
@@ -17,71 +20,118 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const orte = getAllOrte();
-  const bundeslaender = Array.from(
-    new Set(orte.map((o) => o.bundesland))
-  ).sort();
+  // Neue Datenquelle: Bundesländer als { slug, name }[]
+  const bundeslaender = getBundeslaender();
 
   return (
     <html lang="de">
-      <body className="min-h-screen bg-black text-[#000000] antialiased">
-        <div className="flex min-h-screen flex-col">
-          {/* HEADER */}
-          <header className="sticky top-0 z-20 border-b border-black/15 bg-white/90 backdrop-blur">
-            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-              {/* Logo / Brand */}
-              <Link href="/" className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0087CC] text-white font-bold shadow-md">
-                  W
-                </div>
-                <div className="flex flex-col leading-tight">
-                  <span className="text-sm font-semibold sm:text-base">
-                    Wohnlagencheck24
-                  </span>
-                  <span className="text-[11px] text-black/60 sm:text-xs">
-                    Immobilienmarkt &amp; Standortprofile
-                  </span>
-                </div>
-              </Link>
+      <body className="bg-dark text-light">
+        {/* Bootstrap-JS (Offcanvas, Toggler etc.) nur im Browser laden */}
+        <BootstrapClient />
 
-              {/* Navigation */}
-              <MainNav bundeslaender={bundeslaender} />
-            </div>
+        <div className="d-flex flex-column min-vh-100">
+          {/* HEADER */}
+          <header className="border-bottom bg-white text-dark sticky-top">
+            <nav className="navbar navbar-light bg-white">
+              <div className="container d-flex justify-content-between align-items-center">
+                {/* Logo / Brand */}
+                <Link
+                  href="/"
+                  className="navbar-brand d-flex align-items-center gap-2"
+                >
+                  <div
+                    className="d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                    style={{
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "12px",
+                      backgroundColor: "#0087CC",
+                    }}
+                  >
+                    W
+                  </div>
+                  <div className="d-flex flex-column lh-sm">
+                    <span className="fw-semibold">Wohnlagencheck24</span>
+                    <small className="text-muted">
+                      Immobilienmarkt &amp; Standortprofile
+                    </small>
+                  </div>
+                </Link>
+
+                {/* NAV-Icon: öffnet Offcanvas auf allen Geräten */}
+                <button
+                  className="navbar-toggler"
+                  type="button"
+                  data-bs-toggle="offcanvas"
+                  data-bs-target="#mainNavOffcanvas"
+                  aria-controls="mainNavOffcanvas"
+                  aria-label="Navigation öffnen"
+                >
+                  <span className="navbar-toggler-icon" />
+                </button>
+
+                {/* Offcanvas-Menü */}
+                <div
+                  className="offcanvas offcanvas-end"
+                  tabIndex={-1}
+                  id="mainNavOffcanvas"
+                  aria-labelledby="mainNavOffcanvasLabel"
+                >
+                  <div className="offcanvas-header">
+                    <h5 className="offcanvas-title" id="mainNavOffcanvasLabel">
+                      Navigation
+                    </h5>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      data-bs-dismiss="offcanvas"
+                      aria-label="Schließen"
+                    />
+                  </div>
+                  <div className="offcanvas-body">
+                    {/* Navigation: Einstiegslink + Bundesländer + weitere Inhalte */}
+                    <MainNav bundeslaender={bundeslaender} />
+                  </div>
+                </div>
+              </div>
+            </nav>
           </header>
 
           {/* CONTENT-BEREICH */}
-          <main className="flex-1">
-            <div className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
-              <div className="relative rounded-3xl border border-black/15 bg-[#bcaf9d] shadow-[0_18px_45px_rgba(0,0,0,0.35)]">
-                {/* dezenter gelber Glow */}
-                <div className="pointer-events-none absolute -inset-4 rounded-3xl bg-[radial-gradient(circle_at_top_left,#ffe00066,transparent_60%)] opacity-70 blur-2xl" />
-                <div className="relative px-4 py-6 sm:px-8 sm:py-8">
-                  {children}
-                </div>
+          <main className="flex-grow-1 py-4">
+            <div className="container">
+              <div
+                className="card border-0 shadow-lg"
+                style={{
+                  borderRadius: "1.5rem",
+                  backgroundColor: "var(--brand-bg)",
+                }}
+              >
+                <div className="card-body p-4 p-md-5">{children}</div>
               </div>
             </div>
           </main>
 
           {/* FOOTER */}
-          <footer className="border-t border-black/30 bg-black text-[#ffe000]">
-            <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-xs sm:flex-row sm:items-center sm:justify-between sm:text-sm">
+          <footer className="border-top bg-black text-warning py-3 mt-4">
+            <div className="container d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 small">
               <span>
                 &copy; 2025 Wohnlagencheck24. Alle Rechte vorbehalten.
               </span>
-              <div className="flex flex-wrap gap-4">
+              <div className="d-flex flex-wrap gap-3">
                 <Link
                   href="/impressum"
-                  className="hover:text-white transition-colors"
+                  className="text-warning text-decoration-none"
                 >
                   Impressum
                 </Link>
                 <Link
                   href="/datenschutz"
-                  className="hover:text-white transition-colors"
+                  className="text-warning text-decoration-none"
                 >
                   Datenschutz
                 </Link>
-                <span className="text-[11px] text-[#ffe000]/80">
+                <span className="text-warning-50">
                   Technische Demo · GEO &amp; LLM-optimiert
                 </span>
               </div>

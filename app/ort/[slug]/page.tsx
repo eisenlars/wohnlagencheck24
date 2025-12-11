@@ -15,16 +15,15 @@ export default function OrtPage({ params }: OrtPageProps) {
   }
 
   const {
-      name,
-      bundesland,
-      landkreis,
-      plz,
-      beschreibungKurz,
-      beschreibungLang,
-      lat,
-      lng,
-    } = ort;
-
+    name,
+    bundesland,
+    landkreis,
+    plz,
+    beschreibungKurz,
+    beschreibungLang,
+    lat,
+    lng,
+  } = ort;
 
   return (
     <div className="text-dark">
@@ -49,9 +48,7 @@ export default function OrtPage({ params }: OrtPageProps) {
         <p className="small text-muted mb-1">
           {bundesland} · PLZ {plz}
         </p>
-        {beschreibungKurz && (
-          <p className="small mb-0">{beschreibungKurz}</p>
-        )}
+        {beschreibungKurz && <p className="small mb-0">{beschreibungKurz}</p>}
       </section>
 
       {/* Meta-Infos (Tabelle / Faktenbox) */}
@@ -117,7 +114,7 @@ export default function OrtPage({ params }: OrtPageProps) {
                   {beschreibungKurz ||
                     "Diese Wohnlage ist Teil des regionalen Wohnungsmarktes und steht exemplarisch für die örtlichen Strukturen."}
                 </p>
-                <p className="small mb-0 text-white-75">
+                <p className="small mb-0 text-white-50">
                   Hier können später automatisiert Stichworte zur Nachfrage,
                   zum Preisniveau oder zur Position im regionalen Markt ergänzt
                   werden.
@@ -153,7 +150,7 @@ export default function OrtPage({ params }: OrtPageProps) {
         </div>
       </section>
 
-      {/* Ausführliche Beschreibung / Textblocke */}
+      {/* Ausführliche Beschreibung / Textblöcke */}
       <section className="mb-4">
         <div className="card border-0 shadow-sm">
           <div className="card-body">
@@ -179,7 +176,8 @@ export default function OrtPage({ params }: OrtPageProps) {
               <div className="card-body">
                 <h2 className="h6 mb-3">Kennzahlen (Platzhalter)</h2>
                 <p className="small text-muted mb-2">
-                  Hier können später zentrale Kennzahlen zur Wohnlage eingebunden werden, zum Beispiel:
+                  Hier können später zentrale Kennzahlen zur Wohnlage
+                  eingebunden werden, zum Beispiel:
                 </p>
                 <ul className="small text-muted mb-0">
                   <li>Ø Angebotsmiete und -kaufpreis</li>

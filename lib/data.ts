@@ -1,27 +1,193 @@
+// lib/data.ts
+
 import fs from "node:fs";
 import path from "node:path";
 
-export type Ort = {
-  id: string;
+export type ReportType = "deutschland" | "bundesland" | "kreis" | "ortslage";
+
+export interface ReportMeta {
+  type: ReportType;
   slug: string;
   name: string;
-  bundesland: string;
-  landkreis: string;
-  lat: number;
-  lng: number;
-  plz: string;
-  beschreibungKurz?: string;
-  beschreibungLang?: string;
-  regionalschluessel: string;
-};
-
-const filePath = path.join(process.cwd(), "data", "orte.json");
-
-export function getAllOrte(): Ort[] {
-  const data = fs.readFileSync(filePath, "utf8");
-  return JSON.parse(data);
+  plz?: string;
+  regionalschluessel?: string;
+  [key: string]: unknown;
 }
 
-export function getOrtBySlug(slug: string): Ort | undefined {
-  return getAllOrte().find((o) => o.slug === slug);
+export interface Report<TData = any> {
+  meta: ReportMeta;
+  data: TData;
+  [key: string]: any;
+}
+
+// Erwartete Struktur:
+// data/json/reports/deutschland.json
+// data/json/reports/deutschland/sachsen.json
+// data/json/reports/deutschland/sachsen/leipzig.json
+// data/json/reports/deutschland/sachsen/leipzig/connewitz.json
+
+const REPORTS_ROOT = path.join(process.cwd(), "data", "json", "reports");
+const DEUTSCHLAND_DIR = path.join(REPORTS_ROOT, "deutschland");
+
+function readJsonFile<T = any>(filePath: string): T {
+  const raw = fs.readFileSync(filePath, "utf8");
+  return JSON.parse(raw) as T;
+}
+
+export function getDeutschlandReport(): Report | null {
+  const filePath = path.join(REPORTS_ROOT, "deutschland.json");
+  if (!fs.existsSync(filePath)) return null;
+  return readJsonFile<Report>(filePath);
+}
+
+/**
+ * Alle Bundesländer:
+ * data/json/reports/deutschland/<bundesland>.json
+ */
+export function getBundeslaender(): { slug: string; name: string }[] {
+  if (!fs.existsSync(DEUTSCHLAND_DIR)) {
+    console.warn("DEUTSCHLAND_DIR existiert nicht:", DEUTSCHLAND_DIR);
+    return [];
+  }
+
+  const entries = fs.readdirSync(DEUTSCHLAND_DIR, { withFileTypes: true });
+  const result: { slug: string; name: string }[] = [];
+
+  for (const entry of entries) {
+    // Wir erwarten hier die Dateien: sachsen.json, bayern.json, ...
+    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+
+    const blSlug = entry.name.replace(/\.json$/, "");
+    const blJsonPath = path.join(DEUTSCHLAND_DIR, entry.name);
+    const report = readJsonFile<Report>(blJsonPath);
+
+    result.push({
+      slug: blSlug,
+      name: report.meta?.name ?? blSlug,
+    });
+  }
+
+  result.sort((a, b) => a.name.localeCompare(b.name, "de"));
+  return result;
+}
+
+/**
+ * Alle Kreise eines Bundeslands:
+ * data/json/reports/deutschland/<bundesland>/<kreis>.json
+ */
+export function getKreiseForBundesland(
+  bundeslandSlug: string,
+): { slug: string; name: string }[] {
+  const blDir = path.join(DEUTSCHLAND_DIR, bundeslandSlug);
+  if (!fs.existsSync(blDir)) {
+    console.warn("Bundesland-Verzeichnis existiert nicht:", blDir);
+    return [];
+  }
+
+  const entries = fs.readdirSync(blDir, { withFileTypes: true });
+  const result: { slug: string; name: string }[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+
+    const kreisSlug = entry.name.replace(/\.json$/, "");
+    // Kreis-Report selbst, keine Ortsebene
+    const kreisJsonPath = path.join(blDir, entry.name);
+    const report = readJsonFile<Report>(kreisJsonPath);
+
+    result.push({
+      slug: kreisSlug,
+      name: report.meta?.name ?? kreisSlug,
+    });
+  }
+
+  // Kreis-Sammelreport (z. B. sachsen.json) aussortieren,
+  // falls du deinen Bundesland-Report dort liegen hast
+  result.splice(
+    result.findIndex((k) => k.slug === bundeslandSlug),
+    result.findIndex((k) => k.slug === bundeslandSlug) >= 0 ? 1 : 0,
+  );
+
+  result.sort((a, b) => a.name.localeCompare(b.name, "de"));
+  return result;
+}
+
+/**
+ * Ortslagen eines Kreises:
+ * data/json/reports/deutschland/<bundesland>/<kreis>/<ort>.json
+ * (alle JSON-Dateien in diesem Unterordner)
+ */
+export function getOrteForKreis(
+  bundeslandSlug: string,
+  kreisSlug: string,
+): { slug: string; name: string; plz?: string }[] {
+  const kreisDir = path.join(DEUTSCHLAND_DIR, bundeslandSlug, kreisSlug);
+  if (!fs.existsSync(kreisDir)) {
+    console.warn("Kreis-Verzeichnis existiert nicht:", kreisDir);
+    return [];
+  }
+
+  const entries = fs.readdirSync(kreisDir, { withFileTypes: true });
+  const result: { slug: string; name: string; plz?: string }[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+
+    const ortSlug = entry.name.replace(/\.json$/, "");
+    const ortJsonPath = path.join(kreisDir, entry.name);
+    const report = readJsonFile<Report>(ortJsonPath);
+
+    result.push({
+      slug: ortSlug,
+      name: report.meta?.name ?? ortSlug,
+      plz: report.meta?.plz as string | undefined,
+    });
+  }
+
+  result.sort((a, b) => a.name.localeCompare(b.name, "de"));
+  return result;
+}
+
+/**
+ * Generischer Loader:
+ * /immobilienmarkt
+ * /immobilienmarkt/[bundesland]
+ * /immobilienmarkt/[bundesland]/[kreis]
+ * /immobilienmarkt/[bundesland]/[kreis]/[ort]
+ */
+export function getReportBySlugs(slugs: string[]): Report | null {
+  if (slugs.length === 0) {
+    return getDeutschlandReport();
+  }
+
+  const [bundeslandSlug, kreisSlug, ortSlug] = slugs;
+
+  let filePath: string;
+
+  if (slugs.length === 1) {
+    // Bundesland-Report: data/json/reports/deutschland/<bundesland>.json
+    filePath = path.join(DEUTSCHLAND_DIR, `${bundeslandSlug}.json`);
+  } else if (slugs.length === 2) {
+    // Kreis-Report: data/json/reports/deutschland/<bundesland>/<kreis>.json
+    filePath = path.join(
+      DEUTSCHLAND_DIR,
+      bundeslandSlug,
+      `${kreisSlug}.json`,
+    );
+  } else {
+    // Orts-Report: data/json/reports/deutschland/<bundesland>/<kreis>/<ort>.json
+    filePath = path.join(
+      DEUTSCHLAND_DIR,
+      bundeslandSlug,
+      kreisSlug,
+      `${ortSlug}.json`,
+    );
+  }
+
+  if (!fs.existsSync(filePath)) {
+    console.warn("Report nicht gefunden für Slugs:", slugs, " -> ", filePath);
+    return null;
+  }
+
+  return readJsonFile<Report>(filePath);
 }

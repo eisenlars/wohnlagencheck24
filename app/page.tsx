@@ -1,114 +1,180 @@
-import type { Metadata } from "next";
+// app/page.tsx
+
 import Link from "next/link";
-import "./globals.css";
-import { MainNav } from "@/components/main-nav";
-import { getAllOrte } from "@/lib/data";
+import {
+  getBundeslaender,
+  getKreiseForBundesland,
+  getOrteForKreis,
+} from "@/lib/data";
 
-export const metadata: Metadata = {
-  title: "Wohnlagencheck24 – Wohnlagen & Standortanalysen",
-  description:
-    "Wohnlagencheck24 bietet strukturierte Informationen zu Wohnlagen, Standorten und Märkten in Deutschland.",
-};
+export default function HomePage() {
+  const bundeslaender = getBundeslaender();
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const orte = getAllOrte();
-  const bundeslaender = Array.from(
-    new Set(orte.map((o) => o.bundesland))
-  ).sort();
+  // Struktur: Bundesland -> Kreise -> Ortslagen
+  const struktur = bundeslaender.map((bl) => {
+    const kreise = getKreiseForBundesland(bl.slug).map((kreis) => {
+      const orte = getOrteForKreis(bl.slug, kreis.slug);
+      return { ...kreis, orte };
+    });
+    return { ...bl, kreise };
+  });
 
   return (
-    <html lang="de">
-      <body>
-        <div className="d-flex flex-column min-vh-100 bg-dark text-light">
-          {/* HEADER mit Bootstrap-Navbar */}
-          <header className="border-bottom bg-white text-dark">
-            <nav className="navbar navbar-expand-md navbar-light bg-white">
-              <div className="container">
-                {/* Brand */}
-                <Link href="/" className="navbar-brand d-flex align-items-center gap-2">
-                  <div
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "12px",
-                      backgroundColor: "#0087CC",
-                    }}
-                    className="d-flex align-items-center justify-content-center text-white fw-bold"
-                  >
-                    W
-                  </div>
-                  <div className="d-flex flex-column lh-sm">
-                    <span className="fw-semibold">Wohnlagencheck24</span>
-                    <small className="text-muted">
-                      Immobilienmarkt &amp; Standortprofile
-                    </small>
-                  </div>
-                </Link>
+    <div className="text-dark">
+      {/* Konzept */}
+      <section id="konzept" className="mb-5">
+        <div className="d-inline-flex align-items-center gap-2 rounded-pill border border-warning bg-warning px-3 py-1 text-uppercase small fw-semibold">
+          <span
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              backgroundColor: "#000",
+              display: "inline-block",
+            }}
+          />
+          Technisches Demo · GEO &amp; LLM-ready
+        </div>
 
-                {/* Toggle-Button für Mobile */}
-                <button
-                  className="navbar-toggler"
-                  type="button"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#mainNavbar"
-                  aria-controls="mainNavbar"
-                  aria-expanded="false"
-                  aria-label="Navigation umschalten"
-                >
-                  <span className="navbar-toggler-icon"></span>
-                </button>
+        <h1 className="mt-3 mb-2 h3">
+          Wohnlagencheck24 – Immobilienmarkt &amp; Standortprofile
+        </h1>
+        <p className="small text-muted mb-2">
+          Wohnlagencheck24 stellt strukturierte Informationen zu Wohnlagen,
+          Standorten und regionalen Immobilienmärkten bereit. Die Inhalte sind
+          so aufgebaut, dass sie für Nutzer, klassische Suchmaschinen und
+          KI-Suchsysteme gleichermaßen gut auswertbar sind.
+        </p>
+        <p className="small text-muted mb-0">
+          Dieses Demo bildet den technischen Unterbau für ein späteres Portal
+          mit vielen tausend Wohnlagen – inklusive klarer URL-Struktur und
+          Einstieg über Bundesländer, Landkreise und Wohnlagen.
+        </p>
+      </section>
 
-                {/* Nav-Inhalt (wir nutzen hier deine MainNav-Logik, aber Bootstrap-Styling außenrum) */}
-                <div className="collapse navbar-collapse" id="mainNavbar">
-                  <div className="ms-auto">
-                    <MainNav bundeslaender={bundeslaender} />
+      {/* Immobilienmarkt & Standortprofile */}
+      <section
+        id="immobilienmarkt-standortprofile"
+        className="mb-4"
+        aria-labelledby="immobilienmarkt-standortprofile-heading"
+      >
+        <h2 id="immobilienmarkt-standortprofile-heading" className="h4 mb-2">
+          Immobilienmarkt &amp; Standortprofile
+        </h2>
+        <p className="small text-muted mb-3">
+          Der Einstieg in die Standortprofile erfolgt über die Bundesländer.
+          Innerhalb eines Bundeslandes sind die erfassten Landkreise und
+          ausgewählte Wohnlagen aufgeführt. Die Detailseiten folgen der
+          Hierarchie:
+          <br />
+          <code>/immobilienmarkt/&lt;bundesland&gt;/&lt;kreis&gt;/&lt;wohnlage&gt;</code>
+        </p>
+
+        <p className="small mb-3">
+          Alternativ kannst du direkt über den Menüpunkt{" "}
+          <Link href="/immobilienmarkt" className="link-primary">
+            Immobilienmarkt &amp; Standortprofile
+          </Link>{" "}
+          in die hierarchische Übersicht einsteigen.
+        </p>
+      </section>
+
+      {/* Bundesländer + Kreise + Wohnlagen */}
+      <section
+        aria-label="Wohnlagen nach Bundesland und Landkreis"
+        className="mb-5"
+      >
+        {struktur.map((bl) => (
+          <section
+            key={bl.slug}
+            id={`bundeslaender-${bl.slug}`}
+            className="mb-4"
+          >
+            <h3 className="h5 mb-3">
+              <Link
+                href={`/immobilienmarkt/${bl.slug}`}
+                className="link-dark text-decoration-none"
+              >
+                {bl.name}
+              </Link>
+            </h3>
+
+            <div className="row g-3">
+              {bl.kreise.map((kreis) => (
+                <div key={kreis.slug} className="col-12 col-md-6">
+                  <div className="card border-0 shadow-sm h-100">
+                    <div className="card-body">
+                      <h4 className="h6 mb-2">
+                        <Link
+                          href={`/immobilienmarkt/${bl.slug}/${kreis.slug}`}
+                          className="link-dark text-decoration-none"
+                        >
+                          Landkreis {kreis.name}
+                        </Link>
+                      </h4>
+                      <ul className="list-unstyled mb-0 small">
+                        {kreis.orte.map((ort) => (
+                          <li key={ort.slug} className="mb-1">
+                            <Link
+                              href={`/immobilienmarkt/${bl.slug}/${kreis.slug}/${ort.slug}`}
+                              className="link-primary"
+                            >
+                              {ort.name}
+                            </Link>
+                            {ort.plz && (
+                              <span className="text-muted">
+                                {" "}
+                                (PLZ {ort.plz})
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                        {kreis.orte.length === 0 && (
+                          <li className="text-muted">
+                            (Für diesen Landkreis sind noch keine einzelnen
+                            Wohnlagen hinterlegt.)
+                          </li>
+                        )}
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </nav>
-          </header>
+              ))}
 
-          {/* CONTENT-BEREICH: zentrale Card */}
-          <main className="flex-grow-1 py-4">
-            <div className="container">
-              <div
-                className="card border-0 shadow-lg"
-                style={{
-                  borderRadius: "1.5rem",
-                  backgroundColor: "var(--brand-bg)",
-                }}
-              >
-                <div className="card-body p-4 p-md-5">{children}</div>
-              </div>
+              {bl.kreise.length === 0 && (
+                <div className="col-12">
+                  <p className="small text-muted mb-0">
+                    Für dieses Bundesland liegen aktuell noch keine Kreisdaten
+                    vor.
+                  </p>
+                </div>
+              )}
             </div>
-          </main>
+          </section>
+        ))}
 
-          {/* FOOTER */}
-          <footer className="border-top bg-black text-warning py-3 mt-4">
-            <div className="container d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 small">
-              <span>
-                &copy; {new Date().getFullYear()} Wohnlagencheck24. Alle Rechte
-                vorbehalten.
-              </span>
-              <div className="d-flex flex-wrap gap-3">
-                <Link href="/impressum" className="text-warning text-decoration-none">
-                  Impressum
-                </Link>
-                <Link href="/datenschutz" className="text-warning text-decoration-none">
-                  Datenschutz
-                </Link>
-                <span className="text-warning-50">
-                  Technische Demo · GEO &amp; LLM-optimiert
-                </span>
-              </div>
-            </div>
-          </footer>
-        </div>
-      </body>
-    </html>
+        {struktur.length === 0 && (
+          <p className="small text-muted mb-0">
+            Es wurden noch keine Reports in der Datenstruktur hinterlegt.
+          </p>
+        )}
+      </section>
+
+      {/* Weitere Inhalte */}
+      <section id="inhalte" className="pt-3 border-top">
+        <h2 className="h4 mb-2">Weitere Inhalte</h2>
+        <p className="small text-muted mb-1">
+          Hier können später zusätzliche Inhalte entstehen – zum Beispiel
+          methodische Erläuterungen zum Wohnlagenmodell, regionale
+          Vergleichsanalysen oder ein Glossar wichtiger Begriffe rund um
+          Immobilienmärkte und Standorte.
+        </p>
+        <p className="small text-muted mb-0">
+          Die Musterseite zeigt verschiedene Inhaltstypen, die später auf
+          Wohnlagen- und Marktprofilseiten eingesetzt werden können: Tabellen,
+          Grids, Formulare und Chart-Platzhalter.
+        </p>
+      </section>
+    </div>
   );
 }
