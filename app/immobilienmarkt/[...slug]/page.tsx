@@ -229,7 +229,7 @@ function KreisPage({
       region: String(item.region),
       value: Number(item.immobilienpreis),
     }))
-    .filter((item) => item.region && !Number.isNaN(item.value));
+    .filter((item: VergleichItem) => item.region && !Number.isNaN(item.value));
 
   // Überregionaler Vergleich: Grundstückspreise
   const grundVergleichRaw =
@@ -240,7 +240,7 @@ function KreisPage({
       region: String(item.region),
       value: Number(item.grundstueckspreis),
     }))
-    .filter((item) => item.region && !Number.isNaN(item.value));
+    .filter((item: VergleichItem) => item.region && !Number.isNaN(item.value));
 
   // Überregionaler Vergleich: Mietpreise (Kaltmiete)
   const mieteVergleichRaw =
@@ -251,7 +251,7 @@ function KreisPage({
       region: String(item.region),
       value: Number(item.kaltmiete),
     }))
-    .filter((item) => item.region && !Number.isNaN(item.value));
+    .filter((item: VergleichItem) => item.region && !Number.isNaN(item.value));
 
   // Hero-Bildpfad
   const heroImageSrc = `/images/immobilienmarkt/${slugs.join(
