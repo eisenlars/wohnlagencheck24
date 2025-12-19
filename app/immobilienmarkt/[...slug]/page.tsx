@@ -2856,7 +2856,7 @@ export function StandortTeaserBlock({
 
 // --- Maklerempfehlung ---
 
-type MaklerEmpfehlungBlock = {
+type MaklerEmpfehlungBlockProps = {
   kreisName: string;
   agentSuggestText: string;
   imageSrc?: string;
@@ -2866,49 +2866,44 @@ export function MaklerEmpfehlungBlock({
   kreisName,
   agentSuggestText,
   imageSrc,
-}: StandortTeaserProps) {
+}: MaklerEmpfehlungBlockProps) {
   return (
-      <div className="card bg-transparent border-0 mb-5">
-        
-        <h2 className="h2 mb-0 align-center text-center">Maklerempfehlung {kreisName}</h2>
-        
-        <div className="row g-4 align-items-center">
+    <div className="card bg-transparent border-0 mb-5">
+      <h2 className="h2 mb-0 align-center text-center">
+        Maklerempfehlung {kreisName}
+      </h2>
 
-          {/* Bild links – jetzt doppelt so groß */}
-          <div className="col-12 col-md-5 d-flex justify-content-center">
-            <div
-              className="shadow-sm overflow-hidden"
-              style={{
-                width: "100%",
-                maxWidth: "400px", // vorher 260px → jetzt doppelt so groß
-                aspectRatio: "1",
-                borderRadius: "50%",
-              }}
-            >
-              <img
-                src={imageSrc}
-                alt={`Maklerempfehlung ${kreisName}`}
-                className="w-100 h-100 object-fit-cover"
-              />
-            </div>
+      <div className="row g-4 align-items-center">
+        <div className="col-12 col-md-5 d-flex justify-content-center">
+          <div
+            className="shadow-sm overflow-hidden"
+            style={{
+              width: "100%",
+              maxWidth: "400px",
+              aspectRatio: "1",
+              borderRadius: "50%",
+            }}
+          >
+            <img
+              src={imageSrc}
+              alt={`Maklerempfehlung ${kreisName}`}
+              className="w-100 h-100 object-fit-cover"
+            />
           </div>
+        </div>
 
-          {/* Text rechts */}
-          <div className="col-12 col-md-7">
-            
-            <p className="mb-4">{agentSuggestText}</p>
+        <div className="col-12 col-md-7">
+          <p className="mb-4">{agentSuggestText}</p>
 
-            <a
-              href="/makler"
-              className="btn btn-outline-dark fw-semibold px-4 py-2"
-            >
-              Maklerempfehlung
-            </a>
-          </div>
-
+          <a
+            href="/makler"
+            className="btn btn-outline-dark fw-semibold px-4 py-2"
+          >
+            Maklerempfehlung
+          </a>
         </div>
       </div>
-
+    </div>
   );
 }
 
