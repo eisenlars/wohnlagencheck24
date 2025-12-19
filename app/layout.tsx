@@ -20,47 +20,36 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Neue Datenquelle: Bundesländer als { slug, name }[]
   const bundeslaender = getBundeslaender();
 
   return (
     <html lang="de">
-      <body className="bg-dark text-light">
-        {/* Bootstrap-JS (Offcanvas, Toggler etc.) nur im Browser laden */}
+      <body className="text-light">
         <BootstrapClient />
 
         <div className="d-flex flex-column min-vh-100">
           {/* HEADER */}
           <header className="border-bottom bg-white text-dark sticky-top">
             <nav className="navbar navbar-light bg-white">
-              <div className="container d-flex justify-content-between align-items-center">
+              <div className="container d-flex align-items-center position-relative">
                 {/* Logo / Brand */}
-                <Link
-                  href="/"
-                  className="navbar-brand d-flex align-items-center gap-2"
-                >
-                  <div
-                    className="d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
-                    style={{
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "12px",
-                      backgroundColor: "#0087CC",
-                    }}
-                  >
-                    W
-                  </div>
-                  <div className="d-flex flex-column lh-sm">
-                    <span className="fw-semibold">Wohnlagencheck24</span>
-                    <small className="text-muted">
-                      Immobilienmarkt &amp; Standortprofile
-                    </small>
-                  </div>
+                <Link href="/" className="navbar-brand brand-header">
+                  <img
+                    src="/logo/wohnlagencheck24.svg"
+                    alt="Immobilienmarkt & Standortprofile"
+                    className="brand-icon"
+                  />
+                  <span className="brand-text">
+                    <span className="brand-title">
+                      Wohnlagencheck<span style={{ color: "#ffe000" }}>24</span>
+                    </span>
+                    <small>Immobilienmarkt &amp; Standortprofile</small>
+                  </span>
                 </Link>
 
-                {/* NAV-Icon: öffnet Offcanvas auf allen Geräten */}
+                {/* NAV-Icon */}
                 <button
-                  className="navbar-toggler"
+                  className="navbar-toggler position-absolute end-0 me-2"
                   type="button"
                   data-bs-toggle="offcanvas"
                   data-bs-target="#mainNavOffcanvas"
@@ -89,7 +78,6 @@ export default function RootLayout({
                     />
                   </div>
                   <div className="offcanvas-body">
-                    {/* Navigation: Einstiegslink + Bundesländer + weitere Inhalte */}
                     <MainNav bundeslaender={bundeslaender} />
                   </div>
                 </div>
@@ -97,19 +85,9 @@ export default function RootLayout({
             </nav>
           </header>
 
-          {/* CONTENT-BEREICH */}
+          {/* CONTENT-BEREICH – KEINE CARD */}
           <main className="flex-grow-1 py-4">
-            <div className="container">
-              <div
-                className="card border-0 shadow-lg"
-                style={{
-                  borderRadius: "1.5rem",
-                  backgroundColor: "var(--brand-bg)",
-                }}
-              >
-                <div className="card-body p-4 p-md-5">{children}</div>
-              </div>
-            </div>
+            {children}
           </main>
 
           {/* FOOTER */}

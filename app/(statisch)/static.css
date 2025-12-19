@@ -1,0 +1,129 @@
+/* app/(statisch)/home.css */
+
+.home-page-root {
+  background: radial-gradient(circle at top, #020617 0%, #020617 55%, #020617 100%);
+}
+
+/* Startseiten-Hero */
+.home-hero {
+  background: linear-gradient(135deg, #020617 0%, #0b1220 40%, #020617 100%);
+  padding: 2.75rem 0 2.5rem;
+  color: #fff;
+}
+
+/* Weißer Hero-Abschnitt über volle Breite */
+.home-cutout-section {
+  background-color: #ffffff;
+  padding: 3rem 0 3.5rem;
+}
+
+/* Innerer Bereich: zweispaltig, links orientiert */
+.home-cutout-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3rem;
+  align-items: center;
+  justify-content: flex-start; /* linksorientiert */
+}
+
+/* Linke Spalte: große Deutschland-Maske */
+.home-cutout-media-col {
+  flex: 0 0 55%;              /* größerer Anteil */
+  min-width: 320px;
+}
+
+/* Rahmen / Fläche der Maske – hier “doppelt“ dimensionieren */
+.home-cutout-frame {
+  width: 100%;
+  max-width: 820px;           /* vorher z.B. ~400–600, jetzt deutlich größer */
+  aspect-ratio: 4 / 5;        /* eher hochformatig, damit Deutschland gut passt */
+  position: relative;
+}
+
+/* Medien-Element mit Deutschland-Maske */
+.home-cutout-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% center; /* ← Video innerhalb der Maske weiter links */
+  display: block;
+
+  /* Deutschland-Maske anwenden */
+  -webkit-mask-image: url("/shapes/deutschland-maske.svg");
+  mask-image: url("/shapes/deutschland-maske.svg");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+
+  background-color: #000; /* Fallback-Farbe, falls kein Bild/Video geladen wird */
+}
+
+/* --- Rechts: Logo + Portalinfo --- */
+
+.home-cutout-brand-col {
+  flex: 1 1 0;
+  min-width: 260px;
+}
+
+.home-cutout-logo {
+  height: 100px;
+  width: auto;
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.home-cutout-title {
+  margin: 0 0 0.25rem;
+  font-size: 2.7rem;
+  font-weight: 600;
+  color: #bcaf9d;
+}
+
+.home-cutout-claim {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.home-cutout-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+/* Startseiten-Inhalt darunter (falls noch nicht vorhanden) */
+.home-page-root-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 3rem;
+}
+
+/* Responsive Verhalten für mobile Geräte */
+@media (max-width: 767.98px) {
+  .home-cutout-inner {
+    padding-inline: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .home-cutout-media-col,
+  .home-cutout-brand-col {
+    flex: 1 1 100%;
+  }
+
+  .home-cutout-frame {
+    max-width: 100%;
+  }
+
+  .home-cutout-logo {
+    height: 52px;
+  }
+}

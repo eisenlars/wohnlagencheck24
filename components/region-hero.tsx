@@ -1,4 +1,3 @@
-import Image from "next/image";
 import React from "react";
 
 type RegionHeroProps = {
@@ -13,60 +12,68 @@ export function RegionHero({
   subtitle,
   imageSrc,
   rightOverlay,
+  rightOverlayMode,   
 }: RegionHeroProps) {
   return (
     <section className="mb-4">
       <div className="position-relative overflow-hidden rounded-4 shadow-sm">
+        {/* Parallax-Hintergrund */}
         <div
-          className="w-100"
-          style={{
-            aspectRatio: "21 / 6",
-            position: "relative",
-          }}
+          className="region-hero-media region-hero-parallax"
+          style={{ backgroundImage: `url(${imageSrc})` }}
         >
-          <Image
-            src={imageSrc}
-            alt={title}
-            fill
-            sizes="(min-width: 992px) 900px, 100vw"
-            style={{ objectFit: "cover" }}
-            priority
-          />
+          {/* Dunkler Verlauf oben links */}
+          <div className="region-hero-gradient" />
 
-          <div
-            className="position-absolute top-0 start-0 w-100 h-100"
-            style={{
-              background:
-                "linear-gradient(120deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 60%)",
-            }}
-          />
-
-          <div className="position-absolute bottom-0 start-0 w-100 px-3 px-md-4 pb-0 text-white">
-            <div className="d-flex flex-row justify-content-between align-items-end gap-4">
-
-              {/* Text links */}
-              <div className="flex-grow-1">
-                <div className="small text-uppercase mb-1 opacity-75">
-                  Regionale Standortaufnahme
-                </div>
-                <h1 className="h4 h3-md mb-1">{title}</h1>
-                {subtitle && (
-                  <p className="small mb-0 text-white-75">{subtitle}</p>
-                )}
+          {/* INHALTSBLOCK */}
+          <div className="region-hero-content d-flex flex-column justify-content-start">
+            {/* TEXTBLOCK LINKS OBEN */}
+            <div className="px-3 px-md-4 pt-4 text-white region-hero-text">
+              <div className="small text-uppercase mb-1 opacity-85">
+                Standortaufnahme
               </div>
 
-              {/* Tachos / Kennzahlen rechts */}
-              {rightOverlay && (
+              <h4 className="h4 h3-md mb-1">{title}</h4>
+
+              {subtitle && (
+                <p
+                  className="small mb-2 text-white-75"
+                  style={{ fontSize: "0.70rem" }}
+                >
+                  Quelle: {subtitle}
+                </p>
+              )}
+            </div>
+
+            {/* TACHO-BEREICH – Standard für Marktüberblick */}
+            {rightOverlay && rightOverlayMode !== "buttons" && (
+              <div className="mt-auto pb-3 d-flex justify-content-center w-100">
                 <div
-                  className="d-none d-md-flex flex-row gap-4 align-items-end"
+                  className="hero-tacho-row d-flex flex-row gap-4 align-items-end justify-content-center"
+                  style={{ marginBottom: "-24px" }}
+                >
+                  {rightOverlay}
+                </div>
+              </div>
+            )}
+
+            {/* BUTTON-BEREICH – für Immobilienpreise */}
+            {rightOverlay && rightOverlayMode === "buttons" && (
+              <div className="mt-auto d-flex justify-content-center w-100">
+                <div
+                  className="d-flex flex-row gap-2 justify-content-center"
                   style={{
-                    marginBottom: "-12px",   // zieht die Tachos leicht über den Bildrand hinaus
+                    marginBottom: 0,
+                    paddingBottom: 0,
+                    maxWidth: "360px",   // Begrenzung der Button-Zone
+                    width: "100%",
                   }}
                 >
                   {rightOverlay}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+            
           </div>
         </div>
       </div>

@@ -32,34 +32,34 @@ export function GaugeTacho({
   backgroundLabel,
   leftLabelLines,
   rightLabelLines,
-  width = 280,
-  height = 180,
+  width = 200,
+  height = 120,
 }: GaugeTachoProps) {
   const angle = valueToAngle(value, { min, max, start: -90, end: 90 });
 
   // Geometrie
   const cx = width / 2;
   const cy = height - 8; // Mittelpunkt unten → Halbkreis
-  const ringStroke = 12;
+  const ringStroke = 8;
 
   // Radius der Skala (Halbkreis)
-  const R = width / 2 - 18;
-  const rOuter = R + ringStroke / 2 + 6;
+  const R = width / 2 - 20;
+  const rOuter = R + ringStroke / 2 + 2;
 
   const x0 = cx - R;
   const x1 = cx + R;
   const y = cy;
 
-  const hubR = 10;
-  const shaftW = 6;
+  const hubR = 4;
+  const shaftW = 4;
 
   // Mittel-Label deutlich über der Nadel-Zone
-  const centerLabelY = height / 2 - 8;
+  const centerLabelY = height / 2 - 0;
 
   // Seitenlabels: etwas ins Innere verschoben
-  const leftOffset = R * 0.35;
-  const rightOffset = R * 0.25; // kleiner = näher an der Mitte
-  const sideLabelY = cy - R * 0.2;
+  const leftOffset = R * 0.22;
+  const rightOffset = R * 0.14; // kleiner = näher an der Mitte
+  const sideLabelY = cy - R * 0.1;
 
   // Nadel-Geometrie (länger, aber unterhalb der Label-Zone)
   const headTopY = cy - R * 0.55; // Spitze Länge
@@ -102,9 +102,11 @@ export function GaugeTacho({
           y2={y}
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0%" stopColor="#ff5252" />
-          <stop offset="50%" stopColor="rgb(200, 213, 79)" />
-          <stop offset="100%" stopColor="#ff5252" />
+          <stop offset="0%" stopColor="#e0744f" />
+          <stop offset="25%" stopColor="#ffe000" />
+          <stop offset="50%" stopColor="#7fb36a" />
+          <stop offset="75%" stopColor="#ffe000" />
+          <stop offset="100%" stopColor="#e0744f" />
         </linearGradient>
       </defs>
 
@@ -135,7 +137,7 @@ export function GaugeTacho({
       <circle
         cx={cx}
         cy={cy}
-        r={10}
+        r={4} 
         fill="#000"
         stroke="rgba(255,255,255,0.25)"
         strokeWidth={1}
@@ -146,7 +148,7 @@ export function GaugeTacho({
         x={cx}
         y={centerLabelY}
         textAnchor="middle"
-        fontSize={18}
+        fontSize={16}
         fontWeight={700}
         fill="#333"
       >
@@ -159,7 +161,7 @@ export function GaugeTacho({
         y={sideLabelY}
         textAnchor="end"
         dominantBaseline="middle"
-        fontSize={10}
+        fontSize={8}
         fill="#555"
       >
         {renderLabelLines(leftLabelLines)}
@@ -170,7 +172,7 @@ export function GaugeTacho({
         y={sideLabelY}
         textAnchor="start"
         dominantBaseline="middle"
-        fontSize={10}
+        fontSize={8}
         fill="#555"
       >
         {renderLabelLines(rightLabelLines)}
@@ -190,7 +192,7 @@ export function GaugeTacho({
         />
         {/* Spitze – sitzt direkt auf dem Schaft */}
         <polygon
-          points={`${cx},${headTopY} ${cx - 8},${headBaseY} ${cx + 8},${headBaseY}`}
+          points={`${cx},${headTopY} ${cx - 5},${headBaseY} ${cx + 5},${headBaseY}`}
           fill="#000000"
         />
         {/* Kleine Nabe */}

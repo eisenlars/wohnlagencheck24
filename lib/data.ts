@@ -191,3 +191,41 @@ export function getReportBySlugs(slugs: string[]): Report | null {
 
   return readJsonFile<Report>(filePath);
 }
+
+
+
+
+
+// SVG Maps aus map_inetractive holen
+
+export function getImmobilienpreisMapSvg(
+  bundeslandSlug: string,
+  kreisSlug: string,
+): string | null {
+  const svgPath = path.join(
+    process.cwd(),
+    "data",
+    "visuals",
+    "map_interactive",
+    "deutschland",
+    bundeslandSlug,
+    kreisSlug,
+    "immobilienpreis",
+    `immobilienpreis_${kreisSlug}.svg`,
+  );
+
+  if (!fs.existsSync(svgPath)) {
+    console.warn("Immobilienpreis-SVG nicht gefunden:", svgPath);
+    return null;
+  }
+
+  try {
+    return fs.readFileSync(svgPath, "utf8");
+  } catch (err) {
+    console.error("Fehler beim Lesen der Immobilienpreis-SVG:", err);
+    return null;
+  }
+}
+
+
+

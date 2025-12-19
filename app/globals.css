@@ -1,11 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 /* Farb-Definitionen */
 :root {
-  --brand-bg: #bcaf9d;      /* warme Grundfläche */
-  --brand-primary: #0087cc; /* Blau: Links / Akzente */
+  /*--brand-bg: #bcaf9d;      /* warme Grundfläche */
+  --brand-bg: rgba(188, 175, 157, 0.3);
+  --brand-bg: #ffffff;
+  --brand-primary: #486b7a; /* Blau: Links / Akzente */
   --brand-accent: #ffe000;  /* Gelb: Highlights */
   --brand-text: #000000;    /* Textfarbe */
 }
@@ -21,25 +20,48 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica,
     Arial, system-ui, sans-serif;
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.8;
   -webkit-font-smoothing: antialiased;
 }
 
+
+.navbar-toggler {
+  background-color: #ffe000 !important;
+  border:0
+}
+
+section {
+  padding: 0 0 2em 0
+}
+
+.no-underspace {
+  padding: 0
+}
+
+
+
 /* Überschriften – einfache, globale Typo */
-h1 {
-  font-size: 1.75rem; /* ~ text-2xl */
-  font-weight: 600;
+:root h1 {
+  font-size: 2.75rem; /* ~ text-2xl */
+  font-weight: 700;
+  color: rgb(72, 107, 122)
 }
 
-h2 {
-  font-size: 1.375rem; /* ~ text-xl */
+:root h2 {
+  font-size: 2.25rem; /* ~ text-xl */
   font-weight: 600;
+  color: rgb(72, 107, 122)
 }
 
-h3 {
-  font-size: 1rem; /* ~ text-base / text-sm */
+:root h3 {
+  font-size: 2rem; /* ~ text-base / text-sm */
   font-weight: 600;
+  color: rgb(72, 107, 122)
 }
+
+.highlighted {font-size: 3rem; font-weight: 600; color: rgb(72, 107, 122)}
+.superlighted {font-size: 4rem; font-weight: 600; color: rgb(72, 107, 122)}
+
 
 /* -----------------------------
    Inhaltselemente / Boxen / Tabellen / Charts
@@ -97,4 +119,649 @@ h3 {
     border: 1px solid rgba(0, 0, 0, 0.12);
     padding: 1rem 1.25rem;
   }
+}
+
+
+/* Voll transparente Cards – global nutzbar */
+.card.bg-transparent,
+.card.bg-transparent .card-body {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none; /* optional – falls du bei manchen Cards keine Schatten willst */
+}
+
+
+
+/* Startseite Layout */
+
+.home-layout-main {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.home-page-section {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+
+
+
+
+
+
+
+/* Beraterblock – zentriert, responsiv */
+
+.berater-section {
+  margin: 3rem 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Zentrierte innere Box */
+.berater-wrapper {
+  width: 580px;          /* FIXIERTE MITTIGE BREITE */
+  max-width: 100%;
+}
+
+/* Anordnung Bild + Text */
+.berater-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;      /* Mobil bricht der Block unter das Bild */
+}
+
+/* Rundes Bild */
+.berater-avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  flex-shrink: 0;
+}
+
+.berater-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Textblock */
+.berater-text {
+  flex: 1 1 240px;
+  text-align: left;
+}
+
+.berater-text h3 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #000000
+}
+
+.berater-text p {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  color: #6c757d;
+}
+
+/* Button */
+.berater-button {
+  display: inline-block;
+  padding: 10px 22px;
+  border-radius: 999px;
+  background-color: #ffe000;
+  color: #000;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* mobiler Modus: Text + Button zentriert */
+@media (max-width: 767px) {
+  .berater-text {
+    text-align: center;
+  }
+}
+
+
+/* Seiten-Einleitungstext */
+
+.teaser-text {
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #555;
+  margin-bottom: 2rem
+}
+
+
+/* Zitat */
+
+.zitat {
+    width: 60%;
+    margin: 0 auto;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    padding: 60px 80px 50px;
+    position: relative;
+}
+
+
+
+
+
+
+.zitat::after, .zitat::before {
+    color: #f0f0f0;
+    font-family: Arial,sans-serif;
+    font-size: 214px;
+    position: absolute;
+    content: "”";
+    left: -9px;
+    top: -42px;
+}
+
+
+
+.zitat-text {
+    font-size: 26px;
+    font-style: italic;
+    line-height: 1.7;
+    margin-bottom: 12px;
+}
+
+.zitat-text::before {
+    left: 75px;
+    top: 15px;
+}
+
+.zitat-footer::after, .zitat-text::before {
+    border-top: 1px solid #707070;
+    content: "";
+    position: absolute;
+    width: 20%;
+}
+
+
+.zitat-footer::after {
+    bottom: 10px;
+    left: 75px;
+}
+
+.zitat-autor {
+    font-size: 15px;
+    font-style: normal;
+    line-height: 1.8;
+}
+
+.zitat-autor::before {
+    content: "- ";
+}
+
+
+
+
+
+
+/* globale Header-Höhe grob definieren – einmal zentral */
+:root {
+  --main-header-offset: 72px; /* ggf. auf 64px / 80px anpassen, je nach Header-Höhe */
+}
+
+
+/* --- Subnavigation: Tabs mit Icons --- */
+
+.kreis-subnav {
+  margin-top: -1.5rem;
+  margin-left: -1.5rem;
+  margin-right: -1.5rem;
+  padding: 1.75rem 1.5rem 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background-color: rgba(255, 255, 255, 0.96);
+}
+
+.kreis-subnav-sticky {
+  position: sticky;
+  top: calc(var(--main-header-offset));
+  z-index: 20;
+}
+
+/* Tab-Stil */
+.kreis-subnav-link {
+  min-width: 90px;
+  text-align: center;
+  border-radius: 1rem !important;
+  padding: 0.6rem 1rem;
+  
+  background-color: #ffffff !important;
+  color: #000 !important;
+  border: 1px solid rgba(0,0,0,0.10) !important;
+  transition: all 0.15s ease;
+}
+
+/* Icon pur */
+.kreis-subnav-link .subnav-icon-img {
+  width: 36px;     
+  height: 36px;
+  display: block;
+  filter: none;
+}
+
+/* Label */
+.kreis-subnav-link .subnav-label {
+  font-size: 0.8rem;
+  line-height: 1.2;
+  color: #000;
+}
+
+
+/* --- ACTIVE --- */
+
+.kreis-subnav-link.active {
+  background-color: #f8f8f8 !important;
+  border-color: #486b7a !important;
+  color: #000 !important;
+}
+
+/* Icon im aktiven Tab → NICHT invertieren */
+.kreis-subnav-link.active .subnav-icon-img {
+  filter: none !important;
+}
+
+/* Label bleibt schwarz */
+.kreis-subnav-link.active .subnav-label {
+  color: #000 !important;
+}
+
+
+/* --- HOVER STATE --- */
+.kreis-subnav-link:hover {
+  border-color: #486b7a !important;
+  background-color: #f8f8f8 !important;
+  color: #000 !important;
+  text-decoration: none;
+}
+
+.kreis-subnav-link:hover .subnav-icon-img {
+  filter: none !important;
+}
+
+.kreis-subnav-link:hover .subnav-label {
+  color: #000 !important;
+}
+
+
+
+
+
+/* Horizontal scrollen bei wenig Platz */
+.kreis-subnav-tabs-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kreis-subnav-tabs {
+  flex-wrap: nowrap !important;
+  white-space: nowrap;
+}
+
+.kreis-subnav-tabs .nav-item {
+  flex: 0 0 auto;
+  margin-right: 1rem;
+}
+
+.kreis-subnav-tabs .nav-item:last-child {
+  margin-right: 0;
+}
+
+
+
+/* Desktop: Tabs zentrieren */
+@media (min-width: 768px) {
+  .kreis-subnav-tabs {
+    justify-content: center;
+  }
+}
+
+
+/* Sehr kleine Screens: kompakter */
+@media (max-width: 575.98px) {
+  .kreis-subnav-link {
+    min-width: 88px;
+    padding: 0.7rem 0.6rem;
+  }
+
+  .kreis-subnav-tabs-wrapper::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .kreis-subnav-tabs-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.18);
+    border-radius: 999px;
+  }
+}
+
+
+
+/* --- Logo / Brand --- */
+
+/* BRAND WRAPPER */
+.brand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  margin: 0 auto;           /* zentriert Brand im Header */
+  position: relative;
+}
+
+/* ICON */
+.brand-icon {
+  height: 48px;             /* Icon-Größe */
+  width: auto;
+  display: block;
+}
+
+/* TEXT RECHTS NEBEN DEM ICON */
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  font-weight: 600;
+  font-size: 1.05rem;
+  /*color: #bcaf9d;*/
+  color: #486b7a;
+  white-space: nowrap; 
+}
+
+
+.brand-title {
+  white-space: nowrap;
+  display: block;
+}
+
+
+/* Untertitel */
+.brand-text small {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+
+/* MOBILE: Text unter das Icon zentrieren */
+@media (max-width: 576px) {
+  .brand-header {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .brand-text {
+    text-align: center;
+  }
+}
+
+
+
+
+
+/* --- Right Edge Control Center --- */
+
+/* Gesamtblock (Buttons + TOC) rechts, vertikal zentriert */
+.right-edge-wrapper {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  z-index: 35;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* TOC und Buttons schlagen rechts an */
+  gap: 0.5rem;
+}
+
+/* nur Desktop/XL */
+@media (max-width: 1199.98px) {
+  .right-edge-wrapper {
+    display: none !important;
+  }
+}
+
+
+.edge-btn {
+  background-color: #ffe000;
+  color: #000;
+  border: none;
+  border-radius: 999px 0 0 999px; /* links rund, rechts gerade an Fensterkante */
+  padding: 0.6rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.edge-btn:hover {
+  background-color: #ffec55;
+}
+
+.edge-btn i {
+  font-size: 1.1rem;
+}
+
+
+
+
+
+
+
+/* TOC: Breite & Schatten; Position kommt vom Wrapper */
+.immobilienmarkt-toc {
+  width: 220px;
+}
+
+/* Card selbst soll rechts bündig sein */
+.immobilienmarkt-toc .card {
+  border-radius: 0.75rem 0 0 0.75rem; /* links rund, rechts gerade */
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}
+
+@media (min-width: 1200px) {
+  .immobilienmarkt-toc a {
+    color: #000;
+    font-size:12px;
+    line-height: 0.8em
+  }
+}
+
+/* Auf kleineren Screens ausblenden (nur Inhalt, kein TOC) */
+@media (max-width: 1199.98px) {
+  .immobilienmarkt-toc {
+    display: none;
+  }
+}
+
+/* Globale Offset-Lösung für alle Sections mit Anker-ID */
+@media (min-width: 768px) {
+  section[id] {
+    scroll-margin-top: 14rem; /* Höhe Header + Subnav + etwas Luft */
+  }
+}
+
+
+
+
+
+
+
+/* Hero: Parallax-Hintergrund */
+.region-hero-media {
+  position: relative;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+
+  /* Desktop: Panorama-Charakter */
+  aspect-ratio: 21 / 5;
+  min-height: 220px;
+}
+
+/* Parallax-Effekt in Desktop-/Tablet-Ansicht */
+.region-hero-parallax {
+  background-attachment: fixed;
+}
+
+/* Mobil: Parallax deaktivieren (bessere Kompatibilität) */
+@media (max-width: 767.98px) {
+  .region-hero-media {
+    aspect-ratio: 16 / 9;   /* etwas höher, damit Text + Tachos Platz haben */
+    min-height: 260px;
+  }
+
+  .region-hero-parallax {
+    background-attachment: scroll;  /* viele Mobile-Browser ignorieren fixed ohnehin */
+  }
+}
+
+/* Overlay-Gradient über dem Bild */
+.region-hero-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(0, 0, 0, 0.65) 0%,
+    rgba(0, 0, 0, 0.15) 70%
+  );
+  pointer-events: none;
+}
+
+/* Inhaltsebene über dem Gradient */
+.region-hero-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+/* Textblock links im Hero */
+.region-hero-text {
+  max-width: 60%;
+}
+
+/* Textblock links im Hero */
+.region-hero-text h3 {
+  color: #fff
+}
+
+/* Mobil: Text über volle Breite */
+@media (max-width: 575.98px) {
+  .region-hero-text {
+    max-width: 100%;
+  }
+}
+
+/* Tacho-Row (deine bestehenden Regeln wirken weiter) */
+/* + deine mobile Optimierung mit scale/order, die wir schon eingebaut haben */
+
+
+
+
+
+
+
+
+
+
+
+/* ---------- MOBIL: Tachos maximal an den Rand ---------- */
+@media (max-width: 575.98px) {
+
+  .hero-tacho-row {
+    gap: 0.25rem !important;     /* Minimaler Abstand */
+    padding: 0 !important;
+    /*margin: 0 !important;*/
+  }
+
+  /* Jedes direkte Kind = Tacho-Container → Padding entfernen */
+  .hero-tacho-row > * {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Linkes Tacho → nach rechts */
+  .hero-tacho-row > *:first-child {
+    order: 1;
+    transform: scale(0.75);
+    transform-origin: bottom right;
+  }
+
+  /* Rechtes Tacho → nach links */
+  .hero-tacho-row > *:last-child {
+    order: 2;
+    transform: scale(0.75);
+    transform-origin: bottom left;
+  }
+}
+
+
+
+
+
+/* ---------- schmale Teasertexte ---------- */
+
+.teaser-text-narrow {
+  width: 100%;
+}
+
+/* ab Tablet: 50 % Breite */
+@media (min-width: 768px) {
+  .teaser-text-narrow {
+    width: 75%;
+  }
+}
+
+/* ab großem Desktop: 25 % Breite (oder z.B. 40%, wenn 25% zu schmal ist) */
+@media (min-width: 1200px) {
+  .teaser-text-narrow {
+    width: 50%;
+  }
+}
+
+
+/* ---------- Interaktive SVG Maps ---------- */
+
+.region-map-wrapper svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+
+.region-map-root {
+  position: relative;
+}
+
+.region-map-wrapper svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.map-tooltip {
+  white-space: nowrap;
 }
