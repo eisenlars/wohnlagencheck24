@@ -2106,15 +2106,7 @@ function KreisPage({
       Kontakt
     </button>
 
-    {/* Kontakt-Offcanvas – wie bereits definiert */}
-    <div
-      className="offcanvas offcanvas-end"
-      tabIndex={-1}
-      id="kreisKontaktOffcanvas"
-      aria-labelledby="kreisKontaktOffcanvasLabel"
-    >
-      {/* ... Avatar, Telefonnummer, Formular ... */}
-    </div>
+    
 
     
     

@@ -5,6 +5,7 @@ type RegionHeroProps = {
   subtitle?: string;
   imageSrc: string;
   rightOverlay?: React.ReactNode;
+  rightOverlayMode?: "tachos" | "buttons";
 };
 
 export function RegionHero({
@@ -12,22 +13,18 @@ export function RegionHero({
   subtitle,
   imageSrc,
   rightOverlay,
-  rightOverlayMode,   
+  rightOverlayMode = "tachos",
 }: RegionHeroProps) {
   return (
     <section className="mb-4">
       <div className="position-relative overflow-hidden rounded-4 shadow-sm">
-        {/* Parallax-Hintergrund */}
         <div
           className="region-hero-media region-hero-parallax"
           style={{ backgroundImage: `url(${imageSrc})` }}
         >
-          {/* Dunkler Verlauf oben links */}
           <div className="region-hero-gradient" />
 
-          {/* INHALTSBLOCK */}
           <div className="region-hero-content d-flex flex-column justify-content-start">
-            {/* TEXTBLOCK LINKS OBEN */}
             <div className="px-3 px-md-4 pt-4 text-white region-hero-text">
               <div className="small text-uppercase mb-1 opacity-85">
                 Standortaufnahme
@@ -45,8 +42,8 @@ export function RegionHero({
               )}
             </div>
 
-            {/* TACHO-BEREICH – Standard für Marktüberblick */}
-            {rightOverlay && rightOverlayMode !== "buttons" && (
+            {/* TACHO-BEREICH */}
+            {rightOverlay && rightOverlayMode === "tachos" && (
               <div className="mt-auto pb-3 d-flex justify-content-center w-100">
                 <div
                   className="hero-tacho-row d-flex flex-row gap-4 align-items-end justify-content-center"
@@ -57,7 +54,7 @@ export function RegionHero({
               </div>
             )}
 
-            {/* BUTTON-BEREICH – für Immobilienpreise */}
+            {/* BUTTON-BEREICH */}
             {rightOverlay && rightOverlayMode === "buttons" && (
               <div className="mt-auto d-flex justify-content-center w-100">
                 <div
@@ -65,7 +62,7 @@ export function RegionHero({
                   style={{
                     marginBottom: 0,
                     paddingBottom: 0,
-                    maxWidth: "360px",   // Begrenzung der Button-Zone
+                    maxWidth: "360px",
                     width: "100%",
                   }}
                 >
@@ -73,7 +70,6 @@ export function RegionHero({
                 </div>
               </div>
             )}
-            
           </div>
         </div>
       </div>
