@@ -390,7 +390,8 @@ function KreisPage({
   const orte = getOrteForKreis(bundeslandSlug, kreisSlug);
 
   const bundeslandName = report.meta.bundesland_name;
-  const kreisName = report.meta.amtlicher_name;
+  const kreisName = String(report.meta.amtlicher_name ?? report.meta.name ?? "").trim();
+  
   
   const activeSection: ReportSection = sectionSlug ?? "uebersicht";
   
