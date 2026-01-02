@@ -104,7 +104,7 @@ export default async function ImmobilienmarktHierarchiePage({
     return (
       <BundeslandPage
         report={report}
-        slugs={regionSlugs}
+        //slugs={regionSlugs}
         sectionSlug={sectionSlug}
       />
     );
