@@ -1,8 +1,5 @@
 // app/immobilienmarkt/[...slug]/page.tsx
 
-
-
-
 import { resolveRoute } from "@/features/immobilienmarkt/routes/resolveRoute";
 import { KREIS_TABS } from "@/features/immobilienmarkt/config/kreisSections";
 
@@ -16,62 +13,17 @@ import { buildKreisMietpreiseVM } from "@/features/immobilienmarkt/selectors/kre
 import { KreisMietpreiseSection } from "@/features/immobilienmarkt/sections/kreis/KreisMietpreiseSection";
 
 
-import { GaugeTacho } from "@/components/gauge-tacho";
-import { RegionHero } from "@/components/region-hero";
-import { BeraterBlock } from "@/components/advisor-avatar";
+//import { GaugeTacho } from "@/components/gauge-tacho";
+//import { RegionHero } from "@/components/region-hero";
 import { RightEdgeControls } from "@/components/right-edge-controls";
-import { InteractiveMap } from "@/components/interactive-map";
-
-import { MatrixTable } from "@/components/MatrixTable";
-import { VergleichBarChart } from "@/components/VergleichBarChart";
-import { buildBarModel } from "@/utils/barModel";
-
-import { FaqSection } from "@/components/FaqSection";
-
-import { VergleichChart } from "@/components/VergleichChart";
-import type { VergleichItem } from "@/components/VergleichChart";
-
-import { ZeitreiheChart } from "@/components/ZeitreiheChart";
-import type { Zeitpunkt } from "@/components/ZeitreiheChart";
-
-import { PreisindexBox } from "@/components/PreisindexBox";
-
-import {
-  OrtslagenUebersichtTable,
-  type OrtslagenUebersichtRow,
-} from "@/components/OrtslagenUebersichtTable";
-
-import { PreisgrenzenRow } from "@/components/PreisgrenzenRow";
-
-import { KpiValue } from "@/components/KpiValue";
-
-import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
-
-  
-import { toNumberOrNull } from "@/utils/toNumberOrNull";  
-import { parseNumberDE } from "@/utils/parseNumber";
-import {
-  formatMetric,
-  formatEurPerSqm,
-  formatValueCtx,
-  formatIndexDelta,
-  formatIndexFactor,
-  formatPercentSigned,
-  formatWithUnit,
-} from "@/utils/format";
-
-import { buildTableModel } from "@/utils/buildTableModel";
-
-
-import { getText } from "@/utils/getText";
 
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   getReportBySlugs,
-  getBundeslaender,
-  getKreiseForBundesland,
+  //getBundeslaender,
+  //getKreiseForBundesland,
   getOrteForKreis,
   getImmobilienpreisMapSvg,   
   getMietpreisMapSvg,   
@@ -79,19 +31,33 @@ import {
 } from "@/lib/data";
 
 
+type ReportSection =
+  | "immobilienpreise"
+  | "mietpreise"
+  | "mietrendite"
+  | "wohnmarktsituation"
+  | "grundstueckspreise"
+  | "wohnlagencheck"
+  | "wirtschaft"
+  | "uebersicht"
+  | null;
+  
 
+type ReportMetaLike = Report["meta"] & {
+  bundesland_name?: string;
+  amtlicher_name?: string;
+};
 
-const REPORT_SECTIONS = [
-  "immobilienpreise",
-  "mietpreise",
-  "mietrendite",
-  "wohnmarktsituation",
-  "grundstueckspreise",
-  "wohnlagencheck",
-  "wirtschaft",
-] as const;
+type ReportDataLike = Report["data"] & {
+  text?: {
+    berater?: {
+      berater_name?: string;
+      berater_telefon?: string;
+      berater_email?: string;
+    };
+  };
+};
 
-type ReportSection = (typeof REPORT_SECTIONS)[number] | "uebersicht" | null;
 
 type PageParams = {
   slug?: string[];
@@ -100,6 +66,8 @@ type PageParams = {
 type PageProps = {
   params: Promise<PageParams>; // WICHTIG: params ist ein Promise
 };
+
+
 
 export default async function ImmobilienmarktHierarchiePage({
   params,
@@ -119,6 +87,8 @@ export default async function ImmobilienmarktHierarchiePage({
   if (!report) {
     notFound();
   }
+  
+  
 
   const level = regionSlugs.length;
 
@@ -144,7 +114,9 @@ export default async function ImmobilienmarktHierarchiePage({
     const [bundeslandSlug, kreisSlug] = regionSlugs;
 
 
-    // Übersicht über Feature-System
+
+    // --- Übersicht über Feature-System ---
+    
     if (route.section === "uebersicht") {
       const activeTab =
         KREIS_TABS.find((t) => t.id === "uebersicht")!;
@@ -177,8 +149,14 @@ export default async function ImmobilienmarktHierarchiePage({
     }
     
 
-    // Immobilienpreise über Feature-System
+    // --- Immobilienpreise über Feature-System ---
+    
     if (route.section === "immobilienpreise") {
+      
+      const data = report.data as ReportDataLike;
+      // optional, falls meta gebraucht wird
+      // const meta = report.meta as ReportMetaLike;
+      
       const activeTab =
         KREIS_TABS.find((t) => t.id === "immobilienpreise") ??
         KREIS_TABS.find((t) => t.id === "uebersicht")!;
@@ -199,8 +177,7 @@ export default async function ImmobilienmarktHierarchiePage({
       const vm = buildKreisImmobilienpreiseVM({ report, bundeslandSlug, kreisSlug });
 
       // Optional: Berater analog zur Übersicht (wenn du es sauber übergeben willst)
-      const beraterName =
-        (report.data as any)?.text?.berater?.berater_name ?? "Lars Hofmann";
+      const beraterName = data.text?.berater?.berater_name ?? "Lars Hofmann";
       const beraterTaetigkeit = `Standort- / Immobilienberatung – ${vm.kreisName}`;
       const beraterImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`;
 
@@ -225,9 +202,8 @@ export default async function ImmobilienmarktHierarchiePage({
     }
 
 
-
-
-    // Mietpreise über Feature-System
+    // --- Mietpreise über Feature-System ---
+    
     if (route.section === "mietpreise") {
       const activeTab =
         KREIS_TABS.find((t) => t.id === route.section) ??
@@ -240,6 +216,11 @@ export default async function ImmobilienmarktHierarchiePage({
       }));
 
       const mietpreisMapSvg = getMietpreisMapSvg(bundeslandSlug, kreisSlug);
+      
+      const orte = getOrteForKreis(bundeslandSlug, kreisSlug);
+      
+      // Hero-Image wie bei Übersicht
+      const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`;
 
       const vm = buildKreisMietpreiseVM({
         report,
@@ -251,9 +232,13 @@ export default async function ImmobilienmarktHierarchiePage({
       return (
         <KreisMietpreiseSection
           vm={vm}
-          tocItems={activeTab.toc}
           tabs={tabs}
+          tocItems={activeTab.toc}
           activeTabId={route.section}
+          orte={orte}
+          bundeslandSlug={bundeslandSlug}
+          kreisSlug={kreisSlug}
+          heroImageSrc={heroImageSrc}
         />
       );
     }
@@ -267,11 +252,7 @@ export default async function ImmobilienmarktHierarchiePage({
       />
     );
   }
-
-
-
-
-
+  
 
   // level >= 3
   return (
@@ -298,7 +279,8 @@ function DeutschlandPage({
   report: Report;
   sectionSlug: ReportSection;
 }) {
-  const bundeslaender = getBundeslaender();
+  
+  //const bundeslaender = getBundeslaender(); // -> einblenden wenn benötigt
 
   return (
     <div className="text-dark">
@@ -329,15 +311,13 @@ function DeutschlandPage({
  
 function BundeslandPage({
   report,
-  slugs,
   sectionSlug,
 }: {
   report: Report;
-  slugs: string[];
   sectionSlug: ReportSection;
 }) {
-  const bundeslandSlug = report.meta.slug;
-  const kreise = getKreiseForBundesland(bundeslandSlug);
+  //const bundeslandSlug = report.meta.slug;
+  //const kreise = getKreiseForBundesland(bundeslandSlug);
 
   return (
     <div className="text-dark">
@@ -372,51 +352,26 @@ function KreisPage({
   sectionSlug: ReportSection;
 }) {
 
-  
-  
-  
-  
-  
-  
-  
   // -------------------------------------------------------------------
   // --------------------- Allgemein für alle Subseiten ----------------
   // -------------------------------------------------------------------
 
-  
-  
+  const meta = report.meta as ReportMetaLike;
+  const data = report.data as ReportDataLike;
   
   const [bundeslandSlug, kreisSlug] = slugs;
-  const orte = getOrteForKreis(bundeslandSlug, kreisSlug);
+  //const orte = getOrteForKreis(bundeslandSlug, kreisSlug);
 
-  const bundeslandName = report.meta.bundesland_name;
-  const kreisName = String(report.meta.amtlicher_name ?? report.meta.name ?? "").trim();
+
+  //const bundeslandName = String(meta.bundesland_name ?? "").trim();
+  const kreisName = String(meta.amtlicher_name ?? meta.name ?? "").trim();
   
   
   const activeSection: ReportSection = sectionSlug ?? "uebersicht";
   
   const tocItems = getTocItemsForSection(activeSection);
   
- 
-  
-  // Farbendefinitionen für Preiskategorien (Header voll, Zellen leicht getönt)
-  const COLOR_IMMO = "rgb(75,192,192,0.6)";
-  const COLOR_GRUND = "rgb(72,107,122,0.6)";
-  const COLOR_MIETE = "rgb(200,213,79,0.6)";
 
-  // RGB-Anteile für eigene Opazitäten
-  const COLOR_IMMO_RGB = "75,192,192";
-  const COLOR_GRUND_RGB = "72,107,122";
-  const COLOR_MIETE_RGB = "200,213,79";
-
-  // Sehr leichte Tönung für Zellen
-  const BG_IMMO = `rgba(${COLOR_IMMO_RGB}, 0.1)`;
-  const BG_GRUND = `rgba(${COLOR_GRUND_RGB}, 0.1)`;
-  const BG_MIETE = `rgba(${COLOR_MIETE_RGB}, 0.1)`;
-  
-  
-  
-  
   
   // --------------- Subnavigation ----------------
   
@@ -630,11 +585,10 @@ function KreisPage({
 
   // --------------- Text + Bild Beraterkontakt ----------------
   
-  const beraterName = (report.data as any)?.text?.berater?.berater_name ?? "Lars Hofmann";
-  
-  const beraterTelefon = (report.data as any)?.text?.berater?.berater_telefon ?? "+49 351/287051-0 ";
+  const beraterName = data.text?.berater?.berater_name ?? "Lars Hofmann";
+  const beraterTelefon = data.text?.berater?.berater_telefon ?? "+49 351/287051-0 ";
+  const beraterEmail = data.text?.berater?.berater_email ?? "kontakt@wohnlagencheck24.de";
 
-  const beraterEmail = (report.data as any)?.text?.berater?.berater_email ?? "kontakt@wohnlagencheck24.de";
   
   // --- Text: dynamisch mit Kreisnamen ---
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${kreisName}`;
@@ -729,561 +683,6 @@ function KreisPage({
       
 
 
-
-
-
-      {/* CONTENT je Berichtsebene */}
-
-
-
-
-{/****************** Immobilienpreise-Ansicht **************/}
-
-      {activeSection === "immobilienpreise" && (
-        <>
-        
-        
-        
-        {/* Headline Immobilienpreise */}
-        <section className="mb-3" id="einleitung">
-          <h1 className="mt-3 mb-1">Immobilienpreise 2025 - {kreisName}</h1>
-          <p className="small text-muted mb-4">
-            Aktualisiert am: {kreisName}
-          </p>
-
-          {/* Einleitungstext */}
-          <div>
-            <p className="teaser-text">
-              {teaserImmobilienpreise}
-            </p>
-          </div>
-
-
-          {/* Beraterkontakt */}
-          <BeraterBlock
-            name={beraterName}
-            taetigkeit={beraterTaetigkeit}
-            imageSrc={beraterImageSrc}
-          />
-
-        </section>
-        
-        
-        
-        {/* Leitkennzahl + Interaktive Karte */}
-        <section className="mb-5">
-          <div className="row g-4 align-items-stretch">
-            {/* Linke Spalte: Karte */}
-            <div className="col-12 col-lg-6">
-              <div className="h-100" style={{ width: "90%", margin: "0 auto" }}>
-                {immobilienpreisMapSvg ? (
-            
-                  <InteractiveMap
-                    svg={immobilienpreisMapSvg}
-                    theme="immobilienpreis"
-                    mode="singleValue"
-                    kind="kaufpreis_qm"
-                    unitKey="eur_per_sqm"
-                    ctx="kpi"
-                  />
-      
-                ) : (
-                  <p className="small text-muted mb-0">
-                    Für diesen Landkreis liegt aktuell noch keine interaktive
-                    Immobilienpreis-Karte vor.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Rechte Spalte: Hauptindikator */}
-            <div className="col-12 col-lg-6 d-flex align-items-center">
-              <div className="w-100 align-center text-center">
-                {kaufpreis !== null && Number.isFinite(kaufpreis) ? (
-                  <>
-                    <p
-                      className="display-1 fw-bold mb-2"
-                      style={{ color: "#486b7a", fontSize: "7rem" }}
-                    >
-                      <KpiValue
-                        value={kaufpreis}
-                        kind="kaufpreis_qm"
-                        unitKey="eur_per_sqm"
-                        ctx="kpi"
-                        size="ultra"          // ultrahighlight
-                        showUnit={true}
-                      />
-                    </p>
-                    <p className="mb-0">Ø Immobilienpreis – {kreisName}</p>
-                  </>
-                ) : (
-                  <p className="small text-muted mb-0">Keine Kaufpreisdaten verfügbar.</p>
-                )}
-              </div>
-            </div>
-            
-          </div>
-        </section>
-
-
-
-        
-        
-
-        {/* Hauspreise – Standard-/Individualüberschrift + Intro */}
-        <section className="mb-4" id="hauspreise">
-          
-          <header className="mb-3">
-            {ueberschriftHausIndividuell ? (
-              <>
-                {/* Standardüberschrift: leicht, damit die Individualüberschrift hervorsticht */}
-                <h2 className="h5 text-muted text-uppercase mb-1">
-                  Kaufpreise für Häuser in {kreisName}
-                </h2>
-                {/* Individualüberschrift: optisch wie H2 */}
-                <h3 className="h2 mb-0">
-                  {ueberschriftHausIndividuell}
-                </h3>
-              </>
-            ) : (
-              /* Fallback: nur Standardüberschrift, aber im vollen H2-Stil */
-              <h2 className="h2 mb-0">
-                Kaufpreise für Häuser in {kreisName}
-              </h2>
-            )}
-          </header>
-
-          {hauspreiseIntro && (
-            <p className="teaser-text">
-              {hauspreiseIntro}
-            </p>
-          )}
-
-        {/* --- Hauspreisspanne --- */}
-        <KpiValue
-          icon="/icons/ws24_marktbericht_immobilienpreise.svg" // optional
-          items={[
-            { label: "min", value: hausMin, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
-            { label: "Durchschnitt", value: hausAvg, kind: "kaufpreis_qm", unitKey: "eur_per_sqm", highlight: true },
-            { label: "max", value: hausMax, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
-          ]}
-          ctx="kpi"
-          size="md"
-          highlightBg="transparent"            // oder z.B. "#fff3cd"
-          highlightValueColor="#486b7a"
-          normalValueColor="#6c757d"
-        />
-        
-        </section>
-          
-          
-
-        {/* --- Kaufpreise für Häuser im überregionalen Vergleich (Tabelle) --- */}
-        
-          
-        <section className="mb-5">
-
-          {/* Standard-Überschrift */}
-          <h3 className="h5 text-muted mb-1">
-            Kaufpreise für Häuser im überregionalen Vergleich
-          </h3>
-
-          {/* --- Text überregionaler Vergleich Haus --- */}
-          {hausVergleichIntro && <p className="mb-3">{hausVergleichIntro}</p>}
-          
-          
-          {/* --- Hauspreisindex --- */}
-          {indexHaus !== null && (
-          <KpiValue
-            icon="/icons/ws24_marktbericht_immobilienpreise.svg"
-            iconAlt="Immobilienpreisindex Haus"
-            items={[
-              { label: "Immobilienpreisindex Haus", value: indexHaus, kind: "index", unitKey: "none" },
-            ]}
-            ctx="kpi"
-            size="lg"
-            showUnit={false}
-            caption="Basis: D = 100"
-          />
-          )}
-
-          {/* --- Tabelle überregionaler Vergleich Haus --- */}
-          <MatrixTable
-            model={ueberregionalModel_haus}
-            highlightColLabel="Ø Preis"
-            highlightBg="#c8d54f"
-            headerBg="#f5f5f5"
-          />
-
-        </section>
-       
-        
-        
-        {/* --- Kaufpreise für Häuser nach Lage (Tabelle) --- */}
-        
-        <section className="mb-5" id="hauspreise-lage">
-
-          {/* Standard-Überschrift */}
-          <h3 className="h5 text-muted mb-1">Hauspreise nach Lagequalität</h3>
-
-          {/* Text aus JSON */}
-          {text_haus_lage && <p className="mb-3">{text_haus_lage}</p>}
-
-          <div className="card border-0 shadow-sm">
-            <div className="card-body">
-              <MatrixTable
-                model={lageModel_haus}
-                highlightColLabel="Ø Preis"
-                highlightBg="#c8d54f"
-                headerBg="#f5f5f5"
-              />
-            </div>
-          </div>
-        </section>
-   
-        
-        
-        
-        {/* --- Kaufpreisentwicklung für Häuser (Chart) --- */}
-
-        {hausKaufpreisentwicklungSeries.length > 0 && (
-          <section className="mb-5" id="haus-kaufpreisentwicklung">
-            
-            {/* Standard-Überschrift */}
-            <h3 className="h5 text-muted mb-1">Preisentwicklung: Häuser (Kauf)</h3>
-            
-            {/* Text aus JSON */}
-            {text_haus_kaufpreisentwicklung && <p className="mb-3">{text_haus_kaufpreisentwicklung}</p>}
-
-            <div className="card border-0 shadow-sm">
-              <div className="card-body">
-                <ZeitreiheChart
-                  title="Haus-Kaufpreise"
-                  ariaLabel={`Preisentwicklung Haus-Kaufpreise: ${kreisName} im Vergleich zu ${bundeslandName ?? "Bundesland"} und Deutschland`}
-                  series={hausKaufpreisentwicklungSeries}
-                  kind="kaufpreis_qm"
-                  unitKey="eur_per_sqm"
-                  ctx="chart"
-                  svgWidth={720}
-                  svgHeight={360}
-                />
-              </div>
-            </div>
-            
-            
-            
-          </section>
-        )}
-
-        
-        
-        
-        
-        <section className="mb-5" id="haustypen-kaufpreise">
-          
-          {/* Standard-Überschrift */}
-          <h3 className="h5 text-muted mb-1">Kaufpreise nach Haustypen</h3>
-            
-          {/* Text aus JSON */}
-          {text_haustypen_kaufpreise && <p className="mb-3">{text_haustypen_kaufpreise}</p>}
-          
-          <MatrixTable
-            model={haustypModel}
-            highlightColLabel="Ø Preis"
-            highlightBg="#c8d54f"
-            headerBg="#f5f5f5"
-          />
-
-        </section>
-        
-        
-        
-        
-        
-        {/* Wohnungspreise – Standard-/Individualüberschrift + Intro */}
-        <section className="mb-4" id="wohnungspreise">
-          
-          <header className="mb-3">
-            {ueberschriftWohnungIndividuell ? (
-              <>
-                {/* Standardüberschrift: leicht, damit die Individualüberschrift hervorsticht */}
-                <h2 className="h5 text-muted text-uppercase mb-1">
-                  Kaufpreise für Wohnungen in {kreisName}
-                </h2>
-                {/* Individualüberschrift: optisch wie H2 */}
-                <h3 className="h2 mb-0">
-                  {ueberschriftWohnungIndividuell}
-                </h3>
-              </>
-            ) : (
-              /* Fallback: nur Standardüberschrift, aber im vollen H2-Stil */
-              <h2 className="h2 mb-0">
-                Kaufpreise für Wohnungen in {kreisName}
-              </h2>
-            )}
-          </header>
-
-          {wohnungspreiseIntro && (
-            <p className="teaser-text">
-              {wohnungspreiseIntro}
-            </p>
-          )}
-        
-        
-        
-        {/* --- Wohnungspreisspanne --- */}
-      
-        <KpiValue
-          icon="/icons/ws24_marktbericht_immobilienpreise.svg" // optional
-          items={[
-            { label: "min", value: wohnungMin, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
-            { label: "Durchschnitt", value: wohnungAvg, kind: "kaufpreis_qm", unitKey: "eur_per_sqm", highlight: true },
-            { label: "max", value: wohnungMax, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
-          ]}
-          ctx="kpi"
-          size="md"
-          highlightBg="transparent"            // oder z.B. "#fff3cd"
-          highlightValueColor="#486b7a"
-          normalValueColor="#6c757d"
-        />
- 
-        
-        </section>
-        
-        
-        
-        {/* --- Kaufpreise für Wohnungen im überregionalen Vergleich (Tabelle) --- */}
-        
-        <section className="mb-5">
-
-          {/* Standard-Überschrift */}
-          <h3 className="h5 text-muted mb-1">
-            Kaufpreise für Wohnungen im überregionalen Vergleich
-          </h3>
-          
-          
-          {/* --- Text überregionaler Vergleich Wohnung --- */}
-          {wohnungVergleichIntro && <p className="mb-3">{wohnungVergleichIntro}</p>}
-          
-          
-          {/* --- Wohnungpreisindex --- */}
-          {indexWohnung !== null && (
-          <KpiValue
-            icon="/icons/ws24_marktbericht_immobilienpreise.svg"
-            iconAlt="Immobilienpreisindex Wohnung"
-            items={[
-              { label: "Immobilienpreisindex Wohnung", value: indexWohnung, kind: "index", unitKey: "none" },
-            ]}
-            ctx="kpi"
-            size="lg"
-            showUnit={false}
-            caption="Basis: D = 100"
-          />
-          )}
-
-          
-          {/* --- Tabelle überregionaler Vergleich Wohnung --- */}
-          <MatrixTable
-            model={ueberregionalModel_wohnung}
-            highlightColLabel="Ø Preis"
-            highlightBg="#c8d54f"
-            headerBg="#f5f5f5"
-          />
-          
-
-        </section>
-    
-        
-        
-        
-        
-        {/* --- Kaufpreise für Wohnungen nach Lage (Tabelle) --- */}
-        
-        <section className="mb-5" id="wohnungpreise-lage">
-
-          {/* Standard-Überschrift */}
-          <h3 className="h5 text-muted mb-1">Wohnungspreise nach Lagequalität</h3>
-
-          {/* Text aus JSON */}
-          {text_wohnung_lage && <p className="mb-3">{text_wohnung_lage}</p>}
-
-          <div className="card border-0 shadow-sm">
-            <div className="card-body">
-              <MatrixTable
-                model={lageModel_wohnung}
-                highlightColLabel="Ø Preis"
-                highlightBg="#c8d54f"
-                headerBg="#f5f5f5"
-              />
-            </div>
-          </div>
-        </section>
-        
-        
-        
-        {/* --- Kaufpreisentwicklung für Wohnungen (Chart) --- */}
-
-        <section className="mb-5" id="wohnung-kaufpreisentwicklung">
-
-          {/* Standard-Überschrift */}
-          <h3 className="h5 text-muted mb-1">Preisentwicklung: Wohnungen (Kauf)</h3>
-
-          {/* Text aus JSON */}
-          {text_wohnung_kaufpreisentwicklung && <p className="mb-3">{text_wohnung_kaufpreisentwicklung}</p>}
-
-          <div className="card border-0 shadow-sm">
-            <div className="card-body">
-              <ZeitreiheChart
-                title="Wohnung-Kaufpreise"
-                ariaLabel={`Preisentwicklung Haus-Kaufpreise: ${kreisName} im Vergleich zu ${bundeslandName ?? "Bundesland"} und Deutschland`}
-                series={wohnungKaufpreisentwicklungSeries}
-                kind="kaufpreis_qm"
-                unitKey="eur_per_sqm"
-                ctx="chart"
-                svgWidth={720}
-                svgHeight={360}
-              />
-            </div>
-          </div>
-
-        </section>
-
-        
-        
-        {/* --- Kaufpreise für Wohnungen nach Zimmern und Flächen (Chart) --- */}
-        <section className="mb-5" id="wohnungpreise-zimmer-flaechen">
-          {/* Standard-Überschrift */}
-          <h3 className="h5 text-muted mb-1">Wohnungspreise nach Zimmern und Flächen</h3>
-
-          {/* Text aus JSON */}
-          {text_wohnung_zimmer_flaechen && <p className="mb-3">{text_wohnung_zimmer_flaechen}</p>}
-
-          <div className="row g-3">
-            {/* Nach Zimmern */}
-            <div className="col-12 col-lg-6">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body">
-                  <h5 className="h5 mb-3 text-center">Nach Zimmern</h5>
-
-                  <VergleichBarChart
-                    title="Wohnungskaufpreise nach Zimmern"
-                    categories={wohnungZimmerModel.categories}
-                    series={[
-                      {
-                        ...wohnungZimmerModel.series.find((s) => s.key === "preis_vorjahr")!,
-                        label: "Vorjahr",
-                        color: "rgba(75,192,192)",
-                        fillOpacity: 0.6,
-                      },
-                      {
-                        ...wohnungZimmerModel.series.find((s) => s.key === "preis")!,
-                        label: "Aktuell",
-                        color: "rgba(200,213,79)",
-                        fillOpacity: 0.9,
-                      },
-                    ]}
-                    valueKind="kaufpreis_qm"
-                    unitKey="eur_per_sqm"
-                    ctx="chart"
-                    svgWidth={560}
-                    svgHeight={300}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Nach Flächen */}
-            <div className="col-12 col-lg-6">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body">
-                  <h5 className="h5 mb-3 text-center">Nach Flächen</h5>
-
-                  <VergleichBarChart
-                    title="Wohnungskaufpreise nach Flächen"
-                    categories={wohnungFlaechenModel.categories}
-                    series={[
-                      {
-                        ...wohnungFlaechenModel.series.find((s) => s.key === "preis_vorjahr")!,
-                        label: "Vorjahr",
-                        color: "rgba(75,192,192)",
-                        fillOpacity: 0.6,
-                      },
-                      {
-                        ...wohnungFlaechenModel.series.find((s) => s.key === "preis")!,
-                        label: "Aktuell",
-                        color: "rgba(200,213,79)",
-                        fillOpacity: 0.9,
-                      },
-                    ]}
-                    valueKind="kaufpreis_qm"
-                    unitKey="eur_per_sqm"
-                    ctx="chart"
-                    svgWidth={560}
-                    svgHeight={300}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        
-        
-        <section className="mb-5" id="faq-immobilienpreise">
-        <FaqSection
-          id="faq"
-          title={`FAQ – Immobilienmarkt ${kreisName}`}
-          items={FAQ_IMMOBILIENMARKT_ALLGEMEIN}
-        />
-        </section>
-        
-        
-        
-        {/* Erfasste Wohnlagen */}
-        <section className="mb-4" id="wohnlagen">
-          <h2 className="h2 mb-3 align-center text-center">
-            Erfasste Wohnlagen – {kreisName}
-          </h2>
-
-          <div className="card border-0 shadow-sm">
-            <div className="card-body">
-
-              {/* Tab-/Pill-Optik */}
-              <nav
-                className="nav nav-pills flex-wrap gap-2 justify-content-center"
-                aria-label="Wohnlagen Navigation"
-              >
-                {orte.map((ort) => (
-                  <Link
-                    key={ort.slug}
-                    href={`/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ort.slug}`}
-                    className="nav-link px-3 py-2 rounded-pill fw-semibold small bg-light text-dark"
-                  >
-                    {ort.name}
-                    {ort.plz && (
-                      <span className="ms-2 text-muted fw-normal">
-                        ({ort.plz})
-                      </span>
-                    )}
-                  </Link>
-                ))}
-              </nav>
-
-              {orte.length === 0 && (
-                <p className="small text-muted mb-0 text-center">
-                  Für diesen Landkreis liegen noch keine einzelnen Wohnlagen vor.
-                </p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        </>
-      )}
-      
-      
-      
-
       {/* Generischer Platzhalter für die anderen Bereiche/Themen */}
       {activeSection !== "uebersicht" &&
         activeSection !== "immobilienpreise" && 
@@ -1304,12 +703,6 @@ function KreisPage({
             </p>
           </section>
         )}
-        
-        
-        
-        
-        
-        
         
         
         
@@ -1441,15 +834,9 @@ function KreisPage({
     </button>
 
     
-
-    
-    
     </div>
   );
 }
-
-
-
 
 
 
@@ -1457,16 +844,16 @@ function KreisPage({
  * Orts-Ebene – aktuell noch mit Rohdaten-Ausgabe
  */
 function OrtPage({
-  report,
-  slugs,
+  //report, // -> reinnehmen wenn aktiv
+  //slugs, // -> reinnehmen wenn aktiv
   sectionSlug,
 }: {
-  report: Report;
-  slugs: string[];
+  //report: Report; // -> reinnehmen wenn aktiv
+  //slugs: string[]; // -> reinnehmen wenn aktiv
   sectionSlug: ReportSection;
 }) {
-  const name = report.meta.name;
-  const plz = report.meta.plz;
+  //const name = report.meta.name;
+  //const plz = report.meta.plz;
 
   return (
     <div className="text-dark">
@@ -1486,346 +873,6 @@ function OrtPage({
 
 
 
-
-////////////////// Helper - Komponeneten
-
-
-// --- Gauge-Style - Zeigeruhren ---
-
-
-const GAUGE_STYLE = {
-  circleR: 106,
-  bg: "#f0f0f0",
-  trackWidth: 16,
-  tickColor: "#000",
-  tickOpacity: 0.35,
-  // weichere, CI-kompatible Farben
-  gradNeg: "#e0744f",   // warmes Rot
-  gradPos: "#7fb36a",   // warmes Grün
-  gradCi:  "#ffe000",   // CI-Gelb
-  needleColor: "#000000",
-  needle: {
-    shaftW: 8,
-    shaftR: 6,
-    hubR: 8,
-    headTopInset: 26,
-    headBaseInset: 52,
-    shaftTopInset: 46,
-    shaftBottomInsetFromHub: 40,
-  },
-};
-
-type GaugeMode = "trend" | "saldo";
-
-// Prozentwert [-100, +100] → Winkel [-90°, +90°]
-function clampAngleFromPercent(val: number): number {
-  const v = Math.max(-100, Math.min(100, val));
-  return (v / 100) * 90;
-}
-
-// Textauswertung für Wohnraumsituation
-function getWohnungssaldoText(saldoPro1000: number): string {
-  if (saldoPro1000 < -20) return "(deutliches Wohnungsdefizit)";
-  if (saldoPro1000 < -10) return "(mittleres Wohnungsdefizit)";
-  if (saldoPro1000 < 0) return "(leichtes Wohnungsdefizit)";
-
-  if (saldoPro1000 <= 10) return "(Wohnungsangebot ausgeglichen)";
-  if (saldoPro1000 <= 25) return "(leichtes Wohnungsüberangebot)";
-  if (saldoPro1000 <= 40) return "(moderates Wohnungsüberangebot)";
-  return "(deutliches Wohnungsüberangebot)";
-}
-
-
-type GaugeProps = {
-  label: string;
-  value: number;        // in %
-  mode?: GaugeMode;     // "trend" (rot→grün) oder "saldo" (rot→grün→rot)
-  extraText?: string;   // z. B. "(leichtes Wohnungsdefizit)"
-};
-
-function TrendGaugeCircle({ label, value, mode = "trend", extraText }: GaugeProps) {
-  const C = GAUGE_STYLE.circleR;
-  const W = GAUGE_STYLE.trackWidth;
-  const R = C - W / 2;
-  const x0 = 120 - R;
-  const x1 = 120 + R;
-  const y = 120;
-
-  // stabile, aber einfache ID für den Verlauf
-  const gradId = `grad-${label.replace(/\s+/g, "-").toLowerCase()}-${mode}`;
-
-  const deg = clampAngleFromPercent(value);
-  const formattedValue =
-    (value > 0 ? "+" : "") + value.toFixed(1).replace(".", ",") + " %";
-
-  const needleColor = GAUGE_STYLE.needleColor;
-  const N = GAUGE_STYLE.needle;
-
-  const headTopY = y - (R - N.headTopInset);
-  const headBaseY = y - (R - N.headBaseInset);
-  const shaftY = y - (R - N.shaftTopInset);
-  const shaftH = (120 - shaftY) - N.hubR * 0.5;
-
-  return (
-    <div className="d-flex flex-column align-items-center">
-      <svg
-        viewBox="0 0 240 240"
-        role="img"
-        aria-label={`${label}: ${formattedValue}`}
-        width="100%"
-        style={{ maxWidth: 220 }}
-      >
-        <title>{`${label}: ${formattedValue}`}</title>
-
-        {/* Hintergrundkreis */}
-        <circle cx={120} cy={120} r={C} fill={GAUGE_STYLE.bg} />
-
-        {/* Farbverlauf für die Skala */}
-        <defs>
-          <linearGradient
-            id={gradId}
-            x1={x0}
-            y1={y}
-            x2={x1}
-            y2={y}
-            gradientUnits="userSpaceOnUse"
-          >
-            {mode === "saldo" ? (
-              <>
-                <stop offset="0%" stopColor={GAUGE_STYLE.gradNeg} />
-                <stop offset="25%" stopColor={GAUGE_STYLE.gradCi} />
-                <stop offset="50%" stopColor={GAUGE_STYLE.gradPos} />
-                <stop offset="75%" stopColor={GAUGE_STYLE.gradCi} />
-                <stop offset="100%" stopColor={GAUGE_STYLE.gradNeg} />
-              </>
-            ) : (
-              <>
-                <stop offset="0%" stopColor={GAUGE_STYLE.gradNeg} />
-                <stop offset="50%" stopColor={GAUGE_STYLE.gradCi} />
-                <stop offset="100%" stopColor={GAUGE_STYLE.gradPos} />
-              </>
-            )}
-          </linearGradient>
-        </defs>
-
-        {/* Track (neutral + Verlauf) */}
-        <path
-          d={`M${x0},${y} A${R},${R} 0 0 0 ${x1},${y}`}
-          fill="none"
-          stroke="rgba(255,255,255,.25)"
-          strokeWidth={W}
-          strokeLinecap="round"
-        />
-        <path
-          d={`M${x0},${y} A${R},${R} 0 0 0 ${x1},${y}`}
-          fill="none"
-          stroke={`url(#${gradId})`}
-          strokeWidth={W}
-          strokeLinecap="round"
-        />
-
-        {/* Ticks */}
-        <g
-          opacity={GAUGE_STYLE.tickOpacity}
-          stroke={GAUGE_STYLE.tickColor}
-          strokeWidth={3}
-          strokeLinecap="round"
-        >
-          <line x1={120} y1={y - (R + W / 2) - 8} x2={120} y2={y - (R + W / 2) + 10} />
-          <line x1={x0 + 18} y1={y} x2={x0 + 36} y2={y} />
-          <line x1={x1 - 36} y1={y} x2={x1 - 18} y2={y} />
-        </g>
-
-        {/* Zeiger */}
-        <g transform={`rotate(${deg} 120 120)`}>
-          {/* Schaft */}
-          <rect
-            x={120 - N.shaftW / 2}
-            y={shaftY}
-            width={N.shaftW}
-            height={shaftH}
-            rx={N.shaftR}
-            ry={N.shaftR}
-            fill={needleColor}
-          />
-          {/* Spitze */}
-          <polygon
-            points={`120,${headTopY} ${120 - 8},${headBaseY} ${120 + 8},${headBaseY}`}
-            fill={needleColor}
-          />
-          {/* Hub */}
-          <circle cx={120} cy={120} r={N.hubR} fill={needleColor} />
-        </g>
-      </svg>
-
-      {/* Wert + Erklärung als reiner Text – wichtig für SEO/LLM */}
-      <div className="mt-2 text-center">
-        <div className="fw-bold">{formattedValue}</div>
-        {extraText && (
-          <div className="small text-muted">{extraText}</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-
-
-// --- Standort Teaser ---
-
-type StandortTeaserProps = {
-  kreisName: string;
-  teaserText: string;
-  imageSrc?: string;
-};
-
-export function StandortTeaserBlock({
-  kreisName,
-  teaserText,
-  imageSrc,
-}: StandortTeaserProps) {
-  return (
-      <div className="card bg-transparent border-0 mb-5">
-        <div className="row g-4 align-items-center">
-
-          {/* Bild links – jetzt doppelt so groß */}
-          <div className="col-12 col-md-5 d-flex justify-content-center">
-            <div
-              className="shadow-sm overflow-hidden"
-              style={{
-                width: "100%",
-                maxWidth: "400px", // vorher 260px → jetzt doppelt so groß
-                aspectRatio: "1",
-                borderRadius: "50%",
-              }}
-            >
-              <img
-                src={imageSrc}
-                alt={`Standort ${kreisName}`}
-                className="w-100 h-100 object-fit-cover"
-              />
-            </div>
-          </div>
-
-          {/* Text rechts */}
-          <div className="col-12 col-md-7">
-            <h2 className="h2 mb-3">Wohnlagencheck {kreisName}</h2>
-
-            <p className="text-muted mb-4">{teaserText}</p>
-
-            <a
-              href="/wohnlagencheck"
-              className="btn btn-outline-dark fw-semibold px-4 py-2"
-            >
-              Wohnlagencheck
-            </a>
-          </div>
-
-        </div>
-      </div>
-
-  );
-}
-
-
-
-// --- Maklerempfehlung ---
-
-type MaklerEmpfehlungBlockProps = {
-  kreisName: string;
-  agentSuggestText: string;
-  imageSrc?: string;
-};
-
-export function MaklerEmpfehlungBlock({
-  kreisName,
-  agentSuggestText,
-  imageSrc,
-}: MaklerEmpfehlungBlockProps) {
-  return (
-    <div className="card bg-transparent border-0 mb-5">
-      <h2 className="h2 mb-0 align-center text-center">
-        Maklerempfehlung {kreisName}
-      </h2>
-
-      <div className="row g-4 align-items-center">
-        <div className="col-12 col-md-5 d-flex justify-content-center">
-          <div
-            className="shadow-sm overflow-hidden"
-            style={{
-              width: "100%",
-              maxWidth: "400px",
-              aspectRatio: "1",
-              borderRadius: "50%",
-            }}
-          >
-            <img
-              src={imageSrc}
-              alt={`Maklerempfehlung ${kreisName}`}
-              className="w-100 h-100 object-fit-cover"
-            />
-          </div>
-        </div>
-
-        <div className="col-12 col-md-7">
-          <p className="mb-4">{agentSuggestText}</p>
-
-          <a
-            href="/makler"
-            className="btn btn-outline-dark fw-semibold px-4 py-2"
-          >
-            Maklerempfehlung
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-
-
-
-
-// --- Inhaltsverzeichnis ---
-
-
-type TocItem = {
-  id: string;
-  label: string;
-};
-
-function PageToc({ items }: { items: TocItem[] }) {
-  if (!items || items.length === 0) return null;
-
-  return (
-    <nav
-      aria-label="Seiteninhaltsverzeichnis"
-      className="immobilienmarkt-toc d-none d-xl-block"
-    >
-      <div className="card border-0 shadow-sm small">
-        <div className="card-body py-3 px-3">
-          <div className="text-muted mb-2 fw-semibold">
-            Inhalt dieser Seite
-          </div>
-          <ul className="list-unstyled mb-0">
-            {items.map((item) => (
-              <li key={item.id} className="mb-1">
-                <a
-                  href={`#${item.id}`}
-                  className="text-decoration-none"
-                >
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </nav>
-  );
-}
 
 
 

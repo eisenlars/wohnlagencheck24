@@ -87,6 +87,41 @@ export function KreisImmobilienpreiseSection(props: Props) {
   const COLOR_IMMO_LIGHT = "rgba(75,192,192,0.6)";
   const COLOR_GRUND = "rgb(72,107,122)";
   const COLOR_AKTUELL = "rgba(200,213,79,0.9)";
+  
+  const heroRightOverlay = (
+    <>
+      <button
+        className="btn flex-fill fw-semibold"
+        style={{
+          backgroundColor: "#fff",
+          color: "#000",
+          border: "1px solid #fff",
+          borderRadius: "1rem 1rem 0 0",
+          padding: "1rem 1.25rem",
+          fontSize: "1.1rem",
+        }}
+      >
+        Immobilienangebote
+      </button>
+
+      <button
+        className="btn fw-semibold"
+        style={{
+          backgroundColor: "#fff",
+          color: "#000",
+          border: "1px solid #fff",
+          borderRadius: "1rem 1rem 0 0",
+          padding: "1rem 1.25rem",
+          fontSize: "1.1rem",
+          flex: 1,
+        }}
+      >
+        Immobiliengesuche
+      </button>
+    </>
+  );
+  
+  
 
   // Helper: sichere Series-Auswahl für VergleichBarChart
   const pickSeries = (model: any, key: string, fallbackLabel: string, color: string, fillOpacity: number) => {
@@ -145,6 +180,7 @@ export function KreisImmobilienpreiseSection(props: Props) {
           imageSrc={heroImageSrc}
           rightOverlay={null}
           rightOverlayMode={undefined}
+  
         />
 
         {/* Intro */}

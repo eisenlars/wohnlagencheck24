@@ -15,6 +15,41 @@ export function KreisMietpreiseSection(props: {
   activeTabId: string;
 }) {
   const { vm, tocItems, tabs, activeTabId } = props;
+  
+  
+  const heroRightOverlay = (
+    <>
+      <button
+        className="btn flex-fill fw-semibold"
+        style={{
+          backgroundColor: "#fff",
+          color: "#000",
+          border: "1px solid #fff",
+          borderRadius: "1rem 1rem 0 0",
+          padding: "1rem 1.25rem",
+          fontSize: "1.1rem",
+        }}
+      >
+        Mietangebote
+      </button>
+
+      <button
+        className="btn fw-semibold"
+        style={{
+          backgroundColor: "#fff",
+          color: "#000",
+          border: "1px solid #fff",
+          borderRadius: "1rem 1rem 0 0",
+          padding: "1rem 1.25rem",
+          fontSize: "1.1rem",
+          flex: 1,
+        }}
+      >
+        Mietgesuche
+      </button>
+    </>
+  );
+
 
   return (
     <div className="text-dark">
@@ -54,7 +89,8 @@ export function KreisMietpreiseSection(props: {
         title={vm.hero.title}
         subtitle={vm.hero.subtitle}
         imageSrc={vm.hero.imageSrc}
-        rightOverlay={null}
+        rightOverlay={heroRightOverlay}
+        rightOverlayMode="buttons"
       />
 
       {/* Einleitung */}
