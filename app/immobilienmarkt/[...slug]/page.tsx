@@ -21,21 +21,10 @@ import { RegionHero } from "@/components/region-hero";
 import { BeraterBlock } from "@/components/advisor-avatar";
 import { RightEdgeControls } from "@/components/right-edge-controls";
 import { InteractiveMap } from "@/components/interactive-map";
-import { UeberregionalerVergleichTable } from "@/components/ueberregionalerVergleich";
-import { LagepreiseTable } from "@/components/lagepreise";
-import type { LagepreiseRow } from "@/components/lagepreise";
-
-import { PreisentwicklungChart } from "@/components/preisentwicklungChart";
-import type { Serie } from "@/components/preisentwicklungChart";
 
 import { MatrixTable } from "@/components/MatrixTable";
-
 import { VergleichBarChart } from "@/components/VergleichBarChart";
-
-
 import { buildBarModel } from "@/utils/barModel";
-
-
 
 import { FaqSection } from "@/components/FaqSection";
 
