@@ -1,10 +1,81 @@
 // app/immobilienmarkt/[...slug]/page.tsx
 
+
+
+
+import { resolveRoute } from "@/features/immobilienmarkt/routes/resolveRoute";
+import { KREIS_TABS } from "@/features/immobilienmarkt/config/kreisSections";
+
+import { buildKreisUebersichtVM } from "@/features/immobilienmarkt/selectors/kreis/uebersicht";
+import { KreisUebersichtSection } from "@/features/immobilienmarkt/sections/kreis/KreisUebersichtSection";
+
+import { buildKreisImmobilienpreiseVM } from "@/features/immobilienmarkt/selectors/kreis/immobilienpreise";
+import { KreisImmobilienpreiseSection } from "@/features/immobilienmarkt/sections/kreis/KreisImmobilienpreiseSection";
+
+import { buildKreisMietpreiseVM } from "@/features/immobilienmarkt/selectors/kreis/mietpreise";
+import { KreisMietpreiseSection } from "@/features/immobilienmarkt/sections/kreis/KreisMietpreiseSection";
+
+
 import { GaugeTacho } from "@/components/gauge-tacho";
 import { RegionHero } from "@/components/region-hero";
 import { BeraterBlock } from "@/components/advisor-avatar";
 import { RightEdgeControls } from "@/components/right-edge-controls";
 import { InteractiveMap } from "@/components/interactive-map";
+import { UeberregionalerVergleichTable } from "@/components/ueberregionalerVergleich";
+import { LagepreiseTable } from "@/components/lagepreise";
+import type { LagepreiseRow } from "@/components/lagepreise";
+
+import { PreisentwicklungChart } from "@/components/preisentwicklungChart";
+import type { Serie } from "@/components/preisentwicklungChart";
+
+import { MatrixTable } from "@/components/MatrixTable";
+
+import { VergleichBarChart } from "@/components/VergleichBarChart";
+
+
+import { buildBarModel } from "@/utils/barModel";
+
+
+
+import { FaqSection } from "@/components/FaqSection";
+
+import { VergleichChart } from "@/components/VergleichChart";
+import type { VergleichItem } from "@/components/VergleichChart";
+
+import { ZeitreiheChart } from "@/components/ZeitreiheChart";
+import type { Zeitreihenpunkt } from "@/components/ZeitreiheChart";
+
+import { PreisindexBox } from "@/components/PreisindexBox";
+
+import {
+  OrtslagenUebersichtTable,
+  type OrtslagenUebersichtRow,
+} from "@/components/OrtslagenUebersichtTable";
+
+import { PreisgrenzenRow } from "@/components/PreisgrenzenRow";
+
+import { KpiValue } from "@/components/KpiValue";
+
+import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
+
+  
+import { toNumberOrNull } from "@/utils/toNumberOrNull";  
+import { parseNumberDE } from "@/utils/parseNumber";
+import {
+  formatMetric,
+  formatEurPerSqm,
+  formatValueCtx,
+  formatIndexDelta,
+  formatIndexFactor,
+  formatPercentSigned,
+  formatWithUnit,
+} from "@/utils/format";
+
+import { buildTableModel } from "@/utils/buildTableModel";
+
+
+import { getText } from "@/utils/getText";
+
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -13,9 +84,12 @@ import {
   getBundeslaender,
   getKreiseForBundesland,
   getOrteForKreis,
-  getImmobilienpreisMapSvg,   // NEU
+  getImmobilienpreisMapSvg,   
+  getMietpreisMapSvg,   
   type Report,
 } from "@/lib/data";
+
+
 
 
 const REPORT_SECTIONS = [
@@ -42,19 +116,15 @@ export default async function ImmobilienmarktHierarchiePage({
   params,
 }: PageProps) {
   const resolvedParams = await params;
+  
+  
   const slugs = resolvedParams.slug ?? [];
+  const route = resolveRoute(slugs);
+  const regionSlugs = route.regionSlugs;
 
-  // Prüfen: letzter Slug = Report-Section?
-  let sectionSlug: ReportSection = null;
-  let regionSlugs = slugs;
+  // Für deinen bisherigen Code: sectionSlug kompatibel halten
+  const sectionSlug: ReportSection | null = route.section === "uebersicht" ? null : route.section;
 
-  if (slugs.length > 0) {
-    const last = slugs[slugs.length - 1];
-    if (REPORT_SECTIONS.includes(last as (typeof REPORT_SECTIONS)[number])) {
-      sectionSlug = last as ReportSection;
-      regionSlugs = slugs.slice(0, -1);
-    }
-  }
 
   const report = getReportBySlugs(regionSlugs);
   if (!report) {
@@ -82,6 +152,124 @@ export default async function ImmobilienmarktHierarchiePage({
   }
 
   if (level === 2) {
+    const [bundeslandSlug, kreisSlug] = regionSlugs;
+
+
+    // Übersicht über Feature-System
+    if (route.section === "uebersicht") {
+      const activeTab =
+        KREIS_TABS.find((t) => t.id === "uebersicht")!;
+
+      const tabs = KREIS_TABS.map((t) => ({
+        id: t.id,
+        label: t.label,
+        iconSrc: t.iconSrc,
+      }));
+
+      const orte = getOrteForKreis(bundeslandSlug, kreisSlug);
+
+      const vm = buildKreisUebersichtVM({
+        report,
+        bundeslandSlug,
+        kreisSlug,
+      });
+
+      return (
+        <KreisUebersichtSection
+          vm={vm}
+          tocItems={activeTab.toc}
+          tabs={tabs}
+          activeTabId="uebersicht"
+          orte={orte}
+          bundeslandSlug={bundeslandSlug}
+          kreisSlug={kreisSlug}
+        />
+      );
+    }
+    
+
+    // Immobilienpreise über Feature-System
+    if (route.section === "immobilienpreise") {
+      const activeTab =
+        KREIS_TABS.find((t) => t.id === "immobilienpreise") ??
+        KREIS_TABS.find((t) => t.id === "uebersicht")!;
+
+      const tabs = KREIS_TABS.map((t) => ({
+        id: t.id,
+        label: t.label,
+        iconSrc: t.iconSrc,
+      }));
+
+      const orte = getOrteForKreis(bundeslandSlug, kreisSlug);
+      const immobilienpreisMapSvg = getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug);
+
+      // Hero-Image wie bei Übersicht
+      const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`;
+
+      // VM korrekt bauen (ohne {}!)
+      const vm = buildKreisImmobilienpreiseVM({ report, bundeslandSlug, kreisSlug });
+
+      // Optional: Berater analog zur Übersicht (wenn du es sauber übergeben willst)
+      const beraterName =
+        (report.data as any)?.text?.berater?.berater_name ?? "Lars Hofmann";
+      const beraterTaetigkeit = `Standort- / Immobilienberatung – ${vm.kreisName}`;
+      const beraterImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`;
+
+      return (
+        <KreisImmobilienpreiseSection
+          vm={vm}
+          tabs={tabs}
+          tocItems={activeTab.toc}
+          activeTabId="immobilienpreise"
+          orte={orte}
+          bundeslandSlug={bundeslandSlug}
+          kreisSlug={kreisSlug}
+          heroImageSrc={heroImageSrc}
+          immobilienpreisMapSvg={immobilienpreisMapSvg}
+          berater={{
+            name: beraterName,
+            taetigkeit: beraterTaetigkeit,
+            imageSrc: beraterImageSrc,
+          }}
+        />
+      );
+    }
+
+
+
+
+    // Mietpreise über Feature-System
+    if (route.section === "mietpreise") {
+      const activeTab =
+        KREIS_TABS.find((t) => t.id === route.section) ??
+        KREIS_TABS.find((t) => t.id === "uebersicht")!;
+
+      const tabs = KREIS_TABS.map((t) => ({
+        id: t.id,
+        label: t.label,
+        iconSrc: t.iconSrc,
+      }));
+
+      const mietpreisMapSvg = getMietpreisMapSvg(bundeslandSlug, kreisSlug);
+
+      const vm = buildKreisMietpreiseVM({
+        report,
+        bundeslandSlug,
+        kreisSlug,
+        mietpreisMapSvg,
+      });
+
+      return (
+        <KreisMietpreiseSection
+          vm={vm}
+          tocItems={activeTab.toc}
+          tabs={tabs}
+          activeTabId={route.section}
+        />
+      );
+    }
+
+    // Alles andere bleibt vorerst beim bisherigen Code
     return (
       <KreisPage
         report={report}
@@ -90,6 +278,11 @@ export default async function ImmobilienmarktHierarchiePage({
       />
     );
   }
+
+
+
+
+
 
   // level >= 3
   return (
@@ -100,6 +293,10 @@ export default async function ImmobilienmarktHierarchiePage({
     />
   );
 }
+
+
+
+
 
 
 /**
@@ -203,11 +400,31 @@ function KreisPage({
   const [bundeslandSlug, kreisSlug] = slugs;
   const orte = getOrteForKreis(bundeslandSlug, kreisSlug);
 
-  const kreisName = report.meta.name;
+  const bundeslandName = report.meta.bundesland_name;
+  const kreisName = report.meta.amtlicher_name;
   
   const activeSection: ReportSection = sectionSlug ?? "uebersicht";
   
   const tocItems = getTocItemsForSection(activeSection);
+  
+ 
+  
+  // Farbendefinitionen für Preiskategorien (Header voll, Zellen leicht getönt)
+  const COLOR_IMMO = "rgb(75,192,192,0.6)";
+  const COLOR_GRUND = "rgb(72,107,122,0.6)";
+  const COLOR_MIETE = "rgb(200,213,79,0.6)";
+
+  // RGB-Anteile für eigene Opazitäten
+  const COLOR_IMMO_RGB = "75,192,192";
+  const COLOR_GRUND_RGB = "72,107,122";
+  const COLOR_MIETE_RGB = "200,213,79";
+
+  // Sehr leichte Tönung für Zellen
+  const BG_IMMO = `rgba(${COLOR_IMMO_RGB}, 0.1)`;
+  const BG_GRUND = `rgba(${COLOR_GRUND_RGB}, 0.1)`;
+  const BG_MIETE = `rgba(${COLOR_MIETE_RGB}, 0.1)`;
+  
+  
   
   
   
@@ -276,6 +493,7 @@ function KreisPage({
   // --- Overlays im Hero - Tachos, Buttons ---
   const isOverview = activeSection === "uebersicht";
   const isImmobilienpreise = activeSection === "immobilienpreise";
+  const isMietpreise = activeSection === "mietpreise";
 
   let heroRightOverlay: React.ReactNode = null;
   let heroRightOverlayMode: "tachos" | "buttons" | undefined = undefined;
@@ -336,6 +554,44 @@ function KreisPage({
         </button>
       </>
     );
+  } else if (isMietpreise) {
+    heroRightOverlayMode = "buttons";
+    heroRightOverlay = (
+      <>
+        <button
+          className="btn flex-fill fw-semibold"
+          style={{
+            backgroundColor: "#fff",
+            color: "#000",
+            border: "1px solid #fff",
+            borderRadius: "1rem 1rem 0 0", // nur oben rund
+            padding: "1rem 1.25rem",        // „doppelt so groß“
+            fontSize: "1.1rem",
+          }}
+        >
+          Mietangebote
+        </button>
+
+        <button
+          className="btn fw-semibold"
+          style={{
+            backgroundColor: "#fff",
+            color: "#000",
+            border: "1px solid #fff",
+            borderRadius: "1rem 1rem 0 0",
+            padding: "1rem 1.25rem",
+            fontSize: "1.1rem",
+            flex: 1,              // nur innerhalb der maxWidth-Zone strecken
+          }}
+        >
+          Mietgesuche
+        </button>
+      </>
+    );
+    
+    
+    
+    
   } else {
     // Fallback: z.B. kein Overlay oder später andere Inhalte
     heroRightOverlay = null;
@@ -400,17 +656,14 @@ function KreisPage({
 
   
   
-  // --------------------------------------------------------------
-  // --------------------- Texte + Bilder + Daten -----------------
-  // --------------------------------------------------------------
+  // -------------------------------------------------------------------------------
+  // --------------------- Marktüberblick - Texte + Bilder + Daten -----------------
+  // -------------------------------------------------------------------------------
 
-
-
-  // --------------- Seite Marktüberblick ----------------
 
 
   // --- Text Einleitung ---
-  const teaserImmobilienmarktUeberblick = (report.data as any)?.text?.immobilienmarkt_ueberblick?.immobilienmarkt_allgemein ?? "";
+  const teaserImmobilienmarktUeberblick = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_allgemein","",);
   
   
   // --- Daten: Bevölkerungsdynamik, Wohnraumsituation, Arbeitsmarkt, Wirtschaftskraft ---
@@ -440,108 +693,72 @@ function KreisPage({
 
   // --- Text + Bild Standort ---
   
-  const teaserText = report.data?.text?.immobilienmarkt_ueberblick?.immobilienmarkt_standort_teaser ?? null;
+  const teaserText = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_standort_teaser","",);
   const teaserImage = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.jpg`;
 
-  
-  
+
+
   // --- Daten Basis-Preisdaten ---
 
-  // Immobilien-Kaufpreisdaten
-  const kaufpreisRoh =
-    (report.data as any)?.immobilien_kaufpreis?.[0]?.kaufpreis_immobilien ??
-    null;
-  const kaufpreis =
-    kaufpreisRoh !== null
-      ? Number(
-          kaufpreisRoh.toString().replace(".", "").replace(",", "."),
-        )
-      : null;
+  const kaufpreis: number | null = (report.data as any)?.immobilien_kaufpreis?.[0]?.kaufpreis_immobilien ?? null;
+  const kaufpreisLabel = formatEurPerSqm(kaufpreis, "kaufpreis_qm");
+  
 
-  // Grundstückskaufpreisdaten
-  const grundstueckRoh =
-    (report.data as any)?.grundstueck_kaufpreis?.[0]?.kaufpreis_grundstueck ??
-    null;
-  const grundstueckspreis =
-    grundstueckRoh !== null
-      ? Number(
-          grundstueckRoh.toString().replace(".", "").replace(",", "."),
-        )
-      : null;
+  const grundstueckspreis: number | null = (report.data as any)?.grundstueck_kaufpreis?.[0]?.kaufpreis_grundstueck ?? null;
+  const grundstueckLabel = formatEurPerSqm(grundstueckspreis, "grundstueck_qm");
 
-  // Kaltmietedaten
-  const mieteRoh =
-    (report.data as any)?.mietpreise_gesamt?.[0]?.preis_kaltmiete ?? null;
-  const kaltmiete =
-    mieteRoh !== null
-      ? Number(mieteRoh.toString().replace(".", "").replace(",", "."))
-      : null;
-
+  const kaltmiete: number | null = (report.data as any)?.mietpreise_gesamt?.[0]?.preis_kaltmiete ?? null;
+  const kaltmieteLabel = formatEurPerSqm(kaltmiete, "miete_qm");
+  
 
 
   // --- Text Individualtext01 ---
-  const individualText01 = report.data?.text?.immobilienmarkt_ueberblick?.immobilienmarkt_individuell_01 ?? null;
+  const individualText01 = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_individuell_01","",);
   
   // --- Text Zitat ---
-  const zitat = report.data?.text?.immobilienmarkt_ueberblick?.immobilienmarkt_zitat ?? null;
+  const zitat = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_zitat","",);
   
   // --- Text Individualtext02 ---
-  const individualText02 = report.data?.text?.immobilienmarkt_ueberblick?.immobilienmarkt_individuell_02 ?? null;
-
-
-
-
-  // --- Text zu Kaufnebenkosten (Makerprovision, Grundsteuer etc.) ---
-  const marketBasicKnowledgeText = report.data?.text?.immobilienmarkt_ueberblick?.immobilienmarkt_besonderheiten ?? null;
-  
-  // --- Text + Bild Maklerempfehlung ---
-  const agentSuggestText = report.data?.text?.immobilienmarkt_ueberblick?.immobilienmarkt_maklerempfehlung ?? null;
-  const agentSuggestImage = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`;
+  const individualText02 = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_individuell_02","",);
 
 
 
   
   // --- Daten Überregionaler Vergleich ---
 
-  type VergleichItem = { region: string; value: number };
+  
+  // Chart
 
-  // --- Daten Immobilienpreise ---
-  const immVergleichRaw =
-    (report.data as any)?.immobilienpreise_ueberregionaler_vergleich ?? [];
-  const immVergleich: VergleichItem[] = immVergleichRaw
+  const toVergleichItems = (raw: any[], valueKey: string): VergleichItem[] =>
+  (raw ?? [])
     .map((item: any) => ({
-      region: String(item.region),
-      value: Number(item.immobilienpreis),
+      region: String(item?.region ?? ""),
+      value: typeof item?.[valueKey] === "number" ? item[valueKey] : Number(item?.[valueKey]),
     }))
-    .filter((item: VergleichItem) => item.region && !Number.isNaN(item.value));
+    .filter((x) => x.region && Number.isFinite(x.value));
 
-  // --- Daten Grundstückspreise ---
-  const grundVergleichRaw =
-    (report.data as any)?.grundstueckspreise_ueberregionaler_vergleich ?? [];
-  const grundVergleich: VergleichItem[] = grundVergleichRaw
-    .map((item: any) => ({
-      region: String(item.region),
-      value: Number(item.grundstueckspreis),
-    }))
-    .filter((item: VergleichItem) => item.region && !Number.isNaN(item.value));
+  const immVergleich = toVergleichItems(
+    (report.data as any)?.immobilienpreise_ueberregionaler_vergleich,
+    "immobilienpreis",
+  );
 
-  // --- Daten Mietpreise (Kaltmiete) ---
-  const mieteVergleichRaw =
-    (report.data as any)?.mietpreise_ueberregionaler_vergleich ?? [];
-  const mieteVergleich: VergleichItem[] = mieteVergleichRaw
-    .map((item: any) => ({
-      region: String(item.region),
-      value: Number(item.kaltmiete),
-    }))
-    .filter((item: VergleichItem) => item.region && !Number.isNaN(item.value));
+  const grundVergleich = toVergleichItems(
+    (report.data as any)?.grundstueckspreise_ueberregionaler_vergleich,
+    "grundstueckspreis",
+  );
+
+  const mieteVergleich = toVergleichItems(
+    (report.data as any)?.mietpreise_ueberregionaler_vergleich,
+    "kaltmiete",
+  );
+
+
 
 
 
   // --- Daten Preis-Historie ---
 
-  type Zeitreihenpunkt = { jahr: number; value: number };
-
-  // --- Daten Historie Immobilienpreise ---
+  // Immobilienpreise 
 
   const immobilienKaufHistorieRaw =
     (report.data as any)?.immobilie_kaufpreisentwicklung ?? [];
@@ -563,7 +780,7 @@ function KreisPage({
     : [];
     
     
-  // --- Daten Historie Grundstückspreise ---
+  // Grundstückspreise 
 
   const grundstueckKaufHistorieRaw =
     (report.data as any)?.grundstueck_kaufpreisentwicklung ?? [];
@@ -586,7 +803,7 @@ function KreisPage({
     : [];
     
     
-  // --- Daten Historie Mietpreise ---
+  // Mietpreise 
 
   const mietpreisHistorieRaw =
     (report.data as any)?.immobilie_mietpreisentwicklung ?? [];
@@ -609,29 +826,54 @@ function KreisPage({
     : [];
 
 
+
+
+  // --- Daten Preisindizes (Basisjahr = 100) ---
+
+
+
+  // Rohobjekte (defensiv)
+  const basisjahrRaw = (report.data as any)?.basisjahr?.[0] ?? null;
+  const preisindexRaw = (report.data as any)?.preisindex?.[0] ?? null;
+
+  // Basisjahre
+  const basisjahrImmobilien: number | null = toNumberOrNull(
+    basisjahrRaw?.basisjahr_immobilienpreisindex,
+  );
+
+  const basisjahrGrundstueck: number | null = toNumberOrNull(
+    basisjahrRaw?.basisjahr_grundstueckspreisindex,
+  );
+
+  const basisjahrMiete: number | null = toNumberOrNull(
+    basisjahrRaw?.basisjahr_mietpreisindex,
+  );
+
+  // Indexwerte (Basisjahr = 100)
+  const indexImmobilien: number | null = toNumberOrNull(
+    preisindexRaw?.immobilienpreisindex,
+  );
+
+  const indexGrundstueck: number | null = toNumberOrNull(
+    preisindexRaw?.grundstueckspreisindex,
+  );
+
+  const indexMiete: number | null = toNumberOrNull(
+    preisindexRaw?.mietpreisindex,
+  );
+
+
+
+
+
   // --- Text Beschreibungstext01 ---
-  const beschreibungText01 = report.data?.text?.immobilienmarkt_ueberblick?.immobilienmarkt_beschreibung_01 ?? null;
+  const beschreibungText01 = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_beschreibung_01","",);
+  
 
   // --- Text Beschreibungstext02 ---
-  const beschreibungText02 = report.data?.text?.immobilienmarkt_ueberblick?.immobilienmarkt_beschreibung_02 ?? null;
+  const beschreibungText02 = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_beschreibung_02","",);
 
 
-
-  // --- Daten Preisindizes ---
-
-  const basisjahrRaw =
-    (report.data as any)?.basisjahr?.[0] ?? {};
-
-  const preisindexRaw =
-    (report.data as any)?.preisindex?.[0] ?? {};
-
-  const basisjahrImmobilien = Number(basisjahrRaw.basisjahr_immobilienpreisindex ?? null);
-  const basisjahrGrundstueck = Number(basisjahrRaw.basisjahr_grundstueckspreisindex ?? null);
-  const basisjahrMiete = Number(basisjahrRaw.basisjahr_mietpreisindex ?? null);
-
-  const indexImmobilien = Number(preisindexRaw.immobilienpreisindex ?? null);
-  const indexGrundstueck = Number(preisindexRaw.grundstueckspreisindex ?? null);
-  const indexMiete = Number(preisindexRaw.mietpreisindex ?? null);
 
 
   // --- Daten Ortslagen-Übersicht: Preise & Vorjahresveränderung ---
@@ -639,137 +881,432 @@ function KreisPage({
   type OrtslagenUebersichtRow = {
     kreis: string;
     ortslage: string;
-    immobilienpreise_wert?: string;
-    immobilienpreise_tendenz?: string;
-    grundstueckspreise_wert?: string;
-    grundstueckspreise_tendenz?: string;
-    mietpreise_wert?: string;
-    mietpreise_tendenz?: string;
+
+    // Rohwerte für Logik/Färbung
+    immobilienpreise_value: number | null;
+    immobilienpreise_yoy: number | null;
+
+    grundstueckspreise_value: number | null;
+    grundstueckspreise_yoy: number | null;
+
+    mietpreise_value: number | null;
+    mietpreise_yoy: number | null;
+
+    // Displaystrings (für Tabelle)
+    immobilienpreise_wert: string;
+    immobilienpreise_tendenz: string;
+
+    grundstueckspreise_wert: string;
+    grundstueckspreise_tendenz: string;
+
+    mietpreise_wert: string;
+    mietpreise_tendenz: string;
   };
 
-  const ortslagenUebersichtRaw =
-    (report.data as any)?.ortslagen_uebersicht ?? [];
+  const ortslagenUebersichtRaw = (report.data as any)?.ortslagen_uebersicht ?? [];
 
-  const ortslagenUebersicht: OrtslagenUebersichtRow[] =
-    Array.isArray(ortslagenUebersichtRaw)
-      ? ortslagenUebersichtRaw
-          .filter(
-            (item: any) =>
-              !item.kreis || String(item.kreis).toLowerCase() === kreisSlug,
-          )
-          .map((item: any) => ({
-            kreis: String(item.kreis ?? ""),
-            ortslage: String(item.ortslage ?? ""),
-            
-            immobilienpreise_wert: String(item.immobilienpreise_wert ?? "",).trim(),
-            immobilienpreise_tendenz: String(item.immobilienpreise_tendenz ?? "",).trim(),
-            
-            grundstueckspreise_wert: String(item.grundstueckspreise_wert ?? "",).trim(),
-            grundstueckspreise_tendenz: String(item.grundstueckspreise_tendenz ?? "",).trim(),
-            
-            mietpreise_wert: String(item.mietpreise_wert ?? "").trim(),
-            mietpreise_tendenz: String(item.mietpreise_tendenz ?? "",).trim(),
-          }))
-      : [];
-      
+  const ortslagenUebersicht: OrtslagenUebersichtRow[] = Array.isArray(ortslagenUebersichtRaw)
+    ? ortslagenUebersichtRaw
+        .filter((item: any) => {
+          const kreis = String(item?.kreis ?? "").toLowerCase();
+          return !kreis || kreis === kreisSlug;
+        })
+        .map((item: any) => {
+          const ortslage = String(item?.ortslage ?? "").trim();
 
-  function parseTendenzToNumber(value?: string): number | null {
-    if (!value) return null;
-    const cleaned = value
-      .replace("%", "")
-      .replace(" ", "")
-      .replace(",", ".")
-      .trim();
-    const num = Number(cleaned);
-    return Number.isFinite(num) ? num : null;
-  }
-  
-  // Farbendefinitionen für Preiskategorien (Header voll, Zellen leicht getönt)
-  const COLOR_IMMO = "rgb(75,192,192,0.6)";
-  const COLOR_GRUND = "rgb(72,107,122,0.6)";
-  const COLOR_MIETE = "rgb(200,213,79,0.6)";
+          return {
+            ortslage,
 
-  // RGB-Anteile für eigene Opazitäten
-  const COLOR_IMMO_RGB = "75,192,192";
-  const COLOR_GRUND_RGB = "72,107,122";
-  const COLOR_MIETE_RGB = "200,213,79";
+            immobilienpreise_value: toNumberOrNull(item?.immobilienpreise_wert),
+            immobilienpreise_yoy: toNumberOrNull(item?.immobilienpreise_tendenz),
 
-  // Sehr leichte Tönung für Zellen (Alpha kannst du nach Belieben anpassen)
-  const BG_IMMO = `rgba(${COLOR_IMMO_RGB}, 0.1)`;
-  const BG_GRUND = `rgba(${COLOR_GRUND_RGB}, 0.1)`;
-  const BG_MIETE = `rgba(${COLOR_MIETE_RGB}, 0.1)`;
+            grundstueckspreise_value: toNumberOrNull(item?.grundstueckspreise_wert),
+            grundstueckspreise_yoy: toNumberOrNull(item?.grundstueckspreise_tendenz),
+
+            mietpreise_value: toNumberOrNull(item?.mietpreise_wert),
+            mietpreise_yoy: toNumberOrNull(item?.mietpreise_tendenz),
+          };
+        })
+        .filter((r: OrtslagenUebersichtRow) => r.ortslage.length > 0)
+    : [];
+
+
   
 
 
 
   // --- Daten Preisgrenzen Ortslagen: teuerste vs. günstigste ---
 
-  const preisgrenzenImmobilie = (report.data as any)?.ortslagen_preisgrenzen_immobilie?.[0] ?? null;
-  const preisgrenzenGrund = (report.data as any)?.ortslagen_preisgrenzen_grundstueck?.[0] ?? null;
-  const preisgrenzenMiete = (report.data as any)?.ortslagen_preisgrenzen_miete?.[0] ?? null;
-    
-    
+  const preisgrenzenImmobilieRaw =
+    (report.data as any)?.ortslagen_preisgrenzen_immobilie?.[0] ?? null;
+
+  const preisgrenzenGrundRaw =
+    (report.data as any)?.ortslagen_preisgrenzen_grundstueck?.[0] ?? null;
+
+  const preisgrenzenMieteRaw =
+    (report.data as any)?.ortslagen_preisgrenzen_miete?.[0] ?? null;
+
+  type PreisgrenzenData = {
+    cheapestName: string;
+    cheapestValue: number | null;
+    priciestName: string;
+    priciestValue: number | null;
+  };
+
+  const preisgrenzenImmobilie: PreisgrenzenData | null = preisgrenzenImmobilieRaw
+    ? {
+        cheapestName: String(preisgrenzenImmobilieRaw?.guenstigste_ortslage_immobilie ?? "").trim(),
+        cheapestValue: toNumberOrNull(preisgrenzenImmobilieRaw?.guenstigste_ortslage_immobilienpreis),
+        priciestName: String(preisgrenzenImmobilieRaw?.teuerste_ortslage_immobilie ?? "").trim(),
+        priciestValue: toNumberOrNull(preisgrenzenImmobilieRaw?.teuerste_ortslage_immobilienpreis),
+      }
+    : null;
+
+  const preisgrenzenGrund: PreisgrenzenData | null = preisgrenzenGrundRaw
+    ? {
+        cheapestName: String(preisgrenzenGrundRaw?.guenstigste_ortslage_grundstueck ?? "").trim(),
+        cheapestValue: toNumberOrNull(preisgrenzenGrundRaw?.guenstigste_ortslage_grundstueckspreis),
+        priciestName: String(preisgrenzenGrundRaw?.teuerste_ortslage_grundstueck ?? "").trim(),
+        priciestValue: toNumberOrNull(preisgrenzenGrundRaw?.teuerste_ortslage_grundstueckspreis),
+      }
+    : null;
+
+  const preisgrenzenMiete: PreisgrenzenData | null = preisgrenzenMieteRaw
+    ? {
+        cheapestName: String(preisgrenzenMieteRaw?.guenstigste_ortslage_miete ?? "").trim(),
+        cheapestValue: toNumberOrNull(preisgrenzenMieteRaw?.guenstigste_ortslage_mietpreis),
+        priciestName: String(preisgrenzenMieteRaw?.teuerste_ortslage_miete ?? "").trim(),
+        priciestValue: toNumberOrNull(preisgrenzenMieteRaw?.teuerste_ortslage_mietpreis),
+      }
+    : null;
+
   
-  // --------------- Seite Immobilienpreise ----------------
+  
+  
+  // --- Text zu Kaufnebenkosten (Makerprovision, Grundsteuer etc.) ---
+  const marketBasicKnowledgeText = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_besonderheiten","",);
+  
+  
+  // --- Text + Bild Maklerempfehlung ---
+  const agentSuggestText = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_maklerempfehlung","",);
+  const agentSuggestImage = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`;
+  
+  
+  
+  
+  
+    
+    
+    
+  // -------------------------------------------------------------------------------
+  // --------------------- Immobilienpreise - Texte + Bilder + Daten -----------------
+  // -------------------------------------------------------------------------------
+
+  
     
   // --- Text Einleitung ---
-  const teaserImmobilienpreise = (report.data as any)?.text?.immobilienpreise?.immobilienpreise_intro ?? "";  
+  const teaserImmobilienpreise = getText(report, "text.immobilienpreise.immobilienpreise_intro","",);
     
-  // --- Map SVG + Daten Immobilienpreis ---
+  // --- Map SVG + Daten Leitkennzahl: Ø Immobilienpreis ---
 
   const immobilienpreisMapSvg = getImmobilienpreisMapSvg(bundeslandSlug,kreisSlug,);
+  const immobilienpreis = toNumberOrNull((report.data as any)?.immobilien_kaufpreis?.[0]?.kaufpreis_immobilien,);
 
-  const immobilienpreisRoh = (report.data as any)?.immobilien_kaufpreis?.[0]?.kaufpreis_immobilien ?? null;
-  const immobilienpreis = immobilienpreisRoh !== null ? Number(immobilienpreisRoh.toString().replace(".", "").replace(",", "."),): null;
 
   // --- Überschriften und Text Hauspreise ---
-  
-  const ueberschriftHausIndividuell = report.data?.text?.ueberschriften_kreis?.ueberschrift_immobilienpreise_haus ?? null;
-  const hauspreiseIntro = report.data?.text?.immobilienpreise?.immobilienpreise_haus_intro ?? null;
+
+  const ueberschriftHausIndividuell = getText(report, "text.ueberschriften_kreis.ueberschrift_immobilienpreise_haus","",);
+  const hauspreiseIntro = getText(report, "text.immobilienpreise.immobilienpreise_haus_intro","",);
+
 
   // --- Daten HausPreisspanne ---
   
-  function parsePreis(value?: string | number | null): number | null {
-    if (value === null || value === undefined) return null;
-    const num = Number(String(value).trim());
-    return Number.isFinite(num) ? num : null;
-  }
-
-
   const hausPreisspanne = report.data?.haus_kaufpreisspanne?.[0] ?? null;
 
-  const hausMin = parsePreis(hausPreisspanne?.preis_haus_min);
-  const hausAvg = parsePreis(hausPreisspanne?.preis_haus_avg);
-  const hausMax = parsePreis(hausPreisspanne?.preis_haus_max);
+  const hausMin = toNumberOrNull(hausPreisspanne?.preis_haus_min);
+  const hausAvg = toNumberOrNull(hausPreisspanne?.preis_haus_avg);
+  const hausMax = toNumberOrNull(hausPreisspanne?.preis_haus_max);
 
   
-  // --- Daten Tabelle Überregionaler Vergleich ---
   
-  type HausPreisVergleichRow = {
-    preisinfo_label: string;
-    preis: string;
-  };
+  // --- Text zu Hauspreisen im Überregionalen Vergleich ---
+  
+  const hausVergleichIntro = getText(report, "text.immobilienpreise.immobilienpreise_haus_allgemein","",);
+  
+  
+  // --- Daten KPI Preisindex Haus ---
+  
+  const preisindexRegionalRaw = (report.data as any)?.immobilienpreisindex_regional?.[0] ?? null;
+  const indexHaus = toNumberOrNull(preisindexRegionalRaw?.immobilienpreisindex_haus);
+ 
+  
+  
+  // --- Daten Tabelle Überregionaler Vergleich Haus ---
+  
+  const ueberregionalRaw_haus = (report.data as any)?.haus_kaufpreise_im_ueberregionalen_vergleich ?? [];
+  const ueberregionalModel_haus = buildTableModel(ueberregionalRaw_haus, {
+    kind: "kaufpreis_qm",
+    ctx: "table",
+    mode: "keyValue",
+    orientation: "transpose",
+    rowLabelKey: "preisinfo_label",
+    valueKey: "preis",
+    rowLabelHeader: "",
+    unitKeyFromRaw: (u) => (String(u) === "pricePerSqm" ? "eur_per_sqm" : String(u) === "percent" ? "percent" : "none"),
+  });
 
-  const hausPreisVergleichRaw = (report.data as any)?.haus_kaufpreise_im_ueberregionalen_vergleich ?? [];
 
-  const hausPreisVergleich: HausPreisVergleichRow[] = Array.isArray(
-    hausPreisVergleichRaw,
-  )
-    ? hausPreisVergleichRaw.map((item: any) => ({
-        preisinfo_label: String(item.preisinfo_label ?? "").trim(),
-        preis: String(item.preis ?? "").trim(),
-      }))
+
+  
+  // --- Text zu Hauspreise & Lagequalität ---
+  
+  const text_haus_lage = getText(report, "text.immobilienpreise.immobilienpreise_haus_lage","",);
+  
+
+  // --- Daten Tabelle Hauspreise & Lagequalität ---
+
+  const lageRaw_haus = (report.data as any)?.haus_kaufpreise_lage ?? [];
+
+  const lageModel_haus = buildTableModel(lageRaw_haus, {
+    kind: "kaufpreis_qm",
+    ctx: "table",
+    mode: "matrix",
+    orientation: "transpose",
+    rowLabelKey: "preisinfo_label",
+    rowLabelHeader: "Lagequalität",
+    columnLabelMap: {
+      preis_einfache_lage: "Einfach",
+      preis_mittlere_lage: "Mittel",
+      preis_gute_lage: "Gut",
+      preis_sehr_gute_lage: "Sehr gut",
+      preis_top_lage: "Top",
+    },
+    unitKeyFromRaw: (u) => (String(u) === "pricePerSqm" ? "eur_per_sqm" : "none"),
+  });
+    
+      
+      
+  // --- Text zu Kaufpreisentwicklung Haus ---
+  
+  const text_haus_kaufpreisentwicklung = getText(report, "text.immobilienpreise.immobilienpreise_haus_preisentwicklung","",);
+      
+  
+  // --- Daten Chart Preisentwicklung ---
+
+  const hausKaufpreisentwicklungRaw = (report.data as any)?.haus_kaufpreisentwicklung ?? [];
+
+  const hausKaufpreisentwicklungSeries: Serie[] = Array.isArray(hausKaufpreisentwicklungRaw)
+    ? [
+        {
+          key: "k",
+          label: kreisName ?? "Kreis",
+          points: hausKaufpreisentwicklungRaw.map((it: any) => ({
+            jahr: Number(it?.jahr),
+            value: Number(it?.preis_k),
+          })),
+          color: "rgba(75,192,192)",
+        },
+        {
+          key: "bl",
+          label: bundeslandName ?? "Bundesland",
+          points: hausKaufpreisentwicklungRaw.map((it: any) => ({
+            jahr: Number(it?.jahr),
+            value: Number(it?.preis_bl),
+          })),
+          color: "rgb(72,107,122)",
+        },
+        {
+          key: "l",
+          label: "Deutschland",
+          points: hausKaufpreisentwicklungRaw.map((it: any) => ({
+            jahr: Number(it?.jahr),
+            value: Number(it?.preis_l),
+          })),
+          color: "rgba(200,213,79)",
+        },
+      ]
     : [];
     
     
-  // --- Text zu Hauspreisen im Vergleich ---
-  const hausVergleichIntro = report.data?.text?.immobilienpreise?.immobilienpreise_haus_allgemein ?? null;
+    
+  // --- Daten Tabelle Kaufpreise nach Immobilientypen ---
+    
+  const text_haustypen_kaufpreise = getText(report, "text.immobilienpreise.immobilienpreise_haus_haustypen","",);
+    
+    
+  // --- Daten Tabelle Kaufpreise nach Immobilientypen ---
+    
+  const haustypRaw = (report.data as any)?.haus_kaufpreis_haustypen ?? [];
+
+  const haustypModel = buildTableModel(haustypRaw, {
+    kind: "kaufpreis_qm",
+    ctx: "table",
+    mode: "matrix",
+    orientation: "transpose",
+    rowLabelKey: "preisinfo_label",
+    rowLabelHeader: "Haustyp",
+    columnLabelMap: {
+      reihenhaus: "Reihenhaus",
+      doppelhaushaelfte: "Doppelhaushälfte",
+      einfamilienhaus: "Einfamilienhaus",
+    },
+    unitKeyFromRaw: (u) => (String(u) === "pricePerSqm" ? "eur_per_sqm" : "none"),
+  });
 
 
-  // --- Daten regionaler Preisindex Haus ---
-  const preisindexHaus = report.data?.immobilienpreisindex_haus ?? report.data?.immobilienpreisindex_regional?.[0]?.immobilienpreisindex_haus ?? null;
+  
+  // --- Überschriften und Text Wohnungspreise ---
+
+  const ueberschriftWohnungIndividuell = getText(report, "text.ueberschriften_kreis.ueberschrift_immobilienpreise_wohnung","",);
+  const wohnungspreiseIntro = getText(report, "text.immobilienpreise.immobilienpreise_wohnung_intro","",);
 
 
+  // --- Daten WohnungsPreisspanne ---
+  const wohnungPreisspanne = (report.data as any)?.wohnung_kaufpreisspanne?.[0] ?? null;
+
+  const wohnungMin = toNumberOrNull(wohnungPreisspanne?.preis_wohnung_min);
+  const wohnungAvg = toNumberOrNull(wohnungPreisspanne?.preis_wohnung_avg);
+  const wohnungMax = toNumberOrNull(wohnungPreisspanne?.preis_wohnung_max);
+
+
+
+  // --- Text zu Wohnungspreisen im Überregionalen Vergleich ---
+  
+  const wohnungVergleichIntro = getText(report, "text.immobilienpreise.immobilienpreise_wohnung_allgemein","",);
+  
+  
+  // --- Daten KPI Preisindex Wohnung ---
+  
+  const preisindexRegionalRaw_wohnung = (report.data as any)?.immobilienpreisindex_regional?.[0] ?? null;
+  const indexWohnung = toNumberOrNull(preisindexRegionalRaw_wohnung?.immobilienpreisindex_wohnung);
+  
+  
+  // --- Daten Tabelle Überregionaler Vergleich Wohnung ---
+  
+  const ueberregionalRaw_wohnung = (report.data as any)?.wohnung_kaufpreise_im_ueberregionalen_vergleich ?? [];
+  const ueberregionalModel_wohnung = buildTableModel(ueberregionalRaw_wohnung, {
+    kind: "kaufpreis_qm",
+    ctx: "table",
+    mode: "keyValue",
+    orientation: "transpose",
+    rowLabelKey: "preisinfo_label",
+    valueKey: "preis",
+    rowLabelHeader: "",
+    unitKeyFromRaw: (u) => (String(u) === "pricePerSqm" ? "eur_per_sqm" : String(u) === "percent" ? "percent" : "none"),
+  });
+
+  
+  
+  
+  
+  
+
+
+
+  // --- Text zu Wohnungspreisen & Lagequalität ---
+  
+  const text_wohnung_lage = getText(report, "text.immobilienpreise.immobilienpreise_wohnung_lage","",);
+  
+
+  // --- Daten Tabelle Wohnungspreise & Lagequalität ---
+
+  const lageRaw_wohnung = (report.data as any)?.wohnung_kaufpreise_lage ?? [];
+
+  const lageModel_wohnung = buildTableModel(lageRaw_wohnung, {
+    kind: "kaufpreis_qm",
+    ctx: "table",
+    mode: "matrix",
+    orientation: "transpose",
+    rowLabelKey: "preisinfo_label",
+    rowLabelHeader: "Lagequalität",
+    columnLabelMap: {
+      preis_einfache_lage: "Einfach",
+      preis_mittlere_lage: "Mittel",
+      preis_gute_lage: "Gut",
+      preis_sehr_gute_lage: "Sehr gut",
+      preis_top_lage: "Top",
+    },
+    unitKeyFromRaw: (u) => (String(u) === "pricePerSqm" ? "eur_per_sqm" : "none"),
+  });
+
+
+
+
+
+  // --- Text zu Kaufpreisentwicklung Wohnung ---
+  
+  const text_wohnung_kaufpreisentwicklung = getText(report, "text.immobilienpreise.immobilienpreise_wohnung_preisentwicklung","",);
+      
+  
+  // --- Daten Chart Preisentwicklung ---
+
+  const wohnungKaufpreisentwicklungRaw = (report.data as any)?.wohnung_kaufpreisentwicklung ?? [];
+
+  const wohnungKaufpreisentwicklungSeries: Serie[] = Array.isArray(wohnungKaufpreisentwicklungRaw)
+    ? [
+        {
+          key: "k",
+          label: kreisName ?? "Kreis",
+          points: wohnungKaufpreisentwicklungRaw.map((it: any) => ({
+            jahr: Number(it?.jahr),
+            value: Number(it?.preis_k),
+          })),
+          color: "rgba(75,192,192)",
+        },
+        {
+          key: "bl",
+          label: bundeslandName ?? "Bundesland",
+          points: wohnungKaufpreisentwicklungRaw.map((it: any) => ({
+            jahr: Number(it?.jahr),
+            value: Number(it?.preis_bl),
+          })),
+          color: "rgb(72,107,122)",
+        },
+        {
+          key: "l",
+          label: "Deutschland",
+          points: wohnungKaufpreisentwicklungRaw.map((it: any) => ({
+            jahr: Number(it?.jahr),
+            value: Number(it?.preis_l),
+          })),
+          color: "rgba(200,213,79)",
+        },
+      ]
+    : [];
+
+
+
+  // --- Text zu Wohnungspreis nach Zimmer und Fläche ---
+  
+  const text_wohnung_zimmer_flaechen = getText(report, "text.immobilienpreise.immobilienpreise_wohnung_nach_flaechen_und_zimmern","",);
+
+  
+
+
+  // --- Wohnungskaufpreise nach Zimmern ---
+  const wohnungZimmerRaw = (report.data as any)?.wohnung_kaufpreise_nach_zimmern ?? [];
+  const wohnungZimmerModel = buildBarModel(wohnungZimmerRaw, {
+    valueKind: "kaufpreis_qm",
+    labelKey: "zimmer",
+    seriesKeys: ["preis", "preis_vorjahr"],
+    seriesLabelMap: { preis: "Aktuell", preis_vorjahr: "Vorjahr" },
+  });
+
+
+
+  // --- Wohnungskaufpreise nach Flächen ---
+  const wohnungFlaechenRaw = (report.data as any)?.wohnung_kaufpreise_nach_flaechen ?? [];
+  const wohnungFlaechenModel = buildBarModel(wohnungFlaechenRaw, {
+    valueKind: "kaufpreis_qm",
+    labelKey: "flaeche", // falls Ihr Label-Key so heißt; sonst anpassen
+    seriesKeys: ["preis", "preis_vorjahr"],
+    seriesLabelMap: { preis: "Aktuell", preis_vorjahr: "Vorjahr" },
+  });
+
+
+
+  
+  
 
 
   return (
@@ -854,857 +1391,17 @@ function KreisPage({
 
       {/* CONTENT je Berichtsebene */}
 
-      {/* Übersicht */}
-      {activeSection === "uebersicht" && (
-        <>
-        
-        
-          
-        
-          
-          {/* Headline Marktüberblick */}
-          <section className="mb-3" id="einleitung">
-            <h1 className="mt-3 mb-1">Standort & Immobilienmarkt 2025 {kreisName}</h1>
-            <p className="small text-muted mb-4">
-              Aktualisiert am: {kreisName}
-            </p>
-          
-            {/* Einleitungstext */}
-            <div>
-              <p className="teaser-text">
-                {teaserImmobilienmarktUeberblick}
-              </p>
-            </div>
-            
-            
-            {/* Beraterkontakt */}
-            <BeraterBlock
-              name={beraterName}
-              taetigkeit={beraterTaetigkeit}
-              imageSrc={beraterImageSrc}
-            />
-
-          </section>
-        
-        
-        
-          
-        
-        
-        
-          {/* Standortüberblick – Dynamik & Wirtschaftskraft */}
-          {standortAllgemein && (
-            <section className="mb-5" id="standort">
-              <h2 className="h2 mb-3 align-center text-center">Standortüberblick</h2>
-              <p className="small text-muted mb-4 text-center">
-                Die folgenden Indikatoren beschreiben die strukturelle Dynamik des
-                Kreises {kreisName}.
-              </p>
-
-              <div className="row g-3 mb-5">
-                {/* Bevölkerungsdynamik */}
-                {bevoelkerungsdynamik !== null && (
-                  <div className="col-12 col-md-4 mb-3">
-                    <div className="card bg-transparent border-0">
-                      <div className="card-body d-flex flex-column align-items-center">
-                        <h5 className="h5 mb-3 w-100 text-start text-center">
-                          Bevölkerungsdynamik
-                        </h5>
-                        <TrendGaugeCircle
-                          label="Bevölkerungsdynamik"
-                          value={bevoelkerungsdynamik}
-                          mode="trend"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Arbeitsmarktdynamik */}
-                {arbeitsmarktdynamik !== null && (
-                  <div className="col-12 col-md-4 mb-3">
-                    <div className="card bg-transparent border-0">
-                      <div className="card-body d-flex flex-column align-items-center">
-                        <h5 className="h5 mb-3 w-100 text-start text-center">
-                          Arbeitsmarktdynamik
-                        </h5>
-                        <TrendGaugeCircle
-                          label="Arbeitsmarktdynamik"
-                          value={arbeitsmarktdynamik}
-                          mode="trend"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Wirtschaftskraft */}
-                {wirtschaftskraft !== null && (
-                  <div className="col-12 col-md-4 mb-3">
-                    <div className="card bg-transparent border-0">
-                      <div className="card-body d-flex flex-column align-items-center">
-                        <h5 className="h5 mb-3 w-100 text-start text-center">
-                          Wirtschaftskraft
-                        </h5>
-                        <TrendGaugeCircle
-                          label="Wirtschaftskraft"
-                          value={wirtschaftskraft}
-                          mode="trend"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              
-              {/* Standort-Teaser */}
-              {teaserText && (
-                <StandortTeaserBlock
-                  kreisName={kreisName}
-                  teaserText={teaserText}
-                  imageSrc={teaserImage}
-                />
-              )}
-              
-              
-            </section>
-          )}
-
-          
-
-          
-   
-          
-        
-          {/* Headline Immobilienmarktüberblick*/}
-          <section className="mb-5" id="marktueberblick">
-            <h2 className="h2 mb-5 align-center text-center">Immobilienmarkt {kreisName} - Überblick</h2>
-
-            {/* Wohnraumsituation */}
-            {wohnraumsituation !== null && (
-              <>
-                <h5 className="h5 mb-3 text-center">Wohnraumsituation</h5>
-                <p className="small text-muted mb-3 text-center teaser-text-narrow mx-auto">
-                  Der Wohnungssaldo beschreibt, ob die Region tendenziell eher ein
-                  Wohnungsdefizit oder ein Wohnungsüberangebot aufweist.
-                </p>
-
-                <div className="card bg-transparent border-0 mb-5">
-                  <div className="card-body d-flex flex-column align-items-center">
-                    <TrendGaugeCircle
-                      label="Wohnungssaldo"
-                      value={wohnraumsituation}
-                      mode="saldo"
-                      extraText={getWohnungssaldoText(wohnraumsituation)}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-
-
-            {/* Immobilienpreis Kennzahlen */}
-            <div className="row g-3 mb-5">
-            
-              {/* Immobilien-Kaufpreis */}
-              <div className="col-12 col-md-4 mb-3">
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body text-center">
-                    <h5 className="h5 mb-3">Ø Immobilien-Kaufpreis</h5>
-
-                    {kaufpreis !== null ? (
-                      <>
-                        <p className="h4 mb-4 fs-1 fw-bold">
-                          {kaufpreis.toLocaleString("de-DE")} €
-                          <small> / m²</small>
-                        </p>
-
-                        <p className="small text-muted mb-4">
-                          <a
-                            href="/immobilienpreise"
-                            className="btn btn-outline-dark fw-semibold px-4 py-2"
-                          >
-                            Immobilien-Kaufpreise
-                          </a>
-                        </p>
-                      </>
-                    ) : (
-                      <p className="small text-muted mb-0">
-                        Keine Kaufpreisdaten verfügbar.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Grundstückskaufpreis */}
-              <div className="col-12 col-md-4 mb-3">
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body text-center">
-                    <h5 className="h5 mb-3">Ø Grundstückspreis</h5>
-
-                    {grundstueckspreis !== null ? (
-                      <>
-                        <p className="h4 mb-4 fs-1 fw-bold">
-                          {grundstueckspreis.toLocaleString("de-DE")} €
-                          <small> / m²</small>
-                        </p>
-                        <p className="small text-muted mb-4">
-                          <a
-                            href="/grundstueckspreise"
-                            className="btn btn-outline-dark fw-semibold px-4 py-2"
-                          >
-                            Grundstückspreise
-                          </a>
-                        </p>
-                      </>
-                    ) : (
-                      <p className="small text-muted mb-0">
-                        Keine Grundstücksdaten verfügbar.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Kaltmiete */}
-              <div className="col-12 col-md-4 mb-3">
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body text-center">
-                    <h5 className="h5 mb-3 text-center">Ø Kaltmiete</h5>
-
-                    {kaltmiete !== null ? (
-                      <>
-                        <p className="h4 mb-4 fs-1 fw-bold">
-                          {kaltmiete.toLocaleString("de-DE")} €
-                          <small> / m²</small>
-                        </p>
-                        <p className="small text-muted mb-4">
-                          <a
-                            href="/mietpreise"
-                            className="btn btn-outline-dark fw-semibold px-4 py-2"
-                          >
-                            Mietpreise
-                          </a>
-                        </p>
-                      </>
-                    ) : (
-                      <p className="small text-muted mb-0">
-                        Keine Mietdaten verfügbar.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-            </div>
-
-   
-            {/* Individualtext01 */}
-            <div style={{ margin: "2.5rem 0" }}>
-              <p>
-                {individualText01}
-              </p>
-            </div>
-
-            {/* Zitat */}
-            <div style={{ margin: "2.5rem 0" }}>
-              <blockquote className="zitat">
-                <p className="zitat-text">
-                  {zitat}
-                </p>
-                <footer className="zitat-footer">
-                  <cite className="zitat-autor">{beraterName}</cite>
-                </footer>
-              </blockquote>
-            </div>
-            
-          
-            {/* Individualtext02 */}
-            <div style={{ margin: "2.5rem 0" }}>
-              <p>
-                {individualText02}
-              </p>
-            </div>
-            
-          </section>
-          
-   
-
-         
-   
- 
-          {/* Headline Immobilienpreise im überregionalen Vergleich*/}
-          <section className="mb-5" id="preise-vergleich">
-            <h2 className="h2 mb-3 align-center text-center">Immobilienpreise {kreisName} im überregionalen Vergleich</h2>
-            <p className="small text-muted mb-5 text-center teaser-text-narrow mx-auto">
-              Die folgenden Diagramme zeigen den Landkreis im Vergleich zu
-              Deutschland und dem Bundesland – jeweils auf Basis der aktuellen
-              Angebotsdaten.
-            </p>
-
-            {/* Charts Überregionaler Vergleich */}
-            <div className="row g-3">
-              {/* Immobilienpreise */}
-              <div className="col-12 col-md-4">
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body">
-                    <h5 className="h5 mb-2 text-center">Immobilienpreise</h5>
-                    <VergleichChart
-                      title="Immobilienpreise"
-                      unit="€/m²"
-                      items={immVergleich}
-                      barColor="rgba(75,192,192)"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Grundstückspreise */}
-              <div className="col-12 col-md-4">
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body">
-                    <h5 className="h5 mb-2 text-center">Grundstückspreise</h5>
-                    <VergleichChart
-                      title="Grundstückspreise"
-                      unit="€/m²"
-                      items={grundVergleich}
-                      barColor="rgb(72, 107, 122)"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Mietpreise (Kaltmiete) */}
-              <div className="col-12 col-md-4">
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body">
-                    <h5 className="h5 mb-2 text-center">Kaltmieten</h5>
-                    <VergleichChart
-                      title="Kaltmieten"
-                      unit="€/m²"
-                      items={mieteVergleich}
-                      barColor="rgba(200,213,79)"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-          
-          
-   
-       
-          
-          
-          {/* Headline Immobilienpreisentwicklung*/}
-          <section className="mb-5" id="preise-entwicklung">
-            <h2 className="h2 mb-3 align-center text-center">Immobilienpreisentwicklung - {kreisName} </h2>
-            <p className="small text-muted mb-3 text-center teaser-text-narrow mx-auto mb-5">
-              Die folgenden Diagramme zeigen die Entwicklung der
-              durchschnittlichen Immobilienpreise, Grundstückspreise und
-              Angebotsmieten je Quadratmeter im Landkreis {kreisName} nach
-              Kalenderjahr.
-            </p>
-       
-            {/* Preisentwicklung im Zeitverlauf */}
-            <div className="row g-3">
-              {/* Charts Immobilien-Kaufpreise */}
-              <div className="col-12 col-md-4">
-                <div className="card border-0 shadow-sm">
-                  <div className="card-body">
-                    <h5 className="h5 mb-4 text-center">
-                      Historie Immobilien-Kaufpreise
-                    </h5>
-                    <ZeitreiheChart
-                      title="Immobilien-Kaufpreise"
-                      unit="€/m²"
-                      points={immobilienKaufHistorie}
-                      ariaLabel={`Entwicklung der durchschnittlichen Kaufpreise für Wohnimmobilien im Kreis ${kreisName}`}
-                      color="rgba(75,192,192)"  // Immobilienpreise
-                    />
-               
-                  </div>
-                </div>
-                <div className="card border-0 shadow-sm mt-2">
-                  <div className="card-body">
-                    <PreisindexBox
-                      title="Immobilienpreisindex"
-                      index={indexImmobilien}
-                      basisjahr={basisjahrImmobilien}
-                      color="rgba(75,192,192)"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Charts Grundstückskaufpreise */}
-              <div className="col-12 col-md-4">
-                <div className="card border-0 shadow-sm">
-                  <div className="card-body">
-                    <h5 className="h5 mb-4 text-center">
-                      Historie Grundstückspreise
-                    </h5>
-                    <ZeitreiheChart
-                      title="Grundstückspreise"
-                      unit="€/m²"
-                      points={grundstueckKaufHistorie}
-                      ariaLabel={`Entwicklung der durchschnittlichen Grundstückspreise im Landkreis ${kreisName}`}
-                      color="rgb(72, 107, 122)"  // Grundstückspreise
-                    />
-                  </div>
-                </div>
-                <div className="card border-0 shadow-sm mt-2">
-                  <div className="card-body">
-                    <PreisindexBox
-                      title="Grundstückspreisindex"
-                      index={indexGrundstueck}
-                      basisjahr={basisjahrGrundstueck}
-                      color="rgb(72,107,122)"
-                    />
-                  </div>
-                </div>
-                
-              </div>
-
-              {/* Charts Mietpreise */}
-              <div className="col-12 col-md-4">
-                
-                <div className="card border-0 shadow-sm ">
-                  <div className="card-body">
-                    <h5 className="h5 mb-4 text-center">Historie Angebotsmieten</h5>
-                    <ZeitreiheChart
-                      title="Kaltmieten"
-                      unit="€/m²"
-                      points={mietpreisHistorie}
-                      ariaLabel={`Entwicklung der durchschnittlichen Angebotsmieten je Quadratmeter Wohnfläche im Landkreis ${kreisName}`}
-                      color="rgba(200,213,79)"   // Kaltmiete
-                    />
-                  </div>
-                </div>
-                <div className="card border-0 shadow-sm mt-2">
-                  <div className="card-body">
-                    <PreisindexBox
-                      title="Mietpreisindex"
-                      index={indexMiete}
-                      basisjahr={basisjahrMiete}
-                      color="rgba(200,213,79)"
-                    />
-                  </div>
-                </div>
-                
-              </div>
-            </div>
-
-            {/* Beschreibungstext01 */}
-            <div style={{ margin: "2.5rem 0" }}>
-              <p>
-                {beschreibungText01}
-              </p>
-            </div>
-          </section>
-          
-          
-          
-                    
-          
-     
-          
-          
-          
-          
-          
-          {/* Headline Ortslagenübersicht-Tabelle: Preise & Vorjahresveränderung*/}
-          <section className="mb-5" id="ortslagen-tabelle">
-            
-            <h2 className="h2 mb-3 align-center text-center">Ortslagen-Preise und Vorjahresveränderung</h2>
-            <p className="small text-muted mb-3 text-center teaser-text-narrow mx-auto">
-              Die Tabelle zeigt die durchschnittlichen Immobilienpreise, Grundstückspreise und Angebotsmieten je Quadratmeter für die erfassten Ortslagen – jeweils inklusive prozentualer Veränderung gegenüber dem Vorjahr.
-            </p>
-  
-            {/* Kreis - Ortslagenübersicht-Tabelle: Preise & Vorjahresveränderung */}
-            <div className="card border-0 shadow-sm">
-              <div className="card-body">
-
-                <div className="table-responsive">
-                  <table
-                    className="table table-borderless align-middle mb-0 text-nowrap"
-                    style={{
-                      borderCollapse: "separate",
-                      borderSpacing: "2px", // „cellspacing“-Effekt
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        <th
-                          scope="col"
-                          className="text-start"
-                          style={{
-                            backgroundColor: "#f5f5f5",
-                            padding: "0.55rem 0.85rem",
-                          }}
-                        >
-                          Ortslage
-                        </th>
-
-                        <th
-                          scope="col"
-                          className="text-center"
-                          style={{
-                            backgroundColor: COLOR_IMMO,
-                            color: "#000",
-                            padding: "0.55rem 0.85rem",
-                          }}
-                        >
-                          Ø Immobilienpreis
-                        </th>
-                        <th
-                          scope="col"
-                          className="text-center"
-                          style={{
-                            backgroundColor: COLOR_IMMO,
-                            color: "#000",
-                            padding: "0.55rem 0.85rem",
-                          }}
-                        >
-                          Tendenz
-                        </th>
-
-                        <th
-                          scope="col"
-                          className="text-center"
-                          style={{
-                            backgroundColor: COLOR_GRUND,
-                            color: "#fff",
-                            padding: "0.55rem 0.85rem",
-                          }}
-                        >
-                          Ø Grundstückspreis
-                        </th>
-                        <th
-                          scope="col"
-                          className="text-center"
-                          style={{
-                            backgroundColor: COLOR_GRUND,
-                            color: "#fff",
-                            padding: "0.55rem 0.85rem",
-                          }}
-                        >
-                          Tendenz
-                        </th>
-
-                        <th
-                          scope="col"
-                          className="text-center"
-                          style={{
-                            backgroundColor: COLOR_MIETE,
-                            color: "#000",
-                            padding: "0.55rem 0.85rem",
-                          }}
-                        >
-                          Ø Mietpreis
-                        </th>
-                        <th
-                          scope="col"
-                          className="text-center"
-                          style={{
-                            backgroundColor: COLOR_MIETE,
-                            color: "#000",
-                            padding: "0.55rem 0.85rem",
-                          }}
-                        >
-                          Tendenz
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="small">
-                      {ortslagenUebersicht.map((row, index) => {
-                        const ortMatch = orte.find(
-                          (ort) => ort.slug === row.ortslage,
-                        );
-
-                        const tImmo = parseTendenzToNumber(
-                          row.immobilienpreise_tendenz,
-                        );
-                        const tGrund = parseTendenzToNumber(
-                          row.grundstueckspreise_tendenz,
-                        );
-                        const tMiete = parseTendenzToNumber(
-                          row.mietpreise_tendenz,
-                        );
-
-                        const tImmoColor =
-                          tImmo === null
-                            ? "#212529"
-                            : tImmo > 0
-                            ? "#198754"
-                            : tImmo < 0
-                            ? "#b02a37"
-                            : "#6c757d";
-
-                        const tGrundColor =
-                          tGrund === null
-                            ? "#212529"
-                            : tGrund > 0
-                            ? "#198754"
-                            : tGrund < 0
-                            ? "#b02a37"
-                            : "#6c757d";
-
-                        const tMieteColor =
-                          tMiete === null
-                            ? "#212529"
-                            : tMiete > 0
-                            ? "#198754"
-                            : tMiete < 0
-                            ? "#b02a37"
-                            : "#6c757d";
-
-                        return (
-                          <tr key={row.ortslage || index}>
-                            {/* Ortslage – linksbündig */}
-                            <td
-                              className="text-start"
-                              style={{
-                                backgroundColor: "#f5f5f5",
-                                padding: "0.55rem 0.85rem",
-                              }}
-                            >
-                              {ortMatch ? (
-                                <Link
-                                  href={`/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortMatch.slug}`}
-                                  className="link-primary text-decoration-none"
-                                >
-                                  {ortMatch.name}
-                                </Link>
-                              ) : (
-                                row.ortslage || "–"
-                              )}
-                            </td>
-
-                            {/* Immobilienpreise – zentriert */}
-                            <td
-                              className="text-center"
-                              style={{
-                                backgroundColor: BG_IMMO,
-                                padding: "0.55rem 0.85rem",
-                              }}
-                            >
-                              {row.immobilienpreise_wert || "–"}
-                            </td>
-                            <td
-                              className="text-center"
-                              style={{
-                                backgroundColor: BG_IMMO,
-                                color: tImmoColor,
-                                padding: "0.55rem 0.85rem",
-                              }}
-                            >
-                              {row.immobilienpreise_tendenz || "–"}
-                            </td>
-
-                            {/* Grundstückspreise – Body-Schrift schwarz */}
-                            <td
-                              className="text-center"
-                              style={{
-                                backgroundColor: BG_GRUND,
-                                color: "#000", // hier jetzt schwarz
-                                padding: "0.55rem 0.85rem",
-                              }}
-                            >
-                              {row.grundstueckspreise_wert || "–"}
-                            </td>
-                            <td
-                              className="text-center"
-                              style={{
-                                backgroundColor: BG_GRUND,
-                                color: tGrundColor,
-                                padding: "0.55rem 0.85rem",
-                              }}
-                            >
-                              {row.grundstueckspreise_tendenz || "–"}
-                            </td>
-
-                            {/* Mietpreise – zentriert */}
-                            <td
-                              className="text-center"
-                              style={{
-                                backgroundColor: BG_MIETE,
-                                padding: "0.55rem 0.85rem",
-                              }}
-                            >
-                              {row.mietpreise_wert || "–"}
-                            </td>
-                            <td
-                              className="text-center"
-                              style={{
-                                backgroundColor: BG_MIETE,
-                                color: tMieteColor,
-                                padding: "0.55rem 0.85rem",
-                              }}
-                            >
-                              {row.mietpreise_tendenz || "–"}
-                            </td>
-                          </tr>
-                        );
-                      })}
-
-                      {ortslagenUebersicht.length === 0 && (
-                        <tr>
-                          <td colSpan={7} className="text-muted py-3">
-                            Für diesen Landkreis liegen aktuell noch keine
-                            Ortslagen-Preisübersichten vor.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* Beschreibungstext02 */}
-            <div style={{ margin: "2.5rem 0" }}>
-              <p>
-                {beschreibungText02}
-              </p>
-            </div>
-            
-          </section>
-          
-          
-          
-          
-          {/* Headline Preisspannen zwischen günstigsten und teuersten Ortslagen*/}
-          <section className="mb-5" id="preisspannen">
-            
-            <h2 className="h2 mb-3 align-center text-center">Wo ist es teuer und wo preiswert(er)?</h2>
- 
-            {/* Preisspannen zwischen günstigsten und teuersten Ortslagen */}
-    
-            <div className="row g-4">
-
-              {preisgrenzenImmobilie && (
-                <div className="col-12">
-                  <PreisgrenzenRow
-                    
-                    color={COLOR_IMMO}
-                    iconLabel="K"
-                    cheapestName={preisgrenzenImmobilie.guenstigste_ortslage_immobilie}
-                    cheapestPrice={preisgrenzenImmobilie.guenstigste_ortslage_immobilienpreis}
-                    priciestName={preisgrenzenImmobilie.teuerste_ortslage_immobilie}
-                    priciestPrice={preisgrenzenImmobilie.teuerste_ortslage_immobilienpreis}
-                  />
-                </div>
-              )}
-
-              {preisgrenzenGrund && (
-                <div className="col-12">
-                  <PreisgrenzenRow
-                    
-                    color={COLOR_GRUND}
-                    iconLabel="B"
-                    cheapestName={preisgrenzenGrund.guenstigste_ortslage_grundstueck}
-                    cheapestPrice={preisgrenzenGrund.guenstigste_ortslage_grundstueckspreis}
-                    priciestName={preisgrenzenGrund.teuerste_ortslage_grundstueck}
-                    priciestPrice={preisgrenzenGrund.teuerste_ortslage_grundstueckspreis}
-                  />
-                </div>
-              )}
-
-              {preisgrenzenMiete && (
-                <div className="col-12">
-                  <PreisgrenzenRow
-                    
-                    color={COLOR_MIETE}
-                    iconLabel="M"
-                    cheapestName={preisgrenzenMiete.guenstigste_ortslage_miete}
-                    cheapestPrice={preisgrenzenMiete.guenstigste_ortslage_mietpreis}
-                    priciestName={preisgrenzenMiete.teuerste_ortslage_miete}
-                    priciestPrice={preisgrenzenMiete.teuerste_ortslage_mietpreis}
-                  />
-                </div>
-              )}
-
-            </div>
-          </section>
 
 
 
-          <section className="mb-5" id="maklerempfehlung">
+{/****************** Immobilienpreise-Ansicht **************/}
 
-            {/* Marktinformation-Kaufnebenkosten */}
-            <div className="mb-5">
-              <p>
-                {marketBasicKnowledgeText}
-              </p>
-            </div>
-
-            {/* Makler-Empfehlung */}
-            {agentSuggestText && (
-              <MaklerEmpfehlungBlock
-                kreisName={kreisName}
-                agentSuggestText={agentSuggestText}
-                imageSrc={agentSuggestImage}
-              />
-            )}
-          
-          </section>
-
-
-          {/* Erfasste Wohnlagen */}
-          <section className="mb-4" id="wohnlagen">
-            <h2 className="h2 mb-3 align-center text-center">Erfasste Wohnlagen - {kreisName}</h2>
-            <div className="row g-3">
-              {orte.map((ort) => (
-                <div key={ort.slug} className="col-12 col-md-6">
-                  <div className="card border-0 shadow-sm h-100">
-                    <div className="card-body">
-                      <h3 className="h6 mb-1">
-                        <Link
-                          href={`/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ort.slug}`}
-                          className="link-primary"
-                        >
-                          {ort.name}
-                        </Link>
-                      </h3>
-                      {ort.plz && (
-                        <p className="small text-muted mb-0">
-                          PLZ {ort.plz}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {orte.length === 0 && (
-                <p className="small text-muted mb-0">
-                  Für diesen Landkreis liegen noch keine einzelnen Wohnlagen
-                  vor.
-                </p>
-              )}
-            </div>
-          </section>
-        </>
-      )}
-
-
-
-
-
-
-
-
-
-
-      {/* Immobilienpreise-Ansicht */}
       {activeSection === "immobilienpreise" && (
         <>
         
         
         
-        {/* Headline Marktüberblick */}
+        {/* Headline Immobilienpreise */}
         <section className="mb-3" id="einleitung">
           <h1 className="mt-3 mb-1">Immobilienpreise 2025 - {kreisName}</h1>
           <p className="small text-muted mb-4">
@@ -1731,20 +1428,22 @@ function KreisPage({
         
         
         {/* Leitkennzahl + Interaktive Karte */}
-
         <section className="mb-5">
           <div className="row g-4 align-items-stretch">
             {/* Linke Spalte: Karte */}
             <div className="col-12 col-lg-6">
-              <div className="h-100" style={{ width: "90%", margin:"0 auto" }}>
+              <div className="h-100" style={{ width: "90%", margin: "0 auto" }}>
                 {immobilienpreisMapSvg ? (
+            
                   <InteractiveMap
                     svg={immobilienpreisMapSvg}
                     theme="immobilienpreis"
-                    mode="singleValue" // nutzt data-value und formatiert als €/m²
-                    // optional:
-                    // activeSubregionName={kreisNameOderOrt}
+                    mode="singleValue"
+                    kind="kaufpreis_qm"
+                    unitKey="eur_per_sqm"
+                    ctx="kpi"
                   />
+      
                 ) : (
                   <p className="small text-muted mb-0">
                     Für diesen Landkreis liegt aktuell noch keine interaktive
@@ -1757,30 +1456,40 @@ function KreisPage({
             {/* Rechte Spalte: Hauptindikator */}
             <div className="col-12 col-lg-6 d-flex align-items-center">
               <div className="w-100 align-center text-center">
-                
-                {kaufpreis !== null ? (
+                {kaufpreis !== null && Number.isFinite(kaufpreis) ? (
                   <>
-                    <p className="display-1 fw-bold mb-2" style={{ color: "#486b7a", fontSize: "7rem" }}>
-                      {kaufpreis.toLocaleString("de-DE")} €
-                      <small className="fs-5"> / m²</small>
+                    <p
+                      className="display-1 fw-bold mb-2"
+                      style={{ color: "#486b7a", fontSize: "7rem" }}
+                    >
+                      <KpiValue
+                        value={kaufpreis}
+                        kind="kaufpreis_qm"
+                        unitKey="eur_per_sqm"
+                        ctx="kpi"
+                        size="ultra"          // ultrahighlight
+                        showUnit={true}
+                      />
                     </p>
                     <p className="mb-0">Ø Immobilienpreis – {kreisName}</p>
                   </>
                 ) : (
-                  <p className="small text-muted mb-0">
-                    Keine Kaufpreisdaten verfügbar.
-                  </p>
+                  <p className="small text-muted mb-0">Keine Kaufpreisdaten verfügbar.</p>
                 )}
-
               </div>
             </div>
+            
           </div>
         </section>
+
+
+
         
         
 
         {/* Hauspreise – Standard-/Individualüberschrift + Intro */}
         <section className="mb-4" id="hauspreise">
+          
           <header className="mb-3">
             {ueberschriftHausIndividuell ? (
               <>
@@ -1806,155 +1515,437 @@ function KreisPage({
               {hauspreiseIntro}
             </p>
           )}
-        </section>
-        
-        
+
         {/* --- Hauspreisspanne --- */}
-        {hausMin !== null && hausAvg !== null && hausMax !== null && (
-          <div className="d-flex justify-content-center align-items-end gap-4 mb-4">
+        <KpiValue
+          icon="/icons/ws24_marktbericht_immobilienpreise.svg" // optional
+          items={[
+            { label: "min", value: hausMin, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
+            { label: "Durchschnitt", value: hausAvg, kind: "kaufpreis_qm", unitKey: "eur_per_sqm", highlight: true },
+            { label: "max", value: hausMax, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
+          ]}
+          ctx="kpi"
+          size="md"
+          highlightBg="transparent"            // oder z.B. "#fff3cd"
+          highlightValueColor="#486b7a"
+          normalValueColor="#6c757d"
+        />
+        
+        </section>
+          
+          
 
-            {/* MIN */}
-            <div className="text-center">
-              <div className="text-muted small mb-1">min</div>
-              <div className="fw-semibold" style={{ fontSize: "1.4rem", color: "#6c757d" }}>
-                {hausMin.toLocaleString("de-DE")} €
-                <small className="fs-6"> / m²</small>
-              </div>
+        {/* --- Kaufpreise für Häuser im überregionalen Vergleich (Tabelle) --- */}
+        
+          
+        <section className="mb-5">
+
+          {/* Standard-Überschrift */}
+          <h3 className="h5 text-muted mb-1">
+            Kaufpreise für Häuser im überregionalen Vergleich
+          </h3>
+
+          {/* --- Text überregionaler Vergleich Haus --- */}
+          {hausVergleichIntro && <p className="mb-3">{hausVergleichIntro}</p>}
+          
+          
+          {/* --- Hauspreisindex --- */}
+          {indexHaus !== null && (
+          <KpiValue
+            icon="/icons/ws24_marktbericht_immobilienpreise.svg"
+            iconAlt="Immobilienpreisindex Haus"
+            items={[
+              { label: "Immobilienpreisindex Haus", value: indexHaus, kind: "index", unitKey: "none" },
+            ]}
+            ctx="kpi"
+            size="lg"
+            showUnit={false}
+            caption="Basis: D = 100"
+          />
+          )}
+
+          {/* --- Tabelle überregionaler Vergleich Haus --- */}
+          <MatrixTable
+            model={ueberregionalModel_haus}
+            highlightColLabel="Ø Preis"
+            highlightBg="#c8d54f"
+            headerBg="#f5f5f5"
+          />
+
+        </section>
+       
+        
+        
+        {/* --- Kaufpreise für Häuser nach Lage (Tabelle) --- */}
+        
+        <section className="mb-5" id="hauspreise-lage">
+
+          {/* Standard-Überschrift */}
+          <h3 className="h5 text-muted mb-1">Hauspreise nach Lagequalität</h3>
+
+          {/* Text aus JSON */}
+          {text_haus_lage && <p className="mb-3">{text_haus_lage}</p>}
+
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <MatrixTable
+                model={lageModel_haus}
+                highlightColLabel="Ø Preis"
+                highlightBg="#c8d54f"
+                headerBg="#f5f5f5"
+              />
             </div>
-
-            {/* AVG – hervorgehoben */}
-            <div className="text-center">
-              <div className="text-muted small mb-1">Durchschnitt</div>
-              <div className="fw-bold" style={{ fontSize: "2.2rem", color: "#486b7a" }}>
-                {hausAvg.toLocaleString("de-DE")} €
-                <small className="fs-5"> / m²</small>
-              </div>
-            </div>
-
-            {/* MAX */}
-            <div className="text-center">
-              <div className="text-muted small mb-1">max</div>
-              <div className="fw-semibold" style={{ fontSize: "1.4rem", color: "#6c757d" }}>
-                {hausMax.toLocaleString("de-DE")} €
-                <small className="fs-6"> / m²</small>
-              </div>
-            </div>
-
           </div>
-        )}
+        </section>
+   
+        
+        
+        
+        {/* --- Kaufpreisentwicklung für Häuser (Chart) --- */}
 
-
-        {/* --- Kaufpreise für Häuser im überregionalen Vergleich --- */}
-        {hausPreisVergleich.length > 0 && (
-          <section className="mb-5">
+        {hausKaufpreisentwicklungSeries.length > 0 && (
+          <section className="mb-5" id="haus-kaufpreisentwicklung">
+            
             {/* Standard-Überschrift */}
-            <h2 className="h5 text-muted mb-1">
-              Kaufpreise für Häuser im überregionalen Vergleich
-            </h2>
+            <h3 className="h5 text-muted mb-1">Preisentwicklung: Häuser (Kauf)</h3>
+            
+            {/* Text aus JSON */}
+            {text_haus_kaufpreisentwicklung && <p className="mb-3">{text_haus_kaufpreisentwicklung}</p>}
 
-            {/* Individualtext aus JSON – wenn vorhanden */}
-            {hausVergleichIntro && (
-              <p className="mb-3">
-                {hausVergleichIntro}
-              </p>
-            )}
-            
-            
-            {/* --- Preisindex Haus (zentriert) --- */}
-            {preisindexHaus && (
-              <div className="text-center mb-4">
-                <div
-                  className="fw-bold"
-                  style={{
-                    fontSize: "2.8rem",
-                    lineHeight: 1.1,
-                    color: "#486b7a",
-                  }}
-                >
-                  {preisindexHaus}
-                </div>
-                <div className="small text-muted" style={{ marginTop: "-4px" }}>
-                  Basis: D = 100
-                </div>
+            <div className="card border-0 shadow-sm">
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="Haus-Kaufpreise"
+                  ariaLabel={`Preisentwicklung Haus-Kaufpreise: ${kreisName} im Vergleich zu ${bundeslandName ?? "Bundesland"} und Deutschland`}
+                  series={hausKaufpreisentwicklungSeries}
+                  kind="kaufpreis_qm"
+                  unitKey="eur_per_sqm"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={360}
+                />
               </div>
-            )}
-
-            
-
-            {/* Tabelle mit 5 Spalten, horizontal angeordnet */}
-            <div className="table-responsive">
-              <table
-                className="table table-borderless align-middle mb-0 text-nowrap"
-                style={{
-                  borderCollapse: "separate",
-                  borderSpacing: "1px", // optische Trennung
-                }}
-              >
-                <thead>
-                  <tr>
-                    {hausPreisVergleich.map((row) => {
-                      const isAvgCol =
-                        row.preisinfo_label.toLowerCase() === "ø preis";
-
-                      return (
-                        <th
-                          key={row.preisinfo_label}
-                          scope="col"
-                          className="small text-center"
-                          style={{
-                            backgroundColor: isAvgCol ? "#c8d54f" : "#f5f5f5",
-                            padding: "0.55rem 0.85rem",
-                            fontWeight: isAvgCol ? 700 : 500,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {row.preisinfo_label}
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-
-                <tbody className="small">
-                  <tr>
-                    {hausPreisVergleich.map((row) => {
-                      const isAvgCol =
-                        row.preisinfo_label.toLowerCase() === "ø preis";
-
-                      return (
-                        <td
-                          key={row.preisinfo_label}
-                          className="text-center"
-                          style={{
-                            backgroundColor: isAvgCol ? "#c8d54f" : "#f5f5f5",
-                            padding: "0.55rem 0.85rem",
-                            fontWeight: isAvgCol ? 700 : 400,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {row.preis}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                </tbody>
-              </table>
             </div>
+            
+            
+            
           </section>
         )}
 
         
+        
+        
+        
+        <section className="mb-5" id="haustypen-kaufpreise">
+          
+          {/* Standard-Überschrift */}
+          <h3 className="h5 text-muted mb-1">Kaufpreise nach Haustypen</h3>
+            
+          {/* Text aus JSON */}
+          {text_haustypen_kaufpreise && <p className="mb-3">{text_haustypen_kaufpreise}</p>}
+          
+          <MatrixTable
+            model={haustypModel}
+            highlightColLabel="Ø Preis"
+            highlightBg="#c8d54f"
+            headerBg="#f5f5f5"
+          />
 
+        </section>
+        
+        
+        
+        
+        
+        {/* Wohnungspreise – Standard-/Individualüberschrift + Intro */}
+        <section className="mb-4" id="wohnungspreise">
+          
+          <header className="mb-3">
+            {ueberschriftWohnungIndividuell ? (
+              <>
+                {/* Standardüberschrift: leicht, damit die Individualüberschrift hervorsticht */}
+                <h2 className="h5 text-muted text-uppercase mb-1">
+                  Kaufpreise für Wohnungen in {kreisName}
+                </h2>
+                {/* Individualüberschrift: optisch wie H2 */}
+                <h3 className="h2 mb-0">
+                  {ueberschriftWohnungIndividuell}
+                </h3>
+              </>
+            ) : (
+              /* Fallback: nur Standardüberschrift, aber im vollen H2-Stil */
+              <h2 className="h2 mb-0">
+                Kaufpreise für Wohnungen in {kreisName}
+              </h2>
+            )}
+          </header>
+
+          {wohnungspreiseIntro && (
+            <p className="teaser-text">
+              {wohnungspreiseIntro}
+            </p>
+          )}
+        
+        
+        
+        {/* --- Wohnungspreisspanne --- */}
+      
+        <KpiValue
+          icon="/icons/ws24_marktbericht_immobilienpreise.svg" // optional
+          items={[
+            { label: "min", value: wohnungMin, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
+            { label: "Durchschnitt", value: wohnungAvg, kind: "kaufpreis_qm", unitKey: "eur_per_sqm", highlight: true },
+            { label: "max", value: wohnungMax, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
+          ]}
+          ctx="kpi"
+          size="md"
+          highlightBg="transparent"            // oder z.B. "#fff3cd"
+          highlightValueColor="#486b7a"
+          normalValueColor="#6c757d"
+        />
+ 
+        
+        </section>
+        
+        
+        
+        {/* --- Kaufpreise für Wohnungen im überregionalen Vergleich (Tabelle) --- */}
+        
+        <section className="mb-5">
+
+          {/* Standard-Überschrift */}
+          <h3 className="h5 text-muted mb-1">
+            Kaufpreise für Wohnungen im überregionalen Vergleich
+          </h3>
+          
+          
+          {/* --- Text überregionaler Vergleich Wohnung --- */}
+          {wohnungVergleichIntro && <p className="mb-3">{wohnungVergleichIntro}</p>}
+          
+          
+          {/* --- Wohnungpreisindex --- */}
+          {indexWohnung !== null && (
+          <KpiValue
+            icon="/icons/ws24_marktbericht_immobilienpreise.svg"
+            iconAlt="Immobilienpreisindex Wohnung"
+            items={[
+              { label: "Immobilienpreisindex Wohnung", value: indexWohnung, kind: "index", unitKey: "none" },
+            ]}
+            ctx="kpi"
+            size="lg"
+            showUnit={false}
+            caption="Basis: D = 100"
+          />
+          )}
+
+          
+          {/* --- Tabelle überregionaler Vergleich Wohnung --- */}
+          <MatrixTable
+            model={ueberregionalModel_wohnung}
+            highlightColLabel="Ø Preis"
+            highlightBg="#c8d54f"
+            headerBg="#f5f5f5"
+          />
+          
+
+        </section>
+    
+        
+        
+        
+        
+        {/* --- Kaufpreise für Wohnungen nach Lage (Tabelle) --- */}
+        
+        <section className="mb-5" id="wohnungpreise-lage">
+
+          {/* Standard-Überschrift */}
+          <h3 className="h5 text-muted mb-1">Wohnungspreise nach Lagequalität</h3>
+
+          {/* Text aus JSON */}
+          {text_wohnung_lage && <p className="mb-3">{text_wohnung_lage}</p>}
+
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <MatrixTable
+                model={lageModel_wohnung}
+                highlightColLabel="Ø Preis"
+                highlightBg="#c8d54f"
+                headerBg="#f5f5f5"
+              />
+            </div>
+          </div>
+        </section>
+        
+        
+        
+        {/* --- Kaufpreisentwicklung für Wohnungen (Chart) --- */}
+
+        <section className="mb-5" id="wohnung-kaufpreisentwicklung">
+
+          {/* Standard-Überschrift */}
+          <h3 className="h5 text-muted mb-1">Preisentwicklung: Wohnungen (Kauf)</h3>
+
+          {/* Text aus JSON */}
+          {text_wohnung_kaufpreisentwicklung && <p className="mb-3">{text_wohnung_kaufpreisentwicklung}</p>}
+
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <ZeitreiheChart
+                title="Wohnung-Kaufpreise"
+                ariaLabel={`Preisentwicklung Haus-Kaufpreise: ${kreisName} im Vergleich zu ${bundeslandName ?? "Bundesland"} und Deutschland`}
+                series={wohnungKaufpreisentwicklungSeries}
+                kind="kaufpreis_qm"
+                unitKey="eur_per_sqm"
+                ctx="chart"
+                svgWidth={720}
+                svgHeight={360}
+              />
+            </div>
+          </div>
+
+        </section>
 
         
         
+        {/* --- Kaufpreise für Wohnungen nach Zimmern und Flächen (Chart) --- */}
+        <section className="mb-5" id="wohnungpreise-zimmer-flaechen">
+          {/* Standard-Überschrift */}
+          <h3 className="h5 text-muted mb-1">Wohnungspreise nach Zimmern und Flächen</h3>
+
+          {/* Text aus JSON */}
+          {text_wohnung_zimmer_flaechen && <p className="mb-3">{text_wohnung_zimmer_flaechen}</p>}
+
+          <div className="row g-3">
+            {/* Nach Zimmern */}
+            <div className="col-12 col-lg-6">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <h5 className="h5 mb-3 text-center">Nach Zimmern</h5>
+
+                  <VergleichBarChart
+                    title="Wohnungskaufpreise nach Zimmern"
+                    categories={wohnungZimmerModel.categories}
+                    series={[
+                      {
+                        ...wohnungZimmerModel.series.find((s) => s.key === "preis_vorjahr")!,
+                        label: "Vorjahr",
+                        color: "rgba(75,192,192)",
+                        fillOpacity: 0.6,
+                      },
+                      {
+                        ...wohnungZimmerModel.series.find((s) => s.key === "preis")!,
+                        label: "Aktuell",
+                        color: "rgba(200,213,79)",
+                        fillOpacity: 0.9,
+                      },
+                    ]}
+                    valueKind="kaufpreis_qm"
+                    unitKey="eur_per_sqm"
+                    ctx="chart"
+                    svgWidth={560}
+                    svgHeight={300}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Nach Flächen */}
+            <div className="col-12 col-lg-6">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body">
+                  <h5 className="h5 mb-3 text-center">Nach Flächen</h5>
+
+                  <VergleichBarChart
+                    title="Wohnungskaufpreise nach Flächen"
+                    categories={wohnungFlaechenModel.categories}
+                    series={[
+                      {
+                        ...wohnungFlaechenModel.series.find((s) => s.key === "preis_vorjahr")!,
+                        label: "Vorjahr",
+                        color: "rgba(75,192,192)",
+                        fillOpacity: 0.6,
+                      },
+                      {
+                        ...wohnungFlaechenModel.series.find((s) => s.key === "preis")!,
+                        label: "Aktuell",
+                        color: "rgba(200,213,79)",
+                        fillOpacity: 0.9,
+                      },
+                    ]}
+                    valueKind="kaufpreis_qm"
+                    unitKey="eur_per_sqm"
+                    ctx="chart"
+                    svgWidth={560}
+                    svgHeight={300}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        
+        
+        <section className="mb-5" id="faq-immobilienpreise">
+        <FaqSection
+          id="faq"
+          title={`FAQ – Immobilienmarkt ${kreisName}`}
+          items={FAQ_IMMOBILIENMARKT_ALLGEMEIN}
+        />
+        </section>
+        
+        
+        
+        {/* Erfasste Wohnlagen */}
+        <section className="mb-4" id="wohnlagen">
+          <h2 className="h2 mb-3 align-center text-center">
+            Erfasste Wohnlagen – {kreisName}
+          </h2>
+
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+
+              {/* Tab-/Pill-Optik */}
+              <nav
+                className="nav nav-pills flex-wrap gap-2 justify-content-center"
+                aria-label="Wohnlagen Navigation"
+              >
+                {orte.map((ort) => (
+                  <Link
+                    key={ort.slug}
+                    href={`/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ort.slug}`}
+                    className="nav-link px-3 py-2 rounded-pill fw-semibold small bg-light text-dark"
+                  >
+                    {ort.name}
+                    {ort.plz && (
+                      <span className="ms-2 text-muted fw-normal">
+                        ({ort.plz})
+                      </span>
+                    )}
+                  </Link>
+                ))}
+              </nav>
+
+              {orte.length === 0 && (
+                <p className="small text-muted mb-0 text-center">
+                  Für diesen Landkreis liegen noch keine einzelnen Wohnlagen vor.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
 
         </>
       )}
+      
+      
+      
 
       {/* Generischer Platzhalter für die anderen Bereiche/Themen */}
       {activeSection !== "uebersicht" &&
-        activeSection !== "immobilienpreise" && (
+        activeSection !== "immobilienpreise" && 
+          activeSection !== "mietpreise" && 
+        (
           <section className="mb-4">
             <h2 className="h6 mb-2">
               Bereich:{" "}
@@ -2153,465 +2144,7 @@ function OrtPage({
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ////////////////// Helper - Komponeneten
-
-
-type VergleichItem = { region: string; value: number };
-
-function VergleichChart({
-  title,
-  unit,
-  items,
-  barColor,
-}: {
-  title: string;
-  unit: string;
-  items: VergleichItem[];
-  barColor: string;
-}) {
-  if (!items || items.length === 0) {
-    return (
-      <p className="small text-muted mb-0">
-        Für diesen Vergleich liegen aktuell keine Daten vor.
-      </p>
-    );
-  }
-
-  const max = Math.max(...items.map((i) => i.value));
-
-  // Größeres Chart, mehr vertikaler Raum
-  const svgHeight = 220;
-  const paddingTop = 28;
-  const paddingBottom = 52;
-  const barGap = 28;
-
-  const barWidth = 64;
-  const svgWidth =
-    items.length * barWidth + (items.length - 1) * barGap + 48;
-
-  const label = `${title} – überregionaler Vergleich`;
-
-  // Label fürs SVG verkürzen, voller Name steht in der Liste
-  function getShortLabel(region: string): string {
-    let text = region.trim();
-
-    if (text.toLowerCase().startsWith("landkreis ")) {
-      text = "LK " + text.slice(10);
-    }
-
-    if (text.length <= 14) return text;
-    return text.slice(0, 13) + "…";
-  }
-
-  return (
-    <>
-      <svg
-        role="img"
-        aria-label={label}
-        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-        width="100%"
-        height={svgHeight}
-        preserveAspectRatio="xMidYMid meet"
-        className="mb-3"
-        suppressHydrationWarning
-      >
-        {items.map((item, index) => {
-          const ratio = max > 0 ? item.value / max : 0;
-
-          // Maximal verfügbare Höhe für Balken
-          const availableHeight = svgHeight - paddingTop - paddingBottom;
-          const barHeight = ratio * availableHeight;
-
-          const x = 24 + index * (barWidth + barGap);
-          const y = svgHeight - paddingBottom - barHeight;
-
-          // Position der Zahl: bevorzugt über dem Balken,
-          // sonst mittig im Balken (mit anderer Textfarbe)
-          const valueAboveY = y - 10;
-          const canPlaceAbove = valueAboveY >= paddingTop;
-
-          const valueY = canPlaceAbove
-            ? valueAboveY
-            : y + barHeight / 2 + 4;
-
-          const valueColor = canPlaceAbove ? "#333" : "#fff";
-
-          // Opazität rein nach Index:
-          // 0 = Deutschland, 1 = Bundesland, 2+ = Kreis
-          const opacity =
-            index === 0 ? 0.35 : index === 1 ? 0.6 : 1.0;
-
-          const shortLabel = getShortLabel(item.region);
-
-          return (
-            <g key={item.region}>
-              <rect
-                x={x}
-                y={y}
-                width={barWidth}
-                height={barHeight}
-                rx={8}
-                ry={8}
-                fill={barColor}
-                fillOpacity={opacity}
-              />
-
-              {/* Wert (über oder im Balken) */}
-              <text
-                x={x + barWidth / 2}
-                y={valueY}
-                textAnchor="middle"
-                dominantBaseline={canPlaceAbove ? "auto" : "middle"}
-                fontSize="12"
-                fontWeight={600}
-                fill={valueColor}
-              >
-                {item.value.toLocaleString("de-DE")}
-              </text>
-
-              {/* Regionslabel – ggf. gekürzt */}
-              <text
-                x={x + barWidth / 2}
-                y={svgHeight - 18}
-                textAnchor="middle"
-                fontSize="11"
-                fill="#555"
-              >
-                {shortLabel}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-
-      {/* Textliche Darstellung (SEO/GEO – voll ausgeschrieben) */}
-      <ul className="small text-muted mb-0">
-        {items.map((item) => (
-          <li key={item.region}>
-            <strong>{item.region}:</strong>{" "}
-            {item.value.toLocaleString("de-DE")} {unit}
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-}
-
-
-
-
-
-function ZeitreiheChart({
-  title,
-  unit,
-  points,
-  ariaLabel,
-  color,
-}: {
-  title: string;
-  unit: string;
-  points: { jahr: number; value: number }[];
-  ariaLabel?: string;
-  color?: string; // NEU: individuelle Farbsteuerung
-}) {
-  if (!points || points.length === 0) {
-    return (
-      <p className="small text-muted mb-0">
-        Für diese Zeitreihe liegen aktuell keine Daten vor.
-      </p>
-    );
-  }
-
-  const minYear = Math.min(...points.map((p) => p.jahr));
-  const maxYear = Math.max(...points.map((p) => p.jahr));
-  const minValue = Math.min(...points.map((p) => p.value));
-  const maxValue = Math.max(...points.map((p) => p.value));
-
-  const svgWidth = 360;
-  const svgHeight = 220;
-  const paddingLeft = 40;   // bei Bedarf leicht erhöhen, z. B. 48
-  const paddingRight = 16;
-  const paddingTop = 20;
-  const paddingBottom = 40;
-
-  const innerWidth = svgWidth - paddingLeft - paddingRight;
-  const innerHeight = svgHeight - paddingTop - paddingBottom;
-
-  const yearSpan = maxYear - minYear || 1;
-  const valueSpan = maxValue - minValue || 1;
-
-  const scaleX = (year: number) =>
-    paddingLeft + ((year - minYear) / yearSpan) * innerWidth;
-
-  const scaleY = (value: number) =>
-    paddingTop + innerHeight - ((value - minValue) / valueSpan) * innerHeight;
-
-  const pathD = points
-    .map((p, index) => {
-      const x = scaleX(p.jahr);
-      const y = scaleY(p.value);
-      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
-    })
-    .join(" ");
-
-  const label =
-    ariaLabel ??
-    `${title} – Entwicklung von ${minYear} bis ${maxYear} in ${unit}`;
-
-  const strokeColor = color ?? "#0077b6";
-
-  return (
-    <>
-      <svg
-        role="img"
-        aria-label={label}
-        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-        width="100%"
-        height={svgHeight}
-        preserveAspectRatio="xMidYMid meet"
-        className="mb-3"
-        suppressHydrationWarning
-      >
-        {/* X-Achse */}
-        <line
-          x1={paddingLeft}
-          y1={svgHeight - paddingBottom}
-          x2={svgWidth - paddingRight}
-          y2={svgHeight - paddingBottom}
-          stroke="#ccc"
-          strokeWidth={1}
-        />
-
-        {/* Y-Achse */}
-        <line
-          x1={paddingLeft}
-          y1={paddingTop}
-          x2={paddingLeft}
-          y2={svgHeight - paddingBottom}
-          stroke="#ccc"
-          strokeWidth={1}
-        />
-
-        {/* Line-Chart */}
-        <path
-          d={pathD}
-          fill="none"
-          stroke={strokeColor}
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* Punkte */}
-        {points.map((p) => {
-          const x = scaleX(p.jahr);
-          const y = scaleY(p.value);
-          return (
-            <g key={p.jahr}>
-              <circle cx={x} cy={y} r={6} fill="white" fillOpacity={0.8} />
-              <circle cx={x} cy={y} r={3} fill={strokeColor} />
-            </g>
-          );
-        })}
-
-        {/* Jahreslabels */}
-        {points.map((p) => {
-          const x = scaleX(p.jahr);
-          return (
-            <text
-              key={`year-${p.jahr}`}
-              x={x}
-              y={svgHeight - paddingBottom + 16}
-              textAnchor="middle"
-              fontSize="11"
-              fill="#555"
-            >
-              {p.jahr}
-            </text>
-          );
-        })}
-
-        {/* Min/Max-Werte an der Y-Achse – OHNE Einheit, um Platz zu sparen */}
-
-        <text
-          x={paddingLeft - 6}
-          y={paddingTop - 3}   // vorher: paddingTop + 4
-          textAnchor="end"
-          fontSize="11"
-          fill="#888"
-        >
-          {maxValue.toLocaleString("de-DE")}
-        </text>
-
-        {/* Min-Wert um 5px nach oben versetzt */}
-        <text
-          x={paddingLeft - 6}
-          y={svgHeight - paddingBottom - 7}  // vorher: svgHeight - paddingBottom
-          textAnchor="end"
-          dominantBaseline="hanging"
-          fontSize="11"
-          fill="#888"
-        >
-          {minValue.toLocaleString("de-DE")}
-        </text>
-
-      </svg>
-
-      {/* Textliche Zeitreihe (inkl. Einheit) */}
-      <ul className="small text-muted mb-0">
-        {points.map((p) => (
-          <li key={p.jahr}>
-            <strong>{p.jahr}:</strong>{" "}
-            {p.value.toLocaleString("de-DE", {
-              maximumFractionDigits: 2,
-            })}{" "}
-            {unit}
-          </li>
-        ))}
-      </ul>
-    </>
-  );
-}
-
-
-
-function PreisindexBox({
-  title,
-  index,
-  basisjahr,
-  color,
-}: {
-  title: string;
-  index: number | null;
-  basisjahr: number | null;
-  color: string;
-}) {
-  if (!index || !basisjahr) {
-    return null;
-  }
-
-  return (
-    <div className="text-center mt-3 mb-2">
-      <div
-        className="fw-semibold mb-2"
-        style={{ color }}
-      >
-        {title}
-      </div>
-
-      <div
-        className="display-6 fw-bold mb-2"
-        style={{ lineHeight: "1", color }}
-      >
-        {index}
-      </div>
-
-      <div className="small text-muted">
-        Basisjahr {basisjahr} = Index&nbsp;100
-      </div>
-    </div>
-  );
-}
-
-
-
-
-
-function PreisgrenzenRow({
-  color,
-  iconLabel,
-  cheapestName,
-  cheapestPrice,
-  priciestName,
-  priciestPrice,
-}: {
-  color: string;
-  iconLabel: string;
-  cheapestName: string;
-  cheapestPrice: string;
-  priciestName: string;
-  priciestPrice: string;
-}) {
-  if (
-    !cheapestName ||
-    !cheapestPrice ||
-    !priciestName ||
-    !priciestPrice
-  ) {
-    return null;
-  }
-
-  const iconBg = color;
-  const iconTextColor =
-    color === "rgb(72,107,122)" ? "#fff" : "#000";
-
-  return (
-    <div className="card border-0 shadow-sm w-100">
-      <div className="card-body py-5 px-5">
-
-
-        {/* Flexbox: drei Spalten, alle gleich breit auf Desktop */}
-        <div className="d-flex flex-column flex-lg-row align-items-center justify-content-between gap-4 w-100">
-
-          {/* Linke Spalte */}
-          <div className="flex-lg-1 text-start w-100">
-            <div className="small text-muted mb-1">Günstigste Ortslage</div>
-            <div className="fw-semibold mb-1 fs-1">{cheapestName}</div>
-            <div className="fw-bold fs-1" style={{ color }}>
-              {cheapestPrice}
-            </div>
-          </div>
-
-          {/* Icon (mittig, gleich breite Spalte) */}
-          <div className="flex-lg-1 d-flex justify-content-center align-items-center w-100">
-            <div
-              className="rounded-circle d-flex align-items-center justify-content-center"
-              style={{
-                width: "120px",
-                height: "120px",
-                backgroundColor: iconBg,
-                color: iconTextColor,
-                fontWeight: 700,
-                fontSize: "2.2rem",
-              }}
-            >
-              {iconLabel}
-            </div>
-          </div>
-
-          {/* Rechte Spalte */}
-          <div className="flex-lg-1 text-end w-100">
-            <div className="small text-muted mb-1">Teuerste Ortslage</div>
-            <div className="fw-semibold mb-1 fs-1">{priciestName}</div>
-            <div className="fw-bold fs-1" style={{ color }}>
-              {priciestPrice}
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-
-
 
 
 // --- Gauge-Style - Zeigeruhren ---
@@ -2950,8 +2483,6 @@ function PageToc({ items }: { items: TocItem[] }) {
     </nav>
   );
 }
-
-
 
 
 

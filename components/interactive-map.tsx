@@ -1,14 +1,53 @@
+// components/interactive-map.tsx
+
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
+import { formatMetric, getUnitLabel } from "@/utils/format";
 
 type MapMode = "singleValue" | "overview";
+
+/**
+ * Die Map kann alles formatieren, was Ihr zentraler FormatKind kann.
+ * Zusätzlich (optional) ein Faktor, falls Sie ihn (noch) nicht in FormatKind führen.
+ *
+ * Empfehlung: langfristig "kaufpreisfaktor" als FormatKind in format.ts aufnehmen,
+ * dann kann diese Union rein "FormatKind" sein.
+ */
+type MapFormatKind = FormatKind | "kaufpreisfaktor";
+
+type OverviewField = {
+  key: string;   // z.B. "data-immobilienpreis"
+  label: string; // Tooltip-Label
+
+  // Zentralisierte Formatierung
+  kind: MapFormatKind;
+  ctx?: FormatContext;
+  unitKey?: UnitKey;
+
+  // Optionaler Override auf Nachkommastellen (bewusstes Abweichen)
+  fractionDigits?: number;
+
+  // Optionaler Zusatztext unter dem Wert (z.B. "Basis D = 100")
+  note?: string;
+};
 
 type InteractiveMapProps = {
   svg: string;
   theme: string;
   activeSubregionName?: string;
   mode?: MapMode;
+
+  // SingleValue (zentral)
+  kind?: MapFormatKind;
+  ctx?: FormatContext;
+  unitKey?: UnitKey;
+  fractionDigits?: number;
+  note?: string; // optionaler Zusatztext auch im SingleValue Tooltip
+
+  // Overview (3 Kennzahlen)
+  overviewFields?: [OverviewField, OverviewField, OverviewField];
 };
 
 export function InteractiveMap({
@@ -16,18 +55,24 @@ export function InteractiveMap({
   theme,
   activeSubregionName,
   mode = "singleValue",
+
+  kind,
+  ctx = "kpi",
+  unitKey,
+  fractionDigits,
+  note,
+
+  overviewFields,
 }: InteractiveMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // SVG in den Container schreiben
     containerRef.current.innerHTML = svg;
     const svgElement = containerRef.current.querySelector("svg");
     if (!svgElement) return;
 
-    // Alle <title>-Tags entfernen, damit nur unser Tooltip aktiv ist
     svgElement.querySelectorAll("title").forEach((t) => t.remove());
 
     const tooltipEl = document.getElementById(
@@ -38,16 +83,25 @@ export function InteractiveMap({
       `map-${theme}`,
     ) as HTMLDivElement | null;
 
-    const paths = Array.from(
-      svgElement.querySelectorAll<SVGPathElement>("a path"),
-    );
+    const paths = Array.from(svgElement.querySelectorAll<SVGPathElement>("a path"));
 
     paths.forEach((path) => {
       const name = path.getAttribute("data-name") || "";
 
       const onEnter = () => {
         if (!tooltipEl) return;
-        tooltipEl.innerHTML = buildTooltipContent(path, name, theme, mode);
+        tooltipEl.innerHTML = buildTooltipContent({
+          path,
+          name,
+          theme,
+          mode,
+          kind,
+          ctx,
+          unitKey,
+          fractionDigits,
+          note,
+          overviewFields,
+        });
         tooltipEl.style.display = "block";
       };
 
@@ -67,7 +121,6 @@ export function InteractiveMap({
       path.addEventListener("mousemove", onMove);
       path.addEventListener("mouseleave", onLeave);
 
-      // Cleanup bei Unmount / Dependency-Change
       (path as any).__wlc_handlers = { onEnter, onMove, onLeave };
     });
 
@@ -78,11 +131,7 @@ export function InteractiveMap({
     return () => {
       paths.forEach((path) => {
         const handlers = (path as any).__wlc_handlers as
-          | {
-              onEnter: (e: MouseEvent) => void;
-              onMove: (e: MouseEvent) => void;
-              onLeave: () => void;
-            }
+          | { onEnter: (e: MouseEvent) => void; onMove: (e: MouseEvent) => void; onLeave: () => void }
           | undefined;
 
         if (!handlers) return;
@@ -91,11 +140,21 @@ export function InteractiveMap({
         path.removeEventListener("mouseleave", handlers.onLeave);
       });
     };
-  }, [svg, theme, activeSubregionName, mode]);
+  }, [
+    svg,
+    theme,
+    activeSubregionName,
+    mode,
+    kind,
+    ctx,
+    unitKey,
+    fractionDigits,
+    note,
+    overviewFields,
+  ]);
 
   return (
     <div className="position-relative w-100 h-100">
-      {/* SVG-Container */}
       <div
         id={`map-${theme}`}
         ref={containerRef}
@@ -103,7 +162,6 @@ export function InteractiveMap({
         style={{ lineHeight: 0 }}
       />
 
-      {/* Tooltip-Overlay */}
       <div
         id={`map-tooltip-${theme}`}
         className="position-absolute small px-2 py-1 bg-dark text-white rounded"
@@ -119,51 +177,140 @@ export function InteractiveMap({
   );
 }
 
-/**
- * Tooltip-Content je Modus/Theme
- */
-function buildTooltipContent(
-  path: SVGPathElement,
-  name: string,
-  theme: string,
-  mode: MapMode,
-): string {
-  if (mode === "overview") {
-    // Beispiel für später: drei Kennzahlen etc.
-    const iVal =
-      path.getAttribute("data-immobilienpreis") ||
-      path.getAttribute("data-value") ||
-      "n.v.";
-    const gVal = path.getAttribute("data-grundstueckspreis") || "n.v.";
-    const mVal = path.getAttribute("data-mietpreis") || "n.v.";
+function buildTooltipContent(args: {
+  path: SVGPathElement;
+  name: string;
+  theme: string;
+  mode: MapMode;
 
-    return (
-      `<strong>${name}</strong><br>` +
-      `Immobilienpreise: ${formatNumber(iVal)} €/m²<br>` +
-      `Grundstückspreise: ${formatNumber(gVal)} €/m²<br>` +
-      `Mietpreise: ${formatNumber(mVal)} €/m²`
-    );
+  kind?: MapFormatKind;
+  ctx: FormatContext;
+  unitKey?: UnitKey;
+  fractionDigits?: number;
+  note?: string;
+
+  overviewFields?: [OverviewField, OverviewField, OverviewField];
+}): string {
+  const {
+    path,
+    name,
+    theme,
+    mode,
+    kind,
+    ctx,
+    unitKey,
+    fractionDigits,
+    note,
+    overviewFields,
+  } = args;
+
+  if (mode === "overview") {
+    const fields: [OverviewField, OverviewField, OverviewField] =
+      overviewFields ?? [
+        {
+          key: "data-immobilienpreis",
+          label: "Immobilienpreise",
+          kind: "kaufpreis_qm",
+          ctx: "kpi",
+          unitKey: "eur_per_sqm",
+        },
+        {
+          key: "data-grundstueckspreis",
+          label: "Grundstückspreise",
+          kind: "grundstueck_qm",
+          ctx: "kpi",
+          unitKey: "eur_per_sqm",
+        },
+        {
+          key: "data-mietpreis",
+          label: "Mietpreise",
+          kind: "miete_qm",
+          ctx: "kpi",
+          unitKey: "eur_per_sqm",
+        },
+      ];
+
+    const rows = fields.map((f) => {
+      const raw =
+        path.getAttribute(f.key) ||
+        (f.key === "data-immobilienpreis" ? path.getAttribute("data-value") : null) ||
+        null;
+
+      const num = toNumberOrNull(raw);
+
+      const valueLine = formatMapValue(num, {
+        kind: f.kind,
+        ctx: f.ctx ?? "kpi",
+        unitKey: f.unitKey,
+        fractionDigits: f.fractionDigits,
+      });
+
+      const noteLine = f.note ? `<span style="opacity:.85">${escapeHtml(f.note)}</span>` : "";
+
+      return noteLine
+        ? `${escapeHtml(f.label)}: ${valueLine}<br>${noteLine}`
+        : `${escapeHtml(f.label)}: ${valueLine}`;
+    });
+
+    return `<strong>${escapeHtml(name)}</strong><br>${rows.join("<br>")}`;
   }
 
-  // Default: singleValue – z. B. Immobilienpreis-Karte mit data-value
-  const raw =
-    path.getAttribute("data-value") ||
-    path.getAttribute(`data-${theme}`) ||
-    "";
-  const formatted = formatNumber(raw);
+  // singleValue
+  const raw = path.getAttribute("data-value") || path.getAttribute(`data-${theme}`) || null;
+  const num = toNumberOrNull(raw);
 
-  return `<strong>${name}</strong>: ${formatted} €/m²`;
+  const valueLine = formatMapValue(num, { kind: kind ?? "anzahl", ctx, unitKey, fractionDigits });
+  const noteLine = note ? `<br><span style="opacity:.85">${escapeHtml(note)}</span>` : "";
+
+  return `<strong>${escapeHtml(name)}</strong>: ${valueLine}${noteLine}`;
 }
 
-function formatNumber(raw: string): string {
-  const num = Number(raw.replace(",", "."));
-  if (!Number.isFinite(num)) return raw || "n.v.";
-  return num.toLocaleString("de-DE");
+function toNumberOrNull(raw: string | null): number | null {
+  if (raw === null || raw === undefined) return null;
+  const n = Number(String(raw).replace(",", "."));
+  return Number.isFinite(n) ? n : null;
 }
+
+type FormatMapValueArgs = {
+  kind: MapFormatKind;
+  ctx: FormatContext;
+  unitKey?: UnitKey;
+  fractionDigits?: number;
+};
 
 /**
- * Aktive Subregion optisch hervorheben
+ * Zentrale Formatierung:
+ * - Standard: formatMetric (utils/format.ts)
+ * - fractionDigits: seltener Override, Einheit kommt weiterhin über unitKey
+ * - "kaufpreisfaktor": solange nicht als FormatKind geführt, lokal als 1 Nachkommastelle, ohne Einheit
  */
+function formatMapValue(value: number | null, args: FormatMapValueArgs): string {
+  const { kind, ctx, unitKey, fractionDigits } = args;
+
+  if (value === null || !Number.isFinite(value)) return "n.v.";
+
+  if (typeof fractionDigits === "number") {
+    const nf = new Intl.NumberFormat("de-DE", {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    });
+    const s = nf.format(value);
+    const u = unitKey ? getUnitLabel(unitKey) : "";
+    return u ? `${s} ${u}` : s;
+  }
+
+  if (kind === "kaufpreisfaktor") {
+    // Faktor: 1 Nachkommastelle, keine Einheit
+    return new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
+  }
+
+  return formatMetric(value, {
+    kind: kind as FormatKind,
+    ctx,
+    unit: unitKey ?? "none",
+  });
+}
+
 function highlightActiveSubregion(svgRoot: SVGSVGElement, activeName: string) {
   const normalizedActive = normalizeName(activeName);
 
@@ -183,16 +330,12 @@ function highlightActiveSubregion(svgRoot: SVGSVGElement, activeName: string) {
   });
 
   if (!matchFound) {
-    // Fallback: alles wieder normal
     paths.forEach((p) => {
       p.style.opacity = "1";
     });
   }
 }
 
-/**
- * Umlaut-/Sonderzeichen-Normalisierung
- */
 function normalizeName(value: string): string {
   return value
     .toLowerCase()
@@ -202,4 +345,16 @@ function normalizeName(value: string): string {
     .replace(/ü/g, "ue")
     .replace(/ß/g, "ss")
     .replace(/\s+/g, "-");
+}
+
+/**
+ * Minimaler HTML-Escape für Tooltip-Strings (Sicherheit)
+ */
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }

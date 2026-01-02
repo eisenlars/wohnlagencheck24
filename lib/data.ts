@@ -196,7 +196,7 @@ export function getReportBySlugs(slugs: string[]): Report | null {
 
 
 
-// SVG Maps aus map_inetractive holen
+// SVG Maps aus data/visuals/map_interactive holen
 
 export function getImmobilienpreisMapSvg(
   bundeslandSlug: string,
@@ -228,4 +228,33 @@ export function getImmobilienpreisMapSvg(
 }
 
 
+// SVG Maps aus data/visuals/map_interactive holen
 
+export function getMietpreisMapSvg(
+  bundeslandSlug: string,
+  kreisSlug: string,
+): string | null {
+  const svgPath = path.join(
+    process.cwd(),
+    "data",
+    "visuals",
+    "map_interactive",
+    "deutschland",
+    bundeslandSlug,
+    kreisSlug,
+    "mietpreis",
+    `mietpreis_${kreisSlug}.svg`,
+  );
+
+  if (!fs.existsSync(svgPath)) {
+    console.warn("Mietpreis-SVG nicht gefunden:", svgPath);
+    return null;
+  }
+
+  try {
+    return fs.readFileSync(svgPath, "utf8");
+  } catch (err) {
+    console.error("Fehler beim Lesen der Mietpreis-SVG:", err);
+    return null;
+  }
+}
