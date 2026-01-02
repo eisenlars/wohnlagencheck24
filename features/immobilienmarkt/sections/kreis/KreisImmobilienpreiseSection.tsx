@@ -3,6 +3,9 @@
 import React from "react";
 import Link from "next/link";
 
+
+import { KreisTabNav } from "@/features/immobilienmarkt/shared/KreisTabNav";
+import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
 import { RegionHero } from "@/components/region-hero";
 import { BeraterBlock } from "@/components/advisor-avatar";
 import { RightEdgeControls } from "@/components/right-edge-controls";
@@ -81,7 +84,7 @@ export function KreisImmobilienpreiseSection(props: Props) {
       };
 
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
-
+  
   // Farbsystem
   const COLOR_IMMO = "rgba(75,192,192,0.9)";
   const COLOR_IMMO_LIGHT = "rgba(75,192,192,0.6)";
@@ -141,45 +144,17 @@ export function KreisImmobilienpreiseSection(props: Props) {
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
       <div className="container immobilienmarkt-container position-relative">
+        
         {/* Subnavigation Kreisebene */}
-        <section className="kreis-subnav kreis-subnav-sticky mb-4">
-          <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
-            <div className="kreis-subnav-tabs-wrapper w-100">
-              <ul className="nav nav-pills flex-nowrap small kreis-subnav-tabs">
-                {tabs.map((tab) => {
-                  const isActive = tab.id === activeTabId;
-                  const href = tab.id === "uebersicht" ? basePath : `${basePath}/${tab.id}`;
-
-                  return (
-                    <li className="nav-item" key={tab.id}>
-                      <Link
-                        href={href}
-                        className={
-                          "nav-link d-flex flex-column align-items-center justify-content-center gap-2 rounded-pill kreis-subnav-link" +
-                          (isActive ? " active bg-dark text-white" : " bg-light text-dark border-0")
-                        }
-                        aria-current={isActive ? "page" : undefined}
-                      >
-                        {tab.iconSrc ? (
-                          <img src={tab.iconSrc} alt="" aria-hidden="true" className="subnav-icon-img" />
-                        ) : null}
-                        <span className="subnav-label">{tab.label}</span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
-        </section>
+        <KreisTabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} />
 
         {/* Hero */}
         <RegionHero
           title={vm.kreisName}
           subtitle="regionaler Standortberater"
           imageSrc={heroImageSrc}
-          rightOverlay={null}
-          rightOverlayMode={undefined}
+          rightOverlay={<HeroOverlayActions variant="immo" />}
+          rightOverlayMode="buttons"
   
         />
 

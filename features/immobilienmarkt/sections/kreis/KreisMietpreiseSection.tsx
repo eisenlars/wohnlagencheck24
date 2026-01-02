@@ -1,4 +1,9 @@
+// features/immobilienmarkt/sections/kreis/KreisMietpreiseSection.tsx
+
 import Link from "next/link";
+
+import { KreisTabNav } from "@/features/immobilienmarkt/shared/KreisTabNav";
+import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
 import { RegionHero } from "@/components/region-hero";
 import { BeraterBlock } from "@/components/advisor-avatar";
 import { RightEdgeControls } from "@/components/right-edge-controls";
@@ -15,81 +20,19 @@ export function KreisMietpreiseSection(props: {
   activeTabId: string;
 }) {
   const { vm, tocItems, tabs, activeTabId } = props;
-  
-  
-  const heroRightOverlay = (
-    <>
-      <button
-        className="btn flex-fill fw-semibold"
-        style={{
-          backgroundColor: "#fff",
-          color: "#000",
-          border: "1px solid #fff",
-          borderRadius: "1rem 1rem 0 0",
-          padding: "1rem 1.25rem",
-          fontSize: "1.1rem",
-        }}
-      >
-        Mietangebote
-      </button>
-
-      <button
-        className="btn fw-semibold"
-        style={{
-          backgroundColor: "#fff",
-          color: "#000",
-          border: "1px solid #fff",
-          borderRadius: "1rem 1rem 0 0",
-          padding: "1rem 1.25rem",
-          fontSize: "1.1rem",
-          flex: 1,
-        }}
-      >
-        Mietgesuche
-      </button>
-    </>
-  );
-
 
   return (
     <div className="text-dark">
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
       {/* Subnavigation */}
-      <section className="kreis-subnav kreis-subnav-sticky mb-4">
-        <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
-          <div className="kreis-subnav-tabs-wrapper w-100">
-            <ul className="nav nav-pills flex-nowrap small kreis-subnav-tabs">
-              {tabs.map((tab) => {
-                const isActive = tab.id === activeTabId;
-                const href = tab.id === "uebersicht" ? vm.basePath : `${vm.basePath}/${tab.id}`;
-
-                return (
-                  <li className="nav-item" key={tab.id}>
-                    <Link
-                      href={href}
-                      className={
-                        "nav-link d-flex flex-column align-items-center justify-content-center gap-2 rounded-pill kreis-subnav-link" +
-                        (isActive ? " active bg-dark text-white" : " bg-light text-dark border-0")
-                      }
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      <img src={tab.iconSrc} alt="" aria-hidden="true" className="subnav-icon-img" />
-                      <span className="subnav-label">{tab.label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </div>
-      </section>
+      <KreisTabNav tabs={tabs} activeTabId={activeTabId} basePath={vm.basePath} />
 
       <RegionHero
         title={vm.hero.title}
         subtitle={vm.hero.subtitle}
         imageSrc={vm.hero.imageSrc}
-        rightOverlay={heroRightOverlay}
+        rightOverlay={<HeroOverlayActions variant="miete" />}
         rightOverlayMode="buttons"
       />
 
