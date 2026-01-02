@@ -32,7 +32,7 @@ import { VergleichChart } from "@/components/VergleichChart";
 import type { VergleichItem } from "@/components/VergleichChart";
 
 import { ZeitreiheChart } from "@/components/ZeitreiheChart";
-import type { Zeitreihenpunkt } from "@/components/ZeitreiheChart";
+import type { Zeitpunkt } from "@/components/ZeitreiheChart";
 
 import { PreisindexBox } from "@/components/PreisindexBox";
 
@@ -751,7 +751,7 @@ function KreisPage({
 
   const immobilienKaufHistorieRaw =
     (report.data as any)?.immobilie_kaufpreisentwicklung ?? [];
-  const immobilienKaufHistorie: Zeitreihenpunkt[] = Array.isArray(
+  const immobilienKaufHistorie: Zeitpunkt[] = Array.isArray(
     immobilienKaufHistorieRaw,
   )
     ? immobilienKaufHistorieRaw
@@ -774,7 +774,7 @@ function KreisPage({
   const grundstueckKaufHistorieRaw =
     (report.data as any)?.grundstueck_kaufpreisentwicklung ?? [];
 
-  const grundstueckKaufHistorie: Zeitreihenpunkt[] = Array.isArray(
+  const grundstueckKaufHistorie: Zeitpunkt[] = Array.isArray(
     grundstueckKaufHistorieRaw,
   )
     ? grundstueckKaufHistorieRaw
@@ -797,7 +797,7 @@ function KreisPage({
   const mietpreisHistorieRaw =
     (report.data as any)?.immobilie_mietpreisentwicklung ?? [];
 
-  const mietpreisHistorie: Zeitreihenpunkt[] = Array.isArray(
+  const mietpreisHistorie: Zeitpunkt[] = Array.isArray(
     mietpreisHistorieRaw,
   )
     ? mietpreisHistorieRaw
