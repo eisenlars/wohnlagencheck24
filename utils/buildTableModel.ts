@@ -1,8 +1,12 @@
 // utils/buildTableModel.ts
+
 import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 
-// ...types unverändert
+import type { MatrixModel, MatrixColumn as MatrixModelColumn } from "@/components/MatrixTable";
+
+export type BuildTableMode = "auto" | "keyValue" | "matrix";
+export type BuildOrientation = "normal" | "transpose";
 
 export type BuildTableOptions = {
   kind: FormatKind;
@@ -38,6 +42,8 @@ function hasAnyFinite(rows: Record<string, any>[], key: string): boolean {
     return typeof v === "number" && Number.isFinite(v);
   });
 }
+
+
 
 export function buildTableModel(
   raw: unknown,
