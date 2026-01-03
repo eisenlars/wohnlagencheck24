@@ -15,7 +15,7 @@ export type MatrixColumn = {
 
 export type MatrixModel<Row> = {
   rows: Row[];
-  rowLabelKey: keyof Row | string;
+  rowLabelKey?: keyof Row | string;
   rowLabelHeader?: string;
   columns: MatrixColumn[];
 };
@@ -108,8 +108,8 @@ export function MatrixTable<Row extends Record<string, any> = Record<string, any
 
   // NEU: Rowlabel-Spalte automatisch ausblenden, wenn sie faktisch leer ist
   const hideRowLabelCol =
-    isBlank(rowLabelHeader) &&
-    rows.every((r) => isBlank((r as any)?.[rowLabelKey]));
+    !rowLabelKey ||
+    (isBlank(rowLabelHeader) && rows.every((r) => isBlank((r as any)?.[rowLabelKey])));
 
   return (
     <div className="table-responsive">
