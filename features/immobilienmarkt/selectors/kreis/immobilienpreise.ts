@@ -5,7 +5,8 @@ import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
 
 import { buildTableModel } from "@/utils/buildTableModel";
-import type { TableModel } from "@/utils/tableModel";
+type TableModel = ReturnType<typeof buildTableModel>;
+
 
 import { buildBarModel } from "@/utils/barModel";
 import type { BarModel } from "@/utils/barModel";
