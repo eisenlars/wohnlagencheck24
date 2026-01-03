@@ -232,13 +232,7 @@ export default async function ImmobilienmarktHierarchiePage({
   
 
   // level >= 3
-  return (
-    <OrtPage
-      report={report}
-      slugs={regionSlugs}
-      sectionSlug={sectionSlug}
-    />
-  );
+  return <OrtPage sectionSlug={sectionSlug} />;
 }
 
 
