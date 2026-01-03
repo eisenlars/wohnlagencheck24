@@ -5,9 +5,22 @@ import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
 import { formatEurPerSqm } from "@/utils/format";
 
-import type { VergleichItem } from "@/components/VergleichChart";
-import type { Zeitreihenpunkt } from "@/components/ZeitreiheChart";
-import type { OrtslagenUebersichtRow } from "@/components/OrtslagenUebersichtTable";
+export type VergleichItem = { region: string; value: number };
+export type Zeitpunkt = { jahr: number; value: number };
+
+export type OrtslagenUebersichtRow = {
+  ortslage: string;
+
+  immobilienpreise_value: number | null;
+  immobilienpreise_yoy: number | null;
+
+  grundstueckspreise_value: number | null;
+  grundstueckspreise_yoy: number | null;
+
+  mietpreise_value: number | null;
+  mietpreise_yoy: number | null;
+};
+
 
 
 export type PreisgrenzenData = {
@@ -81,9 +94,9 @@ export type KreisUebersichtVM = {
   };
 
   historien: {
-    immobilien: Zeitreihenpunkt[];
-    grundstueck: Zeitreihenpunkt[];
-    miete: Zeitreihenpunkt[];
+    immobilien: Zeitpunkt[];
+    grundstueck: Zeitpunkt[];
+    miete: Zeitpunkt[];
   };
 
   preisindex: {
@@ -114,7 +127,7 @@ const toVergleichItems = (raw: any[], valueKey: string): VergleichItem[] =>
     }))
     .filter((x) => x.region && Number.isFinite(x.value));
 
-const toZeitreihe = (raw: any[], valueKey: string): Zeitreihenpunkt[] =>
+const toZeitreihe = (raw: any[], valueKey: string): Zeitpunkt[] =>
   Array.isArray(raw)
     ? raw
         .map((item: any) => ({
