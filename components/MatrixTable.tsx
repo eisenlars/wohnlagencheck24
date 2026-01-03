@@ -4,7 +4,53 @@ import { formatMetric } from "@/utils/format";
 import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 
-// ...types unverändert
+// ---- types ----
+export type MatrixColumn = {
+  key: string;
+  label: string;
+  kind: FormatKind;
+  unitKey?: UnitKey;
+  ctx?: FormatContext;
+};
+
+export type MatrixModel<Row> = {
+  rows: Row[];
+  rowLabelKey: keyof Row | string;
+  rowLabelHeader?: string;
+  columns: MatrixColumn[];
+};
+
+// Legacy-Shape: erlaubt key als beliebigen Typ (du castest eh auf String)
+export type LegacyMatrixColumn = {
+  key: unknown;
+  label: string;
+  kind: FormatKind;
+  unitKey?: UnitKey;
+  ctx?: FormatContext;
+};
+
+export type LegacyMatrix<Row> = {
+  rows: Row[];
+  rowLabelKey: keyof Row | string;
+  rowLabelHeader?: string;
+  columns: LegacyMatrixColumn[];
+};
+
+export type MatrixTableProps<Row> = {
+  model?: MatrixModel<Row> | null;
+  legacy?: LegacyMatrix<Row> | null;
+
+  headerBg?: string;
+  cellBg?: string;
+
+  highlightRowLabel?: string;
+  highlightColLabel?: string;
+  highlightBg?: string;
+
+  emptyText?: string;
+};
+
+
 
 function norm(v: unknown) {
   return String(v ?? "").trim().toLowerCase();
