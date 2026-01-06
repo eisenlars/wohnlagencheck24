@@ -3,7 +3,7 @@
 import type { RouteLevel, ReportSection } from "../types/route";
 
 // nur noch aus EINER Quelle importieren (nicht mischen)
-import type { TocItem, KreisTab } from "./TabsAndSections";
+import type { TocItem, Tab } from "./TabsAndSections";
 import { TABS } from "./TabsAndSections";
 
 export type ThemeTab = {
@@ -19,7 +19,7 @@ export type ThemeConfig = {
 };
 
 // Helper: KreisTabs -> ThemeTab[]
-const mapKreisTabs = (tabs: KreisTab[]): ThemeTab[] =>
+const mapKreisTabs = (tabs: Tab[]): ThemeTab[] =>
   tabs.map((t) => ({ id: t.id, label: t.label, iconSrc: t.iconSrc, toc: t.toc }));
 
 const ALL_TABS: ThemeTab[] = mapKreisTabs(TABS);
@@ -42,4 +42,3 @@ export const IMMOBILIENMARKT_THEME: ThemeConfig = {
     ort: "immobilienpreise",
   },
 };
-
