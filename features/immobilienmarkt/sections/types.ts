@@ -1,3 +1,5 @@
+import type { ComponentType } from "react";
+
 export type TabItem = {
   id: string;
   label: string;
@@ -38,3 +40,7 @@ export type SectionPropsBase = {
   ctx?: SectionCtx;
   assets?: SectionAssets;
 };
+
+import type { ComponentType } from "react";
+
+export type SectionComponent = ComponentType<SectionPropsBase & { vm: unknown }>;

@@ -2,7 +2,7 @@
 
 import type { RouteLevel, ReportSection } from "../types/route";
 import type { Report } from "@/lib/data";
-import type { ComponentType } from "react";
+import type { SectionComponent } from "@/features/immobilienmarkt/sections/types";
 
 // Shared Builders
 import { buildUebersichtVM } from "../selectors/shared/builders/uebersicht";
@@ -28,7 +28,7 @@ export type RegistryBuildArgs = {
 
 export type RegistryEntry = {
   buildVM: (args: RegistryBuildArgs) => unknown;
-  Component: ComponentType<Record<string, unknown>>;
+  Component: SectionComponent;
 };
 
 export type Registry = Record<RouteLevel, Partial<Record<ReportSection, RegistryEntry>>>;
