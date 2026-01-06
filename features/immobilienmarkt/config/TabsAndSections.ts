@@ -52,6 +52,13 @@ export const TABS: Tab[] = [
     toc: [
       { id: "einleitung", label: "Einleitung" },
       { id: "leitkennzahl", label: "Leitkennzahl" },
+      { id: "mietpreise-ueberregional", label: "Überregionaler Vergleich" },
+      { id: "wohnungspreise", label: "Wohnungen" },
+      { id: "wohnung-preisentwicklung", label: "Preisentwicklung Wohnung" },
+      { id: "wohnung-zimmer-flaechen", label: "Zimmer/Flächen" },
+      { id: "wohnung-baujahr", label: "Baujahr" },
+      { id: "hauspreise", label: "Häuser" },
+      { id: "haus-preisentwicklung", label: "Preisentwicklung Haus" },
       { id: "faq-mietpreise", label: "FAQ" },
       { id: "wohnlagen", label: "Wohnlagen" },
     ],

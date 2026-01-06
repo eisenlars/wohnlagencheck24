@@ -32,9 +32,17 @@ export type BerichtTexte = {
   ueberschriften_kreis?: {
     ueberschrift_immobilienpreise_haus?: string;
     ueberschrift_immobilienpreise_wohnung?: string;
+    ueberschrift_mietpreise_wohnung?: string;
+    ueberschrift_mietpreise_haus?: string;
   };
   mietpreise?: {
     mietpreise_intro?: string;
+    mietpreise_allgemein?: string;
+    mietpreise_wohnung_allgemein?: string;
+    mietpreise_wohnung_preisentwicklung?: string;
+    mietpreise_wohnung_nach_flaechen_und_zimmern?: string;
+    mietpreise_haus_allgemein?: string;
+    mietpreise_haus_preisentwicklung?: string;
   };
   berater?: BerichtBerater;
 };
@@ -51,6 +59,49 @@ export type MietpreiseGesamtRow = {
   preis_kaltmiete?: number | string;
   preis_nebenkosten?: number | string;
   preis_warmmiete?: number | string;
+};
+
+export type MietpreisindexRegionalRow = {
+  mietpreisindex_wohnung?: number | string;
+};
+
+export type MietpreiseWohnungGesamtRow = {
+  preis_wohnung_min?: number | string;
+  preis_wohnung_avg?: number | string;
+  preis_wohnung_max?: number | string;
+};
+
+export type MietpreiseHausGesamtRow = {
+  preis_haus_min?: number | string;
+  preis_haus_avg?: number | string;
+  preis_haus_max?: number | string;
+};
+
+export type MietpreiseWohnungNachZimmernRow = {
+  zimmer?: number | string;
+  kaltmiete?: number | string;
+  kaltmiete_vorjahr?: number | string;
+};
+
+export type MietpreiseWohnungNachFlaechenRow = {
+  flaeche?: number | string;
+  kaltmiete?: number | string;
+  kaltmiete_vorjahr?: number | string;
+};
+
+export type MietpreiseWohnungNachBaujahrRow = {
+  kaltmiete_bestand?: number | string;
+  kaltmiete_bestand_vorjahr?: number | string;
+  kaltmiete_neubau?: number | string;
+  kaltmiete_neubau_vorjahr?: number | string;
+};
+
+export type MietpreiseEntwicklungRow = {
+  jahr?: number | string;
+  preis_ol?: number | string;
+  preis_k?: number | string;
+  preis_bl?: number | string;
+  preis_l?: number | string;
 };
 
 export type ImmobilienpreisindexRegionalRow = {
@@ -207,6 +258,15 @@ export type ImmobilienpreiseReportData = {
 export type MietpreiseReportData = {
   text?: BerichtTexte;
   mietpreise_gesamt?: MietpreiseGesamtRow[];
+  mietpreisindex_regional?: MietpreisindexRegionalRow[];
+  mietpreise_im_ueberregionalen_vergleich?: PreisinfoRow[];
+  mietpreise_wohnung_gesamt?: MietpreiseWohnungGesamtRow[];
+  mietpreise_wohnung_nach_zimmern?: MietpreiseWohnungNachZimmernRow[];
+  mietpreise_wohnung_nach_flaechen?: MietpreiseWohnungNachFlaechenRow[];
+  mietpreise_wohnung_nach_baujahr?: MietpreiseWohnungNachBaujahrRow[];
+  mietpreisentwicklung_wohnung?: MietpreiseEntwicklungRow[];
+  mietpreise_haus_gesamt?: MietpreiseHausGesamtRow[];
+  mietpreisentwicklung_haus?: MietpreiseEntwicklungRow[];
 };
 
 export type UebersichtReportData = {
