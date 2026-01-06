@@ -34,6 +34,8 @@ export type BerichtTexte = {
     ueberschrift_immobilienpreise_wohnung?: string;
     ueberschrift_mietpreise_wohnung?: string;
     ueberschrift_mietpreise_haus?: string;
+    ueberschrift_mietrendite_bruttomietrendite?: string;
+    ueberschrift_mietrendite_nettomietrendite?: string;
   };
   mietpreise?: {
     mietpreise_intro?: string;
@@ -43,6 +45,15 @@ export type BerichtTexte = {
     mietpreise_wohnung_nach_flaechen_und_zimmern?: string;
     mietpreise_haus_allgemein?: string;
     mietpreise_haus_preisentwicklung?: string;
+  };
+  mietrendite?: {
+    mietrendite_intro?: string;
+    mietrendite_hinweis?: string;
+    mietrendite_kaufpreisfaktor?: string;
+    mietrendite_allgemein?: string;
+    mietrendite_etw?: string;
+    mietrendite_efh?: string;
+    mietrendite_mfh?: string;
   };
   berater?: BerichtBerater;
 };
@@ -102,6 +113,53 @@ export type MietpreiseEntwicklungRow = {
   preis_k?: number | string;
   preis_bl?: number | string;
   preis_l?: number | string;
+};
+
+export type MietrenditeGesamtRow = {
+  kaufpreisfaktor?: number | string;
+  bruttomietrendite?: number | string;
+  nettomietrendite?: number | string;
+};
+
+export type BruttomietrenditeAllgemeinRow = {
+  bruttomietrendite_mfh?: number | string;
+  bruttomietrendite_gwa?: number | string;
+  bruttomietrendite_hh?: number | string;
+  bruttomietrendite_etw?: number | string;
+  bruttomietrendite_efh?: number | string;
+  bruttomietrendite_dhh?: number | string;
+  bruttomietrendite_rmh?: number | string;
+};
+
+export type NettomietrenditeAllgemeinRow = {
+  nettomietrendite_mfh?: number | string;
+  nettomietrendite_gwa?: number | string;
+  nettomietrendite_hh?: number | string;
+  nettomietrendite_etw?: number | string;
+  nettomietrendite_efh?: number | string;
+  nettomietrendite_dhh?: number | string;
+  nettomietrendite_rmh?: number | string;
+};
+
+export type KaufpreisfaktorAllgemeinRow = {
+  kaufpreisfaktor_mfh?: number | string;
+  kaufpreisfaktor_gwa?: number | string;
+  kaufpreisfaktor_hh?: number | string;
+  kaufpreisfaktor_etw?: number | string;
+  kaufpreisfaktor_efh?: number | string;
+  kaufpreisfaktor_dhh?: number | string;
+  kaufpreisfaktor_rmh?: number | string;
+};
+
+export type MietrenditeTableRow = {
+  label?: string;
+  [key: string]: number | string | undefined;
+};
+
+export type MietrenditeEntwicklungRow = {
+  jahr?: number | string;
+  brutto_mietrendite?: number | string;
+  kaufpreisfaktor?: number | string;
 };
 
 export type ImmobilienpreisindexRegionalRow = {
@@ -267,6 +325,23 @@ export type MietpreiseReportData = {
   mietpreisentwicklung_wohnung?: MietpreiseEntwicklungRow[];
   mietpreise_haus_gesamt?: MietpreiseHausGesamtRow[];
   mietpreisentwicklung_haus?: MietpreiseEntwicklungRow[];
+};
+
+export type MietrenditeReportData = {
+  text?: BerichtTexte;
+  mietrendite_gesamt?: MietrenditeGesamtRow[];
+  bruttomietrendite_allgemein?: BruttomietrenditeAllgemeinRow[];
+  nettomietrendite_allgemein?: NettomietrenditeAllgemeinRow[];
+  kaufpreisfaktor_allgemein?: KaufpreisfaktorAllgemeinRow[];
+  mietrendite_etw?: MietrenditeTableRow[];
+  mietrendite_efh?: MietrenditeTableRow[];
+  mietrendite_mfh?: MietrenditeTableRow[];
+  mietrendite_gwa?: MietrenditeTableRow[];
+  mietrendite_hh?: MietrenditeTableRow[];
+  mietrendite_dhh?: MietrenditeTableRow[];
+  mietrendite_rmh?: MietrenditeTableRow[];
+  mietrendite_reh?: MietrenditeTableRow[];
+  mietrendite_entwicklung?: MietrenditeEntwicklungRow[];
 };
 
 export type UebersichtReportData = {

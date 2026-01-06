@@ -29,6 +29,7 @@ export type SectionAssets = {
   immobilienpreisMapSvg?: string | null;
   mietpreisMapSvg?: string | null;
   kreisuebersichtMapSvg?: string | null;
+  kaufpreisfaktorMapSvg?: string | null;
 };
 
 export type SectionPropsBase = {

@@ -65,7 +65,24 @@ export const TABS: Tab[] = [
   },
 
   // Platzhalter: später füllst du toc, aber Tab ist schon da
-  { id: "mietrendite", label: "Mietrendite", iconSrc: "/icons/ws24_marktbericht_mietrendite.svg", toc: [] },
+  {
+    id: "mietrendite",
+    label: "Mietrendite",
+    iconSrc: "/icons/ws24_marktbericht_mietrendite.svg",
+    toc: [
+      { id: "einleitung", label: "Einleitung" },
+      { id: "kaufpreisfaktor-gesamt", label: "Kaufpreisfaktor & Gesamt" },
+      { id: "kaufpreisfaktor-entwicklung", label: "Kaufpreisfaktor Entwicklung" },
+      { id: "rendite-allgemein", label: "Brutto & Netto" },
+      { id: "rendite-hinweis", label: "Hinweis" },
+      { id: "rendite-etw", label: "ETW" },
+      { id: "rendite-efh", label: "EFH" },
+      { id: "rendite-mfh", label: "MFH" },
+      { id: "brutto-entwicklung", label: "Bruttomietrendite Entwicklung" },
+      { id: "faq-mietrendite", label: "FAQ" },
+      { id: "wohnlagen", label: "Wohnlagen" },
+    ],
+  },
   { id: "wohnmarktsituation", label: "Wohnmarktsituation", iconSrc: "/icons/ws24_marktbericht_wohnmarktsituation.svg", toc: [] },
   { id: "grundstueckspreise", label: "Grundstückspreise", iconSrc: "/icons/ws24_marktbericht_grundstueckspreise.svg", toc: [] },
   { id: "wohnlagencheck", label: "Wohnlagencheck", iconSrc: "/icons/ws24_marktbericht_wohnlagencheck.svg", toc: [] },

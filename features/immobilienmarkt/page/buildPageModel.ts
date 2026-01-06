@@ -12,6 +12,7 @@ import {
   getKreisUebersichtMapSvg,
   getImmobilienpreisMapSvg,
   getMietpreisMapSvg,
+  getKaufpreisfaktorMapSvg,
 } from "@/lib/data";
 import { asArray, asRecord, asString } from "@/utils/records";
 
@@ -54,6 +55,7 @@ export type PageModel = {
     immobilienpreisMapSvg?: string | null;
     mietpreisMapSvg?: string | null;
     kreisuebersichtMapSvg?: string | null;
+    kaufpreisfaktorMapSvg?: string | null;
   };
 };
 
@@ -164,8 +166,9 @@ export function buildPageModel(route: RouteModel): PageModel | null {
     const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`;
     const immobilienpreisMapSvg = getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug);
     const mietpreisMapSvg = getMietpreisMapSvg(bundeslandSlug, kreisSlug);
+    const kaufpreisfaktorMapSvg = getKaufpreisfaktorMapSvg(bundeslandSlug, kreisSlug);
 
-    assets = { heroImageSrc, immobilienpreisMapSvg, mietpreisMapSvg };
+    assets = { heroImageSrc, immobilienpreisMapSvg, mietpreisMapSvg, kaufpreisfaktorMapSvg };
   }
 
   // -------------------------

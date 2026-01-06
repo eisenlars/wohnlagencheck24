@@ -286,3 +286,32 @@ export function getMietpreisMapSvg(
     return null;
   }
 }
+
+export function getKaufpreisfaktorMapSvg(
+  bundeslandSlug: string,
+  kreisSlug: string,
+): string | null {
+  const svgPath = path.join(
+    process.cwd(),
+    "data",
+    "visuals",
+    "map_interactive",
+    "deutschland",
+    bundeslandSlug,
+    kreisSlug,
+    "kaufpreisfaktor",
+    `kaufpreisfaktor_${kreisSlug}.svg`,
+  );
+
+  if (!fs.existsSync(svgPath)) {
+    console.warn("Kaufpreisfaktor-SVG nicht gefunden:", svgPath);
+    return null;
+  }
+
+  try {
+    return fs.readFileSync(svgPath, "utf8");
+  } catch (err) {
+    console.error("Fehler beim Lesen der Kaufpreisfaktor-SVG:", err);
+    return null;
+  }
+}
