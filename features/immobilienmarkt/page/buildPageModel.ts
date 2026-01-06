@@ -13,6 +13,8 @@ import {
   getImmobilienpreisMapSvg,
   getMietpreisMapSvg,
   getKaufpreisfaktorMapSvg,
+  getWohnungssaldoMapSvg,
+  getLegendHtml,
 } from "@/lib/data";
 import { asArray, asRecord, asString } from "@/utils/records";
 
@@ -56,6 +58,8 @@ export type PageModel = {
     mietpreisMapSvg?: string | null;
     kreisuebersichtMapSvg?: string | null;
     kaufpreisfaktorMapSvg?: string | null;
+    wohnungssaldoMapSvg?: string | null;
+    wohnungssaldoLegendHtml?: string | null;
   };
 };
 
@@ -167,8 +171,17 @@ export function buildPageModel(route: RouteModel): PageModel | null {
     const immobilienpreisMapSvg = getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug);
     const mietpreisMapSvg = getMietpreisMapSvg(bundeslandSlug, kreisSlug);
     const kaufpreisfaktorMapSvg = getKaufpreisfaktorMapSvg(bundeslandSlug, kreisSlug);
+    const wohnungssaldoMapSvg = getWohnungssaldoMapSvg(bundeslandSlug, kreisSlug);
+    const wohnungssaldoLegendHtml = getLegendHtml("wohnungssaldo");
 
-    assets = { heroImageSrc, immobilienpreisMapSvg, mietpreisMapSvg, kaufpreisfaktorMapSvg };
+    assets = {
+      heroImageSrc,
+      immobilienpreisMapSvg,
+      mietpreisMapSvg,
+      kaufpreisfaktorMapSvg,
+      wohnungssaldoMapSvg,
+      wohnungssaldoLegendHtml,
+    };
   }
 
   // -------------------------

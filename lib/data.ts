@@ -315,3 +315,54 @@ export function getKaufpreisfaktorMapSvg(
     return null;
   }
 }
+
+export function getWohnungssaldoMapSvg(
+  bundeslandSlug: string,
+  kreisSlug: string,
+): string | null {
+  const svgPath = path.join(
+    process.cwd(),
+    "data",
+    "visuals",
+    "map_interactive",
+    "deutschland",
+    bundeslandSlug,
+    kreisSlug,
+    "wohnungssaldo",
+    `wohnungssaldo_${kreisSlug}.svg`,
+  );
+
+  if (!fs.existsSync(svgPath)) {
+    console.warn("Wohnungssaldo-SVG nicht gefunden:", svgPath);
+    return null;
+  }
+
+  try {
+    return fs.readFileSync(svgPath, "utf8");
+  } catch (err) {
+    console.error("Fehler beim Lesen der Wohnungssaldo-SVG:", err);
+    return null;
+  }
+}
+
+export function getLegendHtml(theme: string): string | null {
+  const htmlPath = path.join(
+    process.cwd(),
+    "data",
+    "visuals",
+    "legend",
+    `legend_${theme}.html`,
+  );
+
+  if (!fs.existsSync(htmlPath)) {
+    console.warn("Legend-HTML nicht gefunden:", htmlPath);
+    return null;
+  }
+
+  try {
+    return fs.readFileSync(htmlPath, "utf8");
+  } catch (err) {
+    console.error("Fehler beim Lesen der Legend-HTML:", err);
+    return null;
+  }
+}

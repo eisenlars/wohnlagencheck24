@@ -36,6 +36,8 @@ export type BerichtTexte = {
     ueberschrift_mietpreise_haus?: string;
     ueberschrift_mietrendite_bruttomietrendite?: string;
     ueberschrift_mietrendite_nettomietrendite?: string;
+    ueberschrift_wohnmarktsituation_wohnraumnachfrage_individuell?: string;
+    ueberschrift_wohnmarktsituation_wohnraumangebot_individuell?: string;
   };
   mietpreise?: {
     mietpreise_intro?: string;
@@ -54,6 +56,30 @@ export type BerichtTexte = {
     mietrendite_etw?: string;
     mietrendite_efh?: string;
     mietrendite_mfh?: string;
+  };
+  wohnmarktsituation?: {
+    wohnmarktsituation_intro?: string;
+    wohnmarktsituation_wohnraumnachfrage?: string;
+    wohnmarktsituation_natuerlicher_saldo_intro?: string;
+    wohnmarktsituation_jugendquotient_altenquotient_intro?: string;
+    wohnmarktsituation_wanderungssaldo_intro?: string;
+    wohnmarktsituation_wohnraumangebot_intro?: string;
+    wohnmarktsituation_bautaetigkeit_intro?: string;
+    wohnmarktsituation_wohnungsbestand_intro?: string;
+    wohnmarktsituation_baufertigstellungen_intro?: string;
+    wohnmarktsituation_baugenehmigungen_intro?: string;
+    wohnmarktsituation_bauueberhang_baufortschritt?: string;
+    wohnmarktsituation_allgemein?: string;
+    wohnmarktsituation_bevoelkerungsentwicklung?: string;
+    wohnmarktsituation_haushalte?: string;
+    wohnmarktsituation_natuerlicher_saldo?: string;
+    wohnmarktsituation_wanderungssaldo?: string;
+    wohnmarktsituation_alterstruktur?: string;
+    wohnmarktsituation_jugendquotient_altenquotient?: string;
+    wohnmarktsituation_wohnungsbestand_anzahl?: string;
+    wohnmarktsituation_wohnungsbestand_wohnflaeche?: string;
+    wohnmarktsituation_baufertigstellungen?: string;
+    wohnmarktsituation_baugenehmigungen?: string;
   };
   berater?: BerichtBerater;
 };
@@ -160,6 +186,246 @@ export type MietrenditeEntwicklungRow = {
   jahr?: number | string;
   brutto_mietrendite?: number | string;
   kaufpreisfaktor?: number | string;
+};
+
+export type WohnungsnachfrageAllgemeinRow = {
+  anzahl_einwohner?: number | string;
+  anzahl_haushalte?: number | string;
+  mittlere_haushaltsgroesse?: number | string;
+  wanderungssaldo?: number | string;
+  natuerlicher_saldo?: number | string;
+  einwohnerdichte?: number | string;
+  siedlungsdichte?: number | string;
+  jugendquotient?: number | string;
+  altenquotient?: number | string;
+};
+
+export type WohnbauflaechenanteilRow = {
+  label?: string;
+  hectar?: number | string;
+};
+
+export type FlaechennutzungWohnbauRow = {
+  flaechennutzung_wohnbau?: number | string;
+};
+
+export type WohnungsangebotAllgemeinRow = {
+  wohnungsbestand?: number | string;
+  baufertigstellungen?: number | string;
+  baugenehmigungen?: number | string;
+  leerstandsquote?: number | string;
+  wohnungsbestand_anzahl_absolut?: number | string;
+  wohnungsbestand_wohnraumsaldo?: number | string;
+  wohnungsbestand_wohnraumsaldo_per_1000_ew?: number | string;
+  wohnungsbestand_wohnflaeche_pro_ew?: number | string;
+  wohnungsbestand_mittlere_wohnflaeche?: number | string;
+  wohnungsbestand_raum_pro_ew?: number | string;
+  baufertigstellungen_anzahl_absolut?: number | string;
+  baufertigstellungen_flaeche_absolut?: number | string;
+  baugenehmigungen_anzahl_absolut?: number | string;
+  baugenehmigungen_flaeche_absolut?: number | string;
+  baugenehmigungen_erloschen?: number | string;
+};
+
+export type ZeitreiheKreisBundLandRow = {
+  jahr?: number | string;
+  einwohner_k?: number | string;
+  einwohner_bl?: number | string;
+  einwohner_l?: number | string;
+  einwohner_ol?: number | string;
+};
+
+export type BevoelkerungsentwicklungAbsolutRow = {
+  jahr?: number | string;
+  einwohner?: number | string;
+};
+
+export type BevoelkerungsaltersentwicklungRow = {
+  jahr?: number | string;
+  durchschnittsalter_k?: number | string;
+  durchschnittsalter_bl?: number | string;
+  durchschnittsalter_l?: number | string;
+  durchschnittsalter_ol?: number | string;
+};
+
+export type AltersverteilungRow = {
+  label?: string;
+  altersspanne?: number | string;
+};
+
+export type BevoelkerungsbewegungGesamtRow = {
+  jahr?: number | string;
+  natuerlich?: number | string;
+  wanderung?: number | string;
+  saldo?: number | string;
+};
+
+export type NatuerlicheBevoelkerungsbewegungRow = {
+  jahr?: number | string;
+  saldo?: number | string;
+  geburten?: number | string;
+  sterbefaelle?: number | string;
+};
+
+export type WanderungssaldoRow = {
+  jahr?: number | string;
+  saldo?: number | string;
+  zuzug?: number | string;
+  fortzug?: number | string;
+};
+
+export type AussenwanderungssaldoRow = {
+  jahr?: number | string;
+  aussenwanderungssaldo_bundesland_ew?: number | string;
+  aussenwanderungssaldo_deutschland_ew?: number | string;
+  aussenwanderungssaldo_ausland_ew?: number | string;
+  aussenwanderungssaldo_gesamt_ew?: number | string;
+};
+
+export type AussenwanderungssaldoNachAlterRow = {
+  zeitraum?: number | string;
+  aussenwanderungssaldo_nach_alter_ueber_bundeslandgrenzen?: Array<number | string>;
+  aussenwanderungssaldo_nach_alter_ueber_auslandsgrenzen?: Array<number | string>;
+};
+
+export type HaushalteJe1000Row = {
+  jahr?: number | string;
+  anzahl_k?: number | string;
+  anzahl_bl?: number | string;
+  anzahl_l?: number | string;
+  anzahl_ol?: number | string;
+};
+
+export type HaushaltsgroesseNachPersonenanzahlRow = {
+  jahr?: number | string;
+  personenanzahl_1?: number | string;
+  personenanzahl_2?: number | string;
+  personenanzahl_3?: number | string;
+};
+
+export type WohnungsbestandWohnflaecheRow = {
+  jahr?: number | string;
+  flaeche_k?: number | string;
+  flaeche_bl?: number | string;
+  flaeche_l?: number | string;
+  flaeche_ol?: number | string;
+};
+
+export type WohnungsbestandWohnungsanzahlRow = {
+  jahr?: number | string;
+  anzahl?: number | string;
+};
+
+export type WohnungsbestandWohnungsanzahlJe1000Row = {
+  jahr?: number | string;
+  anzahl_k?: number | string;
+  anzahl_bl?: number | string;
+  anzahl_l?: number | string;
+  anzahl_ol?: number | string;
+};
+
+export type WohnungsbestandGebaeudeverteilungRow = {
+  label?: string;
+  anzahl?: number | string;
+};
+
+export type WohnungsbestandWohnungsverteilungRow = {
+  label?: string;
+  anzahl?: number | string;
+};
+
+export type BaufertigstellungenWohnflaecheRow = {
+  jahr?: number | string;
+  flaeche?: number | string;
+};
+
+export type BaufertigstellungenWohnungsanzahlRow = {
+  jahr?: number | string;
+  anzahl?: number | string;
+};
+
+export type BaufertigstellungenWohnungsanzahlJe1000Row = {
+  jahr?: number | string;
+  anzahl_k?: number | string;
+  anzahl_bl?: number | string;
+  anzahl_l?: number | string;
+  anzahl_ol?: number | string;
+};
+
+export type BaufertigstellungenGebaeudeanzahlRow = {
+  jahr?: number | string;
+  anzahl?: number | string;
+};
+
+export type BaufertigstellungenWohnungsanzahlGebaeudeVerteilungRow = {
+  wohnungsanzahl_gebaeude_efh?: number | string;
+  wohnungsanzahl_gebaeude_zfh?: number | string;
+  wohnungsanzahl_gebaeude_mfh?: number | string;
+};
+
+export type BaufertigstellungenGebaeudeverteilungRow = {
+  label?: string;
+  anzahl?: number | string;
+};
+
+export type BaugenehmigungenWohnflaecheRow = {
+  jahr?: number | string;
+  flaeche?: number | string;
+};
+
+export type BaugenehmigungenWohnungsanzahlRow = {
+  jahr?: number | string;
+  anzahl?: number | string;
+};
+
+export type BaugenehmigungenWohnungsanzahlJe1000Row = {
+  jahr?: number | string;
+  anzahl_k?: number | string;
+  anzahl_bl?: number | string;
+  anzahl_l?: number | string;
+  anzahl_ol?: number | string;
+};
+
+export type BaugenehmigungenGebaeudeanzahlRow = {
+  jahr?: number | string;
+  anzahl?: number | string;
+};
+
+export type BaugenehmigungenWohnungsanzahlGebaeudeVerteilungRow = {
+  wohnungsanzahl_gebaeude_efh?: number | string;
+  wohnungsanzahl_gebaeude_zfh?: number | string;
+  wohnungsanzahl_gebaeude_mfh?: number | string;
+};
+
+export type BaugenehmigungenGebaeudeverteilungRow = {
+  label?: string;
+  anzahl?: number | string;
+};
+
+export type BauUeberhangGenehmigungFertigstellungRow = {
+  jahr?: number | string;
+  anzahl_genehmigung_k?: number | string;
+  anzahl_fertigstellung_k?: number | string;
+  anzahl_ueberhang_k?: number | string;
+  anzahl_abgang_k?: number | string;
+  anzahl_genehmigung_ol?: number | string;
+  anzahl_fertigstellung_ol?: number | string;
+  anzahl_ueberhang_ol?: number | string;
+  anzahl_abgang_ol?: number | string;
+};
+
+export type BauueberhangBaufortschrittRow = {
+  jahr?: number | string;
+  anzahl_genehmigung_erloschen_k?: number | string;
+  anzahl_bauueberhang_noch_nicht_begonnen_k?: number | string;
+  anzahl_bauueberhang_noch_nicht_unter_dach_k?: number | string;
+  anzahl_bauueberhang_unter_dach_k?: number | string;
+  anzahl_genehmigungen_k?: number | string;
+  anzahl_genehmigung_erloschen_ol?: number | string;
+  anzahl_bauueberhang_noch_nicht_begonnen_ol?: number | string;
+  anzahl_bauueberhang_noch_nicht_unter_dach_ol?: number | string;
+  anzahl_bauueberhang_unter_dach_ol?: number | string;
+  anzahl_genehmigungen_ol?: number | string;
 };
 
 export type ImmobilienpreisindexRegionalRow = {
@@ -342,6 +608,46 @@ export type MietrenditeReportData = {
   mietrendite_rmh?: MietrenditeTableRow[];
   mietrendite_reh?: MietrenditeTableRow[];
   mietrendite_entwicklung?: MietrenditeEntwicklungRow[];
+};
+
+export type WohnmarktsituationReportData = {
+  text?: BerichtTexte;
+  wohnungsnachfrage_allgemein?: WohnungsnachfrageAllgemeinRow[];
+  wohnbauflaechenanteil?: WohnbauflaechenanteilRow[];
+  flaechennutzung_wohnbau?: FlaechennutzungWohnbauRow[];
+  wohnungsangebot_allgemein?: WohnungsangebotAllgemeinRow[];
+  bevoelkerungsentwicklung_relativ?: ZeitreiheKreisBundLandRow[];
+  bevoelkerungsentwicklung_absolut?: BevoelkerungsentwicklungAbsolutRow[];
+  bevoelkerungsaltersentwicklung?: BevoelkerungsaltersentwicklungRow[];
+  altersverteilung?: AltersverteilungRow[];
+  bevoelkerungsbewegung_gesamt?: BevoelkerungsbewegungGesamtRow[];
+  natuerliche_bevoelkerungsbewegung?: NatuerlicheBevoelkerungsbewegungRow[];
+  natuerliche_bevoelkerungsbewegung_je_1000_ew?: ZeitreiheKreisBundLandRow[];
+  wanderungssaldo?: WanderungssaldoRow[];
+  wanderungssaldo_je_1000_ew?: ZeitreiheKreisBundLandRow[];
+  aussenwanderungssaldo?: AussenwanderungssaldoRow[];
+  aussenwanderungssaldo_nach_alter?: AussenwanderungssaldoNachAlterRow[];
+  haushalte_je_1000_ew?: HaushalteJe1000Row[];
+  haushaltsgroesse_nach_personenanzahl?: HaushaltsgroesseNachPersonenanzahlRow[];
+  wohnungsbestand_wohnflaeche?: WohnungsbestandWohnflaecheRow[];
+  wohnungsbestand_wohnungsanzahl?: WohnungsbestandWohnungsanzahlRow[];
+  wohnungsbestand_wohnungsanzahl_je_1000_ew?: WohnungsbestandWohnungsanzahlJe1000Row[];
+  wohnungsbestand_gebaeudeverteilung?: WohnungsbestandGebaeudeverteilungRow[];
+  wohnungsbestand_wohnungsverteilung?: WohnungsbestandWohnungsverteilungRow[];
+  baufertigstellungen_wohnflaeche?: BaufertigstellungenWohnflaecheRow[];
+  baufertigstellungen_wohnungsanzahl?: BaufertigstellungenWohnungsanzahlRow[];
+  baufertigstellungen_wohnungsanzahl_je_1000_ew?: BaufertigstellungenWohnungsanzahlJe1000Row[];
+  baufertigstellungen_gebaeudeanzahl?: BaufertigstellungenGebaeudeanzahlRow[];
+  baufertigstellungen_wohnungsanzahl_gebaeude_verteilung?: BaufertigstellungenWohnungsanzahlGebaeudeVerteilungRow[];
+  baufertigstellungen_gebaeudeverteilung?: BaufertigstellungenGebaeudeverteilungRow[];
+  baugenehmigungen_wohnflaeche?: BaugenehmigungenWohnflaecheRow[];
+  baugenehmigungen_wohnungsanzahl?: BaugenehmigungenWohnungsanzahlRow[];
+  baugenehmigungen_wohnungsanzahl_je_1000_ew?: BaugenehmigungenWohnungsanzahlJe1000Row[];
+  baugenehmigungen_gebaeudeanzahl?: BaugenehmigungenGebaeudeanzahlRow[];
+  baugenehmigungen_wohnungsanzahl_gebaeude_verteilung?: BaugenehmigungenWohnungsanzahlGebaeudeVerteilungRow[];
+  baugenehmigungen_gebaeudeverteilung?: BaugenehmigungenGebaeudeverteilungRow[];
+  bau_ueberhang_genehmigung_fertigstellung?: BauUeberhangGenehmigungFertigstellungRow[];
+  bauueberhang_baufortschritt?: BauueberhangBaufortschrittRow[];
 };
 
 export type UebersichtReportData = {

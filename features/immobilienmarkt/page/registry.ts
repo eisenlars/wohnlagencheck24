@@ -8,11 +8,13 @@ import type { UebersichtVM } from "@/features/immobilienmarkt/selectors/shared/t
 import type { ImmobilienpreiseVM } from "@/features/immobilienmarkt/selectors/shared/types/immobilienpreise";
 import type { MietpreiseVM } from "@/features/immobilienmarkt/selectors/shared/types/mietpreise";
 import type { MietrenditeVM } from "@/features/immobilienmarkt/selectors/shared/types/mietrendite";
+import type { WohnmarktsituationVM } from "@/features/immobilienmarkt/selectors/shared/types/wohnmarktsituation";
 import type {
   UebersichtReportData,
   ImmobilienpreiseReportData,
   MietpreiseReportData,
   MietrenditeReportData,
+  WohnmarktsituationReportData,
 } from "@/types/reports";
 
 // Shared Builders
@@ -21,6 +23,7 @@ import { buildImmobilienpreiseVM } from "../selectors/shared/builders/immobilien
 import { buildMietpreiseVM } from "../selectors/shared/builders/mietpreise";
 import { buildPlaceholderVM } from "../selectors/shared/builders/placeholder";
 import { buildMietrenditeVM } from "../selectors/shared/builders/mietrendite";
+import { buildWohnmarktsituationVM } from "../selectors/shared/builders/wohnmarktsituation";
 
 // Shared Sections
 import { UebersichtSection } from "../sections/UebersichtSection";
@@ -28,6 +31,7 @@ import { ImmobilienpreiseSection } from "../sections/ImmobilienpreiseSection";
 import { MietpreiseSection } from "../sections/MietpreiseSection";
 import { TabPlaceholderSection } from "../sections/TabPlaceholderSection";
 import { MietrenditeSection } from "../sections/MietrenditeSection";
+import { WohnmarktsituationSection } from "../sections/WohnmarktsituationSection";
 
 export type RegistryBuildArgs = {
   report: Report;
@@ -65,7 +69,7 @@ type SectionVMMap = {
     immobilienpreise: ImmobilienpreiseVM;
     mietpreise: MietpreiseVM;
     mietrendite: MietrenditeVM;
-    wohnmarktsituation: PlaceholderVM;
+    wohnmarktsituation: WohnmarktsituationVM;
     grundstueckspreise: PlaceholderVM;
     wohnlagencheck: PlaceholderVM;
     wirtschaft: PlaceholderVM;
@@ -75,7 +79,7 @@ type SectionVMMap = {
     immobilienpreise: ImmobilienpreiseVM;
     mietpreise: PlaceholderVM;
     mietrendite: MietrenditeVM;
-    wohnmarktsituation: PlaceholderVM;
+    wohnmarktsituation: WohnmarktsituationVM;
     grundstueckspreise: PlaceholderVM;
     wohnlagencheck: PlaceholderVM;
     wirtschaft: PlaceholderVM;
@@ -188,7 +192,16 @@ export const IMMOBILIENMARKT_REGISTRY: Registry = {
         }),
       Component: MietrenditeSection,
     },
-    wohnmarktsituation: placeholderEntry("kreis"),
+    wohnmarktsituation: {
+      buildVM: (args: RegistryBuildArgs) =>
+        buildWohnmarktsituationVM({
+          report: args.report as Report<WohnmarktsituationReportData>,
+          level: "kreis",
+          bundeslandSlug: String(args.bundeslandSlug ?? ""),
+          kreisSlug: String(args.kreisSlug ?? ""),
+        }),
+      Component: WohnmarktsituationSection,
+    },
     grundstueckspreise: placeholderEntry("kreis"),
     wohnlagencheck: placeholderEntry("kreis"),
     wirtschaft: placeholderEntry("kreis"),
@@ -220,7 +233,17 @@ export const IMMOBILIENMARKT_REGISTRY: Registry = {
         }),
       Component: MietrenditeSection,
     },
-    wohnmarktsituation: placeholderEntry("ort"),
+    wohnmarktsituation: {
+      buildVM: (args: RegistryBuildArgs) =>
+        buildWohnmarktsituationVM({
+          report: args.report as Report<WohnmarktsituationReportData>,
+          level: "ort",
+          bundeslandSlug: String(args.bundeslandSlug ?? ""),
+          kreisSlug: String(args.kreisSlug ?? ""),
+          ortSlug: String(args.ortSlug ?? ""),
+        }),
+      Component: WohnmarktsituationSection,
+    },
     grundstueckspreise: placeholderEntry("ort"),
     wohnlagencheck: placeholderEntry("ort"),
     wirtschaft: placeholderEntry("ort"),

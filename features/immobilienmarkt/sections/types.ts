@@ -30,6 +30,8 @@ export type SectionAssets = {
   mietpreisMapSvg?: string | null;
   kreisuebersichtMapSvg?: string | null;
   kaufpreisfaktorMapSvg?: string | null;
+  wohnungssaldoMapSvg?: string | null;
+  wohnungssaldoLegendHtml?: string | null;
 };
 
 export type SectionPropsBase = {

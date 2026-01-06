@@ -1,0 +1,155 @@
+import React from "react";
+
+import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
+import { formatMetric } from "@/utils/format";
+import { toNumberOrNull } from "@/utils/toNumberOrNull";
+
+export type DoughnutSlice = {
+  label: string;
+  value: number | null;
+  color?: string;
+};
+
+type DoughnutChartProps = {
+  title: string;
+  slices: DoughnutSlice[];
+
+  valueKind: FormatKind;
+  unitKey?: UnitKey;
+  ctx?: FormatContext;
+  listCtx?: FormatContext;
+
+  svgSize?: number;
+  innerRatio?: number;
+  showLegend?: boolean;
+  emptyText?: string;
+};
+
+function safeLabel(value: unknown): string {
+  const text = String(value ?? "").trim();
+  return text || "Wert";
+}
+
+function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
+  const angle = ((angleDeg - 90) * Math.PI) / 180.0;
+  return {
+    x: cx + r * Math.cos(angle),
+    y: cy + r * Math.sin(angle),
+  };
+}
+
+function describeArc(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+}
+
+export function DoughnutChart({
+  title,
+  slices,
+  valueKind,
+  unitKey = "none",
+  ctx = "chart",
+  listCtx,
+  svgSize = 220,
+  innerRatio = 0.62,
+  showLegend = true,
+  emptyText = "Für diese Auswertung liegen aktuell keine Daten vor.",
+}: DoughnutChartProps) {
+  const cleaned = (slices ?? [])
+    .map((s) => ({
+      label: safeLabel(s?.label),
+      value: toNumberOrNull(s?.value),
+      color: s?.color,
+    }))
+    .filter((s) => s.label);
+
+  const values = cleaned
+    .map((s) => s.value)
+    .filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+
+  if (!values.length) {
+    return <p className="small text-muted mb-0">{emptyText}</p>;
+  }
+
+  const total = values.reduce((acc, v) => acc + v, 0);
+  if (!(total > 0)) {
+    return <p className="small text-muted mb-0">{emptyText}</p>;
+  }
+
+  const colors = [
+    "rgba(75,192,192,0.9)",
+    "rgba(200,213,79,0.9)",
+    "rgb(72,107,122)",
+    "rgba(231,111,81,0.85)",
+    "rgba(42,157,143,0.85)",
+  ];
+
+  const radius = svgSize / 2;
+  const ringRadius = radius * 0.9;
+  const holeRadius = ringRadius * innerRatio;
+
+  const arcs = cleaned.reduce<{
+    cursor: number;
+    items: Array<{ label: string; value: number | null; color: string; d: string }>;
+  }>(
+    (acc, s, idx) => {
+      const value = s.value ?? 0;
+      const angle = (value / total) * 360;
+      const start = acc.cursor;
+      const end = start + angle;
+
+      acc.items.push({
+        label: s.label,
+        value: s.value,
+        color: s.color ?? colors[idx % colors.length],
+        d: describeArc(radius, radius, ringRadius, start, end),
+      });
+      acc.cursor = end;
+      return acc;
+    },
+    { cursor: 0, items: [] },
+  ).items;
+
+  const fmt = (v: number | null) =>
+    formatMetric(v, { kind: valueKind, ctx: listCtx ?? ctx, unit: unitKey });
+
+  return (
+    <div>
+      <svg
+        role="img"
+        aria-label={`${title} – Kreisdiagramm`}
+        viewBox={`0 0 ${svgSize} ${svgSize}`}
+        width="100%"
+        height={svgSize}
+        className="mb-3"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {arcs.map((a, idx) => (
+          <path key={`${a.label}-${idx}`} d={a.d} stroke={a.color} strokeWidth={ringRadius - holeRadius} fill="none" />
+        ))}
+      </svg>
+
+      {showLegend ? (
+        <ul className="small text-muted mb-0">
+          {arcs.map((a, idx) => (
+            <li key={`${a.label}-legend-${idx}`}>
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 10,
+                  height: 10,
+                  backgroundColor: a.color,
+                  marginRight: 8,
+                  borderRadius: 2,
+                }}
+              />
+              <strong>{a.label}:</strong> {fmt(a.value)}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
