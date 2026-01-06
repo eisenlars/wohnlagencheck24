@@ -265,9 +265,9 @@ export function buildKreisUebersichtVM(args: {
   const grundstueckKaufpreis = data.grundstueck_kaufpreis?.[0];
   const mietpreiseGesamt = data.mietpreise_gesamt?.[0];
 
-  const kaufpreis = toNumberOrNull(immobilienKaufpreis["kaufpreis_immobilien"]);
-  const grundstueckspreis = toNumberOrNull(grundstueckKaufpreis["kaufpreis_grundstueck"]);
-  const kaltmiete = toNumberOrNull(mietpreiseGesamt["preis_kaltmiete"]);
+  const kaufpreis = toNumberOrNull(immobilienKaufpreis?.["kaufpreis_immobilien"]);
+  const grundstueckspreis = toNumberOrNull(grundstueckKaufpreis?.["kaufpreis_grundstueck"]);
+  const kaltmiete = toNumberOrNull(mietpreiseGesamt?.["preis_kaltmiete"]);
 
   const kaufpreisLabel = formatEurPerSqm(kaufpreis, "kaufpreis_qm");
   const grundstueckLabel = formatEurPerSqm(grundstueckspreis, "grundstueck_qm");
@@ -309,13 +309,13 @@ export function buildKreisUebersichtVM(args: {
   const basisjahrRaw = data.basisjahr?.[0];
   const preisindexRaw = data.preisindex?.[0];
 
-  const basisjahrImmobilien = toNumberOrNull(basisjahrRaw["basisjahr_immobilienpreisindex"]);
-  const basisjahrGrundstueck = toNumberOrNull(basisjahrRaw["basisjahr_grundstueckspreisindex"]);
-  const basisjahrMiete = toNumberOrNull(basisjahrRaw["basisjahr_mietpreisindex"]);
+  const basisjahrImmobilien = toNumberOrNull(basisjahrRaw?.["basisjahr_immobilienpreisindex"]);
+  const basisjahrGrundstueck = toNumberOrNull(basisjahrRaw?.["basisjahr_grundstueckspreisindex"]);
+  const basisjahrMiete = toNumberOrNull(basisjahrRaw?.["basisjahr_mietpreisindex"]);
 
-  const indexImmobilien = toNumberOrNull(preisindexRaw["immobilienpreisindex"]);
-  const indexGrundstueck = toNumberOrNull(preisindexRaw["grundstueckspreisindex"]);
-  const indexMiete = toNumberOrNull(preisindexRaw["mietpreisindex"]);
+  const indexImmobilien = toNumberOrNull(preisindexRaw?.["immobilienpreisindex"]);
+  const indexGrundstueck = toNumberOrNull(preisindexRaw?.["grundstueckspreisindex"]);
+  const indexMiete = toNumberOrNull(preisindexRaw?.["mietpreisindex"]);
 
   // Ortslagen-Übersicht
   const ortslagenUebersichtRaw = data.ortslagen_uebersicht ?? [];

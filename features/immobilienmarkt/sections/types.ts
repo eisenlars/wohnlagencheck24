@@ -41,6 +41,4 @@ export type SectionPropsBase = {
   assets?: SectionAssets;
 };
 
-import type { ComponentType } from "react";
-
-export type SectionComponent = ComponentType<SectionPropsBase & { vm: unknown }>;
+export type SectionComponent<VM = unknown> = ComponentType<SectionPropsBase & { vm: VM }>;

@@ -3,6 +3,15 @@
 import type { RouteLevel, ReportSection } from "../types/route";
 import type { Report } from "@/lib/data";
 import type { SectionComponent } from "@/features/immobilienmarkt/sections/types";
+import type { PlaceholderVM } from "@/features/immobilienmarkt/selectors/shared/types/placeholder";
+import type { UebersichtVM } from "@/features/immobilienmarkt/selectors/shared/types/uebersicht";
+import type { ImmobilienpreiseVM } from "@/features/immobilienmarkt/selectors/shared/types/immobilienpreise";
+import type { MietpreiseVM } from "@/features/immobilienmarkt/selectors/shared/types/mietpreise";
+import type {
+  UebersichtReportData,
+  ImmobilienpreiseReportData,
+  MietpreiseReportData,
+} from "@/types/reports";
 
 // Shared Builders
 import { buildUebersichtVM } from "../selectors/shared/builders/uebersicht";
@@ -26,14 +35,59 @@ export type RegistryBuildArgs = {
   heroImageSrc?: string | null;
 };
 
-export type RegistryEntry = {
-  buildVM: (args: RegistryBuildArgs) => unknown;
-  Component: SectionComponent;
+type SectionVMMap = {
+  deutschland: {
+    uebersicht: UebersichtVM;
+    immobilienpreise: PlaceholderVM;
+    mietpreise: PlaceholderVM;
+    mietrendite: PlaceholderVM;
+    wohnmarktsituation: PlaceholderVM;
+    grundstueckspreise: PlaceholderVM;
+    wohnlagencheck: PlaceholderVM;
+    wirtschaft: PlaceholderVM;
+  };
+  bundesland: {
+    uebersicht: UebersichtVM;
+    immobilienpreise: PlaceholderVM;
+    mietpreise: PlaceholderVM;
+    mietrendite: PlaceholderVM;
+    wohnmarktsituation: PlaceholderVM;
+    grundstueckspreise: PlaceholderVM;
+    wohnlagencheck: PlaceholderVM;
+    wirtschaft: PlaceholderVM;
+  };
+  kreis: {
+    uebersicht: UebersichtVM;
+    immobilienpreise: ImmobilienpreiseVM;
+    mietpreise: MietpreiseVM;
+    mietrendite: PlaceholderVM;
+    wohnmarktsituation: PlaceholderVM;
+    grundstueckspreise: PlaceholderVM;
+    wohnlagencheck: PlaceholderVM;
+    wirtschaft: PlaceholderVM;
+  };
+  ort: {
+    uebersicht: never;
+    immobilienpreise: ImmobilienpreiseVM;
+    mietpreise: PlaceholderVM;
+    mietrendite: PlaceholderVM;
+    wohnmarktsituation: PlaceholderVM;
+    grundstueckspreise: PlaceholderVM;
+    wohnlagencheck: PlaceholderVM;
+    wirtschaft: PlaceholderVM;
+  };
 };
 
-export type Registry = Record<RouteLevel, Partial<Record<ReportSection, RegistryEntry>>>;
+export type RegistryEntry<VM> = {
+  buildVM: (args: RegistryBuildArgs) => VM;
+  Component: SectionComponent<VM>;
+};
 
-function placeholderEntry(level: RouteLevel): RegistryEntry {
+export type Registry = {
+  [L in RouteLevel]: Partial<{ [S in ReportSection]: RegistryEntry<SectionVMMap[L][S]> }>;
+};
+
+function placeholderEntry(level: RouteLevel): RegistryEntry<PlaceholderVM> {
   return {
     buildVM: (args: RegistryBuildArgs) =>
       buildPlaceholderVM({
@@ -52,7 +106,7 @@ export const IMMOBILIENMARKT_REGISTRY: Registry = {
     uebersicht: {
       buildVM: (args: RegistryBuildArgs) =>
         buildUebersichtVM({
-          report: args.report,
+          report: args.report as Report<UebersichtReportData>,
           level: "deutschland",
           bundeslandSlug: String(args.bundeslandSlug ?? ""),
           kreisSlug: String(args.kreisSlug ?? ""),
@@ -72,7 +126,7 @@ export const IMMOBILIENMARKT_REGISTRY: Registry = {
     uebersicht: {
       buildVM: (args: RegistryBuildArgs) =>
         buildUebersichtVM({
-          report: args.report,
+          report: args.report as Report<UebersichtReportData>,
           level: "bundesland",
           bundeslandSlug: String(args.bundeslandSlug ?? ""),
           kreisSlug: String(args.kreisSlug ?? ""),
@@ -92,7 +146,7 @@ export const IMMOBILIENMARKT_REGISTRY: Registry = {
     uebersicht: {
       buildVM: (args: RegistryBuildArgs) =>
         buildUebersichtVM({
-          report: args.report,
+          report: args.report as Report<UebersichtReportData>,
           level: "kreis",
           bundeslandSlug: String(args.bundeslandSlug ?? ""),
           kreisSlug: String(args.kreisSlug ?? ""),
@@ -103,7 +157,7 @@ export const IMMOBILIENMARKT_REGISTRY: Registry = {
     immobilienpreise: {
       buildVM: (args: RegistryBuildArgs) =>
         buildImmobilienpreiseVM({
-          report: args.report,
+          report: args.report as Report<ImmobilienpreiseReportData>,
           level: "kreis",
           bundeslandSlug: String(args.bundeslandSlug ?? ""),
           kreisSlug: String(args.kreisSlug ?? ""),
@@ -113,7 +167,7 @@ export const IMMOBILIENMARKT_REGISTRY: Registry = {
     mietpreise: {
       buildVM: (args: RegistryBuildArgs) =>
         buildMietpreiseVM({
-          report: args.report,
+          report: args.report as Report<MietpreiseReportData>,
           level: "kreis",
           bundeslandSlug: String(args.bundeslandSlug ?? ""),
           kreisSlug: String(args.kreisSlug ?? ""),
@@ -133,7 +187,7 @@ export const IMMOBILIENMARKT_REGISTRY: Registry = {
     immobilienpreise: {
       buildVM: (args: RegistryBuildArgs) =>
         buildImmobilienpreiseVM({
-          report: args.report,
+          report: args.report as Report<ImmobilienpreiseReportData>,
           level: "ort",
           bundeslandSlug: String(args.bundeslandSlug ?? ""),
           kreisSlug: String(args.kreisSlug ?? ""),

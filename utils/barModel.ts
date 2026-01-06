@@ -84,9 +84,11 @@ export function buildBarModel(raw: unknown, opts: BuildBarModelOptions): BarMode
   }
 
   // infer unit
+  const rawUnit = rows[0]?.["einheit"];
+  const unitText = typeof rawUnit === "string" ? rawUnit : undefined;
   const inferredUnitKey =
     unitKey ??
-    jsonUnitToUnitKey(rows[0]?.["einheit"]);
+    jsonUnitToUnitKey(unitText);
 
   // infer labelKey: "first property"
   const firstRowKeys = Object.keys(rows[0] ?? {});

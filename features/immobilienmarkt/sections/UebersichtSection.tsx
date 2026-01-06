@@ -268,6 +268,7 @@ export function UebersichtSection(
   const kreisSlug = props.ctx?.kreisSlug ?? "";
 
   const basePath = props.basePath ?? vm.basePath;
+  const heroImageSrc = vm.hero.imageSrc ?? props.assets?.heroImageSrc ?? "";
   
   const isBundesland = vm.level === "bundesland";
   const kreisMapSvg = props.assets?.kreisuebersichtMapSvg ?? null;
@@ -304,7 +305,7 @@ export function UebersichtSection(
         <RegionHero
           title={vm.hero.title}
           subtitle={vm.hero.subtitle}
-          imageSrc={vm.hero.imageSrc}
+          imageSrc={heroImageSrc}
           // Für Bundesland keine Gauges/Buttons – Map kommt unten als Overlay
           rightOverlayMode={isBundesland ? undefined : "tachos"}
           rightOverlay={

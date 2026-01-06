@@ -443,7 +443,7 @@ export function ImmobilienpreiseSection(props: Props) {
         {(vm.level === "kreis" || vm.level === "ort") ? (
           <section className="mb-4" id="wohnlagen">
             <h2 className="h2 mb-3 align-center text-center">
-              Erfasste Wohnlagen – {vm.level === "ort" ? (props.kreisSlug ?? vm.regionName) : vm.regionName}
+              Erfasste Wohnlagen – {vm.level === "ort" ? (props.ctx?.kreisSlug ?? vm.regionName) : vm.regionName}
             </h2>
 
             <div className="card border-0 shadow-sm">

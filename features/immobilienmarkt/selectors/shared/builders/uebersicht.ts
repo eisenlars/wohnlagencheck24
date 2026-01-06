@@ -5,6 +5,7 @@ import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
 import { asArray, asRecord } from "@/utils/records";
 import type { UebersichtReportData } from "@/types/reports";
+import type { UnitKey } from "@/utils/format";
 
 import type {
   UebersichtVM,
@@ -56,7 +57,7 @@ function toVergleichItems(raw: unknown, valueKey: string): VergleichItem[] {
         label: label || "Region",
         value: v,
         kind: undefined,
-        unitKey: "eur_per_sqm",
+        unitKey: "eur_per_sqm" as UnitKey,
       };
     })
     .filter((x) => !!x.label); // label ist immer gesetzt, aber safe

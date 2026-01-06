@@ -14,7 +14,7 @@ export type Zeitreihenpunkt = { jahr: number; value: number };
 export type VergleichItem = {
   label: string;
   value: number | null;
-  unitKey?: string; // z.B. eur_per_sqm, percent, none
+  unitKey?: UnitKey; // z.B. eur_per_sqm, percent, none
   kind?: string;    // z.B. kaufpreis_qm, miete_qm, grundstueck_qm
 };
 
@@ -136,3 +136,4 @@ export type UebersichtVM = {
     miete?: Preisgrenze | null;
   };
 };
+import type { UnitKey } from "@/utils/format";

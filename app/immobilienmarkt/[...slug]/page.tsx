@@ -6,6 +6,7 @@ import { resolveRoute } from "@/features/immobilienmarkt/routes/resolveRoute";
 import { buildPageModel } from "@/features/immobilienmarkt/page/buildPageModel";
 import { IMMOBILIENMARKT_REGISTRY } from "@/features/immobilienmarkt/page/registry";
 import { KontaktContextSetter } from "@/components/kontakt/KontaktContextSetter";
+import type { SectionComponent } from "@/features/immobilienmarkt/sections/types";
 
 type PageParams = { slug?: string[] };
 type PageProps = { params: Promise<PageParams> };
@@ -36,7 +37,7 @@ export default async function ImmobilienmarktHierarchiePage({ params }: PageProp
     heroImageSrc: assets?.heroImageSrc ?? null,
   });
 
-  const Component = entry.Component;
+  const Component = entry.Component as SectionComponent<typeof vm>;
 
   return (
     <>
