@@ -39,6 +39,8 @@ type InteractiveMapProps = {
   activeSubregionName?: string;
   mode?: MapMode;
 
+  inactiveOpacity?: number;   // (global steuerbar)
+
   // SingleValue (zentral)
   kind?: MapFormatKind;
   ctx?: FormatContext;
@@ -50,11 +52,18 @@ type InteractiveMapProps = {
   overviewFields?: [OverviewField, OverviewField, OverviewField];
 };
 
+type MapEventHandlers = {
+  onEnter: () => void;
+  onMove: (event: MouseEvent) => void;
+  onLeave: () => void;
+};
+
 export function InteractiveMap({
   svg,
   theme,
   activeSubregionName,
   mode = "singleValue",
+  inactiveOpacity = 0.4,   // Default
 
   kind,
   ctx = "kpi",
@@ -121,18 +130,20 @@ export function InteractiveMap({
       path.addEventListener("mousemove", onMove);
       path.addEventListener("mouseleave", onLeave);
 
-      (path as any).__wlc_handlers = { onEnter, onMove, onLeave };
+      (path as SVGPathElement & { __wlc_handlers?: MapEventHandlers }).__wlc_handlers = {
+        onEnter,
+        onMove,
+        onLeave,
+      };
     });
 
     if (activeSubregionName) {
-      highlightActiveSubregion(svgElement, activeSubregionName);
+      highlightActiveSubregion(svgElement, activeSubregionName, inactiveOpacity);
     }
 
     return () => {
       paths.forEach((path) => {
-        const handlers = (path as any).__wlc_handlers as
-          | { onEnter: (e: MouseEvent) => void; onMove: (e: MouseEvent) => void; onLeave: () => void }
-          | undefined;
+        const handlers = (path as SVGPathElement & { __wlc_handlers?: MapEventHandlers }).__wlc_handlers;
 
         if (!handlers) return;
         path.removeEventListener("mouseenter", handlers.onEnter);
@@ -151,6 +162,7 @@ export function InteractiveMap({
     fractionDigits,
     note,
     overviewFields,
+    inactiveOpacity,
   ]);
 
   return (
@@ -311,9 +323,12 @@ function formatMapValue(value: number | null, args: FormatMapValueArgs): string 
   });
 }
 
-function highlightActiveSubregion(svgRoot: SVGSVGElement, activeName: string) {
+function highlightActiveSubregion(
+  svgRoot: SVGSVGElement,
+  activeName: string,
+  inactiveOpacity: number,
+) {
   const normalizedActive = normalizeName(activeName);
-
   const paths = svgRoot.querySelectorAll<SVGPathElement>("path[data-name]");
   let matchFound = false;
 
@@ -325,7 +340,7 @@ function highlightActiveSubregion(svgRoot: SVGSVGElement, activeName: string) {
       path.style.opacity = "1";
       matchFound = true;
     } else {
-      path.style.opacity = "0.4";
+      path.style.opacity = String(inactiveOpacity);
     }
   });
 
@@ -335,6 +350,7 @@ function highlightActiveSubregion(svgRoot: SVGSVGElement, activeName: string) {
     });
   }
 }
+
 
 function normalizeName(value: string): string {
   return value

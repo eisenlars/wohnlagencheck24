@@ -1,10 +1,10 @@
-// features/immobilienmarkt/sections/kreis/KreisImmobilienpreiseSection.tsx
+// features/immobilienmarkt/sections/ImmobilienpreiseSection.tsx
 
 import React from "react";
 import Link from "next/link";
 
 
-import { KreisTabNav } from "@/features/immobilienmarkt/shared/KreisTabNav";
+import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
 import { RegionHero } from "@/components/region-hero";
 import { BeraterBlock } from "@/components/advisor-avatar";
@@ -13,29 +13,15 @@ import { InteractiveMap } from "@/components/interactive-map";
 import { MatrixTable } from "@/components/MatrixTable";
 import { ZeitreiheChart } from "@/components/ZeitreiheChart";
 import { VergleichBarChart } from "@/components/VergleichBarChart";
+import type { BarSeries } from "@/components/VergleichBarChart";
 import { KpiValue } from "@/components/KpiValue";
 import { FaqSection } from "@/components/FaqSection";
 
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
-import type { KreisImmobilienpreiseVM } from "@/features/immobilienmarkt/selectors/kreis/immobilienpreise";
-
-export type KreisTabItem = {
-  id: string;
-  label: string;
-  iconSrc?: string;
-};
-
-export type TocItem = {
-  id: string;
-  label: string;
-};
-
-export type OrtsRef = {
-  slug: string;
-  name: string;
-  plz?: string;
-};
+import type { ImmobilienpreiseVM } from "@/features/immobilienmarkt/selectors/shared/types/immobilienpreise";
+import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
+import type { BarModel } from "@/utils/barModel";
 
 type BeraterInfo = {
   name: string;
@@ -43,92 +29,55 @@ type BeraterInfo = {
   imageSrc: string;
 };
 
-type Props = {
-  vm: KreisImmobilienpreiseVM;
-
-  tabs?: KreisTabItem[];
-  activeTabId: string;
-  tocItems?: TocItem[];
-
-  bundeslandSlug: string;
-  kreisSlug: string;
-
-  heroImageSrc: string;
-  immobilienpreisMapSvg: string | null;
-
+type Props = SectionPropsBase & {
+  vm: ImmobilienpreiseVM;
   berater?: BeraterInfo;
-  orte?: OrtsRef[];
 };
 
-export function KreisImmobilienpreiseSection(props: Props) {
+export function ImmobilienpreiseSection(props: Props) {
   const {
     vm,
     activeTabId,
-    bundeslandSlug,
-    kreisSlug,
-    heroImageSrc,
-    immobilienpreisMapSvg,
   } = props;
+  
+  const isOrt = vm.level === "ort"; 
 
   const tabs = Array.isArray(props.tabs) ? props.tabs : [];
   const tocItems = Array.isArray(props.tocItems) ? props.tocItems : [];
-  const orte = Array.isArray(props.orte) ? props.orte : [];
+  const orte = Array.isArray(props.ctx?.orte) ? props.ctx?.orte : [];
+
+  const bundeslandSlug = props.ctx?.bundeslandSlug ?? "";
+  const kreisSlug = props.ctx?.kreisSlug ?? "";
+  const ortSlug = props.ctx?.ortSlug ?? "";
+  const heroImageSrc = props.assets?.heroImageSrc;
+  const immobilienpreisMapSvg = props.assets?.immobilienpreisMapSvg ?? null;
 
   // Fallback: wenn Page noch keinen Berater übergibt, nicht crashen
   const berater: BeraterInfo = props.berater?.name
     ? props.berater
     : {
         name: "Lars Hofmann",
-        taetigkeit: `Standort- / Immobilienberatung – ${vm.kreisName}`,
+        taetigkeit: `Standort- / Immobilienberatung – ${vm.regionName}`,
         imageSrc: `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
       };
 
-  const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
+  const basePath = props.basePath ?? vm.basePath;
   
   // Farbsystem
   const COLOR_IMMO = "rgba(75,192,192,0.9)";
-  const COLOR_IMMO_LIGHT = "rgba(75,192,192,0.6)";
-  const COLOR_GRUND = "rgb(72,107,122)";
   const COLOR_AKTUELL = "rgba(200,213,79,0.9)";
-  
-  const heroRightOverlay = (
-    <>
-      <button
-        className="btn flex-fill fw-semibold"
-        style={{
-          backgroundColor: "#fff",
-          color: "#000",
-          border: "1px solid #fff",
-          borderRadius: "1rem 1rem 0 0",
-          padding: "1rem 1.25rem",
-          fontSize: "1.1rem",
-        }}
-      >
-        Immobilienangebote
-      </button>
-
-      <button
-        className="btn fw-semibold"
-        style={{
-          backgroundColor: "#fff",
-          color: "#000",
-          border: "1px solid #fff",
-          borderRadius: "1rem 1rem 0 0",
-          padding: "1rem 1.25rem",
-          fontSize: "1.1rem",
-          flex: 1,
-        }}
-      >
-        Immobiliengesuche
-      </button>
-    </>
-  );
   
   
 
   // Helper: sichere Series-Auswahl für VergleichBarChart
-  const pickSeries = (model: any, key: string, fallbackLabel: string, color: string, fillOpacity: number) => {
-    const s = model?.series?.find((x: any) => x?.key === key);
+  const pickSeries = (
+    model: BarModel | null | undefined,
+    key: string,
+    fallbackLabel: string,
+    color: string,
+    fillOpacity: number,
+  ): BarSeries | null => {
+    const s = model?.series?.find((x) => x.key === key);
     if (!s) return null;
     return {
       key: String(s.key),
@@ -139,6 +88,8 @@ export function KreisImmobilienpreiseSection(props: Props) {
     };
   };
 
+  const isBarSeries = (value: BarSeries | null): value is BarSeries => Boolean(value);
+
   return (
     <div className="text-dark">
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
@@ -146,22 +97,24 @@ export function KreisImmobilienpreiseSection(props: Props) {
       <div className="container immobilienmarkt-container position-relative">
         
         {/* Subnavigation Kreisebene */}
-        <KreisTabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} />
+        <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
 
         {/* Hero */}
-        <RegionHero
-          title={vm.kreisName}
-          subtitle="regionaler Standortberater"
-          imageSrc={heroImageSrc}
-          rightOverlay={<HeroOverlayActions variant="immo" />}
-          rightOverlayMode="buttons"
-  
-        />
+        {heroImageSrc ? (
+          <RegionHero
+            title={vm.regionName}
+            subtitle="regionaler Standortberater"
+            imageSrc={heroImageSrc}
+            rightOverlay={<HeroOverlayActions variant="immo" />}
+            rightOverlayMode="buttons"
+
+          />
+        ) : null}
 
         {/* Intro */}
         <section className="mb-3" id="einleitung">
-          <h1 className="mt-3 mb-1">Immobilienpreise 2025 - {vm.kreisName}</h1>
-          <p className="small text-muted mb-4">Aktualisiert am: {vm.kreisName}</p>
+          <h1 className="mt-3 mb-1">Immobilienpreise 2025 - {vm.regionName}</h1>
+          <p className="small text-muted mb-4">Aktualisiert am: {vm.regionName}</p>
 
           {vm.teaserImmobilienpreise ? <p className="teaser-text">{vm.teaserImmobilienpreise}</p> : null}
 
@@ -176,11 +129,13 @@ export function KreisImmobilienpreiseSection(props: Props) {
                 {immobilienpreisMapSvg ? (
                   <InteractiveMap
                     svg={immobilienpreisMapSvg}
-                    theme="immobilienpreis"
-                    mode="singleValue"
-                    kind="kaufpreis_qm"
-                    unitKey="eur_per_sqm"
-                    ctx="kpi"
+                      theme="immobilienpreis"
+                      mode="singleValue"
+                      kind="kaufpreis_qm"
+                      unitKey="eur_per_sqm"
+                      ctx="kpi"
+                      activeSubregionName={isOrt ? vm.regionName : undefined}
+                      inactiveOpacity={isOrt ? 0.1 : 1}
                   />
                 ) : (
                   <p className="small text-muted mb-0">
@@ -194,6 +149,7 @@ export function KreisImmobilienpreiseSection(props: Props) {
               <div className="w-100 align-center text-center">
                 {vm.kaufpreisQm !== null && Number.isFinite(vm.kaufpreisQm) ? (
                   <>
+                
                     <div className="mb-2" style={{ color: "#486b7a", fontSize: "7rem" }}>
                       <KpiValue
                         value={vm.kaufpreisQm}
@@ -204,7 +160,7 @@ export function KreisImmobilienpreiseSection(props: Props) {
                         showUnit={true}
                       />
                     </div>
-                    <p className="mb-0">Ø Immobilienpreis – {vm.kreisName}</p>
+                    <p className="mb-0">Ø Immobilienpreis – {vm.regionName}</p>
                   </>
                 ) : (
                   <p className="small text-muted mb-0">Keine Kaufpreisdaten verfügbar.</p>
@@ -219,11 +175,11 @@ export function KreisImmobilienpreiseSection(props: Props) {
           <header className="mb-3">
             {vm.ueberschriftHausIndividuell ? (
               <>
-                <h2 className="h5 text-muted text-uppercase mb-1">Kaufpreise für Häuser in {vm.kreisName}</h2>
+                <h2 className="h5 text-muted text-uppercase mb-1">Kaufpreise für Häuser in {vm.regionName}</h2>
                 <h3 className="h2 mb-0">{vm.ueberschriftHausIndividuell}</h3>
               </>
             ) : (
-              <h2 className="h2 mb-0">Kaufpreise für Häuser in {vm.kreisName}</h2>
+              <h2 className="h2 mb-0">Kaufpreise für Häuser in {vm.regionName}</h2>
             )}
           </header>
 
@@ -296,8 +252,8 @@ export function KreisImmobilienpreiseSection(props: Props) {
               <div className="card-body">
                 <ZeitreiheChart
                   title="Haus-Kaufpreise"
-                  ariaLabel={`Preisentwicklung Haus-Kaufpreise: ${vm.kreisName} im Vergleich zu ${vm.bundeslandName ?? "Bundesland"} und Deutschland`}
-                  series={vm.hausKaufpreisentwicklungSeries as any}
+                  ariaLabel={`Preisentwicklung Haus-Kaufpreise: ${vm.regionName} im Vergleich zu ${vm.bundeslandName ?? "Bundesland"} und Deutschland`}
+                  series={vm.hausKaufpreisentwicklungSeries}
                   kind="kaufpreis_qm"
                   unitKey="eur_per_sqm"
                   ctx="chart"
@@ -326,11 +282,11 @@ export function KreisImmobilienpreiseSection(props: Props) {
           <header className="mb-3">
             {vm.ueberschriftWohnungIndividuell ? (
               <>
-                <h2 className="h5 text-muted text-uppercase mb-1">Kaufpreise für Wohnungen in {vm.kreisName}</h2>
+                <h2 className="h5 text-muted text-uppercase mb-1">Kaufpreise für Wohnungen in {vm.regionName}</h2>
                 <h3 className="h2 mb-0">{vm.ueberschriftWohnungIndividuell}</h3>
               </>
             ) : (
-              <h2 className="h2 mb-0">Kaufpreise für Wohnungen in {vm.kreisName}</h2>
+              <h2 className="h2 mb-0">Kaufpreise für Wohnungen in {vm.regionName}</h2>
             )}
           </header>
 
@@ -403,8 +359,8 @@ export function KreisImmobilienpreiseSection(props: Props) {
               <div className="card-body">
                 <ZeitreiheChart
                   title="Wohnung-Kaufpreise"
-                  ariaLabel={`Preisentwicklung Wohnung-Kaufpreise: ${vm.kreisName} im Vergleich zu ${vm.bundeslandName ?? "Bundesland"} und Deutschland`}
-                  series={vm.wohnungKaufpreisentwicklungSeries as any}
+                  ariaLabel={`Preisentwicklung Wohnung-Kaufpreise: ${vm.regionName} im Vergleich zu ${vm.bundeslandName ?? "Bundesland"} und Deutschland`}
+                  series={vm.wohnungKaufpreisentwicklungSeries}
                   kind="kaufpreis_qm"
                   unitKey="eur_per_sqm"
                   ctx="chart"
@@ -436,7 +392,7 @@ export function KreisImmobilienpreiseSection(props: Props) {
                       series={[
                         pickSeries(vm.wohnungZimmerModel, "preis_vorjahr", "Vorjahr", COLOR_IMMO, 0.6),
                         pickSeries(vm.wohnungZimmerModel, "preis", "Aktuell", COLOR_AKTUELL, 0.9),
-                      ].filter(Boolean) as any}
+                      ].filter(isBarSeries)}
                       valueKind="kaufpreis_qm"
                       unitKey="eur_per_sqm"
                       ctx="chart"
@@ -462,7 +418,7 @@ export function KreisImmobilienpreiseSection(props: Props) {
                       series={[
                         pickSeries(vm.wohnungFlaechenModel, "preis_vorjahr", "Vorjahr", COLOR_IMMO, 0.6),
                         pickSeries(vm.wohnungFlaechenModel, "preis", "Aktuell", COLOR_AKTUELL, 0.9),
-                      ].filter(Boolean) as any}
+                      ].filter(isBarSeries)}
                       valueKind="kaufpreis_qm"
                       unitKey="eur_per_sqm"
                       ctx="chart"
@@ -480,34 +436,55 @@ export function KreisImmobilienpreiseSection(props: Props) {
 
         {/* FAQ */}
         <section className="mb-5" id="faq-immobilienpreise">
-          <FaqSection id="faq" title={`FAQ – Immobilienmarkt ${vm.kreisName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
+          <FaqSection id="faq" title={`FAQ – Immobilienmarkt ${vm.regionName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
         </section>
 
         {/* Erfasste Wohnlagen */}
-        <section className="mb-4" id="wohnlagen">
-          <h2 className="h2 mb-3 align-center text-center">Erfasste Wohnlagen – {vm.kreisName}</h2>
+        {(vm.level === "kreis" || vm.level === "ort") ? (
+          <section className="mb-4" id="wohnlagen">
+            <h2 className="h2 mb-3 align-center text-center">
+              Erfasste Wohnlagen – {vm.level === "ort" ? (props.kreisSlug ?? vm.regionName) : vm.regionName}
+            </h2>
 
-          <div className="card border-0 shadow-sm">
-            <div className="card-body">
-              <nav className="nav nav-pills flex-wrap gap-2 justify-content-center" aria-label="Wohnlagen Navigation">
-                {orte.map((ort) => (
-                  <Link
-                    key={ort.slug}
-                    href={`/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ort.slug}`}
-                    className="nav-link px-3 py-2 rounded-pill fw-semibold small bg-light text-dark"
-                  >
-                    {ort.name}
-                    {ort.plz ? <span className="ms-2 text-muted fw-normal">({ort.plz})</span> : null}
-                  </Link>
-                ))}
-              </nav>
+            <div className="card border-0 shadow-sm">
+              <div className="card-body">
+                <nav className="nav nav-pills flex-wrap gap-2 justify-content-center" aria-label="Wohnlagen Navigation">
+                  {orte.map((ort) => {
+                    const isActive = !!ortSlug && ort.slug === ortSlug;
+                    const sectionSuffix = activeTabId && activeTabId !== "uebersicht" ? `/${activeTabId}` : "";
+                    const href = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ort.slug}${sectionSuffix}`;
 
-              {orte.length === 0 ? (
-                <p className="small text-muted mb-0 text-center">Für diesen Landkreis liegen noch keine einzelnen Wohnlagen vor.</p>
-              ) : null}
+                    return (
+                      <Link
+                        key={ort.slug}
+                        href={href}
+                        className={`nav-link px-3 py-2 rounded-pill fw-semibold small ${
+                          isActive ? "text-white bg-dark" : "bg-light text-dark"
+                        }`}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {ort.name}
+                        {ort.plz ? (
+                          <span className={`ms-2 fw-normal ${isActive ? "text-white-50" : "text-muted"}`}>
+                            ({ort.plz})
+                          </span>
+                        ) : null}
+                      </Link>
+                    );
+                  })}
+                </nav>
+
+                {orte.length === 0 ? (
+                  <p className="small text-muted mb-0 text-center">
+                    Für diesen Landkreis liegen noch keine einzelnen Wohnlagen vor.
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : null}
+
+        
       </div>
     </div>
   );

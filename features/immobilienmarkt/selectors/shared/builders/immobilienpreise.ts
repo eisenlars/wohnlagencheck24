@@ -1,83 +1,14 @@
-// features/immobilienmarkt/selectors/kreis/immobilienpreise.ts
+// features/immobilienmarkt/selectors/shared/builders/immobilienpreise.ts
 
 import type { Report } from "@/lib/data";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
+import { buildTableModel } from "@/utils/buildTableModel";
+import { buildBarModel } from "@/utils/barModel";
 import { asArray, asRecord, asString } from "@/utils/records";
 import type { ImmobilienpreiseReportData } from "@/types/reports";
 
-import { buildTableModel } from "@/utils/buildTableModel";
-type TableModel = ReturnType<typeof buildTableModel>;
-
-
-import { buildBarModel } from "@/utils/barModel";
-import type { BarModel } from "@/utils/barModel";
-
-/**
- * WICHTIG:
- * - Keine type-imports aus Client-Komponenten (z.B. VergleichChart/ZeitreiheChart),
- *   um Turbopack-Chunk-Probleme zu vermeiden.
- * - Lokale Typen (Shape) reichen völlig.
- */
-export type Zeitreihenpunkt = { jahr: number; value: number };
-export type ZeitreiheSeries = { key: string; label: string; points: Zeitreihenpunkt[] };
-
-
-export type KreisImmobilienpreiseVM = {
-  kreisName: string;
-  bundeslandName?: string;
-  basePath: string;
-
-  // Texte/Überschriften in der Form, wie die Section sie nutzt
-  teaserImmobilienpreise: string;
-
-  ueberschriftHausIndividuell: string;
-  hauspreiseIntro: string;
-  hausVergleichIntro: string;
-  textHausLage: string;
-  textHausKaufpreisentwicklung: string;
-  textHaustypen: string;
-
-  ueberschriftWohnungIndividuell: string;
-  wohnungspreiseIntro: string;
-  wohnungVergleichIntro: string;
-  textWohnungLage: string;
-  textWohnungKaufpreisentwicklung: string;
-  textWohnungZimmerFlaechen: string;
-
-  // Leitkennzahl
-  kaufpreisQm: number | null;
-
-  // Haus: Preisspanne
-  hausMin: number | null;
-  hausAvg: number | null;
-  hausMax: number | null;
-  indexHaus: number | null;
-
-  // Wohnung: Preisspanne
-  wohnungMin: number | null;
-  wohnungAvg: number | null;
-  wohnungMax: number | null;
-  indexWohnung: number | null;
-
-  // MatrixTable-Modelle
-  ueberregionalModelHaus: TableModel | null;
-  lageModelHaus: TableModel | null;
-  haustypModel: TableModel | null;
-
-  ueberregionalModelWohnung: TableModel | null;
-  lageModelWohnung: TableModel | null;
-
-  // Zeitreihen (ZeitreiheChart)
-  hausKaufpreisentwicklungSeries: ZeitreiheSeries[];
-  wohnungKaufpreisentwicklungSeries: ZeitreiheSeries[];
-
-  // Bar-Charts (VergleichBarChart)
-  wohnungZimmerModel: BarModel | null;
-  wohnungFlaechenModel: BarModel | null;
-};
-
-/** ---------- Helper ---------- */
+import type { ImmobilienpreiseVM, Zeitreihenpunkt, ZeitreiheSeries } from "../types/immobilienpreise";
 
 function toZeitreihe(raw: unknown, valueKey: string): Zeitreihenpunkt[] {
   const rows = asArray(raw)
@@ -94,22 +25,21 @@ function toZeitreihe(raw: unknown, valueKey: string): Zeitreihenpunkt[] {
 }
 
 function normalizeText(s: unknown): string {
-  const t = String(s ?? "").trim();
-  return t;
+  return String(s ?? "").trim();
 }
 
 function buildSeriesTriplet(args: {
-  kreis: Zeitreihenpunkt[];
+  region: Zeitreihenpunkt[];
   bundesland: Zeitreihenpunkt[];
   deutschland: Zeitreihenpunkt[];
-  labelKreis: string;
+  labelRegion: string;
   labelBL: string;
   labelDE: string;
 }): ZeitreiheSeries[] {
-  const { kreis, bundesland, deutschland, labelKreis, labelBL, labelDE } = args;
+  const { region, bundesland, deutschland, labelRegion, labelBL, labelDE } = args;
 
   const series: ZeitreiheSeries[] = [
-    { key: "kreis", label: labelKreis, points: kreis ?? [] },
+    { key: "region", label: labelRegion, points: region ?? [] },
     { key: "bundesland", label: labelBL, points: bundesland ?? [] },
     { key: "deutschland", label: labelDE, points: deutschland ?? [] },
   ];
@@ -117,28 +47,35 @@ function buildSeriesTriplet(args: {
   return series.filter((s) => Array.isArray(s.points) && s.points.length > 0);
 }
 
-
-/** ---------- Builder ---------- */
-
-export function buildKreisImmobilienpreiseVM(args: {
+export function buildImmobilienpreiseVM(args: {
   report: Report<ImmobilienpreiseReportData>;
+  level: "kreis" | "ort";
   bundeslandSlug: string;
   kreisSlug: string;
-}): KreisImmobilienpreiseVM {
-  const { report, bundeslandSlug, kreisSlug } = args;
+  ortSlug?: string;
+}): ImmobilienpreiseVM {
+  const { report, level, bundeslandSlug, kreisSlug, ortSlug } = args;
 
   const meta = asRecord(report.meta) ?? {};
   const data = report.data ?? {};
 
-  const kreisName = asString(meta["amtlicher_name"]) ?? asString(meta["name"]) ?? kreisSlug;
+  const metaAmtlicherName = asString(meta["amtlicher_name"]);
+  const metaName = asString(meta["name"]);
+
+  const regionName =
+    metaAmtlicherName ??
+    metaName ??
+    (level === "ort" ? ortSlug ?? "Ort" : kreisSlug);
+
   const bundeslandName = asString(meta["bundesland_name"]);
 
-  const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
+  const basePath =
+    level === "ort" && ortSlug
+      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}`
+      : `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
 
-  // Intro / Teaser
   const teaserImmobilienpreise = getText(report, "text.immobilienpreise.immobilienpreise_intro", "");
 
-  // Überschriften (optional individuell)
   const ueberschriftHausIndividuell = getText(
     report,
     "text.ueberschriften_kreis.ueberschrift_immobilienpreise_haus",
@@ -150,7 +87,6 @@ export function buildKreisImmobilienpreiseVM(args: {
     "",
   );
 
-  // Haus-Texte
   const hauspreiseIntro = getText(report, "text.immobilienpreise.immobilienpreise_haus_intro", "");
   const hausVergleichIntro = getText(report, "text.immobilienpreise.immobilienpreise_haus_allgemein", "");
   const textHausLage = getText(report, "text.immobilienpreise.immobilienpreise_haus_lage", "");
@@ -161,7 +97,6 @@ export function buildKreisImmobilienpreiseVM(args: {
   );
   const textHaustypen = getText(report, "text.immobilienpreise.immobilienpreise_haus_haustypen", "");
 
-  // Wohnung-Texte
   const wohnungspreiseIntro = getText(report, "text.immobilienpreise.immobilienpreise_wohnung_intro", "");
   const wohnungVergleichIntro = getText(report, "text.immobilienpreise.immobilienpreise_wohnung_allgemein", "");
   const textWohnungLage = getText(report, "text.immobilienpreise.immobilienpreise_wohnung_lage", "");
@@ -176,11 +111,9 @@ export function buildKreisImmobilienpreiseVM(args: {
     "",
   );
 
-  // Leitkennzahl
   const immobilienKaufpreis = data.immobilien_kaufpreis?.[0];
   const kaufpreisQm = toNumberOrNull(immobilienKaufpreis?.kaufpreis_immobilien);
 
-  // Haus: Preisspanne + Index
   const hausPreisspanne = data.haus_kaufpreisspanne?.[0];
   const hausMin = toNumberOrNull(hausPreisspanne?.preis_haus_min);
   const hausAvg = toNumberOrNull(hausPreisspanne?.preis_haus_avg);
@@ -189,7 +122,6 @@ export function buildKreisImmobilienpreiseVM(args: {
   const preisindexRegionalRaw = data.immobilienpreisindex_regional?.[0];
   const indexHaus = toNumberOrNull(preisindexRegionalRaw?.immobilienpreisindex_haus);
 
-  // Wohnung: Preisspanne + Index
   const wohnungPreisspanne = data.wohnung_kaufpreisspanne?.[0];
   const wohnungMin = toNumberOrNull(wohnungPreisspanne?.preis_wohnung_min);
   const wohnungAvg = toNumberOrNull(wohnungPreisspanne?.preis_wohnung_avg);
@@ -197,7 +129,6 @@ export function buildKreisImmobilienpreiseVM(args: {
 
   const indexWohnung = toNumberOrNull(preisindexRegionalRaw?.immobilienpreisindex_wohnung);
 
-  // Tabellen
   const ueberregionalRawHaus = data.haus_kaufpreise_im_ueberregionalen_vergleich ?? [];
   const ueberregionalModelHaus =
     Array.isArray(ueberregionalRawHaus) && ueberregionalRawHaus.length > 0
@@ -291,37 +222,35 @@ export function buildKreisImmobilienpreiseVM(args: {
         })
       : null;
 
-  // Zeitreihen
   const hausKaufpreisentwicklungRaw = data.haus_kaufpreisentwicklung ?? [];
   const wohnungKaufpreisentwicklungRaw = data.wohnung_kaufpreisentwicklung ?? [];
 
-  const hausKreis = toZeitreihe(hausKaufpreisentwicklungRaw, "preis_k");
+  const hausRegion = toZeitreihe(hausKaufpreisentwicklungRaw, "preis_k");
   const hausBL = toZeitreihe(hausKaufpreisentwicklungRaw, "preis_bl");
   const hausDE = toZeitreihe(hausKaufpreisentwicklungRaw, "preis_l");
 
-  const wohnKreis = toZeitreihe(wohnungKaufpreisentwicklungRaw, "preis_k");
+  const wohnRegion = toZeitreihe(wohnungKaufpreisentwicklungRaw, "preis_k");
   const wohnBL = toZeitreihe(wohnungKaufpreisentwicklungRaw, "preis_bl");
   const wohnDE = toZeitreihe(wohnungKaufpreisentwicklungRaw, "preis_l");
 
   const hausKaufpreisentwicklungSeries = buildSeriesTriplet({
-    kreis: hausKreis,
+    region: hausRegion,
     bundesland: hausBL,
     deutschland: hausDE,
-    labelKreis: kreisName,
+    labelRegion: regionName,
     labelBL: bundeslandName ?? "Bundesland",
     labelDE: "Deutschland",
   });
 
   const wohnungKaufpreisentwicklungSeries = buildSeriesTriplet({
-    kreis: wohnKreis,
+    region: wohnRegion,
     bundesland: wohnBL,
     deutschland: wohnDE,
-    labelKreis: kreisName,
+    labelRegion: regionName,
     labelBL: bundeslandName ?? "Bundesland",
     labelDE: "Deutschland",
   });
 
-  // Bar-Modelle
   const wohnungZimmerRaw = data.wohnung_kaufpreise_nach_zimmern ?? [];
   const wohnungFlaechenRaw = data.wohnung_kaufpreise_nach_flaechen ?? [];
 
@@ -346,7 +275,8 @@ export function buildKreisImmobilienpreiseVM(args: {
       : null;
 
   return {
-    kreisName,
+    level,
+    regionName,
     bundeslandName,
     basePath,
 

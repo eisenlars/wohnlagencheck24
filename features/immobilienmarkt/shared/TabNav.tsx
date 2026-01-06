@@ -1,18 +1,23 @@
-// features/immobilienmarkt/shared/KreisTabNav.tsx
-import Link from "next/link";
+// features/immobilienmarkt/shared/TabNav.tsx
 
-export type KreisTabNavItem = {
+import Link from "next/link";
+import Image from "next/image";
+
+export type TabNavItem = {
   id: string;
   label: string;
   iconSrc?: string;
 };
 
-export function KreisTabNav(props: {
-  tabs: KreisTabNavItem[];
+export function TabNav(props: {
+  tabs: TabNavItem[];
   activeTabId: string;
   basePath: string;
+
+  // NEU: für Ort-Ebene (Übersicht soll auf Kreis-Ebene verlinken)
+  parentBasePath?: string;
 }) {
-  const { tabs, activeTabId, basePath } = props;
+  const { tabs, activeTabId, basePath, parentBasePath } = props;
 
   return (
     <section className="kreis-subnav kreis-subnav-sticky mb-4">
@@ -21,7 +26,12 @@ export function KreisTabNav(props: {
           <ul className="nav nav-pills flex-nowrap small kreis-subnav-tabs">
             {tabs.map((tab) => {
               const isActive = tab.id === activeTabId;
-              const href = tab.id === "uebersicht" ? basePath : `${basePath}/${tab.id}`;
+
+              // Übersicht: auf basePath – aber wenn parentBasePath gesetzt ist, dorthin.
+              const href =
+                tab.id === "uebersicht"
+                  ? (parentBasePath ?? basePath)
+                  : `${basePath}/${tab.id}`;
 
               return (
                 <li className="nav-item" key={tab.id}>
@@ -29,18 +39,18 @@ export function KreisTabNav(props: {
                     href={href}
                     className={
                       "nav-link d-flex flex-column align-items-center justify-content-center gap-2 rounded-pill kreis-subnav-link" +
-                      (isActive
-                        ? " active bg-dark text-white"
-                        : " bg-light text-dark border-0")
+                      (isActive ? " active bg-dark text-white" : " bg-light text-dark border-0")
                     }
                     aria-current={isActive ? "page" : undefined}
                   >
                     {tab.iconSrc ? (
-                      <img
+                      <Image
                         src={tab.iconSrc}
                         alt=""
                         aria-hidden="true"
                         className="subnav-icon-img"
+                        width={36}
+                        height={36}
                       />
                     ) : null}
                     <span className="subnav-label">{tab.label}</span>

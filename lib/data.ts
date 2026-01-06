@@ -14,10 +14,10 @@ export interface ReportMeta {
   [key: string]: unknown;
 }
 
-export interface Report<TData = any> {
+export interface Report<TData = unknown> {
   meta: ReportMeta;
   data: TData;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Erwartete Struktur:
@@ -29,7 +29,7 @@ export interface Report<TData = any> {
 const REPORTS_ROOT = path.join(process.cwd(), "data", "json", "reports");
 const DEUTSCHLAND_DIR = path.join(REPORTS_ROOT, "deutschland");
 
-function readJsonFile<T = any>(filePath: string): T {
+function readJsonFile<T = unknown>(filePath: string): T {
   const raw = fs.readFileSync(filePath, "utf8");
   return JSON.parse(raw) as T;
 }
@@ -193,10 +193,38 @@ export function getReportBySlugs(slugs: string[]): Report | null {
 }
 
 
+// SVG Maps für Bundesland aus data/visuals/map_interactive holen
+
+export function getKreisUebersichtMapSvg(
+  bundeslandSlug: string,
+): string | null {
+  const svgPath = path.join(
+    process.cwd(),
+    "data",
+    "visuals",
+    "map_interactive",
+    "deutschland",
+    bundeslandSlug,
+    `kreisuebersicht_${bundeslandSlug}.svg`,
+  );
+
+  if (!fs.existsSync(svgPath)) {
+    console.warn("Kreisübersicht-SVG nicht gefunden:", svgPath);
+    return null;
+  }
+
+  try {
+    return fs.readFileSync(svgPath, "utf8");
+  } catch (err) {
+    console.error("Fehler beim Lesen der Kreisübersicht-SVG:", err);
+    return null;
+  }
+}
 
 
 
-// SVG Maps aus data/visuals/map_interactive holen
+
+// SVG Maps für Kreis aus data/visuals/map_interactive holen
 
 export function getImmobilienpreisMapSvg(
   bundeslandSlug: string,

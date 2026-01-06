@@ -1,25 +1,11 @@
 // app/page.tsx oder app/(statisch)/page.tsx
 
 import "./static.css"; // falls noch nicht eingebunden
-import Link from "next/link";
-import {
-  getBundeslaender,
-  getKreiseForBundesland,
-  getOrteForKreis,
-} from "@/lib/data";
+import Image from "next/image";
 
 // app/(statisch)/page.tsx (Ausschnitt)
 
 export default function HomePage() {
-  const bundeslaender = getBundeslaender();
-  const struktur = bundeslaender.map((bl) => {
-    const kreise = getKreiseForBundesland(bl.slug).map((kreis) => {
-      const orte = getOrteForKreis(bl.slug, kreis.slug);
-      return { ...kreis, orte };
-    });
-    return { ...bl, kreise };
-  });
-
   return (
     <div className="home-page-root">
       {/* HERO: Deutschland-Maske links, Logo + Claim rechts */}
@@ -42,10 +28,13 @@ export default function HomePage() {
 
           {/* Rechts: Logo + Portalinfo */}
           <div className="home-cutout-brand-col">
-            <img
+            <Image
               src="/logo/wohnlagencheck24.svg"
               alt="Wohnlagencheck24 – Immobilienmarkt & Standortprofile"
               className="home-cutout-logo"
+              width={240}
+              height={72}
+              priority
             />
 
             <h1 className="home-cutout-title">

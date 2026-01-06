@@ -1,27 +1,20 @@
-import { KreisTabNav } from "@/features/immobilienmarkt/shared/KreisTabNav";
+import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
 import { RegionHero } from "@/components/region-hero";
 import { RightEdgeControls } from "@/components/right-edge-controls";
 
-export type KreisTabItem = { id: string; label: string; iconSrc?: string };
-export type TocItem = { id: string; label: string };
+import type { PlaceholderVM } from "@/features/immobilienmarkt/selectors/shared/types/placeholder";
+import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
 
-export function KreisTabPlaceholderSection(props: {
-  kreisName: string;
-  bundeslandSlug: string;
-  kreisSlug: string;
+export function TabPlaceholderSection(
+  props: SectionPropsBase & {
+    vm: PlaceholderVM;
+    overlayVariant?: "immo" | "miete" | null;
+  },
+) {
+  const { vm, tabs, activeTabId, tocItems, overlayVariant } = props;
 
-  tabs: KreisTabItem[];
-  activeTabId: string;
-  tocItems: TocItem[];
-
-  heroImageSrc: string;
-
-  overlayVariant?: "immo" | "miete" | null;
-}) {
-  const { kreisName, bundeslandSlug, kreisSlug, tabs, activeTabId, tocItems, heroImageSrc, overlayVariant } = props;
-
-  const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
+  const basePath = props.basePath ?? vm.basePath;
 
   const rightOverlay =
     overlayVariant === "immo" ? (
@@ -37,19 +30,21 @@ export function KreisTabPlaceholderSection(props: {
       {tocItems.length > 0 ? <RightEdgeControls tocItems={tocItems} /> : null}
 
       <div className="container immobilienmarkt-container position-relative">
-        <KreisTabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} />
+        <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
 
-        <RegionHero
-          title={kreisName}
-          subtitle="regionaler Standortberater"
-          imageSrc={heroImageSrc}
-          rightOverlay={rightOverlay}
-          rightOverlayMode={rightOverlayMode}
-        />
+        {props.assets?.heroImageSrc ? (
+          <RegionHero
+            title={vm.regionName}
+            subtitle={vm.heroSubtitle}
+            imageSrc={props.assets.heroImageSrc}
+            rightOverlay={rightOverlay}
+            rightOverlayMode={rightOverlayMode}
+          />
+        ) : null}
 
         <section className="mb-4" id="einleitung">
           <h1 className="mt-3 mb-2">
-            {tabs.find((t) => t.id === activeTabId)?.label ?? activeTabId} – {kreisName}
+            {tabs.find((t) => t.id === activeTabId)?.label ?? activeTabId} – {vm.regionName}
           </h1>
           <p className="small text-muted mb-0">
             Dieser Bereich ist bereits über die URL-Struktur erreichbar und serverseitig gerendert. Inhalte, Kennzahlen

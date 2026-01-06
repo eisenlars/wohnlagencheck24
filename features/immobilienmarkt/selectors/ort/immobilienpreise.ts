@@ -1,4 +1,4 @@
-// features/immobilienmarkt/selectors/kreis/immobilienpreise.ts
+// features/immobilienmarkt/selectors/ort/immobilienpreise.ts
 
 import type { Report } from "@/lib/data";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
@@ -8,7 +8,6 @@ import type { ImmobilienpreiseReportData } from "@/types/reports";
 
 import { buildTableModel } from "@/utils/buildTableModel";
 type TableModel = ReturnType<typeof buildTableModel>;
-
 
 import { buildBarModel } from "@/utils/barModel";
 import type { BarModel } from "@/utils/barModel";
@@ -22,9 +21,9 @@ import type { BarModel } from "@/utils/barModel";
 export type Zeitreihenpunkt = { jahr: number; value: number };
 export type ZeitreiheSeries = { key: string; label: string; points: Zeitreihenpunkt[] };
 
-
-export type KreisImmobilienpreiseVM = {
-  kreisName: string;
+export type OrtImmobilienpreiseVM = {
+  ortName: string;
+  kreisName?: string;
   bundeslandName?: string;
   basePath: string;
 
@@ -94,22 +93,21 @@ function toZeitreihe(raw: unknown, valueKey: string): Zeitreihenpunkt[] {
 }
 
 function normalizeText(s: unknown): string {
-  const t = String(s ?? "").trim();
-  return t;
+  return String(s ?? "").trim();
 }
 
 function buildSeriesTriplet(args: {
-  kreis: Zeitreihenpunkt[];
+  ort: Zeitreihenpunkt[];
   bundesland: Zeitreihenpunkt[];
   deutschland: Zeitreihenpunkt[];
-  labelKreis: string;
+  labelOrt: string;
   labelBL: string;
   labelDE: string;
 }): ZeitreiheSeries[] {
-  const { kreis, bundesland, deutschland, labelKreis, labelBL, labelDE } = args;
+  const { ort, bundesland, deutschland, labelOrt, labelBL, labelDE } = args;
 
   const series: ZeitreiheSeries[] = [
-    { key: "kreis", label: labelKreis, points: kreis ?? [] },
+    { key: "ort", label: labelOrt, points: ort ?? [] },
     { key: "bundesland", label: labelBL, points: bundesland ?? [] },
     { key: "deutschland", label: labelDE, points: deutschland ?? [] },
   ];
@@ -117,28 +115,32 @@ function buildSeriesTriplet(args: {
   return series.filter((s) => Array.isArray(s.points) && s.points.length > 0);
 }
 
-
 /** ---------- Builder ---------- */
 
-export function buildKreisImmobilienpreiseVM(args: {
+export function buildOrtImmobilienpreiseVM(args: {
   report: Report<ImmobilienpreiseReportData>;
   bundeslandSlug: string;
   kreisSlug: string;
-}): KreisImmobilienpreiseVM {
-  const { report, bundeslandSlug, kreisSlug } = args;
+  ortSlug: string;
+}): OrtImmobilienpreiseVM {
+  const { report, bundeslandSlug, kreisSlug, ortSlug } = args;
 
   const meta = asRecord(report.meta) ?? {};
   const data = report.data ?? {};
 
-  const kreisName = asString(meta["amtlicher_name"]) ?? asString(meta["name"]) ?? kreisSlug;
-  const bundeslandName = asString(meta["bundesland_name"]);
+  const ortName = asString(meta["amtlicher_name"]) ?? asString(meta["name"]) ?? ortSlug;
 
-  const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
+  // Optional: falls in meta vorhanden. Wenn nicht: fallback auf Slug, aber als "optional" im VM
+  const bundeslandName = asString(meta["bundesland_name"]);
+  const kreisName = asString(meta["kreis_name"]) ?? kreisSlug;
+
+  const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}`;
 
   // Intro / Teaser
   const teaserImmobilienpreise = getText(report, "text.immobilienpreise.immobilienpreise_intro", "");
 
-  // Überschriften (optional individuell)
+  // Überschriften (optional individuell) – Keys identisch wie Kreis (wenn eure JSON so ist)
+  // Falls ihr ortsspezifische Überschriften später anders ablegt, könnt ihr hier umschalten.
   const ueberschriftHausIndividuell = getText(
     report,
     "text.ueberschriften_kreis.ueberschrift_immobilienpreise_haus",
@@ -197,7 +199,7 @@ export function buildKreisImmobilienpreiseVM(args: {
 
   const indexWohnung = toNumberOrNull(preisindexRegionalRaw?.immobilienpreisindex_wohnung);
 
-  // Tabellen
+  // Tabellen (können auf Ortsebene ggf. fehlen – bleibt robust)
   const ueberregionalRawHaus = data.haus_kaufpreise_im_ueberregionalen_vergleich ?? [];
   const ueberregionalModelHaus =
     Array.isArray(ueberregionalRawHaus) && ueberregionalRawHaus.length > 0
@@ -295,28 +297,28 @@ export function buildKreisImmobilienpreiseVM(args: {
   const hausKaufpreisentwicklungRaw = data.haus_kaufpreisentwicklung ?? [];
   const wohnungKaufpreisentwicklungRaw = data.wohnung_kaufpreisentwicklung ?? [];
 
-  const hausKreis = toZeitreihe(hausKaufpreisentwicklungRaw, "preis_k");
+  const hausOrt = toZeitreihe(hausKaufpreisentwicklungRaw, "preis_k");
   const hausBL = toZeitreihe(hausKaufpreisentwicklungRaw, "preis_bl");
   const hausDE = toZeitreihe(hausKaufpreisentwicklungRaw, "preis_l");
 
-  const wohnKreis = toZeitreihe(wohnungKaufpreisentwicklungRaw, "preis_k");
+  const wohnOrt = toZeitreihe(wohnungKaufpreisentwicklungRaw, "preis_k");
   const wohnBL = toZeitreihe(wohnungKaufpreisentwicklungRaw, "preis_bl");
   const wohnDE = toZeitreihe(wohnungKaufpreisentwicklungRaw, "preis_l");
 
   const hausKaufpreisentwicklungSeries = buildSeriesTriplet({
-    kreis: hausKreis,
+    ort: hausOrt,
     bundesland: hausBL,
     deutschland: hausDE,
-    labelKreis: kreisName,
+    labelOrt: ortName,
     labelBL: bundeslandName ?? "Bundesland",
     labelDE: "Deutschland",
   });
 
   const wohnungKaufpreisentwicklungSeries = buildSeriesTriplet({
-    kreis: wohnKreis,
+    ort: wohnOrt,
     bundesland: wohnBL,
     deutschland: wohnDE,
-    labelKreis: kreisName,
+    labelOrt: ortName,
     labelBL: bundeslandName ?? "Bundesland",
     labelDE: "Deutschland",
   });
@@ -346,6 +348,7 @@ export function buildKreisImmobilienpreiseVM(args: {
       : null;
 
   return {
+    ortName,
     kreisName,
     bundeslandName,
     basePath,

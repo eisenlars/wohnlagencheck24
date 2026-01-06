@@ -1,3 +1,5 @@
+// components/right-edge-controls.tsx
+
 "use client";
 
 import { useState } from "react";

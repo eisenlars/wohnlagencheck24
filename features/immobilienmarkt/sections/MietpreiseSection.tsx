@@ -1,8 +1,6 @@
-// features/immobilienmarkt/sections/kreis/KreisMietpreiseSection.tsx
+// features/immobilienmarkt/sections/MietpreiseSection.tsx
 
-import Link from "next/link";
-
-import { KreisTabNav } from "@/features/immobilienmarkt/shared/KreisTabNav";
+import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
 import { RegionHero } from "@/components/region-hero";
 import { BeraterBlock } from "@/components/advisor-avatar";
@@ -10,15 +8,14 @@ import { RightEdgeControls } from "@/components/right-edge-controls";
 import { KpiValue } from "@/components/KpiValue";
 import { InteractiveMap } from "@/components/interactive-map";
 
-import type { TocItem } from "../../config/kreisSections";
-import type { KreisMietpreiseVM } from "../../selectors/kreis/mietpreise";
+import type { MietpreiseVM } from "@/features/immobilienmarkt/selectors/shared/types/mietpreise";
+import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
 
-export function KreisMietpreiseSection(props: {
-  vm: KreisMietpreiseVM;
-  tocItems: TocItem[];
-  tabs: { id: string; label: string; iconSrc: string }[];
-  activeTabId: string;
-}) {
+export function MietpreiseSection(
+  props: SectionPropsBase & {
+    vm: MietpreiseVM;
+  },
+) {
   const { vm, tocItems, tabs, activeTabId } = props;
 
   return (
@@ -26,20 +23,25 @@ export function KreisMietpreiseSection(props: {
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
       {/* Subnavigation */}
-      <KreisTabNav tabs={tabs} activeTabId={activeTabId} basePath={vm.basePath} />
+      <TabNav
+        tabs={tabs}
+        activeTabId={activeTabId}
+        basePath={props.basePath ?? vm.basePath}
+        parentBasePath={props.parentBasePath}
+      />
 
       <RegionHero
         title={vm.hero.title}
         subtitle={vm.hero.subtitle}
-        imageSrc={vm.hero.imageSrc}
+        imageSrc={props.assets?.heroImageSrc ?? vm.hero.imageSrc}
         rightOverlay={<HeroOverlayActions variant="miete" />}
         rightOverlayMode="buttons"
       />
 
       {/* Einleitung */}
       <section className="mb-3" id="einleitung">
-        <h1 className="mt-3 mb-1">Mietpreise 2025 – {vm.kreisName}</h1>
-        <p className="small text-muted mb-4">Aktualisiert am: {vm.kreisName}</p>
+        <h1 className="mt-3 mb-1">Mietpreise 2025 – {vm.regionName}</h1>
+        <p className="small text-muted mb-4">Aktualisiert am: {vm.regionName}</p>
 
         {vm.teaser && <p className="teaser-text">{vm.teaser}</p>}
 
@@ -55,9 +57,9 @@ export function KreisMietpreiseSection(props: {
         <div className="row g-4 align-items-stretch">
           <div className="col-12 col-lg-6">
             <div className="h-100" style={{ width: "90%", margin: "0 auto" }}>
-              {vm.assets.mietpreisMapSvg ? (
+              {props.assets?.mietpreisMapSvg ? (
                 <InteractiveMap
-                  svg={vm.assets.mietpreisMapSvg}
+                  svg={props.assets?.mietpreisMapSvg}
                   theme="mietpreis"
                   mode="singleValue"
                   kind="miete_qm"
@@ -88,7 +90,7 @@ export function KreisMietpreiseSection(props: {
                     highlightValueColor="#486b7a"
                     normalValueColor="#486b7a"
                   />
-                  <p className="mb-0 mt-2">Ø Kaltmiete – {vm.kreisName}</p>
+                  <p className="mb-0 mt-2">Ø Kaltmiete – {vm.regionName}</p>
                 </>
               ) : (
                 <p className="small text-muted mb-0">Keine Mietpreisdaten verfügbar.</p>

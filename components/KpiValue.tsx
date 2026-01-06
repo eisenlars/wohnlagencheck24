@@ -2,6 +2,7 @@
 
 
 import React from "react";
+import Image from "next/image";
 import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
 import { formatValueCtx, formatMetric, getUnitLabel } from "@/utils/format";
 
@@ -54,7 +55,7 @@ type KpiValueProps = {
 
   /**
    * Optionales Icon über dem Block (mittig).
-   * - string: wird als <img src=...> interpretiert
+   * - string: wird als Bildpfad interpretiert
    * - ReactNode: z.B. <MySvg />
    */
   icon?: string | React.ReactNode;
@@ -175,7 +176,7 @@ export function KpiValue(props: KpiValueProps) {
       {icon ? (
         <div className="d-flex justify-content-center mb-3">
           {typeof icon === "string" ? (
-            <img
+            <Image
               src={icon}
               alt={iconAlt}
               width={iconSize}

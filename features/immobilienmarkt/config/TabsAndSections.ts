@@ -1,15 +1,17 @@
+// features/immobilienmarkt/config/TabsAndSections.ts
+
 import type { ReportSection } from "../types/route";
 
 export type TocItem = { id: string; label: string };
 
-export type KreisTab = {
+export type Tab = {
   id: ReportSection;
   label: string;
   iconSrc: string;
   toc: TocItem[];
 };
 
-export const KREIS_TABS: KreisTab[] = [
+export const TABS: Tab[] = [
   {
     id: "uebersicht",
     label: "Übersicht",

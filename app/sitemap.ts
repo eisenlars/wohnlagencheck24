@@ -8,6 +8,7 @@ import {
   getReportBySlugs,
   type Report,
 } from "@/lib/data";
+import { asArray, asRecord, asString } from "@/utils/records";
 
 const BASE_URL = "https://www.wohnlagencheck24.de";
 
@@ -36,9 +37,9 @@ function parseGermanDate(dateStr: string | undefined): Date | undefined {
 function getLastModifiedFromReport(report: Report | null): Date | undefined {
   if (!report) return undefined;
 
-  const konf = (report.data as any)?.konfiguration;
-  if (Array.isArray(konf) && konf.length > 0) {
-    const raw = konf[0]?.aktualisierung as string | undefined;
+  const konf = asArray(report.data && asRecord(report.data)?.["konfiguration"]);
+  if (konf.length > 0) {
+    const raw = asString(asRecord(konf[0])?.["aktualisierung"]);
     const parsed = parseGermanDate(raw);
     if (parsed) return parsed;
   }

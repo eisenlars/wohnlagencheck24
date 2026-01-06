@@ -1,5 +1,7 @@
 // --- BeraterBlock ---
 
+import Image from "next/image";
+
 type BeraterProps = {
   name: string;
   taetigkeit: string;
@@ -20,7 +22,13 @@ export function BeraterBlock({
           
           {/* Rundes Bild */}
           <div className="berater-avatar">
-            <img src={imageSrc} alt={`Berater: ${name}`} />
+            <Image
+              src={imageSrc}
+              alt={`Berater: ${name}`}
+              width={140}
+              height={140}
+              className="w-100 h-100 object-fit-cover"
+            />
           </div>
 
           {/* Textblock */}

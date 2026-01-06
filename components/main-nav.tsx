@@ -58,22 +58,22 @@ export function MainNav({ bundeslaender }: MainNavProps) {
       ))}
 
       <li className="nav-item mt-3">
-        <a
+        <Link
           href="/#konzept"
           className="nav-link px-0"
           onClick={handleNavClick}
         >
           Konzept
-        </a>
+        </Link>
       </li>
       <li className="nav-item">
-        <a
+        <Link
           href="/#inhalte"
           className="nav-link px-0"
           onClick={handleNavClick}
         >
           Weitere Inhalte
-        </a>
+        </Link>
       </li>
       <li className="nav-item">
         <Link

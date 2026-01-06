@@ -60,7 +60,7 @@ function isBlank(v: unknown) {
   return String(v ?? "").trim().length === 0;
 }
 
-export function MatrixTable<Row extends Record<string, any> = Record<string, any>>({
+export function MatrixTable<Row extends Record<string, unknown> = Record<string, unknown>>({
   model,
   legacy,
   headerBg = "#f5f5f5",
@@ -109,7 +109,11 @@ export function MatrixTable<Row extends Record<string, any> = Record<string, any
   // NEU: Rowlabel-Spalte automatisch ausblenden, wenn sie faktisch leer ist
   const hideRowLabelCol =
     !rowLabelKey ||
-    (isBlank(rowLabelHeader) && rows.every((r) => isBlank((r as any)?.[rowLabelKey])));
+    (isBlank(rowLabelHeader) &&
+      rows.every((r) => {
+        const rowRecord = r as Record<string, unknown>;
+        return isBlank(rowRecord[rowLabelKey as string]);
+      }));
 
   return (
     <div className="table-responsive">
@@ -154,7 +158,8 @@ export function MatrixTable<Row extends Record<string, any> = Record<string, any
 
         <tbody className="small">
           {rows.map((r, ridx) => {
-            const rowLabel = (r as any)?.[rowLabelKey];
+            const rowRecord = r as Record<string, unknown>;
+            const rowLabel = rowRecord[rowLabelKey as string];
             const isRowHighlight =
               !hideRowLabelCol && highlightRowNorm && norm(rowLabel) === highlightRowNorm;
 
@@ -177,7 +182,7 @@ export function MatrixTable<Row extends Record<string, any> = Record<string, any
                   const isColHighlight =
                     highlightColNorm && norm(c.label) === highlightColNorm;
 
-                  const raw = (r as any)?.[c.key];
+                  const raw = rowRecord[c.key];
                   const value = toNumberOrNull(raw);
 
                   const display = formatMetric(value, {

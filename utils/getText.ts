@@ -1,18 +1,19 @@
 // utils/getText.ts
 
+import { asRecord } from "@/utils/records";
+
 export function getText(
   obj: unknown,
   path: string,
   fallback = "",
 ): string {
-  if (!obj || typeof obj !== "object") return fallback;
-
   const parts = path.split(".");
-  let cur: any = obj;
+  let cur: unknown = obj;
 
   for (const p of parts) {
-    if (cur && typeof cur === "object" && p in cur) {
-      cur = cur[p];
+    const rec = asRecord(cur);
+    if (rec && p in rec) {
+      cur = rec[p];
     } else {
       return fallback;
     }

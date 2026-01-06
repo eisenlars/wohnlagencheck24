@@ -1,5 +1,6 @@
 import type { FormatKind, UnitKey } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
+import { asRecord } from "@/utils/records";
 
 export type BarModel = {
   categories: string[];
@@ -73,7 +74,11 @@ export function buildBarModel(raw: unknown, opts: BuildBarModelOptions): BarMode
     removeEmptyCategories = false,
   } = opts;
 
-  const rows = Array.isArray(raw) ? raw.filter((x) => x && typeof x === "object") as any[] : [];
+  const rows = Array.isArray(raw)
+    ? raw
+        .map((item) => asRecord(item))
+        .filter((row): row is Record<string, unknown> => Boolean(row))
+    : [];
   if (!rows.length) {
     return { categories: [], series: [], unitKey: unitKey ?? "none", valueKind };
   }
@@ -81,7 +86,7 @@ export function buildBarModel(raw: unknown, opts: BuildBarModelOptions): BarMode
   // infer unit
   const inferredUnitKey =
     unitKey ??
-    jsonUnitToUnitKey(rows[0]?.einheit);
+    jsonUnitToUnitKey(rows[0]?.["einheit"]);
 
   // infer labelKey: "first property"
   const firstRowKeys = Object.keys(rows[0] ?? {});

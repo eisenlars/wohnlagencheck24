@@ -2,6 +2,7 @@
 
 import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
+import { asRecord } from "@/utils/records";
 
 import type { MatrixModel, MatrixColumn as MatrixModelColumn } from "@/components/MatrixTable";
 
@@ -36,7 +37,7 @@ function norm(s: unknown) {
   return String(s ?? "").trim();
 }
 
-function hasAnyFinite(rows: Record<string, any>[], key: string): boolean {
+function hasAnyFinite(rows: Record<string, unknown>[], key: string): boolean {
   return rows.some((r) => {
     const v = toNumberOrNull(r?.[key]);
     return typeof v === "number" && Number.isFinite(v);
@@ -48,7 +49,7 @@ function hasAnyFinite(rows: Record<string, any>[], key: string): boolean {
 export function buildTableModel(
   raw: unknown,
   opts: BuildTableOptions,
-): MatrixModel<Record<string, any>> {
+): MatrixModel<Record<string, unknown>> {
   const {
     kind,
     ctx = "table",
@@ -63,7 +64,11 @@ export function buildTableModel(
     columnLabelMap,
   } = opts;
 
-  const arr: any[] = Array.isArray(raw) ? raw.filter((x) => x && typeof x === "object") : [];
+  const arr: Record<string, unknown>[] = Array.isArray(raw)
+    ? raw
+        .map((item) => asRecord(item))
+        .filter((row): row is Record<string, unknown> => Boolean(row))
+    : [];
   if (!arr.length) {
     return {
       rows: [],
@@ -87,7 +92,7 @@ export function buildTableModel(
         .map((it) => {
           const label = norm(it?.[rowLabelKey]);
           const value = toNumberOrNull(it?.[valueKey]);
-          const unitKey = unitKeyFromRaw ? unitKeyFromRaw(it?.einheit) : "none";
+          const unitKey = unitKeyFromRaw ? unitKeyFromRaw(it?.["einheit"]) : "none";
           const inferredKind = kindFromUnitKey(unitKey, kind);
 
           return { __label: label, __value: value, __unitKey: unitKey, __kind: inferredKind };
@@ -104,7 +109,7 @@ export function buildTableModel(
 
     // transpose keyValue
     const columns: MatrixModelColumn[] = [];
-    const row: Record<string, any> = { __row: "" };
+    const row: Record<string, unknown> = { __row: "" };
 
     for (const it of arr) {
       const label = norm(it?.[rowLabelKey]);
@@ -113,10 +118,10 @@ export function buildTableModel(
       const key = `col_${label}`;
       const value = toNumberOrNull(it?.[valueKey]);
 
-      const unitKey = unitKeyFromRaw ? unitKeyFromRaw(it?.einheit) : "none";
+      const unitKey = unitKeyFromRaw ? unitKeyFromRaw(it?.["einheit"]) : "none";
       const inferredKind = kindFromUnitKey(unitKey, kind);
 
-      columns.push({ key, label, kind: inferredKind, explain: undefined as any, unitKey, ctx } as any);
+      columns.push({ key, label, kind: inferredKind, unitKey, ctx });
       row[key] = value;
     }
 
@@ -148,7 +153,7 @@ export function buildTableModel(
 
   // Einheiten/Kind ableiten (typisch überall gleich)
   const unitKey =
-    unitKeyFromRaw && rows[0] ? unitKeyFromRaw((rows[0] as any)?.einheit) : "none";
+    unitKeyFromRaw && rows[0] ? unitKeyFromRaw(rows[0]?.["einheit"]) : "none";
   const inferredKind = kindFromUnitKey(unitKey, kind);
 
   // --------- NEU: transpose für matrix ---------
@@ -165,12 +170,12 @@ export function buildTableModel(
       ctx,
     }));
 
-    const outRows: Record<string, any>[] = Array.from(colKeys).map((k) => {
-      const rowObj: Record<string, any> = { __row: columnLabelMap?.[k] ?? k };
+    const outRows: Record<string, unknown>[] = Array.from(colKeys).map((k) => {
+      const rowObj: Record<string, unknown> = { __row: columnLabelMap?.[k] ?? k };
 
       rows.forEach((srcRow) => {
         const pl = norm(srcRow?.[rowLabelKey]);
-        rowObj[`col_${pl}`] = toNumberOrNull((srcRow as any)?.[k]);
+        rowObj[`col_${pl}`] = toNumberOrNull(srcRow?.[k]);
       });
 
       return rowObj;
@@ -181,7 +186,12 @@ export function buildTableModel(
 
     const filteredRows =
       dropEmpty
-        ? outRows.filter((r) => filteredColumns.some((c) => Number.isFinite(toNumberOrNull(r?.[c.key]) as any)))
+        ? outRows.filter((r) =>
+            filteredColumns.some((c) => {
+              const v = toNumberOrNull(r?.[c.key]);
+              return typeof v === "number" && Number.isFinite(v);
+            }),
+          )
         : outRows;
 
     return {
@@ -205,7 +215,12 @@ export function buildTableModel(
 
   const finalRows =
     dropEmpty && columns.length
-      ? rows.filter((r) => columns.some((c) => Number.isFinite(toNumberOrNull(r?.[c.key]) as any)))
+      ? rows.filter((r) =>
+          columns.some((c) => {
+            const v = toNumberOrNull(r?.[c.key]);
+            return typeof v === "number" && Number.isFinite(v);
+          }),
+        )
       : rows;
 
   return {

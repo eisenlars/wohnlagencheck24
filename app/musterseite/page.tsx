@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export default function MusterSeite() {
   return (
     <div className="text-dark">
@@ -36,10 +38,13 @@ export default function MusterSeite() {
               </p>
             </div>
             <div className="col-md-6 border-top border-md-start border-md-top-0">
-              <img
+              <Image
                 src="https://via.placeholder.com/800x400?text=Kopfbild+%2F+Karte"
                 alt="Kopfbild Platzhalter"
                 className="img-fluid h-100 w-100 object-fit-cover"
+                width={800}
+                height={400}
+                sizes="(max-width: 768px) 100vw, 50vw"
               />
             </div>
           </div>
@@ -165,10 +170,13 @@ export default function MusterSeite() {
         <h2 className="h4 mb-3">Text mit Bild (links)</h2>
         <div className="row g-4 align-items-center">
           <div className="col-12 col-md-4">
-            <img
+            <Image
               src="https://via.placeholder.com/600x400?text=Lagebild"
               alt="Platzhalterbild links"
               className="img-fluid rounded shadow-sm"
+              width={600}
+              height={400}
+              sizes="(max-width: 768px) 100vw, 33vw"
             />
           </div>
           <div className="col-12 col-md-8">
@@ -190,10 +198,13 @@ export default function MusterSeite() {
         <h2 className="h4 mb-3">Text mit Bild (rechts)</h2>
         <div className="row g-4 align-items-center flex-md-row-reverse">
           <div className="col-12 col-md-4">
-            <img
+            <Image
               src="https://via.placeholder.com/600x400?text=Infrastruktur"
               alt="Platzhalterbild rechts"
               className="img-fluid rounded shadow-sm"
+              width={600}
+              height={400}
+              sizes="(max-width: 768px) 100vw, 33vw"
             />
           </div>
           <div className="col-12 col-md-8">

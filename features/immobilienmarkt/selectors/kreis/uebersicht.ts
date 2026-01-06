@@ -4,6 +4,8 @@ import type { Report } from "@/lib/data";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
 import { formatEurPerSqm } from "@/utils/format";
+import { asArray, asRecord, asString } from "@/utils/records";
+import type { UebersichtReportData } from "@/types/reports";
 
 export type VergleichItem = { region: string; value: number };
 export type Zeitpunkt = { jahr: number; value: number };
@@ -116,39 +118,46 @@ export type KreisUebersichtVM = {
   };
 };
 
-const toVergleichItems = (raw: any[], valueKey: string): VergleichItem[] =>
-  (raw ?? [])
-    .map((item: any) => ({
-      region: String(item?.region ?? ""),
+const toVergleichItems = (raw: unknown, valueKey: string): VergleichItem[] =>
+  asArray(raw)
+    .map((item) => asRecord(item))
+    .filter((row): row is Record<string, unknown> => Boolean(row))
+    .map((item) => ({
+      region: String(item["region"] ?? ""),
       value:
-        typeof item?.[valueKey] === "number"
+        typeof item[valueKey] === "number"
           ? item[valueKey]
-          : Number(item?.[valueKey]),
+          : Number(item[valueKey]),
     }))
     .filter((x) => x.region && Number.isFinite(x.value));
 
-const toZeitreihe = (raw: any[], valueKey: string): Zeitpunkt[] =>
-  Array.isArray(raw)
-    ? raw
-        .map((item: any) => ({
-          jahr: Number(item?.jahr),
-          value: Number(item?.[valueKey]),
-        }))
-        .filter((p) => Number.isFinite(p.jahr) && Number.isFinite(p.value) && p.jahr > 1900)
-        .sort((a, b) => a.jahr - b.jahr)
-    : [];
+const toZeitreihe = (raw: unknown, valueKey: string): Zeitpunkt[] =>
+  asArray(raw)
+    .map((item) => asRecord(item))
+    .filter((row): row is Record<string, unknown> => Boolean(row))
+    .map((item) => ({
+      jahr: Number(item["jahr"]),
+      value: Number(item[valueKey]),
+    }))
+    .filter((p) => Number.isFinite(p.jahr) && Number.isFinite(p.value) && p.jahr > 1900)
+    .sort((a, b) => a.jahr - b.jahr);
 
 export function buildKreisUebersichtVM(args: {
-  report: Report;
+  report: Report<UebersichtReportData>;
   bundeslandSlug: string;
   kreisSlug: string;
 }): KreisUebersichtVM {
   const { report, bundeslandSlug, kreisSlug } = args;
 
-  const kreisName =
-    (report.meta as any)?.amtlicher_name ?? report.meta?.name ?? kreisSlug;
+  const meta = asRecord(report.meta) ?? {};
+  const data = report.data ?? {};
+  const text = data.text ?? {};
+  const berater = text.berater ?? {};
 
-  const bundeslandName = (report.meta as any)?.bundesland_name;
+  const kreisName =
+    asString(meta["amtlicher_name"]) ?? asString(meta["name"]) ?? kreisSlug;
+
+  const bundeslandName = asString(meta["bundesland_name"]);
 
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
 
@@ -157,11 +166,14 @@ export function buildKreisUebersichtVM(args: {
 
   // Berater
   const beraterName =
-    (report.data as any)?.text?.berater?.berater_name ?? "Lars Hofmann";
+    (typeof berater.berater_name === "string" ? berater.berater_name : undefined) ??
+    "Lars Hofmann";
   const beraterTelefon =
-    (report.data as any)?.text?.berater?.berater_telefon ?? "+49 351/287051-0";
+    (typeof berater.berater_telefon === "string" ? berater.berater_telefon : undefined) ??
+    "+49 351/287051-0";
   const beraterEmail =
-    (report.data as any)?.text?.berater?.berater_email ?? "kontakt@wohnlagencheck24.de";
+    (typeof berater.berater_email === "string" ? berater.berater_email : undefined) ??
+    "kontakt@wohnlagencheck24.de";
 
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${kreisName}`;
   const beraterImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`;
@@ -226,32 +238,36 @@ export function buildKreisUebersichtVM(args: {
   const agentSuggestImage = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`;
 
   // Standortindikatoren
-  const standortAllgemein = (report.data as any)?.standort_allgemein?.[0] ?? null;
+  const standortAllgemein = data.standort_allgemein?.[0];
 
   const bevoelkerungsdynamik =
-    standortAllgemein && typeof standortAllgemein.bevoelkerungsdynamik === "number"
-      ? standortAllgemein.bevoelkerungsdynamik
+    standortAllgemein && typeof standortAllgemein["bevoelkerungsdynamik"] === "number"
+      ? (standortAllgemein["bevoelkerungsdynamik"] as number)
       : null;
 
   const arbeitsmarktdynamik =
-    standortAllgemein && typeof standortAllgemein.arbeitsmarktdynamik === "number"
-      ? standortAllgemein.arbeitsmarktdynamik
+    standortAllgemein && typeof standortAllgemein["arbeitsmarktdynamik"] === "number"
+      ? (standortAllgemein["arbeitsmarktdynamik"] as number)
       : null;
 
   const wirtschaftskraft =
-    standortAllgemein && typeof standortAllgemein.wirtschaftskraft === "number"
-      ? standortAllgemein.wirtschaftskraft
+    standortAllgemein && typeof standortAllgemein["wirtschaftskraft"] === "number"
+      ? (standortAllgemein["wirtschaftskraft"] as number)
       : null;
 
   const wohnraumsituation =
-    standortAllgemein && typeof standortAllgemein.wohnraumsituation === "number"
-      ? standortAllgemein.wohnraumsituation
+    standortAllgemein && typeof standortAllgemein["wohnraumsituation"] === "number"
+      ? (standortAllgemein["wohnraumsituation"] as number)
       : null;
 
   // KPI Basiswerte
-  const kaufpreis = toNumberOrNull((report.data as any)?.immobilien_kaufpreis?.[0]?.kaufpreis_immobilien);
-  const grundstueckspreis = toNumberOrNull((report.data as any)?.grundstueck_kaufpreis?.[0]?.kaufpreis_grundstueck);
-  const kaltmiete = toNumberOrNull((report.data as any)?.mietpreise_gesamt?.[0]?.preis_kaltmiete);
+  const immobilienKaufpreis = data.immobilien_kaufpreis?.[0];
+  const grundstueckKaufpreis = data.grundstueck_kaufpreis?.[0];
+  const mietpreiseGesamt = data.mietpreise_gesamt?.[0];
+
+  const kaufpreis = toNumberOrNull(immobilienKaufpreis["kaufpreis_immobilien"]);
+  const grundstueckspreis = toNumberOrNull(grundstueckKaufpreis["kaufpreis_grundstueck"]);
+  const kaltmiete = toNumberOrNull(mietpreiseGesamt["preis_kaltmiete"]);
 
   const kaufpreisLabel = formatEurPerSqm(kaufpreis, "kaufpreis_qm");
   const grundstueckLabel = formatEurPerSqm(grundstueckspreis, "grundstueck_qm");
@@ -259,106 +275,99 @@ export function buildKreisUebersichtVM(args: {
 
   // Überregionaler Vergleich
   const immVergleich = toVergleichItems(
-    (report.data as any)?.immobilienpreise_ueberregionaler_vergleich,
+    data.immobilienpreise_ueberregionaler_vergleich,
     "immobilienpreis",
   );
 
   const grundVergleich = toVergleichItems(
-    (report.data as any)?.grundstueckspreise_ueberregionaler_vergleich,
+    data.grundstueckspreise_ueberregionaler_vergleich,
     "grundstueckspreis",
   );
 
   const mieteVergleich = toVergleichItems(
-    (report.data as any)?.mietpreise_ueberregionaler_vergleich,
+    data.mietpreise_ueberregionaler_vergleich,
     "kaltmiete",
   );
 
   // Historien
   const immobilienHistorie = toZeitreihe(
-    (report.data as any)?.immobilie_kaufpreisentwicklung ?? [],
+    data.immobilie_kaufpreisentwicklung,
     "kaufpreisentwicklung_immobilie",
   );
 
   const grundHistorie = toZeitreihe(
-    (report.data as any)?.grundstueck_kaufpreisentwicklung ?? [],
+    data.grundstueck_kaufpreisentwicklung,
     "kaufpreisentwicklung_grundstueck",
   );
 
   const mieteHistorie = toZeitreihe(
-    (report.data as any)?.immobilie_mietpreisentwicklung ?? [],
+    data.immobilie_mietpreisentwicklung,
     "mietpreisentwicklung_immobilie",
   );
 
   // Preisindex
-  const basisjahrRaw = (report.data as any)?.basisjahr?.[0] ?? null;
-  const preisindexRaw = (report.data as any)?.preisindex?.[0] ?? null;
+  const basisjahrRaw = data.basisjahr?.[0];
+  const preisindexRaw = data.preisindex?.[0];
 
-  const basisjahrImmobilien = toNumberOrNull(basisjahrRaw?.basisjahr_immobilienpreisindex);
-  const basisjahrGrundstueck = toNumberOrNull(basisjahrRaw?.basisjahr_grundstueckspreisindex);
-  const basisjahrMiete = toNumberOrNull(basisjahrRaw?.basisjahr_mietpreisindex);
+  const basisjahrImmobilien = toNumberOrNull(basisjahrRaw["basisjahr_immobilienpreisindex"]);
+  const basisjahrGrundstueck = toNumberOrNull(basisjahrRaw["basisjahr_grundstueckspreisindex"]);
+  const basisjahrMiete = toNumberOrNull(basisjahrRaw["basisjahr_mietpreisindex"]);
 
-  const indexImmobilien = toNumberOrNull(preisindexRaw?.immobilienpreisindex);
-  const indexGrundstueck = toNumberOrNull(preisindexRaw?.grundstueckspreisindex);
-  const indexMiete = toNumberOrNull(preisindexRaw?.mietpreisindex);
+  const indexImmobilien = toNumberOrNull(preisindexRaw["immobilienpreisindex"]);
+  const indexGrundstueck = toNumberOrNull(preisindexRaw["grundstueckspreisindex"]);
+  const indexMiete = toNumberOrNull(preisindexRaw["mietpreisindex"]);
 
   // Ortslagen-Übersicht
-  const ortslagenUebersichtRaw = (report.data as any)?.ortslagen_uebersicht ?? [];
+  const ortslagenUebersichtRaw = data.ortslagen_uebersicht ?? [];
 
-  const ortslagenUebersicht: OrtslagenUebersichtRow[] = Array.isArray(ortslagenUebersichtRaw)
-    ? ortslagenUebersichtRaw
-        .filter((item: any) => {
-          const k = String(item?.kreis ?? "").toLowerCase();
-          return !k || k === kreisSlug;
-        })
-        .map((item: any) => ({
-          ortslage: String(item?.ortslage ?? "").trim(),
+  const ortslagenUebersicht: OrtslagenUebersichtRow[] = ortslagenUebersichtRaw
+    .filter((item) => {
+      const k = String(item.kreis ?? "").toLowerCase();
+      return !k || k === kreisSlug;
+    })
+    .map((item) => ({
+      ortslage: String(item.ortslage ?? "").trim(),
 
-          immobilienpreise_value: toNumberOrNull(item?.immobilienpreise_wert),
-          immobilienpreise_yoy: toNumberOrNull(item?.immobilienpreise_tendenz),
+      immobilienpreise_value: toNumberOrNull(item.immobilienpreise_wert),
+      immobilienpreise_yoy: toNumberOrNull(item.immobilienpreise_tendenz),
 
-          grundstueckspreise_value: toNumberOrNull(item?.grundstueckspreise_wert),
-          grundstueckspreise_yoy: toNumberOrNull(item?.grundstueckspreise_tendenz),
+      grundstueckspreise_value: toNumberOrNull(item.grundstueckspreise_wert),
+      grundstueckspreise_yoy: toNumberOrNull(item.grundstueckspreise_tendenz),
 
-          mietpreise_value: toNumberOrNull(item?.mietpreise_wert),
-          mietpreise_yoy: toNumberOrNull(item?.mietpreise_tendenz),
-        }))
-        .filter((r) => r.ortslage.length > 0)
-    : [];
+      mietpreise_value: toNumberOrNull(item.mietpreise_wert),
+      mietpreise_yoy: toNumberOrNull(item.mietpreise_tendenz),
+    }))
+    .filter((r) => r.ortslage.length > 0);
 
   // Preisgrenzen
-  const preisgrenzenImmobilieRaw =
-    (report.data as any)?.ortslagen_preisgrenzen_immobilie?.[0] ?? null;
-
-  const preisgrenzenGrundRaw =
-    (report.data as any)?.ortslagen_preisgrenzen_grundstueck?.[0] ?? null;
-
-  const preisgrenzenMieteRaw =
-    (report.data as any)?.ortslagen_preisgrenzen_miete?.[0] ?? null;
+  const preisgrenzenImmobilieRaw = data.ortslagen_preisgrenzen_immobilie?.[0];
+  const preisgrenzenGrundRaw = data.ortslagen_preisgrenzen_grundstueck?.[0];
+  const preisgrenzenMieteRaw = data.ortslagen_preisgrenzen_miete?.[0];
 
   const preisgrenzenImmobilie: PreisgrenzenData | null = preisgrenzenImmobilieRaw
     ? {
-        cheapestName: String(preisgrenzenImmobilieRaw?.guenstigste_ortslage_immobilie ?? "").trim(),
-        cheapestValue: toNumberOrNull(preisgrenzenImmobilieRaw?.guenstigste_ortslage_immobilienpreis),
-        priciestName: String(preisgrenzenImmobilieRaw?.teuerste_ortslage_immobilie ?? "").trim(),
-        priciestValue: toNumberOrNull(preisgrenzenImmobilieRaw?.teuerste_ortslage_immobilienpreis),
+        cheapestName: String(preisgrenzenImmobilieRaw["guenstigste_ortslage_immobilie"] ?? "").trim(),
+        cheapestValue: toNumberOrNull(preisgrenzenImmobilieRaw["guenstigste_ortslage_immobilienpreis"]),
+        priciestName: String(preisgrenzenImmobilieRaw["teuerste_ortslage_immobilie"] ?? "").trim(),
+        priciestValue: toNumberOrNull(preisgrenzenImmobilieRaw["teuerste_ortslage_immobilienpreis"]),
       }
     : null;
 
   const preisgrenzenGrund: PreisgrenzenData | null = preisgrenzenGrundRaw
     ? {
-        cheapestName: String(preisgrenzenGrundRaw?.guenstigste_ortslage_grundstueck ?? "").trim(),
-        cheapestValue: toNumberOrNull(preisgrenzenGrundRaw?.guenstigste_ortslage_grundstueckspreis),
-        priciestName: String(preisgrenzenGrundRaw?.teuerste_ortslage_grundstueck ?? "").trim(),
-        priciestValue: toNumberOrNull(preisgrenzenGrundRaw?.teuerste_ortslage_grundstueckspreis),
+        cheapestName: String(preisgrenzenGrundRaw["guenstigste_ortslage_grundstueck"] ?? "").trim(),
+        cheapestValue: toNumberOrNull(preisgrenzenGrundRaw["guenstigste_ortslage_grundstueckspreis"]),
+        priciestName: String(preisgrenzenGrundRaw["teuerste_ortslage_grundstueck"] ?? "").trim(),
+        priciestValue: toNumberOrNull(preisgrenzenGrundRaw["teuerste_ortslage_grundstueckspreis"]),
       }
     : null;
 
   const preisgrenzenMiete: PreisgrenzenData | null = preisgrenzenMieteRaw
     ? {
-        cheapestName: String(preisgrenzenMieteRaw?.guenstigste_ortslage_miete ?? "").trim(),
-        cheapestValue: toNumberOrNull(preisgrenzenMieteRaw?.guenstigste_ortslage_mietpreis),
-        priciestName: String(preisgrenzenMieteRaw?.teuerste_ortslage_miete ?? "").trim(),
-        priciestValue: toNumberOrNull(preisgrenzenMieteRaw?.teuerste_ortslage_mietpreis),
+        cheapestName: String(preisgrenzenMieteRaw["guenstigste_ortslage_miete"] ?? "").trim(),
+        cheapestValue: toNumberOrNull(preisgrenzenMieteRaw["guenstigste_ortslage_mietpreis"]),
+        priciestName: String(preisgrenzenMieteRaw["teuerste_ortslage_miete"] ?? "").trim(),
+        priciestValue: toNumberOrNull(preisgrenzenMieteRaw["teuerste_ortslage_mietpreis"]),
       }
     : null;
 
