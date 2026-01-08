@@ -121,12 +121,6 @@ export default function HomePage() {
                             >
                               {ort.name}
                             </Link>
-                            {ort.plz && (
-                              <span className="text-muted">
-                                {" "}
-                                (PLZ {ort.plz})
-                              </span>
-                            )}
                           </li>
                         ))}
                         {kreis.orte.length === 0 && (

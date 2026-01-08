@@ -61,12 +61,6 @@ export default function ImmobilienmarktOverviewPage() {
                               >
                                 {ort.name}
                               </Link>
-                              {ort.plz && (
-                                <span className="text-muted">
-                                  {" "}
-                                  (PLZ {ort.plz})
-                                </span>
-                              )}
                             </li>
                           ))}
                           {orte.length === 0 && (
