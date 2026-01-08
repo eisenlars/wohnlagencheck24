@@ -1,17 +1,15 @@
 {
-    "meta": [
-        {
-            "aktualisierung": "21.12.2025",
-            "regionale_zuordnung": "stadtteil",
-            "amtlicher_name": "Connewitz",
-            "bundesland_name": "sachsen",
-            "bundesland_schluessel": "14",
-            "kreis_name": "leipzig",
-            "kreis_schluessel": "14-7-13",
-            "ortslage_name": "ortslage_holzhausen",
-            "ortslage_schluessel": "14-7-13-3-35"
-        }
-    ],
+    "meta": {
+        "aktualisierung": "08.01.2026",
+        "regionale_zuordnung": "stadtteil",
+        "amtlicher_name": "Holzhausen",
+        "bundesland_name": "sachsen",
+        "bundesland_schluessel": "14",
+        "kreis_name": "leipzig",
+        "kreis_schluessel": "14-7-13",
+        "ortslage_name": "holzhausen",
+        "ortslage_schluessel": "14-7-13-3-35"
+    },
     "data": {
         "regionale_zuordnung_ortslagendaten": [
             {
@@ -350,23 +348,23 @@
         ],
         "wirtschaft_allgemein": [
             {
-                "kaufkraftindex_ol": "77,8",
-                "kaufkraftindex_k": "81,8",
-                "kaufkraft_nominal_ol": "21.846",
-                "kaufkraft_nominal_k": "22.983",
-                "kaufkraft_real_ol": "19.373",
-                "kaufkraft_real_k": "20.751",
-                "bip": "25 Mio",
-                "pendlersaldo_ol": "0",
-                "pendlersaldo_k": "32 Tsd",
-                "gewerbesaldo": "750",
-                "arbeitsplatzzentralitaet_ol": "0,0",
-                "arbeitsplatzzentralitaet_k": "1,1",
-                "arbeitslosenquote_ol": "3,0",
-                "arbeitslosenquote_k": "7,7",
-                "beschaeftigtenquote_ol": "66,3",
-                "beschaeftigtenquote_k": "64,5",
-                "arbeitslosendichte": "0,5"
+                "kaufkraftindex_ol": 77.78980842486449,
+                "kaufkraftindex_k": 81.83764456893748,
+                "kaufkraft_nominal_ol": 21846.001351178387,
+                "kaufkraft_nominal_k": 22982.77023727455,
+                "kaufkraft_real_ol": 19372.785435504968,
+                "kaufkraft_real_k": 20751.359798168432,
+                "bip": 25281756,
+                "pendlersaldo_ol": 0,
+                "pendlersaldo_k": 32324,
+                "gewerbesaldo": 746,
+                "arbeitsplatzzentralitaet_ol": 0.0,
+                "arbeitsplatzzentralitaet_k": 1.1225968816227672,
+                "arbeitslosenquote_ol": "3.0",
+                "arbeitslosenquote_k": "7.7",
+                "beschaeftigtenquote_ol": "66.3",
+                "beschaeftigtenquote_k": "64.5",
+                "arbeitslosendichte": "0.4523809523809524"
             }
         ],
         "gewerbesaldo_abs": [
@@ -1135,20 +1133,20 @@
         ],
         "flaechennutzung_wohnbau": [
             {
-                "flaechennutzung_wohnbau": "179"
+                "flaechennutzung_wohnbau": 179.0
             }
         ],
         "wohnungsnachfrage_allgemein": [
             {
-                "anzahl_einwohner": "7 Tsd",
-                "anzahl_haushalte": "3 Tsd",
-                "mittlere_haushaltsgroesse": "2,0",
-                "wanderungssaldo": "71",
-                "natuerlicher_saldo": "-43",
-                "einwohnerdichte": "521",
-                "siedlungsdichte": "2.670",
-                "jugendquotient": "32,5",
-                "altenquotient": "51,3"
+                "anzahl_einwohner": 6728,
+                "anzahl_haushalte": 3351.0,
+                "mittlere_haushaltsgroesse": 2.0,
+                "wanderungssaldo": 71,
+                "natuerlicher_saldo": -43,
+                "einwohnerdichte": "521.146398140976",
+                "siedlungsdichte": "2669.84126984127",
+                "jugendquotient": "32.51164064639825",
+                "altenquotient": "51.27362366474938"
             }
         ],
         "bevoelkerungsentwicklung_relativ": [
@@ -2054,19 +2052,19 @@
         ],
         "wohnungsangebot_allgemein": [
             {
-                "wohnungsbestand": "3.514",
-                "baufertigstellungen": "27",
-                "baugenehmigungen": "17",
-                "leerstandsquote": "0",
-                "wohnungsbestand_anzahl_absolut": "3.514",
-                "wohnungsbestand_wohnraumsaldo": "-83",
-                "wohnungsbestand_wohnraumsaldo_per_1000_ew": "-12",
-                "wohnungsbestand_wohnflaeche_pro_ew": 48.0,
-                "wohnungsbestand_mittlere_wohnflaeche": "0",
+                "wohnungsbestand": 3514,
+                "baufertigstellungen": 27,
+                "baugenehmigungen": 17,
+                "leerstandsquote": 0.0,
+                "wohnungsbestand_anzahl_absolut": 3514,
+                "wohnungsbestand_wohnraumsaldo": -82.98000000000002,
+                "wohnungsbestand_wohnraumsaldo_per_1000_ew": -12.333531510107017,
+                "wohnungsbestand_wohnflaeche_pro_ew": 47.988555291319855,
+                "wohnungsbestand_mittlere_wohnflaeche": 0,
                 "wohnungsbestand_raum_pro_ew": 0,
-                "baufertigstellungen_anzahl_absolut": "27",
+                "baufertigstellungen_anzahl_absolut": 27,
                 "baufertigstellungen_flaeche_absolut": 0.0,
-                "baugenehmigungen_anzahl_absolut": "17",
+                "baugenehmigungen_anzahl_absolut": 17,
                 "baugenehmigungen_flaeche_absolut": 0.0,
                 "baugenehmigungen_erloschen": 0
             }
@@ -3066,39 +3064,45 @@
         ],
         "immobilien_kaufpreis": [
             {
-                "kaufpreis_immobilien": "2.910"
+                "kaufpreis_immobilien": 2909.2854829823905,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis": [
             {
-                "kaufpreis_haus": "3.230"
+                "kaufpreis_haus": 3233.948519290095,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreisspanne": [
             {
-                "preis_haus_min": "2.670",
-                "preis_haus_avg": "3.230",
-                "preis_haus_max": "3.940"
+                "preis_haus_min": 2666.71,
+                "preis_haus_avg": 3233.948519290095,
+                "preis_haus_max": 3937.66,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": "2.760 €",
-                "doppelhaushaelfte": "2.970 €",
-                "einfamilienhaus": "2.940 €"
+                "reihenhaus": 2715.159888321431,
+                "doppelhaushaelfte": 2948.0480495801194,
+                "einfamilienhaus": 2911.905245664845,
+                "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": "3.290 €",
-                "doppelhaushaelfte": "3.360 €",
-                "einfamilienhaus": "3.530 €"
+                "reihenhaus": 3295.2290093191345,
+                "doppelhaushaelfte": 3422.9590125363084,
+                "einfamilienhaus": 3419.2414253938587,
+                "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": "3.640 €",
-                "doppelhaushaelfte": "3.930 €",
-                "einfamilienhaus": "4.090 €"
+                "reihenhaus": 3667.677307786972,
+                "doppelhaushaelfte": 3988.822947935318,
+                "einfamilienhaus": 3947.765649759507,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreise_im_ueberregionalen_vergleich": [
@@ -3159,7 +3163,7 @@
         ],
         "haus_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 2668.0817359759963,
                 "preis_k": 3047.0018685947102,
                 "preis_bl": 2584,
@@ -3167,7 +3171,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 2866.596826148335,
                 "preis_k": 3392.742781912248,
                 "preis_bl": 2606,
@@ -3175,7 +3179,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 3175.7664237440235,
                 "preis_k": 3691.4109574701124,
                 "preis_bl": 2800,
@@ -3183,7 +3187,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 3043.9487991754922,
                 "preis_k": 3391.88789262848,
                 "preis_bl": 2732,
@@ -3191,7 +3195,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 3055.179799369116,
                 "preis_k": 3340.7070886232905,
                 "preis_bl": 2419,
@@ -3199,7 +3203,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 3233.948519290095,
                 "preis_k": 3450.998704760635,
                 "preis_bl": 2235,
@@ -3337,7 +3341,7 @@
         ],
         "wohnung_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 2054.613389922594,
                 "preis_k": 2694.665832035641,
                 "preis_bl": 3068,
@@ -3345,7 +3349,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 2424.0509948428326,
                 "preis_k": 2947.85045497783,
                 "preis_bl": 3097,
@@ -3353,7 +3357,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 2564.11174744355,
                 "preis_k": 3122.0394834269423,
                 "preis_bl": 3394,
@@ -3361,7 +3365,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 2402.0869353876924,
                 "preis_k": 2843.299578392405,
                 "preis_bl": 3684,
@@ -3369,7 +3373,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 2413.2568632968823,
                 "preis_k": 2874.2238531237763,
                 "preis_bl": 3492,
@@ -3377,7 +3381,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 2584.6224466746858,
                 "preis_k": 2926.8555207915197,
                 "preis_bl": 3223,
@@ -3387,7 +3391,7 @@
         ],
         "grundstueckspreisindex_regional": [
             {
-                "grundstueckspreisindex": 260
+                "grundstueckspreisindex": 260.93801473775466
             }
         ],
         "grundstueckspreise_ueberregionaler_vergleich": [
@@ -3516,7 +3520,7 @@
         ],
         "grundstueck_preisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "angebotspreisentwicklung_grundstueck_k": 569.3284061635977,
                 "verkaufspreisentwicklung_grundstueck_k": 187.91,
                 "angebotspreisentwicklung_grundstueck_ol": 603.1976206978854,
@@ -3524,7 +3528,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "angebotspreisentwicklung_grundstueck_k": 596.3261024650186,
                 "verkaufspreisentwicklung_grundstueck_k": 466.02,
                 "angebotspreisentwicklung_grundstueck_ol": 677.8846833745079,
@@ -3532,7 +3536,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "angebotspreisentwicklung_grundstueck_k": 551.1837511906557,
                 "verkaufspreisentwicklung_grundstueck_k": 344.05,
                 "angebotspreisentwicklung_grundstueck_ol": 638.8655783073299,
@@ -3540,7 +3544,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "angebotspreisentwicklung_grundstueck_k": 570.9820344032142,
                 "verkaufspreisentwicklung_grundstueck_k": 345.86,
                 "angebotspreisentwicklung_grundstueck_ol": 634.6928040183044,
@@ -3548,7 +3552,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "angebotspreisentwicklung_grundstueck_k": 573.8916004651603,
                 "verkaufspreisentwicklung_grundstueck_k": 264.77,
                 "angebotspreisentwicklung_grundstueck_ol": 648.7916870144707,
@@ -3556,7 +3560,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "angebotspreisentwicklung_grundstueck_k": 528.475,
                 "verkaufspreisentwicklung_grundstueck_k": 350.0,
                 "angebotspreisentwicklung_grundstueck_ol": 595.7133333333333,
@@ -3566,27 +3570,27 @@
         ],
         "grundstueck_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "kaufpreisentwicklung_grundstueck": 569.3284061635977
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "kaufpreisentwicklung_grundstueck": 596.3261024650186
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "kaufpreisentwicklung_grundstueck": 551.1837511906557
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "kaufpreisentwicklung_grundstueck": 570.9820344032142
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "kaufpreisentwicklung_grundstueck": 573.8916004651603
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "kaufpreisentwicklung_grundstueck": 528.475
             }
         ],
@@ -3707,7 +3711,7 @@
         ],
         "mietpreisentwicklung_wohnung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 9.10734598832464,
                 "preis_k": 9.035179266692163,
                 "preis_bl": 10.89,
@@ -3715,7 +3719,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 9.607718827125753,
                 "preis_k": 9.446202935011307,
                 "preis_bl": 10.81,
@@ -3723,7 +3727,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 9.979231131849348,
                 "preis_k": 10.070080967268437,
                 "preis_bl": 10.86,
@@ -3731,7 +3735,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 10.128096783115513,
                 "preis_k": 10.50619007822499,
                 "preis_bl": 10.28,
@@ -3739,7 +3743,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 11.274633322278214,
                 "preis_k": 11.560973155560335,
                 "preis_bl": 9.42,
@@ -3747,7 +3751,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 11.435200931754748,
                 "preis_k": 11.84126629683015,
                 "preis_bl": 8.97,
@@ -3765,7 +3769,7 @@
         ],
         "mietpreisentwicklung_haus": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 8.31020622608188,
                 "preis_k": 8.291409771161987,
                 "preis_bl": 10.45,
@@ -3773,7 +3777,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 8.288192109083615,
                 "preis_k": 8.249662106425912,
                 "preis_bl": 10.41,
@@ -3781,7 +3785,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 9.59518883445835,
                 "preis_k": 8.990048315213166,
                 "preis_bl": 10.36,
@@ -3789,7 +3793,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 9.745505302735127,
                 "preis_k": 9.367689397515877,
                 "preis_bl": 10.09,
@@ -3797,7 +3801,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 10.134547134000341,
                 "preis_k": 9.89137253529307,
                 "preis_bl": 9.53,
@@ -3805,7 +3809,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 10.614942006077257,
                 "preis_k": 10.455778974798209,
                 "preis_bl": 9.81,
@@ -4015,27 +4019,27 @@
         ],
         "mietrendite_entwicklung": [
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "brutto_mietrendite": 4.04707335645765,
                 "kaufpreisfaktor": 24.709213595161682
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "brutto_mietrendite": 4.094635344009718,
                 "kaufpreisfaktor": 24.422199194440076
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "brutto_mietrendite": 4.387469785479809,
                 "kaufpreisfaktor": 22.792179750376132
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "brutto_mietrendite": 4.698320561679626,
                 "kaufpreisfaktor": 21.284201170864872
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "brutto_mietrendite": 4.54753781988307,
                 "kaufpreisfaktor": 21.98992157091533
             }
@@ -4067,7 +4071,7 @@
             "wirtschaft_sv_beschaeftigte_arbeitsort": "In den letzten fünf Jahren ist mit 3,4 % leicht gestiegen. Im jüngsten Jahr liegt die Zahl der Wohnort-Beschäftigten bei 2.561.",
             "wirtschaft_arbeitsplatzzentralitaet": "Die Arbeitsplatzzentralität liegt klar über dem Landesniveau mit Index 1.1225968816227672.",
             "wirtschaft_pendler": "Das Pendlervolumen  stieg deutlich um 4316 Personen. Die Zahl der Einpendler ist um 2,64 % % stark gestiegen. Die Zahl der Auspendler ist um 2,09 % % stark gestiegen.",
-            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben. Sie beträgt   derzeit cirka 3,0 %. Damit ist sie in den letzten fünf Jahren weitestgehend stabil geblieben. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben. Ihr Wert liegt bei 3,0 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
         },
         "wohnmarktsituation": {
             "wohnmarktsituation_intro": "Die Wohnraumsituation in größeren kreisfreien Städten ist geprägt von einem ständigen Spannungsfeld zwischen steigender Nachfrage und begrenztem Angebot. Urbanisierung und Bevölkerungswachstum lassen den Bedarf kontinuierlich steigen, während Baukapazitäten, Investitionen und gesetzliche Vorgaben das Angebot bestimmen. Hinzu kommen staatliche Programme zur Förderung von sozialem Wohnraum, die zwar wichtig sind, aber häufig in Konkurrenz zum freien Markt stehen. Als regionaler Immobilienspezialist sehe ich täglich, wie stark auch die wirtschaftliche Lage auf Bauindustrie und Kaufkraft wirkt – und damit die Dynamik des gesamten Wohnungsmarktes entscheidend prägt.",
@@ -4080,12 +4084,12 @@
             "wohnmarktsituation_wohnungsbestand_intro": "Die Haushaltsstruktur, welche die Anzahl der Einzelpersonen- und Mehrpersonenhaushalte umfasst, hat entscheidenden Einfluss auf die Nachfrage nach Wohnraum in einer Region. Die Nachfrage nach Wohnraum hängt daher nicht direkt von der Einwohnerzahl ab, sondern vielmehr von der Anzahl der Haushalte. Ein aussagekräftiger Vergleich zwischen Wohnungsangebot und -nachfrage setzt eine Gegenüberstellung der verfügbaren Wohnungen und der Haushalte voraus.",
             "wohnmarktsituation_baufertigstellungen_intro": "Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau.",
             "wohnmarktsituation_baugenehmigungen_intro": "Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
-            "wohnmarktsituation_allgemein": "In Leipzig Holzhausen leben aktuell rund 6.728 Menschen auf einer Gesamtfläche von 1.291 ha, davon entfallen 252 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 6.728 Einwohner je km². Die Einwohnerzahl hat sich in den letzten fünf Jahren nicht verändert, was auf eine insgesamt stabile Entwicklung hindeutet. Aktuell wird Leipzig Holzhausen als stagnierende Region eingestuft. Insgesamt gibt es hier etwa 3.351 Haushalte, die durchschnittlich aus 2,01 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung liegt mit 388 Personen über dem Niveau von 2015, was Leipzig Holzhausen als polarisierende Gegend kennzeichnet. Im Zehnjahresvergleich zeigt dabei ein normales Wachstum von 6.1 %.Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 388 Personen über dem Niveau von 2015, was Leipzig Holzhausen als polarisierende Gegend kennzeichnet. Über zehn Jahre betrachtet zeigt dabei ein normales Wachstum von 6.1 %.",
+            "wohnmarktsituation_allgemein": "In Leipzig Holzhausen leben aktuell rund 6.728 Menschen auf einer Gesamtfläche von 1.291 ha, davon entfallen 252 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 6.728 Einwohner je km². Über einen Zeitraum von fünf Jahren ist die Bevölkerungzahl nahezu gleich geblieben, was eine weitgehend unveränderte Tendenz erkennen lässt. Aktuell wird Leipzig Holzhausen als stagnierende Region eingestuft. Insgesamt gibt es hier etwa 3.351 Haushalte, die durchschnittlich aus 2,01 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region liegt mit 388 Personen über dem Niveau von 2015, was Leipzig Holzhausen als polarisierende Gegend kennzeichnet. Über die letzten 10 Jahre bedeutet letztlich einen normalen Anstieg von 6.1 %.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 3.351. In den letzten fünf Jahren hat sich die Zahl um 257 erhöht, was einem starken Wachstum von 8,3 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2024 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
-            "wohnmarktsituation_wanderungssaldo": "die Zuzüge sind die gleich blieben. Parallel dazu ist hingegen im selben Zeitfenster die Zahl der Fortzüge aus Leipzig Holzhausen mit 34,7 % deutlich mehr geworden, was für die Gegend leider ausgesprochen negativ ist. Damit hat der Saldo mit 61 deutlich abgenommen. Schauen wir ins aktuelle Jahr 2024, dann sehen wir einen Wanderungssaldo von 71..",
-            "wohnmarktsituation_alterstruktur": "Das mittlere Alter   beträgt 48.22621879 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt über dem Niveau des Bundeslandes, was auf eine ältere Bevölkerung hinweist. Auch im Bundesvergleich liegt das Durchschnittsalter über dem Bundesdurchschnitt, was auf einen höheren Seniorenanteil hinweist.",
+            "wohnmarktsituation_wanderungssaldo": "die Zuzüge sind die auf konstantem Niveau blieben. Parallel dazu sind hingegen im selben Zeitraum die Fortzüge aus Leipzig Holzhausen um 34,7 % stark gestiegen, was für die Gegend leider ausgesprochen negativ ist. Unter Berücksichtigung dieser Tendenzen hat mit 61 deutlich abgenommen. Wenn wir auf die aktuellste Entwicklung in 2024 blicken, hat der Wanderungssaldo 71 Personen betragen.",
+            "wohnmarktsituation_alterstruktur": "Der Altersdurchschnitt erreicht   48.22621879 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt über dem Niveau des Bundeslandes, was auf eine ältere Bevölkerung hinweist. Auch im Bundesvergleich liegt das Durchschnittsalter über dem Bundesdurchschnitt, was auf einen höheren Seniorenanteil hinweist.",
             "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient   bei 51.3 und der Jugendquotient bei 32.5. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt klar über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt klar über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 3.514 Wohnungen. Pro 1.000 Einwohner stehen also um die 522 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre blieb der Bestand dabei nahezu stabil.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt   aktuell ca. 323 m² m². Pro Kopf stehen hier durchschnittlich 48.0 m² zur Verfügung.  Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person leicht vergrößert, was auf eine verbesserte Wohnraumausstattung hindeutet.",
@@ -4098,36 +4102,36 @@
             "immobilienpreise_haus_intro": "Welche Preise erzielen Häuser in der Region aktuell? In diesem Kapitel betrachten wir die Immobilienpreise verschiedener Haustypen, analysieren die Situation in den vorhandenen Wohnlagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends auf. Gern gebe ich Ihnen eine individuell auf Ihre Immobilie abgestimmte Einschätzung. Kontaktieren Sie mich dazu gern.",
             "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Preise für Wohnungen in der Region? In diesem Kapitel betrachten wir die Immobilienpreise nach Wohnlagequalitäten, vergleichen die regionale Situation mit überregionalen Entwicklungen und zeigen aktuelle Trends auf. Zusätzlich fließen Unterschiede nach Zimmeranzahl und Wohnfläche in die Analyse ein. Für eine individuell auf Ihre Immobilie abgestimmte Einschätzung stehe ich Ihnen als Immobilienspezialist in der Region gern zur Verfügung.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Leipzig Holzhausen bei 3.230 €/m².  Er bewegt sich dabei zwischen 2.670 €/m² und 3.940 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 5,9 % gestiegen.  ",
-            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Holzhausen variieren die Preise je nach Lage erheblich. Vorherrschend sind in mittlere, gute, sehr gute und top Wohnlagen. Beispielsweise Top- (3.757 €), sehr guten (3.438 €) und guten (3.120 €).",
-            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Leipzig Holzhausen ungefähr bei 3526,3 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3285,4 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 3358,9 €/m² rechnen .",
-            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute beträgt er 3.230 €/m², und ist damit um 12,8 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen belaufen sich auf 2.580 €/m². Sie pendeln zwischen den Werten von 2.580 €/m² bis 3.100 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 7,1 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Holzhausen variieren die Preise je nach Lage erheblich. in Leipzig Holzhausen gibt es mittlere bis top Wohnlagequalitäten. Beispielsweise Top- (2.961 €), guten (2.490 €) und mittleren (2.221 €).",
+            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Holzhausen variieren die Preise je nach Lage erheblich. Vorherrschend sind in mittlere, gute, sehr gute und top Wohnlagen. Beispielsweise mittleren (2.802 €), sehr guten (3.438 €) und Top- (3.757 €).",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat hier in etwa zwischen 2911,9 €/m² und 3947,8 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3295,2 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen zwischen 2948,0 €/m² und 3988,8 €/m² rechnen .",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute beträgt er 3.230 €/m², und ist damit um 12,8 % deutlich gestiegen.",
+            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen belaufen sich auf 2.580 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 2.580 €/m² bis 3.100 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 7,1 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Holzhausen variieren die Preise je nach Lage erheblich. Vorherrschend sind in mittlere, gute, sehr gute und top Wohnlagen. In mittleren Wohnlagen liegen sie aktuell bei 2.221 € und in guten Wohnlagen bei 2.490 €.",
             "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig Holzhausen derzeit durchschnittlich 2308,1 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 9,8 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 2826,1 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 2826,1 €/m². hier ist der kurzfristige Trend mit 2,6 % Anstieg, leicht positiv ",
-            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Häuser in  bei 2.420 €/m². Heute liegt der Preis bei 2.580 €/m² €/m², und ist damit um  % deutlich gestiegen."
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 2.420 €/m². Heute liegt der Preis bei 2.580 €/m² €/m², und ist damit um  % deutlich gestiegen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "Die Grundstückspreise für Bauland sind ein zentraler Faktor für Bauherren, Investoren und Eigentümer. Sie bestimmen die Wirtschaftlichkeit neuer Projekte und die langfristige Wertentwicklung. Schwankungen entstehen vor allem durch Lage, Nachfrage und verfügbare Flächen. Dieser Report liefert einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist für den Landkreis Greiz helfe ich Ihnen, die statistischen Auswertungen richtig einzuordnen und die Chancen des regionalen Grundstücksmarktes optimal für Ihre Bau- oder Investitionsentscheidung zu nutzen.",
-            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke beträgt 600 €/m². Sie befinden sich üblicherweise in einer Spanne von 540 €/m² bis 660 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
-            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Holzhausen bei 680 €/m². Aktuell beträgt er 600 €/m² und ist damit um 12,1 % kräftig zurückgegangen."
+            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke beträgt 600 €/m². Diese variieren typischerweise von 540 €/m² bis 660 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Holzhausen bei 680 €/m². Aktuell liegt der Preis bei 600 €/m² und ist damit um 12,1 % kräftig zurückgegangen."
         },
         "mietpreise": {
             "mietpreise_intro": "Wie entwickeln sich die Mietpreise in der Region aktuell? Die dargestellten Angebotsmieten spiegeln die Preise wider, die Vermieter derzeit für neue Verträge verlangen – und sie entsprechen in den meisten Fällen dem tatsächlichen Mietpreis, da sie die aktuellen Marktbedingungen abbilden. Bestandsmieten liegen dagegen oft niedriger, da sie sich an früheren Marktverhältnissen orientieren und weniger dynamisch reagieren. In diesem Kapitel betrachten wir die Mietpreise nach Lagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends sowie Unterschiede nach Zimmeranzahl und Wohnfläche. Als Immobilienspezialist in der Region stehe ich Ihnen dabei gern beratend zur Seite.",
-            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) in Leipzig Holzhausen beträgt 11.0 €/m². Sie variieren typischerweise zwischen von 6.0 €/m² bis 19.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 13.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise nahezu unverändert geblieben.",
-            "mietpreise_wohnung_allgemein": "Derzeit stehen die mittleren Mietepreis für Wohnungen bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 19.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 32.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 15.0 €/m² rechnen, im Bestand liegt man bei 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 43,2 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 31,0 % weit über dem derzeitigen Niveau.",
-            "mietpreise_wohnung_preisentwicklung": "Vor einem Jahr stand der mittlere Quadratmeterpreis bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2021) lagen die durchschnittlichen Werte bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
+            "mietpreise_allgemein": "Die aktuellen Angebotsmietpreise in Leipzig Holzhausen liegen bei 11.0 €/m². Diese bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 19.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² beträgt,  kommt man auf eine durchschnittliche Warmmiete von 13.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise nahezu unverändert geblieben.",
+            "mietpreise_wohnung_allgemein": "Derzeit stehen die mittleren Mietepreis für Wohnungen bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 19.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 32.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 15.0 €/m² rechnen, im Bestand sind es 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 43,2 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 31,0 % weit über dem derzeitigen Niveau.",
+            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr lag der Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) standen die mittleren Angebotspreise bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
             "mietpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig Holzhausen derzeit durchschnittlich 12,0 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 14,2 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 12,8 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 12,8 €/m². hier ist der kurzfristige Trend mit 15,1 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 10 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6 €/m² bis 14 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei 10 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 4 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2021) lagen die durchschnittlichen Werte bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 28 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in  bei 10 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 4 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) standen die mittleren Angebotspreise bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 28 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Die Mietrendite zählt zu den wichtigsten Kennzahlen einer Immobilienanlage. Sie zeigt, welche Erträge eine vermietete Immobilie im Verhältnis zum Kaufpreis erwirtschaftet – und ist damit ein entscheidender Faktor für jede Kapitalanlage in Immobilien. Eine fundierte Renditeberechnung unterstützt Investoren dabei, Chancen und Risiken realistisch einzuschätzen und die Rentabilität verschiedener Objekte zu vergleichen. Die folgenden Auswertungen geben einen ersten regionalen Überblick. Doch neben der reinen Zahl sind vor allem Lage, Nachfrage und Mietentwicklung ausschlaggebend. Als Immobilienspezialist für die Region helfe ich Ihnen, die Mietrendite richtig zu bewerten und die passende Immobilie als langfristige, sichere Kapitalanlage auszuwählen.",
             "mietrendite_hinweis": "Beachten Sie, dass die Brutto-Mietrendite nur eine von mehreren Faktoren ist, die bei einer fundierten Investitionsentscheidung berücksichtigt werden sollten. Zusätzliche Aspekte wie Standort, langfristige Entwicklung und Risikobewertung sind ebenso relevant, um eine erfolgreiche Immobilieninvestition zu gewährleisten. Kontaktieren Sie dazu unseren regionalen Investment-Spezialisten.",
             "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
-            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 4,55 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Holzhausen bei 4,7 %. Bis heute ist der Preis innerhalb dieser Zeit mit 3,2 % deutlich gefallen. Im 5-Jahres Rückblick (ab 2021) lag der Wert bei 4,05 %, innerhalb diesen Zeitraums sind sie bis jetzt um 12,4 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 4,21 %, ",
+            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 4,55 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Holzhausen bei 4,7 %. Bis heute ist der Preis innerhalb dieser Zeit mit 3,2 % deutlich gefallen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 4,05 %, innerhalb diesen Zeitraums sind sie bis jetzt um 12,4 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 4,21 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 6,17 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  in Leipzig Holzhausen ungefähr bei 16.7, und die mittlere Netto-Mietrendite bei ungefähr 5,81 %. ",
-            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Holzhausen bei 22.5. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 4,16 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Holzhausen bei 14.5. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 6,69 €/m², "
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Holzhausen bei 22.5. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 4,16 €/m², ",
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Holzhausen bei 14.5. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 6,69 €/m², "
         },
         "quellenangaben": [
             {

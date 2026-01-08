@@ -1,17 +1,15 @@
 {
-    "meta": [
-        {
-            "aktualisierung": "21.12.2025",
-            "regionale_zuordnung": "stadtteil",
-            "amtlicher_name": "Connewitz",
-            "bundesland_name": "sachsen",
-            "bundesland_schluessel": "14",
-            "kreis_name": "leipzig",
-            "kreis_schluessel": "14-7-13",
-            "ortslage_name": "ortslage_plagwitz",
-            "ortslage_schluessel": "14-7-13-5-51"
-        }
-    ],
+    "meta": {
+        "aktualisierung": "08.01.2026",
+        "regionale_zuordnung": "stadtteil",
+        "amtlicher_name": "Plagwitz",
+        "bundesland_name": "sachsen",
+        "bundesland_schluessel": "14",
+        "kreis_name": "leipzig",
+        "kreis_schluessel": "14-7-13",
+        "ortslage_name": "plagwitz",
+        "ortslage_schluessel": "14-7-13-5-51"
+    },
     "data": {
         "regionale_zuordnung_ortslagendaten": [
             {
@@ -350,23 +348,23 @@
         ],
         "wirtschaft_allgemein": [
             {
-                "kaufkraftindex_ol": "86,6",
-                "kaufkraftindex_k": "81,8",
-                "kaufkraft_nominal_ol": "24.308",
-                "kaufkraft_nominal_k": "22.983",
-                "kaufkraft_real_ol": "21.486",
-                "kaufkraft_real_k": "20.751",
-                "bip": "25 Mio",
-                "pendlersaldo_ol": "0",
-                "pendlersaldo_k": "32 Tsd",
-                "gewerbesaldo": "750",
-                "arbeitsplatzzentralitaet_ol": "0,0",
-                "arbeitsplatzzentralitaet_k": "1,1",
-                "arbeitslosenquote_ol": "5,7",
-                "arbeitslosenquote_k": "7,7",
-                "beschaeftigtenquote_ol": "63,0",
-                "beschaeftigtenquote_k": "64,5",
-                "arbeitslosendichte": "6,0"
+                "kaufkraftindex_ol": 86.55803698758442,
+                "kaufkraftindex_k": 81.83764456893748,
+                "kaufkraft_nominal_ol": 24308.415604500984,
+                "kaufkraft_nominal_k": 22982.77023727455,
+                "kaufkraft_real_ol": 21485.971818067817,
+                "kaufkraft_real_k": 20751.359798168432,
+                "bip": 25281756,
+                "pendlersaldo_ol": 0,
+                "pendlersaldo_k": 32324,
+                "gewerbesaldo": 746,
+                "arbeitsplatzzentralitaet_ol": 0.0,
+                "arbeitsplatzzentralitaet_k": 1.1225968816227672,
+                "arbeitslosenquote_ol": "5.7",
+                "arbeitslosenquote_k": "7.7",
+                "beschaeftigtenquote_ol": "63.0",
+                "beschaeftigtenquote_k": "64.5",
+                "arbeitslosendichte": "6.0"
             }
         ],
         "gewerbesaldo_abs": [
@@ -1135,20 +1133,20 @@
         ],
         "flaechennutzung_wohnbau": [
             {
-                "flaechennutzung_wohnbau": "70"
+                "flaechennutzung_wohnbau": 70.0
             }
         ],
         "wohnungsnachfrage_allgemein": [
             {
-                "anzahl_einwohner": "17 Tsd",
-                "anzahl_haushalte": "10 Tsd",
-                "mittlere_haushaltsgroesse": "1,7",
-                "wanderungssaldo": "-88",
-                "natuerlicher_saldo": "-1",
-                "einwohnerdichte": "9.947",
-                "siedlungsdichte": "14.584",
-                "jugendquotient": "24,5",
-                "altenquotient": "17,4"
+                "anzahl_einwohner": 17209,
+                "anzahl_haushalte": 9972.0,
+                "mittlere_haushaltsgroesse": 1.7,
+                "wanderungssaldo": -88,
+                "natuerlicher_saldo": -1,
+                "einwohnerdichte": "9947.398843930636",
+                "siedlungsdichte": "14583.898305084747",
+                "jugendquotient": "24.459953472914588",
+                "altenquotient": "17.422731804586242"
             }
         ],
         "bevoelkerungsentwicklung_relativ": [
@@ -2054,19 +2052,19 @@
         ],
         "wohnungsangebot_allgemein": [
             {
-                "wohnungsbestand": "9.018",
-                "baufertigstellungen": "0",
-                "baugenehmigungen": "20",
-                "leerstandsquote": "0",
-                "wohnungsbestand_anzahl_absolut": "9.018",
-                "wohnungsbestand_wohnraumsaldo": "-1.585",
-                "wohnungsbestand_wohnraumsaldo_per_1000_ew": "-92",
-                "wohnungsbestand_wohnflaeche_pro_ew": 35.0,
-                "wohnungsbestand_mittlere_wohnflaeche": "0",
+                "wohnungsbestand": 9018,
+                "baufertigstellungen": 0,
+                "baugenehmigungen": 20,
+                "leerstandsquote": 0.0,
+                "wohnungsbestand_anzahl_absolut": 9018,
+                "wohnungsbestand_wohnraumsaldo": -1585.2600000000002,
+                "wohnungsbestand_wohnraumsaldo_per_1000_ew": -92.11807775001455,
+                "wohnungsbestand_wohnflaeche_pro_ew": 34.83380789121971,
+                "wohnungsbestand_mittlere_wohnflaeche": 0,
                 "wohnungsbestand_raum_pro_ew": 0,
-                "baufertigstellungen_anzahl_absolut": "0",
+                "baufertigstellungen_anzahl_absolut": 0,
                 "baufertigstellungen_flaeche_absolut": 0.0,
-                "baugenehmigungen_anzahl_absolut": "20",
+                "baugenehmigungen_anzahl_absolut": 20,
                 "baugenehmigungen_flaeche_absolut": 0.0,
                 "baugenehmigungen_erloschen": 0
             }
@@ -3066,39 +3064,45 @@
         ],
         "immobilien_kaufpreis": [
             {
-                "kaufpreis_immobilien": "3.430"
+                "kaufpreis_immobilien": 3428.866516488651,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis": [
             {
-                "kaufpreis_haus": "3.710"
+                "kaufpreis_haus": 3714.973081519181,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreisspanne": [
             {
-                "preis_haus_min": "2.680",
-                "preis_haus_avg": "3.710",
-                "preis_haus_max": "4.470"
+                "preis_haus_min": 2677.38,
+                "preis_haus_avg": 3714.973081519181,
+                "preis_haus_max": 4470.6,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": "3.060 €",
-                "doppelhaushaelfte": "3.320 €",
-                "einfamilienhaus": "3.510 €"
+                "reihenhaus": 3042.9419285580097,
+                "doppelhaushaelfte": 3276.4637303170994,
+                "einfamilienhaus": 3412.875113328266,
+                "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": "3.740 €",
-                "doppelhaushaelfte": "3.840 €",
-                "einfamilienhaus": "4.160 €"
+                "reihenhaus": 3762.1698579655026,
+                "doppelhaushaelfte": 3852.8573893769662,
+                "einfamilienhaus": 4180.054771982703,
+                "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": "4.360 €",
-                "doppelhaushaelfte": "4.590 €",
-                "einfamilienhaus": "4.930 €"
+                "reihenhaus": 4300.943665331094,
+                "doppelhaushaelfte": 4540.125919598381,
+                "einfamilienhaus": 4724.284840784565,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreise_im_ueberregionalen_vergleich": [
@@ -3159,7 +3163,7 @@
         ],
         "haus_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 2926.353767683819,
                 "preis_k": 3047.0018685947102,
                 "preis_bl": 2584,
@@ -3167,7 +3171,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 3557.314445150219,
                 "preis_k": 3392.742781912248,
                 "preis_bl": 2606,
@@ -3175,7 +3179,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 4348.943194191779,
                 "preis_k": 3691.4109574701124,
                 "preis_bl": 2800,
@@ -3183,7 +3187,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 3992.441323564892,
                 "preis_k": 3391.88789262848,
                 "preis_bl": 2732,
@@ -3191,7 +3195,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 3870.521703820128,
                 "preis_k": 3340.7070886232905,
                 "preis_bl": 2419,
@@ -3199,7 +3203,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 3714.973081519181,
                 "preis_k": 3450.998704760635,
                 "preis_bl": 2235,
@@ -3337,7 +3341,7 @@
         ],
         "wohnung_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 2584.0992870836185,
                 "preis_k": 2694.665832035641,
                 "preis_bl": 3068,
@@ -3345,7 +3349,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 3144.479858515242,
                 "preis_k": 2947.85045497783,
                 "preis_bl": 3097,
@@ -3353,7 +3357,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 3391.3925536755305,
                 "preis_k": 3122.0394834269423,
                 "preis_bl": 3394,
@@ -3361,7 +3365,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 3111.2310644403683,
                 "preis_k": 2843.299578392405,
                 "preis_bl": 3684,
@@ -3369,7 +3373,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 3115.6161828126164,
                 "preis_k": 2874.2238531237763,
                 "preis_bl": 3492,
@@ -3377,7 +3381,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 3142.759951458121,
                 "preis_k": 2926.8555207915197,
                 "preis_bl": 3223,
@@ -3387,7 +3391,7 @@
         ],
         "grundstueckspreisindex_regional": [
             {
-                "grundstueckspreisindex": 258
+                "grundstueckspreisindex": 258.60479547372984
             }
         ],
         "grundstueckspreise_ueberregionaler_vergleich": [
@@ -3516,7 +3520,7 @@
         ],
         "grundstueck_preisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "angebotspreisentwicklung_grundstueck_k": 569.3284061635977,
                 "verkaufspreisentwicklung_grundstueck_k": 187.91,
                 "angebotspreisentwicklung_grundstueck_ol": 694.7829613259241,
@@ -3524,7 +3528,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "angebotspreisentwicklung_grundstueck_k": 596.3261024650186,
                 "verkaufspreisentwicklung_grundstueck_k": 466.02,
                 "angebotspreisentwicklung_grundstueck_ol": 616.4889311195019,
@@ -3532,7 +3536,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "angebotspreisentwicklung_grundstueck_k": 551.1837511906557,
                 "verkaufspreisentwicklung_grundstueck_k": 344.05,
                 "angebotspreisentwicklung_grundstueck_ol": 603.1493439536698,
@@ -3540,7 +3544,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "angebotspreisentwicklung_grundstueck_k": 570.9820344032142,
                 "verkaufspreisentwicklung_grundstueck_k": 345.86,
                 "angebotspreisentwicklung_grundstueck_ol": 637.8367993057964,
@@ -3548,7 +3552,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "angebotspreisentwicklung_grundstueck_k": 573.8916004651603,
                 "verkaufspreisentwicklung_grundstueck_k": 264.77,
                 "angebotspreisentwicklung_grundstueck_ol": 613.213717233578,
@@ -3556,7 +3560,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "angebotspreisentwicklung_grundstueck_k": 528.475,
                 "verkaufspreisentwicklung_grundstueck_k": 350.0,
                 "angebotspreisentwicklung_grundstueck_ol": 590.3866666666667,
@@ -3566,27 +3570,27 @@
         ],
         "grundstueck_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "kaufpreisentwicklung_grundstueck": 569.3284061635977
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "kaufpreisentwicklung_grundstueck": 596.3261024650186
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "kaufpreisentwicklung_grundstueck": 551.1837511906557
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "kaufpreisentwicklung_grundstueck": 570.9820344032142
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "kaufpreisentwicklung_grundstueck": 573.8916004651603
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "kaufpreisentwicklung_grundstueck": 528.475
             }
         ],
@@ -3707,7 +3711,7 @@
         ],
         "mietpreisentwicklung_wohnung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 8.474886548644882,
                 "preis_k": 9.035179266692163,
                 "preis_bl": 10.89,
@@ -3715,7 +3719,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 8.860214768019844,
                 "preis_k": 9.446202935011307,
                 "preis_bl": 10.81,
@@ -3723,7 +3727,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 10.066508986771069,
                 "preis_k": 10.070080967268437,
                 "preis_bl": 10.86,
@@ -3731,7 +3735,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 10.453125179440486,
                 "preis_k": 10.50619007822499,
                 "preis_bl": 10.28,
@@ -3739,7 +3743,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 11.592495460619421,
                 "preis_k": 11.560973155560335,
                 "preis_bl": 9.42,
@@ -3747,7 +3751,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 12.000054175570575,
                 "preis_k": 11.84126629683015,
                 "preis_bl": 8.97,
@@ -3765,7 +3769,7 @@
         ],
         "mietpreisentwicklung_haus": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 7.863567087885626,
                 "preis_k": 8.291409771161987,
                 "preis_bl": 10.45,
@@ -3773,7 +3777,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 8.063934786873263,
                 "preis_k": 8.249662106425912,
                 "preis_bl": 10.41,
@@ -3781,7 +3785,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 8.78280874909506,
                 "preis_k": 8.990048315213166,
                 "preis_bl": 10.36,
@@ -3789,7 +3793,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 9.192006262376104,
                 "preis_k": 9.367689397515877,
                 "preis_bl": 10.09,
@@ -3797,7 +3801,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 10.17612701840462,
                 "preis_k": 9.89137253529307,
                 "preis_bl": 9.53,
@@ -3805,7 +3809,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 10.653125920695466,
                 "preis_k": 10.455778974798209,
                 "preis_bl": 9.81,
@@ -4015,27 +4019,27 @@
         ],
         "mietrendite_entwicklung": [
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "brutto_mietrendite": 3.0210448734723174,
                 "kaufpreisfaktor": 33.10113030034617
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "brutto_mietrendite": 2.9317550080950316,
                 "kaufpreisfaktor": 34.109262105423014
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "brutto_mietrendite": 3.3303657049481403,
                 "kaufpreisfaktor": 30.026732455064472
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "brutto_mietrendite": 3.7456655267573367,
                 "kaufpreisfaktor": 26.69752525569764
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "brutto_mietrendite": 3.9639653490152456,
                 "kaufpreisfaktor": 25.22726391259769
             }
@@ -4080,13 +4084,13 @@
             "wohnmarktsituation_wohnungsbestand_intro": "Die Haushaltsstruktur, welche die Anzahl der Einzelpersonen- und Mehrpersonenhaushalte umfasst, hat entscheidenden Einfluss auf die Nachfrage nach Wohnraum in einer Region. Die Nachfrage nach Wohnraum hängt daher nicht direkt von der Einwohnerzahl ab, sondern vielmehr von der Anzahl der Haushalte. Ein aussagekräftiger Vergleich zwischen Wohnungsangebot und -nachfrage setzt eine Gegenüberstellung der verfügbaren Wohnungen und der Haushalte voraus.",
             "wohnmarktsituation_baufertigstellungen_intro": "Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau.",
             "wohnmarktsituation_baugenehmigungen_intro": "Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
-            "wohnmarktsituation_allgemein": "In Leipzig Plagwitz leben aktuell rund 17.209 Menschen auf einer Gesamtfläche von 173 ha, davon entfallen 118 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 17.209 Einwohner je km². Im Verlauf der letzten fünf Jahre hat sich die Bevölkerung um 660 Menschen leicht erhöht. Aktuell wird Leipzig Plagwitz als leicht wachsende Region eingestuft. Insgesamt gibt es hier etwa 9.972 Haushalte, die durchschnittlich aus 1,73 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung liegt mit 2142 Personen stark über dem Niveau von 2015, was Leipzig Plagwitz als polarisierende Gegend kennzeichnet. Im Zehnjahresvergleich bedeutet letztlich einen deutlichen Anstieg von 14.2 %.Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 2142 Personen stark über dem Niveau von 2015, was Leipzig Plagwitz als polarisierende Gegend kennzeichnet. Über zehn Jahre betrachtet bedeutet letztlich einen deutlichen Anstieg von 14.2 %.",
+            "wohnmarktsituation_allgemein": "In Leipzig Plagwitz leben aktuell rund 17.209 Menschen auf einer Gesamtfläche von 173 ha, davon entfallen 118 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 17.209 Einwohner je km². Binnen fünf Jahren hat sich die Zahl der Einwohner um 660 Personen leicht erhöht. Aktuell wird Leipzig Plagwitz als leicht wachsende Region eingestuft. Insgesamt gibt es hier etwa 9.972 Haushalte, die durchschnittlich aus 1,73 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung liegt mit 2142 Personen stark über dem Niveau von 2015, was Leipzig Plagwitz als polarisierende Gegend kennzeichnet. Im Zehnjahresvergleich bedeutet damit einen deutlichen Anstieg von rund 14.2 %.Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 2142 Personen stark über dem Niveau von 2015, was Leipzig Plagwitz als polarisierende Gegend kennzeichnet. Über zehn Jahre betrachtet bedeutet damit einen deutlichen Anstieg von rund 14.2 %.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 9.972. In den letzten fünf Jahren hat sich die Zahl um 1.074 erhöht, was einem sehr starken Wachstum von 12,1 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2024 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
-            "wohnmarktsituation_wanderungssaldo": "die Zuzüge sind die gleich blieben. Währenddessen ist jedoch im selben Zeitfenster die Zahl der Fortzüge aus Leipzig Plagwitz mit 8,1 % weniger geworden, was für die Gegend durchaus nachteilig ist. Folglich ist mit 101 stark gesunken. Schauen wir jetzt auf die jüngste Entwicklung. In der letzten statistischen Erhebung 2024 hat der Wanderungssaldo -88 Personen betragen.",
-            "wohnmarktsituation_alterstruktur": "Das Durchschnittsalter   ist 38.41556744 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter unter dem Bundesdurchschnitt, was eine jüngere Struktur nahelegt.",
-            "wohnmarktsituation_jugendquotient_altenquotient": "  liegt der Jugendquotient bei 24.5 und der Altenquotienten bei 17.4. Damit ist die Region eher von einer jüngeren Bevölkerung geprägt, was sich auch auf die Nachfrage nach familiengerechtem Wohnraum auswirken kann. Der Jugendquotient liegt klar unter dem Landesniveau, was einen geringeren Anteil an jungen Menschen vermuten lässt. Der Altenquotient liegt klar unter dem Landesniveau, was einen vergleichsweise jüngeren Altersaufbau signalisiert.",
+            "wohnmarktsituation_wanderungssaldo": "die Zuzüge sind die gleich blieben. Parallel dazu haben hingegen im selben Zeitfenster die Wegzüge aus Leipzig Plagwitz um 8,1 % deutlich zugenommen, was für die Entwicklungsperspektiven unerfreulich ist. Folglich ist mit 101 stark gesunken. Wenn wir auf die aktuellste Entwicklung in 2024 blicken, ist der Saldo -88.",
+            "wohnmarktsituation_alterstruktur": "Der Altersdurchschnitt   erreicht 38.41556744 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter unter dem Bundesdurchschnitt, was eine jüngere Struktur nahelegt.",
+            "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient   bei 17.4 und der Jugendquotient bei 24.5. Damit ist die Region eher von einer jüngeren Bevölkerung geprägt, was sich auch auf die Nachfrage nach familiengerechtem Wohnraum auswirken kann. Der Jugendquotient liegt klar unter dem Landesniveau, was einen geringeren Anteil an jungen Menschen vermuten lässt. Der Altenquotient liegt klar unter dem Landesniveau, was einen vergleichsweise jüngeren Altersaufbau signalisiert.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 9.018 Wohnungen. Pro 1.000 Einwohner stehen also um die 524 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre ist der Bestand dabei leicht gesunken.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt   aktuell ca. 599 m² m². Pro Kopf stehen hier durchschnittlich 34.8 m² zur Verfügung.  Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person leicht verringert, was auf eine dichtere Belegung schließen lässt.",
             "wohnmarktsituation_baufertigstellungen": "Im Jahr 2024 wurden   0 neue Wohnungen fertiggestellt, was 0.0 Fertigstellungen pro 1.000 Einwohner entspricht. In den vergangenen 5 Jahren ist die Zahl der Fertigstellungen deutlich gesunken, was auf eine leicht schwächelnde Bautätigkeit hindeutet.",
@@ -4099,35 +4103,35 @@
             "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Preise für Wohnungen in der Region? In diesem Kapitel betrachten wir die Immobilienpreise nach Wohnlagequalitäten, vergleichen die regionale Situation mit überregionalen Entwicklungen und zeigen aktuelle Trends auf. Zusätzlich fließen Unterschiede nach Zimmeranzahl und Wohnfläche in die Analyse ein. Für eine individuell auf Ihre Immobilie abgestimmte Einschätzung stehe ich Ihnen als Immobilienspezialist in der Region gern zur Verfügung.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Leipzig Plagwitz bei 3.710 €/m².  Er bewegt sich dabei zwischen 2.680 €/m² und 4.470 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und deutlich über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 4,0 % zurückgegangen.  ",
             "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Plagwitz variieren die Preise je nach Lage erheblich. Leipzig Plagwitz weist vor allem mittlere, gute und sehr gute Wohnlagen auf. Beispielsweise mittleren (3.570 €), guten (3.919 €) und sehr guten (4.341 €).",
-            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Leipzig Plagwitz ungefähr bei 4162,3 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3740,1 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen zwischen 3318,8 €/m² und 4590,8 €/m² rechnen .",
-            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute liegt der Preis bei 3.710 €/m², und ist damit um 4,4 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Der durchschnittliche Quadratmeterpreis für Wohnungen in Leipzig Plagwitz beträgt 3.140 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 3.140 €/m² bis 3.760 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 0,9 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Plagwitz variieren die Preise je nach Lage erheblich. Leipzig Plagwitz weist vor allem mittlere, gute und sehr gute Wohnlagen auf. Beispielsweise mittleren (3.031 €), guten (3.300 €) und sehr guten (3.625 €).",
-            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig Plagwitz derzeit durchschnittlich 2845,4 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 4,0 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 3450,7 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 3450,7 €/m². hier ist der kurzfristige Trend mit 3,6 % Anstieg, leicht positiv ",
-            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Häuser in  bei 3.140 €/m². Heute beträgt er 3.140 €/m² €/m², und ist damit um  % gesunken."
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Leipzig Plagwitz ungefähr bei 4180,1 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3762,2 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 3852,9 €/m² rechnen .",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute beträgt er 3.710 €/m², und ist damit um 4,4 % deutlich gestiegen.",
+            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen in Leipzig Plagwitz belaufen sich auf 3.140 €/m². Sie bewegen sich in einer Preisspanne von 3.140 €/m² bis 3.760 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 0,9 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Plagwitz variieren die Preise je nach Lage erheblich. in Leipzig Plagwitz gibt es mittlere bis sehr gute Wohnlagequalitäten. In guten Wohnlagen liegen sie aktuell bei 3.300 € und in mittleren Wohnlagen bei 3.031 €.",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Plagwitz müssen diese derzeit durchschnittlich 2939,3 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 4,0 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 3601,7 €/m². hier ist der kurzfristige Trend mit 3,6 % Anstieg, leicht positiv ",
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 3.140 €/m². Heute liegt der Preis bei 3.140 €/m² €/m², und ist damit um  % gesunken."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "Die Grundstückspreise für Bauland sind ein zentraler Faktor für Bauherren, Investoren und Eigentümer. Sie bestimmen die Wirtschaftlichkeit neuer Projekte und die langfristige Wertentwicklung. Schwankungen entstehen vor allem durch Lage, Nachfrage und verfügbare Flächen. Dieser Report liefert einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist für den Landkreis Greiz helfe ich Ihnen, die statistischen Auswertungen richtig einzuordnen und die Chancen des regionalen Grundstücksmarktes optimal für Ihre Bau- oder Investitionsentscheidung zu nutzen.",
-            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke  Leipzig Plagwitz beträgt 590 €/m². Diese befinden sich üblicherweise in einer Spanne von 530 €/m² bis 650 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
-            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Plagwitz bei 620 €/m². Aktuell liegt der Preis bei 590 €/m² und ist damit um 4,2 % kräftig zurückgegangen."
+            "grundstueckspreise_allgemein": "Die mittleren Angebotspreise für Grundstücke  Leipzig Plagwitz belaufen sich auf 590 €/m². Diese pendeln zwischen den Werten von 530 €/m² bis 650 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Plagwitz bei 620 €/m². Aktuell beträgt er 590 €/m² und ist damit um 4,2 % kräftig zurückgegangen."
         },
         "mietpreise": {
             "mietpreise_intro": "Wie entwickeln sich die Mietpreise in der Region aktuell? Die dargestellten Angebotsmieten spiegeln die Preise wider, die Vermieter derzeit für neue Verträge verlangen – und sie entsprechen in den meisten Fällen dem tatsächlichen Mietpreis, da sie die aktuellen Marktbedingungen abbilden. Bestandsmieten liegen dagegen oft niedriger, da sie sich an früheren Marktverhältnissen orientieren und weniger dynamisch reagieren. In diesem Kapitel betrachten wir die Mietpreise nach Lagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends sowie Unterschiede nach Zimmeranzahl und Wohnfläche. Als Immobilienspezialist in der Region stehe ich Ihnen dabei gern beratend zur Seite.",
-            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) beträgt 12.0 €/m². Sie bewegen sich in einer Preisspanne von 6.0 €/m² bis 20.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 14.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
-            "mietpreise_wohnung_allgemein": "Derzeit liegen die durchschnittlichen Kaltmieten bei 12.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 20.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 30.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 15.0 €/m² rechnen, im Bestand liegt man bei 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 41,9 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 25,9 % weit über dem derzeitigen Niveau.",
-            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr lag der Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2021) standen die mittleren Angebotspreise bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
-            "mietpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig Plagwitz derzeit durchschnittlich 11,9 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 6,5 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 12,6 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 12,6 €/m². hier ist der kurzfristige Trend mit 6,8 % Anstieg, leicht positiv ",
+            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) beträgt 12.0 €/m². Diese bewegen sich in einer Preisspanne von 6.0 €/m² bis 20.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² beträgt,  kommt man auf eine durchschnittliche Warmmiete von 14.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
+            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Leipzig Plagwitz bei 12.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 20.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 30.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 15.0 €/m² rechnen, im Bestand liegt man bei 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 41,9 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 25,9 % weit über dem derzeitigen Niveau.",
+            "mietpreise_wohnung_preisentwicklung": "Vor einem Jahr stand der mittlere Quadratmeterpreis bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) lagen die durchschnittlichen Werte bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
+            "mietpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Plagwitz müssen diese derzeit durchschnittlich 5,5 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 6,5 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 6,3 €/m². hier ist der kurzfristige Trend mit 6,8 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 10 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5 €/m² bis 13 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei 10 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 4 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2021) standen die mittleren Angebotspreise bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 32 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei 10 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 4 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) standen die mittleren Angebotspreise bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 32 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Die Mietrendite zählt zu den wichtigsten Kennzahlen einer Immobilienanlage. Sie zeigt, welche Erträge eine vermietete Immobilie im Verhältnis zum Kaufpreis erwirtschaftet – und ist damit ein entscheidender Faktor für jede Kapitalanlage in Immobilien. Eine fundierte Renditeberechnung unterstützt Investoren dabei, Chancen und Risiken realistisch einzuschätzen und die Rentabilität verschiedener Objekte zu vergleichen. Die folgenden Auswertungen geben einen ersten regionalen Überblick. Doch neben der reinen Zahl sind vor allem Lage, Nachfrage und Mietentwicklung ausschlaggebend. Als Immobilienspezialist für die Region helfe ich Ihnen, die Mietrendite richtig zu bewerten und die passende Immobilie als langfristige, sichere Kapitalanlage auszuwählen.",
             "mietrendite_hinweis": "Beachten Sie, dass die Brutto-Mietrendite nur eine von mehreren Faktoren ist, die bei einer fundierten Investitionsentscheidung berücksichtigt werden sollten. Zusätzliche Aspekte wie Standort, langfristige Entwicklung und Risikobewertung sind ebenso relevant, um eine erfolgreiche Immobilieninvestition zu gewährleisten. Kontaktieren Sie dazu unseren regionalen Investment-Spezialisten.",
             "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
-            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 3,96 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Plagwitz bei 3,75 %. Bis heute ist der Preis innerhalb dieser Zeit mit 5,8 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2021) lag der Wert bei 3,02 %, innerhalb diesen Zeitraums sind sie bis jetzt um 31,2 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 3,68 %, ",
+            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 3,96 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Plagwitz bei 3,75 %. Bis heute ist der Preis innerhalb dieser Zeit mit 5,8 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 3,02 %, innerhalb diesen Zeitraums sind sie bis jetzt um 31,2 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 3,68 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 4,62 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  in Leipzig Plagwitz ungefähr bei 21.8, und die mittlere Netto-Mietrendite bei ungefähr 4,35 %. ",
-            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Plagwitz bei 28.8. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 3,17 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Plagwitz bei 17.8. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 5,33 €/m², "
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Plagwitz bei 28.8. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 3,17 €/m², ",
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Plagwitz bei 17.8. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 5,33 €/m², "
         },
         "quellenangaben": [
             {

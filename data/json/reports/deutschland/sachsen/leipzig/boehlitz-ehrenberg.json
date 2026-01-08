@@ -1,17 +1,15 @@
 {
-    "meta": [
-        {
-            "aktualisierung": "21.12.2025",
-            "regionale_zuordnung": "stadtteil",
-            "amtlicher_name": "Connewitz",
-            "bundesland_name": "sachsen",
-            "bundesland_schluessel": "14",
-            "kreis_name": "leipzig",
-            "kreis_schluessel": "14-7-13",
-            "ortslage_name": "ortslage_boehlitz-ehrenberg",
-            "ortslage_schluessel": "14-7-13-7-74"
-        }
-    ],
+    "meta": {
+        "aktualisierung": "08.01.2026",
+        "regionale_zuordnung": "stadtteil",
+        "amtlicher_name": "Böhlitz-Ehrenberg",
+        "bundesland_name": "sachsen",
+        "bundesland_schluessel": "14",
+        "kreis_name": "leipzig",
+        "kreis_schluessel": "14-7-13",
+        "ortslage_name": "boehlitz-ehrenberg",
+        "ortslage_schluessel": "14-7-13-7-74"
+    },
     "data": {
         "regionale_zuordnung_ortslagendaten": [
             {
@@ -350,23 +348,23 @@
         ],
         "wirtschaft_allgemein": [
             {
-                "kaufkraftindex_ol": "76,1",
-                "kaufkraftindex_k": "81,8",
-                "kaufkraft_nominal_ol": "21.363",
-                "kaufkraft_nominal_k": "22.983",
-                "kaufkraft_real_ol": "18.654",
-                "kaufkraft_real_k": "20.751",
-                "bip": "25 Mio",
-                "pendlersaldo_ol": "0",
-                "pendlersaldo_k": "32 Tsd",
-                "gewerbesaldo": "750",
-                "arbeitsplatzzentralitaet_ol": "0,0",
-                "arbeitsplatzzentralitaet_k": "1,1",
-                "arbeitslosenquote_ol": "4,8",
-                "arbeitslosenquote_k": "7,7",
-                "beschaeftigtenquote_ol": "69,0",
-                "beschaeftigtenquote_k": "64,5",
-                "arbeitslosendichte": "0,9"
+                "kaufkraftindex_ol": 76.06938743507804,
+                "kaufkraftindex_k": 81.83764456893748,
+                "kaufkraft_nominal_ol": 21362.849123033073,
+                "kaufkraft_nominal_k": 22982.77023727455,
+                "kaufkraft_real_ol": 18654.342940707847,
+                "kaufkraft_real_k": 20751.359798168432,
+                "bip": 25281756,
+                "pendlersaldo_ol": 0,
+                "pendlersaldo_k": 32324,
+                "gewerbesaldo": 746,
+                "arbeitsplatzzentralitaet_ol": 0.0,
+                "arbeitsplatzzentralitaet_k": 1.1225968816227672,
+                "arbeitslosenquote_ol": "4.8",
+                "arbeitslosenquote_k": "7.7",
+                "beschaeftigtenquote_ol": "69.0",
+                "beschaeftigtenquote_k": "64.5",
+                "arbeitslosendichte": "0.9126506024096386"
             }
         ],
         "gewerbesaldo_abs": [
@@ -1135,20 +1133,20 @@
         ],
         "flaechennutzung_wohnbau": [
             {
-                "flaechennutzung_wohnbau": "138"
+                "flaechennutzung_wohnbau": 138.0
             }
         ],
         "wohnungsnachfrage_allgemein": [
             {
-                "anzahl_einwohner": "10 Tsd",
-                "anzahl_haushalte": "6 Tsd",
-                "mittlere_haushaltsgroesse": "1,9",
-                "wanderungssaldo": "35",
-                "natuerlicher_saldo": "-56",
-                "einwohnerdichte": "1.181",
-                "siedlungsdichte": "3.087",
-                "jugendquotient": "26,9",
-                "altenquotient": "43,7"
+                "anzahl_einwohner": 10248,
+                "anzahl_haushalte": 5539.0,
+                "mittlere_haushaltsgroesse": 1.9,
+                "wanderungssaldo": 35,
+                "natuerlicher_saldo": -56,
+                "einwohnerdichte": "1180.6451612903227",
+                "siedlungsdichte": "3086.7469879518076",
+                "jugendquotient": "26.85277500830841",
+                "altenquotient": "43.702226653373216"
             }
         ],
         "bevoelkerungsentwicklung_relativ": [
@@ -2054,19 +2052,19 @@
         ],
         "wohnungsangebot_allgemein": [
             {
-                "wohnungsbestand": "5.495",
-                "baufertigstellungen": "1",
-                "baugenehmigungen": "66",
-                "leerstandsquote": "0",
-                "wohnungsbestand_anzahl_absolut": "5.495",
-                "wohnungsbestand_wohnraumsaldo": "-429",
-                "wohnungsbestand_wohnraumsaldo_per_1000_ew": "-42",
-                "wohnungsbestand_wohnflaeche_pro_ew": 42.0,
-                "wohnungsbestand_mittlere_wohnflaeche": "0",
+                "wohnungsbestand": 5495,
+                "baufertigstellungen": 1,
+                "baugenehmigungen": 66,
+                "leerstandsquote": 0.0,
+                "wohnungsbestand_anzahl_absolut": 5495,
+                "wohnungsbestand_wohnraumsaldo": -428.65000000000055,
+                "wohnungsbestand_wohnraumsaldo_per_1000_ew": -41.827673692427844,
+                "wohnungsbestand_wohnflaeche_pro_ew": 41.97277517564403,
+                "wohnungsbestand_mittlere_wohnflaeche": 0,
                 "wohnungsbestand_raum_pro_ew": 0,
-                "baufertigstellungen_anzahl_absolut": "1",
+                "baufertigstellungen_anzahl_absolut": 1,
                 "baufertigstellungen_flaeche_absolut": 0.0,
-                "baugenehmigungen_anzahl_absolut": "66",
+                "baugenehmigungen_anzahl_absolut": 66,
                 "baugenehmigungen_flaeche_absolut": 0.0,
                 "baugenehmigungen_erloschen": 0
             }
@@ -3066,39 +3064,45 @@
         ],
         "immobilien_kaufpreis": [
             {
-                "kaufpreis_immobilien": "2.750"
+                "kaufpreis_immobilien": 2746.6719644610357,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis": [
             {
-                "kaufpreis_haus": "3.000"
+                "kaufpreis_haus": 3002.1694782567397,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreisspanne": [
             {
-                "preis_haus_min": "2.650",
-                "preis_haus_avg": "3.000",
-                "preis_haus_max": "3.500"
+                "preis_haus_min": 2647.01,
+                "preis_haus_avg": 3002.1694782567397,
+                "preis_haus_max": 3501.73,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": "2.420 €",
-                "doppelhaushaelfte": "2.460 €",
-                "einfamilienhaus": "2.690 €"
+                "reihenhaus": 2354.950353886158,
+                "doppelhaushaelfte": 2446.5007902505745,
+                "einfamilienhaus": 2635.6323894039083,
+                "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": "2.970 €",
-                "doppelhaushaelfte": "3.110 €",
-                "einfamilienhaus": "3.430 €"
+                "reihenhaus": 3049.7562743284097,
+                "doppelhaushaelfte": 3129.2436555743093,
+                "einfamilienhaus": 3414.128817216398,
+                "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": "3.620 €",
-                "doppelhaushaelfte": "3.690 €",
-                "einfamilienhaus": "4.090 €"
+                "reihenhaus": 3499.44543493011,
+                "doppelhaushaelfte": 3802.241248461458,
+                "einfamilienhaus": 4066.863202541744,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreise_im_ueberregionalen_vergleich": [
@@ -3159,7 +3163,7 @@
         ],
         "haus_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 2798.620849584462,
                 "preis_k": 3047.0018685947102,
                 "preis_bl": 2584,
@@ -3167,7 +3171,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 3183.6657545800344,
                 "preis_k": 3392.742781912248,
                 "preis_bl": 2606,
@@ -3175,7 +3179,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 3230.322065702909,
                 "preis_k": 3691.4109574701124,
                 "preis_bl": 2800,
@@ -3183,7 +3187,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 2890.7106640900056,
                 "preis_k": 3391.88789262848,
                 "preis_bl": 2732,
@@ -3191,7 +3195,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 2965.470795327479,
                 "preis_k": 3340.7070886232905,
                 "preis_bl": 2419,
@@ -3199,7 +3203,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 3002.1694782567397,
                 "preis_k": 3450.998704760635,
                 "preis_bl": 2235,
@@ -3337,7 +3341,7 @@
         ],
         "wohnung_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 2276.1178590396066,
                 "preis_k": 2694.665832035641,
                 "preis_bl": 3068,
@@ -3345,7 +3349,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 2540.0778535425484,
                 "preis_k": 2947.85045497783,
                 "preis_bl": 3097,
@@ -3353,7 +3357,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 2691.1303056478746,
                 "preis_k": 3122.0394834269423,
                 "preis_bl": 3394,
@@ -3361,7 +3365,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 2389.9037053959914,
                 "preis_k": 2843.299578392405,
                 "preis_bl": 3684,
@@ -3369,7 +3373,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 2399.066322216458,
                 "preis_k": 2874.2238531237763,
                 "preis_bl": 3492,
@@ -3377,7 +3381,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 2491.174450665332,
                 "preis_k": 2926.8555207915197,
                 "preis_bl": 3223,
@@ -3387,7 +3391,7 @@
         ],
         "grundstueckspreisindex_regional": [
             {
-                "grundstueckspreisindex": 182
+                "grundstueckspreisindex": 182.4948326603244
             }
         ],
         "grundstueckspreise_ueberregionaler_vergleich": [
@@ -3516,7 +3520,7 @@
         ],
         "grundstueck_preisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "angebotspreisentwicklung_grundstueck_k": 569.3284061635977,
                 "verkaufspreisentwicklung_grundstueck_k": 187.91,
                 "angebotspreisentwicklung_grundstueck_ol": 438.4741775793301,
@@ -3524,7 +3528,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "angebotspreisentwicklung_grundstueck_k": 596.3261024650186,
                 "verkaufspreisentwicklung_grundstueck_k": 466.02,
                 "angebotspreisentwicklung_grundstueck_ol": 388.7159974085862,
@@ -3532,7 +3536,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "angebotspreisentwicklung_grundstueck_k": 551.1837511906557,
                 "verkaufspreisentwicklung_grundstueck_k": 344.05,
                 "angebotspreisentwicklung_grundstueck_ol": 336.87519706583174,
@@ -3540,7 +3544,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "angebotspreisentwicklung_grundstueck_k": 570.9820344032142,
                 "verkaufspreisentwicklung_grundstueck_k": 345.86,
                 "angebotspreisentwicklung_grundstueck_ol": 349.50902837870905,
@@ -3548,7 +3552,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "angebotspreisentwicklung_grundstueck_k": 573.8916004651603,
                 "verkaufspreisentwicklung_grundstueck_k": 264.77,
                 "angebotspreisentwicklung_grundstueck_ol": 393.74094383033366,
@@ -3556,7 +3560,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "angebotspreisentwicklung_grundstueck_k": 528.475,
                 "verkaufspreisentwicklung_grundstueck_k": 350.0,
                 "angebotspreisentwicklung_grundstueck_ol": 416.62999999999994,
@@ -3566,27 +3570,27 @@
         ],
         "grundstueck_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "kaufpreisentwicklung_grundstueck": 569.3284061635977
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "kaufpreisentwicklung_grundstueck": 596.3261024650186
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "kaufpreisentwicklung_grundstueck": 551.1837511906557
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "kaufpreisentwicklung_grundstueck": 570.9820344032142
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "kaufpreisentwicklung_grundstueck": 573.8916004651603
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "kaufpreisentwicklung_grundstueck": 528.475
             }
         ],
@@ -3707,7 +3711,7 @@
         ],
         "mietpreisentwicklung_wohnung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 9.041661191965447,
                 "preis_k": 9.035179266692163,
                 "preis_bl": 10.89,
@@ -3715,7 +3719,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 9.509588536676965,
                 "preis_k": 9.446202935011307,
                 "preis_bl": 10.81,
@@ -3723,7 +3727,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 9.707910839555066,
                 "preis_k": 10.070080967268437,
                 "preis_bl": 10.86,
@@ -3731,7 +3735,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 10.28659735085989,
                 "preis_k": 10.50619007822499,
                 "preis_bl": 10.28,
@@ -3739,7 +3743,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 11.3710229338457,
                 "preis_k": 11.560973155560335,
                 "preis_bl": 9.42,
@@ -3747,7 +3751,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 11.58613009042205,
                 "preis_k": 11.84126629683015,
                 "preis_bl": 8.97,
@@ -3765,7 +3769,7 @@
         ],
         "mietpreisentwicklung_haus": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 7.887196610027019,
                 "preis_k": 8.291409771161987,
                 "preis_bl": 10.45,
@@ -3773,7 +3777,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 8.031870240186612,
                 "preis_k": 8.249662106425912,
                 "preis_bl": 10.41,
@@ -3781,7 +3785,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 8.113520121337377,
                 "preis_k": 8.990048315213166,
                 "preis_bl": 10.36,
@@ -3789,7 +3793,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 8.48188360437909,
                 "preis_k": 9.367689397515877,
                 "preis_bl": 10.09,
@@ -3797,7 +3801,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 9.545194603632687,
                 "preis_k": 9.89137253529307,
                 "preis_bl": 9.53,
@@ -3805,7 +3809,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 10.075182869522584,
                 "preis_k": 10.455778974798209,
                 "preis_bl": 9.81,
@@ -4015,27 +4019,27 @@
         ],
         "mietrendite_entwicklung": [
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "brutto_mietrendite": 3.6803659654126277,
                 "kaufpreisfaktor": 27.171210944721476
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "brutto_mietrendite": 3.605468409000497,
                 "kaufpreisfaktor": 27.735647260246513
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "brutto_mietrendite": 4.2566427111799765,
                 "kaufpreisfaktor": 23.49269290028788
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "brutto_mietrendite": 4.678537578431785,
                 "kaufpreisfaktor": 21.374200446952344
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "brutto_mietrendite": 4.731831082900016,
                 "kaufpreisfaktor": 21.133467836876502
             }
@@ -4067,7 +4071,7 @@
             "wirtschaft_sv_beschaeftigte_arbeitsort": "In den letzten fünf Jahren ist mit 2,5 % leicht gestiegen. Im jüngsten Jahr liegt die Zahl der Wohnort-Beschäftigten bei 4.344.",
             "wirtschaft_arbeitsplatzzentralitaet": "Die Arbeitsplatzzentralität liegt klar über dem Landesniveau mit Index 1.1225968816227672.",
             "wirtschaft_pendler": "Das Pendlervolumen  stieg deutlich um 4316 Personen. Die Zahl der Einpendler ist um 2,64 % % stark gestiegen. Die Zahl der Auspendler ist um 2,09 % % stark gestiegen.",
-            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote ist der Anteil der registrierten Arbeitslosen an allen zivilen Erwerbspersonen, angegeben in Prozent.  Ihr Wert ist aktuell ca. 4,8 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote reflektiert das Ausmaß der Arbeitslosigkeit in einer Region und berücksichtigt Personen mit Anspruch auf Bürgergeld (SGB II) oder Arbeitslosengeld (SGB III). Die Basis hierfür bildet die Gesamtzahl der zivilen Erwerbspersonen. Ihr Wert beträgt zur Zeit 4,8 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
         },
         "wohnmarktsituation": {
             "wohnmarktsituation_intro": "Die Wohnraumsituation in größeren kreisfreien Städten ist geprägt von einem ständigen Spannungsfeld zwischen steigender Nachfrage und begrenztem Angebot. Urbanisierung und Bevölkerungswachstum lassen den Bedarf kontinuierlich steigen, während Baukapazitäten, Investitionen und gesetzliche Vorgaben das Angebot bestimmen. Hinzu kommen staatliche Programme zur Förderung von sozialem Wohnraum, die zwar wichtig sind, aber häufig in Konkurrenz zum freien Markt stehen. Als regionaler Immobilienspezialist sehe ich täglich, wie stark auch die wirtschaftliche Lage auf Bauindustrie und Kaufkraft wirkt – und damit die Dynamik des gesamten Wohnungsmarktes entscheidend prägt.",
@@ -4080,12 +4084,12 @@
             "wohnmarktsituation_wohnungsbestand_intro": "Die Haushaltsstruktur, welche die Anzahl der Einzelpersonen- und Mehrpersonenhaushalte umfasst, hat entscheidenden Einfluss auf die Nachfrage nach Wohnraum in einer Region. Die Nachfrage nach Wohnraum hängt daher nicht direkt von der Einwohnerzahl ab, sondern vielmehr von der Anzahl der Haushalte. Ein aussagekräftiger Vergleich zwischen Wohnungsangebot und -nachfrage setzt eine Gegenüberstellung der verfügbaren Wohnungen und der Haushalte voraus.",
             "wohnmarktsituation_baufertigstellungen_intro": "Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau.",
             "wohnmarktsituation_baugenehmigungen_intro": "Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
-            "wohnmarktsituation_allgemein": "In Leipzig Böhlitz Ehrenberg leben aktuell rund 10.248 Menschen auf einer Gesamtfläche von 868 ha, davon entfallen 332 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 10.248 Einwohner je km². Über einen Zeitraum von fünf Jahren hat sich die Bevölkerungzahl nahezu nicht verändert, was eine weitgehend unveränderte Tendenz erkennen lässt. Aktuell wird Leipzig Böhlitz Ehrenberg als stagnierende Region eingestuft. Insgesamt gibt es hier etwa 5.539 Haushalte, die durchschnittlich aus 1,85 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung ist gegenüber 2015 nahezu unverändert, was auf ausgeglichene Bevölkerungsbewegungen hindeutet. Im Zehnjahresvergleich ist generell weitestgehend stabil.Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner ist gegenüber 2015 nahezu unverändert, was auf ausgeglichene Bevölkerungsbewegungen hindeutet. Über zehn Jahre betrachtet ist generell weitestgehend stabil.",
+            "wohnmarktsituation_allgemein": "In Leipzig Böhlitz Ehrenberg leben aktuell rund 10.248 Menschen auf einer Gesamtfläche von 868 ha, davon entfallen 332 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 10.248 Einwohner je km². Die Einwohnerzahl hat sich in den letzten fünf Jahren nicht verändert, was auf eine insgesamt stabile Entwicklung hindeutet. Aktuell wird Leipzig Böhlitz Ehrenberg als stagnierende Region eingestuft. Insgesamt gibt es hier etwa 5.539 Haushalte, die durchschnittlich aus 1,85 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region ist gegenüber 2015 nahezu konstant, was auf ausgeglichene Bevölkerungsbewegungen hindeutet. Über die letzten 10 Jahre ist hier weitestgehend stabil.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 5.539. In den letzten fünf Jahren hat sich die Zahl um 340 erhöht, was einem starken Wachstum von 6,5 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2024 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
-            "wohnmarktsituation_wanderungssaldo": "Über die letzten fünf Jahre sind die Zuzüge mit 38,9 % stark angestiegen, was eine stark wachsende Attraktivität der Region vermuten läßt. Währenddessen sind ebenso im selben Zeitraum die Fortzüge aus Leipzig Böhlitz Ehrenberg um 53,8 % stark gestiegen, was sich für die Gegend deutlich ungünstig auswirkt. Dadurch hat mit 24 leicht abgenommen. Schauen wir jetzt auf die jüngste Entwicklung. In der letzten statistischen Erhebung 2024 hat die Region einen Wanderungssaldo von 35 Menschen.",
-            "wohnmarktsituation_alterstruktur": "Das mittlere Alter beträgt   47.81215847 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt über dem Niveau des Bundeslandes, was auf eine ältere Bevölkerung hinweist. Auch im Bundesvergleich liegt das Durchschnittsalter über dem Bundesdurchschnitt, was auf einen höheren Seniorenanteil hinweist.",
+            "wohnmarktsituation_wanderungssaldo": "Innerhalb der letzten fünf Jahre  sind die Zuzüge mit 38,9 % stark angestiegen, was eine zunehmende Anziehungskraft der Region erkennen lässt. Parallel dazu ist genauso im selben Zeitfenster die Zahl der Fortzüge aus Leipzig Böhlitz Ehrenberg mit 53,8 % deutlich mehr geworden, was für die Gegend leider ausgesprochen negativ ist. Vor dem Hintergrund dieser Zahlen ist mit 24 leicht gesunken. Wenn wir auf die aktuellste Entwicklung in 2024 blicken,  dann sehen wir einen Wanderungssaldo von 35.",
+            "wohnmarktsituation_alterstruktur": "Der Altersdurchschnitt   erreicht 47.81215847 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt über dem Niveau des Bundeslandes, was auf eine ältere Bevölkerung hinweist. Auch im Bundesvergleich liegt das Durchschnittsalter über dem Bundesdurchschnitt, was auf einen höheren Seniorenanteil hinweist.",
             "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient   bei 43.7 und der Jugendquotient bei 26.9. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt leicht unter dem Landesniveau, was einen geringeren Anteil an jungen Menschen vermuten lässt. Der Altenquotient liegt klar über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 5.495 Wohnungen. Pro 1.000 Einwohner stehen also um die 536 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre blieb der Bestand dabei nahezu stabil.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt   aktuell ca. 430 m² m². Pro Kopf stehen hier durchschnittlich 42.0 m² zur Verfügung.  Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person kaum verändert.",
@@ -4098,36 +4102,36 @@
             "immobilienpreise_haus_intro": "Welche Preise erzielen Häuser in der Region aktuell? In diesem Kapitel betrachten wir die Immobilienpreise verschiedener Haustypen, analysieren die Situation in den vorhandenen Wohnlagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends auf. Gern gebe ich Ihnen eine individuell auf Ihre Immobilie abgestimmte Einschätzung. Kontaktieren Sie mich dazu gern.",
             "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Preise für Wohnungen in der Region? In diesem Kapitel betrachten wir die Immobilienpreise nach Wohnlagequalitäten, vergleichen die regionale Situation mit überregionalen Entwicklungen und zeigen aktuelle Trends auf. Zusätzlich fließen Unterschiede nach Zimmeranzahl und Wohnfläche in die Analyse ein. Für eine individuell auf Ihre Immobilie abgestimmte Einschätzung stehe ich Ihnen als Immobilienspezialist in der Region gern zur Verfügung.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Leipzig Böhlitz Ehrenberg bei 3.000 €/m².  Er bewegt sich dabei zwischen 2.650 €/m² und 3.500 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und ungefähr auf Bundesniveau. Gegenüber dem Vorjahr sind die Preise deutlich um 1,2 % gestiegen.  ",
-            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Böhlitz Ehrenberg variieren die Preise je nach Lage erheblich. Leipzig Böhlitz Ehrenberg weist vor allem mittlere, gute und sehr gute Wohnlagen auf. Die Spanne reicht in mittleren Lagen von 2.647 € bis 2.913 €, während in guten Lagen im Mittel 3.107 € erzielt wird.",
-            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat hier in etwa zwischen 2693,6 €/m² und 4091,7 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 2971,0 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen zwischen 2463,8 €/m² und 3685,9 €/m² rechnen .",
-            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute liegt der Preis bei 3.000 €/m², und ist damit um 5,7 % kräftig zurückgegangen.",
-            "immobilienpreise_wohnung_allgemein": "Die aktuellen Angebotspreise für Wohnungen liegen bei 2.490 €/m². Diese bewegen sich in einer Preisspanne von 2.490 €/m² bis 2.950 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 3,8 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Böhlitz Ehrenberg variieren die Preise je nach Lage erheblich. Leipzig Böhlitz Ehrenberg weist vor allem mittlere, gute und sehr gute Wohnlagen auf. Die Spanne reicht in guten Lagen von 2.400 € bis 2.706 €, während in sehr guten Lagen im Mittel 2.815 € erzielt wird.",
-            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Böhlitz Ehrenberg müssen diese derzeit durchschnittlich 2339,8 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 6,8 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 2880,0 €/m². hier ist der kurzfristige Trend mit 2,5 % Anstieg, leicht positiv ",
-            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Häuser in  bei 2.540 €/m². Heute beträgt er 2.490 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
+            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Böhlitz Ehrenberg variieren die Preise je nach Lage erheblich. in Leipzig Böhlitz Ehrenberg gibt es mittlere bis sehr gute Wohnlagequalitäten. Beispielsweise mittleren (2.780 €), guten (3.107 €) und sehr guten (3.380 €).",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Leipzig Böhlitz Ehrenberg ungefähr bei 3414,1 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3049,8 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 3129,2 €/m² rechnen .",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute beträgt er 3.000 €/m², und ist damit um 5,7 % kräftig zurückgegangen.",
+            "immobilienpreise_wohnung_allgemein": "Die aktuellen Angebotspreise für Wohnungen in Leipzig Böhlitz Ehrenberg liegen bei 2.490 €/m². Diese befinden sich üblicherweise in einer Spanne von 2.490 €/m² bis 2.950 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 3,8 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Böhlitz Ehrenberg variieren die Preise je nach Lage erheblich. Leipzig Böhlitz Ehrenberg weist vor allem mittlere, gute und sehr gute Wohnlagen auf. Beispielsweise mittleren (2.357 €), guten (2.553 €) und sehr guten (2.815 €).",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig Böhlitz Ehrenberg derzeit durchschnittlich 2239,7 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 6,8 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 2737,5 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 2737,5 €/m². hier ist der kurzfristige Trend mit 2,5 % Anstieg, leicht positiv ",
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 2.540 €/m². Heute beträgt er 2.490 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "Die Grundstückspreise für Bauland sind ein zentraler Faktor für Bauherren, Investoren und Eigentümer. Sie bestimmen die Wirtschaftlichkeit neuer Projekte und die langfristige Wertentwicklung. Schwankungen entstehen vor allem durch Lage, Nachfrage und verfügbare Flächen. Dieser Report liefert einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist für den Landkreis Greiz helfe ich Ihnen, die statistischen Auswertungen richtig einzuordnen und die Chancen des regionalen Grundstücksmarktes optimal für Ihre Bau- oder Investitionsentscheidung zu nutzen.",
-            "grundstueckspreise_allgemein": "Die mittleren Angebotspreise für Grundstücke belaufen sich auf 420 €/m². Diese befinden sich üblicherweise in einer Spanne von 370 €/m² bis 460 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % merklich gestiegen. ",
-            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Böhlitz Ehrenberg bei 390 €/m². Aktuell beträgt er 420 €/m² und ist damit um 7,2 % deutlich gestiegen."
+            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke beträgt 420 €/m². Sie bewegen sich in einer Preisspanne von 370 €/m² bis 460 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % merklich gestiegen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Böhlitz Ehrenberg bei 390 €/m². Aktuell liegt der Preis bei 420 €/m² und ist damit um 7,2 % deutlich gestiegen."
         },
         "mietpreise": {
             "mietpreise_intro": "Wie entwickeln sich die Mietpreise in der Region aktuell? Die dargestellten Angebotsmieten spiegeln die Preise wider, die Vermieter derzeit für neue Verträge verlangen – und sie entsprechen in den meisten Fällen dem tatsächlichen Mietpreis, da sie die aktuellen Marktbedingungen abbilden. Bestandsmieten liegen dagegen oft niedriger, da sie sich an früheren Marktverhältnissen orientieren und weniger dynamisch reagieren. In diesem Kapitel betrachten wir die Mietpreise nach Lagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends sowie Unterschiede nach Zimmeranzahl und Wohnfläche. Als Immobilienspezialist in der Region stehe ich Ihnen dabei gern beratend zur Seite.",
-            "mietpreise_allgemein": "Die mittleren Angebotspreise aller Mietimmobilien (Haus + Wohnung) in Leipzig Böhlitz Ehrenberg belaufen sich auf 11.0 €/m². Diese befinden sich üblicherweise in einer Spanne von 6.0 €/m² bis 19.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² beträgt,  kommt man auf eine durchschnittliche Warmmiete von 13.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise nahezu unverändert geblieben.",
-            "mietpreise_wohnung_allgemein": "Aktuell stehen die mittleren Mietepreis für Wohnungen in Leipzig Böhlitz Ehrenberg bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 19.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 14.0 €/m² rechnen, im Bestand sind es 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 39,5 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 24,3 % weit über dem derzeitigen Niveau.",
-            "mietpreise_wohnung_preisentwicklung": "Vor einem Jahr stand der mittlere Quadratmeterpreis bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2021) lagen die durchschnittlichen Werte bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
-            "mietpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Böhlitz Ehrenberg müssen diese derzeit durchschnittlich 5,5 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 7,6 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 6,0 €/m². hier ist der kurzfristige Trend mit 10,2 % Anstieg, leicht positiv ",
+            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) in Leipzig Böhlitz Ehrenberg beträgt 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 19.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² beträgt,  kommt man auf eine durchschnittliche Warmmiete von 13.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise nahezu unverändert geblieben.",
+            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Leipzig Böhlitz Ehrenberg bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 19.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 14.0 €/m² rechnen, im Bestand sind es 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 39,5 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 24,3 % weit über dem derzeitigen Niveau.",
+            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr lag der Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) lagen die durchschnittlichen Werte bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
+            "mietpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig Böhlitz Ehrenberg derzeit durchschnittlich 11,5 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 7,6 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 12,3 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 12,3 €/m². hier ist der kurzfristige Trend mit 10,2 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 10 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5 €/m² bis 13 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 5 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2021) lagen die durchschnittlichen Werte bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 25 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 5 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) standen die mittleren Angebotspreise bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 25 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Die Mietrendite zählt zu den wichtigsten Kennzahlen einer Immobilienanlage. Sie zeigt, welche Erträge eine vermietete Immobilie im Verhältnis zum Kaufpreis erwirtschaftet – und ist damit ein entscheidender Faktor für jede Kapitalanlage in Immobilien. Eine fundierte Renditeberechnung unterstützt Investoren dabei, Chancen und Risiken realistisch einzuschätzen und die Rentabilität verschiedener Objekte zu vergleichen. Die folgenden Auswertungen geben einen ersten regionalen Überblick. Doch neben der reinen Zahl sind vor allem Lage, Nachfrage und Mietentwicklung ausschlaggebend. Als Immobilienspezialist für die Region helfe ich Ihnen, die Mietrendite richtig zu bewerten und die passende Immobilie als langfristige, sichere Kapitalanlage auszuwählen.",
             "mietrendite_hinweis": "Beachten Sie, dass die Brutto-Mietrendite nur eine von mehreren Faktoren ist, die bei einer fundierten Investitionsentscheidung berücksichtigt werden sollten. Zusätzliche Aspekte wie Standort, langfristige Entwicklung und Risikobewertung sind ebenso relevant, um eine erfolgreiche Immobilieninvestition zu gewährleisten. Kontaktieren Sie dazu unseren regionalen Investment-Spezialisten.",
             "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
-            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 4,73 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Böhlitz Ehrenberg bei 4,68 %. Bis heute ist der Preis innerhalb dieser Zeit mit 1,1 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2021) lag der Wert bei 3,68 %, innerhalb diesen Zeitraums sind sie bis jetzt um 28,6 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 4,36 %, ",
+            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 4,73 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Böhlitz Ehrenberg bei 4,68 %. Bis heute ist der Preis innerhalb dieser Zeit mit 1,1 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 3,68 %, innerhalb diesen Zeitraums sind sie bis jetzt um 28,6 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 4,36 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 6,03 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  in Leipzig Böhlitz Ehrenberg ungefähr bei 17.0, und die mittlere Netto-Mietrendite bei ungefähr 5,65 %. ",
-            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Böhlitz Ehrenberg bei 22.9. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 4,03 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Böhlitz Ehrenberg bei 14.2. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 6,75 €/m², "
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Böhlitz Ehrenberg bei 22.9. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 4,03 €/m², ",
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Böhlitz Ehrenberg bei 14.2. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 6,75 €/m², "
         },
         "quellenangaben": [
             {

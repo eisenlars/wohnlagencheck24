@@ -1,17 +1,15 @@
 {
-    "meta": [
-        {
-            "aktualisierung": "21.12.2025",
-            "regionale_zuordnung": "stadtteil",
-            "amtlicher_name": "Connewitz",
-            "bundesland_name": "sachsen",
-            "bundesland_schluessel": "14",
-            "kreis_name": "leipzig",
-            "kreis_schluessel": "14-7-13",
-            "ortslage_name": "ortslage_neustadt-neuschoenefeld",
-            "ortslage_schluessel": "14-7-13-2-20"
-        }
-    ],
+    "meta": {
+        "aktualisierung": "08.01.2026",
+        "regionale_zuordnung": "stadtteil",
+        "amtlicher_name": "Neustadt-Neuschönefeld",
+        "bundesland_name": "sachsen",
+        "bundesland_schluessel": "14",
+        "kreis_name": "leipzig",
+        "kreis_schluessel": "14-7-13",
+        "ortslage_name": "neustadt-neuschoenefeld",
+        "ortslage_schluessel": "14-7-13-2-20"
+    },
     "data": {
         "regionale_zuordnung_ortslagendaten": [
             {
@@ -350,23 +348,23 @@
         ],
         "wirtschaft_allgemein": [
             {
-                "kaufkraftindex_ol": "78,7",
-                "kaufkraftindex_k": "81,8",
-                "kaufkraft_nominal_ol": "22.109",
-                "kaufkraft_nominal_k": "22.983",
-                "kaufkraft_real_ol": "19.164",
-                "kaufkraft_real_k": "20.751",
-                "bip": "25 Mio",
-                "pendlersaldo_ol": "0",
-                "pendlersaldo_k": "32 Tsd",
-                "gewerbesaldo": "750",
-                "arbeitsplatzzentralitaet_ol": "0,0",
-                "arbeitsplatzzentralitaet_k": "1,1",
-                "arbeitslosenquote_ol": "8,4",
-                "arbeitslosenquote_k": "7,7",
-                "beschaeftigtenquote_ol": "53,7",
-                "beschaeftigtenquote_k": "64,5",
-                "arbeitslosendichte": "16,9"
+                "kaufkraftindex_ol": 78.72782045252583,
+                "kaufkraftindex_k": 81.83764456893748,
+                "kaufkraft_nominal_ol": 22109.426759193164,
+                "kaufkraft_nominal_k": 22982.77023727455,
+                "kaufkraft_real_ol": 19163.937104049386,
+                "kaufkraft_real_k": 20751.359798168432,
+                "bip": 25281756,
+                "pendlersaldo_ol": 0,
+                "pendlersaldo_k": 32324,
+                "gewerbesaldo": 746,
+                "arbeitsplatzzentralitaet_ol": 0.0,
+                "arbeitsplatzzentralitaet_k": 1.1225968816227672,
+                "arbeitslosenquote_ol": "8.4",
+                "arbeitslosenquote_k": "7.7",
+                "beschaeftigtenquote_ol": "53.7",
+                "beschaeftigtenquote_k": "64.5",
+                "arbeitslosendichte": "16.945454545454545"
             }
         ],
         "gewerbesaldo_abs": [
@@ -1135,20 +1133,20 @@
         ],
         "flaechennutzung_wohnbau": [
             {
-                "flaechennutzung_wohnbau": "40"
+                "flaechennutzung_wohnbau": 40.0
             }
         ],
         "wohnungsnachfrage_allgemein": [
             {
-                "anzahl_einwohner": "14 Tsd",
-                "anzahl_haushalte": "9 Tsd",
-                "mittlere_haushaltsgroesse": "1,6",
-                "wanderungssaldo": "-104",
-                "natuerlicher_saldo": "74",
-                "einwohnerdichte": "16.652",
-                "siedlungsdichte": "25.735",
-                "jugendquotient": "17,5",
-                "altenquotient": "11,5"
+                "anzahl_einwohner": 14154,
+                "anzahl_haushalte": 9102.0,
+                "mittlere_haushaltsgroesse": 1.6,
+                "wanderungssaldo": -104,
+                "natuerlicher_saldo": 74,
+                "einwohnerdichte": "16651.764705882353",
+                "siedlungsdichte": "25734.545454545452",
+                "jugendquotient": "17.47026827694293",
+                "altenquotient": "11.505485387664791"
             }
         ],
         "bevoelkerungsentwicklung_relativ": [
@@ -2054,19 +2052,19 @@
         ],
         "wohnungsangebot_allgemein": [
             {
-                "wohnungsbestand": "7.605",
-                "baufertigstellungen": "83",
-                "baugenehmigungen": "167",
-                "leerstandsquote": "0",
-                "wohnungsbestand_anzahl_absolut": "7.605",
-                "wohnungsbestand_wohnraumsaldo": "-2.029",
-                "wohnungsbestand_wohnraumsaldo_per_1000_ew": "-143",
-                "wohnungsbestand_wohnflaeche_pro_ew": 35.0,
-                "wohnungsbestand_mittlere_wohnflaeche": "0",
+                "wohnungsbestand": 7605,
+                "baufertigstellungen": 83,
+                "baugenehmigungen": 167,
+                "leerstandsquote": 0.0,
+                "wohnungsbestand_anzahl_absolut": 7605,
+                "wohnungsbestand_wohnraumsaldo": -2029.3500000000004,
+                "wohnungsbestand_wohnraumsaldo_per_1000_ew": -143.37643069097078,
+                "wohnungsbestand_wohnflaeche_pro_ew": 34.618411756393954,
+                "wohnungsbestand_mittlere_wohnflaeche": 0,
                 "wohnungsbestand_raum_pro_ew": 0,
-                "baufertigstellungen_anzahl_absolut": "83",
+                "baufertigstellungen_anzahl_absolut": 83,
                 "baufertigstellungen_flaeche_absolut": 0.0,
-                "baugenehmigungen_anzahl_absolut": "167",
+                "baugenehmigungen_anzahl_absolut": 167,
                 "baugenehmigungen_flaeche_absolut": 0.0,
                 "baugenehmigungen_erloschen": 0
             }
@@ -3066,39 +3064,45 @@
         ],
         "immobilien_kaufpreis": [
             {
-                "kaufpreis_immobilien": "3.120"
+                "kaufpreis_immobilien": 3123.2942487278215,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis": [
             {
-                "kaufpreis_haus": "3.360"
+                "kaufpreis_haus": 3362.260145045402,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreisspanne": [
             {
-                "preis_haus_min": "2.840",
-                "preis_haus_avg": "3.360",
-                "preis_haus_max": "3.860"
+                "preis_haus_min": 2835.73,
+                "preis_haus_avg": 3362.260145045402,
+                "preis_haus_max": 3856.51,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": "2.630 €",
-                "doppelhaushaelfte": "2.770 €",
-                "einfamilienhaus": "3.000 €"
+                "reihenhaus": 2621.2456258469965,
+                "doppelhaushaelfte": 2803.131711552652,
+                "einfamilienhaus": 3005.1645813253613,
+                "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": "3.290 €",
-                "doppelhaushaelfte": "3.610 €",
-                "einfamilienhaus": "3.800 €"
+                "reihenhaus": 3404.922952747201,
+                "doppelhaushaelfte": 3500.3929124439055,
+                "einfamilienhaus": 3701.326245757461,
+                "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": "3.970 €",
-                "doppelhaushaelfte": "4.160 €",
-                "einfamilienhaus": "4.520 €"
+                "reihenhaus": 4039.8069454626457,
+                "doppelhaushaelfte": 4241.343569275356,
+                "einfamilienhaus": 4449.811758042528,
+                "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreise_im_ueberregionalen_vergleich": [
@@ -3159,7 +3163,7 @@
         ],
         "haus_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 2568.1846930765405,
                 "preis_k": 3047.0018685947102,
                 "preis_bl": 2584,
@@ -3167,7 +3171,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 3142.696212373421,
                 "preis_k": 3392.742781912248,
                 "preis_bl": 2606,
@@ -3175,7 +3179,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 3429.4018688140827,
                 "preis_k": 3691.4109574701124,
                 "preis_bl": 2800,
@@ -3183,7 +3187,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 3145.468930747854,
                 "preis_k": 3391.88789262848,
                 "preis_bl": 2732,
@@ -3191,7 +3195,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 3258.100556314123,
                 "preis_k": 3340.7070886232905,
                 "preis_bl": 2419,
@@ -3199,7 +3203,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 3362.260145045402,
                 "preis_k": 3450.998704760635,
                 "preis_bl": 2235,
@@ -3337,7 +3341,7 @@
         ],
         "wohnung_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 2642.0478887850395,
                 "preis_k": 2694.665832035641,
                 "preis_bl": 3068,
@@ -3345,7 +3349,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 2903.1497966615193,
                 "preis_k": 2947.85045497783,
                 "preis_bl": 3097,
@@ -3353,7 +3357,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 3058.006629021822,
                 "preis_k": 3122.0394834269423,
                 "preis_bl": 3394,
@@ -3361,7 +3365,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 2785.0256258844006,
                 "preis_k": 2843.299578392405,
                 "preis_bl": 3684,
@@ -3369,7 +3373,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 2816.9935867496533,
                 "preis_k": 2874.2238531237763,
                 "preis_bl": 3492,
@@ -3377,7 +3381,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 2884.3283524102408,
                 "preis_k": 2926.8555207915197,
                 "preis_bl": 3223,
@@ -3387,7 +3391,7 @@
         ],
         "grundstueckspreisindex_regional": [
             {
-                "grundstueckspreisindex": 363
+                "grundstueckspreisindex": 363.259462049141
             }
         ],
         "grundstueckspreise_ueberregionaler_vergleich": [
@@ -3516,7 +3520,7 @@
         ],
         "grundstueck_preisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "angebotspreisentwicklung_grundstueck_k": 569.3284061635977,
                 "verkaufspreisentwicklung_grundstueck_k": 187.91,
                 "angebotspreisentwicklung_grundstueck_ol": 809.3581663803502,
@@ -3524,7 +3528,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "angebotspreisentwicklung_grundstueck_k": 596.3261024650186,
                 "verkaufspreisentwicklung_grundstueck_k": 466.02,
                 "angebotspreisentwicklung_grundstueck_ol": 786.5521760125571,
@@ -3532,7 +3536,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "angebotspreisentwicklung_grundstueck_k": 551.1837511906557,
                 "verkaufspreisentwicklung_grundstueck_k": 344.05,
                 "angebotspreisentwicklung_grundstueck_ol": 774.3472138467424,
@@ -3540,7 +3544,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "angebotspreisentwicklung_grundstueck_k": 570.9820344032142,
                 "verkaufspreisentwicklung_grundstueck_k": 345.86,
                 "angebotspreisentwicklung_grundstueck_ol": 908.2492443361247,
@@ -3548,7 +3552,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "angebotspreisentwicklung_grundstueck_k": 573.8916004651603,
                 "verkaufspreisentwicklung_grundstueck_k": 264.77,
                 "angebotspreisentwicklung_grundstueck_ol": 905.9335410097823,
@@ -3556,7 +3560,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "angebotspreisentwicklung_grundstueck_k": 528.475,
                 "verkaufspreisentwicklung_grundstueck_k": 350.0,
                 "angebotspreisentwicklung_grundstueck_ol": 829.31,
@@ -3566,27 +3570,27 @@
         ],
         "grundstueck_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "kaufpreisentwicklung_grundstueck": 569.3284061635977
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "kaufpreisentwicklung_grundstueck": 596.3261024650186
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "kaufpreisentwicklung_grundstueck": 551.1837511906557
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "kaufpreisentwicklung_grundstueck": 570.9820344032142
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "kaufpreisentwicklung_grundstueck": 573.8916004651603
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "kaufpreisentwicklung_grundstueck": 528.475
             }
         ],
@@ -3707,7 +3711,7 @@
         ],
         "mietpreisentwicklung_wohnung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 8.78453686411614,
                 "preis_k": 9.035179266692163,
                 "preis_bl": 10.89,
@@ -3715,7 +3719,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 9.208769830629285,
                 "preis_k": 9.446202935011307,
                 "preis_bl": 10.81,
@@ -3723,7 +3727,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 9.665716793529498,
                 "preis_k": 10.070080967268437,
                 "preis_bl": 10.86,
@@ -3731,7 +3735,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 10.091333803128817,
                 "preis_k": 10.50619007822499,
                 "preis_bl": 10.28,
@@ -3739,7 +3743,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 11.03575528688568,
                 "preis_k": 11.560973155560335,
                 "preis_bl": 9.42,
@@ -3747,7 +3751,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 11.564527150798128,
                 "preis_k": 11.84126629683015,
                 "preis_bl": 8.97,
@@ -3765,7 +3769,7 @@
         ],
         "mietpreisentwicklung_haus": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_ol": 7.381885510353999,
                 "preis_k": 8.291409771161987,
                 "preis_bl": 10.45,
@@ -3773,7 +3777,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_ol": 7.566405595022367,
                 "preis_k": 8.249662106425912,
                 "preis_bl": 10.41,
@@ -3781,7 +3785,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_ol": 7.782121046975931,
                 "preis_k": 8.990048315213166,
                 "preis_bl": 10.36,
@@ -3789,7 +3793,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_ol": 8.172739508733997,
                 "preis_k": 9.367689397515877,
                 "preis_bl": 10.09,
@@ -3797,7 +3801,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_ol": 9.381423608800759,
                 "preis_k": 9.89137253529307,
                 "preis_bl": 9.53,
@@ -3805,7 +3809,7 @@
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_ol": 10.082405885531708,
                 "preis_k": 10.455778974798209,
                 "preis_bl": 9.81,
@@ -4015,27 +4019,27 @@
         ],
         "mietrendite_entwicklung": [
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "brutto_mietrendite": 3.3148836507907293,
                 "kaufpreisfaktor": 30.16697131320012
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "brutto_mietrendite": 3.212858469271382,
                 "kaufpreisfaktor": 31.12493156994811
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "brutto_mietrendite": 3.6809136833392215,
                 "kaufpreisfaktor": 27.16716788351386
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "brutto_mietrendite": 4.028266768251724,
                 "kaufpreisfaktor": 24.82457239131663
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "brutto_mietrendite": 4.158481009942701,
                 "kaufpreisfaktor": 24.047242192739482
             }
@@ -4067,7 +4071,7 @@
             "wirtschaft_sv_beschaeftigte_arbeitsort": "In den vergangenen fünf Jahren ist um 20,5 % stark gestiegen. Im jüngsten Jahr liegt die Zahl der Wohnort-Beschäftigten bei 5.964.",
             "wirtschaft_arbeitsplatzzentralitaet": "Die Arbeitsplatzzentralität liegt klar über dem Landesniveau mit Index 1.1225968816227672.",
             "wirtschaft_pendler": "Das Pendlervolumen  stieg deutlich um 4316 Personen. Die Zahl der Einpendler ist um 2,64 % % stark gestiegen. Die Zahl der Auspendler ist um 2,09 % % stark gestiegen.",
-            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben. Ihr Wert liegt bei 8,4 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote ist der Anteil der registrierten Arbeitslosen an allen zivilen Erwerbspersonen, angegeben in Prozent.  Ihr Wert ist aktuell ca. 8,4 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
         },
         "wohnmarktsituation": {
             "wohnmarktsituation_intro": "Die Wohnraumsituation in größeren kreisfreien Städten ist geprägt von einem ständigen Spannungsfeld zwischen steigender Nachfrage und begrenztem Angebot. Urbanisierung und Bevölkerungswachstum lassen den Bedarf kontinuierlich steigen, während Baukapazitäten, Investitionen und gesetzliche Vorgaben das Angebot bestimmen. Hinzu kommen staatliche Programme zur Förderung von sozialem Wohnraum, die zwar wichtig sind, aber häufig in Konkurrenz zum freien Markt stehen. Als regionaler Immobilienspezialist sehe ich täglich, wie stark auch die wirtschaftliche Lage auf Bauindustrie und Kaufkraft wirkt – und damit die Dynamik des gesamten Wohnungsmarktes entscheidend prägt.",
@@ -4080,53 +4084,53 @@
             "wohnmarktsituation_wohnungsbestand_intro": "Die Haushaltsstruktur, welche die Anzahl der Einzelpersonen- und Mehrpersonenhaushalte umfasst, hat entscheidenden Einfluss auf die Nachfrage nach Wohnraum in einer Region. Die Nachfrage nach Wohnraum hängt daher nicht direkt von der Einwohnerzahl ab, sondern vielmehr von der Anzahl der Haushalte. Ein aussagekräftiger Vergleich zwischen Wohnungsangebot und -nachfrage setzt eine Gegenüberstellung der verfügbaren Wohnungen und der Haushalte voraus.",
             "wohnmarktsituation_baufertigstellungen_intro": "Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau.",
             "wohnmarktsituation_baugenehmigungen_intro": "Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
-            "wohnmarktsituation_allgemein": "In Leipzig Neustadt Neuschönefeld leben aktuell rund 14.154 Menschen auf einer Gesamtfläche von 85 ha, davon entfallen 55 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 14.154 Einwohner je km². Über fünf Jahre hinweg ist die Bevölkerung um 893 Personen deutlich gestiegen. Aktuell wird Leipzig Neustadt Neuschönefeld als wachsende Region eingestuft. Insgesamt gibt es hier etwa 9.102 Haushalte, die durchschnittlich aus 1,56 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region liegt mit 2593 Personen stark oberhalb des Niveaus von 2015, was Leipzig Neustadt Neuschönefeld als polarisierende Gegend kennzeichnet. Über die letzten 10 Jahre bedeutet dabei einen deutlichen Anstieg von 22.4 %.",
+            "wohnmarktsituation_allgemein": "In Leipzig Neustadt Neuschönefeld leben aktuell rund 14.154 Menschen auf einer Gesamtfläche von 85 ha, davon entfallen 55 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 14.154 Einwohner je km². Die Einwohnerzahl ist in den letzten fünf Jahren um 893 Menschen deutlich gestiegen, was auch auf zukünftiges Wachstum hoffen lässt. Aktuell wird Leipzig Neustadt Neuschönefeld als wachsende Region eingestuft. Insgesamt gibt es hier etwa 9.102 Haushalte, die durchschnittlich aus 1,56 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung liegt mit 2593 Personen stark oberhalb des Niveaus von 2015, was Leipzig Neustadt Neuschönefeld als polarisierende Gegend kennzeichnet. Im Zehnjahresvergleich bedeutet hier einen deutlichen Anstieg von 22.4 %.Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 2593 Personen stark oberhalb des Niveaus von 2015, was Leipzig Neustadt Neuschönefeld als polarisierende Gegend kennzeichnet. Über zehn Jahre betrachtet bedeutet hier einen deutlichen Anstieg von 22.4 %.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 9.102. In den letzten fünf Jahren hat sich die Zahl um 1.934 erhöht, was einem sehr starken Wachstum von 27,0 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2024 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
-            "wohnmarktsituation_wanderungssaldo": "Im Verlauf der vergangenen fünf Jahre sind die Zuzüge mit 25,4 % stark angestiegen, woraus man eine stark zunehmende Attraktivität ableiten kann. Parallel dazu sind genauso im selben Zeitraum die Fortzüge aus Leipzig Neustadt Neuschönefeld um 19,6 % stark gestiegen, was für die Gegend leider ausgesprochen negativ ist. Als Ergebnis dieser Entwicklung hat die Gegend einen leicht positiven Wanderungssaldo von 39. Wenn wir auf die aktuellste Entwicklung in 2024 blicken, hat die Region einen Wanderungssaldo von -104 Menschen.",
-            "wohnmarktsituation_alterstruktur": "Das Durchschnittsalter   ist 34.9549244 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter unter dem Bundesdurchschnitt, was eine jüngere Struktur nahelegt.",
+            "wohnmarktsituation_wanderungssaldo": "Im Verlauf der vergangenen fünf Jahre sind die die Zahl der Zuzüge mit 25,4 % stark gestiegen, woraus man eine stark zunehmende Attraktivität ableiten kann. Parallel dazu ist ebenso im selben Zeitfenster die Zahl der Fortzüge aus Leipzig Neustadt Neuschönefeld mit 19,6 % deutlich mehr geworden, was für die Gegend leider ausgesprochen negativ ist. Als Ergebnis dieser Entwicklung ist mit 39 Personen der Saldo leicht positiv. Schauen wir jetzt auf die jüngste Entwicklung. In der letzten statistischen Erhebung 2024 hat die Region einen Wanderungssaldo von -104 Menschen.",
+            "wohnmarktsituation_alterstruktur": "Das Durchschnittsalter ist   34.9549244 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter unter dem Bundesdurchschnitt, was eine jüngere Struktur nahelegt.",
             "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient   bei 11.5 und der Jugendquotient bei 17.5. Damit ist die Region eher von einer jüngeren Bevölkerung geprägt, was sich auch auf die Nachfrage nach familiengerechtem Wohnraum auswirken kann. Der Jugendquotient liegt klar unter dem Landesniveau, was einen geringeren Anteil an jungen Menschen vermuten lässt. Der Altenquotient liegt klar unter dem Landesniveau, was einen vergleichsweise jüngeren Altersaufbau signalisiert.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 7.605 Wohnungen. Pro 1.000 Einwohner stehen also um die 537 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre ist der Bestand dabei leicht gesunken.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt   aktuell ca. 490 m² m². Pro Kopf stehen hier durchschnittlich 34.6 m² zur Verfügung.  Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person leicht verringert, was auf eine dichtere Belegung schließen lässt.",
             "wohnmarktsituation_baufertigstellungen": "Im Jahr 2024 wurden   83 neue Wohnungen fertiggestellt, was 5.9 Fertigstellungen pro 1.000 Einwohner entspricht. In den vergangenen 5 Jahren ist die Zahl der Fertigstellungen gestiegen, was auf eine erhöhte Bautätigkeit hinweist.",
             "wohnmarktsituation_baugenehmigungen": "Im Jahr 2025 wurden   167 neue Baugenehmigungen erteilt. Über fünf Jahre hat sich die Zahl der Baugenehmigungen stark verringert, was auf eine nachlassende Bautätigkeit schließen lässt. Die Zahl der Baugenehmigungen ist stark gesunken, was auf eine schwächere Nachfrage hindeutet.",
-            "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 262 %, also in etwa dreifach so hoch wie die Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 97 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, ist sie deutlich gestiegen, was auf Fortschritte beim Baufortschritt hindeutet. Langfristig gesehen, ist die Fertigstellungsquote damit über fünf Jahre stark gestiegen, was eine Verbesserung über Zeit zeigt."
+            "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 262 %, cirka das 3-fache der Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 97 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, ist sie deutlich gestiegen, was auf Fortschritte beim Baufortschritt hindeutet. Langfristig gesehen, ist die Fertigstellungsquote damit über fünf Jahre stark gestiegen, was eine Verbesserung über Zeit zeigt."
         },
         "immobilienpreise": {
             "immobilienpreise_intro": "Die Immobilienpreise für Wohnungen und Häuser sind ein wichtiger Indikator für Käufer, Verkäufer und Investoren. Die angezeigten Kaufpreise basieren auf einer kontinuierlichen Auswertung regionaler Immobilienangebote mit modernen Analyseverfahren, die ich durch meine Praxiserfahrung bei der Bestimmung realistischer Markteinschätzungen in der Region weiter optimiere. In diesem Report erhalten Sie einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist in der Region helfe ich Ihnen dabei, die Ergebnisse richtig einzuordnen und fundierte Entscheidungen zu treffen.",
             "immobilienpreise_haus_intro": "Welche Preise erzielen Häuser in der Region aktuell? In diesem Kapitel betrachten wir die Immobilienpreise verschiedener Haustypen, analysieren die Situation in den vorhandenen Wohnlagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends auf. Gern gebe ich Ihnen eine individuell auf Ihre Immobilie abgestimmte Einschätzung. Kontaktieren Sie mich dazu gern.",
             "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Preise für Wohnungen in der Region? In diesem Kapitel betrachten wir die Immobilienpreise nach Wohnlagequalitäten, vergleichen die regionale Situation mit überregionalen Entwicklungen und zeigen aktuelle Trends auf. Zusätzlich fließen Unterschiede nach Zimmeranzahl und Wohnfläche in die Analyse ein. Für eine individuell auf Ihre Immobilie abgestimmte Einschätzung stehe ich Ihnen als Immobilienspezialist in der Region gern zur Verfügung.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Leipzig Neustadt Neuschönefeld bei 3.360 €/m².  Er bewegt sich dabei zwischen 2.840 €/m² und 3.860 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und deutlich über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 3,2 % gestiegen.  ",
-            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Neustadt Neuschönefeld variieren die Preise je nach Lage erheblich. in Leipzig Neustadt Neuschönefeld gibt es einfache bis gute Wohnlagequalitäten. In mittleren Wohnlagen liegen sie aktuell bei 3.285 € und in einfachen Wohnlagen bei 3.006 €.",
-            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Leipzig Neustadt Neuschönefeld ungefähr bei 3802,9 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3288,7 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 3612,8 €/m² rechnen .",
-            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute beträgt er 3.360 €/m², und ist damit um 7,0 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen belaufen sich auf 2.880 €/m². Diese pendeln zwischen den Werten von 2.880 €/m² bis 3.220 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und ungefähr auf Bundesniveau. Gegenüber dem Vorjahr sind die Preise um 2,4 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Neustadt Neuschönefeld variieren die Preise je nach Lage erheblich. in Leipzig Neustadt Neuschönefeld gibt es einfache bis gute Wohnlagequalitäten. In mittleren Wohnlagen liegen sie aktuell bei 2.821 € und in einfachen Wohnlagen bei 2.512 €.",
-            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Neustadt Neuschönefeld müssen diese derzeit durchschnittlich 2709,8 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 0,7 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 3337,8 €/m². hier ist der kurzfristige Trend mit 3,1 % Anstieg, leicht positiv ",
-            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Häuser in  bei 2.900 €/m². Heute beträgt er 2.880 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
+            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Neustadt Neuschönefeld variieren die Preise je nach Lage erheblich. Leipzig Neustadt Neuschönefeld weist vor allem einfache, mittlere und gute Wohnlagen auf. Beispielsweise einfachen (3.006 €), mittleren (3.285 €) und guten (3.733 €).",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Leipzig Neustadt Neuschönefeld ungefähr bei 3701,3 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3404,9 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 3500,4 €/m² rechnen .",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute liegt der Preis bei 3.360 €/m², und ist damit um 7,0 % deutlich gestiegen.",
+            "immobilienpreise_wohnung_allgemein": "Der durchschnittliche Quadratmeterpreis für Wohnungen beträgt 2.880 €/m². Diese variieren typischerweise zwischen von 2.880 €/m² bis 3.220 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und ungefähr auf Bundesniveau. Gegenüber dem Vorjahr sind die Preise um 2,4 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Neustadt Neuschönefeld variieren die Preise je nach Lage erheblich. in Leipzig Neustadt Neuschönefeld gibt es einfache bis gute Wohnlagequalitäten. Beispielsweise einfachen (2.512 €), mittleren (2.821 €) und guten (3.197 €).",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig Neustadt Neuschönefeld derzeit durchschnittlich 2623,5 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 0,7 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 3210,0 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 3210,0 €/m². hier ist der kurzfristige Trend mit 3,1 % Anstieg, leicht positiv ",
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 2.900 €/m². Heute beträgt er 2.880 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "Die Grundstückspreise für Bauland sind ein zentraler Faktor für Bauherren, Investoren und Eigentümer. Sie bestimmen die Wirtschaftlichkeit neuer Projekte und die langfristige Wertentwicklung. Schwankungen entstehen vor allem durch Lage, Nachfrage und verfügbare Flächen. Dieser Report liefert einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist für den Landkreis Greiz helfe ich Ihnen, die statistischen Auswertungen richtig einzuordnen und die Chancen des regionalen Grundstücksmarktes optimal für Ihre Bau- oder Investitionsentscheidung zu nutzen.",
-            "grundstueckspreise_allgemein": "Die mittleren Angebotspreise für Grundstücke belaufen sich auf 830 €/m². Sie befinden sich üblicherweise in einer Spanne von 750 €/m² bis 910 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
-            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Neustadt Neuschönefeld bei 790 €/m². Aktuell beträgt er 830 €/m² und ist damit um 5,4 % deutlich gestiegen."
+            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke beträgt 830 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 750 €/m² bis 910 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Neustadt Neuschönefeld bei 790 €/m². Aktuell liegt der Preis bei 830 €/m² und ist damit um 5,4 % deutlich gestiegen."
         },
         "mietpreise": {
             "mietpreise_intro": "Wie entwickeln sich die Mietpreise in der Region aktuell? Die dargestellten Angebotsmieten spiegeln die Preise wider, die Vermieter derzeit für neue Verträge verlangen – und sie entsprechen in den meisten Fällen dem tatsächlichen Mietpreis, da sie die aktuellen Marktbedingungen abbilden. Bestandsmieten liegen dagegen oft niedriger, da sie sich an früheren Marktverhältnissen orientieren und weniger dynamisch reagieren. In diesem Kapitel betrachten wir die Mietpreise nach Lagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends sowie Unterschiede nach Zimmeranzahl und Wohnfläche. Als Immobilienspezialist in der Region stehe ich Ihnen dabei gern beratend zur Seite.",
-            "mietpreise_allgemein": "Die mittleren Angebotspreise aller Mietimmobilien (Haus + Wohnung) belaufen sich auf 11.0 €/m². Diese pendeln zwischen den Werten von 6.0 €/m² bis 19.0 €/m². Bei Hinzunahme der mittleren Nebenkosten von 2.0 €/m² liegen bei,  kommt man auf eine durchschnittliche Warmmiete von 13.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
-            "mietpreise_wohnung_allgemein": "Derzeit stehen die mittleren Mietepreis für Wohnungen bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 19.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 32.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 15.0 €/m² rechnen, im Bestand liegt man bei 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 44,1 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 28,4 % weit über dem derzeitigen Niveau.",
-            "mietpreise_wohnung_preisentwicklung": "Vor einem Jahr stand der mittlere Quadratmeterpreis bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2021) standen die mittleren Angebotspreise bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
+            "mietpreise_allgemein": "Die aktuellen Angebotsmietpreise liegen bei 11.0 €/m². Sie pendeln zwischen den Werten von 6.0 €/m² bis 19.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 13.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
+            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Leipzig Neustadt Neuschönefeld bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 19.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 32.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 15.0 €/m² rechnen, im Bestand sind es 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 44,1 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 28,4 % weit über dem derzeitigen Niveau.",
+            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr lag der Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) standen die mittleren Angebotspreise bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
             "mietpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Neustadt Neuschönefeld müssen diese derzeit durchschnittlich 5,8 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 10,5 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 6,2 €/m². hier ist der kurzfristige Trend mit 10,3 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 10 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5 €/m² bis 14 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 7 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2021) lagen die durchschnittlichen Werte bei 7 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 33 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 7 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) standen die mittleren Angebotspreise bei 7 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 33 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Die Mietrendite zählt zu den wichtigsten Kennzahlen einer Immobilienanlage. Sie zeigt, welche Erträge eine vermietete Immobilie im Verhältnis zum Kaufpreis erwirtschaftet – und ist damit ein entscheidender Faktor für jede Kapitalanlage in Immobilien. Eine fundierte Renditeberechnung unterstützt Investoren dabei, Chancen und Risiken realistisch einzuschätzen und die Rentabilität verschiedener Objekte zu vergleichen. Die folgenden Auswertungen geben einen ersten regionalen Überblick. Doch neben der reinen Zahl sind vor allem Lage, Nachfrage und Mietentwicklung ausschlaggebend. Als Immobilienspezialist für die Region helfe ich Ihnen, die Mietrendite richtig zu bewerten und die passende Immobilie als langfristige, sichere Kapitalanlage auszuwählen.",
             "mietrendite_hinweis": "Beachten Sie, dass die Brutto-Mietrendite nur eine von mehreren Faktoren ist, die bei einer fundierten Investitionsentscheidung berücksichtigt werden sollten. Zusätzliche Aspekte wie Standort, langfristige Entwicklung und Risikobewertung sind ebenso relevant, um eine erfolgreiche Immobilieninvestition zu gewährleisten. Kontaktieren Sie dazu unseren regionalen Investment-Spezialisten.",
             "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
-            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 4,16 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Neustadt Neuschönefeld bei 4,03 %. Bis heute ist der Preis innerhalb dieser Zeit mit 3,2 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2021) lag der Wert bei 3,31 %, innerhalb diesen Zeitraums sind sie bis jetzt um 25,4 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 3,84 %, ",
+            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 4,16 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Neustadt Neuschönefeld bei 4,03 %. Bis heute ist der Preis innerhalb dieser Zeit mit 3,2 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 3,31 %, innerhalb diesen Zeitraums sind sie bis jetzt um 25,4 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 3,84 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 4,98 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  in Leipzig Neustadt Neuschönefeld ungefähr bei 20.2, und die mittlere Netto-Mietrendite bei ungefähr 4,68 %. ",
-            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Neustadt Neuschönefeld bei 26.3. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 3,46 €/m², ",
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Neustadt Neuschönefeld bei 26.3. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 3,46 €/m², ",
             "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Neustadt Neuschönefeld bei 16.2. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 5,87 €/m², "
         },
         "quellenangaben": [

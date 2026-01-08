@@ -1,6 +1,6 @@
 {
     "meta": {
-        "aktualisierung": "21.12.2025",
+        "aktualisierung": "08.01.2026",
         "regionale_zuordnung": "stadtkreis",
         "amtlicher_name": "Leipzig",
         "bundesland_name": "sachsen",
@@ -77,87 +77,87 @@
         ],
         "immobilie_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "kaufpreisentwicklung_immobilie": 2875.8683804510506
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "kaufpreisentwicklung_immobilie": 3173.8866550685875
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "kaufpreisentwicklung_immobilie": 3406.7413314791424
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "kaufpreisentwicklung_immobilie": 3116.387985437938
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "kaufpreisentwicklung_immobilie": 3109.2969591968877
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "kaufpreisentwicklung_immobilie": 3188.9271127760776
             }
         ],
         "grundstueck_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "kaufpreisentwicklung_grundstueck": 569.3284061635977
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "kaufpreisentwicklung_grundstueck": 596.3261024650186
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "kaufpreisentwicklung_grundstueck": 551.1837511906557
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "kaufpreisentwicklung_grundstueck": 570.9820344032142
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "kaufpreisentwicklung_grundstueck": 573.8916004651603
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "kaufpreisentwicklung_grundstueck": 528.475
             }
         ],
         "immobilie_mietpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "mietpreisentwicklung_immobilie": 8.678179165972017
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "mietpreisentwicklung_immobilie": 8.84829435500458
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "mietpreisentwicklung_immobilie": 9.536391877957966
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "mietpreisentwicklung_immobilie": 9.943181768786664
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "mietpreisentwicklung_immobilie": 10.715674502892584
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "mietpreisentwicklung_immobilie": 11.14852263581418
             }
         ],
         "basisjahr": [
             {
-                "basisjahr_immobilienpreisindex": 2020,
-                "basisjahr_grundstueckspreisindex": 2020,
-                "basisjahr_mietpreisindex": 2020
+                "basisjahr_immobilienpreisindex": 2021,
+                "basisjahr_grundstueckspreisindex": 2021,
+                "basisjahr_mietpreisindex": 2021
             }
         ],
         "preisindex": [
@@ -169,7 +169,7 @@
         ],
         "flaeche_gesamt": [
             {
-                "flaeche_gesamt": "29.780"
+                "flaeche_gesamt": 29780.0
             }
         ],
         "flaechenverteilung": [
@@ -221,13 +221,13 @@
             },
             {
                 "faktor": "sicherheit",
-                "wert": 2,
-                "color": "#f86f7e"
+                "wert": 1,
+                "color": "#ff6384"
             },
             {
                 "faktor": "naherholung",
-                "wert": 3,
-                "color": "#f27c78"
+                "wert": 2,
+                "color": "#f86f7e"
             },
             {
                 "faktor": "lebenserhaltungskosten",
@@ -501,16 +501,16 @@
         ],
         "wirtschaft_allgemein": [
             {
-                "kaufkraftindex_k": "81,8",
-                "kaufkraft_nominal_k": "22.983",
-                "kaufkraft_real_k": "20.751",
-                "bip": "25 Mio",
-                "pendlersaldo_k": "32 Tsd",
-                "gewerbesaldo": "750",
-                "arbeitsplatzzentralitaet_k": "1,1",
-                "arbeitslosenquote_k": "7,7",
-                "beschaeftigtenquote_k": "64,5",
-                "arbeitslosendichte": "2,0"
+                "kaufkraftindex_k": 81.83764456893748,
+                "kaufkraft_nominal_k": 22982.77023727455,
+                "kaufkraft_real_k": 20751.359798168432,
+                "bip": 25281756,
+                "pendlersaldo_k": 32324,
+                "gewerbesaldo": 746,
+                "arbeitsplatzzentralitaet_k": 1.1225968816227672,
+                "arbeitslosenquote_k": "7.7",
+                "beschaeftigtenquote_k": "64.5",
+                "arbeitslosendichte": "2.002840472900353"
             }
         ],
         "gewerbesaldo_abs": [
@@ -1275,20 +1275,20 @@
         ],
         "flaechennutzung_wohnbau": [
             {
-                "flaechennutzung_wohnbau": "4.999"
+                "flaechennutzung_wohnbau": 4999.0
             }
         ],
         "wohnungsnachfrage_allgemein": [
             {
                 "anzahl_einwohner": "612 Tsd",
                 "anzahl_haushalte": "340 Tsd",
-                "mittlere_haushaltsgroesse": "1,8",
-                "wanderungssaldo": "6.009",
-                "natuerlicher_saldo": "-1.858",
-                "einwohnerdichte": "2.055",
-                "siedlungsdichte": "4.697",
-                "jugendquotient": "24,8",
-                "altenquotient": "30,4"
+                "mittlere_haushaltsgroesse": 1.8,
+                "wanderungssaldo": 6009,
+                "natuerlicher_saldo": -1858,
+                "einwohnerdichte": "2054.56682337139",
+                "siedlungsdichte": "4697.144173192078",
+                "jugendquotient": "24.79650978452485",
+                "altenquotient": "30.39886365077553"
             }
         ],
         "bevoelkerungsentwicklung_relativ": [
@@ -2161,21 +2161,21 @@
         ],
         "wohnungsangebot_allgemein": [
             {
-                "wohnungsbestand": "351.805",
-                "baufertigstellungen": "2.084",
-                "baugenehmigungen": "1.975",
-                "leerstandsquote": "0",
-                "wohnungsbestand_anzahl_absolut": "351.805",
-                "wohnungsbestand_wohnraumsaldo": "-601",
-                "wohnungsbestand_wohnraumsaldo_per_1000_ew": "-1",
-                "wohnungsbestand_wohnflaeche_pro_ew": 40.0,
-                "wohnungsbestand_mittlere_wohnflaeche": "69",
-                "wohnungsbestand_raum_pro_ew": 1.7,
-                "baufertigstellungen_anzahl_absolut": "2.084",
-                "baufertigstellungen_flaeche_absolut": "166.700",
-                "baugenehmigungen_anzahl_absolut": "1.975",
-                "baugenehmigungen_flaeche_absolut": "153.500",
-                "baugenehmigungen_erloschen": "250"
+                "wohnungsbestand": 351805,
+                "baufertigstellungen": 2084,
+                "baugenehmigungen": 1975,
+                "leerstandsquote": 0.0355,
+                "wohnungsbestand_anzahl_absolut": 351805,
+                "wohnungsbestand_wohnraumsaldo": -601.077500000014,
+                "wohnungsbestand_wohnraumsaldo_per_1000_ew": -0.9823935605132205,
+                "wohnungsbestand_wohnflaeche_pro_ew": 39.69665767753534,
+                "wohnungsbestand_mittlere_wohnflaeche": 69.03938261252682,
+                "wohnungsbestand_raum_pro_ew": 1.739173689970296,
+                "baufertigstellungen_anzahl_absolut": 2084,
+                "baufertigstellungen_flaeche_absolut": 166700.0,
+                "baugenehmigungen_anzahl_absolut": 1975,
+                "baugenehmigungen_flaeche_absolut": 153500.0,
+                "baugenehmigungen_erloschen": 250
             }
         ],
         "wohnungsbestand_wohnflaeche": [
@@ -3051,23 +3051,23 @@
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": 2772.3706518119907,
-                "doppelhaushaelfte": 2896.9571258879864,
-                "einfamilienhaus": 3181.8584014072003,
+                "reihenhaus": 2837.504397154761,
+                "doppelhaushaelfte": 2854.533428352681,
+                "einfamilienhaus": 3120.262923617425,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": 3423.2664266717975,
-                "doppelhaushaelfte": 3517.617828729054,
-                "einfamilienhaus": 3787.50398477593,
+                "reihenhaus": 3467.4498235897368,
+                "doppelhaushaelfte": 3653.7495687884866,
+                "einfamilienhaus": 3778.8281803199948,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": 4039.2929144779937,
-                "doppelhaushaelfte": 4209.597252232766,
-                "einfamilienhaus": 4616.98204481323,
+                "reihenhaus": 4142.686085695129,
+                "doppelhaushaelfte": 4385.901355138527,
+                "einfamilienhaus": 4515.961212549648,
                 "einheit": "pricePerSqm"
             }
         ],
@@ -3129,42 +3129,42 @@
         ],
         "haus_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_k": 3047.0018685947102,
                 "preis_bl": 2584,
                 "preis_l": 2780.7035903653587,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_k": 3392.742781912248,
                 "preis_bl": 2606,
                 "preis_l": 3251.4663055838787,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_k": 3691.4109574701124,
                 "preis_bl": 2800,
                 "preis_l": 3369.31848901723,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_k": 3391.88789262848,
                 "preis_bl": 2732,
                 "preis_l": 3043.145615893064,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_k": 3340.7070886232905,
                 "preis_bl": 2419,
                 "preis_l": 3062.0408943305847,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_k": 3450.998704760635,
                 "preis_bl": 2235,
                 "preis_l": 3152.5305408373115,
@@ -3301,42 +3301,42 @@
         ],
         "wohnung_kaufpreisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_k": 2690.0,
                 "preis_bl": 3070.0,
                 "preis_l": 2860.0,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_k": 2950.0,
                 "preis_bl": 3100.0,
                 "preis_l": 3290.0,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_k": 3120.0,
                 "preis_bl": 3390.0,
                 "preis_l": 3340.0,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_k": 2840.0,
                 "preis_bl": 3680.0,
                 "preis_l": 3090.0,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_k": 2870.0,
                 "preis_bl": 3490.0,
                 "preis_l": 3150.0,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_k": 2930.0,
                 "preis_bl": 3220.0,
                 "preis_l": 3270.0,
@@ -3420,19 +3420,19 @@
         "grundstueck_flaechenangebot": [
             {
                 "flaecheninfo_label": "min. Fläche",
-                "flaecheninfo": "0 m²"
+                "flaecheninfo": 0.0
             },
             {
                 "flaecheninfo_label": "max. Fläche",
-                "flaecheninfo": "0 m²"
+                "flaecheninfo": 0.0
             },
             {
                 "flaecheninfo_label": "Ø Fläche",
-                "flaecheninfo": "0 m²"
+                "flaecheninfo": 0.0
             },
             {
                 "flaecheninfo_label": "gesamt Fläche",
-                "flaecheninfo": "0 m²"
+                "flaecheninfo": 0.0
             }
         ],
         "grundstueckspreise_lage": [
@@ -3460,37 +3460,37 @@
         ],
         "grundstueck_preisentwicklung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "angebotspreisentwicklung_grundstueck_k": 569.3284061635977,
                 "verkaufspreisentwicklung_grundstueck_k": 187.91,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "angebotspreisentwicklung_grundstueck_k": 596.3261024650186,
                 "verkaufspreisentwicklung_grundstueck_k": 466.02,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "angebotspreisentwicklung_grundstueck_k": 551.1837511906557,
                 "verkaufspreisentwicklung_grundstueck_k": 344.05,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "angebotspreisentwicklung_grundstueck_k": 570.9820344032142,
                 "verkaufspreisentwicklung_grundstueck_k": 345.86,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "angebotspreisentwicklung_grundstueck_k": 573.8916004651603,
                 "verkaufspreisentwicklung_grundstueck_k": 264.77,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "angebotspreisentwicklung_grundstueck_k": 528.475,
                 "verkaufspreisentwicklung_grundstueck_k": 350.0,
                 "einheit": "pricePerSqm"
@@ -3614,42 +3614,42 @@
         ],
         "mietpreisentwicklung_wohnung": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_k": 9.035179266692163,
                 "preis_bl": 10.89,
                 "preis_l": 7.6046065871171615,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_k": 9.446202935011307,
                 "preis_bl": 10.81,
                 "preis_l": 8.122039017109223,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_k": 10.070080967268437,
                 "preis_bl": 10.86,
                 "preis_l": 9.416037353245637,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_k": 10.50619007822499,
                 "preis_bl": 10.28,
                 "preis_l": 9.342214245290139,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_k": 11.560973155560335,
                 "preis_bl": 9.42,
                 "preis_l": 9.703489312834787,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_k": 11.84126629683015,
                 "preis_bl": 8.97,
                 "preis_l": 9.976702318794569,
@@ -3666,42 +3666,42 @@
         ],
         "mietpreisentwicklung_haus": [
             {
-                "jahr": 2020,
+                "jahr": 2021,
                 "preis_k": 8.291409771161987,
                 "preis_bl": 10.45,
                 "preis_l": 8.286160977694141,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "preis_k": 8.249662106425912,
                 "preis_bl": 10.41,
                 "preis_l": 8.660902256090829,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "preis_k": 8.990048315213166,
                 "preis_bl": 10.36,
                 "preis_l": 9.781566741795963,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "preis_k": 9.367689397515877,
                 "preis_bl": 10.09,
                 "preis_l": 9.841857112173976,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "preis_k": 9.89137253529307,
                 "preis_bl": 9.53,
                 "preis_l": 10.046257162683903,
                 "einheit": "pricePerSqm"
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "preis_k": 10.455778974798209,
                 "preis_bl": 9.81,
                 "preis_l": 10.314007020688036,
@@ -3910,27 +3910,27 @@
         ],
         "mietrendite_entwicklung": [
             {
-                "jahr": 2021,
+                "jahr": 2022,
                 "brutto_mietrendite": 3.3454103375270163,
                 "kaufpreisfaktor": 29.89169934649084
             },
             {
-                "jahr": 2022,
+                "jahr": 2023,
                 "brutto_mietrendite": 3.3591250817334393,
                 "kaufpreisfaktor": 29.769656552472323
             },
             {
-                "jahr": 2023,
+                "jahr": 2024,
                 "brutto_mietrendite": 3.828733193138417,
                 "kaufpreisfaktor": 26.118299436276434
             },
             {
-                "jahr": 2024,
+                "jahr": 2025,
                 "brutto_mietrendite": 4.135600289138177,
                 "kaufpreisfaktor": 24.18028653848439
             },
             {
-                "jahr": 2025,
+                "jahr": 2026,
                 "brutto_mietrendite": 4.19521258713586,
                 "kaufpreisfaktor": 23.836694308802986
             }
@@ -4595,6 +4595,15 @@
     "text": {
         "berater": {
             "berater_name": "Sven Butterling",
+            "berater_email_01": "info@butterling-immobilien.de",
+            "berater_email_02": "info@butterling-immobilien.de",
+            "berater_telefon_fest": "03418799733",
+            "berater_telefon_mobil": "01773086283",
+            "berater_telefon_whatsApp": "",
+            "berater_adresse_strasse": "Hommelweg",
+            "berater_adresse_hnr": "6",
+            "berater_adresse_plz": "04316",
+            "berater_adresse_ort": "Leipzig",
             "berater_beschreibung": "Als regionaler Immobilienspezialist kenne ich die Besonderheiten des Marktes vor Ort genau. Mein Anspruch ist es, Käufer und Verkäufer gleichermaßen kompetent zu begleiten und mit fundierter Marktkenntnis Orientierung zu geben. Dabei verbinde ich professionelle Analyse mit persönlicher Beratung – von der ersten Einschätzung über die realistische Bewertung bis hin zur erfolgreichen Vermittlung. Mein Mehrwert liegt in der Kombination aus regionaler Expertise, individueller Betreuung und einem klaren Blick für Chancen und Risiken. So helfe ich Ihnen, Immobilienentscheidungen sicher und erfolgreich zu treffen.\n\nIch freue mich auf Ihre unverbindliche Anfrage.",
             "berater_ausbildung": "Ausbildung\nAusbildung\nAusbildung"
         },
@@ -4628,7 +4637,7 @@
             "immobilienmarkt_individuell_02": "Die Bautätigkeit in Leipzig hat sich merklich abgekühlt. Hohe Bau- und Energiekosten, strengere Kalkulationen und zurückhaltendere Kreditvergaben bremsen viele Vorhaben. Projektentwickler priorisieren, schieben oder überarbeiten Planungen; Genehmigungen und Starts erfolgen selektiver. Dadurch bleibt moderner, energieeffizienter Neubau knapp – genau dort, wo die Nachfrage besonders ausgeprägt ist. Eine rasche Trendwende ist aktuell nicht absehbar: Selbst wenn sich die Finanzierungskonditionen weiter einpendeln, wirken Kostendruck, Kapazitäten und Regulatorik nach. Für den weiteren Jahresverlauf 2025 spricht daher vieles für seitwärts gerichtete bis differenzierte Preisbewegungen: begehrte Lagen und nachhaltige Qualitäten behaupten sich, einfachere Bestände reagieren preissensibel. Vermarktungszeiten können je nach Segment verlängert bleiben; sorgfältige Preisfindung und solide Objektaufbereitung sind entscheidend, um Nachfrage zu aktivieren.",
             "immobilienmarkt_zitat": "Neubauprojekte werden zurückgestellt – damit sind moderne, energieeffiziente Objekte in Leipzig weiterhin Mangelware.",
             "immobilienmarkt_standort_teaser": "Die größte Stadt Sachsens zeichnet sich durch ihre dynamische Entwicklung, ihre lebendige Kulturszene und ihre wachsende Bedeutung als Wirtschaftsstandort aus. Leipzig vereint geschichtsträchtige Tradition mit urbaner Modernität und gilt als einer der attraktivsten Wohn- und Arbeitsorte in Ostdeutschland. Die Stadt ist bekannt für ihre Musik- und Buchgeschichte, ihre gut erhaltene Gründerzeitarchitektur sowie für ihre Rolle als Logistik-, Energie- und Innovationsstandort mit überregionaler Strahlkraft.",
-            "immobilienmarkt_beschreibung_01": "Der durchschnittliche Quadratmeterpreis beim Immobilienkauf liegt aktuell bei 3.190 €/m² und ist damit höher als die Preise in Sachsen. 2021 lagen die Immobilienpreise in Leipzig noch bei 3.170 €/m² - im 5 Jahrestrend sind sie steigend und steigen aktuell weiter. Im Vorjahresvergleich sind die Immobilienpreise um ca. 2,6 % gestiegen.<br><br>Nimmt man den Vorjahresvergleich bei Grundstücken verhalten sich die Preise gegenläufig zu  den Immobilienpreisen und fallen um ca. 7,9 %. In der 5 Jahres Betrachtung fallen sie um 11,4 %. Der durchschnittliche Grundstücks-Quadratmeterpreis von 530 €/m² ist dabei im bundesweiten Vergleich höher.<br><br>Viele Menschen spielen aufgrund der aktuellen Zinspolitik mit dem Gedanken eine Immobilie zu mieten. Die Durchschnittsmieten liegen in Leipzig mit 11,1 €/m² höher dem Mittel in Sachsen. Die Mieten steigen im  Vorjahresvergleich um 4,0 % und sind damit langsfristig im Aufwärtstrend.",
+            "immobilienmarkt_beschreibung_01": "Der durchschnittliche Quadratmeterpreis beim Immobilienkauf liegt aktuell bei 3.190 €/m² und ist damit höher als die Preise in Sachsen. 2022 lagen die Immobilienpreise in Leipzig noch bei 3.170 €/m² - im 5 Jahrestrend sind sie steigend und steigen aktuell weiter. Im Vorjahresvergleich sind die Immobilienpreise um ca. 2,6 % gestiegen.<br><br>Nimmt man den Vorjahresvergleich bei Grundstücken verhalten sich die Preise gegenläufig zu  den Immobilienpreisen und fallen um ca. 7,9 %. In der 5 Jahres Betrachtung fallen sie um 11,4 %. Der durchschnittliche Grundstücks-Quadratmeterpreis von 530 €/m² ist dabei im bundesweiten Vergleich höher.<br><br>Viele Menschen spielen aufgrund der aktuellen Zinspolitik mit dem Gedanken eine Immobilie zu mieten. Die Durchschnittsmieten liegen in Leipzig mit 11,1 €/m² höher dem Mittel in Sachsen. Die Mieten steigen im  Vorjahresvergleich um 4,0 % und sind damit langsfristig im Aufwärtstrend.",
             "immobilienmarkt_beschreibung_02": "    Der Immobilienmarktbericht Leipzig behandelt 63 Stadtteile, jede Ortslage hat dabei ihren eigenen einzigartigen Charakter. Diese Vielfalt spiegelt sich nicht nur in der Landschaft, Infrastruktur oder Kultur der Gegend wider, sondern auch in den Immobilienpreisen. Abhängig von der jeweiligen Lage und den Besonderheiten der einzelnen Regionen variieren die Kosten für Immobilien erheblich. So liegen die günstigsten Durchschnittspreise für Immobilien in der kreisfreien Stadt mit 2575.3739692768404 in Althen Kleinpösna, welche im Vergleich zu Sachsen trotzdem teurer sind. In Zentrum sind die Preise dagegen mit 3962.1804293498208 am höchsten. Am günstigsten läßt es sich aktuell in Mockau Nord mieten. Hier zahlt man im Schnitt 10.345428855424394. Die teuersten Mieten findet man dabei in Leipzig in Zentrum West mit 11.659682910626108.",
             "immobilienmarkt_besonderheiten": "Beim Hausverkauf über einen Makler fällt in der Regel eine Provision von 7,14 % an. Sie wird seit Inkrafttreten der gesetzlichen Neuregelung der Maklerprovision Ende 2020 zwischen Verkäufer und Käufer geteilt, es ist aber auch eine reine Verkäufercourtage möglich, was zunehmend gängiger wird. Bei der Grunderwerbssteuer war Sachsen bis Ende 2022 auf dem Niveau wie Bayern mit 3,5 Prozent: Seit dem 1.1.2023 werden hier aber 5,5 Prozent veranschlagt.",
             "immobilienmarkt_maklerempfehlung": "Beim Verkauf eines Hauses über einen Makler fällt in Sachsen in der Regel eine Provision von 7,14 % des Kaufpreises an (inkl. MwSt.). Seit der gesetzlichen Neuregelung Ende 2020 wird dieser Betrag in den meisten Fällen je zur Hälfte von Käufer und Verkäufer getragen – also jeweils 3,57 %. Alternativ ist auch eine reine Verkäufercourtage möglich, bei der der Verkäufer die gesamten Maklerkosten übernimmt – ein Modell, das zunehmend an Bedeutung gewinnt.\n\nBei der Grunderwerbsteuer lag Sachsen bis Ende 2022 mit 3,5 % auf dem gleichen Niveau wie Bayern und damit unter dem Bundesschnitt. Seit dem 1. Januar 2023 gilt jedoch ein erhöhter Satz von 5,5 %, der beim Immobilienkauf entsprechend berücksichtigt werden muss."
@@ -4657,8 +4666,8 @@
             "wirtschaft_einkommen": "Das gesamte verfügbare Einkommen liegt in Leipzig bei 14.062.007.970 €, auf die Einwohner gerechnet 22.983 € und pro Haushalt 41.369 €. In den vergangenen fünf Jahren ist es um 15,1 % stark gestiegen.",
             "wirtschaft_sv_beschaeftigte_arbeitsort": "Über fünf Jahre ist die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort um 8,2 % gestiegen. Bei den Wohnort-Beschäftigten gab es im selben Zeitraum einen Anstieg um 8,9 %. Zuletzt lag die Zahl der Beschäftigten am Arbeitsort bei 296.635 und am Wohnort bei 264.240.",
             "wirtschaft_arbeitsplatzzentralitaet": "Eine Region mit einem Arbeitsplatzzentralitätswert über 1 gilt als bevorzugter Arbeitsort, da dort mehr Menschen arbeiten als wohnen. Ein Wert unter 1 zeigt, dass mehr Personen in der Region wohnen als dort arbeiten. Mit 1.12 liegt der Wert in Leipzig klar über 1. Mit diesem Wert handelt es sich um einen ausgeprägten Arbeitsstandort. Es arbeiten deutlich mehr Menschen in der Region, als dort wohnen, was auf eine starke Funktion als Beschäftigungszentrum und hohe Einpendelung aus dem Umland schließen lässt.",
-            "wirtschaft_pendler": "Das Pendlervolumen hat sich zuletzt deutlich um 4316 Personen erhöht. Die Zahl der Einpendler ist dabei mit 2,64 % stark gestiegen. Bei den Auspendlern ist hingegen eine Zunahme um 2,09 % zu beobachten. Das ist im Großen und Ganzen eine nicht so gute Entwicklung für die Region.",
-            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben. Ihr Wert liegt bei 7,7 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+            "wirtschaft_pendler": "Das Pendlervolumen hat sich zuletzt deutlich um 4316 Personen erhöht. Die Zahl der Einpendler ist dabei mit 2,64 % stark gestiegen. Bei den Auspendlern ist jedoch eine Zunahme um 2,09 % zu beobachten. Das ist im Großen und Ganzen eine nicht so gute Entwicklung für die Region.",
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote ist der Anteil der registrierten Arbeitslosen an allen zivilen Erwerbspersonen, angegeben in Prozent.  Ihr Wert ist aktuell ca. 7,7 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
         },
         "wohnmarktsituation": {
             "wohnmarktsituation_intro": "Die Wohnraumsituation in größeren kreisfreien Städten ist ein komplexes Zusammenspiel aus Angebot und Nachfrage, staatlicher sozialer Wohnraumvergabe und der allgemeinen wirtschaftlichen Lage. Während die steigende Nachfrage durch Urbanisierung und Bevölkerungswachstum angetrieben wird, hängt das Angebot von Baukapazitäten, Investitionen und regulatorischen Rahmenbedingungen ab. Staatliche, soziale Wohnraumprogramme zielen darauf ab, bezahlbaren Wohnraum für einkommensschwächere Bevölkerungsgruppen bereitzustellen, stehen jedoch oft im direkten Wettbewerb mit dem freien Markt. Die wirtschaftliche Situation beeinflusst sowohl die Bauindustrie als auch die Kaufkraft der Bevölkerung, was die Dynamik des Wohnmarktes weiter prägt.",
@@ -4671,13 +4680,13 @@
             "wohnmarktsituation_wohnungsbestand_intro": "Die Haushaltsstruktur, welche die Anzahl der Einzelpersonen- und Mehrpersonenhaushalte umfasst, hat entscheidenden Einfluss auf die Nachfrage nach Wohnraum in einer Region. Die Nachfrage nach Wohnraum hängt daher nicht direkt von der Einwohnerzahl ab, sondern vielmehr von der Anzahl der Haushalte. Ein aussagekräftiger Vergleich zwischen Wohnungsangebot und -nachfrage setzt eine Gegenüberstellung der verfügbaren Wohnungen und der Haushalte voraus.",
             "wohnmarktsituation_baufertigstellungen_intro": "Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau.",
             "wohnmarktsituation_baugenehmigungen_intro": "Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
-            "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 262 %, cirka das 3-fache der Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 97 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, ist sie deutlich gestiegen, was auf Fortschritte beim Baufortschritt hindeutet. Langfristig gesehen, ist die Fertigstellungsquote damit über fünf Jahre stark gestiegen, was eine Verbesserung über Zeit zeigt.",
-            "wohnmarktsituation_allgemein": "In  leben aktuell rund 611.850 Menschen auf einer Gesamtfläche von 29.780 ha, davon entfallen 13.026 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 611.850 Einwohner je km². Binnen fünf Jahren hat sich die Zahl der Einwohner um 14357 Personen leicht erhöht. Aktuell wird  als leicht wachsende Region eingestuft. Insgesamt gibt es hier etwa 339.917 Haushalte, die durchschnittlich aus 1,8 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 51378 Personen über dem Niveau von 2015, was  als polarisierende Gegend kennzeichnet. Über zehn Jahre betrachtet zeigt damit ein normales Wachstum von rund 9.2 %.",
+            "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 262 %, also in etwa dreifach so hoch wie die Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 97 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, ist sie deutlich gestiegen, was auf Fortschritte beim Baufortschritt hindeutet. Langfristig gesehen, ist die Fertigstellungsquote damit über fünf Jahre stark gestiegen, was eine Verbesserung über Zeit zeigt.",
+            "wohnmarktsituation_allgemein": "In  leben aktuell rund 611.850 Menschen auf einer Gesamtfläche von 29.780 ha, davon entfallen 13.026 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 611.850 Einwohner je km². Über fünf Jahre hinweg hat sich die Bevölkerung um 14357 Personen leicht erhöht. Aktuell wird  als leicht wachsende Region eingestuft. Insgesamt gibt es hier etwa 339.917 Haushalte, die durchschnittlich aus 1,8 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 51378 Personen oberhalb des Niveaus von 2015, was  als polarisierende Gegend kennzeichnet. Über zehn Jahre betrachtet bedeutet dabei einen normalen Anstieg von 9.2 %.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 339.917. In den letzten zehn Jahren hat sich die Zahl um 16.988 erhöht, was einem starken Wachstum von 5,3 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist  Leipzig einen natürlichen Bevölkerungssaldo von -3.04 (je 1.000 Einwohner) oder -1.858 Personen auf. 2023 wurden hier insgesamt 5.033 Geburten registriert, was einem starken Rückgang von 22,6 % im 5 Jahrestrend entspricht und auf eine schleichend rückwärtsgerichtete Entwicklung hindeutet. Demgegenüber standen 6.891 Sterbefälle,  was einer starken Zuwachs von 10,3 im Vergleich zu 2019 bedeutet.",
-            "wohnmarktsituation_wanderungssaldo": "Über die letzten fünf Jahre sind die die Zahl der Zuzüge mit 19,1 % stark gestiegen, was eine stark wachsende Attraktivität der Region vermuten läßt. Währenddessen ist aber auch Im selben Zeitfenster die Zahl der Fortzüge aus  mit 19,8 % deutlich mehr geworden, was sich für die Gegend deutlich ungünstig auswirkt. So ist mit 799 Personen der Saldo leicht positiv. Wenn wir auf die aktuellste Entwicklung in 2024 blicken,  dann sehen wir einen Wanderungssaldo von 6009.",
-            "wohnmarktsituation_alterstruktur": "Das Durchschnittsalter ist in Leipzig 42.3 Jahre. In den letzten fünf Jahren ist es nahezu konstant geblieben. Im Vergleich zu Sachsen liegt das Alter der Bevölkerung im Kreis unter dem des Bundeslandes und im Bundesvergleich über dem Mittel im Land.",
+            "wohnmarktsituation_wanderungssaldo": "Innerhalb der letzten fünf Jahre  sind die Zuzüge mit 19,1 % stark angestiegen, was eine zunehmende Anziehungskraft der Region erkennen lässt. Währenddessen hat aber auch Im selben Zeitraum die Zahl der Wegzügler aus  mit 19,8 % deutlich zugelegt, was sich für die Gegend deutlich ungünstig auswirkt. So ist mit 799 Personen der Saldo leicht positiv. Wenn wir auf die aktuellste Entwicklung in 2024 blicken,  dann sehen wir einen Wanderungssaldo von 6009.",
+            "wohnmarktsituation_alterstruktur": "Das Durchschnittsalter in Leipzig ist 42.3 Jahre. In der 5-Jahres Entwicklung ist der Wert dabei nahezu unverändert geblieben. Im Vergleich zu Sachsen liegt das Alter der Bevölkerung im Kreis unter dem des Bundeslandes und im Bundesvergleich über dem Mittel im Land.",
             "wohnmarktsituation_jugendquotient_altenquotient": "in Leipzig liegt der Jugendquotient bei 24.8 und der Altenquotienten bei 30.4. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt klar unter dem Landesniveau, was einen geringeren Anteil an jungen Menschen vermuten lässt. Der Altenquotient liegt klar unter dem Landesniveau, was einen vergleichsweise jüngeren Altersaufbau signalisiert.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand in Leipzig beträgt ca. 351.805 Wohnungen. Pro 1.000 Einwohner stehen also um die 575 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre blieb der Bestand dabei nahezu stabil.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt in Leipzig aktuell ca. 24288 m². Pro Kopf stehen hier durchschnittlich 39.7 m² zur Verfügung. Sie liegt dabei pro Person stark unter dem Bundesdurchschnitt. Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person kaum verändert.",
@@ -4689,36 +4698,36 @@
             "immobilienpreise_haus_intro": "Welche Preise erzielen Häuser in der Region aktuell? In diesem Kapitel betrachten wir die Immobilienpreise verschiedener Haustypen, analysieren die Situation in den vorhandenen Wohnlagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends auf. Gern gebe ich Ihnen eine individuell auf Ihre Immobilie abgestimmte Einschätzung. Kontaktieren Sie mich dazu gern.",
             "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Preise für Wohnungen in der Region? In diesem Kapitel betrachten wir die Immobilienpreise nach Wohnlagequalitäten, vergleichen die regionale Situation mit überregionalen Entwicklungen und zeigen aktuelle Trends auf. Zusätzlich fließen Unterschiede nach Zimmeranzahl und Wohnfläche in die Analyse ein. Für eine individuell auf Ihre Immobilie abgestimmte Einschätzung stehe ich Ihnen als Immobilienspezialist in der Region gern zur Verfügung.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis in Leipzig bei 3.450 €/m².  Er bewegt sich dabei zwischen 2.860 €/m² und 4.150 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und deutlich über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 3,3 % gestiegen.  ",
-            "immobilienpreise_haus_lage": "Die Preise für Häuser variieren in verschiedenen Lage erheblich. Für einfachen Wohnlagen liegt der Durchschnitt bei 3.021 €. Die Bandbreite in guten Lagen reicht von 3.399 € bis 3.732 €. Die höchsten Preise in sehr guten-Lagen können mit Preisen bis 4.022 € dann meist nur noch von Besserverdienern gestemmt werden.",
-            "immobilienpreise_haus_haustypen": "Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3423,3 €/m²,",
-            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Häuser in Leipzig bei 3.390 €/m².  Aktuell beträgt er 3.450 €/m²  und ist damit um 1,7 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Der durchschnittliche Quadratmeterpreis für Wohnungen beträgt 2.930 €/m². Diese variieren typischerweise zwischen von 2.930 €/m² bis 3.540 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und ungefähr auf Bundesniveau. Gegenüber dem Vorjahr sind die Preise um 1,8 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Preise für Häuser variieren in verschiedenen Lage erheblich. In einfachen Wohnlagen liegen sie aktuell bei 2.539 €. In guten Lagen bewegt sich die Spanne von 2.866 € bis 3.202 €. In Top-Lagen werden im Mittel 3.393 € erzielt.",
-            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig müssen diese derzeit durchschnittlich 2749,2 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 3,5 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 3387,9 €/m². hier ist der kurzfristige Trend mit 2,7 % Anstieg, leicht positiv ",
-            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Häuser in Leipzig bei 2.950 €/m². Heute beträgt er 2.930 €/m², und ist damit um 0,7 % kräftig zurückgegangen."
+            "immobilienpreise_haus_lage": "Die Preise für Häuser variieren in verschiedenen Lage erheblich. In einfachen Wohnlagen liegen sie aktuell bei 3.021 €. In guten Lagen bewegt sich die Spanne von 3.399 € bis 3.732 €. In Top-Lagen werden im Mittel 4.001 € erzielt.",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber icht nicht sein.",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in Leipzig bei 3.390 €/m².  Aktuell liegt der Preis bei 3.450 €/m²  und ist damit um 1,7 % deutlich gestiegen.",
+            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen in Leipzig belaufen sich auf 2.930 €/m². Sie variieren typischerweise zwischen von 2.930 €/m² bis 3.540 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und ungefähr auf Bundesniveau. Gegenüber dem Vorjahr sind die Preise um 1,8 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Preise für Häuser variieren in verschiedenen Lage erheblich. Für einfachen Wohnlagen liegt der Durchschnitt bei 2.539 €. Die Bandbreite in guten Lagen reicht von 2.866 € bis 3.202 €. Die höchsten Preise in sehr guten-Lagen können mit Preisen bis 3.501 € dann meist nur noch von Besserverdienern gestemmt werden.",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig derzeit durchschnittlich 2638,0 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 3,5 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 3236,3 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 3236,3 €/m². hier ist der kurzfristige Trend mit 2,7 % Anstieg, leicht positiv ",
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in Leipzig bei 2.950 €/m². Heute liegt der Preis bei 2.930 €/m², und ist damit um 0,7 % kräftig zurückgegangen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "Die Grundstückspreise für Bauland sind ein zentraler Faktor für Bauherren, Investoren und Eigentümer. Sie bestimmen die Wirtschaftlichkeit neuer Projekte und die langfristige Wertentwicklung. Schwankungen entstehen vor allem durch Lage, Nachfrage und verfügbare Flächen. Dieser Report liefert einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist für den Landkreis Greiz helfe ich Ihnen, die statistischen Auswertungen richtig einzuordnen und die Chancen des regionalen Grundstücksmarktes optimal für Ihre Bau- oder Investitionsentscheidung zu nutzen.",
-            "grundstueckspreise_allgemein": "Die aktuellen Angebotspreise für Baugrundstücke in Leipzig liegen bei 530 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 480 €/m² bis 580 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 7,9 % spürbar zurückgegangen. ",
-            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2025) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig bei 600 €/m². Heute beträgt er 530 €/m² und ist damit um 11,4 % kräftig zurückgegangen."
+            "grundstueckspreise_allgemein": "Die mittleren Angebotspreise für Grundstücke in Leipzig belaufen sich auf 530 €/m². Diese pendeln zwischen den Werten von 480 €/m² bis 580 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 7,9 % spürbar zurückgegangen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig bei 600 €/m². Heute liegt der Preis bei 530 €/m² und ist damit um 11,4 % kräftig zurückgegangen."
         },
         "mietpreise": {
             "mietpreise_intro": "Die dargestellten Angebotsmieten reflektieren die Preise, die Vermieter aktuell für neue Mietverträge verlangen. In den meisten Fällen entsprechen diese Angebotspreise dem tatsächlichen Mietpreis, da sie die gegenwärtigen Marktbedingungen widerspiegeln. Im Vergleich dazu liegen Bestandsmieten, also die Mieten aus bestehenden Verträgen, oft niedriger. Dies liegt daran, dass Bestandsmieten an frühere Marktverhältnisse gebunden sind und sich weniger schnell an aktuelle Entwicklungen anpassen. Während die Angebotsmieten also die Dynamik des aktuellen Marktes zeigen, spiegeln Bestandsmieten eher vergangene Preisniveaus wider. ",
-            "mietpreise_allgemein": "weist auf einen Mietermarkt in Leipzig hin. Die aktuellen Angebotsmietpreise liegen bei 11.0 €/m². Diese bewegen sich in einer Preisspanne von 6.0 €/m² bis 21.0 €/m². Bei Hinzunahme der mittleren Nebenkosten von 2.0 €/m² liegen bei,  kommt man auf eine durchschnittliche Warmmiete von 13.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen  ",
-            "mietpreise_wohnung_allgemein": "Derzeit liegen die durchschnittlichen Kaltmieten bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 21.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 15.0 €/m² rechnen, im Bestand sind es 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 36,9 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 24,8 % weit über dem derzeitigen Niveau.",
-            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr stand der mittlere Quadratmeterpreis in Leipzig bei 11 €/m². Bis heute ist der Preis mit 2,4 % deutlich gestiegen. Blicken wir noch weiter zurück - vor 5 Jahren (2021) lagen die durchschnittlichen Werte bei 9 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 25,4 % recht stark angestiegen. ",
+            "mietpreise_allgemein": "weist auf einen Mietermarkt in Leipzig hin. Die mittleren Angebotspreise aller Mietimmobilien (Haus + Wohnung) belaufen sich auf 11.0 €/m². Sie variieren typischerweise zwischen von 6.0 €/m² bis 21.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 13.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen  ",
+            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Leipzig bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 21.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 15.0 €/m² rechnen, im Bestand liegt man bei 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 36,9 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 24,8 % weit über dem derzeitigen Niveau.",
+            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr stand der mittlere Quadratmeterpreis in Leipzig bei 11 €/m². Bis heute ist der Preis mit 2,4 % deutlich gestiegen. Blicken wir noch weiter zurück - vor 5 Jahren (2022) standen die mittleren Angebotspreise bei 9 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 25,4 % recht stark angestiegen. ",
             "mietpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig derzeit durchschnittlich 11,6 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 5,9 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 12,5 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 12,5 €/m². hier ist der kurzfristige Trend mit 6,9 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in Leipzig ungefähr 10 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5 €/m² bis 15 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 5,7 % deutlich gestiegen. Im 5-JahresRückblick (ab 2021) standen die mittleren Angebotspreise bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 26,7 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 5,7 % deutlich gestiegen. Im 5-JahresRückblick (ab 2022) lagen die durchschnittlichen Werte bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 26,7 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Die Mietrendite zählt zu den wichtigsten Kennzahlen einer Immobilienanlage. Sie zeigt, welche Erträge eine vermietete Immobilie im Verhältnis zum Kaufpreis erwirtschaftet – und ist damit ein entscheidender Faktor für jede Kapitalanlage in Immobilien. Eine fundierte Renditeberechnung unterstützt Investoren dabei, Chancen und Risiken realistisch einzuschätzen und die Rentabilität verschiedener Objekte zu vergleichen. Die folgenden Auswertungen geben einen ersten regionalen Überblick. Doch neben der reinen Zahl sind vor allem Lage, Nachfrage und Mietentwicklung ausschlaggebend. Als Immobilienspezialist für die Region helfe ich Ihnen, die Mietrendite richtig zu bewerten und die passende Immobilie als langfristige, sichere Kapitalanlage auszuwählen.",
             "mietrendite_hinweis": "Beachten Sie, dass die Brutto-Mietrendite nur eine von mehreren Faktoren ist, die bei einer fundierten Investitionsentscheidung berücksichtigt werden sollten. Zusätzliche Aspekte wie Standort, langfristige Entwicklung und Risikobewertung sind ebenso relevant, um eine erfolgreiche Immobilieninvestition zu gewährleisten. Kontaktieren Sie dazu unseren regionalen Investment-Spezialisten.",
             "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
-            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {kreis_name} brechnet. Aktuell liegt sie bei 4,2 %. Letztes Jahr lag die Bruttomietrendite in Leipzig bei 4,14 %. Bis heute ist der Preis innerhalb dieser Zeit mit 1,4 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2021) lag der Wert bei 3,35 %, innerhalb diesen Zeitraums sind sie bis jetzt um 25,4 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 3,88 %, ",
+            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {kreis_name} brechnet. Aktuell liegt sie bei 4,2 %. Letztes Jahr lag die Bruttomietrendite in Leipzig bei 4,14 %. Bis heute ist der Preis innerhalb dieser Zeit mit 1,4 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 3,35 %, innerhalb diesen Zeitraums sind sie bis jetzt um 25,4 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 3,88 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 4,46 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  in Leipzig ungefähr bei 22.4, und die mittlere Netto-Mietrendite bei ungefähr 4,2 %. ",
-            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig bei 29.4. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 3,07 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig bei 18.1. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 5,2 €/m², "
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig bei 29.4. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 3,07 €/m², ",
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig bei 18.1. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 5,2 €/m², "
         }
     }
 }
