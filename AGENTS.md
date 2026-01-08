@@ -39,38 +39,64 @@ Perspektivisch werden folgende Punkte im Projekt relevant:
 
 ## Arbeitsregeln
 
-### 1. Schreibrechte / Sicherheit
+### 1. Lese-, Analyse- und Recherche-Rechte
+
+Folgende Aktionen sind **ohne Rückfrage jederzeit erlaubt**:
+
+- Lesen beliebiger Dateien innerhalb des Repositories  
+- Projektweite Suchen (z. B. mit `rg`, `grep`, `ls`, `find`)  
+- Analyse bestehender Strukturen, Abhängigkeiten und Datenflüsse  
+- Reine Architektur-, Redundanz- und Qualitätsbewertungen ohne Dateischreibzugriffe
+
+Diese Aktionen gelten als **unbedenklich** und dürfen nicht blockiert werden.
+
+---
+
+### 2. Schreibrechte / Sicherheit
+
 - Änderungen an Dateien dürfen **niemals automatisch** durchgeführt werden.
-- Vor jeder Änderung sind:
+- Vor jeder Änderung sind zwingend zu präsentieren:
   - betroffene Dateien,
   - Ziel der Änderung,
-  - und ein zusammengefasster Diff zu präsentieren.
-- Shell-Befehle dürfen nur nach expliziter Bestätigung ausgeführt werden.
+  - ein zusammengefasster Diff.
+- Erst nach expliziter Bestätigung dürfen Änderungen geschrieben werden.
+- Schreibende oder verändernde Shell-Befehle (z. B. `npm run build`, `npm run lint`,
+  `npm install`, Refactor-Skripte etc.) dürfen **nur nach expliziter Zustimmung**
+  ausgeführt werden.
 
-### 2. Git-Workflow
+---
+
+### 3. Git-Workflow
+
 - Das Projekt ist ein Git-Repository.
-- Vor strukturellen Änderungen ist stets darauf hinzuweisen, falls ein Commit sinnvoll wäre.
+- Vor strukturellen Änderungen ist stets darauf hinzuweisen, wenn ein Commit sinnvoll ist.
 - Codex erstellt **keine Commits** selbstständig.
 
-### 3. JSON-Strukturen (kritisch)
-- Bestehende Schlüssel, Hierarchien und Suffix-Konventionen (z. B. `_01` = aktuelles Jahr, `_05` = Vergleichsjahr) dürfen **nicht verändert** werden.
+---
 
-### 4. Analyse vor Aktion
-- Vor jeder Code-Änderung ist zunächst zu erklären:
+### 4. JSON-Strukturen (kritisch)
+
+- Bestehende Schlüssel, Hierarchien und Suffix-Konventionen  
+  (z. B. `_01` = aktuelles Jahr, `_05` = Vergleichsjahr) dürfen **nicht verändert** werden,
+  außer auf ausdrückliche Anweisung.
+
+---
+
+### 5. Analyse vor Aktion
+
+- Vor jeder Code-Änderung ist zu erklären:
   - welche Logik aktuell besteht,
   - welche Seiteneffekte zu erwarten sind,
   - welche Alternativen bestehen.
 
-### 5. Tests & Validierung
+---
+
+### 6. Tests & Validierung
+
 - Nach Änderungen an Berechnungslogiken ist immer vorzuschlagen:
   - welche Tests ergänzt oder angepasst werden sollten,
   - wie die fachliche Validierung erfolgen kann.
 
-### Coding Style & Benennung
-
-- TypeScript / JavaScript, JSON ist das primäre Austauschformat.
-- Keine Umbenennung bestehender Felder oder Funktionen ohne explizite Anweisung.
-- Neue Funktionen müssen sprechend, fachlich eindeutig und konsistent benannt werden.
 
 ---
 
