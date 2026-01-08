@@ -4,6 +4,7 @@ import type { Report } from "@/lib/data";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
 import { asArray, asRecord, asString } from "@/utils/records";
+import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import type { ImmobilienpreiseReportData } from "@/types/reports";
 
 import { buildTableModel } from "@/utils/buildTableModel";
@@ -128,11 +129,17 @@ export function buildOrtImmobilienpreiseVM(args: {
   const meta = asRecord(report.meta) ?? {};
   const data = report.data ?? {};
 
-  const ortName = asString(meta["amtlicher_name"]) ?? asString(meta["name"]) ?? ortSlug;
+  const ortName = getRegionDisplayName({
+    meta,
+    level: "ort",
+    fallbackSlug: ortSlug,
+  });
 
   // Optional: falls in meta vorhanden. Wenn nicht: fallback auf Slug, aber als "optional" im VM
-  const bundeslandName = asString(meta["bundesland_name"]);
-  const kreisName = asString(meta["kreis_name"]) ?? kreisSlug;
+  const bundeslandNameRaw = asString(meta["bundesland_name"])?.trim();
+  const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : undefined;
+  const kreisNameRaw = asString(meta["kreis_name"])?.trim();
+  const kreisName = kreisNameRaw ? formatRegionFallback(kreisNameRaw) : formatRegionFallback(kreisSlug);
 
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}`;
 
@@ -310,7 +317,7 @@ export function buildOrtImmobilienpreiseVM(args: {
     bundesland: hausBL,
     deutschland: hausDE,
     labelOrt: ortName,
-    labelBL: bundeslandName ?? "Bundesland",
+    labelBL: bundeslandName ?? formatRegionFallback(bundeslandSlug ?? "bundesland"),
     labelDE: "Deutschland",
   });
 
@@ -319,7 +326,7 @@ export function buildOrtImmobilienpreiseVM(args: {
     bundesland: wohnBL,
     deutschland: wohnDE,
     labelOrt: ortName,
-    labelBL: bundeslandName ?? "Bundesland",
+    labelBL: bundeslandName ?? formatRegionFallback(bundeslandSlug ?? "bundesland"),
     labelDE: "Deutschland",
   });
 

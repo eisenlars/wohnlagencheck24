@@ -3,14 +3,25 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { getRegionDisplayName } from "@/utils/regionName";
+
 export type ReportType = "deutschland" | "bundesland" | "kreis" | "ortslage";
 
 export interface ReportMeta {
-  type: ReportType;
-  slug: string;
-  name: string;
+  type?: ReportType;
+  slug?: string;
+  name?: string;
   plz?: string;
   regionalschluessel?: string;
+  aktualisierung?: string;
+  regionale_zuordnung?: string;
+  amtlicher_name?: string;
+  bundesland_name?: string;
+  bundesland_schluessel?: string;
+  kreis_name?: string;
+  kreis_schluessel?: string;
+  ortslage_name?: string;
+  ortslage_schluessel?: string;
   [key: string]: unknown;
 }
 
@@ -63,7 +74,11 @@ export function getBundeslaender(): { slug: string; name: string }[] {
 
     result.push({
       slug: blSlug,
-      name: report.meta?.name ?? blSlug,
+      name: getRegionDisplayName({
+        meta: report.meta as Record<string, unknown>,
+        level: "bundesland",
+        fallbackSlug: blSlug,
+      }),
     });
   }
 
@@ -97,7 +112,11 @@ export function getKreiseForBundesland(
 
     result.push({
       slug: kreisSlug,
-      name: report.meta?.name ?? kreisSlug,
+      name: getRegionDisplayName({
+        meta: report.meta as Record<string, unknown>,
+        level: "kreis",
+        fallbackSlug: kreisSlug,
+      }),
     });
   }
 
@@ -120,7 +139,7 @@ export function getKreiseForBundesland(
 export function getOrteForKreis(
   bundeslandSlug: string,
   kreisSlug: string,
-): { slug: string; name: string; plz?: string }[] {
+): { slug: string; name: string }[] {
   const kreisDir = path.join(DEUTSCHLAND_DIR, bundeslandSlug, kreisSlug);
   if (!fs.existsSync(kreisDir)) {
     console.warn("Kreis-Verzeichnis existiert nicht:", kreisDir);
@@ -128,7 +147,7 @@ export function getOrteForKreis(
   }
 
   const entries = fs.readdirSync(kreisDir, { withFileTypes: true });
-  const result: { slug: string; name: string; plz?: string }[] = [];
+  const result: { slug: string; name: string }[] = [];
 
   for (const entry of entries) {
     if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
@@ -139,8 +158,11 @@ export function getOrteForKreis(
 
     result.push({
       slug: ortSlug,
-      name: report.meta?.name ?? ortSlug,
-      plz: report.meta?.plz as string | undefined,
+      name: getRegionDisplayName({
+        meta: report.meta as Record<string, unknown>,
+        level: "ort",
+        fallbackSlug: ortSlug,
+      }),
     });
   }
 
@@ -287,6 +309,35 @@ export function getMietpreisMapSvg(
   }
 }
 
+export function getGrundstueckspreisMapSvg(
+  bundeslandSlug: string,
+  kreisSlug: string,
+): string | null {
+  const svgPath = path.join(
+    process.cwd(),
+    "data",
+    "visuals",
+    "map_interactive",
+    "deutschland",
+    bundeslandSlug,
+    kreisSlug,
+    "grundstueckspreis",
+    `grundstueckspreis_${kreisSlug}.svg`,
+  );
+
+  if (!fs.existsSync(svgPath)) {
+    console.warn("Grundstueckspreis-SVG nicht gefunden:", svgPath);
+    return null;
+  }
+
+  try {
+    return fs.readFileSync(svgPath, "utf8");
+  } catch (err) {
+    console.error("Fehler beim Lesen der Grundstueckspreis-SVG:", err);
+    return null;
+  }
+}
+
 export function getKaufpreisfaktorMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
@@ -343,6 +394,60 @@ export function getWohnungssaldoMapSvg(
     console.error("Fehler beim Lesen der Wohnungssaldo-SVG:", err);
     return null;
   }
+}
+
+export function getKaufkraftindexMapSvg(
+  bundeslandSlug: string,
+  kreisSlug: string,
+): string | null {
+  const svgPath = path.join(
+    process.cwd(),
+    "data",
+    "visuals",
+    "map_interactive",
+    "deutschland",
+    bundeslandSlug,
+    kreisSlug,
+    "kaufkraftindex",
+    `kaufkraftindex_${kreisSlug}.svg`,
+  );
+
+  if (!fs.existsSync(svgPath)) {
+    console.warn("Kaufkraftindex-SVG nicht gefunden:", svgPath);
+    return null;
+  }
+
+  try {
+    return fs.readFileSync(svgPath, "utf8");
+  } catch (err) {
+    console.error("Fehler beim Lesen der Kaufkraftindex-SVG:", err);
+    return null;
+  }
+}
+
+export function getFlaechennutzungGewerbeImageSrc(
+  bundeslandSlug: string,
+  kreisSlug: string,
+): string | null {
+  const relPath = path.join(
+    "visuals",
+    "map_landuse",
+    "deutschland",
+    bundeslandSlug,
+    kreisSlug,
+    "flaechennutzung",
+    `flaechennutzung_${kreisSlug}_industrie_gewerbe.webp`,
+  );
+
+  const publicPath = path.join(process.cwd(), "public", relPath);
+  const dataPath = path.join(process.cwd(), "data", relPath);
+
+  if (fs.existsSync(publicPath) || fs.existsSync(dataPath)) {
+    return `/${relPath.replace(/\\/g, "/")}`;
+  }
+
+  console.warn("Gewerbe-Flächennutzungskarte nicht gefunden:", relPath);
+  return null;
 }
 
 export function getLegendHtml(theme: string): string | null {

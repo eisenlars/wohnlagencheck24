@@ -34,10 +34,13 @@ export type BerichtTexte = {
     ueberschrift_immobilienpreise_wohnung?: string;
     ueberschrift_mietpreise_wohnung?: string;
     ueberschrift_mietpreise_haus?: string;
+    ueberschrift_grundstueckspreise?: string;
     ueberschrift_mietrendite_bruttomietrendite?: string;
     ueberschrift_mietrendite_nettomietrendite?: string;
     ueberschrift_wohnmarktsituation_wohnraumnachfrage_individuell?: string;
     ueberschrift_wohnmarktsituation_wohnraumangebot_individuell?: string;
+    ueberschrift_wirtschaft_individuell?: string;
+    ueberschrift_arbeitsmarkt_individuell?: string;
   };
   mietpreise?: {
     mietpreise_intro?: string;
@@ -47,6 +50,11 @@ export type BerichtTexte = {
     mietpreise_wohnung_nach_flaechen_und_zimmern?: string;
     mietpreise_haus_allgemein?: string;
     mietpreise_haus_preisentwicklung?: string;
+  };
+  grundstueckspreise?: {
+    grundstueckspreise_intro?: string;
+    grundstueckspreise_allgemein?: string;
+    grundstueckspreise_preisentwicklung?: string;
   };
   mietrendite?: {
     mietrendite_intro?: string;
@@ -80,6 +88,19 @@ export type BerichtTexte = {
     wohnmarktsituation_wohnungsbestand_wohnflaeche?: string;
     wohnmarktsituation_baufertigstellungen?: string;
     wohnmarktsituation_baugenehmigungen?: string;
+  };
+  wirtschaft?: {
+    wirtschaft_intro?: string;
+    wirtschaft_gewerbesaldo?: string;
+    wirtschaft_arbeitsmarkt?: string;
+    wirtschaft_sv_beschaeftigte_wohnort?: string;
+    wirtschaft_arbeitslosendichte?: string;
+    wirtschaft_bruttoinlandsprodukt?: string;
+    wirtschaft_einkommen?: string;
+    wirtschaft_sv_beschaeftigte_arbeitsort?: string;
+    wirtschaft_arbeitsplatzzentralitaet?: string;
+    wirtschaft_pendler?: string;
+    wirtschaft_arbeitslosigkeit?: string;
   };
   berater?: BerichtBerater;
 };
@@ -207,6 +228,119 @@ export type WohnbauflaechenanteilRow = {
 
 export type FlaechennutzungWohnbauRow = {
   flaechennutzung_wohnbau?: number | string;
+};
+
+export type GewerbeflaechenanteilRow = {
+  label?: string;
+  hectar?: number | string;
+};
+
+export type FlaechennutzungGewerbeRow = {
+  flaechennutzung_gewerbe?: number | string;
+};
+
+export type WirtschaftAllgemeinRow = {
+  kaufkraftindex_k?: number | string;
+  kaufkraftindex_ol?: number | string;
+  kaufkraft_nominal_k?: number | string;
+  kaufkraft_nominal_ol?: number | string;
+  kaufkraft_real_k?: number | string;
+  kaufkraft_real_ol?: number | string;
+  bip?: number | string;
+  pendlersaldo_k?: number | string;
+  pendlersaldo_ol?: number | string;
+  gewerbesaldo?: number | string;
+  arbeitsplatzzentralitaet_k?: number | string;
+  arbeitsplatzzentralitaet_ol?: number | string;
+  arbeitslosenquote_k?: number | string;
+  arbeitslosenquote_ol?: number | string;
+  beschaeftigtenquote_k?: number | string;
+  beschaeftigtenquote_ol?: number | string;
+  arbeitslosendichte?: number | string;
+};
+
+export type GewerbesaldoAbsRow = {
+  jahr?: number | string;
+  gewerbeanmeldungen?: number | string;
+  gewerbeabmeldungen?: number | string;
+  gewerbesaldo?: number | string;
+};
+
+export type GewerbesaldoJe1000Row = {
+  jahr?: number | string;
+  gewerbesaldo_pro_1000_ew?: number | string;
+  gewerbesaldo_pro_1000_ew_bl?: number | string;
+  gewerbesaldo_pro_1000_ew_l?: number | string;
+};
+
+export type BIPAbsRow = {
+  jahr?: number | string;
+  bip_abs?: number | string;
+};
+
+export type BIPProEwRow = {
+  jahr?: number | string;
+  bip_pro_ew?: number | string;
+  bip_pro_ew_bl?: number | string;
+  bip_pro_ew_l?: number | string;
+};
+
+export type NettoeinkommenProEwRow = {
+  jahr?: number | string;
+  nettoeinkommen_pro_ew_ol?: number | string;
+  nettoeinkommen_pro_ew_k?: number | string;
+  nettoeinkommen_pro_ew_bl?: number | string;
+  nettoeinkommen_pro_ew_l?: number | string;
+};
+
+export type NettoeinkommenProHhRow = {
+  jahr?: number | string;
+  nettoeinkommen_pro_hh_ol?: number | string;
+  nettoeinkommen_pro_hh_k?: number | string;
+  nettoeinkommen_pro_hh_bl?: number | string;
+  nettoeinkommen_pro_hh_l?: number | string;
+};
+
+export type SvbWohnortRow = {
+  jahr?: number | string;
+  anzahl_ol?: number | string;
+  anzahl_k?: number | string;
+};
+
+export type SvbWohnortIndexRow = {
+  jahr?: number | string;
+  index_ol?: number | string;
+  index_k?: number | string;
+  index_bl?: number | string;
+  index_l?: number | string;
+};
+
+export type SvbArbeitsortRow = {
+  jahr?: number | string;
+  anzahl_ol?: number | string;
+  anzahl_k?: number | string;
+};
+
+export type SvbArbeitsortIndexRow = {
+  jahr?: number | string;
+  index_ol?: number | string;
+  index_k?: number | string;
+  index_bl?: number | string;
+  index_l?: number | string;
+};
+
+export type ArbeitslosenzahlenRow = {
+  jahr?: number | string;
+  anzahl_ol?: number | string;
+  anzahl_k?: number | string;
+};
+
+export type ArbeitslosenquotenRow = {
+  jahr?: number | string;
+  quote_ol?: number | string;
+  quote_k?: number | string;
+  quote_bl?: number | string;
+  quote_l?: number | string;
 };
 
 export type WohnungsangebotAllgemeinRow = {
@@ -439,6 +573,12 @@ export type HausKaufpreisspanneRow = {
   preis_haus_max?: number | string;
 };
 
+export type GrundstueckKaufpreisspanneRow = {
+  preis_grundstueck_min?: number | string;
+  preis_grundstueck_avg?: number | string;
+  preis_grundstueck_max?: number | string;
+};
+
 export type WohnungKaufpreisspanneRow = {
   preis_wohnung_min?: number | string;
   preis_wohnung_avg?: number | string;
@@ -478,6 +618,14 @@ export type PreisentwicklungRow = {
   preis_bl?: number | string;
   preis_l?: number | string;
   [key: string]: unknown;
+};
+
+export type GrundstueckPreisentwicklungRow = {
+  jahr?: number | string;
+  angebotspreisentwicklung_grundstueck_k?: number | string;
+  verkaufspreisentwicklung_grundstueck_k?: number | string;
+  angebotspreisentwicklung_grundstueck_ol?: number | string;
+  verkaufspreisentwicklung_grundstueck_ol?: number | string;
 };
 
 export type ZimmerPreisRow = {
@@ -593,6 +741,18 @@ export type MietpreiseReportData = {
   mietpreisentwicklung_haus?: MietpreiseEntwicklungRow[];
 };
 
+export type GrundstueckspreisindexRegionalRow = {
+  grundstueckspreisindex?: number | string;
+};
+
+export type GrundstueckspreiseReportData = {
+  text?: BerichtTexte;
+  grundstueck_kaufpreisspanne?: GrundstueckKaufpreisspanneRow[];
+  grundstueckspreisindex_regional?: GrundstueckspreisindexRegionalRow[];
+  grundstueck_kaufpreise_im_ueberregionalen_vergleich?: PreisinfoRow[];
+  grundstueck_preisentwicklung?: GrundstueckPreisentwicklungRow[];
+};
+
 export type MietrenditeReportData = {
   text?: BerichtTexte;
   mietrendite_gesamt?: MietrenditeGesamtRow[];
@@ -648,6 +808,25 @@ export type WohnmarktsituationReportData = {
   baugenehmigungen_gebaeudeverteilung?: BaugenehmigungenGebaeudeverteilungRow[];
   bau_ueberhang_genehmigung_fertigstellung?: BauUeberhangGenehmigungFertigstellungRow[];
   bauueberhang_baufortschritt?: BauueberhangBaufortschrittRow[];
+};
+
+export type WirtschaftReportData = {
+  text?: BerichtTexte;
+  gewerbeflaechenanteil?: GewerbeflaechenanteilRow[];
+  flaechennutzung_gewerbe?: FlaechennutzungGewerbeRow[];
+  wirtschaft_allgemein?: WirtschaftAllgemeinRow[];
+  gewerbesaldo_abs?: GewerbesaldoAbsRow[];
+  gewerbesaldo_je_1000_ew?: GewerbesaldoJe1000Row[];
+  bruttoinlandsprodukt_abs?: BIPAbsRow[];
+  bruttoinlandsprodukt_pro_ew?: BIPProEwRow[];
+  nettoeinkommen_pro_ew?: NettoeinkommenProEwRow[];
+  nettoeinkommen_pro_hh?: NettoeinkommenProHhRow[];
+  sv_pflichtig_beschaeftigte_wohnort?: SvbWohnortRow[];
+  sv_pflichtig_beschaeftigte_wohnort_index?: SvbWohnortIndexRow[];
+  sv_pflichtig_beschaeftigte_arbeitsort?: SvbArbeitsortRow[];
+  sv_pflichtig_beschaeftigte_arbeitsort_index?: SvbArbeitsortIndexRow[];
+  arbeitslosenzahlen?: ArbeitslosenzahlenRow[];
+  arbeitslosenquoten?: ArbeitslosenquotenRow[];
 };
 
 export type UebersichtReportData = {

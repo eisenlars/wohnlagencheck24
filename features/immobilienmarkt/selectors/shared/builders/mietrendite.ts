@@ -2,6 +2,7 @@ import type { Report } from "@/lib/data";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
 import { asArray, asRecord, asString } from "@/utils/records";
+import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { buildTableModel } from "@/utils/buildTableModel";
 import type { UnitKey } from "@/utils/format";
 
@@ -61,16 +62,19 @@ export function buildMietrenditeVM(args: {
   const text = asRecord(data["text"]) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
 
-  const regionName =
-    (typeof meta["amtlicher_name"] === "string" ? meta["amtlicher_name"] : undefined) ??
-    (typeof meta["name"] === "string" ? meta["name"] : undefined) ??
-    (level === "ort" ? ortSlug ?? "Ort" : kreisSlug);
+  const regionName = getRegionDisplayName({
+    meta,
+    level: level === "ort" ? "ort" : "kreis",
+    fallbackSlug: level === "ort" ? ortSlug ?? "ort" : kreisSlug,
+  });
 
-  const bundeslandName = typeof meta["bundesland_name"] === "string" ? meta["bundesland_name"] : undefined;
-  const kreisName = typeof meta["kreis_name"] === "string" ? meta["kreis_name"] : undefined;
+  const bundeslandNameRaw = asString(meta["bundesland_name"])?.trim();
+  const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : undefined;
+  const kreisNameRaw = asString(meta["kreis_name"])?.trim();
+  const kreisName = kreisNameRaw ? formatRegionFallback(kreisNameRaw) : undefined;
   const aktualisierung = asString(meta["aktualisierung"]);
   const jahrLabel = parseYear(aktualisierung);
-  const isLandkreis = (kreisName ?? kreisSlug ?? "").toLowerCase().includes("landkreis");
+  const isLandkreis = (kreisName ?? formatRegionFallback(kreisSlug ?? "")).toLowerCase().includes("landkreis");
 
   const introText = getText(report, "text.mietrendite.mietrendite_intro", "");
   const hinweisText = getText(report, "text.mietrendite.mietrendite_hinweis", "");
@@ -167,14 +171,14 @@ export function buildMietrenditeVM(args: {
     level === "ort"
       ? isLandkreis
         ? `Mietrendite ${jahrLabel} - ${regionName}`
-        : `Mietrendite ${jahrLabel} - ${kreisName ?? kreisSlug} ${regionName}`
+        : `Mietrendite ${jahrLabel} - ${kreisName ?? formatRegionFallback(kreisSlug ?? "")} ${regionName}`
       : `Mietrendite ${jahrLabel} - ${regionName}`;
 
   const headlineBruttoNetto =
     level === "ort"
       ? isLandkreis
         ? `Brutto- & Nettomietrendite in ${regionName}`
-        : `Brutto- & Nettomietrendite in ${kreisName ?? kreisSlug} ${regionName}`
+        : `Brutto- & Nettomietrendite in ${kreisName ?? formatRegionFallback(kreisSlug ?? "")} ${regionName}`
       : `Brutto- & Nettomietrendite in ${regionName}`;
 
   const headlineBruttoNettoIndividuell =

@@ -12,11 +12,15 @@ import {
   getKreisUebersichtMapSvg,
   getImmobilienpreisMapSvg,
   getMietpreisMapSvg,
+  getGrundstueckspreisMapSvg,
   getKaufpreisfaktorMapSvg,
   getWohnungssaldoMapSvg,
+  getKaufkraftindexMapSvg,
+  getFlaechennutzungGewerbeImageSrc,
   getLegendHtml,
 } from "@/lib/data";
 import { asArray, asRecord, asString } from "@/utils/records";
+import { getRegionDisplayName } from "@/utils/regionName";
 
 export type PageModel = {
   route: RouteModel;
@@ -48,7 +52,7 @@ export type PageModel = {
     ortSlug?: string;
 
     // nur Kreisebene
-    orte?: Array<{ slug: string; name: string; plz?: string }>;
+    orte?: Array<{ slug: string; name: string }>;
   };
 
   // zentral (nicht in ctx)
@@ -58,6 +62,9 @@ export type PageModel = {
     mietpreisMapSvg?: string | null;
     kreisuebersichtMapSvg?: string | null;
     kaufpreisfaktorMapSvg?: string | null;
+    kaufkraftindexMapSvg?: string | null;
+    kaufkraftindexLegendHtml?: string | null;
+    flaechennutzungGewerbeImageSrc?: string | null;
     wohnungssaldoMapSvg?: string | null;
     wohnungssaldoLegendHtml?: string | null;
   };
@@ -109,6 +116,7 @@ export function buildPageModel(route: RouteModel): PageModel | null {
 
   console.log("REPORT META (raw)", report.meta);
   const meta = asRecord(asArray(report.meta)[0] ?? report.meta) ?? {};
+  const regionaleZuordnung = asString(meta["regionale_zuordnung"]) ?? "";
   console.log("REPORT META PICK", {
     zuordnung: meta["regionale_zuordnung"],
     amtlicher_name: meta["amtlicher_name"],
@@ -130,7 +138,11 @@ export function buildPageModel(route: RouteModel): PageModel | null {
       ? basePathFromRegionSlugs(route.regionSlugs.slice(0, 2))
       : undefined;
 
-  const tabsForLevel = IMMOBILIENMARKT_THEME.tabsByLevel[route.level] ?? [];
+  const tabsByLevel = IMMOBILIENMARKT_THEME.tabsByLevel[route.level] ?? [];
+  const tabsForLevel =
+    route.level === "ort" && regionaleZuordnung === "stadtteil"
+      ? tabsByLevel.filter((tab) => tab.id !== "grundstueckspreise")
+      : tabsByLevel;
   const defaultTab = IMMOBILIENMARKT_THEME.defaultTabByLevel[route.level];
 
   const activeTabId = normalizeActiveTab({
@@ -170,15 +182,23 @@ export function buildPageModel(route: RouteModel): PageModel | null {
     const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`;
     const immobilienpreisMapSvg = getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug);
     const mietpreisMapSvg = getMietpreisMapSvg(bundeslandSlug, kreisSlug);
+    const grundstueckspreisMapSvg = getGrundstueckspreisMapSvg(bundeslandSlug, kreisSlug);
     const kaufpreisfaktorMapSvg = getKaufpreisfaktorMapSvg(bundeslandSlug, kreisSlug);
     const wohnungssaldoMapSvg = getWohnungssaldoMapSvg(bundeslandSlug, kreisSlug);
     const wohnungssaldoLegendHtml = getLegendHtml("wohnungssaldo");
+    const kaufkraftindexMapSvg = getKaufkraftindexMapSvg(bundeslandSlug, kreisSlug);
+    const kaufkraftindexLegendHtml = getLegendHtml("kaufkraftindex");
+    const flaechennutzungGewerbeImageSrc = getFlaechennutzungGewerbeImageSrc(bundeslandSlug, kreisSlug);
 
     assets = {
       heroImageSrc,
       immobilienpreisMapSvg,
       mietpreisMapSvg,
+      grundstueckspreisMapSvg,
       kaufpreisfaktorMapSvg,
+      kaufkraftindexMapSvg,
+      kaufkraftindexLegendHtml,
+      flaechennutzungGewerbeImageSrc,
       wohnungssaldoMapSvg,
       wohnungssaldoLegendHtml,
     };
@@ -201,14 +221,11 @@ export function buildPageModel(route: RouteModel): PageModel | null {
   let kontakt: PageModel["kontakt"] | undefined;
 
   if (route.level === "kreis" || route.level === "ort") {
-    const kreisName =
-      String(
-        asString(meta["amtlicher_name"]) ??
-          asString(meta["name"]) ??
-          kreisSlug ??
-          "",
-      ).trim() ||
-      String(kreisSlug ?? "Landkreis");
+    const kreisName = getRegionDisplayName({
+      meta,
+      level: route.level === "ort" ? "ort" : "kreis",
+      fallbackSlug: kreisSlug ?? "landkreis",
+    });
 
     const text = asRecord(data["text"]) ?? {};
     const berater = asRecord(text["berater"]) ?? {};

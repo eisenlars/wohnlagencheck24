@@ -4,8 +4,10 @@ import type { Report } from "@/lib/data";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
 import { asArray, asRecord } from "@/utils/records";
+import { formatRegionFallback } from "@/utils/regionName";
 import type { UebersichtReportData } from "@/types/reports";
 import type { UnitKey } from "@/utils/format";
+import { getRegionDisplayName } from "@/utils/regionName";
 
 import type {
   UebersichtVM,
@@ -25,19 +27,14 @@ function pickMeta(report: Report): Record<string, unknown> {
   return asRecord(m0) ?? {};
 }
 
-function safeTrim(v: unknown): string {
-  if (v == null) return "";
-  try {
-    return String(v).trim();
-  } catch {
-    return "";
-  }
-}
-
 function formatEuroPerSqm(val: number | null): string {
   if (val === null || !Number.isFinite(val)) return "";
   const nf = new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
   return `${nf.format(val)} €/m²`;
+}
+
+function safeTrim(value: unknown): string {
+  return String(value ?? "").trim();
 }
 
 /**
@@ -122,14 +119,15 @@ export function buildUebersichtVM(args: {
   const text = data.text ?? {};
   const berater = text.berater ?? {};
 
-  // Region Name: wie im Bestand
-  const regionName =
-    safeTrim(meta["amtlicher_name"]) ||
-    safeTrim(meta["name"]) ||
-    (level === "kreis" ? safeTrim(kreisSlug) : level === "bundesland" ? safeTrim(bundeslandSlug) : "Deutschland") ||
-    "Deutschland";
+  // Region Name: robustes Fallback auf Kreis/Bundesland-Slug
+  const regionName = getRegionDisplayName({
+    meta,
+    level: level === "bundesland" ? "bundesland" : level === "kreis" ? "kreis" : "deutschland",
+    fallbackSlug: level === "kreis" ? kreisSlug : level === "bundesland" ? bundeslandSlug : undefined,
+  });
 
-  const bundeslandName = safeTrim(meta["bundesland_name"]);
+  const bundeslandNameRaw = String(meta["bundesland_name"] ?? "").trim();
+  const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : "";
 
   // basePath
   let basePath = "/immobilienmarkt";

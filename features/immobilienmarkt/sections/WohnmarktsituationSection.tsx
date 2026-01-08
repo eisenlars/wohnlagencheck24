@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
@@ -746,6 +747,40 @@ export function WohnmarktsituationSection(
         <h2 className="h4 mb-3">FAQ zu Standortinformationen</h2>
         <FaqSection items={faqItems} />
       </section>
+
+      {/* Erfasste Wohnlagen */}
+      {(vm.level === "kreis" || vm.level === "ort") ? (
+        <section className="mb-4" id="wohnlagen">
+          <h2 className="h2 mb-3 align-center text-center">
+            Erfasste Wohnlagen – {vm.level === "ort" ? (props.ctx?.kreisSlug ?? vm.regionName) : vm.regionName}
+          </h2>
+
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <nav className="nav nav-pills flex-wrap gap-2 justify-content-center" aria-label="Wohnlagen Navigation">
+                {(props.ctx?.orte ?? []).map((ort) => {
+                  const isActive = !!props.ctx?.ortSlug && ort.slug === props.ctx.ortSlug;
+                  const sectionSuffix = activeTabId && activeTabId !== "uebersicht" ? `/${activeTabId}` : "";
+                  const href = `/immobilienmarkt/${props.ctx?.bundeslandSlug}/${props.ctx?.kreisSlug}/${ort.slug}${sectionSuffix}`;
+
+                  return (
+                    <Link
+                      key={ort.slug}
+                      href={href}
+                      className={`nav-link px-3 py-2 rounded-pill fw-semibold small ${
+                        isActive ? "text-white bg-dark" : "bg-light text-dark"
+                      }`}
+                      aria-current={isActive ? "page" : undefined}
+                    >
+                      {ort.name}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

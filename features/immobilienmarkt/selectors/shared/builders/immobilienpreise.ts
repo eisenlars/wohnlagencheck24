@@ -6,6 +6,7 @@ import { getText } from "@/utils/getText";
 import { buildTableModel } from "@/utils/buildTableModel";
 import { buildBarModel } from "@/utils/barModel";
 import { asArray, asRecord, asString } from "@/utils/records";
+import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import type { ImmobilienpreiseReportData } from "@/types/reports";
 
 import type { ImmobilienpreiseVM, Zeitreihenpunkt, ZeitreiheSeries } from "../types/immobilienpreise";
@@ -59,15 +60,14 @@ export function buildImmobilienpreiseVM(args: {
   const meta = asRecord(report.meta) ?? {};
   const data = report.data ?? {};
 
-  const metaAmtlicherName = asString(meta["amtlicher_name"]);
-  const metaName = asString(meta["name"]);
+  const regionName = getRegionDisplayName({
+    meta,
+    level: level === "ort" ? "ort" : "kreis",
+    fallbackSlug: level === "ort" ? ortSlug ?? "ort" : kreisSlug,
+  });
 
-  const regionName =
-    metaAmtlicherName ??
-    metaName ??
-    (level === "ort" ? ortSlug ?? "Ort" : kreisSlug);
-
-  const bundeslandName = asString(meta["bundesland_name"]);
+  const bundeslandNameRaw = asString(meta["bundesland_name"])?.trim();
+  const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : undefined;
 
   const basePath =
     level === "ort" && ortSlug
@@ -238,7 +238,7 @@ export function buildImmobilienpreiseVM(args: {
     bundesland: hausBL,
     deutschland: hausDE,
     labelRegion: regionName,
-    labelBL: bundeslandName ?? "Bundesland",
+    labelBL: bundeslandName ?? formatRegionFallback(bundeslandSlug ?? "bundesland"),
     labelDE: "Deutschland",
   });
 
@@ -247,7 +247,7 @@ export function buildImmobilienpreiseVM(args: {
     bundesland: wohnBL,
     deutschland: wohnDE,
     labelRegion: regionName,
-    labelBL: bundeslandName ?? "Bundesland",
+    labelBL: bundeslandName ?? formatRegionFallback(bundeslandSlug ?? "bundesland"),
     labelDE: "Deutschland",
   });
 

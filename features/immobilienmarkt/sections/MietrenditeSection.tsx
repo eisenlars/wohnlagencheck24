@@ -298,11 +298,6 @@ export function MietrenditeSection(
                       aria-current={isActive ? "page" : undefined}
                     >
                       {ort.name}
-                      {ort.plz ? (
-                        <span className={`ms-2 fw-normal ${isActive ? "text-white-50" : "text-muted"}`}>
-                          ({ort.plz})
-                        </span>
-                      ) : null}
                     </Link>
                   );
                 })}

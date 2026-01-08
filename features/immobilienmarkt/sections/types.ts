@@ -14,7 +14,6 @@ export type TocItem = {
 export type OrtsRef = {
   slug: string;
   name: string;
-  plz?: string;
 };
 
 export type SectionCtx = {
@@ -28,8 +27,12 @@ export type SectionAssets = {
   heroImageSrc?: string;
   immobilienpreisMapSvg?: string | null;
   mietpreisMapSvg?: string | null;
+  grundstueckspreisMapSvg?: string | null;
   kreisuebersichtMapSvg?: string | null;
   kaufpreisfaktorMapSvg?: string | null;
+  kaufkraftindexMapSvg?: string | null;
+  kaufkraftindexLegendHtml?: string | null;
+  flaechennutzungGewerbeImageSrc?: string | null;
   wohnungssaldoMapSvg?: string | null;
   wohnungssaldoLegendHtml?: string | null;
 };

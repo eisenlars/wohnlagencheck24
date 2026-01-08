@@ -1,6 +1,7 @@
 import type { Report } from "@/lib/data";
 import { getText } from "@/utils/getText";
 import { asArray, asRecord, asString } from "@/utils/records";
+import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 
 import type { WohnmarktsituationReportData } from "@/types/reports";
 import type {
@@ -139,15 +140,18 @@ export function buildWohnmarktsituationVM(args: {
   const meta = pickMeta(report);
   const data = report.data ?? {};
 
-  const regionName =
-    (typeof meta["amtlicher_name"] === "string" ? meta["amtlicher_name"] : undefined) ??
-    (typeof meta["name"] === "string" ? meta["name"] : undefined) ??
-    (level === "ort" ? ortSlug ?? "Ort" : kreisSlug);
+  const regionName = getRegionDisplayName({
+    meta,
+    level: level === "ort" ? "ort" : "kreis",
+    fallbackSlug: level === "ort" ? ortSlug ?? "ort" : kreisSlug,
+  });
 
-  const bundeslandName = typeof meta["bundesland_name"] === "string" ? meta["bundesland_name"] : undefined;
-  const kreisName = typeof meta["kreis_name"] === "string" ? meta["kreis_name"] : undefined;
+  const bundeslandNameRaw = asString(meta["bundesland_name"])?.trim();
+  const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : undefined;
+  const kreisNameRaw = asString(meta["kreis_name"])?.trim();
+  const kreisName = kreisNameRaw ? formatRegionFallback(kreisNameRaw) : undefined;
   const aktualisierung = asString(meta["aktualisierung"]);
-  const isLandkreis = (kreisName ?? kreisSlug ?? "").toLowerCase().includes("landkreis");
+  const isLandkreis = (kreisName ?? formatRegionFallback(kreisSlug ?? "")).toLowerCase().includes("landkreis");
 
   const text = asRecord(data["text"]) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
@@ -173,21 +177,21 @@ export function buildWohnmarktsituationVM(args: {
     level === "ort"
       ? isLandkreis
         ? `Wohnmarktsituation ${regionName}`
-        : `Wohnmarktsituation ${kreisName ?? kreisSlug} ${regionName}`
+        : `Wohnmarktsituation ${kreisName ?? formatRegionFallback(kreisSlug ?? "")} ${regionName}`
       : `Wohnmarktsituation ${regionName}`;
 
   const headlineWohnraumnachfrage =
     level === "ort"
       ? isLandkreis
         ? `Wohnraumnachfrage in ${regionName}`
-        : `Wohnraumnachfrage in ${kreisName ?? kreisSlug} ${regionName}`
+        : `Wohnraumnachfrage in ${kreisName ?? formatRegionFallback(kreisSlug ?? "")} ${regionName}`
       : `Wohnraumnachfrage, Bevölkerung, Haushalte in ${regionName}`;
 
   const headlineWohnraumangebot =
     level === "ort"
       ? isLandkreis
         ? `Wohnraumverfügbarkeit in ${regionName}`
-        : `Wohnraumverfügbarkeit in ${kreisName ?? kreisSlug} ${regionName}`
+        : `Wohnraumverfügbarkeit in ${kreisName ?? formatRegionFallback(kreisSlug ?? "")} ${regionName}`
       : `Wohnraumverfügbarkeit und Baugeschehen in ${regionName}`;
 
   const headlineWohnraumnachfrageIndividuell =
@@ -232,8 +236,8 @@ export function buildWohnmarktsituationVM(args: {
 
   const baseSeriesLabels = {
     ol: regionName,
-    k: kreisName ?? kreisSlug,
-    bl: bundeslandName ?? bundeslandSlug,
+    k: kreisName ?? formatRegionFallback(kreisSlug ?? "kreis"),
+    bl: bundeslandName ?? formatRegionFallback(bundeslandSlug ?? "bundesland"),
     l: "D",
   };
 
@@ -458,7 +462,12 @@ export function buildWohnmarktsituationVM(args: {
       raw: data.aussenwanderungssaldo,
       categoryKey: "jahr",
       bars: [
-        { key: "bundesland", label: bundeslandName ?? bundeslandSlug, valueKey: "aussenwanderungssaldo_bundesland_ew", color: "rgba(75, 192, 192, 0.85)" },
+        {
+          key: "bundesland",
+          label: bundeslandName ?? formatRegionFallback(bundeslandSlug ?? "bundesland"),
+          valueKey: "aussenwanderungssaldo_bundesland_ew",
+          color: "rgba(75, 192, 192, 0.85)",
+        },
         { key: "deutschland", label: "Deutschland", valueKey: "aussenwanderungssaldo_deutschland_ew", color: "rgba(95, 132, 162, 0.85)" },
         { key: "ausland", label: "Ausland", valueKey: "aussenwanderungssaldo_ausland_ew", color: "rgba(54, 162, 235, 0.85)" },
       ],
@@ -469,7 +478,7 @@ export function buildWohnmarktsituationVM(args: {
       bars: [
         {
           key: "bundesgebiet",
-          label: `Bundesgebiet (${bundeslandName ?? bundeslandSlug})`,
+          label: `Bundesgebiet (${bundeslandName ?? formatRegionFallback(bundeslandSlug ?? "bundesland")})`,
           color: "rgba(95, 132, 162, 0.85)",
           values: asArray(aussenwanderungBundeslandRow?.aussenwanderungssaldo_nach_alter_ueber_bundeslandgrenzen)
             .map((v) => toNumber(v)),

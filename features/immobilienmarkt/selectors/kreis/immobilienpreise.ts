@@ -4,6 +4,7 @@ import type { Report } from "@/lib/data";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
 import { asArray, asRecord, asString } from "@/utils/records";
+import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import type { ImmobilienpreiseReportData } from "@/types/reports";
 
 import { buildTableModel } from "@/utils/buildTableModel";
@@ -130,8 +131,13 @@ export function buildKreisImmobilienpreiseVM(args: {
   const meta = asRecord(report.meta) ?? {};
   const data = report.data ?? {};
 
-  const kreisName = asString(meta["amtlicher_name"]) ?? asString(meta["name"]) ?? kreisSlug;
-  const bundeslandName = asString(meta["bundesland_name"]);
+  const kreisName = getRegionDisplayName({
+    meta,
+    level: "kreis",
+    fallbackSlug: kreisSlug,
+  });
+  const bundeslandNameRaw = asString(meta["bundesland_name"])?.trim();
+  const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : undefined;
 
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
 
@@ -308,7 +314,7 @@ export function buildKreisImmobilienpreiseVM(args: {
     bundesland: hausBL,
     deutschland: hausDE,
     labelKreis: kreisName,
-    labelBL: bundeslandName ?? "Bundesland",
+    labelBL: bundeslandName ?? formatRegionFallback(bundeslandSlug ?? "bundesland"),
     labelDE: "Deutschland",
   });
 
@@ -317,7 +323,7 @@ export function buildKreisImmobilienpreiseVM(args: {
     bundesland: wohnBL,
     deutschland: wohnDE,
     labelKreis: kreisName,
-    labelBL: bundeslandName ?? "Bundesland",
+    labelBL: bundeslandName ?? formatRegionFallback(bundeslandSlug ?? "bundesland"),
     labelDE: "Deutschland",
   });
 

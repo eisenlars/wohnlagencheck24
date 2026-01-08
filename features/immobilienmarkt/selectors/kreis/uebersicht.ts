@@ -5,6 +5,7 @@ import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
 import { formatEurPerSqm } from "@/utils/format";
 import { asArray, asRecord, asString } from "@/utils/records";
+import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import type { UebersichtReportData } from "@/types/reports";
 
 export type VergleichItem = { region: string; value: number };
@@ -154,10 +155,14 @@ export function buildKreisUebersichtVM(args: {
   const text = data.text ?? {};
   const berater = text.berater ?? {};
 
-  const kreisName =
-    asString(meta["amtlicher_name"]) ?? asString(meta["name"]) ?? kreisSlug;
+  const kreisName = getRegionDisplayName({
+    meta,
+    level: "kreis",
+    fallbackSlug: kreisSlug,
+  });
 
-  const bundeslandName = asString(meta["bundesland_name"]);
+  const bundeslandNameRaw = asString(meta["bundesland_name"])?.trim();
+  const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : undefined;
 
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
 

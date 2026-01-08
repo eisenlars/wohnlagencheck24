@@ -819,9 +819,6 @@ export function UebersichtSection(
                     className="nav-link px-3 py-2 rounded-pill fw-semibold small bg-light text-dark"
                   >
                     {item.name}
-                    {"plz" in item && item.plz ? (
-                      <span className="ms-2 text-muted fw-normal">({item.plz})</span>
-                    ) : null}
                   </Link>
                 );
               })}

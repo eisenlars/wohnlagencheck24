@@ -1,6 +1,7 @@
 import type { Report } from "@/lib/data";
 import type { RouteLevel } from "@/features/immobilienmarkt/types/route";
 import type { PlaceholderVM } from "@/features/immobilienmarkt/selectors/shared/types/placeholder";
+import { getRegionDisplayName } from "@/utils/regionName";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -12,15 +13,6 @@ function pickMeta(report: Report): UnknownRecord {
   const meta = report.meta as unknown;
   const m0 = Array.isArray(meta) ? meta[0] : meta;
   return asRecord(m0) ?? {};
-}
-
-function safeTrim(v: unknown): string {
-  if (v == null) return "";
-  try {
-    return String(v).trim();
-  } catch {
-    return "";
-  }
 }
 
 function basePathFromSlugs(slugs: string[]): string {
@@ -38,11 +30,11 @@ export function buildPlaceholderVM(args: {
 
   const meta = pickMeta(report);
 
-  const regionName =
-    safeTrim(meta["amtlicher_name"]) ||
-    safeTrim(meta["name"]) ||
-    (level === "ort" ? safeTrim(ortSlug) : level === "kreis" ? safeTrim(kreisSlug) : safeTrim(bundeslandSlug)) ||
-    "Deutschland";
+  const regionName = getRegionDisplayName({
+    meta,
+    level,
+    fallbackSlug: level === "ort" ? ortSlug : level === "kreis" ? kreisSlug : bundeslandSlug,
+  });
 
   const regionSlugs = [bundeslandSlug, kreisSlug, ortSlug].filter(Boolean) as string[];
 
