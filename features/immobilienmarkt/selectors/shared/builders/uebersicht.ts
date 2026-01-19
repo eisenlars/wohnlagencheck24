@@ -3,7 +3,7 @@
 import type { Report } from "@/lib/data";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
-import { asArray, asRecord } from "@/utils/records";
+import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback } from "@/utils/regionName";
 import type { UebersichtReportData } from "@/types/reports";
 import type { UnitKey } from "@/utils/format";
@@ -25,6 +25,12 @@ function pickMeta(report: Report): Record<string, unknown> {
   const meta = report.meta as unknown;
   const m0 = Array.isArray(meta) ? meta[0] : meta;
   return asRecord(m0) ?? {};
+}
+
+function parseYear(aktualisierung: unknown): string {
+  const text = typeof aktualisierung === "string" ? aktualisierung : "";
+  const match = text.match(/(\d{4})/);
+  return match?.[1] ?? "2025";
 }
 
 function formatEuroPerSqm(val: number | null): string {
@@ -144,10 +150,19 @@ export function buildUebersichtVM(args: {
           ? `/images/immobilienmarkt/deutschland/immobilienmarktbericht-deutschland.jpg`
           : undefined;
 
+  
+  const aktualisierung = asString(meta["aktualisierung"]);
+  const jahrLabel = parseYear(aktualisierung);
+  const updatedAt = aktualisierung || undefined;
+  
+  
+  
   /**
    * TEXTE: ausschließlich euer Schema (Altbestand)
    */
   const teaser = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_allgemein", "");
+  const teaserText = normalizeText(teaser);
+  
   const standortTeaser = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_standort_teaser", "");
   const individual01 = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_individuell_01", "");
   const zitat = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_zitat", "");
@@ -156,6 +171,13 @@ export function buildUebersichtVM(args: {
   const beschreibung02 = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_beschreibung_02", "");
   const marketBasicKnowledge = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_besonderheiten", "");
   const agentSuggest = getText(report, "text.immobilienmarkt_ueberblick.immobilienmarkt_maklerempfehlung", "");
+
+
+  const headlineMain = `Standort & Immobilienmarkt - ${jahrLabel} ${regionName}`
+  
+  
+  
+     
 
   /**
    * Berater: im Bestand aus data.text.berater.* (nicht meta)
@@ -334,18 +356,8 @@ export function buildUebersichtVM(args: {
     basePath,
 
     hero: {
-      title:
-        level === "deutschland"
-          ? "Immobilienmarkt Deutschland"
-          : level === "bundesland"
-            ? `Immobilienmarkt ${regionName}`
-            : `Standort & Immobilienmarkt ${regionName}`,
-      subtitle:
-        level === "deutschland"
-          ? "Bundesweiter Überblick"
-          : level === "bundesland"
-            ? "Bundesland-Überblick"
-            : "Kreis-Überblick",
+      title: regionName,
+      subtitle: "regionaler Standortberater",
       imageSrc: heroImageSrc,
 
       kaufmarktValue: Number.isFinite(kaufmarktValue) ? kaufmarktValue : 0,
@@ -358,13 +370,17 @@ export function buildUebersichtVM(args: {
       imageSrc: beraterImageSrc,
     },
 
+    updatedAt,
+    headlineMain,
+    teaser: teaserText,
+
     images: {
       teaserImage,
       agentSuggestImage,
     },
 
     texts: {
-      teaser: normalizeText(teaser),
+      teaser: teaserText,
       standortTeaser: normalizeText(standortTeaser),
 
       individual01: normalizeText(individual01),

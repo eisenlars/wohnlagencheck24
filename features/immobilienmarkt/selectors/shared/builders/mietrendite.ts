@@ -76,7 +76,7 @@ export function buildMietrenditeVM(args: {
   const jahrLabel = parseYear(aktualisierung);
   const isLandkreis = (kreisName ?? formatRegionFallback(kreisSlug ?? "")).toLowerCase().includes("landkreis");
 
-  const introText = getText(report, "text.mietrendite.mietrendite_intro", "");
+  const teaser = getText(report, "text.mietrendite.mietrendite_intro", "");
   const hinweisText = getText(report, "text.mietrendite.mietrendite_hinweis", "");
   const kaufpreisfaktorText = getText(report, "text.mietrendite.mietrendite_kaufpreisfaktor", "");
   const allgemeinText = getText(report, "text.mietrendite.mietrendite_allgemein", "");
@@ -126,7 +126,7 @@ export function buildMietrenditeVM(args: {
   const mfhTableRaw = data.mietrendite_mfh ?? [];
 
   const tableOptions = (prefix: string) => ({
-    kind: "index" as const,
+    kind: "quote" as const,
     ctx: "table" as const,
     mode: "matrix" as const,
     orientation: "transpose" as const,
@@ -137,7 +137,7 @@ export function buildMietrenditeVM(args: {
       [`${prefix}_bestand_unsaniert`]: "Bestand unsaniert",
       [`${prefix}_bestand_kernsaniert`]: "Bestand kernsaniert",
     },
-    unitKeyFromRaw: () => "none" as UnitKey,
+    unitKeyFromRaw: () => "percent" as UnitKey,
   });
 
   const etwTable =
@@ -197,7 +197,7 @@ export function buildMietrenditeVM(args: {
     headlineBruttoNetto,
     headlineBruttoNettoIndividuell: headlineBruttoNettoIndividuell || undefined,
 
-    introText,
+    teaser,
     kaufpreisfaktorText,
     allgemeinText,
     hinweisText,

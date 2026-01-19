@@ -66,6 +66,10 @@ export type UebersichtVM = {
     imageSrc: string;
   };
 
+  updatedAt?: string;
+  headlineMain: string;
+  teaser: string;
+
   images: {
     teaserImage?: string;
     agentSuggestImage?: string;

@@ -72,21 +72,20 @@ export function buildMietpreiseVM(args: {
   const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : undefined;
   const kreisNameRaw = asString(meta["kreis_name"])?.trim();
   const kreisName = kreisNameRaw ? formatRegionFallback(kreisNameRaw) : undefined;
+
+  const isLandkreis = (kreisName ?? "").toLowerCase().includes("landkreis");
+  
   const aktualisierung = asString(meta["aktualisierung"]);
   const jahrLabel = parseYear(aktualisierung);
-  const isLandkreis = (kreisName ?? "").toLowerCase().includes("landkreis");
 
   const teaser = getText(report, "text.mietpreise.mietpreise_intro", "");
   const ueberregionalText = getText(report, "text.mietpreise.mietpreise_allgemein", "");
   const wohnungText = getText(report, "text.mietpreise.mietpreise_wohnung_allgemein", "");
   const wohnungEntwicklungText = getText(report, "text.mietpreise.mietpreise_wohnung_preisentwicklung", "");
-  const wohnungZimmerFlaechenText = getText(
-    report,
-    "text.mietpreise.mietpreise_wohnung_nach_flaechen_und_zimmern",
-    "",
-  );
+  const wohnungZimmerFlaechenText = getText(report, "text.mietpreise.mietpreise_wohnung_nach_flaechen_und_zimmern","",);
   const hausText = getText(report, "text.mietpreise.mietpreise_haus_allgemein", "");
   const hausEntwicklungText = getText(report, "text.mietpreise.mietpreise_haus_preisentwicklung", "");
+
 
   const beraterName =
     (typeof berater["berater_name"] === "string" ? berater["berater_name"] : undefined) ??

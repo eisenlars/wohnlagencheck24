@@ -1,4 +1,5 @@
 // features/immobilienmarkt/routes/resolveRoute.ts
+
 import { REPORT_SECTIONS, type RouteModel, type ReportSection } from "../types/route";
 
 const SECTION_SLUGS: ReadonlyArray<ReportSection> = ["uebersicht", ...REPORT_SECTIONS];

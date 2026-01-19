@@ -39,6 +39,7 @@ export type VergleichBarChartProps = {
   // Tabelle (SEO/LLM)
   showTable?: boolean;
   tableCtx?: FormatContext;
+  tableClassName?: string;
 
   // wenn Sie die Kategorie-Breite beeinflussen wollen
   groupGap?: number;
@@ -54,6 +55,13 @@ function shortLabel(s: string, max = 12) {
   return t.slice(0, max - 1) + "…";
 }
 
+function formatCompact(value: number): string {
+  if (!Number.isFinite(value)) return "";
+  if (value >= 1_000_000) return `${Math.round(value / 1_000_000)}M`;
+  if (value >= 1_000) return `${Math.round(value / 1_000)}k`;
+  return formatMetric(value, { kind: "anzahl", ctx: "chart", unit: "none" });
+}
+
 export function VergleichBarChart({
   title,
   categories,
@@ -63,7 +71,7 @@ export function VergleichBarChart({
   unitKey = "none",
   ctx = "chart",
 
-  svgWidth = 560,
+  svgWidth = 720,
   svgHeight = 300,
   maxLabelLen = 12,
 
@@ -71,6 +79,7 @@ export function VergleichBarChart({
 
   showTable = true,
   tableCtx = "table",
+  tableClassName = "visually-hidden",
 
   groupGap = 22,
   barGap = 8,
@@ -114,17 +123,23 @@ export function VergleichBarChart({
   const max = Number.isFinite(maxVal) && maxVal > 0 ? maxVal : 1;
 
   const paddingTop = 18;
-  const paddingBottom = showLegend ? 86 : 62;
-  const paddingLeft = 26;
+  const paddingBottom = 56;
+  const paddingLeft = 34;
   const paddingRight = 18;
+  const axisGap = 6;
+  const plotLeft = paddingLeft + axisGap;
 
   const availableHeight = svgHeight - paddingTop - paddingBottom;
 
   const barsPerGroup = seriesAligned.length;
-  const groupWidth = barsPerGroup * barWidth + (barsPerGroup - 1) * barGap;
-
-  const innerWidth = N * groupWidth + (N - 1) * groupGap;
-  const viewWidth = Math.max(svgWidth, innerWidth + paddingLeft + paddingRight);
+  const baseGroupWidth = barsPerGroup * barWidth + (barsPerGroup - 1) * barGap;
+  const innerWidth = N * baseGroupWidth + (N - 1) * groupGap;
+  const viewWidth = svgWidth;
+  const xScale = innerWidth > 0 ? (viewWidth - plotLeft - paddingRight) / innerWidth : 1;
+  const scaledBarWidth = barWidth * xScale;
+  const scaledBarGap = barGap * xScale;
+  const scaledGroupGap = groupGap * xScale;
+  const groupWidth = baseGroupWidth * xScale;
 
   const fmtNoUnit = (v: number | null) =>
     formatMetric(v, { kind: valueKind, ctx, unit: "none" });
@@ -140,6 +155,21 @@ export function VergleichBarChart({
 
   return (
     <>
+      {showLegend ? (
+        <div className="d-flex flex-wrap gap-3 small text-muted mb-3 justify-content-center text-center">
+          {seriesAligned.map((s, si) => {
+            const color = s.color ?? defaultColor(si);
+            const opacity = typeof s.fillOpacity === "number" ? s.fillOpacity : 0.85;
+            return (
+              <div key={`leg-${s.key}`} className="d-flex align-items-center gap-2">
+                <span style={{ width: 12, height: 8, background: color, display: "inline-block", borderRadius: 2, opacity }} />
+                <span>{s.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
       <svg
         role="img"
         aria-label={aria}
@@ -159,9 +189,22 @@ export function VergleichBarChart({
           stroke="#ccc"
           strokeWidth={1}
         />
+        <line x1={paddingLeft} y1={paddingTop} x2={paddingLeft} y2={svgHeight - paddingBottom} stroke="#ccc" strokeWidth={1} />
+        <text x={paddingLeft - 6} y={paddingTop - 2} textAnchor="end" fontSize="11" fill="#888">
+          {formatCompact(max)}
+        </text>
+        <text
+          x={paddingLeft - 6}
+          y={svgHeight - paddingBottom - 8}
+          textAnchor="end"
+          fontSize="11"
+          fill="#888"
+        >
+          {formatCompact(0)}
+        </text>
 
         {cats.map((cat, i) => {
-          const baseX = paddingLeft + i * (groupWidth + groupGap);
+          const baseX = plotLeft + i * (groupWidth + scaledGroupGap);
 
           return (
             <g key={`g-${cat}-${i}`}>
@@ -169,36 +212,23 @@ export function VergleichBarChart({
                 const v = s.values[i];
                 const h = v !== null ? (v / max) * availableHeight : 0;
                 const y = svgHeight - paddingBottom - h;
-                const x = baseX + si * (barWidth + barGap);
+                const x = baseX + si * (scaledBarWidth + scaledBarGap);
 
                 const color = s.color ?? defaultColor(si);
                 const opacity = typeof s.fillOpacity === "number" ? s.fillOpacity : 0.85;
-
-                const label = fmtNoUnit(v);
-                const labelY = Math.max(paddingTop + 10, y - 8);
 
                 return (
                   <g key={`${s.key}-${i}`}>
                     <rect
                       x={x}
                       y={y}
-                      width={barWidth}
+                      width={scaledBarWidth}
                       height={h}
-                      rx={6}
-                      ry={6}
+                      rx={0}
+                      ry={0}
                       fill={color}
                       fillOpacity={opacity}
                     />
-                    {/* Wert über Balken */}
-                    <text
-                      x={x + barWidth / 2}
-                      y={labelY}
-                      textAnchor="middle"
-                      fontSize="10"
-                      fill="#333"
-                    >
-                      {label}
-                    </text>
                   </g>
                 );
               })}
@@ -206,7 +236,7 @@ export function VergleichBarChart({
               {/* Kategorienlabel */}
               <text
                 x={baseX + groupWidth / 2}
-                y={svgHeight - paddingBottom + 28}
+                y={svgHeight - paddingBottom + 22}
                 textAnchor="middle"
                 fontSize="11"
                 fill="#555"
@@ -216,46 +246,25 @@ export function VergleichBarChart({
             </g>
           );
         })}
-
-        {/* Legende */}
-        {showLegend && (
-          <g>
-            {seriesAligned.map((s, si) => {
-              const x0 = paddingLeft + si * 150;
-              const y0 = svgHeight - 26;
-              const color = s.color ?? defaultColor(si);
-              const opacity = typeof s.fillOpacity === "number" ? s.fillOpacity : 0.85;
-
-              return (
-                <g key={`leg-${s.key}`}>
-                  <rect x={x0} y={y0 - 8} width={12} height={8} fill={color} fillOpacity={opacity} rx={2} />
-                  <text x={x0 + 18} y={y0} fontSize="11" fill="#555">
-                    {s.label}
-                  </text>
-                </g>
-              );
-            })}
-          </g>
-        )}
       </svg>
 
       {/* Tabelle (optional) */}
       {showTable && (
-        <div className="table-responsive">
+        <div className={["table-responsive", tableClassName].filter(Boolean).join(" ")} style={{ paddingLeft: paddingLeft }}>
           <table
-            className="table table-borderless align-middle mb-0"
-            style={{ borderCollapse: "separate", borderSpacing: "2px" }}
+            className="table table-borderless table-sm mb-0"
+            style={{ borderCollapse: "separate", borderSpacing: "2px", lineHeight: 1.05, fontSize: "0.75rem", width: "auto" }}
           >
             <thead>
               <tr>
-                <th className="text-start" style={{ backgroundColor: "#f5f5f5", padding: "0.55rem 0.85rem" }}>
+                <th className="text-start" style={{ padding: "0.3rem 0.5rem" }}>
                   Kategorie
                 </th>
                 {seriesAligned.map((s) => (
                   <th
                     key={`th-${s.key}`}
                     className="text-center"
-                    style={{ backgroundColor: "#f5f5f5", padding: "0.55rem 0.85rem" }}
+                    style={{ padding: "0.3rem 0.5rem" }}
                   >
                     {s.label}
                   </th>
@@ -266,7 +275,7 @@ export function VergleichBarChart({
             <tbody className="small">
               {cats.map((cat, i) => (
                 <tr key={`row-${cat}-${i}`}>
-                  <td className="text-start" style={{ backgroundColor: "#f5f5f5", padding: "0.55rem 0.85rem", fontWeight: 600 }}>
+                  <td className="text-start" style={{ padding: "0.3rem 0.5rem", fontWeight: 600 }}>
                     {cat}
                   </td>
 
@@ -274,7 +283,7 @@ export function VergleichBarChart({
                     <td
                       key={`cell-${cat}-${s.key}`}
                       className="text-center"
-                      style={{ backgroundColor: "#ffffff", padding: "0.55rem 0.85rem", whiteSpace: "nowrap" }}
+                      style={{ padding: "0.3rem 0.5rem", whiteSpace: "nowrap" }}
                     >
                       {fmtWithUnit(s.values[i])}
                     </td>

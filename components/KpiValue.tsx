@@ -6,7 +6,7 @@ import Image from "next/image";
 import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
 import { formatValueCtx, formatMetric, getUnitLabel } from "@/utils/format";
 
-type KpiSize = "sm" | "md" | "lg" | "xl" | "ultra";
+type KpiSize = "sm" | "md" | "lg" | "xl" | "ultra" | "mega";
 
 type KpiDisplayItem = {
   /** Optionales Label oberhalb des Werts (z.B. "min", "Ø", "max", "Warmmiete") */
@@ -165,14 +165,25 @@ export function KpiValue(props: KpiValueProps) {
     }
   }
 
-  // Größen-Token: zentral für Typografie
-  const tokens = getSizeTokens(size);
-
-  const justify =
-    align === "start" ? "flex-start" : align === "end" ? "flex-end" : "center";
-
   return (
-    <div className={className} style={style}>
+    <div
+      className={[
+        "kpi",
+        `kpi-size-${size}`,
+        `kpi-align-${align}`,
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      style={{
+        ...style,
+        ["--kpi-gap" as string]: `${gap}px`,
+        ["--kpi-highlight-bg" as string]: highlightBg,
+        ["--kpi-highlight-color" as string]: highlightValueColor,
+        ["--kpi-value-color" as string]: normalValueColor,
+        ["--kpi-label-color" as string]: labelColor,
+      }}
+    >
       {icon ? (
         <div className="d-flex justify-content-center mb-3">
           {typeof icon === "string" ? (
@@ -191,15 +202,7 @@ export function KpiValue(props: KpiValueProps) {
         </div>
       ) : null}
 
-      <div
-        className="d-flex"
-        style={{
-          justifyContent: justify,
-          alignItems: "flex-end",
-          gap: `${gap}px`,
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="kpi-row">
         {resolved.map((it, idx) => (
           <KpiCell
             key={idx}
@@ -208,11 +211,7 @@ export function KpiValue(props: KpiValueProps) {
             fallbackUnitKey={unitKey}
             fallbackCtx={ctx}
             showUnit={showUnit}
-            labelColor={labelColor}
-            normalValueColor={normalValueColor}
-            highlightValueColor={highlightValueColor}
             highlightBg={highlightBg}
-            tokens={tokens}
             count={count}
           />
         ))}
@@ -241,11 +240,7 @@ function KpiCell({
   fallbackUnitKey,
   fallbackCtx,
   showUnit,
-  labelColor,
-  normalValueColor,
-  highlightValueColor,
   highlightBg,
-  tokens,
   count,
 }: {
   item: KpiDisplayItem;
@@ -253,11 +248,7 @@ function KpiCell({
   fallbackUnitKey: UnitKey;
   fallbackCtx: FormatContext;
   showUnit: boolean;
-  labelColor: string;
-  normalValueColor: string;
-  highlightValueColor: string;
   highlightBg: string;
-  tokens: ReturnType<typeof getSizeTokens>;
   count: number;
 }) {
   const kind = item.kind ?? fallbackKind;
@@ -280,59 +271,38 @@ function KpiCell({
 
   const isHighlight = !!item.highlight;
 
-  const valueFontSize = isHighlight ? tokens.valueHighlightSize : tokens.valueSize;
-  const valueWeight = isHighlight ? tokens.valueHighlightWeight : tokens.valueWeight;
-
   // Sonderfall: count===1 => nochmal prominenter (analog "Highlight")
   // (tokens decken das ab; highlight ist ohnehin true)
-  const valueColor = isHighlight ? highlightValueColor : normalValueColor;
-
   return (
     <div
-      className="text-center"
-      style={{
-        padding: isHighlight && highlightBg !== "transparent" ? "0.35rem 0.65rem" : undefined,
-        borderRadius: isHighlight && highlightBg !== "transparent" ? "0.75rem" : undefined,
-        backgroundColor: isHighlight ? highlightBg : "transparent",
-        minWidth: count === 1 ? "min(340px, 100%)" : undefined,
-      }}
+      className={[
+        "kpi-cell",
+        isHighlight ? "kpi-cell--highlight" : null,
+        isHighlight && highlightBg !== "transparent" ? "kpi-cell--with-bg" : null,
+        count === 1 ? "kpi-cell--single" : null,
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       {item.label ? (
         <div
-          className={item.labelClassName}
-          style={{
-            color: labelColor,
-            fontSize: tokens.labelSize,
-            marginBottom: "0.25rem",
-            ...item.labelStyle,
-          }}
+          className={["kpi-label", item.labelClassName].filter(Boolean).join(" ")}
+          style={item.labelStyle}
         >
           {item.label}
         </div>
       ) : null}
 
       <div
-        className={item.valueClassName}
-        style={{
-          color: valueColor,
-          fontSize: valueFontSize,
-          fontWeight: valueWeight,
-          lineHeight: 1.05,
-          ...item.valueStyle,
-        }}
+        className={["kpi-value", item.valueClassName].filter(Boolean).join(" ")}
+        style={item.valueStyle}
       >
         {showUnit && u && u.trim().length > 0 ? (
           <>
             {numberOnly}{" "}
             <small
-              className={item.unitClassName}
-              style={{
-                fontSize: tokens.unitSize,
-                fontWeight: tokens.unitWeight,
-                color: valueColor,
-                opacity: isHighlight ? 0.95 : 0.9,
-                ...item.unitStyle,
-              }}
+              className={["kpi-unit", item.unitClassName].filter(Boolean).join(" ")}
+              style={item.unitStyle}
             >
               {u}
             </small>
@@ -343,71 +313,4 @@ function KpiCell({
       </div>
     </div>
   );
-}
-
-function getSizeTokens(size: KpiSize) {
-  // Default-Optik angelehnt an dein Preisspanne + bisherige KpiValue-Verwendung
-  switch (size) {
-    case "sm":
-      return {
-        labelSize: "0.8rem",
-        valueSize: "1.1rem",
-        valueWeight: 600,
-        valueHighlightSize: "1.4rem",
-        valueHighlightWeight: 800,
-        unitSize: "0.85rem",
-        unitWeight: 500,
-      };
-    case "md":
-      return {
-        labelSize: "0.85rem",
-        valueSize: "1.4rem",
-        valueWeight: 600,
-        valueHighlightSize: "2.2rem",
-        valueHighlightWeight: 800,
-        unitSize: "1.0rem",
-        unitWeight: 500,
-      };
-    case "lg":
-      return {
-        labelSize: "0.9rem",
-        valueSize: "1.8rem",
-        valueWeight: 650,
-        valueHighlightSize: "2.8rem",
-        valueHighlightWeight: 850,
-        unitSize: "1.05rem",
-        unitWeight: 550,
-      };
-    case "xl":
-      return {
-        labelSize: "0.95rem",
-        valueSize: "2.2rem",
-        valueWeight: 700,
-        valueHighlightSize: "3.6rem",
-        valueHighlightWeight: 900,
-        unitSize: "1.1rem",
-        unitWeight: 600,
-      };
-    case "ultra":
-      // Für deine Map-Leitkennzahl (früher: "display-1" + eigener Style)
-      return {
-        labelSize: "0.95rem",
-        valueSize: "3.2rem",
-        valueWeight: 800,
-        valueHighlightSize: "6.5rem",
-        valueHighlightWeight: 900,
-        unitSize: "1.25rem",
-        unitWeight: 650,
-      };
-    default:
-      return {
-        labelSize: "0.85rem",
-        valueSize: "1.4rem",
-        valueWeight: 600,
-        valueHighlightSize: "2.2rem",
-        valueHighlightWeight: 800,
-        unitSize: "1.0rem",
-        unitWeight: 500,
-      };
-  }
 }

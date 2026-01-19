@@ -24,7 +24,7 @@ export type WohnmarktsituationVM = {
   headlineWohnraumangebot: string;
   headlineWohnraumangebotIndividuell?: string;
 
-  introText: string;
+  teaser: string;
   allgemeinText: string;
 
   wohnraumnachfrageText: string;

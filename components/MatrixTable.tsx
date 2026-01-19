@@ -184,11 +184,14 @@ export function MatrixTable<Row extends Record<string, unknown> = Record<string,
 
                   const raw = rowRecord[c.key];
                   const value = toNumberOrNull(raw);
+                  const isKaufpreisfaktorRow =
+                    typeof rowLabel === "string" &&
+                    ["kaufpreisfaktor", "kaupreisfaktor"].includes(norm(rowLabel));
 
                   const display = formatMetric(value, {
-                    kind: c.kind,
+                    kind: isKaufpreisfaktorRow ? "quote" : c.kind,
                     ctx: c.ctx ?? "table",
-                    unit: c.unitKey ?? "none",
+                    unit: isKaufpreisfaktorRow ? "none" : (c.unitKey ?? "none"),
                   });
 
                   const bg =

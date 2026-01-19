@@ -111,11 +111,39 @@ export function buildWirtschaftVM(args: {
   const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : undefined;
   const kreisNameRaw = asString(meta["kreis_name"])?.trim();
   const kreisName = kreisNameRaw ? formatRegionFallback(kreisNameRaw) : undefined;
+  
   const aktualisierung = asString(meta["aktualisierung"]);
-  const aktualisierungJahr = parseYear(aktualisierung);
+  const jahrLabel = parseYear(aktualisierung);
+  
+  const regionaleZuordnung = typeof meta["regionale_zuordnung"] === "string" ? meta["regionale_zuordnung"] : "";
+  
+  
   const isLandkreis = (kreisName ?? formatRegionFallback(kreisSlug ?? "")).toLowerCase().includes("landkreis");
 
+
+  // Texte 
+  const teaser = getText(report, "text.wirtschaft.wirtschaft_intro", "")
+  
+  const headlineWirtschaftIndividuell =
+    level === "kreis" ? getText(report, "text.ueberschriften_kreis.ueberschrift_wirtschaft_individuell", "") : "";
+  const headlineArbeitsmarktIndividuell =
+    level === "kreis" ? getText(report, "text.ueberschriften_kreis.ueberschrift_arbeitsmarkt_individuell", "") : "";
+
+  const einkommenText = getText(report, "text.wirtschaft.wirtschaft_einkommen", "")
+  const bruttoinlandsproduktText = getText(report, "text.wirtschaft.wirtschaft_bruttoinlandsprodukt", "")
+  const gewerbesaldoText = getText(report, "text.wirtschaft.wirtschaft_gewerbesaldo", "")
+  const arbeitsmarktText = getText(report, "text.wirtschaft.wirtschaft_arbeitsmarkt", "")
+  const arbeitslosenquoteText = getText(report, "text.wirtschaft.wirtschaft_arbeitslosigkeit", "")
+  const arbeitslosendichteText = getText(report, "text.wirtschaft.wirtschaft_arbeitslosendichte", "")
+  const svBeschaeftigteWohnortText = getText(report, "text.wirtschaft.wirtschaft_sv_beschaeftigte_wohnort", "")
+  const svBeschaeftigteArbeitsortText = getText(report, "text.wirtschaft.wirtschaft_sv_beschaeftigte_arbeitsort", "")
+  const arbeitsplatzzentralitaetText = getText(report, "text.wirtschaft.wirtschaft_arbeitsplatzzentralitaet", "")
+  const pendlerText = getText(report, "text.wirtschaft.wirtschaft_pendler", "")
+
+  
+
   const allgemeine = asRecord(asArray(data["wirtschaft_allgemein"])[0]) ?? {};
+  
   const regionLabel =
     level === "ort"
       ? kreisName ?? formatRegionFallback(kreisSlug ?? "kreis")
@@ -131,11 +159,11 @@ export function buildWirtschaftVM(args: {
   const headlineMain =
     level === "ort"
       ? isLandkreis
-        ? `Wirtschaft & Arbeitsmarkt ${aktualisierungJahr ?? ""} - ${regionName}`
-        : `Wirtschaft & Arbeitsmarkt ${aktualisierungJahr ?? ""} - ${
+        ? `Wirtschaft & Arbeitsmarkt ${jahrLabel ?? ""} - ${regionName}`
+        : `Wirtschaft & Arbeitsmarkt ${jahrLabel ?? ""} - ${
             kreisName ?? formatRegionFallback(kreisSlug ?? "")
           } ${regionName}`
-      : `Wirtschaft & Arbeitsmarkt in ${regionName}`;
+      : `Wirtschaft & Arbeitsmarkt ${jahrLabel ?? ""} - ${regionName}`;
 
   const headlineWirtschaft =
     level === "ort"
@@ -151,10 +179,7 @@ export function buildWirtschaftVM(args: {
         : `Arbeitsmarkt ${kreisName ?? formatRegionFallback(kreisSlug ?? "")} ${regionName}`
       : `Arbeitsmarkt ${regionName}`;
 
-  const headlineWirtschaftIndividuell =
-    level === "kreis" ? getText(report, "text.ueberschriften_kreis.ueberschrift_wirtschaft_individuell", "") : "";
-  const headlineArbeitsmarktIndividuell =
-    level === "kreis" ? getText(report, "text.ueberschriften_kreis.ueberschrift_arbeitsmarkt_individuell", "") : "";
+  
 
   const gewerbeflaechenanteil = asArray(data["gewerbeflaechenanteil"])
     .map((row) => asRecord(row))
@@ -205,17 +230,7 @@ export function buildWirtschaftVM(args: {
       { key: "abmeldungen", label: "Abmeldungen", valueKey: "gewerbeabmeldungen", color: "rgba(95,132,162,1)" },
     ],
   });
-  const gewerbesaldoAbs = {
-    ...gewerbesaldoAbsRaw,
-    lines: gewerbesaldoAbsRaw.lines.map((line) =>
-      line.key === "abmeldungen"
-        ? {
-            ...line,
-            values: line.values.map((v) => (typeof v === "number" ? Math.abs(v) : v)),
-          }
-        : line,
-    ),
-  };
+  const gewerbesaldoAbs = gewerbesaldoAbsRaw;
 
   const gewerbesaldoPro1000 = buildSeries(data["gewerbesaldo_je_1000_ew"], [
     {
@@ -265,7 +280,7 @@ export function buildWirtschaftVM(args: {
       },
       { key: "l", label: "Deutschland", valueKey: "nettoeinkommen_pro_ew_l", color: "rgba(54,162,235,1)" },
     ],
-    aktualisierungJahr,
+    jahrLabel,
   );
 
   const nettoeinkommenProHh = buildSeries(
@@ -285,7 +300,7 @@ export function buildWirtschaftVM(args: {
       },
       { key: "l", label: "Deutschland", valueKey: "nettoeinkommen_pro_hh_l", color: "rgba(54,162,235,1)" },
     ],
-    aktualisierungJahr,
+    jahrLabel,
   );
 
   const svbWohnortAbs = buildSeries(data["sv_pflichtig_beschaeftigte_wohnort"], [
@@ -388,17 +403,17 @@ export function buildWirtschaftVM(args: {
     headlineArbeitsmarkt,
     headlineArbeitsmarktIndividuell: headlineArbeitsmarktIndividuell || undefined,
 
-    introText: getText(report, "text.wirtschaft.wirtschaft_intro", ""),
-    einkommenText: getText(report, "text.wirtschaft.wirtschaft_einkommen", ""),
-    bruttoinlandsproduktText: getText(report, "text.wirtschaft.wirtschaft_bruttoinlandsprodukt", ""),
-    gewerbesaldoText: getText(report, "text.wirtschaft.wirtschaft_gewerbesaldo", ""),
-    arbeitsmarktText: getText(report, "text.wirtschaft.wirtschaft_arbeitsmarkt", ""),
-    arbeitslosenquoteText: getText(report, "text.wirtschaft.wirtschaft_arbeitslosigkeit", ""),
-    arbeitslosendichteText: getText(report, "text.wirtschaft.wirtschaft_arbeitslosendichte", ""),
-    svBeschaeftigteWohnortText: getText(report, "text.wirtschaft.wirtschaft_sv_beschaeftigte_wohnort", ""),
-    svBeschaeftigteArbeitsortText: getText(report, "text.wirtschaft.wirtschaft_sv_beschaeftigte_arbeitsort", ""),
-    arbeitsplatzzentralitaetText: getText(report, "text.wirtschaft.wirtschaft_arbeitsplatzzentralitaet", ""),
-    pendlerText: getText(report, "text.wirtschaft.wirtschaft_pendler", ""),
+    teaser,
+    einkommenText,
+    bruttoinlandsproduktText,
+    gewerbesaldoText,
+    arbeitsmarktText,
+    arbeitslosenquoteText,
+    arbeitslosendichteText,
+    svBeschaeftigteWohnortText,
+    svBeschaeftigteArbeitsortText,
+    arbeitsplatzzentralitaetText,
+    pendlerText,
 
     berater: {
       name: beraterName,

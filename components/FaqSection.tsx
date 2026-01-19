@@ -34,8 +34,6 @@ export function FaqSection({
         />
       )}
 
-      <h2 className="h2 mb-3 align-center text-center">{title}</h2>
-
       <div className="card border-0 shadow-sm">
         <div className="card-body">
           {/* Accordion (Bootstrap) */}

@@ -31,12 +31,12 @@ export function PreisindexBox({
   }
 
   return (
-    <div className="text-center mt-3 mb-2">
-      <div className="fw-semibold mb-2" style={{ color }}>
+    <div className="kpi-index text-center mt-3 mb-2" style={{ ["--kpi-accent" as string]: color }}>
+      <div className="kpi-index__title fw-semibold mb-2">
         {title}
       </div>
 
-      <div className="display-6 fw-bold mb-2" style={{ lineHeight: "1", color }}>
+      <div className="kpi-index__value display-6 fw-bold mb-2">
         {/* Index ist per Definition dimensionslos (Basisjahr=100) -> keine Einheit */}
         {formatMetric(index, { kind: "index", ctx, unit: "none" })}
       </div>

@@ -24,7 +24,22 @@ function parseGermanNumber(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
   if (!/^[\d\s.,+-]+$/.test(trimmed)) return null;
-  const normalized = trimmed.replace(/\./g, "").replace(",", ".");
+
+  const hasDot = trimmed.includes(".");
+  const hasComma = trimmed.includes(",");
+
+  let normalized = trimmed;
+  if (hasDot && hasComma) {
+    // de-DE: Tausenderpunkt + Dezimalkomma
+    normalized = normalized.replace(/\./g, "").replace(",", ".");
+  } else if (hasComma) {
+    // Komma als Dezimaltrenner
+    normalized = normalized.replace(",", ".");
+  } else {
+    // Punkt als Dezimaltrenner (oder nur Ziffern)
+    normalized = normalized.replace(/\s+/g, "");
+  }
+
   const n = Number(normalized);
   return Number.isFinite(n) ? n : null;
 }
@@ -261,7 +276,7 @@ export function buildWohnmarktsituationVM(args: {
     headlineWohnraumangebot,
     headlineWohnraumangebotIndividuell: headlineWohnraumangebotIndividuell || undefined,
 
-    introText: getText(report, "text.wohnmarktsituation.wohnmarktsituation_intro", ""),
+    teaser: getText(report, "text.wohnmarktsituation.wohnmarktsituation_intro", ""),
     allgemeinText: getText(report, "text.wohnmarktsituation.wohnmarktsituation_allgemein", ""),
 
     wohnraumnachfrageText: getText(report, "text.wohnmarktsituation.wohnmarktsituation_wohnraumnachfrage", ""),
@@ -354,9 +369,7 @@ export function buildWohnmarktsituationVM(args: {
       flaecheWohnbau: readKpiValue(flaecheWohnbauRow["flaechennutzung_wohnbau"]),
       wohnungsbestandAnzahlAbsolut: readKpiValue(wohnungsangebot["wohnungsbestand_anzahl_absolut"]),
       wohnungsbestandWohnraumsaldo: readKpiValue(wohnungsangebot["wohnungsbestand_wohnraumsaldo"]),
-      wohnungsbestandWohnraumsaldoPer1000: readKpiValue(
-        wohnungsangebot["wohnungsbestand_wohnraumsaldo_per_1000_ew"],
-      ),
+      wohnungsbestandWohnraumsaldoPer1000: readKpiValue(wohnungsangebot["wohnungsbestand_wohnraumsaldo_per_1000_ew"]),
       wohnungsbestandWohnflaecheProEw: readKpiValue(wohnungsangebot["wohnungsbestand_wohnflaeche_pro_ew"]),
       wohnungsbestandMittlereWohnflaeche: readKpiValue(wohnungsangebot["wohnungsbestand_mittlere_wohnflaeche"]),
 

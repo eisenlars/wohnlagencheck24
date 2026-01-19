@@ -30,6 +30,8 @@ type ZeitreiheChartProps = {
   svgWidth?: number;
   svgHeight?: number;
   maxYearLabels?: number;
+  showLegend?: boolean;
+  tableClassName?: string;
 };
 
 function toFiniteYear(v: unknown): number | null {
@@ -66,9 +68,11 @@ export function ZeitreiheChart({
   unitKey = "none",
   ctx = "chart",
   tableCtx,
-  svgWidth = 640,
+  svgWidth = 720,
   svgHeight = 320,
   maxYearLabels = 7,
+  showLegend = true,
+  tableClassName = "visually-hidden",
 }: ZeitreiheChartProps) {
   const cleaned = (series ?? [])
     .map((s) => ({
@@ -126,13 +130,24 @@ export function ZeitreiheChart({
 
   return (
     <>
+      {showLegend ? (
+        <div className="d-flex flex-wrap gap-3 small text-muted mb-3 justify-content-center text-center">
+          {paths.map((p) => (
+            <div key={`legend-${p.key}`} className="d-flex align-items-center gap-2">
+              <span style={{ width: 12, height: 8, background: p.stroke, display: "inline-block", borderRadius: 2 }} />
+              <span>{p.label}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <svg
         role="img"
         aria-label={ariaLabel ?? `${title} – Zeitreihe ${minYear} bis ${maxYear}`}
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         width="100%"
         height={svgHeight}
-        className="mb-3"
+        className="mb-0"
         preserveAspectRatio="xMidYMid meet"
         suppressHydrationWarning
       >
@@ -189,8 +204,8 @@ export function ZeitreiheChart({
       </svg>
 
       {/* Tabelle */}
-      <div className="table-responsive">
-        <table className="table table-borderless small mb-0">
+      <div className={["table-responsive", tableClassName].filter(Boolean).join(" ")} style={{ paddingLeft: padL }}>
+        <table className="table table-borderless table-sm mb-0" style={{ lineHeight: 1.05, fontSize: "0.75rem", width: "auto" }}>
           <thead>
             <tr>
               <th>Jahr</th>

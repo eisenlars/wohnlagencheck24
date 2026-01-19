@@ -11,6 +11,20 @@ import type { ImmobilienpreiseReportData } from "@/types/reports";
 
 import type { ImmobilienpreiseVM, Zeitreihenpunkt, ZeitreiheSeries } from "../types/immobilienpreise";
 
+type UnknownRecord = Record<string, unknown>;
+
+function pickMeta(report: Report<ImmobilienpreiseReportData>): UnknownRecord {
+  const meta = report.meta as unknown;
+  const picked = Array.isArray(meta) ? meta[0] : meta;
+  return asRecord(picked) ?? {};
+}
+
+function parseYear(aktualisierung: unknown): string {
+  const text = typeof aktualisierung === "string" ? aktualisierung : "";
+  const match = text.match(/(\d{4})/);
+  return match?.[1] ?? "2025";
+}
+
 function toZeitreihe(raw: unknown, valueKey: string): Zeitreihenpunkt[] {
   const rows = asArray(raw)
     .map((item) => asRecord(item))
@@ -57,8 +71,10 @@ export function buildImmobilienpreiseVM(args: {
 }): ImmobilienpreiseVM {
   const { report, level, bundeslandSlug, kreisSlug, ortSlug } = args;
 
-  const meta = asRecord(report.meta) ?? {};
+  const meta = pickMeta(report);
   const data = report.data ?? {};
+  const text = asRecord(data["text"]) ?? {};
+  const beraterRecord = asRecord(text["berater"]) ?? {};
 
   const regionName = getRegionDisplayName({
     meta,
@@ -68,13 +84,27 @@ export function buildImmobilienpreiseVM(args: {
 
   const bundeslandNameRaw = asString(meta["bundesland_name"])?.trim();
   const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : undefined;
+  const kreisNameRaw = asString(meta["kreis_name"])?.trim();
+  const kreisName = kreisNameRaw ? formatRegionFallback(kreisNameRaw) : undefined;
 
   const basePath =
     level === "ort" && ortSlug
       ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}`
       : `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
 
-  const teaserImmobilienpreise = getText(report, "text.immobilienpreise.immobilienpreise_intro", "");
+  const aktualisierung = asString(meta["aktualisierung"]);
+  const jahrLabel = parseYear(aktualisierung);
+  const isLandkreis = (kreisName ?? "").toLowerCase().includes("landkreis");
+  const labelKreis = kreisName ?? formatRegionFallback(kreisSlug ?? "kreis");
+  const headlineMain =
+    level === "ort"
+      ? isLandkreis
+        ? `Immobilienpreise ${jahrLabel} - ${regionName}`
+        : `Immobilienpreise ${jahrLabel} - ${labelKreis} ${regionName}`
+      : `Immobilienpreise ${jahrLabel} - ${regionName}`;
+  const updatedAt = aktualisierung?.trim() ? aktualisierung : undefined;
+
+  const teaser = getText(report, "text.immobilienpreise.immobilienpreise_intro", "");
 
   const ueberschriftHausIndividuell = getText(
     report,
@@ -110,6 +140,18 @@ export function buildImmobilienpreiseVM(args: {
     "text.immobilienpreise.immobilienpreise_wohnung_nach_flaechen_und_zimmern",
     "",
   );
+
+  const beraterName =
+    (typeof beraterRecord["berater_name"] === "string" ? beraterRecord["berater_name"] : undefined) ??
+    "Lars Hofmann";
+  const beraterTelefon =
+    (typeof beraterRecord["berater_telefon"] === "string" ? beraterRecord["berater_telefon"] : undefined) ??
+    "+49 351/287051-0";
+  const beraterEmail =
+    (typeof beraterRecord["berater_email"] === "string" ? beraterRecord["berater_email"] : undefined) ??
+    "kontakt@wohnlagencheck24.de";
+  const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
+  const beraterImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`;
 
   const immobilienKaufpreis = data.immobilien_kaufpreis?.[0];
   const kaufpreisQm = toNumberOrNull(immobilienKaufpreis?.kaufpreis_immobilien);
@@ -279,8 +321,16 @@ export function buildImmobilienpreiseVM(args: {
     regionName,
     bundeslandName,
     basePath,
-
-    teaserImmobilienpreise: normalizeText(teaserImmobilienpreise),
+    updatedAt,
+    headlineMain,
+    teaser: normalizeText(teaser),
+    berater: {
+      name: beraterName,
+      taetigkeit: beraterTaetigkeit,
+      imageSrc: beraterImageSrc,
+      telefon: beraterTelefon,
+      email: beraterEmail,
+    },
 
     ueberschriftHausIndividuell: normalizeText(ueberschriftHausIndividuell),
     hauspreiseIntro: normalizeText(hauspreiseIntro),

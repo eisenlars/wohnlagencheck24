@@ -14,7 +14,16 @@ export type ImmobilienpreiseVM = {
   bundeslandName?: string;
   basePath: string;
 
-  teaserImmobilienpreise: string;
+  updatedAt?: string;
+  headlineMain: string;
+  teaser: string;
+  berater: {
+    name: string;
+    taetigkeit: string;
+    imageSrc: string;
+    telefon?: string;
+    email?: string;
+  };
 
   ueberschriftHausIndividuell: string;
   hauspreiseIntro: string;

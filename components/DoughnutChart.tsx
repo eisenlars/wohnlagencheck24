@@ -53,7 +53,7 @@ export function DoughnutChart({
   ctx = "chart",
   listCtx,
   svgSize = 220,
-  innerRatio = 0.62,
+  innerRatio = 0.175,
   showLegend = true,
   emptyText = "Für diese Auswertung liegen aktuell keine Daten vor.",
 }: DoughnutChartProps) {
@@ -85,10 +85,16 @@ export function DoughnutChart({
     "rgba(231,111,81,0.85)",
     "rgba(42,157,143,0.85)",
   ];
+  const labelColors: Record<string, string> = {
+    Gesamt: "#E6E6E6",
+    "Industrie & Gewerbe": "#0087CC",
+  };
 
   const radius = svgSize / 2;
-  const ringRadius = radius * 0.9;
-  const holeRadius = ringRadius * innerRatio;
+  const ringWidth = radius * (1 - innerRatio);
+  const padding = 2;
+  const ringRadius = radius - ringWidth / 2 - padding;
+  const holeRadius = ringRadius - ringWidth / 2;
 
   const arcs = cleaned.reduce<{
     cursor: number;
@@ -103,7 +109,7 @@ export function DoughnutChart({
       acc.items.push({
         label: s.label,
         value: s.value,
-        color: s.color ?? colors[idx % colors.length],
+        color: s.color ?? labelColors[s.label] ?? colors[idx % colors.length],
         d: describeArc(radius, radius, ringRadius, start, end),
       });
       acc.cursor = end;
@@ -116,7 +122,27 @@ export function DoughnutChart({
     formatMetric(v, { kind: valueKind, ctx: listCtx ?? ctx, unit: unitKey });
 
   return (
-    <div>
+    <div className="doughnut-chart">
+      {showLegend ? (
+        <div className="d-flex flex-wrap gap-3 small text-muted mb-3 justify-content-center text-center">
+          {arcs.map((a, idx) => (
+            <div key={`${a.label}-legend-${idx}`} className="d-flex align-items-center gap-2">
+              <span
+                style={{
+                  display: "inline-block",
+                  width: 12,
+                  height: 8,
+                  backgroundColor: a.color,
+                  borderRadius: 2,
+                }}
+              />
+              <span>
+                <strong>{a.label}:</strong> {fmt(a.value)}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <svg
         role="img"
         aria-label={`${title} – Kreisdiagramm`}
@@ -127,29 +153,31 @@ export function DoughnutChart({
         preserveAspectRatio="xMidYMid meet"
       >
         {arcs.map((a, idx) => (
-          <path key={`${a.label}-${idx}`} d={a.d} stroke={a.color} strokeWidth={ringRadius - holeRadius} fill="none" />
+          <g key={`${a.label}-${idx}`} className="doughnut-slice">
+            <path
+              d={a.d}
+              stroke="transparent"
+              strokeWidth={ringRadius - holeRadius + 12}
+              strokeLinecap="butt"
+              fill="none"
+              className="doughnut-hit"
+              pointerEvents="stroke"
+            >
+              <title>{`${a.label}: ${fmt(a.value)}`}</title>
+            </path>
+            <path
+              d={a.d}
+              stroke={a.color}
+              strokeWidth={ringRadius - holeRadius}
+              strokeLinecap="butt"
+              fill="none"
+              className="doughnut-segment"
+              pointerEvents="none"
+            />
+          </g>
         ))}
       </svg>
 
-      {showLegend ? (
-        <ul className="small text-muted mb-0">
-          {arcs.map((a, idx) => (
-            <li key={`${a.label}-legend-${idx}`}>
-              <span
-                style={{
-                  display: "inline-block",
-                  width: 10,
-                  height: 10,
-                  backgroundColor: a.color,
-                  marginRight: 8,
-                  borderRadius: 2,
-                }}
-              />
-              <strong>{a.label}:</strong> {fmt(a.value)}
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { InteractiveMap } from "@/components/interactive-map";
 import { MatrixTable } from "@/components/MatrixTable";
 import { ZeitreiheChart } from "@/components/ZeitreiheChart";
 import { FaqSection } from "@/components/FaqSection";
+import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
@@ -35,23 +36,38 @@ export function MietrenditeSection(
     <div className="text-dark">
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
+      {/* Subnavigation */}
       <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
 
-      <RegionHero
-        title={vm.hero.title}
-        subtitle={vm.hero.subtitle}
-        imageSrc={heroImageSrc}
-        rightOverlay={<HeroOverlayActions variant="immo" />}
-        rightOverlayMode="buttons"
+      <ImmobilienmarktBreadcrumb
+        tabs={tabs}
+        activeTabId={activeTabId}
+        basePath={basePath}
+        parentBasePath={props.parentBasePath}
+        ctx={props.ctx}
+        names={{
+          regionName: vm.regionName,
+          bundeslandName: vm.bundeslandName,
+        }}
       />
+
+      {/* Hero */}
+      {heroImageSrc ? (
+        <RegionHero
+          title={vm.regionName}
+          subtitle="regionaler Standortberater"
+          imageSrc={heroImageSrc}
+          rightOverlay={<HeroOverlayActions variant="immo" />}
+          rightOverlayMode="buttons"
+
+        />
+      ) : null}
 
       {/* Einleitung */}
       <section className="mb-3" id="einleitung">
         <h1 className="mt-3 mb-1">{vm.headlineMain}</h1>
         <p className="small text-muted mb-4">Aktualisiert am: {vm.updatedAt ?? "–"}</p>
-
-        {vm.introText ? <p className="teaser-text">{vm.introText}</p> : null}
-
+        {vm.teaser ? <p className="teaser-text">{vm.teaser}</p> : null}
         <BeraterBlock
           name={vm.berater.name}
           taetigkeit={vm.berater.taetigkeit}
@@ -59,20 +75,29 @@ export function MietrenditeSection(
         />
       </section>
 
-      {/* Kaufpreisfaktor + Gesamt-KPI */}
+
+      {/* Interaktive Karte + Leitkennzahl - Kaufpreisfaktor */}
       <section className="mb-5" id="kaufpreisfaktor-gesamt">
         <div className="row g-4 align-items-stretch">
           <div className="col-12 col-lg-6">
-            <div className="h-100" style={{ width: "90%", margin: "0 auto" }}>
+            <div className="" style={{ width: "90%", margin: "0 auto" }}>
               {props.assets?.kaufpreisfaktorMapSvg ? (
-                <InteractiveMap
-                  svg={props.assets?.kaufpreisfaktorMapSvg}
-                  theme="kaufpreisfaktor"
-                  mode="singleValue"
-                  kind="index"
-                  unitKey="none"
-                  ctx="kpi"
-                />
+                <>
+                  <InteractiveMap
+                    svg={props.assets?.kaufpreisfaktorMapSvg}
+                    theme="kaufpreisfaktor"
+                    mode="singleValue"
+                    kind="index"
+                    unitKey="none"
+                    ctx="kpi"
+                  />
+                  {props.assets?.kaufpreisfaktorLegendHtml ? (
+                    <div
+                      className="mt-3"
+                      dangerouslySetInnerHTML={{ __html: props.assets?.kaufpreisfaktorLegendHtml ?? "" }}
+                    />
+                  ) : null}
+                </>
               ) : (
                 <p className="small text-muted mb-0">
                   Für diesen Landkreis liegt aktuell noch keine interaktive Kaufpreisfaktor-Karte vor.
@@ -85,13 +110,13 @@ export function MietrenditeSection(
             <div className="w-100 text-center">
               {vm.gesamt.kaufpreisfaktor !== null ? (
                 <>
-                  <div className="mb-2" style={{ color: "#486b7a", fontSize: "7rem" }}>
+                  <div className="mb-2 kpi-hero">
                     <KpiValue
                       value={vm.gesamt.kaufpreisfaktor}
                       kind="index"
                       unitKey="none"
                       ctx="kpi"
-                      size="ultra"
+                      size="mega"
                       showUnit={false}
                     />
                   </div>
@@ -104,29 +129,34 @@ export function MietrenditeSection(
           </div>
         </div>
 
-        {vm.kaufpreisfaktorText ? <p className="mt-3 mb-0">{vm.kaufpreisfaktorText}</p> : null}
-      </section>
+        {vm.kaufpreisfaktorText ? <p className="mx-auto my-5 w-75">{vm.kaufpreisfaktorText}</p> : null}
+      
 
-      {/* Kaufpreisfaktor-Entwicklung */}
-      <section className="mb-5" id="kaufpreisfaktor-entwicklung">
-        <h2 className="h5 text-muted mb-1">Kaufpreisfaktor-Entwicklung</h2>
-        <ZeitreiheChart
-          title="Kaufpreisfaktor-Entwicklung"
-          series={vm.kaufpreisfaktorSeries}
-          kind="index"
-          unitKey="none"
-          ctx="chart"
-          svgWidth={640}
-          svgHeight={320}
-        />
-      </section>
+        {/* Kaufpreisfaktor-Entwicklung */}
+
+        <div className="card-header bg-white border-0 text-center">
+          <h4 className="h6 mb-0">Kaufpreisfaktor-Entwicklung</h4>
+        </div>
+        <div className="card-body">
+          <ZeitreiheChart
+            title="Kaufpreisfaktor-Entwicklung"
+            series={vm.kaufpreisfaktorSeries}
+            kind="index"
+            unitKey="none"
+            ctx="chart"
+            svgWidth={720}
+            svgHeight={260}
+          />
+        </div>
+      </section>  
+
 
       {/* Allgemein */}
       <section className="mb-5" id="rendite-allgemein">
-        <header className="mb-3">
+        <header className="mb-5 w-75 mx-auto text-center">
           {vm.headlineBruttoNettoIndividuell ? (
             <>
-              <h2 className="h5 text-muted text-uppercase mb-1">{vm.headlineBruttoNetto}</h2>
+              <h2 className="h4 text-muted mb-1">{vm.headlineBruttoNetto}</h2>
               <h3 className="h2 mb-0">{vm.headlineBruttoNettoIndividuell}</h3>
             </>
           ) : (
@@ -134,7 +164,7 @@ export function MietrenditeSection(
           )}
         </header>
 
-        {vm.allgemeinText ? <p className="mb-3">{vm.allgemeinText}</p> : null}
+        {vm.allgemeinText ? <p className="mx-auto my-5 w-75">{vm.allgemeinText}</p> : null}
 
         <div className="text-center">
           <KpiValue
@@ -144,7 +174,7 @@ export function MietrenditeSection(
               { label: "Nettomietrendite", value: vm.gesamt.nettomietrendite, kind: "quote", unitKey: "percent" },
             ]}
             ctx="kpi"
-            size="md"
+            size="ultra"
             highlightBg="transparent"
             highlightValueColor="#486b7a"
             normalValueColor="#6c757d"
@@ -155,7 +185,7 @@ export function MietrenditeSection(
       {/* Hinweis */}
       <section className="mb-5" id="rendite-hinweis">
         {vm.hinweisText ? (
-          <div className="card border-0 shadow-sm">
+          <div className="card border-0 shadow-sm text-center">
             <div className="card-body">
               <h3 className="h5 text-primary mb-2">Praxiswissen-Hinweis</h3>
               <p className="mb-0">{vm.hinweisText}</p>
@@ -166,8 +196,8 @@ export function MietrenditeSection(
 
       {/* ETW */}
       <section className="mb-5" id="rendite-etw">
-        <h3 className="h5 text-muted mb-1">Mietrendite Eigentumswohnungen</h3>
-        {vm.etwText ? <p className="mb-3">{vm.etwText}</p> : null}
+        <h3 className="text-center">Mietrendite Eigentumswohnungen</h3>
+        {vm.etwText ? <p className="mx-auto my-5 w-75">{vm.etwText}</p> : null}
 
         <KpiValue
           icon="/icons/ws24_marktbericht_mietrendite.svg"
@@ -177,7 +207,7 @@ export function MietrenditeSection(
             { label: "Netto", value: vm.etw.netto, kind: "quote", unitKey: "percent" },
           ]}
           ctx="kpi"
-          size="md"
+          size="ultra"
           highlightBg="transparent"
           highlightValueColor="#486b7a"
           normalValueColor="#6c757d"
@@ -196,8 +226,8 @@ export function MietrenditeSection(
 
       {/* EFH */}
       <section className="mb-5" id="rendite-efh">
-        <h3 className="h5 text-muted mb-1">Mietrendite Einfamilienhäuser</h3>
-        {vm.efhText ? <p className="mb-3">{vm.efhText}</p> : null}
+        <h3 className="text-center">Mietrendite Einfamilienhäuser</h3>
+        {vm.efhText ? <p className="mx-auto my-5 w-75">{vm.efhText}</p> : null}
 
         <KpiValue
           icon="/icons/ws24_marktbericht_mietrendite.svg"
@@ -207,7 +237,7 @@ export function MietrenditeSection(
             { label: "Netto", value: vm.efh.netto, kind: "quote", unitKey: "percent" },
           ]}
           ctx="kpi"
-          size="md"
+          size="ultra"
           highlightBg="transparent"
           highlightValueColor="#486b7a"
           normalValueColor="#6c757d"
@@ -226,8 +256,8 @@ export function MietrenditeSection(
 
       {/* MFH */}
       <section className="mb-5" id="rendite-mfh">
-        <h3 className="h5 text-muted mb-1">Mietrendite Mehrfamilienhäuser</h3>
-        {vm.mfhText ? <p className="mb-3">{vm.mfhText}</p> : null}
+        <h3 className="text-center">Mietrendite Mehrfamilienhäuser</h3>
+        {vm.mfhText ? <p className="mx-auto my-5 w-75">{vm.mfhText}</p> : null}
 
         <KpiValue
           icon="/icons/ws24_marktbericht_mietrendite.svg"
@@ -237,7 +267,7 @@ export function MietrenditeSection(
             { label: "Netto", value: vm.mfh.netto, kind: "quote", unitKey: "percent" },
           ]}
           ctx="kpi"
-          size="md"
+          size="ultra"
           highlightBg="transparent"
           highlightValueColor="#486b7a"
           normalValueColor="#6c757d"
@@ -256,29 +286,32 @@ export function MietrenditeSection(
 
       {/* Brutto-Mietrendite-Entwicklung */}
       <section className="mb-5" id="brutto-entwicklung">
-        <h2 className="h5 text-muted mb-1">Bruttomietrendite-Entwicklung</h2>
+        <div className="card-header bg-white border-0 text-center">
+          <h4 className="h6 mb-0">Bruttomietrendite-Entwicklung</h4>
+        </div>
         <ZeitreiheChart
           title="Bruttomietrendite-Entwicklung"
           series={vm.bruttoRenditeSeries}
           kind="quote"
           unitKey="percent"
           ctx="chart"
-          svgWidth={640}
-          svgHeight={320}
+          svgWidth={720}
+          svgHeight={260}
         />
       </section>
 
       {/* FAQ */}
       <section className="mb-5" id="faq-mietrendite">
+        <h2 className="text-center mb-3">FAQ zur Mietrendite</h2>
         <FaqSection id="faq" title={`FAQ – Mietrendite ${vm.regionName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
       </section>
 
       {/* Erfasste Wohnlagen */}
       {(vm.level === "kreis" || vm.level === "ort") ? (
         <section className="mb-4" id="wohnlagen">
-          <h2 className="h2 mb-3 align-center text-center">
+          <h4 className="h2 mb-3 align-center text-center">
             Erfasste Wohnlagen – {vm.level === "ort" ? (props.ctx?.kreisSlug ?? vm.regionName) : vm.regionName}
-          </h2>
+          </h4>
 
           <div className="card border-0 shadow-sm">
             <div className="card-body">

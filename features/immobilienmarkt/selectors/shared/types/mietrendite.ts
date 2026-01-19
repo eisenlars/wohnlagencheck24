@@ -15,7 +15,7 @@ export type MietrenditeVM = {
   headlineBruttoNetto: string;
   headlineBruttoNettoIndividuell?: string;
 
-  introText: string;
+  teaser: string;
   kaufpreisfaktorText: string;
   allgemeinText: string;
   hinweisText: string;

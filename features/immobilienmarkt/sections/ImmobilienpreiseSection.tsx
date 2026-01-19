@@ -16,6 +16,7 @@ import { VergleichBarChart } from "@/components/VergleichBarChart";
 import type { BarSeries } from "@/components/VergleichBarChart";
 import { KpiValue } from "@/components/KpiValue";
 import { FaqSection } from "@/components/FaqSection";
+import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
@@ -23,15 +24,8 @@ import type { ImmobilienpreiseVM } from "@/features/immobilienmarkt/selectors/sh
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
 import type { BarModel } from "@/utils/barModel";
 
-type BeraterInfo = {
-  name: string;
-  taetigkeit: string;
-  imageSrc: string;
-};
-
 type Props = SectionPropsBase & {
   vm: ImmobilienpreiseVM;
-  berater?: BeraterInfo;
 };
 
 export function ImmobilienpreiseSection(props: Props) {
@@ -51,15 +45,6 @@ export function ImmobilienpreiseSection(props: Props) {
   const ortSlug = props.ctx?.ortSlug ?? "";
   const heroImageSrc = props.assets?.heroImageSrc;
   const immobilienpreisMapSvg = props.assets?.immobilienpreisMapSvg ?? null;
-
-  // Fallback: wenn Page noch keinen Berater übergibt, nicht crashen
-  const berater: BeraterInfo = props.berater?.name
-    ? props.berater
-    : {
-        name: "Lars Hofmann",
-        taetigkeit: `Standort- / Immobilienberatung – ${vm.regionName}`,
-        imageSrc: `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
-      };
 
   const basePath = props.basePath ?? vm.basePath;
   
@@ -96,8 +81,21 @@ export function ImmobilienpreiseSection(props: Props) {
 
       <div className="container immobilienmarkt-container position-relative">
         
-        {/* Subnavigation Kreisebene */}
+        
+        {/* Subnavigation */}
         <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
+
+        <ImmobilienmarktBreadcrumb
+          tabs={tabs}
+          activeTabId={activeTabId}
+          basePath={basePath}
+          parentBasePath={props.parentBasePath}
+          ctx={props.ctx}
+          names={{
+            regionName: vm.regionName,
+            bundeslandName: vm.bundeslandName,
+          }}
+        />
 
         {/* Hero */}
         {heroImageSrc ? (
@@ -111,24 +109,29 @@ export function ImmobilienpreiseSection(props: Props) {
           />
         ) : null}
 
-        {/* Intro */}
+
+        {/* Einleitung */}
         <section className="mb-3" id="einleitung">
-          <h1 className="mt-3 mb-1">Immobilienpreise 2025 - {vm.regionName}</h1>
-          <p className="small text-muted mb-4">Aktualisiert am: {vm.regionName}</p>
-
-          {vm.teaserImmobilienpreise ? <p className="teaser-text">{vm.teaserImmobilienpreise}</p> : null}
-
-          <BeraterBlock name={berater.name} taetigkeit={berater.taetigkeit} imageSrc={berater.imageSrc} />
+          <h1 className="mt-3 mb-1">{vm.headlineMain}</h1>
+          <p className="small text-muted mb-4">Aktualisiert am: {vm.updatedAt ?? "–"}</p>
+          {vm.teaser ? <p className="teaser-text">{vm.teaser}</p> : null}
+          <BeraterBlock
+            name={vm.berater.name}
+            taetigkeit={vm.berater.taetigkeit}
+            imageSrc={vm.berater.imageSrc}
+          />
         </section>
-
-        {/* Leitkennzahl + Karte */}
+   
+   
+        {/* Interaktive Karte + Leitkennzahl - Immobilienpreis */}
         <section className="mb-5" id="leitkennzahl">
           <div className="row g-4 align-items-stretch">
             <div className="col-12 col-lg-6">
-              <div className="h-100" style={{ width: "90%", margin: "0 auto" }}>
+              <div className="" style={{ width: "90%", margin: "0 auto" }}>
                 {immobilienpreisMapSvg ? (
-                  <InteractiveMap
-                    svg={immobilienpreisMapSvg}
+                  <>
+                    <InteractiveMap
+                      svg={immobilienpreisMapSvg}
                       theme="immobilienpreis"
                       mode="singleValue"
                       kind="kaufpreis_qm"
@@ -136,7 +139,14 @@ export function ImmobilienpreiseSection(props: Props) {
                       ctx="kpi"
                       activeSubregionName={isOrt ? vm.regionName : undefined}
                       inactiveOpacity={isOrt ? 0.1 : 1}
-                  />
+                    />
+                    {props.assets?.immobilienpreisLegendHtml ? (
+                      <div
+                        className="mt-3"
+                        dangerouslySetInnerHTML={{ __html: props.assets?.immobilienpreisLegendHtml ?? "" }}
+                      />
+                    ) : null}
+                  </>
                 ) : (
                   <p className="small text-muted mb-0">
                     Für diesen Landkreis liegt aktuell noch keine interaktive Immobilienpreis-Karte vor.
@@ -150,13 +160,13 @@ export function ImmobilienpreiseSection(props: Props) {
                 {vm.kaufpreisQm !== null && Number.isFinite(vm.kaufpreisQm) ? (
                   <>
                 
-                    <div className="mb-2" style={{ color: "#486b7a", fontSize: "7rem" }}>
+                    <div className="mb-2 kpi-hero">
                       <KpiValue
                         value={vm.kaufpreisQm}
                         kind="kaufpreis_qm"
                         unitKey="eur_per_sqm"
                         ctx="kpi"
-                        size="ultra"
+                        size="mega"
                         showUnit={true}
                       />
                     </div>
@@ -171,11 +181,12 @@ export function ImmobilienpreiseSection(props: Props) {
         </section>
 
         {/* Hauspreise */}
-        <section className="mb-4" id="hauspreise">
-          <header className="mb-3">
+        
+        <section className="mb-5" id="hauspreise">
+          <header className="mb-5 w-75 mx-auto text-center">
             {vm.ueberschriftHausIndividuell ? (
               <>
-                <h2 className="h5 text-muted text-uppercase mb-1">Kaufpreise für Häuser in {vm.regionName}</h2>
+                <h2 className="h5 text-muted text-center mb-1">Kaufpreise für Häuser in {vm.regionName}</h2>
                 <h3 className="h2 mb-0">{vm.ueberschriftHausIndividuell}</h3>
               </>
             ) : (
@@ -183,40 +194,49 @@ export function ImmobilienpreiseSection(props: Props) {
             )}
           </header>
 
-          {vm.hauspreiseIntro ? <p className="teaser-text">{vm.hauspreiseIntro}</p> : null}
+          {vm.hauspreiseIntro ? <p className="my-5 w-75 mx-auto">{vm.hauspreiseIntro}</p> : null}
 
-          <KpiValue
-            icon="/icons/ws24_marktbericht_immobilienpreise.svg"
-            items={[
-              { label: "min", value: vm.hausMin, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
-              { label: "Durchschnitt", value: vm.hausAvg, kind: "kaufpreis_qm", unitKey: "eur_per_sqm", highlight: true },
-              { label: "max", value: vm.hausMax, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
-            ]}
-            ctx="kpi"
-            size="md"
-            highlightBg="transparent"
-            highlightValueColor="#486b7a"
-            normalValueColor="#6c757d"
-          />
+
+          <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+            <div className="card-body">
+              <KpiValue
+                icon="/icons/ws24_marktbericht_immobilienpreise.svg"
+                items={[
+                  { label: "min", value: vm.hausMin, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
+                  { label: "Durchschnitt", value: vm.hausAvg, kind: "kaufpreis_qm", unitKey: "eur_per_sqm", highlight: true },
+                  { label: "max", value: vm.hausMax, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
+                ]}
+                ctx="kpi"
+                size="xl"
+                highlightBg="transparent"
+                highlightValueColor="#486b7a"
+                normalValueColor="#6c757d"
+              />
+            </div>
+          </div>
         </section>
 
+        
         {/* Haus: Überregionaler Vergleich */}
         <section className="mb-5" id="vergleich-haus">
-          <h3 className="h5 text-muted mb-1">Kaufpreise für Häuser im überregionalen Vergleich</h3>
-          {vm.hausVergleichIntro ? <p className="mb-3">{vm.hausVergleichIntro}</p> : null}
+          
+          <h4 className="text-center">Kaufpreise für Häuser im überregionalen Vergleich</h4>
+          {vm.hausVergleichIntro ? <p className="mx-auto my-5 w-75">{vm.hausVergleichIntro}</p> : null}
 
           {vm.indexHaus !== null ? (
-            <div className="mb-3">
+          <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+            <div className="card-body">
               <KpiValue
                 icon="/icons/ws24_marktbericht_immobilienpreise.svg"
                 iconAlt="Immobilienpreisindex Haus"
                 items={[{ label: "Immobilienpreisindex Haus", value: vm.indexHaus, kind: "index", unitKey: "none" }]}
                 ctx="kpi"
-                size="lg"
+                size="xl"
                 showUnit={false}
                 caption="Basis: D = 100"
               />
             </div>
+          </div>
           ) : null}
 
           {vm.ueberregionalModelHaus ? (
@@ -228,8 +248,8 @@ export function ImmobilienpreiseSection(props: Props) {
 
         {/* Haus: Lagequalität */}
         <section className="mb-5" id="hauspreise-lage">
-          <h3 className="h5 text-muted mb-1">Hauspreise nach Lagequalität</h3>
-          {vm.textHausLage ? <p className="mb-3">{vm.textHausLage}</p> : null}
+          <h4 className="text-center">Hauspreise nach Lagequalität</h4>
+          {vm.textHausLage ? <p className="mx-auto my-5 w-75">{vm.textHausLage}</p> : null}
 
           {vm.lageModelHaus ? (
             <div className="card border-0 shadow-sm">
@@ -245,10 +265,13 @@ export function ImmobilienpreiseSection(props: Props) {
         {/* Haus: Preisentwicklung */}
         {vm.hausKaufpreisentwicklungSeries && vm.hausKaufpreisentwicklungSeries.length > 0 ? (
           <section className="mb-5" id="haus-kaufpreisentwicklung">
-            <h3 className="h5 text-muted mb-1">Preisentwicklung: Häuser (Kauf)</h3>
-            {vm.textHausKaufpreisentwicklung ? <p className="mb-3">{vm.textHausKaufpreisentwicklung}</p> : null}
+            <h4 className="text-center">Preisentwicklung: Häuser (Kauf)</h4>
+            {vm.textHausKaufpreisentwicklung ? <p className="mx-auto my-5 w-75">{vm.textHausKaufpreisentwicklung}</p> : null}
 
-            <div className="card border-0 shadow-sm">
+            <div className="card border-0 shadow-none h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Haus-Kaufpreise</h4>
+              </div>
               <div className="card-body">
                 <ZeitreiheChart
                   title="Haus-Kaufpreise"
@@ -258,7 +281,7 @@ export function ImmobilienpreiseSection(props: Props) {
                   unitKey="eur_per_sqm"
                   ctx="chart"
                   svgWidth={720}
-                  svgHeight={360}
+                  svgHeight={260}
                 />
               </div>
             </div>
@@ -267,63 +290,77 @@ export function ImmobilienpreiseSection(props: Props) {
 
         {/* Haus: Haustypen */}
         <section className="mb-5" id="haustypen-kaufpreise">
-          <h3 className="h5 text-muted mb-1">Kaufpreise nach Haustypen</h3>
-          {vm.textHaustypen ? <p className="mb-3">{vm.textHaustypen}</p> : null}
+          <h4 className="text-center">Kaufpreise nach Haustypen</h4>
+          {vm.textHaustypen ? <p className="mx-auto my-5 w-75">{vm.textHaustypen}</p> : null}
 
           {vm.haustypModel ? (
-            <MatrixTable model={vm.haustypModel} highlightColLabel="Ø Preis" highlightBg="#c8d54f" headerBg="#f5f5f5" />
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <MatrixTable model={vm.haustypModel} highlightColLabel="Ø Preis" highlightBg="#c8d54f" headerBg="#f5f5f5" />
+            </div>
+          </div>
           ) : (
             <p className="small text-muted mb-0">Keine Haustyp-Daten verfügbar.</p>
           )}
         </section>
 
+
+
         {/* Wohnungspreise */}
         <section className="mb-4" id="wohnungspreise">
-          <header className="mb-3">
+          <header className="mb-5 w-75 mx-auto text-center">
             {vm.ueberschriftWohnungIndividuell ? (
               <>
-                <h2 className="h5 text-muted text-uppercase mb-1">Kaufpreise für Wohnungen in {vm.regionName}</h2>
-                <h3 className="h2 mb-0">{vm.ueberschriftWohnungIndividuell}</h3>
+                <h2 className="h4 text-muted mb-2">Kaufpreise für Wohnungen in {vm.regionName}</h2>
+                <h3 className="h2 mb-5">{vm.ueberschriftWohnungIndividuell}</h3>
               </>
             ) : (
               <h2 className="h2 mb-0">Kaufpreise für Wohnungen in {vm.regionName}</h2>
             )}
           </header>
 
-          {vm.wohnungspreiseIntro ? <p className="teaser-text">{vm.wohnungspreiseIntro}</p> : null}
+          {vm.wohnungspreiseIntro ? <p className="mx-auto my-5 w-75">{vm.wohnungspreiseIntro}</p> : null}
 
-          <KpiValue
-            icon="/icons/ws24_marktbericht_immobilienpreise.svg"
-            items={[
-              { label: "min", value: vm.wohnungMin, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
-              { label: "Durchschnitt", value: vm.wohnungAvg, kind: "kaufpreis_qm", unitKey: "eur_per_sqm", highlight: true },
-              { label: "max", value: vm.wohnungMax, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
-            ]}
-            ctx="kpi"
-            size="md"
-            highlightBg="transparent"
-            highlightValueColor="#486b7a"
-            normalValueColor="#6c757d"
-          />
+          <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+            <div className="card-body">
+              <KpiValue
+                icon="/icons/ws24_marktbericht_immobilienpreise.svg"
+                items={[
+                  { label: "min", value: vm.wohnungMin, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
+                  { label: "Durchschnitt", value: vm.wohnungAvg, kind: "kaufpreis_qm", unitKey: "eur_per_sqm", highlight: true },
+                  { label: "max", value: vm.wohnungMax, kind: "kaufpreis_qm", unitKey: "eur_per_sqm" },
+                ]}
+                ctx="kpi"
+                size="xl"
+                highlightBg="transparent"
+                highlightValueColor="#486b7a"
+                normalValueColor="#6c757d"
+              />
+            </div>
+          </div>
+          
         </section>
 
         {/* Wohnung: Überregionaler Vergleich */}
         <section className="mb-5" id="vergleich-wohnung">
-          <h3 className="h5 text-muted mb-1">Kaufpreise für Wohnungen im überregionalen Vergleich</h3>
-          {vm.wohnungVergleichIntro ? <p className="mb-3">{vm.wohnungVergleichIntro}</p> : null}
+          
+          <h4 className="text-center">Kaufpreise für Wohnungen im überregionalen Vergleich</h4>
+          {vm.wohnungVergleichIntro ? <p className="mx-auto my-5 w-75">{vm.wohnungVergleichIntro}</p> : null}
 
           {vm.indexWohnung !== null ? (
-            <div className="mb-3">
+          <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+            <div className="card-body">
               <KpiValue
                 icon="/icons/ws24_marktbericht_immobilienpreise.svg"
                 iconAlt="Immobilienpreisindex Wohnung"
                 items={[{ label: "Immobilienpreisindex Wohnung", value: vm.indexWohnung, kind: "index", unitKey: "none" }]}
                 ctx="kpi"
-                size="lg"
+                size="xl"
                 showUnit={false}
                 caption="Basis: D = 100"
               />
             </div>
+          </div>
           ) : null}
 
           {vm.ueberregionalModelWohnung ? (
@@ -335,8 +372,9 @@ export function ImmobilienpreiseSection(props: Props) {
 
         {/* Wohnung: Lagequalität */}
         <section className="mb-5" id="wohnungpreise-lage">
-          <h3 className="h5 text-muted mb-1">Wohnungspreise nach Lagequalität</h3>
-          {vm.textWohnungLage ? <p className="mb-3">{vm.textWohnungLage}</p> : null}
+          
+          <h4 className="text-center">Wohnungspreise nach Lagequalität</h4>
+          {vm.textWohnungLage ? <p className="mx-auto my-5 w-75">{vm.textWohnungLage}</p> : null}
 
           {vm.lageModelWohnung ? (
             <div className="card border-0 shadow-sm">
@@ -351,11 +389,15 @@ export function ImmobilienpreiseSection(props: Props) {
 
         {/* Wohnung: Preisentwicklung */}
         <section className="mb-5" id="wohnung-kaufpreisentwicklung">
-          <h3 className="h5 text-muted mb-1">Preisentwicklung: Wohnungen (Kauf)</h3>
-          {vm.textWohnungKaufpreisentwicklung ? <p className="mb-3">{vm.textWohnungKaufpreisentwicklung}</p> : null}
+          
+          <h4 className="text-center">Preisentwicklung: Wohnungen (Kauf)</h4>
+          {vm.textWohnungKaufpreisentwicklung ? <p className="mx-auto my-5 w-75">{vm.textWohnungKaufpreisentwicklung}</p> : null}
 
           {vm.wohnungKaufpreisentwicklungSeries && vm.wohnungKaufpreisentwicklungSeries.length > 0 ? (
-            <div className="card border-0 shadow-sm">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Wohnung-Kaufpreise</h4>
+              </div>
               <div className="card-body">
                 <ZeitreiheChart
                   title="Wohnung-Kaufpreise"
@@ -365,7 +407,7 @@ export function ImmobilienpreiseSection(props: Props) {
                   unitKey="eur_per_sqm"
                   ctx="chart"
                   svgWidth={720}
-                  svgHeight={360}
+                  svgHeight={260}
                 />
               </div>
             </div>
@@ -376,14 +418,17 @@ export function ImmobilienpreiseSection(props: Props) {
 
         {/* Wohnung: Zimmer & Flächen */}
         <section className="mb-5" id="wohnungpreise-zimmer-flaechen">
-          <h3 className="h5 text-muted mb-1">Wohnungspreise nach Zimmern und Flächen</h3>
-          {vm.textWohnungZimmerFlaechen ? <p className="mb-3">{vm.textWohnungZimmerFlaechen}</p> : null}
+          
+          <h4 className="text-center">Wohnungspreise nach Zimmern und Flächen</h4>
+          {vm.textWohnungZimmerFlaechen ? <p className="mx-auto my-5 w-75">{vm.textWohnungZimmerFlaechen}</p> : null}
 
           <div className="row g-3">
             <div className="col-12 col-lg-6">
               <div className="card border-0 shadow-sm h-100">
+                <div className="card-header bg-white border-0 text-center">
+                  <h4 className="h6 mb-0">Nach Zimmern</h4>
+                </div>
                 <div className="card-body">
-                  <h5 className="h5 mb-3 text-center">Nach Zimmern</h5>
 
                   {vm.wohnungZimmerModel ? (
                     <VergleichBarChart
@@ -396,8 +441,8 @@ export function ImmobilienpreiseSection(props: Props) {
                       valueKind="kaufpreis_qm"
                       unitKey="eur_per_sqm"
                       ctx="chart"
-                      svgWidth={560}
-                      svgHeight={300}
+                      svgWidth={720}
+                      svgHeight={260}
                     />
                   ) : (
                     <p className="small text-muted mb-0">Keine Zimmertyp-Daten verfügbar.</p>
@@ -408,8 +453,10 @@ export function ImmobilienpreiseSection(props: Props) {
 
             <div className="col-12 col-lg-6">
               <div className="card border-0 shadow-sm h-100">
+                <div className="card-header bg-white border-0 text-center">
+                  <h4 className="h6 mb-0">Nach Flächen</h4>
+                </div>
                 <div className="card-body">
-                  <h5 className="h5 mb-3 text-center">Nach Flächen</h5>
 
                   {vm.wohnungFlaechenModel ? (
                     <VergleichBarChart
@@ -422,8 +469,8 @@ export function ImmobilienpreiseSection(props: Props) {
                       valueKind="kaufpreis_qm"
                       unitKey="eur_per_sqm"
                       ctx="chart"
-                      svgWidth={560}
-                      svgHeight={300}
+                      svgWidth={720}
+                      svgHeight={260}
                     />
                   ) : (
                     <p className="small text-muted mb-0">Keine Flächendaten verfügbar.</p>
@@ -435,16 +482,17 @@ export function ImmobilienpreiseSection(props: Props) {
         </section>
 
         {/* FAQ */}
-        <section className="mb-5" id="faq-immobilienpreise">
+        <section className="mb-0" id="faq-immobilienpreise">
+          <h2 className="text-center mb-3">FAQ zu Immobilienpreisen</h2>
           <FaqSection id="faq" title={`FAQ – Immobilienmarkt ${vm.regionName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
         </section>
 
         {/* Erfasste Wohnlagen */}
         {(vm.level === "kreis" || vm.level === "ort") ? (
           <section className="mb-4" id="wohnlagen">
-            <h2 className="h2 mb-3 align-center text-center">
+            <h4 className="h2 mb-3 align-center text-center">
               Erfasste Wohnlagen – {vm.level === "ort" ? (props.ctx?.kreisSlug ?? vm.regionName) : vm.regionName}
-            </h2>
+            </h4>
 
             <div className="card border-0 shadow-sm">
               <div className="card-body">

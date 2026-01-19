@@ -14,6 +14,7 @@ import { ZeitreiheChart } from "@/components/ZeitreiheChart";
 import { VergleichBarChart } from "@/components/VergleichBarChart";
 import type { BarSeries } from "@/components/VergleichBarChart";
 import { FaqSection } from "@/components/FaqSection";
+import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
@@ -63,45 +64,70 @@ export function MietpreiseSection(
     <div className="text-dark">
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
+
       {/* Subnavigation */}
       <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
 
-      <RegionHero
-        title={vm.hero.title}
-        subtitle={vm.hero.subtitle}
-        imageSrc={heroImageSrc}
-        rightOverlay={<HeroOverlayActions variant="miete" />}
-        rightOverlayMode="buttons"
+      <ImmobilienmarktBreadcrumb
+        tabs={tabs}
+        activeTabId={activeTabId}
+        basePath={basePath}
+        parentBasePath={props.parentBasePath}
+        ctx={props.ctx}
+        names={{
+          regionName: vm.regionName,
+          bundeslandName: vm.bundeslandName,
+        }}
       />
+
+      {/* Hero */}
+      {heroImageSrc ? (
+        <RegionHero
+          title={vm.regionName}
+          subtitle="regionaler Standortberater"
+          imageSrc={heroImageSrc}
+          rightOverlay={<HeroOverlayActions variant="immo" />}
+          rightOverlayMode="buttons"
+
+        />
+      ) : null}
+      
 
       {/* Einleitung */}
       <section className="mb-3" id="einleitung">
         <h1 className="mt-3 mb-1">{vm.headlineMain}</h1>
         <p className="small text-muted mb-4">Aktualisiert am: {vm.updatedAt ?? "–"}</p>
-
         {vm.teaser ? <p className="teaser-text">{vm.teaser}</p> : null}
-
         <BeraterBlock
           name={vm.berater.name}
           taetigkeit={vm.berater.taetigkeit}
           imageSrc={vm.berater.imageSrc}
         />
       </section>
+      
 
-      {/* Leitkennzahl + Karte */}
+      {/* Interaktive Karte + Leitkennzahl - Mietpreis */}
       <section className="mb-5" id="leitkennzahl">
         <div className="row g-4 align-items-stretch">
           <div className="col-12 col-lg-6">
-            <div className="h-100" style={{ width: "90%", margin: "0 auto" }}>
+            <div className="" style={{ width: "90%", margin: "0 auto" }}>
               {props.assets?.mietpreisMapSvg ? (
-                <InteractiveMap
-                  svg={props.assets?.mietpreisMapSvg}
-                  theme="mietpreis"
-                  mode="singleValue"
-                  kind="miete_qm"
-                  unitKey="eur_per_sqm"
-                  ctx="kpi"
-                />
+                <>
+                  <InteractiveMap
+                    svg={props.assets?.mietpreisMapSvg}
+                    theme="mietpreis"
+                    mode="singleValue"
+                    kind="miete_qm"
+                    unitKey="eur_per_sqm"
+                    ctx="kpi"
+                  />
+                  {props.assets?.mietpreisLegendHtml ? (
+                    <div
+                      className="mt-3"
+                      dangerouslySetInnerHTML={{ __html: props.assets?.mietpreisLegendHtml ?? "" }}
+                    />
+                  ) : null}
+                </>
               ) : (
                 <p className="small text-muted mb-0">
                   Für diesen Landkreis liegt aktuell noch keine interaktive Mietpreis-Karte vor.
@@ -119,7 +145,7 @@ export function MietpreiseSection(
                     kind="miete_qm"
                     unitKey="eur_per_sqm"
                     ctx="kpi"
-                    size="ultra"
+                    size="mega"
                     showUnit={true}
                     highlightValueColor="#486b7a"
                     normalValueColor="#486b7a"
@@ -141,15 +167,16 @@ export function MietpreiseSection(
               { label: "Ø Warmmiete", value: vm.kpis.warmmiete, kind: "miete_qm", unitKey: "eur_per_sqm" },
             ]}
             ctx="kpi"
-            size="md"
+            size="xl"
           />
         </div>
       </section>
 
       {/* Überregionaler Vergleich */}
       <section className="mb-5" id="mietpreise-ueberregional">
-        <h2 className="h2 mb-2">Mietpreise im überregionalen Vergleich</h2>
-        {vm.ueberregionalText ? <p className="mb-3">{vm.ueberregionalText}</p> : null}
+        
+        <h4 className="text-center">Mietpreise im überregionalen Vergleich</h4>
+        {vm.ueberregionalText ? <p className="mx-auto my-5 w-75">{vm.ueberregionalText}</p> : null}
 
         {vm.mietpreisindexWohnung !== null ? (
           <div className="mb-3">
@@ -158,7 +185,7 @@ export function MietpreiseSection(
               iconAlt="Mietpreisindex Wohnung"
               items={[{ label: "Mietpreisindex Wohnung", value: vm.mietpreisindexWohnung, kind: "index", unitKey: "none" }]}
               ctx="kpi"
-              size="lg"
+              size="xl"
               showUnit={false}
               caption="Basis: D = 100"
             />
@@ -166,127 +193,165 @@ export function MietpreiseSection(
         ) : null}
 
         {vm.ueberregionalModel ? (
-          <MatrixTable
-            model={vm.ueberregionalModel}
-            highlightColLabel="Ø Preis"
-            highlightBg="#c8d54f"
-            headerBg="#f5f5f5"
-          />
+        <div className="card border-0 shadow-sm">
+          <div className="card-body">
+            <MatrixTable
+              model={vm.ueberregionalModel}
+              highlightColLabel="Ø Preis"
+              highlightBg="#c8d54f"
+              headerBg="#f5f5f5"
+            />
+          </div>
+        </div>
+          
         ) : (
           <p className="small text-muted mb-0">Keine Vergleichsdaten verfügbar.</p>
         )}
       </section>
 
+
       {/* Wohnungen */}
       <section className="mb-4" id="wohnungspreise">
-        <header className="mb-3">
+        <header className="mb-5 w-75 mx-auto text-center">
           {vm.headlineWohnungIndividuell ? (
             <>
-              <h2 className="h5 text-muted text-uppercase mb-1">{vm.headlineWohnung}</h2>
-              <h3 className="h2 mb-0">{vm.headlineWohnungIndividuell}</h3>
+              <h2 className="h4 text-muted mb-2">{vm.headlineWohnung}</h2>
+              <h3 className="h2 mb-5">{vm.headlineWohnungIndividuell}</h3>
             </>
           ) : (
             <h2 className="h2 mb-0">{vm.headlineWohnung}</h2>
           )}
         </header>
 
-        {vm.wohnungText ? <p className="teaser-text">{vm.wohnungText}</p> : null}
+        {vm.wohnungText ? <p className="mx-auto my-5 w-75">{vm.wohnungText}</p> : null}
 
-        <KpiValue
-          icon="/icons/ws24_marktbericht_mietpreise.svg"
-          items={[
-            { label: "min", value: vm.wohnungMin, kind: "miete_qm", unitKey: "eur_per_sqm" },
-            { label: "Durchschnitt", value: vm.wohnungAvg, kind: "miete_qm", unitKey: "eur_per_sqm", highlight: true },
-            { label: "max", value: vm.wohnungMax, kind: "miete_qm", unitKey: "eur_per_sqm" },
-          ]}
-          ctx="kpi"
-          size="md"
-          highlightBg="transparent"
-          highlightValueColor="#486b7a"
-          normalValueColor="#6c757d"
-        />
+        <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+          <div className="card-body">
+            <KpiValue
+              icon="/icons/ws24_marktbericht_mietpreise.svg"
+              items={[
+                { label: "min", value: vm.wohnungMin, kind: "miete_qm", unitKey: "eur_per_sqm" },
+                { label: "Durchschnitt", value: vm.wohnungAvg, kind: "miete_qm", unitKey: "eur_per_sqm", highlight: true },
+                { label: "max", value: vm.wohnungMax, kind: "miete_qm", unitKey: "eur_per_sqm" },
+              ]}
+              ctx="kpi"
+              size="xl"
+              highlightBg="transparent"
+              highlightValueColor="#486b7a"
+              normalValueColor="#6c757d"
+            />
+          </div>
+        </div>
       </section>
 
       {/* Mietpreisentwicklung Wohnung */}
       <section className="mb-5" id="wohnung-preisentwicklung">
-        <h3 className="h5 text-muted mb-1">Mietpreisentwicklung Wohnungen</h3>
-        {vm.wohnungEntwicklungText ? <p className="mb-3">{vm.wohnungEntwicklungText}</p> : null}
+        <h3 className="text-center">Mietpreisentwicklung Wohnungen</h3>
+        {vm.wohnungEntwicklungText ? <p className="mx-auto my-5 w-75">{vm.wohnungEntwicklungText}</p> : null}
 
-        <ZeitreiheChart
-          title="Mietpreisentwicklung Wohnungen"
-          series={vm.wohnungEntwicklungSeries}
-          kind="miete_qm"
-          unitKey="eur_per_sqm"
-          ctx="chart"
-          svgWidth={640}
-          svgHeight={320}
-        />
+        <div className="card border-0 shadow-none h-100">
+          <div className="card-header bg-white border-0 text-center">
+            <h4 className="h6 mb-0">Mietpreisentwicklung Wohnungen</h4>
+          </div>
+          <div className="card-body">
+          
+            <ZeitreiheChart
+              title="Mietpreisentwicklung Wohnungen"
+              series={vm.wohnungEntwicklungSeries}
+              kind="miete_qm"
+              unitKey="eur_per_sqm"
+              ctx="chart"
+              svgWidth={720}
+              svgHeight={260}
+            />
+            
+            
+          </div>
+        </div>
       </section>
 
       {/* Wohnung: Zimmer/Flaechen */}
       <section className="mb-5" id="wohnung-zimmer-flaechen">
-        <h3 className="h5 text-muted mb-1">Wohnungsmieten nach Zimmern und Flächen</h3>
-        {vm.wohnungZimmerFlaechenText ? <p className="mb-3">{vm.wohnungZimmerFlaechenText}</p> : null}
+        <h3 className="text-center">Wohnungsmieten nach Zimmern und Flächen</h3>
+        {vm.wohnungZimmerFlaechenText ? <p className="mx-auto my-5 w-75">{vm.wohnungZimmerFlaechenText}</p> : null}
 
         <div className="row g-4">
           <div className="col-12 col-lg-6">
-            {vm.wohnungZimmerModel ? (
-              <VergleichBarChart
-                title="Mietpreise nach Zimmern"
-                categories={vm.wohnungZimmerModel.categories}
-                series={[
-                  pickSeries(vm.wohnungZimmerModel, "kaltmiete_vorjahr", "Vorjahr", "rgba(75, 192, 192, 0.8)", 0.65),
-                  pickSeries(vm.wohnungZimmerModel, "kaltmiete", "Kaltmiete", "rgba(200, 213, 79, 0.9)", 0.9),
-                ].filter(isBarSeries)}
-                valueKind="miete_qm"
-                unitKey="eur_per_sqm"
-                ctx="chart"
-                svgWidth={560}
-                svgHeight={300}
-              />
-            ) : (
-              <p className="small text-muted mb-0">Keine Zimmerdaten verfügbar.</p>
-            )}
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Nach Zimmern</h4>
+              </div>
+              <div className="card-body">
+                {vm.wohnungZimmerModel ? (
+                  <VergleichBarChart
+                    title="Mietpreise nach Zimmern"
+                    categories={vm.wohnungZimmerModel.categories}
+                    series={[
+                      pickSeries(vm.wohnungZimmerModel, "kaltmiete_vorjahr", "Vorjahr", "rgba(75, 192, 192, 0.8)", 0.65),
+                      pickSeries(vm.wohnungZimmerModel, "kaltmiete", "Kaltmiete", "rgba(200, 213, 79, 0.9)", 0.9),
+                    ].filter(isBarSeries)}
+                    valueKind="miete_qm"
+                    unitKey="eur_per_sqm"
+                    ctx="chart"
+                    svgWidth={720}
+                    svgHeight={260}
+                  />
+                ) : (
+                  <p className="small text-muted mb-0">Keine Zimmerdaten verfügbar.</p>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="col-12 col-lg-6">
-            {vm.wohnungFlaechenModel ? (
-              <VergleichBarChart
-                title="Mietpreise nach Flächen"
-                categories={vm.wohnungFlaechenModel.categories}
-                series={[
-                  pickSeries(vm.wohnungFlaechenModel, "kaltmiete_vorjahr", "Vorjahr", "rgba(75, 192, 192, 0.8)", 0.65),
-                  pickSeries(vm.wohnungFlaechenModel, "kaltmiete", "Kaltmiete", "rgba(200, 213, 79, 0.9)", 0.9),
-                ].filter(isBarSeries)}
-                valueKind="miete_qm"
-                unitKey="eur_per_sqm"
-                ctx="chart"
-                svgWidth={560}
-                svgHeight={300}
-              />
-            ) : (
-              <p className="small text-muted mb-0">Keine Flächendaten verfügbar.</p>
-            )}
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h3 className="h6 mb-0">Nach Flächen</h3>
+              </div>
+              <div className="card-body">
+                {vm.wohnungFlaechenModel ? (
+                  <VergleichBarChart
+                    title="Mietpreise nach Flächen"
+                    categories={vm.wohnungFlaechenModel.categories}
+                    series={[
+                      pickSeries(vm.wohnungFlaechenModel, "kaltmiete_vorjahr", "Vorjahr", "rgba(75, 192, 192, 0.8)", 0.65),
+                      pickSeries(vm.wohnungFlaechenModel, "kaltmiete", "Kaltmiete", "rgba(200, 213, 79, 0.9)", 0.9),
+                    ].filter(isBarSeries)}
+                    valueKind="miete_qm"
+                    unitKey="eur_per_sqm"
+                    ctx="chart"
+                    svgWidth={720}
+                    svgHeight={260}
+                  />
+                ) : (
+                  <p className="small text-muted mb-0">Keine Flächendaten verfügbar.</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Wohnung: Baujahr */}
       <section className="mb-5" id="wohnung-baujahr">
-        <h3 className="h5 text-muted mb-2">Wohnungsmieten nach Baujahr</h3>
+        <h3 className="text-center">Wohnungsmieten nach Baujahr</h3>
         {vm.wohnungBaujahrBestand !== null || vm.wohnungBaujahrNeubau !== null ? (
-          <KpiValue
-            icon="/icons/ws24_marktbericht_mietpreise.svg"
-            items={[
-              { label: "Bestand", value: vm.wohnungBaujahrBestand, kind: "miete_qm", unitKey: "eur_per_sqm" },
-              { label: "Neubau", value: vm.wohnungBaujahrNeubau, kind: "miete_qm", unitKey: "eur_per_sqm", highlight: true },
-            ]}
-            ctx="kpi"
-            size="md"
-            highlightBg="transparent"
-            highlightValueColor="#486b7a"
-            normalValueColor="#6c757d"
-          />
+        <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+          <div className="card-body">
+            <KpiValue
+              icon="/icons/ws24_marktbericht_mietpreise.svg"
+              items={[
+                { label: "Bestand", value: vm.wohnungBaujahrBestand, kind: "miete_qm", unitKey: "eur_per_sqm" },
+                { label: "Neubau", value: vm.wohnungBaujahrNeubau, kind: "miete_qm", unitKey: "eur_per_sqm", highlight: true },
+              ]}
+              ctx="kpi"
+              size="xl"
+              highlightBg="transparent"
+              highlightValueColor="#486b7a"
+              normalValueColor="#6c757d"
+            />
+          </div>
+        </div>
         ) : (
           <p className="small text-muted mb-0">Keine Baujahrsdaten verfügbar.</p>
         )}
@@ -294,61 +359,74 @@ export function MietpreiseSection(
 
       {/* Haus */}
       <section className="mb-4" id="hauspreise">
-        <header className="mb-3">
+        <header className="mb-5 w-75 mx-auto text-center">
           {vm.headlineHausIndividuell ? (
             <>
-              <h2 className="h5 text-muted text-uppercase mb-1">{vm.headlineHaus}</h2>
-              <h3 className="h2 mb-0">{vm.headlineHausIndividuell}</h3>
+              <h2 className="h4 text-muted mb-2">{vm.headlineHaus}</h2>
+              <h3 className="h2 mb-5">{vm.headlineHausIndividuell}</h3>
             </>
           ) : (
             <h2 className="h2 mb-0">{vm.headlineHaus}</h2>
           )}
         </header>
 
-        {vm.hausText ? <p className="teaser-text">{vm.hausText}</p> : null}
+        {vm.hausText ? <p className="mx-auto my-5 w-75">{vm.hausText}</p> : null}
 
-        <KpiValue
-          icon="/icons/ws24_marktbericht_mietpreise.svg"
-          items={[
-            { label: "min", value: vm.hausMin, kind: "miete_qm", unitKey: "eur_per_sqm" },
-            { label: "Durchschnitt", value: vm.hausAvg, kind: "miete_qm", unitKey: "eur_per_sqm", highlight: true },
-            { label: "max", value: vm.hausMax, kind: "miete_qm", unitKey: "eur_per_sqm" },
-          ]}
-          ctx="kpi"
-          size="md"
-          highlightBg="transparent"
-          highlightValueColor="#486b7a"
-          normalValueColor="#6c757d"
-        />
+        <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+          <div className="card-body">
+            <KpiValue
+              icon="/icons/ws24_marktbericht_mietpreise.svg"
+              items={[
+                { label: "min", value: vm.hausMin, kind: "miete_qm", unitKey: "eur_per_sqm" },
+                { label: "Durchschnitt", value: vm.hausAvg, kind: "miete_qm", unitKey: "eur_per_sqm", highlight: true },
+                { label: "max", value: vm.hausMax, kind: "miete_qm", unitKey: "eur_per_sqm" },
+              ]}
+              ctx="kpi"
+              size="xl"
+              highlightBg="transparent"
+              highlightValueColor="#486b7a"
+              normalValueColor="#6c757d"
+            />
+          </div>
+        </div>
+        
       </section>
 
       {/* Mietpreisentwicklung Haus */}
       <section className="mb-5" id="haus-preisentwicklung">
-        <h3 className="h5 text-muted mb-1">Mietpreisentwicklung Häuser</h3>
-        {vm.hausEntwicklungText ? <p className="mb-3">{vm.hausEntwicklungText}</p> : null}
+        <h3 className="text-center">Mietpreisentwicklung Häuser</h3>
+        {vm.hausEntwicklungText ? <p className="mx-auto my-5 w-75">{vm.hausEntwicklungText}</p> : null}
 
-        <ZeitreiheChart
-          title="Mietpreisentwicklung Häuser"
-          series={vm.hausEntwicklungSeries}
-          kind="miete_qm"
-          unitKey="eur_per_sqm"
-          ctx="chart"
-          svgWidth={640}
-          svgHeight={320}
-        />
+        <div className="card border-0 shadow-sm h-100">
+          <div className="card-header bg-white border-0 text-center">
+            <h4 className="h6 mb-0">Mietpreisentwicklung Häuser</h4>
+          </div>
+          <div className="card-body">
+            <ZeitreiheChart
+              title="Mietpreisentwicklung Häuser"
+              series={vm.hausEntwicklungSeries}
+              kind="miete_qm"
+              unitKey="eur_per_sqm"
+              ctx="chart"
+              svgWidth={720}
+              svgHeight={260}
+            />
+          </div>
+        </div>
       </section>
 
       {/* FAQ */}
-      <section className="mb-5" id="faq-mietpreise">
+      <section className="mb-0" id="faq-mietpreise">
+        <h2 className="text-center mb-3">FAQ zu Mietpreisen</h2>
         <FaqSection id="faq" title={`FAQ – Mietpreise ${vm.regionName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
       </section>
 
       {/* Erfasste Wohnlagen */}
       {(vm.level === "kreis" || vm.level === "ort") ? (
         <section className="mb-4" id="wohnlagen">
-          <h2 className="h2 mb-3 align-center text-center">
+          <h4 className="h2 mb-3 align-center text-center">
             Erfasste Wohnlagen – {vm.level === "ort" ? (props.ctx?.kreisSlug ?? vm.regionName) : vm.regionName}
-          </h2>
+          </h4>
 
           <div className="card border-0 shadow-sm">
             <div className="card-body">

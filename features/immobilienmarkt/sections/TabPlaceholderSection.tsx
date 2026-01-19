@@ -2,6 +2,7 @@ import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
 import { RegionHero } from "@/components/region-hero";
 import { RightEdgeControls } from "@/components/right-edge-controls";
+import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import type { PlaceholderVM } from "@/features/immobilienmarkt/selectors/shared/types/placeholder";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
@@ -31,6 +32,15 @@ export function TabPlaceholderSection(
 
       <div className="container immobilienmarkt-container position-relative">
         <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
+
+        <ImmobilienmarktBreadcrumb
+          tabs={tabs}
+          activeTabId={activeTabId}
+          basePath={basePath}
+          parentBasePath={props.parentBasePath}
+          ctx={props.ctx}
+          names={{ regionName: vm.regionName }}
+        />
 
         {props.assets?.heroImageSrc ? (
           <RegionHero

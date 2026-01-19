@@ -170,7 +170,7 @@ export function VergleichChart({
         })}
       </svg>
 
-      <ul className="small text-muted mb-0">
+      <ul className="small text-muted mb-0 chart-legend">
         {cleaned.map((item, idx) => (
           <li key={`${item.label}-list-${idx}`}>
             <strong>{item.label}:</strong>{" "}

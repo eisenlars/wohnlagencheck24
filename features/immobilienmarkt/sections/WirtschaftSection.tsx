@@ -1,3 +1,5 @@
+// features/immobilienmarkt/sections/WirtschaftSection.tsx
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -12,49 +14,13 @@ import { DoughnutChart } from "@/components/DoughnutChart";
 import { StackedComboChart } from "@/components/StackedComboChart";
 import { KpiValue } from "@/components/KpiValue";
 import { FaqSection } from "@/components/FaqSection";
+import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import type { WirtschaftVM } from "@/features/immobilienmarkt/selectors/shared/types/wirtschaft";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
-type KpiCardProps = {
-  iconSrc?: string;
-  title: string;
-  value: number | null;
-  unit?: string;
-  kind?: "anzahl" | "quote" | "index";
-  unitKey?: "eur" | "percent" | "count" | "none";
-};
-
 const DEFAULT_ICON = "/icons/ws24_marktbericht_wirtschaft.svg";
-
-function isEmptyValue(value: number | null): boolean {
-  return value === null || !Number.isFinite(value);
-}
-
-function KpiCard({
-  iconSrc = DEFAULT_ICON,
-  title,
-  value,
-  unit,
-  kind = "anzahl",
-  unitKey = "none",
-}: KpiCardProps) {
-  if (isEmptyValue(value)) return null;
-
-  return (
-    <div className="card border-0 shadow-sm h-100 text-center">
-      <div className="card-body">
-        <Image src={iconSrc} alt="" width={32} height={32} className="mb-2" />
-        <div className="small text-muted">{title}</div>
-        <div className="h4 mb-0">
-          <KpiValue value={value} kind={kind} unitKey={unitKey} ctx="kpi" showUnit={false} />
-        </div>
-        {unit ? <div className="small text-muted">{unit}</div> : null}
-      </div>
-    </div>
-  );
-}
 
 export function WirtschaftSection(
   props: SectionPropsBase & {
@@ -69,32 +35,93 @@ export function WirtschaftSection(
   const mapSvg = props.assets?.kaufkraftindexMapSvg ?? null;
   const legendHtml = props.assets?.kaufkraftindexLegendHtml ?? null;
   const landuseImageSrc = props.assets?.flaechennutzungGewerbeImageSrc ?? null;
+  const bipCategories = Array.from(
+    new Set(vm.bipAbs.flatMap((s) => (s.points ?? []).map((p) => p.jahr))),
+  ).sort((a, b) => a - b);
+  const bipBars = vm.bipAbs.map((s) => ({
+    key: s.key,
+    label: s.label,
+    color: s.color,
+    values: bipCategories.map((year) => s.points.find((p) => p.jahr === year)?.value ?? null),
+  }));
+  const svbWohnortCategories = Array.from(
+    new Set(vm.svbWohnortAbs.flatMap((s) => (s.points ?? []).map((p) => p.jahr))),
+  ).sort((a, b) => a - b);
+  const svbWohnortBars = vm.svbWohnortAbs.map((s) => ({
+    key: s.key,
+    label: s.label,
+    color: s.color,
+    values: svbWohnortCategories.map((year) => s.points.find((p) => p.jahr === year)?.value ?? null),
+  }));
+  const svbArbeitsortCategories = Array.from(
+    new Set(vm.svbArbeitsortAbs.flatMap((s) => (s.points ?? []).map((p) => p.jahr))),
+  ).sort((a, b) => a - b);
+  const svbArbeitsortBars = vm.svbArbeitsortAbs.map((s) => ({
+    key: s.key,
+    label: s.label,
+    color: s.color,
+    values: svbArbeitsortCategories.map((year) => s.points.find((p) => p.jahr === year)?.value ?? null),
+  }));
+  const arbeitslosenzahlenCategories = Array.from(
+    new Set(vm.arbeitslosenzahlen.flatMap((s) => (s.points ?? []).map((p) => p.jahr))),
+  ).sort((a, b) => a - b);
+  const arbeitslosenzahlenBars = vm.arbeitslosenzahlen.map((s) => ({
+    key: s.key,
+    label: s.label,
+    color: s.color,
+    values: arbeitslosenzahlenCategories.map((year) => s.points.find((p) => p.jahr === year)?.value ?? null),
+  }));
 
   return (
     <div className="text-dark">
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
+      {/* Subnavigation */}
       <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
 
-      <RegionHero
-        title={vm.hero.title}
-        subtitle={vm.hero.subtitle}
-        imageSrc={heroImageSrc}
-        rightOverlay={<HeroOverlayActions variant="immo" />}
-        rightOverlayMode="buttons"
+      <ImmobilienmarktBreadcrumb
+        tabs={tabs}
+        activeTabId={activeTabId}
+        basePath={basePath}
+        parentBasePath={props.parentBasePath}
+        ctx={props.ctx}
+        names={{
+          regionName: vm.regionName,
+          bundeslandName: vm.bundeslandName,
+        }}
       />
 
-      <section className="mb-4" id="einleitung">
-        <h1 className="mt-3 mb-1">{vm.headlineMain}</h1>
-        <p className="small text-muted mb-4">Aktualisiert am: {vm.updatedAt ?? "–"}</p>
-        {vm.introText ? <p className="teaser-text">{vm.introText}</p> : null}
-        <BeraterBlock name={vm.berater.name} taetigkeit={vm.berater.taetigkeit} imageSrc={vm.berater.imageSrc} />
-      </section>
+      {/* Hero */}
+      {heroImageSrc ? (
+        <RegionHero
+          title={vm.regionName}
+          subtitle="regionaler Standortberater"
+          imageSrc={heroImageSrc}
+          rightOverlay={<HeroOverlayActions variant="immo" />}
+          rightOverlayMode="buttons"
 
+        />
+      ) : null}
+      
+      
+      {/* Einleitung */}
+      <section className="mb-3" id="einleitung">
+          <h1 className="mt-3 mb-1">{vm.headlineMain}</h1>
+          <p className="small text-muted mb-4">Aktualisiert am: {vm.updatedAt ?? "–"}</p>
+          {vm.teaser ? <p className="teaser-text">{vm.teaser}</p> : null}
+          <BeraterBlock
+            name={vm.berater.name}
+            taetigkeit={vm.berater.taetigkeit}
+            imageSrc={vm.berater.imageSrc}
+          />
+        </section>
+
+
+      {/* Interaktive Karte + Leitkennzahl - Kaufkraftindex */}
       <section className="mb-5" id="kaufkraftindex">
         <div className="row g-4 align-items-stretch">
           <div className="col-12 col-lg-6">
-            <div className="h-100" style={{ width: "90%", margin: "0 auto" }}>
+            <div className="" style={{ width: "90%", margin: "0 auto" }}>
               {mapSvg ? (
                 <>
                   <InteractiveMap
@@ -118,16 +145,31 @@ export function WirtschaftSection(
           </div>
           <div className="col-12 col-lg-6 d-flex align-items-center">
             <div className="w-100 text-center">
-              <div className="mb-2" style={{ color: "#486b7a", fontSize: "5rem" }}>
-                <KpiValue value={vm.kpis.kaufkraftindex} kind="index" unitKey="none" ctx="kpi" size="xl" />
+              <div className="mb-2 kpi-hero">
+                <KpiValue value={vm.kpis.kaufkraftindex} kind="index" unitKey="none" ctx="kpi" size="mega" />
               </div>
               <p className="mb-0">Kaufkraftindex (Basis D = 100)</p>
             </div>
           </div>
         </div>
       </section>
+      
+      
+      
 
-      <section className="mb-5" id="flaechengewerbe">
+
+      <section className="mb-4" id="wirtschaft">
+        <header className="mb-5 w-75 mx-auto text-center">
+          {vm.headlineWirtschaftIndividuell ? (
+            <>
+              <h2 className="h4 text-muted mb-1">{vm.headlineWirtschaft}</h2>
+              <h3 className="h2 mb-0">{vm.headlineWirtschaftIndividuell}</h3>
+            </>
+          ) : (
+            <h2 className="h2 mb-0">{vm.headlineWirtschaft}</h2>
+          )}
+        </header>
+        
         <div className="row g-4 align-items-center">
           <div className="col-12 col-lg-4">
             <DoughnutChart
@@ -139,23 +181,30 @@ export function WirtschaftSection(
             />
           </div>
           <div className="col-12 col-lg-4">
-            <KpiValue
-              items={[
-                {
-                  label: "Flächennutzung Industrie und Gewerbe",
-                  value: vm.kpis.flaecheGewerbe,
-                  kind: "anzahl",
-                  unitKey: "none",
-                },
-              ]}
-              ctx="kpi"
-              size="md"
-              showUnit={false}
-            />
-            <div className="small text-muted mt-1 text-center">Hektar</div>
+            <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+              <div className="card-body">
+                <KpiValue
+                  icon={DEFAULT_ICON}
+                  iconAlt="Flächennutzung Industrie und Gewerbe"
+                  items={[
+                    {
+                      label: "Flächennutzung Industrie und Gewerbe",
+                      value: vm.kpis.flaecheGewerbe,
+                      kind: "anzahl",
+                      unitKey: "none",
+                    },
+                  ]}
+                  ctx="kpi"
+                  size="ultra"
+                  showUnit={false}
+                  caption="Hektar"
+                  captionClassName="small text-muted mt-1"
+                />
+              </div>
+            </div>
           </div>
           <div className="col-12 col-lg-4">
-            <div className="card border-0 shadow-sm h-100">
+            <div className="card border-0 shadow-none h-100">
               <div className="card-body text-center">
                 {landuseImageSrc ? (
                   <Image
@@ -174,108 +223,212 @@ export function WirtschaftSection(
             </div>
           </div>
         </div>
+
       </section>
 
-      <section className="mb-4" id="wirtschaft">
-        <header className="mb-3">
-          {vm.headlineWirtschaftIndividuell ? (
-            <>
-              <h2 className="h5 text-muted text-uppercase mb-1">{vm.headlineWirtschaft}</h2>
-              <h3 className="h2 mb-0">{vm.headlineWirtschaftIndividuell}</h3>
-            </>
-          ) : (
-            <h2 className="h2 mb-0">{vm.headlineWirtschaft}</h2>
-          )}
-        </header>
 
-        <div className="row g-4">
-          <div className="col-12 col-lg-4">
-            <KpiCard title="Bruttoinlandsprodukt" value={vm.kpis.bip} unit="€" kind="anzahl" unitKey="eur" />
-          </div>
-          <div className="col-12 col-lg-4">
-            <KpiCard title="Gewerbesaldo" value={vm.kpis.gewerbesaldo} unit="Unternehmen" kind="anzahl" unitKey="count" />
-          </div>
-        </div>
-      </section>
 
       <section className="mb-5" id="bip">
-        {vm.bruttoinlandsproduktText ? <p>{vm.bruttoinlandsproduktText}</p> : null}
+      
+        <h3 className="text-center">Bruttoinlandsprodukt</h3>
+        
+        {vm.bruttoinlandsproduktText ? <p className="mx-auto my-5 w-75">{vm.bruttoinlandsproduktText}</p> : null}
+        
         <div className="row g-4">
-          <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Bruttoinlandsprodukt"
-              series={vm.bipAbs}
-              kind="anzahl"
-              unitKey="eur"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
-          </div>
-          <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Bruttoinlandsprodukt pro EW"
-              series={vm.bipProEw}
-              kind="anzahl"
-              unitKey="eur"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+          
+          <div className="col-12 col-lg-12">
+            {vm.kpis.bip !== null ? (
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Bruttoinlandsprodukt"
+                    items={[{ label: "Bruttoinlandsprodukt", value: vm.kpis.bip, kind: "anzahl", unitKey: "eur" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="€"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
+    
+        <div className="row g-4">
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Bruttoinlandsprodukt</h4>
+              </div>
+              <div className="card-body">
+                <StackedComboChart
+                  title="Bruttoinlandsprodukt"
+                  categories={bipCategories}
+                  bars={bipBars}
+                  valueKind="anzahl"
+                  unitKey="eur"
+                  ctx="chart"
+                  stacked={false}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Bruttoinlandsprodukt pro EW</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="Bruttoinlandsprodukt pro EW"
+                  series={vm.bipProEw}
+                  kind="anzahl"
+                  unitKey="eur"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        
       </section>
 
       <section className="mb-5" id="gewerbesaldo">
-        {vm.gewerbesaldoText ? <p>{vm.gewerbesaldoText}</p> : null}
+        
+        <h3 className="text-center">Gewerbesaldo</h3>
+      
+        <div className="row g-4">
+          <div className="col-12 col-lg-12">
+            {vm.kpis.gewerbesaldo !== null ? (
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Gewerbesaldo"
+                    items={[{ label: "Gewerbesaldo", value: vm.kpis.gewerbesaldo, kind: "anzahl", unitKey: "count" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="Unternehmen"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        
+        {vm.gewerbesaldoText ? <p className="mx-auto my-5 w-75">{vm.gewerbesaldoText}</p> : null}
+        
         <div className="row g-4">
           <div className="col-12 col-lg-6">
-            <StackedComboChart
-              title="Gewerbesaldo absolut"
-              categories={vm.gewerbesaldoAbs.categories}
-              bars={vm.gewerbesaldoAbs.bars}
-              lines={vm.gewerbesaldoAbs.lines}
-              valueKind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              stacked={false}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Gewerbesaldo absolut</h4>
+              </div>
+              <div className="card-body">
+                <StackedComboChart
+                  title="Gewerbesaldo absolut"
+                  categories={vm.gewerbesaldoAbs.categories}
+                  bars={vm.gewerbesaldoAbs.bars}
+                  lines={vm.gewerbesaldoAbs.lines}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  stacked={false}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
           <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Gewerbesaldo pro 1000 EW"
-              series={vm.gewerbesaldoPro1000}
-              kind="quote"
-              unitKey="none"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Gewerbesaldo pro 1000 EW</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="Gewerbesaldo pro 1000 EW"
+                  series={vm.gewerbesaldoPro1000}
+                  kind="quote"
+                  unitKey="none"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       <section className="mb-5" id="einkommen">
-        {vm.einkommenText ? <p>{vm.einkommenText}</p> : null}
+      
+        <h3 className="text-center">Nettoeinkommen und Kaufkraft</h3>
+      
+        {vm.einkommenText ? <p className="mx-auto my-5 w-75">{vm.einkommenText}</p> : null}
+        
         <div className="row g-4">
           <div className="col-12 col-lg-6">
-            <KpiCard title="Nominales Einkommen" value={vm.kpis.kaufkraftNominal} unit="€ pro EW" kind="anzahl" unitKey="eur" />
+            {vm.kpis.kaufkraftNominal !== null ? (
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Nominales Einkommen"
+                    items={[{ label: "Nominales Einkommen", value: vm.kpis.kaufkraftNominal, kind: "anzahl", unitKey: "eur" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="€ pro EW"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
           <div className="col-12 col-lg-6">
-            <KpiCard title="Reales Einkommen" value={vm.kpis.kaufkraftReal} unit="€ pro EW" kind="anzahl" unitKey="eur" />
+            {vm.kpis.kaufkraftReal !== null ? (
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Reales Einkommen"
+                    items={[{ label: "Reales Einkommen", value: vm.kpis.kaufkraftReal, kind: "anzahl", unitKey: "eur" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="€ pro EW"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
-        <div className="mt-4">
-          <ZeitreiheChart
-            title="Verfügbares Einkommen pro EW"
-            series={vm.nettoeinkommenProEw}
-            kind="anzahl"
-            unitKey="eur"
-            ctx="chart"
-            svgWidth={520}
-            svgHeight={260}
-          />
+        
+        <div className="mt-5">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="card-header bg-white border-0 text-center">
+              <h4 className="h6 mb-0">Verfügbares Einkommen pro EW</h4>
+            </div>
+            <div className="card-body">
+              <ZeitreiheChart
+                title="Verfügbares Einkommen pro EW"
+                series={vm.nettoeinkommenProEw}
+                kind="anzahl"
+                unitKey="eur"
+                ctx="chart"
+                svgWidth={720}
+                svgHeight={260}
+              />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -286,16 +439,17 @@ export function WirtschaftSection(
           kind="anzahl"
           unitKey="eur"
           ctx="chart"
-          svgWidth={520}
+          svgWidth={720}
           svgHeight={260}
         />
       </section>
 
-      <section className="mb-4" id="arbeitsmarkt">
-        <header className="mb-3">
+      
+      <section className="mb-5" id="arbeitsmarkt">
+        <header className="mb-5 w-75 mx-auto text-center">
           {vm.headlineArbeitsmarktIndividuell ? (
             <>
-              <h2 className="h5 text-muted text-uppercase mb-1">{vm.headlineArbeitsmarkt}</h2>
+              <h2 className="h4 text-muted mb-1">{vm.headlineArbeitsmarkt}</h2>
               <h3 className="h2 mb-0">{vm.headlineArbeitsmarktIndividuell}</h3>
             </>
           ) : (
@@ -303,120 +457,257 @@ export function WirtschaftSection(
           )}
         </header>
 
-        {vm.arbeitsmarktText ? <p>{vm.arbeitsmarktText}</p> : null}
-      </section>
+        {vm.arbeitsmarktText ? <p className="mx-auto my-5 w-75">{vm.arbeitsmarktText}</p> : null}
 
-      <section className="mb-5" id="arbeitsplatzzentralitaet">
-        {vm.arbeitsplatzzentralitaetText ? <p>{vm.arbeitsplatzzentralitaetText}</p> : null}
         <div className="row g-4">
-          <div className="col-12 col-lg-6">
-            <KpiCard title="Arbeitsplatzzentralität" value={vm.kpis.arbeitsplatzzentralitaet} kind="quote" unitKey="none" />
-          </div>
-          <div className="col-12 col-lg-6">
-            <KpiCard title="Pendlersaldo" value={vm.kpis.pendlersaldo} unit="Pendler" kind="anzahl" unitKey="count" />
+          <div className="col-12 col-lg-12">
+            {vm.kpis.arbeitsplatzzentralitaet !== null ? (
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Arbeitsplatzzentralität"
+                    items={[{ label: "Arbeitsplatzzentralität", value: vm.kpis.arbeitsplatzzentralitaet, kind: "quote", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
-        {vm.pendlerText ? <p className="mt-3">{vm.pendlerText}</p> : null}
+
+        {vm.arbeitsplatzzentralitaetText ? <p className="mx-auto my-5 w-75">{vm.arbeitsplatzzentralitaetText}</p> : null}
+       
+        
+        
+        
+        <div className="row g-4">
+          <div className="col-12 col-lg-12">
+            {vm.kpis.pendlersaldo !== null ? (
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Pendlersaldo"
+                    items={[{ label: "Pendlersaldo", value: vm.kpis.pendlersaldo, kind: "anzahl", unitKey: "count" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="Pendler"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        
+        {vm.pendlerText ? <p className="mx-auto my-5 w-75">{vm.pendlerText}</p> : null}
+      
       </section>
 
-      <section className="mb-5" id="svb-wohnort">
-        {vm.svBeschaeftigteWohnortText ? <p>{vm.svBeschaeftigteWohnortText}</p> : null}
+
+
+
+      <section className="mb-5" id="beschaeftigung">
+      
+        <h3 className="text-center">Beschäftigung</h3>
+        {vm.svBeschaeftigteWohnortText ? <p className="mx-auto my-5 w-75">{vm.svBeschaeftigteWohnortText}</p> : null}
+        
+        <div className="row g-4">
+          <div className="col-12 col-lg-12">
+            {vm.kpis.beschaeftigtenquote !== null ? (
+              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Beschäftigtenquote"
+                    items={[{ label: "Beschäftigtenquote", value: vm.kpis.beschaeftigtenquote, kind: "quote", unitKey: "percent" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={true}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        
         <div className="row g-4">
           <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="SVB absolut am Wohnort"
-              series={vm.svbWohnortAbs}
-              kind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">SVB absolut am Wohnort</h4>
+              </div>
+              <div className="card-body">
+                <StackedComboChart
+                  title="SVB absolut am Wohnort"
+                  categories={svbWohnortCategories}
+                  bars={svbWohnortBars}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  stacked={false}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
           <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="SVB am Wohnort (Index)"
-              series={vm.svbWohnortIndex}
-              kind="index"
-              unitKey="none"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">SVB am Wohnort (Index)</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="SVB am Wohnort (Index)"
+                  series={vm.svbWohnortIndex}
+                  kind="index"
+                  unitKey="none"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+     
+        {vm.svBeschaeftigteArbeitsortText ? <p className="mx-auto my-5 w-75">{vm.svBeschaeftigteArbeitsortText}</p> : null}
+        <div className="row g-4">
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">SVB absolut am Arbeitsort</h4>
+              </div>
+              <div className="card-body">
+                <StackedComboChart
+                  title="SVB absolut am Arbeitsort"
+                  categories={svbArbeitsortCategories}
+                  bars={svbArbeitsortBars}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  stacked={false}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">SVB am Arbeitsort (Index)</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="SVB am Arbeitsort (Index)"
+                  series={vm.svbArbeitsortIndex}
+                  kind="index"
+                  unitKey="none"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="mb-5" id="svb-arbeitsort">
-        {vm.svBeschaeftigteArbeitsortText ? <p>{vm.svBeschaeftigteArbeitsortText}</p> : null}
-        <div className="row g-4">
-          <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="SVB absolut am Arbeitsort"
-              series={vm.svbArbeitsortAbs}
-              kind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
-          </div>
-          <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="SVB am Arbeitsort (Index)"
-              series={vm.svbArbeitsortIndex}
-              kind="index"
-              unitKey="none"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
-          </div>
-        </div>
-      </section>
 
       <section className="mb-5" id="arbeitslosigkeit">
-        {vm.arbeitslosenquoteText ? <p>{vm.arbeitslosenquoteText}</p> : null}
+      
+        <h3 className="text-center">Arbeitslosigkeit</h3>
+        {vm.arbeitslosenquoteText ? <p className="mx-auto my-5 w-75">{vm.arbeitslosenquoteText}</p> : null}
         <div className="row g-4">
-          <div className="col-12 col-lg-4">
-            <KpiCard title="Arbeitslosenquote" value={vm.kpis.arbeitslosenquote} unit="%" kind="quote" unitKey="percent" />
-          </div>
-          <div className="col-12 col-lg-4">
-            <KpiCard title="Beschäftigtenquote" value={vm.kpis.beschaeftigtenquote} unit="%" kind="quote" unitKey="percent" />
-          </div>
-          <div className="col-12 col-lg-4">
-            <KpiCard title="Arbeitslosendichte" value={vm.kpis.arbeitslosendichte} kind="anzahl" unitKey="none" />
-          </div>
-        </div>
-        <div className="row g-4 mt-3">
-          <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Arbeitslosenstatistik"
-              series={vm.arbeitslosenzahlen}
-              kind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
-          </div>
-          <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Arbeitslosenquoten"
-              series={vm.arbeitslosenquoten}
-              kind="quote"
-              unitKey="percent"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+          <div className="col-12 col-lg-12">
+            {vm.kpis.arbeitslosenquote !== null ? (
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Arbeitslosenquote"
+                    items={[{ label: "Arbeitslosenquote", value: vm.kpis.arbeitslosenquote, kind: "quote", unitKey: "percent" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={true}
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
-        {vm.arbeitslosendichteText ? <p className="mt-3">{vm.arbeitslosendichteText}</p> : null}
+        
+        <div className="row g-4 mt-5">
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Arbeitslosenzahlen</h4>
+              </div>
+              <div className="card-body">
+                <StackedComboChart
+                  title="Arbeitslosenstatistik"
+                  categories={arbeitslosenzahlenCategories}
+                  bars={arbeitslosenzahlenBars}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  stacked={false}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
+          </div>
+    
+          <div className="col-12 col-lg-6">
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Arbeitslosenquoten</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="Arbeitslosenquoten"
+                  series={vm.arbeitslosenquoten}
+                  kind="quote"
+                  unitKey="percent"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="col-12 col-lg-12 mt-5">
+          {vm.kpis.arbeitslosendichte !== null ? (
+            <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+              <div className="card-body">
+                <KpiValue
+                  icon={DEFAULT_ICON}
+                  iconAlt="Arbeitslosendichte"
+                  items={[{ label: "Arbeitslosendichte", value: vm.kpis.arbeitslosendichte, kind: "anzahl", unitKey: "none" }]}
+                  ctx="kpi"
+                  size="xl"
+                  showUnit={false}
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+        
+        {vm.arbeitslosendichteText ? <p className="mx-auto my-5 w-75">{vm.arbeitslosendichteText}</p> : null}
+      
       </section>
+
+
 
       {/* FAQ */}
       <section className="mb-5" id="faq-wirtschaft">
+        <h2 className="text-center mb-3">FAQ zu Wirtschaft und Arbeitsmarkt</h2>
         <FaqSection id="faq" title={`FAQ – Wirtschaft ${vm.regionName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
       </section>
 

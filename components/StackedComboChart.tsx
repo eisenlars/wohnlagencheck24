@@ -28,6 +28,7 @@ type StackedComboChartProps = {
   svgHeight?: number;
   showLegend?: boolean;
   showTable?: boolean;
+  tableClassName?: string;
   emptyText?: string;
 };
 
@@ -35,6 +36,15 @@ function shortLabel(value: string, max = 10) {
   const text = String(value ?? "").trim();
   if (text.length <= max) return text;
   return text.slice(0, max - 1) + "…";
+}
+
+function formatCompact(value: number): string {
+  if (!Number.isFinite(value)) return "";
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return `${sign}${Math.round(abs / 1_000_000)}M`;
+  if (abs >= 1_000) return `${sign}${Math.round(abs / 1_000)}k`;
+  return formatMetric(value, { kind: "anzahl", ctx: "chart", unit: "none" });
 }
 
 export function StackedComboChart({
@@ -51,6 +61,7 @@ export function StackedComboChart({
   svgHeight = 320,
   showLegend = true,
   showTable = true,
+  tableClassName = "visually-hidden",
   emptyText = "Für diese Auswertung liegen aktuell keine Daten vor.",
 }: StackedComboChartProps) {
   const cats = (categories ?? []).map((c) => String(c ?? "").trim()).filter(Boolean);
@@ -84,35 +95,59 @@ export function StackedComboChart({
 
   const barCount = seriesBars.length || 1;
 
-  const barWidth = stacked ? 30 : Math.max(18, 30 - barCount * 2);
-  const barGap = stacked ? 0 : 8;
-  const groupGap = 26;
+  const baseBarWidth = stacked ? 30 : Math.max(18, 30 - barCount * 2);
+  const baseBarGap = stacked ? 0 : 8;
+  const baseGroupGap = 26;
 
-  const groupWidth = stacked ? barWidth : barCount * barWidth + (barCount - 1) * barGap;
-  const innerWidth = N * groupWidth + (N - 1) * groupGap;
+  const baseGroupWidth = stacked ? baseBarWidth : barCount * baseBarWidth + (barCount - 1) * baseBarGap;
+  const innerWidth = N * baseGroupWidth + (N - 1) * baseGroupGap;
   const padL = 34;
   const padR = 18;
   const padT = 18;
-  const padB = showLegend ? 76 : 52;
-  const viewWidth = Math.max(svgWidth, innerWidth + padL + padR);
+  const padB = 56;
+  const viewWidth = svgWidth;
+  const xScale = innerWidth > 0 ? (viewWidth - padL - padR) / innerWidth : 1;
+  const barWidth = baseBarWidth * xScale;
+  const barGap = baseBarGap * xScale;
+  const groupGap = baseGroupGap * xScale;
+  const groupWidth = baseGroupWidth * xScale;
   const availableHeight = svgHeight - padT - padB;
 
-  const stackTotals = cats.map((_, i) =>
-    stacked
-      ? seriesBars.reduce((sum, s) => sum + (typeof s.values[i] === "number" ? (s.values[i] as number) : 0), 0)
-      : Math.max(
-          ...seriesBars.map((s) => (typeof s.values[i] === "number" ? (s.values[i] as number) : 0)),
-        ),
+  const barValues = seriesBars.flatMap((s) =>
+    s.values.filter((v): v is number => typeof v === "number" && Number.isFinite(v)),
+  );
+  const lineValues = seriesLines.flatMap((s) =>
+    s.values.filter((v): v is number => typeof v === "number" && Number.isFinite(v)),
   );
 
-  const lineMax = Math.max(
-    ...seriesLines.flatMap((s) => s.values.filter((v): v is number => typeof v === "number" && Number.isFinite(v))),
+  const posTotals = cats.map((_, i) =>
+    seriesBars.reduce((sum, s) => {
+      const v = typeof s.values[i] === "number" ? (s.values[i] as number) : 0;
+      return sum + (v > 0 ? v : 0);
+    }, 0),
+  );
+  const negTotals = cats.map((_, i) =>
+    seriesBars.reduce((sum, s) => {
+      const v = typeof s.values[i] === "number" ? (s.values[i] as number) : 0;
+      return sum + (v < 0 ? v : 0);
+    }, 0),
+  );
+
+  const maxVal = Math.max(
+    ...(stacked ? posTotals : barValues),
+    ...lineValues,
+    1,
+  );
+  const minVal = Math.min(
+    ...(stacked ? negTotals : barValues),
+    ...lineValues,
     0,
   );
+  const span = maxVal - minVal || 1;
 
-  const maxVal = Math.max(...stackTotals, lineMax, 1);
-
-  const scaleY = (v: number) => padT + availableHeight - (v / maxVal) * availableHeight;
+  const scaleY = (v: number) => padT + availableHeight - ((v - minVal) / span) * availableHeight;
+  const zeroY = scaleY(0);
+  const showZeroLine = minVal < 0 && maxVal > 0;
 
   const fmt = (v: number | null, useCtx: FormatContext) =>
     formatMetric(v, { kind: valueKind, ctx: useCtx, unit: unitKey });
@@ -124,6 +159,23 @@ export function StackedComboChart({
 
   return (
     <>
+      {showLegend ? (
+        <div className="d-flex flex-wrap gap-3 small text-muted mb-3 justify-content-center text-center">
+          {seriesBars.map((s, si) => (
+            <div key={`legend-bar-${s.key}`} className="d-flex align-items-center gap-2">
+              <span style={{ width: 12, height: 8, background: s.color ?? defaultBarColor(si), display: "inline-block", borderRadius: 2 }} />
+              <span>{s.label}</span>
+            </div>
+          ))}
+          {seriesLines.map((s, si) => (
+            <div key={`legend-line-${s.key}`} className="d-flex align-items-center gap-2">
+              <span style={{ width: 12, height: 8, background: s.color ?? defaultLineColor(si), display: "inline-block", borderRadius: 2 }} />
+              <span>{s.label}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <svg
         role="img"
         aria-label={`${title} – Kombination`}
@@ -131,25 +183,39 @@ export function StackedComboChart({
         width="100%"
         height={svgHeight}
         preserveAspectRatio="xMidYMid meet"
-        className="mb-3"
+        className="mb-0"
       >
         <line x1={padL} y1={svgHeight - padB} x2={viewWidth - padR} y2={svgHeight - padB} stroke="#ccc" />
+        {showZeroLine ? (
+          <line x1={padL} y1={zeroY} x2={viewWidth - padR} y2={zeroY} stroke="#bbb" />
+        ) : null}
+        <line x1={padL} y1={padT} x2={padL} y2={svgHeight - padB} stroke="#ccc" />
 
         {cats.map((cat, i) => {
           const baseX = padL + i * (groupWidth + groupGap);
-          let stackTop = svgHeight - padB;
+          let posTop = zeroY;
+          let negBottom = zeroY;
 
           return (
             <g key={`bar-${cat}-${i}`}>
               {seriesBars.map((s, si) => {
                 const value = typeof s.values[i] === "number" ? (s.values[i] as number) : 0;
-                const h = (value / maxVal) * availableHeight;
+                const h = Math.abs((value / span) * availableHeight);
                 const color = s.color ?? defaultBarColor(si);
 
                 const x = stacked ? baseX : baseX + si * (barWidth + barGap);
-                const y = stacked ? stackTop - h : svgHeight - padB - h;
-
-                if (stacked) stackTop -= h;
+                let y = zeroY - h;
+                if (stacked) {
+                  if (value >= 0) {
+                    y = posTop - h;
+                    posTop -= h;
+                  } else {
+                    y = negBottom;
+                    negBottom += h;
+                  }
+                } else {
+                  y = value >= 0 ? zeroY - h : zeroY;
+                }
 
                 return (
                   <rect
@@ -159,15 +225,15 @@ export function StackedComboChart({
                     width={barWidth}
                     height={Math.max(h, 0)}
                     fill={color}
-                    rx={4}
-                    ry={4}
+                    rx={0}
+                    ry={0}
                   />
                 );
               })}
 
               <text
                 x={baseX + groupWidth / 2}
-                y={svgHeight - padB + 24}
+                y={svgHeight - padB + 22}
                 textAnchor="middle"
                 fontSize="11"
                 fill="#555"
@@ -200,40 +266,28 @@ export function StackedComboChart({
           );
         })}
 
-        <text x={padL - 6} y={padT + 2} textAnchor="end" fontSize="11" fill="#888">
-          {fmt(maxVal, ctx)}
+        <text x={padL - 6} y={padT - 2} textAnchor="end" fontSize="11" fill="#888">
+          {formatCompact(maxVal)}
         </text>
         <text
           x={padL - 6}
-          y={svgHeight - padB - 4}
+          y={svgHeight - padB - 8}
           textAnchor="end"
           fontSize="11"
           fill="#888"
         >
-          {fmt(0, ctx)}
+          {formatCompact(minVal)}
         </text>
+        {showZeroLine ? (
+          <text x={padL - 6} y={zeroY - 4} textAnchor="end" fontSize="11" fill="#888">
+            0
+          </text>
+        ) : null}
       </svg>
 
-      {showLegend ? (
-        <div className="d-flex flex-wrap gap-3 small text-muted mb-3">
-          {seriesBars.map((s, si) => (
-            <div key={`legend-bar-${s.key}`} className="d-flex align-items-center gap-2">
-              <span style={{ width: 12, height: 8, background: s.color ?? defaultBarColor(si), display: "inline-block" }} />
-              <span>{s.label}</span>
-            </div>
-          ))}
-          {seriesLines.map((s, si) => (
-            <div key={`legend-line-${s.key}`} className="d-flex align-items-center gap-2">
-              <span style={{ width: 12, height: 2, background: s.color ?? defaultLineColor(si), display: "inline-block" }} />
-              <span>{s.label}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
       {showTable ? (
-        <div className="table-responsive">
-          <table className="table table-borderless small mb-0">
+        <div className={["table-responsive", tableClassName].filter(Boolean).join(" ")} style={{ paddingLeft: padL }}>
+          <table className="table table-borderless table-sm mb-0" style={{ lineHeight: 1.05, fontSize: "0.75rem", width: "auto" }}>
             <thead>
               <tr>
                 <th>Jahr</th>

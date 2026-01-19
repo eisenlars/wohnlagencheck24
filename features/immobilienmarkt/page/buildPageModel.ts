@@ -16,7 +16,9 @@ import {
   getKaufpreisfaktorMapSvg,
   getWohnungssaldoMapSvg,
   getKaufkraftindexMapSvg,
+  getWohnlagencheckMapSvg,
   getFlaechennutzungGewerbeImageSrc,
+  getFlaechennutzungWohnbauImageSrc,
   getLegendHtml,
 } from "@/lib/data";
 import { asArray, asRecord, asString } from "@/utils/records";
@@ -59,14 +61,21 @@ export type PageModel = {
   assets?: {
     heroImageSrc?: string;
     immobilienpreisMapSvg?: string | null;
+    immobilienpreisLegendHtml?: string | null;
     mietpreisMapSvg?: string | null;
+    mietpreisLegendHtml?: string | null;
+    grundstueckspreisMapSvg?: string | null;
     kreisuebersichtMapSvg?: string | null;
     kaufpreisfaktorMapSvg?: string | null;
+    kaufpreisfaktorLegendHtml?: string | null;
     kaufkraftindexMapSvg?: string | null;
     kaufkraftindexLegendHtml?: string | null;
+    grundstueckspreisLegendHtml?: string | null;
     flaechennutzungGewerbeImageSrc?: string | null;
     wohnungssaldoMapSvg?: string | null;
     wohnungssaldoLegendHtml?: string | null;
+    wohnlagencheckMapSvgs?: Partial<Record<string, string | null>>;
+    wohnlagencheckLegendHtml?: Partial<Record<string, string | null>>;
   };
 };
 
@@ -181,26 +190,57 @@ export function buildPageModel(route: RouteModel): PageModel | null {
 
     const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`;
     const immobilienpreisMapSvg = getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug);
+    const immobilienpreisLegendHtml = getLegendHtml("immobilienpreis");
     const mietpreisMapSvg = getMietpreisMapSvg(bundeslandSlug, kreisSlug);
+    const mietpreisLegendHtml = getLegendHtml("mietpreis");
     const grundstueckspreisMapSvg = getGrundstueckspreisMapSvg(bundeslandSlug, kreisSlug);
+    const grundstueckspreisLegendHtml = getLegendHtml("grundstueckspreis");
     const kaufpreisfaktorMapSvg = getKaufpreisfaktorMapSvg(bundeslandSlug, kreisSlug);
+    const kaufpreisfaktorLegendHtml = getLegendHtml("kaufpreisfaktor");
     const wohnungssaldoMapSvg = getWohnungssaldoMapSvg(bundeslandSlug, kreisSlug);
     const wohnungssaldoLegendHtml = getLegendHtml("wohnungssaldo");
     const kaufkraftindexMapSvg = getKaufkraftindexMapSvg(bundeslandSlug, kreisSlug);
     const kaufkraftindexLegendHtml = getLegendHtml("kaufkraftindex");
     const flaechennutzungGewerbeImageSrc = getFlaechennutzungGewerbeImageSrc(bundeslandSlug, kreisSlug);
+    const flaechennutzungWohnbauImageSrc = getFlaechennutzungWohnbauImageSrc(
+      bundeslandSlug,
+      kreisSlug,
+      route.level === "ort" ? ortSlug : undefined,
+    );
+
+    const wohnlagenThemes = [
+      "mobilitaet",
+      "bildung",
+      "gesundheit",
+      "naherholung",
+      "nahversorgung",
+      "kultur_freizeit",
+    ];
+    const wohnlagencheckMapSvgs = Object.fromEntries(
+      wohnlagenThemes.map((theme) => [theme, getWohnlagencheckMapSvg(bundeslandSlug, kreisSlug, theme)]),
+    );
+    const wohnlagencheckLegendHtml = Object.fromEntries(
+      wohnlagenThemes.map((theme) => [theme, getLegendHtml(theme)]),
+    );
 
     assets = {
       heroImageSrc,
       immobilienpreisMapSvg,
+      immobilienpreisLegendHtml,
       mietpreisMapSvg,
+      mietpreisLegendHtml,
       grundstueckspreisMapSvg,
+      grundstueckspreisLegendHtml,
       kaufpreisfaktorMapSvg,
+      kaufpreisfaktorLegendHtml,
       kaufkraftindexMapSvg,
       kaufkraftindexLegendHtml,
       flaechennutzungGewerbeImageSrc,
+      flaechennutzungWohnbauImageSrc,
       wohnungssaldoMapSvg,
       wohnungssaldoLegendHtml,
+      wohnlagencheckMapSvgs,
+      wohnlagencheckLegendHtml,
     };
   }
 

@@ -1,3 +1,5 @@
+// features/immobilienmarkt/sections/types.ts
+
 import type { ComponentType } from "react";
 
 export type TabItem = {
@@ -26,15 +28,22 @@ export type SectionCtx = {
 export type SectionAssets = {
   heroImageSrc?: string;
   immobilienpreisMapSvg?: string | null;
+  immobilienpreisLegendHtml?: string | null;
   mietpreisMapSvg?: string | null;
+  mietpreisLegendHtml?: string | null;
   grundstueckspreisMapSvg?: string | null;
+  grundstueckspreisLegendHtml?: string | null;
   kreisuebersichtMapSvg?: string | null;
   kaufpreisfaktorMapSvg?: string | null;
+  kaufpreisfaktorLegendHtml?: string | null;
   kaufkraftindexMapSvg?: string | null;
   kaufkraftindexLegendHtml?: string | null;
   flaechennutzungGewerbeImageSrc?: string | null;
+  flaechennutzungWohnbauImageSrc?: string | null;
   wohnungssaldoMapSvg?: string | null;
   wohnungssaldoLegendHtml?: string | null;
+  wohnlagencheckMapSvgs?: Partial<Record<string, string | null>>;
+  wohnlagencheckLegendHtml?: Partial<Record<string, string | null>>;
 };
 
 export type SectionPropsBase = {

@@ -217,12 +217,28 @@ export function getReportBySlugs(slugs: string[]): Report | null {
 
 // SVG Maps für Bundesland aus data/visuals/map_interactive holen
 
+function readInteractiveSvg(relPath: string, warnLabel: string): string | null {
+  const publicPath = path.join(process.cwd(), "public", relPath);
+  const dataPath = path.join(process.cwd(), "data", relPath);
+
+  const resolved = fs.existsSync(publicPath) ? publicPath : fs.existsSync(dataPath) ? dataPath : null;
+  if (!resolved) {
+    console.warn(`${warnLabel} nicht gefunden:`, relPath);
+    return null;
+  }
+
+  try {
+    return fs.readFileSync(resolved, "utf8");
+  } catch (err) {
+    console.error(`Fehler beim Lesen der ${warnLabel}:`, err);
+    return null;
+  }
+}
+
 export function getKreisUebersichtMapSvg(
   bundeslandSlug: string,
 ): string | null {
-  const svgPath = path.join(
-    process.cwd(),
-    "data",
+  const relPath = path.join(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -230,17 +246,7 @@ export function getKreisUebersichtMapSvg(
     `kreisuebersicht_${bundeslandSlug}.svg`,
   );
 
-  if (!fs.existsSync(svgPath)) {
-    console.warn("Kreisübersicht-SVG nicht gefunden:", svgPath);
-    return null;
-  }
-
-  try {
-    return fs.readFileSync(svgPath, "utf8");
-  } catch (err) {
-    console.error("Fehler beim Lesen der Kreisübersicht-SVG:", err);
-    return null;
-  }
+  return readInteractiveSvg(relPath, "Kreisübersicht-SVG");
 }
 
 
@@ -252,9 +258,7 @@ export function getImmobilienpreisMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
 ): string | null {
-  const svgPath = path.join(
-    process.cwd(),
-    "data",
+  const relPath = path.join(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -264,17 +268,7 @@ export function getImmobilienpreisMapSvg(
     `immobilienpreis_${kreisSlug}.svg`,
   );
 
-  if (!fs.existsSync(svgPath)) {
-    console.warn("Immobilienpreis-SVG nicht gefunden:", svgPath);
-    return null;
-  }
-
-  try {
-    return fs.readFileSync(svgPath, "utf8");
-  } catch (err) {
-    console.error("Fehler beim Lesen der Immobilienpreis-SVG:", err);
-    return null;
-  }
+  return readInteractiveSvg(relPath, "Immobilienpreis-SVG");
 }
 
 
@@ -284,9 +278,7 @@ export function getMietpreisMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
 ): string | null {
-  const svgPath = path.join(
-    process.cwd(),
-    "data",
+  const relPath = path.join(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -296,26 +288,32 @@ export function getMietpreisMapSvg(
     `mietpreis_${kreisSlug}.svg`,
   );
 
-  if (!fs.existsSync(svgPath)) {
-    console.warn("Mietpreis-SVG nicht gefunden:", svgPath);
-    return null;
-  }
+  return readInteractiveSvg(relPath, "Mietpreis-SVG");
+}
 
-  try {
-    return fs.readFileSync(svgPath, "utf8");
-  } catch (err) {
-    console.error("Fehler beim Lesen der Mietpreis-SVG:", err);
-    return null;
-  }
+export function getWohnlagencheckMapSvg(
+  bundeslandSlug: string,
+  kreisSlug: string,
+  theme: string,
+): string | null {
+  const relPath = path.join(
+    "visuals",
+    "map_interactive",
+    "deutschland",
+    bundeslandSlug,
+    kreisSlug,
+    theme,
+    `${theme}_${kreisSlug}.svg`,
+  );
+
+  return readInteractiveSvg(relPath, "Wohnlagencheck-SVG");
 }
 
 export function getGrundstueckspreisMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
 ): string | null {
-  const svgPath = path.join(
-    process.cwd(),
-    "data",
+  const relPath = path.join(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -325,26 +323,14 @@ export function getGrundstueckspreisMapSvg(
     `grundstueckspreis_${kreisSlug}.svg`,
   );
 
-  if (!fs.existsSync(svgPath)) {
-    console.warn("Grundstueckspreis-SVG nicht gefunden:", svgPath);
-    return null;
-  }
-
-  try {
-    return fs.readFileSync(svgPath, "utf8");
-  } catch (err) {
-    console.error("Fehler beim Lesen der Grundstueckspreis-SVG:", err);
-    return null;
-  }
+  return readInteractiveSvg(relPath, "Grundstueckspreis-SVG");
 }
 
 export function getKaufpreisfaktorMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
 ): string | null {
-  const svgPath = path.join(
-    process.cwd(),
-    "data",
+  const relPath = path.join(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -354,26 +340,14 @@ export function getKaufpreisfaktorMapSvg(
     `kaufpreisfaktor_${kreisSlug}.svg`,
   );
 
-  if (!fs.existsSync(svgPath)) {
-    console.warn("Kaufpreisfaktor-SVG nicht gefunden:", svgPath);
-    return null;
-  }
-
-  try {
-    return fs.readFileSync(svgPath, "utf8");
-  } catch (err) {
-    console.error("Fehler beim Lesen der Kaufpreisfaktor-SVG:", err);
-    return null;
-  }
+  return readInteractiveSvg(relPath, "Kaufpreisfaktor-SVG");
 }
 
 export function getWohnungssaldoMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
 ): string | null {
-  const svgPath = path.join(
-    process.cwd(),
-    "data",
+  const relPath = path.join(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -383,26 +357,14 @@ export function getWohnungssaldoMapSvg(
     `wohnungssaldo_${kreisSlug}.svg`,
   );
 
-  if (!fs.existsSync(svgPath)) {
-    console.warn("Wohnungssaldo-SVG nicht gefunden:", svgPath);
-    return null;
-  }
-
-  try {
-    return fs.readFileSync(svgPath, "utf8");
-  } catch (err) {
-    console.error("Fehler beim Lesen der Wohnungssaldo-SVG:", err);
-    return null;
-  }
+  return readInteractiveSvg(relPath, "Wohnungssaldo-SVG");
 }
 
 export function getKaufkraftindexMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
 ): string | null {
-  const svgPath = path.join(
-    process.cwd(),
-    "data",
+  const relPath = path.join(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -412,17 +374,7 @@ export function getKaufkraftindexMapSvg(
     `kaufkraftindex_${kreisSlug}.svg`,
   );
 
-  if (!fs.existsSync(svgPath)) {
-    console.warn("Kaufkraftindex-SVG nicht gefunden:", svgPath);
-    return null;
-  }
-
-  try {
-    return fs.readFileSync(svgPath, "utf8");
-  } catch (err) {
-    console.error("Fehler beim Lesen der Kaufkraftindex-SVG:", err);
-    return null;
-  }
+  return readInteractiveSvg(relPath, "Kaufkraftindex-SVG");
 }
 
 export function getFlaechennutzungGewerbeImageSrc(
@@ -450,14 +402,37 @@ export function getFlaechennutzungGewerbeImageSrc(
   return null;
 }
 
+export function getFlaechennutzungWohnbauImageSrc(
+  bundeslandSlug: string,
+  kreisSlug: string,
+  ortSlug?: string,
+): string | null {
+  const baseParts = ["visuals", "map_landuse", "deutschland", bundeslandSlug, kreisSlug, "flaechennutzung"];
+  const filename = ortSlug
+    ? `flaechennutzung_${kreisSlug}_${ortSlug}_wohnbau.webp`
+    : `flaechennutzung_${kreisSlug}_wohnbau.webp`;
+  const relPath = path.join(...baseParts, filename);
+
+  const publicPath = path.join(process.cwd(), "public", relPath);
+  const dataPath = path.join(process.cwd(), "data", relPath);
+
+  if (fs.existsSync(publicPath) || fs.existsSync(dataPath)) {
+    return `/${relPath.replace(/\\/g, "/")}`;
+  }
+
+  if (ortSlug) {
+    return getFlaechennutzungWohnbauImageSrc(bundeslandSlug, kreisSlug);
+  }
+
+  console.warn("Wohnbau-Flächennutzungskarte nicht gefunden:", relPath);
+  return null;
+}
+
 export function getLegendHtml(theme: string): string | null {
-  const htmlPath = path.join(
-    process.cwd(),
-    "data",
-    "visuals",
-    "legend",
-    `legend_${theme}.html`,
-  );
+  const filename = `legend_${theme}.html`;
+  const publicPath = path.join(process.cwd(), "public", "visuals", "legend", filename);
+  const dataPath = path.join(process.cwd(), "data", "visuals", "legend", filename);
+  const htmlPath = fs.existsSync(publicPath) ? publicPath : dataPath;
 
   if (!fs.existsSync(htmlPath)) {
     console.warn("Legend-HTML nicht gefunden:", htmlPath);

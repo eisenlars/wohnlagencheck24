@@ -6,11 +6,24 @@ export type FormatKind =
   | "kaufpreis_qm"
   | "grundstueck_qm"
   | "miete_qm"
+  | "flaeche"
+  | "currency"
   | "quote"
   | "anzahl"
-  | "index";
+  | "index"
+  | "distance_km"
+  | "distance_m";
 
-export type UnitKey = "eur_per_sqm" | "eur" | "percent" | "points" | "count" | "none";
+export type UnitKey =
+  | "eur_per_sqm"
+  | "eur"
+  | "percent"
+  | "points"
+  | "count"
+  | "ha"
+  | "km"
+  | "m"
+  | "none";
 
 const UNIT_LABEL: Record<UnitKey, string> = {
   eur_per_sqm: "€ / m²",
@@ -18,6 +31,9 @@ const UNIT_LABEL: Record<UnitKey, string> = {
   percent: "%",
   points: "Punkte",
   count: "",      // bewusst leer: "Personen" etc. wäre fachlich falsch, es sind Haushalte
+  ha: "ha",
+  km: "km",
+  m: "m",
   none: "",
 };
 
@@ -38,15 +54,23 @@ function numberFormatFor(kind: FormatKind, ctx: FormatContext): Intl.NumberForma
   // zentrale Rundungs-Policy
   if (ctx === "kpi") {
     if (kind === "miete_qm") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
-    if (kind === "quote") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
+    if (kind === "flaeche") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
+    if (kind === "currency") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
+    if (kind === "quote") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 });
     if (kind === "index") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
+    if (kind === "distance_km") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
+    if (kind === "distance_m") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
     return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
   }
 
   // table/chart
   if (kind === "miete_qm") return new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (kind === "quote") return new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  if (kind === "flaeche") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
+  if (kind === "currency") return new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  if (kind === "quote") return new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (kind === "index") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
+  if (kind === "distance_km") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 1 });
+  if (kind === "distance_m") return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
   return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 });
 }
 
@@ -63,6 +87,13 @@ export function formatMetric(value: number | null, opts: MetricFormatOptions): s
   } = opts;
 
   if (value === null || !Number.isFinite(value)) return nullText;
+
+  if (ctx === "kpi" && unit === "eur" && Math.abs(value) >= 1_000_000) {
+    const nf = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let s = nf.format(value / 1_000_000);
+    if (signed && value > 0) s = `+${s}`;
+    return `${s} Mio`;
+  }
 
   const nf = numberFormatFor(kind, ctx);
   let s = nf.format(value);

@@ -1,3 +1,5 @@
+// features/immobilienmarkt/sections/WohnmarktsituationSection.tsx
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -12,18 +14,13 @@ import { VergleichBarChart } from "@/components/VergleichBarChart";
 import { DoughnutChart } from "@/components/DoughnutChart";
 import { StackedComboChart } from "@/components/StackedComboChart";
 import { FaqSection } from "@/components/FaqSection";
+import { KpiValue } from "@/components/KpiValue";
+import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { formatMetric } from "@/utils/format";
 
 import type { WohnmarktsituationVM } from "@/features/immobilienmarkt/selectors/shared/types/wohnmarktsituation";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
-
-type KpiCardProps = {
-  iconSrc?: string;
-  title: string;
-  value: number | string | null;
-  unit?: string;
-};
 
 const DEFAULT_ICON = "/icons/ws24_marktbericht_wohnmarktsituation.svg";
 
@@ -32,41 +29,20 @@ function parseSaldoValue(value: number | string | null): number | null {
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
   const trimmed = String(value).trim();
   if (!trimmed) return null;
-  const normalized = trimmed.replace(/\./g, "").replace(",", ".");
+  const hasDot = trimmed.includes(".");
+  const hasComma = trimmed.includes(",");
+
+  let normalized = trimmed;
+  if (hasDot && hasComma) {
+    normalized = normalized.replace(/\./g, "").replace(",", ".");
+  } else if (hasComma) {
+    normalized = normalized.replace(",", ".");
+  } else {
+    normalized = normalized.replace(/\s+/g, "");
+  }
+
   const num = Number(normalized);
   return Number.isFinite(num) ? num : null;
-}
-
-function isEmptyValue(value: number | string | null): boolean {
-  if (value === null || value === undefined) return true;
-  if (typeof value === "number") return !Number.isFinite(value);
-  const trimmed = String(value).trim();
-  if (!trimmed) return true;
-  const num = parseSaldoValue(trimmed);
-  return num === null;
-}
-
-function formatKpiValue(value: number | string | null, kind: "anzahl" | "index" | "quote" = "anzahl"): string {
-  if (value === null || value === undefined) return "–";
-  if (typeof value === "number") {
-    return formatMetric(value, { kind, ctx: "kpi", unit: "none" });
-  }
-  return String(value);
-}
-
-function KpiCard({ iconSrc = DEFAULT_ICON, title, value, unit }: KpiCardProps) {
-  if (isEmptyValue(value)) return null;
-
-  return (
-    <div className="card border-0 shadow-sm h-100 text-center">
-      <div className="card-body">
-        <Image src={iconSrc} alt="" width={32} height={32} className="mb-2" />
-        <div className="small text-muted">{title}</div>
-        <div className="h4 mb-0">{formatKpiValue(value)}</div>
-        {unit ? <div className="small text-muted">{unit}</div> : null}
-      </div>
-    </div>
-  );
 }
 
 export function WohnmarktsituationSection(
@@ -99,26 +75,66 @@ export function WohnmarktsituationSection(
       a: "Die Standortfaktoren werden durch unsere regionalen Partner und Immobilienspezialisten bereitgestellt.",
     },
   ];
+  const einwohnerValue = parseSaldoValue(vm.kpis.einwohner);
+  const einwohnerdichteValue = parseSaldoValue(vm.kpis.einwohnerdichte);
+  const siedlungsdichteValue = parseSaldoValue(vm.kpis.siedlungsdichte);
+  const haushalteValue = parseSaldoValue(vm.kpis.haushalte);
+  const haushaltsgroesseValue = parseSaldoValue(vm.kpis.haushaltsgroesse);
+  const wanderungssaldoValue = parseSaldoValue(vm.kpis.wanderungssaldo);
+  const natuerlicherSaldoValue = parseSaldoValue(vm.kpis.natuerlicherSaldo);
+  const jugendquotientValue = parseSaldoValue(vm.kpis.jugendquotient);
+  const altenquotientValue = parseSaldoValue(vm.kpis.altenquotient);
+  const flaecheWohnbauValue = parseSaldoValue(vm.kpis.flaecheWohnbau);
+  const wohnungsbestandValue = parseSaldoValue(vm.kpis.wohnungsbestand);
+  const baufertigstellungenValue = parseSaldoValue(vm.kpis.baufertigstellungen);
+  const baugenehmigungenValue = parseSaldoValue(vm.kpis.baugenehmigungen);
+  const wohnungsbestandAnzahlAbsolutValue = parseSaldoValue(vm.kpis.wohnungsbestandAnzahlAbsolut);
+  const leerstandsquoteValue = parseSaldoValue(vm.kpis.leerstandsquote);
+  const wohnungsbestandMittlereWohnflaecheValue = parseSaldoValue(vm.kpis.wohnungsbestandMittlereWohnflaeche);
+  const baufertigstellungenAnzahlAbsolutValue = parseSaldoValue(vm.kpis.baufertigstellungenAnzahlAbsolut);
+  const baufertigstellungenFlaecheAbsolutValue = parseSaldoValue(vm.kpis.baufertigstellungenFlaecheAbsolut);
+  const baugenehmigungenAnzahlAbsolutValue = parseSaldoValue(vm.kpis.baugenehmigungenAnzahlAbsolut);
+  const baugenehmigungenFlaecheAbsolutValue = parseSaldoValue(vm.kpis.baugenehmigungenFlaecheAbsolut);
+  const baugenehmigungenErloschenValue = parseSaldoValue(vm.kpis.baugenehmigungenErloschen);
 
   return (
     <div className="text-dark">
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
+      {/* Subnavigation */}
       <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
 
-      <RegionHero
-        title={vm.hero.title}
-        subtitle={vm.hero.subtitle}
-        imageSrc={heroImageSrc}
-        rightOverlay={<HeroOverlayActions variant="immo" />}
-        rightOverlayMode="buttons"
+      <ImmobilienmarktBreadcrumb
+        tabs={tabs}
+        activeTabId={activeTabId}
+        basePath={basePath}
+        parentBasePath={props.parentBasePath}
+        ctx={props.ctx}
+        names={{
+          regionName: vm.regionName,
+          bundeslandName: vm.bundeslandName,
+        }}
       />
 
+      {/* Hero */}
+      {heroImageSrc ? (
+        <RegionHero
+          title={vm.regionName}
+          subtitle="regionaler Standortberater"
+          imageSrc={heroImageSrc}
+          rightOverlay={<HeroOverlayActions variant="immo" />}
+          rightOverlayMode="buttons"
+
+        />
+      ) : null}
+
+
       {/* Einleitung */}
-      <section className="mb-4" id="einleitung">
+      <section className="mb-3" id="einleitung">
         <h1 className="mt-3 mb-1">{vm.headlineMain}</h1>
         <p className="small text-muted mb-4">Aktualisiert am: {vm.updatedAt ?? "–"}</p>
-        {vm.introText ? <p className="teaser-text">{vm.introText}</p> : null}
+        
+        {vm.teaser ? <p className="teaser-text">{vm.teaser}</p> : null}
 
         <BeraterBlock
           name={vm.berater.name}
@@ -127,11 +143,12 @@ export function WohnmarktsituationSection(
         />
       </section>
 
-      {/* Wohnungssaldo */}
+
+      {/* Interaktive Karte + Leitkennzahl - Wohnungssaldo */}
       <section className="mb-5" id="wohnungssaldo">
         <div className="row g-4 align-items-stretch">
           <div className="col-12 col-lg-6">
-            <div className="h-100" style={{ width: "90%", margin: "0 auto" }}>
+            <div className="" style={{ width: "90%", margin: "0 auto" }}>
               {props.assets?.wohnungssaldoMapSvg ? (
                 <>
                   <InteractiveMap
@@ -158,296 +175,570 @@ export function WohnmarktsituationSection(
           </div>
 
           <div className="col-12 col-lg-6 d-flex align-items-center">
-            <div className="w-100 text-center">
-              <div className="mb-2" style={{ color: "#486b7a", fontSize: "5rem" }}>
-                {formatKpiValue(vm.kpis.wohnungsbestandWohnraumsaldoPer1000)}
-              </div>
-              <p className="mb-0">Wohnungssaldo per 1000 EW</p>
+            <div className="w-100 align-center text-center">
+              {vm.kpis.wohnungsbestandWohnraumsaldoPer1000 !== null &&
+              Number.isFinite(vm.kpis.wohnungsbestandWohnraumsaldoPer1000) ? (
+                <>
+                  <div className="mb-2 kpi-hero">
+                    <KpiValue
+                      value={vm.kpis.wohnungsbestandWohnraumsaldoPer1000}
+                      kind="anzahl"
+                      unitKey="none"
+                      ctx="kpi"
+                      size="ultra"
+                      showUnit={true}
+                    />
+                  </div>
+                  <p className="mb-0">Wohnungssaldo per 1000 EW – {vm.regionName}</p>
+                </>
+              ) : (
+                <p className="small text-muted mb-0">Keine Wohnungssaldo-Daten verfügbar.</p>
+              )}
             </div>
           </div>
+          
+          
+          
+          
         </div>
       </section>
 
       {/* Wohnraumnachfrage */}
       <section className="mb-5" id="wohnraumnachfrage">
-        <header className="mb-3">
+        <header className="mb-5 w-75 mx-auto text-center">
           {vm.headlineWohnraumnachfrageIndividuell ? (
             <>
-              <h2 className="h5 text-muted text-uppercase mb-1">{vm.headlineWohnraumnachfrage}</h2>
-              <h3 className="h2 mb-0">{vm.headlineWohnraumnachfrageIndividuell}</h3>
+              <h2 className="h4 text-muted mb-2">{vm.headlineWohnraumnachfrage}</h2>
+              <h3 className="h2 mb-5">{vm.headlineWohnraumnachfrageIndividuell}</h3>
             </>
           ) : (
-            <h2 className="h2 mb-0">{vm.headlineWohnraumnachfrage}</h2>
+            <h2 className="h2 mb-5">{vm.headlineWohnraumnachfrage}</h2>
           )}
         </header>
 
-        {vm.wohnraumnachfrageText ? <p>{vm.wohnraumnachfrageText}</p> : null}
+        {vm.wohnraumnachfrageText ? <p className="my-5 w-75 mx-auto">{vm.wohnraumnachfrageText}</p> : null}
 
-        <div className="row g-3 mb-3">
-          <div className="col-12 col-md-4">
-            <KpiCard title="Bevölkerung" value={vm.kpis.einwohner} unit="EW" />
-          </div>
-          <div className="col-12 col-md-4">
-            <KpiCard title="Einwohnerdichte" value={vm.kpis.einwohnerdichte} unit="EW pro km²" />
-          </div>
-          <div className="col-12 col-md-4">
-            <KpiCard title="Siedlungsdichte" value={vm.kpis.siedlungsdichte} unit="EW pro km²" />
-          </div>
+        <div className="row g-3 mb-5 mt-5">
+          {einwohnerValue !== null ? (
+            <div className="col-12 col-md-4">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Bevölkerung"
+                    items={[{ label: "Bevölkerung", value: einwohnerValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="EW"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {einwohnerdichteValue !== null ? (
+            <div className="col-12 col-md-4">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Einwohnerdichte"
+                    items={[{ label: "Einwohnerdichte", value: einwohnerdichteValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="EW pro km²"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {siedlungsdichteValue !== null ? (
+            <div className="col-12 col-md-4">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Siedlungsdichte"
+                    items={[{ label: "Siedlungsdichte", value: siedlungsdichteValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="EW pro km²"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {vm.allgemeinText ? <p>{vm.allgemeinText}</p> : null}
+        {vm.allgemeinText ? <p className="mx-auto mt-5 w-75">{vm.allgemeinText}</p> : null}
       </section>
 
       {/* Bevölkerungsentwicklung */}
       <section className="mb-5" id="bevoelkerungsentwicklung">
         <div className="row g-4">
           <div className="col-12 col-lg-6">
-            <StackedComboChart
-              title="Abs. Bevölkerungsentwicklung"
-              categories={vm.bevoelkerungsentwicklungAbsolut.categories}
-              bars={vm.bevoelkerungsentwicklungAbsolut.bars}
-              lines={vm.bevoelkerungsentwicklungAbsolut.lines}
-              valueKind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              stacked={false}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-none h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Abs. Bevölkerungsentwicklung</h4>
+              </div>
+              <div className="card-body">
+                <StackedComboChart
+                  title="Abs. Bevölkerungsentwicklung"
+                  categories={vm.bevoelkerungsentwicklungAbsolut.categories}
+                  bars={vm.bevoelkerungsentwicklungAbsolut.bars}
+                  lines={vm.bevoelkerungsentwicklungAbsolut.lines}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  stacked={false}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
           <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title={`Rel. Bevölkerungsentwicklung ${vm.bevoelkerungsentwicklungBasisjahr ? `(Basisjahr: ${vm.bevoelkerungsentwicklungBasisjahr})` : ""}`}
-              series={vm.bevoelkerungsentwicklungRelativ}
-              kind="index"
-              unitKey="none"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-none h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Rel. Bevölkerungsentwicklung</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title={`Rel. Bevölkerungsentwicklung ${vm.bevoelkerungsentwicklungBasisjahr ? `(Basisjahr: ${vm.bevoelkerungsentwicklungBasisjahr})` : ""}`}
+                  series={vm.bevoelkerungsentwicklungRelativ}
+                  kind="index"
+                  unitKey="none"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {vm.bevoelkerungsentwicklungText ? <p className="mt-3">{vm.bevoelkerungsentwicklungText}</p> : null}
-      </section>
-
-      {/* Haushalte */}
-      <section className="mb-5" id="haushalte">
+        {vm.bevoelkerungsentwicklungText ? <p className="mx-auto my-5 w-75">{vm.bevoelkerungsentwicklungText}</p> : null}
+      
+        {/* Haushalte */}
+      
         <div className="row g-3 mb-3">
-          <div className="col-12 col-md-6">
-            <KpiCard title="Haushalte" value={vm.kpis.haushalte} unit="Haushalte" />
-          </div>
-          <div className="col-12 col-md-6">
-            <KpiCard title="Ø Haushaltsgröße" value={vm.kpis.haushaltsgroesse} unit="EW pro Haushalt" />
-          </div>
+          {haushalteValue !== null ? (
+            <div className="col-12 col-md-6">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Haushalte"
+                    items={[{ label: "Haushalte", value: haushalteValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="Haushalte"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {haushaltsgroesseValue !== null ? (
+            <div className="col-12 col-md-6">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Ø Haushaltsgröße"
+                    items={[{ label: "Ø Haushaltsgröße", value: haushaltsgroesseValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="EW pro Haushalt"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {vm.haushalteText ? <p>{vm.haushalteText}</p> : null}
+        {vm.haushalteText ? <p className="mx-auto my-5 w-75">{vm.haushalteText}</p> : null}
 
         <div className="row g-4 mt-2">
           <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Haushalte je 1000 EW"
-              series={vm.haushalteJe1000}
-              kind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-none h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Haushalte je 1000 EW</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="Haushalte je 1000 EW"
+                  series={vm.haushalteJe1000}
+                  kind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
           <div className="col-12 col-lg-6">
-            <VergleichBarChart
-              title="Haushaltsgröße nach Personenanzahl"
-              categories={vm.haushaltsgroesseNachPersonenanzahl.categories}
-              series={vm.haushaltsgroesseNachPersonenanzahl.bars}
-              valueKind="anzahl"
-              unitKey="count"
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-none h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Haushaltsgröße nach Personenanzahl</h4>
+              </div>
+              <div className="card-body">
+                <VergleichBarChart
+                  title="Haushaltsgröße nach Personenanzahl"
+                  categories={vm.haushaltsgroesseNachPersonenanzahl.categories}
+                  series={vm.haushaltsgroesseNachPersonenanzahl.bars}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
         </div>
+        
+        
+        
+        
       </section>
 
-      {/* Bevölkerungsbewegungen */}
+
+      {/* Bevölkerungsbewegungen Gesamt */}
+      
       <section className="mb-5" id="bevoelkerungsbewegung">
-        <h4>Analyse der Bevölkerungsbewegungen</h4>
-        {vm.natuerlicherSaldoIntro ? <p>{vm.natuerlicherSaldoIntro}</p> : null}
+        
+        <h3 className="text-center">Analyse der Bevölkerungsbewegungen</h3>
+        
+        {vm.natuerlicherSaldoIntro ? <p className="mx-auto my-5 w-75">{vm.natuerlicherSaldoIntro}</p> : null}
 
-        <div className="row g-3 mb-3">
-          <div className="col-12 col-md-6">
-            <KpiCard title="Wanderungssaldo" value={vm.kpis.wanderungssaldo} unit="EW" />
-          </div>
-          <div className="col-12 col-md-6">
-            <KpiCard title="Natürlicher Saldo" value={vm.kpis.natuerlicherSaldo} unit="EW" />
-          </div>
+        <div className="row g-3 mb-5">
+          {wanderungssaldoValue !== null ? (
+            <div className="col-12 col-md-6">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Wanderungssaldo"
+                    items={[{ label: "Wanderungssaldo", value: wanderungssaldoValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="EW"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {natuerlicherSaldoValue !== null ? (
+            <div className="col-12 col-md-6">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Natürlicher Saldo"
+                    items={[{ label: "Natürlicher Saldo", value: natuerlicherSaldoValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="EW"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        <StackedComboChart
-          title="Gesamte Bevölkerungsbewegung"
-          categories={vm.bevoelkerungsbewegungGesamt.categories}
-          bars={vm.bevoelkerungsbewegungGesamt.bars}
-          lines={vm.bevoelkerungsbewegungGesamt.lines}
-          valueKind="anzahl"
-          unitKey="count"
-          ctx="chart"
-          stacked
-          svgHeight={300}
-        />
+        <div className="card border-0 shadow-none h-100">
+          <div className="card-header bg-white border-0 text-center">
+            <h4 className="h6 mb-0">Gesamte Bevölkerungsbewegung</h4>
+          </div>
+          <div className="card-body">
+            <StackedComboChart
+              title="Gesamte Bevölkerungsbewegung"
+              categories={vm.bevoelkerungsbewegungGesamt.categories}
+              bars={vm.bevoelkerungsbewegungGesamt.bars}
+              lines={vm.bevoelkerungsbewegungGesamt.lines}
+              valueKind="anzahl"
+              unitKey="count"
+              ctx="chart"
+              stacked
+              svgHeight={300}
+              tableClassName="visually-hidden"
+            />
+          </div>
+        </div>
+        
       </section>
 
-      {/* Natürlicher Saldo */}
+
+
+      {/* Natürliche Bevölkerungsbewegung */}
+      
       <section className="mb-5" id="natuerlicher-saldo">
-        {vm.natuerlicherSaldoText ? <p>{vm.natuerlicherSaldoText}</p> : null}
+        
+        <h4 className="text-center">Natürliche Bevölkerungsbewegung</h4>
+        
+        {vm.natuerlicherSaldoText ? <p className="mx-auto my-5 w-75">{vm.natuerlicherSaldoText}</p> : null}
 
         <div className="row g-4">
           <div className="col-12 col-lg-6">
-            <StackedComboChart
-              title="Natürliches Saldo"
-              categories={vm.natuerlicheBevoelkerungsbewegung.categories}
-              bars={vm.natuerlicheBevoelkerungsbewegung.bars}
-              lines={vm.natuerlicheBevoelkerungsbewegung.lines}
-              valueKind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              stacked
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Natürliches Saldo – Kombination</h4>
+              </div>
+              <div className="card-body">
+                <StackedComboChart
+                  title="Natürliches Saldo – Kombination"
+                  categories={vm.natuerlicheBevoelkerungsbewegung.categories}
+                  bars={vm.natuerlicheBevoelkerungsbewegung.bars}
+                  lines={vm.natuerlicheBevoelkerungsbewegung.lines}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  stacked
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
           <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Natürliches Saldo je 1000 EW"
-              series={vm.natuerlicheBevoelkerungsbewegungJe1000}
-              kind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Natürliches Saldo je 1000 EW – Zeitreihe</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="Natürliches Saldo je 1000 EW – Zeitreihe"
+                  series={vm.natuerlicheBevoelkerungsbewegungJe1000}
+                  kind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Wanderungssaldo */}
+
+
+      {/* Wanderungsbewegung */}
+      
       <section className="mb-5" id="wanderungssaldo">
-        {vm.wanderungssaldoIntro ? <p>{vm.wanderungssaldoIntro}</p> : null}
+      
+        <h4 className="text-center">Wanderungsbewegung</h4>
+      
+        {vm.wanderungssaldoIntro ? <p className="mx-auto my-5 w-75">{vm.wanderungssaldoIntro}</p> : null}
 
         <div className="row g-4">
           <div className="col-12 col-lg-6">
-            <StackedComboChart
-              title="Gesamtwanderung"
-              categories={vm.wanderungssaldo.categories}
-              bars={vm.wanderungssaldo.bars}
-              lines={vm.wanderungssaldo.lines}
-              valueKind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              stacked
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Gesamtwanderung – Kombination</h4>
+              </div>
+              <div className="card-body">
+                <StackedComboChart
+                  title="Gesamtwanderung – Kombination"
+                  categories={vm.wanderungssaldo.categories}
+                  bars={vm.wanderungssaldo.bars}
+                  lines={vm.wanderungssaldo.lines}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  stacked
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
           <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Wanderungssaldo je 1000 EW"
-              series={vm.wanderungssaldoJe1000}
-              kind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Wanderungssaldo je 1000 EW – Zeitreihe 2014 bis 2024</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="Wanderungssaldo je 1000 EW – Zeitreihe 2014 bis 2024"
+                  series={vm.wanderungssaldoJe1000}
+                  kind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {vm.wanderungssaldoText ? <p className="mt-3">{vm.wanderungssaldoText}</p> : null}
-      </section>
+        {vm.wanderungssaldoText ? <p className="mx-auto my-5 w-75">{vm.wanderungssaldoText}</p> : null}
+        
+        {/* Aussenwanderungssaldo */}
 
-      {/* Aussenwanderungssaldo */}
-      <section className="mb-5" id="aussenwanderungssaldo">
         <div className="row g-4">
-          <div className="col-12 col-lg-6">
-            <StackedComboChart
-              title="Außenwanderungssaldo nach Ziel- und Herkunftsgebieten"
-              categories={vm.aussenwanderungssaldo.categories}
-              bars={vm.aussenwanderungssaldo.bars}
-              lines={vm.aussenwanderungssaldo.lines}
-              valueKind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              stacked
-              svgHeight={260}
-            />
-          </div>
-          <div className="col-12 col-lg-6">
-            <StackedComboChart
-              title={`Wanderungssalden nach Altersklassen ${vm.aussenwanderungssaldoNachAlterZeitraum ? `(Durchschnitt ${vm.aussenwanderungssaldoNachAlterZeitraum})` : ""}`}
-              categories={vm.aussenwanderungssaldoNachAlter.categories}
-              bars={vm.aussenwanderungssaldoNachAlter.bars}
-              lines={vm.aussenwanderungssaldoNachAlter.lines}
-              valueKind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              stacked
-              svgHeight={260}
-            />
+       
+        <div className="col-12 col-lg-6">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="card-header bg-white border-0 text-center">
+              <h4 className="h6 mb-0">Außenwanderungssaldo</h4>
+            </div>
+            <div className="card-body">
+              <StackedComboChart
+                title="Außenwanderungssaldo nach Ziel- und Herkunftsgebieten"
+                categories={vm.aussenwanderungssaldo.categories}
+                bars={vm.aussenwanderungssaldo.bars}
+                lines={vm.aussenwanderungssaldo.lines}
+                valueKind="anzahl"
+                unitKey="count"
+                ctx="chart"
+                stacked
+                svgHeight={260}
+              />
+            </div>
+          </div> {/* <- Dieses div hat im Original gefehlt */}
+        </div>
+
+        <div className="col-12 col-lg-6">
+          <div className="card border-0 shadow-sm h-100">
+            <div className="card-header bg-white border-0 text-center">
+              <h4 className="h6 mb-0">Wanderungssalden nach Altersklassen</h4>
+            </div>
+            <div className="card-body">
+              <StackedComboChart
+                title={`Wanderungssalden nach Altersklassen ${vm.aussenwanderungssaldoNachAlterZeitraum ? `(Durchschnitt ${vm.aussenwanderungssaldoNachAlterZeitraum})` : ""}`}
+                categories={vm.aussenwanderungssaldoNachAlter.categories}
+                bars={vm.aussenwanderungssaldoNachAlter.bars}
+                lines={vm.aussenwanderungssaldoNachAlter.lines}
+                valueKind="anzahl"
+                unitKey="count"
+                ctx="chart"
+                stacked
+                svgHeight={260}
+              />
+            </div>
           </div>
         </div>
+      </div>
+
       </section>
+
+        
+
+
 
       {/* Altersstruktur */}
+      
       <section className="mb-5" id="alterstruktur">
-        <h5>Analyse der Altersstrukturen</h5>
-        {vm.alterstrukturText ? <p>{vm.alterstrukturText}</p> : null}
+        
+        <h3 className="text-center">Analyse der Altersstrukturen</h3>
+        
+        {vm.alterstrukturText ? <p className="mx-auto my-5 w-75">{vm.alterstrukturText}</p> : null}
 
-        <div className="row g-4">
-          <div className="col-12 col-lg-6">
-            <DoughnutChart
-              title="Altersverteilung"
-              slices={vm.altersverteilung}
-              valueKind="anzahl"
-              unitKey="count"
-              svgSize={240}
-            />
-          </div>
-          <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Durchschnittliche Altersentwicklung"
-              series={vm.bevoelkerungsaltersentwicklung}
-              kind="index"
-              unitKey="none"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
-          </div>
+        <div className="card border-0 shadow-none h-100">
+          <div className="card-header bg-white border-0 text-center">
+              <h4 className="h6 mb-0">Durchschnittliche Altersentwicklung</h4>
+            </div>
+            <div className="card-body">
+              <ZeitreiheChart
+                title="Durchschnittliche Altersentwicklung – Zeitreihe 2014 bis 2024"
+                series={vm.bevoelkerungsaltersentwicklung}
+                kind="index"
+                unitKey="none"
+                ctx="chart"
+                svgWidth={720}
+                svgHeight={260}
+              />
+            </div>
         </div>
-      </section>
 
-      {/* Jugend- und Altenquotient */}
-      <section className="mb-5" id="jugend-altenquotient">
-        {vm.jugendAltenQuotientIntro ? <p>{vm.jugendAltenQuotientIntro}</p> : null}
+        
+        {/* Jugend- und Altenquotient */}
+        
+        {vm.jugendAltenQuotientIntro ? <p className="mx-auto my-5 w-75">{vm.jugendAltenQuotientIntro}</p> : null}
 
         <div className="row g-3 mb-3">
-          <div className="col-12 col-md-6">
-            <KpiCard title="Jugendquotient" value={vm.kpis.jugendquotient} />
+          {jugendquotientValue !== null ? (
+            <div className="col-12 col-md-4">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Jugendquotient"
+                    items={[{ label: "Jugendquotient", value: jugendquotientValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+ 
+          <div className="col-12 col-md-4">
+            <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Altersverteilung</h4>
+              </div>
+              <div className="card-body">
+                <DoughnutChart
+                  title="Altersverteilung"
+                  slices={vm.altersverteilung}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  svgSize={240}
+                />
+              </div>
+            </div>
           </div>
-          <div className="col-12 col-md-6">
-            <KpiCard title="Altenquotient" value={vm.kpis.altenquotient} />
-          </div>
+          
+          {altenquotientValue !== null ? (
+            <div className="col-12 col-md-4">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Altenquotient"
+                    items={[{ label: "Altenquotient", value: altenquotientValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {vm.jugendAltenQuotientText ? <p>{vm.jugendAltenQuotientText}</p> : null}
+        {vm.jugendAltenQuotientText ? <p className="mx-auto my-5 w-75">{vm.jugendAltenQuotientText}</p> : null}
+        
       </section>
 
+
+
       {/* Wohnraumangebot */}
+      
       <section className="mb-5" id="wohnraumangebot">
-        <header className="mb-3">
+        
+        <header className="mb-5 text-center">
           {vm.headlineWohnraumangebotIndividuell ? (
             <>
-              <h2 className="h5 text-muted text-uppercase mb-1">{vm.headlineWohnraumangebot}</h2>
+              <h2 className="h4 text-muted mb-1">{vm.headlineWohnraumangebot}</h2>
               <h3 className="h2 mb-0">{vm.headlineWohnraumangebotIndividuell}</h3>
             </>
           ) : (
-            <h2 className="h2 mb-0">{vm.headlineWohnraumangebot}</h2>
+            <h2 className="h2 mx-auto mb-0">{vm.headlineWohnraumangebot}</h2>
           )}
         </header>
 
@@ -462,13 +753,28 @@ export function WohnmarktsituationSection(
             />
           </div>
           <div className="col-12 col-lg-4">
-            <KpiCard title="Flächennutzung Wohnbau" value={vm.kpis.flaecheWohnbau} unit="Hektar" />
+            {flaecheWohnbauValue !== null ? (
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Flächennutzung Wohnbau"
+                    items={[{ label: "Flächennutzung Wohnbau", value: flaecheWohnbauValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="Hektar"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
           <div className="col-12 col-lg-4">
-            <div className="card border-0 shadow-sm h-100">
+            <div className="card border-0 shadow-none h-100">
               <div className="card-body text-center">
                 <Image
-                  src="/images/wohnmarktsituation/landuse-placeholder.svg"
+                  src={props.assets?.flaechennutzungWohnbauImageSrc ?? "/images/wohnmarktsituation/landuse-placeholder.svg"}
                   alt="Flächennutzung Wohnbau"
                   width={320}
                   height={200}
@@ -479,9 +785,9 @@ export function WohnmarktsituationSection(
           </div>
         </div>
 
-        {vm.wohnraumangebotIntro ? <p>{vm.wohnraumangebotIntro}</p> : null}
+        {vm.wohnraumangebotIntro ? <p className="mx-auto my-5 w-75">{vm.wohnraumangebotIntro}</p> : null}
 
-        <div className="row g-4 mt-2" id="wohnungsbestand-gebaeude">
+        <div className="row g-4 my-5" id="wohnungsbestand-gebaeude">
           <div className="col-12 col-lg-4">
             <DoughnutChart
               title="Wohnungsbestand"
@@ -490,9 +796,9 @@ export function WohnmarktsituationSection(
               unitKey="count"
               svgSize={220}
             />
-            {vm.kpis.wohnungsbestand ? (
+            {wohnungsbestandValue !== null ? (
               <p className="text-center mt-2 mb-0">
-                <strong>{formatKpiValue(vm.kpis.wohnungsbestand)}</strong> Wohnungen insgesamt
+                <strong>{formatMetric(wohnungsbestandValue, { kind: "anzahl", ctx: "kpi", unit: "none" })}</strong> Wohnungen insgesamt
               </p>
             ) : null}
           </div>
@@ -504,9 +810,9 @@ export function WohnmarktsituationSection(
               unitKey="count"
               svgSize={220}
             />
-            {vm.kpis.baufertigstellungen ? (
+            {baufertigstellungenValue !== null ? (
               <p className="text-center mt-2 mb-0">
-                <strong>{formatKpiValue(vm.kpis.baufertigstellungen)}</strong> Wohnungen insgesamt
+                <strong>{formatMetric(baufertigstellungenValue, { kind: "anzahl", ctx: "kpi", unit: "none" })}</strong> Wohnungen insgesamt
               </p>
             ) : null}
           </div>
@@ -518,40 +824,51 @@ export function WohnmarktsituationSection(
               unitKey="count"
               svgSize={220}
             />
-            {vm.kpis.baugenehmigungen ? (
+            {baugenehmigungenValue !== null ? (
               <p className="text-center mt-2 mb-0">
-                <strong>{formatKpiValue(vm.kpis.baugenehmigungen)}</strong> Wohnungen insgesamt
+                <strong>{formatMetric(baugenehmigungenValue, { kind: "anzahl", ctx: "kpi", unit: "none" })}</strong> Wohnungen insgesamt
               </p>
             ) : null}
           </div>
         </div>
 
-        {vm.bautaetigkeitIntro ? <p className="mt-3">{vm.bautaetigkeitIntro}</p> : null}
+        {vm.bautaetigkeitIntro ? <p className="mx-auto my-5 w-75">{vm.bautaetigkeitIntro}</p> : null}
 
         <div className="mt-3" id="bauueberhang-genehmigung-fertigstellung">
-          <StackedComboChart
-            title="Gegenüberstellung von Genehmigungen, Fertigstellungen, Bauüberhang und Bauabgängen"
-            categories={vm.bauUeberhangGenehmigungFertigstellung[0]?.points.map((p) => String(p.jahr)) ?? []}
-            bars={[]}
-            lines={vm.bauUeberhangGenehmigungFertigstellung.map((series) => ({
-              key: series.key,
-              label: series.label,
-              values: series.points.map((p) => p.value),
-              color: series.color,
-            }))}
-            valueKind="anzahl"
-            unitKey="count"
-            ctx="chart"
-            stacked={false}
-            svgHeight={300}
-          />
+          <div className="card border-0 shadow-none h-100">
+            <div className="card-header bg-white border-0 text-center">
+              <h4 className="h6 mb-0">Gegenüberstellung von Genehmigungen, Fertigstellungen, Bauüberhang und Bauabgängen</h4>
+            </div>
+            <div className="card-body">
+              <StackedComboChart
+                title="Gegenüberstellung von Genehmigungen, Fertigstellungen, Bauüberhang und Bauabgängen"
+                categories={vm.bauUeberhangGenehmigungFertigstellung[0]?.points.map((p) => String(p.jahr)) ?? []}
+                bars={[]}
+                lines={vm.bauUeberhangGenehmigungFertigstellung.map((series) => ({
+                  key: series.key,
+                  label: series.label,
+                  values: series.points.map((p) => p.value),
+                  color: series.color,
+                }))}
+                valueKind="anzahl"
+                unitKey="count"
+                ctx="chart"
+                stacked={false}
+                svgHeight={300}
+              />
+            </div>
+          </div> 
         </div>
       </section>
+      
+      
 
       {/* Wohnraumsaldo */}
       <section className="mb-5" id="wohnraumsaldo">
-        <h4>Wohnraumbestand und Wohnraumsaldo</h4>
-        {vm.wohnungsbestandIntro ? <p>{vm.wohnungsbestandIntro}</p> : null}
+        
+        <h4 className="mx-auto text-center">Wohnraumbestand und Wohnraumsaldo</h4>
+        
+        {vm.wohnungsbestandIntro ? <p className="mx-auto my-5 w-75">{vm.wohnungsbestandIntro}</p> : null}
 
         <div className="row g-4 align-items-center my-4">
           <div className="col-12 col-lg-6 text-center">
@@ -564,8 +881,16 @@ export function WohnmarktsituationSection(
             />
           </div>
           <div className="col-12 col-lg-6 text-center">
-            <div className="h2 mb-1">{formatKpiValue(vm.kpis.wohnungsbestandWohnraumsaldo)}</div>
-            <div className="text-muted">{saldoStatus.label}</div>
+            <KpiValue
+              icon={DEFAULT_ICON}
+              iconAlt="Wohnraumsaldo"
+              items={[{ label: "Wohnraumsaldo", value: saldoValue, kind: "anzahl", unitKey: "none" }]}
+              ctx="kpi"
+              size="ultra"
+              showUnit={false}
+              caption={saldoStatus.label}
+              captionClassName="small text-muted mt-1"
+            />
           </div>
         </div>
       </section>
@@ -573,128 +898,283 @@ export function WohnmarktsituationSection(
       {/* Wohnungsbestand Anzahl */}
       <section className="mb-5" id="wohnungsbestand-anzahl">
         <div className="row g-3 mb-3">
-          <div className="col-12 col-md-6">
-            <KpiCard title="Wohnungen insgesamt" value={vm.kpis.wohnungsbestandAnzahlAbsolut} unit="Wohnungen" />
-          </div>
-          <div className="col-12 col-md-6">
-            <KpiCard title="Leerstandsquote" value={vm.kpis.leerstandsquote} />
-          </div>
+          {wohnungsbestandAnzahlAbsolutValue !== null ? (
+            <div className={leerstandsquoteValue ? "col-12 col-md-6" : "col-12"}>
+              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Wohnungen insgesamt"
+                    items={[{ label: "Wohnungen insgesamt", value: wohnungsbestandAnzahlAbsolutValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="Wohnungen"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {leerstandsquoteValue ? (
+            <div className="col-12 col-md-6">
+              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Leerstandsquote"
+                    items={[{ label: "Leerstandsquote", value: leerstandsquoteValue * 100, kind: "quote", unitKey: "percent" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={true}
+                    caption="marktaktiver Leerstand"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {vm.wohnungsbestandAnzahlText ? <p>{vm.wohnungsbestandAnzahlText}</p> : null}
+        {vm.wohnungsbestandAnzahlText ? <p className="mx-auto my-5 w-75">{vm.wohnungsbestandAnzahlText}</p> : null}
 
         <div className="row g-4 mt-2">
           <div className="col-12 col-lg-6">
-            <StackedComboChart
-              title="Wohnungsanzahl"
-              categories={vm.wohnungsbestandWohnungsanzahl.categories}
-              bars={vm.wohnungsbestandWohnungsanzahl.bars}
-              lines={vm.wohnungsbestandWohnungsanzahl.lines}
-              valueKind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              stacked={false}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Wohnungsanzahl</h4>
+              </div>
+              <div className="card-body">
+                <StackedComboChart
+                  title="Wohnungsanzahl"
+                  categories={vm.wohnungsbestandWohnungsanzahl.categories}
+                  bars={vm.wohnungsbestandWohnungsanzahl.bars}
+                  lines={vm.wohnungsbestandWohnungsanzahl.lines}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  stacked={false}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
           <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Wohnungsanzahl pro 1000 EW"
-              series={vm.wohnungsbestandWohnungsanzahlJe1000}
-              kind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Wohnungsanzahl pro 1000 EW</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="Wohnungsanzahl pro 1000 EW"
+                  series={vm.wohnungsbestandWohnungsanzahlJe1000}
+                  kind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Wohnfläche */}
       <section className="mb-5" id="wohnflaeche">
-        {vm.wohnungsbestandWohnflaecheText ? <p>{vm.wohnungsbestandWohnflaecheText}</p> : null}
+        {vm.wohnungsbestandWohnflaecheText ? <p className="mx-auto my-5 w-75">{vm.wohnungsbestandWohnflaecheText}</p> : null}
 
         <div className="row g-4">
           <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Wohnfläche pro EW"
-              series={vm.wohnungsbestandWohnflaeche}
-              kind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Wohnfläche pro EW</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="Wohnfläche pro EW"
+                  series={vm.wohnungsbestandWohnflaeche}
+                  kind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
           <div className="col-12 col-lg-6">
-            <KpiCard title="Ø Wohnfläche" value={vm.kpis.wohnungsbestandMittlereWohnflaeche} unit="m²" />
+            {wohnungsbestandMittlereWohnflaecheValue !== null ? (
+              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Ø Wohnfläche"
+                    items={[{ label: "Ø Wohnfläche", value: wohnungsbestandMittlereWohnflaecheValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="m²"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
 
       {/* Baufertigstellungen */}
       <section className="mb-5" id="baufertigstellungen">
-        <h4>Baufertigstellungen</h4>
-        {vm.baufertigstellungenIntro ? <p>{vm.baufertigstellungenIntro}</p> : null}
+        <h4 className="mx-auto text-center">Baufertigstellungen</h4>
+        {vm.baufertigstellungenIntro ? <p className="mx-auto my-5 w-75">{vm.baufertigstellungenIntro}</p> : null}
 
         <div className="row g-3 mb-3">
-          <div className="col-12 col-md-6">
-            <KpiCard title="Baufertigstellungen insgesamt" value={vm.kpis.baufertigstellungenAnzahlAbsolut} unit="Wohnungen" />
-          </div>
-          <div className="col-12 col-md-6">
-            <KpiCard title="Fertiggestellte Flächen" value={vm.kpis.baufertigstellungenFlaecheAbsolut} unit="1000 m²" />
-          </div>
+          {baufertigstellungenAnzahlAbsolutValue !== null ? (
+            <div className="col-12 col-md-6">
+              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Baufertigstellungen insgesamt"
+                    items={[{ label: "Baufertigstellungen insgesamt", value: baufertigstellungenAnzahlAbsolutValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="Wohnungen"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {baufertigstellungenFlaecheAbsolutValue !== null ? (
+            <div className="col-12 col-md-6">
+              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Fertiggestellte Flächen"
+                    items={[{ label: "Fertiggestellte Flächen", value: baufertigstellungenFlaecheAbsolutValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="1000 m²"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {vm.baufertigstellungenText ? <p>{vm.baufertigstellungenText}</p> : null}
+        {vm.baufertigstellungenText ? <p className="mx-auto my-5 w-75">{vm.baufertigstellungenText}</p> : null}
 
         <div className="row g-4 mt-2">
           <div className="col-12 col-lg-6">
-            <StackedComboChart
-              title="Fertiggestellte Wohnungen"
-              categories={vm.baufertigstellungenWohnungsanzahl.categories}
-              bars={vm.baufertigstellungenWohnungsanzahl.bars}
-              lines={vm.baufertigstellungenWohnungsanzahl.lines}
-              valueKind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              stacked={false}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-none h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Fertiggestellte Wohnungen</h4>
+              </div>
+              <div className="card-body">
+                <StackedComboChart
+                  title="Fertiggestellte Wohnungen"
+                  categories={vm.baufertigstellungenWohnungsanzahl.categories}
+                  bars={vm.baufertigstellungenWohnungsanzahl.bars}
+                  lines={vm.baufertigstellungenWohnungsanzahl.lines}
+                  valueKind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  stacked={false}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
           <div className="col-12 col-lg-6">
-            <ZeitreiheChart
-              title="Baufertigstellungen pro 1000 EW"
-              series={vm.baufertigstellungenWohnungsanzahlJe1000}
-              kind="anzahl"
-              unitKey="count"
-              ctx="chart"
-              svgWidth={420}
-              svgHeight={260}
-            />
+            <div className="card border-0 shadow-none h-100">
+              <div className="card-header bg-white border-0 text-center">
+                <h4 className="h6 mb-0">Baufertigstellungen pro 1000 EW</h4>
+              </div>
+              <div className="card-body">
+                <ZeitreiheChart
+                  title="Baufertigstellungen pro 1000 EW"
+                  series={vm.baufertigstellungenWohnungsanzahlJe1000}
+                  kind="anzahl"
+                  unitKey="count"
+                  ctx="chart"
+                  svgWidth={720}
+                  svgHeight={260}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Baugenehmigungen */}
       <section className="mb-5" id="baugenehmigungen">
-        <h4>Baugenehmigungen</h4>
-        {vm.baugenehmigungenIntro ? <p>{vm.baugenehmigungenIntro}</p> : null}
+        <h4 className="mx-auto text-center">Baugenehmigungen</h4>
+        {vm.baugenehmigungenIntro ? <p className="mx-auto my-5 w-75">{vm.baugenehmigungenIntro}</p> : null}
 
         <div className="row g-3 mb-3">
-          <div className="col-12 col-md-4">
-            <KpiCard title="Genehmigungen" value={vm.kpis.baugenehmigungenAnzahlAbsolut} unit="Wohnungen" />
-          </div>
-          <div className="col-12 col-md-4">
-            <KpiCard title="Flächen" value={vm.kpis.baugenehmigungenFlaecheAbsolut} unit="1000 m²" />
-          </div>
-          <div className="col-12 col-md-4">
-            <KpiCard title="Erloschen" value={vm.kpis.baugenehmigungenErloschen} unit="Genehmigungen" />
-          </div>
+          {baugenehmigungenAnzahlAbsolutValue !== null ? (
+            <div className="col-12 col-md-4">
+              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Genehmigungen"
+                    items={[{ label: "Genehmigungen", value: baugenehmigungenAnzahlAbsolutValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="Wohnungen"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {baugenehmigungenFlaecheAbsolutValue !== null ? (
+            <div className="col-12 col-md-4">
+              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Flächen"
+                    items={[{ label: "Flächen", value: baugenehmigungenFlaecheAbsolutValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="1000 m²"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
+          {baugenehmigungenErloschenValue !== null ? (
+            <div className="col-12 col-md-4">
+              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+                <div className="card-body">
+                  <KpiValue
+                    icon={DEFAULT_ICON}
+                    iconAlt="Erloschen"
+                    items={[{ label: "Erloschen", value: baugenehmigungenErloschenValue, kind: "anzahl", unitKey: "none" }]}
+                    ctx="kpi"
+                    size="xl"
+                    showUnit={false}
+                    caption="Genehmigungen"
+                    captionClassName="small text-muted mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {vm.baugenehmigungenText ? <p>{vm.baugenehmigungenText}</p> : null}
+        {vm.baugenehmigungenText ? <p className="mx-auto my-5 w-75">{vm.baugenehmigungenText}</p> : null}
 
         <div className="row g-4 mt-2">
           <div className="col-12 col-lg-6">
@@ -726,8 +1206,8 @@ export function WohnmarktsituationSection(
 
       {/* Bauüberhang und Baufortschritt */}
       <section className="mb-5" id="bauueberhang-baufortschritt">
-        <h4>Bauüberhang und Baufortschritt</h4>
-        {vm.bauueberhangBaufortschrittText ? <p>{vm.bauueberhangBaufortschrittText}</p> : null}
+        <h4 className="mx-auto text-center">Bauüberhang und Baufortschritt</h4>
+        {vm.bauueberhangBaufortschrittText ? <p className="mx-auto my-5 w-75">{vm.bauueberhangBaufortschrittText}</p> : null}
 
         <StackedComboChart
           title="Bauüberhang und Baufortschritt (Wohnungsneubau)"
@@ -743,17 +1223,17 @@ export function WohnmarktsituationSection(
       </section>
 
       {/* FAQ */}
-      <section className="mb-5" id="faq-wohnmarktsituation">
-        <h2 className="h4 mb-3">FAQ zu Standortinformationen</h2>
+      <section className="mb-0" id="faq-wohnmarktsituation">
+        <h2 className="text-center mb-3">FAQ zur Wohnmarktsituation</h2>
         <FaqSection items={faqItems} />
       </section>
 
       {/* Erfasste Wohnlagen */}
       {(vm.level === "kreis" || vm.level === "ort") ? (
         <section className="mb-4" id="wohnlagen">
-          <h2 className="h2 mb-3 align-center text-center">
+          <h4 className="h2 mb-3 align-center text-center">
             Erfasste Wohnlagen – {vm.level === "ort" ? (props.ctx?.kreisSlug ?? vm.regionName) : vm.regionName}
-          </h2>
+          </h4>
 
           <div className="card border-0 shadow-sm">
             <div className="card-body">

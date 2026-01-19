@@ -12,6 +12,7 @@ import { GaugeTacho } from "@/components/gauge-tacho";
 import { RegionHero } from "@/components/region-hero";
 import { BeraterBlock } from "@/components/advisor-avatar";
 import { RightEdgeControls } from "@/components/right-edge-controls";
+import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { VergleichChart } from "@/components/VergleichChart";
 import { ZeitreiheChart } from "@/components/ZeitreiheChart";
@@ -299,6 +300,19 @@ export function UebersichtSection(
       {/* Subnavigation */}
       <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
 
+      <ImmobilienmarktBreadcrumb
+        tabs={tabs}
+        activeTabId={activeTabId}
+        basePath={basePath}
+        parentBasePath={props.parentBasePath}
+        ctx={props.ctx}
+        names={{
+          regionName: vm.regionName,
+          bundeslandName: vm.bundeslandName,
+          kreisName: vm.kreisName,
+        }}
+      />
+
 
 
       <div className="position-relative" style={{ overflow: "visible" }}>
@@ -374,12 +388,16 @@ export function UebersichtSection(
 
       {/* Einleitung */}
       <section className="mb-3" id="einleitung">
-        <h1 className="mt-3 mb-1">Standort & Immobilienmarkt 2025 {vm.regionName}</h1>
-        <p className="small text-muted mb-4">Aktualisiert am: {vm.regionName}</p>
+        <h1 className="mt-3 mb-1">{vm.headlineMain}</h1>
+        <p className="small text-muted mb-4">Aktualisiert am: {vm.updatedAt ?? "–"}</p>
 
-        {vm.texts.teaser ? <p className="teaser-text">{vm.texts.teaser}</p> : null}
+        {vm.teaser ? <p className="teaser-text">{vm.teaser}</p> : null}
 
-        <BeraterBlock name={vm.berater.name} taetigkeit={vm.berater.taetigkeit} imageSrc={vm.berater.imageSrc} />
+        <BeraterBlock
+          name={vm.berater.name}
+          taetigkeit={vm.berater.taetigkeit}
+          imageSrc={vm.berater.imageSrc}
+        />
       </section>
 
       {/* Standortüberblick */}
