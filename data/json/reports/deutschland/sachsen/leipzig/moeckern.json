@@ -1,6 +1,6 @@
 {
     "meta": {
-        "aktualisierung": "08.01.2026",
+        "aktualisierung": "15.01.2026",
         "regionale_zuordnung": "stadtteil",
         "amtlicher_name": "Möckern",
         "bundesland_name": "sachsen",
@@ -66,32 +66,32 @@
         "standortfaktoren": [
             {
                 "faktor": "gesundheit",
-                "wert": 7,
+                "wert": 1,
                 "color": "#daaf60"
             },
             {
                 "faktor": "bildung",
-                "wert": 3,
+                "wert": 1,
                 "color": "#f27c78"
             },
             {
                 "faktor": "naherholung",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "kultur_freizeit",
-                "wert": 7,
+                "wert": 1,
                 "color": "#daaf60"
             },
             {
                 "faktor": "mobilitaet",
-                "wert": 5,
+                "wert": 1,
                 "color": "#e6956c"
             },
             {
                 "faktor": "nahversorgung",
-                "wert": 9,
+                "wert": 1,
                 "color": "#cec854"
             }
         ],
@@ -3085,23 +3085,23 @@
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": 2599.258671406822,
-                "doppelhaushaelfte": 2810.288929804228,
-                "einfamilienhaus": 3013.868025615505,
+                "reihenhaus": 2664.403276831846,
+                "doppelhaushaelfte": 2816.4786992780823,
+                "einfamilienhaus": 2965.062060349354,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": 3116.873605816169,
-                "doppelhaushaelfte": 3317.585752661824,
-                "einfamilienhaus": 3593.3325740466566,
+                "reihenhaus": 3211.18543208962,
+                "doppelhaushaelfte": 3307.342674275839,
+                "einfamilienhaus": 3619.3204049617916,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": 3850.7425414718637,
-                "doppelhaushaelfte": 4035.1696810854087,
-                "einfamilienhaus": 4135.392379895737,
+                "reihenhaus": 3833.493050540823,
+                "doppelhaushaelfte": 4078.8463644346625,
+                "einfamilienhaus": 4213.121399630903,
                 "einheit": "pricePerSqm"
             }
         ],
@@ -4071,7 +4071,7 @@
             "wirtschaft_sv_beschaeftigte_arbeitsort": "In den vergangenen fünf Jahren ist um 12,8 % stark gestiegen. Im jüngsten Jahr liegt die Zahl der Wohnort-Beschäftigten bei 7.716.",
             "wirtschaft_arbeitsplatzzentralitaet": "Die Arbeitsplatzzentralität liegt klar über dem Landesniveau mit Index 1.1225968816227672.",
             "wirtschaft_pendler": "Das Pendlervolumen  stieg deutlich um 4316 Personen. Die Zahl der Einpendler ist um 2,64 % % stark gestiegen. Die Zahl der Auspendler ist um 2,09 % % stark gestiegen.",
-            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben. Ihr Wert liegt bei 6,9 %. Damit ist sie in den letzten fünf Jahren weitestgehend stabil geblieben. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote reflektiert das Ausmaß der Arbeitslosigkeit in einer Region und berücksichtigt Personen mit Anspruch auf Bürgergeld (SGB II) oder Arbeitslosengeld (SGB III). Die Basis hierfür bildet die Gesamtzahl der zivilen Erwerbspersonen. Ihr Wert beträgt zur Zeit 6,9 %. Damit ist sie in den letzten fünf Jahren weitestgehend stabil geblieben. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
         },
         "wohnmarktsituation": {
             "wohnmarktsituation_intro": "Die Wohnraumsituation in größeren kreisfreien Städten ist geprägt von einem ständigen Spannungsfeld zwischen steigender Nachfrage und begrenztem Angebot. Urbanisierung und Bevölkerungswachstum lassen den Bedarf kontinuierlich steigen, während Baukapazitäten, Investitionen und gesetzliche Vorgaben das Angebot bestimmen. Hinzu kommen staatliche Programme zur Förderung von sozialem Wohnraum, die zwar wichtig sind, aber häufig in Konkurrenz zum freien Markt stehen. Als regionaler Immobilienspezialist sehe ich täglich, wie stark auch die wirtschaftliche Lage auf Bauindustrie und Kaufkraft wirkt – und damit die Dynamik des gesamten Wohnungsmarktes entscheidend prägt.",
@@ -4084,13 +4084,13 @@
             "wohnmarktsituation_wohnungsbestand_intro": "Die Haushaltsstruktur, welche die Anzahl der Einzelpersonen- und Mehrpersonenhaushalte umfasst, hat entscheidenden Einfluss auf die Nachfrage nach Wohnraum in einer Region. Die Nachfrage nach Wohnraum hängt daher nicht direkt von der Einwohnerzahl ab, sondern vielmehr von der Anzahl der Haushalte. Ein aussagekräftiger Vergleich zwischen Wohnungsangebot und -nachfrage setzt eine Gegenüberstellung der verfügbaren Wohnungen und der Haushalte voraus.",
             "wohnmarktsituation_baufertigstellungen_intro": "Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau.",
             "wohnmarktsituation_baugenehmigungen_intro": "Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
-            "wohnmarktsituation_allgemein": "In Leipzig Möckern leben aktuell rund 17.824 Menschen auf einer Gesamtfläche von 485 ha, davon entfallen 232 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 17.824 Einwohner je km². Die Einwohnerzahl ist in den letzten fünf Jahren um 1233 Menschen deutlich gestiegen, was auch auf zukünftiges Wachstum hoffen lässt. Aktuell wird Leipzig Möckern als wachsende Region eingestuft. Insgesamt gibt es hier etwa 10.258 Haushalte, die durchschnittlich aus 1,74 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung liegt mit 3947 Personen stark über dem Niveau von 2015, was Leipzig Möckern als polarisierende Gegend kennzeichnet. Im Zehnjahresvergleich bedeutet hier einen deutlichen Anstieg von 28.4 %.Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 3947 Personen stark über dem Niveau von 2015, was Leipzig Möckern als polarisierende Gegend kennzeichnet. Über zehn Jahre betrachtet bedeutet hier einen deutlichen Anstieg von 28.4 %.",
+            "wohnmarktsituation_allgemein": "In Leipzig Möckern leben aktuell rund 17.824 Menschen auf einer Gesamtfläche von 485 ha, davon entfallen 232 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 17.824 Einwohner je km². Über fünf Jahre hinweg ist die Bevölkerung um 1233 Personen deutlich gestiegen. Aktuell wird Leipzig Möckern als wachsende Region eingestuft. Insgesamt gibt es hier etwa 10.258 Haushalte, die durchschnittlich aus 1,74 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung liegt mit 3947 Personen stark über dem Niveau von 2015, was Leipzig Möckern als polarisierende Gegend kennzeichnet. Im Zehnjahresvergleich zeigt insgesamt ein starkes Wachstum in Höhe von 28.4 %.Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 3947 Personen stark über dem Niveau von 2015, was Leipzig Möckern als polarisierende Gegend kennzeichnet. Über zehn Jahre betrachtet zeigt insgesamt ein starkes Wachstum in Höhe von 28.4 %.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 10.258. In den letzten fünf Jahren hat sich die Zahl um 1.789 erhöht, was einem sehr starken Wachstum von 21,1 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2024 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
-            "wohnmarktsituation_wanderungssaldo": "Über die letzten fünf Jahre hat die Anzahl neuer Bürger um 4,5 % leicht zugenommen, was auf eine allmählich wachsende Anziehungskraft der Region schließen läßt. Parallel dazu sind aber auch im selben Zeitraum die Fortzüge aus Leipzig Möckern um 60,2 % stark gestiegen, was für die Gegend leider ausgesprochen negativ ist. Folglich ist mit 631 stark gesunken. Schauen wir ins aktuelle Jahr 2024, dann sehen wir einen Wanderungssaldo von -476..",
-            "wohnmarktsituation_alterstruktur": "Das Durchschnittsalter   ist 41.13128366 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter unter dem Bundesdurchschnitt, was eine jüngere Struktur nahelegt.",
-            "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient   bei 26.2 und der Jugendquotient bei 23.6. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt klar unter dem Landesniveau, was einen geringeren Anteil an jungen Menschen vermuten lässt. Der Altenquotient liegt klar unter dem Landesniveau, was einen vergleichsweise jüngeren Altersaufbau signalisiert.",
+            "wohnmarktsituation_wanderungssaldo": "Innerhalb der letzten fünf Jahre hat die Anzahl neuer Bürger um 4,5 % leicht zugenommen, woraus man eine langsam steigende Attraktivität ableiten kann. Währenddessen haben aber auch im selben Zeitfenster die Wegzüge aus Leipzig Möckern um 60,2 % erheblich zugenommen, was sich für die Gegend deutlich ungünstig auswirkt. Folglich hat mit 631 stark abgenommen. Wenn wir auf die aktuellste Entwicklung in 2024 blicken, ist der Saldo -476.",
+            "wohnmarktsituation_alterstruktur": "Der Altersdurchschnitt erreicht   41.13128366 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter unter dem Bundesdurchschnitt, was eine jüngere Struktur nahelegt.",
+            "wohnmarktsituation_jugendquotient_altenquotient": "  liegt der Jugendquotient bei 23.6 und der Altenquotienten bei 26.2. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt klar unter dem Landesniveau, was einen geringeren Anteil an jungen Menschen vermuten lässt. Der Altenquotient liegt klar unter dem Landesniveau, was einen vergleichsweise jüngeren Altersaufbau signalisiert.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 9.750 Wohnungen. Pro 1.000 Einwohner stehen also um die 547 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre blieb der Bestand dabei nahezu stabil.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt   aktuell ca. 628 m² m². Pro Kopf stehen hier durchschnittlich 35.2 m² zur Verfügung.  Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person kaum verändert.",
             "wohnmarktsituation_baufertigstellungen": "Im Jahr 2024 wurden   151 neue Wohnungen fertiggestellt, was 8.5 Fertigstellungen pro 1.000 Einwohner entspricht. In den vergangenen 5 Jahren ist die Zahl der Fertigstellungen gestiegen, was auf eine erhöhte Bautätigkeit hinweist.",
@@ -4102,25 +4102,25 @@
             "immobilienpreise_haus_intro": "Welche Preise erzielen Häuser in der Region aktuell? In diesem Kapitel betrachten wir die Immobilienpreise verschiedener Haustypen, analysieren die Situation in den vorhandenen Wohnlagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends auf. Gern gebe ich Ihnen eine individuell auf Ihre Immobilie abgestimmte Einschätzung. Kontaktieren Sie mich dazu gern.",
             "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Preise für Wohnungen in der Region? In diesem Kapitel betrachten wir die Immobilienpreise nach Wohnlagequalitäten, vergleichen die regionale Situation mit überregionalen Entwicklungen und zeigen aktuelle Trends auf. Zusätzlich fließen Unterschiede nach Zimmeranzahl und Wohnfläche in die Analyse ein. Für eine individuell auf Ihre Immobilie abgestimmte Einschätzung stehe ich Ihnen als Immobilienspezialist in der Region gern zur Verfügung.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Leipzig Möckern bei 3.240 €/m².  Er bewegt sich dabei zwischen 3.000 €/m² und 3.690 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 3,5 % gestiegen.  ",
-            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Möckern variieren die Preise je nach Lage erheblich. Leipzig Möckern weist vor allem einfache, mittlere und gute Wohnlagen auf. Die Spanne reicht in guten Lagen von 3.350 € bis 3.687 €, während in mittleren Lagen im Mittel 3.155 € erzielt wird.",
-            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat hier in etwa zwischen 3013,9 €/m² und 4135,4 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3116,9 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen zwischen 2810,3 €/m² und 4035,2 €/m² rechnen .",
+            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Möckern variieren die Preise je nach Lage erheblich. Leipzig Möckern weist vor allem einfache, mittlere und gute Wohnlagen auf. Beispielsweise einfachen (3.519 €), mittleren (3.155 €) und guten (3.519 €).",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat hier in etwa zwischen 2965,1 €/m² und 4213,1 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3211,2 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen zwischen 2816,5 €/m² und 4078,8 €/m² rechnen .",
             "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute liegt der Preis bei 3.240 €/m², und ist damit um 8,0 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Die aktuellen Angebotspreise für Wohnungen in Leipzig Möckern liegen bei 2.640 €/m². Diese bewegen sich in einer Preisspanne von 2.640 €/m² bis 3.150 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 4,3 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Möckern variieren die Preise je nach Lage erheblich. in Leipzig Möckern gibt es einfache bis gute Wohnlagequalitäten. Die Spanne reicht in guten Lagen von 2.864 € bis 3.154 €, während in mittleren Lagen im Mittel 2.579 € erzielt wird.",
-            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Möckern müssen diese derzeit durchschnittlich 2478,1 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 5,8 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 3034,3 €/m². hier ist der kurzfristige Trend mit 1,8 % Anstieg, leicht positiv ",
-            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 2.590 €/m². Heute liegt der Preis bei 2.640 €/m² €/m², und ist damit um  % deutlich gestiegen."
+            "immobilienpreise_wohnung_allgemein": "Der durchschnittliche Quadratmeterpreis für Wohnungen in Leipzig Möckern beträgt 2.640 €/m². Diese befinden sich üblicherweise in einer Spanne von 2.640 €/m² bis 3.150 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 4,3 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Möckern variieren die Preise je nach Lage erheblich. in Leipzig Möckern gibt es einfache bis gute Wohnlagequalitäten. In guten Wohnlagen liegen sie aktuell bei 3.009 € und in einfachen Wohnlagen bei 2.723 €.",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig Möckern derzeit durchschnittlich 2375,4 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 5,8 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 2890,0 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 2890,0 €/m². hier ist der kurzfristige Trend mit 1,8 % Anstieg, leicht positiv ",
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 2.590 €/m². Heute beträgt er 2.640 €/m² €/m², und ist damit um  % deutlich gestiegen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "Die Grundstückspreise für Bauland sind ein zentraler Faktor für Bauherren, Investoren und Eigentümer. Sie bestimmen die Wirtschaftlichkeit neuer Projekte und die langfristige Wertentwicklung. Schwankungen entstehen vor allem durch Lage, Nachfrage und verfügbare Flächen. Dieser Report liefert einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist für den Landkreis Greiz helfe ich Ihnen, die statistischen Auswertungen richtig einzuordnen und die Chancen des regionalen Grundstücksmarktes optimal für Ihre Bau- oder Investitionsentscheidung zu nutzen.",
-            "grundstueckspreise_allgemein": "Die mittleren Angebotspreise für Grundstücke  Leipzig Möckern belaufen sich auf 620 €/m². Sie variieren typischerweise von 560 €/m² bis 690 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
+            "grundstueckspreise_allgemein": "Die aktuellen Angebotspreise für Baugrundstücke  Leipzig Möckern liegen bei 620 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 560 €/m² bis 690 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
             "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Möckern bei 780 €/m². Aktuell liegt der Preis bei 620 €/m² und ist damit um 19,6 % kräftig zurückgegangen."
         },
         "mietpreise": {
             "mietpreise_intro": "Wie entwickeln sich die Mietpreise in der Region aktuell? Die dargestellten Angebotsmieten spiegeln die Preise wider, die Vermieter derzeit für neue Verträge verlangen – und sie entsprechen in den meisten Fällen dem tatsächlichen Mietpreis, da sie die aktuellen Marktbedingungen abbilden. Bestandsmieten liegen dagegen oft niedriger, da sie sich an früheren Marktverhältnissen orientieren und weniger dynamisch reagieren. In diesem Kapitel betrachten wir die Mietpreise nach Lagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends sowie Unterschiede nach Zimmeranzahl und Wohnfläche. Als Immobilienspezialist in der Region stehe ich Ihnen dabei gern beratend zur Seite.",
-            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) in Leipzig Möckern beträgt 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 20.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² beträgt,  kommt man auf eine durchschnittliche Warmmiete von 13.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
-            "mietpreise_wohnung_allgemein": "Derzeit liegen die durchschnittlichen Kaltmieten bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 20.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 32.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 14.0 €/m² rechnen, im Bestand sind es 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 40,0 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 25,6 % weit über dem derzeitigen Niveau.",
-            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr stand der mittlere Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) standen die mittleren Angebotspreise bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
-            "mietpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig Möckern derzeit durchschnittlich 11,7 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 6,3 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 12,3 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 12,3 €/m². hier ist der kurzfristige Trend mit 6,7 % Anstieg, leicht positiv ",
+            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) in Leipzig Möckern beträgt 11.0 €/m². Diese pendeln zwischen den Werten von 6.0 €/m² bis 20.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² beträgt,  kommt man auf eine durchschnittliche Warmmiete von 13.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
+            "mietpreise_wohnung_allgemein": "Derzeit stehen die mittleren Mietepreis für Wohnungen bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 20.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 32.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 14.0 €/m² rechnen, im Bestand sind es 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 40,0 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 25,6 % weit über dem derzeitigen Niveau.",
+            "mietpreise_wohnung_preisentwicklung": "Vor einem Jahr stand der mittlere Quadratmeterpreis bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) standen die mittleren Angebotspreise bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
+            "mietpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Möckern müssen diese derzeit durchschnittlich 5,6 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 6,3 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 5,8 €/m². hier ist der kurzfristige Trend mit 6,7 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 10 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6 €/m² bis 12 €/m². ",
             "mietpreise_haus_preisentwicklung": "Letztes Jahr lag der Quadratmetermietpreis bei Häusern in  bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 6 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) standen die mittleren Angebotspreise bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 23 % recht stark angestiegen. "
         },
@@ -4131,7 +4131,7 @@
             "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 4,5 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Möckern bei 4,48 %. Bis heute ist der Preis innerhalb dieser Zeit mit 0,4 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 3,85 %, innerhalb diesen Zeitraums sind sie bis jetzt um 16,7 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 4,15 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 5,57 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  in Leipzig Möckern ungefähr bei 18.2, und die mittlere Netto-Mietrendite bei ungefähr 5,22 %. ",
             "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Möckern bei 24.7. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 3,7 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Möckern bei 15.2. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 6,26 €/m², "
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Möckern bei 15.2. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 6,26 €/m², "
         },
         "quellenangaben": [
             {

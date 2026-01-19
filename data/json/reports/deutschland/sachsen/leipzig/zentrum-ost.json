@@ -1,6 +1,6 @@
 {
     "meta": {
-        "aktualisierung": "08.01.2026",
+        "aktualisierung": "15.01.2026",
         "regionale_zuordnung": "stadtteil",
         "amtlicher_name": " Zentrum-Ost",
         "bundesland_name": "sachsen",
@@ -66,32 +66,32 @@
         "standortfaktoren": [
             {
                 "faktor": "gesundheit",
-                "wert": 9,
+                "wert": 1,
                 "color": "#cec854"
             },
             {
                 "faktor": "bildung",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "naherholung",
-                "wert": 9,
+                "wert": 1,
                 "color": "#cec854"
             },
             {
                 "faktor": "kultur_freizeit",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "mobilitaet",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "nahversorgung",
-                "wert": 10,
+                "wert": 1,
                 "color": "#c8d54f"
             }
         ],
@@ -348,11 +348,11 @@
         ],
         "wirtschaft_allgemein": [
             {
-                "kaufkraftindex_ol": 84.25626615953672,
+                "kaufkraftindex_ol": 84.43615096421236,
                 "kaufkraftindex_k": 81.83764456893748,
-                "kaufkraft_nominal_ol": 23662.000738108793,
+                "kaufkraft_nominal_ol": 23712.51845714645,
                 "kaufkraft_nominal_k": 22982.77023727455,
-                "kaufkraft_real_ol": 20903.654040911857,
+                "kaufkraft_real_ol": 20948.282765819233,
                 "kaufkraft_real_k": 20751.359798168432,
                 "bip": 25281756,
                 "pendlersaldo_ol": 0,
@@ -642,35 +642,35 @@
         "nettoeinkommen_pro_ew": [
             {
                 "jahr": -4,
-                "nettoeinkommen_pro_ew_ol": 21434.025561797658,
+                "nettoeinkommen_pro_ew_ol": 21478.017774224467,
                 "nettoeinkommen_pro_ew_k": 20455.337552071738,
                 "nettoeinkommen_pro_ew_bl": 20455.337552071738,
                 "nettoeinkommen_pro_ew_l": 23894.7659101949
             },
             {
                 "jahr": -3,
-                "nettoeinkommen_pro_ew_ol": 21683.69159755977,
+                "nettoeinkommen_pro_ew_ol": 21729.677682553553,
                 "nettoeinkommen_pro_ew_k": 20615.929459381325,
                 "nettoeinkommen_pro_ew_bl": 20615.929459381325,
                 "nettoeinkommen_pro_ew_l": 24454.869440227176
             },
             {
                 "jahr": -2,
-                "nettoeinkommen_pro_ew_ol": 21757.860112080947,
+                "nettoeinkommen_pro_ew_ol": 21804.638490673504,
                 "nettoeinkommen_pro_ew_k": 21651.566160463106,
                 "nettoeinkommen_pro_ew_bl": 21651.566160463106,
                 "nettoeinkommen_pro_ew_l": 26040.73670674114
             },
             {
                 "jahr": -1,
-                "nettoeinkommen_pro_ew_ol": 22053.952797517137,
+                "nettoeinkommen_pro_ew_ol": 22100.89645673959,
                 "nettoeinkommen_pro_ew_k": 22010.36266424572,
                 "nettoeinkommen_pro_ew_bl": 24428.45500568276,
                 "nettoeinkommen_pro_ew_l": 26874.040281356854
             },
             {
                 "jahr": 0,
-                "nettoeinkommen_pro_ew_ol": 23662.000738108793,
+                "nettoeinkommen_pro_ew_ol": 23712.51845714645,
                 "nettoeinkommen_pro_ew_k": 22982.77023727455,
                 "nettoeinkommen_pro_ew_bl": 25356.736295898707,
                 "nettoeinkommen_pro_ew_l": 28083.372094017912
@@ -679,35 +679,35 @@
         "nettoeinkommen_pro_hh": [
             {
                 "jahr": -4,
-                "nettoeinkommen_pro_hh_ol": 33785.21447776216,
+                "nettoeinkommen_pro_hh_ol": 33854.55685714422,
                 "nettoeinkommen_pro_hh_k": 36819.558294998205,
                 "nettoeinkommen_pro_hh_bl": 41455.59569489939,
                 "nettoeinkommen_pro_hh_l": 48578.79810278226
             },
             {
                 "jahr": -3,
-                "nettoeinkommen_pro_hh_ol": 34285.0870894464,
+                "nettoeinkommen_pro_hh_ol": 34357.797814085745,
                 "nettoeinkommen_pro_hh_k": 36077.92151150112,
                 "nettoeinkommen_pro_hh_bl": 42305.23192488263,
                 "nettoeinkommen_pro_hh_l": 50210.97681302417
             },
             {
                 "jahr": -2,
-                "nettoeinkommen_pro_hh_ol": 34409.61115500851,
+                "nettoeinkommen_pro_hh_ol": 34483.590204857166,
                 "nettoeinkommen_pro_hh_k": 37890.209392813034,
                 "nettoeinkommen_pro_hh_bl": 45498.28883610451,
                 "nettoeinkommen_pro_hh_l": 53545.432056007725
             },
             {
                 "jahr": -1,
-                "nettoeinkommen_pro_hh_ol": 34771.69429200688,
+                "nettoeinkommen_pro_hh_ol": 34845.70871393015,
                 "nettoeinkommen_pro_hh_k": 39618.652795642294,
                 "nettoeinkommen_pro_hh_bl": 47054.53102068258,
                 "nettoeinkommen_pro_hh_l": 55256.377714472655
             },
             {
                 "jahr": 0,
-                "nettoeinkommen_pro_hh_ol": 37323.34416680315,
+                "nettoeinkommen_pro_hh_ol": 37403.02847731574,
                 "nettoeinkommen_pro_hh_k": 41368.94585936106,
                 "nettoeinkommen_pro_hh_bl": 48880.60498366211,
                 "nettoeinkommen_pro_hh_l": 57476.930188407976
@@ -3047,8 +3047,8 @@
         ],
         "immobilienpreisindex_regional": [
             {
-                "immobilienpreisindex": 120,
-                "immobilienpreisindex_haus": 119,
+                "immobilienpreisindex": 121,
+                "immobilienpreisindex_haus": 120,
                 "immobilienpreisindex_wohnung": 111
             }
         ],
@@ -3064,44 +3064,44 @@
         ],
         "immobilien_kaufpreis": [
             {
-                "kaufpreis_immobilien": 3401.311068277716,
+                "kaufpreis_immobilien": 3418.976344941748,
                 "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis": [
             {
-                "kaufpreis_haus": 3533.0553328062783,
+                "kaufpreis_haus": 3568.385886134341,
                 "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreisspanne": [
             {
-                "preis_haus_min": 3141.59,
-                "preis_haus_avg": 3533.0553328062783,
-                "preis_haus_max": 3869.76,
+                "preis_haus_min": 3173.01,
+                "preis_haus_avg": 3568.385886134341,
+                "preis_haus_max": 3908.45,
                 "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": 2842.036003780341,
-                "doppelhaushaelfte": 2928.3089452826807,
-                "einfamilienhaus": 3263.218922963055,
+                "reihenhaus": 2841.958594705291,
+                "doppelhaushaelfte": 3022.5373870924814,
+                "einfamilienhaus": 3229.768606836924,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": 3552.7125702111857,
-                "doppelhaushaelfte": 3733.039448544705,
-                "einfamilienhaus": 3896.0268786581582,
+                "reihenhaus": 3497.2190151474606,
+                "doppelhaushaelfte": 3721.0872093881726,
+                "einfamilienhaus": 4035.8063161265723,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": 4135.645437660216,
-                "doppelhaushaelfte": 4423.752000912188,
-                "einfamilienhaus": 4652.525343314591,
+                "reihenhaus": 4250.149980796028,
+                "doppelhaushaelfte": 4426.965963804234,
+                "einfamilienhaus": 4697.067041110909,
                 "einheit": "pricePerSqm"
             }
         ],
@@ -3118,17 +3118,17 @@
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "preis": 3533.0553328062783,
+                "preis": 3568.385886134341,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis Vorjahr",
-                "preis": 3404.9965219968544,
+                "preis": 3439.046487216823,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Tendenz",
-                "preis": 3.7609087111291393,
+                "preis": 3.760908711129131,
                 "einheit": "percent"
             }
         ],
@@ -3136,8 +3136,8 @@
             {
                 "preisinfo_label": "min. Preis",
                 "preis_einfache_lage": null,
-                "preis_mittlere_lage": 3141.59,
-                "preis_gute_lage": 3600.89,
+                "preis_mittlere_lage": 3173.01,
+                "preis_gute_lage": 3636.9,
                 "preis_sehr_gute_lage": null,
                 "preis_top_lage": null,
                 "einheit": "pricePerSqm"
@@ -3145,8 +3145,8 @@
             {
                 "preisinfo_label": "Ø Preis",
                 "preis_einfache_lage": null,
-                "preis_mittlere_lage": 3299.52,
-                "preis_gute_lage": 3735.5,
+                "preis_mittlere_lage": 3332.52,
+                "preis_gute_lage": 3772.85,
                 "preis_sehr_gute_lage": null,
                 "preis_top_lage": null,
                 "einheit": "pricePerSqm"
@@ -3154,8 +3154,8 @@
             {
                 "preisinfo_label": "max. Preis",
                 "preis_einfache_lage": null,
-                "preis_mittlere_lage": 3457.8,
-                "preis_gute_lage": 3869.76,
+                "preis_mittlere_lage": 3492.38,
+                "preis_gute_lage": 3908.45,
                 "preis_sehr_gute_lage": null,
                 "preis_top_lage": null,
                 "einheit": "pricePerSqm"
@@ -3164,7 +3164,7 @@
         "haus_kaufpreisentwicklung": [
             {
                 "jahr": 2021,
-                "preis_ol": 2892.9450172356046,
+                "preis_ol": 2921.87446740796,
                 "preis_k": 3047.0018685947102,
                 "preis_bl": 2584,
                 "preis_l": 2780.7035903653587,
@@ -3172,7 +3172,7 @@
             },
             {
                 "jahr": 2022,
-                "preis_ol": 3479.7641132818035,
+                "preis_ol": 3514.561754414621,
                 "preis_k": 3392.742781912248,
                 "preis_bl": 2606,
                 "preis_l": 3251.4663055838787,
@@ -3180,7 +3180,7 @@
             },
             {
                 "jahr": 2023,
-                "preis_ol": 3680.4020991360426,
+                "preis_ol": 3717.2061201274028,
                 "preis_k": 3691.4109574701124,
                 "preis_bl": 2800,
                 "preis_l": 3369.31848901723,
@@ -3188,7 +3188,7 @@
             },
             {
                 "jahr": 2024,
-                "preis_ol": 3328.4429164733497,
+                "preis_ol": 3361.727345638083,
                 "preis_k": 3391.88789262848,
                 "preis_bl": 2732,
                 "preis_l": 3043.145615893064,
@@ -3196,7 +3196,7 @@
             },
             {
                 "jahr": 2025,
-                "preis_ol": 3404.9965219968544,
+                "preis_ol": 3439.046487216823,
                 "preis_k": 3340.7070886232905,
                 "preis_bl": 2419,
                 "preis_l": 3062.0408943305847,
@@ -3204,7 +3204,7 @@
             },
             {
                 "jahr": 2026,
-                "preis_ol": 3533.0553328062783,
+                "preis_ol": 3568.385886134341,
                 "preis_k": 3450.998704760635,
                 "preis_bl": 2235,
                 "preis_l": 3152.5305408373115,
@@ -3819,229 +3819,229 @@
         ],
         "mietrendite_gesamt": [
             {
-                "kaufpreisfaktor": 25.215406279941238,
-                "bruttomietrendite": 3.9658294175315203,
-                "nettomietrendite": 3.6712371324138378
+                "kaufpreisfaktor": 25.346366700552423,
+                "bruttomietrendite": 3.9453386428683097,
+                "nettomietrendite": 3.6522684666202574
             }
         ],
         "bruttomietrendite_allgemein": [
             {
-                "bruttomietrendite_mfh": 5.82931789069076,
-                "bruttomietrendite_gwa": 4.142079541700084,
-                "bruttomietrendite_hh": 4.142079541700084,
-                "bruttomietrendite_etw": 4.3089809251538,
-                "bruttomietrendite_efh": 3.58103625325174,
-                "bruttomietrendite_dhh": 4.142079541700084,
-                "bruttomietrendite_rmh": 4.123748537905001
+                "bruttomietrendite_mfh": 5.782288026499468,
+                "bruttomietrendite_gwa": 4.128307571799377,
+                "bruttomietrendite_hh": 4.128307571799377,
+                "bruttomietrendite_etw": 4.316959028468552,
+                "bruttomietrendite_efh": 3.552145111644336,
+                "bruttomietrendite_dhh": 4.128307571799377,
+                "bruttomietrendite_rmh": 4.131383682374408
             }
         ],
         "nettomietrendite_allgemein": [
             {
-                "nettomietrendite_mfh": 5.4866333293589475,
-                "nettomietrendite_gwa": 3.904820374545795,
-                "nettomietrendite_hh": 3.8985816338203723,
-                "nettomietrendite_etw": 4.055671487272295,
-                "nettomietrendite_efh": 3.244702974947215,
-                "nettomietrendite_dhh": 3.8459128317419373,
-                "nettomietrendite_rmh": 3.8288925302232273
+                "nettomietrendite_mfh": 5.442224934943691,
+                "nettomietrendite_gwa": 3.8917241234992677,
+                "nettomietrendite_hh": 3.8855169966281995,
+                "nettomietrendite_etw": 4.063073641470738,
+                "nettomietrendite_efh": 3.2184296640154604,
+                "nettomietrendite_dhh": 3.833027597716697,
+                "nettomietrendite_rmh": 3.8358836874151154
             }
         ],
         "kaufpreisfaktor_allgemein": [
             {
-                "kaufpreisfaktor_mfh": 17.179646784164532,
-                "kaufpreisfaktor_gwa": 24.177619320553735,
-                "kaufpreisfaktor_hh": 24.177619320553735,
-                "kaufpreisfaktor_etw": 23.24113847199354,
-                "kaufpreisfaktor_efh": 27.965542729075036,
-                "kaufpreisfaktor_dhh": 24.177619320553735,
-                "kaufpreisfaktor_rmh": 24.285094358725264
+                "kaufpreisfaktor_mfh": 17.322451770506294,
+                "kaufpreisfaktor_gwa": 24.26258308524128,
+                "kaufpreisfaktor_hh": 24.26258308524128,
+                "kaufpreisfaktor_etw": 23.20230625347079,
+                "kaufpreisfaktor_efh": 28.198004955897222,
+                "kaufpreisfaktor_dhh": 24.26258308524128,
+                "kaufpreisfaktor_rmh": 24.24451785718597
             }
         ],
         "mietrendite_mfh": [
             {
                 "label": "Bruttomietrendite",
-                "mfh_neubau": 5.783711481182996,
-                "mfh_bestand_unsaniert": 6.122968306043612,
-                "mfh_bestand_kernsaniert": 5.581273884845673
+                "mfh_neubau": 5.727019674920256,
+                "mfh_bestand_unsaniert": 6.093830657206194,
+                "mfh_bestand_kernsaniert": 5.5260137473719535
             },
             {
                 "label": "Kaupreisfaktor",
-                "mfh_neubau": 17.289935766219457,
-                "mfh_bestand_unsaniert": 16.33194800327417,
-                "mfh_bestand_kernsaniert": 17.917056582999972
+                "mfh_neubau": 17.461088956603316,
+                "mfh_bestand_unsaniert": 16.410039206085596,
+                "mfh_bestand_kernsaniert": 18.096227148829975
             },
             {
                 "label": "Nettomietrendite",
-                "mfh_neubau": 5.546650538939147,
-                "mfh_bestand_unsaniert": 5.677468703830481,
-                "mfh_bestand_kernsaniert": 5.235780745307213
+                "mfh_neubau": 5.492282398553219,
+                "mfh_bestand_unsaniert": 5.6504510742905145,
+                "mfh_bestand_kernsaniert": 5.18394133198734
             }
         ],
         "mietrendite_gwa": [
             {
                 "label": "Bruttomietrendite",
-                "gwa_neubau": 4.109673455887852,
+                "gwa_neubau": 4.0888483208489435,
                 "gwa_bestand_unsaniert": 4.350735751680879,
-                "gwa_bestand_kernsaniert": 3.9658294175315203
+                "gwa_bestand_kernsaniert": 3.9453386428683097
             },
             {
                 "label": "Kaupreisfaktor",
-                "gwa_neubau": 24.33283351423746,
+                "gwa_neubau": 24.4567643876889,
                 "gwa_bestand_unsaniert": 22.984618167482513,
-                "gwa_bestand_kernsaniert": 25.215406279941238
+                "gwa_bestand_kernsaniert": 25.346366700552423
             },
             {
                 "label": "Nettomietrendite",
-                "gwa_neubau": 3.9599436784777016,
+                "gwa_neubau": 3.9398772759433065,
                 "gwa_bestand_unsaniert": 4.034181598559565,
-                "gwa_bestand_kernsaniert": 3.720335846600118
+                "gwa_bestand_kernsaniert": 3.701113495994932
             }
         ],
         "mietrendite_hh": [
             {
                 "label": "Bruttomietrendite",
-                "hh_neubau": 4.109673455887852,
+                "hh_neubau": 4.0888483208489435,
                 "hh_bestand_unsaniert": 4.350735751680879,
-                "hh_bestand_kernsaniert": 3.9658294175315203
+                "hh_bestand_kernsaniert": 3.9453386428683097
             },
             {
                 "label": "Kaupreisfaktor",
-                "hh_neubau": 24.33283351423746,
+                "hh_neubau": 24.4567643876889,
                 "hh_bestand_unsaniert": 22.984618167482513,
-                "hh_bestand_kernsaniert": 25.215406279941238
+                "hh_bestand_kernsaniert": 25.346366700552423
             },
             {
                 "label": "Nettomietrendite",
-                "hh_neubau": 3.9412274563014336,
+                "hh_neubau": 3.9212558953301015,
                 "hh_bestand_unsaniert": 4.034181598559565,
-                "hh_bestand_kernsaniert": 3.720335846600118
+                "hh_bestand_kernsaniert": 3.701113495994932
             }
         ],
         "mietrendite_etw": [
             {
                 "label": "Bruttomietrendite",
-                "etw_neubau": 4.275269065152557,
-                "etw_bestand_unsaniert": 4.526044750140875,
+                "etw_neubau": 4.275696606353808,
+                "etw_bestand_unsaniert": 4.54955151888388,
                 "etw_bestand_kernsaniert": 4.125628960167967
             },
             {
                 "label": "Kaupreisfaktor",
-                "etw_neubau": 23.390340695768966,
-                "etw_bestand_unsaniert": 22.094346282565464,
+                "etw_neubau": 23.3880018173874,
+                "etw_bestand_unsaniert": 21.980188505378774,
                 "etw_bestand_kernsaniert": 24.23872843764619
             },
             {
                 "label": "Nettomietrendite",
-                "etw_neubau": 4.100035684955704,
-                "etw_bestand_unsaniert": 4.196735331080782,
+                "etw_neubau": 4.100445702233026,
+                "etw_bestand_unsaniert": 4.218531776398791,
                 "etw_bestand_kernsaniert": 3.870243445780398
             }
         ],
         "mietrendite_efh": [
             {
                 "label": "Bruttomietrendite",
-                "efh_neubau": 3.5530195609233357,
-                "efh_bestand_unsaniert": 3.761430049383586,
-                "efh_bestand_kernsaniert": 3.4286591494482987
+                "efh_neubau": 3.518192945306197,
+                "efh_bestand_unsaniert": 3.7435303604700785,
+                "efh_bestand_kernsaniert": 3.3947120291567314
             },
             {
                 "label": "Kaupreisfaktor",
-                "efh_neubau": 28.14507443184823,
-                "efh_bestand_unsaniert": 26.58563330624419,
-                "efh_bestand_kernsaniert": 29.16592044913268
+                "efh_neubau": 28.423682712858366,
+                "efh_bestand_unsaniert": 26.71275250120929,
+                "efh_bestand_kernsaniert": 29.457579653624006
             },
             {
                 "label": "Nettomietrendite",
-                "efh_neubau": 3.2941217026378893,
-                "efh_bestand_unsaniert": 3.350914550936802,
-                "efh_bestand_kernsaniert": 3.0890726712669543
+                "efh_neubau": 3.2618327978438972,
+                "efh_bestand_unsaniert": 3.334968400868865,
+                "efh_bestand_kernsaniert": 3.0584877933336183
             }
         ],
         "mietrendite_dhh": [
             {
                 "label": "Bruttomietrendite",
-                "dhh_neubau": 4.109673455887852,
+                "dhh_neubau": 4.0888483208489435,
                 "dhh_bestand_unsaniert": 4.350735751680879,
-                "dhh_bestand_kernsaniert": 3.9658294175315203
+                "dhh_bestand_kernsaniert": 3.9453386428683097
             },
             {
                 "label": "Kaupreisfaktor",
-                "dhh_neubau": 24.33283351423746,
+                "dhh_neubau": 24.4567643876889,
                 "dhh_bestand_unsaniert": 22.984618167482513,
-                "dhh_bestand_kernsaniert": 25.215406279941238
+                "dhh_bestand_kernsaniert": 25.346366700552423
             },
             {
                 "label": "Nettomietrendite",
-                "dhh_neubau": 3.8850787897726273,
+                "dhh_neubau": 3.865391753490487,
                 "dhh_bestand_unsaniert": 3.9814225730393464,
-                "dhh_bestand_kernsaniert": 3.6712371324138378
+                "dhh_bestand_kernsaniert": 3.6522684666202574
             }
         ],
         "mietrendite_rmh": [
             {
                 "label": "Bruttomietrendite",
-                "rh_neubau": 4.091485867031094,
-                "rh_bestand_unsaniert": 4.331481328202877,
+                "rh_neubau": 4.091895029298038,
+                "rh_bestand_unsaniert": 4.353977599344151,
                 "rh_bestand_kernsaniert": 3.948278418481034
             },
             {
                 "label": "Kaupreisfaktor",
-                "rh_neubau": 24.440998514938787,
-                "rh_bestand_unsaniert": 23.086790043139768,
+                "rh_neubau": 24.438554577768567,
+                "rh_bestand_unsaniert": 22.967504475692117,
                 "rh_bestand_kernsaniert": 25.327494518097232
             },
             {
                 "label": "Nettomietrendite",
-                "rh_neubau": 3.867885157124452,
-                "rh_bestand_unsaniert": 3.96380256561036,
+                "rh_neubau": 3.8682719585727763,
+                "rh_bestand_unsaniert": 3.9843892357377,
                 "rh_bestand_kernsaniert": 3.65498986793487
             }
         ],
         "mietrendite_reh": [
             {
                 "label": "Bruttomietrendite",
-                "rh_neubau": 4.091485867031094,
-                "rh_bestand_unsaniert": 4.331481328202877,
+                "rh_neubau": 4.091895029298038,
+                "rh_bestand_unsaniert": 4.353977599344151,
                 "rh_bestand_kernsaniert": 3.948278418481034
             },
             {
                 "label": "Kaupreisfaktor",
-                "rh_neubau": 24.440998514938787,
-                "rh_bestand_unsaniert": 23.086790043139768,
+                "rh_neubau": 24.438554577768567,
+                "rh_bestand_unsaniert": 22.967504475692117,
                 "rh_bestand_kernsaniert": 25.327494518097232
             },
             {
                 "label": "Nettomietrendite",
-                "rh_neubau": 3.867885157124452,
-                "rh_bestand_unsaniert": 3.96380256561036,
+                "rh_neubau": 3.8682719585727763,
+                "rh_bestand_unsaniert": 3.9843892357377,
                 "rh_bestand_kernsaniert": 3.65498986793487
             }
         ],
         "mietrendite_entwicklung": [
             {
                 "jahr": 2022,
-                "brutto_mietrendite": 3.231566908304009,
-                "kaufpreisfaktor": 30.944740690045624
+                "brutto_mietrendite": 3.2148699447295224,
+                "kaufpreisfaktor": 31.105457365060943
             },
             {
                 "jahr": 2023,
-                "brutto_mietrendite": 3.1703685059547126,
-                "kaufpreisfaktor": 31.542074623872907
+                "brutto_mietrendite": 3.1539877442488056,
+                "kaufpreisfaktor": 31.70589365236018
             },
             {
                 "jahr": 2024,
-                "brutto_mietrendite": 3.6754944670497967,
-                "kaufpreisfaktor": 27.207223652894477
+                "brutto_mietrendite": 3.656503804323038,
+                "kaufpreisfaktor": 27.34852890943837
             },
             {
                 "jahr": 2025,
-                "brutto_mietrendite": 3.9499456991375395,
-                "kaufpreisfaktor": 25.3168037276651
+                "brutto_mietrendite": 3.929536992980096,
+                "kaufpreisfaktor": 25.448290772842846
             },
             {
                 "jahr": 2026,
-                "brutto_mietrendite": 3.9658294175315203,
-                "kaufpreisfaktor": 25.215406279941238
+                "brutto_mietrendite": 3.9453386428683097,
+                "kaufpreisfaktor": 25.346366700552423
             }
         ]
     },
@@ -4067,11 +4067,11 @@
             "wirtschaft_sv_beschaeftigte_wohnort": "Menschen, die in der Region wohnen, aber außerhalb arbeiten (Auspendler), sind in der Statistik der sozialversicherungspflichtig Beschäftigten (SvB) am Arbeitsort nicht erfasst. Umgekehrt sind unter den SvB am Wohnort alle im ortslage lebenden Beschäftigten gezählt, egal wo sie arbeiten. Einpendler, also Personen, die zum Arbeiten in den ortslage kommen, sind in dieser Statistik am Wohnort nicht inkludiert.",
             "wirtschaft_arbeitslosendichte": "Die Arbeitslosendichte bezieht sich auf die Anzahl der Arbeitslosen in einem bestimmten Gebiet im Verhältnis zur Fläche dieses Gebiets. Sie kann mit der Siedlungsdichte in Bezug gesetzt werden, um zu analysieren, wie Arbeitslosigkeit und Wohnraumverteilung zusammenhängen. In dicht besiedelten Gebieten könnte eine hohe Arbeitslosendichte auf strukturelle Probleme oder einen gesättigten Arbeitsmarkt hinweisen, während in weniger dichten Gebieten andere Faktoren wie Erreichbarkeit von Arbeitsplätzen eine Rolle spielen könnten.",
             "wirtschaft_bruttoinlandsprodukt": "Betrachten wir das aktuelle Niveau: Im jüngsten Jahr liegt das Bruttoinlandsprodukt bei 25.28 Mio. In den vergangenen fünf Jahren ist um 16,3 % stark gestiegen. pro Kopf liegt auf Landesniveau (Index 100).",
-            "wirtschaft_einkommen": "In den vergangenen fünf Jahren ist um 24,0 % stark gestiegen. Schauen wir auf das aktuelle Niveau: Im jüngsten Jahr liegt das verfügbare Einkommen bei 146.680.743 €.",
+            "wirtschaft_einkommen": "In den vergangenen fünf Jahren ist um 24,0 % stark gestiegen. Schauen wir auf das aktuelle Niveau: Im jüngsten Jahr liegt das verfügbare Einkommen bei 146.993.902 €.",
             "wirtschaft_sv_beschaeftigte_arbeitsort": "In den vergangenen fünf Jahren ist um 24,4 % stark gestiegen. Im jüngsten Jahr liegt die Zahl der Wohnort-Beschäftigten bei 2.931.",
             "wirtschaft_arbeitsplatzzentralitaet": "Die Arbeitsplatzzentralität liegt klar über dem Landesniveau mit Index 1.1225968816227672.",
             "wirtschaft_pendler": "Das Pendlervolumen  stieg deutlich um 4316 Personen. Die Zahl der Einpendler ist um 2,64 % % stark gestiegen. Die Zahl der Auspendler ist um 2,09 % % stark gestiegen.",
-            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote reflektiert das Ausmaß der Arbeitslosigkeit in einer Region und berücksichtigt Personen mit Anspruch auf Bürgergeld (SGB II) oder Arbeitslosengeld (SGB III). Die Basis hierfür bildet die Gesamtzahl der zivilen Erwerbspersonen. Sie liegt bei 4,9 %. Damit ist sie in den letzten fünf Jahren weitestgehend stabil geblieben. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben. Ihr Wert liegt bei 4,9 %. Damit ist sie in den letzten fünf Jahren weitestgehend stabil geblieben. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
         },
         "wohnmarktsituation": {
             "wohnmarktsituation_intro": "Die Wohnraumsituation in größeren kreisfreien Städten ist geprägt von einem ständigen Spannungsfeld zwischen steigender Nachfrage und begrenztem Angebot. Urbanisierung und Bevölkerungswachstum lassen den Bedarf kontinuierlich steigen, während Baukapazitäten, Investitionen und gesetzliche Vorgaben das Angebot bestimmen. Hinzu kommen staatliche Programme zur Förderung von sozialem Wohnraum, die zwar wichtig sind, aber häufig in Konkurrenz zum freien Markt stehen. Als regionaler Immobilienspezialist sehe ich täglich, wie stark auch die wirtschaftliche Lage auf Bauindustrie und Kaufkraft wirkt – und damit die Dynamik des gesamten Wohnungsmarktes entscheidend prägt.",
@@ -4084,54 +4084,54 @@
             "wohnmarktsituation_wohnungsbestand_intro": "Die Haushaltsstruktur, welche die Anzahl der Einzelpersonen- und Mehrpersonenhaushalte umfasst, hat entscheidenden Einfluss auf die Nachfrage nach Wohnraum in einer Region. Die Nachfrage nach Wohnraum hängt daher nicht direkt von der Einwohnerzahl ab, sondern vielmehr von der Anzahl der Haushalte. Ein aussagekräftiger Vergleich zwischen Wohnungsangebot und -nachfrage setzt eine Gegenüberstellung der verfügbaren Wohnungen und der Haushalte voraus.",
             "wohnmarktsituation_baufertigstellungen_intro": "Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau.",
             "wohnmarktsituation_baugenehmigungen_intro": "Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
-            "wohnmarktsituation_allgemein": "In Leipzig Zentrum Ost leben aktuell rund 6.199 Menschen auf einer Gesamtfläche von 162 ha, davon entfallen 66 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 6.199 Einwohner je km². Die Einwohnerzahl hat sich in den letzten fünf Jahren um 679 Menschen stark erhöht, was positive Entwicklungsperspektiven für die Region eröffnet. Aktuell wird Leipzig Zentrum Ost als stark wachsende Region eingestuft. Insgesamt gibt es hier etwa 3.930 Haushalte, die durchschnittlich aus 1,58 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region liegt mit 1979 Personen stark über dem Niveau von 2015, was Leipzig Zentrum Ost als polarisierende Gegend kennzeichnet. Über die letzten 10 Jahre bedeutet hier einen deutlichen Anstieg von 46.9 %.",
+            "wohnmarktsituation_allgemein": "In Leipzig Zentrum Ost leben aktuell rund 6.199 Menschen auf einer Gesamtfläche von 162 ha, davon entfallen 66 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 6.199 Einwohner je km². Binnen fünf Jahren hat sich die Zahl der Einwohner um 679 Personen stark erhöht. Aktuell wird Leipzig Zentrum Ost als stark wachsende Region eingestuft. Insgesamt gibt es hier etwa 3.930 Haushalte, die durchschnittlich aus 1,58 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region liegt mit 1979 Personen stark über dem Niveau von 2015, was Leipzig Zentrum Ost als polarisierende Gegend kennzeichnet. Über die letzten 10 Jahre zeigt damit ein starkes Wachstum von rund 46.9 %.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 3.930. In den letzten fünf Jahren hat sich die Zahl um 1.222 erhöht, was einem sehr starken Wachstum von 45,1 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2024 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
-            "wohnmarktsituation_wanderungssaldo": "Über die letzten fünf Jahre haben die Zuzügler mit 5,7 % mehr geworden, was eine negative Außenwahrnehmung vermuten läßt. Parallel dazu haben genauso im selben Zeitfenster die Wegzüge aus Leipzig Zentrum Ost um 14,8 % erheblich zugenommen, was für die Gegend leider ausgesprochen negativ ist. Auf Basis dieser Veränderungen hat mit 105 stark abgenommen. Wenn wir auf die aktuellste Entwicklung in 2024 blicken, hat der Wanderungssaldo -9 Personen betragen.",
-            "wohnmarktsituation_alterstruktur": "Das mittlere Alter beträgt   40.53403775 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter unter dem Bundesdurchschnitt, was eine jüngere Struktur nahelegt.",
+            "wohnmarktsituation_wanderungssaldo": "Innerhalb der letzten fünf Jahre  hat die Anzahl neuer Bürger mit 5,7 % abgenommen. Währenddessen hat ebenso im selben Zeitraum die Zahl der Wegzügler aus Leipzig Zentrum Ost mit 14,8 % deutlich zugelegt, was sich für die Gegend deutlich ungünstig auswirkt. Folglich hat mit 105 stark abgenommen. Schauen wir ins aktuelle Jahr 2024, dann sehen wir einen Wanderungssaldo von -9..",
+            "wohnmarktsituation_alterstruktur": "Der Altersdurchschnitt erreicht   40.53403775 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter unter dem Bundesdurchschnitt, was eine jüngere Struktur nahelegt.",
             "wohnmarktsituation_jugendquotient_altenquotient": "  liegt der Jugendquotient bei 14.9 und der Altenquotienten bei 22.7. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt klar unter dem Landesniveau, was einen geringeren Anteil an jungen Menschen vermuten lässt. Der Altenquotient liegt klar unter dem Landesniveau, was einen vergleichsweise jüngeren Altersaufbau signalisiert.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 4.371 Wohnungen. Pro 1.000 Einwohner stehen also um die 705 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre ist der Bestand dabei stark gestiegen.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt   aktuell ca. 275 m² m². Pro Kopf stehen hier durchschnittlich 44.3 m² zur Verfügung.  Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person leicht vergrößert, was auf eine verbesserte Wohnraumausstattung hindeutet.",
             "wohnmarktsituation_baufertigstellungen": "Im Jahr 2024 wurden   6 neue Wohnungen fertiggestellt, was 1.0 Fertigstellungen pro 1.000 Einwohner entspricht. In den vergangenen 5 Jahren ist die Zahl der Fertigstellungen stark gesunken, was auf eine stark schwächelnde Bautätigkeit hindeutet.",
             "wohnmarktsituation_baugenehmigungen": "Im Jahr 2025 wurden   58 neue Baugenehmigungen erteilt. Über fünf Jahre hat sich die Zahl der Baugenehmigungen stark verringert, was auf eine nachlassende Bautätigkeit schließen lässt. Die absolute Veränderung bleibt nahezu unverändert.",
-            "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 262 %, cirka das 3-fache der Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 97 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, ist sie deutlich gestiegen, was auf Fortschritte beim Baufortschritt hindeutet. Langfristig gesehen, ist die Fertigstellungsquote damit über fünf Jahre stark gestiegen, was eine Verbesserung über Zeit zeigt."
+            "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 262 %, also in etwa dreifach so hoch wie die Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 97 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, ist sie deutlich gestiegen, was auf Fortschritte beim Baufortschritt hindeutet. Langfristig gesehen, ist die Fertigstellungsquote damit über fünf Jahre stark gestiegen, was eine Verbesserung über Zeit zeigt."
         },
         "immobilienpreise": {
             "immobilienpreise_intro": "Die Immobilienpreise für Wohnungen und Häuser sind ein wichtiger Indikator für Käufer, Verkäufer und Investoren. Die angezeigten Kaufpreise basieren auf einer kontinuierlichen Auswertung regionaler Immobilienangebote mit modernen Analyseverfahren, die ich durch meine Praxiserfahrung bei der Bestimmung realistischer Markteinschätzungen in der Region weiter optimiere. In diesem Report erhalten Sie einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist in der Region helfe ich Ihnen dabei, die Ergebnisse richtig einzuordnen und fundierte Entscheidungen zu treffen.",
             "immobilienpreise_haus_intro": "Welche Preise erzielen Häuser in der Region aktuell? In diesem Kapitel betrachten wir die Immobilienpreise verschiedener Haustypen, analysieren die Situation in den vorhandenen Wohnlagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends auf. Gern gebe ich Ihnen eine individuell auf Ihre Immobilie abgestimmte Einschätzung. Kontaktieren Sie mich dazu gern.",
             "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Preise für Wohnungen in der Region? In diesem Kapitel betrachten wir die Immobilienpreise nach Wohnlagequalitäten, vergleichen die regionale Situation mit überregionalen Entwicklungen und zeigen aktuelle Trends auf. Zusätzlich fließen Unterschiede nach Zimmeranzahl und Wohnfläche in die Analyse ein. Für eine individuell auf Ihre Immobilie abgestimmte Einschätzung stehe ich Ihnen als Immobilienspezialist in der Region gern zur Verfügung.",
-            "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Leipzig Zentrum Ost bei 3.530 €/m².  Er bewegt sich dabei zwischen 3.140 €/m² und 3.870 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und deutlich über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 3,8 % gestiegen.  ",
-            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Zentrum Ost variieren die Preise je nach Lage erheblich. In Leipzig Zentrum Ost dominieren mittlere und gute Wohnlagen. Die Spanne reicht in mittleren Lagen von 3.142 € bis 3.458 €, während in guten Lagen im Mittel 3.736 € erzielt wird.",
-            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Leipzig Zentrum Ost ungefähr bei 3896,0 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3552,7 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen zwischen 2928,3 €/m² und 4423,8 €/m² rechnen .",
-            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute beträgt er 3.530 €/m², und ist damit um 1,5 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Der durchschnittliche Quadratmeterpreis für Wohnungen beträgt 3.270 €/m². Sie befinden sich üblicherweise in einer Spanne von 3.270 €/m² bis 3.580 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 3,0 % merklich gestiegen",
+            "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Leipzig Zentrum Ost bei 3.570 €/m².  Er bewegt sich dabei zwischen 3.170 €/m² und 3.910 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und deutlich über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 3,8 % gestiegen.  ",
+            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Zentrum Ost variieren die Preise je nach Lage erheblich. In Leipzig Zentrum Ost gibt es vor allem mittlere und gute Wohnlagequalitäten. Die Spanne reicht in mittleren Lagen von 3.173 € bis 3.492 €, während in guten Lagen im Mittel 3.773 € erzielt wird.",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Leipzig Zentrum Ost ungefähr bei 4035,8 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3497,2 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 3721,1 €/m² rechnen .",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute liegt der Preis bei 3.570 €/m², und ist damit um 1,5 % deutlich gestiegen.",
+            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen belaufen sich auf 3.270 €/m². Diese variieren typischerweise zwischen von 3.270 €/m² bis 3.580 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 3,0 % merklich gestiegen",
             "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Zentrum Ost variieren die Preise je nach Lage erheblich. In Leipzig Zentrum Ost dominieren mittlere und gute Wohnlagen. Die Spanne reicht in mittleren Lagen von 2.907 € bis 3.200 €, während in guten Lagen im Mittel 3.457 € erzielt wird.",
             "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Zentrum Ost müssen diese derzeit durchschnittlich 3071,1 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 4,7 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 3784,6 €/m². hier ist der kurzfristige Trend mit 1,6 % Anstieg, leicht positiv ",
-            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 3.330 €/m². Heute liegt der Preis bei 3.270 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 3.330 €/m². Heute beträgt er 3.270 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "Die Grundstückspreise für Bauland sind ein zentraler Faktor für Bauherren, Investoren und Eigentümer. Sie bestimmen die Wirtschaftlichkeit neuer Projekte und die langfristige Wertentwicklung. Schwankungen entstehen vor allem durch Lage, Nachfrage und verfügbare Flächen. Dieser Report liefert einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist für den Landkreis Greiz helfe ich Ihnen, die statistischen Auswertungen richtig einzuordnen und die Chancen des regionalen Grundstücksmarktes optimal für Ihre Bau- oder Investitionsentscheidung zu nutzen.",
-            "grundstueckspreise_allgemein": "Die mittleren Angebotspreise für Grundstücke  Leipzig Zentrum Ost belaufen sich auf 860 €/m². Sie befinden sich üblicherweise in einer Spanne von 770 €/m² bis 950 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
-            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Zentrum Ost bei 840 €/m². Aktuell liegt der Preis bei 860 €/m² und ist damit um 2,1 % deutlich gestiegen."
+            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke beträgt 860 €/m². Diese bewegen sich dabei innerhalb einer Spanne von 770 €/m² bis 950 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Zentrum Ost bei 840 €/m². Aktuell beträgt er 860 €/m² und ist damit um 2,1 % deutlich gestiegen."
         },
         "mietpreise": {
             "mietpreise_intro": "Wie entwickeln sich die Mietpreise in der Region aktuell? Die dargestellten Angebotsmieten spiegeln die Preise wider, die Vermieter derzeit für neue Verträge verlangen – und sie entsprechen in den meisten Fällen dem tatsächlichen Mietpreis, da sie die aktuellen Marktbedingungen abbilden. Bestandsmieten liegen dagegen oft niedriger, da sie sich an früheren Marktverhältnissen orientieren und weniger dynamisch reagieren. In diesem Kapitel betrachten wir die Mietpreise nach Lagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends sowie Unterschiede nach Zimmeranzahl und Wohnfläche. Als Immobilienspezialist in der Region stehe ich Ihnen dabei gern beratend zur Seite.",
-            "mietpreise_allgemein": "Die aktuellen Angebotsmietpreise in Leipzig Zentrum Ost liegen bei 12.0 €/m². Diese pendeln zwischen den Werten von 6.0 €/m² bis 21.0 €/m². Bei Hinzunahme der mittleren Nebenkosten von 2.0 €/m² liegen bei,  kommt man auf eine durchschnittliche Warmmiete von 14.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
-            "mietpreise_wohnung_allgemein": "Derzeit liegen die durchschnittlichen Kaltmieten bei 12.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 21.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 15.0 €/m² rechnen, im Bestand sind es 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 36,9 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 24,8 % weit über dem derzeitigen Niveau.",
+            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) in Leipzig Zentrum Ost beträgt 12.0 €/m². Sie befinden sich üblicherweise in einer Spanne von 6.0 €/m² bis 21.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 14.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
+            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Leipzig Zentrum Ost bei 12.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 21.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 15.0 €/m² rechnen, im Bestand sind es 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 36,9 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 24,8 % weit über dem derzeitigen Niveau.",
             "mietpreise_wohnung_preisentwicklung": "Letztes Jahr lag der Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) lagen die durchschnittlichen Werte bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
             "mietpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Zentrum Ost müssen diese derzeit durchschnittlich 5,5 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 5,9 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 6,2 €/m². hier ist der kurzfristige Trend mit 6,9 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 10 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5 €/m² bis 14 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Letztes Jahr lag der Quadratmetermietpreis bei Häusern in  bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 5 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lagen die durchschnittlichen Werte bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 24 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in  bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 5 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lagen die durchschnittlichen Werte bei 8 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 24 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Die Mietrendite zählt zu den wichtigsten Kennzahlen einer Immobilienanlage. Sie zeigt, welche Erträge eine vermietete Immobilie im Verhältnis zum Kaufpreis erwirtschaftet – und ist damit ein entscheidender Faktor für jede Kapitalanlage in Immobilien. Eine fundierte Renditeberechnung unterstützt Investoren dabei, Chancen und Risiken realistisch einzuschätzen und die Rentabilität verschiedener Objekte zu vergleichen. Die folgenden Auswertungen geben einen ersten regionalen Überblick. Doch neben der reinen Zahl sind vor allem Lage, Nachfrage und Mietentwicklung ausschlaggebend. Als Immobilienspezialist für die Region helfe ich Ihnen, die Mietrendite richtig zu bewerten und die passende Immobilie als langfristige, sichere Kapitalanlage auszuwählen.",
             "mietrendite_hinweis": "Beachten Sie, dass die Brutto-Mietrendite nur eine von mehreren Faktoren ist, die bei einer fundierten Investitionsentscheidung berücksichtigt werden sollten. Zusätzliche Aspekte wie Standort, langfristige Entwicklung und Risikobewertung sind ebenso relevant, um eine erfolgreiche Immobilieninvestition zu gewährleisten. Kontaktieren Sie dazu unseren regionalen Investment-Spezialisten.",
             "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
-            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 3,97 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Zentrum Ost bei 3,95 %. Bis heute ist der Preis innerhalb dieser Zeit mit 0,4 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 3,23 %, innerhalb diesen Zeitraums sind sie bis jetzt um 22,7 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 3,67 %, ",
-            "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 4,31 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  in Leipzig Zentrum Ost ungefähr bei 23.2, und die mittlere Netto-Mietrendite bei ungefähr 4,06 %. ",
-            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Zentrum Ost bei 28.0. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 3,24 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Zentrum Ost bei 17.2. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 5,49 €/m², "
+            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 3,95 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Zentrum Ost bei 3,93 %. Bis heute ist der Preis innerhalb dieser Zeit mit 0,4 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 3,21 %, innerhalb diesen Zeitraums sind sie bis jetzt um 22,7 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 3,65 %, ",
+            "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 4,32 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  in Leipzig Zentrum Ost ungefähr bei 23.2, und die mittlere Netto-Mietrendite bei ungefähr 4,06 %. ",
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Zentrum Ost bei 28.2. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 3,22 €/m², ",
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern in Leipzig Zentrum Ost bei 17.3. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 5,44 €/m², "
         },
         "quellenangaben": [
             {

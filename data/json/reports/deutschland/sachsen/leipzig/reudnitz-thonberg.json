@@ -1,6 +1,6 @@
 {
     "meta": {
-        "aktualisierung": "08.01.2026",
+        "aktualisierung": "15.01.2026",
         "regionale_zuordnung": "stadtteil",
         "amtlicher_name": "Reudnitz-Thonberg",
         "bundesland_name": "sachsen",
@@ -66,32 +66,32 @@
         "standortfaktoren": [
             {
                 "faktor": "gesundheit",
-                "wert": 9,
+                "wert": 1,
                 "color": "#cec854"
             },
             {
                 "faktor": "bildung",
-                "wert": 4,
+                "wert": 1,
                 "color": "#ec8972"
             },
             {
                 "faktor": "naherholung",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "kultur_freizeit",
-                "wert": 7,
+                "wert": 1,
                 "color": "#daaf60"
             },
             {
                 "faktor": "mobilitaet",
-                "wert": 3,
+                "wert": 1,
                 "color": "#f27c78"
             },
             {
                 "faktor": "nahversorgung",
-                "wert": 10,
+                "wert": 1,
                 "color": "#c8d54f"
             }
         ],
@@ -3085,23 +3085,23 @@
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": 3058.102855760646,
-                "doppelhaushaelfte": 3232.3201669207615,
-                "einfamilienhaus": 3357.9396064986386,
+                "reihenhaus": 3073.260310549715,
+                "doppelhaushaelfte": 3281.9352233732084,
+                "einfamilienhaus": 3355.13879439282,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": 3310.755209596376,
-                "doppelhaushaelfte": 3639.4515099982623,
-                "einfamilienhaus": 3704.8523769480635,
+                "reihenhaus": 3293.61427868495,
+                "doppelhaushaelfte": 3606.8455260592773,
+                "einfamilienhaus": 3709.3005997115515,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": 3766.6757871603354,
-                "doppelhaushaelfte": 3947.781365440798,
-                "einfamilienhaus": 4219.328420080356,
+                "reihenhaus": 3655.442925473904,
+                "doppelhaushaelfte": 3973.827412226223,
+                "einfamilienhaus": 4186.558436797233,
                 "einheit": "pricePerSqm"
             }
         ],
@@ -4071,7 +4071,7 @@
             "wirtschaft_sv_beschaeftigte_arbeitsort": "Über fünf Jahre ist um 9,6 % gestiegen. Im jüngsten Jahr liegt die Zahl der Wohnort-Beschäftigten bei 10.840.",
             "wirtschaft_arbeitsplatzzentralitaet": "Die Arbeitsplatzzentralität liegt klar über dem Landesniveau mit Index 1.1225968816227672.",
             "wirtschaft_pendler": "Das Pendlervolumen  stieg deutlich um 4316 Personen. Die Zahl der Einpendler ist um 2,64 % % stark gestiegen. Die Zahl der Auspendler ist um 2,09 % % stark gestiegen.",
-            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote reflektiert das Ausmaß der Arbeitslosigkeit in einer Region und berücksichtigt Personen mit Anspruch auf Bürgergeld (SGB II) oder Arbeitslosengeld (SGB III). Die Basis hierfür bildet die Gesamtzahl der zivilen Erwerbspersonen. Ihr Wert beträgt zur Zeit 5,8 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben. Sie beträgt   derzeit cirka 5,8 %. Damit ist sie in den letzten fünf Jahren weitestgehend stabil geblieben. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
         },
         "wohnmarktsituation": {
             "wohnmarktsituation_intro": "Die Wohnraumsituation in größeren kreisfreien Städten ist geprägt von einem ständigen Spannungsfeld zwischen steigender Nachfrage und begrenztem Angebot. Urbanisierung und Bevölkerungswachstum lassen den Bedarf kontinuierlich steigen, während Baukapazitäten, Investitionen und gesetzliche Vorgaben das Angebot bestimmen. Hinzu kommen staatliche Programme zur Förderung von sozialem Wohnraum, die zwar wichtig sind, aber häufig in Konkurrenz zum freien Markt stehen. Als regionaler Immobilienspezialist sehe ich täglich, wie stark auch die wirtschaftliche Lage auf Bauindustrie und Kaufkraft wirkt – und damit die Dynamik des gesamten Wohnungsmarktes entscheidend prägt.",
@@ -4085,11 +4085,11 @@
             "wohnmarktsituation_baufertigstellungen_intro": "Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau.",
             "wohnmarktsituation_baugenehmigungen_intro": "Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
             "wohnmarktsituation_allgemein": "In Leipzig Reudnitz Thonberg leben aktuell rund 23.955 Menschen auf einer Gesamtfläche von 203 ha, davon entfallen 120 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 23.955 Einwohner je km². Die Einwohnerzahl ist in den letzten fünf Jahren um 1238 Menschen deutlich gestiegen, was positive Entwicklungsperspektiven für die Region eröffnet. Aktuell wird Leipzig Reudnitz Thonberg als wachsende Region eingestuft. Insgesamt gibt es hier etwa 14.688 Haushalte, die durchschnittlich aus 1,63 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region liegt mit 3409 Personen stark oberhalb des Niveaus von 2015, was Leipzig Reudnitz Thonberg als polarisierende Gegend kennzeichnet. Über die letzten 10 Jahre bedeutet damit einen deutlichen Anstieg von rund 16.6 %.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region liegt mit 3409 Personen stark oberhalb des Niveaus von 2015, was Leipzig Reudnitz Thonberg als polarisierende Gegend kennzeichnet. Über die letzten 10 Jahre bedeutet hier einen deutlichen Anstieg von 16.6 %.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 14.688. In den letzten fünf Jahren hat sich die Zahl um 2.248 erhöht, was einem sehr starken Wachstum von 18,1 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2024 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
-            "wohnmarktsituation_wanderungssaldo": "Innerhalb der letzten fünf Jahre  haben die Zuzügler mit 31,5 % prozentual stark zugelegt, was eine zunehmende Anziehungskraft der Region erkennen lässt. Währenddessen ist genauso im selben Zeitfenster die Zahl der Fortzüge aus Leipzig Reudnitz Thonberg mit 20,8 % deutlich mehr geworden, was sich für die Gegend deutlich ungünstig auswirkt. So hat die Gegend einen leicht positiven Wanderungssaldo von 140. Schauen wir ins aktuelle Jahr 2024, dann sehen wir einen Wanderungssaldo von -73..",
-            "wohnmarktsituation_alterstruktur": "Der Altersdurchschnitt   erreicht 36.62920058 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter unter dem Bundesdurchschnitt, was eine jüngere Struktur nahelegt.",
+            "wohnmarktsituation_wanderungssaldo": "Über die letzten fünf Jahre haben die Zuzügler mit 31,5 % prozentual stark zugelegt, was eine stark wachsende Attraktivität der Region vermuten läßt. Parallel dazu ist aber auch im selben Zeitfenster die Zahl der Fortzüge aus Leipzig Reudnitz Thonberg mit 20,8 % deutlich mehr geworden, was für die Gegend leider ausgesprochen negativ ist. Aus diesen Entwicklungen heraus ist mit 140 Personen der Saldo leicht positiv. Schauen wir jetzt auf die jüngste Entwicklung. In der letzten statistischen Erhebung 2024  dann sehen wir einen Wanderungssaldo von -73.",
+            "wohnmarktsituation_alterstruktur": "Das mittlere Alter   beträgt 36.62920058 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter unter dem Bundesdurchschnitt, was eine jüngere Struktur nahelegt.",
             "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient   bei 16.5 und der Jugendquotient bei 20.0. Damit ist die Region eher von einer jüngeren Bevölkerung geprägt, was sich auch auf die Nachfrage nach familiengerechtem Wohnraum auswirken kann. Der Jugendquotient liegt klar unter dem Landesniveau, was einen geringeren Anteil an jungen Menschen vermuten lässt. Der Altenquotient liegt klar unter dem Landesniveau, was einen vergleichsweise jüngeren Altersaufbau signalisiert.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 13.240 Wohnungen. Pro 1.000 Einwohner stehen also um die 553 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre blieb der Bestand dabei nahezu stabil.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt   aktuell ca. 870 m² m². Pro Kopf stehen hier durchschnittlich 36.3 m² zur Verfügung.  Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person kaum verändert.",
@@ -4102,27 +4102,27 @@
             "immobilienpreise_haus_intro": "Welche Preise erzielen Häuser in der Region aktuell? In diesem Kapitel betrachten wir die Immobilienpreise verschiedener Haustypen, analysieren die Situation in den vorhandenen Wohnlagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends auf. Gern gebe ich Ihnen eine individuell auf Ihre Immobilie abgestimmte Einschätzung. Kontaktieren Sie mich dazu gern.",
             "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Preise für Wohnungen in der Region? In diesem Kapitel betrachten wir die Immobilienpreise nach Wohnlagequalitäten, vergleichen die regionale Situation mit überregionalen Entwicklungen und zeigen aktuelle Trends auf. Zusätzlich fließen Unterschiede nach Zimmeranzahl und Wohnfläche in die Analyse ein. Für eine individuell auf Ihre Immobilie abgestimmte Einschätzung stehe ich Ihnen als Immobilienspezialist in der Region gern zur Verfügung.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Leipzig Reudnitz Thonberg bei 3.380 €/m².  Er bewegt sich dabei zwischen 2.830 €/m² und 4.060 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und deutlich über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 5,0 % gestiegen.  ",
-            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Reudnitz Thonberg variieren die Preise je nach Lage erheblich. Leipzig Reudnitz Thonberg weist vor allem einfache, mittlere und gute Wohnlagen auf. In einfachen Wohnlagen liegen sie aktuell bei 2.973 € und in mittleren Wohnlagen bei 3.463 €.",
-            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Leipzig Reudnitz Thonberg ungefähr bei 3704,9 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3310,8 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 3639,5 €/m² rechnen .",
+            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Reudnitz Thonberg variieren die Preise je nach Lage erheblich. Leipzig Reudnitz Thonberg weist vor allem einfache, mittlere und gute Wohnlagen auf. Die Spanne reicht in mittleren Lagen von 3.457 € bis 3.664 €, während in einfachen Lagen im Mittel 2.973 € erzielt wird.",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Leipzig Reudnitz Thonberg ungefähr bei 3709,3 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 3293,6 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 3606,8 €/m² rechnen .",
             "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute beträgt er 3.380 €/m², und ist damit um 2,1 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Die aktuellen Angebotspreise für Wohnungen in Leipzig Reudnitz Thonberg liegen bei 2.870 €/m². Diese bewegen sich dabei innerhalb einer Spanne von 2.870 €/m² bis 3.600 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und etwas unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 5,1 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Reudnitz Thonberg variieren die Preise je nach Lage erheblich. in Leipzig Reudnitz Thonberg gibt es einfache bis gute Wohnlagequalitäten. Die Spanne reicht in mittleren Lagen von 2.923 € bis 3.602 €, während in guten Lagen im Mittel 3.263 € erzielt wird.",
-            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Leipzig Reudnitz Thonberg derzeit durchschnittlich 2611,3 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 7,4 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 3106,2 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 3106,2 €/m². hier ist der kurzfristige Trend mit 2,1 % Anstieg, leicht positiv ",
-            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 2.910 €/m². Heute beträgt er 2.870 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
+            "immobilienpreise_wohnung_allgemein": "Die aktuellen Angebotspreise für Wohnungen liegen bei 2.870 €/m². Diese variieren typischerweise zwischen von 2.870 €/m² bis 3.600 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und etwas unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 5,1 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Leipzig Reudnitz Thonberg variieren die Preise je nach Lage erheblich. Leipzig Reudnitz Thonberg weist vor allem einfache, mittlere und gute Wohnlagen auf. Beispielsweise einfachen (2.515 €), mittleren (2.945 €) und guten (3.263 €).",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Reudnitz Thonberg müssen diese derzeit durchschnittlich 2707,5 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 7,4 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 3268,0 €/m². hier ist der kurzfristige Trend mit 2,1 % Anstieg, leicht positiv ",
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 2.910 €/m². Heute liegt der Preis bei 2.870 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "Die Grundstückspreise für Bauland sind ein zentraler Faktor für Bauherren, Investoren und Eigentümer. Sie bestimmen die Wirtschaftlichkeit neuer Projekte und die langfristige Wertentwicklung. Schwankungen entstehen vor allem durch Lage, Nachfrage und verfügbare Flächen. Dieser Report liefert einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist für den Landkreis Greiz helfe ich Ihnen, die statistischen Auswertungen richtig einzuordnen und die Chancen des regionalen Grundstücksmarktes optimal für Ihre Bau- oder Investitionsentscheidung zu nutzen.",
-            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke  Leipzig Reudnitz Thonberg beträgt 850 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 770 €/m² bis 940 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
-            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Reudnitz Thonberg bei 820 €/m². Aktuell beträgt er 850 €/m² und ist damit um 3,6 % deutlich gestiegen."
+            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke  Leipzig Reudnitz Thonberg beträgt 850 €/m². Sie variieren typischerweise von 770 €/m² bis 940 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Leipzig Reudnitz Thonberg bei 820 €/m². Aktuell liegt der Preis bei 850 €/m² und ist damit um 3,6 % deutlich gestiegen."
         },
         "mietpreise": {
             "mietpreise_intro": "Wie entwickeln sich die Mietpreise in der Region aktuell? Die dargestellten Angebotsmieten spiegeln die Preise wider, die Vermieter derzeit für neue Verträge verlangen – und sie entsprechen in den meisten Fällen dem tatsächlichen Mietpreis, da sie die aktuellen Marktbedingungen abbilden. Bestandsmieten liegen dagegen oft niedriger, da sie sich an früheren Marktverhältnissen orientieren und weniger dynamisch reagieren. In diesem Kapitel betrachten wir die Mietpreise nach Lagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends sowie Unterschiede nach Zimmeranzahl und Wohnfläche. Als Immobilienspezialist in der Region stehe ich Ihnen dabei gern beratend zur Seite.",
-            "mietpreise_allgemein": "Die aktuellen Angebotsmietpreise in Leipzig Reudnitz Thonberg liegen bei 11.0 €/m². Diese bewegen sich in einer Preisspanne von 6.0 €/m² bis 19.0 €/m². Bei Hinzunahme der mittleren Nebenkosten von 2.0 €/m² liegen bei,  kommt man auf eine durchschnittliche Warmmiete von 14.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
+            "mietpreise_allgemein": "Die mittleren Angebotspreise aller Mietimmobilien (Haus + Wohnung) in Leipzig Reudnitz Thonberg belaufen sich auf 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 19.0 €/m². Bei Hinzunahme der mittleren Nebenkosten von 2.0 €/m² liegen bei,  kommt man auf eine durchschnittliche Warmmiete von 14.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich  über dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
             "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Leipzig Reudnitz Thonberg bei 11.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6.0 €/m² bis 19.0 €/m². Damit reihen sie sich weit über dem Landesniveau von Sachsen und deutlich  über dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 32.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 14.0 €/m² rechnen, im Bestand sind es 11.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 44,3 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 22,2 % weit über dem derzeitigen Niveau.",
-            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr lag der Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) lagen die durchschnittlichen Werte bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
+            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr lag der Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) standen die mittleren Angebotspreise bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
             "mietpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Leipzig Reudnitz Thonberg müssen diese derzeit durchschnittlich 5,4 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 5,8 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 6,1 €/m². hier ist der kurzfristige Trend mit 9,9 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 10 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6 €/m² bis 14 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Letztes Jahr lag der Quadratmetermietpreis bei Häusern in  bei 10 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 5 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lagen die durchschnittlichen Werte bei 7 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 38 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei 10 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 5 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) standen die mittleren Angebotspreise bei 7 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 38 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Die Mietrendite zählt zu den wichtigsten Kennzahlen einer Immobilienanlage. Sie zeigt, welche Erträge eine vermietete Immobilie im Verhältnis zum Kaufpreis erwirtschaftet – und ist damit ein entscheidender Faktor für jede Kapitalanlage in Immobilien. Eine fundierte Renditeberechnung unterstützt Investoren dabei, Chancen und Risiken realistisch einzuschätzen und die Rentabilität verschiedener Objekte zu vergleichen. Die folgenden Auswertungen geben einen ersten regionalen Überblick. Doch neben der reinen Zahl sind vor allem Lage, Nachfrage und Mietentwicklung ausschlaggebend. Als Immobilienspezialist für die Region helfe ich Ihnen, die Mietrendite richtig zu bewerten und die passende Immobilie als langfristige, sichere Kapitalanlage auszuwählen.",
@@ -4131,7 +4131,7 @@
             "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 4,34 %. Letztes Jahr lag die Bruttomietrendite in Leipzig Reudnitz Thonberg bei 4,37 %. Bis heute ist der Preis innerhalb dieser Zeit mit 0,7 % deutlich gefallen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 3,22 %, innerhalb diesen Zeitraums sind sie bis jetzt um 35,0 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 4,02 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 5,03 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  in Leipzig Reudnitz Thonberg ungefähr bei 20.0, und die mittlere Netto-Mietrendite bei ungefähr 4,73 %. ",
             "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Reudnitz Thonberg bei 26.4. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 3,44 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Reudnitz Thonberg bei 16.2. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 5,83 €/m², "
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in Leipzig Reudnitz Thonberg bei 16.2. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 5,83 €/m², "
         },
         "quellenangaben": [
             {
