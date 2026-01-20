@@ -4,6 +4,7 @@
 
 import Image from "next/image";
 import { useKontakt } from "./contact-context";
+import { KontaktForm } from "./KontaktForm";
 
 export function KontaktOffcanvas() {
   const { vm } = useKontakt();
@@ -44,31 +45,11 @@ export function KontaktOffcanvas() {
         {vm.phone ? <div className="small text-muted">{vm.phone}</div> : null}
       </div>
 
-      <form>
-        <div className="mb-3">
-          <label className="form-label" htmlFor="kontakt_name">Name</label>
-          <input className="form-control" id="kontakt_name" name="name" autoComplete="name" />
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label" htmlFor="kontakt_email">E-Mail</label>
-          <input className="form-control" id="kontakt_email" name="email" type="email" autoComplete="email" />
-        </div>
-
-        <div className="mb-3">
-          <label className="form-label" htmlFor="kontakt_msg">Nachricht</label>
-          <textarea className="form-control" id="kontakt_msg" name="message" rows={5} />
-        </div>
-
-        {/* Hidden target */}
-        <input type="hidden" name="targetEmail" value={vm.email} />
-        <input type="hidden" name="scope" value={vm.scope} />
-        <input type="hidden" name="regionLabel" value={vm.regionLabel ?? ""} />
-
-        <button type="submit" className="btn btn-dark w-100">
-          Senden
-        </button>
-      </form>
+      <KontaktForm
+        targetEmail={vm.email}
+        scope={vm.scope}
+        regionLabel={vm.regionLabel}
+      />
     </div>
   );
 }

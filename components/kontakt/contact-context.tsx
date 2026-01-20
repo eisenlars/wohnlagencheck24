@@ -5,7 +5,7 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
 
 export type KontaktVM = {
-  scope: "portal" | "berater";
+  scope: "portal" | "berater" | "makler";
   title: string;
 
   name: string;

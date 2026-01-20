@@ -268,12 +268,18 @@ export function buildPageModel(route: RouteModel): PageModel | null {
       fallbackSlug: kreisSlug ?? "landkreis",
     });
 
-    const text = asRecord(data["text"]) ?? {};
+    const text = asRecord(report?.["text"]) ?? asRecord(data["text"]) ?? {};
     const berater = asRecord(text["berater"]) ?? {};
 
     const beraterName = asString(berater["berater_name"]) ?? "Lars Hofmann";
-    const beraterTelefon = asString(berater["berater_telefon"]) ?? "+49 351/287051-0";
-    const beraterEmail = asString(berater["berater_email"]) ?? "kontakt@wohnlagencheck24.de";
+    const beraterTelefon =
+      asString(berater["berater_telefon_mobil"]) ??
+      asString(berater["berater_telefon_fest"]) ??
+      "+49 351/287051-0";
+    const beraterEmail =
+      asString(berater["berater_email_01"]) ??
+      asString(berater["berater_email_02"]) ??
+      "kontakt@wohnlagencheck24.de";
 
     const beraterTaetigkeit = `Standort- / Immobilienberatung – ${kreisName}`;
 
