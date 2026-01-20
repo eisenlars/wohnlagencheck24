@@ -72,6 +72,7 @@ export type PageModel = {
     kaufkraftindexLegendHtml?: string | null;
     grundstueckspreisLegendHtml?: string | null;
     flaechennutzungGewerbeImageSrc?: string | null;
+    flaechennutzungWohnbauImageSrc?: string | null;
     wohnungssaldoMapSvg?: string | null;
     wohnungssaldoLegendHtml?: string | null;
     wohnlagencheckMapSvgs?: Partial<Record<string, string | null>>;
