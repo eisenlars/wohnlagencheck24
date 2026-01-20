@@ -1,6 +1,6 @@
 {
     "meta": {
-        "aktualisierung": "08.01.2026",
+        "aktualisierung": "20.01.2026",
         "regionale_zuordnung": "stadt",
         "amtlicher_name": "Mügeln",
         "bundesland_name": "sachsen",
@@ -66,27 +66,27 @@
         "standortfaktoren": [
             {
                 "faktor": "gesundheit",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "bildung",
-                "wert": 5,
+                "wert": 1,
                 "color": "#e6956c"
             },
             {
                 "faktor": "naherholung",
-                "wert": 7,
+                "wert": 1,
                 "color": "#daaf60"
             },
             {
                 "faktor": "kultur_freizeit",
-                "wert": 4,
+                "wert": 1,
                 "color": "#ec8972"
             },
             {
                 "faktor": "mobilitaet",
-                "wert": 4,
+                "wert": 1,
                 "color": "#ec8972"
             },
             {
@@ -348,11 +348,11 @@
         ],
         "wirtschaft_allgemein": [
             {
-                "kaufkraftindex_ol": 68.92151871980691,
+                "kaufkraftindex_ol": 68.85104752769873,
                 "kaufkraftindex_k": 89.0598915785478,
-                "kaufkraft_nominal_ol": 19355.486554931584,
+                "kaufkraft_nominal_ol": 19335.69586783275,
                 "kaufkraft_nominal_k": 25011.0207385325,
-                "kaufkraft_real_ol": 14060.798727009831,
+                "kaufkraft_real_ol": 14046.421776723608,
                 "kaufkraft_real_k": 20259.7607415046,
                 "bip": 7249656,
                 "pendlersaldo_ol": -678,
@@ -642,35 +642,35 @@
         "nettoeinkommen_pro_ew": [
             {
                 "jahr": 2018,
-                "nettoeinkommen_pro_ew_ol": 18590.09897229905,
+                "nettoeinkommen_pro_ew_ol": 18572.398792504173,
                 "nettoeinkommen_pro_ew_k": 22065.89716577865,
                 "nettoeinkommen_pro_ew_bl": 22065.89716577865,
                 "nettoeinkommen_pro_ew_l": 23894.7659101949
             },
             {
                 "jahr": 2019,
-                "nettoeinkommen_pro_ew_ol": 18386.514375712002,
+                "nettoeinkommen_pro_ew_ol": 18369.60597996648,
                 "nettoeinkommen_pro_ew_k": 22554.49579555407,
                 "nettoeinkommen_pro_ew_bl": 22554.49579555407,
                 "nettoeinkommen_pro_ew_l": 24454.869440227176
             },
             {
                 "jahr": 2020,
-                "nettoeinkommen_pro_ew_ol": 18874.152368042996,
+                "nettoeinkommen_pro_ew_ol": 18857.84037319153,
                 "nettoeinkommen_pro_ew_k": 23785.370347317315,
                 "nettoeinkommen_pro_ew_bl": 23785.370347317315,
                 "nettoeinkommen_pro_ew_l": 26040.73670674114
             },
             {
                 "jahr": 2021,
-                "nettoeinkommen_pro_ew_ol": 19146.39501099088,
+                "nettoeinkommen_pro_ew_ol": 19128.36505120203,
                 "nettoeinkommen_pro_ew_k": 24320.241944997917,
                 "nettoeinkommen_pro_ew_bl": 24428.45500568276,
                 "nettoeinkommen_pro_ew_l": 26874.040281356854
             },
             {
                 "jahr": 2022,
-                "nettoeinkommen_pro_ew_ol": 19355.486554931584,
+                "nettoeinkommen_pro_ew_ol": 19335.69586783275,
                 "nettoeinkommen_pro_ew_k": 25011.0207385325,
                 "nettoeinkommen_pro_ew_bl": 25356.736295898707,
                 "nettoeinkommen_pro_ew_l": 28083.372094017912
@@ -679,35 +679,35 @@
         "nettoeinkommen_pro_hh": [
             {
                 "jahr": 2018,
-                "nettoeinkommen_pro_hh_ol": 35316.36258365053,
+                "nettoeinkommen_pro_hh_ol": 35282.73683650614,
                 "nettoeinkommen_pro_hh_k": 43006.55446424165,
                 "nettoeinkommen_pro_hh_bl": 41455.59569489939,
                 "nettoeinkommen_pro_hh_l": 48578.79810278226
             },
             {
                 "jahr": 2019,
-                "nettoeinkommen_pro_hh_ol": 36409.43589980747,
+                "nettoeinkommen_pro_hh_ol": 36375.95347140993,
                 "nettoeinkommen_pro_hh_k": 44322.96350829719,
                 "nettoeinkommen_pro_hh_bl": 42305.23192488263,
                 "nettoeinkommen_pro_hh_l": 50210.97681302417
             },
             {
                 "jahr": 2020,
-                "nettoeinkommen_pro_hh_ol": 37374.29463962088,
+                "nettoeinkommen_pro_hh_ol": 37341.99388831558,
                 "nettoeinkommen_pro_hh_k": 46725.91657862817,
                 "nettoeinkommen_pro_hh_bl": 45498.28883610451,
                 "nettoeinkommen_pro_hh_l": 53545.432056007725
             },
             {
                 "jahr": 2021,
-                "nettoeinkommen_pro_hh_ol": 38285.9569045617,
+                "nettoeinkommen_pro_hh_ol": 38249.90341965916,
                 "nettoeinkommen_pro_hh_k": 47253.781750934264,
                 "nettoeinkommen_pro_hh_bl": 47054.53102068258,
                 "nettoeinkommen_pro_hh_l": 55256.377714472655
             },
             {
                 "jahr": 2022,
-                "nettoeinkommen_pro_hh_ol": 38718.00635352412,
+                "nettoeinkommen_pro_hh_ol": 38678.41778794306,
                 "nettoeinkommen_pro_hh_k": 48594.10740074267,
                 "nettoeinkommen_pro_hh_bl": 48880.60498366211,
                 "nettoeinkommen_pro_hh_l": 57476.930188407976
@@ -3085,23 +3085,23 @@
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": 1022.2345714818694,
-                "doppelhaushaelfte": 1137.3546468138559,
-                "einfamilienhaus": 1213.9394780132163,
+                "reihenhaus": 995.532687514223,
+                "doppelhaushaelfte": 1157.85346001496,
+                "einfamilienhaus": 1243.875362025509,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": 1721.0465321260967,
-                "doppelhaushaelfte": 1924.4741052578754,
-                "einfamilienhaus": 2026.4733468898555,
+                "reihenhaus": 1646.3975341758364,
+                "doppelhaushaelfte": 1879.5687836166558,
+                "einfamilienhaus": 2011.5855059360824,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": 2384.0962282900978,
-                "doppelhaushaelfte": 2719.231670798539,
-                "einfamilienhaus": 2792.3983486416514,
+                "reihenhaus": 2287.8684951022324,
+                "doppelhaushaelfte": 2736.384939162313,
+                "einfamilienhaus": 2896.8398213588425,
                 "einheit": "pricePerSqm"
             }
         ],
@@ -3165,7 +3165,7 @@
             {
                 "jahr": 2021,
                 "preis_ol": 1165.7077930542332,
-                "preis_k": 1433.0376941718655,
+                "preis_k": 1504.689578880459,
                 "preis_bl": 2584,
                 "preis_l": 2780.7035903653587,
                 "einheit": "pricePerSqm"
@@ -3173,7 +3173,7 @@
             {
                 "jahr": 2022,
                 "preis_ol": 1447.9313890365063,
-                "preis_k": 1898.8974847702286,
+                "preis_k": 1993.8423590087405,
                 "preis_bl": 2606,
                 "preis_l": 3251.4663055838787,
                 "einheit": "pricePerSqm"
@@ -3181,7 +3181,7 @@
             {
                 "jahr": 2023,
                 "preis_ol": 1466.9329676080083,
-                "preis_k": 2070.705931569447,
+                "preis_k": 2174.2412281479196,
                 "preis_bl": 2800,
                 "preis_l": 3369.31848901723,
                 "einheit": "pricePerSqm"
@@ -3189,7 +3189,7 @@
             {
                 "jahr": 2024,
                 "preis_ol": 1383.6483517773179,
-                "preis_k": 1823.5763865908846,
+                "preis_k": 1914.755205920429,
                 "preis_bl": 2732,
                 "preis_l": 3043.145615893064,
                 "einheit": "pricePerSqm"
@@ -3197,7 +3197,7 @@
             {
                 "jahr": 2025,
                 "preis_ol": 1514.4181807538944,
-                "preis_k": 1809.039123401748,
+                "preis_k": 1899.4910795718356,
                 "preis_bl": 2419,
                 "preis_l": 3062.0408943305847,
                 "einheit": "pricePerSqm"
@@ -3205,7 +3205,7 @@
             {
                 "jahr": 2026,
                 "preis_ol": 1692.8464548776556,
-                "preis_k": 2022.54829946949,
+                "preis_k": 2123.675714442965,
                 "preis_bl": 2235,
                 "preis_l": 3152.5305408373115,
                 "einheit": "pricePerSqm"
@@ -3343,7 +3343,7 @@
             {
                 "jahr": 2021,
                 "preis_ol": 1202.7586672102868,
-                "preis_k": 1343.4653474496188,
+                "preis_k": 1276.2920800771378,
                 "preis_bl": 3068,
                 "preis_l": 2856.9982913319204,
                 "einheit": "pricePerSqm"
@@ -3351,7 +3351,7 @@
             {
                 "jahr": 2022,
                 "preis_ol": 1401.1785121891446,
-                "preis_k": 1679.3924021000835,
+                "preis_k": 1595.4227819950793,
                 "preis_bl": 3097,
                 "preis_l": 3292.9741098254426,
                 "einheit": "pricePerSqm"
@@ -3359,7 +3359,7 @@
             {
                 "jahr": 2023,
                 "preis_ol": 1394.4448821237686,
-                "preis_k": 1855.3828972557876,
+                "preis_k": 1762.6137523929983,
                 "preis_bl": 3394,
                 "preis_l": 3342.4658353694217,
                 "einheit": "pricePerSqm"
@@ -3367,7 +3367,7 @@
             {
                 "jahr": 2024,
                 "preis_ol": 1358.686692264777,
-                "preis_k": 1656.563384015059,
+                "preis_k": 1573.7352148143061,
                 "preis_bl": 3684,
                 "preis_l": 3094.873857527238,
                 "einheit": "pricePerSqm"
@@ -3375,7 +3375,7 @@
             {
                 "jahr": 2025,
                 "preis_ol": 1391.5996154358334,
-                "preis_k": 1641.4055117211415,
+                "preis_k": 1559.3352361350844,
                 "preis_bl": 3492,
                 "preis_l": 3146.2445730130976,
                 "einheit": "pricePerSqm"
@@ -3383,7 +3383,7 @@
             {
                 "jahr": 2026,
                 "preis_ol": 1465.9466682586908,
-                "preis_k": 1841.027741995689,
+                "preis_k": 1748.9763548959045,
                 "preis_bl": 3223,
                 "preis_l": 3270.644922150526,
                 "einheit": "pricePerSqm"
@@ -3832,7 +3832,7 @@
                 "bruttomietrendite_etw": 5.9408720506186725,
                 "bruttomietrendite_efh": 4.245578095919432,
                 "bruttomietrendite_dhh": 5.514132296519947,
-                "bruttomietrendite_rmh": 4.337039193389444
+                "bruttomietrendite_rmh": 4.130513517513756
             }
         ],
         "nettomietrendite_allgemein": [
@@ -3843,7 +3843,7 @@
                 "nettomietrendite_etw": 5.477969602054032,
                 "nettomietrendite_efh": 3.720826763847358,
                 "nettomietrendite_dhh": 4.994115880409324,
-                "nettomietrendite_rmh": 3.928029859445631
+                "nettomietrendite_rmh": 3.7409808185196485
             }
         ],
         "kaufpreisfaktor_allgemein": [
@@ -3854,7 +3854,7 @@
                 "kaufpreisfaktor_etw": 17.667117173796576,
                 "kaufpreisfaktor_efh": 24.721741129598342,
                 "kaufpreisfaktor_dhh": 19.034378754215574,
-                "kaufpreisfaktor_rmh": 24.200399847156405
+                "kaufpreisfaktor_rmh": 25.41041983951423
             }
         ],
         "mietrendite_mfh": [
@@ -3980,41 +3980,41 @@
         "mietrendite_rmh": [
             {
                 "label": "Bruttomietrendite",
-                "rh_neubau": 4.117022789490522,
-                "rh_bestand_unsaniert": 5.616001754788397,
-                "rh_bestand_kernsaniert": 3.278093035889413
+                "rh_neubau": 3.9209740852290684,
+                "rh_bestand_unsaniert": 5.348573099798473,
+                "rh_bestand_kernsaniert": 3.121993367513726
             },
             {
                 "label": "Kaupreisfaktor",
-                "rh_neubau": 24.28939675905338,
-                "rh_bestand_unsaniert": 17.806262242481772,
-                "rh_bestand_kernsaniert": 30.505540539934064
+                "rh_neubau": 25.503866597006056,
+                "rh_bestand_unsaniert": 18.696575354605862,
+                "rh_bestand_kernsaniert": 32.03081756693077
             },
             {
                 "label": "Nettomietrendite",
-                "rh_neubau": 3.8451692041299017,
-                "rh_bestand_unsaniert": 5.030738019796973,
-                "rh_bestand_kernsaniert": 2.9081823544100187
+                "rh_neubau": 3.6620659086951433,
+                "rh_bestand_unsaniert": 4.791179066473307,
+                "rh_bestand_kernsaniert": 2.769697480390494
             }
         ],
         "mietrendite_reh": [
             {
                 "label": "Bruttomietrendite",
-                "rh_neubau": 4.117022789490522,
-                "rh_bestand_unsaniert": 5.616001754788397,
-                "rh_bestand_kernsaniert": 3.278093035889413
+                "rh_neubau": 3.9209740852290684,
+                "rh_bestand_unsaniert": 5.348573099798473,
+                "rh_bestand_kernsaniert": 3.121993367513726
             },
             {
                 "label": "Kaupreisfaktor",
-                "rh_neubau": 24.28939675905338,
-                "rh_bestand_unsaniert": 17.806262242481772,
-                "rh_bestand_kernsaniert": 30.505540539934064
+                "rh_neubau": 25.503866597006056,
+                "rh_bestand_unsaniert": 18.696575354605862,
+                "rh_bestand_kernsaniert": 32.03081756693077
             },
             {
                 "label": "Nettomietrendite",
-                "rh_neubau": 3.8451692041299017,
-                "rh_bestand_unsaniert": 5.030738019796973,
-                "rh_bestand_kernsaniert": 2.9081823544100187
+                "rh_neubau": 3.6620659086951433,
+                "rh_bestand_unsaniert": 4.791179066473307,
+                "rh_bestand_kernsaniert": 2.769697480390494
             }
         ],
         "mietrendite_entwicklung": [
@@ -4067,7 +4067,7 @@
             "wirtschaft_sv_beschaeftigte_wohnort": "Die Zahl der sozialversicherungs­pflichtig Beschäftigten in {ortsname} offenbart, wie eng der Ort mit dem regionalen Arbeitsmarkt verflochten ist. Viele Bewohnerinnen und Bewohner pendeln täglich zu Arbeitsplätzen in umliegende Städte, während zugleich lokale Betriebe stabile Beschäftigungsmöglichkeiten bieten. Diese Kombination aus regionaler Mobilität und ortsnahen Arbeitsplätzen stärkt den Wirtschaftsraum und schafft für die Menschen in {ortsname} flexible Erwerbsperspektiven. Besonders die gute Verkehrsanbindung wirkt als wichtiger Motor für berufliche Chancen, da sie den Zugang zu vielfältigen Branchen erleichtert. Gleichzeitig gewinnt der Wohnort als Lebens- und Arbeitsmittelpunkt an Bedeutung, wenn Unternehmen vor Ort weiter wachsen oder neue Arbeitgeber hinzukommen. So zeigt die Verteilung der Beschäftigten nach Wohn- und Arbeitsort, wie dynamisch sich {ortsname} innerhalb der regionalen Wirtschaftsstruktur positioniert.",
             "wirtschaft_arbeitslosendichte": "Die Arbeitslosendichte in {ortsname} wird von der regionalen Wirtschaftsstruktur und der Erreichbarkeit größerer Arbeitsmarktzentren geprägt. In einem Umfeld, in dem Industrie, Handwerk und Dienstleistungsbetriebe zusammentreffen, ergeben sich für Arbeitsuchende unterschiedliche Einstiegs- und Entwicklungsmöglichkeiten. Gerade Pendlerverbindungen zu umliegenden Städten eröffnen zusätzliche Perspektiven, während lokale Betriebe wichtige Arbeitgeber vor Ort darstellen. Gleichzeitig zeigt sich in {ortsname}, dass Qualifikation und Berufserfahrung zu entscheidenden Hebeln für gute Beschäftigungschancen werden. Angebote zur Weiterbildung, beruflichen Neuorientierung und Unterstützung durch regionale Arbeitsmarktakteure helfen dabei, Arbeitslosigkeit zu vermeiden oder zu verkürzen. So kann {ortsname} seine Rolle als lebenswerter Wohn- und Arbeitsstandort stärken und die Arbeitslosendichte langfristig auf einem möglichst niedrigen Niveau halten.",
             "wirtschaft_bruttoinlandsprodukt": "Betrachten wir das aktuelle Niveau: Im jüngsten Jahr liegt das Bruttoinlandsprodukt bei 7.25 Mio. In den vergangenen fünf Jahren ist um 33,4 % stark gestiegen. Deutlich unter dem Landesdurchschnitt liegt klar unter dem Landesniveau mit Index 74.",
-            "wirtschaft_einkommen": "Über die letzten fünf Jahre ist mit 2,1 % leicht gesunken. Schauen wir auf das aktuelle Niveau: Im jüngsten Jahr liegt das verfügbare Einkommen bei 106.551.953 €.",
+            "wirtschaft_einkommen": "Über die letzten fünf Jahre ist mit 2,1 % leicht gesunken. Schauen wir auf das aktuelle Niveau: Im jüngsten Jahr liegt das verfügbare Einkommen bei 106.443.006 €.",
             "wirtschaft_sv_beschaeftigte_arbeitsort": "In den vergangenen fünf Jahren ist um -10,6 % deutlich zurückgegangen. Über die letzten fünf Jahre ist mit -2,2 % leicht gesunken. Im jüngsten Jahr liegt die Zahl der Beschäftigten am Arbeitsort bei 1.296 und am Wohnort bei 2.233.",
             "wirtschaft_arbeitsplatzzentralitaet": "Die Arbeitsplatzzentralität  liegt klar niedriger bei 0.58038513210927.",
             "wirtschaft_pendler": "Das Pendlervolumen  stieg deutlich um 141 Personen. Die Zahl der Einpendler ist um 24,55 % % stark gestiegen. Die Zahl der Auspendler ist um 2,9 % % stark zurückgegangen.",
@@ -4084,11 +4084,11 @@
             "wohnmarktsituation_wohnungsbestand_intro": "Der Wohnraumbestand in {ortsname} prägt maßgeblich die Angebote am lokalen Wohnungsmarkt. Er zeigt, welche Wohnformen dominieren und wie vielfältig das bestehende Angebot ist – von klassischen Einfamilienhäusern über Mehrfamilienwohnraum bis hin zu modernen Neubauprojekten. Der Wohnraumsaldo beschreibt die Veränderung dieses Bestands im Zeitverlauf und macht sichtbar, ob in {ortsname} neuer Wohnraum entsteht oder der Bestand weitgehend stabil bleibt. Ein positiver Saldo weist auf Neubautätigkeit, Nachverdichtung oder Modernisierungen hin, während ein stagnierender oder negativer Saldo auf demografische Veränderungen oder geringe Bauimpulse hindeuten kann. Für die zukünftige Wohnraumentwicklung ist die Kombination aus Bestandsstruktur und Saldo besonders relevant, da sie Aufschluss darüber gibt, wie gut {ortsname} auf wachsende oder veränderte Nachfrage reagieren kann. So entsteht ein klares Bild über Potenziale, Herausforderungen und Entwicklungsperspektiven des lokalen Wohnmarktes.",
             "wohnmarktsituation_baufertigstellungen_intro": "Die Entwicklung der Baufertigstellungen in {ortsname} liefert einen wichtigen Hinweis darauf, wie sich der Wohnungsmarkt vor Ort strukturiert. Wo vermehrt Neubauprojekte abgeschlossen werden, wächst das Angebot an modernen, energieeffizienten Wohnungen und Häusern – ein Pluspunkt für Familien, Zuzügler und Kapitalanleger. In {ortsname} zeigt die Zahl der Baufertigstellungen, ob eher kompakte Mehrfamilienhäuser, Reihen- und Doppelhäuser oder klassische Einfamilienhäuser dominieren. Daraus lassen sich Zielgruppen und Nachfragetrends ablesen, etwa ob stärker bezahlbarer Wohnraum, familienorientiertes Wohnen oder hochwertige Neubauquartiere im Fokus stehen. Gleichzeitig wirken neue Projekte dem Alterungsprozess des Bestands entgegen und verbessern die energetische Qualität des Wohnangebots insgesamt. Für Eigentümer, Investoren und Kommunen ist es daher entscheidend, die Baufertigstellungen in {ortsname} genau im Blick zu behalten, um Chancen frühzeitig zu nutzen und Wohnkonzepte optimal auf die lokale Nachfrage auszurichten.",
             "wohnmarktsituation_baugenehmigungen_intro": "Die Zahl der Baugenehmigungen in {ortsname} ist ein zentraler Hinweis darauf, wie sich der Wohnungsmarkt in den kommenden Jahren entwickeln kann. Genehmigte Neubauprojekte markieren den Beginn zukünftiger Wohnangebote – von modernen Mehrfamilienhäusern über familienfreundliche Reihen- und Doppelhäuser bis hin zu hochwertigen Einfamilienhäusern. In {ortsname} lassen sich aus den Genehmigungszahlen Trends erkennen: Wird verstärkt kompakter Wohnraum geplant, rücken Zielgruppen wie Singles, Paare und Senioren stärker in den Fokus. Steigen die Genehmigungen für größere Wohnformen, spricht dies eher für wachsende Nachfrage durch Familien oder Zuzüge aus dem Umland. Gleichzeitig fungieren Baugenehmigungen als zuverlässiger Frühindikator für das zukünftige Angebotsniveau vor Ort. Für Eigentümer, Investoren und kommunale Akteure ist es deshalb entscheidend, die Genehmigungsentwicklung in {ortsname} aufmerksam zu verfolgen, um frühzeitig auf Marktveränderungen reagieren und Potenziale optimal nutzen zu können.",
-            "wohnmarktsituation_allgemein": "In Mügeln leben aktuell rund 5.505 Menschen auf einer Gesamtfläche von 5.508 ha, davon entfallen 584 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 5.505 Einwohner je km². Binnen fünf Jahren ist die Zahl der Einwohner um 350 Personen deutlich gesunken. Aktuell wird Mügeln als schrumpfende Region eingestuft. Insgesamt gibt es hier etwa 2.752 Haushalte, die durchschnittlich aus 2,0 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region liegt mit 566 Personen unter dem Niveau des Jahres 2015. Über die letzten 10 Jahre zeigt das eine Abnahme von 9.3 %.",
+            "wohnmarktsituation_allgemein": "In Mügeln leben aktuell rund 5.505 Menschen auf einer Gesamtfläche von 5.508 ha, davon entfallen 584 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 5.505 Einwohner je km². Im Verlauf der letzten fünf Jahre ist die Bevölkerung um 350 Menschen deutlich gesunken, was auf demografische Belastungen hinweist. Aktuell wird Mügeln als schrumpfende Region eingestuft. Insgesamt gibt es hier etwa 2.752 Haushalte, die durchschnittlich aus 2,0 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung liegt mit 566 Personen unter dem Niveau des Jahres 2015. Im Zehnjahresvergleich bedeutet das einen Rückgang von 9.3 %.Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 566 Personen unter dem Niveau des Jahres 2015. Über zehn Jahre betrachtet bedeutet das einen Rückgang von 9.3 %.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 2.752. In den letzten fünf Jahren  ist die Zahl um 199 gesunken, was einem starken Rückgang von 6,7 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2023 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
-            "wohnmarktsituation_wanderungssaldo": "die Zuzüge sind die gleich blieben. Währenddessen haben jedoch die Fortzüge von Personen um 18,6 % erheblich abgenommen, was auf eine stärkere Bindung an den Ort schließen lässt. Gestützt auf diese Beobachtungen hat die Gegend einen leicht positiven Wanderungssaldo von 63. Wenn wir auf die aktuellste Entwicklung in 2024 blicken, hat die Region einen Wanderungssaldo von 65 Menschen.",
+            "wohnmarktsituation_wanderungssaldo": "die Zuzüge sind die gleich blieben. Währenddessen sind hingegen die Wegzüge um 18,6 % stark gesunken, was auf eine stärkere Bindung an den Ort schließen lässt. Daher ist mit 63 Menschen der Saldo leicht positiv. Schauen wir ins aktuelle Jahr 2024, dann sehen wir einen Wanderungssaldo von 65..",
             "wohnmarktsituation_alterstruktur": "Das Durchschnittsalter   ist 49.9 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt über dem Niveau des Bundeslandes, was auf eine ältere Bevölkerung hinweist. Auch im Bundesvergleich liegt das Durchschnittsalter über dem Bundesdurchschnitt, was auf einen höheren Seniorenanteil hinweist.",
             "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient   bei 59.2 und der Jugendquotient bei 29.3. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt deutlich über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt klar über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 3.497 Wohnungen. Pro 1.000 Einwohner stehen also um die 635 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre ist der Bestand dabei deutlich gestiegen.",
@@ -4103,22 +4103,22 @@
             "immobilienpreise_wohnung_intro": "Der Wohnungsmarkt zeigt in vielen Ortslagen eine dynamische Entwicklung mit spürbaren Unterschieden je nach Lage, Baujahr und Ausstattung. Moderne oder umfassend sanierte Wohnungen erzielen stabile bis steigende Preise, während unsanierte Bestände und weniger gefragte Wohnbereiche deutlicher differenziert betrachtet werden müssen. Käufer legen zunehmend Wert auf Energieeffizienz, funktionale Grundrisse und eine gute Infrastruktur im direkten Umfeld. Zudem spielen Wohnungsgröße und Zimmeranzahl eine wichtige Rolle, da die Nachfrage sowohl nach kompakten Einheiten als auch nach familiengerechten Wohnungen spürbar ist. Für Eigentümer eröffnet eine fundierte Marktanalyse klare Vorteile, da realistische Preisspannen und optimale Vermarktungsstrategien leichter identifiziert werden können. Eine sorgfältige Bewertung aller relevanten Marktfaktoren hilft sowohl Kaufinteressenten als auch Verkäufern, sichere und strategisch sinnvolle Entscheidungen zu treffen.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Mügeln bei 1.690 €/m².  Er bewegt sich dabei zwischen 1.360 €/m² und 1.960 €/m².  Damit liegt er unter dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 11,8 % gestiegen.  ",
             "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Mügeln variieren die Preise je nach Lage erheblich. in Mügeln gibt es einfache bis gute Wohnlagequalitäten. Beispielsweise einfachen (1.429 €), mittleren (1.649 €) und guten (1.869 €).",
-            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Mügeln ungefähr bei 2026,5 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 1721,0 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen zwischen 1137,4 €/m² und 2719,2 €/m² rechnen .",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat hier in etwa zwischen 1243,9 €/m² und 2896,8 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 1646,4 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen zwischen 1157,9 €/m² und 2736,4 €/m² rechnen .",
             "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute liegt der Preis bei 1.690 €/m², und ist damit um 16,9 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Die aktuellen Angebotspreise für Wohnungen liegen bei 1.470 €/m². Sie variieren typischerweise zwischen von 1.470 €/m² bis 1.700 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 5,3 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Mügeln variieren die Preise je nach Lage erheblich. Mügeln weist vor allem einfache, mittlere und gute Wohnlagen auf. In mittleren Wohnlagen liegen sie aktuell bei 1.427 € und in guten Wohnlagen bei 1.622 €.",
-            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Mügeln müssen diese derzeit durchschnittlich 918,2 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 13,1 % deutlich gefallen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 1510,5 €/m². hier ist der kurzfristige Trend mit 9,3 % Anstieg, leicht positiv ",
+            "immobilienpreise_wohnung_allgemein": "Der durchschnittliche Quadratmeterpreis für Wohnungen in Mügeln beträgt 1.470 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 1.470 €/m² bis 1.700 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 5,3 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Mügeln variieren die Preise je nach Lage erheblich. in Mügeln gibt es einfache bis gute Wohnlagequalitäten. Beispielsweise einfachen (1.232 €), mittleren (1.427 €) und guten (1.622 €).",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Mügeln derzeit durchschnittlich 2169,4 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 13,1 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 1613,1 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 1613,1 €/m². hier ist der kurzfristige Trend mit 9,3 % Anstieg, leicht positiv ",
             "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 1.400 €/m². Heute liegt der Preis bei 1.470 €/m² €/m², und ist damit um  % deutlich gestiegen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "In {ortsname} lassen sich die aktuellen Grundstückspreise nur im Kontext der jeweiligen Lage und Nutzungsart richtig einordnen. Während zentrale und gut erreichbare Wohnlagen tendenziell höhere Preise erzielen, bieten ruhigere Randbereiche häufig noch attraktive Einstiegsmöglichkeiten für Bauwillige. Entscheidend sind Faktoren wie Anbindung an den ÖPNV, Nähe zu Schulen, Einkaufsmöglichkeiten und Freizeitangeboten sowie die städtebauliche Entwicklung von {ortsname}. Auf Baugrundstücke für Ein- und Zweifamilienhäuser trifft vielerorts eine lebhafte Nachfrage, während größere Flächen für Projektentwicklungen gezielt von Investoren geprüft werden. Für Eigentümer kann dieses Marktumfeld interessante Verkaufserlöse ermöglichen, sofern Preisstrategie und Vermarktung zur Lage passen. Käufer sollten in {ortsname} genau hinschauen, welche Grundstücke langfristig werthaltig sind und welches Preisniveau realistisch ist – so lassen sich fundierte Entscheidungen rund um den Erwerb von Bauland treffen.",
-            "grundstueckspreise_allgemein": "Die mittleren Angebotspreise für Grundstücke belaufen sich auf 110 €/m². Sie befinden sich üblicherweise in einer Spanne von 96 €/m² bis 120 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % merklich gestiegen. ",
-            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Mügeln bei 90 €/m². Aktuell beträgt er 110 €/m² und ist damit um 18,9 % deutlich gestiegen."
+            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke  Mügeln beträgt 110 €/m². Sie pendeln zwischen den Werten von 96 €/m² bis 120 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % merklich gestiegen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Mügeln bei 90 €/m². Aktuell liegt der Preis bei 110 €/m² und ist damit um 18,9 % deutlich gestiegen."
         },
         "mietpreise": {
             "mietpreise_intro": "Die Mietpreise in {ortsname} entwickeln sich zunehmend differenziert und hängen stark von Lagequalität, Wohnungszustand und Ausstattung ab. Besonders gefragt sind modernisierte Wohnungen mit effizienter Raumaufteilung, guter Energiekennzahl und kurzen Wegen zu Einkaufsmöglichkeiten, ÖPNV und weiteren Alltagsangeboten. In einigen Bereichen von {ortsname} sorgt die begrenzte Verfügbarkeit attraktiver Mietwohnungen für eine spürbare Nachfrage, während andere Segmente ein ausgeglichenes Verhältnis zwischen Angebot und Mietinteresse aufweisen. Für Vermieter ist eine realistische Einschätzung des Mietniveaus entscheidend, um optimale Vermarktungserfolge zu erzielen. Mieter profitieren von einer klaren Einordnung der Preisstrukturen, die hilft, passende Angebote zu identifizieren und fundierte Entscheidungen zu treffen. Eine sorgfältige Betrachtung der lokalen Rahmenbedingungen unterstützt beide Seiten dabei, Chancen im Mietmarkt von {ortsname} gezielt zu nutzen.",
-            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) in Mügeln beträgt 5.0 €/m². Sie variieren typischerweise zwischen von 5.0 €/m² bis 9.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 7.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
-            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Mügeln bei 5.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5.0 €/m² bis 9.0 €/m². Damit reihen sie sich deutlich unter dem Landesniveau von Sachsen und deutlich unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 35.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 9.0 €/m² rechnen, im Bestand sind es 6.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 50,9 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 42,2 % weit über dem derzeitigen Niveau.",
+            "mietpreise_allgemein": "Die mittleren Angebotspreise aller Mietimmobilien (Haus + Wohnung) belaufen sich auf 5.0 €/m². Sie pendeln zwischen den Werten von 5.0 €/m² bis 9.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² beträgt,  kommt man auf eine durchschnittliche Warmmiete von 7.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
+            "mietpreise_wohnung_allgemein": "Derzeit liegen die durchschnittlichen Kaltmieten bei 5.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5.0 €/m² bis 9.0 €/m². Damit reihen sie sich deutlich unter dem Landesniveau von Sachsen und deutlich unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 35.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 9.0 €/m² rechnen, im Bestand liegt man bei 6.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 50,9 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 42,2 % weit über dem derzeitigen Niveau.",
             "mietpreise_wohnung_preisentwicklung": "Letztes Jahr lag der Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) lagen die durchschnittlichen Werte bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
             "mietpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Mügeln derzeit durchschnittlich 7,4 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 3,4 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 6,1 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 6,1 €/m². hier ist der kurzfristige Trend mit 16,1 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 5 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6 €/m² bis 8 €/m². ",
@@ -4131,7 +4131,7 @@
             "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 4,17 %. Letztes Jahr lag die Bruttomietrendite im Mügeln bei 4,32 %. Bis heute ist der Preis innerhalb dieser Zeit mit 3,5 % deutlich gefallen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 4,16 %, innerhalb diesen Zeitraums sind sie bis jetzt um 0,2 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 3,7 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 5,94 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  im Mügeln ungefähr bei 17.7, und die mittlere Netto-Mietrendite bei ungefähr 5,48 %. ",
             "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Mügeln bei 24.7. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 3,72 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Mügeln bei 12.5. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 7,71 €/m², "
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Mügeln bei 12.5. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 7,71 €/m², "
         },
         "quellenangaben": [
             {

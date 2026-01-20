@@ -1,6 +1,6 @@
 {
     "meta": {
-        "aktualisierung": "08.01.2026",
+        "aktualisierung": "20.01.2026",
         "regionale_zuordnung": "landkreis",
         "amtlicher_name": "Landkreis Nordsachsen",
         "bundesland_name": "sachsen",
@@ -11,7 +11,7 @@
     "data": {
         "immobilienmarkt_situation": [
             {
-                "immobilienmarkt_index": -18.28353324922664,
+                "immobilienmarkt_index": -18.283533249226647,
                 "mietmarkt_index": -1.5087908033324013
             }
         ],
@@ -44,7 +44,7 @@
             },
             {
                 "region": "Nordsachsen",
-                "immobilienpreis": 1931.7880207325895
+                "immobilienpreis": 1936.3260346694346
             }
         ],
         "grundstueckspreise_ueberregionaler_vergleich": [
@@ -78,27 +78,27 @@
         "immobilie_kaufpreisentwicklung": [
             {
                 "jahr": 2021,
-                "kaufpreisentwicklung_immobilie": 1389.717383140101
+                "kaufpreisentwicklung_immobilie": 1392.982004716217
             },
             {
                 "jahr": 2022,
-                "kaufpreisentwicklung_immobilie": 1787.8325023061261
+                "kaufpreisentwicklung_immobilie": 1792.0323465567046
             },
             {
                 "jahr": 2023,
-                "kaufpreisentwicklung_immobilie": 1962.3059918469614
+                "kaufpreisentwicklung_immobilie": 1966.915696350657
             },
             {
                 "jahr": 2024,
-                "kaufpreisentwicklung_immobilie": 1739.9889722158332
+                "kaufpreisentwicklung_immobilie": 1744.0764259742834
             },
             {
                 "jahr": 2025,
-                "kaufpreisentwicklung_immobilie": 1725.0922880440748
+                "kaufpreisentwicklung_immobilie": 1729.1447476107924
             },
             {
                 "jahr": 2026,
-                "kaufpreisentwicklung_immobilie": 1931.7880207325895
+                "kaufpreisentwicklung_immobilie": 1936.3260346694346
             }
         ],
         "grundstueck_kaufpreisentwicklung": [
@@ -162,7 +162,7 @@
         ],
         "preisindex": [
             {
-                "immobilienpreisindex": 139.00581831736653,
+                "immobilienpreisindex": 139.0058183173665,
                 "grundstueckspreisindex": 191.58569516225,
                 "mietpreisindex": 132.0782793188182
             }
@@ -211,47 +211,47 @@
         "standortfaktoren": [
             {
                 "faktor": "gesundheit",
-                "wert": 6,
+                "wert": 1,
                 "color": "#e0a266"
             },
             {
                 "faktor": "bildung",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "sicherheit",
-                "wert": 4,
+                "wert": 1,
                 "color": "#ec8972"
             },
             {
                 "faktor": "naherholung",
-                "wert": 4,
+                "wert": 1,
                 "color": "#ec8972"
             },
             {
                 "faktor": "lebenserhaltungskosten",
-                "wert": 2,
+                "wert": 1,
                 "color": "#f86f7e"
             },
             {
                 "faktor": "arbeitsplatz",
-                "wert": 6,
+                "wert": 1,
                 "color": "#e0a266"
             },
             {
                 "faktor": "kultur_freizeit",
-                "wert": 4,
+                "wert": 1,
                 "color": "#ec8972"
             },
             {
                 "faktor": "mobilitaet",
-                "wert": 9,
+                "wert": 1,
                 "color": "#cec854"
             },
             {
                 "faktor": "nahversorgung",
-                "wert": 3,
+                "wert": 1,
                 "color": "#f27c78"
             }
         ],
@@ -1280,8 +1280,8 @@
         ],
         "wohnungsnachfrage_allgemein": [
             {
-                "anzahl_einwohner": "199 Tsd",
-                "anzahl_haushalte": "103 Tsd",
+                "anzahl_einwohner": 199422,
+                "anzahl_haushalte": 102641.0,
                 "mittlere_haushaltsgroesse": 1.9,
                 "wanderungssaldo": 1573,
                 "natuerlicher_saldo": -1665,
@@ -3014,8 +3014,8 @@
         "immobilienpreisindex_regional": [
             {
                 "immobilienpreisindex": 68,
-                "immobilienpreisindex_haus": 68,
-                "immobilienpreisindex_wohnung": 62
+                "immobilienpreisindex_haus": 71,
+                "immobilienpreisindex_wohnung": 59
             }
         ],
         "immobilien_angebotsverteilung": [
@@ -3030,44 +3030,44 @@
         ],
         "immobilien_kaufpreis": [
             {
-                "kaufpreis_immobilien": 1931.7880207325895,
+                "kaufpreis_immobilien": 1936.3260346694346,
                 "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis": [
             {
-                "kaufpreis_haus": 2022.54829946949,
+                "kaufpreis_haus": 2123.675714442965,
                 "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreisspanne": [
             {
-                "preis_haus_min": 1747.28,
-                "preis_haus_avg": 2022.54829946949,
-                "preis_haus_max": 2519.89,
+                "preis_haus_min": 1834.64,
+                "preis_haus_avg": 2123.675714442965,
+                "preis_haus_max": 2645.89,
                 "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": 1213.381261376318,
-                "doppelhaushaelfte": 1419.2178750633332,
-                "einfamilienhaus": 1479.098412532017,
+                "reihenhaus": 1281.6136050268249,
+                "doppelhaushaelfte": 1435.345352152469,
+                "einfamilienhaus": 1520.478137888012,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": 2041.4294997481052,
-                "doppelhaushaelfte": 2253.085428855731,
-                "einfamilienhaus": 2403.0023354131763,
+                "reihenhaus": 2076.6660426014037,
+                "doppelhaushaelfte": 2412.1076592709246,
+                "einfamilienhaus": 2573.5866806495455,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": 2780.0814092746296,
-                "doppelhaushaelfte": 3247.4400152980097,
-                "einfamilienhaus": 3422.9001225818424,
+                "reihenhaus": 2935.0681220352712,
+                "doppelhaushaelfte": 3434.232957168354,
+                "einfamilienhaus": 3525.1498186696444,
                 "einheit": "pricePerSqm"
             }
         ],
@@ -3084,88 +3084,88 @@
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "preis": 2022.54829946949,
+                "preis": 2123.675714442965,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis Vorjahr",
-                "preis": 1809.039123401748,
+                "preis": 1899.4910795718356,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Tendenz",
-                "preis": 11.802352602869963,
+                "preis": 11.80235260286996,
                 "einheit": "percent"
             }
         ],
         "haus_kaufpreise_lage": [
             {
                 "preisinfo_label": "min. Preis",
-                "preis_einfache_lage": 1747.28,
-                "preis_mittlere_lage": 1836.68,
-                "preis_gute_lage": 2083.43,
-                "preis_sehr_gute_lage": 2174.04,
-                "preis_top_lage": 2278.4,
+                "preis_einfache_lage": 1834.64,
+                "preis_mittlere_lage": 1928.51,
+                "preis_gute_lage": 2187.6,
+                "preis_sehr_gute_lage": 2282.74,
+                "preis_top_lage": 2392.32,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "preis_einfache_lage": 1832.02,
-                "preis_mittlere_lage": 1975.42,
-                "preis_gute_lage": 2183.54,
-                "preis_sehr_gute_lage": 2274.15,
-                "preis_top_lage": 2399.15,
+                "preis_einfache_lage": 1923.63,
+                "preis_mittlere_lage": 2074.19,
+                "preis_gute_lage": 2292.72,
+                "preis_sehr_gute_lage": 2387.86,
+                "preis_top_lage": 2519.1,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "preis_einfache_lage": 1916.57,
-                "preis_mittlere_lage": 2086.66,
-                "preis_gute_lage": 2283.86,
-                "preis_sehr_gute_lage": 2374.27,
-                "preis_top_lage": 2519.89,
+                "preis_einfache_lage": 2012.4,
+                "preis_mittlere_lage": 2191.0,
+                "preis_gute_lage": 2398.05,
+                "preis_sehr_gute_lage": 2492.98,
+                "preis_top_lage": 2645.89,
                 "einheit": "pricePerSqm"
             }
         ],
         "haus_kaufpreisentwicklung": [
             {
                 "jahr": 2021,
-                "preis_k": 1433.0376941718655,
+                "preis_k": 1504.689578880459,
                 "preis_bl": 2584,
                 "preis_l": 2780.7035903653587,
                 "einheit": "pricePerSqm"
             },
             {
                 "jahr": 2022,
-                "preis_k": 1898.8974847702286,
+                "preis_k": 1993.8423590087405,
                 "preis_bl": 2606,
                 "preis_l": 3251.4663055838787,
                 "einheit": "pricePerSqm"
             },
             {
                 "jahr": 2023,
-                "preis_k": 2070.705931569447,
+                "preis_k": 2174.2412281479196,
                 "preis_bl": 2800,
                 "preis_l": 3369.31848901723,
                 "einheit": "pricePerSqm"
             },
             {
                 "jahr": 2024,
-                "preis_k": 1823.5763865908846,
+                "preis_k": 1914.755205920429,
                 "preis_bl": 2732,
                 "preis_l": 3043.145615893064,
                 "einheit": "pricePerSqm"
             },
             {
                 "jahr": 2025,
-                "preis_k": 1809.039123401748,
+                "preis_k": 1899.4910795718356,
                 "preis_bl": 2419,
                 "preis_l": 3062.0408943305847,
                 "einheit": "pricePerSqm"
             },
             {
                 "jahr": 2026,
-                "preis_k": 2022.54829946949,
+                "preis_k": 2123.675714442965,
                 "preis_bl": 2235,
                 "preis_l": 3152.5305408373115,
                 "einheit": "pricePerSqm"
@@ -3173,15 +3173,15 @@
         ],
         "wohnung_kaufpreis": [
             {
-                "kaufpreis_wohnung": 1841.027741995689,
+                "kaufpreis_wohnung": 1748.9763548959045,
                 "einheit": "pricePerSqm"
             }
         ],
         "wohnung_kaufpreisspanne": [
             {
-                "preis_wohnung_min": 1585.49,
-                "preis_wohnung_avg": 1841.027741995689,
-                "preis_wohnung_max": 2366.27,
+                "preis_wohnung_min": 1506.22,
+                "preis_wohnung_avg": 1748.9763548959045,
+                "preis_wohnung_max": 2247.96,
                 "einheit": "pricePerSqm"
             }
         ],
@@ -3198,146 +3198,146 @@
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "preis": 1841.027741995689,
+                "preis": 1748.9763548959045,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis Vorjahr",
-                "preis": 1641.4055117211415,
+                "preis": 1559.3352361350844,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Tendenz",
-                "preis": 12.161664430213108,
+                "preis": 12.161664430213104,
                 "einheit": "percent"
             }
         ],
         "wohnung_kaufpreise_lage": [
             {
                 "preisinfo_label": "min. Preis",
-                "preis_einfache_lage": 1585.49,
-                "preis_mittlere_lage": 1695.22,
-                "preis_gute_lage": 1902.15,
-                "preis_sehr_gute_lage": 1966.22,
-                "preis_top_lage": 2140.93,
+                "preis_einfache_lage": 1506.22,
+                "preis_mittlere_lage": 1610.46,
+                "preis_gute_lage": 1807.04,
+                "preis_sehr_gute_lage": 1867.91,
+                "preis_top_lage": 2033.88,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "preis_einfache_lage": 1658.03,
-                "preis_mittlere_lage": 1791.69,
-                "preis_gute_lage": 1997.15,
-                "preis_sehr_gute_lage": 2066.74,
-                "preis_top_lage": 2253.6,
+                "preis_einfache_lage": 1575.13,
+                "preis_mittlere_lage": 1702.1,
+                "preis_gute_lage": 1897.29,
+                "preis_sehr_gute_lage": 1963.4,
+                "preis_top_lage": 2140.92,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "preis_einfache_lage": 1731.49,
-                "preis_mittlere_lage": 1881.53,
-                "preis_gute_lage": 2092.88,
-                "preis_sehr_gute_lage": 2167.07,
-                "preis_top_lage": 2366.27,
+                "preis_einfache_lage": 1644.91,
+                "preis_mittlere_lage": 1787.45,
+                "preis_gute_lage": 1988.24,
+                "preis_sehr_gute_lage": 2058.72,
+                "preis_top_lage": 2247.96,
                 "einheit": "pricePerSqm"
             }
         ],
         "wohnung_kaufpreise_nach_zimmern": [
             {
                 "zimmer": "1 Zimmer",
-                "preis": 1634.836201313411,
-                "preis_vorjahr": 1349.7518438390136,
+                "preis": 1553.09439124774,
+                "preis_vorjahr": 1282.264251647063,
                 "einheit": "pricePerSqm"
             },
             {
                 "zimmer": "2 Zimmer",
-                "preis": 1670.5048837181448,
-                "preis_vorjahr": 1676.2902800183404,
+                "preis": 1586.9796395322371,
+                "preis_vorjahr": 1592.4757660174232,
                 "einheit": "pricePerSqm"
             },
             {
                 "zimmer": "3 Zimmer",
-                "preis": 2040.682186906147,
-                "preis_vorjahr": 1748.875864277554,
+                "preis": 1938.6480775608395,
+                "preis_vorjahr": 1661.4320710636764,
                 "einheit": "pricePerSqm"
             },
             {
                 "zimmer": "4 Zimmer",
-                "preis": 2018.0876960450541,
-                "preis_vorjahr": 1790.7040587496576,
+                "preis": 1917.1833112428012,
+                "preis_vorjahr": 1701.1688558121746,
                 "einheit": "pricePerSqm"
             }
         ],
         "wohnung_kaufpreise_nach_flaechen": [
             {
                 "flaeche": "< 40",
-                "preis": 2008.0267082701232,
-                "preis_vorjahr": 1716.9588590225742,
+                "preis": 1907.6253728566169,
+                "preis_vorjahr": 1631.1109160714457,
                 "einheit": "pricePerSqm"
             },
             {
                 "flaeche": "40-60",
-                "preis": 1627.3139400316174,
-                "preis_vorjahr": 1392.9203642568887,
+                "preis": 1545.9482430300363,
+                "preis_vorjahr": 1323.2743460440443,
                 "einheit": "pricePerSqm"
             },
             {
                 "flaeche": "60-80",
-                "preis": 1799.72049837771,
-                "preis_vorjahr": 1625.9257149154616,
+                "preis": 1709.7344734588244,
+                "preis_vorjahr": 1544.6294291696884,
                 "einheit": "pricePerSqm"
             },
             {
                 "flaeche": "80-100",
-                "preis": 2022.4619697105632,
-                "preis_vorjahr": 1863.7869800623228,
+                "preis": 1921.3388712250344,
+                "preis_vorjahr": 1770.5976310592068,
                 "einheit": "pricePerSqm"
             },
             {
                 "flaeche": "> 100",
-                "preis": 1747.6155935884326,
-                "preis_vorjahr": 1607.43564034846,
+                "preis": 1660.2348139090107,
+                "preis_vorjahr": 1527.0638583310374,
                 "einheit": "pricePerSqm"
             }
         ],
         "wohnung_kaufpreisentwicklung": [
             {
                 "jahr": 2021,
-                "preis_k": 1340.0,
+                "preis_k": 1280.0,
                 "preis_bl": 3070.0,
                 "preis_l": 2860.0,
                 "einheit": "pricePerSqm"
             },
             {
                 "jahr": 2022,
-                "preis_k": 1680.0,
+                "preis_k": 1600.0,
                 "preis_bl": 3100.0,
                 "preis_l": 3290.0,
                 "einheit": "pricePerSqm"
             },
             {
                 "jahr": 2023,
-                "preis_k": 1860.0,
+                "preis_k": 1760.0,
                 "preis_bl": 3390.0,
                 "preis_l": 3340.0,
                 "einheit": "pricePerSqm"
             },
             {
                 "jahr": 2024,
-                "preis_k": 1660.0,
+                "preis_k": 1570.0,
                 "preis_bl": 3680.0,
                 "preis_l": 3090.0,
                 "einheit": "pricePerSqm"
             },
             {
                 "jahr": 2025,
-                "preis_k": 1640.0,
+                "preis_k": 1560.0,
                 "preis_bl": 3490.0,
                 "preis_l": 3150.0,
                 "einheit": "pricePerSqm"
             },
             {
                 "jahr": 2026,
-                "preis_k": 1840.0,
+                "preis_k": 1750.0,
                 "preis_bl": 3220.0,
                 "preis_l": 3270.0,
                 "einheit": "pricePerSqm"
@@ -3710,229 +3710,229 @@
         ],
         "mietrendite_gesamt": [
             {
-                "kaufpreisfaktor": 21.015942063443113,
-                "bruttomietrendite": 4.758292523747882,
-                "nettomietrendite": 4.324626929485474
+                "kaufpreisfaktor": 21.065311164481265,
+                "bruttomietrendite": 4.74714089049928,
+                "nettomietrendite": 4.314491643936306
             }
         ],
         "bruttomietrendite_allgemein": [
             {
-                "bruttomietrendite_mfh": 6.4853801934296955,
-                "bruttomietrendite_gwa": 4.175870258458047,
-                "bruttomietrendite_hh": 4.175870258458047,
-                "bruttomietrendite_etw": 4.3817352435320585,
-                "bruttomietrendite_efh": 3.2914980077663087,
-                "bruttomietrendite_dhh": 4.175870258458047,
-                "bruttomietrendite_rmh": 4.017273894853505
+                "bruttomietrendite_mfh": 6.002715504035938,
+                "bruttomietrendite_gwa": 4.048830535444603,
+                "bruttomietrendite_hh": 4.048830535444603,
+                "bruttomietrendite_etw": 4.4825397174752455,
+                "bruttomietrendite_efh": 3.0465332075271196,
+                "bruttomietrendite_dhh": 4.048830535444603,
+                "bruttomietrendite_rmh": 3.7182943132657513
             }
         ],
         "nettomietrendite_allgemein": [
             {
-                "nettomietrendite_mfh": 5.939348164115006,
-                "nettomietrendite_gwa": 3.83238782280023,
-                "nettomietrendite_hh": 3.824285795654968,
-                "nettomietrendite_etw": 4.012818122933731,
-                "nettomietrendite_efh": 2.8503494562005276,
-                "nettomietrendite_dhh": 3.7495199223007987,
-                "nettomietrendite_rmh": 3.6071160188904314
+                "nettomietrendite_mfh": 5.498198922556905,
+                "nettomietrendite_gwa": 3.7162504076676584,
+                "nettomietrendite_hh": 3.708534191338837,
+                "nettomietrendite_etw": 4.1057909588369155,
+                "nettomietrendite_efh": 2.6388923419947368,
+                "nettomietrendite_dhh": 3.6362377979523948,
+                "nettomietrendite_rmh": 3.3393845969707066
             }
         ],
         "kaufpreisfaktor_allgemein": [
             {
-                "kaufpreisfaktor_mfh": 15.66584437390965,
-                "kaufpreisfaktor_gwa": 24.330008004947313,
-                "kaufpreisfaktor_hh": 24.330008004947313,
-                "kaufpreisfaktor_etw": 23.186922798650908,
-                "kaufpreisfaktor_efh": 30.86708744048525,
-                "kaufpreisfaktor_dhh": 24.330008004947313,
-                "kaufpreisfaktor_rmh": 25.290522746298976
+                "kaufpreisfaktor_mfh": 17.00596102074352,
+                "kaufpreisfaktor_gwa": 25.212699071150013,
+                "kaufpreisfaktor_hh": 25.212699071150013,
+                "kaufpreisfaktor_etw": 22.77323845727011,
+                "kaufpreisfaktor_efh": 33.50757694944286,
+                "kaufpreisfaktor_dhh": 25.212699071150013,
+                "kaufpreisfaktor_rmh": 27.453971439552376
             }
         ],
         "mietrendite_mfh": [
             {
                 "label": "Bruttomietrendite",
-                "mfh_neubau": 5.44760725583516,
-                "mfh_bestand_unsaniert": 6.618615971165748,
-                "mfh_bestand_kernsaniert": 7.38991735328818
+                "mfh_neubau": 4.952747730617168,
+                "mfh_bestand_unsaniert": 6.017382254549521,
+                "mfh_bestand_kernsaniert": 7.038016526941123
             },
             {
                 "label": "Kaupreisfaktor",
-                "mfh_neubau": 18.356683091073762,
-                "mfh_bestand_unsaniert": 15.10889896553204,
-                "mfh_bestand_kernsaniert": 13.531951065123147
+                "mfh_neubau": 20.19081234075673,
+                "mfh_bestand_unsaniert": 16.618522103094527,
+                "mfh_bestand_kernsaniert": 14.208548618379305
             },
             {
                 "label": "Nettomietrendite",
-                "mfh_neubau": 5.107867866365791,
-                "mfh_bestand_unsaniert": 5.881516783406881,
-                "mfh_bestand_kernsaniert": 6.828659842572344
+                "mfh_neubau": 4.643870197569365,
+                "mfh_bestand_unsaniert": 5.347241005746736,
+                "mfh_bestand_kernsaniert": 6.503485564354613
             }
         ],
         "mietrendite_gwa": [
             {
                 "label": "Bruttomietrendite",
-                "gwa_neubau": 3.5076588327772487,
-                "gwa_bestand_unsaniert": 4.261659418849009,
-                "gwa_bestand_kernsaniert": 4.758292523747882
+                "gwa_neubau": 3.340627459787856,
+                "gwa_bestand_unsaniert": 4.058723256046674,
+                "gwa_bestand_kernsaniert": 4.74714089049928
             },
             {
                 "label": "Kaupreisfaktor",
-                "gwa_neubau": 28.5090439998189,
-                "gwa_bestand_unsaniert": 23.46503795157992,
-                "gwa_bestand_kernsaniert": 21.015942063443113
+                "gwa_neubau": 29.93449619980985,
+                "gwa_bestand_unsaniert": 24.638289849158916,
+                "gwa_bestand_kernsaniert": 21.065311164481265
             },
             {
                 "label": "Nettomietrendite",
-                "gwa_neubau": 3.31321018129096,
-                "gwa_bestand_unsaniert": 3.787048758580522,
-                "gwa_bestand_kernsaniert": 4.396904528529208
+                "gwa_neubau": 3.1554382678961517,
+                "gwa_bestand_unsaniert": 3.6067131034100206,
+                "gwa_bestand_kernsaniert": 4.386599851696802
             }
         ],
         "mietrendite_hh": [
             {
                 "label": "Bruttomietrendite",
-                "hh_neubau": 3.5076588327772487,
-                "hh_bestand_unsaniert": 4.261659418849009,
-                "hh_bestand_kernsaniert": 4.758292523747882
+                "hh_neubau": 3.340627459787856,
+                "hh_bestand_unsaniert": 4.058723256046674,
+                "hh_bestand_kernsaniert": 4.74714089049928
             },
             {
                 "label": "Kaupreisfaktor",
-                "hh_neubau": 28.5090439998189,
-                "hh_bestand_unsaniert": 23.46503795157992,
-                "hh_bestand_kernsaniert": 21.015942063443113
+                "hh_neubau": 29.93449619980985,
+                "hh_bestand_unsaniert": 24.638289849158916,
+                "hh_bestand_kernsaniert": 21.065311164481265
             },
             {
                 "label": "Nettomietrendite",
-                "hh_neubau": 3.2889040998551735,
-                "hh_bestand_unsaniert": 3.787048758580522,
-                "hh_bestand_kernsaniert": 4.396904528529208
+                "hh_neubau": 3.1322896189096885,
+                "hh_bestand_unsaniert": 3.6067131034100206,
+                "hh_bestand_kernsaniert": 4.386599851696802
             }
         ],
         "mietrendite_etw": [
             {
                 "label": "Bruttomietrendite",
-                "etw_neubau": 3.68058186164574,
-                "etw_bestand_unsaniert": 4.471753698209074,
-                "etw_bestand_kernsaniert": 4.992870170741361
+                "etw_neubau": 3.698474198585629,
+                "etw_bestand_unsaniert": 4.493492142533411,
+                "etw_bestand_kernsaniert": 5.255652811306696
             },
             {
                 "label": "Kaupreisfaktor",
-                "etw_neubau": 27.169617130940775,
-                "etw_bestand_unsaniert": 22.362591222331798,
-                "etw_bestand_kernsaniert": 20.02856004268014
+                "etw_neubau": 27.038176996947016,
+                "etw_bestand_unsaniert": 22.254406334317178,
+                "etw_bestand_kernsaniert": 19.02713204054613
             },
             {
                 "label": "Nettomietrendite",
-                "etw_neubau": 3.4510428042498242,
-                "etw_bestand_unsaniert": 3.9737453482508176,
-                "etw_bestand_kernsaniert": 4.613666216300551
+                "etw_neubau": 3.467819287688779,
+                "etw_bestand_unsaniert": 3.9930628348213855,
+                "etw_bestand_kernsaniert": 4.856490754000581
             }
         ],
         "mietrendite_efh": [
             {
                 "label": "Bruttomietrendite",
-                "efh_neubau": 2.764801429504519,
-                "efh_bestand_unsaniert": 3.359118607315075,
-                "efh_bestand_kernsaniert": 3.750573986479332
+                "efh_neubau": 2.513647435012514,
+                "efh_bestand_unsaniert": 3.053976962350434,
+                "efh_bestand_kernsaniert": 3.5719752252184116
             },
             {
                 "label": "Kaupreisfaktor",
-                "efh_neubau": 36.16896278078134,
-                "efh_bestand_unsaniert": 29.769713930979485,
-                "efh_bestand_kernsaniert": 26.66258560969493
+                "efh_neubau": 39.782826583833206,
+                "efh_bestand_unsaniert": 32.744189374315695,
+                "efh_bestand_kernsaniert": 27.99571489017968
             },
             {
                 "label": "Nettomietrendite",
-                "efh_neubau": 2.4582653977953832,
-                "efh_bestand_unsaniert": 2.7979732845260417,
-                "efh_bestand_kernsaniert": 3.2948096862801575
+                "efh_neubau": 2.2349570735196567,
+                "efh_bestand_unsaniert": 2.5438059655310696,
+                "efh_bestand_kernsaniert": 3.1379139869334836
             }
         ],
         "mietrendite_dhh": [
             {
                 "label": "Bruttomietrendite",
-                "dhh_neubau": 3.5076588327772487,
-                "dhh_bestand_unsaniert": 4.261659418849009,
-                "dhh_bestand_kernsaniert": 4.758292523747882
+                "dhh_neubau": 3.340627459787856,
+                "dhh_bestand_unsaniert": 4.058723256046674,
+                "dhh_bestand_kernsaniert": 4.74714089049928
             },
             {
                 "label": "Kaupreisfaktor",
-                "dhh_neubau": 28.5090439998189,
-                "dhh_bestand_unsaniert": 23.46503795157992,
-                "dhh_bestand_kernsaniert": 21.015942063443113
+                "dhh_neubau": 29.93449619980985,
+                "dhh_bestand_unsaniert": 24.638289849158916,
+                "dhh_bestand_kernsaniert": 21.065311164481265
             },
             {
                 "label": "Nettomietrendite",
-                "dhh_neubau": 3.2159858555478147,
-                "dhh_bestand_unsaniert": 3.707946981869107,
-                "dhh_bestand_kernsaniert": 4.324626929485474
+                "dhh_neubau": 3.0628436719503,
+                "dhh_bestand_unsaniert": 3.5313780779705777,
+                "dhh_bestand_kernsaniert": 4.314491643936306
             }
         ],
         "mietrendite_rmh": [
             {
                 "label": "Bruttomietrendite",
-                "rh_neubau": 3.3744406288550715,
-                "rh_bestand_unsaniert": 4.099804848443829,
-                "rh_bestand_kernsaniert": 4.577576207261616
+                "rh_neubau": 3.0679071345979647,
+                "rh_bestand_unsaniert": 3.727379417331083,
+                "rh_bestand_kernsaniert": 4.359596387868206
             },
             {
                 "label": "Kaupreisfaktor",
-                "rh_neubau": 29.634541246597493,
-                "rh_bestand_unsaniert": 24.39140488307808,
-                "rh_bestand_kernsaniert": 21.845622109221353
+                "rh_neubau": 32.59551075463193,
+                "rh_bestand_unsaniert": 26.828500349342768,
+                "rh_bestand_kernsaniert": 22.937903214682425
             },
             {
                 "label": "Nettomietrendite",
-                "rh_neubau": 3.093845168571143,
-                "rh_bestand_unsaniert": 3.567121986990071,
-                "rh_bestand_kernsaniert": 4.160380901110079
+                "rh_neubau": 2.812800908345306,
+                "rh_bestand_unsaniert": 3.243085357700072,
+                "rh_bestand_kernsaniert": 3.962267524866742
             }
         ],
         "mietrendite_reh": [
             {
                 "label": "Bruttomietrendite",
-                "rh_neubau": 3.3744406288550715,
-                "rh_bestand_unsaniert": 4.099804848443829,
-                "rh_bestand_kernsaniert": 4.577576207261616
+                "rh_neubau": 3.0679071345979647,
+                "rh_bestand_unsaniert": 3.727379417331083,
+                "rh_bestand_kernsaniert": 4.359596387868206
             },
             {
                 "label": "Kaupreisfaktor",
-                "rh_neubau": 29.634541246597493,
-                "rh_bestand_unsaniert": 24.39140488307808,
-                "rh_bestand_kernsaniert": 21.845622109221353
+                "rh_neubau": 32.59551075463193,
+                "rh_bestand_unsaniert": 26.828500349342768,
+                "rh_bestand_kernsaniert": 22.937903214682425
             },
             {
                 "label": "Nettomietrendite",
-                "rh_neubau": 3.093845168571143,
-                "rh_bestand_unsaniert": 3.567121986990071,
-                "rh_bestand_kernsaniert": 4.160380901110079
+                "rh_neubau": 2.812800908345306,
+                "rh_bestand_unsaniert": 3.243085357700072,
+                "rh_bestand_kernsaniert": 3.962267524866742
             }
         ],
         "mietrendite_entwicklung": [
             {
                 "jahr": 2022,
-                "brutto_mietrendite": 4.028849005388483,
-                "kaufpreisfaktor": 24.82098481880372
+                "brutto_mietrendite": 4.01940691112928,
+                "kaufpreisfaktor": 24.87929244563704
             },
             {
                 "jahr": 2023,
-                "brutto_mietrendite": 3.776671290151149,
-                "kaufpreisfaktor": 26.478343577525862
+                "brutto_mietrendite": 3.7678202048262985,
+                "kaufpreisfaktor": 26.54054454931459
             },
             {
                 "jahr": 2024,
-                "brutto_mietrendite": 4.638582101814608,
-                "kaufpreisfaktor": 21.558311959355017
+                "brutto_mietrendite": 4.6277110243987485,
+                "kaufpreisfaktor": 21.60895515574947
             },
             {
                 "jahr": 2025,
-                "brutto_mietrendite": 5.015776461860208,
-                "kaufpreisfaktor": 19.93709264366077
+                "brutto_mietrendite": 5.004021383903046,
+                "kaufpreisfaktor": 19.983927391213864
             },
             {
                 "jahr": 2026,
-                "brutto_mietrendite": 4.758292523747882,
-                "kaufpreisfaktor": 21.015942063443113
+                "brutto_mietrendite": 4.74714089049928,
+                "kaufpreisfaktor": 21.065311164481265
             }
         ],
         "ortslagen_uebersicht": [
@@ -4298,7 +4298,7 @@
             "immobilienmarkt_individuell_02": "Angesichts exorbitanter Kosten hat die Bautätigkeit spürbar nachgelassen, Bauträger halten sich zurück. Mit ein Grund dafür ist auch die inzwischen restriktivere Kreditvergabe der Geldinstitute. Neubauprojekte werden zurückgestellt – damit sind gefragte neue Objekte auf dem Markt Mangelware. Eine Aussicht auf kurzfristige Änderung der Lage ist nicht in Sicht. Es bleibt nun abzuwarten, wie sich die Preise in 2024 entwickeln werden.",
             "immobilienmarkt_zitat": "Neubauprojekte werden zurückgestellt – damit sind gefragte neue Objekte auf dem Markt Mangelware.\n\n",
             "immobilienmarkt_standort_teaser": "Die Landeshauptstadt Sachsens ist bekannt für ihre reiche kulturelle Geschichte, bedeutsame Architektur sowie für ihre Rolle als Wirtschafts- und Bildungszentrum im Osten Deutschlands. Die Stadt verbindet historisches Erbe mit moderner Technologie und Forschung, was den Standort und die Marke Silicon Saxony weltweit bekannt mcht.",
-            "immobilienmarkt_beschreibung_01": "Der durchschnittliche Quadratmeterpreis beim Immobilienkauf liegt aktuell bei 1.930 €/m² und ist damit höher als die Preise in Sachsen. 2022 lagen die Immobilienpreise im Landkreis Nordsachsen noch bei 1.790 €/m² - im 5 Jahrestrend sind sie steigend und steigen aktuell weiter. Im Vorjahresvergleich sind die Immobilienpreise um ca. 12,0 % gestiegen.<br><br>Nimmt man den Vorjahresvergleich bei Grundstücken verhalten sich die Preise analog zu  den Immobilienpreisen und steigen um ca. 7,4 %. In der 5 Jahres Betrachtung steigen sie um 12,0 %. Der durchschnittliche Grundstücks-Quadratmeterpreis von 130 €/m² ist dabei im bundesweiten Vergleich geringer.<br><br>Viele Menschen spielen aufgrund der aktuellen Zinspolitik mit dem Gedanken eine Immobilie zu mieten. Die Durchschnittsmieten liegen im Landkreis Nordsachsen mit 7,7 €/m² geringer dem Mittel in Sachsen. Die Mieten steigen im  Vorjahresvergleich um 6,2 % und sind damit langsfristig im Aufwärtstrend.",
+            "immobilienmarkt_beschreibung_01": "Der durchschnittliche Quadratmeterpreis beim Immobilienkauf liegt aktuell bei 1.940 €/m² und ist damit höher als die Preise in Sachsen. 2022 lagen die Immobilienpreise im Landkreis Nordsachsen noch bei 1.790 €/m² - im 5 Jahrestrend sind sie steigend und steigen aktuell weiter. Im Vorjahresvergleich sind die Immobilienpreise um ca. 12,0 % gestiegen.<br><br>Nimmt man den Vorjahresvergleich bei Grundstücken verhalten sich die Preise analog zu  den Immobilienpreisen und steigen um ca. 7,4 %. In der 5 Jahres Betrachtung steigen sie um 12,0 %. Der durchschnittliche Grundstücks-Quadratmeterpreis von 130 €/m² ist dabei im bundesweiten Vergleich geringer.<br><br>Viele Menschen spielen aufgrund der aktuellen Zinspolitik mit dem Gedanken eine Immobilie zu mieten. Die Durchschnittsmieten liegen im Landkreis Nordsachsen mit 7,7 €/m² geringer dem Mittel in Sachsen. Die Mieten steigen im  Vorjahresvergleich um 6,2 % und sind damit langsfristig im Aufwärtstrend.",
             "immobilienmarkt_beschreibung_02": "    Der Immobilienmarktbericht Landkreis Nordsachsen behandelt 30 Städte und Gemeinden, jede Ortslage hat dabei ihren eigenen einzigartigen Charakter. Diese Vielfalt spiegelt sich nicht nur in der Landschaft, Infrastruktur oder Kultur der Gegend wider, sondern auch in den Immobilienpreisen. Abhängig von der jeweiligen Lage und den Besonderheiten der einzelnen Regionen variieren die Kosten für Immobilien erheblich. So liegen die günstigsten Durchschnittspreise für Immobilien im Landkreis mit 1535.6443733987135 in Cavertitz, welche im Vergleich zu Sachsen günstiger sind. In Taucha sind die Preise dagegen mit 2798.1894756007578 am höchsten. Am günstigsten läßt es sich aktuell in Mügeln mieten. Hier zahlt man im Schnitt 5.485485255792975. Die teuersten Mieten findet man dabei im Landkreis Nordsachsen in Taucha mit 10.592764716847263.",
             "immobilienmarkt_besonderheiten": "Beim Hausverkauf über einen Makler fällt in der Regel eine Provision von 7,14 % an. Sie wird seit Inkrafttreten der gesetzlichen Neuregelung der Maklerprovision Ende 2020 zwischen Verkäufer und Käufer geteilt, es ist aber auch eine reine Verkäufercourtage möglich, was zunehmend gängiger wird. Bei der Grunderwerbssteuer war Sachsen bis Ende 2022 auf dem Niveau wie Bayern mit 3,5 Prozent: Seit dem 1.1.2023 werden hier aber 5,5 Prozent veranschlagt.",
             "immobilienmarkt_maklerempfehlung": "Wollen Sie Ihren Immobilienverkauf von einem professionellen Dienstleister begleiten lassen, dann haben wir für Karlsruhe diese Maklerempfehlung.\n\nSchürrer und Fleischer Immobilien hat uns mit einer durchweg positiven Reputation, dem motivierenden Umgang mit den eigenen Mitarbeitern sowie einem ausgesprochen hohem Qualitäts- und Servicelevel überzeugt. Das traditionsreiche, regionale Maklerunternehmen übertrifft sogar noch unsere hohen Anforderungen für eine Praxiswissen Immobilien Partnerschaft.\n\n"
@@ -4323,12 +4323,12 @@
             "wirtschaft_arbeitsmarkt": "Der Arbeitsmarkt im Landkreis Nordsachsen zeigt sich dynamisch und vielfältig aufgestellt. Die Region profitiert von einer stabilen Wirtschaftsstruktur, die von mittelständischen Industriebetrieben, modernen Logistikunternehmen und einem wachsenden Dienstleistungssektor geprägt ist. Besonders die Lage zwischen Leipzig und Torgau sorgt dafür, dass Arbeitnehmerinnen und Arbeitnehmer sowohl lokal als auch überregional attraktive Beschäftigungschancen finden. Gleichzeitig wird der Fachkräftebedarf in vielen Branchen zunehmend spürbar, was den Landkreis Nordsachsen zu einem aktiven Gestaltungsraum für berufliche Entwicklung macht. Unternehmen investieren in Weiterbildung, Ausbildungsprogramme und flexible Arbeitsmodelle, um qualifizierte Arbeitskräfte langfristig zu binden. Auch Infrastrukturprojekte und die Ansiedlung neuer Betriebe stärken die wirtschaftliche Basis. Insgesamt präsentiert sich der Arbeitsmarkt im Landkreis Nordsachsen als robust, chancenreich und zukunftsorientiert – mit einem ausgewogenen Mix aus traditionellen Industrien und wachstumsstarken Zukunftsbranchen.",
             "wirtschaft_sv_beschaeftigte_wohnort": "Im Landkreis Nordsachsen zeigt die Verteilung der sozialversicherungs­pflichtig Beschäftigten nach Wohn- und Arbeitsort ein vielschichtiges Bild regionaler Arbeitsmarktstrukturen. Viele Einwohner pendeln täglich in die wirtschaftlich starken Zentren der Region, insbesondere in den Großraum Leipzig, wo ein breites Spektrum an Industrie-, Dienstleistungs- und Technologiearbeitsplätzen zur Verfügung steht. Gleichzeitig verfügt der Landkreis selbst über eine stabile Basis an Arbeitsorten, getragen durch mittelständische Betriebe, Logistikstandorte und zunehmend auch moderne Produktions- und Energiewirtschaft. Diese Balance aus Wohn- und Arbeitsregion macht Nordsachsen zu einem attraktiven Lebensmittelpunkt – mit der Möglichkeit, lokal zu leben und zugleich überregional zu arbeiten. Der Pendleraustausch verdeutlicht zudem die enge Verflechtung mit benachbarten Wirtschaftsräumen und unterstreicht die Bedeutung gut ausgebauter Verkehrsanbindungen. Insgesamt zeigt sich, dass der Landkreis Nordsachsen sowohl als Wohnstandort als auch als Arbeitsort eine wichtige Rolle in der regionalen Wirtschaftslandschaft einnimmt.",
             "wirtschaft_arbeitslosendichte": "Die Arbeitslosendichte im Landkreis Nordsachsen bewegt sich insgesamt auf einem moderaten Niveau, zeigt jedoch klare Unterschiede zwischen den einzelnen Städten und Gemeinden. In den gut angebundenen Orten entlang der Hauptverkehrsachsen profitieren Arbeitsuchende von einem breiteren Angebot an Jobs im Dienstleistungssektor, im Handel und im verarbeitenden Gewerbe. In ländlicher geprägten Bereichen spiegelt die Arbeitslosigkeit hingegen die strukturellen Herausforderungen eines Transformationsraums wider, in dem traditionelle Branchen an Bedeutung verlieren und neue Wirtschaftsachsen erst entstehen. Gleichzeitig sorgen Investitionen in Logistik, Produktion und erneuerbare Energien für zusätzliche Impulse am Arbeitsmarkt. Qualifizierungsangebote, regionale Netzwerke und eine enge Zusammenarbeit zwischen Unternehmen, Arbeitsagentur und Bildungsträgern tragen dazu bei, die Beschäftigungschancen im Landkreis Nordsachsen weiter zu verbessern und die Arbeitslosendichte langfristig zu stabilisieren oder zu senken.",
-            "wirtschaft_bruttoinlandsprodukt": "Das BIP liegt aktuell bei 7.25 Mio. Innerhalb der zurückliegenden fünf Jahre ist es um 33,4 % stark gestiegen. Pro-Kopf liegt es mit Index 74 klar unter dem Landesniveau.",
+            "wirtschaft_bruttoinlandsprodukt": "Das aktuelle BIP liegt bei 7.25 Mio. Innerhalb der zurückliegenden fünf Jahre ist es um 33,4 % stark gestiegen. Pro-Kopf liegt es mit Index 74 klar unter dem Landesniveau.",
             "wirtschaft_einkommen": "Das gesamte verfügbare Einkommen liegt im Landkreis Nordsachsen bei 4.987.747.778 €, auf die Einwohner gerechnet 25.011 € und pro Haushalt 48.594 €. In den vergangenen fünf Jahren ist es um 14,5 % stark gestiegen.",
             "wirtschaft_sv_beschaeftigte_arbeitsort": "Innerhalb der vergangenen fünf Jahre ist die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort mit 4,6 % leicht gestiegen. Auf der anderen Seite ist die Zahl der Wohnort-Beschäftigten konstant geblieben. Zuletzt lag die Zahl der Beschäftigten am Arbeitsort bei 77.563 und am Wohnort bei 83.121.",
             "wirtschaft_arbeitsplatzzentralitaet": "Eine Region mit einem Arbeitsplatzzentralitätswert über 1 gilt als bevorzugter Arbeitsort, da dort mehr Menschen arbeiten als wohnen. Ein Wert unter 1 zeigt, dass mehr Personen in der Region wohnen als dort arbeiten. Mit 0.93 liegt der Wert im Landkreis Nordsachsen unter 1. Die Region ist damit überwiegend Wohnstandort, liegt aber näher an einem ausgeglichenen Verhältnis zwischen Wohnen und Arbeiten. Es gibt hier also bereits eine vergleichsweise höhere Arbeitsplatzdichte, dennoch pendeln mehr Menschen zur Arbeit in andere Regionen als umgekehrt.",
             "wirtschaft_pendler": "Das Pendlervolumen hat sich zuletzt deutlich um 824 Personen erhöht. Die Zahl der Einpendler ist dabei mit 1,12 % stark gestiegen. Bei den Auspendlern ist hingegen eine Zunahme um 1,15 % zu beobachten. Das ist im Großen und Ganzen eine nicht so gute Entwicklung für die Region.",
-            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben. Sie beträgt im Landkreis Nordsachsen derzeit cirka 6,6 %. Damit ist sie in den letzten fünf Jahren weitestgehend stabil geblieben. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote ist der Anteil der registrierten Arbeitslosen an allen zivilen Erwerbspersonen, angegeben in Prozent.  Ihr Wert ist aktuell ca. 6,6 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
         },
         "wohnmarktsituation": {
             "wohnmarktsituation_intro": "Die Wohnmarktsituation im Landkreis Nordsachsen zeigt ein vielschichtiges Bild, das von regionalen Unterschieden, dynamischen Nachfrageimpulsen und einer fortlaufenden strukturellen Erneuerung geprägt ist. Während die Nähe zur Metropolregion Leipzig den südlichen Teil des Kreises spürbar belebt, entwickeln sich die ländlicheren Räume moderater, jedoch zunehmend stabil. Der Wohnungsbestand wird kontinuierlich modernisiert, und Neubauprojekte ergänzen vor allem dort das Angebot, wo Zuzug und Haushaltsveränderungen für wachsende Nachfrage sorgen. Gleichzeitig bleibt bezahlbarer Wohnraum ein zentrales Thema: Verfügbarkeiten und Angebotsbreiten unterscheiden sich je nach Gemeinde deutlich. Für Eigentümer, Mieter und Investoren ist der Blick auf Struktur, Qualität und Entwicklung der jeweiligen Teilmärkte entscheidend, um Chancen richtig einzuschätzen. Insgesamt befindet sich der Wohnmarkt in Nordsachsen in einer Phase der ausgewogenen, aber klar erkennbaren Weiterentwicklung – geprägt von moderatem Wachstum, gezielten Investitionen und einer stetigen Anpassung an demografische sowie wirtschaftliche Veränderungen.",
@@ -4342,13 +4342,13 @@
             "wohnmarktsituation_baufertigstellungen_intro": "Im Landkreis Nordsachsen spiegeln die Baufertigstellungen der letzten Jahre einen dynamischen, aber zugleich stark differenzierten Wohnungsneubau wider. Besonders entlang der Achse Leipzig–Eilenburg und in den gut angebundenen Gemeinden zeigen die Fertigstellungen, dass Nachfrage und Investitionsbereitschaft stetig zunehmen. In ländlicheren Bereichen fallen die Zahlen zwar niedriger aus, doch hochwertige Ein- und Zweifamilienhäuser sowie kleinere Mehrfamilienprojekte verbessern dort gezielt das Wohnungsangebot. Auffällig ist der Fokus auf energieeffizienten Neubauten, die sowohl für Familien als auch für Kapitalanleger attraktiv sind. Insgesamt tragen die Baufertigstellungen in Nordsachsen dazu bei, Engpässe im Bestand zu entschärfen, moderne Wohnformen zu schaffen und den demografischen Wandel abzufedern. Für Marktakteure ist der Blick auf die räumlichen Schwerpunkte der Bautätigkeit entscheidend, um Chancen im Landkreis frühzeitig zu erkennen und passgenaue Strategien für Wohnen, Vermietung und Verkauf zu entwickeln.",
             "wohnmarktsituation_baugenehmigungen_intro": "Im Landkreis Nordsachsen geben die Entwicklungen bei den Baugenehmigungen einen präzisen Einblick in die zukünftige Dynamik des Wohnungsmarktes. Sie zeigen nicht nur, wo neue Projekte entstehen könnten, sondern spiegeln auch die Erwartungen von Investoren, Bauträgern und privaten Bauherren wider. Besonders im Umfeld der Verkehrsachsen und in wachstumsaffinen Gemeinden ist ein solides Genehmigungsniveau zu beobachten, das den regionalen Bedarf an modernem Wohnraum unterstreicht. Gleichzeitig fallen die Genehmigungszahlen in ländlichen Gebieten heterogener aus – hier entstehen vor allem kleinteilige Wohnprojekte, die maßgeblich zur Stabilisierung der lokalen Angebotsstruktur beitragen. Die Genehmigungsentwicklung ist zudem ein wichtiger Frühindikator für künftige Marktentspannung oder -verengung: Steigen die Genehmigungen, wächst mittelfristig das Angebot, während Rückgänge auf potenzielle Engpässe hinweisen können. Für Marktakteure in Nordsachsen lohnt daher der genaue Blick auf Trends und Genehmigungsschwerpunkte, um Potenziale frühzeitig zu erkennen und strategisch kluge Entscheidungen für Neubau, Vermietung und Standortwahl zu treffen.",
             "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 235 %, cirka das 3-fache der Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 32 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, ist sie stark gestiegen, was auf Fortschritte beim Baufortschritt hindeutet. Langfristig gesehen, blieb die Fertigstellungsquote damit über fünf Jahre nahezu unverändert.",
-            "wohnmarktsituation_allgemein": "In  leben aktuell rund 199.422 Menschen auf einer Gesamtfläche von 202.854 ha, davon entfallen 15.754 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 199.422 Einwohner je km². Über einen Zeitraum von fünf Jahren hat sich die Bevölkerungzahl nahezu nicht verändert, was eine weitgehend unveränderte Tendenz erkennen lässt. Aktuell wird  als stagnierende Region eingestuft. Insgesamt gibt es hier etwa 102.641 Haushalte, die durchschnittlich aus 1,94 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung ist gegenüber 2015 nahezu unverändert, was auf ausgeglichene Bevölkerungsbewegungen hindeutet. Im Zehnjahresvergleich gab es im Wesentlichen kaum Bewegung.",
+            "wohnmarktsituation_allgemein": "In  leben aktuell rund 199.422 Menschen auf einer Gesamtfläche von 202.854 ha, davon entfallen 15.754 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 199.422 Einwohner je km². Die Einwohnerzahl ist in den letzten fünf Jahren gleich geblieben, was auf eine insgesamt stabile Entwicklung hindeutet. Aktuell wird  als stagnierende Region eingestuft. Insgesamt gibt es hier etwa 102.641 Haushalte, die durchschnittlich aus 1,94 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung ist gegenüber 2015 nahezu unverändert, was auf ausgeglichene Bevölkerungsbewegungen hindeutet. Im Zehnjahresvergleich ist im Großen und Ganzen nahezu konstant.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 102.641. In den letzten zehn Jahren ist die Zahl gleich geblieben, was auf eine insgesamt stabile Entwicklung hindeutet, was auf eine insgesamt stabile Entwicklung hindeutet.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist der Landkreis Nordsachsen einen natürlichen Bevölkerungssaldo von -8.35 (je 1.000 Einwohner) oder -1.665 Personen auf. 2023 wurden hier insgesamt 1.194 Geburten registriert, was einem starken Rückgang von 24,9 % im 5 Jahrestrend entspricht und auf eine schleichend rückwärtsgerichtete Entwicklung hindeutet. Demgegenüber standen 2.859 Sterbefälle,  was einer leichten Zuwachs von 4,4 im Vergleich zu 2019 bedeutet.",
-            "wohnmarktsituation_wanderungssaldo": "Über die letzten fünf Jahre sind die Zuzüge mit 27,1 % stark angestiegen, was eine stark wachsende Attraktivität der Region vermuten läßt. Währenddessen ist ebenso Im selben Zeitfenster die Zahl der Fortzüge aus  mit 27,8 % deutlich mehr geworden, was sich für die Gegend deutlich ungünstig auswirkt. So ist mit 278 Personen der Saldo leicht positiv. Wenn wir auf die aktuellste Entwicklung in 2024 blicken, hat der Wanderungssaldo 1573 Personen betragen.",
-            "wohnmarktsituation_alterstruktur": "Der Altersdurchschnitt im Landkreis Nordsachsen erreicht 48.0 Jahre. In der 5-Jahres Entwicklung hat sich der Wert dabei kaum verändert. Im Vergleich zu Sachsen liegt das Alter der Bevölkerung im Kreis über dem des Bundeslandes und deutschlandweit über dem Mittel im Land.",
-            "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient im Landkreis Nordsachsen bei 49.2 und der Jugendquotient bei 28.7. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt leicht über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt klar über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
+            "wohnmarktsituation_wanderungssaldo": "Im Verlauf der vergangenen fünf Jahre haben die Zuzügler mit 27,1 % prozentual stark zugelegt, woraus man eine stark zunehmende Attraktivität ableiten kann. Währenddessen haben genauso Im selben Zeitfenster die Wegzüge aus  um 27,8 % erheblich zugenommen, was sich für die Gegend deutlich ungünstig auswirkt. Aus diesen Entwicklungen heraus ist mit 278 Personen der Saldo leicht positiv. Wenn wir auf die aktuellste Entwicklung in 2024 blicken, hat die Region einen Wanderungssaldo von 1573 Menschen.",
+            "wohnmarktsituation_alterstruktur": "Das Durchschnittsalter ist im Landkreis Nordsachsen 48.0 Jahre. In der 5-Jahres Entwicklung ist der Wert dabei nahezu konstant geblieben. Im Vergleich zu Sachsen liegt das Alter der Bevölkerung im Kreis über dem des Bundeslandes und deutschlandweit über dem Mittel im Land.",
+            "wohnmarktsituation_jugendquotient_altenquotient": "im Landkreis Nordsachsen liegt der Jugendquotient bei 28.7 und der Altenquotienten bei 49.2. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt leicht über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt klar über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand im Landkreis Nordsachsen beträgt ca. 112.682 Wohnungen. Pro 1.000 Einwohner stehen also um die 565 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre blieb der Bestand dabei nahezu stabil.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt im Landkreis Nordsachsen aktuell ca. 9123 m². Pro Kopf stehen hier durchschnittlich 45.7 m² zur Verfügung. Die Wohnfläche pro Person liegt auf Bundesniveau. Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person kaum verändert.",
             "wohnmarktsituation_baufertigstellungen": "Im Jahr 2023 wurden im Landkreis Nordsachsen 364 neue Wohnungen fertiggestellt, was 1.8 Fertigstellungen pro 1.000 Einwohner entspricht. In den vergangenen 5 Jahren ist die Zahl der Fertigstellungen deutlich gesunken, was auf eine leicht schwächelnde Bautätigkeit hindeutet.",
@@ -4358,37 +4358,37 @@
             "immobilienpreise_intro": "Die aktuellen Immobilienpreise in der Region spiegeln ein Marktumfeld wider, das von hoher Angebotsdynamik und gleichzeitig differenzierten Nachfrageimpulsen geprägt ist. Während gut entwickelte Wohnlagen stabile bis moderate Preissteigerungen verzeichnen, zeigen sich in weniger gefragten Bereichen stärkere Unterschiede zwischen einzelnen Objektarten. Käufer achten verstärkt auf energetische Standards, Ausstattung und Modernisierungsgrad, was den Wert bestimmter Immobilien deutlich beeinflusst. Auch die Entwicklung der Neubautätigkeit und der regionalen Bevölkerungsbewegungen spielt eine zentrale Rolle für das Preisgefüge. Für Eigentümer bieten diese Rahmenbedingungen gute Orientierungspunkte für fundierte Verkaufsentscheidungen, während Interessenten einen klaren Überblick benötigen, um Chancen und Risiken im Markt realistisch einzuschätzen. Ein umfassender Blick auf lokale Trends, Angebotsspannen und Qualitätsunterschiede hilft, die Entwicklung der Immobilienpreise besser zu verstehen und strategisch zu nutzen.",
             "immobilienpreise_haus_intro": "Wie entwickeln sich die Immobilienpreise für Häuser derzeit in der Region? Die Märkte zeigen ein klares Bild: Qualitativ hochwertige Lagen mit guter Infrastruktur und stabiler Wohnraumnachfrage können ihre Preisniveaus oft halten oder sogar moderat steigern, während periphere Bereiche stärker differenzieren. Käufer achten zunehmend auf Energieeffizienz, Grundstücksgrößen und den baulichen Zustand – Faktoren, die maßgeblich über die erzielbaren Werte entscheiden. Gleichzeitig sorgen begrenzte Neubauaktivitäten und eine anhaltend solide Eigennutzernachfrage dafür, dass attraktive Ein- und Zweifamilienhäuser weiterhin begehrt bleiben. Für Eigentümer eröffnet diese Situation gute Chancen, da realistische Preisstrategien und professionelle Vermarktung deutliche Vorteile bringen. Wer den regionalen Markt im Detail versteht, kann Entwicklungen früh erkennen, Potenziale nutzen und fundierte Entscheidungen treffen – sei es beim Verkauf, der Wertermittlung oder der Bewertung künftiger Investitionen.",
             "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Immobilienpreise für Wohnungen aktuell in der Region? Die Preislandschaft zeigt sich vielschichtig und hängt stark von Lagequalität, Objektzustand und Wohnungsgröße ab. Besonders gefragte sind energetisch modernisierte Einheiten sowie Wohnungen in gut angebundenen und urban geprägten Wohnbereichen, die weiterhin stabile bis ansteigende Preisniveaus erzielen. Gleichzeitig differenzieren sich Rand- und Bestandslagen stärker, da Käufer vermehrt auf Energieeffizienz, Ausstattung und langfristige Nutzungskosten achten. Auch die Entwicklung des regionalen Wohnungsangebots, insbesondere im Neubausegment, beeinflusst die Preisstruktur. Für Eigentümer ergeben sich in diesem Marktumfeld gute Chancen, wenn Vermarktung, Preisstrategie und Zielgruppe stimmig aufeinander abgestimmt sind. Interessenten profitieren von einer klaren Analyse der Angebots- und Nachfragesituation, die hilft, reale Werte einzuschätzen und fundierte Kaufentscheidungen zu treffen. Eine differenzierte Betrachtung aller Qualitätsmerkmale ist daher entscheidend, um die tatsächliche Wertentwicklung im Wohnungsmarkt richtig einzuordnen.",
-            "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis im Landkreis Nordsachsen bei 2.020 €/m².  Er bewegt sich dabei zwischen 1.750 €/m² und 2.520 €/m².  Damit liegt er über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 11,8 % gestiegen.  ",
-            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch im Landkreis Nordsachsen variieren die Preise je nach Lage erheblich. Für einfachen Wohnlagen liegt der Durchschnitt bei 1.832 €. Die Bandbreite in guten Lagen reicht von 2.083 € bis 2.284 €. Die höchsten Preise in sehr guten-Lagen können mit Preisen bis 2.374 € dann meist nur noch von Besserverdienern gestemmt werden.",
-            "immobilienpreise_haus_haustypen": "Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 2253,1 €/m² und  €/m² rechnen .",
-            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser im Landkreis Nordsachsen bei 1.900 €/m².  Aktuell liegt der Preis bei 2.020 €/m²  und ist damit um 6,5 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen belaufen sich auf 1.840 €/m². Sie befinden sich üblicherweise in einer Spanne von 1.840 €/m² bis 2.370 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 12,2 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Lage einer Wohnung hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch im Landkreis Nordsachsen variieren die Preise je nach Lage erheblich. Für einfachen Wohnlagen liegt der Durchschnitt bei 1.658 €. Die Bandbreite in guten Lagen reicht von 1.902 € bis 2.093 €. Die höchsten Preise in sehr guten-Lagen können mit Preisen bis 2.167 € dann meist nur noch von Besserverdienern gestemmt werden.",
-            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Landkreis Nordsachsen müssen diese derzeit durchschnittlich 1634,8 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 17,0 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 2018,1 €/m². hier ist der kurzfristige Trend mit 8,5 % Anstieg, leicht positiv ",
-            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser im Landkreis Nordsachsen bei 1.680 €/m². Heute beträgt er 1.840 €/m², und ist damit um 9,6 % deutlich gestiegen."
+            "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis im Landkreis Nordsachsen bei 2.120 €/m².  Er bewegt sich dabei zwischen 1.830 €/m² und 2.650 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 11,8 % gestiegen.  ",
+            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch im Landkreis Nordsachsen variieren die Preise je nach Lage erheblich. Für einfachen Wohnlagen liegt der Durchschnitt bei 1.924 €. Die Bandbreite in guten Lagen reicht von 2.188 € bis 2.398 €. Die höchsten Preise in sehr guten-Lagen können mit Preisen bis 2.493 € dann meist nur noch von Besserverdienern gestemmt werden.",
+            "immobilienpreise_haus_haustypen": "Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat hier in etwa zwischen 3525,1 €/m² und 1520,5 €/m².",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser im Landkreis Nordsachsen bei 1.990 €/m².  Aktuell liegt der Preis bei 2.120 €/m²  und ist damit um 6,5 % deutlich gestiegen.",
+            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen im Landkreis Nordsachsen belaufen sich auf 1.750 €/m². Sie befinden sich üblicherweise in einer Spanne von 1.750 €/m² bis 2.250 €/m². Damit liegen sie leicht über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 12,2 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage einer Wohnung hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch im Landkreis Nordsachsen variieren die Preise je nach Lage erheblich. Für einfachen Wohnlagen liegt der Durchschnitt bei 1.575 €. Die Bandbreite in guten Lagen reicht von 1.807 € bis 1.988 €. Die höchsten Preise in sehr guten-Lagen können mit Preisen bis 2.059 € dann meist nur noch von Besserverdienern gestemmt werden.",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Landkreis Nordsachsen müssen diese derzeit durchschnittlich 1553,1 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 17,0 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 1917,2 €/m². hier ist der kurzfristige Trend mit 8,5 % Anstieg, leicht positiv ",
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser im Landkreis Nordsachsen bei 1.600 €/m². Heute liegt der Preis bei 1.750 €/m², und ist damit um 9,6 % deutlich gestiegen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "Im Landkreis Nordsachsen zeigen sich die Grundstückspreise aktuell von ihrer dynamischen Seite. Zwischen ländlich geprägten Dörfern, gewachsenen Kleinstädten und gut angebundenen Pendlerlagen hat sich ein vielschichtiges Preisniveau entwickelt. Besonders nachgefragt sind Baugrundstücke in wohnfreundlichen Lagen mit guter Erreichbarkeit der Oberzentren und solider Infrastruktur. Hier treffen begrenzte Flächenangebote auf eine stabile Nachfrage von Eigennutzern und Kapitalanlegern. Gleichzeitig bleiben in einigen Randlagen noch Reserven für preisbewusste Käufer, die Wert auf Ruhe und großzügige Grundstückszuschnitte legen. Für Eigentümer eröffnet dieses Umfeld interessante Verkaufschancen, während Käufer genauer prüfen müssen, wo Preis, Lagequalität und Zukunftsperspektiven zusammenpassen. Wer die lokalen Unterschiede im Landkreis Nordsachsen kennt, kann Marktchancen gezielt nutzen – sei es beim Verkauf eines Baugrundstücks, der Suche nach einem geeigneten Wohnbauareal oder der strategischen Auswahl von Standorten für langfristige Investitionen.",
-            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke beträgt 130 €/m². Sie variieren typischerweise von 120 €/m² bis 150 €/m². Damit liegen sie über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 7,4 % merklich gestiegen. ",
+            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke im Landkreis Nordsachsen beträgt 130 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 120 €/m² bis 150 €/m². Damit liegen sie über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 7,4 % merklich gestiegen. ",
             "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke im Landkreis Nordsachsen bei 120 €/m². Heute liegt der Preis bei 130 €/m² und ist damit um 12,0 % deutlich gestiegen."
         },
         "mietpreise": {
             "mietpreise_intro": "Im Landkreis Nordsachsen zeigen die aktuellen Mietpreise ein facettenreiches Marktbild. Zwischen wachsender Nachfrage in gut angebundenen Wohnlagen und moderateren Entwicklungen in ländlich geprägten Bereichen entsteht ein differenziertes Mietgefüge. Besonders Wohnungen mit zeitgemäßer Ausstattung, guter Energieeffizienz und attraktiven Grundrissen erzielen stabile bis leicht steigende Mieten. Gleichzeitig achten Mieter verstärkt auf Nebenkosten, Wohnumfeld und Verfügbarkeit von Infrastruktur, was die Preisdynamik zusätzlich beeinflusst. Im Landkreis Nordsachsen bleibt das Angebot in vielen Segmenten knapp, was insbesondere bei kleineren und familiengeeigneten Wohnungen spürbare Auswirkungen zeigt. Für Vermieter eröffnen sich dadurch interessante Chancen, sofern Mietniveau, Qualität und Vermarktung stimmig zusammenspielen. Mieter wiederum profitieren von einer transparenten Analyse der Mietpreissituation, die Orientierung gibt und hilft, realistische Erwartungen an den lokalen Wohnungsmarkt zu entwickeln.",
-            "mietpreise_allgemein": "deutet auf einen deutlich ausgeprägten Mietermarkt in Landkreis Nordsachsen hin. Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) beträgt 6.0 €/m². Sie variieren typischerweise zwischen von 2.0 €/m² bis 19.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 9.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen  ",
-            "mietpreise_wohnung_allgemein": "Aktuell stehen die mittleren Mietpreise bei Wohnungen im Landkreis Nordsachsen bei 6.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 2.0 €/m² bis 19.0 €/m². Damit reihen sie sich deutlich unter dem Landesniveau von Sachsen und deutlich unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 8.0 €/m² rechnen, im Bestand liegt man bei 6.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 22,2 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 16,3 % weit über dem derzeitigen Niveau.",
+            "mietpreise_allgemein": "deutet auf einen deutlich ausgeprägten Mietermarkt in Landkreis Nordsachsen hin. Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) beträgt 6.0 €/m². Sie bewegen sich in einer Preisspanne von 2.0 €/m² bis 19.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 9.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen  ",
+            "mietpreise_wohnung_allgemein": "Derzeit stehen die mittleren Mietpreise bei Wohnungen bei 6.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 2.0 €/m² bis 19.0 €/m². Damit reihen sie sich deutlich unter dem Landesniveau von Sachsen und deutlich unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 8.0 €/m² rechnen, im Bestand sind es 6.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 22,2 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 16,3 % weit über dem derzeitigen Niveau.",
             "mietpreise_wohnung_preisentwicklung": "Letztes Jahr stand der mittlere Quadratmeterpreis im Landkreis Nordsachsen bei 6 €/m². Bis heute ist der Preis mit 3,9 % deutlich gestiegen. Blicken wir noch weiter zurück - vor 5 Jahren (2022) standen die mittleren Angebotspreise bei 5 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 26,9 % recht stark angestiegen. ",
             "mietpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung im Landkreis Nordsachsen müssen diese derzeit durchschnittlich 5,8 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 7,5 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 4,7 €/m². hier ist der kurzfristige Trend mit 2,0 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man im Landkreis Nordsachsen ungefähr 8 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 4 €/m² bis 22 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei 8 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 8,7 % deutlich gestiegen. Im 5-JahresRückblick (ab 2022) standen die mittleren Angebotspreise bei 6 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 28,9 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Landkreis Nordsachsen bei 8 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 8,7 % deutlich gestiegen. Im 5-JahresRückblick (ab 2022) standen die mittleren Angebotspreise bei 6 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 28,9 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Im Landkreis Nordsachsen rückt die Mietrendite zunehmend in den Fokus von Anlegern, die Wert auf solide Rahmenbedingungen und stabile Mieterstrukturen legen. Die Region verbindet ein moderates Kaufpreisniveau mit einer kontinuierlichen Nachfrage nach Mietwohnungen, was attraktive Ausgangsbedingungen für Investitionen schaffen kann. Unterschiedliche Wohnlagen, energetische Standards und Objektarten führen dabei zu klaren Renditeunterschieden. Während zentral gelegene Wohnungen oft durch zuverlässige Vermietbarkeit überzeugen, punkten Randlagen durch geringere Einstiegspreise und damit potenziell höheren Renditespielraum. Entscheidend für eine erfolgreiche Investition im Landkreis Nordsachsen ist die realistische Einschätzung des Mietmarktes, der laufenden Bewirtschaftungskosten sowie der langfristigen Standortentwicklung. Eine fundierte Analyse hilft Anlegern, Chancen gezielt zu nutzen und Risiken frühzeitig zu erkennen.",
             "mietrendite_hinweis": "Im Landkreis Nordsachsen gewinnt die Betrachtung der Mietrendite zunehmend an Bedeutung – sowohl für private Anleger als auch für professionelle Investoren. Die wirtschaftliche Entwicklung, die Nachfrage nach Mietwohnungen und das allgemein moderate Preisniveau schaffen Voraussetzungen, die eine solide Renditeperspektive ermöglichen können. Unterschiedliche Lagequalitäten, Wohnungstypen und energetische Standards führen jedoch zu deutlichen Renditespannen. Während zentralere Wohnlagen stabile Nachfrage und verlässliche Mieterstrukturen bieten, können Randlagen durch niedrigere Kaufpreise interessante Chancen für kapitalstarke Anleger eröffnen. Entscheidend ist eine realistische Einschätzung des Mietniveaus, der zu erwartenden Bewirtschaftungskosten und der langfristigen Standortentwicklung. Wer im Landkreis Nordsachsen investieren möchte, profitiert von einer fundierten Analyse der Mietrendite, die Risiken minimiert und Potenziale klar hervorhebt.",
             "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
-            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {kreis_name} brechnet. Aktuell liegt sie bei 4,76 %. Letztes Jahr lag die Bruttomietrendite im Landkreis Nordsachsen bei 5,02 %. Bis heute ist der Preis innerhalb dieser Zeit mit 5,1 % deutlich gefallen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 4,03 %, innerhalb diesen Zeitraums sind sie bis jetzt um 18,1 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 4,32 %, ",
-            "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 4,38 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  im Landkreis Nordsachsen ungefähr bei 23.2, und die mittlere Netto-Mietrendite bei ungefähr 4,01 %. ",
-            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Landkreis Nordsachsen bei 30.9. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 2,85 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Landkreis Nordsachsen bei 15.7. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 5,94 €/m², "
+            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {kreis_name} brechnet. Aktuell liegt sie bei 4,75 %. Letztes Jahr lag die Bruttomietrendite im Landkreis Nordsachsen bei 5,0 %. Bis heute ist der Preis innerhalb dieser Zeit mit 5,1 % deutlich gefallen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 4,02 %, innerhalb diesen Zeitraums sind sie bis jetzt um 18,1 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 4,31 %, ",
+            "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 4,48 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  im Landkreis Nordsachsen ungefähr bei 22.8, und die mittlere Netto-Mietrendite bei ungefähr 4,11 %. ",
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Landkreis Nordsachsen bei 33.5. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 2,64 €/m², ",
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Landkreis Nordsachsen bei 17.0. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 5,5 €/m², "
         }
     }
 }

@@ -1,6 +1,6 @@
 {
     "meta": {
-        "aktualisierung": "08.01.2026",
+        "aktualisierung": "20.01.2026",
         "regionale_zuordnung": "gemeinde",
         "amtlicher_name": "Wiedemar",
         "bundesland_name": "sachsen",
@@ -66,32 +66,32 @@
         "standortfaktoren": [
             {
                 "faktor": "gesundheit",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "bildung",
-                "wert": 2,
+                "wert": 1,
                 "color": "#f86f7e"
             },
             {
                 "faktor": "naherholung",
-                "wert": 6,
+                "wert": 1,
                 "color": "#e0a266"
             },
             {
                 "faktor": "kultur_freizeit",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "mobilitaet",
-                "wert": 2,
+                "wert": 1,
                 "color": "#f86f7e"
             },
             {
                 "faktor": "nahversorgung",
-                "wert": 2,
+                "wert": 1,
                 "color": "#f86f7e"
             }
         ],
@@ -348,11 +348,11 @@
         ],
         "wirtschaft_allgemein": [
             {
-                "kaufkraftindex_ol": 97.43042147005809,
+                "kaufkraftindex_ol": 97.30710190851869,
                 "kaufkraftindex_k": 89.0598915785478,
-                "kaufkraft_nominal_ol": 27361.74779420633,
+                "kaufkraft_nominal_ol": 27327.115502874505,
                 "kaufkraft_nominal_k": 25011.0207385325,
-                "kaufkraft_real_ol": 23250.673738132544,
+                "kaufkraft_real_ol": 23221.244912437032,
                 "kaufkraft_real_k": 20259.7607415046,
                 "bip": 7249656,
                 "pendlersaldo_ol": -433,
@@ -642,35 +642,35 @@
         "nettoeinkommen_pro_ew": [
             {
                 "jahr": 2018,
-                "nettoeinkommen_pro_ew_ol": 24418.60819110069,
+                "nettoeinkommen_pro_ew_ol": 24387.556212057396,
                 "nettoeinkommen_pro_ew_k": 22065.89716577865,
                 "nettoeinkommen_pro_ew_bl": 22065.89716577865,
                 "nettoeinkommen_pro_ew_l": 23894.7659101949
             },
             {
                 "jahr": 2019,
-                "nettoeinkommen_pro_ew_ol": 23612.542463834554,
+                "nettoeinkommen_pro_ew_ol": 23583.80496599932,
                 "nettoeinkommen_pro_ew_k": 22554.49579555407,
                 "nettoeinkommen_pro_ew_bl": 22554.49579555407,
                 "nettoeinkommen_pro_ew_l": 24454.869440227176
             },
             {
                 "jahr": 2020,
-                "nettoeinkommen_pro_ew_ol": 24435.921751430502,
+                "nettoeinkommen_pro_ew_ol": 24406.653684481993,
                 "nettoeinkommen_pro_ew_k": 23785.370347317315,
                 "nettoeinkommen_pro_ew_bl": 23785.370347317315,
                 "nettoeinkommen_pro_ew_l": 26040.73670674114
             },
             {
                 "jahr": 2021,
-                "nettoeinkommen_pro_ew_ol": 26368.192635686446,
+                "nettoeinkommen_pro_ew_ol": 26335.10452794564,
                 "nettoeinkommen_pro_ew_k": 24320.241944997917,
                 "nettoeinkommen_pro_ew_bl": 24428.45500568276,
                 "nettoeinkommen_pro_ew_l": 26874.040281356854
             },
             {
                 "jahr": 2022,
-                "nettoeinkommen_pro_ew_ol": 27361.74779420633,
+                "nettoeinkommen_pro_ew_ol": 27327.115502874505,
                 "nettoeinkommen_pro_ew_k": 25011.0207385325,
                 "nettoeinkommen_pro_ew_bl": 25356.736295898707,
                 "nettoeinkommen_pro_ew_l": 28083.372094017912
@@ -679,35 +679,35 @@
         "nettoeinkommen_pro_hh": [
             {
                 "jahr": 2018,
-                "nettoeinkommen_pro_hh_ol": 46389.23561116372,
+                "nettoeinkommen_pro_hh_ol": 46330.24463343235,
                 "nettoeinkommen_pro_hh_k": 43006.55446424165,
                 "nettoeinkommen_pro_hh_bl": 41455.59569489939,
                 "nettoeinkommen_pro_hh_l": 48578.79810278226
             },
             {
                 "jahr": 2019,
-                "nettoeinkommen_pro_hh_ol": 46747.625429319516,
+                "nettoeinkommen_pro_hh_ol": 46690.73152275968,
                 "nettoeinkommen_pro_hh_k": 44322.96350829719,
                 "nettoeinkommen_pro_hh_bl": 42305.23192488263,
                 "nettoeinkommen_pro_hh_l": 50210.97681302417
             },
             {
                 "jahr": 2020,
-                "nettoeinkommen_pro_hh_ol": 48382.07556510864,
+                "nettoeinkommen_pro_hh_ol": 48324.12604958998,
                 "nettoeinkommen_pro_hh_k": 46725.91657862817,
                 "nettoeinkommen_pro_hh_bl": 45498.28883610451,
                 "nettoeinkommen_pro_hh_l": 53545.432056007725
             },
             {
                 "jahr": 2021,
-                "nettoeinkommen_pro_hh_ol": 52736.385271372885,
+                "nettoeinkommen_pro_hh_ol": 52670.20905589129,
                 "nettoeinkommen_pro_hh_k": 47253.781750934264,
                 "nettoeinkommen_pro_hh_bl": 47054.53102068258,
                 "nettoeinkommen_pro_hh_l": 55256.377714472655
             },
             {
                 "jahr": 2022,
-                "nettoeinkommen_pro_hh_ol": 54723.49558841266,
+                "nettoeinkommen_pro_hh_ol": 54654.231005749,
                 "nettoeinkommen_pro_hh_k": 48594.10740074267,
                 "nettoeinkommen_pro_hh_bl": 48880.60498366211,
                 "nettoeinkommen_pro_hh_l": 57476.930188407976
@@ -3085,23 +3085,23 @@
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": 1315.5430571881377,
-                "doppelhaushaelfte": 1556.0107645755984,
-                "einfamilienhaus": 1600.8195539312494,
+                "reihenhaus": 1330.886755934585,
+                "doppelhaushaelfte": 1534.5831309572313,
+                "einfamilienhaus": 1618.4034669069279,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": 2160.6049308071606,
-                "doppelhaushaelfte": 2502.266464744362,
-                "einfamilienhaus": 2646.5173515707183,
+                "reihenhaus": 2215.791803821729,
+                "doppelhaushaelfte": 2480.7075754870793,
+                "einfamilienhaus": 2675.653166364268,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": 3135.1922748080297,
-                "doppelhaushaelfte": 3491.725737660141,
-                "einfamilienhaus": 3828.111275397712,
+                "reihenhaus": 3075.8645212222077,
+                "doppelhaushaelfte": 3549.383418729095,
+                "einfamilienhaus": 3847.8991962545597,
                 "einheit": "pricePerSqm"
             }
         ],
@@ -3165,7 +3165,7 @@
             {
                 "jahr": 2021,
                 "preis_ol": 1268.7051879986875,
-                "preis_k": 1433.0376941718655,
+                "preis_k": 1504.689578880459,
                 "preis_bl": 2584,
                 "preis_l": 2780.7035903653587,
                 "einheit": "pricePerSqm"
@@ -3173,7 +3173,7 @@
             {
                 "jahr": 2022,
                 "preis_ol": 1468.8510176170255,
-                "preis_k": 1898.8974847702286,
+                "preis_k": 1993.8423590087405,
                 "preis_bl": 2606,
                 "preis_l": 3251.4663055838787,
                 "einheit": "pricePerSqm"
@@ -3181,7 +3181,7 @@
             {
                 "jahr": 2023,
                 "preis_ol": 1684.639772016777,
-                "preis_k": 2070.705931569447,
+                "preis_k": 2174.2412281479196,
                 "preis_bl": 2800,
                 "preis_l": 3369.31848901723,
                 "einheit": "pricePerSqm"
@@ -3189,7 +3189,7 @@
             {
                 "jahr": 2024,
                 "preis_ol": 1789.2491576514833,
-                "preis_k": 1823.5763865908846,
+                "preis_k": 1914.755205920429,
                 "preis_bl": 2732,
                 "preis_l": 3043.145615893064,
                 "einheit": "pricePerSqm"
@@ -3197,7 +3197,7 @@
             {
                 "jahr": 2025,
                 "preis_ol": 1755.3934284901984,
-                "preis_k": 1809.039123401748,
+                "preis_k": 1899.4910795718356,
                 "preis_bl": 2419,
                 "preis_l": 3062.0408943305847,
                 "einheit": "pricePerSqm"
@@ -3205,7 +3205,7 @@
             {
                 "jahr": 2026,
                 "preis_ol": 2226.7709982559113,
-                "preis_k": 2022.54829946949,
+                "preis_k": 2123.675714442965,
                 "preis_bl": 2235,
                 "preis_l": 3152.5305408373115,
                 "einheit": "pricePerSqm"
@@ -3343,7 +3343,7 @@
             {
                 "jahr": 2021,
                 "preis_ol": 1463.9463882084283,
-                "preis_k": 1343.4653474496188,
+                "preis_k": 1276.2920800771378,
                 "preis_bl": 3068,
                 "preis_l": 2856.9982913319204,
                 "einheit": "pricePerSqm"
@@ -3351,7 +3351,7 @@
             {
                 "jahr": 2022,
                 "preis_ol": 1715.6201033142338,
-                "preis_k": 1679.3924021000835,
+                "preis_k": 1595.4227819950793,
                 "preis_bl": 3097,
                 "preis_l": 3292.9741098254426,
                 "einheit": "pricePerSqm"
@@ -3359,7 +3359,7 @@
             {
                 "jahr": 2023,
                 "preis_ol": 1690.475532259743,
-                "preis_k": 1855.3828972557876,
+                "preis_k": 1762.6137523929983,
                 "preis_bl": 3394,
                 "preis_l": 3342.4658353694217,
                 "einheit": "pricePerSqm"
@@ -3367,7 +3367,7 @@
             {
                 "jahr": 2024,
                 "preis_ol": 1538.9417845359983,
-                "preis_k": 1656.563384015059,
+                "preis_k": 1573.7352148143061,
                 "preis_bl": 3684,
                 "preis_l": 3094.873857527238,
                 "einheit": "pricePerSqm"
@@ -3375,7 +3375,7 @@
             {
                 "jahr": 2025,
                 "preis_ol": 1598.4346084780623,
-                "preis_k": 1641.4055117211415,
+                "preis_k": 1559.3352361350844,
                 "preis_bl": 3492,
                 "preis_l": 3146.2445730130976,
                 "einheit": "pricePerSqm"
@@ -3383,7 +3383,7 @@
             {
                 "jahr": 2026,
                 "preis_ol": 1684.1443491102175,
-                "preis_k": 1841.027741995689,
+                "preis_k": 1748.9763548959045,
                 "preis_bl": 3223,
                 "preis_l": 3270.644922150526,
                 "einheit": "pricePerSqm"
@@ -3832,7 +3832,7 @@
                 "bruttomietrendite_etw": 5.9608302296649285,
                 "bruttomietrendite_efh": 3.720459159113877,
                 "bruttomietrendite_dhh": 5.13378462873476,
-                "bruttomietrendite_rmh": 4.999321220964718
+                "bruttomietrendite_rmh": 4.761258305680684
             }
         ],
         "nettomietrendite_allgemein": [
@@ -3843,7 +3843,7 @@
                 "nettomietrendite_etw": 5.561839138979049,
                 "nettomietrendite_efh": 3.325611106394948,
                 "nettomietrendite_dhh": 4.71854844019229,
-                "nettomietrendite_rmh": 4.594960843734696
+                "nettomietrendite_rmh": 4.376153184509234
             }
         ],
         "kaufpreisfaktor_allgemein": [
@@ -3854,7 +3854,7 @@
                 "kaufpreisfaktor_etw": 17.342707871319423,
                 "kaufpreisfaktor_efh": 27.786069654969847,
                 "kaufpreisfaktor_dhh": 20.136594115185222,
-                "kaufpreisfaktor_rmh": 20.678194653725427
+                "kaufpreisfaktor_rmh": 21.712104386411706
             }
         ],
         "mietrendite_mfh": [
@@ -3980,41 +3980,41 @@
         "mietrendite_rmh": [
             {
                 "label": "Bruttomietrendite",
-                "rh_neubau": 3.8026442812258705,
-                "rh_bestand_unsaniert": 5.514557011338914,
-                "rh_bestand_kernsaniert": 5.680762370329371
+                "rh_neubau": 3.621565982119876,
+                "rh_bestand_unsaniert": 5.251959058418012,
+                "rh_bestand_kernsaniert": 5.410249876504163
             },
             {
                 "label": "Kaupreisfaktor",
-                "rh_neubau": 26.297490010757116,
-                "rh_bestand_unsaniert": 18.133822860908346,
-                "rh_bestand_kernsaniert": 17.603271089510823
+                "rh_neubau": 27.612364511294977,
+                "rh_bestand_unsaniert": 19.040514003953767,
+                "rh_bestand_kernsaniert": 18.483434643986367
             },
             {
                 "label": "Nettomietrendite",
-                "rh_neubau": 3.564236257538934,
-                "rh_bestand_unsaniert": 4.974334736026444,
-                "rh_bestand_kernsaniert": 5.246311537638711
+                "rh_neubau": 3.3945107214656502,
+                "rh_bestand_unsaniert": 4.737461653358518,
+                "rh_bestand_kernsaniert": 4.996487178703533
             }
         ],
         "mietrendite_reh": [
             {
                 "label": "Bruttomietrendite",
-                "rh_neubau": 3.8026442812258705,
-                "rh_bestand_unsaniert": 5.514557011338914,
-                "rh_bestand_kernsaniert": 5.680762370329371
+                "rh_neubau": 3.621565982119876,
+                "rh_bestand_unsaniert": 5.251959058418012,
+                "rh_bestand_kernsaniert": 5.410249876504163
             },
             {
                 "label": "Kaupreisfaktor",
-                "rh_neubau": 26.297490010757116,
-                "rh_bestand_unsaniert": 18.133822860908346,
-                "rh_bestand_kernsaniert": 17.603271089510823
+                "rh_neubau": 27.612364511294977,
+                "rh_bestand_unsaniert": 19.040514003953767,
+                "rh_bestand_kernsaniert": 18.483434643986367
             },
             {
                 "label": "Nettomietrendite",
-                "rh_neubau": 3.564236257538934,
-                "rh_bestand_unsaniert": 4.974334736026444,
-                "rh_bestand_kernsaniert": 5.246311537638711
+                "rh_neubau": 3.3945107214656502,
+                "rh_bestand_unsaniert": 4.737461653358518,
+                "rh_bestand_kernsaniert": 4.996487178703533
             }
         ],
         "mietrendite_entwicklung": [
@@ -4067,11 +4067,11 @@
             "wirtschaft_sv_beschaeftigte_wohnort": "Die Zahl der sozialversicherungs­pflichtig Beschäftigten in {ortsname} offenbart, wie eng der Ort mit dem regionalen Arbeitsmarkt verflochten ist. Viele Bewohnerinnen und Bewohner pendeln täglich zu Arbeitsplätzen in umliegende Städte, während zugleich lokale Betriebe stabile Beschäftigungsmöglichkeiten bieten. Diese Kombination aus regionaler Mobilität und ortsnahen Arbeitsplätzen stärkt den Wirtschaftsraum und schafft für die Menschen in {ortsname} flexible Erwerbsperspektiven. Besonders die gute Verkehrsanbindung wirkt als wichtiger Motor für berufliche Chancen, da sie den Zugang zu vielfältigen Branchen erleichtert. Gleichzeitig gewinnt der Wohnort als Lebens- und Arbeitsmittelpunkt an Bedeutung, wenn Unternehmen vor Ort weiter wachsen oder neue Arbeitgeber hinzukommen. So zeigt die Verteilung der Beschäftigten nach Wohn- und Arbeitsort, wie dynamisch sich {ortsname} innerhalb der regionalen Wirtschaftsstruktur positioniert.",
             "wirtschaft_arbeitslosendichte": "Die Arbeitslosendichte in {ortsname} wird von der regionalen Wirtschaftsstruktur und der Erreichbarkeit größerer Arbeitsmarktzentren geprägt. In einem Umfeld, in dem Industrie, Handwerk und Dienstleistungsbetriebe zusammentreffen, ergeben sich für Arbeitsuchende unterschiedliche Einstiegs- und Entwicklungsmöglichkeiten. Gerade Pendlerverbindungen zu umliegenden Städten eröffnen zusätzliche Perspektiven, während lokale Betriebe wichtige Arbeitgeber vor Ort darstellen. Gleichzeitig zeigt sich in {ortsname}, dass Qualifikation und Berufserfahrung zu entscheidenden Hebeln für gute Beschäftigungschancen werden. Angebote zur Weiterbildung, beruflichen Neuorientierung und Unterstützung durch regionale Arbeitsmarktakteure helfen dabei, Arbeitslosigkeit zu vermeiden oder zu verkürzen. So kann {ortsname} seine Rolle als lebenswerter Wohn- und Arbeitsstandort stärken und die Arbeitslosendichte langfristig auf einem möglichst niedrigen Niveau halten.",
             "wirtschaft_bruttoinlandsprodukt": "Betrachten wir das aktuelle Niveau: Im jüngsten Jahr liegt das Bruttoinlandsprodukt bei 7.25 Mio. In den vergangenen fünf Jahren ist um 33,4 % stark gestiegen. Deutlich unter dem Landesdurchschnitt liegt klar unter dem Landesniveau mit Index 74.",
-            "wirtschaft_einkommen": "In den vergangenen fünf Jahren ist um 17,1 % stark gestiegen. Schauen wir auf das aktuelle Niveau: Im jüngsten Jahr liegt das verfügbare Einkommen bei 151.693.530 €.",
+            "wirtschaft_einkommen": "In den vergangenen fünf Jahren ist um 17,1 % stark gestiegen. Schauen wir auf das aktuelle Niveau: Im jüngsten Jahr liegt das verfügbare Einkommen bei 151.501.528 €.",
             "wirtschaft_sv_beschaeftigte_arbeitsort": "die Zahl der Arbeitsort-Beschäftigten ist konstant geblieben. In den letzten fünf Jahren ist mit 2,1 % leicht gestiegen. Im jüngsten Jahr liegt die Zahl der Beschäftigten am Arbeitsort bei 2.569 und am Wohnort bei 2.510.",
             "wirtschaft_arbeitsplatzzentralitaet": "Die Arbeitsplatzzentralität  liegt leicht erhöht bei 1.0235059760956176.",
             "wirtschaft_pendler": "Das Pendlervolumen  stieg deutlich um 1668 Personen. Die Zahl der Einpendler ist um 48,19 % % stark zurückgegangen. Die Zahl der Auspendler ist um 27,56 % % stark zurückgegangen.",
-            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote reflektiert das Ausmaß der Arbeitslosigkeit in einer Region und berücksichtigt Personen mit Anspruch auf Bürgergeld (SGB II) oder Arbeitslosengeld (SGB III). Die Basis hierfür bildet die Gesamtzahl der zivilen Erwerbspersonen. Ihr Wert beträgt zur Zeit 3,1 %. Damit ist sie in den letzten fünf Jahren weitestgehend stabil geblieben. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben. Sie beträgt   derzeit cirka 3,1 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
         },
         "wohnmarktsituation": {
             "wohnmarktsituation_intro": "Die Wohnmarktsituation in {ortsname} wird durch ein Zusammenspiel aus Nachfrage, Bestandsstruktur und regionalen Standortfaktoren geprägt. Während sich einige Ortsteile durch eine lebendige Entwicklung und kontinuierliche Neubauimpulse auszeichnen, wirken andere Bereiche eher von Bestandsmodernisierung und schrittweiser Nachverdichtung bestimmt. Für {ortsname} lässt sich anhand von Angebotsvielfalt, Wohnungsgrößen, Baualtersstrukturen und Marktaktivität gut erkennen, wie ausgewogen oder angespannt der lokale Markt ist. Besonders wichtig ist die Frage, ob neue Haushalte ausreichend Wohnraum finden und wie sich Miet- und Kaufpreise im Verhältnis zur Nachfrage entwickeln. Durch die Kombination aus qualitativen Verbesserungen, lokalen Investitionen und einer anhaltenden Nachfrage entsteht in {ortsname} ein Wohnmarkt, der sich stetig an veränderte Lebensstile und wirtschaftliche Rahmenbedingungen anpasst. Wer den Standort analysiert, erkennt schnell die Chancen, die sich aus dieser dynamischen, aber strukturierten Entwicklung ergeben.",
@@ -4084,13 +4084,13 @@
             "wohnmarktsituation_wohnungsbestand_intro": "Der Wohnraumbestand in {ortsname} prägt maßgeblich die Angebote am lokalen Wohnungsmarkt. Er zeigt, welche Wohnformen dominieren und wie vielfältig das bestehende Angebot ist – von klassischen Einfamilienhäusern über Mehrfamilienwohnraum bis hin zu modernen Neubauprojekten. Der Wohnraumsaldo beschreibt die Veränderung dieses Bestands im Zeitverlauf und macht sichtbar, ob in {ortsname} neuer Wohnraum entsteht oder der Bestand weitgehend stabil bleibt. Ein positiver Saldo weist auf Neubautätigkeit, Nachverdichtung oder Modernisierungen hin, während ein stagnierender oder negativer Saldo auf demografische Veränderungen oder geringe Bauimpulse hindeuten kann. Für die zukünftige Wohnraumentwicklung ist die Kombination aus Bestandsstruktur und Saldo besonders relevant, da sie Aufschluss darüber gibt, wie gut {ortsname} auf wachsende oder veränderte Nachfrage reagieren kann. So entsteht ein klares Bild über Potenziale, Herausforderungen und Entwicklungsperspektiven des lokalen Wohnmarktes.",
             "wohnmarktsituation_baufertigstellungen_intro": "Die Entwicklung der Baufertigstellungen in {ortsname} liefert einen wichtigen Hinweis darauf, wie sich der Wohnungsmarkt vor Ort strukturiert. Wo vermehrt Neubauprojekte abgeschlossen werden, wächst das Angebot an modernen, energieeffizienten Wohnungen und Häusern – ein Pluspunkt für Familien, Zuzügler und Kapitalanleger. In {ortsname} zeigt die Zahl der Baufertigstellungen, ob eher kompakte Mehrfamilienhäuser, Reihen- und Doppelhäuser oder klassische Einfamilienhäuser dominieren. Daraus lassen sich Zielgruppen und Nachfragetrends ablesen, etwa ob stärker bezahlbarer Wohnraum, familienorientiertes Wohnen oder hochwertige Neubauquartiere im Fokus stehen. Gleichzeitig wirken neue Projekte dem Alterungsprozess des Bestands entgegen und verbessern die energetische Qualität des Wohnangebots insgesamt. Für Eigentümer, Investoren und Kommunen ist es daher entscheidend, die Baufertigstellungen in {ortsname} genau im Blick zu behalten, um Chancen frühzeitig zu nutzen und Wohnkonzepte optimal auf die lokale Nachfrage auszurichten.",
             "wohnmarktsituation_baugenehmigungen_intro": "Die Zahl der Baugenehmigungen in {ortsname} ist ein zentraler Hinweis darauf, wie sich der Wohnungsmarkt in den kommenden Jahren entwickeln kann. Genehmigte Neubauprojekte markieren den Beginn zukünftiger Wohnangebote – von modernen Mehrfamilienhäusern über familienfreundliche Reihen- und Doppelhäuser bis hin zu hochwertigen Einfamilienhäusern. In {ortsname} lassen sich aus den Genehmigungszahlen Trends erkennen: Wird verstärkt kompakter Wohnraum geplant, rücken Zielgruppen wie Singles, Paare und Senioren stärker in den Fokus. Steigen die Genehmigungen für größere Wohnformen, spricht dies eher für wachsende Nachfrage durch Familien oder Zuzüge aus dem Umland. Gleichzeitig fungieren Baugenehmigungen als zuverlässiger Frühindikator für das zukünftige Angebotsniveau vor Ort. Für Eigentümer, Investoren und kommunale Akteure ist es deshalb entscheidend, die Genehmigungsentwicklung in {ortsname} aufmerksam zu verfolgen, um frühzeitig auf Marktveränderungen reagieren und Potenziale optimal nutzen zu können.",
-            "wohnmarktsituation_allgemein": "In Wiedemar leben aktuell rund 5.544 Menschen auf einer Gesamtfläche von 9.554 ha, davon entfallen 797 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 5.544 Einwohner je km². Über fünf Jahre hinweg hat sich die Bevölkerung um 238 Personen leicht erhöht. Aktuell wird Wiedemar als leicht wachsende Region eingestuft. Insgesamt gibt es hier etwa 2.772 Haushalte, die durchschnittlich aus 2,0 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region liegt mit 336 Personen über dem Niveau von 2015, was Wiedemar als polarisierende Gegend kennzeichnet. Über die letzten 10 Jahre zeigt hier ein normales Wachstum von 6.5 %.",
+            "wohnmarktsituation_allgemein": "In Wiedemar leben aktuell rund 5.544 Menschen auf einer Gesamtfläche von 9.554 ha, davon entfallen 797 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 5.544 Einwohner je km². Binnen fünf Jahren hat sich die Zahl der Einwohner um 238 Personen leicht erhöht. Aktuell wird Wiedemar als leicht wachsende Region eingestuft. Insgesamt gibt es hier etwa 2.772 Haushalte, die durchschnittlich aus 2,0 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region liegt mit 336 Personen über dem Niveau von 2015, was Wiedemar als polarisierende Gegend kennzeichnet. Über die letzten 10 Jahre bedeutet letztlich einen normalen Anstieg von 6.5 %.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 2.772. In den letzten fünf Jahren hat sich die Zahl um 240 erhöht, was einem starken Wachstum von 9,5 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2023 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
-            "wohnmarktsituation_wanderungssaldo": "Im Verlauf der vergangenen fünf Jahre sind die die Zahl der Zuzüge mit 18,1 % stark gestiegen, woraus man eine stark zunehmende Attraktivität ableiten kann. Parallel dazu haben genauso die Fortzüge von Personen im gleichen Zeitraum um 3,0 % etwas abgenommen, was eine hohe Akzeptanz der Gegend vermuten lässt. Gestützt auf diese Beobachtungen ist mit 58 Menschen der Saldo leicht positiv. Schauen wir ins aktuelle Jahr 2024, dann sehen wir einen Wanderungssaldo von 67..",
+            "wohnmarktsituation_wanderungssaldo": "Über die letzten fünf Jahre sind die die Zahl der Zuzüge mit 18,1 % stark gestiegen, was eine stark wachsende Attraktivität der Region vermuten läßt. Währenddessen haben aber auch die Fortzüge von Personen im gleichen Zeitraum um 3,0 % etwas abgenommen, was auf eine stärkere Bindung an den Ort schließen lässt. Gestützt auf diese Beobachtungen hat die Gegend einen leicht positiven Wanderungssaldo von 58. Wenn wir auf die aktuellste Entwicklung in 2024 blicken, hat der Wanderungssaldo 67 Personen betragen.",
             "wohnmarktsituation_alterstruktur": "Der Altersdurchschnitt erreicht   46.0 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt unter dem Niveau des Bundeslandes, was eine vergleichsweise jüngere Bevölkerung signalisiert. Auch im Bundesvergleich liegt das Durchschnittsalter über dem Bundesdurchschnitt, was auf einen höheren Seniorenanteil hinweist.",
-            "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient   bei 39.2 und der Jugendquotient bei 28.5. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt leicht über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt leicht über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
+            "wohnmarktsituation_jugendquotient_altenquotient": "  liegt der Jugendquotient bei 28.5 und der Altenquotienten bei 39.2. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt leicht über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt leicht über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 2.798 Wohnungen. Pro 1.000 Einwohner stehen also um die 505 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre blieb der Bestand dabei nahezu stabil.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt   aktuell ca. 267 m² m². Pro Kopf stehen hier durchschnittlich 48.1 m² zur Verfügung.  Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person kaum verändert.",
             "wohnmarktsituation_baufertigstellungen": "Im Jahr 2023 wurden   24 neue Wohnungen fertiggestellt, was 4.3 Fertigstellungen pro 1.000 Einwohner entspricht. In den vergangenen 5 Jahren ist die Zahl der Fertigstellungen nahezu unverändert geblieben.",
@@ -4103,26 +4103,26 @@
             "immobilienpreise_wohnung_intro": "Der Wohnungsmarkt zeigt in vielen Ortslagen eine dynamische Entwicklung mit spürbaren Unterschieden je nach Lage, Baujahr und Ausstattung. Moderne oder umfassend sanierte Wohnungen erzielen stabile bis steigende Preise, während unsanierte Bestände und weniger gefragte Wohnbereiche deutlicher differenziert betrachtet werden müssen. Käufer legen zunehmend Wert auf Energieeffizienz, funktionale Grundrisse und eine gute Infrastruktur im direkten Umfeld. Zudem spielen Wohnungsgröße und Zimmeranzahl eine wichtige Rolle, da die Nachfrage sowohl nach kompakten Einheiten als auch nach familiengerechten Wohnungen spürbar ist. Für Eigentümer eröffnet eine fundierte Marktanalyse klare Vorteile, da realistische Preisspannen und optimale Vermarktungsstrategien leichter identifiziert werden können. Eine sorgfältige Bewertung aller relevanten Marktfaktoren hilft sowohl Kaufinteressenten als auch Verkäufern, sichere und strategisch sinnvolle Entscheidungen zu treffen.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Wiedemar bei 2.230 €/m².  Er bewegt sich dabei zwischen 2.040 €/m² und 2.650 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 26,9 % gestiegen.  ",
             "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Wiedemar variieren die Preise je nach Lage erheblich. Wiedemar weist vor allem einfache, mittlere und gute Wohnlagen auf. Beispielsweise einfachen (2.133 €), mittleren (2.336 €) und guten (2.539 €).",
-            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat hier in etwa zwischen 1600,8 €/m² und 3828,1 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 2160,6 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 2502,3 €/m² rechnen .",
-            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute beträgt er 2.230 €/m², und ist damit um 51,6 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Die aktuellen Angebotspreise für Wohnungen liegen bei 1.680 €/m². Diese bewegen sich dabei innerhalb einer Spanne von 1.680 €/m² bis 2.070 €/m². Damit liegen auf Bundesniveau und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 5,4 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Wiedemar variieren die Preise je nach Lage erheblich. Wiedemar weist vor allem einfache, mittlere und gute Wohnlagen auf. Beispielsweise einfachen (1.596 €), mittleren (1.787 €) und guten (1.979 €).",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Wiedemar ungefähr bei 2675,7 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 2215,8 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 2480,7 €/m² rechnen .",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute liegt der Preis bei 2.230 €/m², und ist damit um 51,6 % deutlich gestiegen.",
+            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen belaufen sich auf 1.680 €/m². Sie bewegen sich in einer Preisspanne von 1.680 €/m² bis 2.070 €/m². Damit liegen auf Bundesniveau und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 5,4 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Wiedemar variieren die Preise je nach Lage erheblich. Wiedemar weist vor allem einfache, mittlere und gute Wohnlagen auf. Die Spanne reicht in guten Lagen von 1.889 € bis 2.068 €, während in einfachen Lagen im Mittel 1.596 € erzielt wird.",
             "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Wiedemar derzeit durchschnittlich 1526,1 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 2,6 % deutlich gefallen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 1917,6 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 1917,6 €/m². hier ist der kurzfristige Trend mit 5,5 % Anstieg, leicht positiv ",
-            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 1.720 €/m². Heute liegt der Preis bei 1.680 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 1.720 €/m². Heute beträgt er 1.680 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "In {ortsname} lassen sich die aktuellen Grundstückspreise nur im Kontext der jeweiligen Lage und Nutzungsart richtig einordnen. Während zentrale und gut erreichbare Wohnlagen tendenziell höhere Preise erzielen, bieten ruhigere Randbereiche häufig noch attraktive Einstiegsmöglichkeiten für Bauwillige. Entscheidend sind Faktoren wie Anbindung an den ÖPNV, Nähe zu Schulen, Einkaufsmöglichkeiten und Freizeitangeboten sowie die städtebauliche Entwicklung von {ortsname}. Auf Baugrundstücke für Ein- und Zweifamilienhäuser trifft vielerorts eine lebhafte Nachfrage, während größere Flächen für Projektentwicklungen gezielt von Investoren geprüft werden. Für Eigentümer kann dieses Marktumfeld interessante Verkaufserlöse ermöglichen, sofern Preisstrategie und Vermarktung zur Lage passen. Käufer sollten in {ortsname} genau hinschauen, welche Grundstücke langfristig werthaltig sind und welches Preisniveau realistisch ist – so lassen sich fundierte Entscheidungen rund um den Erwerb von Bauland treffen.",
-            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke  Wiedemar beträgt 140 €/m². Diese befinden sich üblicherweise in einer Spanne von 130 €/m² bis 160 €/m². Damit liegen sie leicht über dem mittlerem Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
-            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Wiedemar bei 140 €/m². Aktuell beträgt er 140 €/m² und ist damit um 1,6 % kräftig zurückgegangen."
+            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke beträgt 140 €/m². Sie befinden sich üblicherweise in einer Spanne von 130 €/m² bis 160 €/m². Damit liegen sie leicht über dem mittlerem Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % spürbar zurückgegangen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Wiedemar bei 140 €/m². Aktuell liegt der Preis bei 140 €/m² und ist damit um 1,6 % kräftig zurückgegangen."
         },
         "mietpreise": {
             "mietpreise_intro": "Die Mietpreise in {ortsname} entwickeln sich zunehmend differenziert und hängen stark von Lagequalität, Wohnungszustand und Ausstattung ab. Besonders gefragt sind modernisierte Wohnungen mit effizienter Raumaufteilung, guter Energiekennzahl und kurzen Wegen zu Einkaufsmöglichkeiten, ÖPNV und weiteren Alltagsangeboten. In einigen Bereichen von {ortsname} sorgt die begrenzte Verfügbarkeit attraktiver Mietwohnungen für eine spürbare Nachfrage, während andere Segmente ein ausgeglichenes Verhältnis zwischen Angebot und Mietinteresse aufweisen. Für Vermieter ist eine realistische Einschätzung des Mietniveaus entscheidend, um optimale Vermarktungserfolge zu erzielen. Mieter profitieren von einer klaren Einordnung der Preisstrukturen, die hilft, passende Angebote zu identifizieren und fundierte Entscheidungen zu treffen. Eine sorgfältige Betrachtung der lokalen Rahmenbedingungen unterstützt beide Seiten dabei, Chancen im Mietmarkt von {ortsname} gezielt zu nutzen.",
-            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) beträgt 9.0 €/m². Sie pendeln zwischen den Werten von 5.0 €/m² bis 14.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 11.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
-            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Wiedemar bei 9.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5.0 €/m² bis 14.0 €/m². Damit reihen sie sich in etwa auf dem Landesniveau von Sachsen und unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 11.0 €/m² rechnen, im Bestand liegt man bei 8.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 22,2 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 16,3 % weit über dem derzeitigen Niveau.",
-            "mietpreise_wohnung_preisentwicklung": "Vor einem Jahr lag der Quadratmeterpreis bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) standen die mittleren Angebotspreise bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
+            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) beträgt 9.0 €/m². Diese variieren typischerweise zwischen von 5.0 €/m² bis 14.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² beträgt,  kommt man auf eine durchschnittliche Warmmiete von 11.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
+            "mietpreise_wohnung_allgemein": "Aktuell stehen die mittleren Mietepreis für Wohnungen in Wiedemar bei 9.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5.0 €/m² bis 14.0 €/m². Damit reihen sie sich in etwa auf dem Landesniveau von Sachsen und unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 11.0 €/m² rechnen, im Bestand sind es 8.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 22,2 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 16,3 % weit über dem derzeitigen Niveau.",
+            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr stand der mittlere Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) lagen die durchschnittlichen Werte bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
             "mietpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Wiedemar müssen diese derzeit durchschnittlich 8,1 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 7,5 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 6,5 €/m². hier ist der kurzfristige Trend mit 9,1 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 9 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 8 €/m² bis 15 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis in  bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 5 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lagen die durchschnittlichen Werte bei 7 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 24 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei 9 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 5 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) standen die mittleren Angebotspreise bei 7 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 24 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Die Mietrendite in {ortsname} hängt stark von der jeweiligen Wohnlage, dem Zustand der Immobilie und der lokalen Nachfrageentwicklung ab. Wohnungen mit guter Infrastruktur, moderner Ausstattung und funktionalen Grundrissen erzielen häufig stabile Mieteinnahmen und bieten damit solide Renditechancen. In einigen Bereichen von {ortsname} können zudem niedrigere Kaufpreise in Kombination mit einer konstanten Nachfrage attraktive Renditepotenziale eröffnen. Für Investoren lohnt sich eine genaue Betrachtung der örtlichen Mietpreisspannen, der Bewirtschaftungs- kosten sowie möglicher Modernisierungsbedarfe. Eine transparente Analyse unterstützt dabei, Renditechancen realistisch einzuschätzen und Investitionsentscheidungen in {ortsname} strategisch und vorausschauend auszurichten.",
@@ -4130,8 +4130,8 @@
             "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
             "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 5,83 %. Letztes Jahr lag die Bruttomietrendite im Wiedemar bei 6,41 %. Bis heute ist der Preis innerhalb dieser Zeit mit 9,0 % deutlich gefallen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 5,59 %, innerhalb diesen Zeitraums sind sie bis jetzt um 4,3 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 5,39 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 5,96 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  im Wiedemar ungefähr bei 17.3, und die mittlere Netto-Mietrendite bei ungefähr 5,56 %. ",
-            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Wiedemar bei 27.8. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 3,33 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Wiedemar bei 14.1. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 6,84 €/m², "
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Wiedemar bei 27.8. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 3,33 €/m², ",
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Wiedemar bei 14.1. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 6,84 €/m², "
         },
         "quellenangaben": [
             {

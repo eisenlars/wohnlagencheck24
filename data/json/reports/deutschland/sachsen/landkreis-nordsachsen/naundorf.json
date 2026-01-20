@@ -1,6 +1,6 @@
 {
     "meta": {
-        "aktualisierung": "08.01.2026",
+        "aktualisierung": "20.01.2026",
         "regionale_zuordnung": "gemeinde",
         "amtlicher_name": "Naundorf",
         "bundesland_name": "sachsen",
@@ -66,32 +66,32 @@
         "standortfaktoren": [
             {
                 "faktor": "gesundheit",
-                "wert": 9,
+                "wert": 1,
                 "color": "#cec854"
             },
             {
                 "faktor": "bildung",
-                "wert": 3,
+                "wert": 1,
                 "color": "#f27c78"
             },
             {
                 "faktor": "naherholung",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "kultur_freizeit",
-                "wert": 8,
+                "wert": 1,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "mobilitaet",
-                "wert": 3,
+                "wert": 1,
                 "color": "#f27c78"
             },
             {
                 "faktor": "nahversorgung",
-                "wert": 2,
+                "wert": 1,
                 "color": "#f86f7e"
             }
         ],
@@ -348,11 +348,11 @@
         ],
         "wirtschaft_allgemein": [
             {
-                "kaufkraftindex_ol": 73.69614784485174,
+                "kaufkraftindex_ol": 73.59166089197994,
                 "kaufkraftindex_k": 89.0598915785478,
-                "kaufkraft_nominal_ol": 20696.363418227273,
+                "kaufkraft_nominal_ol": 20667.019958462584,
                 "kaufkraft_nominal_k": 25011.0207385325,
-                "kaufkraft_real_ol": 15200.301247194951,
+                "kaufkraft_real_ol": 15178.750145726302,
                 "kaufkraft_real_k": 20259.7607415046,
                 "bip": 7249656,
                 "pendlersaldo_ol": -938,
@@ -642,35 +642,35 @@
         "nettoeinkommen_pro_ew": [
             {
                 "jahr": 2018,
-                "nettoeinkommen_pro_ew_ol": 18890.219966547673,
+                "nettoeinkommen_pro_ew_ol": 18862.882018312925,
                 "nettoeinkommen_pro_ew_k": 22065.89716577865,
                 "nettoeinkommen_pro_ew_bl": 22065.89716577865,
                 "nettoeinkommen_pro_ew_l": 23894.7659101949
             },
             {
                 "jahr": 2019,
-                "nettoeinkommen_pro_ew_ol": 18844.165601180448,
+                "nettoeinkommen_pro_ew_ol": 18816.989725499625,
                 "nettoeinkommen_pro_ew_k": 22554.49579555407,
                 "nettoeinkommen_pro_ew_bl": 22554.49579555407,
                 "nettoeinkommen_pro_ew_l": 24454.869440227176
             },
             {
                 "jahr": 2020,
-                "nettoeinkommen_pro_ew_ol": 18856.093677782992,
+                "nettoeinkommen_pro_ew_ol": 18829.33015874622,
                 "nettoeinkommen_pro_ew_k": 23785.370347317315,
                 "nettoeinkommen_pro_ew_bl": 23785.370347317315,
                 "nettoeinkommen_pro_ew_l": 26040.73670674114
             },
             {
                 "jahr": 2021,
-                "nettoeinkommen_pro_ew_ol": 20425.292850132108,
+                "nettoeinkommen_pro_ew_ol": 20395.8385862946,
                 "nettoeinkommen_pro_ew_k": 24320.241944997917,
                 "nettoeinkommen_pro_ew_bl": 24428.45500568276,
                 "nettoeinkommen_pro_ew_l": 26874.040281356854
             },
             {
                 "jahr": 2022,
-                "nettoeinkommen_pro_ew_ol": 20696.363418227273,
+                "nettoeinkommen_pro_ew_ol": 20667.019958462584,
                 "nettoeinkommen_pro_ew_k": 25011.0207385325,
                 "nettoeinkommen_pro_ew_bl": 25356.736295898707,
                 "nettoeinkommen_pro_ew_l": 28083.372094017912
@@ -679,35 +679,35 @@
         "nettoeinkommen_pro_hh": [
             {
                 "jahr": 2018,
-                "nettoeinkommen_pro_hh_ol": 39671.24570878378,
+                "nettoeinkommen_pro_hh_ol": 39613.833436003726,
                 "nettoeinkommen_pro_hh_k": 43006.55446424165,
                 "nettoeinkommen_pro_hh_bl": 41455.59569489939,
                 "nettoeinkommen_pro_hh_l": 48578.79810278226
             },
             {
                 "jahr": 2019,
-                "nettoeinkommen_pro_hh_ol": 38244.1038283865,
+                "nettoeinkommen_pro_hh_ol": 38188.95057654394,
                 "nettoeinkommen_pro_hh_k": 44322.96350829719,
                 "nettoeinkommen_pro_hh_bl": 42305.23192488263,
                 "nettoeinkommen_pro_hh_l": 50210.97681302417
             },
             {
                 "jahr": 2020,
-                "nettoeinkommen_pro_hh_ol": 38272.9633757231,
+                "nettoeinkommen_pro_hh_ol": 38218.64039656296,
                 "nettoeinkommen_pro_hh_k": 46725.91657862817,
                 "nettoeinkommen_pro_hh_bl": 45498.28883610451,
                 "nettoeinkommen_pro_hh_l": 53545.432056007725
             },
             {
                 "jahr": 2021,
-                "nettoeinkommen_pro_hh_ol": 40869.53309622909,
+                "nettoeinkommen_pro_hh_ol": 40810.59724548929,
                 "nettoeinkommen_pro_hh_k": 47253.781750934264,
                 "nettoeinkommen_pro_hh_bl": 47054.53102068258,
                 "nettoeinkommen_pro_hh_l": 55256.377714472655
             },
             {
                 "jahr": 2022,
-                "nettoeinkommen_pro_hh_ol": 41373.73934708002,
+                "nettoeinkommen_pro_hh_ol": 41315.07934815594,
                 "nettoeinkommen_pro_hh_k": 48594.10740074267,
                 "nettoeinkommen_pro_hh_bl": 48880.60498366211,
                 "nettoeinkommen_pro_hh_l": 57476.930188407976
@@ -3085,23 +3085,23 @@
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": 1065.6041893768472,
-                "doppelhaushaelfte": 1191.498020622056,
-                "einfamilienhaus": 1278.753179534391,
+                "reihenhaus": 1054.2992926345014,
+                "doppelhaushaelfte": 1211.9447736707405,
+                "einfamilienhaus": 1284.30739570532,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": 1772.379905193312,
-                "doppelhaushaelfte": 2012.8312644707503,
-                "einfamilienhaus": 2150.8228575676508,
+                "reihenhaus": 1760.4501157372436,
+                "doppelhaushaelfte": 2022.9707897856667,
+                "einfamilienhaus": 2132.9532088364767,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": 2477.5366750425533,
-                "doppelhaushaelfte": 2744.1434815396783,
-                "einfamilienhaus": 3017.3072902585127,
+                "reihenhaus": 2460.4824504000953,
+                "doppelhaushaelfte": 2789.7030606986987,
+                "einfamilienhaus": 3006.612130751597,
                 "einheit": "pricePerSqm"
             }
         ],
@@ -3165,7 +3165,7 @@
             {
                 "jahr": 2021,
                 "preis_ol": 1310.026072905839,
-                "preis_k": 1433.0376941718655,
+                "preis_k": 1504.689578880459,
                 "preis_bl": 2584,
                 "preis_l": 2780.7035903653587,
                 "einheit": "pricePerSqm"
@@ -3173,7 +3173,7 @@
             {
                 "jahr": 2022,
                 "preis_ol": 1629.5971103303493,
-                "preis_k": 1898.8974847702286,
+                "preis_k": 1993.8423590087405,
                 "preis_bl": 2606,
                 "preis_l": 3251.4663055838787,
                 "einheit": "pricePerSqm"
@@ -3181,7 +3181,7 @@
             {
                 "jahr": 2023,
                 "preis_ol": 1708.9151819131582,
-                "preis_k": 2070.705931569447,
+                "preis_k": 2174.2412281479196,
                 "preis_bl": 2800,
                 "preis_l": 3369.31848901723,
                 "einheit": "pricePerSqm"
@@ -3189,7 +3189,7 @@
             {
                 "jahr": 2024,
                 "preis_ol": 1536.3691498816568,
-                "preis_k": 1823.5763865908846,
+                "preis_k": 1914.755205920429,
                 "preis_bl": 2732,
                 "preis_l": 3043.145615893064,
                 "einheit": "pricePerSqm"
@@ -3197,7 +3197,7 @@
             {
                 "jahr": 2025,
                 "preis_ol": 1489.7373194019988,
-                "preis_k": 1809.039123401748,
+                "preis_k": 1899.4910795718356,
                 "preis_bl": 2419,
                 "preis_l": 3062.0408943305847,
                 "einheit": "pricePerSqm"
@@ -3205,7 +3205,7 @@
             {
                 "jahr": 2026,
                 "preis_ol": 1763.3245233682162,
-                "preis_k": 2022.54829946949,
+                "preis_k": 2123.675714442965,
                 "preis_bl": 2235,
                 "preis_l": 3152.5305408373115,
                 "einheit": "pricePerSqm"
@@ -3343,7 +3343,7 @@
             {
                 "jahr": 2021,
                 "preis_ol": 1117.259260065626,
-                "preis_k": 1343.4653474496188,
+                "preis_k": 1276.2920800771378,
                 "preis_bl": 3068,
                 "preis_l": 2856.9982913319204,
                 "einheit": "pricePerSqm"
@@ -3351,7 +3351,7 @@
             {
                 "jahr": 2022,
                 "preis_ol": 1405.9862506001398,
-                "preis_k": 1679.3924021000835,
+                "preis_k": 1595.4227819950793,
                 "preis_bl": 3097,
                 "preis_l": 3292.9741098254426,
                 "einheit": "pricePerSqm"
@@ -3359,7 +3359,7 @@
             {
                 "jahr": 2023,
                 "preis_ol": 1409.3140799708317,
-                "preis_k": 1855.3828972557876,
+                "preis_k": 1762.6137523929983,
                 "preis_bl": 3394,
                 "preis_l": 3342.4658353694217,
                 "einheit": "pricePerSqm"
@@ -3367,7 +3367,7 @@
             {
                 "jahr": 2024,
                 "preis_ol": 1433.296689281568,
-                "preis_k": 1656.563384015059,
+                "preis_k": 1573.7352148143061,
                 "preis_bl": 3684,
                 "preis_l": 3094.873857527238,
                 "einheit": "pricePerSqm"
@@ -3375,7 +3375,7 @@
             {
                 "jahr": 2025,
                 "preis_ol": 1363.6161964516632,
-                "preis_k": 1641.4055117211415,
+                "preis_k": 1559.3352361350844,
                 "preis_bl": 3492,
                 "preis_l": 3146.2445730130976,
                 "einheit": "pricePerSqm"
@@ -3383,7 +3383,7 @@
             {
                 "jahr": 2026,
                 "preis_ol": 1390.7846112797079,
-                "preis_k": 1841.027741995689,
+                "preis_k": 1748.9763548959045,
                 "preis_bl": 3223,
                 "preis_l": 3270.644922150526,
                 "einheit": "pricePerSqm"
@@ -3832,7 +3832,7 @@
                 "bruttomietrendite_etw": 5.32025563052695,
                 "bruttomietrendite_efh": 3.462949527489492,
                 "bruttomietrendite_dhh": 4.691866605203594,
-                "bruttomietrendite_rmh": 3.684829128507656
+                "bruttomietrendite_rmh": 3.5093610747691955
             }
         ],
         "nettomietrendite_allgemein": [
@@ -3843,7 +3843,7 @@
                 "nettomietrendite_etw": 4.848922209886076,
                 "nettomietrendite_efh": 2.972244817546139,
                 "nettomietrendite_dhh": 4.1858649596207655,
-                "nettomietrendite_rmh": 3.2874330046177467
+                "nettomietrendite_rmh": 3.1308885758264253
             }
         ],
         "kaufpreisfaktor_allgemein": [
@@ -3854,7 +3854,7 @@
                 "kaufpreisfaktor_etw": 18.798926834602806,
                 "kaufpreisfaktor_efh": 28.88147677167184,
                 "kaufpreisfaktor_dhh": 21.31669647827078,
-                "kaufpreisfaktor_rmh": 27.142397341003846
+                "kaufpreisfaktor_rmh": 28.499517208054044
             }
         ],
         "mietrendite_mfh": [
@@ -3980,41 +3980,41 @@
         "mietrendite_rmh": [
             {
                 "label": "Bruttomietrendite",
-                "rh_neubau": 3.6394334337436822,
-                "rh_bestand_unsaniert": 3.668189141730685,
-                "rh_bestand_kernsaniert": 3.746864810048601
+                "rh_neubau": 3.4661270797558874,
+                "rh_bestand_unsaniert": 3.4935134683149376,
+                "rh_bestand_kernsaniert": 3.568442676236762
             },
             {
                 "label": "Kaupreisfaktor",
-                "rh_neubau": 27.476804239042114,
-                "rh_bestand_unsaniert": 27.26140777812212,
-                "rh_bestand_kernsaniert": 26.688980005847316
+                "rh_neubau": 28.850644450994224,
+                "rh_bestand_unsaniert": 28.62447816702823,
+                "rh_bestand_kernsaniert": 28.023429006139686
             },
             {
                 "label": "Nettomietrendite",
-                "rh_neubau": 3.3307621395862963,
-                "rh_bestand_unsaniert": 3.1820720693617957,
-                "rh_bestand_kernsaniert": 3.349464804905148
+                "rh_neubau": 3.1721544186536152,
+                "rh_bestand_unsaniert": 3.0305448279636145,
+                "rh_bestand_kernsaniert": 3.189966480862046
             }
         ],
         "mietrendite_reh": [
             {
                 "label": "Bruttomietrendite",
-                "rh_neubau": 3.6394334337436822,
-                "rh_bestand_unsaniert": 3.668189141730685,
-                "rh_bestand_kernsaniert": 3.746864810048601
+                "rh_neubau": 3.4661270797558874,
+                "rh_bestand_unsaniert": 3.4935134683149376,
+                "rh_bestand_kernsaniert": 3.568442676236762
             },
             {
                 "label": "Kaupreisfaktor",
-                "rh_neubau": 27.476804239042114,
-                "rh_bestand_unsaniert": 27.26140777812212,
-                "rh_bestand_kernsaniert": 26.688980005847316
+                "rh_neubau": 28.850644450994224,
+                "rh_bestand_unsaniert": 28.62447816702823,
+                "rh_bestand_kernsaniert": 28.023429006139686
             },
             {
                 "label": "Nettomietrendite",
-                "rh_neubau": 3.3307621395862963,
-                "rh_bestand_unsaniert": 3.1820720693617957,
-                "rh_bestand_kernsaniert": 3.349464804905148
+                "rh_neubau": 3.1721544186536152,
+                "rh_bestand_unsaniert": 3.0305448279636145,
+                "rh_bestand_kernsaniert": 3.189966480862046
             }
         ],
         "mietrendite_entwicklung": [
@@ -4067,7 +4067,7 @@
             "wirtschaft_sv_beschaeftigte_wohnort": "Die Zahl der sozialversicherungs­pflichtig Beschäftigten in {ortsname} offenbart, wie eng der Ort mit dem regionalen Arbeitsmarkt verflochten ist. Viele Bewohnerinnen und Bewohner pendeln täglich zu Arbeitsplätzen in umliegende Städte, während zugleich lokale Betriebe stabile Beschäftigungsmöglichkeiten bieten. Diese Kombination aus regionaler Mobilität und ortsnahen Arbeitsplätzen stärkt den Wirtschaftsraum und schafft für die Menschen in {ortsname} flexible Erwerbsperspektiven. Besonders die gute Verkehrsanbindung wirkt als wichtiger Motor für berufliche Chancen, da sie den Zugang zu vielfältigen Branchen erleichtert. Gleichzeitig gewinnt der Wohnort als Lebens- und Arbeitsmittelpunkt an Bedeutung, wenn Unternehmen vor Ort weiter wachsen oder neue Arbeitgeber hinzukommen. So zeigt die Verteilung der Beschäftigten nach Wohn- und Arbeitsort, wie dynamisch sich {ortsname} innerhalb der regionalen Wirtschaftsstruktur positioniert.",
             "wirtschaft_arbeitslosendichte": "Die Arbeitslosendichte in {ortsname} wird von der regionalen Wirtschaftsstruktur und der Erreichbarkeit größerer Arbeitsmarktzentren geprägt. In einem Umfeld, in dem Industrie, Handwerk und Dienstleistungsbetriebe zusammentreffen, ergeben sich für Arbeitsuchende unterschiedliche Einstiegs- und Entwicklungsmöglichkeiten. Gerade Pendlerverbindungen zu umliegenden Städten eröffnen zusätzliche Perspektiven, während lokale Betriebe wichtige Arbeitgeber vor Ort darstellen. Gleichzeitig zeigt sich in {ortsname}, dass Qualifikation und Berufserfahrung zu entscheidenden Hebeln für gute Beschäftigungschancen werden. Angebote zur Weiterbildung, beruflichen Neuorientierung und Unterstützung durch regionale Arbeitsmarktakteure helfen dabei, Arbeitslosigkeit zu vermeiden oder zu verkürzen. So kann {ortsname} seine Rolle als lebenswerter Wohn- und Arbeitsstandort stärken und die Arbeitslosendichte langfristig auf einem möglichst niedrigen Niveau halten.",
             "wirtschaft_bruttoinlandsprodukt": "Betrachten wir das aktuelle Niveau: Im jüngsten Jahr liegt das Bruttoinlandsprodukt bei 7.25 Mio. In den vergangenen fünf Jahren ist um 33,4 % stark gestiegen. Deutlich unter dem Landesdurchschnitt liegt klar unter dem Landesniveau mit Index 74.",
-            "wirtschaft_einkommen": "Über fünf Jahre ist um 7,3 % gestiegen. Schauen wir auf das aktuelle Niveau: Im jüngsten Jahr liegt das verfügbare Einkommen bei 45.097.376 €.",
+            "wirtschaft_einkommen": "Über fünf Jahre ist um 7,3 % gestiegen. Schauen wir auf das aktuelle Niveau: Im jüngsten Jahr liegt das verfügbare Einkommen bei 45.033.436 €.",
             "wirtschaft_sv_beschaeftigte_arbeitsort": "In den letzten fünf Jahren ist um -5,4 % gesunken. In den letzten fünf Jahren ist um -6,0 % gesunken. Im jüngsten Jahr liegt die Zahl der Beschäftigten am Arbeitsort bei 297 und am Wohnort bei 939.",
             "wirtschaft_arbeitsplatzzentralitaet": "Die Arbeitsplatzzentralität  liegt klar niedriger bei 0.31629392971246006.",
             "wirtschaft_pendler": "Das Pendlervolumen  stieg deutlich um 1303 Personen. Die Zahl der Einpendler ist um 232,26 % % stark gestiegen. Die Zahl der Auspendler ist um 92,91 % % stark gestiegen.",
@@ -4085,44 +4085,44 @@
             "wohnmarktsituation_baufertigstellungen_intro": "Die Entwicklung der Baufertigstellungen in {ortsname} liefert einen wichtigen Hinweis darauf, wie sich der Wohnungsmarkt vor Ort strukturiert. Wo vermehrt Neubauprojekte abgeschlossen werden, wächst das Angebot an modernen, energieeffizienten Wohnungen und Häusern – ein Pluspunkt für Familien, Zuzügler und Kapitalanleger. In {ortsname} zeigt die Zahl der Baufertigstellungen, ob eher kompakte Mehrfamilienhäuser, Reihen- und Doppelhäuser oder klassische Einfamilienhäuser dominieren. Daraus lassen sich Zielgruppen und Nachfragetrends ablesen, etwa ob stärker bezahlbarer Wohnraum, familienorientiertes Wohnen oder hochwertige Neubauquartiere im Fokus stehen. Gleichzeitig wirken neue Projekte dem Alterungsprozess des Bestands entgegen und verbessern die energetische Qualität des Wohnangebots insgesamt. Für Eigentümer, Investoren und Kommunen ist es daher entscheidend, die Baufertigstellungen in {ortsname} genau im Blick zu behalten, um Chancen frühzeitig zu nutzen und Wohnkonzepte optimal auf die lokale Nachfrage auszurichten.",
             "wohnmarktsituation_baugenehmigungen_intro": "Die Zahl der Baugenehmigungen in {ortsname} ist ein zentraler Hinweis darauf, wie sich der Wohnungsmarkt in den kommenden Jahren entwickeln kann. Genehmigte Neubauprojekte markieren den Beginn zukünftiger Wohnangebote – von modernen Mehrfamilienhäusern über familienfreundliche Reihen- und Doppelhäuser bis hin zu hochwertigen Einfamilienhäusern. In {ortsname} lassen sich aus den Genehmigungszahlen Trends erkennen: Wird verstärkt kompakter Wohnraum geplant, rücken Zielgruppen wie Singles, Paare und Senioren stärker in den Fokus. Steigen die Genehmigungen für größere Wohnformen, spricht dies eher für wachsende Nachfrage durch Familien oder Zuzüge aus dem Umland. Gleichzeitig fungieren Baugenehmigungen als zuverlässiger Frühindikator für das zukünftige Angebotsniveau vor Ort. Für Eigentümer, Investoren und kommunale Akteure ist es deshalb entscheidend, die Genehmigungsentwicklung in {ortsname} aufmerksam zu verfolgen, um frühzeitig auf Marktveränderungen reagieren und Potenziale optimal nutzen zu können.",
             "wohnmarktsituation_allgemein": "In Naundorf leben aktuell rund 2.179 Menschen auf einer Gesamtfläche von 3.693 ha, davon entfallen 188 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 2.179 Einwohner je km². Die Einwohnerzahl ist in den letzten fünf Jahren mit 45 Menschen leicht gesunken, was der Region perspektivisch nicht gut tut. Aktuell wird Naundorf als leicht schrumpfende Region eingestuft. Insgesamt gibt es hier etwa 1.090 Haushalte, die durchschnittlich aus 2,0 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Einwohnerzahl in der Region liegt mit 175 Personen unter dem Niveau des Jahres 2015. Über die letzten 10 Jahre bedeutet das einen Rückgang von 7.4 %.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung liegt mit 175 Personen unter dem Niveau des Jahres 2015. Im Zehnjahresvergleich zeigt das eine Abnahme von 7.4 %.Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 175 Personen unter dem Niveau des Jahres 2015. Über zehn Jahre betrachtet zeigt das eine Abnahme von 7.4 %.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 1.090. In den letzten fünf Jahren  ist die Zahl um 47 gesunken, was einem leichten Rückgang von 4,1 % entspricht.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2023 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
-            "wohnmarktsituation_wanderungssaldo": "Innerhalb der letzten fünf Jahre  ist die Zahl der Zuzüge mit 21,6 % stark zurückgegangen. Parallel dazu haben genauso die Fortzüge von Personen im gleichen Zeitraum um 4,8 % etwas abgenommen, was eine hohe Akzeptanz der Gegend vermuten lässt. Vor dem Hintergrund dieser Zahlen hat mit 15 leicht abgenommen. Wenn wir auf die aktuellste Entwicklung in 2024 blicken,  dann sehen wir einen Wanderungssaldo von -11.",
-            "wohnmarktsituation_alterstruktur": "Der Altersdurchschnitt   erreicht 47.8 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt über dem Niveau des Bundeslandes, was auf eine ältere Bevölkerung hinweist. Auch im Bundesvergleich liegt das Durchschnittsalter über dem Bundesdurchschnitt, was auf einen höheren Seniorenanteil hinweist.",
-            "wohnmarktsituation_jugendquotient_altenquotient": "  liegt der Jugendquotient bei 29.7 und der Altenquotienten bei 46.8. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt deutlich über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt klar über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
+            "wohnmarktsituation_wanderungssaldo": "Innerhalb der letzten fünf Jahre  ist die Zahl der Zuzüge mit 21,6 % stark zurückgegangen. Parallel dazu haben ebenso die Fortzüge von Personen im gleichen Zeitraum um 4,8 % etwas abgenommen, was eine hohe Akzeptanz der Gegend vermuten lässt. Vor dem Hintergrund dieser Zahlen ist mit 15 leicht gesunken. Wenn wir auf die aktuellste Entwicklung in 2024 blicken, hat der Wanderungssaldo -11 Personen betragen.",
+            "wohnmarktsituation_alterstruktur": "Das mittlere Alter beträgt   47.8 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt über dem Niveau des Bundeslandes, was auf eine ältere Bevölkerung hinweist. Auch im Bundesvergleich liegt das Durchschnittsalter über dem Bundesdurchschnitt, was auf einen höheren Seniorenanteil hinweist.",
+            "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient   bei 46.8 und der Jugendquotient bei 29.7. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt deutlich über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt klar über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 1.207 Wohnungen. Pro 1.000 Einwohner stehen also um die 554 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre ist der Bestand dabei leicht gestiegen.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt   aktuell ca. 110 m² m². Pro Kopf stehen hier durchschnittlich 50.4 m² zur Verfügung.  Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person leicht vergrößert, was auf eine verbesserte Wohnraumausstattung hindeutet.",
             "wohnmarktsituation_baufertigstellungen": "Im Jahr 2023 wurden   6 neue Wohnungen fertiggestellt, was 2.8 Fertigstellungen pro 1.000 Einwohner entspricht. In den vergangenen 5 Jahren ist die Zahl der Fertigstellungen nahezu unverändert geblieben.",
             "wohnmarktsituation_baugenehmigungen": "Im Jahr 2023 wurden   2 neue Baugenehmigungen erteilt. Über fünf Jahre hat sich die Zahl der Baugenehmigungen stark verringert, was auf eine nachlassende Bautätigkeit schließen lässt. Die absolute Veränderung bleibt nahezu unverändert.",
-            "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 235 %, cirka das 3-fache der Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 32 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, ist sie stark gestiegen, was auf Fortschritte beim Baufortschritt hindeutet. Langfristig gesehen, blieb die Fertigstellungsquote damit über fünf Jahre nahezu unverändert."
+            "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 235 %, also in etwa dreifach so hoch wie die Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 32 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, ist sie stark gestiegen, was auf Fortschritte beim Baufortschritt hindeutet. Langfristig gesehen, blieb die Fertigstellungsquote damit über fünf Jahre nahezu unverändert."
         },
         "immobilienpreise": {
             "immobilienpreise_intro": "In vielen Ortslagen zeigt sich der Immobilienmarkt in einem dynamischen Spannungsfeld zwischen Angebot, Nachfrage und sich wandelnden Wohnbedürfnissen. Preisniveaus unterscheiden sich je nach Lagequalität, Immobilientyp und baulichem Zustand teilweise erheblich. Besonders energetisch modernisierte Objekte und attraktive Wohnlagen erzielen weiterhin stabile bis steigende Werte, während sanierungsbedürftige Immobilien oder Randlagen stärker differenziert betrachtet werden müssen. Käufer legen zunehmend Wert auf nachhaltige Ausstattung, Infrastruktur und langfristige Wohnperspektiven. Verkäufer profitieren von einer marktorientierten Analyse, die realistische Preisspannen sichtbar macht und optimale Vermarktungsstrategien untermauert. Eine fundierte Betrachtung der Immobilienpreise bietet damit für beide Seiten einen wichtigen Leitfaden zur Einschätzung des lokalen Marktes.",
             "immobilienpreise_haus_intro": "In vielen Ortslagen zeigt sich ein vielfältiges Bild der Hauspreise. Während gefragte Wohnlagen mit guter Anbindung, gewachsenem Umfeld und hoher Lebensqualität stabile bis steigende Werte erzielen, präsentieren sich Randlagen häufig heterogener. Besonders Ein- und Zweifamilienhäuser bleiben begehrt, da sie Raum, Privatsphäre und langfristige Nutzungsmöglichkeiten bieten. Käufer achten verstärkt auf energetische Standards, Ausstattung und Modernisierungsgrad, was deutliche Unterschiede im Preisgefüge erzeugt. Verkäufer profitieren von einer transparenten Marktanalyse, die realistische Erwartungen schafft und optimale Verkaufszeitpunkte identifiziert. Wer die lokalen Strukturen versteht, kann besser einschätzen, welche Haustypen besonders gefragt sind und an welchen Standorten sich künftig Wertsteigerungspotenziale ergeben. Eine fundierte Betrachtung der Immobilienpreise unterstützt sowohl Eigentümer als auch Interessenten dabei, kluge Entscheidungen zu treffen.",
             "immobilienpreise_wohnung_intro": "Der Wohnungsmarkt zeigt in vielen Ortslagen eine dynamische Entwicklung mit spürbaren Unterschieden je nach Lage, Baujahr und Ausstattung. Moderne oder umfassend sanierte Wohnungen erzielen stabile bis steigende Preise, während unsanierte Bestände und weniger gefragte Wohnbereiche deutlicher differenziert betrachtet werden müssen. Käufer legen zunehmend Wert auf Energieeffizienz, funktionale Grundrisse und eine gute Infrastruktur im direkten Umfeld. Zudem spielen Wohnungsgröße und Zimmeranzahl eine wichtige Rolle, da die Nachfrage sowohl nach kompakten Einheiten als auch nach familiengerechten Wohnungen spürbar ist. Für Eigentümer eröffnet eine fundierte Marktanalyse klare Vorteile, da realistische Preisspannen und optimale Vermarktungsstrategien leichter identifiziert werden können. Eine sorgfältige Bewertung aller relevanten Marktfaktoren hilft sowohl Kaufinteressenten als auch Verkäufern, sichere und strategisch sinnvolle Entscheidungen zu treffen.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Naundorf bei 1.760 €/m².  Er bewegt sich dabei zwischen 1.480 €/m² und 2.020 €/m².  Damit liegt er unter dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 18,4 % gestiegen.  ",
-            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Naundorf variieren die Preise je nach Lage erheblich. Naundorf weist vor allem einfache, mittlere und gute Wohnlagen auf. In einfachen Wohnlagen liegen sie aktuell bei 1.548 € und in mittleren Wohnlagen bei 1.727 €.",
-            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat hier in etwa zwischen 1278,8 €/m² und 3017,3 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 1772,4 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen von cirka 2012,8 €/m² rechnen .",
-            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute beträgt er 1.760 €/m², und ist damit um 8,2 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen in Naundorf belaufen sich auf 1.390 €/m². Sie befinden sich üblicherweise in einer Spanne von 1.390 €/m² bis 1.630 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 2,0 % merklich gestiegen",
-            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Naundorf variieren die Preise je nach Lage erheblich. Naundorf weist vor allem einfache, mittlere und gute Wohnlagen auf. Beispielsweise einfachen (1.205 €), mittleren (1.348 €) und guten (1.562 €).",
-            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Naundorf derzeit durchschnittlich 1527,7 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 8,8 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 1508,1 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 1508,1 €/m². hier ist der kurzfristige Trend mit 11,9 % Anstieg, leicht positiv ",
+            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Naundorf variieren die Preise je nach Lage erheblich. in Naundorf gibt es einfache bis gute Wohnlagequalitäten. Beispielsweise einfachen (1.548 €), mittleren (1.727 €) und guten (1.962 €).",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat hier in etwa zwischen 1284,3 €/m² und 3006,6 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 1760,5 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen zwischen 1211,9 €/m² und 2789,7 €/m² rechnen .",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute liegt der Preis bei 1.760 €/m², und ist damit um 8,2 % deutlich gestiegen.",
+            "immobilienpreise_wohnung_allgemein": "Der durchschnittliche Quadratmeterpreis für Wohnungen in Naundorf beträgt 1.390 €/m². Diese befinden sich üblicherweise in einer Spanne von 1.390 €/m² bis 1.630 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 2,0 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Naundorf variieren die Preise je nach Lage erheblich. Naundorf weist vor allem einfache, mittlere und gute Wohnlagen auf. Die Spanne reicht in einfachen Lagen von 1.175 € bis 1.240 €, während in mittleren Lagen im Mittel 1.348 € erzielt wird.",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Naundorf müssen diese derzeit durchschnittlich 916,0 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 8,8 % deutlich gefallen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 1872,3 €/m². hier ist der kurzfristige Trend mit 11,9 % Anstieg, leicht positiv ",
             "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei 1.410 €/m². Heute liegt der Preis bei 1.390 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "In {ortsname} lassen sich die aktuellen Grundstückspreise nur im Kontext der jeweiligen Lage und Nutzungsart richtig einordnen. Während zentrale und gut erreichbare Wohnlagen tendenziell höhere Preise erzielen, bieten ruhigere Randbereiche häufig noch attraktive Einstiegsmöglichkeiten für Bauwillige. Entscheidend sind Faktoren wie Anbindung an den ÖPNV, Nähe zu Schulen, Einkaufsmöglichkeiten und Freizeitangeboten sowie die städtebauliche Entwicklung von {ortsname}. Auf Baugrundstücke für Ein- und Zweifamilienhäuser trifft vielerorts eine lebhafte Nachfrage, während größere Flächen für Projektentwicklungen gezielt von Investoren geprüft werden. Für Eigentümer kann dieses Marktumfeld interessante Verkaufserlöse ermöglichen, sofern Preisstrategie und Vermarktung zur Lage passen. Käufer sollten in {ortsname} genau hinschauen, welche Grundstücke langfristig werthaltig sind und welches Preisniveau realistisch ist – so lassen sich fundierte Entscheidungen rund um den Erwerb von Bauland treffen.",
-            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke  Naundorf beträgt 76 €/m². Diese befinden sich üblicherweise in einer Spanne von 68 €/m² bis 83 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % merklich gestiegen. ",
+            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke  Naundorf beträgt 76 €/m². Sie pendeln zwischen den Werten von 68 €/m² bis 83 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % merklich gestiegen. ",
             "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Naundorf bei 74 €/m². Aktuell liegt der Preis bei 76 €/m² und ist damit um 1,7 % deutlich gestiegen."
         },
         "mietpreise": {
             "mietpreise_intro": "Die Mietpreise in {ortsname} entwickeln sich zunehmend differenziert und hängen stark von Lagequalität, Wohnungszustand und Ausstattung ab. Besonders gefragt sind modernisierte Wohnungen mit effizienter Raumaufteilung, guter Energiekennzahl und kurzen Wegen zu Einkaufsmöglichkeiten, ÖPNV und weiteren Alltagsangeboten. In einigen Bereichen von {ortsname} sorgt die begrenzte Verfügbarkeit attraktiver Mietwohnungen für eine spürbare Nachfrage, während andere Segmente ein ausgeglichenes Verhältnis zwischen Angebot und Mietinteresse aufweisen. Für Vermieter ist eine realistische Einschätzung des Mietniveaus entscheidend, um optimale Vermarktungserfolge zu erzielen. Mieter profitieren von einer klaren Einordnung der Preisstrukturen, die hilft, passende Angebote zu identifizieren und fundierte Entscheidungen zu treffen. Eine sorgfältige Betrachtung der lokalen Rahmenbedingungen unterstützt beide Seiten dabei, Chancen im Mietmarkt von {ortsname} gezielt zu nutzen.",
-            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) in Naundorf beträgt 6.0 €/m². Sie variieren typischerweise zwischen von 5.0 €/m² bis 10.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 8.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
-            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Naundorf bei 6.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5.0 €/m² bis 10.0 €/m². Damit reihen sie sich deutlich unter dem Landesniveau von Sachsen und deutlich unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 7.0 €/m² rechnen, im Bestand sind es 5.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 22,2 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 16,3 % weit über dem derzeitigen Niveau.",
+            "mietpreise_allgemein": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus) in Naundorf beträgt 6.0 €/m². Sie bewegen sich in einer Preisspanne von 5.0 €/m² bis 10.0 €/m². Bei Hinzunahme der mittleren Nebenkosten von 2.0 €/m² liegen bei,  kommt man auf eine durchschnittliche Warmmiete von 8.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen.",
+            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Naundorf bei 6.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 5.0 €/m² bis 10.0 €/m². Damit reihen sie sich deutlich unter dem Landesniveau von Sachsen und deutlich unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 7.0 €/m² rechnen, im Bestand liegt man bei 5.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 22,2 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 16,3 % weit über dem derzeitigen Niveau.",
             "mietpreise_wohnung_preisentwicklung": "Vor einem Jahr stand der mittlere Quadratmeterpreis bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) standen die mittleren Angebotspreise bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
             "mietpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Naundorf derzeit durchschnittlich 5,9 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 7,5 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 6,6 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 6,6 €/m². hier ist der kurzfristige Trend mit 9,1 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 6 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6 €/m² bis 10 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei 5 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 9 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lagen die durchschnittlichen Werte bei 4 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 32 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Letztes Jahr lag der Quadratmetermietpreis bei Häusern in  bei 5 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 9 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) standen die mittleren Angebotspreise bei 4 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 32 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Die Mietrendite in {ortsname} hängt stark von der jeweiligen Wohnlage, dem Zustand der Immobilie und der lokalen Nachfrageentwicklung ab. Wohnungen mit guter Infrastruktur, moderner Ausstattung und funktionalen Grundrissen erzielen häufig stabile Mieteinnahmen und bieten damit solide Renditechancen. In einigen Bereichen von {ortsname} können zudem niedrigere Kaufpreise in Kombination mit einer konstanten Nachfrage attraktive Renditepotenziale eröffnen. Für Investoren lohnt sich eine genaue Betrachtung der örtlichen Mietpreisspannen, der Bewirtschaftungs- kosten sowie möglicher Modernisierungsbedarfe. Eine transparente Analyse unterstützt dabei, Renditechancen realistisch einzuschätzen und Investitionsentscheidungen in {ortsname} strategisch und vorausschauend auszurichten.",
@@ -4130,8 +4130,8 @@
             "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
             "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 4,77 %. Letztes Jahr lag die Bruttomietrendite im Naundorf bei 4,91 %. Bis heute ist der Preis innerhalb dieser Zeit mit 2,9 % deutlich gefallen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 3,78 %, innerhalb diesen Zeitraums sind sie bis jetzt um 26,3 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 4,26 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 5,32 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  im Naundorf ungefähr bei 18.8, und die mittlere Netto-Mietrendite bei ungefähr 4,85 %. ",
-            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Naundorf bei 28.9. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 2,97 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Naundorf bei 14.7. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 6,22 €/m², "
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Naundorf bei 28.9. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 2,97 €/m², ",
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Naundorf bei 14.7. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 6,22 €/m², "
         },
         "quellenangaben": [
             {
