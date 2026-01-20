@@ -52,6 +52,12 @@ export function WohnlagencheckSection(
   const naherholung = vm.faktoren.find((factor) => factor.theme === "naherholung") ?? null;
   const nahversorgung = vm.faktoren.find((factor) => factor.theme === "nahversorgung") ?? null;
   const kulturFreizeit = vm.faktoren.find((factor) => factor.theme === "kultur_freizeit") ?? null;
+  const mobilitaetMapSvg = mobilitaet ? factorMapSvgs[mobilitaet.theme] ?? null : null;
+  const bildungMapSvg = bildung ? factorMapSvgs[bildung.theme] ?? null : null;
+  const gesundheitMapSvg = gesundheit ? factorMapSvgs[gesundheit.theme] ?? null : null;
+  const naherholungMapSvg = naherholung ? factorMapSvgs[naherholung.theme] ?? null : null;
+  const nahversorgungMapSvg = nahversorgung ? factorMapSvgs[nahversorgung.theme] ?? null : null;
+  const kulturFreizeitMapSvg = kulturFreizeit ? factorMapSvgs[kulturFreizeit.theme] ?? null : null;
 
   return (
     <div className="text-dark">
@@ -232,10 +238,10 @@ export function WohnlagencheckSection(
             <div className="row g-4 align-items-stretch">
               <div className="col-12 col-lg-6">
                 <div className="" style={{ width: "90%", margin: "0 auto" }}>
-                  {factorMapSvgs[mobilitaet.theme] ? (
+                  {mobilitaetMapSvg ? (
                     <>
                       <InteractiveMap
-                        svg={factorMapSvgs[mobilitaet.theme]}
+                        svg={mobilitaetMapSvg}
                         theme={mobilitaet.theme}
                         mode="singleValue"
                         kind="index"
@@ -693,10 +699,10 @@ export function WohnlagencheckSection(
             <div className="row g-4 align-items-stretch">
               <div className="col-12 col-lg-6">
                 <div className="" style={{ width: "90%", margin: "0 auto" }}>
-                  {factorMapSvgs[bildung.theme] ? (
+                  {bildungMapSvg ? (
                     <>
                       <InteractiveMap
-                        svg={factorMapSvgs[bildung.theme]}
+                        svg={bildungMapSvg}
                         theme={bildung.theme}
                         mode="singleValue"
                         kind="index"
@@ -1105,10 +1111,10 @@ export function WohnlagencheckSection(
             <div className="row g-4 align-items-stretch">
               <div className="col-12 col-lg-6">
                 <div className="" style={{ width: "90%", margin: "0 auto" }}>
-                  {factorMapSvgs[gesundheit.theme] ? (
+                  {gesundheitMapSvg ? (
                     <>
                       <InteractiveMap
-                        svg={factorMapSvgs[gesundheit.theme]}
+                        svg={gesundheitMapSvg}
                         theme={gesundheit.theme}
                         mode="singleValue"
                         kind="index"
@@ -1504,10 +1510,10 @@ export function WohnlagencheckSection(
             <div className="row g-4 align-items-stretch">
               <div className="col-12 col-lg-6">
                 <div className="" style={{ width: "90%", margin: "0 auto" }}>
-                  {factorMapSvgs[naherholung.theme] ? (
+                  {naherholungMapSvg ? (
                     <>
                       <InteractiveMap
-                        svg={factorMapSvgs[naherholung.theme]}
+                        svg={naherholungMapSvg}
                         theme={naherholung.theme}
                         mode="singleValue"
                         kind="index"
@@ -1797,10 +1803,10 @@ export function WohnlagencheckSection(
             <div className="row g-4 align-items-stretch">
               <div className="col-12 col-lg-6">
                 <div className="" style={{ width: "90%", margin: "0 auto" }}>
-                  {factorMapSvgs[nahversorgung.theme] ? (
+                  {nahversorgungMapSvg ? (
                     <>
                       <InteractiveMap
-                        svg={factorMapSvgs[nahversorgung.theme]}
+                        svg={nahversorgungMapSvg}
                         theme={nahversorgung.theme}
                         mode="singleValue"
                         kind="index"
@@ -1926,10 +1932,10 @@ export function WohnlagencheckSection(
             <div className="row g-4 align-items-stretch">
               <div className="col-12 col-lg-6">
                 <div className="" style={{ width: "90%", margin: "0 auto" }}>
-                  {factorMapSvgs[kulturFreizeit.theme] ? (
+                  {kulturFreizeitMapSvg ? (
                     <>
                       <InteractiveMap
-                        svg={factorMapSvgs[kulturFreizeit.theme]}
+                        svg={kulturFreizeitMapSvg}
                         theme={kulturFreizeit.theme}
                         mode="singleValue"
                         kind="index"
