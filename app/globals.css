@@ -809,8 +809,8 @@ h6 {
 /* Hero: Parallax-Hintergrund */
 .region-hero-media {
   position: relative;
-  background-size: cover;
-  background-position: center center;
+  background-size: auto;
+  background-position: center top;
   background-repeat: no-repeat;
 
   /* Desktop: Panorama-Charakter */
