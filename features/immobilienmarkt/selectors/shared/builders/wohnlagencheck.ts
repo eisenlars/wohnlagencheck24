@@ -195,7 +195,7 @@ export function buildWohnlagencheckVM(args: {
 }): WohnlagencheckVM {
   const { report, level, bundeslandSlug, kreisSlug, ortSlug } = args;
   const meta = pickMeta(report);
-  const data: Record<string, unknown> = report.data ?? {};
+  const data = (report.data ?? {}) as Record<string, unknown>;
   const text = asRecord(data["text"]) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
 
