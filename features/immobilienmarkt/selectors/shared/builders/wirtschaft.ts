@@ -97,7 +97,7 @@ export function buildWirtschaftVM(args: {
   const { report, level, bundeslandSlug, kreisSlug, ortSlug } = args;
 
   const meta = pickMeta(report);
-  const data = report.data ?? {};
+  const data: WirtschaftReportData = report.data ?? {};
   const text = asRecord(data["text"]) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
 
