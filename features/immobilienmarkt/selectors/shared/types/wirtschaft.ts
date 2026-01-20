@@ -24,6 +24,7 @@ export type WirtschaftVM = {
   headlineArbeitsmarkt: string;
   headlineArbeitsmarktIndividuell?: string;
 
+  teaser?: string;
   introText: string;
   einkommenText: string;
   bruttoinlandsproduktText: string;
