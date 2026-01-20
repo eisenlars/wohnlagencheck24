@@ -18,6 +18,7 @@ import { KpiValue } from "@/components/KpiValue";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { formatMetric } from "@/utils/format";
+import { toNumberOrNull } from "@/utils/toNumberOrNull";
 
 import type { WohnmarktsituationVM } from "@/features/immobilienmarkt/selectors/shared/types/wohnmarktsituation";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
@@ -56,6 +57,9 @@ export function WohnmarktsituationSection(
   const basePath = props.basePath ?? vm.basePath;
 
   const saldoValue = parseSaldoValue(vm.kpis.wohnungsbestandWohnraumsaldo);
+  const wohnungsbestandWohnraumsaldoPer1000Value = toNumberOrNull(
+    vm.kpis.wohnungsbestandWohnraumsaldoPer1000,
+  );
   const saldoStatus =
     saldoValue === null
       ? { label: "Wohnraumsaldo", image: "/images/wohnmarktsituation/wohnungsmarkt-ausgeglichen.svg" }
@@ -176,12 +180,12 @@ export function WohnmarktsituationSection(
 
           <div className="col-12 col-lg-6 d-flex align-items-center">
             <div className="w-100 align-center text-center">
-              {vm.kpis.wohnungsbestandWohnraumsaldoPer1000 !== null &&
-              Number.isFinite(vm.kpis.wohnungsbestandWohnraumsaldoPer1000) ? (
+              {wohnungsbestandWohnraumsaldoPer1000Value !== null &&
+              Number.isFinite(wohnungsbestandWohnraumsaldoPer1000Value) ? (
                 <>
                   <div className="mb-2 kpi-hero">
                     <KpiValue
-                      value={vm.kpis.wohnungsbestandWohnraumsaldoPer1000}
+                      value={wohnungsbestandWohnraumsaldoPer1000Value}
                       kind="anzahl"
                       unitKey="none"
                       ctx="kpi"
