@@ -53,8 +53,14 @@ export function WohnmarktsituationSection(
 ) {
   const { vm, tocItems, tabs, activeTabId } = props;
 
+  const bundeslandSlug = props.ctx?.bundeslandSlug ?? "";
+  const kreisSlug = props.ctx?.kreisSlug ?? "";
   const heroImageSrc = props.assets?.heroImageSrc ?? vm.hero.imageSrc ?? "";
   const basePath = props.basePath ?? vm.basePath;
+  const kontaktHref =
+    bundeslandSlug && kreisSlug
+      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
+      : "/immobilienmarkt";
 
   const saldoValue = parseSaldoValue(vm.kpis.wohnungsbestandWohnraumsaldo);
   const wohnungsbestandWohnraumsaldoPer1000Value = toNumberOrNull(
@@ -144,6 +150,7 @@ export function WohnmarktsituationSection(
           name={vm.berater.name}
           taetigkeit={vm.berater.taetigkeit}
           imageSrc={vm.berater.imageSrc}
+          kontaktHref={kontaktHref}
         />
       </section>
 

@@ -37,6 +37,10 @@ export function WohnlagencheckSection(
 
   const heroImageSrc = props.assets?.heroImageSrc ?? vm.hero.imageSrc ?? "";
   const basePath = props.basePath ?? vm.basePath;
+  const kontaktHref =
+    bundeslandSlug && kreisSlug
+      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
+      : "/immobilienmarkt";
   const gallery = vm.gallery ?? [];
 
   const flaecheFormatted =
@@ -216,6 +220,7 @@ export function WohnlagencheckSection(
             name={vm.berater.name}
             taetigkeit={vm.berater.taetigkeit}
             imageSrc={vm.berater.imageSrc}
+            kontaktHref={kontaktHref}
           />
           
           

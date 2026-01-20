@@ -35,6 +35,12 @@ export function GrundstueckspreiseSection(props: Props) {
 
   const isOrt = vm.level === "ort";
   const basePath = props.basePath ?? vm.basePath;
+  const bundeslandSlug = props.ctx?.bundeslandSlug ?? "";
+  const kreisSlug = props.ctx?.kreisSlug ?? "";
+  const kontaktHref =
+    bundeslandSlug && kreisSlug
+      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
+      : "/immobilienmarkt";
   const heroImageSrc = props.assets?.heroImageSrc ?? vm.hero.imageSrc;
   const grundstueckspreisMapSvg = props.assets?.grundstueckspreisMapSvg ?? null;
 
@@ -90,6 +96,7 @@ export function GrundstueckspreiseSection(props: Props) {
             name={vm.berater.name}
             taetigkeit={vm.berater.taetigkeit}
             imageSrc={vm.berater.imageSrc}
+            kontaktHref={kontaktHref}
           />
         </section>
 

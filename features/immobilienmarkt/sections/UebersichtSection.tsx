@@ -270,6 +270,10 @@ export function UebersichtSection(
 
   const basePath = props.basePath ?? vm.basePath;
   const heroImageSrc = vm.hero.imageSrc ?? props.assets?.heroImageSrc ?? "";
+  const kontaktHref =
+    bundeslandSlug && kreisSlug
+      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
+      : "/immobilienmarkt";
   
   const isBundesland = vm.level === "bundesland";
   const kreisMapSvg = props.assets?.kreisuebersichtMapSvg ?? null;
@@ -397,6 +401,7 @@ export function UebersichtSection(
           name={vm.berater.name}
           taetigkeit={vm.berater.taetigkeit}
           imageSrc={vm.berater.imageSrc}
+          kontaktHref={kontaktHref}
         />
       </section>
 

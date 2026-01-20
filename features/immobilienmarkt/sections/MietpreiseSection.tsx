@@ -59,6 +59,10 @@ export function MietpreiseSection(
   const heroImageSrc = props.assets?.heroImageSrc ?? vm.hero.imageSrc ?? "";
 
   const basePath = props.basePath ?? vm.basePath;
+  const kontaktHref =
+    bundeslandSlug && kreisSlug
+      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
+      : "/immobilienmarkt";
 
   return (
     <div className="text-dark">
@@ -102,6 +106,7 @@ export function MietpreiseSection(
           name={vm.berater.name}
           taetigkeit={vm.berater.taetigkeit}
           imageSrc={vm.berater.imageSrc}
+          kontaktHref={kontaktHref}
         />
       </section>
       

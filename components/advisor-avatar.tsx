@@ -6,14 +6,14 @@ type BeraterProps = {
   name: string;
   taetigkeit: string;
   imageSrc: string;
-  kontaktHref?: string;
+  kontaktHref: string;
 };
 
 export function BeraterBlock({
   name,
   taetigkeit,
   imageSrc,
-  kontaktHref = "/berater/kontakt",
+  kontaktHref,
 }: BeraterProps) {
   return (
     <div className="berater-section">

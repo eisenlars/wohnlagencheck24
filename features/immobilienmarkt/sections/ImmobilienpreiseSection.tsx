@@ -47,6 +47,10 @@ export function ImmobilienpreiseSection(props: Props) {
   const immobilienpreisMapSvg = props.assets?.immobilienpreisMapSvg ?? null;
 
   const basePath = props.basePath ?? vm.basePath;
+  const kontaktHref =
+    bundeslandSlug && kreisSlug
+      ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
+      : "/immobilienmarkt";
   
   // Farbsystem
   const COLOR_IMMO = "rgba(75,192,192,0.9)";
@@ -119,6 +123,7 @@ export function ImmobilienpreiseSection(props: Props) {
             name={vm.berater.name}
             taetigkeit={vm.berater.taetigkeit}
             imageSrc={vm.berater.imageSrc}
+            kontaktHref={kontaktHref}
           />
         </section>
    
