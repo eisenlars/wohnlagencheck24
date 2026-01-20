@@ -190,12 +190,13 @@ export function buildWirtschaftVM(args: {
     }))
     .filter((row) => row.label);
 
+  const flaecheGewerbe = toNumberOrNull(data.flaechennutzung_gewerbe?.[0]?.flaechennutzung_gewerbe);
   const kpis = {
     kaufkraftindex:
       level === "ort"
         ? toNumberOrNull(allgemeine["kaufkraftindex_ol"])
         : toNumberOrNull(allgemeine["kaufkraftindex_k"]),
-    flaecheGewerbe: toNumberOrNull(asArray(data["flaechennutzung_gewerbe"])[0]?.["flaechennutzung_gewerbe"]),
+    flaecheGewerbe,
     bip: toNumberOrNull(allgemeine["bip"]),
     gewerbesaldo: toNumberOrNull(allgemeine["gewerbesaldo"]),
     kaufkraftNominal:
