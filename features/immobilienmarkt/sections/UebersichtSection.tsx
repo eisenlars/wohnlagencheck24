@@ -217,8 +217,13 @@ function StandortTeaserBlock(props: { regionName: string; teaserText: string; im
   );
 }
 
-function MaklerEmpfehlungBlock(props: { regionName: string; agentSuggestText: string; imageSrc?: string }) {
-  const { regionName, agentSuggestText, imageSrc } = props;
+function MaklerEmpfehlungBlock(props: {
+  regionName: string;
+  agentSuggestText: string;
+  imageSrc?: string;
+  linkHref: string;
+}) {
+  const { regionName, agentSuggestText, imageSrc, linkHref } = props;
 
   return (
     <div className="card bg-transparent border-0 mb-5">
@@ -250,7 +255,7 @@ function MaklerEmpfehlungBlock(props: { regionName: string; agentSuggestText: st
 
         <div className="col-12 col-md-7">
           <p className="mb-4">{agentSuggestText}</p>
-          <a href="/makler" className="btn btn-outline-dark fw-semibold px-4 py-2">
+          <a href={linkHref} className="btn btn-outline-dark fw-semibold px-4 py-2">
             Maklerempfehlung
           </a>
         </div>
@@ -816,6 +821,11 @@ export function UebersichtSection(
               regionName={vm.regionName}
               agentSuggestText={vm.texts.agentSuggest}
               imageSrc={vm.images.agentSuggestImage}
+              linkHref={
+                bundeslandSlug && kreisSlug
+                  ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmakler`
+                  : "/immobilienmarkt"
+              }
             />
           ) : null}
         </section>
