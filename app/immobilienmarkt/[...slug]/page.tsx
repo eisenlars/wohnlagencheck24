@@ -7,6 +7,9 @@ import { IMMOBILIENMARKT_REGISTRY } from "@/features/immobilienmarkt/page/regist
 import { KontaktContextSetter } from "@/components/kontakt/KontaktContextSetter";
 import type { SectionComponent } from "@/features/immobilienmarkt/sections/types";
 import { ValuationWizard } from "@/features/valuation/components/ValuationWizard";
+import { asArray, asRecord } from "@/utils/records";
+import { formatValueCtx } from "@/utils/format";
+import { toNumberOrNull } from "@/utils/toNumberOrNull";
 
 type PageParams = { slug?: string[] };
 type PageProps = { params: Promise<PageParams> };
@@ -23,6 +26,11 @@ export default async function ImmobilienmarktHierarchiePage({ params }: PageProp
   if (!entry) notFound();
 
   const { report, tabs, tocItems, activeTabId, basePath, ctx, assets, parentBasePath } = pageModel;
+  const reportData = asRecord(report?.data) ?? {};
+  const immobilienKaufpreisRow = asRecord(asArray(reportData["immobilien_kaufpreis"])[0]) ?? null;
+  const averagePrice = toNumberOrNull(immobilienKaufpreisRow?.["kaufpreis_immobilien"]);
+  const averagePriceLabel =
+    averagePrice === null ? "---" : formatValueCtx(averagePrice, "kaufpreis_qm", "kpi");
 
   const vm = entry.buildVM({
     report,
@@ -65,14 +73,14 @@ export default async function ImmobilienmarktHierarchiePage({ params }: PageProp
               </h2>
               <p className="lead text-secondary">
                 Nutzen Sie den aktuellen Durchschnittspreis von 
-                <strong> {report?.averagePrice || "---"} €/m²</strong> als Basis für Ihre KI-Bewertung.
+                <strong> {averagePriceLabel} €/m²</strong> als Basis für Ihre KI-Bewertung.
               </p>
             </div>
             
             <div className="col-lg-10">
               <ValuationWizard 
                 ctx={ctx}
-                basePrice={report?.averagePrice}
+                basePrice={averagePrice ?? undefined}
                 level={level}
               />
             </div>
