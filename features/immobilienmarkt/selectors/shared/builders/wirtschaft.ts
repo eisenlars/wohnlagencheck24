@@ -405,6 +405,7 @@ export function buildWirtschaftVM(args: {
     headlineArbeitsmarktIndividuell: headlineArbeitsmarktIndividuell || undefined,
 
     teaser,
+    introText: teaser,
     einkommenText,
     bruttoinlandsproduktText,
     gewerbesaldoText,
