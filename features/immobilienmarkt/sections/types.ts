@@ -18,11 +18,20 @@ export type OrtsRef = {
   name: string;
 };
 
+export type MaklerRef = {
+  slug: string;
+  name: string;
+  imageSrc: string;
+  kontaktHref: string;
+};
+
 export type SectionCtx = {
   bundeslandSlug?: string;
   kreisSlug?: string;
   ortSlug?: string;
   orte?: OrtsRef[];
+  berater?: Array<{ slug: string; name: string; imageSrc: string; kontaktHref: string }>;
+  makler?: MaklerRef[];
 };
 
 export type SectionAssets = {

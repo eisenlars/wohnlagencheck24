@@ -7,9 +7,9 @@ import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import type { UebersichtVM } from "@/features/immobilienmarkt/selectors/shared/types/uebersicht";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
 
-import { InteractiveMap } from "@/components/interactive-map";
 import { GaugeTacho } from "@/components/gauge-tacho";
 import { RegionHero } from "@/components/region-hero";
+import { BundeslandHero } from "@/components/bundesland-hero";
 import { BeraterBlock } from "@/components/advisor-avatar";
 import { RightEdgeControls } from "@/components/right-edge-controls";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
@@ -208,9 +208,6 @@ function StandortTeaserBlock(props: { regionName: string; teaserText: string; im
         <div className="col-12 col-md-7">
           <h2 className="h2 mb-3">Wohnlagencheck {regionName}</h2>
           <p className="text-muted mb-4">{teaserText}</p>
-          <a href="/wohnlagencheck" className="btn btn-outline-dark fw-semibold px-4 py-2">
-            Wohnlagencheck
-          </a>
         </div>
       </div>
     </div>
@@ -281,12 +278,20 @@ export function UebersichtSection(
       : "/immobilienmarkt";
   
   const isBundesland = vm.level === "bundesland";
+  const bundeslandBerater = isBundesland ? (props.ctx?.berater ?? []) : [];
+  const bundeslandMakler = isBundesland ? (props.ctx?.makler ?? []) : [];
   const kreisMapSvg = props.assets?.kreisuebersichtMapSvg ?? null;
+  const heroSlidesBase = isBundesland
+    ? (orte ?? []).map(
+        (item) =>
+          `/images/immobilienmarkt/${bundeslandSlug}/${item.slug}/immobilienmarktbericht-${item.slug}.jpg`,
+      )
+    : [];
+  const heroSlides =
+    heroSlidesBase.length > 0
+      ? Array.from({ length: 5 }, (_, index) => heroSlidesBase[index % heroSlidesBase.length])
+      : undefined;
 
-  // Steuerbar: Map-Größe (damit Layout stabil bleibt)
-  const MAP_MAX_WIDTH = 760;     // px
-  const MAP_HEIGHT = 360;        // px (wichtig für Spacer)
-  
   const hasStandort =
     vm.standort.bevoelkerungsdynamik !== null ||
     vm.standort.arbeitsmarktdynamik !== null ||
@@ -307,89 +312,87 @@ export function UebersichtSection(
       {tocItems?.length > 0 ? <RightEdgeControls tocItems={tocItems} /> : null}
 
       {/* Subnavigation */}
-      <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
+      {!isBundesland ? (
+        <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
+      ) : null}
 
-      <ImmobilienmarktBreadcrumb
-        tabs={tabs}
-        activeTabId={activeTabId}
-        basePath={basePath}
-        parentBasePath={props.parentBasePath}
-        ctx={props.ctx}
-        names={{
-          regionName: vm.regionName,
-          bundeslandName: vm.bundeslandName,
-          kreisName: vm.kreisName,
-        }}
-      />
+      {!isBundesland ? (
+        <ImmobilienmarktBreadcrumb
+          tabs={tabs}
+          activeTabId={activeTabId}
+          basePath={basePath}
+          parentBasePath={props.parentBasePath}
+          ctx={props.ctx}
+          names={{
+            regionName: vm.regionName,
+            bundeslandName: vm.bundeslandName,
+            kreisName: vm.kreisName,
+          }}
+        />
+      ) : null}
 
-
-
-      <div className="position-relative" style={{ overflow: "visible" }}>
-        <RegionHero
+      {isBundesland ? (
+        <BundeslandHero
           title={vm.hero.title}
           subtitle={vm.hero.subtitle}
           imageSrc={heroImageSrc}
-          // Für Bundesland keine Gauges/Buttons – Map kommt unten als Overlay
-          rightOverlayMode={isBundesland ? undefined : "tachos"}
-          rightOverlay={
-            isBundesland ? null : (
-              <>
-                <GaugeTacho
-                  value={vm.hero.kaufmarktValue}
-                  backgroundLabel="Kauf"
-                  leftLabelLines={["Käufermarkt"]}
-                  rightLabelLines={["Verkäufermarkt"]}
-                  width={220}
-                  height={135}
-                />
-                <GaugeTacho
-                  value={vm.hero.mietmarktValue}
-                  backgroundLabel="Miete"
-                  leftLabelLines={["Mietermarkt"]}
-                  rightLabelLines={["Vermietermarkt"]}
-                  width={220}
-                  height={135}
-                />
-              </>
-            )
-          }
+          imageSrcs={heroSlides}
+          mapSvg={kreisMapSvg}
+          mapTheme="kreisuebersicht"
+          mapMode="singleValue"
+          mapKind="anzahl"
+          mapUnitKey="none"
+          mapCtx="kpi"
         />
+      ) : (
+        <div className="position-relative" style={{ overflow: "visible" }}>
+          <RegionHero
+            title={vm.hero.title}
+            subtitle={vm.hero.subtitle}
+            imageSrc={heroImageSrc}
+            imageSrcs={heroSlides}
+            mediaClassName={isBundesland ? "region-hero-bundesland" : undefined}
+            // Für Bundesland keine Gauges/Buttons – Map kommt unten als Overlay
+            rightOverlayMode={isBundesland ? undefined : "tachos"}
+            rightOverlay={
+              isBundesland ? null : (
+                <>
+                  <GaugeTacho
+                    value={vm.hero.kaufmarktValue}
+                    backgroundLabel="Kauf"
+                    leftLabelLines={["Käufermarkt"]}
+                    rightLabelLines={["Verkäufermarkt"]}
+                    width={220}
+                    height={135}
+                  />
+                  <GaugeTacho
+                    value={vm.hero.mietmarktValue}
+                    backgroundLabel="Miete"
+                    leftLabelLines={["Mietermarkt"]}
+                    rightLabelLines={["Vermietermarkt"]}
+                    width={220}
+                    height={135}
+                  />
+                </>
+              )
+            }
+          />
+        </div>
+      )}
 
-        {/* Bundesland: Kreisübersicht-Map halb in den Hero hineinragend */}
-        {isBundesland && kreisMapSvg ? (
-          <div
-            className="position-absolute start-50"
-            style={{
-              bottom: 0,
-              transform: "translate(-50%, 50%)", // -> hängt zur Hälfte unter dem Hero
-              width: "100%",
-              maxWidth: MAP_MAX_WIDTH,
-              height: MAP_HEIGHT,
-              zIndex: 5,
-              pointerEvents: "auto",
-            }}
-          >
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-body p-2 h-100">
-                <InteractiveMap
-                  svg={kreisMapSvg}
-                  theme="kreisuebersicht"
-                  mode="singleValue"
-                  // kind/unitKey sind hier optional – Tooltip kann über data-value arbeiten,
-                  // aber die Links in <a> funktionieren ohnehin.
-                  kind="anzahl"
-                  unitKey="none"
-                  ctx="kpi"
-                />
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {/* Spacer: schiebt den Content nach unten (Hälfte der Maphöhe) */}
-      {isBundesland && kreisMapSvg ? (
-        <div style={{ height: MAP_HEIGHT / 2 }} />
+      {isBundesland ? (
+        <ImmobilienmarktBreadcrumb
+          tabs={tabs}
+          activeTabId={activeTabId}
+          basePath={basePath}
+          parentBasePath={props.parentBasePath}
+          ctx={props.ctx}
+          names={{
+            regionName: vm.regionName,
+            bundeslandName: vm.bundeslandName,
+            kreisName: vm.kreisName,
+          }}
+        />
       ) : null}
 
 
@@ -402,13 +405,54 @@ export function UebersichtSection(
 
         {vm.teaser ? <p className="teaser-text">{vm.teaser}</p> : null}
 
-        <BeraterBlock
-          name={vm.berater.name}
-          taetigkeit={vm.berater.taetigkeit}
-          imageSrc={vm.berater.imageSrc}
-          kontaktHref={kontaktHref}
-        />
+        {!isBundesland ? (
+          <BeraterBlock
+            name={vm.berater.name}
+            taetigkeit={vm.berater.taetigkeit}
+            imageSrc={vm.berater.imageSrc}
+            kontaktHref={kontaktHref}
+          />
+        ) : null}
       </section>
+
+      {isBundesland && bundeslandBerater.length > 0 ? (
+        <section className="mb-5" id="berater">
+          <h2 className="h2 mb-4 align-center text-center">Unsere Standortberater in {vm.regionName}</h2>
+          <div className="row g-4 justify-content-center">
+            {bundeslandBerater.map((berater) => (
+              <div key={berater.slug} className="col-12 col-md-6 col-lg-4">
+                <div className="card border-0 shadow-sm h-100">
+                  <div className="card-body text-center">
+                    <div
+                      className="mx-auto mb-3"
+                      style={{
+                        width: "140px",
+                        height: "140px",
+                        borderRadius: "50%",
+                        overflow: "hidden",
+                        position: "relative",
+                      }}
+                    >
+                      <Image
+                        src={berater.imageSrc}
+                        alt={`Berater: ${berater.name}`}
+                        fill
+                        sizes="140px"
+                        style={{ objectFit: "cover" }}
+                      />
+                    </div>
+
+                    <h5 className="h5 mb-3">{berater.name}</h5>
+                    <Link href={berater.kontaktHref} className="btn btn-outline-dark fw-semibold px-4 py-2">
+                      Kontakt aufnehmen
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* Standortüberblick */}
       {hasStandort ? (
@@ -484,19 +528,14 @@ export function UebersichtSection(
         ) : null}
 
         {/* KPI Karten */}
-        <div className="row g-3 mb-5">
-          <div className="col-12 col-md-4 mb-3">
-            <div className="card border-0 shadow-sm h-100">
+        <div className="row g-3 mb-0">
+          <div className="col-12 col-md-4 mb-0">
+            <div className="card border-0 shadow-none h-100">
               <div className="card-body text-center">
                 <h5 className="h5 mb-3">Ø Immobilien-Kaufpreis</h5>
                 {vm.kpis.kaufpreis !== null ? (
                   <>
                     <p className="h4 mb-4 fs-1 fw-bold">{vm.kpis.kaufpreisLabel}</p>
-                    <p className="small text-muted mb-4">
-                      <Link href={`${basePath}/immobilienpreise`} className="btn btn-outline-dark fw-semibold px-4 py-2">
-                        Immobilien-Kaufpreise
-                      </Link>
-                    </p>
                   </>
                 ) : (
                   <p className="small text-muted mb-0">Keine Kaufpreisdaten verfügbar.</p>
@@ -505,18 +544,13 @@ export function UebersichtSection(
             </div>
           </div>
 
-          <div className="col-12 col-md-4 mb-3">
-            <div className="card border-0 shadow-sm h-100">
+          <div className="col-12 col-md-4 mb-0">
+            <div className="card border-0 shadow-none h-100">
               <div className="card-body text-center">
                 <h5 className="h5 mb-3">Ø Grundstückspreis</h5>
                 {vm.kpis.grundstueckspreis !== null ? (
                   <>
                     <p className="h4 mb-4 fs-1 fw-bold">{vm.kpis.grundstueckLabel}</p>
-                    <p className="small text-muted mb-4">
-                      <Link href={`${basePath}/grundstueckspreise`} className="btn btn-outline-dark fw-semibold px-4 py-2">
-                        Grundstückspreise
-                      </Link>
-                    </p>
                   </>
                 ) : (
                   <p className="small text-muted mb-0">Keine Grundstücksdaten verfügbar.</p>
@@ -525,18 +559,13 @@ export function UebersichtSection(
             </div>
           </div>
 
-          <div className="col-12 col-md-4 mb-3">
-            <div className="card border-0 shadow-sm h-100">
+          <div className="col-12 col-md-4 mb-30">
+            <div className="card border-0 shadow-none h-100">
               <div className="card-body text-center">
                 <h5 className="h5 mb-3 text-center">Ø Kaltmiete</h5>
                 {vm.kpis.kaltmiete !== null ? (
                   <>
                     <p className="h4 mb-4 fs-1 fw-bold">{vm.kpis.kaltmieteLabel}</p>
-                    <p className="small text-muted mb-4">
-                      <Link href={`${basePath}/mietpreise`} className="btn btn-outline-dark fw-semibold px-4 py-2">
-                        Mietpreise
-                      </Link>
-                    </p>
                   </>
                 ) : (
                   <p className="small text-muted mb-0">Keine Mietdaten verfügbar.</p>
@@ -545,7 +574,43 @@ export function UebersichtSection(
             </div>
           </div>
         </div>
+      </section>
+      
+      {/* Persönliche Markteinschätzung */}
+      <section className="mb-5 bg-light p-4" id="persoenliche_markteinschaetzung">
+        <h2 className="text-center my-4">
+          {isBundesland ? `Markteinschätzung - ${vm.regionName}` : `Persönliche Markteinschätzung  - ${vm.regionName}`}
+        </h2>
+        
+        {!isBundesland ? (
+          <div className="card border-0 bg-transparent shadow-none h-100">
+            <div className="card-body text-center">
+              {vm.berater.imageSrc ? (
+                <div
+                  className="mx-auto mb-3"
+                  style={{
+                    width: "140px",
+                    height: "140px",
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    position: "relative",
+                  }}
+                >
+                  <Image
+                    src={vm.berater.imageSrc}
+                    alt={`Berater: ${vm.berater.name}`}
+                    fill
+                    sizes="140px"
+                    style={{ objectFit: "cover" }}
+                  />
+                </div>
+              ) : null}
+            </div>
 
+            <h5 className="h5 mb-3 text-center">{vm.berater.name}</h5>
+          </div>
+        ) : null}
+  
         {vm.texts.individual01 ? <div style={{ margin: "2.5rem 0" }}><p>{vm.texts.individual01}</p></div> : null}
 
         {vm.texts.zitat ? (
@@ -559,7 +624,7 @@ export function UebersichtSection(
           </div>
         ) : null}
 
-        {vm.texts.individual02 ? <div style={{ margin: "2.5rem 0" }}><p>{vm.texts.individual02}</p></div> : null}
+        {vm.texts.individual02 ? <div ><p>{vm.texts.individual02}</p></div> : null}
       </section>
 
       {/* Vergleich */}
@@ -721,7 +786,7 @@ export function UebersichtSection(
             </div>
           </div>
 
-          {vm.texts.beschreibung01 ? <div style={{ margin: "2.5rem 0" }}><p>{vm.texts.beschreibung01}</p></div> : null}
+          {vm.texts.beschreibung01 ? <div><p className="my-5 w-75 mx-auto">{vm.texts.beschreibung01}</p></div> : null}
         </section>
       ) : null}
 
@@ -749,7 +814,7 @@ export function UebersichtSection(
             ctx="table"
           />
 
-          {vm.texts.beschreibung02 ? <div style={{ margin: "2.5rem 0" }}><p>{vm.texts.beschreibung02}</p></div> : null}
+          {vm.texts.beschreibung02 ? <div style={{ margin: "2.5rem 0" }}><p className="my-5 w-75 mx-auto">{vm.texts.beschreibung02}</p></div> : null}
         </section>
       ) : null}
 
@@ -807,16 +872,63 @@ export function UebersichtSection(
         </section>
       ) : null}
 
-      {/* Wissen + Makler */}
-      {(vm.texts.marketBasicKnowledge || vm.texts.agentSuggest) ? (
-        <section className="mb-5" id="maklerempfehlung">
-          {vm.texts.marketBasicKnowledge ? (
-            <div className="mb-5">
-              <p>{vm.texts.marketBasicKnowledge}</p>
-            </div>
-          ) : null}
+      {/* Kaufnebenkosten */}
+      {vm.texts.marketBasicKnowledge ? (
+        <section className="mb-5" id="kaufnebenkosten">
+          <div className="mb-5">
+            <h2 className="h2 mb-3 align-center text-center">Kaufnebenkosten in {vm.regionName}</h2>
+            <p className="my-5 w-75 mx-auto">{vm.texts.marketBasicKnowledge}</p>
+          </div>
+        </section>
+      ) : null}
 
-          {vm.texts.agentSuggest ? (
+      {/* Maklerempfehlung */}
+      {vm.texts.agentSuggest ? (
+        <section className="mb-5" id="maklerempfehlung">
+          {isBundesland ? (
+            <>
+              <h2 className="h2 mb-4 align-center text-center">WOHNLAGENCHECK24 Maklerempfehlungen<br />für {vm.regionName}</h2>
+              <div className="mb-5">
+                <p className="my-5 w-75 mx-auto">{vm.texts.agentSuggest}</p>
+              </div>
+
+              {bundeslandMakler.length > 0 ? (
+                <div className="row g-4 justify-content-center">
+                  {bundeslandMakler.map((makler) => (
+                    <div key={makler.slug} className="col-12 col-md-6 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100">
+                        <div className="card-body text-center">
+                          <div
+                            className="mx-auto mb-3"
+                            style={{
+                              width: "140px",
+                              height: "140px",
+                              borderRadius: "50%",
+                              overflow: "hidden",
+                              position: "relative",
+                            }}
+                          >
+                            <Image
+                              src={makler.imageSrc}
+                              alt={`Makler: ${makler.name}`}
+                              fill
+                              sizes="140px"
+                              style={{ objectFit: "cover" }}
+                            />
+                          </div>
+
+                          <h5 className="h5 mb-3">{makler.name}</h5>
+                          <Link href={makler.kontaktHref} className="btn btn-outline-dark fw-semibold px-4 py-2">
+                            Kontakt aufnehmen
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : (
             <MaklerEmpfehlungBlock
               regionName={vm.regionName}
               agentSuggestText={vm.texts.agentSuggest}
@@ -827,7 +939,7 @@ export function UebersichtSection(
                   : "/immobilienmarkt"
               }
             />
-          ) : null}
+          )}
         </section>
       ) : null}
 

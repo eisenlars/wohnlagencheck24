@@ -191,8 +191,8 @@ export function buildUebersichtVM(args: {
 
   const beraterImageSrc =
     (bundeslandSlug && (kreisSlug || level === "bundesland"))
-      ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug ?? bundeslandSlug}/immobilienberatung-${kreisSlug ?? bundeslandSlug}.png`
-      : "/images/immobilienmarkt/berater.png";
+      ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug || bundeslandSlug}/immobilienberatung-${kreisSlug || bundeslandSlug}.png`
+      : undefined;
 
   /**
    * Tachowerte:
@@ -338,9 +338,11 @@ export function buildUebersichtVM(args: {
    * Bilder: wie im Bestand, aber optional, weil nicht überall vorhanden
    */
   const teaserImage =
-    bundeslandSlug && kreisSlug
+    level === "kreis" && bundeslandSlug && kreisSlug
       ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.jpg`
-      : undefined;
+      : level === "bundesland" && bundeslandSlug
+        ? `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}-preview.jpg`
+        : undefined;
 
   const agentSuggestImage =
     bundeslandSlug && kreisSlug

@@ -55,6 +55,10 @@ export type PageModel = {
 
     // nur Kreisebene
     orte?: Array<{ slug: string; name: string }>;
+    // nur Bundesland (Beraterliste)
+    berater?: Array<{ slug: string; name: string; imageSrc: string; kontaktHref: string }>;
+    // nur Bundesland (Maklerempfehlung)
+    makler?: Array<{ slug: string; name: string; imageSrc: string; kontaktHref: string }>;
   };
 
   // zentral (nicht in ctx)
@@ -170,14 +174,66 @@ export function buildPageModel(route: RouteModel): PageModel | null {
 
   // Kontext-Daten
   let orte: PageModel["ctx"]["orte"] | undefined;
+  let berater: PageModel["ctx"]["berater"] | undefined;
+  let makler: PageModel["ctx"]["makler"] | undefined;
   let assets: PageModel["assets"] | undefined;
 
   // Bundesland: "orte" = Kreise (für Navigation unten)
   if (route.level === "bundesland" && bundeslandSlug) {
-    orte = getKreiseForBundesland(bundeslandSlug).map((k) => ({
+    const kreise = getKreiseForBundesland(bundeslandSlug);
+    orte = kreise.map((k) => ({
       slug: k.slug,
       name: k.name,
     }));
+
+    const maklerSeen = new Set<string>();
+    const maklerEntries = kreise
+      .map((kreis) => {
+        const kreisReport = getReportBySlugs([bundeslandSlug, kreis.slug]);
+        if (!kreisReport) return null;
+
+        const kreisData = asRecord(kreisReport.data) ?? {};
+        const text = asRecord(kreisReport["text"]) ?? asRecord(kreisData["text"]) ?? {};
+        const maklerRecord = asRecord(text["makler"]) ?? {};
+        const maklerName = asString(maklerRecord["makler_name"]) ?? "";
+        if (!maklerName) return null;
+        if (maklerSeen.has(maklerName)) return null;
+        maklerSeen.add(maklerName);
+
+        return {
+          slug: kreis.slug,
+          name: maklerName,
+          imageSrc: `/images/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/makler-${kreis.slug}-logo.jpg`,
+          kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienmakler`,
+        };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+    const beraterSeen = new Set<string>();
+    const beraterEntries = kreise
+      .map((kreis) => {
+        const kreisReport = getReportBySlugs([bundeslandSlug, kreis.slug]);
+        if (!kreisReport) return null;
+
+        const kreisData = asRecord(kreisReport.data) ?? {};
+        const text = asRecord(kreisReport["text"]) ?? asRecord(kreisData["text"]) ?? {};
+        const beraterRecord = asRecord(text["berater"]) ?? {};
+        const beraterName = asString(beraterRecord["berater_name"]) ?? "";
+        if (!beraterName) return null;
+        if (beraterSeen.has(beraterName)) return null;
+        beraterSeen.add(beraterName);
+
+        return {
+          slug: kreis.slug,
+          name: beraterName,
+          imageSrc: `/images/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienberatung-${kreis.slug}.png`,
+          kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienberatung`,
+        };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+
+    berater = beraterEntries.length > 0 ? beraterEntries : undefined;
+    makler = maklerEntries.length > 0 ? maklerEntries : undefined;
 
     const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.jpg`;
     const kreisuebersichtMapSvg = getKreisUebersichtMapSvg(bundeslandSlug);
@@ -254,7 +310,6 @@ export function buildPageModel(route: RouteModel): PageModel | null {
     name: "Wohnlagencheck24 Team",
     email: "kontakt@wohnlagencheck24.de",
     phone: "+49 351/287051-0",
-    imageSrc: "/images/immobilienmarkt/berater.png",
     regionLabel: "Allgemeine Anfrage",
     subjectDefault: "Kontaktanfrage (Portal)",
   };
@@ -286,7 +341,7 @@ export function buildPageModel(route: RouteModel): PageModel | null {
     const beraterImageSrc =
       bundeslandSlug && kreisSlug
         ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`
-        : "/images/immobilienmarkt/berater.png";
+        : undefined;
 
     kontakt = {
       scope: "berater",
@@ -313,7 +368,7 @@ export function buildPageModel(route: RouteModel): PageModel | null {
     activeTabId,
     tocItems,
 
-    ctx: { bundeslandSlug, kreisSlug, ortSlug, orte },
+    ctx: { bundeslandSlug, kreisSlug, ortSlug, orte, berater, makler },
     assets,
 
     kontakt,

@@ -818,6 +818,35 @@ h6 {
   min-height: 220px;
 }
 
+.region-hero-media.region-hero-bundesland {
+  aspect-ratio: 21 / 8;
+  min-height: 198px;
+}
+
+.region-hero-media.has-slideshow {
+  background-image: none;
+}
+
+.region-hero-slideshow {
+  position: absolute;
+  inset: 0;
+}
+
+.region-hero-slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  opacity: 0;
+  animation: regionHeroSlide 25s infinite ease-in-out;
+}
+
+.bundesland-hero-slider .region-hero-slide {
+  animation: bundeslandHeroSlide 28s infinite ease-in-out;
+  will-change: opacity;
+}
+
 /* Parallax-Effekt in Desktop-/Tablet-Ansicht */
 .region-hero-parallax {
   background-attachment: fixed;
@@ -827,6 +856,11 @@ h6 {
 @media (max-width: 767.98px) {
   .region-hero-media {
     aspect-ratio: 16 / 9;   /* etwas höher, damit Text + Tachos Platz haben */
+    min-height: 260px;
+  }
+
+  .region-hero-media.region-hero-bundesland {
+    aspect-ratio: 21 / 14;
     min-height: 260px;
   }
 
@@ -865,10 +899,152 @@ h6 {
   color: #fff
 }
 
+@keyframes regionHeroSlide {
+  0%,
+  18% {
+    opacity: 1;
+  }
+  22%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes bundeslandHeroSlide {
+  0%,
+  22% {
+    opacity: 1;
+  }
+  32%,
+  100% {
+    opacity: 0;
+  }
+}
+
 /* Mobil: Text über volle Breite */
 @media (max-width: 575.98px) {
   .region-hero-text {
     max-width: 100%;
+  }
+}
+
+/* --- Bundesland Hero --- */
+.bundesland-hero {
+  --bundesland-hero-radius: 1.25rem;
+  position: relative;
+}
+
+.bundesland-hero-grid {
+  position: relative;
+}
+
+.bundesland-hero-slider {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  
+}
+
+.bundesland-hero-slider-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--bundesland-hero-radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.bundesland-hero-media {
+  position: relative;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  aspect-ratio: 21 / 8;
+  min-height: 260px;
+}
+
+.bundesland-hero-media.has-slideshow {
+  background-image: none;
+}
+
+
+.bundesland-hero-map {
+  position: absolute;
+  top: 0rem;
+  bottom: 0rem;
+  right: 0%;
+  width: 100%;
+  display: flex;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bundesland-hero-map-card {
+  margin-left: auto;
+  width: 100%;
+  height: 100%;
+  background: rgba(72, 107, 122, 0.6);
+  border-radius: var(--bundesland-hero-radius);
+  
+  display: flex;
+  overflow: hidden;
+}
+
+.bundesland-hero-map-body {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.bundesland-hero-map-body > .position-relative {
+  width: 100%;
+  height: 100%;
+}
+
+.bundesland-hero-map-body svg {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.bundesland-hero-map-body svg path {
+  fill: #ffe000;
+}
+
+@media (max-width: 991.98px) {
+  .bundesland-hero-grid {
+    display: block;
+  }
+
+  .bundesland-hero-slider {
+    width: 100%;
+    padding: 2.5rem 0;
+  }
+
+  .bundesland-hero-media {
+    aspect-ratio: 4 / 3;
+    min-height: 240px;
+  }
+
+  .bundesland-hero-map {
+    position: static;
+    width: 100%;
+    padding: 0 0 2.5rem 0;
+    pointer-events: auto;
+    right: auto;
+  }
+
+  .bundesland-hero-map-card {
+    height: auto;
+    min-height: 260px;
+  }
+
+  .bundesland-hero-parallax {
+    background-attachment: scroll;
   }
 }
 
