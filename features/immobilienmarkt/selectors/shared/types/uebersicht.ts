@@ -63,7 +63,7 @@ export type UebersichtVM = {
   berater: {
     name: string;
     taetigkeit: string;
-    imageSrc: string;
+    imageSrc?: string;
   };
 
   updatedAt?: string;
