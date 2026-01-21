@@ -405,7 +405,7 @@ export function UebersichtSection(
 
         {vm.teaser ? <p className="teaser-text">{vm.teaser}</p> : null}
 
-        {!isBundesland ? (
+        {!isBundesland && vm.berater.imageSrc ? (
           <BeraterBlock
             name={vm.berater.name}
             taetigkeit={vm.berater.taetigkeit}
