@@ -171,9 +171,9 @@ export function buildGrundstueckspreiseVM(args: {
   const headlineMain =
     level === "ort"
       ? isLandkreis
-        ? `Grundstueckspreise ${jahrLabel} - ${regionName}`
-        : `Grundstueckspreise ${jahrLabel} - ${kreisName ?? formatRegionFallback(kreisSlug ?? "")} ${regionName}`
-      : `Grundstueckspreise ${jahrLabel} - ${regionName}`;
+        ? `Grundstückspreise ${jahrLabel} - ${regionName}`
+        : `Grundstückspreise ${jahrLabel} - ${kreisName ?? formatRegionFallback(kreisSlug ?? "")} ${regionName}`
+      : `Grundstückspreise ${jahrLabel} - ${regionName}`;
 
   const headlineSection =
     level === "ort"

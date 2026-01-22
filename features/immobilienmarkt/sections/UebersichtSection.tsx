@@ -20,6 +20,8 @@ import { PreisindexBox } from "@/components/PreisindexBox";
 
 import { OrtslagenUebersichtTable } from "@/components/OrtslagenUebersichtTable";
 import { PreisgrenzenRow } from "@/components/PreisgrenzenRow";
+import { FaqSection } from "@/components/FaqSection";
+import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
 type GaugeMode = "trend" | "saldo";
 
@@ -940,6 +942,17 @@ export function UebersichtSection(
               }
             />
           )}
+        </section>
+      ) : null}
+
+      {isBundesland ? (
+        <section className="mb-5" id="faq-uebersicht">
+          <h2 className="text-center mb-3">FAQ zum Immobilienmarkt</h2>
+          <FaqSection
+            id="faq-uebersicht"
+            title={`FAQ – Immobilienmarkt ${vm.regionName}`}
+            items={FAQ_IMMOBILIENMARKT_ALLGEMEIN}
+          />
         </section>
       ) : null}
 

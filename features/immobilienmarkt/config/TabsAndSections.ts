@@ -146,3 +146,75 @@ export const TABS: Tab[] = [
     ],
   },
 ];
+
+const BUNDESLAND_UEBERSICHT_TOC: TocItem[] = [
+  { id: "einleitung", label: "Einleitung" },
+  { id: "berater", label: "Berater" },
+  { id: "standort", label: "Standortüberblick" },
+  { id: "marktueberblick", label: "Marktüberblick" },
+  { id: "persoenliche_markteinschaetzung", label: "Markteinschätzung" },
+  { id: "kaufnebenkosten", label: "Kaufnebenkosten" },
+  { id: "maklerempfehlung", label: "Maklerempfehlung" },
+  { id: "faq-uebersicht", label: "FAQ" },
+  { id: "wohnlagen", label: "Wohnlagenübersicht" },
+];
+
+export const BUNDESLAND_TABS: Tab[] = TABS.map((tab) =>
+  tab.id === "uebersicht" ? { ...tab, toc: BUNDESLAND_UEBERSICHT_TOC } : tab,
+);
+
+const KREIS_IMMOBILIENPREISE_TOC: TocItem[] = [
+  { id: "einleitung", label: "Einleitung" },
+  { id: "hauspreise", label: "Hauspreise" },
+  { id: "wohnungspreise", label: "Wohnungspreise" },
+  { id: "faq-immobilienpreise", label: "FAQ" },
+  { id: "wohnlagen", label: "Wohnlagen" },
+];
+
+const KREIS_MIETPREISE_TOC: TocItem[] = [
+  { id: "einleitung", label: "Einleitung" },
+  { id: "wohnungspreise", label: "Mietpreise Wohnungen" },
+  { id: "hauspreise", label: "Mietpreise Häuser" },
+  { id: "faq-mietpreise", label: "FAQ" },
+  { id: "wohnlagen", label: "Wohnlagen" },
+];
+
+const KREIS_GRUNDSTUECKPREISE_TOC: TocItem[] = [
+  { id: "einleitung", label: "Einleitung" },
+  { id: "leitkennzahl", label: "Grundstückspreise" },
+  { id: "faq-grundstueckspreise", label: "FAQ" },
+  { id: "wohnlagen", label: "Wohnlagen" },
+];
+
+export const KREIS_TABS: Tab[] = TABS.map((tab) =>
+  tab.id === "immobilienpreise"
+    ? { ...tab, toc: KREIS_IMMOBILIENPREISE_TOC }
+    : tab.id === "mietpreise"
+      ? { ...tab, toc: KREIS_MIETPREISE_TOC }
+      : tab.id === "grundstueckspreise"
+        ? { ...tab, toc: KREIS_GRUNDSTUECKPREISE_TOC }
+      : tab.id === "mietrendite"
+        ? {
+            ...tab,
+            toc: [
+              { id: "einleitung", label: "Einleitung" },
+              { id: "kaufpreisfaktor-gesamt", label: "Kaufpreisfaktor" },
+              { id: "rendite-allgemein", label: "Mietrendite" },
+              { id: "faq-mietrendite", label: "FAQ" },
+              { id: "wohnlagen", label: "Wohnlagen" },
+            ],
+          }
+        : tab.id === "wirtschaft"
+          ? {
+              ...tab,
+              toc: [
+                { id: "einleitung", label: "Einleitung" },
+                { id: "kaufkraftindex", label: "Kaufkraftindex" },
+                { id: "wirtschaft", label: "Wirtschaft" },
+                { id: "arbeitsmarkt", label: "Arbeitsmarkt" },
+                { id: "faq-wirtschaft", label: "FAQ" },
+                { id: "wohnlagen", label: "Wohnlagen" },
+              ],
+            }
+        : tab,
+);

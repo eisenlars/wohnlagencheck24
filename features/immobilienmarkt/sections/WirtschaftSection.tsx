@@ -696,7 +696,7 @@ export function WirtschaftSection(
                 <KpiValue
                   icon={DEFAULT_ICON}
                   iconAlt="Arbeitslosendichte"
-                  items={[{ label: "Arbeitslosendichte", value: vm.kpis.arbeitslosendichte, kind: "anzahl", unitKey: "none" }]}
+                  items={[{ label: "Arbeitslosendichte", value: vm.kpis.arbeitslosendichte, kind: "quote", unitKey: "none" }]}
                   ctx="kpi"
                   size="xl"
                   showUnit={false}
