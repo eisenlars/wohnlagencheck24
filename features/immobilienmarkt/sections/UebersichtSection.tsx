@@ -339,7 +339,7 @@ export function UebersichtSection(
           imageSrcs={heroSlides}
           mapSvg={kreisMapSvg}
           mapTheme="kreisuebersicht"
-          mapMode="singleValue"
+          mapMode="overview"
           mapKind="anzahl"
           mapUnitKey="none"
           mapCtx="kpi"
