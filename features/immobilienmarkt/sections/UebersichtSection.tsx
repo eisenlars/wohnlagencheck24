@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
+import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import type { UebersichtVM } from "@/features/immobilienmarkt/selectors/shared/types/uebersicht";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
@@ -12,7 +13,6 @@ import { RegionHero } from "@/components/region-hero";
 import { BundeslandHero } from "@/components/bundesland-hero";
 import { BeraterBlock } from "@/components/advisor-avatar";
 import { RightEdgeControls } from "@/components/right-edge-controls";
-import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { VergleichChart } from "@/components/VergleichChart";
 import { ZeitreiheChart } from "@/components/ZeitreiheChart";
@@ -315,11 +315,7 @@ export function UebersichtSection(
 
       {/* Subnavigation */}
       {!isBundesland ? (
-        <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
-      ) : null}
-
-      {!isBundesland ? (
-        <ImmobilienmarktBreadcrumb
+        <TabNav
           tabs={tabs}
           activeTabId={activeTabId}
           basePath={basePath}
@@ -383,21 +379,23 @@ export function UebersichtSection(
       )}
 
       {isBundesland ? (
-        <ImmobilienmarktBreadcrumb
-          tabs={tabs}
-          activeTabId={activeTabId}
-          basePath={basePath}
-          parentBasePath={props.parentBasePath}
-          ctx={props.ctx}
-          names={{
-            regionName: vm.regionName,
-            bundeslandName: vm.bundeslandName,
-            kreisName: vm.kreisName,
-          }}
-        />
+        <div className="breadcrumb-sticky">
+          <ImmobilienmarktBreadcrumb
+            tabs={tabs}
+            activeTabId={activeTabId}
+            basePath={basePath}
+            parentBasePath={props.parentBasePath}
+            ctx={props.ctx}
+            names={{
+              regionName: vm.regionName,
+              bundeslandName: vm.bundeslandName,
+              kreisName: vm.kreisName,
+            }}
+            compact
+            rootIconSrc="/logo/wohnlagencheck24.svg"
+          />
+        </div>
       ) : null}
-
-
 
 
       {/* Einleitung */}

@@ -14,7 +14,6 @@ import { ZeitreiheChart } from "@/components/ZeitreiheChart";
 import { VergleichBarChart } from "@/components/VergleichBarChart";
 import type { BarSeries } from "@/components/VergleichBarChart";
 import { FaqSection } from "@/components/FaqSection";
-import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
@@ -70,9 +69,7 @@ export function MietpreiseSection(
 
 
       {/* Subnavigation */}
-      <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
-
-      <ImmobilienmarktBreadcrumb
+      <TabNav
         tabs={tabs}
         activeTabId={activeTabId}
         basePath={basePath}

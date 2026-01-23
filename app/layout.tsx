@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       <span className="brand-title">
                         Wohnlagencheck<span style={{ color: "#ffe000" }}>24</span>
                       </span>
-                      <small className="d-block text-muted">Immobilienmarkt &amp; Standortprofile</small>
+                      <small className="d-block text-muted">DATA-DRIVEN. EXPERT-LED.</small>
                     </span>
                   </Link>
 

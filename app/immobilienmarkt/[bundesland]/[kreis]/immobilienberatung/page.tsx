@@ -4,6 +4,7 @@ import { getReportBySlugs } from "@/lib/data";
 import { ImmobilienberatungSection } from "@/features/immobilienmarkt/sections/ImmobilienberatungSection";
 import { KontaktContextSetter } from "@/components/kontakt/KontaktContextSetter";
 import { asRecord, asString } from "@/utils/records";
+import { formatRegionFallback } from "@/utils/regionName";
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 
@@ -21,7 +22,9 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
   if (!report) notFound();
 
   const meta = asRecord(report.meta) ?? {};
-  const kreisName = asString(meta["kreis_name"]) ?? kreisSlug;
+  const kreisName = asString(meta["kreis_name"]) ?? formatRegionFallback(kreisSlug);
+  const bundeslandNameRaw = asString(meta["bundesland_name"]) ?? "";
+  const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : formatRegionFallback(bundeslandSlug);
   const text = asRecord(report["text"]) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
   const name = asString(berater["berater_name"]) ?? "Berater";
@@ -51,7 +54,13 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
           subjectDefault: `Kontaktanfrage – ${kreisName}`,
         }}
       />
-      <TabNav tabs={tabs} activeTabId="uebersicht" basePath={basePath} />
+      <TabNav
+        tabs={tabs}
+        activeTabId="uebersicht"
+        basePath={basePath}
+        ctx={{ bundeslandSlug, kreisSlug }}
+        names={{ regionName: kreisName, bundeslandName, kreisName }}
+      />
       <ImmobilienberatungSection
         report={report}
         bundeslandSlug={bundeslandSlug}

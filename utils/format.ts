@@ -48,6 +48,7 @@ type MetricFormatOptions = {
   unit?: UnitKey;
   signed?: boolean;
   nullText?: string;
+  fractionDigits?: number;
 };
 
 function numberFormatFor(kind: FormatKind, ctx: FormatContext): Intl.NumberFormat {
@@ -84,6 +85,7 @@ export function formatMetric(value: number | null, opts: MetricFormatOptions): s
     unit = "none",
     signed = false,
     nullText = "–",
+    fractionDigits,
   } = opts;
 
   if (value === null || !Number.isFinite(value)) return nullText;
@@ -95,7 +97,9 @@ export function formatMetric(value: number | null, opts: MetricFormatOptions): s
     return `${s} Mio`;
   }
 
-  const nf = numberFormatFor(kind, ctx);
+  const nf = typeof fractionDigits === "number"
+    ? new Intl.NumberFormat("de-DE", { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })
+    : numberFormatFor(kind, ctx);
   let s = nf.format(value);
 
   if (signed && value > 0) s = `+${s}`;

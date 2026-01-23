@@ -16,7 +16,6 @@ import { VergleichBarChart } from "@/components/VergleichBarChart";
 import type { BarSeries } from "@/components/VergleichBarChart";
 import { KpiValue } from "@/components/KpiValue";
 import { FaqSection } from "@/components/FaqSection";
-import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
@@ -87,9 +86,7 @@ export function ImmobilienpreiseSection(props: Props) {
         
         
         {/* Subnavigation */}
-        <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
-
-        <ImmobilienmarktBreadcrumb
+        <TabNav
           tabs={tabs}
           activeTabId={activeTabId}
           basePath={basePath}

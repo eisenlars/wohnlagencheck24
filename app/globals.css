@@ -312,7 +312,7 @@ h6 {
 .berater-button {
   display: inline-block;
   padding: 10px 22px;
-  border-radius: 999px;
+  border-radius: 0.75rem;
   background-color: #ffe000;
   color: #000;
   text-decoration: none;
@@ -420,9 +420,119 @@ h6 {
   margin-top: -1.5rem;
   margin-left: -1.5rem;
   margin-right: -1.5rem;
-  padding: 1.75rem 1.5rem 0.75rem;
+  padding: 1.75rem 1.5rem 1.75rem;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   background-color: rgba(255, 255, 255, 0.96);
+}
+
+.breadcrumb-sticky {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.35rem;
+}
+
+.breadcrumb-compact .breadcrumb {
+  margin: 0;
+}
+
+.breadcrumb-compact .breadcrumb-item {
+  font-size: 0.75rem;
+}
+
+.breadcrumb-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #486b7a;
+  text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+  color: #274452;
+  text-decoration: underline;
+}
+
+.breadcrumb-root-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+}
+
+/* Standortfaktor-Akkordeon */
+.acc-wrap {
+  margin: 1rem 0 2.5rem;
+}
+
+.acc-wrap .acc-toggle {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.acc-wrap .acc-teaser {
+  position: relative;
+  overflow: hidden;
+  max-height: 320px;
+}
+
+.acc-wrap .acc-teaser::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, #ffffff 100%);
+  pointer-events: none;
+  transition: background 0.5s ease-in-out;
+}
+
+.acc-wrap .acc-toggle:checked ~ .acc-teaser::after {
+  background: transparent;
+}
+
+.acc-wrap .acc-toggle:checked ~ .acc-teaser {
+  max-height: none;
+}
+
+.acc-wrap .acc-content {
+  display: none;
+  margin-bottom: 4rem
+}
+
+.acc-wrap .acc-toggle:checked ~ .acc-content {
+  display: block;
+}
+
+.acc-wrap .acc-button-row {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.acc-wrap .acc-button {
+  background-color: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+  padding: 10px 22px;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  text-align: center;
+  font-size: 16px;
+}
+
+.acc-wrap .acc-button:hover {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.acc-wrap .acc-button::after {
+  content: attr(data-closed);
+}
+
+.acc-wrap .acc-toggle:checked ~ .acc-button-row .acc-button::after {
+  content: attr(data-open);
 }
 
 .kreis-subnav-sticky {
@@ -673,12 +783,15 @@ h6 {
 .brand-text {
   display: flex;
   flex-direction: column;
-  line-height: 1.1;
+  line-height: 1.0;
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   /*color: #bcaf9d;*/
   color: #486b7a;
   white-space: nowrap; 
+  text-transform:uppercase;
+  letter-spacing: .1em;
+  margin: 0 0 0.25rem;
 }
 
 
@@ -691,10 +804,11 @@ h6 {
 /* Untertitel */
 .brand-text small {
   display: block;
-  font-size: 0.75rem;
-  font-weight: 400;
+  font-size: 0.6rem;
+  font-weight: 500;
   color: #6c757d;
-  margin-top: 2px;
+  margin-top: 5px;
+  letter-spacing: .1em
 }
 
 
@@ -843,7 +957,7 @@ h6 {
 }
 
 .bundesland-hero-slider .region-hero-slide {
-  animation: bundeslandHeroSlide 28s infinite ease-in-out;
+  animation: bundeslandHeroSlide 50s infinite ease-in-out;
   will-change: opacity;
 }
 
@@ -911,11 +1025,14 @@ h6 {
 }
 
 @keyframes bundeslandHeroSlide {
-  0%,
+  0% {
+    opacity: 0;
+  }
+  6%,
   22% {
     opacity: 1;
   }
-  32%,
+  30%,
   100% {
     opacity: 0;
   }
@@ -1321,8 +1438,8 @@ h6 {
   --kpi-label-size: 1rem;
   --kpi-value-size: 5rem;
   --kpi-value-weight: 900;
-  --kpi-highlight-size: 9rem;
-  --kpi-highlight-weight: 700;
+  --kpi-highlight-size: 12rem;
+  --kpi-highlight-weight: 900;
   --kpi-unit-size: 2rem;
   --kpi-unit-weight: 750;
 }

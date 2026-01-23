@@ -10,7 +10,6 @@ import { InteractiveMap } from "@/components/interactive-map";
 import { MatrixTable } from "@/components/MatrixTable";
 import { ZeitreiheChart } from "@/components/ZeitreiheChart";
 import { FaqSection } from "@/components/FaqSection";
-import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
@@ -41,9 +40,7 @@ export function MietrenditeSection(
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
       {/* Subnavigation */}
-      <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
-
-      <ImmobilienmarktBreadcrumb
+      <TabNav
         tabs={tabs}
         activeTabId={activeTabId}
         basePath={basePath}

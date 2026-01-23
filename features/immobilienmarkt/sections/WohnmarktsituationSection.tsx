@@ -15,7 +15,7 @@ import { DoughnutChart } from "@/components/DoughnutChart";
 import { StackedComboChart } from "@/components/StackedComboChart";
 import { FaqSection } from "@/components/FaqSection";
 import { KpiValue } from "@/components/KpiValue";
-import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
+import { ImageModal } from "@/components/ImageModal";
 
 import { formatMetric } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
@@ -44,6 +44,18 @@ function parseSaldoValue(value: number | string | null): number | null {
 
   const num = Number(normalized);
   return Number.isFinite(num) ? num : null;
+}
+
+function ensureDoughnutSlices(slices: { label: string; value: number | null }[], totalValue: number | null) {
+  const sliceTotal = (slices ?? [])
+    .map((slice) => (typeof slice.value === "number" ? slice.value : 0))
+    .reduce((sum, value) => sum + value, 0);
+
+  if (sliceTotal > 0) return slices;
+  if (typeof totalValue === "number" && Number.isFinite(totalValue) && totalValue > 0) {
+    return [{ label: "Gesamt", value: totalValue }];
+  }
+  return slices;
 }
 
 export function WohnmarktsituationSection(
@@ -112,9 +124,7 @@ export function WohnmarktsituationSection(
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
       {/* Subnavigation */}
-      <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
-
-      <ImmobilienmarktBreadcrumb
+      <TabNav
         tabs={tabs}
         activeTabId={activeTabId}
         basePath={basePath}
@@ -362,7 +372,7 @@ export function WohnmarktsituationSection(
                   <KpiValue
                     icon={DEFAULT_ICON}
                     iconAlt="Ø Haushaltsgröße"
-                    items={[{ label: "Ø Haushaltsgröße", value: haushaltsgroesseValue, kind: "anzahl", unitKey: "none" }]}
+                    items={[{ label: "Ø Haushaltsgröße", value: haushaltsgroesseValue, kind: "anzahl", unitKey: "none", fractionDigits: 1 }]}
                     ctx="kpi"
                     size="xl"
                     showUnit={false}
@@ -687,7 +697,7 @@ export function WohnmarktsituationSection(
                   <KpiValue
                     icon={DEFAULT_ICON}
                     iconAlt="Jugendquotient"
-                    items={[{ label: "Jugendquotient", value: jugendquotientValue, kind: "anzahl", unitKey: "none" }]}
+                    items={[{ label: "Jugendquotient", value: jugendquotientValue, kind: "anzahl", unitKey: "none", fractionDigits: 1 }]}
                     ctx="kpi"
                     size="xl"
                     showUnit={false}
@@ -721,7 +731,7 @@ export function WohnmarktsituationSection(
                   <KpiValue
                     icon={DEFAULT_ICON}
                     iconAlt="Altenquotient"
-                    items={[{ label: "Altenquotient", value: altenquotientValue, kind: "anzahl", unitKey: "none" }]}
+                    items={[{ label: "Altenquotient", value: altenquotientValue, kind: "anzahl", unitKey: "none", fractionDigits: 1 }]}
                     ctx="kpi"
                     size="xl"
                     showUnit={false}
@@ -770,11 +780,11 @@ export function WohnmarktsituationSection(
                   <KpiValue
                     icon={DEFAULT_ICON}
                     iconAlt="Flächennutzung Wohnbau"
-                    items={[{ label: "Flächennutzung Wohnbau", value: flaecheWohnbauValue, kind: "anzahl", unitKey: "none" }]}
+                    items={[{ label: "Flächennutzung Wohnbau", value: flaecheWohnbauValue, kind: "anzahl", unitKey: "ha" }]}
                     ctx="kpi"
                     size="xl"
-                    showUnit={false}
-                    caption="Hektar"
+                    showUnit={true}
+                    caption="Gesamtfläche Wohnbau"
                     captionClassName="small text-muted mt-1"
                   />
                 </div>
@@ -784,13 +794,21 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-4">
             <div className="card border-0 shadow-none h-100">
               <div className="card-body text-center">
-                <Image
-                  src={props.assets?.flaechennutzungWohnbauImageSrc ?? "/images/wohnmarktsituation/landuse-placeholder.svg"}
-                  alt="Flächennutzung Wohnbau"
-                  width={320}
-                  height={200}
-                  style={{ width: "100%", height: "auto" }}
-                />
+                {props.assets?.flaechennutzungWohnbauImageSrc ? (
+                  <ImageModal
+                    src={props.assets.flaechennutzungWohnbauImageSrc}
+                    alt="Flächennutzung Wohnbau"
+                    thumbStyle={{ width: "100%", height: "auto" }}
+                  />
+                ) : (
+                  <Image
+                    src="/images/wohnmarktsituation/landuse-placeholder.svg"
+                    alt="Flächennutzung Wohnbau"
+                    width={320}
+                    height={200}
+                    style={{ width: "100%", height: "auto" }}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -800,9 +818,10 @@ export function WohnmarktsituationSection(
 
         <div className="row g-4 my-5" id="wohnungsbestand-gebaeude">
           <div className="col-12 col-lg-4">
+            <h4 className="h4 text-center mb-3">Wohnungsbestand</h4>
             <DoughnutChart
               title="Wohnungsbestand"
-              slices={vm.wohnungsbestandGebaeudeverteilung}
+              slices={ensureDoughnutSlices(vm.wohnungsbestandGebaeudeverteilung, wohnungsbestandValue)}
               valueKind="anzahl"
               unitKey="count"
               svgSize={220}
@@ -814,9 +833,10 @@ export function WohnmarktsituationSection(
             ) : null}
           </div>
           <div className="col-12 col-lg-4">
+            <h4 className="h4 text-center mb-3">Baufertigstellungen</h4>
             <DoughnutChart
               title="Baufertigstellungen"
-              slices={vm.baufertigstellungenGebaeudeverteilung}
+              slices={ensureDoughnutSlices(vm.baufertigstellungenGebaeudeverteilung, baufertigstellungenValue)}
               valueKind="anzahl"
               unitKey="count"
               svgSize={220}
@@ -828,9 +848,10 @@ export function WohnmarktsituationSection(
             ) : null}
           </div>
           <div className="col-12 col-lg-4">
+            <h4 className="h4 text-center mb-3">Baugenehmigungen</h4>
             <DoughnutChart
               title="Baugenehmigungen"
-              slices={vm.baugenehmigungenGebaeudeverteilung}
+              slices={ensureDoughnutSlices(vm.baugenehmigungenGebaeudeverteilung, baugenehmigungenValue)}
               valueKind="anzahl"
               unitKey="count"
               svgSize={220}

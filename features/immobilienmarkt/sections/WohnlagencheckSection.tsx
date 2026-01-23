@@ -16,7 +16,6 @@ import { FaqSection } from "@/components/FaqSection";
 import { ImageModal } from "@/components/ImageModal";
 
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
-import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import { formatMetric } from "@/utils/format";
 
@@ -63,6 +62,12 @@ export function WohnlagencheckSection(
   const nahversorgungMapSvg = nahversorgung ? factorMapSvgs[nahversorgung.theme] ?? null : null;
   const kulturFreizeitMapSvg = kulturFreizeit ? factorMapSvgs[kulturFreizeit.theme] ?? null : null;
 
+  const renderFaktorAccordionHeader = () => (
+    <div className="text-dark mt-5">
+      <p className="h5 text-center small text-muted mb-3">Teilindikatoren (Auszug)</p>
+    </div>
+  );
+
   return (
     <div className="text-dark">
       {tocItems.length > 0 ? <RightEdgeControls tocItems={tocItems} /> : null}
@@ -70,9 +75,7 @@ export function WohnlagencheckSection(
       <div className="container immobilienmarkt-container position-relative">
         
       {/* Subnavigation */}
-      <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
-
-      <ImmobilienmarktBreadcrumb
+      <TabNav
         tabs={tabs}
         activeTabId={activeTabId}
         basePath={basePath}
@@ -297,6 +300,10 @@ export function WohnlagencheckSection(
             {mobilitaet.text ? <p className="small text-muted mb-0">{mobilitaet.text}</p> : null}
             </div>
 
+            {renderFaktorAccordionHeader()}
+            <div className="acc-wrap">
+              <input className="acc-toggle" type="checkbox" id="acc-toggle-mobilitaet" />
+              <div className="acc-teaser" id="acc-teaser-mobilitaet">
             <div className="mt-5">
               <h3 className="h3 mb-3 text-center">Anbindung Fernverkehr</h3>
               <div className="row g-4">
@@ -484,7 +491,8 @@ export function WohnlagencheckSection(
                 </div>
               </div>
             </div>
-
+              </div>
+              <div className="acc-content" id="acc-content-mobilitaet">
             <div className="mt-5">
               <h3 className="h3 mb-3 text-center">Versorgung</h3>
               <div className="row g-4">
@@ -686,6 +694,16 @@ export function WohnlagencheckSection(
                 </div>
               </div>
             </div>
+              </div>
+              <div className="acc-button-row">
+                <label
+                  htmlFor="acc-toggle-mobilitaet"
+                  className="acc-button"
+                  data-open="Weniger anzeigen"
+                  data-closed="Mehr anzeigen"
+                />
+              </div>
+            </div>
           </section>
         ) : null}
 
@@ -758,6 +776,10 @@ export function WohnlagencheckSection(
               {bildung.text ? <p className="small text-muted mb-0">{bildung.text}</p> : null}
             </div>
 
+            {renderFaktorAccordionHeader()}
+            <div className="acc-wrap">
+              <input className="acc-toggle" type="checkbox" id="acc-toggle-bildung" />
+              <div className="acc-teaser" id="acc-teaser-bildung">
             <div className="mt-5">
               <div className="text-center gap-3 mb-3">
                 <Image
@@ -859,7 +881,8 @@ export function WohnlagencheckSection(
                 </div>
               </div>
             </div>
-
+          </div>
+          <div className="acc-content" id="acc-content-bildung">
             <div className="mt-5">
               <div className="text-center gap-3 mb-3">
                 <Image
@@ -1101,6 +1124,16 @@ export function WohnlagencheckSection(
             </div>
 
           
+              </div>
+              <div className="acc-button-row">
+                <label
+                  htmlFor="acc-toggle-bildung"
+                  className="acc-button"
+                  data-open="Weniger anzeigen"
+                  data-closed="Mehr anzeigen"
+                />
+              </div>
+            </div>
           </section>
         ) : null}
 
@@ -1170,6 +1203,10 @@ export function WohnlagencheckSection(
               {gesundheit.text ? <p className="small text-muted mb-0">{gesundheit.text}</p> : null}
             </div>
 
+            {renderFaktorAccordionHeader()}
+            <div className="acc-wrap">
+              <input className="acc-toggle" type="checkbox" id="acc-toggle-gesundheit" />
+              <div className="acc-teaser" id="acc-teaser-gesundheit">
             <div className="mt-5">
               <h3 className="h3 mb-3 text-center">Wohnungsnahe medizinische Versorgung</h3>
               <div className="row g-4">
@@ -1292,6 +1329,8 @@ export function WohnlagencheckSection(
               </div>
             </div>
 
+              </div>
+              <div className="acc-content" id="acc-content-gesundheit">
             <div className="mt-5">
               <div className="text-center gap-3 mb-3">
                 <Image
@@ -1494,6 +1533,16 @@ export function WohnlagencheckSection(
             </div>
             
             
+              </div>
+              <div className="acc-button-row">
+                <label
+                  htmlFor="acc-toggle-gesundheit"
+                  className="acc-button"
+                  data-open="Weniger anzeigen"
+                  data-closed="Mehr anzeigen"
+                />
+              </div>
+            </div>
           </section>
         ) : null}
 
@@ -1569,228 +1618,240 @@ export function WohnlagencheckSection(
               {naherholung.text ? <p className="small text-muted mb-0">{naherholung.text}</p> : null}
             </div>
 
-            <div className="mt-5">
-              <div className="text-center gap-3 mb-3">
-                <Image
-                  src="/icons/ws24_marktbericht_wohnlagencheck.svg"
-                  alt=""
-                  width={40}
-                  height={40}
-                />
-                <h3 className="h3 mt-2">
-                  Vegetationsflächen
-                  {naherholung.vegetationsflaechenanteilRegionLabel ? (
-                    <span className="ms-2 small text-muted">{naherholung.vegetationsflaechenanteilRegionLabel}</span>
-                  ) : null}
-                </h3>
-              </div>
-
-              <div className="row g-4 align-items-center">
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <h4 className="h6 mb-1">Waldfläche</h4>
-                      <KpiValue
-                        value={naherholung.values.wald ?? null}
-                        kind="quote"
-                        unitKey="percent"
-                        ctx="kpi"
-                        size="lg"
-                        showUnit
-                        caption="Anteil an Vegetationsfläche"
-                        captionClassName="small text-muted mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-12 col-lg-4">
-                  <div className="d-flex justify-content-center">
-                    <div style={{ width: "100%", maxWidth: "280px" }}>
-                      <DoughnutChart
-                        title="Vegetationsflächenanteil"
-                        slices={naherholung.vegetationsflaechenanteil}
-                        valueKind="anzahl"
-                        unitKey="count"
-                        ctx="chart"
-                        svgSize={260}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <h4 className="h6 mb-1">Wasserfläche</h4>
-                      <KpiValue
-                        value={naherholung.values.wasser ?? null}
-                        kind="quote"
-                        unitKey="percent"
-                        ctx="kpi"
-                        size="lg"
-                        showUnit
-                        caption="Anteil an Vegetationsfläche"
-                        captionClassName="small text-muted mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                
+            {renderFaktorAccordionHeader()}
+            <div className="acc-wrap">
+              <input className="acc-toggle" type="checkbox" id="acc-toggle-naherholung" />
+              <div className="acc-teaser" id="acc-teaser-naherholung">
                 <div className="mt-5">
-              <div className="text-center gap-3 mb-3">
-                <Image
-                  src="/icons/ws24_marktbericht_wohnlagencheck.svg"
-                  alt=""
-                  width={40}
-                  height={40}
-                />
-                <h3 className="h3 mt-2">Erholungs- / Parkflächen</h3>
-              </div>
-
-              <div className="row g-4">
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <h4 className="h6 mb-1">Parkflächenanteil</h4>
-                      <KpiValue
-                        value={naherholung.values.parkanteil ?? null}
-                        kind="quote"
-                        unitKey="percent"
-                        ctx="kpi"
-                        size="lg"
-                        showUnit
-                        caption="Anteil an Siedlungsfläche (%)"
-                        captionClassName="small text-muted mt-1"
-                      />
-                    </div>
+                  <div className="text-center gap-3 mb-3">
+                    <Image
+                      src="/icons/ws24_marktbericht_wohnlagencheck.svg"
+                      alt=""
+                      width={40}
+                      height={40}
+                    />
+                    <h3 className="h3 mt-2">
+                      Vegetationsflächen
+                      {naherholung.vegetationsflaechenanteilRegionLabel ? (
+                        <span className="ms-2 small text-muted">{naherholung.vegetationsflaechenanteilRegionLabel}</span>
+                      ) : null}
+                    </h3>
                   </div>
-                </div>
 
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <h4 className="h6 mb-1">Erreichbarkeit Parkanlagen</h4>
-                      <KpiValue
-                        value={naherholung.values.parkErreichbarkeit ?? null}
-                        kind="distance_m"
-                        unitKey="m"
-                        ctx="kpi"
-                        size="lg"
-                        showUnit
-                        caption="⌀ m ab Wohnungsnähe"
-                        captionClassName="small text-muted mt-1"
-                      />
-                      <div className="image-container mt-3">
-                        {naherholung.maps.parks ? (
-                          <ImageModal
-                            src={naherholung.maps.parks.src}
-                            alt={naherholung.maps.parks.alt}
-                            thumbStyle={{ width: "100%", margin: "0 auto", display: "block" }}
+                  <div className="row g-4 align-items-center">
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <h4 className="h6 mb-1">Waldfläche</h4>
+                          <KpiValue
+                            value={naherholung.values.wald ?? null}
+                            kind="quote"
+                            unitKey="percent"
+                            ctx="kpi"
+                            size="lg"
+                            showUnit
+                            caption="Anteil an Vegetationsfläche"
+                            captionClassName="small text-muted mt-1"
                           />
-                        ) : (
-                          <p className="small text-muted mb-0">Keine Karte verfügbar.</p>
-                        )}
+                        </div>
                       </div>
-                      <p className="small text-muted mb-0">
-                        einwohnergewichteter Fussweg 250m²-fassender Wohnabschnitte zur nächsten Parkanlage
-                      </p>
                     </div>
-                  </div>
-                </div>
 
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <h4 className="h6 mb-1">Parkflächenbereitstellung</h4>
-                      <KpiValue
-                        value={naherholung.values.parkBereitstellung ?? null}
-                        kind="anzahl"
-                        unitKey="none"
-                        ctx="kpi"
-                        size="lg"
-                        showUnit={false}
-                        caption="Flächenbereitstellung pro 1000 EW"
-                        captionClassName="small text-muted mt-1"
-                      />
+                    <div className="col-12 col-lg-4">
+                      <div className="d-flex justify-content-center">
+                        <div style={{ width: "100%", maxWidth: "280px" }}>
+                          <DoughnutChart
+                            title="Vegetationsflächenanteil"
+                            slices={naherholung.vegetationsflaechenanteil}
+                            valueKind="anzahl"
+                            unitKey="count"
+                            ctx="chart"
+                            svgSize={260}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <h4 className="h6 mb-1">Wasserfläche</h4>
+                          <KpiValue
+                            value={naherholung.values.wasser ?? null}
+                            kind="quote"
+                            unitKey="percent"
+                            ctx="kpi"
+                            size="lg"
+                            showUnit
+                            caption="Anteil an Vegetationsfläche"
+                            captionClassName="small text-muted mt-1"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-5">
-              <div className="text-center gap-3 mb-3">
-                <Image
-                  src="/icons/ws24_marktbericht_wohnlagencheck.svg"
-                  alt=""
-                  width={40}
-                  height={40}
+              <div className="acc-content" id="acc-content-naherholung">
+                <div className="mt-5">
+                  <div className="text-center gap-3 mb-3">
+                    <Image
+                      src="/icons/ws24_marktbericht_wohnlagencheck.svg"
+                      alt=""
+                      width={40}
+                      height={40}
+                    />
+                    <h3 className="h3 mt-2">Erholungs- / Parkflächen</h3>
+                  </div>
+
+                  <div className="row g-4">
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <h4 className="h6 mb-1">Parkflächenanteil</h4>
+                          <KpiValue
+                            value={naherholung.values.parkanteil ?? null}
+                            kind="quote"
+                            unitKey="percent"
+                            ctx="kpi"
+                            size="lg"
+                            showUnit
+                            caption="Anteil an Siedlungsfläche (%)"
+                            captionClassName="small text-muted mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <h4 className="h6 mb-1">Erreichbarkeit Parkanlagen</h4>
+                          <KpiValue
+                            value={naherholung.values.parkErreichbarkeit ?? null}
+                            kind="distance_m"
+                            unitKey="m"
+                            ctx="kpi"
+                            size="lg"
+                            showUnit
+                            caption="⌀ m ab Wohnungsnähe"
+                            captionClassName="small text-muted mt-1"
+                          />
+                          <div className="image-container mt-3">
+                            {naherholung.maps.parks ? (
+                              <ImageModal
+                                src={naherholung.maps.parks.src}
+                                alt={naherholung.maps.parks.alt}
+                                thumbStyle={{ width: "100%", margin: "0 auto", display: "block" }}
+                              />
+                            ) : (
+                              <p className="small text-muted mb-0">Keine Karte verfügbar.</p>
+                            )}
+                          </div>
+                          <p className="small text-muted mb-0">
+                            einwohnergewichteter Fussweg 250m²-fassender Wohnabschnitte zur nächsten Parkanlage
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <h4 className="h6 mb-1">Parkflächenbereitstellung</h4>
+                          <KpiValue
+                            value={naherholung.values.parkBereitstellung ?? null}
+                            kind="anzahl"
+                            unitKey="none"
+                            ctx="kpi"
+                            size="lg"
+                            showUnit={false}
+                            caption="Flächenbereitstellung pro 1000 EW"
+                            captionClassName="small text-muted mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <div className="text-center gap-3 mb-3">
+                    <Image
+                      src="/icons/ws24_marktbericht_wohnlagencheck.svg"
+                      alt=""
+                      width={40}
+                      height={40}
+                    />
+                    <h3 className="h3 mt-2">Luft- und Landschaft</h3>
+                  </div>
+
+                  <div className="row g-4">
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <h4 className="h6 mb-1">Naturschutzgebiete</h4>
+                          <KpiValue
+                            value={naherholung.values.naturschutz ?? null}
+                            kind="quote"
+                            unitKey="percent"
+                            ctx="kpi"
+                            size="lg"
+                            showUnit
+                            caption="Anteil Naturschutzgebiete an der Gesamtfläche"
+                            captionClassName="small text-muted mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <h4 className="h6 mb-1">Luftqualität</h4>
+                          <KpiValue
+                            value={naherholung.values.luftqualitaet ?? null}
+                            kind="anzahl"
+                            unitKey="none"
+                            ctx="kpi"
+                            size="lg"
+                            showUnit={false}
+                            caption="1 - 5 (1 Sehr gut, 5 sehr schlecht)"
+                            captionClassName="small text-muted mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <h4 className="h6 mb-1">Landschaftqualität</h4>
+                          <KpiValue
+                            value={naherholung.values.landschaftqualitaet ?? null}
+                            kind="anzahl"
+                            unitKey="none"
+                            ctx="kpi"
+                            size="lg"
+                            showUnit={false}
+                            caption="Maß menschlicher Eingriffe in den Naturhaushalt (1-7)"
+                            captionClassName="small text-muted mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="acc-button-row">
+                <label
+                  htmlFor="acc-toggle-naherholung"
+                  className="acc-button"
+                  data-open="Weniger anzeigen"
+                  data-closed="Mehr anzeigen"
                 />
-                <h3 className="h3 mt-2">Luft- und Landschaft</h3>
-              </div>
-
-              <div className="row g-4">
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <h4 className="h6 mb-1">Naturschutzgebiete</h4>
-                      <KpiValue
-                        value={naherholung.values.naturschutz ?? null}
-                        kind="quote"
-                        unitKey="percent"
-                        ctx="kpi"
-                        size="lg"
-                        showUnit
-                        caption="Anteil Naturschutzgebiete an der Gesamtfläche"
-                        captionClassName="small text-muted mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <h4 className="h6 mb-1">Luftqualität</h4>
-                      <KpiValue
-                        value={naherholung.values.luftqualitaet ?? null}
-                        kind="anzahl"
-                        unitKey="none"
-                        ctx="kpi"
-                        size="lg"
-                        showUnit={false}
-                        caption="1 - 5 (1 Sehr gut, 5 sehr schlecht)"
-                        captionClassName="small text-muted mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <h4 className="h6 mb-1">Landschaftqualität</h4>
-                      <KpiValue
-                        value={naherholung.values.landschaftqualitaet ?? null}
-                        kind="anzahl"
-                        unitKey="none"
-                        ctx="kpi"
-                        size="lg"
-                        showUnit={false}
-                        caption="Maß menschlicher Eingriffe in den Naturhaushalt (1-7)"
-                        captionClassName="small text-muted mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-                
-                
-                
               </div>
             </div>
           </section>
@@ -1862,64 +1923,88 @@ export function WohnlagencheckSection(
               {nahversorgung.text ? <p className="small text-muted mb-0">{nahversorgung.text}</p> : null}
             </div>
 
-            <div className="mt-4">
-              <div className="row g-4 align-items-stretch">
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <h4 className="h6 mb-1">Supermarktversorgung</h4>
-                      <KpiValue
-                        value={nahversorgung.values.supermarktVersorgung ?? null}
-                        kind="anzahl"
-                        unitKey="none"
-                        ctx="kpi"
-                        size="lg"
-                        showUnit={false}
-                        caption="Supermärkte pro 1000 EW"
-                        captionClassName="small text-muted mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <div className="image-container">
-                        {nahversorgung.maps.supermaerkte ? (
-                          <ImageModal
-                            src={nahversorgung.maps.supermaerkte.src}
-                            alt={nahversorgung.maps.supermaerkte.alt}
-                            thumbStyle={{ width: "100%", margin: "0 auto", display: "block" }}
+            {renderFaktorAccordionHeader()}
+            <div className="acc-wrap">
+              <input className="acc-toggle" type="checkbox" id="acc-toggle-nahversorgung" />
+              <div className="acc-teaser" id="acc-teaser-nahversorgung">
+                <div className="mt-4">
+                  <div className="row g-4 align-items-stretch">
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <h4 className="h6 mb-1">Supermarktversorgung</h4>
+                          <KpiValue
+                            items={[
+                              {
+                                value: nahversorgung.values.supermarktVersorgung ?? null,
+                                kind: "anzahl",
+                                unitKey: "none",
+                                ctx: "kpi",
+                                fractionDigits: 2,
+                              },
+                            ]}
+                            size="lg"
+                            showUnit={false}
+                            caption="Supermärkte pro 1000 EW"
+                            captionClassName="small text-muted mt-1"
                           />
-                        ) : (
-                          <p className="small text-muted mb-0">Keine Karte verfügbar.</p>
-                        )}
+                        </div>
                       </div>
-                      <p className="small text-muted mb-0">
-                        einwohnergewichteter Fahrweg 250m²-fassender Wohnabschnitte zum nächsten Supermarkt
-                      </p>
                     </div>
-                  </div>
-                </div>
 
-                <div className="col-12 col-lg-4">
-                  <div className="card border-0 shadow-sm h-100 text-center">
-                    <div className="card-body">
-                      <h4 className="h6 mb-1">Supermarkterreichbarkeit</h4>
-                      <KpiValue
-                        value={nahversorgung.values.supermarktErreichbarkeit ?? null}
-                        kind="distance_km"
-                        unitKey="km"
-                        ctx="kpi"
-                        size="lg"
-                        showUnit
-                        caption="⌀ km ab Wohnungsnähe"
-                        captionClassName="small text-muted mt-1"
-                      />
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <div className="image-container">
+                            {nahversorgung.maps.supermaerkte ? (
+                              <ImageModal
+                                src={nahversorgung.maps.supermaerkte.src}
+                                alt={nahversorgung.maps.supermaerkte.alt}
+                                thumbStyle={{ width: "100%", margin: "0 auto", display: "block" }}
+                              />
+                            ) : (
+                              <p className="small text-muted mb-0">Keine Karte verfügbar.</p>
+                            )}
+                          </div>
+                          <p className="small text-muted mb-0">
+                            einwohnergewichteter Fahrweg 250m²-fassender Wohnabschnitte zum nächsten Supermarkt
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-12 col-lg-4">
+                      <div className="card border-0 shadow-sm h-100 text-center">
+                        <div className="card-body">
+                          <h4 className="h6 mb-1">Supermarkterreichbarkeit</h4>
+                          <KpiValue
+                            value={nahversorgung.values.supermarktErreichbarkeit ?? null}
+                            kind="distance_km"
+                            unitKey="km"
+                            ctx="kpi"
+                            size="lg"
+                            showUnit
+                            caption="⌀ km ab Wohnungsnähe"
+                            captionClassName="small text-muted mt-1"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </div>
+              <div className="acc-content" id="acc-content-nahversorgung">
+                <p className="small text-muted mt-4 mb-0 text-center">
+                  Weitere Teilindikatoren sind aktuell nicht hinterlegt.
+                </p>
+              </div>
+              <div className="acc-button-row">
+                <label
+                  htmlFor="acc-toggle-nahversorgung"
+                  className="acc-button"
+                  data-open="Weniger anzeigen"
+                  data-closed="Mehr anzeigen"
+                />
               </div>
             </div>
           </section>
@@ -1991,6 +2076,10 @@ export function WohnlagencheckSection(
               {kulturFreizeit.text ? <p className="small text-muted mb-0">{kulturFreizeit.text}</p> : null}
             </div>
 
+            {renderFaktorAccordionHeader()}
+            <div className="acc-wrap">
+              <input className="acc-toggle" type="checkbox" id="acc-toggle-kultur" />
+              <div className="acc-teaser" id="acc-teaser-kultur">
             <div className="mt-5">
               <div className="text-center gap-3 mb-3">
                 <Image
@@ -2094,6 +2183,8 @@ export function WohnlagencheckSection(
               </div>
             </div>
 
+              </div>
+              <div className="acc-content" id="acc-content-kultur">
             <div className="mt-5">
               <div className="text-center gap-3 mb-3">
                 <Image
@@ -2281,6 +2372,16 @@ export function WohnlagencheckSection(
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+              </div>
+              <div className="acc-button-row">
+                <label
+                  htmlFor="acc-toggle-kultur"
+                  className="acc-button"
+                  data-open="Weniger anzeigen"
+                  data-closed="Mehr anzeigen"
+                />
               </div>
             </div>
           </section>

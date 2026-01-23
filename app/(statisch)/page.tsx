@@ -1,11 +1,15 @@
 // app/page.tsx oder app/(statisch)/page.tsx
 
 import "./static.css"; // falls noch nicht eingebunden
+import Link from "next/link";
 import Image from "next/image";
+import { getBundeslaender } from "@/lib/data";
 
 // app/(statisch)/page.tsx (Ausschnitt)
 
 export default function HomePage() {
+  const bundeslaender = getBundeslaender();
+
   return (
     <div className="home-page-root">
       {/* HERO: Deutschland-Maske links, Logo + Claim rechts */}
@@ -42,23 +46,50 @@ export default function HomePage() {
             </h1>
 
             <p className="home-cutout-claim">
-              Immobilienmarkt &amp; Standortprofile
+              DATA-DRIVEN. EXPERT-LED.
             </p>
 
             <p className="home-cutout-text">
-              Regionale Wohnlagenanalysen mit strukturierten Kennzahlen zu Preisen, Mieten und
+              Immobilienmarkt &amp; Standortprofile: Regionale Wohnlagenanalysen mit strukturierten Kennzahlen zu Preisen, Mieten und
               Standortfaktoren.
             </p>
+
+            <div className="home-cutout-actions">
+              {bundeslaender.map((bl) => (
+                <Link
+                  key={bl.slug}
+                  href={`/immobilienmarkt/${bl.slug}`}
+                  className="btn btn-outline-dark fw-semibold px-4 py-2"
+                >
+                  {bl.name}
+                </Link>
+              ))}
+            </div>
           </div>
 
         </div>
       </section>
 
-      {/* Danach dein bisheriger Startseiten-Content */}
-      <div className="home-page-root-inner">
-        {/* Konzept, Immobilienmarkt & Standortprofile, Bundesländer-Liste usw. */}
-        {/* ... */}
-      </div>
+      <section className="home-breaker">
+        <div className="home-breaker-inner">
+          <div className="home-breaker-left">
+            <div className="home-breaker-claim">DATA-DRIVEN. EXPERT-LED.</div>
+            <div className="home-breaker-subclaim">Harte Daten. Lokales Gespür.</div>
+          </div>
+          <div className="home-breaker-right">
+            <p className="home-breaker-text">
+              <span className="home-breaker-line">
+                Wir verbinden harte Marktdaten mit lokaler Expertise, um Wohnlagen verlässlich
+                einzuordnen.
+              </span>
+              
+              
+            </p>
+          </div>
+        </div>
+      </section>
+
+  
     </div>
   );
 }

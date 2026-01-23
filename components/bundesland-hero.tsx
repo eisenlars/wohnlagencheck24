@@ -61,7 +61,7 @@ export function BundeslandHero({
                       className="region-hero-slide"
                       style={{
                         backgroundImage: `url(${src})`,
-                        animationDelay: `${index * 5}s`,
+                        animationDelay: `${index * 10}s`,
                       }}
                     />
                   ))}

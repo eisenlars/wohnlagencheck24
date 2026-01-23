@@ -83,6 +83,8 @@
   font-size: 2.7rem;
   font-weight: 600;
   color: #486b7a;
+  text-transform:uppercase;
+  letter-spacing: .1em
 }
 
 .home-cutout-claim {
@@ -90,6 +92,7 @@
   font-size: 1rem;
   font-weight: 500;
   color: #4b5563;
+  letter-spacing: .1em
 }
 
 .home-cutout-text {
@@ -99,11 +102,99 @@
   color: #6b7280;
 }
 
+.home-cutout-actions {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.home-cutout-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  background: #f7f4ea;
+  border: 1px solid #d9d2bf;
+  color: #2f3b42;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.home-cutout-button:hover {
+  transform: translateY(-1px);
+  border-color: #bfb297;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
 /* Startseiten-Inhalt darunter (falls noch nicht vorhanden) */
 .home-page-root-inner {
   max-width: 1120px;
   margin: 0 auto;
   padding: 2.5rem 1.5rem 3rem;
+}
+
+.home-breaker {
+  background: linear-gradient(120deg, #000 0%, #486b7a 55%, #486b7a 100%);
+  border-top: 1px solid rgba(79, 70, 58, 0.15);
+  border-bottom: 1px solid rgba(79, 70, 58, 0.12);
+}
+
+.home-breaker-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 2.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.home-breaker-left {
+  flex: 0 1 40%;
+}
+
+.home-breaker-claim {
+  font-size: 1.15rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffe000;
+  font-weight: 700;
+}
+
+.home-breaker-subclaim {
+  margin-top: 0.4rem;
+  font-size: 1.1rem;
+  color: #fff;
+  font-weight: 500;
+}
+
+.home-breaker-right {
+  flex: 1 1 60%;
+}
+
+.home-breaker-text {
+  margin: 0;
+  color: #fff;
+  line-height: 1.55;
+  font-size: 3rem;
+}
+
+.home-breaker-line {
+  display: block;
+}
+
+.home-breaker-text a {
+  color: #1f3a43;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(31, 58, 67, 0.35);
+}
+
+.home-breaker-text a:hover {
+  border-bottom-color: rgba(31, 58, 67, 0.8);
 }
 
 /* Responsive Verhalten für mobile Geräte */
@@ -125,5 +216,11 @@
 
   .home-cutout-logo {
     height: 52px;
+  }
+
+  .home-breaker-inner {
+    padding: 2rem 1rem;
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

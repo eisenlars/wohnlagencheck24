@@ -11,7 +11,6 @@ import { MatrixTable } from "@/components/MatrixTable";
 import { ZeitreiheChart } from "@/components/ZeitreiheChart";
 import { KpiValue } from "@/components/KpiValue";
 import { FaqSection } from "@/components/FaqSection";
-import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import type { GrundstueckspreiseVM } from "@/features/immobilienmarkt/selectors/shared/types/grundstueckspreise";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
@@ -60,9 +59,7 @@ export function GrundstueckspreiseSection(props: Props) {
   
         
         {/* Subnavigation */}
-        <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
-
-        <ImmobilienmarktBreadcrumb
+        <TabNav
           tabs={tabs}
           activeTabId={activeTabId}
           basePath={basePath}

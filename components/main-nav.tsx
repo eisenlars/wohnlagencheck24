@@ -38,7 +38,7 @@ export function MainNav({ bundeslaender }: MainNavProps) {
       {/* Einstieg zu den Standortprofilen */}
       <li className="nav-item mb-2">
         <Link
-          href="/immobilienmarkt"
+          href="/"
           className="nav-link px-0"
           onClick={handleNavClick}
         >

@@ -102,7 +102,8 @@ export function DoughnutChart({
   }>(
     (acc, s, idx) => {
       const value = s.value ?? 0;
-      const angle = (value / total) * 360;
+      const rawAngle = (value / total) * 360;
+      const angle = rawAngle >= 360 ? 359.99 : rawAngle;
       const start = acc.cursor;
       const end = start + angle;
 

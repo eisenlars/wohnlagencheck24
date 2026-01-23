@@ -24,6 +24,7 @@ type KpiDisplayItem = {
   signed?: boolean;
 
   /** Optional: individuelle Formatierung per Item */
+  fractionDigits?: number;
   valueClassName?: string;
   labelClassName?: string;
   unitClassName?: string;
@@ -267,6 +268,7 @@ function KpiCell({
     ctx,
     unit: unitKey ?? "none",
     signed: item.signed ?? false,
+    fractionDigits: item.fractionDigits,
   });
 
   const isHighlight = !!item.highlight;

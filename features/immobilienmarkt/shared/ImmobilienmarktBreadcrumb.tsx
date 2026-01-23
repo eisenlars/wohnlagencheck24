@@ -22,8 +22,10 @@ export function ImmobilienmarktBreadcrumb(props: {
   parentBasePath?: string;
   ctx?: SectionCtx;
   names?: BreadcrumbNames;
+  compact?: boolean;
+  rootIconSrc?: string;
 }) {
-  const { tabs, activeTabId, basePath, parentBasePath, ctx, names } = props;
+  const { tabs, activeTabId, basePath, parentBasePath, ctx, names, compact, rootIconSrc } = props;
   const siteUrl = "https://www.wohnlagencheck24.de";
 
   const activeTabLabel = tabs.find((tab) => tab.id === activeTabId)?.label ?? activeTabId;
@@ -82,19 +84,31 @@ export function ImmobilienmarktBreadcrumb(props: {
   };
 
   return (
-    <nav aria-label="Breadcrumb" className="mt-3">
-      <ol className="breadcrumb small mb-3">
+    <nav aria-label="Breadcrumb" className={compact ? "breadcrumb-compact" : "mt-3"}>
+      <ol className={`breadcrumb small mb-3${compact ? " mb-0" : ""}`}>
         {breadcrumbItems.map((item, index) => {
           const isLast = index === breadcrumbItems.length - 1;
+          const isRoot = index === 0;
           return (
             <li
               key={`${item.href}-${item.label}`}
               className={`breadcrumb-item${isLast ? " active" : ""}`}
               aria-current={isLast ? "page" : undefined}
             >
-              {isLast ? item.label : (
-                <Link href={item.href} style={{ color: "#486b7a" }}>
-                  {item.label}
+              {isLast ? (
+                item.label
+              ) : (
+                <Link
+                  href={item.href}
+                  className="breadcrumb-link"
+                  aria-label={isRoot && rootIconSrc ? item.label : undefined}
+                >
+                  {isRoot && rootIconSrc ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={rootIconSrc} alt="" aria-hidden="true" className="breadcrumb-root-icon" />
+                  ) : (
+                    item.label
+                  )}
                 </Link>
               )}
             </li>

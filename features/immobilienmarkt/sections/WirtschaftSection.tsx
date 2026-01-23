@@ -1,6 +1,5 @@
 // features/immobilienmarkt/sections/WirtschaftSection.tsx
 
-import Image from "next/image";
 import Link from "next/link";
 
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
@@ -13,8 +12,8 @@ import { ZeitreiheChart } from "@/components/ZeitreiheChart";
 import { DoughnutChart } from "@/components/DoughnutChart";
 import { StackedComboChart } from "@/components/StackedComboChart";
 import { KpiValue } from "@/components/KpiValue";
+import { ImageModal } from "@/components/ImageModal";
 import { FaqSection } from "@/components/FaqSection";
-import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
 import type { WirtschaftVM } from "@/features/immobilienmarkt/selectors/shared/types/wirtschaft";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
@@ -83,9 +82,7 @@ export function WirtschaftSection(
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
       {/* Subnavigation */}
-      <TabNav tabs={tabs} activeTabId={activeTabId} basePath={basePath} parentBasePath={props.parentBasePath} />
-
-      <ImmobilienmarktBreadcrumb
+      <TabNav
         tabs={tabs}
         activeTabId={activeTabId}
         basePath={basePath}
@@ -198,13 +195,13 @@ export function WirtschaftSection(
                       label: "Flächennutzung Industrie und Gewerbe",
                       value: vm.kpis.flaecheGewerbe,
                       kind: "anzahl",
-                      unitKey: "none",
+                      unitKey: "ha",
                     },
                   ]}
                   ctx="kpi"
                   size="ultra"
-                  showUnit={false}
-                  caption="Hektar"
+                  showUnit={true}
+                  caption="Gesamtfläche Industrie & Gewerbe"
                   captionClassName="small text-muted mt-1"
                 />
               </div>
@@ -214,12 +211,10 @@ export function WirtschaftSection(
             <div className="card border-0 shadow-none h-100">
               <div className="card-body text-center">
                 {landuseImageSrc ? (
-                  <Image
+                  <ImageModal
                     src={landuseImageSrc}
                     alt={`Flächennutzung Gewerbe ${vm.regionName}`}
-                    width={320}
-                    height={200}
-                    style={{ width: "100%", height: "auto" }}
+                    thumbStyle={{ width: "100%", height: "auto" }}
                   />
                 ) : (
                   <p className="small text-muted mb-0">
