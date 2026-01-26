@@ -48,7 +48,9 @@ export type SectionAssets = {
   kaufkraftindexMapSvg?: string | null;
   kaufkraftindexLegendHtml?: string | null;
   flaechennutzungGewerbeImageSrc?: string | null;
+  flaechennutzungGewerbeUsesKreisFallback?: boolean;
   flaechennutzungWohnbauImageSrc?: string | null;
+  flaechennutzungWohnbauUsesKreisFallback?: boolean;
   wohnungssaldoMapSvg?: string | null;
   wohnungssaldoLegendHtml?: string | null;
   wohnlagencheckMapSvgs?: Partial<Record<string, string | null>>;

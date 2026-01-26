@@ -36,6 +36,8 @@ export type WirtschaftVM = {
   svBeschaeftigteArbeitsortText: string;
   arbeitsplatzzentralitaetText: string;
   pendlerText: string;
+  arbeitsplatzzentralitaetUsesKreisFallback?: boolean;
+  pendlersaldoUsesKreisFallback?: boolean;
 
   berater: {
     name: string;

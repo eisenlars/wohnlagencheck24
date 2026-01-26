@@ -380,52 +380,53 @@ export function getKaufkraftindexMapSvg(
 export function getFlaechennutzungGewerbeImageSrc(
   bundeslandSlug: string,
   kreisSlug: string,
-): string | null {
-  const relPath = path.join(
-    "visuals",
-    "map_landuse",
-    "deutschland",
-    bundeslandSlug,
-    kreisSlug,
-    "flaechennutzung",
-    `flaechennutzung_${kreisSlug}_industrie_gewerbe.webp`,
-  );
+  ortSlug?: string,
+): { src: string | null; usesKreisFallback: boolean } {
+  const baseParts = ["visuals", "map_landuse", "deutschland", bundeslandSlug, kreisSlug, "flaechennutzung"];
+  const resolvePath = (relPath: string) => {
+    const publicPath = path.join(process.cwd(), "public", relPath);
+    const dataPath = path.join(process.cwd(), "data", relPath);
+    return fs.existsSync(publicPath) || fs.existsSync(dataPath) ? `/${relPath.replace(/\\/g, "/")}` : null;
+  };
 
-  const publicPath = path.join(process.cwd(), "public", relPath);
-  const dataPath = path.join(process.cwd(), "data", relPath);
-
-  if (fs.existsSync(publicPath) || fs.existsSync(dataPath)) {
-    return `/${relPath.replace(/\\/g, "/")}`;
+  if (ortSlug) {
+    const ortRelPath = path.join(...baseParts, `flaechennutzung_${kreisSlug}_${ortSlug}_industrie_gewerbe.webp`);
+    const ortSrc = resolvePath(ortRelPath);
+    if (ortSrc) return { src: ortSrc, usesKreisFallback: false };
   }
 
-  console.warn("Gewerbe-Flächennutzungskarte nicht gefunden:", relPath);
-  return null;
+  const kreisRelPath = path.join(...baseParts, `flaechennutzung_${kreisSlug}_industrie_gewerbe.webp`);
+  const kreisSrc = resolvePath(kreisRelPath);
+  if (kreisSrc) return { src: kreisSrc, usesKreisFallback: Boolean(ortSlug) };
+
+  console.warn("Gewerbe-Flächennutzungskarte nicht gefunden:", kreisRelPath);
+  return { src: null, usesKreisFallback: false };
 }
 
 export function getFlaechennutzungWohnbauImageSrc(
   bundeslandSlug: string,
   kreisSlug: string,
   ortSlug?: string,
-): string | null {
+): { src: string | null; usesKreisFallback: boolean } {
   const baseParts = ["visuals", "map_landuse", "deutschland", bundeslandSlug, kreisSlug, "flaechennutzung"];
-  const filename = ortSlug
-    ? `flaechennutzung_${kreisSlug}_${ortSlug}_wohnbau.webp`
-    : `flaechennutzung_${kreisSlug}_wohnbau.webp`;
-  const relPath = path.join(...baseParts, filename);
-
-  const publicPath = path.join(process.cwd(), "public", relPath);
-  const dataPath = path.join(process.cwd(), "data", relPath);
-
-  if (fs.existsSync(publicPath) || fs.existsSync(dataPath)) {
-    return `/${relPath.replace(/\\/g, "/")}`;
-  }
+  const resolvePath = (relPath: string) => {
+    const publicPath = path.join(process.cwd(), "public", relPath);
+    const dataPath = path.join(process.cwd(), "data", relPath);
+    return fs.existsSync(publicPath) || fs.existsSync(dataPath) ? `/${relPath.replace(/\\/g, "/")}` : null;
+  };
 
   if (ortSlug) {
-    return getFlaechennutzungWohnbauImageSrc(bundeslandSlug, kreisSlug);
+    const ortRelPath = path.join(...baseParts, `flaechennutzung_${kreisSlug}_${ortSlug}_wohnbau.webp`);
+    const ortSrc = resolvePath(ortRelPath);
+    if (ortSrc) return { src: ortSrc, usesKreisFallback: false };
   }
 
-  console.warn("Wohnbau-Flächennutzungskarte nicht gefunden:", relPath);
-  return null;
+  const kreisRelPath = path.join(...baseParts, `flaechennutzung_${kreisSlug}_wohnbau.webp`);
+  const kreisSrc = resolvePath(kreisRelPath);
+  if (kreisSrc) return { src: kreisSrc, usesKreisFallback: Boolean(ortSlug) };
+
+  console.warn("Wohnbau-Flächennutzungskarte nicht gefunden:", kreisRelPath);
+  return { src: null, usesKreisFallback: false };
 }
 
 export function getLegendHtml(theme: string): string | null {

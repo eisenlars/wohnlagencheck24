@@ -588,7 +588,16 @@ export function buildWohnmarktsituationVM(args: {
       const rows = pickRows(data.bauueberhang_baufortschritt);
       if (!rows.length) return { categories: [], bars: [], lines: [] };
 
-      const hasOlData = rows.some((row) => toNumber(row["anzahl_bauueberhang_noch_nicht_begonnen_ol"]) !== null);
+      const hasOlData = rows.some((row) =>
+        [
+          "anzahl_bauueberhang_noch_nicht_begonnen_ol",
+          "anzahl_bauueberhang_noch_nicht_unter_dach_ol",
+          "anzahl_bauueberhang_unter_dach_ol",
+        ].some((key) => {
+          const value = toNumber(row[key]);
+          return typeof value === "number" && Number.isFinite(value) && value !== 0;
+        }),
+      );
       const useOl = level === "ort" && hasOlData;
 
       return buildComboFromRows({
@@ -629,6 +638,22 @@ export function buildWohnmarktsituationVM(args: {
           },
         ],
       });
+    })(),
+    bauueberhangBaufortschrittUsesKreisFallback: (() => {
+      if (level !== "ort") return false;
+      const rows = pickRows(data.bauueberhang_baufortschritt);
+      if (!rows.length) return false;
+      const hasOlData = rows.some((row) =>
+        [
+          "anzahl_bauueberhang_noch_nicht_begonnen_ol",
+          "anzahl_bauueberhang_noch_nicht_unter_dach_ol",
+          "anzahl_bauueberhang_unter_dach_ol",
+        ].some((key) => {
+          const value = toNumber(row[key]);
+          return typeof value === "number" && Number.isFinite(value) && value !== 0;
+        }),
+      );
+      return !hasOlData;
     })(),
   };
 }

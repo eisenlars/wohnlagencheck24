@@ -38,6 +38,7 @@ export type WohnmarktsituationVM = {
   baufertigstellungenIntro: string;
   baugenehmigungenIntro: string;
   bauueberhangBaufortschrittText: string;
+  bauueberhangBaufortschrittUsesKreisFallback?: boolean;
 
   bevoelkerungsentwicklungText: string;
   haushalteText: string;

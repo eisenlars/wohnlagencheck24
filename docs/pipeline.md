@@ -1,11 +1,13 @@
-## Pipeline und Partnerdaten (Supabase -> JSON -> Frontend)
+## Pipeline und Partnerdaten (JSON -> Supabase -> Frontend)
 
 Dieser Leitfaden beschreibt den aktuellen Datenfluss fuer Partneranpassungen
 und die JSON-Pipeline. Ziel ist, dass neue Teammitglieder die Logik schnell
 verstehen und sicher erweitern koennen.
 
-### 1) Quelle der Wahrheit fuer das Portal
-- Frontend liest weiterhin nur aus den JSON-Reports unter `data/json/reports/`.
+### 1) Quelle fuer das Portal
+- Frontend liest aktuell die Daten für KPIs und Charts aus den JSON-Reports unter `data/json/reports/`.
+- Frontend soll Texte jetzt über supabase lesen
+- 
 - Partnerdaten wirken erst, nachdem das Python-Skript die JSON-Dateien neu
   generiert/aktualisiert hat.
 
@@ -40,9 +42,9 @@ erfolgreichen Lauf dieses Skripts.
 
 ### 5) Texte (Unique Content)
 - Partner koennen Texte via Dashboard (und KI) individualisieren.
-- Die Texte liegen zuerst in `report_texts`, werden dann durch das Python-Update
-  in die JSON-Reports ueberfuehrt.
-- Die JSON bleibt dadurch einzige Quelle fuer die Ausgabe.
+- Die Texte liegen in `report_texts`
+- Die JSON bleibt Ursprungsquelle 
+- `report_texts` fuer die Ausgabe in den Editierfeldern des Partnerbereichs und im Frontend.
 
 ### 6) Geplante Erweiterungen
 - CTA-Daten fuer KI-Immobilienbewertung

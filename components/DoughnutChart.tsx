@@ -74,9 +74,6 @@ export function DoughnutChart({
   }
 
   const total = values.reduce((acc, v) => acc + v, 0);
-  if (!(total > 0)) {
-    return <p className="small text-muted mb-0">{emptyText}</p>;
-  }
 
   const colors = [
     "rgba(75,192,192,0.9)",
@@ -86,7 +83,7 @@ export function DoughnutChart({
     "rgba(42,157,143,0.85)",
   ];
   const labelColors: Record<string, string> = {
-    Gesamt: "#E6E6E6",
+    Gesamt: "#486b7a",
     "Industrie & Gewerbe": "#0087CC",
   };
 
@@ -95,6 +92,54 @@ export function DoughnutChart({
   const padding = 2;
   const ringRadius = radius - ringWidth / 2 - padding;
   const holeRadius = ringRadius - ringWidth / 2;
+
+  const fmt = (v: number | null) =>
+    formatMetric(v, { kind: valueKind, ctx: listCtx ?? ctx, unit: unitKey });
+
+  if (!(total > 0)) {
+    return (
+      <div className="doughnut-chart">
+        {showLegend ? (
+          <div className="d-flex flex-wrap gap-3 small text-muted mb-3 justify-content-center text-center">
+            {cleaned.map((s, idx) => (
+              <div key={`${s.label}-legend-${idx}`} className="d-flex align-items-center gap-2">
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 12,
+                    height: 8,
+                    backgroundColor: s.color ?? labelColors[s.label] ?? colors[idx % colors.length],
+                    borderRadius: 2,
+                  }}
+                />
+                <span>
+                  <strong>{s.label}:</strong> {fmt(s.value)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <svg
+          role="img"
+          aria-label={`${title} – Kreisdiagramm`}
+          viewBox={`0 0 ${svgSize} ${svgSize}`}
+          width="100%"
+          height={svgSize}
+          className="mb-3"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <circle
+            cx={radius}
+            cy={radius}
+            r={ringRadius}
+            stroke="#E6E6E6"
+            strokeWidth={ringRadius - holeRadius}
+            fill="none"
+          />
+        </svg>
+      </div>
+    );
+  }
 
   const arcs = cleaned.reduce<{
     cursor: number;
@@ -118,9 +163,6 @@ export function DoughnutChart({
     },
     { cursor: 0, items: [] },
   ).items;
-
-  const fmt = (v: number | null) =>
-    formatMetric(v, { kind: valueKind, ctx: listCtx ?? ctx, unit: unitKey });
 
   return (
     <div className="doughnut-chart">

@@ -76,7 +76,9 @@ export type PageModel = {
     kaufkraftindexLegendHtml?: string | null;
     grundstueckspreisLegendHtml?: string | null;
     flaechennutzungGewerbeImageSrc?: string | null;
+    flaechennutzungGewerbeUsesKreisFallback?: boolean;
     flaechennutzungWohnbauImageSrc?: string | null;
+    flaechennutzungWohnbauUsesKreisFallback?: boolean;
     wohnungssaldoMapSvg?: string | null;
     wohnungssaldoLegendHtml?: string | null;
     wohnlagencheckMapSvgs?: Partial<Record<string, string | null>>;
@@ -258,8 +260,18 @@ export function buildPageModel(route: RouteModel): PageModel | null {
     const wohnungssaldoLegendHtml = getLegendHtml("wohnungssaldo");
     const kaufkraftindexMapSvg = getKaufkraftindexMapSvg(bundeslandSlug, kreisSlug);
     const kaufkraftindexLegendHtml = getLegendHtml("kaufkraftindex");
-    const flaechennutzungGewerbeImageSrc = getFlaechennutzungGewerbeImageSrc(bundeslandSlug, kreisSlug);
-    const flaechennutzungWohnbauImageSrc = getFlaechennutzungWohnbauImageSrc(
+    const {
+      src: flaechennutzungGewerbeImageSrc,
+      usesKreisFallback: flaechennutzungGewerbeUsesKreisFallback,
+    } = getFlaechennutzungGewerbeImageSrc(
+      bundeslandSlug,
+      kreisSlug,
+      route.level === "ort" ? ortSlug : undefined,
+    );
+    const {
+      src: flaechennutzungWohnbauImageSrc,
+      usesKreisFallback: flaechennutzungWohnbauUsesKreisFallback,
+    } = getFlaechennutzungWohnbauImageSrc(
       bundeslandSlug,
       kreisSlug,
       route.level === "ort" ? ortSlug : undefined,
@@ -293,7 +305,9 @@ export function buildPageModel(route: RouteModel): PageModel | null {
       kaufkraftindexMapSvg,
       kaufkraftindexLegendHtml,
       flaechennutzungGewerbeImageSrc,
+      flaechennutzungGewerbeUsesKreisFallback,
       flaechennutzungWohnbauImageSrc,
+      flaechennutzungWohnbauUsesKreisFallback,
       wohnungssaldoMapSvg,
       wohnungssaldoLegendHtml,
       wohnlagencheckMapSvgs,

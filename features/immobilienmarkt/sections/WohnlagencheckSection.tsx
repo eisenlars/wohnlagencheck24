@@ -583,7 +583,7 @@ export function WohnlagencheckSection(
               <div className="row g-4">
                 <div className="col-12">
                   <div className="d-flex justify-content-center">
-                    <div style={{ width: "50%", minWidth: "260px" }}>
+                    <div style={{ width: "100%", maxWidth: "320px" }}>
                       <DoughnutChart
                         title="Verkehrsflächenanteil"
                         slices={mobilitaet.verkehrsflaechenanteil}

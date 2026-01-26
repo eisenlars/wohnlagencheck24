@@ -84,7 +84,9 @@
   font-weight: 600;
   color: #486b7a;
   text-transform:uppercase;
-  letter-spacing: .1em
+  letter-spacing: .1em;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .home-cutout-claim {
@@ -107,6 +109,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
+}
+
+.home-cutout-actions .btn {
+  white-space: normal;
+  text-align: center;
 }
 
 .home-cutout-button {
@@ -208,6 +215,8 @@
   .home-cutout-media-col,
   .home-cutout-brand-col {
     flex: 1 1 100%;
+    min-width: 0;
+    width: 100%;
   }
 
   .home-cutout-frame {
@@ -216,6 +225,10 @@
 
   .home-cutout-logo {
     height: 52px;
+  }
+
+  .home-cutout-title {
+    font-size: 2.1rem;
   }
 
   .home-breaker-inner {

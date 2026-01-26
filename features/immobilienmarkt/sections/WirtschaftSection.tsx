@@ -40,6 +40,7 @@ export function WirtschaftSection(
   const mapSvg = props.assets?.kaufkraftindexMapSvg ?? null;
   const legendHtml = props.assets?.kaufkraftindexLegendHtml ?? null;
   const landuseImageSrc = props.assets?.flaechennutzungGewerbeImageSrc ?? null;
+  const landuseUsesKreisFallback = props.assets?.flaechennutzungGewerbeUsesKreisFallback ?? false;
   const bipCategories = Array.from(
     new Set(vm.bipAbs.flatMap((s) => (s.points ?? []).map((p) => p.jahr))),
   ).sort((a, b) => a - b);
@@ -178,7 +179,9 @@ export function WirtschaftSection(
           <div className="col-12 col-lg-4">
             <DoughnutChart
               title="Gewerbeflächenanteil"
-              slices={vm.gewerbeflaechenanteil}
+              slices={vm.gewerbeflaechenanteil.map((slice) =>
+                slice.label === "Gesamt" ? { ...slice, color: "#E6E6E6" } : slice,
+              )}
               valueKind="anzahl"
               unitKey="count"
               svgSize={220}
@@ -221,6 +224,9 @@ export function WirtschaftSection(
                     Für diesen Landkreis liegt aktuell noch keine Flächennutzungskarte vor.
                   </p>
                 )}
+                {landuseImageSrc && landuseUsesKreisFallback ? (
+                  <p className="small text-muted mt-2 mb-0">(Kreisangaben)</p>
+                ) : null}
               </div>
             </div>
           </div>
@@ -232,7 +238,7 @@ export function WirtschaftSection(
 
       <section className="mb-5" id="bip">
       
-        <h3 className="text-center">Bruttoinlandsprodukt</h3>
+        <h3 className="text-center">Bruttoinlandsprodukt{vm.level === "ort" ? " (Kreisangaben)" : ""}</h3>
         
         {vm.bruttoinlandsproduktText ? <p className="mx-auto my-5 w-75">{vm.bruttoinlandsproduktText}</p> : null}
         
@@ -302,7 +308,7 @@ export function WirtschaftSection(
 
       <section className="mb-5" id="gewerbesaldo">
         
-        <h3 className="text-center">Gewerbesaldo</h3>
+        <h3 className="text-center">Gewerbesaldo{vm.level === "ort" ? " (Kreisangaben)" : ""}</h3>
       
         <div className="row g-4">
           <div className="col-12 col-lg-12">
@@ -469,11 +475,21 @@ export function WirtschaftSection(
                   <KpiValue
                     icon={DEFAULT_ICON}
                     iconAlt="Arbeitsplatzzentralität"
-                    items={[{ label: "Arbeitsplatzzentralität", value: vm.kpis.arbeitsplatzzentralitaet, kind: "quote", unitKey: "none" }]}
+                    items={[
+                      {
+                        label: `Arbeitsplatzzentralität${vm.arbeitsplatzzentralitaetUsesKreisFallback ? " (Kreisangaben)" : ""}`,
+                        value: vm.kpis.arbeitsplatzzentralitaet,
+                        kind: "quote",
+                        unitKey: "none",
+                      },
+                    ]}
                     ctx="kpi"
                     size="xl"
                     showUnit={false}
                   />
+                  {vm.arbeitsplatzzentralitaetUsesKreisFallback ? (
+                    <p className="small text-muted mt-2 mb-0">Kreisangaben</p>
+                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -493,13 +509,23 @@ export function WirtschaftSection(
                   <KpiValue
                     icon={DEFAULT_ICON}
                     iconAlt="Pendlersaldo"
-                    items={[{ label: "Pendlersaldo", value: vm.kpis.pendlersaldo, kind: "anzahl", unitKey: "count" }]}
+                    items={[
+                      {
+                        label: `Pendlersaldo${vm.pendlersaldoUsesKreisFallback ? " (Kreisangaben)" : ""}`,
+                        value: vm.kpis.pendlersaldo,
+                        kind: "anzahl",
+                        unitKey: "count",
+                      },
+                    ]}
                     ctx="kpi"
                     size="xl"
                     showUnit={false}
                     caption="Pendler"
                     captionClassName="small text-muted mt-1"
                   />
+                  {vm.pendlersaldoUsesKreisFallback ? (
+                    <p className="small text-muted mt-2 mb-0">Kreisangaben</p>
+                  ) : null}
                 </div>
               </div>
             ) : null}

@@ -191,6 +191,14 @@ export function buildWirtschaftVM(args: {
     .filter((row) => row.label);
 
   const flaecheGewerbe = toNumberOrNull(data.flaechennutzung_gewerbe?.[0]?.flaechennutzung_gewerbe);
+  const arbeitsplatzzentralitaetOl = toNumberOrNull(allgemeine["arbeitsplatzzentralitaet_ol"]);
+  const arbeitsplatzzentralitaetK = toNumberOrNull(allgemeine["arbeitsplatzzentralitaet_k"]);
+  const pendlersaldoOl = toNumberOrNull(allgemeine["pendlersaldo_ol"]);
+  const pendlersaldoK = toNumberOrNull(allgemeine["pendlersaldo_k"]);
+  const arbeitsplatzzentralitaetUsesKreisFallback =
+    level === "ort" && (arbeitsplatzzentralitaetOl === null || arbeitsplatzzentralitaetOl === 0);
+  const pendlersaldoUsesKreisFallback = level === "ort" && (pendlersaldoOl === null || pendlersaldoOl === 0);
+
   const kpis = {
     kaufkraftindex:
       level === "ort"
@@ -207,10 +215,10 @@ export function buildWirtschaftVM(args: {
       level === "ort" ? toNumberOrNull(allgemeine["kaufkraft_real_ol"]) : toNumberOrNull(allgemeine["kaufkraft_real_k"]),
     arbeitsplatzzentralitaet:
       level === "ort"
-        ? toNumberOrNull(allgemeine["arbeitsplatzzentralitaet_ol"])
-        : toNumberOrNull(allgemeine["arbeitsplatzzentralitaet_k"]),
+        ? (arbeitsplatzzentralitaetUsesKreisFallback ? arbeitsplatzzentralitaetK : arbeitsplatzzentralitaetOl)
+        : arbeitsplatzzentralitaetK,
     pendlersaldo:
-      level === "ort" ? toNumberOrNull(allgemeine["pendlersaldo_ol"]) : toNumberOrNull(allgemeine["pendlersaldo_k"]),
+      level === "ort" ? (pendlersaldoUsesKreisFallback ? pendlersaldoK : pendlersaldoOl) : pendlersaldoK,
     arbeitslosenquote:
       level === "ort"
         ? toNumberOrNull(allgemeine["arbeitslosenquote_ol"])
@@ -416,6 +424,8 @@ export function buildWirtschaftVM(args: {
     svBeschaeftigteArbeitsortText,
     arbeitsplatzzentralitaetText,
     pendlerText,
+    arbeitsplatzzentralitaetUsesKreisFallback,
+    pendlersaldoUsesKreisFallback,
 
     berater: {
       name: beraterName,

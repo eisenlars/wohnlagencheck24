@@ -322,6 +322,13 @@ h6 {
 
 /* mobiler Modus: Text + Button zentriert */
 @media (max-width: 767px) {
+  .berater-section {
+    margin: 3rem 0;
+    padding: 0 1.25rem;
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+
   .berater-text {
     text-align: center;
   }
@@ -400,6 +407,27 @@ h6 {
 
 .zitat-autor::before {
     content: "- ";
+}
+
+@media (max-width: 767px) {
+  .zitat {
+    width: 100%;
+    padding: 28px 20px 24px;
+  }
+
+  .zitat::after, .zitat::before {
+    font-size: 120px;
+    left: -2px;
+    top: -28px;
+  }
+
+  .zitat-text {
+    font-size: 18px;
+  }
+
+  .zitat-footer::after, .zitat-text::before {
+    width: 35%;
+  }
 }
 
 
@@ -714,9 +742,12 @@ h6 {
 .kreis-subnav-tabs-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
 }
 
 .kreis-subnav-tabs {
+  display: inline-flex;
+  min-width: 100%;
   flex-wrap: nowrap !important;
   white-space: nowrap;
 }
@@ -791,7 +822,7 @@ h6 {
   white-space: nowrap; 
   text-transform:uppercase;
   letter-spacing: .1em;
-  margin: 0 0 0.25rem;
+  margin: 0rem;
 }
 
 
@@ -1042,6 +1073,18 @@ h6 {
 @media (max-width: 575.98px) {
   .region-hero-text {
     max-width: 100%;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .kpi-size-mega {
+    --kpi-label-size: 0.9rem;
+    --kpi-value-size: 3rem;
+    --kpi-value-weight: 800;
+    --kpi-highlight-size: 7rem;
+    --kpi-highlight-weight: 900;
+    --kpi-unit-size: 1.1rem;
+    --kpi-unit-weight: 650;
   }
 }
 

@@ -113,11 +113,52 @@ export function WohnmarktsituationSection(
   const wohnungsbestandAnzahlAbsolutValue = parseSaldoValue(vm.kpis.wohnungsbestandAnzahlAbsolut);
   const leerstandsquoteValue = parseSaldoValue(vm.kpis.leerstandsquote);
   const wohnungsbestandMittlereWohnflaecheValue = parseSaldoValue(vm.kpis.wohnungsbestandMittlereWohnflaeche);
+  const showMittlereWohnflaeche = wohnungsbestandMittlereWohnflaecheValue !== null && wohnungsbestandMittlereWohnflaecheValue !== 0;
+  const wohnflaecheHasChartData = (vm.wohnungsbestandWohnflaeche ?? []).some((serie) =>
+    (serie.points ?? []).some((point) => {
+      const value = toNumberOrNull(point?.value);
+      return typeof value === "number" && Number.isFinite(value);
+    }),
+  );
+  const showWohnflaecheSection = showMittlereWohnflaeche || wohnflaecheHasChartData;
   const baufertigstellungenAnzahlAbsolutValue = parseSaldoValue(vm.kpis.baufertigstellungenAnzahlAbsolut);
   const baufertigstellungenFlaecheAbsolutValue = parseSaldoValue(vm.kpis.baufertigstellungenFlaecheAbsolut);
+  const showBaufertigstellungenAnzahl = baufertigstellungenAnzahlAbsolutValue !== null;
+  const baufertigstellungenBothZero =
+    baufertigstellungenAnzahlAbsolutValue === 0 && baufertigstellungenFlaecheAbsolutValue === 0;
+  const showBaufertigstellungenFlaeche =
+    baufertigstellungenFlaecheAbsolutValue !== null &&
+    (baufertigstellungenBothZero ||
+      baufertigstellungenAnzahlAbsolutValue === null ||
+      baufertigstellungenFlaecheAbsolutValue !== 0);
   const baugenehmigungenAnzahlAbsolutValue = parseSaldoValue(vm.kpis.baugenehmigungenAnzahlAbsolut);
   const baugenehmigungenFlaecheAbsolutValue = parseSaldoValue(vm.kpis.baugenehmigungenFlaecheAbsolut);
   const baugenehmigungenErloschenValue = parseSaldoValue(vm.kpis.baugenehmigungenErloschen);
+  const showBaugenehmigungenAnzahl = baugenehmigungenAnzahlAbsolutValue !== null;
+  const baugenehmigungenAllZero =
+    baugenehmigungenAnzahlAbsolutValue === 0 &&
+    baugenehmigungenFlaecheAbsolutValue === 0 &&
+    baugenehmigungenErloschenValue === 0;
+  const showBaugenehmigungenFlaeche =
+    baugenehmigungenFlaecheAbsolutValue !== null &&
+    (baugenehmigungenAllZero ||
+      baugenehmigungenAnzahlAbsolutValue === null ||
+      baugenehmigungenFlaecheAbsolutValue !== 0);
+  const showBaugenehmigungenErloschen =
+    baugenehmigungenErloschenValue !== null &&
+    (baugenehmigungenAllZero ||
+      baugenehmigungenAnzahlAbsolutValue === null ||
+      baugenehmigungenErloschenValue !== 0);
+  const baugenehmigungenVisibleCount =
+    (showBaugenehmigungenAnzahl ? 1 : 0) +
+    (showBaugenehmigungenFlaeche ? 1 : 0) +
+    (showBaugenehmigungenErloschen ? 1 : 0);
+  const baugenehmigungenColClass =
+    baugenehmigungenVisibleCount === 3
+      ? "col-md-4"
+      : baugenehmigungenVisibleCount === 2
+        ? "col-md-6"
+        : "col-md-8";
 
   return (
     <div className="text-dark">
@@ -305,7 +346,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-none h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Abs. Bevölkerungsentwicklung</h4>
+                <h4 className="h5 mb-0">Abs. Bevölkerungsentwicklung</h4>
               </div>
               <div className="card-body">
                 <StackedComboChart
@@ -325,7 +366,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-none h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Rel. Bevölkerungsentwicklung</h4>
+                <h4 className="h5 mb-0">Rel. Bevölkerungsentwicklung</h4>
               </div>
               <div className="card-body">
                 <ZeitreiheChart
@@ -391,7 +432,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-none h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Haushalte je 1000 EW</h4>
+                <h4 className="h5 mb-0">Haushalte je 1000 EW</h4>
               </div>
               <div className="card-body">
                 <ZeitreiheChart
@@ -409,7 +450,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-none h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Haushaltsgröße nach Personenanzahl</h4>
+                <h4 className="h5 mb-0">Haushaltsgröße nach Personenanzahl</h4>
               </div>
               <div className="card-body">
                 <VergleichBarChart
@@ -481,7 +522,7 @@ export function WohnmarktsituationSection(
 
         <div className="card border-0 shadow-none h-100">
           <div className="card-header bg-white border-0 text-center">
-            <h4 className="h6 mb-0">Gesamte Bevölkerungsbewegung</h4>
+            <h4 className="h5 mb-0">Gesamte Bevölkerungsbewegung</h4>
           </div>
           <div className="card-body">
             <StackedComboChart
@@ -515,7 +556,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Natürliches Saldo – Kombination</h4>
+                <h4 className="h5 mb-0">Natürliches Saldo – Kombination</h4>
               </div>
               <div className="card-body">
                 <StackedComboChart
@@ -535,7 +576,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Natürliches Saldo je 1000 EW – Zeitreihe</h4>
+                <h4 className="h5 mb-0">Natürliches Saldo je 1000 EW – Zeitreihe</h4>
               </div>
               <div className="card-body">
                 <ZeitreiheChart
@@ -567,11 +608,11 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Gesamtwanderung – Kombination</h4>
+                <h4 className="h5 mb-0">Gesamtwanderung</h4>
               </div>
               <div className="card-body">
                 <StackedComboChart
-                  title="Gesamtwanderung – Kombination"
+                  title="Gesamtwanderung"
                   categories={vm.wanderungssaldo.categories}
                   bars={vm.wanderungssaldo.bars}
                   lines={vm.wanderungssaldo.lines}
@@ -587,11 +628,11 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Wanderungssaldo je 1000 EW – Zeitreihe 2014 bis 2024</h4>
+                <h4 className="h5 mb-0">Wanderungssaldo je 1000 EW</h4>
               </div>
               <div className="card-body">
                 <ZeitreiheChart
-                  title="Wanderungssaldo je 1000 EW – Zeitreihe 2014 bis 2024"
+                  title="Wanderungssaldo je 1000 EW"
                   series={vm.wanderungssaldoJe1000}
                   kind="anzahl"
                   unitKey="count"
@@ -613,7 +654,7 @@ export function WohnmarktsituationSection(
         <div className="col-12 col-lg-6">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-header bg-white border-0 text-center">
-              <h4 className="h6 mb-0">Außenwanderungssaldo</h4>
+              <h4 className="h5 mb-0">Außenwanderungssaldo</h4>
             </div>
             <div className="card-body">
               <StackedComboChart
@@ -634,7 +675,7 @@ export function WohnmarktsituationSection(
         <div className="col-12 col-lg-6">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-header bg-white border-0 text-center">
-              <h4 className="h6 mb-0">Wanderungssalden nach Altersklassen</h4>
+              <h4 className="h5 mb-0">Wanderungssalden nach Altersklassen</h4>
             </div>
             <div className="card-body">
               <StackedComboChart
@@ -669,7 +710,7 @@ export function WohnmarktsituationSection(
 
         <div className="card border-0 shadow-none h-100">
           <div className="card-header bg-white border-0 text-center">
-              <h4 className="h6 mb-0">Durchschnittliche Altersentwicklung</h4>
+              <h4 className="h5 mb-0">Durchschnittliche Altersentwicklung</h4>
             </div>
             <div className="card-body">
               <ZeitreiheChart
@@ -710,7 +751,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-md-4">
             <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Altersverteilung</h4>
+                <h4 className="h5 mb-0">Altersverteilung</h4>
               </div>
               <div className="card-body">
                 <DoughnutChart
@@ -809,6 +850,9 @@ export function WohnmarktsituationSection(
                     style={{ width: "100%", height: "auto" }}
                   />
                 )}
+                {props.assets?.flaechennutzungWohnbauImageSrc && props.assets?.flaechennutzungWohnbauUsesKreisFallback ? (
+                  <p className="small text-muted mt-2 mb-0">(Kreisangaben)</p>
+                ) : null}
               </div>
             </div>
           </div>
@@ -818,7 +862,7 @@ export function WohnmarktsituationSection(
 
         <div className="row g-4 my-5" id="wohnungsbestand-gebaeude">
           <div className="col-12 col-lg-4">
-            <h4 className="h4 text-center mb-3">Wohnungsbestand</h4>
+            <h4 className="h5 text-center mb-3">Wohnungsbestand</h4>
             <DoughnutChart
               title="Wohnungsbestand"
               slices={ensureDoughnutSlices(vm.wohnungsbestandGebaeudeverteilung, wohnungsbestandValue)}
@@ -833,7 +877,7 @@ export function WohnmarktsituationSection(
             ) : null}
           </div>
           <div className="col-12 col-lg-4">
-            <h4 className="h4 text-center mb-3">Baufertigstellungen</h4>
+            <h4 className="h5 text-center mb-3">Baufertigstellungen</h4>
             <DoughnutChart
               title="Baufertigstellungen"
               slices={ensureDoughnutSlices(vm.baufertigstellungenGebaeudeverteilung, baufertigstellungenValue)}
@@ -848,7 +892,7 @@ export function WohnmarktsituationSection(
             ) : null}
           </div>
           <div className="col-12 col-lg-4">
-            <h4 className="h4 text-center mb-3">Baugenehmigungen</h4>
+            <h4 className="h5 text-center mb-3">Baugenehmigungen</h4>
             <DoughnutChart
               title="Baugenehmigungen"
               slices={ensureDoughnutSlices(vm.baugenehmigungenGebaeudeverteilung, baugenehmigungenValue)}
@@ -869,7 +913,7 @@ export function WohnmarktsituationSection(
         <div className="mt-3" id="bauueberhang-genehmigung-fertigstellung">
           <div className="card border-0 shadow-none h-100">
             <div className="card-header bg-white border-0 text-center">
-              <h4 className="h6 mb-0">Gegenüberstellung von Genehmigungen, Fertigstellungen, Bauüberhang und Bauabgängen</h4>
+              <h4 className="h5 mb-0">Gegenüberstellung von Genehmigungen, Fertigstellungen, Bauüberhang und Bauabgängen</h4>
             </div>
             <div className="card-body">
               <StackedComboChart
@@ -894,45 +938,15 @@ export function WohnmarktsituationSection(
       </section>
       
       
-
-      {/* Wohnraumsaldo */}
-      <section className="mb-5" id="wohnraumsaldo">
-        
-        <h4 className="mx-auto text-center">Wohnraumbestand und Wohnraumsaldo</h4>
-        
-        {vm.wohnungsbestandIntro ? <p className="mx-auto my-5 w-75">{vm.wohnungsbestandIntro}</p> : null}
-
-        <div className="row g-4 align-items-center my-4">
-          <div className="col-12 col-lg-6 text-center">
-            <Image
-              src={saldoStatus.image}
-              alt={saldoStatus.label}
-              width={320}
-              height={200}
-              style={{ width: "70%", height: "auto" }}
-            />
-          </div>
-          <div className="col-12 col-lg-6 text-center">
-            <KpiValue
-              icon={DEFAULT_ICON}
-              iconAlt="Wohnraumsaldo"
-              items={[{ label: "Wohnraumsaldo", value: saldoValue, kind: "anzahl", unitKey: "none" }]}
-              ctx="kpi"
-              size="ultra"
-              showUnit={false}
-              caption={saldoStatus.label}
-              captionClassName="small text-muted mt-1"
-            />
-          </div>
-        </div>
-      </section>
-
       {/* Wohnungsbestand Anzahl */}
       <section className="mb-5" id="wohnungsbestand-anzahl">
+        
+        <h3 className="mx-auto text-center">Wohnungsbestand</h3>
+        
         <div className="row g-3 mb-3">
           {wohnungsbestandAnzahlAbsolutValue !== null ? (
             <div className={leerstandsquoteValue ? "col-12 col-md-6" : "col-12"}>
-              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
                 <div className="card-body">
                   <KpiValue
                     icon={DEFAULT_ICON}
@@ -950,7 +964,7 @@ export function WohnmarktsituationSection(
           ) : null}
           {leerstandsquoteValue ? (
             <div className="col-12 col-md-6">
-              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+              <div className="card border-0 shadow-none h-100 text-center d-flex align-items-center">
                 <div className="card-body">
                   <KpiValue
                     icon={DEFAULT_ICON}
@@ -974,7 +988,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Wohnungsanzahl</h4>
+                <h4 className="h5 mb-0">Wohnungsanzahl</h4>
               </div>
               <div className="card-body">
                 <StackedComboChart
@@ -994,7 +1008,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Wohnungsanzahl pro 1000 EW</h4>
+                <h4 className="h5 mb-0">Wohnungsanzahl pro 1000 EW</h4>
               </div>
               <div className="card-body">
                 <ZeitreiheChart
@@ -1013,57 +1027,59 @@ export function WohnmarktsituationSection(
       </section>
 
       {/* Wohnfläche */}
-      <section className="mb-5" id="wohnflaeche">
-        {vm.wohnungsbestandWohnflaecheText ? <p className="mx-auto my-5 w-75">{vm.wohnungsbestandWohnflaecheText}</p> : null}
+      {showWohnflaecheSection ? (
+        <section className="mb-5" id="wohnflaeche">
+          {vm.wohnungsbestandWohnflaecheText ? <p className="mx-auto my-5 w-75">{vm.wohnungsbestandWohnflaecheText}</p> : null}
 
-        <div className="row g-4">
-          <div className="col-12 col-lg-6">
-            <div className="card border-0 shadow-sm h-100">
-              <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Wohnfläche pro EW</h4>
-              </div>
-              <div className="card-body">
-                <ZeitreiheChart
-                  title="Wohnfläche pro EW"
-                  series={vm.wohnungsbestandWohnflaeche}
-                  kind="anzahl"
-                  unitKey="count"
-                  ctx="chart"
-                  svgWidth={720}
-                  svgHeight={260}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="col-12 col-lg-6">
-            {wohnungsbestandMittlereWohnflaecheValue !== null ? (
-              <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+          <div className={`row g-4${showMittlereWohnflaeche ? "" : " justify-content-center"}`}>
+            <div className={`col-12 ${showMittlereWohnflaeche ? "col-lg-6" : "col-lg-8"}`}>
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-header bg-white border-0 text-center">
+                  <h4 className="h5 mb-0">Wohnfläche pro EW</h4>
+                </div>
                 <div className="card-body">
-                  <KpiValue
-                    icon={DEFAULT_ICON}
-                    iconAlt="Ø Wohnfläche"
-                    items={[{ label: "Ø Wohnfläche", value: wohnungsbestandMittlereWohnflaecheValue, kind: "anzahl", unitKey: "none" }]}
-                    ctx="kpi"
-                    size="xl"
-                    showUnit={false}
-                    caption="m²"
-                    captionClassName="small text-muted mt-1"
+                  <ZeitreiheChart
+                    title="Wohnfläche pro EW"
+                    series={vm.wohnungsbestandWohnflaeche}
+                    kind="anzahl"
+                    unitKey="count"
+                    ctx="chart"
+                    svgWidth={720}
+                    svgHeight={260}
                   />
                 </div>
               </div>
-            ) : null}
+            </div>
+            <div className="col-12 col-lg-6">
+              {showMittlereWohnflaeche ? (
+                <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
+                  <div className="card-body">
+                    <KpiValue
+                      icon={DEFAULT_ICON}
+                      iconAlt="Ø Wohnfläche"
+                      items={[{ label: "Ø Wohnfläche", value: wohnungsbestandMittlereWohnflaecheValue, kind: "anzahl", unitKey: "none" }]}
+                      ctx="kpi"
+                      size="xl"
+                      showUnit={false}
+                      caption="m²"
+                      captionClassName="small text-muted mt-1"
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* Baufertigstellungen */}
       <section className="mb-5" id="baufertigstellungen">
-        <h4 className="mx-auto text-center">Baufertigstellungen</h4>
+        <h3 className="mx-auto text-center">Baufertigstellungen</h3>
         {vm.baufertigstellungenIntro ? <p className="mx-auto my-5 w-75">{vm.baufertigstellungenIntro}</p> : null}
 
-        <div className="row g-3 mb-3">
-          {baufertigstellungenAnzahlAbsolutValue !== null ? (
-            <div className="col-12 col-md-6">
+        <div className={`row g-3 mb-3${showBaufertigstellungenAnzahl && showBaufertigstellungenFlaeche ? "" : " justify-content-center"}`}>
+          {showBaufertigstellungenAnzahl ? (
+            <div className={`col-12 ${showBaufertigstellungenAnzahl && showBaufertigstellungenFlaeche ? "col-md-6" : "col-md-8"}`}>
               <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
                 <div className="card-body">
                   <KpiValue
@@ -1080,8 +1096,8 @@ export function WohnmarktsituationSection(
               </div>
             </div>
           ) : null}
-          {baufertigstellungenFlaecheAbsolutValue !== null ? (
-            <div className="col-12 col-md-6">
+          {showBaufertigstellungenFlaeche ? (
+            <div className={`col-12 ${showBaufertigstellungenAnzahl && showBaufertigstellungenFlaeche ? "col-md-6" : "col-md-8"}`}>
               <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
                 <div className="card-body">
                   <KpiValue
@@ -1106,7 +1122,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-none h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Fertiggestellte Wohnungen</h4>
+                <h4 className="h5 mb-0">Fertiggestellte Wohnungen</h4>
               </div>
               <div className="card-body">
                 <StackedComboChart
@@ -1126,7 +1142,7 @@ export function WohnmarktsituationSection(
           <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-none h-100">
               <div className="card-header bg-white border-0 text-center">
-                <h4 className="h6 mb-0">Baufertigstellungen pro 1000 EW</h4>
+                <h4 className="h5 mb-0">Baufertigstellungen pro 1000 EW</h4>
               </div>
               <div className="card-body">
                 <ZeitreiheChart
@@ -1146,12 +1162,12 @@ export function WohnmarktsituationSection(
 
       {/* Baugenehmigungen */}
       <section className="mb-5" id="baugenehmigungen">
-        <h4 className="mx-auto text-center">Baugenehmigungen</h4>
+        <h3 className="mx-auto text-center">Baugenehmigungen</h3>
         {vm.baugenehmigungenIntro ? <p className="mx-auto my-5 w-75">{vm.baugenehmigungenIntro}</p> : null}
 
-        <div className="row g-3 mb-3">
-          {baugenehmigungenAnzahlAbsolutValue !== null ? (
-            <div className="col-12 col-md-4">
+        <div className={`row g-3 mb-3${baugenehmigungenVisibleCount < 3 ? " justify-content-center" : ""}`}>
+          {showBaugenehmigungenAnzahl ? (
+            <div className={`col-12 ${baugenehmigungenColClass}`}>
               <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
                 <div className="card-body">
                   <KpiValue
@@ -1168,8 +1184,8 @@ export function WohnmarktsituationSection(
               </div>
             </div>
           ) : null}
-          {baugenehmigungenFlaecheAbsolutValue !== null ? (
-            <div className="col-12 col-md-4">
+          {showBaugenehmigungenFlaeche ? (
+            <div className={`col-12 ${baugenehmigungenColClass}`}>
               <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
                 <div className="card-body">
                   <KpiValue
@@ -1186,8 +1202,8 @@ export function WohnmarktsituationSection(
               </div>
             </div>
           ) : null}
-          {baugenehmigungenErloschenValue !== null ? (
-            <div className="col-12 col-md-4">
+          {showBaugenehmigungenErloschen ? (
+            <div className={`col-12 ${baugenehmigungenColClass}`}>
               <div className="card border-0 shadow-sm h-100 text-center d-flex align-items-center">
                 <div className="card-body">
                   <KpiValue
@@ -1229,7 +1245,6 @@ export function WohnmarktsituationSection(
               kind="anzahl"
               unitKey="count"
               ctx="chart"
-              svgWidth={420}
               svgHeight={260}
             />
           </div>
@@ -1238,13 +1253,22 @@ export function WohnmarktsituationSection(
 
       {/* Bauüberhang und Baufortschritt */}
       <section className="mb-5" id="bauueberhang-baufortschritt">
-        <h4 className="mx-auto text-center">Bauüberhang und Baufortschritt</h4>
+        <h3 className="mx-auto text-center">Bauüberhang und Baufortschritt</h3>
         {vm.bauueberhangBaufortschrittText ? <p className="mx-auto my-5 w-75">{vm.bauueberhangBaufortschrittText}</p> : null}
 
+        {vm.bauueberhangBaufortschrittUsesKreisFallback ? (
+          <p className="small text-muted text-center mb-3">
+            Hinweis: Für die Ortsebene liegen keine Bauüberhang-Daten vor. Darstellung auf Kreisebene.
+          </p>
+        ) : null}
+
         <StackedComboChart
-          title="Bauüberhang und Baufortschritt (Wohnungsneubau)"
+          title={`Bauüberhang und Baufortschritt (Wohnungsneubau)${vm.bauueberhangBaufortschrittUsesKreisFallback ? " (Kreisangaben)" : ""}`}
           categories={vm.bauueberhangBaufortschritt.categories}
-          bars={vm.bauueberhangBaufortschritt.bars}
+          bars={vm.bauueberhangBaufortschritt.bars.filter((series) => {
+            if (series.key !== "genehmigung_erloschen") return true;
+            return series.values.some((value) => typeof value === "number" && Number.isFinite(value) && value !== 0);
+          })}
           lines={vm.bauueberhangBaufortschritt.lines}
           valueKind="anzahl"
           unitKey="count"
@@ -1253,6 +1277,40 @@ export function WohnmarktsituationSection(
           svgHeight={300}
         />
       </section>
+      
+      
+      {/* Wohnraumsaldo */}
+      <section className="mb-5" id="wohnraumsaldo">
+        
+        <h4 className="mx-auto text-center">Zusammenfassung Wohnraumsaldo</h4>
+        
+        {vm.wohnungsbestandIntro ? <p className="mx-auto my-5 w-75">{vm.wohnungsbestandIntro}</p> : null}
+
+        <div className="row g-4 align-items-center my-4">
+          <div className="col-12 col-lg-6 text-center">
+            <Image
+              src={saldoStatus.image}
+              alt={saldoStatus.label}
+              width={320}
+              height={200}
+              style={{ width: "70%", height: "auto" }}
+            />
+          </div>
+          <div className="col-12 col-lg-6 text-center">
+            <KpiValue
+              icon={DEFAULT_ICON}
+              iconAlt="Wohnraumsaldo"
+              items={[{ label: "Wohnraumsaldo", value: saldoValue, kind: "anzahl", unitKey: "none" }]}
+              ctx="kpi"
+              size="ultra"
+              showUnit={false}
+              caption={saldoStatus.label}
+              captionClassName="small text-muted mt-1"
+            />
+          </div>
+        </div>
+      </section>
+      
 
       {/* FAQ */}
       <section className="mb-0" id="faq-wohnmarktsituation">
