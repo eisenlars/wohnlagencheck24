@@ -33,13 +33,8 @@ export function BundeslandHeroMedia(props: BundeslandHeroMediaProps) {
 
     updateIsMobile();
 
-    if ("addEventListener" in mediaQuery) {
-      mediaQuery.addEventListener("change", updateIsMobile);
-      return () => mediaQuery.removeEventListener("change", updateIsMobile);
-    }
-
-    mediaQuery.addListener(updateIsMobile);
-    return () => mediaQuery.removeListener(updateIsMobile);
+    mediaQuery.addEventListener("change", updateIsMobile);
+    return () => mediaQuery.removeEventListener("change", updateIsMobile);
   }, []);
 
   if (isMobile === null) return null;
