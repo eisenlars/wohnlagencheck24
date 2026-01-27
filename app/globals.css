@@ -1151,6 +1151,10 @@ h6 {
   height: 100%;
 }
 
+.region-hero-text {
+  color: #fff
+}
+
 /* Textblock links im Hero */
 .region-hero-text {
   max-width: 60%;
@@ -1166,9 +1170,9 @@ h6 {
   color: #000;
   border: 1px solid #fff;
   border-radius: 1rem 1rem 0 0;
-  padding: 1rem 1.25rem;
+  padding: 0.6rem 0.4rem;
   font-size: 1.1rem;
-  flex: 1;
+  flex: 0.4;
 }
 
 @keyframes regionHeroSlide {
@@ -1362,6 +1366,10 @@ h6 {
     box-sizing: border-box;
     padding-inline: 0.75rem;
   }
+  
+  .region-hero-inner h4 {
+    color:#fff
+  }
 
   .region-hero-tacho-wrap {
     padding-bottom: 0 !important;
@@ -1392,14 +1400,12 @@ h6 {
   }
 
   .region-hero-buttons {
-    max-width: min(320px, 90%);
+    max-width: min(320px, 100%);
     margin: 0 auto;
-    width: 100%;
+    width: 80%;
   }
 
   .hero-overlay-action {
-    padding: 0.6rem 0.8rem;
-    font-size: 0.9rem;
   }
 }
 

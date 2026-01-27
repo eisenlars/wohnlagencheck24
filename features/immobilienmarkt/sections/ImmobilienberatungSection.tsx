@@ -33,11 +33,9 @@ export function ImmobilienberatungSection({
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const email01 = asString(berater["berater_email_01"]) ?? "";
-  const email02 = asString(berater["berater_email_02"]) ?? "";
-  const emailTarget = email01 || email02 || "kontakt@wohnlagencheck24.de";
-  const telFest = asString(berater["berater_telefon_fest"]) ?? "";
-  const telMobil = asString(berater["berater_telefon_mobil"]) ?? "";
+  const email = asString(berater["berater_email"]) ?? "";
+  const emailTarget = email || "kontakt@wohnlagencheck24.de";
+  const tel = asString(berater["berater_telefon"]) ?? "";
   const telWhatsApp = asString(berater["berater_telefon_whatsApp"]) ?? "";
 
   const strasse = asString(berater["berater_adresse_strasse"]) ?? "";
@@ -49,10 +47,8 @@ export function ImmobilienberatungSection({
     (plz || ort ? `, ${[plz, ort].filter(Boolean).join(" ")}` : "");
 
   const contactItems: ContactItem[] = [
-    email01 ? { label: "E-Mail", value: email01, href: `mailto:${email01}` } : null,
-    email02 && email02 !== email01 ? { label: "E-Mail 2", value: email02, href: `mailto:${email02}` } : null,
-    telFest ? { label: "Telefon (Fest)", value: telFest, href: `tel:${normalizePhone(telFest)}` } : null,
-    telMobil ? { label: "Telefon (Mobil)", value: telMobil, href: `tel:${normalizePhone(telMobil)}` } : null,
+    email ? { label: "E-Mail", value: email, href: `mailto:${email}` } : null,
+    tel ? { label: "Telefon", value: tel, href: `tel:${normalizePhone(tel)}` } : null,
     telWhatsApp ? { label: "WhatsApp", value: telWhatsApp, href: `https://wa.me/${normalizePhone(telWhatsApp)}` } : null,
     adresse ? { label: "Adresse", value: adresse } : null,
   ].filter(Boolean) as ContactItem[];
@@ -75,13 +71,13 @@ export function ImmobilienberatungSection({
               <h1 className={styles.title}>{name}</h1>
               <p className={styles.role}>Standort- / Immobilienberatung</p>
               <div className={styles.cta}>
-                {email01 ? (
-                  <a className={`${styles.btn} ${styles.btnPrimary}`} href={`mailto:${email01}`}>
+                {email ? (
+                  <a className={`${styles.btn} ${styles.btnPrimary}`} href={`mailto:${email}`}>
                     Kontakt aufnehmen
                   </a>
                 ) : null}
-                {telMobil || telFest ? (
-                  <a className={`${styles.btn} ${styles.btnSecondary}`} href={`tel:${normalizePhone(telMobil || telFest)}`}>
+                {tel ? (
+                  <a className={`${styles.btn} ${styles.btnSecondary}`} href={`tel:${normalizePhone(tel)}`}>
                     Rueckruf anfordern
                   </a>
                 ) : null}

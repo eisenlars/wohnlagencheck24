@@ -29,12 +29,10 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
   const berater = asRecord(text["berater"]) ?? {};
   const name = asString(berater["berater_name"]) ?? "Berater";
   const email =
-    asString(berater["berater_email_01"]) ??
-    asString(berater["berater_email_02"]) ??
+    asString(berater["berater_email"]) ??
     "kontakt@wohnlagencheck24.de";
   const phone =
-    asString(berater["berater_telefon_mobil"]) ??
-    asString(berater["berater_telefon_fest"]) ??
+    asString(berater["berater_telefon"]) ??
     "";
 
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;

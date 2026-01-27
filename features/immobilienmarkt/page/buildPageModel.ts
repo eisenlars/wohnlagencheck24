@@ -124,10 +124,55 @@ export function buildPageModel(route: RouteModel): PageModel | null {
     fullSlugs: route.fullSlugs,
   });
 
-  const report = getReportBySlugs(route.regionSlugs);
+  let report = getReportBySlugs(route.regionSlugs);
   if (!report) {
     console.log("REPORT: null (not found)");
     return null;
+  }
+
+  // Sicherstellen, dass text auch unter data.text vorhanden ist (einheitliche Quelle für Builder)
+  const rawData = asRecord(report.data) ?? {};
+  const rawDataText = asRecord(rawData["text"]);
+  const rawTopText = asRecord(report["text"]);
+  if (rawTopText && !rawDataText) {
+    report = {
+      ...report,
+      data: {
+        ...rawData,
+        text: rawTopText,
+      },
+    };
+  }
+
+  // Ortsebene: fehlende Berater-/Maklerdaten aus Kreisreport ergänzen
+  if (route.level === "ort") {
+    const kreisReport =
+      route.regionSlugs.length >= 2
+        ? getReportBySlugs(route.regionSlugs.slice(0, 2))
+        : null;
+    const ortText = asRecord(report["text"]) ?? {};
+    const ortHasBerater = Boolean(asRecord(ortText["berater"])?.["berater_name"]);
+    const ortHasMakler = Boolean(asRecord(ortText["makler"])?.["makler_name"]);
+
+    if (kreisReport && (!ortHasBerater || !ortHasMakler)) {
+      const kreisData = asRecord(kreisReport.data) ?? {};
+      const kreisText = asRecord(kreisReport["text"]) ?? asRecord(kreisData["text"]) ?? {};
+      const mergedText = {
+        ...kreisText,
+        ...ortText,
+        berater: ortHasBerater ? ortText["berater"] : kreisText["berater"],
+        makler: ortHasMakler ? ortText["makler"] : kreisText["makler"],
+      };
+
+      report = {
+        ...report,
+        text: mergedText,
+        data: {
+          ...(asRecord(report.data) ?? {}),
+          text: mergedText,
+        },
+      };
+    }
   }
 
   console.log("REPORT META (raw)", report.meta);
@@ -342,12 +387,10 @@ export function buildPageModel(route: RouteModel): PageModel | null {
 
     const beraterName = asString(berater["berater_name"]) ?? "Lars Hofmann";
     const beraterTelefon =
-      asString(berater["berater_telefon_mobil"]) ??
-      asString(berater["berater_telefon_fest"]) ??
+      asString(berater["berater_telefon"]) ??
       "+49 351/287051-0";
     const beraterEmail =
-      asString(berater["berater_email_01"]) ??
-      asString(berater["berater_email_02"]) ??
+      asString(berater["berater_email"]) ??
       "kontakt@wohnlagencheck24.de";
 
     const beraterTaetigkeit = `Standort- / Immobilienberatung – ${kreisName}`;

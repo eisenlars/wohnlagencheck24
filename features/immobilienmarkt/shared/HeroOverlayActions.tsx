@@ -3,12 +3,12 @@
 export function HeroOverlayActions(props: { variant: "immo" | "miete" }) {
   const isImmo = props.variant === "immo";
 
-  const leftLabel = isImmo ? "Immobilienangebote" : "Mietangebote";
-  const rightLabel = isImmo ? "Immobiliengesuche" : "Mietgesuche";
+  const leftLabel = isImmo ? "Angebote" : "Mietangebote";
+  const rightLabel = isImmo ? "Gesuche" : "Mietgesuche";
 
   return (
     <>
-      <button className="btn flex-fill fw-semibold hero-overlay-action">
+      <button className="btn fw-semibold hero-overlay-action">
         {leftLabel}
       </button>
 

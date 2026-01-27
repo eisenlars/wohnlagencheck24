@@ -34,8 +34,7 @@ export function ImmobilienmaklerSection({
   const berater = asRecord(text["berater"]) ?? {};
   const emailTarget =
     asString(makler["makler_email"]) ??
-    asString(berater["berater_email_01"]) ??
-    asString(berater["berater_email_02"]) ??
+    asString(berater["berater_email"]) ??
     "kontakt@wohnlagencheck24.de";
   const gallery = [
     `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-01.jpg`,

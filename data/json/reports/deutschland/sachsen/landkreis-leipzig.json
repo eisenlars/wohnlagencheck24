@@ -1,6 +1,6 @@
 {
     "meta": {
-        "aktualisierung": "26.01.2026",
+        "aktualisierung": "27.01.2026",
         "regionale_zuordnung": "landkreis",
         "amtlicher_name": "Landkreis Leipzig",
         "bundesland_name": "sachsen",
@@ -211,47 +211,47 @@
         "standortfaktoren": [
             {
                 "faktor": "gesundheit",
-                "wert": 1,
+                "wert": 5,
                 "color": "#e6956c"
             },
             {
                 "faktor": "bildung",
-                "wert": 1,
+                "wert": 8,
                 "color": "#d4bb5a"
             },
             {
                 "faktor": "sicherheit",
-                "wert": 1,
+                "wert": 7,
                 "color": "#daaf60"
             },
             {
                 "faktor": "naherholung",
-                "wert": 1,
+                "wert": 7,
                 "color": "#daaf60"
             },
             {
                 "faktor": "lebenserhaltungskosten",
-                "wert": 1,
+                "wert": 3,
                 "color": "#f27c78"
             },
             {
                 "faktor": "arbeitsplatz",
-                "wert": 1,
+                "wert": 10,
                 "color": "#c8d54f"
             },
             {
                 "faktor": "kultur_freizeit",
-                "wert": 1,
+                "wert": 6,
                 "color": "#e0a266"
             },
             {
                 "faktor": "mobilitaet",
-                "wert": 1,
+                "wert": 10,
                 "color": "#c8d54f"
             },
             {
                 "faktor": "nahversorgung",
-                "wert": 1,
+                "wert": 3,
                 "color": "#f27c78"
             }
         ],
@@ -3051,23 +3051,23 @@
         "haus_kaufpreis_haustypen": [
             {
                 "preisinfo_label": "min. Preis",
-                "reihenhaus": 1783.193987135882,
-                "doppelhaushaelfte": 1977.2629018838004,
-                "einfamilienhaus": 2113.806074822333,
+                "reihenhaus": 1789.0106214347518,
+                "doppelhaushaelfte": 1953.0279911114721,
+                "einfamilienhaus": 2122.678129189009,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "Ø Preis",
-                "reihenhaus": 2309.660533309623,
-                "doppelhaushaelfte": 2673.330251959766,
-                "einfamilienhaus": 2853.732493053455,
+                "reihenhaus": 2406.381207898374,
+                "doppelhaushaelfte": 2640.7560174063897,
+                "einfamilienhaus": 2839.7210862557326,
                 "einheit": "pricePerSqm"
             },
             {
                 "preisinfo_label": "max. Preis",
-                "reihenhaus": 3037.324703892248,
-                "doppelhaushaelfte": 3288.522549318456,
-                "einfamilienhaus": 3672.576579746928,
+                "reihenhaus": 2932.715522878174,
+                "doppelhaushaelfte": 3333.1526625810616,
+                "einfamilienhaus": 3534.6272161566367,
                 "einheit": "pricePerSqm"
             }
         ],
@@ -4264,28 +4264,28 @@
     },
     "text": {
         "berater": {
-            "berater_name": "Lars Hofmann",
-            "berater_email": "info@wohnlagencheck24.de",
-            "berater_telefon_fest": " 03512870510",
+            "berater_name": "Sven Butterling",
+            "berater_email": "info@butterling-immobilien.de",
+            "berater_telefon_fest": "03418799733",
             "berater_telefon_mobil": "",
             "berater_telefon_whatsApp": "",
-            "berater_adresse_strasse": "Räcknitzhöhe",
-            "berater_adresse_hnr": "35A",
-            "berater_adresse_plz": "01217",
-            "berater_adresse_ort": "Dresden",
+            "berater_adresse_strasse": "Hommelweg",
+            "berater_adresse_hnr": "6",
+            "berater_adresse_plz": "04316",
+            "berater_adresse_ort": "Leipzig",
             "berater_beschreibung": "Als regionaler Immobilienspezialist kenne ich die Besonderheiten des Marktes vor Ort genau. Mein Anspruch ist es, Käufer und Verkäufer gleichermaßen kompetent zu begleiten und mit fundierter Marktkenntnis Orientierung zu geben. Dabei verbinde ich professionelle Analyse mit persönlicher Beratung – von der ersten Einschätzung über die realistische Bewertung bis hin zur erfolgreichen Vermittlung. Mein Mehrwert liegt in der Kombination aus regionaler Expertise, individueller Betreuung und einem klaren Blick für Chancen und Risiken. So helfe ich Ihnen, Immobilienentscheidungen sicher und erfolgreich zu treffen.\n\nIch freue mich auf Ihre unverbindliche Anfrage.",
             "berater_ausbildung": "Ausbildung\nAusbildung\nAusbildung"
         },
         "makler": {
-            "makler_name": "Wohnlagencheck24 Onlinemakler",
-            "makler_email": "info@wohnlagencheck24.de",
-            "makler_telefon_fest": " 03512870510",
+            "makler_name": "Butterling Immobilien",
+            "makler_email": "info@butterling-immobilien.de",
+            "makler_telefon_fest": "03418799733",
             "makler_telefon_mobil": "",
             "makler_telefon_whatsApp": "",
-            "makler_adresse_strasse": "Räcknitzhöhe",
-            "makler_adresse_hnr": "35A",
-            "makler_adresse_plz": "01217",
-            "makler_adresse_ort": "Dresden",
+            "makler_adresse_strasse": "Hommelweg",
+            "makler_adresse_hnr": "6",
+            "makler_adresse_plz": "04316",
+            "makler_adresse_ort": "Leipzig",
             "makler_empfehlung": "Eine durchweg positive Reputation, der motivierende Umgang mit den eigenen Mitarbeitern sowie ein ausgesprochen hohes Qualitäts- und Servicelevel haben uns überzeugt. Dieses Maklerunternehmen als traditionsreiches, regionales Maklerunternehmen übertrifft sogar noch unsere hohen Anforderungen. Hier haben wir ein uneingeschränkt positives Gefühl, wenn wir Ihnen dieses Unternehmen weiterempfehlen.",
             "makler_beschreibung": "Wir als ihr regionales Maklerteam begleiten Käufer und Verkäufer mit fundierter Beratung und individueller Betreuung bei allen Immobilientransaktionen. Mit Erfahrung, Leidenschaft und Fachwissen stehen wir Ihnen vom ersten Gespräch bis zum erfolgreichen Vertragsabschluss und darüber hinaus zur Seite. Unser Anspruch ist es, durch umfassenden Service, Marktkenntnis und Engagement die bestmöglichen Ergebnisse zu erzielen. Dafür beobachten und analysieren wir kontinuierlich den regionalen Immobilienmarkt und entwickeln uns stetig weiter – damit Sie sicher sein können, jederzeit professionell und zuverlässig betreut zu werden.",
             "makler_benefits": "25 Jahre Erfahrung im Immobilienkauf und –verkauf\nBeste regionale Marktkenntnisse\nErfahrenes, kompetentes Maklerteam\nErstklassiges Netzwerk aus Kunden und Kooperationspartnern\n125 Mitarbeiter in 10 Filialen kümmern sich vor Ort individuell um die Anliegen unserer Kunden",
@@ -4344,7 +4344,7 @@
             "wirtschaft_sv_beschaeftigte_arbeitsort": "die Zahl der Arbeitsort-Beschäftigten ist konstant geblieben. Auf der anderen Seite ist die Zahl der Wohnort-Beschäftigten konstant geblieben. Zuletzt lag die Zahl der Beschäftigten am Arbeitsort bei 79.562 und am Wohnort bei 105.790.",
             "wirtschaft_arbeitsplatzzentralitaet": "Eine Region mit einem Arbeitsplatzzentralitätswert über 1 gilt als bevorzugter Arbeitsort, da dort mehr Menschen arbeiten als wohnen. Ein Wert unter 1 zeigt, dass mehr Personen in der Region wohnen als dort arbeiten. Mit 0.75 liegt der Wert im Landkreis Leipzig klar unter 1. Damit hat die Region gerade noch den Charakter einer Wohnregion, es pendeln mehr Menschen aus der Region zur Arbeit in andere Orte, als umgekehrt einpendeln. Das spricht für einen eher geringen Stellenanteil vor Ort und eine stärkere Funktion als Wohnstandort statt als Beschäftigungszentrum.",
             "wirtschaft_pendler": "Das Pendlervolumen hat sich zuletzt deutlich um 1198 Personen erhöht. Die Zahl der Einpendler ist dabei mit 1,58 % stark gestiegen. Bei den Auspendlern ist hingegen eine Zunahme um 1,36 % zu beobachten. Das ist im Großen und Ganzen eine nicht so gute Entwicklung für die Region.",
-            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote ist der Anteil der registrierten Arbeitslosen an allen zivilen Erwerbspersonen, angegeben in Prozent.  Ihr Wert ist aktuell ca. 5,8 %. Damit ist sie in den letzten fünf Jahren weitestgehend stabil geblieben. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote ist der Anteil der registrierten Arbeitslosen an allen zivilen Erwerbspersonen, angegeben in Prozent.  Sie liegt im Landkreis Leipzig aktuell bei 5,8 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
         },
         "wohnmarktsituation": {
             "wohnmarktsituation_intro": "Die Wohnraumsituation in größeren kreisfreien Städten ist ein komplexes Zusammenspiel aus Angebot und Nachfrage, staatlicher sozialer Wohnraumvergabe und der allgemeinen wirtschaftlichen Lage. Während die steigende Nachfrage durch Urbanisierung und Bevölkerungswachstum angetrieben wird, hängt das Angebot von Baukapazitäten, Investitionen und regulatorischen Rahmenbedingungen ab. Staatliche, soziale Wohnraumprogramme zielen darauf ab, bezahlbaren Wohnraum für einkommensschwächere Bevölkerungsgruppen bereitzustellen, stehen jedoch oft im direkten Wettbewerb mit dem freien Markt. Die wirtschaftliche Situation beeinflusst sowohl die Bauindustrie als auch die Kaufkraft der Bevölkerung, was die Dynamik des Wohnmarktes weiter prägt.",
@@ -4358,13 +4358,13 @@
             "wohnmarktsituation_baufertigstellungen_intro": "Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau.",
             "wohnmarktsituation_baugenehmigungen_intro": "Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
             "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 227 %, cirka das 3-fache der Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 14 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, blieb sie nahezu unverändert. Langfristig gesehen, ist die Fertigstellungsquote damit über fünf Jahre stark gestiegen, was eine Verbesserung über Zeit zeigt.",
-            "wohnmarktsituation_allgemein": "In  leben aktuell rund 260.127 Menschen auf einer Gesamtfläche von 165.127 ha, davon entfallen 21.397 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 260.127 Einwohner je km². Über einen Zeitraum von fünf Jahren ist die Bevölkerungzahl nahezu gleich geblieben, was eine weitgehend unveränderte Tendenz erkennen lässt. Aktuell wird  als stagnierende Region eingestuft. Insgesamt gibt es hier etwa 133.156 Haushalte, die durchschnittlich aus 1,95 Personen bestehen.",
-            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung ist gegenüber 2015 nahezu unverändert, was auf ausgeglichene Bevölkerungsbewegungen hindeutet. Im Zehnjahresvergleich gab es generell wenig bis keine Dynamik.",
+            "wohnmarktsituation_allgemein": "In  leben aktuell rund 260.127 Menschen auf einer Gesamtfläche von 165.127 ha, davon entfallen 21.397 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 260.127 Einwohner je km². Die Einwohnerzahl hat sich in den letzten fünf Jahren nicht verändert, was auf eine insgesamt stabile Entwicklung hindeutet. Aktuell wird  als stagnierende Region eingestuft. Insgesamt gibt es hier etwa 133.156 Haushalte, die durchschnittlich aus 1,95 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung ist gegenüber 2015 nahezu konstant, was auf ausgeglichene Bevölkerungsbewegungen hindeutet. Im Zehnjahresvergleich ist im Großen und Ganzen weitestgehend stabil.",
             "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 133.156. In den letzten zehn Jahren ist die Zahl gleich geblieben, was auf eine insgesamt stabile Entwicklung hindeutet, was auf eine insgesamt stabile Entwicklung hindeutet.",
             "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist der Landkreis Leipzig einen natürlichen Bevölkerungssaldo von -8.41 (je 1.000 Einwohner) oder -2.187 Personen auf. 2023 wurden hier insgesamt 1.537 Geburten registriert, was einem starken Rückgang von 19,3 % im 5 Jahrestrend entspricht und auf eine schleichend rückwärtsgerichtete Entwicklung hindeutet. Demgegenüber standen 3.724 Sterbefälle,  was einer Zuwachs von 6,4 im Vergleich zu 2019 bedeutet.",
-            "wohnmarktsituation_wanderungssaldo": "Innerhalb der letzten fünf Jahre  sind die die Zahl der Zuzüge mit 28,5 % stark gestiegen, was eine zunehmende Anziehungskraft der Region erkennen lässt. Parallel dazu haben genauso Im selben Zeitfenster die Wegzüge aus  um 21,7 % erheblich zugenommen, was für die Gegend leider ausgesprochen negativ ist. So ist mit 1353 Personen der Saldo leicht positiv. Schauen wir ins aktuelle Jahr 2024, dann sehen wir einen Wanderungssaldo von 3312..",
-            "wohnmarktsituation_alterstruktur": "Der Altersdurchschnitt im Landkreis Leipzig erreicht 48.2 Jahre. Blickt man auf die letzten 5 Jahre, ist es nahezu konstant geblieben. Im Vergleich zu Sachsen liegt das Alter der Bevölkerung im Kreis über dem des Bundeslandes und deutschlandweit über dem Mittel im Land.",
-            "wohnmarktsituation_jugendquotient_altenquotient": "im Landkreis Leipzig liegt der Jugendquotient bei 29.6 und der Altenquotienten bei 50.5. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt deutlich über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt klar über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
+            "wohnmarktsituation_wanderungssaldo": "Im Verlauf der vergangenen fünf Jahre sind die Zuzüge mit 28,5 % stark angestiegen, woraus man eine stark zunehmende Attraktivität ableiten kann. Parallel dazu hat ebenso Im selben Zeitraum die Zahl der Wegzügler aus  mit 21,7 % deutlich zugelegt, was für die Gegend leider ausgesprochen negativ ist. Aus diesen Entwicklungen heraus hat die Gegend einen leicht positiven Wanderungssaldo von 1353. Schauen wir ins aktuelle Jahr 2024, dann sehen wir einen Wanderungssaldo von 3312..",
+            "wohnmarktsituation_alterstruktur": "Das mittlere Alter im Landkreis Leipzig beträgt 48.2 Jahre. In den letzten fünf Jahren ist es nahezu konstant geblieben. Im Vergleich zu Sachsen liegt das Alter der Bevölkerung im Kreis über dem des Bundeslandes und deutschlandweit über dem Mittel im Land.",
+            "wohnmarktsituation_jugendquotient_altenquotient": "Aktuell liegt der Altenquotient im Landkreis Leipzig bei 50.5 und der Jugendquotient bei 29.6. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt deutlich über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt klar über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
             "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand im Landkreis Leipzig beträgt ca. 147.372 Wohnungen. Pro 1.000 Einwohner stehen also um die 567 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre blieb der Bestand dabei nahezu stabil.",
             "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt im Landkreis Leipzig aktuell ca. 12093 m². Pro Kopf stehen hier durchschnittlich 46.5 m² zur Verfügung. Die Wohnfläche pro Person liegt auf Bundesniveau. Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person leicht vergrößert, was auf eine verbesserte Wohnraumausstattung hindeutet.",
             "wohnmarktsituation_baufertigstellungen": "Im Jahr 2023 wurden im Landkreis Leipzig 625 neue Wohnungen fertiggestellt, was 2.4 Fertigstellungen pro 1.000 Einwohner entspricht. In den vergangenen 5 Jahren ist die Zahl der Fertigstellungen stark gesunken, was auf eine stark schwächelnde Bautätigkeit hindeutet.",
@@ -4375,27 +4375,27 @@
             "immobilienpreise_haus_intro": "Welche Preise erzielen Häuser in der Region aktuell? In diesem Kapitel betrachten wir die Immobilienpreise verschiedener Haustypen, analysieren die Situation in den vorhandenen Wohnlagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends auf. Gern gebe ich Ihnen eine individuell auf Ihre Immobilie abgestimmte Einschätzung. Kontaktieren Sie mich dazu gern.",
             "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Preise für Wohnungen in der Region? In diesem Kapitel betrachten wir die Immobilienpreise nach Wohnlagequalitäten, vergleichen die regionale Situation mit überregionalen Entwicklungen und zeigen aktuelle Trends auf. Zusätzlich fließen Unterschiede nach Zimmeranzahl und Wohnfläche in die Analyse ein. Für eine individuell auf Ihre Immobilie abgestimmte Einschätzung stehe ich Ihnen als Immobilienspezialist in der Region gern zur Verfügung.",
             "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis im Landkreis Leipzig bei 2.360 €/m².  Er bewegt sich dabei zwischen 1.970 €/m² und 3.040 €/m².  Damit liegt er weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 2,9 % gestiegen.  ",
-            "immobilienpreise_haus_lage": "Die Preise für Häuser variieren in verschiedenen Lage erheblich. In einfachen Wohnlagen liegen sie aktuell bei 2.063 €. In guten Lagen bewegt sich die Spanne von 2.384 € bis 2.636 €. In Top-Lagen werden im Mittel 2.930 € erzielt.",
-            "immobilienpreise_haus_haustypen": "Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 2309,7 €/m²,",
-            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser im Landkreis Leipzig bei 2.280 €/m².  Aktuell liegt der Preis bei 2.360 €/m²  und ist damit um 3,6 % deutlich gestiegen.",
-            "immobilienpreise_wohnung_allgemein": "Der durchschnittliche Quadratmeterpreis für Wohnungen im Landkreis Leipzig beträgt 2.060 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 2.060 €/m² bis 2.640 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 0,8 % merklich gestiegen",
+            "immobilienpreise_haus_lage": "Die Preise für Häuser variieren in verschiedenen Lage erheblich. Für einfachen Wohnlagen liegt der Durchschnitt bei 2.063 €. Die Bandbreite in guten Lagen reicht von 2.384 € bis 2.636 €. Die höchsten Preise in sehr guten-Lagen können mit Preisen bis 2.833 € dann meist nur noch von Besserverdienern gestemmt werden.",
+            "immobilienpreise_haus_haustypen": "Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat hier in etwa zwischen 3534,6 €/m² und 2122,7 €/m².",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser im Landkreis Leipzig bei 2.280 €/m².  Aktuell beträgt er 2.360 €/m²  und ist damit um 3,6 % deutlich gestiegen.",
+            "immobilienpreise_wohnung_allgemein": "Die aktuellen Angebotspreise für Wohnungen im Landkreis Leipzig liegen bei 2.060 €/m². Diese bewegen sich in einer Preisspanne von 2.060 €/m² bis 2.640 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 0,8 % merklich gestiegen",
             "immobilienpreise_wohnung_lage": "Die Preise für Häuser variieren in verschiedenen Lage erheblich. In einfachen Wohnlagen liegen sie aktuell bei 1.824 €. In guten Lagen bewegt sich die Spanne von 2.065 € bis 2.314 €. In Top-Lagen werden im Mittel 2.546 € erzielt.",
-            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Landkreis Leipzig derzeit durchschnittlich 1845,9 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 5,1 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 2447,6 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 2447,6 €/m². hier ist der kurzfristige Trend mit 0,8 % Anstieg, leicht positiv ",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Landkreis Leipzig müssen diese derzeit durchschnittlich 1919,6 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 5,1 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 2266,6 €/m². hier ist der kurzfristige Trend mit 0,8 % Anstieg, leicht positiv ",
             "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser im Landkreis Leipzig bei 1.990 €/m². Heute liegt der Preis bei 2.060 €/m², und ist damit um 3,6 % deutlich gestiegen."
         },
         "grundstueckspreise": {
             "grundstueckspreise_intro": "Die Grundstückspreise für Bauland sind ein zentraler Faktor für Bauherren, Investoren und Eigentümer. Sie bestimmen die Wirtschaftlichkeit neuer Projekte und die langfristige Wertentwicklung. Schwankungen entstehen vor allem durch Lage, Nachfrage und verfügbare Flächen. Dieser Report liefert einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist für den Landkreis Greiz helfe ich Ihnen, die statistischen Auswertungen richtig einzuordnen und die Chancen des regionalen Grundstücksmarktes optimal für Ihre Bau- oder Investitionsentscheidung zu nutzen.",
-            "grundstueckspreise_allgemein": "Die mittleren Angebotspreise für Grundstücke im Landkreis Leipzig belaufen sich auf 200 €/m². Diese pendeln zwischen den Werten von 180 €/m² bis 220 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 5,8 % spürbar zurückgegangen. ",
-            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke im Landkreis Leipzig bei 230 €/m². Heute beträgt er 200 €/m² und ist damit um 12,4 % kräftig zurückgegangen."
+            "grundstueckspreise_allgemein": "Die mittleren Angebotspreise für Grundstücke belaufen sich auf 200 €/m². Diese variieren typischerweise von 180 €/m² bis 220 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 5,8 % spürbar zurückgegangen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke im Landkreis Leipzig bei 230 €/m². Heute liegt der Preis bei 200 €/m² und ist damit um 12,4 % kräftig zurückgegangen."
         },
         "mietpreise": {
             "mietpreise_intro": "Die dargestellten Angebotsmieten reflektieren die Preise, die Vermieter aktuell für neue Mietverträge verlangen. In den meisten Fällen entsprechen diese Angebotspreise dem tatsächlichen Mietpreis, da sie die gegenwärtigen Marktbedingungen widerspiegeln. Im Vergleich dazu liegen Bestandsmieten, also die Mieten aus bestehenden Verträgen, oft niedriger. Dies liegt daran, dass Bestandsmieten an frühere Marktverhältnisse gebunden sind und sich weniger schnell an aktuelle Entwicklungen anpassen. Während die Angebotsmieten also die Dynamik des aktuellen Marktes zeigen, spiegeln Bestandsmieten eher vergangene Preisniveaus wider. ",
-            "mietpreise_allgemein": "deutet auf einen deutlich ausgeprägten Mietermarkt in Landkreis Leipzig hin. Die mittleren Angebotspreise aller Mietimmobilien (Haus + Wohnung) im Landkreis Leipzig belaufen sich auf 6.0 €/m². Diese befinden sich üblicherweise in einer Spanne von 2.0 €/m² bis 19.0 €/m². Bei Hinzunahme der mittleren Nebenkosten von 2.0 €/m² liegen bei,  kommt man auf eine durchschnittliche Warmmiete von 10.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen  ",
-            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten im Landkreis Leipzig bei 6.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 2.0 €/m² bis 19.0 €/m². Damit reihen sie sich deutlich unter dem Landesniveau von Sachsen und deutlich unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 8.0 €/m² rechnen, im Bestand sind es 6.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 16,7 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 10,8 % weit über dem derzeitigen Niveau.",
-            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr lag der Quadratmeterpreis im Landkreis Leipzig bei 6 €/m². Bis heute ist der Preis mit 3,1 % deutlich gestiegen. Blicken wir noch weiter zurück - vor 5 Jahren (2022) lagen die durchschnittlichen Werte bei 5 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 22,9 % recht stark angestiegen. ",
-            "mietpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung im Landkreis Leipzig müssen diese derzeit durchschnittlich 6,0 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 5,0 % stark gestiegen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 4,9 €/m². hier ist der kurzfristige Trend mit 36,9 % Anstieg, leicht positiv ",
+            "mietpreise_allgemein": "deutet auf einen deutlich ausgeprägten Mietermarkt in Landkreis Leipzig hin. Die mittleren Angebotspreise aller Mietimmobilien (Haus + Wohnung) belaufen sich auf 6.0 €/m². Diese pendeln zwischen den Werten von 2.0 €/m² bis 19.0 €/m². Bei Hinzunahmen der mittleren Nebenkosten von 2.0 €/m² belaufen sich auf,  kommt man auf eine durchschnittliche Warmmiete von 10.0 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise mit 0,0 % moderat gestiegen  ",
+            "mietpreise_wohnung_allgemein": "Derzeit liegen die durchschnittlichen Kaltmieten bei 6.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 2.0 €/m² bis 19.0 €/m². Damit reihen sie sich deutlich unter dem Landesniveau von Sachsen und deutlich unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 33.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 8.0 €/m² rechnen, im Bestand sind es 6.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 16,7 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 10,8 % weit über dem derzeitigen Niveau.",
+            "mietpreise_wohnung_preisentwicklung": "Vor einem Jahr lag der Quadratmeterpreis bei 6 €/m². Bis heute ist der Preis mit 3,1 % deutlich gestiegen. Blicken wir noch weiter zurück - vor 5 Jahren (2022) standen die mittleren Angebotspreise bei 5 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 22,9 % recht stark angestiegen. ",
+            "mietpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt im Landkreis Leipzig derzeit durchschnittlich 6,2 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 5,0 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 8,2 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 8,2 €/m². hier ist der kurzfristige Trend mit 36,9 % Anstieg, leicht positiv ",
             "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man im Landkreis Leipzig ungefähr 9 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 4 €/m² bis 22 €/m². ",
-            "mietpreise_haus_preisentwicklung": "Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei 8 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 7,0 % deutlich gestiegen. Im 5-JahresRückblick (ab 2022) standen die mittleren Angebotspreise bei 7 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 23,6 % recht stark angestiegen. "
+            "mietpreise_haus_preisentwicklung": "Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Landkreis Leipzig bei 8 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 7,0 % deutlich gestiegen. Im 5-JahresRückblick (ab 2022) standen die mittleren Angebotspreise bei 7 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 23,6 % recht stark angestiegen. "
         },
         "mietrendite": {
             "mietrendite_intro": "Die Mietrendite zählt zu den wichtigsten Kennzahlen einer Immobilienanlage. Sie zeigt, welche Erträge eine vermietete Immobilie im Verhältnis zum Kaufpreis erwirtschaftet – und ist damit ein entscheidender Faktor für jede Kapitalanlage in Immobilien. Eine fundierte Renditeberechnung unterstützt Investoren dabei, Chancen und Risiken realistisch einzuschätzen und die Rentabilität verschiedener Objekte zu vergleichen. Die folgenden Auswertungen geben einen ersten regionalen Überblick. Doch neben der reinen Zahl sind vor allem Lage, Nachfrage und Mietentwicklung ausschlaggebend. Als Immobilienspezialist für die Region helfe ich Ihnen, die Mietrendite richtig zu bewerten und die passende Immobilie als langfristige, sichere Kapitalanlage auszuwählen.",
@@ -4403,8 +4403,8 @@
             "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
             "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {kreis_name} brechnet. Aktuell liegt sie bei 4,23 %. Letztes Jahr lag die Bruttomietrendite im Landkreis Leipzig bei 4,1 %. Bis heute ist der Preis innerhalb dieser Zeit mit 3,1 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei 3,56 %, innerhalb diesen Zeitraums sind sie bis jetzt um 18,9 % recht stark angestiegen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 3,84 %, ",
             "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 3,71 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  im Landkreis Leipzig ungefähr bei 27.7, und die mittlere Netto-Mietrendite bei ungefähr 3,4 %. ",
-            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Landkreis Leipzig bei 38.6. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 2,31 €/m², ",
-            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr stand der mittlere Haus-Quadratmetermietpreis im Landkreis Leipzig bei 20.2. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 4,66 €/m², "
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Landkreis Leipzig bei 38.6. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 2,31 €/m², ",
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Landkreis Leipzig bei 20.2. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 4,66 €/m², "
         }
     }
 }

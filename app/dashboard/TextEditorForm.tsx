@@ -9,10 +9,8 @@ import { createClient } from '@/utils/supabase/client';
 const TAB_CONFIG = [
   { id: 'berater', label: 'Berater', icon: '👤', sections: [
     { key: 'berater_name', label: 'Name', type: 'individual' },
-    { key: 'berater_email_01', label: 'E-Mail Haupt', type: 'individual' },
-    { key: 'berater_email_02', label: 'E-Mail Sekundär', type: 'individual' },
-    { key: 'berater_telefon_fest', label: 'Telefon Festnetz', type: 'individual' },
-    { key: 'berater_telefon_mobil', label: 'Mobilnummer', type: 'individual' },
+    { key: 'berater_email', label: 'E-Mail', type: 'individual' },
+    { key: 'berater_telefon', label: 'Telefon', type: 'individual' },
     { key: 'berater_telefon_whatsApp', label: 'WhatsApp', type: 'individual' },
     { key: 'berater_adresse_strasse', label: 'Straße', type: 'individual' },
     { key: 'berater_adresse_hnr', label: 'Hausnummer', type: 'individual' },

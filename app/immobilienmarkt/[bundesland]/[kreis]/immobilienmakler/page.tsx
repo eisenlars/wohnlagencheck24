@@ -31,8 +31,7 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
   const name = asString(makler["makler_name"]) ?? "Maklerempfehlung";
   const email =
     asString(makler["makler_email"]) ??
-    asString(berater["berater_email_01"]) ??
-    asString(berater["berater_email_02"]) ??
+    asString(berater["berater_email"]) ??
     "kontakt@wohnlagencheck24.de";
 
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
