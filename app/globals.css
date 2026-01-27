@@ -28,7 +28,7 @@ body {
 .navbar-toggler {
   background-color: transparent !important;
   color: #486b7a;
-  border:4px solid #486b7a
+  border: 4px solid #486b7a;
 }
 
 section {
@@ -334,6 +334,12 @@ h6 {
   }
 }
 
+@media (max-width: 767.98px) {
+  .site-header--default .brand-text small {
+    display: none !important;
+  }
+}
+
 
 /* Seiten-Einleitungstext */
 
@@ -445,19 +451,23 @@ h6 {
 /* --- Subnavigation: Tabs mit Icons --- */
 
 .kreis-subnav {
-  margin-top: -1.5rem;
-  margin-left: -1.5rem;
-  margin-right: -1.5rem;
-  padding: 1.75rem 1.5rem 1.75rem;
+  position: relative;
+  padding: 1rem 0rem 1rem;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   background-color: rgba(255, 255, 255, 0.96);
 }
+
+/*
+.card-body .kreis-subnav {
+  margin: 0 0 1rem;
+}*/
 
 .breadcrumb-sticky {
   width: 100%;
   display: flex;
   justify-content: center;
   margin-bottom: 0.35rem;
+  
 }
 
 .breadcrumb-compact .breadcrumb {
@@ -743,6 +753,7 @@ h6 {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
+  padding-bottom: 5px;
 }
 
 .kreis-subnav-tabs {
@@ -782,10 +793,57 @@ h6 {
     height: 4px;
   }
 
-  .kreis-subnav-tabs-wrapper::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.18);
-    border-radius: 999px;
+.kreis-subnav-tabs-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+  border-radius: 999px;
+}
+
+.kreis-subnav-tabs-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kreis-subnav-scroll-handle {
+  display: none;
+  margin: 0.35rem auto 0;
+  width: min(220px, 70%);
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(255, 224, 0, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  position: relative;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.kreis-subnav-scroll-handle.is-active {
+  cursor: grabbing;
+}
+
+@media (max-width: 767.98px) {
+  .kreis-subnav-scroll-handle {
+    display: block;
   }
+}
+
+.kreis-subnav-tabs-wrapper {
+  scrollbar-width: none;
+}
+
+.kreis-subnav-tabs-wrapper::-webkit-scrollbar {
+  height: 0;
+}
+
+.kreis-subnav-scroll-thumb {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 999px;
+  background: #ffe000;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
 }
 
 
@@ -808,6 +866,52 @@ h6 {
   height: 48px;             /* Icon-Größe */
   width: auto;
   display: block;
+}
+
+/* Header-Variante: Startseite kompakter */
+.site-header--home .brand-icon {
+  height: 35px;
+}
+
+.site-header--home .brand-header {
+  margin: 0;
+}
+
+.site-header--home .navbar-toggler {
+  border: 3px solid #486b7a;
+  padding: 0.2rem 0.45rem;
+}
+
+@media (max-width: 575.98px) {
+  .site-header--default .brand-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .site-header--default .brand-text {
+    display: flex;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+  }
+
+  .site-header--default .brand-text small {
+    display: none;
+  }
+
+  .site-header--default .navbar-toggler {
+    border-width: 3px;
+    padding: 0.2rem 0.45rem;
+  }
+
+  .site-header--default .berater-button {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.6rem;
+  }
+
+  .site-header--default .site-header-left,
+  .site-header--default .site-header-right {
+    flex: 1 1 0 !important;
+  }
 }
 
 /* TEXT RECHTS NEBEN DEM ICON */
@@ -1002,6 +1106,8 @@ h6 {
   .region-hero-media {
     aspect-ratio: 16 / 9;   /* etwas höher, damit Text + Tachos Platz haben */
     min-height: 260px;
+    background-size: cover;
+    background-color: #0f1a1f;
   }
 
   .region-hero-media.region-hero-bundesland {
@@ -1011,6 +1117,11 @@ h6 {
 
   .region-hero-parallax {
     background-attachment: scroll;  /* viele Mobile-Browser ignorieren fixed ohnehin */
+  }
+
+  .region-hero-slide {
+    background-size: contain;
+    background-color: #0f1a1f;
   }
 }
 
@@ -1034,6 +1145,12 @@ h6 {
   height: 100%;
 }
 
+.region-hero-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 /* Textblock links im Hero */
 .region-hero-text {
   max-width: 60%;
@@ -1042,6 +1159,16 @@ h6 {
 /* Textblock links im Hero */
 .region-hero-text h3 {
   color: #fff
+}
+
+.hero-overlay-action {
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #fff;
+  border-radius: 1rem 1rem 0 0;
+  padding: 1rem 1.25rem;
+  font-size: 1.1rem;
+  flex: 1;
 }
 
 @keyframes regionHeroSlide {
@@ -1208,6 +1335,12 @@ h6 {
   }
 }
 
+@media (max-width: 767.98px) {
+  .bundesland-hero-slider {
+    padding: 0;
+  }
+}
+
 /* Tacho-Row (deine bestehenden Regeln wirken weiter) */
 /* + deine mobile Optimierung mit scale/order, die wir schon eingebaut haben */
 
@@ -1221,33 +1354,52 @@ h6 {
 
 
 
-/* ---------- MOBIL: Tachos maximal an den Rand ---------- */
+/* ---------- MOBIL: Tachos + Buttons zentriert ---------- */
 @media (max-width: 575.98px) {
-
-  .hero-tacho-row {
-    gap: 0.25rem !important;     /* Minimaler Abstand */
-    padding: 0 !important;
-    /*margin: 0 !important;*/
+  .region-hero-inner {
+    width: min(360px, 83vw);
+    /*margin: 0 auto;*/
+    box-sizing: border-box;
+    padding-inline: 0.75rem;
   }
 
-  /* Jedes direkte Kind = Tacho-Container → Padding entfernen */
+  .region-hero-tacho-wrap {
+    padding-bottom: 0 !important;
+  }
+
+  .hero-tacho-row {
+    gap: 0.4rem !important;
+    padding: 0 !important;
+    margin: 0 auto -4px !important;
+    max-width: min(320px, 90%);
+    justify-content: center !important;
+    width: 100%;
+  }
+
   .hero-tacho-row > * {
     padding: 0 !important;
     margin: 0 !important;
+    transform: none !important;
   }
 
-  /* Linkes Tacho → nach rechts */
-  .hero-tacho-row > *:first-child {
-    order: 1;
-    transform: scale(0.75);
-    transform-origin: bottom right;
+  .hero-tacho-row svg {
+    width: min(150px, 44vw);
+    height: auto;
   }
 
-  /* Rechtes Tacho → nach links */
-  .hero-tacho-row > *:last-child {
-    order: 2;
-    transform: scale(0.75);
-    transform-origin: bottom left;
+  .region-hero-text {
+    max-width: 100%;
+  }
+
+  .region-hero-buttons {
+    max-width: min(320px, 90%);
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .hero-overlay-action {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
   }
 }
 

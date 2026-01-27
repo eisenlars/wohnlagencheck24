@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
+import { KreisSubnavScrollHandle } from "@/components/kreis-subnav-scroll-handle";
 
 export type TabNavItem = {
   id: string;
@@ -44,7 +45,7 @@ export function TabNav(props: {
           rootIconSrc="/logo/wohnlagencheck24.svg"
         />
       </div>
-      <div className="kreis-subnav-tabs-wrapper w-100">
+      <div className="kreis-subnav-tabs-wrapper w-100" id="kreis-subnav-tabs-wrapper">
         <ul className="nav nav-pills flex-nowrap small kreis-subnav-tabs">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
@@ -82,6 +83,7 @@ export function TabNav(props: {
           })}
         </ul>
       </div>
+      <KreisSubnavScrollHandle targetId="kreis-subnav-tabs-wrapper" />
     </section>
   );
 }

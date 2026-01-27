@@ -31,8 +31,11 @@
 
 /* Linke Spalte: große Deutschland-Maske */
 .home-cutout-media-col {
-  flex: 0 0 55%;              /* größerer Anteil */
+  flex: 0 0 45%;              /* größerer Anteil */
   min-width: 320px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Rahmen / Fläche der Maske – hier “doppelt“ dimensionieren */
@@ -85,8 +88,6 @@
   color: #486b7a;
   text-transform:uppercase;
   letter-spacing: .1em;
-  overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 .home-cutout-claim {
@@ -206,6 +207,13 @@
 
 /* Responsive Verhalten für mobile Geräte */
 @media (max-width: 767.98px) {
+  
+  .home-cutout-section {
+    background-color: #ffffff;
+    padding: 0rem 0 3.5rem;
+    text-align:center
+  }
+  
   .home-cutout-inner {
     padding-inline: 1rem;
     flex-direction: column;
@@ -219,21 +227,61 @@
     width: 100%;
   }
 
+  .home-cutout-brand-col {
+    order: -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
   .home-cutout-frame {
-    max-width: 100%;
+    max-width: 60%;
   }
 
   .home-cutout-logo {
-    height: 52px;
+    height: 40px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .home-cutout-title {
-    font-size: 2.1rem;
+    font-size: 1.6rem;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  
+  .home-cutout-claim {
+    font-size: 0.75rem;
+  }
+
+  .home-cutout-actions {
+    justify-content: center;
   }
 
   .home-breaker-inner {
     padding: 2rem 1rem;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
   }
+
+  .home-breaker-left,
+  .home-breaker-right {
+    width: 100%;
+  }
+  
+  .home-breaker-text {
+    font-size: 2.3rem;
+    text-align: center;
+  }
+
+  .home-breaker-claim {
+    font-size: 1.05rem;
+  }
+
+  .home-breaker-subclaim {
+    font-size: 1rem;
+  }
+  
 }
