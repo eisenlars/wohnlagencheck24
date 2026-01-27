@@ -59,7 +59,7 @@ export function RightEdgeControls({
     <div className="right-edge-wrapper d-none d-xl-flex">
       {/* TOC Toggle oben */}
       <button
-        className="edge-btn"
+        className="edge-btn edge-btn--toc"
         type="button"
         onClick={handleToggleToc}
         aria-expanded={tocIsOpen}
@@ -78,12 +78,12 @@ export function RightEdgeControls({
       {/* Kontakt unten */}
       <button
         type="button"
-        className="edge-btn"
+        className="edge-btn edge-btn--contact"
         data-bs-toggle="offcanvas"
         data-bs-target="#kreisKontaktOffcanvas"
         aria-controls="kreisKontaktOffcanvas"
       >
-        <i className="bi bi-envelope-fill" />
+        <i className="bi bi-envelope" />
         <span>Kontakt</span>
       </button>
     </div>

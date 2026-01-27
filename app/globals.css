@@ -986,6 +986,30 @@ h6 {
   }
 }
 
+/* Mobile: nur Kontakt-Button als Icon unten rechts */
+@media (max-width: 575.98px) {
+  .right-edge-wrapper {
+    display: flex !important;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    align-items: flex-end;
+  }
+
+  .edge-btn--toc,
+  .immobilienmarkt-toc {
+    display: none !important;
+  }
+
+  .edge-btn--contact {
+    padding: 0.55rem 0.65rem;
+    border-radius: 999px;
+  }
+
+  .edge-btn--contact span {
+    display: none;
+  }
+}
 
 .edge-btn {
   background-color: #ffe000;
@@ -1010,6 +1034,10 @@ h6 {
   font-size: 1.1rem;
 }
 
+/* Kontakt-Icon etwas kompakter */
+.edge-btn--contact i {
+  font-size: 1rem;
+}
 
 
 
