@@ -168,7 +168,7 @@ export function ImmobilienpreiseSection(props: Props) {
                         kind="kaufpreis_qm"
                         unitKey="eur_per_sqm"
                         ctx="kpi"
-                        size="mega"
+                        size="ultra"
                         showUnit={true}
                       />
                     </div>

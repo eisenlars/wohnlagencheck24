@@ -1611,29 +1611,29 @@ h6 {
 
 .kpi-size-xl {
   --kpi-label-size: 0.95rem;
-  --kpi-value-size: 2.2rem;
-  --kpi-value-weight: 700;
-  --kpi-highlight-size: 3.6rem;
-  --kpi-highlight-weight: 900;
-  --kpi-unit-size: 1.1rem;
-  --kpi-unit-weight: 600;
+  --kpi-value-size: 3rem;
+  --kpi-value-weight: 800;
+  --kpi-highlight-size: 4rem;
+  --kpi-highlight-weight: 850;
+  --kpi-unit-size: 1.25rem;
+  --kpi-unit-weight: 650;
 }
 
 .kpi-size-ultra {
-  --kpi-label-size: 0.95rem;
-  --kpi-value-size: 3.2rem;
-  --kpi-value-weight: 800;
-  --kpi-highlight-size: 6.5rem;
+  --kpi-label-size: 0.98rem;
+  --kpi-value-size: 4rem;
+  --kpi-value-weight: 850;
+  --kpi-highlight-size: 5rem;
   --kpi-highlight-weight: 900;
-  --kpi-unit-size: 1.25rem;
-  --kpi-unit-weight: 650;
+  --kpi-unit-size: 1.6rem;
+  --kpi-unit-weight: 700;
 }
 
 .kpi-size-mega {
   --kpi-label-size: 1rem;
   --kpi-value-size: 5rem;
   --kpi-value-weight: 900;
-  --kpi-highlight-size: 12rem;
+  --kpi-highlight-size: 15rem;
   --kpi-highlight-weight: 900;
   --kpi-unit-size: 2rem;
   --kpi-unit-weight: 750;

@@ -28,6 +28,7 @@ export function WohnlagencheckSection(
   },
 ) {
   const { vm, tocItems, tabs, activeTabId } = props;
+  const isOrt = vm.level === "ort";
 
   const orte = Array.isArray(props.ctx?.orte) ? props.ctx?.orte : [];
   const bundeslandSlug = props.ctx?.bundeslandSlug ?? "";
@@ -255,6 +256,8 @@ export function WohnlagencheckSection(
                         kind="index"
                         unitKey="none"
                         ctx="kpi"
+                        activeSubregionName={isOrt ? vm.regionName : undefined}
+                        inactiveOpacity={isOrt ? 0.1 : 1}
                       />
                     </>
                   ) : (
@@ -731,6 +734,8 @@ export function WohnlagencheckSection(
                         kind="index"
                         unitKey="none"
                         ctx="kpi"
+                        activeSubregionName={isOrt ? vm.regionName : undefined}
+                        inactiveOpacity={isOrt ? 0.1 : 1}
                       />
                     </>
                   ) : (
@@ -1158,6 +1163,8 @@ export function WohnlagencheckSection(
                         kind="index"
                         unitKey="none"
                         ctx="kpi"
+                        activeSubregionName={isOrt ? vm.regionName : undefined}
+                        inactiveOpacity={isOrt ? 0.1 : 1}
                       />
                     </>
                   ) : (
@@ -1573,6 +1580,8 @@ export function WohnlagencheckSection(
                         kind="index"
                         unitKey="none"
                         ctx="kpi"
+                        activeSubregionName={isOrt ? vm.regionName : undefined}
+                        inactiveOpacity={isOrt ? 0.1 : 1}
                       />
                     </>
                   ) : (
@@ -1878,6 +1887,8 @@ export function WohnlagencheckSection(
                         kind="index"
                         unitKey="none"
                         ctx="kpi"
+                        activeSubregionName={isOrt ? vm.regionName : undefined}
+                        inactiveOpacity={isOrt ? 0.1 : 1}
                       />
                     </>
                   ) : (
@@ -2031,6 +2042,8 @@ export function WohnlagencheckSection(
                         kind="index"
                         unitKey="none"
                         ctx="kpi"
+                        activeSubregionName={isOrt ? vm.regionName : undefined}
+                        inactiveOpacity={isOrt ? 0.1 : 1}
                       />
                     </>
                   ) : (

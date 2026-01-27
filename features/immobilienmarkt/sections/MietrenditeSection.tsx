@@ -22,6 +22,7 @@ export function MietrenditeSection(
   },
 ) {
   const { vm, tocItems, tabs, activeTabId } = props;
+  const isOrt = vm.level === "ort";
 
   const orte = Array.isArray(props.ctx?.orte) ? props.ctx?.orte : [];
   const bundeslandSlug = props.ctx?.bundeslandSlug ?? "";
@@ -92,6 +93,8 @@ export function MietrenditeSection(
                     kind="index"
                     unitKey="none"
                     ctx="kpi"
+                    activeSubregionName={isOrt ? vm.regionName : undefined}
+                    inactiveOpacity={isOrt ? 0.1 : 1}
                   />
                   {props.assets?.kaufpreisfaktorLegendHtml ? (
                     <div
@@ -118,7 +121,7 @@ export function MietrenditeSection(
                       kind="index"
                       unitKey="none"
                       ctx="kpi"
-                      size="mega"
+                      size="ultra"
                       showUnit={false}
                     />
                   </div>
@@ -176,7 +179,7 @@ export function MietrenditeSection(
               { label: "Nettomietrendite", value: vm.gesamt.nettomietrendite, kind: "quote", unitKey: "percent" },
             ]}
             ctx="kpi"
-            size="ultra"
+            size="xl"
             highlightBg="transparent"
             highlightValueColor="#486b7a"
             normalValueColor="#6c757d"
@@ -209,7 +212,7 @@ export function MietrenditeSection(
             { label: "Netto", value: vm.etw.netto, kind: "quote", unitKey: "percent" },
           ]}
           ctx="kpi"
-          size="ultra"
+          size="xl"
           highlightBg="transparent"
           highlightValueColor="#486b7a"
           normalValueColor="#6c757d"
@@ -239,7 +242,7 @@ export function MietrenditeSection(
             { label: "Netto", value: vm.efh.netto, kind: "quote", unitKey: "percent" },
           ]}
           ctx="kpi"
-          size="ultra"
+          size="xl"
           highlightBg="transparent"
           highlightValueColor="#486b7a"
           normalValueColor="#6c757d"
@@ -269,7 +272,7 @@ export function MietrenditeSection(
             { label: "Netto", value: vm.mfh.netto, kind: "quote", unitKey: "percent" },
           ]}
           ctx="kpi"
-          size="ultra"
+          size="xl"
           highlightBg="transparent"
           highlightValueColor="#486b7a"
           normalValueColor="#6c757d"

@@ -140,7 +140,7 @@ export function GrundstueckspreiseSection(props: Props) {
                           kind="grundstueck_qm"
                           unitKey="eur_per_sqm"
                           ctx="kpi"
-                          size="ultra"
+                          size="xl"
                           showUnit={true}
                         />
                       </div>
@@ -162,7 +162,7 @@ export function GrundstueckspreiseSection(props: Props) {
                       kind="grundstueck_qm"
                       unitKey="eur_per_sqm"
                       ctx="kpi"
-                      size="ultra"
+                      size="xl"
                       showUnit={true}
                     />
                   </div>
@@ -200,7 +200,7 @@ export function GrundstueckspreiseSection(props: Props) {
               { label: "max", value: vm.kpis.max, kind: "grundstueck_qm", unitKey: "eur_per_sqm" },
             ]}
             ctx="kpi"
-            size="ultra"
+            size="xl"
             highlightBg="transparent"
             highlightValueColor="#486b7a"
             normalValueColor="#6c757d"
@@ -222,7 +222,7 @@ export function GrundstueckspreiseSection(props: Props) {
                   },
                 ]}
                 ctx="kpi"
-                size="ultra"
+                size="xl"
                 showUnit={false}
                 caption="Basis: D = 100"
               />

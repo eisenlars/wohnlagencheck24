@@ -27,6 +27,7 @@ export function WirtschaftSection(
   },
 ) {
   const { vm, tocItems, tabs, activeTabId } = props;
+  const isOrt = vm.level === "ort";
 
   const bundeslandSlug = props.ctx?.bundeslandSlug ?? "";
   const kreisSlug = props.ctx?.kreisSlug ?? "";
@@ -136,6 +137,8 @@ export function WirtschaftSection(
                     kind="index"
                     unitKey="none"
                     ctx="kpi"
+                    activeSubregionName={isOrt ? vm.regionName : undefined}
+                    inactiveOpacity={isOrt ? 0.1 : 1}
                   />
                   {legendHtml ? (
                     <div className="mt-3" dangerouslySetInnerHTML={{ __html: legendHtml }} />
@@ -151,7 +154,7 @@ export function WirtschaftSection(
           <div className="col-12 col-lg-6 d-flex align-items-center">
             <div className="w-100 text-center">
               <div className="mb-2 kpi-hero">
-                <KpiValue value={vm.kpis.kaufkraftindex} kind="index" unitKey="none" ctx="kpi" size="mega" />
+                <KpiValue value={vm.kpis.kaufkraftindex} kind="index" unitKey="none" ctx="kpi" size="ultra" />
               </div>
               <p className="mb-0">Kaufkraftindex (Basis D = 100)</p>
             </div>
@@ -202,7 +205,7 @@ export function WirtschaftSection(
                     },
                   ]}
                   ctx="kpi"
-                  size="ultra"
+                  size="xl"
                   showUnit={true}
                   caption="Gesamtfläche Industrie & Gewerbe"
                   captionClassName="small text-muted mt-1"

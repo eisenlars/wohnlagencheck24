@@ -64,6 +64,7 @@ export function WohnmarktsituationSection(
   },
 ) {
   const { vm, tocItems, tabs, activeTabId } = props;
+  const isOrt = vm.level === "ort";
 
   const bundeslandSlug = props.ctx?.bundeslandSlug ?? "";
   const kreisSlug = props.ctx?.kreisSlug ?? "";
@@ -220,6 +221,8 @@ export function WohnmarktsituationSection(
                     kind="anzahl"
                     unitKey="none"
                     ctx="kpi"
+                    activeSubregionName={isOrt ? vm.regionName : undefined}
+                    inactiveOpacity={isOrt ? 0.1 : 1}
                   />
                   {props.assets?.wohnungssaldoLegendHtml ? (
                     <div
@@ -247,7 +250,7 @@ export function WohnmarktsituationSection(
                       kind="anzahl"
                       unitKey="none"
                       ctx="kpi"
-                      size="ultra"
+                      size="xl"
                       showUnit={true}
                     />
                   </div>
@@ -1302,7 +1305,7 @@ export function WohnmarktsituationSection(
               iconAlt="Wohnraumsaldo"
               items={[{ label: "Wohnraumsaldo", value: saldoValue, kind: "anzahl", unitKey: "none" }]}
               ctx="kpi"
-              size="ultra"
+              size="xl"
               showUnit={false}
               caption={saldoStatus.label}
               captionClassName="small text-muted mt-1"
