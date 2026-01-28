@@ -1192,11 +1192,16 @@ h6 {
 /* Textblock links im Hero */
 .region-hero-text {
   max-width: 60%;
+  padding-left: 1.5rem;
 }
 
 /* Textblock links im Hero */
 .region-hero-text h3 {
   color: #fff
+}
+
+.region-hero-text h4 {
+  color: #fff;
 }
 
 .hero-overlay-action {
@@ -1399,6 +1404,10 @@ h6 {
     /*margin: 0 auto;*/
     box-sizing: border-box;
     padding-inline: 0.75rem;
+  }
+
+  .region-hero-text {
+    padding-left: 0;
   }
   
   .region-hero-inner h4 {
