@@ -1177,15 +1177,15 @@ h6 {
 /* Mobil: Parallax deaktivieren (bessere Kompatibilität) */
 @media (max-width: 767.98px) {
   .region-hero-media {
-    aspect-ratio: 16 / 9;   /* etwas höher, damit Text + Tachos Platz haben */
-    min-height: 260px;
+    aspect-ratio: 16 / 7;
+    min-height: 200px;
     background-size: cover;
     background-color: #0f1a1f;
   }
 
   .region-hero-media.region-hero-bundesland {
-    aspect-ratio: 21 / 14;
-    min-height: 260px;
+    aspect-ratio: 21 / 10;
+    min-height: 200px;
   }
 
   .region-hero-parallax {
