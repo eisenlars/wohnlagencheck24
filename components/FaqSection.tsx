@@ -72,17 +72,6 @@ export function FaqSection({
             })}
           </div>
 
-          {/* Plaintext-Block: extrem robust für LLM/SEO (immer im HTML) */}
-          <div className="mt-4">
-            <div className="small text-muted mb-2">Kurzüberblick</div>
-            <ul className="small text-muted mb-0">
-              {cleaned.map((it, idx) => (
-                <li key={`faq-plain-${idx}`}>
-                  <strong>{it.q}</strong>: {it.a}
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
       </div>
     </section>
