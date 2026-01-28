@@ -45,6 +45,7 @@ export function KreisSubnavScrollHandle({ targetId }: KreisSubnavScrollHandlePro
   }, [targetId]);
 
   useEffect(() => {
+    if (!isVisible) return;
     const target = targetRef.current;
     if (!target) return;
 
@@ -77,7 +78,7 @@ export function KreisSubnavScrollHandle({ targetId }: KreisSubnavScrollHandlePro
       target.removeEventListener("scroll", updateThumb);
       window.removeEventListener("resize", updateThumb);
     };
-  }, []);
+  }, [isVisible]);
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     const target = targetRef.current;
