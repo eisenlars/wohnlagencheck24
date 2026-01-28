@@ -1447,6 +1447,7 @@ h6 {
 
   .region-hero-text {
     padding-left: 0;
+    padding-top: 0.75rem !important;
   }
   
   .region-hero-inner h4 {
