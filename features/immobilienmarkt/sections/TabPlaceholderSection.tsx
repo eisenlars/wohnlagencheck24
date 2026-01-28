@@ -29,36 +29,34 @@ export function TabPlaceholderSection(
     <div className="text-dark">
       {tocItems.length > 0 ? <RightEdgeControls tocItems={tocItems} /> : null}
 
-      <div className="container immobilienmarkt-container position-relative">
-        <TabNav
-          tabs={tabs}
-          activeTabId={activeTabId}
-          basePath={basePath}
-          parentBasePath={props.parentBasePath}
-          ctx={props.ctx}
-          names={{ regionName: vm.regionName }}
+      <TabNav
+        tabs={tabs}
+        activeTabId={activeTabId}
+        basePath={basePath}
+        parentBasePath={props.parentBasePath}
+        ctx={props.ctx}
+        names={{ regionName: vm.regionName }}
+      />
+
+      {props.assets?.heroImageSrc ? (
+        <RegionHero
+          title={vm.regionName}
+          subtitle={vm.heroSubtitle}
+          imageSrc={props.assets.heroImageSrc}
+          rightOverlay={rightOverlay}
+          rightOverlayMode={rightOverlayMode}
         />
+      ) : null}
 
-        {props.assets?.heroImageSrc ? (
-          <RegionHero
-            title={vm.regionName}
-            subtitle={vm.heroSubtitle}
-            imageSrc={props.assets.heroImageSrc}
-            rightOverlay={rightOverlay}
-            rightOverlayMode={rightOverlayMode}
-          />
-        ) : null}
-
-        <section className="mb-4" id="einleitung">
-          <h1 className="mt-3 mb-2">
-            {tabs.find((t) => t.id === activeTabId)?.label ?? activeTabId} – {vm.regionName}
-          </h1>
-          <p className="small text-muted mb-0">
-            Dieser Bereich ist bereits über die URL-Struktur erreichbar und serverseitig gerendert. Inhalte, Kennzahlen
-            und Visualisierungen werden in einem nächsten Schritt ergänzt.
-          </p>
-        </section>
-      </div>
+      <section className="mb-4" id="einleitung">
+        <h1 className="mt-3 mb-2">
+          {tabs.find((t) => t.id === activeTabId)?.label ?? activeTabId} – {vm.regionName}
+        </h1>
+        <p className="small text-muted mb-0">
+          Dieser Bereich ist bereits über die URL-Struktur erreichbar und serverseitig gerendert. Inhalte, Kennzahlen
+          und Visualisierungen werden in einem nächsten Schritt ergänzt.
+        </p>
+      </section>
     </div>
   );
 }

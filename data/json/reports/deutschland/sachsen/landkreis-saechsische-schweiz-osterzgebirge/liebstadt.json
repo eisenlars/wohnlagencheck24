@@ -1,0 +1,4162 @@
+{
+    "meta": {
+        "aktualisierung": "28.01.2026",
+        "regionale_zuordnung": "stadt",
+        "amtlicher_name": "",
+        "bundesland_name": "sachsen",
+        "bundesland_schluessel": "14",
+        "kreis_name": "landkreis-saechsische-schweiz-osterzgebirge",
+        "kreis_schluessel": "14-6-28",
+        "ortslage_name": "liebstadt",
+        "ortslage_schluessel": "14-6-28-0230-230"
+    },
+    "data": {
+        "regionale_zuordnung_ortslagendaten": [
+            {
+                "regionale_zuordnung_bip": "Kreis",
+                "regionale_zuordnung_einkommen": "",
+                "regionale_zuordnung_gewerbesaldo": "Kreis",
+                "regionale_zuordnung_svb_arbeitsort": "",
+                "regionale_zuordnung_arbeitsplatzzentralitaet": "",
+                "regionale_zuordnung_pendler": ""
+            }
+        ],
+        "flaeche_gesamt": [
+            {
+                "flaeche_gesamt": 3736.0,
+                "einheit": "sqm"
+            }
+        ],
+        "flaechenverteilung": [
+            {
+                "label": "Siedlung",
+                "hectar": 69.0
+            },
+            {
+                "label": "Verkehr",
+                "hectar": 102.0
+            },
+            {
+                "label": "Vegetation",
+                "hectar": 3545.0
+            }
+        ],
+        "siedlungsflaechenverteilung": [
+            {
+                "label": "Wohnen",
+                "hectar": 52.0
+            },
+            {
+                "label": "Industrie & Gewerbe",
+                "hectar": 3.0
+            },
+            {
+                "label": "Mischgebiet",
+                "hectar": 5.0
+            },
+            {
+                "label": "Erholung",
+                "hectar": 8.0
+            },
+            {
+                "label": "Besondere Nutzung",
+                "hectar": 0.0
+            }
+        ],
+        "standortfaktoren": [
+            {
+                "faktor": "gesundheit",
+                "wert": 7,
+                "color": "#daaf60"
+            },
+            {
+                "faktor": "bildung",
+                "wert": 1,
+                "color": "#ff6384"
+            },
+            {
+                "faktor": "naherholung",
+                "wert": 4,
+                "color": "#ec8972"
+            },
+            {
+                "faktor": "kultur_freizeit",
+                "wert": 4,
+                "color": "#ec8972"
+            },
+            {
+                "faktor": "mobilitaet",
+                "wert": 2,
+                "color": "#f86f7e"
+            },
+            {
+                "faktor": "nahversorgung",
+                "wert": 3,
+                "color": "#f27c78"
+            }
+        ],
+        "standortfaktoren_werte": [
+            {
+                "gesundheit": {
+                    "gesundheit_01": 4.1,
+                    "gesundheit_02": 7.1,
+                    "gesundheit_03": 10.0,
+                    "gesundheit_04": 3.28,
+                    "gesundheit_05": 18.7,
+                    "gesundheit_06": 2.46,
+                    "gesundheit_07": 30.74,
+                    "gesundheit_08": 23.77,
+                    "gesundheit_09": 1036.08,
+                    "gesundheit_10": 490.58,
+                    "gesundheit_11": 1633.22,
+                    "gesundheit_12": "",
+                    "gesundheit_13": "",
+                    "gesundheit_14": "",
+                    "gesundheit_15": "",
+                    "gesundheit_16": "",
+                    "gesundheit_17": "",
+                    "gesundheit_18": "",
+                    "gesundheit_19": "",
+                    "gesundheit_20": ""
+                }
+            },
+            {
+                "bildung": {
+                    "bildung_01": 0.0,
+                    "bildung_02": 10.5,
+                    "bildung_03": 0.3,
+                    "bildung_04": 7.1,
+                    "bildung_05": 4.5,
+                    "bildung_06": 33.9,
+                    "bildung_07": 0.0,
+                    "bildung_08": 16.9,
+                    "bildung_09": 0.9,
+                    "bildung_10": 2.1,
+                    "bildung_11": 3.6,
+                    "bildung_12": 0.0,
+                    "bildung_13": 11.32,
+                    "bildung_14": 0.0,
+                    "bildung_15": 0.0,
+                    "bildung_16": "",
+                    "bildung_17": "",
+                    "bildung_18": "",
+                    "bildung_19": "",
+                    "bildung_20": ""
+                }
+            },
+            {
+                "sicherheit": {
+                    "sicherheit_01": 0.0,
+                    "sicherheit_02": 76.8,
+                    "sicherheit_03": 49.87,
+                    "sicherheit_04": "",
+                    "sicherheit_05": ""
+                }
+            },
+            {
+                "naherholung": {
+                    "naherholung_01": 40.0,
+                    "naherholung_02": 88.8,
+                    "naherholung_03": 1.2,
+                    "naherholung_04": 11.6,
+                    "naherholung_05": 4535.8,
+                    "naherholung_06": 6.6,
+                    "naherholung_07": 0.0,
+                    "naherholung_08": 0.0,
+                    "naherholung_09": 0.0,
+                    "naherholung_10": 0.05
+                }
+            },
+            {
+                "lebenserhaltungskosten": {
+                    "lebenserhaltungskosten_01": 457.0,
+                    "lebenserhaltungskosten_02": 1768.76,
+                    "lebenserhaltungskosten_03": 8.89,
+                    "lebenserhaltungskosten_04": "",
+                    "lebenserhaltungskosten_05": ""
+                }
+            },
+            {
+                "arbeitsplatz": {
+                    "arbeitsplatz_01": 113.3,
+                    "arbeitsplatz_02": 0.8,
+                    "arbeitsplatz_03": 41.0,
+                    "arbeitsplatz_04": "",
+                    "arbeitsplatz_05": ""
+                }
+            },
+            {
+                "kultur_freizeit": {
+                    "kultur_freizeit_01": 0.0,
+                    "kultur_freizeit_02": 0.0,
+                    "kultur_freizeit_03": 0.0,
+                    "kultur_freizeit_04": 8.0,
+                    "kultur_freizeit_05": 2.0,
+                    "kultur_freizeit_06": 1902.13,
+                    "kultur_freizeit_07": 13.2,
+                    "kultur_freizeit_08": 4.4,
+                    "kultur_freizeit_09": 9.5,
+                    "kultur_freizeit_10": 0.0,
+                    "kultur_freizeit_11": 0.0,
+                    "kultur_freizeit_12": 0.0,
+                    "kultur_freizeit_13": "",
+                    "kultur_freizeit_14": "",
+                    "kultur_freizeit_15": "",
+                    "kultur_freizeit_16": "",
+                    "kultur_freizeit_17": "",
+                    "kultur_freizeit_18": "",
+                    "kultur_freizeit_19": "",
+                    "kultur_freizeit_20": ""
+                }
+            },
+            {
+                "mobilitaet": {
+                    "mobilitaet_01": "5,4",
+                    "mobilitaet_02": "7",
+                    "mobilitaet_03": "27,8",
+                    "mobilitaet_04": "57,2",
+                    "mobilitaet_05": "32,4",
+                    "mobilitaet_06": "33,1",
+                    "mobilitaet_07": 2,
+                    "mobilitaet_08": 3,
+                    "mobilitaet_09": 3,
+                    "mobilitaet_10": "0,0",
+                    "mobilitaet_11": "0,0",
+                    "mobilitaet_12": "0,0",
+                    "mobilitaet_13": 5.4,
+                    "mobilitaet_14": "2,1",
+                    "mobilitaet_15": "337,7",
+                    "mobilitaet_16": "0,03",
+                    "mobilitaet_17": "",
+                    "mobilitaet_18": "",
+                    "mobilitaet_19": "",
+                    "mobilitaet_20": ""
+                }
+            },
+            {
+                "nahversorgung": {
+                    "nahversorgung_01": 0.0,
+                    "nahversorgung_02": 8.6,
+                    "nahversorgung_03": "",
+                    "nahversorgung_04": "",
+                    "nahversorgung_05": "",
+                    "nahversorgung_06": "",
+                    "nahversorgung_07": "",
+                    "nahversorgung_08": "",
+                    "nahversorgung_09": "",
+                    "nahversorgung_10": ""
+                }
+            }
+        ],
+        "verkehrsflaechenanteil": [
+            {
+                "label": "Gesamt",
+                "hectar_k": 159394.0,
+                "hectar_ol": 3634.0
+            },
+            {
+                "label": "Verkehrsflächen",
+                "hectar_k": 6031.0,
+                "hectar_ol": 102.0
+            }
+        ],
+        "mobilitaet_fernanbindung": [
+            {
+                "autobahn": "'A 17, D8'",
+                "flughafen": "'Flughafen Dresden, Letiště Karlovy Vary, Letiště Václava Havla Praha'",
+                "bahnhof": "'Bad Schandau, Dresden Central Station, Dresden-Neustadt'"
+            }
+        ],
+        "mobilitaet_oepnv_linien": [
+            {
+                "tram": "'0'",
+                "bus": "'201, 204, 205, 206, 207, 372'"
+            }
+        ],
+        "vegetationsflaechenanteil": [
+            {
+                "label": "Gesamt",
+                "hectar_k": 18452.0,
+                "hectar_ol": 191.0
+            },
+            {
+                "label": "Vegetationsflächen",
+                "hectar_k": 146973.0,
+                "hectar_ol": 3545.0
+            }
+        ],
+        "erholungsflaechenanteil": [
+            {
+                "label": "Gesamt",
+                "hectar_k": 164108.0,
+                "hectar_ol": 3728.0
+            },
+            {
+                "label": "Erholungsflächen",
+                "hectar_k": 1317.0,
+                "hectar_ol": 8.0
+            }
+        ],
+        "wohneigentumsdelikte_anteil": [
+            {
+                "label": "Alle",
+                "anzahl_ol": "",
+                "anzahl_k": 19036
+            },
+            {
+                "label": "Wohneigentumsdelikte",
+                "anzahl_ol": "",
+                "anzahl_k": 122
+            }
+        ],
+        "absolventenverteilung": [
+            {
+                "label": "Ohne",
+                "anzahl_k": 220.0,
+                "anzahl_ol": 0.0
+            },
+            {
+                "label": "Haupts.",
+                "anzahl_k": 189.0,
+                "anzahl_ol": 0.0
+            },
+            {
+                "label": "Reals.",
+                "anzahl_k": 1077.0,
+                "anzahl_ol": 0.0
+            },
+            {
+                "label": "Gymn.",
+                "anzahl_k": 541.0,
+                "anzahl_ol": 0.0
+            }
+        ],
+        "gewerbeflaechenanteil": [
+            {
+                "label": "Gesamt",
+                "hectar": 3733.0
+            },
+            {
+                "label": "Industrie & Gewerbe",
+                "hectar": 3.0
+            }
+        ],
+        "flaechennutzung_gewerbe": [
+            {
+                "flaechennutzung_gewerbe": 3.0
+            }
+        ],
+        "wirtschaft_allgemein": [
+            {
+                "kaufkraftindex_ol": 99.54944030790945,
+                "kaufkraftindex_k": 90.36550807916298,
+                "kaufkraft_nominal_ol": 27956.839739182462,
+                "kaufkraft_nominal_k": 25377.681878521158,
+                "kaufkraft_real_ol": 22808.41611256596,
+                "kaufkraft_real_k": 19518.25025153511,
+                "bip": 6581290,
+                "pendlersaldo_ol": 2103,
+                "pendlersaldo_k": -19457,
+                "gewerbesaldo": 41,
+                "arbeitsplatzzentralitaet_ol": 0.3333333333333333,
+                "arbeitsplatzzentralitaet_k": 0.8036155638726079,
+                "arbeitslosenquote_ol": "2.3",
+                "arbeitslosenquote_k": "5.3",
+                "beschaeftigtenquote_ol": "75.2",
+                "beschaeftigtenquote_k": "70.7",
+                "arbeitslosendichte": "0.2318840579710145"
+            }
+        ],
+        "gewerbesaldo_abs": [
+            {
+                "jahr": 2014,
+                "gewerbeanmeldungen": 1581,
+                "gewerbeabmeldungen": -1790,
+                "gewerbesaldo": -209
+            },
+            {
+                "jahr": 2015,
+                "gewerbeanmeldungen": 1598,
+                "gewerbeabmeldungen": -1750,
+                "gewerbesaldo": -152
+            },
+            {
+                "jahr": 2016,
+                "gewerbeanmeldungen": 1495,
+                "gewerbeabmeldungen": -1651,
+                "gewerbesaldo": -156
+            },
+            {
+                "jahr": 2017,
+                "gewerbeanmeldungen": 1477,
+                "gewerbeabmeldungen": -1633,
+                "gewerbesaldo": -156
+            },
+            {
+                "jahr": 2018,
+                "gewerbeanmeldungen": 1440,
+                "gewerbeabmeldungen": -1676,
+                "gewerbesaldo": -236
+            },
+            {
+                "jahr": 2019,
+                "gewerbeanmeldungen": 1523,
+                "gewerbeabmeldungen": -1549,
+                "gewerbesaldo": -26
+            },
+            {
+                "jahr": 2020,
+                "gewerbeanmeldungen": 1406,
+                "gewerbeabmeldungen": -1373,
+                "gewerbesaldo": 33
+            },
+            {
+                "jahr": 2021,
+                "gewerbeanmeldungen": 1456,
+                "gewerbeabmeldungen": -1192,
+                "gewerbesaldo": 264
+            },
+            {
+                "jahr": 2022,
+                "gewerbeanmeldungen": 1553,
+                "gewerbeabmeldungen": -1351,
+                "gewerbesaldo": 202
+            },
+            {
+                "jahr": 2023,
+                "gewerbeanmeldungen": 1533,
+                "gewerbeabmeldungen": -1505,
+                "gewerbesaldo": 28
+            },
+            {
+                "jahr": 2024,
+                "gewerbeanmeldungen": 1559,
+                "gewerbeabmeldungen": -1518,
+                "gewerbesaldo": 41
+            }
+        ],
+        "gewerbesaldo_je_1000_ew": [
+            {
+                "jahr": 2014,
+                "gewerbesaldo_pro_1000_ew": -0.8497523927238426,
+                "gewerbesaldo_pro_1000_ew_bl": -0.14894184708604155,
+                "gewerbesaldo_pro_1000_ew_l": 0.3546905616114932
+            },
+            {
+                "jahr": 2015,
+                "gewerbesaldo_pro_1000_ew": -0.6143598532003298,
+                "gewerbesaldo_pro_1000_ew_bl": -0.23305623632294054,
+                "gewerbesaldo_pro_1000_ew_l": 0.38168225043310866
+            },
+            {
+                "jahr": 2016,
+                "gewerbesaldo_pro_1000_ew": -0.6339762502743166,
+                "gewerbesaldo_pro_1000_ew_bl": -0.39051561535730833,
+                "gewerbesaldo_pro_1000_ew_l": 0.4075778753486676
+            },
+            {
+                "jahr": 2017,
+                "gewerbesaldo_pro_1000_ew": -0.6356501968070801,
+                "gewerbesaldo_pro_1000_ew_bl": -0.42878410548775053,
+                "gewerbesaldo_pro_1000_ew_l": 0.4766382343702258
+            },
+            {
+                "jahr": 2018,
+                "gewerbesaldo_pro_1000_ew": -0.9608690164528462,
+                "gewerbesaldo_pro_1000_ew_bl": -0.47131674667852885,
+                "gewerbesaldo_pro_1000_ew_l": 0.39225859681420977
+            },
+            {
+                "jahr": 2019,
+                "gewerbesaldo_pro_1000_ew": -0.10586922707320451,
+                "gewerbesaldo_pro_1000_ew_bl": -0.24484457281252742,
+                "gewerbesaldo_pro_1000_ew_l": 0.7017350968706698
+            },
+            {
+                "jahr": 2020,
+                "gewerbesaldo_pro_1000_ew": 0.13484688748866058,
+                "gewerbesaldo_pro_1000_ew_bl": 0.23194815995598655,
+                "gewerbesaldo_pro_1000_ew_l": 1.432565156520716
+            },
+            {
+                "jahr": 2021,
+                "gewerbesaldo_pro_1000_ew": 1.081927305960026,
+                "gewerbesaldo_pro_1000_ew_bl": 0.7435069287623405,
+                "gewerbesaldo_pro_1000_ew_l": 1.9961766098501912
+            },
+            {
+                "jahr": 2022,
+                "gewerbesaldo_pro_1000_ew": 0.8234378121012746,
+                "gewerbesaldo_pro_1000_ew_bl": 0.49358426871132527,
+                "gewerbesaldo_pro_1000_ew_l": 1.3274180678499004
+            },
+            {
+                "jahr": 2023,
+                "gewerbesaldo_pro_1000_ew": 0.11421904765789763,
+                "gewerbesaldo_pro_1000_ew_bl": 0.28460875790966955,
+                "gewerbesaldo_pro_1000_ew_l": 1.3456065405447861
+            },
+            {
+                "jahr": 2024,
+                "gewerbesaldo_pro_1000_ew": 0.1680355415662552,
+                "gewerbesaldo_pro_1000_ew_bl": 0.3035309030081471,
+                "gewerbesaldo_pro_1000_ew_l": 1.1647562958005024
+            }
+        ],
+        "bruttoinlandsprodukt_abs": [
+            {
+                "jahr": 2012,
+                "bip_abs": 4637121,
+                "bip_abs_bl": 101329875,
+                "bip_abs_l": 2745310000
+            },
+            {
+                "jahr": 2013,
+                "bip_abs": 4816263,
+                "bip_abs_bl": 104138739,
+                "bip_abs_l": 2811350000
+            },
+            {
+                "jahr": 2014,
+                "bip_abs": 5117531,
+                "bip_abs_bl": 109327533,
+                "bip_abs_l": 2927430000
+            },
+            {
+                "jahr": 2015,
+                "bip_abs": 5279627,
+                "bip_abs_bl": 113587903,
+                "bip_abs_l": 3026180000
+            },
+            {
+                "jahr": 2016,
+                "bip_abs": 5414702,
+                "bip_abs_bl": 117236822,
+                "bip_abs_l": 3134740000
+            },
+            {
+                "jahr": 2017,
+                "bip_abs": 5633735,
+                "bip_abs_bl": 121844210,
+                "bip_abs_l": 3267160000
+            },
+            {
+                "jahr": 2018,
+                "bip_abs": 5767704,
+                "bip_abs_bl": 125180270,
+                "bip_abs_l": 3365450000
+            },
+            {
+                "jahr": 2019,
+                "bip_abs": 5942799,
+                "bip_abs_bl": 130348083,
+                "bip_abs_l": 3473260000
+            },
+            {
+                "jahr": 2020,
+                "bip_abs": 5910429,
+                "bip_abs_bl": 128678979,
+                "bip_abs_l": 3405430000
+            },
+            {
+                "jahr": 2021,
+                "bip_abs": 6182486,
+                "bip_abs_bl": 134983845,
+                "bip_abs_l": 3601750000
+            },
+            {
+                "jahr": 2022,
+                "bip_abs": 6581290,
+                "bip_abs_bl": 146249593,
+                "bip_abs_l": 3876810000
+            }
+        ],
+        "bruttoinlandsprodukt_pro_ew": [
+            {
+                "jahr": 2012,
+                "bip_pro_ew": 18853.610837798937,
+                "bip_pro_ew_bl": 24987.183356784277,
+                "bip_pro_ew_l": 33810.26200339057
+            },
+            {
+                "jahr": 2013,
+                "bip_pro_ew": 18742.506426527412,
+                "bip_pro_ew_bl": 24806.25976320801,
+                "bip_pro_ew_l": 33407.81440894365
+            },
+            {
+                "jahr": 2014,
+                "bip_pro_ew": 18845.02938236083,
+                "bip_pro_ew_bl": 24824.90494962618,
+                "bip_pro_ew_l": 33267.753373772095
+            },
+            {
+                "jahr": 2015,
+                "bip_pro_ew": 19624.734127081145,
+                "bip_pro_ew_bl": 25516.020599278465,
+                "bip_pro_ew_l": 33956.63930355112
+            },
+            {
+                "jahr": 2016,
+                "bip_pro_ew": 20835.919401004026,
+                "bip_pro_ew_bl": 26809.51986261681,
+                "bip_pro_ew_l": 35262.07842996536
+            },
+            {
+                "jahr": 2017,
+                "bip_pro_ew": 21498.078066339287,
+                "bip_pro_ew_bl": 27895.066787067,
+                "bip_pro_ew_l": 36386.91447110371
+            },
+            {
+                "jahr": 2018,
+                "bip_pro_ew": 22125.930647837136,
+                "bip_pro_ew_bl": 28897.837557903847,
+                "bip_pro_ew_l": 37697.53870935362
+            },
+            {
+                "jahr": 2019,
+                "bip_pro_ew": 23088.226253949648,
+                "bip_pro_ew_bl": 30137.063993537475,
+                "bip_pro_ew_l": 39251.23602300339
+            },
+            {
+                "jahr": 2020,
+                "bip_pro_ew": 23511.61169607807,
+                "bip_pro_ew_bl": 30908.96049276451,
+                "bip_pro_ew_l": 40489.782172563486
+            },
+            {
+                "jahr": 2021,
+                "bip_pro_ew": 24242.172935796658,
+                "bip_pro_ew_bl": 32147.49219977167,
+                "bip_pro_ew_l": 41617.83607167102
+            },
+            {
+                "jahr": 2022,
+                "bip_pro_ew": 24223.466778143906,
+                "bip_pro_ew_bl": 31832.14889489519,
+                "bip_pro_ew_l": 40745.95038786922
+            }
+        ],
+        "nettoeinkommen_pro_ew": [
+            {
+                "jahr": 2018,
+                "nettoeinkommen_pro_ew_ol": -431092.6631359491,
+                "nettoeinkommen_pro_ew_k": 22421.294366669117,
+                "nettoeinkommen_pro_ew_bl": 22421.294366669117,
+                "nettoeinkommen_pro_ew_l": 23894.7659101949
+            },
+            {
+                "jahr": 2019,
+                "nettoeinkommen_pro_ew_ol": -462430.2729092223,
+                "nettoeinkommen_pro_ew_k": 22934.531103360943,
+                "nettoeinkommen_pro_ew_bl": 22934.531103360943,
+                "nettoeinkommen_pro_ew_l": 24454.869440227176
+            },
+            {
+                "jahr": 2020,
+                "nettoeinkommen_pro_ew_ol": -517805.2263789574,
+                "nettoeinkommen_pro_ew_k": 24391.169648571416,
+                "nettoeinkommen_pro_ew_bl": 24391.169648571416,
+                "nettoeinkommen_pro_ew_l": 26040.73670674114
+            },
+            {
+                "jahr": 2021,
+                "nettoeinkommen_pro_ew_ol": -523732.42085382657,
+                "nettoeinkommen_pro_ew_k": 24867.514646963293,
+                "nettoeinkommen_pro_ew_bl": 24428.45500568276,
+                "nettoeinkommen_pro_ew_l": 26874.040281356854
+            },
+            {
+                "jahr": 2022,
+                "nettoeinkommen_pro_ew_ol": 27956.839739182462,
+                "nettoeinkommen_pro_ew_k": 25377.681878521158,
+                "nettoeinkommen_pro_ew_bl": 25356.736295898707,
+                "nettoeinkommen_pro_ew_l": 28083.372094017912
+            }
+        ],
+        "nettoeinkommen_pro_hh": [
+            {
+                "jahr": 2018,
+                "nettoeinkommen_pro_hh_ol": -905579.1421981242,
+                "nettoeinkommen_pro_hh_k": 43366.11158092739,
+                "nettoeinkommen_pro_hh_bl": 41455.59569489939,
+                "nettoeinkommen_pro_hh_l": 48578.79810278226
+            },
+            {
+                "jahr": 2019,
+                "nettoeinkommen_pro_hh_ol": -938895.9694370951,
+                "nettoeinkommen_pro_hh_k": 44757.3239492942,
+                "nettoeinkommen_pro_hh_bl": 42305.23192488263,
+                "nettoeinkommen_pro_hh_l": 50210.97681302417
+            },
+            {
+                "jahr": 2020,
+                "nettoeinkommen_pro_hh_ol": -1050965.4677081967,
+                "nettoeinkommen_pro_hh_k": 47586.8154416326,
+                "nettoeinkommen_pro_hh_bl": 45498.28883610451,
+                "nettoeinkommen_pro_hh_l": 53545.432056007725
+            },
+            {
+                "jahr": 2021,
+                "nettoeinkommen_pro_hh_ol": -1047464.8417076531,
+                "nettoeinkommen_pro_hh_k": 48203.065962666326,
+                "nettoeinkommen_pro_hh_bl": 47054.53102068258,
+                "nettoeinkommen_pro_hh_l": 55256.377714472655
+            },
+            {
+                "jahr": 2022,
+                "nettoeinkommen_pro_hh_ol": 55867.39331985634,
+                "nettoeinkommen_pro_hh_k": 49190.124464820845,
+                "nettoeinkommen_pro_hh_bl": 48880.60498366211,
+                "nettoeinkommen_pro_hh_l": 57476.930188407976
+            }
+        ],
+        "sv_pflichtig_beschaeftigte_wohnort": [
+            {
+                "jahr": 2014,
+                "anzahl_ol": 566,
+                "anzahl_k": 95456
+            },
+            {
+                "jahr": 2015,
+                "anzahl_ol": 554,
+                "anzahl_k": 95529
+            },
+            {
+                "jahr": 2016,
+                "anzahl_ol": 538,
+                "anzahl_k": 95994
+            },
+            {
+                "jahr": 2017,
+                "anzahl_ol": 534,
+                "anzahl_k": 97005
+            },
+            {
+                "jahr": 2018,
+                "anzahl_ol": 530,
+                "anzahl_k": 98073
+            },
+            {
+                "jahr": 2019,
+                "anzahl_ol": 537,
+                "anzahl_k": 98709
+            },
+            {
+                "jahr": 2020,
+                "anzahl_ol": 519,
+                "anzahl_k": 98406
+            },
+            {
+                "jahr": 2021,
+                "anzahl_ol": 536,
+                "anzahl_k": 98967
+            },
+            {
+                "jahr": 2022,
+                "anzahl_ol": 533,
+                "anzahl_k": 99827
+            },
+            {
+                "jahr": 2023,
+                "anzahl_ol": 529,
+                "anzahl_k": 99628
+            },
+            {
+                "jahr": 2024,
+                "anzahl_ol": 513,
+                "anzahl_k": 99127
+            }
+        ],
+        "sv_pflichtig_beschaeftigte_wohnort_index": [
+            {
+                "jahr": 2014,
+                "index_ol": 100.0,
+                "index_k": 100.0,
+                "index_bl": 100.0,
+                "index_l": 100.0
+            },
+            {
+                "jahr": 2015,
+                "index_ol": 97.87985865724382,
+                "index_k": 100.07647502514247,
+                "index_bl": 100.86526439965323,
+                "index_l": 102.05130049084676
+            },
+            {
+                "jahr": 2016,
+                "index_ol": 95.0530035335689,
+                "index_k": 100.56361045926919,
+                "index_bl": 102.0888974353496,
+                "index_l": 104.24329708214883
+            },
+            {
+                "jahr": 2017,
+                "index_ol": 94.34628975265018,
+                "index_k": 101.62273717733825,
+                "index_bl": 103.51104144450724,
+                "index_l": 106.5910424571311
+            },
+            {
+                "jahr": 2018,
+                "index_ol": 93.63957597173145,
+                "index_k": 102.74157727120348,
+                "index_bl": 104.92522170619729,
+                "index_l": 108.88517535309572
+            },
+            {
+                "jahr": 2019,
+                "index_ol": 94.87632508833921,
+                "index_k": 103.40785283271873,
+                "index_bl": 105.48987082542625,
+                "index_l": 110.63386592461416
+            },
+            {
+                "jahr": 2020,
+                "index_ol": 91.69611307420494,
+                "index_k": 103.09042909822325,
+                "index_bl": 105.02376498786985,
+                "index_l": 110.36557692282697
+            },
+            {
+                "jahr": 2021,
+                "index_ol": 94.69964664310953,
+                "index_k": 103.67813442842775,
+                "index_bl": 105.80634885487139,
+                "index_l": 111.91561006572294
+            },
+            {
+                "jahr": 2022,
+                "index_ol": 94.1696113074205,
+                "index_k": 104.57907308079115,
+                "index_bl": 106.88255544354513,
+                "index_l": 114.00813964597836
+            },
+            {
+                "jahr": 2023,
+                "index_ol": 93.46289752650176,
+                "index_k": 104.3706000670466,
+                "index_bl": 106.95772545012979,
+                "index_l": 114.83405108228193
+            },
+            {
+                "jahr": 2024,
+                "index_ol": 90.63604240282686,
+                "index_k": 103.84575092189073,
+                "index_bl": 106.83011125290467,
+                "index_l": 115.25390330872108
+            }
+        ],
+        "sv_pflichtig_beschaeftigte_arbeitsort": [
+            {
+                "jahr": 2014,
+                "anzahl_ol": 194,
+                "anzahl_k": 75198
+            },
+            {
+                "jahr": 2015,
+                "anzahl_ol": 192,
+                "anzahl_k": 75681
+            },
+            {
+                "jahr": 2016,
+                "anzahl_ol": 188,
+                "anzahl_k": 76611
+            },
+            {
+                "jahr": 2017,
+                "anzahl_ol": 178,
+                "anzahl_k": 77894
+            },
+            {
+                "jahr": 2018,
+                "anzahl_ol": 192,
+                "anzahl_k": 79249
+            },
+            {
+                "jahr": 2019,
+                "anzahl_ol": 189,
+                "anzahl_k": 80097
+            },
+            {
+                "jahr": 2020,
+                "anzahl_ol": 180,
+                "anzahl_k": 79544
+            },
+            {
+                "jahr": 2021,
+                "anzahl_ol": 180,
+                "anzahl_k": 79934
+            },
+            {
+                "jahr": 2022,
+                "anzahl_ol": 180,
+                "anzahl_k": 80797
+            },
+            {
+                "jahr": 2023,
+                "anzahl_ol": 180,
+                "anzahl_k": 80070
+            },
+            {
+                "jahr": 2024,
+                "anzahl_ol": 171,
+                "anzahl_k": 79660
+            }
+        ],
+        "sv_pflichtig_beschaeftigte_arbeitsort_index": [
+            {
+                "jahr": 2014,
+                "index_ol": 100.0,
+                "index_k": 100.0,
+                "index_bl": 100.0,
+                "index_l": 100.0
+            },
+            {
+                "jahr": 2015,
+                "index_ol": 98.96907216494846,
+                "index_k": 100.64230431660417,
+                "index_bl": 101.22260128749885,
+                "index_l": 101.97780212136041
+            },
+            {
+                "jahr": 2016,
+                "index_ol": 96.90721649484536,
+                "index_k": 101.87903933615257,
+                "index_bl": 102.89009157767232,
+                "index_l": 104.20491736318458
+            },
+            {
+                "jahr": 2017,
+                "index_ol": 91.75257731958763,
+                "index_k": 103.58520173408867,
+                "index_bl": 104.53628011931626,
+                "index_l": 106.59652246159466
+            },
+            {
+                "jahr": 2018,
+                "index_ol": 98.96907216494846,
+                "index_k": 105.38711135934466,
+                "index_bl": 106.35685191910893,
+                "index_l": 108.93377704124725
+            },
+            {
+                "jahr": 2019,
+                "index_ol": 97.42268041237114,
+                "index_k": 106.51480092555654,
+                "index_bl": 106.98254116629057,
+                "index_l": 110.71353780285709
+            },
+            {
+                "jahr": 2020,
+                "index_ol": 92.78350515463917,
+                "index_k": 105.77940902683582,
+                "index_bl": 106.41023859942989,
+                "index_l": 110.43412973965935
+            },
+            {
+                "jahr": 2021,
+                "index_ol": 92.78350515463917,
+                "index_k": 106.29803984148514,
+                "index_bl": 107.39938066158467,
+                "index_l": 112.02229498048104
+            },
+            {
+                "jahr": 2022,
+                "index_ol": 92.78350515463917,
+                "index_k": 107.44567674672199,
+                "index_bl": 108.5728953111676,
+                "index_l": 114.15294799367877
+            },
+            {
+                "jahr": 2023,
+                "index_ol": 92.78350515463917,
+                "index_k": 106.47889571531157,
+                "index_bl": 108.73788463052382,
+                "index_l": 115.02775604769656
+            },
+            {
+                "jahr": 2024,
+                "index_ol": 88.14432989690721,
+                "index_k": 105.93366844862895,
+                "index_bl": 108.35405623000068,
+                "index_l": 115.4521076650636
+            }
+        ],
+        "arbeitslosenzahlen": [
+            {
+                "jahr": 2013,
+                "anzahl_ol": 45,
+                "anzahl_k": 10176
+            },
+            {
+                "jahr": 2014,
+                "anzahl_ol": 36,
+                "anzahl_k": 9383
+            },
+            {
+                "jahr": 2015,
+                "anzahl_ol": 26,
+                "anzahl_k": 8314
+            },
+            {
+                "jahr": 2016,
+                "anzahl_ol": 24,
+                "anzahl_k": 7250
+            },
+            {
+                "jahr": 2017,
+                "anzahl_ol": 21,
+                "anzahl_k": 6462
+            },
+            {
+                "jahr": 2018,
+                "anzahl_ol": 17,
+                "anzahl_k": 5748
+            },
+            {
+                "jahr": 2019,
+                "anzahl_ol": 21,
+                "anzahl_k": 6260
+            },
+            {
+                "jahr": 2020,
+                "anzahl_ol": 18,
+                "anzahl_k": 6075
+            },
+            {
+                "jahr": 2021,
+                "anzahl_ol": 16,
+                "anzahl_k": 6011
+            },
+            {
+                "jahr": 2022,
+                "anzahl_ol": 14,
+                "anzahl_k": 6555
+            },
+            {
+                "jahr": 2023,
+                "anzahl_ol": 16,
+                "anzahl_k": 6759
+            }
+        ],
+        "arbeitslosenquoten": [
+            {
+                "jahr": 2013,
+                "quote_ol": "5.5",
+                "quote_k": "7.9",
+                "quote_bl": "8.8",
+                "quote_l": "6.7"
+            },
+            {
+                "jahr": 2014,
+                "quote_ol": "4.4",
+                "quote_k": "7.3",
+                "quote_bl": "8.2",
+                "quote_l": "6.4"
+            },
+            {
+                "jahr": 2015,
+                "quote_ol": "3.2",
+                "quote_k": "6.5",
+                "quote_bl": "7.5",
+                "quote_l": "6.1"
+            },
+            {
+                "jahr": 2016,
+                "quote_ol": "3.2",
+                "quote_k": "5.7",
+                "quote_bl": "6.7",
+                "quote_l": "5.2"
+            },
+            {
+                "jahr": 2017,
+                "quote_ol": "2.8",
+                "quote_k": "5.1",
+                "quote_bl": "6.0",
+                "quote_l": "5.2"
+            },
+            {
+                "jahr": 2018,
+                "quote_ol": "2.3",
+                "quote_k": "4.5",
+                "quote_bl": "5.5",
+                "quote_l": "5.0"
+            },
+            {
+                "jahr": 2019,
+                "quote_ol": "2.9",
+                "quote_k": "4.9",
+                "quote_bl": "6.1",
+                "quote_l": "5.9"
+            },
+            {
+                "jahr": 2020,
+                "quote_ol": "2.5",
+                "quote_k": "4.8",
+                "quote_bl": "5.9",
+                "quote_l": "5.7"
+            },
+            {
+                "jahr": 2021,
+                "quote_ol": "2.3",
+                "quote_k": "4.8",
+                "quote_bl": "5.6",
+                "quote_l": "5.3"
+            },
+            {
+                "jahr": 2022,
+                "quote_ol": "2.0",
+                "quote_k": "5.2",
+                "quote_bl": "6.2",
+                "quote_l": "5.7"
+            },
+            {
+                "jahr": 2023,
+                "quote_ol": "2.3",
+                "quote_k": "5.3",
+                "quote_bl": "6.5",
+                "quote_l": "6.0"
+            }
+        ],
+        "wohnbauflaechenanteil": [
+            {
+                "label": "Gesamt",
+                "hectar": 3684.0
+            },
+            {
+                "label": "Wohnbauflächen",
+                "hectar": 52.0
+            }
+        ],
+        "flaechennutzung_wohnbau": [
+            {
+                "flaechennutzung_wohnbau": 52.0
+            }
+        ],
+        "wohnungsnachfrage_allgemein": [
+            {
+                "anzahl_einwohner": 1207,
+                "anzahl_haushalte": 604.0,
+                "mittlere_haushaltsgroesse": 2.0,
+                "wanderungssaldo": -18,
+                "natuerlicher_saldo": -2,
+                "einwohnerdichte": "32.30728051391863",
+                "siedlungsdichte": "1749.2753623188407",
+                "jugendquotient": "33.28125",
+                "altenquotient": "55.3125"
+            }
+        ],
+        "bevoelkerungsentwicklung_relativ": [
+            {
+                "jahr": 2014,
+                "einwohner_ol": 100.0,
+                "einwohner_k": 100.0,
+                "einwohner_bl": 100.0,
+                "einwohner_l": 100.0
+            },
+            {
+                "jahr": 2015,
+                "einwohner_ol": 99.25871015567087,
+                "einwohner_k": 100.59279377444564,
+                "einwohner_bl": 100.72934652504368,
+                "einwohner_l": 100.0
+            },
+            {
+                "jahr": 2016,
+                "einwohner_ol": 100.22238695329875,
+                "einwohner_k": 100.04553697032779,
+                "einwohner_bl": 100.65369195768277,
+                "einwohner_l": 100.42101140283786
+            },
+            {
+                "jahr": 2017,
+                "einwohner_ol": 95.92290585618977,
+                "einwohner_k": 99.78207307057417,
+                "einwohner_bl": 100.64197881573477,
+                "einwohner_l": 100.75042515009672
+            },
+            {
+                "jahr": 2018,
+                "einwohner_ol": 95.70051890289103,
+                "einwohner_k": 99.86054302837117,
+                "einwohner_bl": 100.55885249677334,
+                "einwohner_l": 101.02649465016927
+            },
+            {
+                "jahr": 2019,
+                "einwohner_ol": 94.14381022979985,
+                "einwohner_k": 99.85037852606585,
+                "einwohner_bl": 100.41173543390656,
+                "einwohner_l": 101.20598570253459
+            },
+            {
+                "jahr": 2020,
+                "einwohner_ol": 94.36619718309859,
+                "einwohner_k": 99.49909332639436,
+                "einwohner_bl": 100.0411069634259,
+                "einwohner_l": 101.19177225223947
+            },
+            {
+                "jahr": 2021,
+                "einwohner_ol": 94.21793921423276,
+                "einwohner_k": 99.20920172064696,
+                "einwohner_bl": 99.69738173055632,
+                "einwohner_l": 101.2916716336672
+            },
+            {
+                "jahr": 2022,
+                "einwohner_ol": 91.32690882134915,
+                "einwohner_k": 99.73938216089188,
+                "einwohner_bl": 99.86913338038318,
+                "einwohner_l": 101.14731871291755
+            },
+            {
+                "jahr": 2023,
+                "einwohner_ol": 89.84432913269089,
+                "einwohner_k": 99.67026354521578,
+                "einwohner_bl": 99.98557434096932,
+                "einwohner_l": 101.55807769120608
+            },
+            {
+                "jahr": 2024,
+                "einwohner_ol": 89.47368421052632,
+                "einwohner_k": 99.20391617944819,
+                "einwohner_bl": 99.68307936775666,
+                "einwohner_l": 101.70543880109352
+            }
+        ],
+        "bevoelkerungsentwicklung_absolut": [
+            {
+                "jahr": 2014,
+                "einwohner": 1349
+            },
+            {
+                "jahr": 2015,
+                "einwohner": 1339
+            },
+            {
+                "jahr": 2016,
+                "einwohner": 1352
+            },
+            {
+                "jahr": 2017,
+                "einwohner": 1294
+            },
+            {
+                "jahr": 2018,
+                "einwohner": 1291
+            },
+            {
+                "jahr": 2019,
+                "einwohner": 1270
+            },
+            {
+                "jahr": 2020,
+                "einwohner": 1273
+            },
+            {
+                "jahr": 2021,
+                "einwohner": 1271
+            },
+            {
+                "jahr": 2022,
+                "einwohner": 1232
+            },
+            {
+                "jahr": 2023,
+                "einwohner": 1212
+            },
+            {
+                "jahr": 2024,
+                "einwohner": 1207
+            }
+        ],
+        "bevoelkerungsaltersentwicklung": [
+            {
+                "jahr": 2014,
+                "durchschnittsalter_ol": 46.7,
+                "durchschnittsalter_k": 47.4,
+                "durchschnittsalter_bl": 46.7,
+                "durchschnittsalter_l": 44.3
+            },
+            {
+                "jahr": 2015,
+                "durchschnittsalter_ol": 46.8,
+                "durchschnittsalter_k": 47.4,
+                "durchschnittsalter_bl": 46.6,
+                "durchschnittsalter_l": 44.2
+            },
+            {
+                "jahr": 2016,
+                "durchschnittsalter_ol": 46.7,
+                "durchschnittsalter_k": 47.6,
+                "durchschnittsalter_bl": 46.7,
+                "durchschnittsalter_l": 44.3
+            },
+            {
+                "jahr": 2017,
+                "durchschnittsalter_ol": 47.4,
+                "durchschnittsalter_k": 47.7,
+                "durchschnittsalter_bl": 46.7,
+                "durchschnittsalter_l": 44.4
+            },
+            {
+                "jahr": 2018,
+                "durchschnittsalter_ol": 47.4,
+                "durchschnittsalter_k": 47.8,
+                "durchschnittsalter_bl": 46.8,
+                "durchschnittsalter_l": 44.4
+            },
+            {
+                "jahr": 2019,
+                "durchschnittsalter_ol": 47.9,
+                "durchschnittsalter_k": 47.8,
+                "durchschnittsalter_bl": 46.9,
+                "durchschnittsalter_l": 44.5
+            },
+            {
+                "jahr": 2020,
+                "durchschnittsalter_ol": 47.7,
+                "durchschnittsalter_k": 47.9,
+                "durchschnittsalter_bl": 46.9,
+                "durchschnittsalter_l": 44.6
+            },
+            {
+                "jahr": 2021,
+                "durchschnittsalter_ol": 48.0,
+                "durchschnittsalter_k": 47.9,
+                "durchschnittsalter_bl": 46.9,
+                "durchschnittsalter_l": 44.7
+            },
+            {
+                "jahr": 2022,
+                "durchschnittsalter_ol": 48.6,
+                "durchschnittsalter_k": 47.9,
+                "durchschnittsalter_bl": 46.9,
+                "durchschnittsalter_l": 44.7
+            },
+            {
+                "jahr": 2023,
+                "durchschnittsalter_ol": 48.9,
+                "durchschnittsalter_k": 48.1,
+                "durchschnittsalter_bl": 46.9,
+                "durchschnittsalter_l": 44.8
+            },
+            {
+                "jahr": 2024,
+                "durchschnittsalter_ol": 49.1,
+                "durchschnittsalter_k": 48.4,
+                "durchschnittsalter_bl": 47.1,
+                "durchschnittsalter_l": 44.9
+            }
+        ],
+        "altersverteilung": [
+            {
+                "label": "u. 18",
+                "altersspanne": 40808
+            },
+            {
+                "label": "18-65",
+                "altersspanne": 132738
+            },
+            {
+                "label": "ü. 65",
+                "altersspanne": 70450
+            }
+        ],
+        "bevoelkerungsbewegung_gesamt": [
+            {
+                "jahr": 2013,
+                "natuerlich": -3,
+                "wanderung": -10,
+                "saldo": -10
+            },
+            {
+                "jahr": 2014,
+                "natuerlich": -1111,
+                "wanderung": 1098,
+                "saldo": -13
+            },
+            {
+                "jahr": 2015,
+                "natuerlich": -1456,
+                "wanderung": 2897,
+                "saldo": 1441
+            },
+            {
+                "jahr": 2016,
+                "natuerlich": -1277,
+                "wanderung": -7,
+                "saldo": -1284
+            },
+            {
+                "jahr": 2017,
+                "natuerlich": -1408,
+                "wanderung": 737,
+                "saldo": -671
+            },
+            {
+                "jahr": 2018,
+                "natuerlich": -1322,
+                "wanderung": 1525,
+                "saldo": 203
+            },
+            {
+                "jahr": 2019,
+                "natuerlich": -1425,
+                "wanderung": 1410,
+                "saldo": -15
+            },
+            {
+                "jahr": 2020,
+                "natuerlich": -2325,
+                "wanderung": 1484,
+                "saldo": -841
+            },
+            {
+                "jahr": 2021,
+                "natuerlich": -2233,
+                "wanderung": 1554,
+                "saldo": -679
+            },
+            {
+                "jahr": 2022,
+                "natuerlich": -2066,
+                "wanderung": 4275,
+                "saldo": 2209
+            },
+            {
+                "jahr": 2023,
+                "natuerlich": -2182,
+                "wanderung": 1991,
+                "saldo": -191
+            }
+        ],
+        "natuerliche_bevoelkerungsbewegung": [
+            {
+                "jahr": 2013,
+                "saldo": -3,
+                "geburten": 10,
+                "sterbefaelle": -13
+            },
+            {
+                "jahr": 2014,
+                "saldo": -3,
+                "geburten": 7,
+                "sterbefaelle": -10
+            },
+            {
+                "jahr": 2015,
+                "saldo": 5,
+                "geburten": 13,
+                "sterbefaelle": -8
+            },
+            {
+                "jahr": 2016,
+                "saldo": -1,
+                "geburten": 10,
+                "sterbefaelle": -11
+            },
+            {
+                "jahr": 2017,
+                "saldo": -6,
+                "geburten": 13,
+                "sterbefaelle": -19
+            },
+            {
+                "jahr": 2018,
+                "saldo": -2,
+                "geburten": 8,
+                "sterbefaelle": -10
+            },
+            {
+                "jahr": 2019,
+                "saldo": -2,
+                "geburten": 7,
+                "sterbefaelle": -9
+            },
+            {
+                "jahr": 2020,
+                "saldo": -11,
+                "geburten": 6,
+                "sterbefaelle": -17
+            },
+            {
+                "jahr": 2021,
+                "saldo": -8,
+                "geburten": 8,
+                "sterbefaelle": -16
+            },
+            {
+                "jahr": 2022,
+                "saldo": 0,
+                "geburten": 8,
+                "sterbefaelle": -8
+            },
+            {
+                "jahr": 2023,
+                "saldo": -2,
+                "geburten": 11,
+                "sterbefaelle": -13
+            }
+        ],
+        "natuerliche_bevoelkerungsbewegung_je_1000_ew": [
+            {
+                "jahr": 2013,
+                "einwohner_ol": -2.223869532987398,
+                "einwohner_k": -4.431723005114778,
+                "einwohner_bl": -4.4722008919742535,
+                "einwohner_l": -2.6079116168265055
+            },
+            {
+                "jahr": 2014,
+                "einwohner_ol": -2.2404779686333085,
+                "einwohner_k": -4.490485505957674,
+                "einwohner_bl": -3.726941325399629,
+                "einwohner_l": -1.8670851586705381
+            },
+            {
+                "jahr": 2015,
+                "einwohner_ol": 3.698224852071006,
+                "einwohner_k": -5.917111669226955,
+                "einwohner_bl": -4.410082554609101,
+                "einwohner_l": -2.273645681818807
+            },
+            {
+                "jahr": 2016,
+                "einwohner_ol": -0.7727975270479134,
+                "einwohner_k": -5.2033673161707785,
+                "einwohner_bl": -3.7706049139148528,
+                "einwohner_l": -1.4345286559141195
+            },
+            {
+                "jahr": 2017,
+                "einwohner_ol": -4.647560030983733,
+                "einwohner_k": -5.732642267650879,
+                "einwohner_bl": -4.378439392271141,
+                "einwohner_l": -1.775239666509486
+            },
+            {
+                "jahr": 2018,
+                "einwohner_ol": -1.574803149606299,
+                "einwohner_k": -5.383043007337552,
+                "einwohner_bl": -5.009858861961443,
+                "einwohner_l": -2.01223540029135
+            },
+            {
+                "jahr": 2019,
+                "einwohner_ol": -1.5710919088766695,
+                "einwohner_k": -5.8229337779194354,
+                "einwohner_bl": -5.04197620818247,
+                "einwohner_l": -1.9413136891260374
+            },
+            {
+                "jahr": 2020,
+                "einwohner_ol": -8.65460267505901,
+                "einwohner_k": -9.52833706953432,
+                "einwohner_bl": -7.10091164931405,
+                "einwohner_l": -2.552082409767065
+            },
+            {
+                "jahr": 2021,
+                "einwohner_ol": -6.493506493506494,
+                "einwohner_k": -9.10265660605023,
+                "einwohner_bl": -7.858088720229079,
+                "einwohner_l": -2.7454176537663977
+            },
+            {
+                "jahr": 2022,
+                "einwohner_ol": 0.0,
+                "einwohner_k": -8.42773401647202,
+                "einwohner_bl": -7.5801128027328355,
+                "einwohner_l": -3.9244850388009644
+            },
+            {
+                "jahr": 2023,
+                "einwohner_ol": -1.657000828500414,
+                "einwohner_k": -8.94276955359924,
+                "einwohner_bl": -7.893040360457172,
+                "einwohner_l": -4.010869479381563
+            }
+        ],
+        "wanderungssaldo": [
+            {
+                "jahr": 2014,
+                "saldo": -10,
+                "zuzug": 43,
+                "fortzug": -53
+            },
+            {
+                "jahr": 2015,
+                "saldo": -10,
+                "zuzug": 57,
+                "fortzug": -67
+            },
+            {
+                "jahr": 2016,
+                "saldo": -15,
+                "zuzug": 70,
+                "fortzug": -85
+            },
+            {
+                "jahr": 2017,
+                "saldo": 14,
+                "zuzug": 91,
+                "fortzug": -77
+            },
+            {
+                "jahr": 2018,
+                "saldo": -52,
+                "zuzug": 32,
+                "fortzug": -84
+            },
+            {
+                "jahr": 2019,
+                "saldo": -2,
+                "zuzug": 46,
+                "fortzug": -48
+            },
+            {
+                "jahr": 2020,
+                "saldo": -19,
+                "zuzug": 38,
+                "fortzug": -57
+            },
+            {
+                "jahr": 2021,
+                "saldo": 16,
+                "zuzug": 46,
+                "fortzug": -30
+            },
+            {
+                "jahr": 2022,
+                "saldo": 6,
+                "zuzug": 48,
+                "fortzug": -42
+            },
+            {
+                "jahr": 2023,
+                "saldo": -2,
+                "zuzug": 45,
+                "fortzug": -47
+            },
+            {
+                "jahr": 2024,
+                "saldo": -18,
+                "zuzug": 35,
+                "fortzug": -53
+            }
+        ],
+        "wanderungssaldo_je_1000_ew": [
+            {
+                "jahr": 2014,
+                "einwohner_ol": -7.4128984432913265,
+                "einwohner_k": 4.391064995893541
+            },
+            {
+                "jahr": 2015,
+                "einwohner_ol": -7.468259895444362,
+                "einwohner_k": 4.437941571144488
+            },
+            {
+                "jahr": 2016,
+                "einwohner_ol": -11.094674556213016,
+                "einwohner_k": 11.773264083619843
+            },
+            {
+                "jahr": 2017,
+                "einwohner_ol": 10.819165378670787,
+                "einwohner_k": -0.02852276524134334
+            },
+            {
+                "jahr": 2018,
+                "einwohner_ol": -40.278853601859026,
+                "einwohner_k": 3.000679936973507
+            },
+            {
+                "jahr": 2019,
+                "einwohner_ol": -1.574803149606299,
+                "einwohner_k": 6.209637357178341
+            },
+            {
+                "jahr": 2020,
+                "einwohner_ol": -14.925373134328359,
+                "einwohner_k": 5.761639738151862
+            },
+            {
+                "jahr": 2021,
+                "einwohner_ol": 12.588512981904012,
+                "einwohner_k": 6.081742886532873
+            },
+            {
+                "jahr": 2022,
+                "einwohner_ol": 4.87012987012987,
+                "einwohner_k": 6.334764158442479
+            },
+            {
+                "jahr": 2023,
+                "einwohner_ol": -1.6501650165016502,
+                "einwohner_k": 17.43880102633973
+            },
+            {
+                "jahr": 2024,
+                "einwohner_ol": -14.913007456503728,
+                "einwohner_k": 8.159969835571076
+            }
+        ],
+        "aussenwanderungssaldo": [
+            {
+                "jahr": 2014,
+                "aussenwanderungssaldo_bundesland_ew": 795,
+                "aussenwanderungssaldo_deutschland_ew": 70,
+                "aussenwanderungssaldo_ausland_ew": 215,
+                "aussenwanderungssaldo_gesamt_ew": 215
+            },
+            {
+                "jahr": 2015,
+                "aussenwanderungssaldo_bundesland_ew": 1167,
+                "aussenwanderungssaldo_deutschland_ew": -233,
+                "aussenwanderungssaldo_ausland_ew": 164,
+                "aussenwanderungssaldo_gesamt_ew": 164
+            },
+            {
+                "jahr": 2016,
+                "aussenwanderungssaldo_bundesland_ew": 2007,
+                "aussenwanderungssaldo_deutschland_ew": -114,
+                "aussenwanderungssaldo_ausland_ew": 1004,
+                "aussenwanderungssaldo_gesamt_ew": 1004
+            },
+            {
+                "jahr": 2017,
+                "aussenwanderungssaldo_bundesland_ew": 791,
+                "aussenwanderungssaldo_deutschland_ew": -390,
+                "aussenwanderungssaldo_ausland_ew": -408,
+                "aussenwanderungssaldo_gesamt_ew": -408
+            },
+            {
+                "jahr": 2018,
+                "aussenwanderungssaldo_bundesland_ew": 724,
+                "aussenwanderungssaldo_deutschland_ew": 15,
+                "aussenwanderungssaldo_ausland_ew": -2,
+                "aussenwanderungssaldo_gesamt_ew": -2
+            },
+            {
+                "jahr": 2019,
+                "aussenwanderungssaldo_bundesland_ew": 1127,
+                "aussenwanderungssaldo_deutschland_ew": 244,
+                "aussenwanderungssaldo_ausland_ew": 154,
+                "aussenwanderungssaldo_gesamt_ew": 154
+            },
+            {
+                "jahr": 2020,
+                "aussenwanderungssaldo_bundesland_ew": 1078,
+                "aussenwanderungssaldo_deutschland_ew": 150,
+                "aussenwanderungssaldo_ausland_ew": 182,
+                "aussenwanderungssaldo_gesamt_ew": 182
+            },
+            {
+                "jahr": 2021,
+                "aussenwanderungssaldo_bundesland_ew": 1206,
+                "aussenwanderungssaldo_deutschland_ew": 151,
+                "aussenwanderungssaldo_ausland_ew": 127,
+                "aussenwanderungssaldo_gesamt_ew": 127
+            },
+            {
+                "jahr": 2022,
+                "aussenwanderungssaldo_bundesland_ew": 1233,
+                "aussenwanderungssaldo_deutschland_ew": 293,
+                "aussenwanderungssaldo_ausland_ew": 28,
+                "aussenwanderungssaldo_gesamt_ew": 28
+            },
+            {
+                "jahr": 2023,
+                "aussenwanderungssaldo_bundesland_ew": 1785,
+                "aussenwanderungssaldo_deutschland_ew": 130,
+                "aussenwanderungssaldo_ausland_ew": 2360,
+                "aussenwanderungssaldo_gesamt_ew": 2360
+            },
+            {
+                "jahr": 2024,
+                "aussenwanderungssaldo_bundesland_ew": 1339,
+                "aussenwanderungssaldo_deutschland_ew": 130,
+                "aussenwanderungssaldo_ausland_ew": 522,
+                "aussenwanderungssaldo_gesamt_ew": 522
+            }
+        ],
+        "aussenwanderungssaldo_nach_alter": [
+            {
+                "zeitraum": "2019 bis 2024"
+            },
+            {
+                "aussenwanderungssaldo_nach_alter_ueber_bundeslandgrenzen": [
+                    561,
+                    -424,
+                    143,
+                    872,
+                    162,
+                    187
+                ]
+            },
+            {
+                "aussenwanderungssaldo_nach_alter_ueber_auslandsgrenzen": [
+                    233,
+                    59,
+                    50,
+                    204,
+                    62,
+                    35
+                ]
+            }
+        ],
+        "haushalte": [
+            {
+                "jahr": 2014,
+                "anzahl": 642.0
+            },
+            {
+                "jahr": 2015,
+                "anzahl": 647.0
+            },
+            {
+                "jahr": 2016,
+                "anzahl": 676.0
+            },
+            {
+                "jahr": 2017,
+                "anzahl": 616.0
+            },
+            {
+                "jahr": 2018,
+                "anzahl": 615.0
+            },
+            {
+                "jahr": 2019,
+                "anzahl": 605.0
+            },
+            {
+                "jahr": 2020,
+                "anzahl": 606.0
+            },
+            {
+                "jahr": 2021,
+                "anzahl": 626.0
+            },
+            {
+                "jahr": 2022,
+                "anzahl": 607.0
+            },
+            {
+                "jahr": 2023,
+                "anzahl": 606.0
+            },
+            {
+                "jahr": 2024,
+                "anzahl": 604.0
+            }
+        ],
+        "haushalte_je_1000_ew": [
+            {
+                "jahr": 2014,
+                "anzahl_ol": 475.9080800593032,
+                "anzahl_k": 511.0020572952666,
+                "anzahl_bl": 524.5021668079642,
+                "anzahl_l": 485.35954976072736
+            },
+            {
+                "jahr": 2015,
+                "anzahl_ol": 483.1964152352502,
+                "anzahl_k": 514.890142757829,
+                "anzahl_bl": 522.1732689882691,
+                "anzahl_l": 483.2086338338236
+            },
+            {
+                "jahr": 2016,
+                "anzahl_ol": 500.0,
+                "anzahl_k": 515.5527378833322,
+                "anzahl_bl": 525.50564299964,
+                "anzahl_l": 487.8234807051187
+            },
+            {
+                "jahr": 2017,
+                "anzahl_ol": 476.0432766615147,
+                "anzahl_k": 511.2094467398479,
+                "anzahl_bl": 526.5468815389576,
+                "anzahl_l": 487.9315481692264
+            },
+            {
+                "jahr": 2018,
+                "anzahl_ol": 476.3749031758327,
+                "anzahl_k": 517.0330319081801,
+                "anzahl_bl": 520.3611532007483,
+                "anzahl_l": 490.50091573380735
+            },
+            {
+                "jahr": 2019,
+                "anzahl_ol": 476.3779527559055,
+                "anzahl_k": 511.27914457664525,
+                "anzahl_bl": 524.8072739221375,
+                "anzahl_l": 490.64102102101884
+            },
+            {
+                "jahr": 2020,
+                "anzahl_ol": 476.0408483896308,
+                "anzahl_k": 517.023397978114,
+                "anzahl_bl": 526.7515598575379,
+                "anzahl_l": 491.87643258770476
+            },
+            {
+                "jahr": 2021,
+                "anzahl_ol": 492.5255704169945,
+                "anzahl_k": 512.4196238663328,
+                "anzahl_bl": 526.8362469274069,
+                "anzahl_l": 487.0422961754421
+            },
+            {
+                "jahr": 2022,
+                "anzahl_ol": 492.6948051948052,
+                "anzahl_k": 512.5615030593568,
+                "anzahl_bl": 519.7573214794096,
+                "anzahl_l": 486.3297522653831
+            },
+            {
+                "jahr": 2023,
+                "anzahl_ol": 500.0,
+                "anzahl_k": 515.890725005405,
+                "anzahl_bl": 519.1520237433747,
+                "anzahl_l": 486.35182747996265
+            },
+            {
+                "jahr": 2024,
+                "anzahl_ol": 500.4142502071252,
+                "anzahl_k": 515.9100968868343,
+                "anzahl_bl": 518.7484136985203,
+                "anzahl_l": 488.60250542193717
+            }
+        ],
+        "mittlere_haushaltsgroesse": [
+            {
+                "jahr": 2014,
+                "personen": 2.1
+            },
+            {
+                "jahr": 2015,
+                "personen": 2.1
+            },
+            {
+                "jahr": 2016,
+                "personen": 2.0
+            },
+            {
+                "jahr": 2017,
+                "personen": 2.1
+            },
+            {
+                "jahr": 2018,
+                "personen": 2.1
+            },
+            {
+                "jahr": 2019,
+                "personen": 2.1
+            },
+            {
+                "jahr": 2020,
+                "personen": 2.1
+            },
+            {
+                "jahr": 2021,
+                "personen": 2.0
+            },
+            {
+                "jahr": 2022,
+                "personen": 2.0
+            },
+            {
+                "jahr": 2023,
+                "personen": 2.0
+            },
+            {
+                "jahr": 2024,
+                "personen": 2.0
+            }
+        ],
+        "haushaltsgroesse_nach_personenanzahl": [
+            {
+                "jahr": 2014,
+                "personenanzahl_1": 214.0,
+                "personenanzahl_2": 257.0,
+                "personenanzahl_3": 171.0
+            },
+            {
+                "jahr": 2015,
+                "personenanzahl_1": 216.0,
+                "personenanzahl_2": 263.0,
+                "personenanzahl_3": 168.0
+            },
+            {
+                "jahr": 2016,
+                "personenanzahl_1": 232.0,
+                "personenanzahl_2": 276.0,
+                "personenanzahl_3": 168.0
+            },
+            {
+                "jahr": 2017,
+                "personenanzahl_1": 204.0,
+                "personenanzahl_2": 251.0,
+                "personenanzahl_3": 160.0
+            },
+            {
+                "jahr": 2018,
+                "personenanzahl_1": 201.0,
+                "personenanzahl_2": 252.0,
+                "personenanzahl_3": 162.0
+            },
+            {
+                "jahr": 2019,
+                "personenanzahl_1": 197.0,
+                "personenanzahl_2": 246.0,
+                "personenanzahl_3": 162.0
+            },
+            {
+                "jahr": 2020,
+                "personenanzahl_1": 202.0,
+                "personenanzahl_2": 250.0,
+                "personenanzahl_3": 154.0
+            },
+            {
+                "jahr": 2021,
+                "personenanzahl_1": 219.0,
+                "personenanzahl_2": 254.0,
+                "personenanzahl_3": 153.0
+            },
+            {
+                "jahr": 2022,
+                "personenanzahl_1": 212.0,
+                "personenanzahl_2": 257.0,
+                "personenanzahl_3": 138.0
+            },
+            {
+                "jahr": 2023,
+                "personenanzahl_1": 207.0,
+                "personenanzahl_2": 254.0,
+                "personenanzahl_3": 143.0
+            },
+            {
+                "jahr": 2024,
+                "personenanzahl_1": 207.0,
+                "personenanzahl_2": 253.0,
+                "personenanzahl_3": 142.0
+            }
+        ],
+        "wohnungsangebot_allgemein": [
+            {
+                "wohnungsbestand": 715,
+                "baufertigstellungen": 1,
+                "baugenehmigungen": 1,
+                "leerstandsquote": 0.037000000000000005,
+                "wohnungsbestand_anzahl_absolut": 715,
+                "wohnungsbestand_wohnraumsaldo": 60.94999999999993,
+                "wohnungsbestand_wohnraumsaldo_per_1000_ew": 50.49710024855007,
+                "wohnungsbestand_wohnflaeche_pro_ew": 49.13007456503728,
+                "wohnungsbestand_mittlere_wohnflaeche": 82.93706293706293,
+                "wohnungsbestand_raum_pro_ew": 1.6881118881118882,
+                "baufertigstellungen_anzahl_absolut": 1,
+                "baufertigstellungen_flaeche_absolut": 100.0,
+                "baugenehmigungen_anzahl_absolut": 1,
+                "baugenehmigungen_flaeche_absolut": 100.0,
+                "baugenehmigungen_erloschen": 0
+            }
+        ],
+        "wohnungsbestand_wohnflaeche": [
+            {
+                "jahr": 2013,
+                "flaeche_ol": 42.92068198665678,
+                "flaeche_k": 40.91456125942249,
+                "flaeche_bl": 41.578472872609844,
+                "flaeche_l": 44.58312571722465
+            },
+            {
+                "jahr": 2014,
+                "flaeche_ol": 43.39058999253174,
+                "flaeche_k": 40.910303461432754,
+                "flaeche_bl": 41.46437654641503,
+                "flaeche_l": 44.36272170244424
+            },
+            {
+                "jahr": 2015,
+                "flaeche_ol": 43.04733727810651,
+                "flaeche_k": 41.38727008201052,
+                "flaeche_bl": 41.67928574350964,
+                "flaeche_l": 44.48371871562001
+            },
+            {
+                "jahr": 2016,
+                "flaeche_ol": 44.97681607418856,
+                "flaeche_k": 41.767107547123686,
+                "flaeche_bl": 41.93182675750029,
+                "flaeche_l": 44.66605858311718
+            },
+            {
+                "jahr": 2017,
+                "flaeche_ol": 45.081332300542215,
+                "flaeche_k": 42.00178330775088,
+                "flaeche_bl": 42.191039243617546,
+                "flaeche_l": 44.879996634032175
+            },
+            {
+                "jahr": 2018,
+                "flaeche_ol": 45.826771653543304,
+                "flaeche_k": 42.27032485565138,
+                "flaeche_bl": 42.49499812253083,
+                "flaeche_l": 45.13482563955186
+            },
+            {
+                "jahr": 2019,
+                "flaeche_ol": 45.954438334642575,
+                "flaeche_k": 42.69497634050065,
+                "flaeche_bl": 42.91721274723985,
+                "flaeche_l": 45.490283083413196
+            },
+            {
+                "jahr": 2020,
+                "flaeche_ol": 46.10542879622344,
+                "flaeche_k": 43.05455946297063,
+                "flaeche_bl": 43.33767334272899,
+                "flaeche_l": 45.80787534177659
+            },
+            {
+                "jahr": 2021,
+                "flaeche_ol": 47.80844155844156,
+                "flaeche_k": 43.06457464545295,
+                "flaeche_bl": 43.49193462564016,
+                "flaeche_l": 46.21640132802684
+            },
+            {
+                "jahr": 2022,
+                "flaeche_ol": 48.76237623762376,
+                "flaeche_k": 43.40690943653296,
+                "flaeche_bl": 43.69743277474549,
+                "flaeche_l": 46.375646006229985
+            },
+            {
+                "jahr": 2023,
+                "flaeche_ol": 49.13007456503728,
+                "flaeche_k": 43.87039131789046,
+                "flaeche_bl": 44.06986702526357,
+                "flaeche_l": 46.648282054159786
+            }
+        ],
+        "wohnungsbestand_wohnungsanzahl": [
+            {
+                "jahr": 2013,
+                "anzahl": 522.6093402520386
+            },
+            {
+                "jahr": 2014,
+                "anzahl": 527.2591486183719
+            },
+            {
+                "jahr": 2015,
+                "anzahl": 522.1893491124259
+            },
+            {
+                "jahr": 2016,
+                "anzahl": 545.5950540958269
+            },
+            {
+                "jahr": 2017,
+                "anzahl": 546.8628969790859
+            },
+            {
+                "jahr": 2018,
+                "anzahl": 555.9055118110236
+            },
+            {
+                "jahr": 2019,
+                "anzahl": 556.1665357423409
+            },
+            {
+                "jahr": 2020,
+                "anzahl": 557.8284815106216
+            },
+            {
+                "jahr": 2021,
+                "anzahl": 577.1103896103896
+            },
+            {
+                "jahr": 2022,
+                "anzahl": 588.2838283828384
+            },
+            {
+                "jahr": 2023,
+                "anzahl": 592.3777961888981
+            }
+        ],
+        "wohnungsbestand_wohnungsanzahl_je_1000_ew": [
+            {
+                "jahr": 2013,
+                "anzahl_ol": 522.6093402520386,
+                "anzahl_k": 546.1590378688697,
+                "anzahl_bl": 574.2571278784122,
+                "anzahl_l": 504.8809054392869
+            },
+            {
+                "jahr": 2014,
+                "anzahl_ol": 527.2591486183719,
+                "anzahl_k": 544.617884338674,
+                "anzahl_bl": 571.3540102197118,
+                "anzahl_l": 501.6229618484223
+            },
+            {
+                "jahr": 2015,
+                "anzahl_ol": 522.1893491124259,
+                "anzahl_k": 550.0516121690928,
+                "anzahl_bl": 573.1284588132196,
+                "anzahl_l": 502.24722231388165
+            },
+            {
+                "jahr": 2016,
+                "anzahl_ol": 545.5950540958269,
+                "anzahl_k": 553.5820518462378,
+                "anzahl_bl": 575.2648415654982,
+                "anzahl_l": 503.71014346482326
+            },
+            {
+                "jahr": 2017,
+                "anzahl_ol": 546.8628969790859,
+                "anzahl_k": 555.618437284975,
+                "anzahl_bl": 577.7438444978429,
+                "anzahl_l": 505.52233011411465
+            },
+            {
+                "jahr": 2018,
+                "anzahl_ol": 555.9055118110236,
+                "anzahl_k": 558.0448396895589,
+                "anzahl_bl": 580.6546755858526,
+                "anzahl_l": 507.8402342975905
+            },
+            {
+                "jahr": 2019,
+                "anzahl_ol": 556.1665357423409,
+                "anzahl_k": 562.1766739402261,
+                "anzahl_bl": 584.9471313484717,
+                "anzahl_l": 511.2471306757134
+            },
+            {
+                "jahr": 2020,
+                "anzahl_ol": 557.8284815106216,
+                "anzahl_k": 565.7619186177559,
+                "anzahl_bl": 589.59456364355,
+                "anzahl_l": 514.2385385636342
+            },
+            {
+                "jahr": 2021,
+                "anzahl_ol": 577.1103896103896,
+                "anzahl_k": 564.6785942856677,
+                "anzahl_bl": 590.6359237001191,
+                "anzahl_l": 518.3457531314237
+            },
+            {
+                "jahr": 2022,
+                "anzahl_ol": 588.2838283828384,
+                "anzahl_k": 567.8889464516628,
+                "anzahl_bl": 592.1669948052736,
+                "anzahl_l": 519.6378404943584
+            },
+            {
+                "jahr": 2023,
+                "anzahl_ol": 592.3777961888981,
+                "anzahl_k": 572.4028262758407,
+                "anzahl_bl": 595.9741461925548,
+                "anzahl_l": 522.2819062724568
+            }
+        ],
+        "wohnungsbestand_gebaeudeverteilung": [
+            {
+                "label": "Eigenheim",
+                "anzahl": 386
+            },
+            {
+                "label": "MFH",
+                "anzahl": 49
+            }
+        ],
+        "wohnungsbestand_wohnungsverteilung": [
+            {
+                "label": "1 Raum",
+                "anzahl": 2
+            },
+            {
+                "label": "2 Raum",
+                "anzahl": 37
+            },
+            {
+                "label": "3 Raum",
+                "anzahl": 158
+            },
+            {
+                "label": "4 Raum",
+                "anzahl": 196
+            },
+            {
+                "label": "5 Raum",
+                "anzahl": 149
+            },
+            {
+                "label": "6 Raum",
+                "anzahl": 108
+            },
+            {
+                "label": "7 Raum",
+                "anzahl": 65
+            }
+        ],
+        "baufertigstellungen_wohnflaeche": [
+            {
+                "jahr": 2013,
+                "flaeche": 100.0
+            },
+            {
+                "jahr": 2014,
+                "flaeche": 100.0
+            },
+            {
+                "jahr": 2015,
+                "flaeche": 0.0
+            },
+            {
+                "jahr": 2016,
+                "flaeche": 0.0
+            },
+            {
+                "jahr": 2017,
+                "flaeche": 0.0
+            },
+            {
+                "jahr": 2018,
+                "flaeche": 0.0
+            },
+            {
+                "jahr": 2019,
+                "flaeche": 200.0
+            },
+            {
+                "jahr": 2020,
+                "flaeche": 100.0
+            },
+            {
+                "jahr": 2021,
+                "flaeche": 300.0
+            },
+            {
+                "jahr": 2022,
+                "flaeche": 200.0
+            },
+            {
+                "jahr": 2023,
+                "flaeche": 100.0
+            }
+        ],
+        "baufertigstellungen_wohnungsanzahl": [
+            {
+                "jahr": 2013,
+                "anzahl": 1
+            },
+            {
+                "jahr": 2014,
+                "anzahl": 1
+            },
+            {
+                "jahr": 2015,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2016,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2017,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2018,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2019,
+                "anzahl": 2
+            },
+            {
+                "jahr": 2020,
+                "anzahl": 1
+            },
+            {
+                "jahr": 2021,
+                "anzahl": 2
+            },
+            {
+                "jahr": 2022,
+                "anzahl": 2
+            },
+            {
+                "jahr": 2023,
+                "anzahl": 1
+            }
+        ],
+        "baufertigstellungen_wohnungsanzahl_je_1000_ew": [
+            {
+                "jahr": 2013,
+                "anzahl_ol": 0.7412898443291327,
+                "anzahl_k": 1.0977662489733853,
+                "anzahl_bl": 1.12273547977276,
+                "anzahl_l": 2.3202304769416835
+            },
+            {
+                "jahr": 2014,
+                "anzahl_ol": 0.7468259895444362,
+                "anzahl_k": 1.661196708324576,
+                "anzahl_bl": 1.4984634690469738,
+                "anzahl_l": 2.629975066590258
+            },
+            {
+                "jahr": 2015,
+                "anzahl_ol": 0.0,
+                "anzahl_k": 2.4383701933627564,
+                "anzahl_bl": 1.5133092572535092,
+                "anzahl_l": 2.62630463788698
+            },
+            {
+                "jahr": 2016,
+                "anzahl_ol": 0.0,
+                "anzahl_k": 1.8784278251798971,
+                "anzahl_bl": 1.9334487865164796,
+                "anzahl_l": 2.846374056946396
+            },
+            {
+                "jahr": 2017,
+                "anzahl_ol": 0.0,
+                "anzahl_k": 1.4128031724963457,
+                "anzahl_bl": 1.7994392753002315,
+                "anzahl_l": 2.9547858999819714
+            },
+            {
+                "jahr": 2018,
+                "anzahl_ol": 0.0,
+                "anzahl_k": 1.8119925402913846,
+                "anzahl_bl": 1.9931379668470133,
+                "anzahl_l": 3.0220985894223955
+            },
+            {
+                "jahr": 2019,
+                "anzahl_ol": 1.5710919088766695,
+                "anzahl_k": 1.4220217226076937,
+                "anzahl_bl": 2.05499660951441,
+                "anzahl_l": 3.077685101217748
+            },
+            {
+                "jahr": 2020,
+                "anzahl_ol": 0.7867820613690008,
+                "anzahl_k": 1.2868377805736675,
+                "anzahl_bl": 2.5795188822563033,
+                "anzahl_l": 3.229015937648206
+            },
+            {
+                "jahr": 2021,
+                "anzahl_ol": 1.6233766233766236,
+                "anzahl_k": 1.3533730377110058,
+                "anzahl_bl": 1.8533484346909495,
+                "anzahl_l": 3.0841749660523834
+            },
+            {
+                "jahr": 2022,
+                "anzahl_ol": 1.6501650165016502,
+                "anzahl_k": 2.496502041665477,
+                "anzahl_bl": 2.1900569932737133,
+                "anzahl_l": 3.1009617098437867
+            },
+            {
+                "jahr": 2023,
+                "anzahl_ol": 0.828500414250207,
+                "anzahl_k": 1.7377334054656635,
+                "anzahl_bl": 2.0814254424698855,
+                "anzahl_l": 3.0778870873064097
+            }
+        ],
+        "baufertigstellungen_gebaeudeanzahl": [
+            {
+                "jahr": 2014,
+                "anzahl": 1
+            },
+            {
+                "jahr": 2015,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2016,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2017,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2018,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2019,
+                "anzahl": 2
+            },
+            {
+                "jahr": 2020,
+                "anzahl": 1
+            },
+            {
+                "jahr": 2021,
+                "anzahl": 2
+            },
+            {
+                "jahr": 2022,
+                "anzahl": 2
+            },
+            {
+                "jahr": 2023,
+                "anzahl": 1
+            }
+        ],
+        "baufertigstellungen_wohnungsanzahl_gebaeude_verteilung": [
+            {
+                "wohnungsanzahl_gebaeude_efh": 1,
+                "wohnungsanzahl_gebaeude_zfh": 0,
+                "wohnungsanzahl_gebaeude_mfh": 0
+            }
+        ],
+        "baufertigstellungen_gebaeudeverteilung": [
+            {
+                "label": "Eigenheim",
+                "anzahl": 1
+            },
+            {
+                "label": "MFH",
+                "anzahl": 0
+            }
+        ],
+        "baugenehmigungen_wohnflaeche": [
+            {
+                "jahr": 2013,
+                "flaeche": 200.0
+            },
+            {
+                "jahr": 2014,
+                "flaeche": 0.0
+            },
+            {
+                "jahr": 2015,
+                "flaeche": 0.0
+            },
+            {
+                "jahr": 2016,
+                "flaeche": 0.0
+            },
+            {
+                "jahr": 2017,
+                "flaeche": 0.0
+            },
+            {
+                "jahr": 2018,
+                "flaeche": 400.0
+            },
+            {
+                "jahr": 2019,
+                "flaeche": 100.0
+            },
+            {
+                "jahr": 2020,
+                "flaeche": 300.0
+            },
+            {
+                "jahr": 2021,
+                "flaeche": 100.0
+            },
+            {
+                "jahr": 2022,
+                "flaeche": 400.0
+            },
+            {
+                "jahr": 2023,
+                "flaeche": 100.0
+            }
+        ],
+        "baugenehmigungen_wohnungsanzahl": [
+            {
+                "jahr": 2013,
+                "anzahl": 2
+            },
+            {
+                "jahr": 2014,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2015,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2016,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2017,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2018,
+                "anzahl": 3
+            },
+            {
+                "jahr": 2019,
+                "anzahl": 1
+            },
+            {
+                "jahr": 2020,
+                "anzahl": 2
+            },
+            {
+                "jahr": 2021,
+                "anzahl": 1
+            },
+            {
+                "jahr": 2022,
+                "anzahl": 3
+            },
+            {
+                "jahr": 2023,
+                "anzahl": 1
+            }
+        ],
+        "baugenehmigungen_wohnungsanzahl_je_1000_ew": [
+            {
+                "jahr": 2013,
+                "anzahl_ol": 1.4825796886582654,
+                "anzahl_k": 1.71576798913618,
+                "anzahl_bl": 1.6531558656702359,
+                "anzahl_l": 2.922182233187689
+            },
+            {
+                "jahr": 2014,
+                "anzahl_ol": 0.0,
+                "anzahl_k": 2.1017573925274444,
+                "anzahl_bl": 2.061764309151056,
+                "anzahl_l": 2.9938783351045792
+            },
+            {
+                "jahr": 2015,
+                "anzahl_ol": 0.0,
+                "anzahl_k": 2.0197833101688167,
+                "anzahl_bl": 2.1189269493258216,
+                "anzahl_l": 3.2472083417912145
+            },
+            {
+                "jahr": 2016,
+                "anzahl_ol": 0.0,
+                "anzahl_k": 2.2858959000562304,
+                "anzahl_bl": 2.5357066901101315,
+                "anzahl_l": 3.8234208375119096
+            },
+            {
+                "jahr": 2017,
+                "anzahl_ol": 0.0,
+                "anzahl_k": 1.925809511788967,
+                "anzahl_bl": 2.9289319575069452,
+                "anzahl_l": 3.617825189453434
+            },
+            {
+                "jahr": 2018,
+                "anzahl_ol": 2.3622047244094486,
+                "anzahl_k": 1.681691953124364,
+                "anzahl_bl": 2.7011489030742113,
+                "anzahl_l": 3.6337736140605585
+            },
+            {
+                "jahr": 2019,
+                "anzahl_ol": 0.7855459544383347,
+                "anzahl_k": 1.9818406191515268,
+                "anzahl_bl": 3.0251857249094822,
+                "anzahl_l": 3.7416617642773775
+            },
+            {
+                "jahr": 2020,
+                "anzahl_ol": 1.5735641227380015,
+                "anzahl_k": 2.1802474498891433,
+                "anzahl_bl": 3.1629962092524315,
+                "anzahl_l": 3.84878747132109
+            },
+            {
+                "jahr": 2021,
+                "anzahl_ol": 0.8116883116883118,
+                "anzahl_k": 2.1686580001875155,
+                "anzahl_bl": 2.901752038967231,
+                "anzahl_l": 3.9520563538555638
+            },
+            {
+                "jahr": 2022,
+                "anzahl_ol": 2.4752475247524752,
+                "anzahl_k": 3.4347299331410643,
+                "anzahl_bl": 2.594773606557741,
+                "anzahl_l": 3.646506373504759
+            },
+            {
+                "jahr": 2023,
+                "anzahl_ol": 0.828500414250207,
+                "anzahl_k": 1.7254381219364252,
+                "anzahl_bl": 1.7694837401933792,
+                "anzahl_l": 2.556273162733255
+            }
+        ],
+        "baugenehmigungen_gebaeudeanzahl": [
+            {
+                "jahr": 2013,
+                "anzahl": 2
+            },
+            {
+                "jahr": 2014,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2015,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2016,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2017,
+                "anzahl": 0
+            },
+            {
+                "jahr": 2018,
+                "anzahl": 3
+            },
+            {
+                "jahr": 2019,
+                "anzahl": 1
+            },
+            {
+                "jahr": 2020,
+                "anzahl": 2
+            },
+            {
+                "jahr": 2021,
+                "anzahl": 1
+            },
+            {
+                "jahr": 2022,
+                "anzahl": 3
+            },
+            {
+                "jahr": 2023,
+                "anzahl": 1
+            }
+        ],
+        "baugenehmigungen_wohnungsanzahl_gebaeude_verteilung": [
+            {
+                "wohnungsanzahl_gebaeude_efh": 1,
+                "wohnungsanzahl_gebaeude_zfh": 0,
+                "wohnungsanzahl_gebaeude_mfh": 0
+            }
+        ],
+        "baugenehmigungen_gebaeudeverteilung": [
+            {
+                "label": "Eigenheim",
+                "anzahl": 1
+            },
+            {
+                "label": "MFH",
+                "anzahl": 0
+            }
+        ],
+        "bau_ueberhang_genehmigung_fertigstellung": [
+            {
+                "jahr": 2013,
+                "anzahl_genehmigung_ol": 2,
+                "anzahl_fertigstellung_ol": 1,
+                "anzahl_ueberhang_ol": 0.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 422,
+                "anzahl_fertigstellung_k": 270,
+                "anzahl_ueberhang_k": 746.0,
+                "anzahl_abgang_k": 49.0
+            },
+            {
+                "jahr": 2014,
+                "anzahl_genehmigung_ol": 0,
+                "anzahl_fertigstellung_ol": 1,
+                "anzahl_ueberhang_ol": 0.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 520,
+                "anzahl_fertigstellung_k": 411,
+                "anzahl_ueberhang_k": 626.0,
+                "anzahl_abgang_k": 97.0
+            },
+            {
+                "jahr": 2015,
+                "anzahl_genehmigung_ol": 0,
+                "anzahl_fertigstellung_ol": 0,
+                "anzahl_ueberhang_ol": 0.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 497,
+                "anzahl_fertigstellung_k": 600,
+                "anzahl_ueberhang_k": 691.0,
+                "anzahl_abgang_k": 106.0
+            },
+            {
+                "jahr": 2016,
+                "anzahl_genehmigung_ol": 0,
+                "anzahl_fertigstellung_ol": 0,
+                "anzahl_ueberhang_ol": 0.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 561,
+                "anzahl_fertigstellung_k": 461,
+                "anzahl_ueberhang_k": 810.0,
+                "anzahl_abgang_k": 7.0
+            },
+            {
+                "jahr": 2017,
+                "anzahl_genehmigung_ol": 0,
+                "anzahl_fertigstellung_ol": 0,
+                "anzahl_ueberhang_ol": 0.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 473,
+                "anzahl_fertigstellung_k": 347,
+                "anzahl_ueberhang_k": 671.0,
+                "anzahl_abgang_k": 5.0
+            },
+            {
+                "jahr": 2018,
+                "anzahl_genehmigung_ol": 3,
+                "anzahl_fertigstellung_ol": 0,
+                "anzahl_ueberhang_ol": 1.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 413,
+                "anzahl_fertigstellung_k": 445,
+                "anzahl_ueberhang_k": 770.0,
+                "anzahl_abgang_k": 12.0
+            },
+            {
+                "jahr": 2019,
+                "anzahl_genehmigung_ol": 1,
+                "anzahl_fertigstellung_ol": 2,
+                "anzahl_ueberhang_ol": 1.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 485,
+                "anzahl_fertigstellung_k": 348,
+                "anzahl_ueberhang_k": 892.0,
+                "anzahl_abgang_k": 21.0
+            },
+            {
+                "jahr": 2020,
+                "anzahl_genehmigung_ol": 2,
+                "anzahl_fertigstellung_ol": 1,
+                "anzahl_ueberhang_ol": 1.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 532,
+                "anzahl_fertigstellung_k": 314,
+                "anzahl_ueberhang_k": 1084.0,
+                "anzahl_abgang_k": 6.0
+            },
+            {
+                "jahr": 2021,
+                "anzahl_genehmigung_ol": 1,
+                "anzahl_fertigstellung_ol": 2,
+                "anzahl_ueberhang_ol": 3.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 532,
+                "anzahl_fertigstellung_k": 332,
+                "anzahl_ueberhang_k": 1414.0,
+                "anzahl_abgang_k": 18.0
+            },
+            {
+                "jahr": 2022,
+                "anzahl_genehmigung_ol": 3,
+                "anzahl_fertigstellung_ol": 2,
+                "anzahl_ueberhang_ol": 3.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 842,
+                "anzahl_fertigstellung_k": 612,
+                "anzahl_ueberhang_k": 1355.0,
+                "anzahl_abgang_k": 32.0
+            },
+            {
+                "jahr": 2023,
+                "anzahl_genehmigung_ol": 1,
+                "anzahl_fertigstellung_ol": 1,
+                "anzahl_ueberhang_ol": 1.0,
+                "anzahl_abgang_ol": 0.0,
+                "anzahl_genehmigung_k": 421,
+                "anzahl_fertigstellung_k": 424,
+                "anzahl_ueberhang_k": 1164.0,
+                "anzahl_abgang_k": 13.0
+            }
+        ],
+        "bauueberhang_baufortschritt": [
+            {
+                "jahr": 2013,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 0,
+                "anzahl_bauueberhang_unter_dach_ol": 0,
+                "anzahl_genehmigungen_ol": 2,
+                "anzahl_genehmigung_erloschen_k": -8,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 170,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 264,
+                "anzahl_bauueberhang_unter_dach_k": 312,
+                "anzahl_genehmigungen_k": 422
+            },
+            {
+                "jahr": 2014,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 0,
+                "anzahl_bauueberhang_unter_dach_ol": 0,
+                "anzahl_genehmigungen_ol": 0,
+                "anzahl_genehmigung_erloschen_k": -17,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 304,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 210,
+                "anzahl_bauueberhang_unter_dach_k": 112,
+                "anzahl_genehmigungen_k": 520
+            },
+            {
+                "jahr": 2015,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 0,
+                "anzahl_bauueberhang_unter_dach_ol": 0,
+                "anzahl_genehmigungen_ol": 0,
+                "anzahl_genehmigung_erloschen_k": -32,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 337,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 213,
+                "anzahl_bauueberhang_unter_dach_k": 141,
+                "anzahl_genehmigungen_k": 497
+            },
+            {
+                "jahr": 2016,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 0,
+                "anzahl_bauueberhang_unter_dach_ol": 0,
+                "anzahl_genehmigungen_ol": 0,
+                "anzahl_genehmigung_erloschen_k": -7,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 387,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 265,
+                "anzahl_bauueberhang_unter_dach_k": 158,
+                "anzahl_genehmigungen_k": 561
+            },
+            {
+                "jahr": 2017,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 0,
+                "anzahl_bauueberhang_unter_dach_ol": 0,
+                "anzahl_genehmigungen_ol": 0,
+                "anzahl_genehmigung_erloschen_k": -27,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 282,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 209,
+                "anzahl_bauueberhang_unter_dach_k": 180,
+                "anzahl_genehmigungen_k": 473
+            },
+            {
+                "jahr": 2018,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 0,
+                "anzahl_bauueberhang_unter_dach_ol": 1,
+                "anzahl_genehmigungen_ol": 3,
+                "anzahl_genehmigung_erloschen_k": -34,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 265,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 325,
+                "anzahl_bauueberhang_unter_dach_k": 180,
+                "anzahl_genehmigungen_k": 413
+            },
+            {
+                "jahr": 2019,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 0,
+                "anzahl_bauueberhang_unter_dach_ol": 1,
+                "anzahl_genehmigungen_ol": 1,
+                "anzahl_genehmigung_erloschen_k": -41,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 368,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 295,
+                "anzahl_bauueberhang_unter_dach_k": 229,
+                "anzahl_genehmigungen_k": 485
+            },
+            {
+                "jahr": 2020,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 1,
+                "anzahl_bauueberhang_unter_dach_ol": 0,
+                "anzahl_genehmigungen_ol": 2,
+                "anzahl_genehmigung_erloschen_k": -29,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 294,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 494,
+                "anzahl_bauueberhang_unter_dach_k": 296,
+                "anzahl_genehmigungen_k": 532
+            },
+            {
+                "jahr": 2021,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": 3,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 0,
+                "anzahl_bauueberhang_unter_dach_ol": 0,
+                "anzahl_genehmigungen_ol": 1,
+                "anzahl_genehmigung_erloschen_k": -24,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 697,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 437,
+                "anzahl_bauueberhang_unter_dach_k": 280,
+                "anzahl_genehmigungen_k": 532
+            },
+            {
+                "jahr": 2022,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 3,
+                "anzahl_bauueberhang_unter_dach_ol": 0,
+                "anzahl_genehmigungen_ol": 3,
+                "anzahl_genehmigung_erloschen_k": -57,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 829,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 271,
+                "anzahl_bauueberhang_unter_dach_k": 255,
+                "anzahl_genehmigungen_k": 842
+            },
+            {
+                "jahr": 2023,
+                "anzahl_genehmigung_erloschen_ol": 0,
+                "anzahl_bauueberhang_noch_nicht_begonnen_ol": "0",
+                "anzahl_bauueberhang_noch_nicht_unter_dach_ol": 1,
+                "anzahl_bauueberhang_unter_dach_ol": 0,
+                "anzahl_genehmigungen_ol": 1,
+                "anzahl_genehmigung_erloschen_k": -111,
+                "anzahl_bauueberhang_noch_nicht_begonnen_k": 709,
+                "anzahl_bauueberhang_noch_nicht_unter_dach_k": 201,
+                "anzahl_bauueberhang_unter_dach_k": 254,
+                "anzahl_genehmigungen_k": 421
+            }
+        ],
+        "immobilienpreisindex_regional": [
+            {
+                "immobilienpreisindex": 62,
+                "immobilienpreisindex_haus": 60,
+                "immobilienpreisindex_wohnung": 59
+            }
+        ],
+        "immobilien_angebotsverteilung": [
+            {
+                "verteilung": "Haus",
+                "anteil": 100.0
+            },
+            {
+                "verteilung": "Wohnung",
+                "anteil": 0.0
+            }
+        ],
+        "immobilien_kaufpreis": [
+            {
+                "kaufpreis_immobilien": 1768.7588480111083,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "haus_kaufpreis": [
+            {
+                "kaufpreis_haus": 1790.2961489827692,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "haus_kaufpreisspanne": [
+            {
+                "preis_haus_min": 1594.08,
+                "preis_haus_avg": 1790.2961489827692,
+                "preis_haus_max": 2069.94,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "haus_kaufpreis_haustypen": [
+            {
+                "preisinfo_label": "min. Preis",
+                "reihenhaus": 1319.2933187699011,
+                "doppelhaushaelfte": 1532.0104709405698,
+                "einfamilienhaus": 1580.5363229236984,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis",
+                "reihenhaus": 1835.4199126831302,
+                "doppelhaushaelfte": 2043.859673898808,
+                "einfamilienhaus": 2182.7681170136107,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "max. Preis",
+                "reihenhaus": 2267.774395209828,
+                "doppelhaushaelfte": 2555.6933280276126,
+                "einfamilienhaus": 2807.1642398512604,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "haus_kaufpreise_im_ueberregionalen_vergleich": [
+            {
+                "preisinfo_label": "Ø Deutschland",
+                "preis": 3152.5305408373115,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Sachsen",
+                "preis": 2235,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis",
+                "preis": 1790.2961489827692,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis Vorjahr",
+                "preis": 1724.960352211411,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Tendenz",
+                "preis": 3.787669478176544,
+                "einheit": "percent"
+            }
+        ],
+        "haus_kaufpreise_lage": [
+            {
+                "preisinfo_label": "min. Preis",
+                "preis_einfache_lage": 1594.08,
+                "preis_mittlere_lage": 1871.4,
+                "preis_gute_lage": null,
+                "preis_sehr_gute_lage": null,
+                "preis_top_lage": null,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis",
+                "preis_einfache_lage": 1678.76,
+                "preis_mittlere_lage": 1970.58,
+                "preis_gute_lage": null,
+                "preis_sehr_gute_lage": null,
+                "preis_top_lage": null,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "max. Preis",
+                "preis_einfache_lage": 1763.26,
+                "preis_mittlere_lage": 2069.94,
+                "preis_gute_lage": null,
+                "preis_sehr_gute_lage": null,
+                "preis_top_lage": null,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "haus_kaufpreisentwicklung": [
+            {
+                "jahr": 2021,
+                "preis_ol": 1399.199832200031,
+                "preis_k": 1641.4012464124492,
+                "preis_bl": 2584,
+                "preis_l": 2780.7035903653587,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2022,
+                "preis_ol": 1753.2391064264466,
+                "preis_k": 1886.0640099573131,
+                "preis_bl": 2606,
+                "preis_l": 3251.4663055838787,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2023,
+                "preis_ol": 1912.3725154478943,
+                "preis_k": 2075.563204773419,
+                "preis_bl": 2800,
+                "preis_l": 3369.31848901723,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2024,
+                "preis_ol": 1630.3186969535932,
+                "preis_k": 1852.2520386302417,
+                "preis_bl": 2732,
+                "preis_l": 3043.145615893064,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2025,
+                "preis_ol": 1724.960352211411,
+                "preis_k": 1818.3509153845805,
+                "preis_bl": 2419,
+                "preis_l": 3062.0408943305847,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2026,
+                "preis_ol": 1790.2961489827692,
+                "preis_k": 2084.925112654213,
+                "preis_bl": 2235,
+                "preis_l": 3152.5305408373115,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "wohnung_kaufpreis": [
+            {
+                "kaufpreis_wohnung": 1747.2215470394474,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "wohnung_kaufpreisspanne": [
+            {
+                "preis_wohnung_min": 1565.34,
+                "preis_wohnung_avg": 1747.2215470394474,
+                "preis_wohnung_max": 1984.14,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "wohnung_kaufpreise_im_ueberregionalen_vergleich": [
+            {
+                "preisinfo_label": "Ø Deutschland",
+                "preis": 3270.644922150526,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Sachsen",
+                "preis": 3223,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis",
+                "preis": 1747.2215470394474,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis Vorjahr",
+                "preis": 1717.3212369809842,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Tendenz",
+                "preis": 1.7411017469874976,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "wohnung_kaufpreise_lage": [
+            {
+                "preisinfo_label": "min. Preis",
+                "preis_einfache_lage": 1565.34,
+                "preis_mittlere_lage": 1831.61,
+                "preis_gute_lage": null,
+                "preis_sehr_gute_lage": null,
+                "preis_top_lage": null,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis",
+                "preis_einfache_lage": 1647.8,
+                "preis_mittlere_lage": 1907.97,
+                "preis_gute_lage": null,
+                "preis_sehr_gute_lage": null,
+                "preis_top_lage": null,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "max. Preis",
+                "preis_einfache_lage": 1730.1,
+                "preis_mittlere_lage": 1984.14,
+                "preis_gute_lage": null,
+                "preis_sehr_gute_lage": null,
+                "preis_top_lage": null,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "wohnung_kaufpreise_nach_zimmern": [
+            {
+                "zimmer": "1 Zimmer",
+                "preis": 1359.1852420487621,
+                "preis_vorjahr": 1837.3500714668312,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "zimmer": "2 Zimmer",
+                "preis": 1367.2883290461252,
+                "preis_vorjahr": 1185.550758818577,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "zimmer": "3 Zimmer",
+                "preis": 2647.5209814438485,
+                "preis_vorjahr": 1227.8602015796187,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "zimmer": "4 Zimmer",
+                "preis": 1614.8916356190546,
+                "preis_vorjahr": 2618.523916058909,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "wohnung_kaufpreise_nach_flaechen": [
+            {
+                "flaeche": "< 40",
+                "preis": 1886.396663973177,
+                "preis_vorjahr": 1826.329417372738,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "flaeche": "40-60",
+                "preis": 1530.783186607658,
+                "preis_vorjahr": 1622.2535670164336,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "flaeche": "60-80",
+                "preis": 1765.4248945644176,
+                "preis_vorjahr": 1721.657076102575,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "flaeche": "80-100",
+                "preis": 1756.790500905763,
+                "preis_vorjahr": 1672.4418589031695,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "flaeche": "> 100",
+                "preis": 1796.7124891462227,
+                "preis_vorjahr": 1743.9242655100038,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "wohnung_kaufpreisentwicklung": [
+            {
+                "jahr": 2021,
+                "preis_ol": -154517.12117911433,
+                "preis_k": 1696.1791006301512,
+                "preis_bl": 3068,
+                "preis_l": 2856.9982913319204,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2022,
+                "preis_ol": -177703.8475949294,
+                "preis_k": 1932.0175260042497,
+                "preis_bl": 3097,
+                "preis_l": 3292.9741098254426,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2023,
+                "preis_ol": -218283.70963039328,
+                "preis_k": 2118.44473833795,
+                "preis_bl": 3394,
+                "preis_l": 3342.4658353694217,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2024,
+                "preis_ol": -209543.88289101308,
+                "preis_k": 1967.7462635936017,
+                "preis_bl": 3684,
+                "preis_l": 3094.873857527238,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2025,
+                "preis_ol": 1717.3212369809842,
+                "preis_k": 1859.5156797453724,
+                "preis_bl": 3492,
+                "preis_l": 3146.2445730130976,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2026,
+                "preis_ol": 1747.2215470394474,
+                "preis_k": 1955.616422324465,
+                "preis_bl": 3223,
+                "preis_l": 3270.644922150526,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "grundstueckspreisindex_regional": [
+            {
+                "grundstueckspreisindex": 50.75487157425423
+            }
+        ],
+        "grundstueckspreise_ueberregionaler_vergleich": [
+            {
+                "region": "Deutschland",
+                "grundstueckspreis": 228.296875
+            },
+            {
+                "region": "Sachsen",
+                "grundstueckspreis": 148.44
+            },
+            {
+                "region": "Sächsische Schweiz Osterzgebirge",
+                "grundstueckspreis": 155.6184523809524
+            }
+        ],
+        "grundstueck_kaufpreis": [
+            {
+                "kaufpreis_grundstueck": 115.87178571428572,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "grundstueck_kaufpreisspanne": [
+            {
+                "preis_grundstueck_min": 104.08959151472651,
+                "preis_grundstueck_avg": 115.87178571428572,
+                "preis_grundstueck_max": 127.00392782007614,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "grundstueck_angebotsverteilung_erschliessung": [
+            {
+                "verteilung_erschliessung": "unerschlossen",
+                "anteil_erschliessung": 0
+            },
+            {
+                "verteilung_erschliessung": "erschlossen",
+                "anteil_erschliessung": 0
+            }
+        ],
+        "grundstueck_angebotsverteilung_flaechen": [
+            {
+                "verteilung_flaechen": "0-500",
+                "anteil_flaechen": 0
+            },
+            {
+                "verteilung_flaechen": "500-1000",
+                "anteil_flaechen": 0
+            },
+            {
+                "verteilung_flaechen": "1000-2000",
+                "anteil_flaechen": 0
+            },
+            {
+                "verteilung_flaechen": "> 2000",
+                "anteil_flaechen": 0
+            }
+        ],
+        "grundstueck_kaufpreise_im_ueberregionalen_vergleich": [
+            {
+                "preisinfo_label": "Ø Deutschland",
+                "preis": 228.296875,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Sachsen",
+                "preis": 148.44,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis",
+                "preis": 115.87178571428572,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis Vorjahr",
+                "preis": 115.34373637997273,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Tendenz",
+                "preis": 0.4578049496970189,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "grundstueck_flaechenangebot": [
+            {
+                "flaecheninfo_label": "min. Fläche",
+                "flaecheninfo": 0.0
+            },
+            {
+                "flaecheninfo_label": "max. Fläche",
+                "flaecheninfo": 0.0
+            },
+            {
+                "flaecheninfo_label": "Ø Fläche",
+                "flaecheninfo": 0.0
+            },
+            {
+                "flaecheninfo_label": "gesamt Fläche",
+                "flaecheninfo": 0.0
+            }
+        ],
+        "grundstueckspreise_lage": [
+            {
+                "preisinfo_label": "min. Preis",
+                "preis_einfache_lage": 77.27494264676417,
+                "preis_mittlere_lage": 104.08959151472651,
+                "preis_gute_lage": 134.07324433981168,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis",
+                "preis_einfache_lage": 86.37567195952715,
+                "preis_mittlere_lage": 115.87178571428572,
+                "preis_gute_lage": 149.4307250550992,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "max. Preis",
+                "preis_einfache_lage": 94.74509266680025,
+                "preis_mittlere_lage": 127.00392782007614,
+                "preis_gute_lage": 164.05689716489684,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "grundstueck_preisentwicklung": [
+            {
+                "jahr": 2021,
+                "angebotspreisentwicklung_grundstueck_k": 91.71091677780574,
+                "verkaufspreisentwicklung_grundstueck_k": 47.23,
+                "angebotspreisentwicklung_grundstueck_ol": 129.69530598723472,
+                "verkaufspreisentwicklung_grundstueck_ol": 0.0,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2022,
+                "angebotspreisentwicklung_grundstueck_k": 160.99394240308627,
+                "verkaufspreisentwicklung_grundstueck_k": 101.53,
+                "angebotspreisentwicklung_grundstueck_ol": 147.1593198917273,
+                "verkaufspreisentwicklung_grundstueck_ol": 0.0,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2023,
+                "angebotspreisentwicklung_grundstueck_k": 159.95409885974004,
+                "verkaufspreisentwicklung_grundstueck_k": 155.22,
+                "angebotspreisentwicklung_grundstueck_ol": 136.22886007610876,
+                "verkaufspreisentwicklung_grundstueck_ol": 0.0,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2024,
+                "angebotspreisentwicklung_grundstueck_k": 152.49764281574485,
+                "verkaufspreisentwicklung_grundstueck_k": 148.07,
+                "angebotspreisentwicklung_grundstueck_ol": 120.86442536184587,
+                "verkaufspreisentwicklung_grundstueck_ol": 0.0,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2025,
+                "angebotspreisentwicklung_grundstueck_k": 156.3888298896468,
+                "verkaufspreisentwicklung_grundstueck_k": 125.63,
+                "angebotspreisentwicklung_grundstueck_ol": 115.34373637997273,
+                "verkaufspreisentwicklung_grundstueck_ol": 0.0,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2026,
+                "angebotspreisentwicklung_grundstueck_k": 155.6184523809524,
+                "verkaufspreisentwicklung_grundstueck_k": 130.0,
+                "angebotspreisentwicklung_grundstueck_ol": 115.87178571428572,
+                "verkaufspreisentwicklung_grundstueck_ol": "",
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "grundstueck_kaufpreisentwicklung": [
+            {
+                "jahr": 2021,
+                "kaufpreisentwicklung_grundstueck": 91.71091677780574
+            },
+            {
+                "jahr": 2022,
+                "kaufpreisentwicklung_grundstueck": 160.99394240308627
+            },
+            {
+                "jahr": 2023,
+                "kaufpreisentwicklung_grundstueck": 159.95409885974004
+            },
+            {
+                "jahr": 2024,
+                "kaufpreisentwicklung_grundstueck": 152.49764281574485
+            },
+            {
+                "jahr": 2025,
+                "kaufpreisentwicklung_grundstueck": 156.3888298896468
+            },
+            {
+                "jahr": 2026,
+                "kaufpreisentwicklung_grundstueck": 155.6184523809524
+            }
+        ],
+        "mietpreisindex_regional": [
+            {
+                "mietpreisindex_wohnung": 84
+            }
+        ],
+        "mietpreise_gesamt": [
+            {
+                "preis_kaltmiete": 8.887834442053252,
+                "preis_nebenkosten": 2.57,
+                "preis_warmmiete": 11.457834442053253,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "mietpreise_im_ueberregionalen_vergleich": [
+            {
+                "preisinfo_label": "Ø Deutschland",
+                "preis": 10.145354669741302,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Sachsen",
+                "preis": 7.90100070735615,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis",
+                "preis": 8.887834442053252,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Ø Preis Vorjahr",
+                "preis": 7.479922496761185,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "preisinfo_label": "Tendenz",
+                "preis": 18.822547237644436,
+                "einheit": "percent"
+            }
+        ],
+        "mietpreise_wohnung_gesamt": [
+            {
+                "preis_wohnung_min": 4.41928027635369,
+                "preis_wohnung_avg": 8.205376459958547,
+                "preis_wohnung_max": 11.2754712572337,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "mietpreise_wohnung_nach_zimmern": [
+            {
+                "zimmer": "1 Zimmer",
+                "kaltmiete": 6.286819150325838,
+                "kaltmiete_vorjahr": 5.712241072884723,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "zimmer": "2 Zimmer",
+                "kaltmiete": 5.687098515368235,
+                "kaltmiete_vorjahr": 5.534288309442974,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "zimmer": "3 Zimmer",
+                "kaltmiete": 5.759855432898832,
+                "kaltmiete_vorjahr": 5.262682607385587,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "zimmer": "4 Zimmer",
+                "kaltmiete": 5.692713445577684,
+                "kaltmiete_vorjahr": 5.201788411347979,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "mietpreise_wohnung_nach_flaechen": [
+            {
+                "flaeche": "< 40",
+                "kaltmiete": 7.868836525791416,
+                "kaltmiete_vorjahr": 7.430417937370627,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "flaeche": "40-60",
+                "kaltmiete": 7.290412050689865,
+                "kaltmiete_vorjahr": 7.022361283585752,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "flaeche": "60-80",
+                "kaltmiete": 8.579642707795342,
+                "kaltmiete_vorjahr": 6.610709028684561,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "flaeche": "80-100",
+                "kaltmiete": 8.063473234460117,
+                "kaltmiete_vorjahr": 7.834144199985751,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "flaeche": "> 100",
+                "kaltmiete": 10.962149048309293,
+                "kaltmiete_vorjahr": 7.911805976969248,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "mietpreise_wohnung_nach_baujahr": [
+            {
+                "kaltmiete_bestand": 5.596687551434356,
+                "kaltmiete_bestand_vorjahr": 5.097288930703799,
+                "kaltmiete_neubau": 7.51225099936442,
+                "kaltmiete_neubau_vorjahr": 6.3638391213631245,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "mietpreisentwicklung_wohnung": [
+            {
+                "jahr": 2021,
+                "preis_ol": 6.9184381751210715,
+                "preis_k": 5.055837394425074,
+                "preis_bl": 10.89,
+                "preis_l": 7.6046065871171615,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2022,
+                "preis_ol": 7.114035277045976,
+                "preis_k": 5.100693169834997,
+                "preis_bl": 10.81,
+                "preis_l": 8.122039017109223,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2023,
+                "preis_ol": 7.3451671216551615,
+                "preis_k": 5.325464297111055,
+                "preis_bl": 10.86,
+                "preis_l": 9.416037353245637,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2024,
+                "preis_ol": 7.009008748365326,
+                "preis_k": 5.338451749717816,
+                "preis_bl": 10.28,
+                "preis_l": 9.342214245290139,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2025,
+                "preis_ol": 7.573144347172886,
+                "preis_k": 5.520270120417423,
+                "preis_bl": 9.42,
+                "preis_l": 9.703489312834787,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2026,
+                "preis_ol": 8.205376459958547,
+                "preis_k": 5.802045185185186,
+                "preis_bl": 8.97,
+                "preis_l": 9.976702318794569,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "mietpreise_haus_gesamt": [
+            {
+                "preis_haus_min": 6.03879398043999,
+                "preis_haus_avg": 9.570292424147958,
+                "preis_haus_max": 11.1609640288845,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "mietpreisentwicklung_haus": [
+            {
+                "jahr": 2021,
+                "preis_ol": 6.348601603360992,
+                "preis_k": 6.478892320630095,
+                "preis_bl": 10.45,
+                "preis_l": 8.286160977694141,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2022,
+                "preis_ol": 6.757655072934391,
+                "preis_k": 6.509729945625934,
+                "preis_bl": 10.41,
+                "preis_l": 8.660902256090829,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2023,
+                "preis_ol": 7.350097660114739,
+                "preis_k": 6.668003920736851,
+                "preis_bl": 10.36,
+                "preis_l": 9.781566741795963,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2024,
+                "preis_ol": 7.618677093308331,
+                "preis_k": 6.675245997083464,
+                "preis_bl": 10.09,
+                "preis_l": 9.841857112173976,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2025,
+                "preis_ol": 7.2756539120806085,
+                "preis_k": 6.796466388301706,
+                "preis_bl": 9.53,
+                "preis_l": 10.046257162683903,
+                "einheit": "pricePerSqm"
+            },
+            {
+                "jahr": 2026,
+                "preis_ol": 9.570292424147958,
+                "preis_k": 7.320409458326284,
+                "preis_bl": 9.81,
+                "preis_l": 10.314007020688036,
+                "einheit": "pricePerSqm"
+            }
+        ],
+        "mietrendite_gesamt": [
+            {
+                "kaufpreisfaktor": 16.584081491232308,
+                "bruttomietrendite": 6.02987871549402,
+                "nettomietrendite": 5.506800060062643
+            }
+        ],
+        "bruttomietrendite_allgemein": [
+            {
+                "bruttomietrendite_mfh": 11.662511753743573,
+                "bruttomietrendite_gwa": 7.306370243482938,
+                "bruttomietrendite_hh": 7.306370243482938,
+                "bruttomietrendite_etw": 7.396432946298682,
+                "bruttomietrendite_efh": 5.870658817165592,
+                "bruttomietrendite_dhh": 7.306370243482938,
+                "bruttomietrendite_rmh": 6.152240194542212
+            }
+        ],
+        "nettomietrendite_allgemein": [
+            {
+                "nettomietrendite_mfh": 10.841306597639225,
+                "nettomietrendite_gwa": 6.810430047616155,
+                "nettomietrendite_hh": 6.791898829172928,
+                "nettomietrendite_etw": 6.8756198486972275,
+                "nettomietrendite_efh": 5.201693837328502,
+                "nettomietrendite_dhh": 6.673513444906128,
+                "nettomietrendite_rmh": 5.619350824876553
+            }
+        ],
+        "kaufpreisfaktor_allgemein": [
+            {
+                "kaufpreisfaktor_mfh": 8.922750660623384,
+                "kaufpreisfaktor_gwa": 14.242596663926706,
+                "kaufpreisfaktor_hh": 14.242596663926706,
+                "kaufpreisfaktor_etw": 14.069171614314158,
+                "kaufpreisfaktor_efh": 17.725725118102734,
+                "kaufpreisfaktor_dhh": 14.242596663926706,
+                "kaufpreisfaktor_rmh": 16.914437857539905
+            }
+        ],
+        "mietrendite_mfh": [
+            {
+                "label": "Bruttomietrendite",
+                "mfh_neubau": 15.123239841485535,
+                "mfh_bestand_unsaniert": 10.239334043633196,
+                "mfh_bestand_kernsaniert": 9.624961376111985
+            },
+            {
+                "label": "Kaupreisfaktor",
+                "mfh_neubau": 6.612339753131702,
+                "mfh_bestand_unsaniert": 9.766260146789513,
+                "mfh_bestand_kernsaniert": 10.389652081948938
+            },
+            {
+                "label": "Nettomietrendite",
+                "mfh_neubau": 14.324586784771274,
+                "mfh_bestand_unsaniert": 9.27015840939515,
+                "mfh_bestand_kernsaniert": 8.929174598751253
+            }
+        ],
+        "mietrendite_gwa": [
+            {
+                "label": "Bruttomietrendite",
+                "gwa_neubau": 9.474459009862708,
+                "gwa_bestand_unsaniert": 6.414773005092085,
+                "gwa_bestand_kernsaniert": 6.02987871549402
+            },
+            {
+                "label": "Kaupreisfaktor",
+                "gwa_neubau": 10.554692346645032,
+                "gwa_bestand_unsaniert": 15.589016153902781,
+                "gwa_bestand_kernsaniert": 16.584081491232308
+            },
+            {
+                "label": "Nettomietrendite",
+                "gwa_neubau": 9.029709767225258,
+                "gwa_bestand_unsaniert": 5.807600539655333,
+                "gwa_bestand_kernsaniert": 5.593979835967873
+            }
+        ],
+        "mietrendite_hh": [
+            {
+                "label": "Bruttomietrendite",
+                "hh_neubau": 9.474459009862708,
+                "hh_bestand_unsaniert": 6.414773005092085,
+                "hh_bestand_kernsaniert": 6.02987871549402
+            },
+            {
+                "label": "Kaupreisfaktor",
+                "hh_neubau": 10.554692346645032,
+                "hh_bestand_unsaniert": 15.589016153902781,
+                "hh_bestand_kernsaniert": 16.584081491232308
+            },
+            {
+                "label": "Nettomietrendite",
+                "hh_neubau": 8.974116111895578,
+                "hh_bestand_unsaniert": 5.807600539655333,
+                "hh_bestand_kernsaniert": 5.593979835967873
+            }
+        ],
+        "mietrendite_etw": [
+            {
+                "label": "Bruttomietrendite",
+                "etw_neubau": 9.591246875479884,
+                "etw_bestand_unsaniert": 6.493845345465663,
+                "etw_bestand_kernsaniert": 6.104206617950498
+            },
+            {
+                "label": "Kaupreisfaktor",
+                "etw_neubau": 10.426173082422784,
+                "etw_bestand_unsaniert": 15.399196420626978,
+                "etw_bestand_kernsaniert": 16.382145339892713
+            },
+            {
+                "label": "Nettomietrendite",
+                "etw_neubau": 9.084736450789649,
+                "etw_bestand_unsaniert": 5.87918850796861,
+                "etw_bestand_kernsaniert": 5.662934587333425
+            }
+        ],
+        "mietrendite_efh": [
+            {
+                "label": "Bruttomietrendite",
+                "efh_neubau": 7.612715270450063,
+                "efh_bestand_unsaniert": 5.154261616573608,
+                "efh_bestand_kernsaniert": 4.844999564473107
+            },
+            {
+                "label": "Kaupreisfaktor",
+                "efh_neubau": 13.135917533677574,
+                "efh_bestand_unsaniert": 19.40142108395283,
+                "efh_bestand_kernsaniert": 20.639836736677804
+            },
+            {
+                "label": "Nettomietrendite",
+                "efh_neubau": 6.898004415208043,
+                "efh_bestand_unsaniert": 4.422468208430378,
+                "efh_bestand_kernsaniert": 4.284608888347086
+            }
+        ],
+        "mietrendite_dhh": [
+            {
+                "label": "Bruttomietrendite",
+                "dhh_neubau": 9.474459009862708,
+                "dhh_bestand_unsaniert": 6.414773005092085,
+                "dhh_bestand_kernsaniert": 6.02987871549402
+            },
+            {
+                "label": "Kaupreisfaktor",
+                "dhh_neubau": 10.554692346645032,
+                "dhh_bestand_unsaniert": 15.589016153902781,
+                "dhh_bestand_kernsaniert": 16.584081491232308
+            },
+            {
+                "label": "Nettomietrendite",
+                "dhh_neubau": 8.807335145906533,
+                "dhh_bestand_unsaniert": 5.706405128749208,
+                "dhh_bestand_kernsaniert": 5.506800060062643
+            }
+        ],
+        "mietrendite_rmh": [
+            {
+                "label": "Bruttomietrendite",
+                "rh_neubau": 7.977852969333456,
+                "rh_bestand_unsaniert": 5.401481584647814,
+                "rh_bestand_kernsaniert": 5.077386029645363
+            },
+            {
+                "label": "Kaupreisfaktor",
+                "rh_neubau": 12.53470080037774,
+                "rh_bestand_unsaniert": 18.51343903202813,
+                "rh_bestand_kernsaniert": 19.695173740213843
+            },
+            {
+                "label": "Nettomietrendite",
+                "rh_neubau": 7.416109434062928,
+                "rh_bestand_unsaniert": 4.805009030407026,
+                "rh_bestand_kernsaniert": 4.6369340101597025
+            }
+        ],
+        "mietrendite_reh": [
+            {
+                "label": "Bruttomietrendite",
+                "rh_neubau": 7.977852969333456,
+                "rh_bestand_unsaniert": 5.401481584647814,
+                "rh_bestand_kernsaniert": 5.077386029645363
+            },
+            {
+                "label": "Kaupreisfaktor",
+                "rh_neubau": 12.53470080037774,
+                "rh_bestand_unsaniert": 18.51343903202813,
+                "rh_bestand_kernsaniert": 19.695173740213843
+            },
+            {
+                "label": "Nettomietrendite",
+                "rh_neubau": 7.416109434062928,
+                "rh_bestand_unsaniert": 4.805009030407026,
+                "rh_bestand_kernsaniert": 4.6369340101597025
+            }
+        ],
+        "mietrendite_entwicklung": [
+            {
+                "jahr": 2022,
+                "brutto_mietrendite": -0.08421611401608,
+                "kaufpreisfaktor": -1187.421209923154
+            },
+            {
+                "jahr": 2023,
+                "brutto_mietrendite": -0.07721065003065238,
+                "kaufpreisfaktor": -1295.1581156265402
+            },
+            {
+                "jahr": 2024,
+                "brutto_mietrendite": -0.08495991810449492,
+                "kaufpreisfaktor": -1177.0256166797005
+            },
+            {
+                "jahr": 2025,
+                "brutto_mietrendite": 5.214459333948254,
+                "kaufpreisfaktor": 19.177443641943718
+            },
+            {
+                "jahr": 2026,
+                "brutto_mietrendite": 6.02987871549402,
+                "kaufpreisfaktor": 16.584081491232308
+            }
+        ]
+    },
+    "text": {
+        "wohnlagencheck": {
+            "wohnlagencheck_allgemein": "Liebstadt ist eine der kleinsten Städte Sachsens – kompakt, geschichtsbewusst und landschaftsnah. Über dem Gottleubatal wacht Schloss Kuckuckstein, dessen Mauern von Territorialpolitik und Adelskultur erzählen. Am Fuß des Burgbergs liegt die Stadt mit Markt, Kirche und Bürgerhäusern, deren Fassaden vom 18. und 19. Jahrhundert geprägt sind. Landwirtschaftliche Prägung und Kleingewerbe gaben dem Ort seine ökonomische Basis; später kamen Pendlerbeziehungen in Richtung Dresden und Pirna hinzu. Die Wohnlagen profitieren von der Tallandschaft und der Überschaubarkeit: kurze Wege, stille Gassen, Gärten mit Obst und Sandsteinmauern. Sanierungen achten auf Materialauthentizität, Neubauten bleiben maßvoll und orientieren sich am historischen Grundriss. Liebstadt bietet kein großstädtisches Spektakel, sondern eine konzentrierte Dosis sächsischer Kleinstadtgeschichte – ideal für alle, die intime Maßstäblichkeit, Burgromantik und das tägliche Leben in einem geordneten, naturnahen Umfeld schätzen.",
+            "wohnlagencheck_lage": "Liebstadt liegt im grünen Hügelland zwischen Müglitz- und Gottleubatal – ruhig, aussichtsreich und mit kurzen Wegen zur A17 Richtung Dresden und Prag. Über die Elbtalachse sind Pirna und Heidenau als Versorgungs- und ÖPNV‑Knoten schnell erreicht; Regionalbusse verbinden die Ortsteile untereinander. Das Ortsbild ist kleinteilig und gewachsen, die Wohnlagen reichen von sonnigen Hangkanten mit weitem Blick bis zu geschützten Tallagen nahe Wald- und Wiesenflächen. Für Alltagstermine, weiterführende Schulen und größere Einkäufe stehen die Zentren im Elbtal bereit, während vor Ort Ruhe, Platz und Natur dominieren. Handwerks- und Dienstleistungsbetriebe profitieren von der Nähe zur Autobahn, ohne die Wohnstraßen zu belasten. Wer ein entspanntes Umfeld, planbare Pendlerrouten und ein stark landschaftlich geprägtes Setting sucht, findet in Liebstadt eine bodenständige Lage mit guten Perspektiven für Familien, Rückkehrer und unternehmensnahe Wohnformen.",
+            "wohnlagencheck_standortfaktoren_intro": "Standortfaktoren sind entscheidend für die Attraktivität einer Wohnlage – sie prägen Lebensqualität, Sicherheit, Erreichbarkeit, Freizeitangebote und die wirtschaftlichen Perspektiven vor Ort. Wer eine Immobilie kaufen oder verkaufen möchte, sollte diese Faktoren deshalb immer mit berücksichtigen. Unsere Standortanalysen beruhen auf einer Vielzahl objektiver Daten und Indikatoren, die realitätsnah ausgewertet werden. So entsteht ein klares Bild über die Stärken und Schwächen einer Region. Als Immobilienspezialist helfe ich Ihnen dabei, diese Standortfaktoren richtig einzuordnen und für Ihre Immobilienentscheidung optimal zu nutzen.",
+            "wohnlagencheck_faktor_gesundheit": "Die gesundheitliche Versorgungssituation ist ein wesentlicher Bestandteil bei der Bewertung einer Region. Auf Kreisebene errechnet sich der PWI-Gesamtindex für Gesundheit aus einer Vielzahl von Einzelindikatoren, wie z.B. den Kapazitäten gesundheitlicher Einrichtungen oder der Personalsituation. Für eine bessere Vergleichbarkeit der Stadtkreise untereinander wird unser LOCALSCORE verwendet, der die gesundheitlichen Versorgungspotenziale der verschiedenen Regionen einordnet. ",
+            "wohnlagencheck_faktor_bildung": "Der PWI-Bildungsindex umfasst auf Stadtortslageebene zahlreiche Teilindikatoren, die von der frühkindlichen Bildung und Betreuung über allgemeinbildende Schulen bis hin zum Hochschulangebot reichen. Dabei werden nicht nur die Einrichtungen und personellen Kapazitäten berücksichtigt, sondern auch die Qualität der Ausbildung und der erzielten Abschlüsse bewertet. ",
+            "wohnlagencheck_faktor_sicherheit": "Um die Sicherheit in urbanen Räumen bewerten zu können werden bsp. begangende Straftaten, gelöste Fälle oder die Kapazitäten bzw. die Präsenz der Polizei ausgewertet.",
+            "wohnlagencheck_faktor_naherholung": "Menschen lieben die Nähe zur Natur. Gerade in Ballungsräumen ist es daher wichtig den Anteil der Grünflächen in Form Park- oder Sport- und Freizeitanlagen oder die Landschafts bzw. Luftqualität zu betrachten. Auch Naturreservate oder Landschaftsschutzgebiete tragen zur Bildung des Naherholungsindex bei.",
+            "wohnlagencheck_faktor_lebenserhaltungskosten": "Was kostet das Leben? Dieser Index wird maßgeblich durch die Höhe der steuerlichen Abgaben, bzw. der Wohnkosten bestimmt. ",
+            "wohnlagencheck_faktor_arbeitsplatz": "Ein stabiler und vielfältiger Arbeitsmarkt signalisiert wirtschaftliche Gesundheit und Wachstumspotenzial einer Region. Unternehmen siedeln sich eher in Regionen an, in denen sie qualifiziertes Personal finden und in denen eine hohe Arbeitsplatzsicherheit gegeben ist. Der Standortfaktor hat Einfluss auf die demografische Entwicklung, indem er den Zuzug oder Abzug junger Familien bzw. Fachkräfte bestimmt. ",
+            "wohnlagencheck_faktor_kultur_freizeit": "Kultur- und Freizeitmöglichkeiten halten eine Stadt lebendig. Je höher hier das Angebot umso attraktiver ist die Region für deren Bewohner, potenzielle Zuzügler aber auch für Touristen, die zur wirtschaftlichen Stabilität der Region beitragen. ",
+            "wohnlagencheck_faktor_mobilitaet": "Mobilität umfasst die Erreichbarkeit von und innerhalb einer Region, die Verkehrsinfrastruktur, öffentliche Verkehrsmittel, Anbindung an überregionale Verkehrsnetze und die Verfügbarkeit von Mobilitätslösungen wie Carsharing oder Fahrradwege.",
+            "wohnlagencheck_faktor_nahversorgung": "Text Nahversorgung"
+        },
+        "wirtschaft": {
+            "wirtschaft_intro": "Die wirtschaftliche Entwicklung hat direkten Einfluss auf den Wohnungsmarkt einer Region. Entstehen neue Arbeitsplätze und steigt der Lebensstandard, zieht es Menschen zu – die Nachfrage nach Wohnraum übersteigt das Angebot, und die Preise steigen. In wirtschaftlich schwächeren Gegenden ist die Situation oft umgekehrt: Abwanderung führt zu einem Überangebot an Wohnungen und sinkenden Preisen. Als Immobilienspezialist für die Region beobachte ich diese Zusammenhänge täglich und helfe Ihnen, wirtschaftliche Trends frühzeitig für Ihre Immobilienentscheidungen richtig einzuordnen.",
+            "wirtschaft_gewerbesaldo": "Ein positives Gewerbesaldo, also mehr Neuanmeldungen als Abmeldungen von Gewerben, deutet auf eine wachsende Wirtschaft hin und hat mehrere positive Auswirkungen auf eine Region. Es fördert das Wirtschaftswachstum, da neue Unternehmen zum Marktwettbewerb beitragen, Innovationen vorantreiben und die Diversifizierung der lokalen Wirtschaft fördern. Zudem entstehen neue Arbeitsplätze, was die Arbeitslosenquote senken und die Lebensqualität der Bevölkerung verbessern kann. Ein stärkeres Gewerbe fördert auch die Infrastrukturentwicklung, da erhöhte wirtschaftliche Aktivitäten Investitionen in Verkehr, Telekommunikation und öffentliche Dienste anziehen können. Langfristig kann ein positives Gewerbesaldo zu einer stabileren und resilienteren regionalen Wirtschaft führen, die besser gegenüber externen Schocks gewappnet ist.",
+            "wirtschaft_arbeitsmarkt": "Die Beschreibung des regionalen Arbeitsmarktes umfasst weit mehr als nur die Zahl der Beschäftigten und Arbeitslosen. Wesentliche Indikatoren sind auch die Arbeitsplatzzentralität und der Pendlersaldo, die Aufschluss über die wirtschaftliche Dynamik einer Region geben. ",
+            "wirtschaft_sv_beschaeftigte_wohnort": "Menschen, die in der Region wohnen, aber außerhalb arbeiten (Auspendler), sind in der Statistik der sozialversicherungspflichtig Beschäftigten (SvB) am Arbeitsort nicht erfasst. Umgekehrt sind unter den SvB am Wohnort alle im ortslage lebenden Beschäftigten gezählt, egal wo sie arbeiten. Einpendler, also Personen, die zum Arbeiten in den ortslage kommen, sind in dieser Statistik am Wohnort nicht inkludiert.",
+            "wirtschaft_arbeitslosendichte": "Die Arbeitslosendichte bezieht sich auf die Anzahl der Arbeitslosen in einem bestimmten Gebiet im Verhältnis zur Fläche dieses Gebiets. Sie kann mit der Siedlungsdichte in Bezug gesetzt werden, um zu analysieren, wie Arbeitslosigkeit und Wohnraumverteilung zusammenhängen. In dicht besiedelten Gebieten könnte eine hohe Arbeitslosendichte auf strukturelle Probleme oder einen gesättigten Arbeitsmarkt hinweisen, während in weniger dichten Gebieten andere Faktoren wie Erreichbarkeit von Arbeitsplätzen eine Rolle spielen könnten.",
+            "wirtschaft_bruttoinlandsprodukt": "Betrachten wir das aktuelle Niveau: Im jüngsten Jahr liegt das Bruttoinlandsprodukt bei 6.58 Mio. In den vergangenen fünf Jahren ist um 14,1 % stark gestiegen. Deutlich unter dem Landesdurchschnitt liegt klar unter dem Landesniveau mit Index 64.",
+            "wirtschaft_einkommen": "In den vergangenen fünf Jahren ist um 106,1 % deutlich zurückgegangen. Schauen wir auf das aktuelle Niveau: Im jüngsten Jahr liegt das verfügbare Einkommen bei 33.743.906 €.",
+            "wirtschaft_sv_beschaeftigte_arbeitsort": "Über die letzten fünf Jahre ist mit -5,0 % leicht gesunken. die Zahl der Wohnort-Beschäftigten ist konstant geblieben. Im jüngsten Jahr liegt die Zahl der Beschäftigten am Arbeitsort bei 171 und am Wohnort bei 513.",
+            "wirtschaft_arbeitsplatzzentralitaet": "Die Arbeitsplatzzentralität  liegt klar niedriger bei 0.3333333333333333.",
+            "wirtschaft_pendler": "Das Pendlervolumen  stieg deutlich um 4517 Personen. Die Zahl der Einpendler ist um 2618,05 % % stark gestiegen. Die Zahl der Auspendler ist um 216,98 % % stark gestiegen.",
+            "wirtschaft_arbeitslosigkeit": "Die Arbeitslosenquote reflektiert das Ausmaß der Arbeitslosigkeit in einer Region und berücksichtigt Personen mit Anspruch auf Bürgergeld (SGB II) oder Arbeitslosengeld (SGB III). Die Basis hierfür bildet die Gesamtzahl der zivilen Erwerbspersonen. Sie liegt bei 2,3 %. Damit hat sie sich in den letzten fünf Jahren kaum verändert. Im bundesweiten Vergleich  entspricht die Quote etwa dem Deutschlandniveau."
+        },
+        "wohnmarktsituation": {
+            "wohnmarktsituation_intro": "Die Wohnraumsituation in größeren kreisfreien Städten ist geprägt von einem ständigen Spannungsfeld zwischen steigender Nachfrage und begrenztem Angebot. Urbanisierung und Bevölkerungswachstum lassen den Bedarf kontinuierlich steigen, während Baukapazitäten, Investitionen und gesetzliche Vorgaben das Angebot bestimmen. Hinzu kommen staatliche Programme zur Förderung von sozialem Wohnraum, die zwar wichtig sind, aber häufig in Konkurrenz zum freien Markt stehen. Als regionaler Immobilienspezialist sehe ich täglich, wie stark auch die wirtschaftliche Lage auf Bauindustrie und Kaufkraft wirkt – und damit die Dynamik des gesamten Wohnungsmarktes entscheidend prägt.",
+            "wohnmarktsituation_wohnraumnachfrage": "Die Nachfrage auf dem Immobilienmarkt wird hauptsächlich durch die Anzahl und das Wachstum der Haushalte beeinflusst. Diese Haushalte wiederum werden maßgeblich durch den Wanderungssaldo sowie die natürliche Bevölkerungsentwicklung, also Geburten und Sterbefälle, geprägt.",
+            "wohnmarktsituation_natuerlicher_saldo_intro": "Die Bevölkerungsentwicklung  wird maßgeblich von der natürlichen Bevölkerungsbewegung beeinflusst, die in vielen Regionen Deutschlands seit geraumer Zeit negativ ist. Das bedeutet, dass die Anzahl der Sterbefälle die Anzahl der Geburten übersteigt, was zu einem Rückgang der Einwohnerzahl führt. Eine Ausnahme bilden Städte, die vermehrt junge Zuwanderer verzeichnen, wo inzwischen wieder ein Überschuss an Geburten zu beobachten ist.",
+            "wohnmarktsituation_jugendquotient_altenquotient_intro": "Der Jugendquotient gibt an, wie viele junge Menschen (unter 15 Jahre) es im Verhältnis zur Anzahl der erwerbsfähigen Personen (zwischen 15 und unter 65 Jahren) gibt, während der Altenquotient das Verhältnis der 65-jährigen und älteren Menschen zu den erwerbsfähigen Personen beschreibt. Diese Kennzahlen werden oft als Indikatoren für die Belastung der erwerbstätigen Bevölkerung betrachtet, da sie das Verhältnis zwischen den nicht erwerbstätigen und den potenziell erwerbstätigen Personen verdeutlichen. Allerdings ist es wichtig zu beachten, dass die tatsächliche Erwerbstätigkeit nicht allein vom Alter abhängt.",
+            "wohnmarktsituation_wanderungssaldo_intro": "Neben der natürlichen Bevölkerungsbewegung sind auch Migrations- bzw. Wanderungsströme ein ausschlaggebender Faktor bei der demografischen Entwicklungen einer Region. Doch nicht immer ist ein positiver Migrationsaldo gleichbedeutend mit anhaltendem Bevölkerungswachstum in einer Stadt. Beispielsweise, wenn die Mehrheit der Zuwanderer aus der näheren Umgebung stammt und gleichzeitig eine Abwanderung in weiter entfernte Gebiete stattfindet, könnte dies eher eine zukünftige Schrumpfung der Region signalisieren. Dies liegt daran, dass die Bevölkerungszuwächse dann von der Abwanderung aus angrenzenden Gebieten abhängen, was keine langfristig tragfähige Situation darstellt. Auch eine dominierende Zuwanderung aus dem Ausland ist mit Unsicherheiten behaftet, da sie von vielen sozioökonomischen und rechtlichen Faktoren beeinflusst wird und schnell enden kann.<br><br>Andererseits zeigt eine positive Wanderungsbilanz, die insbesondere auf Bevölkerungsgewinnen gegenüber anderen Regionen Deutschlands basiert und durch eine stabile Zuwanderung aus dem Ausland unterstützt wird, eine Aussicht auf langfristiges Bevölkerungswachstum. Solche \"Schwarmstädte\", die Menschen aus allen Ecken Deutschlands anziehen, sind oft widerstandsfähiger gegenüber Veränderungen.",
+            "wohnmarktsituation_wohnraumangebot_intro": "Das Wohnraumangebot in einer Region wird durch verschiedene Faktoren bestimmt. Der vorhandene Wohnungsbestand gibt Aufschluss über die Menge und Art der verfügbaren Wohnungen. Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
+            "wohnmarktsituation_bautaetigkeit_intro": "Bauüberhang und Bauabgang, spielen eine entscheidende Rolle für das Wohnangebot in einer Region. Sie haben einen direkten Einfluss auf die Verfügbarkeit von Wohnraum, die Preisgestaltung sowie die allgemeinen Lebensbedingungen vor Ort. Unter Bauüberhang versteht man die Situation, in der die Anzahl der fertiggestellten, aber noch nicht veräußerten oder bezogenen Neubauten das übliche Maß übertrifft. Dies kann ein Indikator für eine Diskrepanz zwischen Wohnungsangebot und -nachfrage sein. Der Bauabgang hingegen bezieht sich auf die Reduzierung des bestehenden Wohnungsbestandes durch Maßnahmen wie Abriss, langfristige Unbewohnbarkeit oder die Umwandlung von Gebäuden zu nicht-wohnwirtschaftlichen Zwecken. Die Rolle des Bauabgangs im Hinblick auf das Wohnungsangebot einer Region ist bedeutsam, da er direkt die Menge und Qualität des verfügbaren Wohnraums beeinflusst.  ",
+            "wohnmarktsituation_wohnungsbestand_intro": "Die Haushaltsstruktur, welche die Anzahl der Einzelpersonen- und Mehrpersonenhaushalte umfasst, hat entscheidenden Einfluss auf die Nachfrage nach Wohnraum in einer Region. Die Nachfrage nach Wohnraum hängt daher nicht direkt von der Einwohnerzahl ab, sondern vielmehr von der Anzahl der Haushalte. Ein aussagekräftiger Vergleich zwischen Wohnungsangebot und -nachfrage setzt eine Gegenüberstellung der verfügbaren Wohnungen und der Haushalte voraus.",
+            "wohnmarktsituation_baufertigstellungen_intro": "Baufertigstellungen zeigen, wie viele neue Einheiten kürzlich hinzugekommen sind und tragen so zur Erweiterung des Angebots bei. Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau.",
+            "wohnmarktsituation_baugenehmigungen_intro": "Baugenehmigungen wiederum sind ein Indikator für zukünftiges Wachstum und geben einen Einblick in die Planungen und Entwicklungen im Wohnungsbau. Diese Elemente sind eng mit wirtschaftlichen, sozialen und politischen Faktoren verknüpft und beeinflussen die Wohnraumsituation und -politik einer Region.",
+            "wohnmarktsituation_allgemein": "In Liebstadt leben aktuell rund 1.207 Menschen auf einer Gesamtfläche von 3.736 ha, davon entfallen 69 ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich 1.207 Einwohner je km². Im Verlauf der letzten fünf Jahre ist die Bevölkerung um 66 Menschen deutlich gesunken, was auf demografische Belastungen hinweist. Aktuell wird Liebstadt als schrumpfende Region eingestuft. Insgesamt gibt es hier etwa 604 Haushalte, die durchschnittlich aus 2,0 Personen bestehen.",
+            "wohnmarktsituation_bevoelkerungsentwicklung": "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung liegt mit 132 Personen unter dem Niveau des Jahres 2015. Im Zehnjahresvergleich zeigt das eine Abnahme von 9.9 %.Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner liegt mit 132 Personen unter dem Niveau des Jahres 2015. Über zehn Jahre betrachtet zeigt das eine Abnahme von 9.9 %.",
+            "wohnmarktsituation_haushalte": "Die aktuelle Anzahl der privaten Haushalte beträgt 604. In den letzten fünf Jahren  ist die Zahl um 43 gesunken, was einem starken Rückgang von 6,6 % entspricht.",
+            "wohnmarktsituation_natuerlicher_saldo": "Aktuell weist   einen natürlichen Bevölkerungssaldo von  (je 1.000 Einwohner) oder  Personen auf. 2023 wurden hier insgesamt  Geburten registriert,  Demgegenüber standen  Sterbefälle,  ",
+            "wohnmarktsituation_wanderungssaldo": "Innerhalb der letzten fünf Jahre  ist die Zahl der Zuzüge mit 7,9 % zurückgegangen. Währenddessen sind ebenso die Wegzüge um 7,0 % deutlich gesunken, was auf eine stärkere Bindung an den Ort schließen lässt. geblieben der Saldo konstant gleich. Schauen wir jetzt auf die jüngste Entwicklung. In der letzten statistischen Erhebung 2024  dann sehen wir einen Wanderungssaldo von -18.",
+            "wohnmarktsituation_alterstruktur": "Das mittlere Alter beträgt   49.1 Jahre. In den letzten fünf Jahren blieb das Durchschnittsalter nahezu unverändert. Das Durchschnittsalter liegt über dem Niveau des Bundeslandes, was auf eine ältere Bevölkerung hinweist. Auch im Bundesvergleich liegt das Durchschnittsalter über dem Bundesdurchschnitt, was auf einen höheren Seniorenanteil hinweist.",
+            "wohnmarktsituation_jugendquotient_altenquotient": "  liegt der Jugendquotient bei 33.3 und der Altenquotienten bei 55.3. Damit ist die Region stärker durch eine ältere Bevölkerung geprägt, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht. Der Jugendquotient liegt klar über dem Landesniveau, was auf eine vergleichsweise junge Altersstruktur schließen lässt. Der Altenquotient liegt klar über dem Landesniveau, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist.",
+            "wohnmarktsituation_wohnungsbestand_anzahl": "Der aktuelle Wohnungsbestand   beträgt ca. 715 Wohnungen. Pro 1.000 Einwohner stehen also um die 592 Wohneinheiten zur Verfügung. Über die letzten fünf Jahre ist der Bestand dabei deutlich gestiegen.",
+            "wohnmarktsituation_wohnungsbestand_wohnflaeche": "Die gesamte für Wohnraum nutzbare Fläche beträgt   aktuell ca. 59 m² m². Pro Kopf stehen hier durchschnittlich 49.1 m² zur Verfügung.  Im 5-Jahres Trend hat sich die durchschnittliche Wohnfläche pro Person deutlich vergrößert, was auf eine verbesserte Wohnraumausstattung hindeutet.",
+            "wohnmarktsituation_baufertigstellungen": "Im Jahr 2023 wurden   1 neue Wohnungen fertiggestellt, was 0.8 Fertigstellungen pro 1.000 Einwohner entspricht. In den vergangenen 5 Jahren ist die Zahl der Fertigstellungen nahezu unverändert geblieben.",
+            "wohnmarktsituation_baugenehmigungen": "Im Jahr 2023 wurden   1 neue Baugenehmigungen erteilt. Über fünf Jahre hat sich die Zahl der Baugenehmigungen kaum verändert. Die absolute Veränderung bleibt nahezu unverändert.",
+            "wohnmarktsituation_bauueberhang_baufortschritt": "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. Sie liegt aktuell bei 216 %, cirka das 3-fache der Genehmigungen. Kurzfristig betrachtet, ist die Quote stark gestiegen, was auf zunehmende Verzögerungen hinweist. Langfristig gesehen, ist die Quote über fünf Jahre stark gestiegen, was strukturelle Probleme verdeutlicht.\nDarüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. Sie beträgt 60 %, und damit ungefähr auf dem Niveu der Genehmigungen. Kurzfristig betrachtet, ist sie stark gestiegen, was auf Fortschritte beim Baufortschritt hindeutet. Langfristig gesehen, ist die Fertigstellungsquote damit über fünf Jahre stark gestiegen, was eine Verbesserung über Zeit zeigt."
+        },
+        "immobilienpreise": {
+            "immobilienpreise_intro": "Die Immobilienpreise für Wohnungen und Häuser sind ein wichtiger Indikator für Käufer, Verkäufer und Investoren. Die angezeigten Kaufpreise basieren auf einer kontinuierlichen Auswertung regionaler Immobilienangebote mit modernen Analyseverfahren, die ich durch meine Praxiserfahrung bei der Bestimmung realistischer Markteinschätzungen in der Region weiter optimiere. In diesem Report erhalten Sie einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist in der Region helfe ich Ihnen dabei, die Ergebnisse richtig einzuordnen und fundierte Entscheidungen zu treffen.",
+            "immobilienpreise_haus_intro": "Welche Preise erzielen Häuser in der Region aktuell? In diesem Kapitel betrachten wir die Immobilienpreise verschiedener Haustypen, analysieren die Situation in den vorhandenen Wohnlagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends auf. Gern gebe ich Ihnen eine individuell auf Ihre Immobilie abgestimmte Einschätzung. Kontaktieren Sie mich dazu gern.",
+            "immobilienpreise_wohnung_intro": "Wie entwickeln sich die Preise für Wohnungen in der Region? In diesem Kapitel betrachten wir die Immobilienpreise nach Wohnlagequalitäten, vergleichen die regionale Situation mit überregionalen Entwicklungen und zeigen aktuelle Trends auf. Zusätzlich fließen Unterschiede nach Zimmeranzahl und Wohnfläche in die Analyse ein. Für eine individuell auf Ihre Immobilie abgestimmte Einschätzung stehe ich Ihnen als Immobilienspezialist in der Region gern zur Verfügung.",
+            "immobilienpreise_haus_allgemein": "Laut aktuellen Auswertungen liegt der durchschnittliche Hauspreis  Liebstadt bei 1.790 €/m².  Er bewegt sich dabei zwischen 1.590 €/m² und 2.070 €/m².  Damit liegt er leicht unter dem mittlerem Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise deutlich um 3,8 % gestiegen.  ",
+            "immobilienpreise_haus_lage": "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Liebstadt variieren die Preise je nach Lage erheblich. In Liebstadt gibt es vor allem einfache und mittlere Wohnlagequalitäten. Die Spanne reicht in einfachen Lagen von 1.594 € bis 1.763 €, während in mittleren Lagen im Mittel 1.971 € erzielt wird.",
+            "immobilienpreise_haus_haustypen": "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber nicht immer so sein. Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. einen mittleren Preis von hat in Liebstadt ungefähr bei 2182,8 €/m². Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart liegen Die Angebotspreise 1835,4 €/m², Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer mit Preisen zwischen 1532,0 €/m² und 2555,7 €/m² rechnen .",
+            "immobilienpreise_haus_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei  €/m². Heute liegt der Preis bei 1.790 €/m², und ist damit um 2,1 % deutlich gestiegen.",
+            "immobilienpreise_wohnung_allgemein": "Die mittleren Angebotspreise für Wohnungen in Liebstadt belaufen sich auf 1.750 €/m². Sie variieren typischerweise zwischen von 1.750 €/m² bis 1.980 €/m². Damit liegen sie leicht über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 1,7 % merklich gestiegen",
+            "immobilienpreise_wohnung_lage": "Die Lage eines wohnunges hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch in Liebstadt variieren die Preise je nach Lage erheblich. In Liebstadt dominieren einfache und mittlere Wohnlagen. In einfachen Wohnlagen liegen sie aktuell bei 1.648 € und in mittleren Wohnlagen bei 1.908 €.",
+            "immobilienpreise_wohnung_nach_flaechen_und_zimmern": "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in Liebstadt müssen diese derzeit durchschnittlich 1359,2 €/m² bezahlen. Im Vorjahresvergleich sind die Preise für diese Wohnform um 3,3 % deutlich gefallen. Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, haben im Schnitt einen Mietpreis von 1614,9 €/m². hier ist der kurzfristige Trend mit 5,0 % Anstieg, leicht positiv ",
+            "immobilienpreise_wohnung_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Häuser in  bei -177.703 €/m². Heute liegt der Preis bei 1.750 €/m² €/m², und ist damit um  % kräftig zurückgegangen."
+        },
+        "grundstueckspreise": {
+            "grundstueckspreise_intro": "Die Grundstückspreise für Bauland sind ein zentraler Faktor für Bauherren, Investoren und Eigentümer. Sie bestimmen die Wirtschaftlichkeit neuer Projekte und die langfristige Wertentwicklung. Schwankungen entstehen vor allem durch Lage, Nachfrage und verfügbare Flächen. Dieser Report liefert einen kompakten Überblick über aktuelle Preisniveaus und Entwicklungen. Als Immobilienspezialist für den Landkreis Greiz helfe ich Ihnen, die statistischen Auswertungen richtig einzuordnen und die Chancen des regionalen Grundstücksmarktes optimal für Ihre Bau- oder Investitionsentscheidung zu nutzen.",
+            "grundstueckspreise_allgemein": "Der durchschnittliche Quadratmeterpreis für Grundstücke  Liebstadt beträgt 120 €/m². Diese befinden sich üblicherweise in einer Spanne von 100 €/m² bis 130 €/m². Damit liegen sie weit über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um  % merklich gestiegen. ",
+            "grundstueckspreise_preisentwicklung": "Vor 5 Jahren (2026) lag der mittlere Angebotspreis für Baugrundstücke in Liebstadt bei 150 €/m². Aktuell liegt der Preis bei 120 €/m² und ist damit um 21,3 % kräftig zurückgegangen."
+        },
+        "mietpreise": {
+            "mietpreise_intro": "Wie entwickeln sich die Mietpreise in der Region aktuell? Die dargestellten Angebotsmieten spiegeln die Preise wider, die Vermieter derzeit für neue Verträge verlangen – und sie entsprechen in den meisten Fällen dem tatsächlichen Mietpreis, da sie die aktuellen Marktbedingungen abbilden. Bestandsmieten liegen dagegen oft niedriger, da sie sich an früheren Marktverhältnissen orientieren und weniger dynamisch reagieren. In diesem Kapitel betrachten wir die Mietpreise nach Lagequalitäten, vergleichen mit überregionalen Entwicklungen und zeigen Trends sowie Unterschiede nach Zimmeranzahl und Wohnfläche. Als Immobilienspezialist in der Region stehe ich Ihnen dabei gern beratend zur Seite.",
+            "mietpreise_allgemein": "Die mittleren Angebotspreise aller Mietimmobilien (Haus + Wohnung) in Liebstadt belaufen sich auf 8.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 4.0 €/m² bis 11.0 €/m². Bei Hinzunahme der mittleren Nebenkosten von 2.0 €/m² liegen bei,  kommt man auf eine durchschnittliche Warmmiete von 11.0 €/m². Damit liegen sie leicht über dem mittleren Preis von Sachsen und deutlich unter dem Bundesdurchschnitt. Gegenüber dem Vorjahr sind die Preise um 0,1 % gestiegen.",
+            "mietpreise_wohnung_allgemein": "Aktuell liegen die durchschnittlichen Kaltmieten in Liebstadt bei 8.0 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 4.0 €/m² bis 11.0 €/m². Damit reihen sie sich unter dem Landesniveau von Sachsen und deutlich unter dem Bundesdurchschnitt ein. Neubaumieten liegen um rund 34.0 % deutlich über dem Wert der Bestandsmieten Bestand So muss man bei Neuvermietung für Wohnungen in Neubauten mit cirka 10.0 €/m² rechnen, im Bestand sind es 8.0. Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so sind die Neubaupreise um 21,7 % stark gestiegen. Bei den Neuvermietungen im Bestand liegen um 13,0 % weit über dem derzeitigen Niveau.",
+            "mietpreise_wohnung_preisentwicklung": "Letztes Jahr stand der mittlere Quadratmeterpreis in  bei  €/m².  Blicken wir noch weiter zurück - vor 5 Jahren (2022) lagen die durchschnittlichen Werte bei  €/m², innerhalb diesen Zeitraums sind sie bis jetzt um  % recht stark angestiegen. ",
+            "mietpreise_wohnung_nach_flaechen_und_zimmern": "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte liegt in Liebstadt derzeit durchschnittlich 7,9 €/m². Damit sind die Preise für diese kleineren Flächen im Vergleich zum Vorjahr um 5,9 % stark gestiegen. Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, liegen im Schnitt bei 8,1 €/m².Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², liegen im Schnitt bei 8,1 €/m². hier ist der kurzfristige Trend mit 2,9 % Anstieg, leicht positiv ",
+            "mietpreise_haus_allgemein": "Bei den Angebotsmieten für Häuser zahlt man in  ungefähr 9 €/m². Sie bewegen sich dabei innerhalb einer Spanne von 6 €/m² bis 11 €/m². ",
+            "mietpreise_haus_preisentwicklung": "Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei 7 €/m². Bis heute ist der Preis innerhalb dieser Zeit mit 31 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lagen die durchschnittlichen Werte bei 6 €/m², innerhalb diesen Zeitraums sind sie bis jetzt um 41 % recht stark angestiegen. "
+        },
+        "mietrendite": {
+            "mietrendite_intro": "Die Mietrendite zählt zu den wichtigsten Kennzahlen einer Immobilienanlage. Sie zeigt, welche Erträge eine vermietete Immobilie im Verhältnis zum Kaufpreis erwirtschaftet – und ist damit ein entscheidender Faktor für jede Kapitalanlage in Immobilien. Eine fundierte Renditeberechnung unterstützt Investoren dabei, Chancen und Risiken realistisch einzuschätzen und die Rentabilität verschiedener Objekte zu vergleichen. Die folgenden Auswertungen geben einen ersten regionalen Überblick. Doch neben der reinen Zahl sind vor allem Lage, Nachfrage und Mietentwicklung ausschlaggebend. Als Immobilienspezialist für die Region helfe ich Ihnen, die Mietrendite richtig zu bewerten und die passende Immobilie als langfristige, sichere Kapitalanlage auszuwählen.",
+            "mietrendite_hinweis": "Beachten Sie, dass die Brutto-Mietrendite nur eine von mehreren Faktoren ist, die bei einer fundierten Investitionsentscheidung berücksichtigt werden sollten. Zusätzliche Aspekte wie Standort, langfristige Entwicklung und Risikobewertung sind ebenso relevant, um eine erfolgreiche Immobilieninvestition zu gewährleisten. Kontaktieren Sie dazu unseren regionalen Investment-Spezialisten.",
+            "mietrendite_kaufpreisfaktor": "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist.      ",
+            "mietrendite_allgemein": "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {ortslage_name} brechnet. Aktuell liegt sie bei 6,03 %. Letztes Jahr lag die Bruttomietrendite im Liebstadt bei 5,21 %. Bis heute ist der Preis innerhalb dieser Zeit mit 15,6 % deutlich gestiegen. Im 5-Jahres Rückblick (ab 2022) lag der Wert bei -0,08 %, innerhalb diesen Zeitraums sind sie bis jetzt um 7260,0 % recht stark gefallen. Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. Sie liegt heute ungefähr bei 5,51 %, ",
+            "mietrendite_etw": "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. Sie steht aktuell bei 7,4 %. Der Kaufpreisfaktor liegt bei Eigentumswohnungen  im Liebstadt ungefähr bei 14.1, und die mittlere Netto-Mietrendite bei ungefähr 6,88 %. ",
+            "mietrendite_efh": "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. Vor einem Jahr stand der mittlere Haus-Quadratmetermietpreis bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Liebstadt bei 17.7. Im 5-Jahres Rückblick (ab ) standen die mittleren Angebotspreise bei 5,2 €/m², ",
+            "mietrendite_mfh": "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. Vor einem Jahr lag der Quadratmetermietpreis bei Häusern bei  %. Letztes Jahr lag der Quadratmetermietpreis bei Häusern im Liebstadt bei 8.9. Im 5-Jahres Rückblick (ab ) lagen die durchschnittlichen Werte bei 10,84 €/m², "
+        },
+        "quellenangaben": [
+            {
+                "quellenangabe_gebiete": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_einwohnerzahl": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_einwohner_altersverteilung": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_einwohner_durchschnittsalter": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_bevoelkerungssaldo": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_wanderungssaldo": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_haushalte": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_arbeitslosenzahlen": "'Agentur für Arbeit'",
+                "quellenangabe_beschaeftigte_wohnort": "'Stat. Bundes- und Landesamt'",
+                "quellenangabe_beschaeftigte_arbeitsort": "'Stat. Bundes- und Landesamt'",
+                "quellenangabe_arbeitsmark": "'Bundesagentur für Arbeit'",
+                "quellenangabe_wohnungsbestand": "'Statistisches Bundes- und Landesamt'",
+                "quellenangabe_baufertigstellungen": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_baugenehmigungen": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_bauueberhang": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_bauabgang": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_wohnungsleerstand": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_bip": "'2022'",
+                "quellenangabe_einkommen": "'Stat. Bundes- und Landesamt&comma;&nbsp;Deutschland&comma;&nbsp;2018-2024&comma;&nbsp;Datenlizenz by-2-0&comma;'",
+                "quellenangabe_gewerbesaldo": "'Stat. Bundes- und Landesamt&comma; Deutschland&comma; 2018-2025'",
+                "quellenangabe_pendler": "'Statistisches Bundesamt'"
+            }
+        ]
+    }
+}

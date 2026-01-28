@@ -73,8 +73,6 @@ export function WohnlagencheckSection(
     <div className="text-dark">
       {tocItems.length > 0 ? <RightEdgeControls tocItems={tocItems} /> : null}
 
-      <div className="container immobilienmarkt-container position-relative">
-        
       {/* Subnavigation */}
       <TabNav
         tabs={tabs}
@@ -2439,7 +2437,6 @@ export function WohnlagencheckSection(
           </section>
         ) : null}
 
-      </div>
     </div>
   );
 }

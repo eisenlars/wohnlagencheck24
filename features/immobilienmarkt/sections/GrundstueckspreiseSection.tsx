@@ -55,10 +55,7 @@ export function GrundstueckspreiseSection(props: Props) {
     <div className="text-dark">
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}
 
-      <div className="container immobilienmarkt-container position-relative">
-  
-        
-        {/* Subnavigation */}
+      {/* Subnavigation */}
         <TabNav
           tabs={tabs}
           activeTabId={activeTabId}
@@ -310,7 +307,6 @@ export function GrundstueckspreiseSection(props: Props) {
             </div>
           </section>
         ) : null}
-      </div>
     </div>
   );
 }
