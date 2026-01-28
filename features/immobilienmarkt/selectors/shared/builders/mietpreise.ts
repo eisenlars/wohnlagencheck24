@@ -5,6 +5,7 @@ import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { buildTableModel } from "@/utils/buildTableModel";
 import { buildBarModel } from "@/utils/barModel";
+import { buildWebAssetUrl } from "@/utils/assets";
 
 import type {
   MietpreiseVM,
@@ -97,7 +98,9 @@ export function buildMietpreiseVM(args: {
     (typeof berater["berater_email"] === "string" ? berater["berater_email"] : undefined) ??
     "kontakt@wohnlagencheck24.de";
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
-  const beraterImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`;
+  const beraterImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  );
 
   const mietpreiseGesamt = data.mietpreise_gesamt?.[0];
 
@@ -206,7 +209,9 @@ export function buildMietpreiseVM(args: {
       ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}`
       : `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
 
-  const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`;
+  const heroImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+  );
 
   const headlineMain =
     level === "ort"

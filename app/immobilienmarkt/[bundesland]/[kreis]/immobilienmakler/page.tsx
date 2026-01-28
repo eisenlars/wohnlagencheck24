@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getReportBySlugs } from "@/lib/data";
+import { buildWebAssetUrl } from "@/utils/assets";
 import { ImmobilienmaklerSection } from "@/features/immobilienmarkt/sections/ImmobilienmaklerSection";
 import { KontaktContextSetter } from "@/components/kontakt/KontaktContextSetter";
 import { asRecord, asString } from "@/utils/records";
@@ -18,7 +19,7 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
 
   if (!bundeslandSlug || !kreisSlug) notFound();
 
-  const report = getReportBySlugs([bundeslandSlug, kreisSlug]);
+  const report = await getReportBySlugs([bundeslandSlug, kreisSlug]);
   if (!report) notFound();
 
   const meta = asRecord(report.meta) ?? {};
@@ -45,7 +46,9 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
           title: "Maklerkontakt",
           name,
           email,
-          imageSrc: `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`,
+          imageSrc: buildWebAssetUrl(
+            `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`,
+          ),
           regionLabel: `Maklerempfehlung – ${kreisSlug}`,
           subjectDefault: `Makleranfrage – ${kreisSlug}`,
         }}

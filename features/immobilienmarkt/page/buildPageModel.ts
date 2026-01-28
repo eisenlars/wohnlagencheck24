@@ -21,6 +21,7 @@ import {
   getFlaechennutzungWohnbauImageSrc,
   getLegendHtml,
 } from "@/lib/data";
+import { buildWebAssetUrl } from "@/utils/assets";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { getRegionDisplayName } from "@/utils/regionName";
 
@@ -115,7 +116,7 @@ function normalizeActiveTab(args: {
   return (tabsForLevel[0]?.id ?? "uebersicht") as ReportSection;
 }
 
-export function buildPageModel(route: RouteModel): PageModel | null {
+export async function buildPageModel(route: RouteModel): Promise<PageModel | null> {
   console.log("\n=== buildPageModel ===");
   console.log("ROUTE", {
     level: route.level,
@@ -124,7 +125,7 @@ export function buildPageModel(route: RouteModel): PageModel | null {
     fullSlugs: route.fullSlugs,
   });
 
-  let report = getReportBySlugs(route.regionSlugs);
+  let report = await getReportBySlugs(route.regionSlugs);
   if (!report) {
     console.log("REPORT: null (not found)");
     return null;
@@ -148,7 +149,7 @@ export function buildPageModel(route: RouteModel): PageModel | null {
   if (route.level === "ort") {
     const kreisReport =
       route.regionSlugs.length >= 2
-        ? getReportBySlugs(route.regionSlugs.slice(0, 2))
+        ? await getReportBySlugs(route.regionSlugs.slice(0, 2))
         : null;
     const ortText = asRecord(report["text"]) ?? {};
     const ortHasBerater = Boolean(asRecord(ortText["berater"])?.["berater_name"]);
@@ -227,16 +228,16 @@ export function buildPageModel(route: RouteModel): PageModel | null {
 
   // Bundesland: "orte" = Kreise (für Navigation unten)
   if (route.level === "bundesland" && bundeslandSlug) {
-    const kreise = getKreiseForBundesland(bundeslandSlug);
+    const kreise = await getKreiseForBundesland(bundeslandSlug);
     orte = kreise.map((k) => ({
       slug: k.slug,
       name: k.name,
     }));
 
     const maklerSeen = new Set<string>();
-    const maklerEntries = kreise
-      .map((kreis) => {
-        const kreisReport = getReportBySlugs([bundeslandSlug, kreis.slug]);
+    const maklerEntries = (await Promise.all(
+      kreise.map(async (kreis) => {
+        const kreisReport = await getReportBySlugs([bundeslandSlug, kreis.slug]);
         if (!kreisReport) return null;
 
         const kreisData = asRecord(kreisReport.data) ?? {};
@@ -250,16 +251,18 @@ export function buildPageModel(route: RouteModel): PageModel | null {
         return {
           slug: kreis.slug,
           name: maklerName,
-          imageSrc: `/images/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/makler-${kreis.slug}-logo.jpg`,
+          imageSrc: buildWebAssetUrl(
+            `/images/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/makler-${kreis.slug}-logo.jpg`,
+          ),
           kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienmakler`,
         };
-      })
-      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+      }),
+    )).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
     const beraterSeen = new Set<string>();
-    const beraterEntries = kreise
-      .map((kreis) => {
-        const kreisReport = getReportBySlugs([bundeslandSlug, kreis.slug]);
+    const beraterEntries = (await Promise.all(
+      kreise.map(async (kreis) => {
+        const kreisReport = await getReportBySlugs([bundeslandSlug, kreis.slug]);
         if (!kreisReport) return null;
 
         const kreisData = asRecord(kreisReport.data) ?? {};
@@ -273,42 +276,48 @@ export function buildPageModel(route: RouteModel): PageModel | null {
         return {
           slug: kreis.slug,
           name: beraterName,
-          imageSrc: `/images/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienberatung-${kreis.slug}.png`,
+          imageSrc: buildWebAssetUrl(
+            `/images/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienberatung-${kreis.slug}.png`,
+          ),
           kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienberatung`,
         };
-      })
-      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+      }),
+    )).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
     berater = beraterEntries.length > 0 ? beraterEntries : undefined;
     makler = maklerEntries.length > 0 ? maklerEntries : undefined;
 
-    const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.jpg`;
-    const kreisuebersichtMapSvg = getKreisUebersichtMapSvg(bundeslandSlug);
+    const heroImageSrc = buildWebAssetUrl(
+      `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.jpg`,
+    );
+    const kreisuebersichtMapSvg = await getKreisUebersichtMapSvg(bundeslandSlug);
 
     assets = { heroImageSrc, kreisuebersichtMapSvg };
   }
 
   // Ort + Kreis: (Ort nutzt dieselben Kreis-Assets)
   if ((route.level === "kreis" || route.level === "ort") && bundeslandSlug && kreisSlug) {
-    orte = getOrteForKreis(bundeslandSlug, kreisSlug);
+    orte = await getOrteForKreis(bundeslandSlug, kreisSlug);
 
-    const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`;
-    const immobilienpreisMapSvg = getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug);
-    const immobilienpreisLegendHtml = getLegendHtml("immobilienpreis");
-    const mietpreisMapSvg = getMietpreisMapSvg(bundeslandSlug, kreisSlug);
-    const mietpreisLegendHtml = getLegendHtml("mietpreis");
-    const grundstueckspreisMapSvg = getGrundstueckspreisMapSvg(bundeslandSlug, kreisSlug);
-    const grundstueckspreisLegendHtml = getLegendHtml("grundstueckspreis");
-    const kaufpreisfaktorMapSvg = getKaufpreisfaktorMapSvg(bundeslandSlug, kreisSlug);
-    const kaufpreisfaktorLegendHtml = getLegendHtml("kaufpreisfaktor");
-    const wohnungssaldoMapSvg = getWohnungssaldoMapSvg(bundeslandSlug, kreisSlug);
-    const wohnungssaldoLegendHtml = getLegendHtml("wohnungssaldo");
-    const kaufkraftindexMapSvg = getKaufkraftindexMapSvg(bundeslandSlug, kreisSlug);
-    const kaufkraftindexLegendHtml = getLegendHtml("kaufkraftindex");
+    const heroImageSrc = buildWebAssetUrl(
+      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+    );
+    const immobilienpreisMapSvg = await getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug);
+    const immobilienpreisLegendHtml = await getLegendHtml("immobilienpreis");
+    const mietpreisMapSvg = await getMietpreisMapSvg(bundeslandSlug, kreisSlug);
+    const mietpreisLegendHtml = await getLegendHtml("mietpreis");
+    const grundstueckspreisMapSvg = await getGrundstueckspreisMapSvg(bundeslandSlug, kreisSlug);
+    const grundstueckspreisLegendHtml = await getLegendHtml("grundstueckspreis");
+    const kaufpreisfaktorMapSvg = await getKaufpreisfaktorMapSvg(bundeslandSlug, kreisSlug);
+    const kaufpreisfaktorLegendHtml = await getLegendHtml("kaufpreisfaktor");
+    const wohnungssaldoMapSvg = await getWohnungssaldoMapSvg(bundeslandSlug, kreisSlug);
+    const wohnungssaldoLegendHtml = await getLegendHtml("wohnungssaldo");
+    const kaufkraftindexMapSvg = await getKaufkraftindexMapSvg(bundeslandSlug, kreisSlug);
+    const kaufkraftindexLegendHtml = await getLegendHtml("kaufkraftindex");
     const {
       src: flaechennutzungGewerbeImageSrc,
       usesKreisFallback: flaechennutzungGewerbeUsesKreisFallback,
-    } = getFlaechennutzungGewerbeImageSrc(
+    } = await getFlaechennutzungGewerbeImageSrc(
       bundeslandSlug,
       kreisSlug,
       route.level === "ort" ? ortSlug : undefined,
@@ -316,7 +325,7 @@ export function buildPageModel(route: RouteModel): PageModel | null {
     const {
       src: flaechennutzungWohnbauImageSrc,
       usesKreisFallback: flaechennutzungWohnbauUsesKreisFallback,
-    } = getFlaechennutzungWohnbauImageSrc(
+    } = await getFlaechennutzungWohnbauImageSrc(
       bundeslandSlug,
       kreisSlug,
       route.level === "ort" ? ortSlug : undefined,
@@ -331,10 +340,17 @@ export function buildPageModel(route: RouteModel): PageModel | null {
       "kultur_freizeit",
     ];
     const wohnlagencheckMapSvgs = Object.fromEntries(
-      wohnlagenThemes.map((theme) => [theme, getWohnlagencheckMapSvg(bundeslandSlug, kreisSlug, theme)]),
+      await Promise.all(
+        wohnlagenThemes.map(async (theme) => [
+          theme,
+          await getWohnlagencheckMapSvg(bundeslandSlug, kreisSlug, theme),
+        ]),
+      ),
     );
     const wohnlagencheckLegendHtml = Object.fromEntries(
-      wohnlagenThemes.map((theme) => [theme, getLegendHtml(theme)]),
+      await Promise.all(
+        wohnlagenThemes.map(async (theme) => [theme, await getLegendHtml(theme)]),
+      ),
     );
 
     assets = {
@@ -397,7 +413,9 @@ export function buildPageModel(route: RouteModel): PageModel | null {
 
     const beraterImageSrc =
       bundeslandSlug && kreisSlug
-        ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`
+        ? buildWebAssetUrl(
+            `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+          )
         : undefined;
 
     kontakt = {

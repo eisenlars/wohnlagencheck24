@@ -4,6 +4,7 @@ import type { Report } from "@/lib/data";
 import { getText } from "@/utils/getText";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
+import { buildWebAssetUrl } from "@/utils/assets";
 
 import type {
   WohnlagencheckBildung,
@@ -37,11 +38,6 @@ function buildGalleryImages(args: {
 }): WohnlagencheckVM["gallery"] {
   const { level, bundeslandSlug, kreisSlug, ortSlug, regionName, kreisName } = args;
 
-  const basePath =
-    level === "ort" && ortSlug
-      ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}`
-      : `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
-
   const imageKey = level === "ort" && ortSlug ? ortSlug : kreisSlug;
   const altBase =
     level === "ort"
@@ -51,7 +47,11 @@ function buildGalleryImages(args: {
       : regionName;
 
   return [1, 2, 3].map((idx) => ({
-    src: `${basePath}/immobilienmarktbericht-${imageKey}-standortcheck-0${idx}.jpg`,
+    src: buildWebAssetUrl(
+      level === "ort" && ortSlug
+        ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}/immobilienmarktbericht-${imageKey}-standortcheck-0${idx}.jpg`
+        : `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${imageKey}-standortcheck-0${idx}.jpg`,
+    ),
     alt: `Immobilienmarktbericht ${altBase}`,
   }));
 }
@@ -74,7 +74,9 @@ function buildPoiImage(args: {
   const { bundeslandSlug, kreisSlug, ortSlug, folder, filePrefix, mode, alt } = args;
   const regionSlug = ortSlug ? `${kreisSlug}_${ortSlug}` : kreisSlug;
   return {
-    src: `/visuals/map_poi_availabilities/deutschland/${bundeslandSlug}/${kreisSlug}/${folder}/${filePrefix}_${regionSlug}_${mode}.webp`,
+    src: buildWebAssetUrl(
+      `/visuals/map_poi_availabilities/deutschland/${bundeslandSlug}/${kreisSlug}/${folder}/${filePrefix}_${regionSlug}_${mode}.webp`,
+    ),
     alt,
   };
 }
@@ -294,7 +296,9 @@ export function buildWohnlagencheckVM(args: {
     (typeof berater["berater_name"] === "string" ? berater["berater_name"] : undefined) ??
     "Lars Hofmann";
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
-  const beraterImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`;
+  const beraterImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  );
 
   const mobilitaetIndex = pickStandortfaktorIndex(data["standortfaktoren"], "mobilitaet");
   const bildungIndex = pickStandortfaktorIndex(data["standortfaktoren"], "bildung");
@@ -676,7 +680,9 @@ export function buildWohnlagencheckVM(args: {
     hero: {
       title: regionName,
       subtitle: "Wohnlagencheck",
-      imageSrc: `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+      imageSrc: buildWebAssetUrl(
+        `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+      ),
     },
     berater: {
       name: beraterName,

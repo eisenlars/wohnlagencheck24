@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getReportBySlugs } from "@/lib/data";
+import { buildWebAssetUrl } from "@/utils/assets";
 import { ImmobilienberatungSection } from "@/features/immobilienmarkt/sections/ImmobilienberatungSection";
 import { KontaktContextSetter } from "@/components/kontakt/KontaktContextSetter";
 import { asRecord, asString } from "@/utils/records";
@@ -18,7 +19,7 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
 
   if (!bundeslandSlug || !kreisSlug) notFound();
 
-  const report = getReportBySlugs([bundeslandSlug, kreisSlug]);
+  const report = await getReportBySlugs([bundeslandSlug, kreisSlug]);
   if (!report) notFound();
 
   const meta = asRecord(report.meta) ?? {};
@@ -47,7 +48,9 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
           name,
           email,
           phone,
-          imageSrc: `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+          imageSrc: buildWebAssetUrl(
+            `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+          ),
           regionLabel: `Standort- / Immobilienberatung – ${kreisName}`,
           subjectDefault: `Kontaktanfrage – ${kreisName}`,
         }}

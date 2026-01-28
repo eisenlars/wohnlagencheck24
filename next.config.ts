@@ -8,6 +8,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "via.placeholder.com",
       },
+      {
+        protocol: "https",
+        hostname: "www.praxiswissen-immobilien.de",
+      },
+      {
+        protocol: "https",
+        hostname: "glatwnjxpotnxroqtiee.supabase.co",
+      },
     ],
   },
 };

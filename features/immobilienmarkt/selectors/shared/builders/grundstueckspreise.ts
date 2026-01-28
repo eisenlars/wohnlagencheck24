@@ -4,6 +4,7 @@ import { getText } from "@/utils/getText";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { buildTableModel } from "@/utils/buildTableModel";
+import { buildWebAssetUrl } from "@/utils/assets";
 
 import type {
   GrundstueckspreiseVM,
@@ -93,7 +94,9 @@ export function buildGrundstueckspreiseVM(args: {
     (typeof berater["berater_email"] === "string" ? berater["berater_email"] : undefined) ??
     "kontakt@wohnlagencheck24.de";
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
-  const beraterImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`;
+  const beraterImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  );
 
   const grundstueckSpanne = data.grundstueck_kaufpreisspanne?.[0];
   const minPreis = toNumberOrNull(grundstueckSpanne?.preis_grundstueck_min);
@@ -166,7 +169,9 @@ export function buildGrundstueckspreiseVM(args: {
       ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}`
       : `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
 
-  const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`;
+  const heroImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+  );
 
   const headlineMain =
     level === "ort"

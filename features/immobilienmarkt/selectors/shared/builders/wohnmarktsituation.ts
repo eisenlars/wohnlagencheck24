@@ -2,6 +2,7 @@ import type { Report } from "@/lib/data";
 import { getText } from "@/utils/getText";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
+import { buildWebAssetUrl } from "@/utils/assets";
 
 import type { WohnmarktsituationReportData } from "@/types/reports";
 import type {
@@ -181,7 +182,9 @@ export function buildWohnmarktsituationVM(args: {
     (typeof berater["berater_email"] === "string" ? berater["berater_email"] : undefined) ??
     "kontakt@wohnlagencheck24.de";
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
-  const beraterImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`;
+  const beraterImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  );
 
   const basePath =
     level === "ort" && ortSlug
@@ -346,7 +349,9 @@ export function buildWohnmarktsituationVM(args: {
     },
 
     hero: {
-      imageSrc: `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+      imageSrc: buildWebAssetUrl(
+        `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+      ),
       title: "Wohnmarktsituation",
       subtitle: regionName,
     },

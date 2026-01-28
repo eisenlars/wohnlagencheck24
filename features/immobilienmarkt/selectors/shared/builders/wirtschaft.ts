@@ -3,6 +3,7 @@ import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getText } from "@/utils/getText";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
+import { buildWebAssetUrl } from "@/utils/assets";
 
 import type { WirtschaftReportData } from "@/types/reports";
 import type {
@@ -154,7 +155,9 @@ export function buildWirtschaftVM(args: {
       ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}`
       : `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
 
-  const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`;
+  const heroImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+  );
 
   const headlineMain =
     level === "ort"
@@ -397,7 +400,9 @@ export function buildWirtschaftVM(args: {
     (typeof berater["berater_email"] === "string" ? berater["berater_email"] : undefined) ??
     "kontakt@wohnlagencheck24.de";
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
-  const beraterImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`;
+  const beraterImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  );
 
   return {
     level,

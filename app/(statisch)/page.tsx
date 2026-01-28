@@ -7,8 +7,8 @@ import { getBundeslaender } from "@/lib/data";
 
 // app/(statisch)/page.tsx (Ausschnitt)
 
-export default function HomePage() {
-  const bundeslaender = getBundeslaender();
+export default async function HomePage() {
+  const bundeslaender = await getBundeslaender();
 
   return (
     <div className="home-page-root">

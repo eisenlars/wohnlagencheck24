@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { buildWebAssetUrl } from "@/utils/assets";
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 
@@ -284,9 +285,10 @@ export function UebersichtSection(
   const bundeslandMakler = isBundesland ? (props.ctx?.makler ?? []) : [];
   const kreisMapSvg = props.assets?.kreisuebersichtMapSvg ?? null;
   const heroSlidesBase = isBundesland
-    ? (orte ?? []).map(
-        (item) =>
+    ? (orte ?? []).map((item) =>
+        buildWebAssetUrl(
           `/images/immobilienmarkt/${bundeslandSlug}/${item.slug}/immobilienmarktbericht-${item.slug}.jpg`,
+        ),
       )
     : [];
   const heroSlides =

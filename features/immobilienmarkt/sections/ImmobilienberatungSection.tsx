@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { buildWebAssetUrl } from "@/utils/assets";
 
 import { asRecord, asString } from "@/utils/records";
 import type { Report } from "@/lib/data";
@@ -60,7 +61,9 @@ export function ImmobilienberatungSection({
           <div className={styles.portrait}>
             <div className={styles.avatar}>
               <Image
-                src={`/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`}
+                src={buildWebAssetUrl(
+                  `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+                )}
                 alt={`Berater: ${name}`}
                 width={220}
                 height={220}

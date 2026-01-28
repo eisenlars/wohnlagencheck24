@@ -18,7 +18,7 @@ export default async function ImmobilienmarktHierarchiePage({ params }: PageProp
   const resolvedParams = await params;
   const slugs = resolvedParams.slug ?? [];
   const route = resolveRoute(slugs);
-  const pageModel = buildPageModel(route);
+  const pageModel = await buildPageModel(route);
 
   if (!pageModel) notFound();
 

@@ -7,17 +7,22 @@ import {
   getOrteForKreis,
 } from "@/lib/data";
 
-export default function HomePage() {
-  const bundeslaender = getBundeslaender();
+export default async function HomePage() {
+  const bundeslaender = await getBundeslaender();
 
   // Struktur: Bundesland -> Kreise -> Ortslagen
-  const struktur = bundeslaender.map((bl) => {
-    const kreise = getKreiseForBundesland(bl.slug).map((kreis) => {
-      const orte = getOrteForKreis(bl.slug, kreis.slug);
-      return { ...kreis, orte };
-    });
-    return { ...bl, kreise };
-  });
+  const struktur = await Promise.all(
+    bundeslaender.map(async (bl) => {
+      const kreise = await getKreiseForBundesland(bl.slug);
+      const kreiseWithOrte = await Promise.all(
+        kreise.map(async (kreis) => ({
+          ...kreis,
+          orte: await getOrteForKreis(bl.slug, kreis.slug),
+        })),
+      );
+      return { ...bl, kreise: kreiseWithOrte };
+    }),
+  );
 
   return (
     <div className="text-dark">

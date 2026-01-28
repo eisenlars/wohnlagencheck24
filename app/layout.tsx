@@ -16,8 +16,8 @@ export const metadata: Metadata = {
   description: "Wohnlagencheck24 bietet strukturierte Informationen zu Wohnlagen, Standorten und Märkten in Deutschland.",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const bundeslaender = getBundeslaender();
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const bundeslaender = await getBundeslaender();
 
   return (
     <html lang="de">

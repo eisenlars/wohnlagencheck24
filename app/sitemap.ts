@@ -71,11 +71,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // 2) Dynamische Immobilienmarkt-Hierarchie aus Reports
-  const bundeslaender = getBundeslaender();
+  const bundeslaender = await getBundeslaender();
 
   for (const bl of bundeslaender) {
     // Bundesland-URL
-    const blReport = getReportBySlugs([bl.slug]);
+    const blReport = await getReportBySlugs([bl.slug]);
     const blLastMod = getLastModifiedFromReport(blReport) ?? now;
 
     entries.push({
@@ -85,11 +85,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     });
 
-    const kreise = getKreiseForBundesland(bl.slug);
+    const kreise = await getKreiseForBundesland(bl.slug);
 
     for (const kreis of kreise) {
       // Kreis-URL
-      const kreisReport = getReportBySlugs([bl.slug, kreis.slug]);
+      const kreisReport = await getReportBySlugs([bl.slug, kreis.slug]);
       const kreisLastMod = getLastModifiedFromReport(kreisReport) ?? blLastMod;
 
       entries.push({
@@ -99,13 +99,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
       });
 
-      const orte = getOrteForKreis(bl.slug, kreis.slug);
+      const orte = await getOrteForKreis(bl.slug, kreis.slug);
 
       for (const ort of orte) {
         // Ortslagen-URL
-        const ortReport = getReportBySlugs([bl.slug, kreis.slug, ort.slug]);
-        const ortLastMod =
-          getLastModifiedFromReport(ortReport) ?? kreisLastMod;
+        const ortLastMod = kreisLastMod;
 
         entries.push({
           url: `${BASE_URL}/immobilienmarkt/${bl.slug}/${kreis.slug}/${ort.slug}`,

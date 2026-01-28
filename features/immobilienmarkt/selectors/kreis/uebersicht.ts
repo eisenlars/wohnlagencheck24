@@ -6,6 +6,7 @@ import { getText } from "@/utils/getText";
 import { formatEurPerSqm } from "@/utils/format";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
+import { buildWebAssetUrl } from "@/utils/assets";
 import type { UebersichtReportData } from "@/types/reports";
 
 export type VergleichItem = { region: string; value: number };
@@ -167,7 +168,9 @@ export function buildKreisUebersichtVM(args: {
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
 
   // Hero
-  const heroImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`;
+  const heroImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+  );
 
   // Berater
   const beraterName =
@@ -181,7 +184,9 @@ export function buildKreisUebersichtVM(args: {
     "kontakt@wohnlagencheck24.de";
 
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${kreisName}`;
-  const beraterImageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`;
+  const beraterImageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  );
 
   // Texte
   const teaser = getText(
@@ -239,8 +244,12 @@ export function buildKreisUebersichtVM(args: {
   );
 
   // Bilder
-  const teaserImage = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.jpg`;
-  const agentSuggestImage = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`;
+  const teaserImage = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.jpg`,
+  );
+  const agentSuggestImage = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`,
+  );
 
   // Standortindikatoren
   const standortAllgemein = data.standort_allgemein?.[0];

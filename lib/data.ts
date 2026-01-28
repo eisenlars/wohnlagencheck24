@@ -1,10 +1,5 @@
 // lib/data.ts
 
-import fs from "node:fs";
-import path from "node:path";
-
-import { getRegionDisplayName } from "@/utils/regionName";
-
 export type ReportType = "deutschland" | "bundesland" | "kreis" | "ortslage";
 
 export interface ReportMeta {
@@ -31,141 +26,148 @@ export interface Report<TData = unknown> {
   [key: string]: unknown;
 }
 
-// Erwartete Struktur:
-// data/json/reports/deutschland.json
-// data/json/reports/deutschland/sachsen.json
-// data/json/reports/deutschland/sachsen/leipzig.json
-// data/json/reports/deutschland/sachsen/leipzig/connewitz.json
+export type ReportsIndex = {
+  bundeslaender: Array<{
+    slug: string;
+    name: string;
+    kreise: Array<{
+      slug: string;
+      name: string;
+      orte: Array<{ slug: string; name: string }>;
+    }>;
+  }>;
+};
 
-const REPORTS_ROOT = path.join(process.cwd(), "data", "json", "reports");
-const DEUTSCHLAND_DIR = path.join(REPORTS_ROOT, "deutschland");
+const SUPABASE_PUBLIC_BASE_URL = process.env.SUPABASE_PUBLIC_BASE_URL ?? "";
+const SUPABASE_BUCKET = "immobilienmarkt";
+const SUPABASE_ROOT = SUPABASE_PUBLIC_BASE_URL
+  ? `${SUPABASE_PUBLIC_BASE_URL.replace(/\/+$/, "")}/${SUPABASE_BUCKET}`
+  : "";
 
-function readJsonFile<T = unknown>(filePath: string): T {
-  const raw = fs.readFileSync(filePath, "utf8");
-  return JSON.parse(raw) as T;
+const DEFAULT_REVALIDATE_SECONDS = 60 * 60 * 24; // 24h
+
+function joinPath(...parts: string[]): string {
+  return parts
+    .map((part) => part.replace(/^\/+|\/+$/g, ""))
+    .filter(Boolean)
+    .join("/");
 }
 
-export function getDeutschlandReport(): Report | null {
-  const filePath = path.join(REPORTS_ROOT, "deutschland.json");
-  if (!fs.existsSync(filePath)) return null;
-  return readJsonFile<Report>(filePath);
+function buildSupabaseUrl(...parts: string[]): string | null {
+  if (!SUPABASE_ROOT) {
+    console.warn("SUPABASE_PUBLIC_BASE_URL ist nicht gesetzt.");
+    return null;
+  }
+  const rel = joinPath(...parts);
+  return `${SUPABASE_ROOT}/${rel}`;
+}
+
+async function fetchJson<T>(url: string | null, warnLabel: string): Promise<T | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, {
+      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags: ["reports"] },
+    });
+    if (!res.ok) {
+      console.warn(`${warnLabel} nicht gefunden:`, url, res.status);
+      return null;
+    }
+    return (await res.json()) as T;
+  } catch (err) {
+    console.error(`Fehler beim Laden von ${warnLabel}:`, err);
+    return null;
+  }
+}
+
+async function fetchText(url: string | null, warnLabel: string): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, {
+      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags: ["reports"] },
+    });
+    if (!res.ok) {
+      console.warn(`${warnLabel} nicht gefunden:`, url, res.status);
+      return null;
+    }
+    return await res.text();
+  } catch (err) {
+    console.error(`Fehler beim Laden von ${warnLabel}:`, err);
+    return null;
+  }
+}
+
+async function assetExists(url: string | null): Promise<boolean> {
+  if (!url) return false;
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags: ["reports"] },
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn("Asset-Check fehlgeschlagen:", url, err);
+    return false;
+  }
+}
+
+export async function getReportsIndex(): Promise<ReportsIndex | null> {
+  const url = buildSupabaseUrl("reports", "index.json");
+  return fetchJson<ReportsIndex>(url, "Reports-Index");
+}
+
+export async function getDeutschlandReport(): Promise<Report | null> {
+  const url = buildSupabaseUrl("reports", "deutschland.json");
+  return fetchJson<Report>(url, "Deutschland-Report");
 }
 
 /**
- * Alle Bundesländer:
- * data/json/reports/deutschland/<bundesland>.json
+ * Alle Bundesländer aus reports/index.json
  */
-export function getBundeslaender(): { slug: string; name: string }[] {
-  if (!fs.existsSync(DEUTSCHLAND_DIR)) {
-    console.warn("DEUTSCHLAND_DIR existiert nicht:", DEUTSCHLAND_DIR);
-    return [];
-  }
+export async function getBundeslaender(): Promise<{ slug: string; name: string }[]> {
+  const index = await getReportsIndex();
+  if (!index) return [];
 
-  const entries = fs.readdirSync(DEUTSCHLAND_DIR, { withFileTypes: true });
-  const result: { slug: string; name: string }[] = [];
-
-  for (const entry of entries) {
-    // Wir erwarten hier die Dateien: sachsen.json, bayern.json, ...
-    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
-
-    const blSlug = entry.name.replace(/\.json$/, "");
-    const blJsonPath = path.join(DEUTSCHLAND_DIR, entry.name);
-    const report = readJsonFile<Report>(blJsonPath);
-
-    result.push({
-      slug: blSlug,
-      name: getRegionDisplayName({
-        meta: report.meta as Record<string, unknown>,
-        level: "bundesland",
-        fallbackSlug: blSlug,
-      }),
-    });
-  }
+  const result = index.bundeslaender.map((bl) => ({
+    slug: bl.slug,
+    name: bl.name,
+  }));
 
   result.sort((a, b) => a.name.localeCompare(b.name, "de"));
   return result;
 }
 
 /**
- * Alle Kreise eines Bundeslands:
- * data/json/reports/deutschland/<bundesland>/<kreis>.json
+ * Alle Kreise eines Bundeslands aus reports/index.json
  */
-export function getKreiseForBundesland(
+export async function getKreiseForBundesland(
   bundeslandSlug: string,
-): { slug: string; name: string }[] {
-  const blDir = path.join(DEUTSCHLAND_DIR, bundeslandSlug);
-  if (!fs.existsSync(blDir)) {
-    console.warn("Bundesland-Verzeichnis existiert nicht:", blDir);
-    return [];
-  }
+): Promise<{ slug: string; name: string }[]> {
+  const index = await getReportsIndex();
+  if (!index) return [];
 
-  const entries = fs.readdirSync(blDir, { withFileTypes: true });
-  const result: { slug: string; name: string }[] = [];
+  const bl = index.bundeslaender.find((b) => b.slug === bundeslandSlug);
+  if (!bl) return [];
 
-  for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
-
-    const kreisSlug = entry.name.replace(/\.json$/, "");
-    // Kreis-Report selbst, keine Ortsebene
-    const kreisJsonPath = path.join(blDir, entry.name);
-    const report = readJsonFile<Report>(kreisJsonPath);
-
-    result.push({
-      slug: kreisSlug,
-      name: getRegionDisplayName({
-        meta: report.meta as Record<string, unknown>,
-        level: "kreis",
-        fallbackSlug: kreisSlug,
-      }),
-    });
-  }
-
-  // Kreis-Sammelreport (z. B. sachsen.json) aussortieren,
-  // falls du deinen Bundesland-Report dort liegen hast
-  result.splice(
-    result.findIndex((k) => k.slug === bundeslandSlug),
-    result.findIndex((k) => k.slug === bundeslandSlug) >= 0 ? 1 : 0,
-  );
-
+  const result = bl.kreise.map((k) => ({ slug: k.slug, name: k.name }));
   result.sort((a, b) => a.name.localeCompare(b.name, "de"));
   return result;
 }
 
 /**
- * Ortslagen eines Kreises:
- * data/json/reports/deutschland/<bundesland>/<kreis>/<ort>.json
- * (alle JSON-Dateien in diesem Unterordner)
+ * Ortslagen eines Kreises aus reports/index.json
  */
-export function getOrteForKreis(
+export async function getOrteForKreis(
   bundeslandSlug: string,
   kreisSlug: string,
-): { slug: string; name: string }[] {
-  const kreisDir = path.join(DEUTSCHLAND_DIR, bundeslandSlug, kreisSlug);
-  if (!fs.existsSync(kreisDir)) {
-    console.warn("Kreis-Verzeichnis existiert nicht:", kreisDir);
-    return [];
-  }
+): Promise<{ slug: string; name: string }[]> {
+  const index = await getReportsIndex();
+  if (!index) return [];
 
-  const entries = fs.readdirSync(kreisDir, { withFileTypes: true });
-  const result: { slug: string; name: string }[] = [];
+  const bl = index.bundeslaender.find((b) => b.slug === bundeslandSlug);
+  const kreis = bl?.kreise.find((k) => k.slug === kreisSlug);
+  if (!kreis) return [];
 
-  for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
-
-    const ortSlug = entry.name.replace(/\.json$/, "");
-    const ortJsonPath = path.join(kreisDir, entry.name);
-    const report = readJsonFile<Report>(ortJsonPath);
-
-    result.push({
-      slug: ortSlug,
-      name: getRegionDisplayName({
-        meta: report.meta as Record<string, unknown>,
-        level: "ort",
-        fallbackSlug: ortSlug,
-      }),
-    });
-  }
-
+  const result = kreis.orte.map((o) => ({ slug: o.slug, name: o.name }));
   result.sort((a, b) => a.name.localeCompare(b.name, "de"));
   return result;
 }
@@ -177,68 +179,46 @@ export function getOrteForKreis(
  * /immobilienmarkt/[bundesland]/[kreis]
  * /immobilienmarkt/[bundesland]/[kreis]/[ort]
  */
-export function getReportBySlugs(slugs: string[]): Report | null {
+export async function getReportBySlugs(slugs: string[]): Promise<Report | null> {
   if (slugs.length === 0) {
     return getDeutschlandReport();
   }
 
   const [bundeslandSlug, kreisSlug, ortSlug] = slugs;
-
-  let filePath: string;
+  let url: string | null = null;
 
   if (slugs.length === 1) {
-    // Bundesland-Report: data/json/reports/deutschland/<bundesland>.json
-    filePath = path.join(DEUTSCHLAND_DIR, `${bundeslandSlug}.json`);
+    url = buildSupabaseUrl("reports", "deutschland", `${bundeslandSlug}.json`);
   } else if (slugs.length === 2) {
-    // Kreis-Report: data/json/reports/deutschland/<bundesland>/<kreis>.json
-    filePath = path.join(
-      DEUTSCHLAND_DIR,
+    url = buildSupabaseUrl(
+      "reports",
+      "deutschland",
       bundeslandSlug,
       `${kreisSlug}.json`,
     );
   } else {
-    // Orts-Report: data/json/reports/deutschland/<bundesland>/<kreis>/<ort>.json
-    filePath = path.join(
-      DEUTSCHLAND_DIR,
+    url = buildSupabaseUrl(
+      "reports",
+      "deutschland",
       bundeslandSlug,
       kreisSlug,
       `${ortSlug}.json`,
     );
   }
 
-  if (!fs.existsSync(filePath)) {
-    console.warn("Report nicht gefunden für Slugs:", slugs, " -> ", filePath);
-    return null;
-  }
-
-  return readJsonFile<Report>(filePath);
+  return fetchJson<Report>(url, "Report");
 }
 
-
-// SVG Maps für Bundesland aus data/visuals/map_interactive holen
-
-function readInteractiveSvg(relPath: string, warnLabel: string): string | null {
-  const publicPath = path.join(process.cwd(), "public", relPath);
-  const dataPath = path.join(process.cwd(), "data", relPath);
-
-  const resolved = fs.existsSync(publicPath) ? publicPath : fs.existsSync(dataPath) ? dataPath : null;
-  if (!resolved) {
-    console.warn(`${warnLabel} nicht gefunden:`, relPath);
-    return null;
-  }
-
-  try {
-    return fs.readFileSync(resolved, "utf8");
-  } catch (err) {
-    console.error(`Fehler beim Lesen der ${warnLabel}:`, err);
-    return null;
-  }
+async function readInteractiveSvg(relPath: string, warnLabel: string): Promise<string | null> {
+  const url = buildSupabaseUrl(relPath);
+  return fetchText(url, warnLabel);
 }
 
-export function getKreisUebersichtMapSvg(
+// SVG Maps für Bundesland aus visuals/map_interactive holen
+export async function getKreisUebersichtMapSvg(
   bundeslandSlug: string,
-): string | null {
-  const relPath = path.join(
+): Promise<string | null> {
+  const relPath = joinPath(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -249,16 +229,12 @@ export function getKreisUebersichtMapSvg(
   return readInteractiveSvg(relPath, "Kreisübersicht-SVG");
 }
 
-
-
-
-// SVG Maps für Kreis aus data/visuals/map_interactive holen
-
-export function getImmobilienpreisMapSvg(
+// SVG Maps für Kreis aus visuals/map_interactive holen
+export async function getImmobilienpreisMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
-): string | null {
-  const relPath = path.join(
+): Promise<string | null> {
+  const relPath = joinPath(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -271,14 +247,11 @@ export function getImmobilienpreisMapSvg(
   return readInteractiveSvg(relPath, "Immobilienpreis-SVG");
 }
 
-
-// SVG Maps aus data/visuals/map_interactive holen
-
-export function getMietpreisMapSvg(
+export async function getMietpreisMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
-): string | null {
-  const relPath = path.join(
+): Promise<string | null> {
+  const relPath = joinPath(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -291,12 +264,12 @@ export function getMietpreisMapSvg(
   return readInteractiveSvg(relPath, "Mietpreis-SVG");
 }
 
-export function getWohnlagencheckMapSvg(
+export async function getWohnlagencheckMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
   theme: string,
-): string | null {
-  const relPath = path.join(
+): Promise<string | null> {
+  const relPath = joinPath(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -309,11 +282,11 @@ export function getWohnlagencheckMapSvg(
   return readInteractiveSvg(relPath, "Wohnlagencheck-SVG");
 }
 
-export function getGrundstueckspreisMapSvg(
+export async function getGrundstueckspreisMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
-): string | null {
-  const relPath = path.join(
+): Promise<string | null> {
+  const relPath = joinPath(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -326,11 +299,11 @@ export function getGrundstueckspreisMapSvg(
   return readInteractiveSvg(relPath, "Grundstueckspreis-SVG");
 }
 
-export function getKaufpreisfaktorMapSvg(
+export async function getKaufpreisfaktorMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
-): string | null {
-  const relPath = path.join(
+): Promise<string | null> {
+  const relPath = joinPath(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -343,11 +316,11 @@ export function getKaufpreisfaktorMapSvg(
   return readInteractiveSvg(relPath, "Kaufpreisfaktor-SVG");
 }
 
-export function getWohnungssaldoMapSvg(
+export async function getWohnungssaldoMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
-): string | null {
-  const relPath = path.join(
+): Promise<string | null> {
+  const relPath = joinPath(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -360,11 +333,11 @@ export function getWohnungssaldoMapSvg(
   return readInteractiveSvg(relPath, "Wohnungssaldo-SVG");
 }
 
-export function getKaufkraftindexMapSvg(
+export async function getKaufkraftindexMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
-): string | null {
-  const relPath = path.join(
+): Promise<string | null> {
+  const relPath = joinPath(
     "visuals",
     "map_interactive",
     "deutschland",
@@ -377,73 +350,85 @@ export function getKaufkraftindexMapSvg(
   return readInteractiveSvg(relPath, "Kaufkraftindex-SVG");
 }
 
-export function getFlaechennutzungGewerbeImageSrc(
+export async function getFlaechennutzungGewerbeImageSrc(
   bundeslandSlug: string,
   kreisSlug: string,
   ortSlug?: string,
-): { src: string | null; usesKreisFallback: boolean } {
-  const baseParts = ["visuals", "map_landuse", "deutschland", bundeslandSlug, kreisSlug, "flaechennutzung"];
-  const resolvePath = (relPath: string) => {
-    const publicPath = path.join(process.cwd(), "public", relPath);
-    const dataPath = path.join(process.cwd(), "data", relPath);
-    return fs.existsSync(publicPath) || fs.existsSync(dataPath) ? `/${relPath.replace(/\\/g, "/")}` : null;
-  };
+): Promise<{ src: string | null; usesKreisFallback: boolean }> {
+  const baseParts = [
+    "visuals",
+    "map_landuse",
+    "deutschland",
+    bundeslandSlug,
+    kreisSlug,
+    "flaechennutzung",
+  ];
 
   if (ortSlug) {
-    const ortRelPath = path.join(...baseParts, `flaechennutzung_${kreisSlug}_${ortSlug}_industrie_gewerbe.webp`);
-    const ortSrc = resolvePath(ortRelPath);
-    if (ortSrc) return { src: ortSrc, usesKreisFallback: false };
+    const ortRelPath = joinPath(
+      ...baseParts,
+      `flaechennutzung_${kreisSlug}_${ortSlug}_industrie_gewerbe.webp`,
+    );
+    const ortUrl = buildSupabaseUrl(ortRelPath);
+    if (await assetExists(ortUrl)) {
+      return { src: ortUrl, usesKreisFallback: false };
+    }
   }
 
-  const kreisRelPath = path.join(...baseParts, `flaechennutzung_${kreisSlug}_industrie_gewerbe.webp`);
-  const kreisSrc = resolvePath(kreisRelPath);
-  if (kreisSrc) return { src: kreisSrc, usesKreisFallback: Boolean(ortSlug) };
+  const kreisRelPath = joinPath(
+    ...baseParts,
+    `flaechennutzung_${kreisSlug}_industrie_gewerbe.webp`,
+  );
+  const kreisUrl = buildSupabaseUrl(kreisRelPath);
+  if (await assetExists(kreisUrl)) {
+    return { src: kreisUrl, usesKreisFallback: Boolean(ortSlug) };
+  }
 
   console.warn("Gewerbe-Flächennutzungskarte nicht gefunden:", kreisRelPath);
   return { src: null, usesKreisFallback: false };
 }
 
-export function getFlaechennutzungWohnbauImageSrc(
+export async function getFlaechennutzungWohnbauImageSrc(
   bundeslandSlug: string,
   kreisSlug: string,
   ortSlug?: string,
-): { src: string | null; usesKreisFallback: boolean } {
-  const baseParts = ["visuals", "map_landuse", "deutschland", bundeslandSlug, kreisSlug, "flaechennutzung"];
-  const resolvePath = (relPath: string) => {
-    const publicPath = path.join(process.cwd(), "public", relPath);
-    const dataPath = path.join(process.cwd(), "data", relPath);
-    return fs.existsSync(publicPath) || fs.existsSync(dataPath) ? `/${relPath.replace(/\\/g, "/")}` : null;
-  };
+): Promise<{ src: string | null; usesKreisFallback: boolean }> {
+  const baseParts = [
+    "visuals",
+    "map_landuse",
+    "deutschland",
+    bundeslandSlug,
+    kreisSlug,
+    "flaechennutzung",
+  ];
 
   if (ortSlug) {
-    const ortRelPath = path.join(...baseParts, `flaechennutzung_${kreisSlug}_${ortSlug}_wohnbau.webp`);
-    const ortSrc = resolvePath(ortRelPath);
-    if (ortSrc) return { src: ortSrc, usesKreisFallback: false };
+    const ortRelPath = joinPath(
+      ...baseParts,
+      `flaechennutzung_${kreisSlug}_${ortSlug}_wohnbau.webp`,
+    );
+    const ortUrl = buildSupabaseUrl(ortRelPath);
+    if (await assetExists(ortUrl)) {
+      return { src: ortUrl, usesKreisFallback: false };
+    }
   }
 
-  const kreisRelPath = path.join(...baseParts, `flaechennutzung_${kreisSlug}_wohnbau.webp`);
-  const kreisSrc = resolvePath(kreisRelPath);
-  if (kreisSrc) return { src: kreisSrc, usesKreisFallback: Boolean(ortSlug) };
+  const kreisRelPath = joinPath(
+    ...baseParts,
+    `flaechennutzung_${kreisSlug}_wohnbau.webp`,
+  );
+  const kreisUrl = buildSupabaseUrl(kreisRelPath);
+  if (await assetExists(kreisUrl)) {
+    return { src: kreisUrl, usesKreisFallback: Boolean(ortSlug) };
+  }
 
   console.warn("Wohnbau-Flächennutzungskarte nicht gefunden:", kreisRelPath);
   return { src: null, usesKreisFallback: false };
 }
 
-export function getLegendHtml(theme: string): string | null {
+export async function getLegendHtml(theme: string): Promise<string | null> {
   const filename = `legend_${theme}.html`;
-  const publicPath = path.join(process.cwd(), "public", "visuals", "legend", filename);
-  const dataPath = path.join(process.cwd(), "data", "visuals", "legend", filename);
-  const htmlPath = fs.existsSync(publicPath) ? publicPath : dataPath;
-
-  if (!fs.existsSync(htmlPath)) {
-    console.warn("Legend-HTML nicht gefunden:", htmlPath);
-    return null;
-  }
-
-  try {
-    return fs.readFileSync(htmlPath, "utf8");
-  } catch (err) {
-    console.error("Fehler beim Lesen der Legend-HTML:", err);
-    return null;
-  }
+  const relPath = joinPath("visuals", "legend", filename);
+  const url = buildSupabaseUrl(relPath);
+  return fetchText(url, "Legend-HTML");
 }

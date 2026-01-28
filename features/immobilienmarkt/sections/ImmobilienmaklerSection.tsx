@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { buildWebAssetUrl } from "@/utils/assets";
 
 import { asRecord, asString } from "@/utils/records";
 import type { Report } from "@/lib/data";
@@ -30,15 +31,21 @@ export function ImmobilienmaklerSection({
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const imageSrc = `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`;
+  const imageSrc = buildWebAssetUrl(
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`,
+  );
   const berater = asRecord(text["berater"]) ?? {};
   const emailTarget =
     asString(makler["makler_email"]) ??
     asString(berater["berater_email"]) ??
     "kontakt@wohnlagencheck24.de";
   const gallery = [
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-01.jpg`,
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-02.jpg`,
+    buildWebAssetUrl(
+      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-01.jpg`,
+    ),
+    buildWebAssetUrl(
+      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-02.jpg`,
+    ),
   ];
 
   const meta = asRecord(report.meta) ?? {};

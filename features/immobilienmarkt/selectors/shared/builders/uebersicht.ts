@@ -8,6 +8,7 @@ import { formatRegionFallback } from "@/utils/regionName";
 import type { UebersichtReportData } from "@/types/reports";
 import type { UnitKey } from "@/utils/format";
 import { getRegionDisplayName } from "@/utils/regionName";
+import { buildWebAssetUrl } from "@/utils/assets";
 
 import type {
   UebersichtVM,
@@ -143,11 +144,15 @@ export function buildUebersichtVM(args: {
   // Hero image: wie im Bestand (nur dort, wo Pfade existieren)
   const heroImageSrc =
     level === "kreis" && bundeslandSlug && kreisSlug
-      ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`
+      ? buildWebAssetUrl(
+          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+        )
       : level === "bundesland" && bundeslandSlug
-        ? `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.jpg`
+        ? buildWebAssetUrl(
+            `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.jpg`,
+          )
         : level === "deutschland"
-          ? `/images/immobilienmarkt/deutschland/immobilienmarktbericht-deutschland.jpg`
+          ? buildWebAssetUrl("/images/immobilienmarkt/deutschland/immobilienmarktbericht-deutschland.jpg")
           : undefined;
 
   
@@ -191,7 +196,9 @@ export function buildUebersichtVM(args: {
 
   const beraterImageSrc =
     (bundeslandSlug && (kreisSlug || level === "bundesland"))
-      ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug || bundeslandSlug}/immobilienberatung-${kreisSlug || bundeslandSlug}.png`
+      ? buildWebAssetUrl(
+          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug || bundeslandSlug}/immobilienberatung-${kreisSlug || bundeslandSlug}.png`,
+        )
       : undefined;
 
   /**
@@ -339,14 +346,20 @@ export function buildUebersichtVM(args: {
    */
   const teaserImage =
     level === "kreis" && bundeslandSlug && kreisSlug
-      ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.jpg`
+      ? buildWebAssetUrl(
+          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.jpg`,
+        )
       : level === "bundesland" && bundeslandSlug
-        ? `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}-preview.jpg`
+        ? buildWebAssetUrl(
+            `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}-preview.jpg`,
+          )
         : undefined;
 
   const agentSuggestImage =
     bundeslandSlug && kreisSlug
-      ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`
+      ? buildWebAssetUrl(
+          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`,
+        )
       : undefined;
 
   return {
