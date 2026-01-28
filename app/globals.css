@@ -465,6 +465,14 @@ h6 {
   .zitat-footer::after, .zitat-text::before {
     width: 35%;
   }
+
+  .zitat {
+    padding-left: 44px;
+  }
+
+  .zitat-text {
+    padding-left: 8px;
+  }
 }
 
 
