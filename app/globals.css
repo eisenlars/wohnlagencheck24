@@ -415,6 +415,37 @@ h6 {
     content: "- ";
 }
 
+.markteinschaetzung-block {
+  background: #486b7a;
+  color: #fff;
+}
+
+.markteinschaetzung-block h2,
+.markteinschaetzung-block h5,
+.markteinschaetzung-block p {
+  color: #fff;
+}
+
+.markteinschaetzung-block .text-muted {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.markteinschaetzung-block .zitat,
+.markteinschaetzung-block .zitat-text,
+.markteinschaetzung-block .zitat-autor {
+  color: #fff;
+}
+
+.markteinschaetzung-block .zitat::after,
+.markteinschaetzung-block .zitat::before {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.markteinschaetzung-block .zitat-footer::after,
+.markteinschaetzung-block .zitat-text::before {
+  border-top-color: rgba(255, 255, 255, 0.35);
+}
+
 @media (max-width: 767px) {
   .zitat {
     width: 100%;

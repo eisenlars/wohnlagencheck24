@@ -577,7 +577,7 @@ export function UebersichtSection(
       </section>
       
       {/* Persönliche Markteinschätzung */}
-      <section className="mb-5 bg-light p-4" id="persoenliche_markteinschaetzung">
+      <section className="mb-5 p-4 markteinschaetzung-block" id="persoenliche_markteinschaetzung">
         <h2 className="text-center my-4">
           {isBundesland ? `Markteinschätzung - ${vm.regionName}` : `Persönliche Markteinschätzung  - ${vm.regionName}`}
         </h2>
