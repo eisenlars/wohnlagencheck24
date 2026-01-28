@@ -1723,6 +1723,13 @@ h6 {
   font-size: 2.2rem;
 }
 
+@media (max-width: 575.98px) {
+  .kpi-range .text-start,
+  .kpi-range .text-end {
+    text-align: center !important;
+  }
+}
+
 .kpi-index-bg {
   position: relative;
   padding: clamp(1.25rem, 1.1rem + 1vw, 2rem) clamp(1rem, 0.9rem + 1vw, 1.75rem);
