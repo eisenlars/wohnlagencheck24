@@ -88,7 +88,7 @@ https://www.praxiswissen-immobilien.de/fileadmin/user_upload/immobilienmarkt
 
 POI‑Basis (separat):
 
-https://praxiswissen-immobilien.de/public/fileadmin
+https://www.praxiswissen-immobilien.de/fileadmin
 ```
 
 **Images (WebP bevorzugt)**
@@ -222,11 +222,11 @@ ASSET_VERSION=YYYY-MM-DD
 Optional:
 ```
 WEB_ASSET_BASE_URL=https://www.praxiswissen-immobilien.de/fileadmin/user_upload/immobilienmarkt
-WEB_POI_BASE_URL=https://praxiswissen-immobilien.de/public/fileadmin
+WEB_POI_BASE_URL=https://www.praxiswissen-immobilien.de/fileadmin
 
 POI‑Basis (separat):
 
-https://praxiswissen-immobilien.de/public/fileadmin
+https://www.praxiswissen-immobilien.de/fileadmin
 ```
 
 ### 7.2 Next.js Image Domains

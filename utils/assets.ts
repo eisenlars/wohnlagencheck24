@@ -1,7 +1,7 @@
 const DEFAULT_WEB_ASSET_BASE_URL =
   "https://www.praxiswissen-immobilien.de/fileadmin/user_upload/immobilienmarkt";
 const DEFAULT_WEB_POI_BASE_URL =
-  "https://praxiswissen-immobilien.de/public/fileadmin";
+  "https://www.praxiswissen-immobilien.de/fileadmin";
 
 const WEB_ASSET_BASE_URL =
   process.env.WEB_ASSET_BASE_URL ?? DEFAULT_WEB_ASSET_BASE_URL;
