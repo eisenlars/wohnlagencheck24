@@ -32,7 +32,7 @@ export function ImmobilienmaklerSection({
     .filter(Boolean);
 
   const imageSrc = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`,
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.webp`,
   );
   const berater = asRecord(text["berater"]) ?? {};
   const emailTarget =
@@ -41,10 +41,10 @@ export function ImmobilienmaklerSection({
     "kontakt@wohnlagencheck24.de";
   const gallery = [
     buildWebAssetUrl(
-      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-01.jpg`,
+      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-01.webp`,
     ),
     buildWebAssetUrl(
-      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-02.jpg`,
+      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-02.webp`,
     ),
   ];
 

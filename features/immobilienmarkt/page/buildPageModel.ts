@@ -252,7 +252,7 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
           slug: kreis.slug,
           name: maklerName,
           imageSrc: buildWebAssetUrl(
-            `/images/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/makler-${kreis.slug}-logo.jpg`,
+            `/images/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/makler-${kreis.slug}-logo.webp`,
           ),
           kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienmakler`,
         };
@@ -288,7 +288,7 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
     makler = maklerEntries.length > 0 ? maklerEntries : undefined;
 
     const heroImageSrc = buildWebAssetUrl(
-      `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.jpg`,
+      `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.webp`,
     );
     const kreisuebersichtMapSvg = await getKreisUebersichtMapSvg(bundeslandSlug);
 
@@ -300,7 +300,7 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
     orte = await getOrteForKreis(bundeslandSlug, kreisSlug);
 
     const heroImageSrc = buildWebAssetUrl(
-      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
     );
     const immobilienpreisMapSvg = await getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug);
     const immobilienpreisLegendHtml = await getLegendHtml("immobilienpreis");

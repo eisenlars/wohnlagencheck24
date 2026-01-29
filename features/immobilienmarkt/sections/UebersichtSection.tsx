@@ -287,7 +287,7 @@ export function UebersichtSection(
   const heroSlidesBase = isBundesland
     ? (orte ?? []).map((item) =>
         buildWebAssetUrl(
-          `/images/immobilienmarkt/${bundeslandSlug}/${item.slug}/immobilienmarktbericht-${item.slug}.jpg`,
+          `/images/immobilienmarkt/${bundeslandSlug}/${item.slug}/immobilienmarktbericht-${item.slug}.webp`,
         ),
       )
     : [];

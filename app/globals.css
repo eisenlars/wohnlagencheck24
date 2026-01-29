@@ -364,10 +364,6 @@ h6 {
 }
 
 
-
-
-
-
 .zitat::after, .zitat::before {
     color: #f0f0f0;
     font-family: Arial,sans-serif;
@@ -385,6 +381,7 @@ h6 {
     font-style: italic;
     line-height: 1.7;
     margin-bottom: 12px;
+    color: #ffe000;
 }
 
 .zitat-text::before {
@@ -415,6 +412,8 @@ h6 {
     content: "- ";
 }
 
+
+
 .markteinschaetzung-block {
   background: #486b7a;
   color: #fff;
@@ -430,15 +429,16 @@ h6 {
   color: rgba(255, 255, 255, 0.75) !important;
 }
 
+
 .markteinschaetzung-block .zitat,
 .markteinschaetzung-block .zitat-text,
 .markteinschaetzung-block .zitat-autor {
-  color: #fff;
+  color: #ffe000;
 }
 
 .markteinschaetzung-block .zitat::after,
 .markteinschaetzung-block .zitat::before {
-  color: rgba(255, 255, 255, 0.15);
+  color: #ffe000;
 }
 
 .markteinschaetzung-block .zitat-footer::after,

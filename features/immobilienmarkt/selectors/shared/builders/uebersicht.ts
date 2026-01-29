@@ -145,14 +145,14 @@ export function buildUebersichtVM(args: {
   const heroImageSrc =
     level === "kreis" && bundeslandSlug && kreisSlug
       ? buildWebAssetUrl(
-          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
         )
       : level === "bundesland" && bundeslandSlug
         ? buildWebAssetUrl(
-            `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.jpg`,
+            `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.webp`,
           )
         : level === "deutschland"
-          ? buildWebAssetUrl("/images/immobilienmarkt/deutschland/immobilienmarktbericht-deutschland.jpg")
+          ? buildWebAssetUrl("/images/immobilienmarkt/deutschland/immobilienmarktbericht-deutschland.webp")
           : undefined;
 
   
@@ -347,18 +347,18 @@ export function buildUebersichtVM(args: {
   const teaserImage =
     level === "kreis" && bundeslandSlug && kreisSlug
       ? buildWebAssetUrl(
-          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.jpg`,
+          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.webp`,
         )
       : level === "bundesland" && bundeslandSlug
         ? buildWebAssetUrl(
-            `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}-preview.jpg`,
+            `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}-preview.webp`,
           )
         : undefined;
 
   const agentSuggestImage =
     bundeslandSlug && kreisSlug
       ? buildWebAssetUrl(
-          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`,
+          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.webp`,
         )
       : undefined;
 

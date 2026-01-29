@@ -47,7 +47,7 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
           name,
           email,
           imageSrc: buildWebAssetUrl(
-            `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`,
+            `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.webp`,
           ),
           regionLabel: `Maklerempfehlung – ${kreisSlug}`,
           subjectDefault: `Makleranfrage – ${kreisSlug}`,

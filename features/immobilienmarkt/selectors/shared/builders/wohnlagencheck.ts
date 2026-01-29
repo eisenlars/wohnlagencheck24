@@ -49,8 +49,8 @@ function buildGalleryImages(args: {
   return [1, 2, 3].map((idx) => ({
     src: buildWebAssetUrl(
       level === "ort" && ortSlug
-        ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}/immobilienmarktbericht-${imageKey}-standortcheck-0${idx}.jpg`
-        : `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${imageKey}-standortcheck-0${idx}.jpg`,
+        ? `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortSlug}/immobilienmarktbericht-${imageKey}-standortcheck-0${idx}.webp`
+        : `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${imageKey}-standortcheck-0${idx}.webp`,
     ),
     alt: `Immobilienmarktbericht ${altBase}`,
   }));
@@ -681,7 +681,7 @@ export function buildWohnlagencheckVM(args: {
       title: regionName,
       subtitle: "Wohnlagencheck",
       imageSrc: buildWebAssetUrl(
-        `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+        `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
       ),
     },
     berater: {

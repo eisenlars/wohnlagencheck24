@@ -156,7 +156,7 @@ export function buildWirtschaftVM(args: {
       : `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
 
   const heroImageSrc = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
   );
 
   const headlineMain =

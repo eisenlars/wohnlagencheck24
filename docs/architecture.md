@@ -85,15 +85,19 @@ immobilienmarkt/
 **Basis**
 ```
 https://www.praxiswissen-immobilien.de/fileadmin/user_upload/immobilienmarkt
+
+POI‑Basis (separat):
+
+https://praxiswissen-immobilien.de/public/fileadmin
 ```
 
-**Images**
+**Images (WebP bevorzugt)**
 ```
-/immobilienmarkt/<bundesland>/<kreis>/immobilienmarktbericht-<kreis>.jpg
+/immobilienmarkt/<bundesland>/<kreis>/immobilienmarktbericht-<kreis>.webp
 /immobilienmarkt/<bundesland>/<kreis>/immobilienberatung-<kreis>.png
-/immobilienmarkt/<bundesland>/<kreis>/makler-<kreis>-logo.jpg
-/immobilienmarkt/<bundesland>/<kreis>/immobilienmarktbericht-<kreis>-preview.jpg
-/immobilienmarkt/<bundesland>/<kreis>/<ort>/immobilienmarktbericht-<ort>-standortcheck-01.jpg
+/immobilienmarkt/<bundesland>/<kreis>/makler-<kreis>-logo.webp
+/immobilienmarkt/<bundesland>/<kreis>/immobilienmarktbericht-<kreis>-preview.webp
+/immobilienmarkt/<bundesland>/<kreis>/<ort>/immobilienmarktbericht-<ort>-standortcheck-01.webp
 ...
 ```
 
@@ -218,6 +222,11 @@ ASSET_VERSION=YYYY-MM-DD
 Optional:
 ```
 WEB_ASSET_BASE_URL=https://www.praxiswissen-immobilien.de/fileadmin/user_upload/immobilienmarkt
+WEB_POI_BASE_URL=https://praxiswissen-immobilien.de/public/fileadmin
+
+POI‑Basis (separat):
+
+https://praxiswissen-immobilien.de/public/fileadmin
 ```
 
 ### 7.2 Next.js Image Domains
@@ -244,7 +253,7 @@ In `next.config.ts`:
   - Alternative: Manifest mit `hasOrtLanduse` pro Ort.
 - Sitemap‑`lastModified` basiert aktuell auf Kreis‑Report (gilt für Ortslagen).
   - Das ist korrekt solange Ort/Kreis immer gemeinsam aktualisiert werden.
-- Cache‑Busting erfordert manuelles `ASSET_VERSION`‑Update bei neuen Uploads.
+- Cache‑Busting erfordert manuelles `ASSET_VERSION`‑Update bei neuen Uploads (lokal `.env.local`, Vercel Env + Redeploy).
 
 ---
 

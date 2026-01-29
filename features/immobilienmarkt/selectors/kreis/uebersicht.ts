@@ -169,7 +169,7 @@ export function buildKreisUebersichtVM(args: {
 
   // Hero
   const heroImageSrc = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.jpg`,
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
   );
 
   // Berater
@@ -245,10 +245,10 @@ export function buildKreisUebersichtVM(args: {
 
   // Bilder
   const teaserImage = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.jpg`,
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.webp`,
   );
   const agentSuggestImage = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.jpg`,
+    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.webp`,
   );
 
   // Standortindikatoren

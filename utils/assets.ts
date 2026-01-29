@@ -1,8 +1,12 @@
 const DEFAULT_WEB_ASSET_BASE_URL =
   "https://www.praxiswissen-immobilien.de/fileadmin/user_upload/immobilienmarkt";
+const DEFAULT_WEB_POI_BASE_URL =
+  "https://praxiswissen-immobilien.de/public/fileadmin";
 
 const WEB_ASSET_BASE_URL =
   process.env.WEB_ASSET_BASE_URL ?? DEFAULT_WEB_ASSET_BASE_URL;
+const WEB_POI_BASE_URL =
+  process.env.WEB_POI_BASE_URL ?? DEFAULT_WEB_POI_BASE_URL;
 
 const ASSET_VERSION = process.env.ASSET_VERSION ?? "";
 
@@ -21,7 +25,9 @@ function normalizeWebAssetPath(publicPath: string): string {
 }
 
 export function buildWebAssetUrl(publicPath: string): string {
-  const base = WEB_ASSET_BASE_URL.replace(/\/+$/, "");
-  const relPath = normalizeWebAssetPath(publicPath);
-  return appendAssetVersion(`${base}/${relPath}`);
+  const relPath = publicPath.replace(/^\/+/, "");
+  const isPoi = relPath.startsWith("visuals/map_poi_availabilities/");
+  const base = (isPoi ? WEB_POI_BASE_URL : WEB_ASSET_BASE_URL).replace(/\/+$/, "");
+  const normalized = isPoi ? relPath : normalizeWebAssetPath(relPath);
+  return appendAssetVersion(`${base}/${normalized}`);
 }
