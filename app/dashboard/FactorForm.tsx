@@ -230,8 +230,13 @@ export default function FactorForm({ config }: { config: any }) {
       <details style={sectionStyle}>
         <summary style={summaryStyle}>📍 Standortbewertung</summary>
         <div style={gridStyle}>
-          {Object.keys(sf).map(key => (
-            <InputRow key={key} label={key.charAt(0).toUpperCase() + key.slice(1)} value={sf[key]} onChange={(v:any) => setSf({...sf, [key]: v})} />
+          {(Object.keys(defaultSf) as Array<keyof typeof defaultSf>).map((key) => (
+            <InputRow
+              key={key}
+              label={key.charAt(0).toUpperCase() + key.slice(1)}
+              value={sf[key]}
+              onChange={(v:any) => setSf({ ...sf, [key]: v })}
+            />
           ))}
         </div>
       </details>
