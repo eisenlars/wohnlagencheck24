@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
 export default function FactorForm({ config }: { config: any }) {
@@ -10,28 +10,113 @@ export default function FactorForm({ config }: { config: any }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [comment, setComment] = useState("");
+  const [settingsId, setSettingsId] = useState<string | null>(null);
+
+  const defaultSf = { gesundheit: 1, bildung: 1, nahversorgung: 1, mobilitaet: 1, lebenserhaltungskosten: 1, arbeitsplatz: 1, naherholung: 1 };
+  const defaultTrend = { immobilienmarkt: 1, mietmarkt: 1 };
+  const defaultF = { f01: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 };
+  const defaultRendite = {
+    mietrendite_etw: 1, kaufpreisfaktor_etw: 1,
+    mietrendite_efh: 1, kaufpreisfaktor_efh: 1,
+    mietrendite_mfh: 1, kaufpreisfaktor_mfh: 1
+  };
 
   // States basierend auf deinen Datenbankvorgaben
-  const [sf, setSf] = useState(config.standortfaktoren || {});
-  const [trend, setTrend] = useState(config.immobilienmarkt_trend || {});
-  const [kh, setKh] = useState(config.kauf_haus || {});
-  const [kw, setKw] = useState(config.kauf_wohnung || {});
-  const [kg, setKg] = useState(config.kauf_grundstueck || {});
-  const [mh, setMh] = useState(config.miete_haus || {});
-  const [mw, setMw] = useState(config.miete_wohnung || {});
-  const [rendite, setRendite] = useState(config.rendite || {});
+  const [sf, setSf] = useState(defaultSf);
+  const [trend, setTrend] = useState(defaultTrend);
+  const [kh, setKh] = useState(defaultF);
+  const [kw, setKw] = useState(defaultF);
+  const [kg, setKg] = useState(defaultF);
+  const [mh, setMh] = useState(defaultF);
+  const [mw, setMw] = useState(defaultF);
+  const [rendite, setRendite] = useState(defaultRendite);
+
+  useEffect(() => {
+    let alive = true;
+    async function loadSettings() {
+      if (!config?.area_id) return;
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        if (alive) setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('data_value_settings')
+        .select('*')
+        .eq('auth_user_id', user.id)
+        .eq('area_id', config.area_id)
+        .maybeSingle();
+
+      if (!alive) return;
+
+      if (error) {
+        setMessage('❌ Fehler beim Laden: ' + error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data) {
+        setSettingsId(data.id ?? null);
+        setSf(data.standortfaktoren || defaultSf);
+        setTrend(data.immobilienmarkt_trend || defaultTrend);
+        setKh(data.kauf_haus || defaultF);
+        setKw(data.kauf_wohnung || defaultF);
+        setKg(data.kauf_grundstueck || defaultF);
+        setMh(data.miete_haus || defaultF);
+        setMw(data.miete_wohnung || defaultF);
+        setRendite(data.rendite || defaultRendite);
+      } else {
+        setSettingsId(null);
+        setSf(defaultSf);
+        setTrend(defaultTrend);
+        setKh(defaultF);
+        setKw(defaultF);
+        setKg(defaultF);
+        setMh(defaultF);
+        setMw(defaultF);
+        setRendite(defaultRendite);
+      }
+      setLoading(false);
+    }
+    loadSettings();
+    return () => { alive = false; };
+  }, [config, supabase]);
 
   const handleSave = async () => {
     setLoading(true);
     setMessage('');
-    const { error } = await supabase
-      .from('partner_area_config')
-      .update({
-        standortfaktoren: sf, immobilienmarkt_trend: trend,
-        kauf_haus: kh, kauf_wohnung: kw, kauf_grundstueck: kg,
-        miete_haus: mh, miete_wohnung: mw, rendite: rendite,
-      })
-      .eq('id', config.id);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setMessage('❌ Fehler: nicht eingeloggt.');
+      setLoading(false);
+      return;
+    }
+
+    const payload = {
+      auth_user_id: user.id,
+      area_id: config.area_id,
+      standortfaktoren: sf, immobilienmarkt_trend: trend,
+      kauf_haus: kh, kauf_wohnung: kw, kauf_grundstueck: kg,
+      miete_haus: mh, miete_wohnung: mw, rendite: rendite,
+    };
+
+    let error = null;
+    if (settingsId) {
+      const res = await supabase
+        .from('data_value_settings')
+        .update(payload)
+        .eq('id', settingsId);
+      error = res.error;
+    } else {
+      const res = await supabase
+        .from('data_value_settings')
+        .insert(payload)
+        .select('id')
+        .single();
+      error = res.error;
+      if (!error && res.data?.id) setSettingsId(res.data.id);
+    }
 
     if (error) { setMessage('❌ Fehler: ' + error.message); }
     else { 

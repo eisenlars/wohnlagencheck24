@@ -1,29 +1,35 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import FactorForm from './FactorForm';
 import TextEditorForm from './TextEditorForm';
 
 export default function DashboardClient() {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
   const [configs, setConfigs] = useState<any[]>([]);
   const [selectedConfig, setSelectedConfig] = useState<any>(null);
   const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastLogin, setLastLogin] = useState<string | null>(null);
 
   // Werkzeug-Modus umschalten
-  const [activeMainTab, setActiveMainTab] = useState<'factors' | 'texts' | 'ads'>('factors');
+  const [activeMainTab, setActiveMainTab] = useState<
+    'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche'
+  >('texts');
 
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setLastLogin(user.last_sign_in_at ?? null);
 
       const { data } = await supabase
-        .from('partner_area_config')
-        .select(`*, areas!inner ( name, id )`)
-        .eq('partner_id', user.id)
+        .from('partner_area_map')
+        .select(`*, areas ( name, id, slug, parent_slug, bundesland_slug )`)
+        .eq('auth_user_id', user.id)
         .order('area_id', { ascending: true });
 
       if (data && data.length > 0) {
@@ -36,25 +42,44 @@ export default function DashboardClient() {
     loadData();
   }, [supabase]);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
   if (loading) return <div style={{ padding: '40px' }}>Dashboard wird geladen...</div>;
 
   const mainDistricts = configs.filter(c => c.area_id.split('-').length <= 3);
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
+      <header style={dashboardHeaderStyle}>
+        <div className="brand-header" style={{ margin: 0 }}>
+          <img
+            alt="Immobilienmarkt & Standortprofile"
+            width={48}
+            height={48}
+            src="/logo/wohnlagencheck24.svg"
+            className="brand-icon"
+            style={{ display: 'block' }}
+          />
+          <span className="brand-text">
+            <span className="brand-title">
+              Wohnlagencheck<span style={{ color: '#ffe000' }}>24</span>
+            </span>
+            <small>DATA-DRIVEN. EXPERT-LED.</small>
+          </span>
+        </div>
+        <div style={dashboardStatusStyle}>
+          {lastLogin ? `Letzter Login: ${new Date(lastLogin).toLocaleString('de-DE')}` : 'Letzter Login: –'}
+        </div>
+      </header>
+
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
       {/* 1. SPALTE: WERKZEUGE (Ganz links, schmal) */}
       <aside style={utilityBarStyle}>
-        <div style={logoContainerStyle}>W</div>
-
         <div style={toolIconsGroupStyle}>
-          <button
-            onClick={() => setActiveMainTab('factors')}
-            style={toolIconButtonStyle(activeMainTab === 'factors')}
-            title="Preisfaktoren"
-          >
-            📊
-          </button>
           <button
             onClick={() => setActiveMainTab('texts')}
             style={toolIconButtonStyle(activeMainTab === 'texts')}
@@ -63,11 +88,53 @@ export default function DashboardClient() {
             ✍️
           </button>
           <button
+            onClick={() => setActiveMainTab('factors')}
+            style={toolIconButtonStyle(activeMainTab === 'factors')}
+            title="Preisfaktoren"
+          >
+            📊
+          </button>
+          <button
+            onClick={() => setActiveMainTab('marketing')}
+            style={toolIconButtonStyle(activeMainTab === 'marketing')}
+            title="Online-Marketing"
+          >
+            📈
+          </button>
+          <button
+            onClick={() => setActiveMainTab('local_site')}
+            style={toolIconButtonStyle(activeMainTab === 'local_site')}
+            title="Lokale Website"
+          >
+            🧭
+          </button>
+          <button
+            onClick={() => setActiveMainTab('immobilien')}
+            style={toolIconButtonStyle(activeMainTab === 'immobilien')}
+            title="Immobilien"
+          >
+            🏠
+          </button>
+          <button
+            onClick={() => setActiveMainTab('gesuche')}
+            style={toolIconButtonStyle(activeMainTab === 'gesuche')}
+            title="Gesuche"
+          >
+            🔎
+          </button>
+          <button
             style={toolIconButtonStyle(false, true)}
             disabled
             title="Werbung (In Kürze)"
           >
             📢
+          </button>
+          <button
+            onClick={handleLogout}
+            style={logoutButtonStyle}
+            title="Abmelden"
+          >
+            <span aria-hidden>⎋</span>
           </button>
         </div>
       </aside>
@@ -134,14 +201,19 @@ export default function DashboardClient() {
             {/* Die Forms nutzen nun die volle Breite des <main> Containers */}
             {activeMainTab === 'factors' ? (
               <FactorForm key={`f-${selectedConfig.id}`} config={selectedConfig} />
-            ) : (
+            ) : activeMainTab === 'texts' ? (
               <TextEditorForm key={`t-${selectedConfig.id}`} config={selectedConfig} />
+            ) : (
+              <div style={{ padding: '20px', color: '#64748b' }}>
+                Bereich in Vorbereitung.
+              </div>
             )}
           </div>
         ) : (
           <div style={emptyStateStyle}>Wählen Sie eine Region aus der mittleren Spalte.</div>
         )}
       </main>
+      </div>
     </div>
   );
 }
@@ -150,25 +222,12 @@ export default function DashboardClient() {
 
 const utilityBarStyle: React.CSSProperties = {
   width: '64px',
-  backgroundColor: '#0f172a',
+  backgroundColor: '#f0f0f0',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   padding: '20px 0',
   zIndex: 10
-};
-
-const logoContainerStyle = {
-  width: '40px',
-  height: '40px',
-  backgroundColor: '#3b82f6',
-  borderRadius: '12px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: 'white',
-  fontWeight: '900',
-  marginBottom: '40px'
 };
 
 const toolIconsGroupStyle = {
@@ -178,11 +237,12 @@ const toolIconsGroupStyle = {
 };
 
 const toolIconButtonStyle = (active: boolean, disabled = false) => ({
-  width: '44px',
-  height: '44px',
+  width: '48px',
+  height: '48px',
   borderRadius: '12px',
   border: 'none',
-  backgroundColor: active ? '#3b82f6' : 'transparent',
+  backgroundColor: active ? '#e2e8f0' : '#fff',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
   fontSize: '20px',
   cursor: disabled ? 'not-allowed' : 'pointer',
   opacity: disabled ? 0.3 : 1,
@@ -191,6 +251,40 @@ const toolIconButtonStyle = (active: boolean, disabled = false) => ({
   alignItems: 'center',
   justifyContent: 'center'
 });
+
+const logoutButtonStyle: React.CSSProperties = {
+  marginTop: '8px',
+  width: '48px',
+  height: '48px',
+  borderRadius: '12px',
+  border: '1px solid #e2e8f0',
+  backgroundColor: '#fff',
+  color: '#0f172a',
+  fontSize: '18px',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+};
+
+const dashboardHeaderStyle: React.CSSProperties = {
+  minHeight: '72px',
+  backgroundColor: '#fff',
+  color: '#0f172a',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '10px 20px',
+  borderBottom: '1px solid #e2e8f0',
+  position: 'sticky',
+  top: 0,
+  zIndex: 40
+};
+
+const dashboardStatusStyle: React.CSSProperties = {
+  fontSize: '12px',
+  color: '#94a3b8'
+};
 
 const regionSidebarStyle: React.CSSProperties = {
   width: '260px',

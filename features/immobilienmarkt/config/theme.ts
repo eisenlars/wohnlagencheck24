@@ -26,16 +26,20 @@ const ALL_TABS: ThemeTab[] = mapKreisTabs(TABS);
 const BUNDESLAND_THEME_TABS: ThemeTab[] = mapKreisTabs(BUNDESLAND_TABS);
 const KREIS_THEME_TABS: ThemeTab[] = mapKreisTabs(KREIS_TABS);
 
-// Ort-Tabs: identisch zur Kreisebene, aber Übersicht soll NUR als Button dienen.
-// -> Also NICHT rausfiltern. (Aktive Section bleibt über normalizeActiveTab() geregelt.)
-const ORT_TABS: ThemeTab[] = ALL_TABS;
+const ORT_TABS: ThemeTab[] = mapKreisTabs(KREIS_TABS).map((tab) => {
+  if (tab.id !== "uebersicht") return tab;
+  return {
+    ...tab,
+    toc: tab.toc.filter((item) => item.id !== "marktueberblick"),
+  };
+});
 
 export const IMMOBILIENMARKT_THEME: ThemeConfig = {
   tabsByLevel: {
     deutschland: ALL_TABS,
     bundesland: BUNDESLAND_THEME_TABS,
     kreis: KREIS_THEME_TABS,
-    ort: KREIS_THEME_TABS,
+    ort: ORT_TABS,
   },
   defaultTabByLevel: {
     deutschland: "uebersicht",

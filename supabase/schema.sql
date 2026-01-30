@@ -4,6 +4,9 @@
 CREATE TABLE public.areas (
   id text NOT NULL,
   name text NOT NULL,
+  slug text,
+  parent_slug text,
+  bundesland_slug text,
   type text,
   parent_id text,
   CONSTRAINT areas_pkey PRIMARY KEY (id)
@@ -20,9 +23,9 @@ CREATE TABLE public.market_data (
   CONSTRAINT market_data_pkey PRIMARY KEY (id),
   CONSTRAINT market_data_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
 );
-CREATE TABLE public.partner_area_config (
+CREATE TABLE public.data_value_settings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
-  partner_id uuid,
+  auth_user_id uuid,
   area_id text,
   price_factor_houses double precision DEFAULT 1.0,
   price_factor_apartments double precision DEFAULT 1.0,
@@ -38,9 +41,19 @@ CREATE TABLE public.partner_area_config (
   miete_haus jsonb DEFAULT '{"f01": 1, "f02": 1, "f03": 1, "f04": 1, "f05": 1, "f06": 1}'::jsonb,
   miete_wohnung jsonb DEFAULT '{"f01": 1, "f02": 1, "f03": 1, "f04": 1, "f05": 1, "f06": 1}'::jsonb,
   rendite jsonb DEFAULT '{"mietrendite_efh": 1, "mietrendite_etw": 1, "mietrendite_mfh": 1, "kaufpreisfaktor_efh": 1, "kaufpreisfaktor_etw": 1, "kaufpreisfaktor_mfh": 1}'::jsonb,
-  CONSTRAINT partner_area_config_pkey PRIMARY KEY (id),
-  CONSTRAINT partner_area_config_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
-  CONSTRAINT partner_area_config_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+  CONSTRAINT data_value_settings_pkey PRIMARY KEY (id),
+  CONSTRAINT data_value_settings_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES public.partners(id),
+  CONSTRAINT data_value_settings_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
+CREATE TABLE public.partner_area_map (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  auth_user_id uuid NOT NULL,
+  area_id text NOT NULL,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT partner_area_map_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_area_map_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_area_map_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
 );
 CREATE TABLE public.partners (
   id uuid NOT NULL DEFAULT auth.uid(),

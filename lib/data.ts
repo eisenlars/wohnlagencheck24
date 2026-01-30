@@ -1,5 +1,7 @@
 // lib/data.ts
 
+import { buildWebAssetUrl } from "@/utils/assets";
+
 export type ReportType = "deutschland" | "bundesland" | "kreis" | "ortslage";
 
 export interface ReportMeta {
@@ -36,6 +38,12 @@ export type ReportsIndex = {
       orte: Array<{ slug: string; name: string }>;
     }>;
   }>;
+};
+
+export type ReportTextOverride = {
+  section_key: string;
+  optimized_content: string | null;
+  status?: string | null;
 };
 
 const SUPABASE_PUBLIC_BASE_URL = process.env.SUPABASE_PUBLIC_BASE_URL ?? "";
@@ -76,6 +84,28 @@ async function fetchJson<T>(url: string | null, warnLabel: string): Promise<T | 
   } catch (err) {
     console.error(`Fehler beim Laden von ${warnLabel}:`, err);
     return null;
+  }
+}
+
+export async function getApprovedReportTexts(
+  supabaseClient: { from: (table: string) => any },
+  areaId: string,
+): Promise<ReportTextOverride[]> {
+  try {
+    const { data, error } = await supabaseClient
+      .from("report_texts")
+      .select("section_key, optimized_content, status")
+      .eq("area_id", areaId)
+      .eq("status", "approved");
+
+    if (error) {
+      console.warn("report_texts fetch failed:", error.message);
+      return [];
+    }
+    return (data ?? []) as ReportTextOverride[];
+  } catch (err) {
+    console.warn("report_texts fetch error:", err);
+    return [];
   }
 }
 
@@ -369,7 +399,7 @@ export async function getFlaechennutzungGewerbeImageSrc(
       ...baseParts,
       `flaechennutzung_${kreisSlug}_${ortSlug}_industrie_gewerbe.webp`,
     );
-    const ortUrl = buildSupabaseUrl(ortRelPath);
+    const ortUrl = buildWebAssetUrl(ortRelPath);
     if (await assetExists(ortUrl)) {
       return { src: ortUrl, usesKreisFallback: false };
     }
@@ -379,7 +409,7 @@ export async function getFlaechennutzungGewerbeImageSrc(
     ...baseParts,
     `flaechennutzung_${kreisSlug}_industrie_gewerbe.webp`,
   );
-  const kreisUrl = buildSupabaseUrl(kreisRelPath);
+  const kreisUrl = buildWebAssetUrl(kreisRelPath);
   if (await assetExists(kreisUrl)) {
     return { src: kreisUrl, usesKreisFallback: Boolean(ortSlug) };
   }
@@ -407,7 +437,7 @@ export async function getFlaechennutzungWohnbauImageSrc(
       ...baseParts,
       `flaechennutzung_${kreisSlug}_${ortSlug}_wohnbau.webp`,
     );
-    const ortUrl = buildSupabaseUrl(ortRelPath);
+    const ortUrl = buildWebAssetUrl(ortRelPath);
     if (await assetExists(ortUrl)) {
       return { src: ortUrl, usesKreisFallback: false };
     }
@@ -417,7 +447,7 @@ export async function getFlaechennutzungWohnbauImageSrc(
     ...baseParts,
     `flaechennutzung_${kreisSlug}_wohnbau.webp`,
   );
-  const kreisUrl = buildSupabaseUrl(kreisRelPath);
+  const kreisUrl = buildWebAssetUrl(kreisRelPath);
   if (await assetExists(kreisUrl)) {
     return { src: kreisUrl, usesKreisFallback: Boolean(ortSlug) };
   }

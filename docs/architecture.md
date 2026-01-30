@@ -15,7 +15,7 @@ Die Daten- und Asset‑Quellen sind aufgeteilt in:
    - Report‑JSONs (Kreis/Ort etc.)
    - Interaktive SVG‑Karten
    - Legend‑HTML
-   - Landuse‑Images (optional, aktuell ebenfalls in Supabase)
+   - (Landuse‑Images sind auf dem Webserver)
 
 2. **Eigener Webserver** – statische, selten wechselnde Assets
    - `images/immobilienmarkt` (Hero‑Bilder, Berater, Makler, Teaser etc.)
@@ -70,14 +70,12 @@ immobilienmarkt/
 
 **Landuse (WebP)**
 ```
-immobilienmarkt/
-  visuals/
-    map_landuse/
-      deutschland/<bundesland>/<kreis>/flaechennutzung/
-        flaechennutzung_<kreis>_industrie_gewerbe.webp
-        flaechennutzung_<kreis>_<ort>_industrie_gewerbe.webp
-        flaechennutzung_<kreis>_wohnbau.webp
-        flaechennutzung_<kreis>_<ort>_wohnbau.webp
+fileadmin/visuals/map_landuse/
+  deutschland/<bundesland>/<kreis>/flaechennutzung/
+    flaechennutzung_<kreis>_industrie_gewerbe.webp
+    flaechennutzung_<kreis>_<ort>_industrie_gewerbe.webp
+    flaechennutzung_<kreis>_wohnbau.webp
+    flaechennutzung_<kreis>_<ort>_wohnbau.webp
 ```
 
 ### 2.2 Webserver (statische Assets)
@@ -202,6 +200,10 @@ Damit bleibt die Sitemap schnell, auch bei vielen Ortslagen.
 4. (Optional) Upload der statischen Assets auf Webserver
 5. (Optional später) Revalidate‑API call
 
+Separater Partner‑Sync (nur bei Änderungen an Partnern/Gebieten):
+- Script: `_NEONBLUE/_pwi/Import_Portale/Hilfsscripte/supabase/sync_partner_db.py`
+- Synct `partners`, `areas`, `partner_area_map` aus `partner.json` + Report‑JSON
+
 **Vorteile**
 - Keine Vercel‑Builds pro Update
 - Voller SEO‑Render
@@ -223,6 +225,7 @@ Optional:
 ```
 WEB_ASSET_BASE_URL=https://www.praxiswissen-immobilien.de/fileadmin/user_upload/immobilienmarkt
 WEB_POI_BASE_URL=https://www.praxiswissen-immobilien.de/fileadmin
+WEB_LANDUSE_BASE_URL=https://www.praxiswissen-immobilien.de/fileadmin/visuals/map_landuse
 
 POI‑Basis (separat):
 
@@ -247,6 +250,38 @@ In `next.config.ts`:
 
 ---
 
+## 8.1) Partner‑Daten (Supabase DB)
+
+- **data_value_settings** ersetzt `partner_area_modification_factors`.
+- `auth_user_id` entspricht **Supabase Auth UID** und ist der Join‑Schlüssel aus dem Dashboard.
+- `area_id` referenziert `areas.id` (Kreis oder Ortslage).
+
+---
+
+## 8.2) Partner‑Sync Flow (Stammdaten vs. Gebietszuordnung)
+
+Quelle der Wahrheit ist `partner.json`:
+
+```
+partner.json
+  ├─ Partner‑Stammdaten (Firma, Kontakt, E‑Mail)
+  └─ partner_gebiete[] (kreis_schluessel → Gebietszuordnung)
+
+Sync‑Flow:
+  partner.json
+    → Auth‑User anlegen/finden (Supabase Auth)
+    → partners (Stammdaten)
+    → partner_area_map (Zuweisung Partner ↔ Gebiet)
+    → data_value_settings (nur wenn Overrides gesetzt werden)
+```
+
+Kurzlogik:
+- `partners` = *wer der Partner ist*
+- `partner_area_map` = *wo der Partner aktiv ist*
+- `data_value_settings` = *welche Werte abweichen*
+
+---
+
 ## 9) Risiken & Tradeoffs
 
 - `HEAD`‑Checks für Landuse‑Images können je nach Storage‑Policy blockiert sein.
@@ -257,7 +292,52 @@ In `next.config.ts`:
 
 ---
 
-## 10) Quick Debug Checklist
+## 10) Text‑Merge (DB → JSON)
+
+Öffentliche Seiten verwenden **DB‑Overrides**, wenn vorhanden:
+- Quelle: `report_texts`
+- Filter: `status = 'approved'`
+- Priorität: `optimized_content` überschreibt JSON‑Text
+- Fallback: JSON‑Text aus Report
+
+Implementierung:
+- Merge in `features/immobilienmarkt/page/buildPageModel.ts`
+- DB‑Fetch in `lib/data.ts` (`getApprovedReportTexts`)
+
+### RLS‑Policy (Supabase)
+```sql
+alter table public.report_texts enable row level security;
+
+drop policy if exists "report_texts_select_approved" on public.report_texts;
+create policy "report_texts_select_approved"
+on public.report_texts
+for select
+using (status = 'approved');
+```
+
+### SQL‑Checkliste
+```sql
+-- Gibt es approved Texte für eine Area?
+select area_id, count(*)
+from public.report_texts
+where area_id = '14-7-13' and status = 'approved'
+group by area_id;
+
+-- Welche Keys sind überschrieben?
+select section_key, optimized_content
+from public.report_texts
+where area_id = '14-7-13' and status = 'approved'
+order by section_key;
+
+-- Policies prüfen
+select policyname, cmd
+from pg_policies
+where schemaname = 'public' and tablename = 'report_texts';
+```
+
+---
+
+## 11) Quick Debug Checklist
 
 - `SUPABASE_PUBLIC_BASE_URL` gesetzt?
 - `reports/index.json` öffentlich erreichbar?
@@ -267,7 +347,7 @@ In `next.config.ts`:
 
 ---
 
-## 11) Referenzdateien (Code)
+## 12) Referenzdateien (Code)
 
 - `lib/data.ts`
 - `utils/assets.ts`
@@ -275,4 +355,3 @@ In `next.config.ts`:
 - `features/immobilienmarkt/page/buildPageModel.ts`
 - `app/sitemap.ts`
 - `app/api/fetch-json/route.ts`
-

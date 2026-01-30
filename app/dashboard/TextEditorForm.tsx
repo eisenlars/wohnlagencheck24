@@ -128,32 +128,43 @@ export default function TextEditorForm({ config }: { config: any }) {
   const [dbTexts, setDbTexts] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
+  const parts = config?.area_id ? config.area_id.split('-') : [];
+  const isOrtslage = parts.length > 3;
 
   useEffect(() => {
   async function loadTexts() {
     if (!config?.area_id) return;
     setLoading(true);
     
-    // area_id Zerlegung: [bundesland_id, ..., kreis_id, ortslage_id]
-    const parts = config.area_id.split('-');
-    const isOrtslage = parts.length > 3;
+    const bundeslandSlug = String(config?.areas?.bundesland_slug || '');
+    const kreisSlug = isOrtslage ? String(config?.areas?.parent_slug || '') : String(config?.areas?.slug || '');
+    const ortSlug = isOrtslage ? String(config?.areas?.slug || '') : '';
 
     try {
-      const res = await fetch('/api/fetch-json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            bundesland: 'sachsen', // Aktuell statisch, oder aus config extrahieren
-            kreis: isOrtslage ? config.parent_name?.toLowerCase() : config.areas.name.toLowerCase(),
-            ortslage: isOrtslage ? config.areas.name.toLowerCase() : null
-        }),
-      });
-      
-      const jsonTexts = await res.json();
-      // Wir setzen das ganze Objekt, da dein API-Endpunkt direkt `jsonData.text` zurückgibt
-      setBaseTexts({ text: jsonTexts });
+      if (bundeslandSlug && kreisSlug) {
+        const res = await fetch('/api/fetch-json', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+              bundesland: bundeslandSlug,
+              kreis: kreisSlug,
+              ortslage: ortSlug || null
+          }),
+        });
+        
+        const jsonTexts = await res.json();
+        // Wir setzen das ganze Objekt, da dein API-Endpunkt direkt `jsonData.text` zurückgibt
+        setBaseTexts({ text: jsonTexts });
+      } else {
+        setBaseTexts({ text: {} });
+      }
 
-      const { data } = await supabase.from('report_texts').select('*').eq('area_id', config.area_id);
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data } = await supabase
+        .from('report_texts')
+        .select('*')
+        .eq('area_id', config.area_id)
+        .eq('partner_id', user?.id);
       setDbTexts(data || []);
     } catch (err) { 
       console.error("Fehler beim Laden der JSON:", err); 
@@ -163,6 +174,17 @@ export default function TextEditorForm({ config }: { config: any }) {
   }
   loadTexts();
 }, [config, supabase]);
+
+  const hiddenTabIds = new Set(['berater', 'makler', 'marktueberblick']);
+  const visibleTabs = isOrtslage
+    ? TAB_CONFIG.filter((tab) => !hiddenTabIds.has(tab.id))
+    : TAB_CONFIG;
+
+  useEffect(() => {
+    if (visibleTabs.length === 0) return;
+    const exists = visibleTabs.some((tab) => tab.id === activeTab);
+    if (!exists) setActiveTab(visibleTabs[0].id);
+  }, [activeTab, visibleTabs]);
 
   const saveText = async (key: string, content: string, type: string) => {
     setSaving(true);
@@ -175,13 +197,24 @@ export default function TextEditorForm({ config }: { config: any }) {
         text_type: type,
         optimized_content: content,
         last_updated: new Date().toISOString()
-      });
+      }, { onConflict: 'partner_id,area_id,section_key' });
       setDbTexts(prev => {
         const filtered = prev.filter(t => t.section_key !== key);
         return [...filtered, { section_key: key, optimized_content: content }];
       });
     }
     setSaving(false);
+  };
+
+  const resetToOriginal = async (key: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !config?.area_id) return;
+    await supabase
+      .from('report_texts')
+      .delete()
+      .eq('area_id', config.area_id)
+      .eq('section_key', key);
+    setDbTexts((prev) => prev.filter((t) => t.section_key !== key));
   };
 
   const handleAiRewrite = async (key: string, currentText: string, type: string, label: string) => {
@@ -192,7 +225,7 @@ export default function TextEditorForm({ config }: { config: any }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           text: currentText, 
-          areaName: config.areas.name,
+          areaName: config?.areas?.name || config.area_id,
           type: type,
           sectionLabel: label 
         }),
@@ -216,13 +249,13 @@ export default function TextEditorForm({ config }: { config: any }) {
 
   if (loading) return <div style={{ padding: '40px', color: '#64748b' }}>Sektionen werden geladen...</div>;
 
-  const activeTabConfig = TAB_CONFIG.find(t => t.id === activeTab);
+  const activeTabConfig = visibleTabs.find(t => t.id === activeTab);
 
   return (
     <div style={{ width: '100%' }}>
       {/* TABS */}
       <div style={tabContainerStyle}>
-        {TAB_CONFIG.map((tab) => (
+        {visibleTabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -246,6 +279,7 @@ export default function TextEditorForm({ config }: { config: any }) {
             dbEntry={dbTexts.find(t => t.section_key === section.key)}
             onSave={saveText}
             onAiRewrite={handleAiRewrite}
+            onReset={resetToOriginal}
             isRewriting={rewritingKey === section.key}
           />
         ))}
@@ -258,13 +292,17 @@ export default function TextEditorForm({ config }: { config: any }) {
 
 // --- SUB-KOMPONENTE FÜR EINZELNE TEXTFELDER ---
 
-function TextEditorField({ label, sectionKey, type, rawText, dbEntry, onSave, onAiRewrite, isRewriting }: any) {
-    const [localValue, setLocalValue] = useState(dbEntry?.optimized_content || '');
+function TextEditorField({ label, sectionKey, type, rawText, dbEntry, onSave, onAiRewrite, onReset, isRewriting }: any) {
+    const [localValue, setLocalValue] = useState(dbEntry?.optimized_content ?? rawText ?? '');
     
     // Update local state when DB entry changes (e.g. after AI rewrite)
     useEffect(() => {
-        if (dbEntry?.optimized_content) setLocalValue(dbEntry.optimized_content);
-    }, [dbEntry]);
+        if (dbEntry?.optimized_content !== undefined && dbEntry?.optimized_content !== null) {
+            setLocalValue(dbEntry.optimized_content);
+        } else {
+            setLocalValue(rawText ?? '');
+        }
+    }, [dbEntry, rawText]);
 
     const currentText = localValue || rawText;
     const isIndividual = type === 'individual';
@@ -276,7 +314,16 @@ function TextEditorField({ label, sectionKey, type, rawText, dbEntry, onSave, on
                     <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>{label}</h4>
                     <span style={typeTagStyle(type)}>{type.replace('_', ' ')}</span>
                 </div>
-                {dbEntry && <span style={savedBadgeStyle}>✓ Individuell angepasst</span>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {dbEntry && <span style={savedBadgeStyle}>✓ Individuell angepasst</span>}
+                    <button
+                        type="button"
+                        onClick={() => onReset(sectionKey)}
+                        style={resetButtonStyle(Boolean(dbEntry))}
+                    >
+                        Original nutzen
+                    </button>
+                </div>
             </div>
             
             <div style={editorGridStyle}>
@@ -325,4 +372,13 @@ const aiButtonStyle = { alignSelf: 'flex-start', padding: '10px 18px', backgroun
 const aiButtonLoadingStyle = { ...aiButtonStyle, opacity: 0.6, cursor: 'not-allowed', backgroundColor: '#f1f5f9' };
 const typeTagStyle = (type: string) => ({ fontSize: '9px', padding: '2px 7px', borderRadius: '4px', backgroundColor: type === 'individual' ? '#fef3c7' : (type === 'data_driven' ? '#dcfce7' : '#f1f5f9'), color: type === 'individual' ? '#92400e' : (type === 'data_driven' ? '#166534' : '#64748b'), fontWeight: '700', textTransform: 'uppercase' as const });
 const savedBadgeStyle = { color: '#10b981', fontSize: '11px', fontWeight: '700' };
+const resetButtonStyle = (hasOverride: boolean) => ({
+  backgroundColor: hasOverride ? '#f1f5f9' : '#ecfdf3',
+  color: hasOverride ? '#475569' : '#15803d',
+  border: hasOverride ? '1px solid #e2e8f0' : '1px solid #bbf7d0',
+  padding: '4px 8px',
+  borderRadius: '6px',
+  fontSize: '10px',
+  cursor: 'pointer',
+});
 const saveIndicatorStyle: React.CSSProperties = { position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#0f172a', color: '#fff', padding: '12px 24px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)', zIndex: 100, fontSize: '13px' };

@@ -20,10 +20,12 @@ import {
   getFlaechennutzungGewerbeImageSrc,
   getFlaechennutzungWohnbauImageSrc,
   getLegendHtml,
+  getApprovedReportTexts,
 } from "@/lib/data";
 import { buildWebAssetUrl } from "@/utils/assets";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { getRegionDisplayName } from "@/utils/regionName";
+import { createClient } from "@/utils/supabase/server";
 
 export type PageModel = {
   route: RouteModel;
@@ -145,6 +147,47 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
     };
   }
 
+  // DB-Overrides: approved report_texts überschreiben JSON-Texte (if present)
+  const meta = asRecord(asArray(report.meta)[0] ?? report.meta) ?? {};
+  const areaId =
+    (asString(meta["ortslage_schluessel"]) ??
+      asString(meta["kreis_schluessel"]) ??
+      "") || "";
+  if (areaId) {
+    const supabase = createClient();
+    const overrides = await getApprovedReportTexts(supabase, areaId);
+    if (overrides.length > 0) {
+      const mergedText = { ...(asRecord(report["text"]) ?? {}) };
+      const topGroups = Object.keys(mergedText);
+      for (const entry of overrides) {
+        if (!entry.section_key || !entry.optimized_content) continue;
+        let applied = false;
+        for (const groupKey of topGroups) {
+          const group = asRecord(mergedText[groupKey]);
+          if (group && Object.prototype.hasOwnProperty.call(group, entry.section_key)) {
+            mergedText[groupKey] = {
+              ...group,
+              [entry.section_key]: entry.optimized_content,
+            };
+            applied = true;
+            break;
+          }
+        }
+        if (!applied) {
+          mergedText[entry.section_key] = entry.optimized_content;
+        }
+      }
+      report = {
+        ...report,
+        text: mergedText,
+        data: {
+          ...(asRecord(report.data) ?? {}),
+          text: mergedText,
+        },
+      };
+    }
+  }
+
   // Ortsebene: fehlende Berater-/Maklerdaten aus Kreisreport ergänzen
   if (route.level === "ort") {
     const kreisReport =
@@ -177,7 +220,6 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
   }
 
   console.log("REPORT META (raw)", report.meta);
-  const meta = asRecord(asArray(report.meta)[0] ?? report.meta) ?? {};
   const regionaleZuordnung = asString(meta["regionale_zuordnung"]) ?? "";
   console.log("REPORT META PICK", {
     zuordnung: meta["regionale_zuordnung"],
