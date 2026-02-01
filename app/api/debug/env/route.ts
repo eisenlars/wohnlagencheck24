@@ -15,5 +15,7 @@ export async function GET() {
     },
     SUPABASE_PUBLIC_BASE_URL: Boolean(process.env.SUPABASE_PUBLIC_BASE_URL),
     TEST_ENV: process.env.TEST_ENV ?? null,
+    VERCEL_ENV: process.env.VERCEL_ENV ?? null,
+    VERCEL_GIT_COMMIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
   });
 }
