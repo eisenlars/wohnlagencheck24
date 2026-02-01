@@ -14,5 +14,6 @@ export async function GET() {
       length: serviceKey.length,
     },
     SUPABASE_PUBLIC_BASE_URL: Boolean(process.env.SUPABASE_PUBLIC_BASE_URL),
+    TEST_ENV: process.env.TEST_ENV ?? null,
   });
 }
