@@ -457,5 +457,5 @@ export async function getOfferOverrides(
     console.warn("partner_property_overrides fetch failed:", error.message);
     return null;
   }
-  return (data as OfferOverrides) ?? null;
+  return (data as unknown as OfferOverrides) ?? null;
 }
