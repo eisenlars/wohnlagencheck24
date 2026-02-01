@@ -127,7 +127,7 @@ export default function OffersManager() {
   const normalizedSelectedSource = (selectedOffer?.source ?? '').trim();
   const effectiveSource = normalizedSelectedSource.length > 0 ? normalizedSelectedSource : 'manual';
   const effectiveExternalId =
-    normalizedSelectedExternalId.length > 0 ? normalizedSelectedExternalId : selectedOffer?.id ?? null;
+    normalizedSelectedExternalId.length > 0 ? normalizedSelectedExternalId : selectedOffer?.id ?? '';
 
   const selectedOverride = selectedOffer && effectiveExternalId
     ? overrides.find(
