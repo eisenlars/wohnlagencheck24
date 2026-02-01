@@ -277,7 +277,7 @@ export async function GET(req: Request) {
   });
 
   const zip = buildZip(entries);
-  return new NextResponse(zip, {
+  return new NextResponse(new Uint8Array(zip), {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": "attachment; filename=\"local-site-package.zip\"",
