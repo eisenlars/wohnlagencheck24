@@ -201,7 +201,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
   }
 
   const offers = (data ?? []).map((row) => {
-    const record = row as Record<string, unknown>;
+    const record = row as unknown as Record<string, unknown>;
     return {
       id: String(record["id"] ?? ""),
       partnerId: String(record["partner_id"] ?? ""),
@@ -254,7 +254,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
       console.warn("partner_property_overrides fetch failed:", overridesError.message);
     } else {
       (overridesData ?? []).forEach((row) => {
-        const record = row as Record<string, unknown>;
+        const record = row as unknown as Record<string, unknown>;
         const key = `${String(record["partner_id"] ?? "")}::${String(record["source"] ?? "")}::${String(
           record["external_id"] ?? "",
         )}`;
@@ -296,7 +296,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
       console.warn("partner_property_offers top fetch failed:", topError.message);
     } else {
       const topMapped = (topData ?? []).map((row) => {
-        const record = row as Record<string, unknown>;
+        const record = row as unknown as Record<string, unknown>;
         return {
           id: String(record["id"] ?? ""),
           partnerId: String(record["partner_id"] ?? ""),
@@ -398,7 +398,7 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
   }
   if (!data) return null;
 
-  const record = data as Record<string, unknown>;
+  const record = data as unknown as Record<string, unknown>;
   return {
     id: String(record["id"] ?? ""),
     partnerId: String(record["partner_id"] ?? ""),
