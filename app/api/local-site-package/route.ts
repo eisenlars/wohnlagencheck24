@@ -192,12 +192,7 @@ export async function GET(req: Request) {
     .eq("parent_slug", kreis);
 
   const entries: ZipEntry[] = [];
-  const manifest: Record<string, any> = {
-    generated_at: new Date().toISOString(),
-    partner_id: integration.partner_id,
-    kreis: { slug: kreis, area_id: kreisAreaId },
-    ortslagen: [],
-  };
+  const generatedAt = new Date().toISOString();
 
   const kreisReportJson = await fetchReportJson(["reports", "deutschland", bundesland, `${kreis}.json`]);
   if (kreisReportJson) {
@@ -223,11 +218,11 @@ export async function GET(req: Request) {
       local_site: {
         partner_id: integration.partner_id,
         area_id: kreisAreaId,
-        generated_at: manifest.generated_at,
+        generated_at: generatedAt,
       },
     };
     entries.push({
-      name: "kreis.json",
+      name: `${kreis}.json`,
       data: Buffer.from(JSON.stringify(kreisPayload)),
     });
   }
@@ -260,21 +255,15 @@ export async function GET(req: Request) {
       local_site: {
         partner_id: integration.partner_id,
         area_id: ort.id,
-        generated_at: manifest.generated_at,
+        generated_at: generatedAt,
       },
     };
 
     entries.push({
-      name: `orte/${ortSlug}.json`,
+      name: `ortslagen/${ortSlug}.json`,
       data: Buffer.from(JSON.stringify(payload)),
     });
-    manifest.ortslagen.push({ slug: ortSlug, area_id: ort.id });
   }
-
-  entries.push({
-    name: "manifest.json",
-    data: Buffer.from(JSON.stringify(manifest)),
-  });
 
   const zip = buildZip(entries);
   return new NextResponse(new Uint8Array(zip), {
