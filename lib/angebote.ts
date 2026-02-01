@@ -197,7 +197,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
 
   if (error) {
     console.warn("partner_property_offers fetch failed:", error.message);
-    return { offers: [], topOffers: [], areaId, total: 0, page, pageSize };
+    return { offers: [], topOffers: [], areaId, total: 0, totalWithTop: 0, page, pageSize };
   }
 
   const offers = (data ?? []).map((row) => {
