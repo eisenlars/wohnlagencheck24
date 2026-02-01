@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
 
+export const runtime = "nodejs";
+
 const SUPABASE_PUBLIC_BASE_URL = process.env.SUPABASE_PUBLIC_BASE_URL ?? "";
 const SUPABASE_BUCKET = "immobilienmarkt";
 
