@@ -259,7 +259,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
           record["external_id"] ?? "",
         )}`;
         if (key.includes("::")) {
-          overridesMap.set(key, row as OfferOverrides);
+          overridesMap.set(key, row as unknown as OfferOverrides);
         }
       });
     }
