@@ -59,6 +59,7 @@ export function MietpreiseSection(
   const heroImageSrc = props.assets?.heroImageSrc ?? vm.hero.imageSrc ?? "";
 
   const basePath = props.basePath ?? vm.basePath;
+  const angebotHref = kreisSlug ? `${basePath}/mietangebote` : undefined;
   const kontaktHref =
     bundeslandSlug && kreisSlug
       ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
@@ -88,7 +89,7 @@ export function MietpreiseSection(
           title={vm.regionName}
           subtitle="regionaler Standortberater"
           imageSrc={heroImageSrc}
-          rightOverlay={<HeroOverlayActions variant="immo" />}
+          rightOverlay={<HeroOverlayActions variant="miete" hrefLeft={angebotHref} />}
           rightOverlayMode="buttons"
 
         />
@@ -164,6 +165,11 @@ export function MietpreiseSection(
           </div>
         </div>
 
+      </section>
+
+
+      {/* Nebenkosten Warmmiete */}
+      <section className="mb-5" id="nebenkosten-warmmiete">
         <div className="d-flex justify-content-center align-items-end gap-4 mb-4 mt-3">
           <KpiValue
             icon="/icons/ws24_marktbericht_mietpreise.svg"
@@ -176,6 +182,8 @@ export function MietpreiseSection(
           />
         </div>
       </section>
+
+
 
       {/* Überregionaler Vergleich */}
       <section className="mb-5" id="mietpreise-ueberregional">
@@ -216,7 +224,7 @@ export function MietpreiseSection(
 
 
       {/* Wohnungen */}
-      <section className="mb-4" id="wohnungspreise">
+      <section className="mb-5" id="wohnungspreise">
         <header className="mb-5 w-75 mx-auto text-center">
           {vm.headlineWohnungIndividuell ? (
             <>
@@ -363,7 +371,7 @@ export function MietpreiseSection(
       </section>
 
       {/* Haus */}
-      <section className="mb-4" id="hauspreise">
+      <section className="mb-5" id="hauspreise">
         <header className="mb-5 w-75 mx-auto text-center">
           {vm.headlineHausIndividuell ? (
             <>

@@ -14,6 +14,10 @@ import { KontaktOffcanvas } from "@/components/kontakt/KontaktOffcanvas";
 export const metadata: Metadata = {
   title: "Wohnlagencheck24 – Wohnlagen & Standortanalysen",
   description: "Wohnlagencheck24 bietet strukturierte Informationen zu Wohnlagen, Standorten und Märkten in Deutschland.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

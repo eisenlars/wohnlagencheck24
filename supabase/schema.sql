@@ -4,24 +4,12 @@
 CREATE TABLE public.areas (
   id text NOT NULL,
   name text NOT NULL,
+  type text,
+  parent_id text,
   slug text,
   parent_slug text,
   bundesland_slug text,
-  type text,
-  parent_id text,
   CONSTRAINT areas_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.market_data (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  area_id text,
-  reference_date date NOT NULL,
-  avg_price_sqm_house double precision,
-  avg_price_sqm_apartment double precision,
-  purchase_yield double precision,
-  vacancy_rate double precision,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT market_data_pkey PRIMARY KEY (id),
-  CONSTRAINT market_data_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
 );
 CREATE TABLE public.data_value_settings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -44,6 +32,18 @@ CREATE TABLE public.data_value_settings (
   CONSTRAINT data_value_settings_pkey PRIMARY KEY (id),
   CONSTRAINT data_value_settings_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES public.partners(id),
   CONSTRAINT data_value_settings_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
+CREATE TABLE public.market_data (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  area_id text,
+  reference_date date NOT NULL,
+  avg_price_sqm_house double precision,
+  avg_price_sqm_apartment double precision,
+  purchase_yield double precision,
+  vacancy_rate double precision,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT market_data_pkey PRIMARY KEY (id),
+  CONSTRAINT market_data_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
 );
 CREATE TABLE public.partner_area_map (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -78,3 +78,131 @@ CREATE TABLE public.report_texts (
   CONSTRAINT report_texts_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
   CONSTRAINT report_texts_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
 );
+
+-- ------------------------------
+-- Lokale Website Texte (partner_local_site_texts)
+-- ------------------------------
+CREATE TABLE public.partner_local_site_texts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  area_id text NOT NULL,
+  section_key text NOT NULL,
+  text_type text,
+  raw_content text,
+  optimized_content text,
+  status text DEFAULT 'draft'::text,
+  last_updated timestamp with time zone DEFAULT now(),
+  CONSTRAINT partner_local_site_texts_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_local_site_texts_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_local_site_texts_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
+
+CREATE UNIQUE INDEX partner_local_site_texts_unique
+  ON public.partner_local_site_texts (partner_id, area_id, section_key);
+
+ALTER TABLE public.partner_local_site_texts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY partner_local_site_texts_deny_select
+  ON public.partner_local_site_texts FOR SELECT USING (false);
+CREATE POLICY partner_local_site_texts_deny_insert
+  ON public.partner_local_site_texts FOR INSERT WITH CHECK (false);
+CREATE POLICY partner_local_site_texts_deny_update
+  ON public.partner_local_site_texts FOR UPDATE USING (false);
+CREATE POLICY partner_local_site_texts_deny_delete
+  ON public.partner_local_site_texts FOR DELETE USING (false);
+
+-- ------------------------------
+-- CRM Integrations (partner_integrations)
+-- ------------------------------
+CREATE TABLE public.partner_integrations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  kind text NOT NULL,
+  provider text NOT NULL,
+  base_url text,
+  auth_type text,
+  auth_config jsonb,
+  detail_url_template text,
+  is_active boolean DEFAULT true,
+  settings jsonb,
+  last_sync_at timestamp with time zone,
+  CONSTRAINT partner_integrations_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_integrations_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
+
+-- Unique per partner + kind (crm / llm / other)
+CREATE UNIQUE INDEX partner_integrations_kind_unique
+  ON public.partner_integrations (partner_id, kind);
+
+-- RLS (deny all for anon/auth; service-role bypasses)
+ALTER TABLE public.partner_integrations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY partner_integrations_deny_select
+  ON public.partner_integrations FOR SELECT USING (false);
+CREATE POLICY partner_integrations_deny_insert
+  ON public.partner_integrations FOR INSERT WITH CHECK (false);
+CREATE POLICY partner_integrations_deny_update
+  ON public.partner_integrations FOR UPDATE USING (false);
+CREATE POLICY partner_integrations_deny_delete
+  ON public.partner_integrations FOR DELETE USING (false);
+
+-- ------------------------------
+-- partner_property_offers extensions
+-- ------------------------------
+ALTER TABLE public.partner_property_offers
+  ADD COLUMN source text,
+  ADD COLUMN external_id text;
+
+CREATE UNIQUE INDEX partner_property_offers_ext_idx
+  ON public.partner_property_offers (partner_id, source, external_id);
+
+CREATE INDEX partner_property_offers_area_offer_idx
+  ON public.partner_property_offers (area_id, offer_type, updated_at);
+
+ALTER TABLE public.partner_property_offers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY offers_public_read
+  ON public.partner_property_offers FOR SELECT USING (true);
+CREATE POLICY offers_deny_insert
+  ON public.partner_property_offers FOR INSERT WITH CHECK (false);
+CREATE POLICY offers_deny_update
+  ON public.partner_property_offers FOR UPDATE USING (false);
+CREATE POLICY offers_deny_delete
+  ON public.partner_property_offers FOR DELETE USING (false);
+
+-- ------------------------------
+-- partner_property_overrides (SEO/Content Overrides)
+-- ------------------------------
+CREATE TABLE public.partner_property_overrides (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  source text NOT NULL,
+  external_id text NOT NULL,
+  is_active_override boolean,
+  is_top_override boolean,
+  seo_title text,
+  seo_description text,
+  seo_h1 text,
+  short_description text,
+  long_description text,
+  location_text text,
+  features_text text,
+  highlights jsonb,
+  image_alt_texts jsonb,
+  status text DEFAULT 'draft'::text,
+  last_updated timestamp with time zone DEFAULT now(),
+  CONSTRAINT partner_property_overrides_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_property_overrides_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
+
+CREATE UNIQUE INDEX partner_property_overrides_unique
+  ON public.partner_property_overrides (partner_id, source, external_id);
+
+ALTER TABLE public.partner_property_overrides ENABLE ROW LEVEL SECURITY;
+CREATE POLICY overrides_public_read
+  ON public.partner_property_overrides FOR SELECT USING (true);
+CREATE POLICY overrides_partner_write
+  ON public.partner_property_overrides FOR INSERT WITH CHECK (auth.uid() = partner_id);
+CREATE POLICY overrides_partner_update
+  ON public.partner_property_overrides FOR UPDATE USING (auth.uid() = partner_id);
+CREATE POLICY overrides_partner_delete
+  ON public.partner_property_overrides FOR DELETE USING (auth.uid() = partner_id);
+
+

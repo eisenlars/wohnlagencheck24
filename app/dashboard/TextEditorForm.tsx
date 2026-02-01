@@ -120,12 +120,30 @@ const TAB_CONFIG = [
   ]}
 ];
 
-export default function TextEditorForm({ config }: { config: any }) {
+type TextEntry = {
+    section_key: string;
+    optimized_content?: string | null;
+    status?: string | null;
+    text_type?: string | null;
+    last_updated?: string | null;
+};
+
+type TextEditorFormProps = {
+    config: any;
+    tableName?: 'report_texts' | 'partner_local_site_texts';
+    enableApproval?: boolean;
+};
+
+export default function TextEditorForm({
+    config,
+    tableName = 'report_texts',
+    enableApproval = false,
+}: TextEditorFormProps) {
   const supabase = useMemo(() => createClient(), []);
   const [activeTab, setActiveTab] = useState('marktueberblick');
   const [loading, setLoading] = useState(true);
   const [baseTexts, setBaseTexts] = useState<any>(null);
-  const [dbTexts, setDbTexts] = useState<any[]>([]);
+    const [dbTexts, setDbTexts] = useState<TextEntry[]>([]);
   const [saving, setSaving] = useState(false);
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const parts = config?.area_id ? config.area_id.split('-') : [];
@@ -161,7 +179,7 @@ export default function TextEditorForm({ config }: { config: any }) {
 
       const { data: { user } } = await supabase.auth.getUser();
       const { data } = await supabase
-        .from('report_texts')
+        .from(tableName)
         .select('*')
         .eq('area_id', config.area_id)
         .eq('partner_id', user?.id);
@@ -173,10 +191,14 @@ export default function TextEditorForm({ config }: { config: any }) {
     }
   }
   loadTexts();
-}, [config, supabase]);
+}, [config, supabase, tableName]);
 
   const hiddenTabIds = new Set(['berater', 'makler', 'marktueberblick']);
-  const visibleTabs = isOrtslage
+  if (tableName === 'partner_local_site_texts' && !isOrtslage) {
+    hiddenTabIds.delete('marktueberblick');
+  }
+  const shouldHideTabs = isOrtslage || tableName === 'partner_local_site_texts';
+  const visibleTabs = shouldHideTabs
     ? TAB_CONFIG.filter((tab) => !hiddenTabIds.has(tab.id))
     : TAB_CONFIG;
 
@@ -190,17 +212,20 @@ export default function TextEditorForm({ config }: { config: any }) {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from('report_texts').upsert({
+      const status = enableApproval ? 'draft' : 'approved';
+      await supabase.from(tableName).upsert({
         partner_id: user.id,
         area_id: config.area_id,
         section_key: key,
         text_type: type,
+        raw_content: getRawTextFromJSON(key),
         optimized_content: content,
+        status,
         last_updated: new Date().toISOString()
       }, { onConflict: 'partner_id,area_id,section_key' });
       setDbTexts(prev => {
         const filtered = prev.filter(t => t.section_key !== key);
-        return [...filtered, { section_key: key, optimized_content: content }];
+        return [...filtered, { section_key: key, optimized_content: content, status, text_type: type }];
       });
     }
     setSaving(false);
@@ -210,14 +235,48 @@ export default function TextEditorForm({ config }: { config: any }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || !config?.area_id) return;
     await supabase
-      .from('report_texts')
+      .from(tableName)
       .delete()
       .eq('area_id', config.area_id)
       .eq('section_key', key);
     setDbTexts((prev) => prev.filter((t) => t.section_key !== key));
   };
 
-  const handleAiRewrite = async (key: string, currentText: string, type: string, label: string) => {
+  const approveAllTexts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const entriesToApprove = dbTexts
+      .filter((entry) => Boolean(entry.optimized_content))
+      .map((entry) => ({
+        partner_id: user.id,
+        area_id: config.area_id,
+        section_key: entry.section_key,
+        text_type: entry.text_type ?? null,
+        raw_content: getRawTextFromJSON(entry.section_key),
+        optimized_content: entry.optimized_content ?? '',
+        status: 'approved',
+        last_updated: new Date().toISOString(),
+      }));
+    if (entriesToApprove.length === 0) return;
+    await supabase
+      .from(tableName)
+      .upsert(entriesToApprove, { onConflict: 'partner_id,area_id,section_key' });
+    setDbTexts((prev) =>
+      prev.map((entry) =>
+        entry.optimized_content
+          ? { ...entry, status: 'approved' }
+          : entry,
+      ),
+    );
+  };
+
+  const handleAiRewrite = async (
+    key: string,
+    currentText: string,
+    type: string,
+    label: string,
+    customPrompt?: string,
+  ) => {
     setRewritingKey(key);
     try {
       const res = await fetch('/api/ai-rewrite', {
@@ -227,7 +286,8 @@ export default function TextEditorForm({ config }: { config: any }) {
           text: currentText, 
           areaName: config?.areas?.name || config.area_id,
           type: type,
-          sectionLabel: label 
+          sectionLabel: label,
+          customPrompt: customPrompt || undefined,
         }),
       });
       const data = await res.json();
@@ -277,13 +337,26 @@ export default function TextEditorForm({ config }: { config: any }) {
             type={section.type}
             rawText={getRawTextFromJSON(section.key)}
             dbEntry={dbTexts.find(t => t.section_key === section.key)}
+            areaName={config?.areas?.name || config.area_id}
             onSave={saveText}
             onAiRewrite={handleAiRewrite}
             onReset={resetToOriginal}
+            enableApproval={enableApproval}
             isRewriting={rewritingKey === section.key}
           />
         ))}
       </div>
+
+      {enableApproval ? (
+        <div style={approvalFooterStyle}>
+          <button type="button" onClick={approveAllTexts} style={approveAllButtonStyle}>
+            Texte freigeben
+          </button>
+          <span style={approvalHintStyle}>
+            Freigabe setzt alle geänderten Textblöcke dieser Region auf „approved“.
+          </span>
+        </div>
+      ) : null}
 
       {saving && <div style={saveIndicatorStyle}>Speichere Änderungen...</div>}
     </div>
@@ -292,8 +365,42 @@ export default function TextEditorForm({ config }: { config: any }) {
 
 // --- SUB-KOMPONENTE FÜR EINZELNE TEXTFELDER ---
 
-function TextEditorField({ label, sectionKey, type, rawText, dbEntry, onSave, onAiRewrite, onReset, isRewriting }: any) {
+function getStandardPromptText(label: string, type: string, areaName: string) {
+    const lowerLabel = String(label || '').toLowerCase();
+    if (lowerLabel.includes('überschrift') || lowerLabel.includes('headline')) {
+        return `Formuliere eine prägnante Überschrift (40–60 Zeichen), ohne neue Fakten.`;
+    }
+    if (lowerLabel.includes('titel')) {
+        return `Formuliere einen prägnanten Titel (max. 60 Zeichen) für ${areaName}. Keine erfundenen Fakten.`;
+    }
+    if (lowerLabel.includes('description')) {
+        return `Schreibe eine SEO-Description (140–160 Zeichen) für ${areaName}. Fakten beibehalten.`;
+    }
+    if (type === 'data_driven') {
+        return `Formuliere den Text flüssiger. Alle Zahlen und Fakten müssen exakt gleich bleiben.`;
+    }
+    if (type === 'individual') {
+        return `Formuliere den Text professionell und leicht individuell. Keine neuen Fakten hinzufügen.`;
+    }
+    return `Optimiere den Text für bessere Lesbarkeit und SEO. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
+}
+
+function TextEditorField({
+    label,
+    sectionKey,
+    type,
+    rawText,
+    dbEntry,
+    areaName,
+    onSave,
+    onAiRewrite,
+    onReset,
+    enableApproval,
+    isRewriting,
+}: any) {
     const [localValue, setLocalValue] = useState(dbEntry?.optimized_content ?? rawText ?? '');
+    const [showPrompt, setShowPrompt] = useState(false);
+    const [customPrompt, setCustomPrompt] = useState('');
     
     // Update local state when DB entry changes (e.g. after AI rewrite)
     useEffect(() => {
@@ -306,6 +413,10 @@ function TextEditorField({ label, sectionKey, type, rawText, dbEntry, onSave, on
 
     const currentText = localValue || rawText;
     const isIndividual = type === 'individual';
+    const standardPrompt = getStandardPromptText(label, type, areaName);
+    const status = dbEntry?.status ?? null;
+    const showStatus = enableApproval && Boolean(dbEntry?.status);
+    const hasOverride = Boolean(dbEntry?.optimized_content);
 
     return (
         <div style={fieldCardStyle}>
@@ -313,13 +424,18 @@ function TextEditorField({ label, sectionKey, type, rawText, dbEntry, onSave, on
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>{label}</h4>
                     <span style={typeTagStyle(type)}>{type.replace('_', ' ')}</span>
+                    {showStatus ? (
+                        <span style={statusBadgeStyle(status === 'approved')}>
+                            {status === 'approved' ? 'Freigegeben' : 'Entwurf'}
+                        </span>
+                    ) : null}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    {dbEntry && <span style={savedBadgeStyle}>✓ Individuell angepasst</span>}
+                    {hasOverride && <span style={savedBadgeStyle}>✓ Individuell angepasst</span>}
                     <button
                         type="button"
                         onClick={() => onReset(sectionKey)}
-                        style={resetButtonStyle(Boolean(dbEntry))}
+                        style={resetButtonStyle(hasOverride)}
                     >
                         Original nutzen
                     </button>
@@ -336,13 +452,37 @@ function TextEditorField({ label, sectionKey, type, rawText, dbEntry, onSave, on
                         placeholder="Inhalt bearbeiten..."
                     />
                     {!isIndividual && (
-                        <button 
-                            style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle} 
-                            onClick={() => onAiRewrite(sectionKey, currentText, type, label)}
-                            disabled={isRewriting}
-                        >
-                            {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
-                        </button>
+                        <>
+                            <button 
+                                style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle} 
+                                onClick={() => onAiRewrite(sectionKey, currentText, type, label, customPrompt)}
+                                disabled={isRewriting}
+                            >
+                                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowPrompt((prev) => !prev)}
+                                style={promptToggleStyle}
+                            >
+                                {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+                            </button>
+                            {showPrompt ? (
+                                <div style={promptPanelStyle}>
+                                    <div style={promptLabelStyle}>Standard-Prompt</div>
+                                    <div style={promptContentStyle}>{standardPrompt}</div>
+                                    <label style={promptInputLabelStyle}>
+                                        Eigener Prompt (optional)
+                                        <textarea
+                                            value={customPrompt}
+                                            onChange={(e) => setCustomPrompt(e.target.value)}
+                                            style={promptInputStyle}
+                                            placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
+                                        />
+                                    </label>
+                                </div>
+                            ) : null}
+                        </>
                     )}
                 </div>
                 
@@ -370,8 +510,23 @@ const previewHeaderStyle = { padding: '10px 15px', fontSize: '9px', fontWeight: 
 const previewContentStyle = { padding: '15px', fontSize: '12.5px', color: '#64748b', lineHeight: '1.5', fontStyle: 'italic' };
 const aiButtonStyle = { alignSelf: 'flex-start', padding: '10px 18px', backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #dbeafe', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' };
 const aiButtonLoadingStyle = { ...aiButtonStyle, opacity: 0.6, cursor: 'not-allowed', backgroundColor: '#f1f5f9' };
+const promptToggleStyle = { alignSelf: 'flex-start', background: 'transparent', border: 'none', color: '#2563eb', fontSize: '12px', fontWeight: '600', cursor: 'pointer', padding: 0 };
+const promptPanelStyle = { border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px', backgroundColor: '#f8fafc' };
+const promptLabelStyle = { fontSize: '10px', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: '#94a3b8', fontWeight: '700', marginBottom: '6px' };
+const promptContentStyle = { fontSize: '12px', color: '#475569', marginBottom: '10px', lineHeight: 1.5 };
+const promptInputLabelStyle = { display: 'flex', flexDirection: 'column' as const, gap: '6px', fontSize: '11px', fontWeight: '600', color: '#1e293b' };
+const promptInputStyle = { width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', lineHeight: '1.4', fontFamily: 'inherit' };
 const typeTagStyle = (type: string) => ({ fontSize: '9px', padding: '2px 7px', borderRadius: '4px', backgroundColor: type === 'individual' ? '#fef3c7' : (type === 'data_driven' ? '#dcfce7' : '#f1f5f9'), color: type === 'individual' ? '#92400e' : (type === 'data_driven' ? '#166534' : '#64748b'), fontWeight: '700', textTransform: 'uppercase' as const });
 const savedBadgeStyle = { color: '#10b981', fontSize: '11px', fontWeight: '700' };
+const statusBadgeStyle = (approved: boolean) => ({
+  fontSize: '10px',
+  padding: '2px 6px',
+  borderRadius: '6px',
+  backgroundColor: approved ? '#dcfce7' : '#fef3c7',
+  color: approved ? '#166534' : '#92400e',
+  fontWeight: '700',
+  textTransform: 'uppercase' as const,
+});
 const resetButtonStyle = (hasOverride: boolean) => ({
   backgroundColor: hasOverride ? '#f1f5f9' : '#ecfdf3',
   color: hasOverride ? '#475569' : '#15803d',
@@ -381,4 +536,23 @@ const resetButtonStyle = (hasOverride: boolean) => ({
   fontSize: '10px',
   cursor: 'pointer',
 });
+const approvalFooterStyle: React.CSSProperties = {
+  marginTop: '24px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+};
+const approveAllButtonStyle: React.CSSProperties = {
+  padding: '10px 14px',
+  borderRadius: '10px',
+  border: 'none',
+  backgroundColor: '#0f172a',
+  color: '#fff',
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+const approvalHintStyle: React.CSSProperties = {
+  fontSize: '12px',
+  color: '#64748b',
+};
 const saveIndicatorStyle: React.CSSProperties = { position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#0f172a', color: '#fff', padding: '12px 24px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)', zIndex: 100, fontSize: '13px' };
