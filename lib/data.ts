@@ -73,9 +73,7 @@ function buildSupabaseUrl(...parts: string[]): string | null {
 async function fetchJson<T>(url: string | null, warnLabel: string): Promise<T | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url, {
-      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags: ["reports"] },
-    });
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) {
       console.warn(`${warnLabel} nicht gefunden:`, url, res.status);
       return null;
@@ -109,12 +107,32 @@ export async function getApprovedReportTexts(
   }
 }
 
+export async function getApprovedMarketingTexts(
+  supabaseClient: { from: (table: string) => any },
+  areaId: string,
+): Promise<ReportTextOverride[]> {
+  try {
+    const { data, error } = await supabaseClient
+      .from("partner_marketing_texts")
+      .select("section_key, optimized_content, status")
+      .eq("area_id", areaId)
+      .eq("status", "approved");
+
+    if (error) {
+      console.warn("partner_marketing_texts fetch failed:", error.message);
+      return [];
+    }
+    return (data ?? []) as ReportTextOverride[];
+  } catch (err) {
+    console.warn("partner_marketing_texts fetch error:", err);
+    return [];
+  }
+}
+
 async function fetchText(url: string | null, warnLabel: string): Promise<string | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url, {
-      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags: ["reports"] },
-    });
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) {
       console.warn(`${warnLabel} nicht gefunden:`, url, res.status);
       return null;

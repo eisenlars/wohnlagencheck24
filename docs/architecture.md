@@ -1,6 +1,6 @@
 # Architektur – Immobilienmarkt & Standortprofile
 
-Stand: 2026-01-28
+Stand: 2026-02-06
 
 Diese Dokumentation beschreibt die aktuelle Zielarchitektur für das Portal *Immobilienmarkt & Standortprofile*.
 Ziel ist ein skalierbarer, SEO‑fähiger Aufbau ohne Vercel‑Bundle‑Limit‑Probleme durch große Assets/JSONs.
@@ -44,6 +44,12 @@ immobilienmarkt/
     deutschland/<bundesland>/<kreis>.json
     deutschland/<bundesland>/<kreis>/<ort>.json
 ```
+
+**Zusatzfelder in Report‑JSON (Phase‑1 Textgen)**
+- `data.textgen_inputs.kreis|ortslage` → Inputs für die Next.js‑Textgenerierung
+- `helpers.applied_factors` → angewendeter Faktorstand (Rebuild)
+- `helpers.textgen_last_aktualisierung` → zuletzt verarbeiteter Stand
+- `helpers.textgen_signatures` → Signaturen je `scope` für Textgen
 
 **Interaktive Karten (SVG)**
 ```
@@ -120,7 +126,9 @@ https://www.praxiswissen-immobilien.de/fileadmin
   - `getLegendHtml(theme)` → Legend‑HTML
   - `getFlaechennutzung*` → Landuse‑Images (prüft Ort/Kreis via `HEAD`)
 
-Alle Loader sind **async** und nutzen `fetch()` mit `revalidate` + `tags: ["reports"]`.
+Alle Loader sind **async**.
+Aktuell (Stabilisierungsphase Preisfaktoren) laden Report-JSON/Text in `lib/data.ts` mit
+`cache: "no-store"`, damit DB/Storage/Frontend sofort konsistent bleiben.
 
 ### 3.2 Index/Manifest
 
@@ -196,9 +204,46 @@ Damit bleibt die Sitemap schnell, auch bei vielen Ortslagen.
 **Workflow (Python)**
 1. Python berechnet Reports + Texte
 2. Erzeugt `reports/index.json`
-3. Upload nach Supabase Storage
-4. (Optional) Upload der statischen Assets auf Webserver
-5. (Optional später) Revalidate‑API call
+3. Schreibt zusätzlich `data.textgen_inputs.{kreis|ortslage}` in die JSONs
+4. Upload nach Supabase Storage
+5. (Optional) Upload der statischen Assets auf Webserver
+6. (Optional später) Revalidate‑API call
+
+### 6.1 Partner-Faktorisierung (Next.js-Rebuild)
+
+Separater Online-Flow (ohne Python-Lauf) für Partneränderungen:
+1. Partner setzt Faktoren im Dashboard (`data_value_settings`)
+2. `POST /api/rebuild-region` lädt Ziel-Report aus Storage
+3. Faktoren werden als **Delta** angewendet (`target/previous`), `previous` kommt aus `helpers.applied_factors` (fallback Request `previous_factors`)
+4. `data.*`, `data.textgen_inputs.*` und Preis-Texte werden aktualisiert
+5. Report wird in Storage upserted (`cacheControl: "0"`)
+6. `helpers.applied_factors` wird auf Zielstand gesetzt
+7. `helpers.textgen_signatures` werden aktualisiert; bei Änderungen werden `report_texts` für die betroffenen `section_key`s gelöscht
+
+API-Optionen:
+- `mode = "textgen_only"` berechnet nur Texte neu (keine Faktor-Anwendung).
+- `debug = true` liefert Debug-Payload (Vorher/Nachher + Pfade/Links).
+
+Faktorisierung (aktuell):
+- Markttrend-Indizes werden additiv angepasst und auf `[-100, 100]` geclamped.
+- Zeitreihen werden jahrbezogen skaliert, Basis ist `year01` (`f01..f06`).
+
+### 6.2 Data-Driven Text Lifecycle (global)
+
+Gilt für alle datengenerierten Texte:
+- Quelle: strukturierte Inputs aus Report-JSON (`data.textgen_inputs.*` bzw. fachliche Input-Blöcke)
+- Ausgabe: `text.*` im Report
+- Optionaler DB-Override: `report_texts` / `partner_marketing_texts` (Status `approved`)
+
+Regelmodell:
+1. **Auto-Modus**: Rebuild darf Text neu generieren.
+2. **Manual-Modus**: Override bleibt führend; Rebuild ändert nur Zahlenbereiche außerhalb des Overrides.
+3. UI zeigt bei manueller Bearbeitung einen Kontext-Hinweis (Kontext kann vom Datenstand abweichen).
+
+SEO/GEO-Qualität:
+- Ziel ist hohe Textdiversität bei stabiler Fachlogik:
+  - deterministische Variation pro Region/Abschnitt/Aktualisierung
+  - keine zufälligen Sprünge bei identischer Datenlage
 
 Separater Partner‑Sync (nur bei Änderungen an Partnern/Gebieten):
 - Script: `_NEONBLUE/_pwi/Import_Portale/Hilfsscripte/supabase/sync_partner_db.py`
@@ -616,6 +661,7 @@ Kurzlogik:
 - `partners` = *wer der Partner ist*
 - `partner_area_map` = *wo der Partner aktiv ist*
 - `data_value_settings` = *welche Werte abweichen*
+  - Legacy‑Spalten entfernt (2026‑02‑05): `price_factor_houses`, `price_factor_apartments`, `custom_intro_text`, `custom_market_report`
 
 ---
 

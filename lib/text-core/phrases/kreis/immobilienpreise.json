@@ -1,0 +1,3653 @@
+{
+  "immobilienpreise_haus_allgemein": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_haus_jahr01_kreis }} {{ verbkonstrukt_staticText_quadratmeterpreis_min_haus_jahr01_kreis_quadratmeterpreis_max_haus_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_haus_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_haus_vergleich_kreis_land }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_haus_2jahrestrend_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_haus_vergleich_kreis_bundesland": {
+            "gleich": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} er {{ phrase }}"
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} er {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} er {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} er {{ phrase }}"
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} er {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} er {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_haus_vergleich_kreis_bundesland": {
+            "gleich": [
+              {
+                "phrase": "auf Bundesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "weit über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem mittlerem Preis von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "weit unter dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_haus_vergleich_kreis_land": {
+            "gleich": [
+              "und {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "und {{ phrase }}."
+            ],
+            "groesser": [
+              "und {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "und {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "und {{ phrase }}."
+            ],
+            "kleiner": [
+              "und {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "und {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_haus_vergleich_kreis_land": {
+            "gleich": [
+              {
+                "phrase": "ungefähr auf Bundesniveau",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "deutlich über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_haus_2jahrestrend_kreis": {
+            "gleich": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }} "
+            ],
+            "groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_haus_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_haus_2jahrestrend_kreis }} % leicht gestiegen. ",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_haus_2jahrestrend_kreis }} % gestiegen. ",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "deutlich um {{ quadratmeterpreis_avg_haus_2jahrestrend_kreis }} % gestiegen. ",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_haus_2jahrestrend_kreis }} % leicht gesunken. ",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_haus_2jahrestrend_kreis }} % gesunken. ",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich um {{ quadratmeterpreis_avg_haus_2jahrestrend_kreis }} % zurückgegangen. ",
+                "auxiliar": "sind die Preise"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_haus_jahr01_kreis": [
+            "Laut aktuellen Auswertungen {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ quadratmeterpreis_avg_haus_jahr01_kreis }} €/m². "
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_haus_jahr01_kreis": [
+            {
+              "phrase": "der durchschnittliche Hauspreis",
+              "auxiliar": "liegt"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterpreis_min_haus_jahr01_kreis_quadratmeterpreis_max_haus_jahr01_kreis": [
+            "Er {{ auxiliar }} {{ phrase }} {{ quadratmeterpreis_min_haus_jahr01_kreis }} €/m² und {{ quadratmeterpreis_max_haus_jahr01_kreis }} €/m². "
+          ],
+          "phrases_staticText_quadratmeterpreis_min_haus_jahr01_kreis_quadratmeterpreis_max_haus_jahr01_kreis": [
+            {
+              "phrase": "dabei zwischen",
+              "auxiliar": "bewegt sich"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "immobilienpreise_haus_lage": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [],
+          "ohne_verbkonstrukt": [
+            "Die Lage eines Hauses hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch {{ in_oder_im }} {{ region_name }} variieren die Preise je nach Lage erheblich. {{ text_wohnlagen_liste }}",
+            "Die Preise für Häuser variieren in verschiedenen Lage erheblich. {{ text_wohnlagen_liste }}"
+          ]
+        },
+        "scoring_dynamic_subblocks_preisangaben": {
+          "text_wohnlagen_liste": {
+            "label_by_score": {
+              "01": "einfachen",
+              "02": "mittleren",
+              "03": "guten",
+              "04": "sehr guten",
+              "05": "Top-"
+            },
+            "sequences_fixed": [
+              {
+                "steps": [
+                  {
+                    "score": "01",
+                    "template": "In {{ label }} Wohnlagen liegen sie aktuell bei {{ preis_avg }}."
+                  },
+                  {
+                    "score": "03",
+                    "template": "In {{ label }} Lagen bewegt sich die Spanne von {{ preis_min }} bis {{ preis_max }}."
+                  },
+                  {
+                    "score": "05",
+                    "template": "In {{ label }} Lagen werden im Mittel {{ preis_avg }} erzielt."
+                  }
+                ]
+              },
+              {
+                "steps": [
+                  {
+                    "score": "01",
+                    "template": "Für {{ label }} Wohnlagen liegt der Durchschnitt bei {{ preis_avg }}."
+                  },
+                  {
+                    "score": "03",
+                    "template": "Die Bandbreite in {{ label }} Lagen reicht von {{ preis_min }} bis {{ preis_max }}."
+                  },
+                  {
+                    "score": "04",
+                    "template": "Die höchsten Preise in {{ label }}-Lagen können mit Preisen bis {{ preis_max }} dann meist nur noch von Besserverdienern gestemmt werden."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "scoring_dynamic_subblocks_lagekombination": {
+          "text_lageverteilung": {
+            "labels_by_score": {
+              "01": {
+                "label_pl": "einfache"
+              },
+              "02": {
+                "label_pl": "mittlere"
+              },
+              "03": {
+                "label_pl": "gute"
+              },
+              "04": {
+                "label_pl": "sehr gute"
+              },
+              "05": {
+                "label_pl": "top"
+              }
+            },
+            "order": [
+              "01",
+              "02",
+              "03",
+              "04",
+              "05"
+            ],
+            "templates": {
+              "single": [
+                "In {{ region_name }} prägen vor allem {{ single }} Wohnlagen das Bild."
+              ],
+              "pair": [
+                "In {{ region_name }} dominieren {{ pair }} Wohnlagen."
+              ],
+              "list_3": [
+                "{{ region_name }} weist vor allem {{ list }} Wohnlagen auf."
+              ],
+              "list_4": [
+                "Vorherrschend sind in {{ list }} Wohnlagen."
+              ],
+              "list_5": [
+                "{{ region_name }} bietet die komplette Bandbreite aus {{ list }} Wohnlagen."
+              ],
+              "range": [
+                "in {{ region_name }} gibt es {{ first }} bis {{ last }} Wohnlagequalitäten."
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "immobilienpreise_haus_haustypen": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "Beim Hauskauf unterscheiden sich Einfamilienhäuser, Reihenhäuser und Doppelhaushälften in Bauweise, Privatsphäre und Preis. Meist steigt der Preis mit größerer Freistehigkeit und mehr Platz, das muss aber icht nicht sein.",
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_haus_efh_kreis }}",
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_haus_rmh_kreis }}",
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_haus_dhh_kreis }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_haus_efh_kreis": [
+            "Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. {{ phrase }} {{ auxiliar }} in {{ region_name }} ungefähr bei {{ quadratmeterpreis_avg_haus_efh_kreis }} €/m².",
+            "Ein Einfamilienhaus (EFH) ist freistehend und bietet maximale Privatsphäre, ist aber meist auch die teuerste Option in vergleichbaren Lagen. {{ phrase }} {{ auxiliar }} hier in etwa zwischen {{ quadratmeterpreis_min_haus_efh_kreis }} €/m² und {{ quadratmeterpreis_max_haus_efh_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_haus_rmh_kreis": [
+            {
+              "phrase": "Die Angebotspreise",
+              "auxiliar": "liegen"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_haus_rmh_kreis": [
+            "Reihenhäuser sind aneinandergebaut, teilen sich Wände mit Nachbarn und sind kostengünstiger, jedoch mit weniger Privatsphäre und kleineren Gärten. Diese Bauart {{ auxiliar }} {{ phrase }} {{ quadratmeterpreis_avg_haus_rmh_kreis }} €/m²,"
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_haus_efh_kreis": [
+            {
+              "phrase": "einen mittleren Preis von",
+              "auxiliar": "hat"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_haus_dhh_kreis": [
+            "Die Doppelhaushälfte (DHH) liegt dazwischen: Sie teilt eine Wand mit einem Nachbarhaus, bietet mehr Platz und Privatsphäre als ein Reihenhaus, ist aber meist günstiger als ein EFH. Hier müssen Käufer {{ phrase }} {{ auxiliar }} ."
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_haus_dhh_kreis": [
+            {
+              "phrase": "mit Preisen zwischen {{ quadratmeterpreis_min_haus_dhh_kreis }} €/m² und {{ quadratmeterpreis_max_haus_dhh_kreis }} €/m²",
+              "auxiliar": "rechnen"
+            },
+            {
+              "phrase": "mit Preisen von cirka {{ quadratmeterpreis_avg_haus_dhh_kreis }} €/m² und {{ quadratmeterpreis_max_wohnung_jahr05_kreis }} €/m²",
+              "auxiliar": "rechnen"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "immobilienpreise_haus_preisentwicklung": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_haus_jahr05_kreis }} {{ verbkonstrukt_staticText_quadratmeterpreis_avg_haus_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_haus_5jahrestrend_kreis }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_haus_5jahrestrend_kreis": {
+            "gleich": [
+              "und ist damit über diesen Zeitraum {{ phrase }} {{ auxiliar }}."
+            ],
+            "leicht_groesser": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "groesser": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "viel_groesser": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "leicht_kleiner": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "kleiner": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "viel_kleiner": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_haus_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu konstant",
+                "auxiliar": "geblieben"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_haus_5jahrestrend_kreis }} %",
+                "auxiliar": "leicht gestiegen"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_haus_5jahrestrend_kreis }} %",
+                "auxiliar": "gestiegen"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_haus_5jahrestrend_kreis }} %",
+                "auxiliar": "deutlich gestiegen"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_haus_5jahrestrend_kreis }} %",
+                "auxiliar": "leicht gesunken"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_haus_5jahrestrend_kreis }} %",
+                "auxiliar": "gesunken"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_haus_5jahrestrend_kreis }} %",
+                "auxiliar": "kräftig zurückgegangen"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_haus_jahr05_kreis": [
+            "Vor 5 Jahren ({{ jahr01 }}) {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ quadratmeterpreis_avg_haus_jahr05_kreis }} €/m². "
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_haus_jahr05_kreis": [
+            {
+              "phrase": "der mittlere Angebotspreis für Häuser",
+              "auxiliar": "lag"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_haus_jahr01_kreis": [
+            "Aktuell {{ auxiliar }} {{ phrase }} {{ quadratmeterpreis_avg_haus_jahr01_kreis }} €/m² "
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_haus_jahr01_kreis": [
+            {
+              "phrase": "er",
+              "auxiliar": "beträgt"
+            },
+            {
+              "phrase": "der Preis bei",
+              "auxiliar": "liegt"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "immobilienpreise_wohnung_allgemein": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_jahr01_kreis }} {{ verbkonstrukt_staticText_quadratmeterpreis_min_wohnung_jahr01_kreis_quadratmeterpreis_max_wohnung_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_vergleich_kreis_land }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_2jahrestrend_kreis }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_vergleich_kreis_bundesland": {
+            "gleich": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_wohnung_vergleich_kreis_bundesland": {
+            "gleich": [
+              {
+                "phrase": "auf Bundesniveau",
+                "auxiliar": "liegen"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "weit über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht über dem mittlerem Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "weit über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_vergleich_kreis_land": {
+            "gleich": [
+              "und {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "und {{ phrase }}."
+            ],
+            "groesser": [
+              "und {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "und {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "und {{ phrase }}."
+            ],
+            "kleiner": [
+              "und {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "und {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_wohnung_vergleich_kreis_land": {
+            "gleich": [
+              {
+                "phrase": "ungefähr auf Bundesniveau",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "etwas über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "deutlich  über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "etwas unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_2jahrestrend_kreis": {
+            "gleich": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }} "
+            ],
+            "groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_wohnung_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_2jahrestrend_kreis }} % moderat gestiegen",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_2jahrestrend_kreis }} % merklich gestiegen",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_2jahrestrend_kreis }} % minimal gesunken",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_2jahrestrend_kreis }} % gesunken",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_2jahrestrend_kreis }} % spürbar zurückgegangen",
+                "auxiliar": "sind die Preise"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_jahr01_kreis": [
+            "{{ phrase }} {{ in_oder_im }} {{ region_name }} {{ auxiliar }} {{ quadratmeterpreis_avg_wohnung_jahr01_kreis }} €/m².",
+            "{{ phrase }} {{ auxiliar }} {{ quadratmeterpreis_avg_wohnung_jahr01_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_wohnung_jahr01_kreis": [
+            {
+              "phrase": "Die aktuellen Angebotspreise für Wohnungen",
+              "auxiliar": "liegen bei"
+            },
+            {
+              "phrase": "Der durchschnittliche Quadratmeterpreis für Wohnungen",
+              "auxiliar": "beträgt"
+            },
+            {
+              "phrase": "Die mittleren Angebotspreise für Wohnungen",
+              "auxiliar": "belaufen sich auf"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterpreis_min_wohnung_jahr01_kreis_quadratmeterpreis_max_wohnung_jahr01_kreis": [
+            "Sie {{ auxiliar }} {{ phrase }} von {{ quadratmeterpreis_avg_wohnung_jahr01_kreis }} €/m² bis {{ quadratmeterpreis_max_wohnung_jahr01_kreis }} €/m².",
+            "Diese {{ auxiliar }} {{ phrase }} von {{ quadratmeterpreis_avg_wohnung_jahr01_kreis }} €/m² bis {{ quadratmeterpreis_max_wohnung_jahr01_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterpreis_min_wohnung_jahr01_kreis_quadratmeterpreis_max_wohnung_jahr01_kreis": [
+            {
+              "phrase": "dabei innerhalb einer Spanne",
+              "auxiliar": "bewegen sich"
+            },
+            {
+              "phrase": "typischerweise zwischen",
+              "auxiliar": "variieren"
+            },
+            {
+              "phrase": "üblicherweise in einer Spanne",
+              "auxiliar": "befinden sich"
+            },
+            {
+              "phrase": "zwischen den Werten",
+              "auxiliar": "pendeln"
+            },
+            {
+              "phrase": "in einer Preisspanne",
+              "auxiliar": "bewegen sich"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "immobilienpreise_wohnung_lage": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [],
+          "ohne_verbkonstrukt": [
+            "Die Lage einer Wohnung hat einen entscheidenden Einfluss auf den Verkaufspreis. Auch {{ in_oder_im }} {{ region_name }} variieren die Preise je nach Lage erheblich. {{ text_wohnlagen_liste }}",
+            "Die Preise für Häuser variieren in verschiedenen Lage erheblich. {{ text_wohnlagen_liste }}"
+          ]
+        },
+        "scoring_dynamic_subblocks_preisangaben": {
+          "text_wohnlagen_liste": {
+            "label_by_score": {
+              "01": "einfachen",
+              "02": "mittleren",
+              "03": "guten",
+              "04": "sehr guten",
+              "05": "Top-"
+            },
+            "sequences_fixed": [
+              {
+                "steps": [
+                  {
+                    "score": "01",
+                    "template": "In {{ label }} Wohnlagen liegen sie aktuell bei {{ preis_avg }}."
+                  },
+                  {
+                    "score": "03",
+                    "template": "In {{ label }} Lagen bewegt sich die Spanne von {{ preis_min }} bis {{ preis_max }}."
+                  },
+                  {
+                    "score": "05",
+                    "template": "In {{ label }} Lagen werden im Mittel {{ preis_avg }} erzielt."
+                  }
+                ]
+              },
+              {
+                "steps": [
+                  {
+                    "score": "01",
+                    "template": "Für {{ label }} Wohnlagen liegt der Durchschnitt bei {{ preis_avg }}."
+                  },
+                  {
+                    "score": "03",
+                    "template": "Die Bandbreite in {{ label }} Lagen reicht von {{ preis_min }} bis {{ preis_max }}."
+                  },
+                  {
+                    "score": "04",
+                    "template": "Die höchsten Preise in {{ label }}-Lagen können mit Preisen bis {{ preis_max }} dann meist nur noch von Besserverdienern gestemmt werden."
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        " \n            \n            ### Ortslagen\n            \n            \"scoring_dynamic_subblocks_preisangaben\": {\n              \"wohnlagen_liste\": {\n                \"label_by_score\": {\n                  \"01\": \"einfachen\", \"02\": \"mittleren\", \"03\": \"guten\", \"04\": \"sehr guten\", \"05\": \"Top-\"\n                },\n                \"templates_by_case\": {\n                  \"single\": [\n                    {\n                      \"slots\": { \"a\": \"any\" },\n                      \"distinct_slots\": true,\n                      \"templates\": [\n                        \"In {{ label_a }} Wohnlagen liegen sie aktuell bei {{ preis_avg_a }}.\",\n                        \"Für {{ label_a }} Wohnlagen beträgt der Mittelwert {{ preis_avg_a }}.\"\n                      ]\n                    }\n                  ],\n                  \"pair\": [\n                    {\n                      \"slots\": { \"a\": \"any\", \"b\": \"any\" },\n                      \"distinct_slots\": true,\n                      \"templates\": [\n                        \"In {{ label_a }} Wohnlagen liegen sie aktuell bei {{ preis_avg_a }} und in {{ label_b }} Wohnlagen bei {{ preis_avg_b }}.\",\n                        \"Die Spanne reicht in {{ label_a }} Lagen von {{ preis_min_a }} bis {{ preis_max_a }}, während in {{ label_b }} Lagen im Mittel {{ preis_avg_b }} erzielt wird.\"\n                      ]\n                    }\n                  ],\n                  \"list\": [\n                    {\n                      \"slots\": { \"a\": \"any\", \"b\": \"any\", \"c\": \"any\" },\n                      \"distinct_slots\": true,\n                      \"templates\": [\n                        \"Beispielsweise {{ label_a }} ({{ preis_avg_a }}), {{ label_b }} ({{ preis_avg_b }}) und {{ label_c }} ({{ preis_avg_c }}).\"\n                      ]\n                    }\n                  ]\n                }\n              }\n            }\n            \n            scoring_dynamic_subblocks_lagekombination": {
+          "text_lageverteilung": {
+            "labels_by_score": {
+              "01": {
+                "label_pl": "einfache"
+              },
+              "02": {
+                "label_pl": "mittlere"
+              },
+              "03": {
+                "label_pl": "gute"
+              },
+              "04": {
+                "label_pl": "sehr gute"
+              },
+              "05": {
+                "label_pl": "top"
+              }
+            },
+            "order": [
+              "01",
+              "02",
+              "03",
+              "04",
+              "05"
+            ],
+            "templates": {
+              "single": [
+                "In {{ region_name }} prägen vor allem {{ single }} Wohnlagen das Bild."
+              ],
+              "pair": [
+                "In {{ region_name }} dominieren {{ pair }} Wohnlagen."
+              ],
+              "list_3": [
+                "{{ region_name }} weist vor allem {{ list }} Wohnlagen auf."
+              ],
+              "list_4": [
+                "Vorherrschend sind in {{ list }} Wohnlagen."
+              ],
+              "list_5": [
+                "{{ region_name }} bietet die komplette Bandbreite aus {{ list }} Wohnlagen."
+              ],
+              "range": [
+                "in {{ region_name }} gibt es {{ first }} bis {{ last }} Wohnlagequalitäten."
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "immobilienpreise_wohnung_nach_flaechen_und_zimmern": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_unter_40qm_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} {{ verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_80_100_qm_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis": {
+            "gleich": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % leicht angestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % stark gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % leicht gesunken",
+                "auxiliar": "sind"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % gesunken",
+                "auxiliar": "sind"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % deutlich gefallen",
+                "auxiliar": "sind"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis": {
+            "gleich": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "konstant geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_unter_40qm_jahr01_kreis": [
+            "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte {{ auxiliar }} in {{ region_name }} {{ phrase }}."
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_wohnung_unter_40qm_jahr01_kreis": [
+            {
+              "phrase": "derzeit durchschnittlich {{ quadratmeterpreis_avg_wohnung_unter_40qm_jahr01_kreis }} €/m²",
+              "auxiliar": "liegt"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_80_100_qm_jahr01_kreis": [
+            "Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, {{ auxiliar }} {{ phrase }}.Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_wohnung_80_100_qm_jahr01_kreis": [
+            {
+              "phrase": "im Schnitt bei {{ quadratmeterpreis_avg_wohnung_80_100_qm_jahr01_kreis }} €/m²",
+              "auxiliar": "liegen"
+            }
+          ]
+        }
+      },
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_1zimmer_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_1zimmer_2jahrestrend_kreis }} {{ verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_4zimmer_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_4zimmer_2jahrestrend_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_1zimmer_2jahrestrend_kreis": {
+            "gleich": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_wohnung_1zimmer_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % leicht angestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % stark gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % leicht gesunken",
+                "auxiliar": "sind"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % gesunken",
+                "auxiliar": "sind"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % deutlich gefallen",
+                "auxiliar": "sind"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_4zimmer_2jahrestrend_kreis": {
+            "gleich": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_wohnung_4zimmer_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "konstant geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_1zimmer_jahr01_kreis": [
+            "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung in {{ region_name }} {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_wohnung_1zimmer_jahr01_kreis": [
+            {
+              "phrase": "diese derzeit durchschnittlich {{ quadratmeterpreis_avg_wohnung_1zimmer_jahr01_kreis }} €/m² bezahlen",
+              "auxiliar": "müssen"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_4zimmer_jahr01_kreis": [
+            "Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_wohnung_4zimmer_jahr01_kreis": [
+            {
+              "phrase": "im Schnitt einen Mietpreis von {{ quadratmeterpreis_avg_wohnung_4zimmer_jahr01_kreis }} €/m²",
+              "auxiliar": "haben"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "immobilienpreise_wohnung_preisentwicklung": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_jahr05_kreis }} {{ verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_5jahrestrend_kreis }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_wohnung_5jahrestrend_kreis": {
+            "gleich": [
+              "und ist damit über diesen Zeitraum {{ phrase }} {{ auxiliar }}."
+            ],
+            "leicht_groesser": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "groesser": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "viel_groesser": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "leicht_kleiner": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "kleiner": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "viel_kleiner": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_wohnung_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu konstant",
+                "auxiliar": "geblieben"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_5jahrestrend_kreis }} %",
+                "auxiliar": "leicht gestiegen"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_5jahrestrend_kreis }} %",
+                "auxiliar": "gestiegen"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_5jahrestrend_kreis }} %",
+                "auxiliar": "deutlich gestiegen"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_5jahrestrend_kreis }} %",
+                "auxiliar": "leicht gesunken"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_5jahrestrend_kreis }} %",
+                "auxiliar": "gesunken"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_wohnung_5jahrestrend_kreis }} %",
+                "auxiliar": "kräftig zurückgegangen"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_jahr05_kreis": [
+            "Vor 5 Jahren ({{ jahr01 }}) {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ quadratmeterpreis_avg_wohnung_jahr05_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_wohnung_jahr05_kreis": [
+            {
+              "phrase": "der mittlere Angebotspreis für Häuser",
+              "auxiliar": "lag"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_wohnung_jahr01_kreis": [
+            "Heute {{ auxiliar }} {{ phrase }} {{ quadratmeterpreis_avg_wohnung_jahr01_kreis }} €/m²,"
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_wohnung_jahr01_kreis": [
+            {
+              "phrase": "er",
+              "auxiliar": "beträgt"
+            },
+            {
+              "phrase": "der Preis bei",
+              "auxiliar": "liegt"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "grundstueckspreise_allgemein": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_grundstueck_jahr01_kreis }}{{ verbkonstrukt_staticText_quadratmeterpreis_min_grundstueck_jahr01_kreis_quadratmeterpreis_max_grundstueck_jahr01_kreis }}{{ verbkonstrukt_trendText_quadratmeterpreis_avg_grundstueck_vergleich_kreis_bundesland }}{{ verbkonstrukt_trendText_quadratmeterpreis_avg_grundstueck_vergleich_kreis_land }}{{ verbkonstrukt_trendText_quadratmeterpreis_avg_grundstueck_2jahrestrend_kreis }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_grundstueck_vergleich_kreis_bundesland": {
+            "gleich": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_grundstueck_vergleich_kreis_bundesland": {
+            "gleich": [
+              {
+                "phrase": "auf Bundesniveau",
+                "auxiliar": "liegen"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem mittleren Preis von {{ bundesland_name }} ",
+                "auxiliar": "liegen"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem mittleren Preis von {{ bundesland_name }} ",
+                "auxiliar": "liegen"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "weit über dem mittleren Preis von {{ bundesland_name }} ",
+                "auxiliar": "liegen"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht über dem mittlerem Preis von {{ bundesland_name }} ",
+                "auxiliar": "liegen"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "über dem mittleren Preis von {{ bundesland_name }} ",
+                "auxiliar": "liegen"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "weit über dem mittleren Preis von {{ bundesland_name }} ",
+                "auxiliar": "liegen"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_grundstueck_vergleich_kreis_land": {
+            "gleich": [
+              "und {{ phrase }}. "
+            ],
+            "leicht_groesser": [
+              "und {{ phrase }}. "
+            ],
+            "groesser": [
+              "und {{ phrase }} ."
+            ],
+            "viel_groesser": [
+              "und {{ phrase }}. "
+            ],
+            "leicht_kleiner": [
+              "und {{ phrase }}. "
+            ],
+            "kleiner": [
+              "und {{ phrase }}. "
+            ],
+            "viel_kleiner": [
+              "und {{ phrase }}. "
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_grundstueck_vergleich_kreis_land": {
+            "gleich": [
+              {
+                "phrase": "ungefähr auf Bundesniveau",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "etwas über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "deutlich  über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "etwas unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_grundstueck_2jahrestrend_kreis": {
+            "gleich": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }} "
+            ],
+            "groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_grundstueck_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_grundstueck_2jahrestrend_kreis }} % moderat gestiegen. ",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_grundstueck_2jahrestrend_kreis }} % gestiegen. ",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_grundstueck_2jahrestrend_kreis }} % merklich gestiegen. ",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterpreis_avg_grundstueck_2jahrestrend_kreis }} % minimal gesunken. ",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_grundstueck_2jahrestrend_kreis }} % gesunken.",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_grundstueck_2jahrestrend_kreis }} % spürbar zurückgegangen. ",
+                "auxiliar": "sind die Preise"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_grundstueck_jahr01_kreis": [
+            "{{ phrase }} {{ in_oder_im }} {{ region_name }} {{ auxiliar }} {{ quadratmeterpreis_avg_grundstueck_jahr01_kreis }} €/m². ",
+            "{{ phrase }} {{ auxiliar }} {{ quadratmeterpreis_avg_grundstueck_jahr01_kreis }} €/m². "
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_grundstueck_jahr01_kreis": [
+            {
+              "phrase": "Die aktuellen Angebotspreise für Baugrundstücke",
+              "auxiliar": "liegen bei"
+            },
+            {
+              "phrase": "Der durchschnittliche Quadratmeterpreis für Grundstücke",
+              "auxiliar": "beträgt"
+            },
+            {
+              "phrase": "Die mittleren Angebotspreise für Grundstücke",
+              "auxiliar": "belaufen sich auf"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterpreis_min_grundstueck_jahr01_kreis_quadratmeterpreis_max_grundstueck_jahr01_kreis": [
+            "Sie {{ auxiliar }} {{ phrase }} von {{ quadratmeterpreis_min_grundstueck_jahr01_kreis }} €/m² bis {{ quadratmeterpreis_max_grundstueck_jahr01_kreis }} €/m². ",
+            "Diese {{ auxiliar }} {{ phrase }} von {{ quadratmeterpreis_min_grundstueck_jahr01_kreis }} €/m² bis {{ quadratmeterpreis_max_grundstueck_jahr01_kreis }} €/m². "
+          ],
+          "phrases_staticText_quadratmeterpreis_min_grundstueck_jahr01_kreis_quadratmeterpreis_max_grundstueck_jahr01_kreis": [
+            {
+              "phrase": "dabei innerhalb einer Spanne",
+              "auxiliar": "bewegen sich"
+            },
+            {
+              "phrase": "typischerweise",
+              "auxiliar": "variieren"
+            },
+            {
+              "phrase": "üblicherweise in einer Spanne",
+              "auxiliar": "befinden sich"
+            },
+            {
+              "phrase": "zwischen den Werten",
+              "auxiliar": "pendeln"
+            },
+            {
+              "phrase": "in einer Preisspanne",
+              "auxiliar": "bewegen sich"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "grundstueckspreise_preisentwicklung": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterpreis_avg_grundstueck_jahr05_kreis }}{{ verbkonstrukt_staticText_quadratmeterpreis_avg_grundstueck_jahr01_kreis }}{{ verbkonstrukt_trendText_quadratmeterpreis_avg_grundstueck_5jahrestrend_kreis }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterpreis_avg_grundstueck_5jahrestrend_kreis": {
+            "gleich": [
+              "und ist damit über diesen Zeitraum {{ phrase }} {{ auxiliar }}."
+            ],
+            "leicht_groesser": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "groesser": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "viel_groesser": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "leicht_kleiner": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "kleiner": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ],
+            "viel_kleiner": [
+              "und ist damit {{ phrase }} {{ auxiliar }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterpreis_avg_grundstueck_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu konstant",
+                "auxiliar": "geblieben"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_grundstueck_5jahrestrend_kreis }} %",
+                "auxiliar": "leicht gestiegen"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_grundstueck_5jahrestrend_kreis }} %",
+                "auxiliar": "gestiegen"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_grundstueck_5jahrestrend_kreis }} %",
+                "auxiliar": "deutlich gestiegen"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_grundstueck_5jahrestrend_kreis }} %",
+                "auxiliar": "leicht gesunken"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_grundstueck_5jahrestrend_kreis }} %",
+                "auxiliar": "gesunken"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterpreis_avg_grundstueck_5jahrestrend_kreis }} %",
+                "auxiliar": "kräftig zurückgegangen"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_grundstueck_jahr05_kreis": [
+            "Vor 5 Jahren ({{ jahr01 }}) {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ quadratmeterpreis_avg_grundstueck_jahr05_kreis }} €/m². "
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_grundstueck_jahr05_kreis": [
+            {
+              "phrase": "der mittlere Angebotspreis für Baugrundstücke",
+              "auxiliar": "lag"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterpreis_avg_grundstueck_jahr01_kreis": [
+            "Heute {{ auxiliar }} {{ phrase }} {{ quadratmeterpreis_avg_grundstueck_jahr01_kreis }} €/m² "
+          ],
+          "phrases_staticText_quadratmeterpreis_avg_grundstueck_jahr01_kreis": [
+            {
+              "phrase": "er",
+              "auxiliar": "beträgt"
+            },
+            {
+              "phrase": "der Preis bei",
+              "auxiliar": "liegt"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietpreise_allgemein": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_trendText_mietmarktspannung_index }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_jahr01_kreis }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_min_jahr01_kreis_quadratmeterkaltmiete_max_jahr01_kreis }} {{ verbkonstrukt_staticText_quadratmeternebenkosten_avg_jahr01_kreis }} {{ verbkonstrukt_staticText_quadratmeterwarmmiete_avg_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_jahr01_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_jahr01_vergleich_kreis_land }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_2jahrestrend_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_mietmarktspannung_index": {
+            "groesser": [
+              "{{ auxiliar }} {{ phrase }} in {{ region_name }} hin."
+            ],
+            "viel_groesser": [
+              "{{ auxiliar }} {{ phrase }} in {{ region_name }} hin."
+            ],
+            "leicht_groesser": [
+              "{{ auxiliar }} {{ phrase }} in {{ region_name }}."
+            ],
+            "gleich": [
+              "{{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Die Region {{ auxiliar }} {{ phrase }}."
+            ],
+            "kleiner": [
+              "{{ auxiliar }} {{ phrase }} in {{ region_name }} hin."
+            ],
+            "viel_kleiner": [
+              "{{ auxiliar }} {{ phrase }} in {{ region_name }} hin."
+            ]
+          },
+          "phrases_trendText_mietmarktspannung_index": {
+            "gleich": [
+              {
+                "phrase": "ein nahezu ausgeglichenes Verhältnis von Angebot und Nachfrage",
+                "auxiliar": "zeigt"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "eine leicht angespannte Vermieterseite",
+                "auxiliar": "weist auf"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "einen Vermietermarkt",
+                "auxiliar": "deutet auf"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "einen stark ausgeprägten Vermietermarkt",
+                "auxiliar": "signalisiert"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "durch eine leichte Verschiebung in Richtung Mietermarkt und damit zusammenhängend eine Entlastung zugunsten der Mieter",
+                "auxiliar": "ist geprägt"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "einen Mietermarkt",
+                "auxiliar": "weist auf"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "einen deutlich ausgeprägten Mietermarkt",
+                "auxiliar": "deutet auf"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_jahr01_vergleich_kreis_bundesland": {
+            "gleich": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_jahr01_vergleich_kreis_bundesland": {
+            "gleich": [
+              {
+                "phrase": "auf Bundesniveau",
+                "auxiliar": "liegen"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "weit über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht über dem mittlerem Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "weit über dem mittleren Preis von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_jahr01_vergleich_kreis_land": {
+            "gleich": [
+              "und {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "und {{ phrase }}."
+            ],
+            "groesser": [
+              "und {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "und {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "und {{ phrase }}."
+            ],
+            "kleiner": [
+              "und {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "und {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_jahr01_vergleich_kreis_land": {
+            "gleich": [
+              {
+                "phrase": "ungefähr auf Bundesniveau",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "etwas über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "deutlich  über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "etwas unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_2jahrestrend_kreis": {
+            "gleich": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }} "
+            ],
+            "groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Gegenüber dem Vorjahr {{ auxiliar }} {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_2jahrestrend_kreis }} % moderat gestiegen",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_2jahrestrend_kreis }} % merklich gestiegen",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_2jahrestrend_kreis }} % minimal gesunken",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_2jahrestrend_kreis }} % gesunken",
+                "auxiliar": "sind die Preise"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_2jahrestrend_kreis }} % spürbar zurückgegangen",
+                "auxiliar": "sind die Preise"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeternebenkosten_avg_jahr01_kreis": [
+            "{{ phrase }} {{ quadratmeternebenkosten_avg_jahr01_kreis }} €/m² {{ auxiliar }}, "
+          ],
+          "phrases_staticText_quadratmeternebenkosten_avg_jahr01_kreis": [
+            {
+              "phrase": "Bei Hinzunahme der mittleren Nebenkosten von",
+              "auxiliar": "liegen bei"
+            },
+            {
+              "phrase": "Bei Hinzunahmen der mittleren Nebenkosten von",
+              "auxiliar": "beträgt"
+            },
+            {
+              "phrase": "Bei Hinzunahmen der mittleren Nebenkosten von",
+              "auxiliar": "belaufen sich auf"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterwarmmiete_avg_jahr01_kreis": [
+            "{{ auxiliar }} {{ phrase }} {{ quadratmeterwarmmiete_avg_jahr01_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterwarmmiete_avg_jahr01_kreis": [
+            {
+              "phrase": "auf eine durchschnittliche Warmmiete von",
+              "auxiliar": "kommt man"
+            },
+            {
+              "phrase": "auf eine durchschnittliche Warmmiete von",
+              "auxiliar": "kommt man"
+            },
+            {
+              "phrase": "auf eine durchschnittliche Warmmiete von",
+              "auxiliar": "kommt man"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_jahr01_kreis": [
+            "{{ phrase }} {{ in_oder_im }} {{ region_name }} {{ auxiliar }} {{ quadratmeterkaltmiete_avg_jahr01_kreis }} €/m².",
+            "{{ phrase }} {{ auxiliar }} {{ quadratmeterkaltmiete_avg_jahr01_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_jahr01_kreis": [
+            {
+              "phrase": "Die aktuellen Angebotsmietpreise",
+              "auxiliar": "liegen bei"
+            },
+            {
+              "phrase": "Die durchschnittlichen Quadratmeterpreise für Mietobjekte (Wohnung + Haus)",
+              "auxiliar": "beträgt"
+            },
+            {
+              "phrase": "Die mittleren Angebotspreise aller Mietimmobilien (Haus + Wohnung)",
+              "auxiliar": "belaufen sich auf"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_min_jahr01_kreis_quadratmeterkaltmiete_max_jahr01_kreis": [
+            "Sie {{ auxiliar }} {{ phrase }} von {{ quadratmeterkaltmiete_min_jahr01_kreis }} €/m² bis {{ quadratmeterkaltmiete_max_jahr01_kreis }} €/m².",
+            "Diese {{ auxiliar }} {{ phrase }} von {{ quadratmeterkaltmiete_min_jahr01_kreis }} €/m² bis {{ quadratmeterkaltmiete_max_jahr01_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_min_jahr01_kreis_quadratmeterkaltmiete_max_jahr01_kreis": [
+            {
+              "phrase": "dabei innerhalb einer Spanne",
+              "auxiliar": "bewegen sich"
+            },
+            {
+              "phrase": "typischerweise zwischen",
+              "auxiliar": "variieren"
+            },
+            {
+              "phrase": "üblicherweise in einer Spanne",
+              "auxiliar": "befinden sich"
+            },
+            {
+              "phrase": "zwischen den Werten",
+              "auxiliar": "pendeln"
+            },
+            {
+              "phrase": "in einer Preisspanne",
+              "auxiliar": "bewegen sich"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietpreise_wohnung_allgemein": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_jahr01_kreis }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_min_wohnung_jahr01_kreis_quadratmeterkaltmiete_max_wohnung_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_kreis_land }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_neubau_bestand }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_neubau_jahr01_kreis }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_bestand_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_neubau_2jahrestrend_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_bestand_2jahrestrend_kreis }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_kreis_bundesland": {
+            "gleich": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_kreis_bundesland": {
+            "gleich": [
+              {
+                "phrase": "in etwa auf dem Landesniveau von {{ bundesland_name }}",
+                "auxiliar": "reihen sie sich"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem Landesniveau von {{ bundesland_name }}",
+                "auxiliar": "reihen sie sich"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Landesniveau von {{ bundesland_name }}",
+                "auxiliar": "reihen sie sich"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "weit über dem Landesniveau von {{ bundesland_name }}",
+                "auxiliar": "reihen sie sich"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem Landesniveau von {{ bundesland_name }}",
+                "auxiliar": "reihen sie sich"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Landesniveau von {{ bundesland_name }}",
+                "auxiliar": "reihen sie sich"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich unter dem Landesniveau von {{ bundesland_name }}",
+                "auxiliar": "reihen sie sich"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_kreis_land": {
+            "gleich": [
+              "und {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "und {{ phrase }} ein."
+            ],
+            "groesser": [
+              "und {{ phrase }} ein."
+            ],
+            "viel_groesser": [
+              "und {{ phrase }} ein."
+            ],
+            "leicht_kleiner": [
+              "und {{ phrase }} ein."
+            ],
+            "kleiner": [
+              "und {{ phrase }} ein."
+            ],
+            "viel_kleiner": [
+              "und {{ phrase }} ein."
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_kreis_land": {
+            "gleich": [
+              {
+                "phrase": "ungefähr auf Bundesniveau",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "etwas über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "deutlich  über dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "etwas unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich unter dem Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_neubau_bestand": {
+            "gleich": [
+              "Neubauwohnungen {{ auxiliar }} {{ phrase }} wie Bestandswohnungen"
+            ],
+            "leicht_groesser": [
+              "Neubaumieten {{ auxiliar }} {{ phrase }} Bestand"
+            ],
+            "groesser": [
+              "Neubaumieten {{ auxiliar }} {{ phrase }} Bestand"
+            ],
+            "viel_groesser": [
+              "Neubaumieten {{ auxiliar }} {{ phrase }} Bestand"
+            ],
+            "leicht_kleiner": [
+              "Neubaumieten {{ auxiliar }} {{ phrase }} Bestand"
+            ],
+            "kleiner": [
+              "Neubaumieten {{ auxiliar }} {{ phrase }} Bestand"
+            ],
+            "viel_kleiner": [
+              "Neubaumieten {{ auxiliar }} {{ phrase }} Bestand"
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_neubau_bestand": {
+            "gleich": [
+              {
+                "phrase": "in etwa so viel",
+                "auxiliar": "kosten"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um rund {{ quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_neubau_bestand_kreis }} % leicht über dem Wert der Bestandsmieten",
+                "auxiliar": "liegen"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um rund {{ quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_neubau_bestand_kreis }} % über dem Wert der Bestandsmieten",
+                "auxiliar": "liegen"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um rund {{ quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_neubau_bestand_kreis }} % deutlich über dem Wert der Bestandsmieten",
+                "auxiliar": "liegen"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um rund {{ quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_neubau_bestand_kreis }} % leicht unter dem Wert der Bestandsmieten",
+                "auxiliar": "liegen"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um rund {{ quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_neubau_bestand_kreis }} % unter dem Wert der Bestandsmieten",
+                "auxiliar": "liegen"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um rund {{ quadratmeterkaltmiete_avg_wohnung_jahr01_vergleich_neubau_bestand_kreis }} % deutlich unter dem Wert der Bestandsmieten",
+                "auxiliar": "liegen"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_neubau_2jahrestrend_kreis": {
+            "gleich": [
+              "Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so {{ auxiliar }} die Neubaupreise {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so {{ auxiliar }} die Neubaupreise {{ phrase }}."
+            ],
+            "groesser": [
+              "Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so {{ auxiliar }} die Neubaupreise {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so {{ auxiliar }} die Neubaupreise {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so {{ auxiliar }} die Neubaupreise {{ phrase }}."
+            ],
+            "kleiner": [
+              "Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so {{ auxiliar }} die Neubaupreise {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Schaut man auf den kurzfristigen Trend im Vorjahresvergleich, so {{ auxiliar }} die Neubaupreise {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_neubau_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_neubau_2jahrestrend_kreis }} % leicht gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_neubau_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_neubau_2jahrestrend_kreis }} % stark gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_neubau_2jahrestrend_kreis }} % leicht gesunken",
+                "auxiliar": "sind"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_neubau_2jahrestrend_kreis }} % gesunken",
+                "auxiliar": "sind"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_neubau_2jahrestrend_kreis }} % deutlich gefallen",
+                "auxiliar": "sind"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_bestand_2jahrestrend_kreis": {
+            "gleich": [
+              "Bei den Neuvermietungen im Bestand {{ auxiliar }} die Mietpreise {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Bei den Neuvermietungen im Bestand {{ auxiliar }} {{ phrase }}."
+            ],
+            "groesser": [
+              "Bei den Neuvermietungen im Bestand {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Bei den Neuvermietungen im Bestand {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Bei den Neuvermietungen im Bestand {{ auxiliar }} {{ phrase }}."
+            ],
+            "kleiner": [
+              "Bei den Neuvermietungen im Bestand {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Bei den Neuvermietungen im Bestand {{ auxiliar }} {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_bestand_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_bestand_2jahrestrend_kreis }} % etwas über dem derzeitigen Niveau",
+                "auxiliar": "liegen"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_bestand_2jahrestrend_kreis }} % über dem derzeitigen Niveau",
+                "auxiliar": "liegen"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_bestand_2jahrestrend_kreis }} % weit über dem derzeitigen Niveau",
+                "auxiliar": "liegen"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_bestand_2jahrestrend_kreis }} % etwas unter dem derzeitigen Niveau",
+                "auxiliar": "liegen"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_bestand_2jahrestrend_kreis }} % über dem derzeitigen Niveau",
+                "auxiliar": "liegen"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_bestand_2jahrestrend_kreis }} % weit unter dem derzeitigen Niveau",
+                "auxiliar": "liegen"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_jahr01_kreis": [
+            "Aktuell {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ quadratmeterkaltmiete_avg_wohnung_jahr01_kreis }} €/m².",
+            "Derzeit {{ auxiliar }} {{ phrase }} bei {{ quadratmeterkaltmiete_avg_wohnung_jahr01_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_wohnung_jahr01_kreis": [
+            {
+              "phrase": "die mittleren Mietpreise bei Wohnungen",
+              "auxiliar": "stehen"
+            },
+            {
+              "phrase": "die durchschnittlichen Kaltmieten",
+              "auxiliar": "liegen"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_min_wohnung_jahr01_kreis_quadratmeterkaltmiete_max_wohnung_jahr01_kreis": [
+            "Sie {{ auxiliar }} {{ phrase }} von {{ quadratmeterkaltmiete_min_wohnung_jahr01_kreis }} €/m² bis {{ quadratmeterkaltmiete_max_wohnung_jahr01_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_min_wohnung_jahr01_kreis_quadratmeterkaltmiete_max_wohnung_jahr01_kreis": [
+            {
+              "phrase": "dabei innerhalb einer Spanne",
+              "auxiliar": "bewegen sich"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_neubau_jahr01_kreis": [
+            "{{ phrase }} cirka {{ quadratmeterkaltmiete_avg_wohnung_neubau_jahr01_kreis }} €/m² {{ auxiliar }},"
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_wohnung_neubau_jahr01_kreis": [
+            {
+              "phrase": "So muss man bei Neuvermietung für Wohnungen in Neubauten mit",
+              "auxiliar": "rechnen"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_bestand_jahr01_kreis": [
+            "im Bestand {{ auxiliar }} {{ phrase }} {{ quadratmeterkaltmiete_avg_wohnung_bestand_jahr01_kreis }}."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_wohnung_bestand_jahr01_kreis": [
+            {
+              "phrase": "es",
+              "auxiliar": "sind"
+            },
+            {
+              "phrase": "man bei",
+              "auxiliar": "liegt"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietpreise_wohnung_nach_flaechen_und_zimmern": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_unter_40qm_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_80_100_qm_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis": {
+            "gleich": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} die Preise für diese kleineren Flächen im Vergleich zum Vorjahr {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % leicht angestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % stark gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % leicht gesunken",
+                "auxiliar": "sind"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % gesunken",
+                "auxiliar": "sind"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % deutlich gefallen",
+                "auxiliar": "sind"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis": {
+            "gleich": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "konstant geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_unter_40qm_jahr01_kreis": [
+            "Mietwohnungen unter 40 m² für kleinere 1-2 Personen-Haushalte {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_wohnung_unter_40qm_jahr01_kreis": [
+            {
+              "phrase": "derzeit durchschnittlich {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_jahr01_kreis }} €/m²",
+              "auxiliar": "liegt"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_80_100_qm_jahr01_kreis": [
+            "Flächen um die 80 - 100 m², die eher bei größeren Falilien nachgefragt werden, {{ auxiliar }} {{ phrase }}.Die durchschnittlichen Mietkosten für von größeren Familien nachgefragten Wohnungen mit 2-3 Kindern zwischen 80-100 m², {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_wohnung_80_100_qm_jahr01_kreis": [
+            {
+              "phrase": "im Schnitt bei {{ quadratmeterkaltmiete_avg_wohnung_80_100_qm_jahr01_kreis }} €/m²",
+              "auxiliar": "liegen"
+            }
+          ]
+        }
+      },
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_1zimmer_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_1zimmer_2jahrestrend_kreis }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_4zimmer_jahr01_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_4zimmer_2jahrestrend_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_1zimmer_2jahrestrend_kreis": {
+            "gleich": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise für diese Wohnform {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_1zimmer_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % leicht angestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % stark gestiegen",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % leicht gesunken",
+                "auxiliar": "sind"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % gesunken",
+                "auxiliar": "sind"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_unter_40qm_2jahrestrend_kreis }} % deutlich gefallen",
+                "auxiliar": "sind"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_4zimmer_2jahrestrend_kreis": {
+            "gleich": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "hier {{ auxiliar }} der kurzfristige Trend {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_4zimmer_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "konstant geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "mit {{ quadratmeterkaltmiete_avg_wohnung_80_100_2jahrestrend_kreis }} % Anstieg, leicht positiv",
+                "auxiliar": "ist"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_1zimmer_jahr01_kreis": [
+            "In Deutschland nimmt die Haushaltsgröße stetig ab, daher rücken kleiner Wohneinheiten in den Fokus vieler Mieter. Für eine 1-Zimmer-Wohnung {{ in_oder_im }} {{ region_name }} {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_wohnung_1zimmer_jahr01_kreis": [
+            {
+              "phrase": "diese derzeit durchschnittlich {{ quadratmeterkaltmiete_avg_wohnung_1zimmer_jahr01_kreis }} €/m² bezahlen",
+              "auxiliar": "müssen"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_4zimmer_jahr01_kreis": [
+            "Größere Wohnungen mit z.B. 4 Zimmern, welche eher von größeren Familien nachgefragt werden, {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_wohnung_4zimmer_jahr01_kreis": [
+            {
+              "phrase": "im Schnitt einen Mietpreis von {{ quadratmeterkaltmiete_avg_wohnung_4zimmer_jahr01_kreis }} €/m²",
+              "auxiliar": "haben"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietpreise_wohnung_preisentwicklung": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_jahr02_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_2jahrestrend_kreis }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_jahr05_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_5jahrestrend_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_2jahrestrend_kreis": {
+            "gleich": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "der Preis nahezu unverändert geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "der Preis mit {{ quadratmeterkaltmiete_avg_wohnung_2jahrestrend_kreis }} % leicht gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "der Preis mit {{ quadratmeterkaltmiete_avg_wohnung_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "der Preis mit {{ quadratmeterkaltmiete_avg_wohnung_2jahrestrend_kreis }} % deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "der Preis mit {{ quadratmeterkaltmiete_avg_wohnung_2jahrestrend_kreis }} % leicht gefallen",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "der Preis mit {{ quadratmeterkaltmiete_avg_wohnung_2jahrestrend_kreis }} % gefallen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "der Preis mit {{ quadratmeterkaltmiete_avg_wohnung_2jahrestrend_kreis }} % deutlich gefallen",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_wohnung_5jahrestrend_kreis": {
+            "gleich": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_wohnung_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_5jahrestrend_kreis }} % leicht angestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_5jahrestrend_kreis }} % recht stark angestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_5jahrestrend_kreis }} % leicht gefallen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_5jahrestrend_kreis }} % gefallen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_wohnung_5jahrestrend_kreis }} % recht stark  gefallen",
+                "auxiliar": "sind sie"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_jahr02_kreis": [
+            "Letztes Jahr {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ quadratmeterkaltmiete_avg_wohnung_jahr02_kreis }} €/m².",
+            "Vor einem Jahr {{ auxiliar }} {{ phrase }} bei {{ quadratmeterkaltmiete_avg_wohnung_jahr02_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_wohnung_jahr02_kreis": [
+            {
+              "phrase": "der Quadratmeterpreis",
+              "auxiliar": "lag"
+            },
+            {
+              "phrase": "der mittlere Quadratmeterpreis",
+              "auxiliar": "stand"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_wohnung_jahr05_kreis": [
+            "Blicken wir noch weiter zurück - vor 5 Jahren ({{ jahr05 }}) {{ auxiliar }} {{ phrase }} bei {{ quadratmeterkaltmiete_avg_wohnung_jahr05_kreis }} €/m²,"
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_wohnung_jahr05_kreis": [
+            {
+              "phrase": "die durchschnittlichen Werte",
+              "auxiliar": "lagen"
+            },
+            {
+              "phrase": "die mittleren Angebotspreise",
+              "auxiliar": "standen"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietpreise_haus_allgemein": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_haus_jahr01_kreis }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_min_haus_jahr01_kreis_quadratmeterkaltmiete_max_haus_jahr01_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_haus_jahr01_kreis": [
+            "Bei den Angebotsmieten für Häuser {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_haus_jahr01_kreis": [
+            {
+              "phrase": "ungefähr {{ quadratmeterkaltmiete_avg_haus_jahr01_kreis }} €/m²",
+              "auxiliar": "zahlt man"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_min_haus_jahr01_kreis_quadratmeterkaltmiete_max_haus_jahr01_kreis": [
+            "Sie {{ auxiliar }} {{ phrase }} von {{ quadratmeterkaltmiete_min_haus_jahr01_kreis }} €/m² bis {{ quadratmeterkaltmiete_max_haus_jahr01_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_min_haus_jahr01_kreis_quadratmeterkaltmiete_max_haus_jahr01_kreis": [
+            {
+              "phrase": "dabei innerhalb einer Spanne",
+              "auxiliar": "bewegen sich"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietpreise_haus_preisentwicklung": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_haus_jahr02_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_haus_jahr05_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis": {
+            "gleich": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "der Preis nahezu unverändert geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % leicht gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % leicht gefallen",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % gefallen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % deutlich gefallen",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis": {
+            "gleich": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % leicht angestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % recht stark angestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % leicht gefallen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % gefallen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % recht stark gefallen",
+                "auxiliar": "sind sie"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_haus_jahr02_kreis": [
+            "Letztes Jahr {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ quadratmeterkaltmiete_avg_haus_jahr02_kreis }} €/m².",
+            "Vor einem Jahr {{ auxiliar }} {{ phrase }} bei {{ quadratmeterkaltmiete_avg_haus_jahr02_kreis }} €/m²."
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_haus_jahr02_kreis": [
+            {
+              "phrase": "der Quadratmetermietpreis bei Häusern",
+              "auxiliar": "lag"
+            },
+            {
+              "phrase": "der mittlere Haus-Quadratmetermietpreis",
+              "auxiliar": "stand"
+            }
+          ],
+          "verbkonstrukt_staticText_quadratmeterkaltmiete_avg_haus_jahr05_kreis": [
+            "Im 5-JahresRückblick (ab {{ jahr05 }}) {{ auxiliar }} {{ phrase }} bei {{ quadratmeterkaltmiete_avg_haus_jahr05_kreis }} €/m²,"
+          ],
+          "phrases_staticText_quadratmeterkaltmiete_avg_haus_jahr05_kreis": [
+            {
+              "phrase": "die durchschnittlichen Werte",
+              "auxiliar": "lagen"
+            },
+            {
+              "phrase": "die mittleren Angebotspreise",
+              "auxiliar": "standen"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietrendite_kaufpreisfaktor": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "Der Kaufpreisfaktor, auch als Multiplikator oder Vielfaches bezeichnet, ist eine Kennzahl, die das Verhältnis zwischen dem Kaufpreis einer Immobilie und ihrem potenziellen Ertrag bewertet. Er wird oft verwendet, um grob einzuschätzen, ob eine Immobilie im Vergleich zu anderen Objekten in einer bestimmten Region teuer oder günstig ist. {{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_haus_jahr01_kreis }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_haus_jahr02_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} {{ verbkonstrukt_staticText_quadratmeterkaltmiete_avg_haus_jahr05_kreis }} {{ verbkonstrukt_trendText_quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_kaufpreisfaktor_2jahrestrend_kreis": {
+            "gleich": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_kaufpreisfaktor_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "der Preis nahezu unverändert geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % leicht gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % leicht gefallen",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % gefallen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ quadratmeterkaltmiete_avg_haus_2jahrestrend_kreis }} % deutlich gefallen",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_kaufpreisfaktor_5jahrestrend_kreis": {
+            "gleich": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_kaufpreisfaktor_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % leicht angestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % recht stark angestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % leicht gefallen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % gefallen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ quadratmeterkaltmiete_avg_haus_5jahrestrend_kreis }} % recht stark gefallen",
+                "auxiliar": "sind sie"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_kaufpreisfaktor_jahr01_kreis": [
+            "{{ phrase }} {{ liegt }} der Kaufpreisfaktor {{ in_oder_im }} {{ region_name }} bei {{ kaufpreisfaktor_jahr01_kreis }}. Grundsätzlich gilt für die Immobilienbewertung: je niedriger der Kaufpreisfaktor, desto lohnender die Investition. Je höher der Faktor, umso niedriger die Rentabilität."
+          ],
+          "phrases_staticText_kaufpreisfaktor_jahr01_kreis": [
+            {
+              "phrase": "Aktuell",
+              "auxiliar": "liegt"
+            }
+          ],
+          "verbkonstrukt_staticText_kaufpreisfaktor_jahr02_kreis": [
+            "Letztes Jahr {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ kaufpreisfaktor_jahr02_kreis }}"
+          ],
+          "phrases_staticText_kaufpreisfaktor_jahr02_kreis": [
+            {
+              "phrase": "der Quadratmetermietpreis bei Häusern",
+              "auxiliar": "lag"
+            }
+          ],
+          "verbkonstrukt_staticText_kaufpreisfaktor_jahr05_kreis": [
+            "Im 5-Jahres Rückblick (ab {{ jahr05 }}) {{ auxiliar }} {{ phrase }} bei {{ kaufpreisfaktor_jahr05_kreis }},"
+          ],
+          "phrases_staticText_kaufpreisfaktor_jahr05_kreis": [
+            {
+              "phrase": "die durchschnittlichen Werte",
+              "auxiliar": "lagen"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietrendite_allgemein": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "Die Brutto-Mietrendite ist ein erster grober Anhaltspunkt dafür, dass sich das Vermieten einer Immobilie lohnen kann. Die durchschnittliche Brutto-Mietrendite wird unter Beachtung des durchschnittlichen Kaufpreises aller relevanten Assetklassen (EFH, ZFH, MFH, ETW) und der durchschnittlichen Jahresnettokaltmiete {in_oder_im} {kreis_name} brechnet. {{ verbkonstrukt_staticText_mietrendite_brutto_jahr01_kreis }} {{ verbkonstrukt_staticText_mietrendite_brutto_jahr02_kreis }} {{ verbkonstrukt_trendText_mietrendite_brutto_2jahrestrend_kreis }} {{ verbkonstrukt_staticText_mietrendite_brutto_jahr05_kreis }} {{ verbkonstrukt_trendText_mietrendite_brutto_5jahrestrend_kreis }} Die Nettomietrendite zeigt, wie rentabel eine Immobilie nach Abzug der laufenden Kosten ist. Sie gibt an, welchen Prozentsatz des Kaufpreises man jährlich als Einnahmen aus der Vermietung erwirtschaftet – allerdings ohne Steuern und Finanzierungskosten. Dadurch bietet sie eine realistischere Einschätzung der tatsächlichen Rendite im Vergleich zur Bruttomietrendite. {{ verbkonstrukt_staticText_mietrendite_netto_jahr01_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_mietrendite_brutto_2jahrestrend_kreis": {
+            "gleich": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Bis heute {{ auxiliar }} {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_mietrendite_brutto_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "der Preis nahezu unverändert geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ mietrendite_brutto_2jahrestrend_kreis }} % leicht gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ mietrendite_brutto_2jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ mietrendite_brutto_2jahrestrend_kreis }} % deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ mietrendite_brutto_2jahrestrend_kreis }} % leicht gefallen",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ mietrendite_brutto_2jahrestrend_kreis }} % gefallen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "der Preis innerhalb dieser Zeit mit {{ mietrendite_brutto_2jahrestrend_kreis }} % deutlich gefallen",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_mietrendite_brutto_5jahrestrend_kreis": {
+            "gleich": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "innerhalb diesen Zeitraums {{ auxiliar }} bis jetzt {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_mietrendite_brutto_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um {{ mietrendite_brutto_5jahrestrend_kreis }} % leicht angestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "um {{ mietrendite_brutto_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "um {{ mietrendite_brutto_5jahrestrend_kreis }} % recht stark angestiegen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um {{ mietrendite_brutto_5jahrestrend_kreis }} % leicht gefallen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "um {{ mietrendite_brutto_5jahrestrend_kreis }} % gefallen",
+                "auxiliar": "sind sie"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "um {{ mietrendite_brutto_5jahrestrend_kreis }} % recht stark gefallen",
+                "auxiliar": "sind sie"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_mietrendite_brutto_jahr01_kreis": [
+            "{{ phrase }} {{ auxiliar }} {{ mietrendite_brutto_jahr01_kreis }} %."
+          ],
+          "phrases_staticText_mietrendite_brutto_jahr01_kreis": [
+            {
+              "phrase": "Aktuell",
+              "auxiliar": "liegt sie bei"
+            }
+          ],
+          "verbkonstrukt_staticText_mietrendite_brutto_jahr02_kreis": [
+            "Letztes Jahr {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ mietrendite_brutto_jahr02_kreis }} %."
+          ],
+          "phrases_staticText_mietrendite_brutto_jahr02_kreis": [
+            {
+              "phrase": "die Bruttomietrendite",
+              "auxiliar": "lag"
+            }
+          ],
+          "verbkonstrukt_staticText_mietrendite_brutto_jahr05_kreis": [
+            "Im 5-Jahres Rückblick (ab {{ jahr05 }}) {{ auxiliar }} {{ phrase }} bei {{ mietrendite_brutto_jahr05_kreis }} %,"
+          ],
+          "phrases_staticText_mietrendite_brutto_jahr05_kreis": [
+            {
+              "phrase": "der Wert",
+              "auxiliar": "lag"
+            }
+          ],
+          "verbkonstrukt_staticText_mietrendite_netto_jahr01_kreis": [
+            "Sie {{ auxiliar }} {{ phrase }} {{ mietrendite_netto_jahr01_kreis }} %,"
+          ],
+          "phrases_staticText_mietrendite_netto_jahr01_kreis": [
+            {
+              "phrase": "heute ungefähr bei",
+              "auxiliar": "liegt"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietrendite_etw": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "Die Bruttomietrendite von Eigentumswohnungen variiert stark je nach Region. In stark nachgefragten urbanen Zentren ist die Rendite oft niedriger, da die Kaufpreise hoch sind, während in ländlichen Gebieten höhere Renditen möglich sind, da die Kaufpreise niedriger, die Mieten jedoch stabil bleiben. {{ verbkonstrukt_staticText_mietrendite_brutto_etw_jahr01_kreis }} {{ verbkonstrukt_staticText_kaufpreisfaktor_etw_jahr01_kreis }} {{ verbkonstrukt_staticText_mietrendite_netto_etw_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_mietrendite_brutto_etw_jahr01_kreis": [
+            "Sie {{ auxiliar }} {{ phrase }} {{ mietrendite_brutto_etw_jahr01_kreis }} %."
+          ],
+          "phrases_staticText_mietrendite_brutto_etw_jahr01_kreis": [
+            {
+              "phrase": "aktuell bei",
+              "auxiliar": "steht"
+            }
+          ],
+          "verbkonstrukt_staticText_kaufpreisfaktor_etw_jahr01_kreis": [
+            "{{ phrase }} {{ auxiliar }} {{ in_oder_im }} {{ region_name }} ungefähr bei {{ kaufpreisfaktor_etw_jahr01_kreis }},"
+          ],
+          "phrases_staticText_kaufpreisfaktor_etw_jahr01_kreis": [
+            {
+              "phrase": "Der Kaufpreisfaktor",
+              "auxiliar": "liegt bei Eigentumswohnungen "
+            }
+          ],
+          "verbkonstrukt_staticText_mietrendite_netto_etw_kreis": [
+            "{{ phrase }} {{ auxiliar }} {{ mietrendite_netto_etw_kreis }} %."
+          ],
+          "phrases_staticText_mietrendite_netto_etw_kreis": [
+            {
+              "phrase": "und die mittlere Netto-Mietrendite",
+              "auxiliar": "bei ungefähr"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietrendite_efh": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "Einfamilienhäuser erzielen in Vorstadtgebieten oft moderate Bruttomietrenditen, da die Nachfrage nach Einfamilienhäusern hier hoch ist. In ländlichen Regionen kann die Rendite höher sein, da die Preise für EZFH niedriger sind, während in städtischen Gebieten die Renditen durch hohe Kaufpreise und mäßige Mietsteigerungen begrenzt sein können. {{ verbkonstrukt_staticText_mietrendite_brutto_efh_jahr01_kreis }} {{ verbkonstrukt_staticText_kaufpreisfaktor_efh_jahr01_kreis }} {{ verbkonstrukt_staticText_mietrendite_netto_efh_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_mietrendite_brutto_efh_jahr01_kreis": [
+            "Vor einem Jahr {{ auxiliar }} {{ phrase }} bei {{ mietrendite_brutto_efh_jahr01_kreis }} %."
+          ],
+          "phrases_staticText_mietrendite_brutto_efh_jahr01_kreis": [
+            {
+              "phrase": "der Quadratmetermietpreis bei Häusern",
+              "auxiliar": "lag"
+            },
+            {
+              "phrase": "der mittlere Haus-Quadratmetermietpreis",
+              "auxiliar": "stand"
+            }
+          ],
+          "verbkonstrukt_staticText_kaufpreisfaktor_efh_jahr01_kreis": [
+            "Letztes Jahr {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ kaufpreisfaktor_efh_jahr01_kreis }}."
+          ],
+          "phrases_staticText_kaufpreisfaktor_efh_jahr01_kreis": [
+            {
+              "phrase": "der Quadratmetermietpreis bei Häusern",
+              "auxiliar": "lag"
+            },
+            {
+              "phrase": "der mittlere Haus-Quadratmetermietpreis",
+              "auxiliar": "stand"
+            }
+          ],
+          "verbkonstrukt_staticText_mietrendite_netto_efh_kreis": [
+            "Im 5-Jahres Rückblick (ab {{ jahr05 }}) {{ auxiliar }} {{ phrase }} bei {{ mietrendite_netto_efh_kreis }} €/m²,"
+          ],
+          "phrases_staticText_mietrendite_netto_efh_kreis": [
+            {
+              "phrase": "die durchschnittlichen Werte",
+              "auxiliar": "lagen"
+            },
+            {
+              "phrase": "die mittleren Angebotspreise",
+              "auxiliar": "standen"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "mietrendite_mfh": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "Mehrfamilienhäuser bieten in Wachstumsregionen oft attraktive Bruttomietrenditen, da die Mieten stabil steigen und die Nachfrage nach Wohnraum hoch ist. In strukturschwachen Regionen kann die Rendite jedoch schwanken, da die Mietnachfrage geringer ist, während in Großstädten die Renditen aufgrund hoher Kaufpreise tendenziell niedriger ausfallen. {{ verbkonstrukt_staticText_mietrendite_brutto_mfh_jahr01_kreis }} {{ verbkonstrukt_staticText_kaufpreisfaktor_mfh_jahr01_kreis }} {{ verbkonstrukt_staticText_mietrendite_netto_mfh_kreis }} "
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_mietrendite_brutto_mfh_jahr01_kreis": [
+            "Vor einem Jahr {{ auxiliar }} {{ phrase }} bei {{ mietrendite_brutto_mfh_jahr01_kreis }} %."
+          ],
+          "phrases_staticText_mietrendite_brutto_mfh_jahr01_kreis": [
+            {
+              "phrase": "der Quadratmetermietpreis bei Häusern",
+              "auxiliar": "lag"
+            },
+            {
+              "phrase": "der mittlere Haus-Quadratmetermietpreis",
+              "auxiliar": "stand"
+            }
+          ],
+          "verbkonstrukt_staticText_kaufpreisfaktor_mfh_jahr01_kreis": [
+            "Letztes Jahr {{ auxiliar }} {{ phrase }} {{ in_oder_im }} {{ region_name }} bei {{ kaufpreisfaktor_mfh_jahr01_kreis }}."
+          ],
+          "phrases_staticText_kaufpreisfaktor_mfh_jahr01_kreis": [
+            {
+              "phrase": "der Quadratmetermietpreis bei Häusern",
+              "auxiliar": "lag"
+            },
+            {
+              "phrase": "der mittlere Haus-Quadratmetermietpreis",
+              "auxiliar": "stand"
+            }
+          ],
+          "verbkonstrukt_staticText_mietrendite_netto_mfh_kreis": [
+            "Im 5-Jahres Rückblick (ab {{ jahr05 }}) {{ auxiliar }} {{ phrase }} bei {{ mietrendite_netto_mfh_kreis }} €/m²,"
+          ],
+          "phrases_staticText_mietrendite_netto_mfh_kreis": [
+            {
+              "phrase": "die durchschnittlichen Werte",
+              "auxiliar": "lagen"
+            },
+            {
+              "phrase": "die mittleren Angebotspreise",
+              "auxiliar": "standen"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

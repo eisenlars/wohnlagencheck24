@@ -4,11 +4,108 @@ import "./static.css"; // falls noch nicht eingebunden
 import Link from "next/link";
 import Image from "next/image";
 import { getBundeslaender } from "@/lib/data";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { buildWebAssetUrl } from "@/utils/assets";
+import BlogAuthorImage from "@/components/blog-author-image";
+
+type BlogBlock = {
+  headline: string | null;
+  subline: string | null;
+  body_md: string | null;
+  author_name: string | null;
+  author_image_url: string | null;
+  bundesland_slug: string | null;
+  kreis_slug: string | null;
+  area_name: string | null;
+  created_at: string | null;
+};
+
+function renderMarkdown(md: string) {
+  const lines = md.split('\n');
+  const blocks: Array<{ type: 'p' | 'h2' | 'h3' | 'ul'; content: string | string[] }> = [];
+  let buffer: string[] = [];
+  let listBuffer: string[] = [];
+
+  const flushParagraph = () => {
+    if (buffer.length) {
+      blocks.push({ type: 'p', content: buffer.join(' ').trim() });
+      buffer = [];
+    }
+  };
+
+  const flushList = () => {
+    if (listBuffer.length) {
+      blocks.push({ type: 'ul', content: [...listBuffer] });
+      listBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+    if (trimmed.startsWith('# ')) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: 'h2', content: trimmed.replace(/^#\s+/, '') });
+      continue;
+    }
+    if (trimmed.startsWith('## ')) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: 'h3', content: trimmed.replace(/^##\s+/, '') });
+      continue;
+    }
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      flushParagraph();
+      listBuffer.push(trimmed.replace(/^[-*]\s+/, ''));
+      continue;
+    }
+    buffer.push(trimmed);
+  }
+
+  flushParagraph();
+  flushList();
+
+  return blocks.map((block, index) => {
+    if (block.type === 'h2') return <h3 key={`h2-${index}`}>{block.content as string}</h3>;
+    if (block.type === 'h3') return <h4 key={`h3-${index}`}>{block.content as string}</h4>;
+    if (block.type === 'ul') {
+      return (
+        <ul key={`ul-${index}`}>
+          {(block.content as string[]).map((item, itemIndex) => (
+            <li key={`li-${index}-${itemIndex}`}>{item}</li>
+          ))}
+        </ul>
+      );
+    }
+    return <p key={`p-${index}`}>{block.content as string}</p>;
+  });
+}
 
 // app/(statisch)/page.tsx (Ausschnitt)
 
 export default async function HomePage() {
   const bundeslaender = await getBundeslaender();
+  let latestBlog: BlogBlock | null = null;
+
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from('partner_blog_posts')
+      .select('headline, subline, body_md, author_name, author_image_url, area_name, created_at, bundesland_slug, kreis_slug')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (!error && data && data.length > 0) {
+      latestBlog = data[0] as BlogBlock;
+    }
+  } catch {
+    latestBlog = null;
+  }
 
   return (
     <div className="home-page-root">
@@ -89,6 +186,49 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {latestBlog ? (
+        <section className="home-blog-section">
+          <div className="home-blog-inner">
+            <div className="home-blog-header">
+              <div className="home-blog-kicker">Neuester Marktbeitrag</div>
+              <h2 className="home-blog-title">{latestBlog.headline}</h2>
+              {latestBlog.subline ? (
+                <p className="home-blog-subline">{latestBlog.subline}</p>
+              ) : null}
+            </div>
+            <div className="home-blog-body">
+              {latestBlog.body_md ? renderMarkdown(latestBlog.body_md) : null}
+            </div>
+            <div className="home-blog-author">
+              {(() => {
+                const fallbackImage =
+                  latestBlog.bundesland_slug && latestBlog.kreis_slug
+                    ? buildWebAssetUrl(
+                        `/images/immobilienmarkt/${latestBlog.bundesland_slug}/${latestBlog.kreis_slug}/immobilienberatung-${latestBlog.kreis_slug}.png`,
+                      )
+                    : null;
+                const imageSrc = latestBlog.author_image_url || fallbackImage || null;
+                return (
+                  <BlogAuthorImage
+                    src={imageSrc}
+                    fallbackSrc="/images/avatars/berater-placeholder.svg"
+                    alt={latestBlog.author_name || 'Berater'}
+                    className="home-blog-author-image"
+                  />
+                );
+              })()}
+              <div>
+                <div className="home-blog-author-name">
+                  {latestBlog.author_name || 'Berater'}
+                </div>
+                {latestBlog.area_name ? (
+                  <div className="home-blog-author-meta">{latestBlog.area_name}</div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
   
     </div>
   );

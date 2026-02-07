@@ -1,18 +1,83 @@
 // app/immobilienmarkt/[...slug]/page.tsx
 
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { resolveRoute } from "@/features/immobilienmarkt/routes/resolveRoute";
 import { buildPageModel } from "@/features/immobilienmarkt/page/buildPageModel";
 import { IMMOBILIENMARKT_REGISTRY } from "@/features/immobilienmarkt/page/registry";
 import { KontaktContextSetter } from "@/components/kontakt/KontaktContextSetter";
 import type { SectionComponent } from "@/features/immobilienmarkt/sections/types";
 import { ValuationWizard } from "@/features/valuation/components/ValuationWizard";
-import { asArray, asRecord } from "@/utils/records";
+import { asArray, asRecord, asString } from "@/utils/records";
 import { formatValueCtx } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
+import { getApprovedMarketingTexts, getReportBySlugs } from "@/lib/data";
+import { createClient } from "@/utils/supabase/server";
 
 type PageParams = { slug?: string[] };
 type PageProps = { params: Promise<PageParams> };
+
+function getValueByPath(root: unknown, pathParts: string[]): unknown {
+  let current: any = root;
+  for (const part of pathParts) {
+    if (!current || typeof current !== "object") return undefined;
+    current = current[part];
+  }
+  return current;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const resolvedParams = await params;
+  const slugs = resolvedParams.slug ?? [];
+  const route = resolveRoute(slugs);
+  const report = await getReportBySlugs(route.regionSlugs);
+  if (!report) return {};
+
+  const baseText =
+    asRecord(report.text ?? asRecord(asRecord(report.data)?.text) ?? {}) ?? {};
+  const meta = asRecord(asArray(report.meta)[0] ?? report.meta) ?? {};
+  const areaId =
+    (asString(meta["ortslage_schluessel"]) ??
+      asString(meta["kreis_schluessel"]) ??
+      "") || "";
+
+  const marketingSection =
+    route.section === "uebersicht" ? "immobilienmarkt_ueberblick" : route.section;
+
+  const overrides =
+    areaId.length > 0
+      ? await getApprovedMarketingTexts(createClient(), areaId)
+      : [];
+
+  const getOverride = (field: string) =>
+    overrides.find(
+      (entry) => entry.section_key === `marketing.${marketingSection}.${field}`,
+    )?.optimized_content ?? null;
+
+  const getBase = (field: string) => {
+    const value = getValueByPath(baseText, [
+      "marketing",
+      marketingSection,
+      field,
+    ]);
+    return typeof value === "string" ? value : null;
+  };
+
+  const title =
+    getOverride("title") ??
+    getBase("title") ??
+    "Immobilienmarkt & Standortprofile";
+  const description =
+    getOverride("description") ??
+    getBase("description") ??
+    "Wohnlagencheck24 bietet strukturierte Informationen zu Wohnlagen, Standorten und Märkten in Deutschland.";
+
+  return {
+    title,
+    description,
+    openGraph: { title, description },
+  };
+}
 
 export default async function ImmobilienmarktHierarchiePage({ params }: PageProps) {
   const resolvedParams = await params;

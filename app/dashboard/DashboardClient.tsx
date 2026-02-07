@@ -3,24 +3,30 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import FactorForm from './FactorForm';
+import FactorForm, { type FactorFormHandle } from './FactorForm';
 import TextEditorForm from './TextEditorForm';
 import OffersManager from './OffersManager';
+import BlogManager from './BlogManager';
 
 export default function DashboardClient() {
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
   const router = useRouter();
+  const factorFormRef = useRef<FactorFormHandle | null>(null);
   const [configs, setConfigs] = useState<any[]>([]);
   const [selectedConfig, setSelectedConfig] = useState<any>(null);
   const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastLogin, setLastLogin] = useState<string | null>(null);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [utilityCollapsed, setUtilityCollapsed] = useState(false);
+  const [utilityUserToggled, setUtilityUserToggled] = useState(false);
+  const [textFocusKey, setTextFocusKey] = useState<string | null>(null);
 
   // Werkzeug-Modus umschalten
   const [activeMainTab, setActiveMainTab] = useState<
-    'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche'
-  >('texts');
+    'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog'
+  >('factors');
 
   const headerConfig = useMemo(() => {
     switch (activeMainTab) {
@@ -46,6 +52,12 @@ export default function DashboardClient() {
         return {
           title: 'Lokale Website',
           description: 'Regionale Inhalte für die lokale Website bearbeiten.',
+          isRegionBased: true,
+        };
+      case 'blog':
+        return {
+          title: 'Blog',
+          description: 'Blogbeiträge aus Marktüberblick-Texten generieren und veröffentlichen.',
           isRegionBased: true,
         };
       case 'gesuche':
@@ -86,19 +98,56 @@ export default function DashboardClient() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (utilityUserToggled) return;
+    setUtilityCollapsed(showWelcome);
+  }, [showWelcome, utilityUserToggled]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
+  };
+
+  const handleToolSelect = (tab: 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog') => {
+    setActiveMainTab(tab);
+    setShowWelcome(false);
+    if (!utilityUserToggled) setUtilityCollapsed(false);
+    if (tab === 'blog') {
+      const kreis = configs.find((c) => c.area_id.split('-').length <= 3);
+      if (kreis) setSelectedConfig(kreis);
+    }
+  };
+
+  const handleToggleUtility = () => {
+    setUtilityUserToggled(true);
+    setUtilityCollapsed(prev => !prev);
   };
 
   if (loading) return <div style={{ padding: '40px' }}>Dashboard wird geladen...</div>;
 
   const mainDistricts = configs.filter(c => c.area_id.split('-').length <= 3);
 
+  const handleSelectConfig = async (nextConfig: any) => {
+    const current = selectedConfig;
+    const currentIsKreis = current?.area_id?.split?.('-')?.length <= 3;
+    const nextIsOrt = nextConfig?.area_id?.split?.('-')?.length > 3;
+    if (activeMainTab === 'factors' && currentIsKreis && nextIsOrt && factorFormRef.current) {
+      await factorFormRef.current.autoSyncIfDirty();
+    }
+    setSelectedConfig(nextConfig);
+    setShowWelcome(false);
+    if (!utilityUserToggled) setUtilityCollapsed(false);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', backgroundColor: '#f8fafc' }}>
       <header style={dashboardHeaderStyle}>
-        <div className="brand-header" style={{ margin: 0 }}>
+        <div
+          className="brand-header"
+          style={{ margin: 0, cursor: 'pointer' }}
+          onClick={() => setShowWelcome(true)}
+          title="Zur Willkommensseite"
+        >
           <img
             alt="Immobilienmarkt & Standortprofile"
             width={48}
@@ -122,45 +171,61 @@ export default function DashboardClient() {
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
       {/* 1. SPALTE: WERKZEUGE (Ganz links, schmal) */}
-      <aside style={utilityBarStyle}>
+      <aside style={utilityBarStyle(utilityCollapsed)}>
         <div style={toolIconsGroupStyle}>
           <button
-            onClick={() => setActiveMainTab('texts')}
-            style={toolIconButtonStyle(activeMainTab === 'texts')}
-            title="Berichte & Texte"
+            onClick={handleToggleUtility}
+            style={toolIconButtonStyle(false)}
+            title={utilityCollapsed ? 'Menü ausklappen' : 'Menü einklappen'}
           >
-            ✍️
+            {utilityCollapsed ? '»' : '«'}
           </button>
+          {!utilityCollapsed ? (
+            <>
           <button
-            onClick={() => setActiveMainTab('factors')}
+            onClick={() => handleToolSelect('factors')}
             style={toolIconButtonStyle(activeMainTab === 'factors')}
             title="Preisfaktoren"
           >
             📊
           </button>
           <button
-            onClick={() => setActiveMainTab('marketing')}
+            onClick={() => handleToolSelect('texts')}
+            style={toolIconButtonStyle(activeMainTab === 'texts')}
+            title="Berichte & Texte"
+          >
+            ✍️
+          </button>
+          <button
+            onClick={() => handleToolSelect('marketing')}
             style={toolIconButtonStyle(activeMainTab === 'marketing')}
             title="Online-Marketing"
           >
             📈
           </button>
           <button
-            onClick={() => setActiveMainTab('local_site')}
+            onClick={() => handleToolSelect('local_site')}
             style={toolIconButtonStyle(activeMainTab === 'local_site')}
             title="Lokale Website"
           >
             🧭
           </button>
           <button
-            onClick={() => setActiveMainTab('immobilien')}
+            onClick={() => handleToolSelect('blog')}
+            style={toolIconButtonStyle(activeMainTab === 'blog')}
+            title="Blog"
+          >
+            📝
+          </button>
+          <button
+            onClick={() => handleToolSelect('immobilien')}
             style={toolIconButtonStyle(activeMainTab === 'immobilien')}
             title="Immobilien"
           >
             🏠
           </button>
           <button
-            onClick={() => setActiveMainTab('gesuche')}
+            onClick={() => handleToolSelect('gesuche')}
             style={toolIconButtonStyle(activeMainTab === 'gesuche')}
             title="Gesuche"
           >
@@ -173,6 +238,8 @@ export default function DashboardClient() {
           >
             📢
           </button>
+            </>
+          ) : null}
           <button
             onClick={handleLogout}
             style={logoutButtonStyle}
@@ -184,7 +251,7 @@ export default function DashboardClient() {
       </aside>
 
       {/* 2. SPALTE: REGIONEN-NAVIGATION (Mitte) */}
-      {activeMainTab !== 'immobilien' ? (
+      {activeMainTab !== 'immobilien' && !showWelcome ? (
         <aside style={regionSidebarStyle}>
           <div style={sidebarHeaderStyle}>
             <h2 style={{ fontSize: '14px', fontWeight: '800', margin: 0 }}>Regionen</h2>
@@ -197,13 +264,16 @@ export default function DashboardClient() {
             {mainDistricts.map(district => {
               const isSelected = selectedConfig?.area_id.startsWith(district.area_id);
               const isExpanded = expandedDistrict === district.area_id;
-              const subAreas = configs.filter(c => c.area_id.startsWith(district.area_id) && c.area_id.split('-').length > 3);
+              const allowSubAreas = activeMainTab !== 'blog';
+              const subAreas = allowSubAreas
+                ? configs.filter(c => c.area_id.startsWith(district.area_id) && c.area_id.split('-').length > 3)
+                : [];
 
               return (
                 <div key={district.id} style={{ marginBottom: '8px' }}>
                   <button
                     onClick={() => {
-                      setSelectedConfig(district);
+                      handleSelectConfig(district);
                       setExpandedDistrict(isExpanded ? null : district.area_id);
                     }}
                     style={districtButtonStyle(isSelected)}
@@ -217,7 +287,7 @@ export default function DashboardClient() {
                       {subAreas.map(ort => (
                         <button
                           key={ort.id}
-                          onClick={() => setSelectedConfig(ort)}
+                          onClick={() => handleSelectConfig(ort)}
                           style={subAreaButtonStyle(selectedConfig?.id === ort.id)}
                         >
                           {ort.areas?.name}
@@ -240,7 +310,30 @@ export default function DashboardClient() {
           padding: activeMainTab === 'immobilien' ? '24px 48px' : '40px',
         }}
       >
-        {selectedConfig ? (
+        {showWelcome ? (
+          <div style={welcomeWrapStyle}>
+            <div style={welcomeHeaderStyle}>
+              <h1 style={welcomeTitleStyle}>Willkommen im Partnerbereich</h1>
+              <p style={welcomeTextStyle}>
+                Hier verwalten Sie Preisfaktoren, Texte und Marketing-Inhalte für Ihre Regionen.
+                Wählen Sie einen Bereich aus, um direkt zu starten.
+              </p>
+            </div>
+            <div style={welcomeGridStyle}>
+              {welcomeTools.map(tool => (
+                <button
+                  key={tool.key}
+                  onClick={() => handleToolSelect(tool.key)}
+                  style={welcomeCardStyle}
+                >
+                  <div style={welcomeCardIconStyle}>{tool.icon}</div>
+                  <div style={welcomeCardTitleStyle}>{tool.title}</div>
+                  <div style={welcomeCardTextStyle}>{tool.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : selectedConfig ? (
           /* Hier entfernen wir das maxWidth: '1000px' damit die Formulare die Breite nutzen */
           <div style={{ width: '100%' }}>
             <header style={{ marginBottom: '30px' }}>
@@ -260,15 +353,39 @@ export default function DashboardClient() {
 
             {/* Die Forms nutzen nun die volle Breite des <main> Containers */}
             {activeMainTab === 'factors' ? (
-              <FactorForm key={`f-${selectedConfig.id}`} config={selectedConfig} />
+              <FactorForm ref={factorFormRef} key={`f-${selectedConfig.id}`} config={selectedConfig} />
             ) : activeMainTab === 'texts' ? (
-              <TextEditorForm key={`t-${selectedConfig.id}`} config={selectedConfig} />
+              <TextEditorForm
+                key={`t-${selectedConfig.id}`}
+                config={selectedConfig}
+                initialTabId={textFocusKey ? 'marktueberblick' : undefined}
+                focusSectionKey={textFocusKey ?? undefined}
+                onFocusHandled={() => setTextFocusKey(null)}
+              />
+            ) : activeMainTab === 'marketing' ? (
+              <TextEditorForm
+                key={`mkt-${selectedConfig.id}`}
+                config={selectedConfig}
+                tableName="partner_marketing_texts"
+                enableApproval
+              />
             ) : activeMainTab === 'local_site' ? (
               <TextEditorForm
                 key={`ls-${selectedConfig.id}`}
                 config={selectedConfig}
                 tableName="partner_local_site_texts"
                 enableApproval
+              />
+            ) : activeMainTab === 'blog' ? (
+              <BlogManager
+                key={`blog-${selectedConfig.id}`}
+                config={selectedConfig}
+                onNavigateToTexts={(sectionKey) => {
+                  setTextFocusKey(sectionKey);
+                  setActiveMainTab('texts');
+                  setShowWelcome(false);
+                  if (!utilityUserToggled) setUtilityCollapsed(false);
+                }}
               />
             ) : activeMainTab === 'immobilien' ? (
               <OffersManager />
@@ -289,15 +406,15 @@ export default function DashboardClient() {
 
 // --- STYLES ---
 
-const utilityBarStyle: React.CSSProperties = {
-  width: '80px',
+const utilityBarStyle = (collapsed: boolean): React.CSSProperties => ({
+  width: collapsed ? '56px' : '80px',
   backgroundColor: 'rgb(72, 107, 122)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '20px 0px',
+  padding: collapsed ? '16px 0px' : '20px 0px',
   zIndex: 10
-};
+});
 
 const toolIconsGroupStyle = {
   display: 'flex',
@@ -447,4 +564,116 @@ const emptyStateStyle = {
   alignItems: 'center',
   justifyContent: 'center',
   color: '#94a3b8'
+};
+
+const welcomeTools = [
+  {
+    key: 'factors',
+    title: 'Preisfaktoren',
+    description: 'Preisfaktoren der Region prüfen und bei Bedarf anpassen.',
+    icon: '📊',
+  },
+  {
+    key: 'texts',
+    title: 'Berichte & Texte',
+    description: 'Texte und Berichte für die ausgewählte Region verwalten und optimieren.',
+    icon: '✍️',
+  },
+  {
+    key: 'marketing',
+    title: 'Online-Marketing',
+    description: 'Marketing-Informationen der Region pflegen und ausrichten.',
+    icon: '📈',
+  },
+  {
+    key: 'local_site',
+    title: 'Lokale Website',
+    description: 'Regionale Inhalte für die lokale Website bearbeiten.',
+    icon: '🧭',
+  },
+  {
+    key: 'blog',
+    title: 'Blog',
+    description: 'Blogbeiträge aus Marktüberblick-Texten generieren.',
+    icon: '📝',
+  },
+  {
+    key: 'immobilien',
+    title: 'Immobilien',
+    description: 'SEO-Texte und Exposé-Inhalte pro Objekt individuell optimieren.',
+    icon: '🏠',
+  },
+  {
+    key: 'gesuche',
+    title: 'Gesuche',
+    description: 'Gesuche für die ausgewählte Region verwalten.',
+    icon: '🔎',
+  },
+];
+
+const welcomeWrapStyle = {
+  maxWidth: '1100px',
+  margin: '0 auto',
+  padding: '20px 10px 40px',
+  display: 'flex',
+  flexDirection: 'column' as const,
+  gap: '28px',
+};
+
+const welcomeHeaderStyle = {
+  backgroundColor: '#fff',
+  borderRadius: '18px',
+  padding: '28px 32px',
+  border: '1px solid #e2e8f0',
+  boxShadow: '0 8px 16px rgba(15, 23, 42, 0.06)',
+};
+
+const welcomeTitleStyle = {
+  margin: 0,
+  fontSize: '34px',
+  fontWeight: 800,
+  color: '#0f172a',
+  letterSpacing: '-0.02em',
+};
+
+const welcomeTextStyle = {
+  margin: '10px 0 0',
+  fontSize: '16px',
+  color: '#475569',
+  lineHeight: 1.5,
+};
+
+const welcomeGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: '16px',
+};
+
+const welcomeCardStyle = {
+  backgroundColor: '#fff',
+  border: '1px solid #e2e8f0',
+  borderRadius: '16px',
+  padding: '20px',
+  textAlign: 'left' as const,
+  cursor: 'pointer',
+  boxShadow: '0 10px 18px rgba(15, 23, 42, 0.06)',
+  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+};
+
+const welcomeCardIconStyle = {
+  fontSize: '26px',
+  marginBottom: '12px',
+};
+
+const welcomeCardTitleStyle = {
+  fontSize: '16px',
+  fontWeight: 800,
+  color: '#0f172a',
+  marginBottom: '6px',
+};
+
+const welcomeCardTextStyle = {
+  fontSize: '13px',
+  color: '#64748b',
+  lineHeight: 1.4,
 };

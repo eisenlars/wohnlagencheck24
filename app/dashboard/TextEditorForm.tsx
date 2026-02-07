@@ -120,6 +120,121 @@ const TAB_CONFIG = [
   ]}
 ];
 
+const MARKETING_TAB_CONFIG = [
+  {
+    id: 'immobilienmarkt_ueberblick',
+    label: 'Marktüberblick',
+    icon: '🧭',
+    sections: [
+      { key: 'marketing.immobilienmarkt_ueberblick.title', label: 'Title', type: 'marketing' },
+      { key: 'marketing.immobilienmarkt_ueberblick.description', label: 'Description', type: 'marketing' },
+      { key: 'marketing.immobilienmarkt_ueberblick.summary', label: 'Summary', type: 'marketing' },
+      { key: 'marketing.immobilienmarkt_ueberblick.primary_keyword', label: 'Primary Keyword', type: 'marketing' },
+      { key: 'marketing.immobilienmarkt_ueberblick.secondary_keywords', label: 'Secondary Keywords (CSV)', type: 'marketing' },
+      { key: 'marketing.immobilienmarkt_ueberblick.entities', label: 'Entities (CSV)', type: 'marketing' },
+      { key: 'marketing.immobilienmarkt_ueberblick.cta', label: 'CTA', type: 'marketing' },
+    ],
+  },
+  {
+    id: 'immobilienpreise',
+    label: 'Immobilienpreise',
+    icon: '🏠',
+    sections: [
+      { key: 'marketing.immobilienpreise.title', label: 'Title', type: 'marketing' },
+      { key: 'marketing.immobilienpreise.description', label: 'Description', type: 'marketing' },
+      { key: 'marketing.immobilienpreise.summary', label: 'Summary', type: 'marketing' },
+      { key: 'marketing.immobilienpreise.primary_keyword', label: 'Primary Keyword', type: 'marketing' },
+      { key: 'marketing.immobilienpreise.secondary_keywords', label: 'Secondary Keywords (CSV)', type: 'marketing' },
+      { key: 'marketing.immobilienpreise.entities', label: 'Entities (CSV)', type: 'marketing' },
+      { key: 'marketing.immobilienpreise.cta', label: 'CTA', type: 'marketing' },
+    ],
+  },
+  {
+    id: 'mietpreise',
+    label: 'Mietpreise',
+    icon: '🔑',
+    sections: [
+      { key: 'marketing.mietpreise.title', label: 'Title', type: 'marketing' },
+      { key: 'marketing.mietpreise.description', label: 'Description', type: 'marketing' },
+      { key: 'marketing.mietpreise.summary', label: 'Summary', type: 'marketing' },
+      { key: 'marketing.mietpreise.primary_keyword', label: 'Primary Keyword', type: 'marketing' },
+      { key: 'marketing.mietpreise.secondary_keywords', label: 'Secondary Keywords (CSV)', type: 'marketing' },
+      { key: 'marketing.mietpreise.entities', label: 'Entities (CSV)', type: 'marketing' },
+      { key: 'marketing.mietpreise.cta', label: 'CTA', type: 'marketing' },
+    ],
+  },
+  {
+    id: 'mietrendite',
+    label: 'Mietrendite',
+    icon: '📈',
+    sections: [
+      { key: 'marketing.mietrendite.title', label: 'Title', type: 'marketing' },
+      { key: 'marketing.mietrendite.description', label: 'Description', type: 'marketing' },
+      { key: 'marketing.mietrendite.summary', label: 'Summary', type: 'marketing' },
+      { key: 'marketing.mietrendite.primary_keyword', label: 'Primary Keyword', type: 'marketing' },
+      { key: 'marketing.mietrendite.secondary_keywords', label: 'Secondary Keywords (CSV)', type: 'marketing' },
+      { key: 'marketing.mietrendite.entities', label: 'Entities (CSV)', type: 'marketing' },
+      { key: 'marketing.mietrendite.cta', label: 'CTA', type: 'marketing' },
+    ],
+  },
+  {
+    id: 'wohnmarktsituation',
+    label: 'Wohnmarktsituation',
+    icon: '🏢',
+    sections: [
+      { key: 'marketing.wohnmarktsituation.title', label: 'Title', type: 'marketing' },
+      { key: 'marketing.wohnmarktsituation.description', label: 'Description', type: 'marketing' },
+      { key: 'marketing.wohnmarktsituation.summary', label: 'Summary', type: 'marketing' },
+      { key: 'marketing.wohnmarktsituation.primary_keyword', label: 'Primary Keyword', type: 'marketing' },
+      { key: 'marketing.wohnmarktsituation.secondary_keywords', label: 'Secondary Keywords (CSV)', type: 'marketing' },
+      { key: 'marketing.wohnmarktsituation.entities', label: 'Entities (CSV)', type: 'marketing' },
+      { key: 'marketing.wohnmarktsituation.cta', label: 'CTA', type: 'marketing' },
+    ],
+  },
+  {
+    id: 'grundstueckspreise',
+    label: 'Grundstücke',
+    icon: '🌱',
+    sections: [
+      { key: 'marketing.grundstueckspreise.title', label: 'Title', type: 'marketing' },
+      { key: 'marketing.grundstueckspreise.description', label: 'Description', type: 'marketing' },
+      { key: 'marketing.grundstueckspreise.summary', label: 'Summary', type: 'marketing' },
+      { key: 'marketing.grundstueckspreise.primary_keyword', label: 'Primary Keyword', type: 'marketing' },
+      { key: 'marketing.grundstueckspreise.secondary_keywords', label: 'Secondary Keywords (CSV)', type: 'marketing' },
+      { key: 'marketing.grundstueckspreise.entities', label: 'Entities (CSV)', type: 'marketing' },
+      { key: 'marketing.grundstueckspreise.cta', label: 'CTA', type: 'marketing' },
+    ],
+  },
+  {
+    id: 'wohnlagencheck',
+    label: 'Wohnlagencheck',
+    icon: '📍',
+    sections: [
+      { key: 'marketing.wohnlagencheck.title', label: 'Title', type: 'marketing' },
+      { key: 'marketing.wohnlagencheck.description', label: 'Description', type: 'marketing' },
+      { key: 'marketing.wohnlagencheck.summary', label: 'Summary', type: 'marketing' },
+      { key: 'marketing.wohnlagencheck.primary_keyword', label: 'Primary Keyword', type: 'marketing' },
+      { key: 'marketing.wohnlagencheck.secondary_keywords', label: 'Secondary Keywords (CSV)', type: 'marketing' },
+      { key: 'marketing.wohnlagencheck.entities', label: 'Entities (CSV)', type: 'marketing' },
+      { key: 'marketing.wohnlagencheck.cta', label: 'CTA', type: 'marketing' },
+    ],
+  },
+  {
+    id: 'wirtschaft',
+    label: 'Wirtschaft',
+    icon: '🏭',
+    sections: [
+      { key: 'marketing.wirtschaft.title', label: 'Title', type: 'marketing' },
+      { key: 'marketing.wirtschaft.description', label: 'Description', type: 'marketing' },
+      { key: 'marketing.wirtschaft.summary', label: 'Summary', type: 'marketing' },
+      { key: 'marketing.wirtschaft.primary_keyword', label: 'Primary Keyword', type: 'marketing' },
+      { key: 'marketing.wirtschaft.secondary_keywords', label: 'Secondary Keywords (CSV)', type: 'marketing' },
+      { key: 'marketing.wirtschaft.entities', label: 'Entities (CSV)', type: 'marketing' },
+      { key: 'marketing.wirtschaft.cta', label: 'CTA', type: 'marketing' },
+    ],
+  },
+];
+
 type TextEntry = {
     section_key: string;
     optimized_content?: string | null;
@@ -130,14 +245,20 @@ type TextEntry = {
 
 type TextEditorFormProps = {
     config: any;
-    tableName?: 'report_texts' | 'partner_local_site_texts';
+    tableName?: 'report_texts' | 'partner_local_site_texts' | 'partner_marketing_texts';
     enableApproval?: boolean;
+    initialTabId?: string;
+    focusSectionKey?: string;
+    onFocusHandled?: () => void;
 };
 
 export default function TextEditorForm({
     config,
     tableName = 'report_texts',
     enableApproval = false,
+    initialTabId,
+    focusSectionKey,
+    onFocusHandled,
 }: TextEditorFormProps) {
   const supabase = useMemo(() => createClient(), []);
   const [activeTab, setActiveTab] = useState('marktueberblick');
@@ -148,6 +269,8 @@ export default function TextEditorForm({
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const parts = config?.area_id ? config.area_id.split('-') : [];
   const isOrtslage = parts.length > 3;
+  const isMarketing = tableName === 'partner_marketing_texts';
+  const isLocalSite = tableName === 'partner_local_site_texts';
 
   useEffect(() => {
   async function loadTexts() {
@@ -193,14 +316,18 @@ export default function TextEditorForm({
   loadTexts();
 }, [config, supabase, tableName]);
 
+  const tabConfig = isMarketing ? MARKETING_TAB_CONFIG : TAB_CONFIG;
   const hiddenTabIds = new Set(['berater', 'makler', 'marktueberblick']);
-  if (tableName === 'partner_local_site_texts' && !isOrtslage) {
+  if (isLocalSite && !isOrtslage) {
     hiddenTabIds.delete('marktueberblick');
   }
-  const shouldHideTabs = isOrtslage || tableName === 'partner_local_site_texts';
-  const visibleTabs = shouldHideTabs
-    ? TAB_CONFIG.filter((tab) => !hiddenTabIds.has(tab.id))
-    : TAB_CONFIG;
+  const shouldHideTabs = !isMarketing && (isOrtslage || isLocalSite);
+  let visibleTabs = shouldHideTabs
+    ? tabConfig.filter((tab) => !hiddenTabIds.has(tab.id))
+    : tabConfig;
+  if (isMarketing && isOrtslage) {
+    visibleTabs = visibleTabs.filter((tab) => tab.id !== 'immobilienmarkt_ueberblick');
+  }
 
   useEffect(() => {
     if (visibleTabs.length === 0) return;
@@ -208,7 +335,32 @@ export default function TextEditorForm({
     if (!exists) setActiveTab(visibleTabs[0].id);
   }, [activeTab, visibleTabs]);
 
-  const saveText = async (key: string, content: string, type: string) => {
+  useEffect(() => {
+    if (!initialTabId) return;
+    const exists = visibleTabs.some((tab) => tab.id === initialTabId);
+    if (exists) setActiveTab(initialTabId);
+  }, [initialTabId, visibleTabs]);
+
+  useEffect(() => {
+    if (!focusSectionKey) return;
+    const id = `text-section-${focusSectionKey}`;
+    const tryScroll = () => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        onFocusHandled?.();
+        return true;
+      }
+      return false;
+    };
+    if (tryScroll()) return;
+    const t = window.setTimeout(() => {
+      tryScroll();
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [focusSectionKey, onFocusHandled]);
+
+  const saveText = async (key: string, content: string, type: string, sourceGroup?: string | null) => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
@@ -218,7 +370,7 @@ export default function TextEditorForm({
         area_id: config.area_id,
         section_key: key,
         text_type: type,
-        raw_content: getRawTextFromJSON(key),
+        raw_content: getRawTextFromJSON(key, sourceGroup),
         optimized_content: content,
         status,
         last_updated: new Date().toISOString()
@@ -298,11 +450,20 @@ export default function TextEditorForm({
     finally { setRewritingKey(null); }
   };
 
-  const getRawTextFromJSON = (key: string) => {
+  const getRawTextFromJSON = (key: string, preferredGroup?: string | null) => {
     if (!baseTexts?.text) return '';
+    if (key.includes('.')) {
+      const value = getValueByPath(baseTexts.text, key.split('.'));
+      return typeof value === 'string' ? value : '';
+    }
+    if (preferredGroup && baseTexts.text[preferredGroup] && typeof baseTexts.text[preferredGroup] === 'object') {
+      const preferred = baseTexts.text[preferredGroup][key];
+      if (typeof preferred === 'string') return preferred;
+    }
     const groups = Object.keys(baseTexts.text);
     for (const group of groups) {
-      if (baseTexts.text[group][key]) return baseTexts.text[group][key];
+      const value = baseTexts.text[group]?.[key];
+      if (typeof value === 'string' && value.length > 0) return value;
     }
     return '';
   };
@@ -329,13 +490,16 @@ export default function TextEditorForm({
 
       {/* CONTENT AREA */}
       <div style={contentWrapperStyle}>
-        {activeTabConfig?.sections.map((section) => (
+        {activeTabConfig?.sections.map((section) => {
+          const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
+          return (
           <TextEditorField 
             key={section.key}
             label={section.label}
             sectionKey={section.key}
+            sectionGroup={sectionGroup}
             type={section.type}
-            rawText={getRawTextFromJSON(section.key)}
+            rawText={getRawTextFromJSON(section.key, sectionGroup)}
             dbEntry={dbTexts.find(t => t.section_key === section.key)}
             areaName={config?.areas?.name || config.area_id}
             onSave={saveText}
@@ -344,7 +508,8 @@ export default function TextEditorForm({
             enableApproval={enableApproval}
             isRewriting={rewritingKey === section.key}
           />
-        ))}
+          );
+        })}
       </div>
 
       {enableApproval ? (
@@ -367,6 +532,30 @@ export default function TextEditorForm({
 
 function getStandardPromptText(label: string, type: string, areaName: string) {
     const lowerLabel = String(label || '').toLowerCase();
+    if (type === 'marketing') {
+        if (lowerLabel.includes('primary keyword')) {
+            return `Gib ein prägnantes Haupt-Keyword für ${areaName}. Keine Zahlen.`;
+        }
+        if (lowerLabel.includes('secondary keywords')) {
+            return `Gib 3–6 sekundäre Keywords als CSV für ${areaName}. Keine Zahlen.`;
+        }
+        if (lowerLabel.includes('entities')) {
+            return `Gib relevante Entitäten als CSV (Ort, Kreis, Bundesland, Thema). Kontext: ${areaName}.`;
+        }
+        if (lowerLabel.includes('summary')) {
+            return `Schreibe eine 2–3 Sätze Zusammenfassung für ${areaName}. Keine Zahlen, keine neuen Fakten.`;
+        }
+        if (lowerLabel.includes('cta')) {
+            return `Schreibe eine kurze, neutrale Handlungsaufforderung für ${areaName}.`;
+        }
+        if (lowerLabel.includes('description')) {
+            return `Schreibe eine Meta-Description (140–160 Zeichen) mit lokalem Bezug für ${areaName}. Keine Zahlen.`;
+        }
+        if (lowerLabel.includes('title')) {
+            return `Formuliere einen prägnanten SEO-Title (max. 60 Zeichen) für ${areaName}. Keine Zahlen.`;
+        }
+        return `Optimiere den Marketing-Text klar und prägnant. Kontext: ${areaName}. Keine neuen Fakten.`;
+    }
     if (lowerLabel.includes('überschrift') || lowerLabel.includes('headline')) {
         return `Formuliere eine prägnante Überschrift (40–60 Zeichen), ohne neue Fakten.`;
     }
@@ -385,9 +574,34 @@ function getStandardPromptText(label: string, type: string, areaName: string) {
     return `Optimiere den Text für bessere Lesbarkeit und SEO. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
 }
 
+function getValueByPath(root: any, pathParts: string[]) {
+    let current = root;
+    for (const part of pathParts) {
+        if (!current || typeof current !== 'object') return undefined;
+        current = current[part];
+    }
+    return current;
+}
+
+function resolveGroupForTab(tabId: string | undefined): string | null {
+  if (!tabId) return null;
+  const map: Record<string, string> = {
+    marktueberblick: 'immobilienmarkt_ueberblick',
+    immobilienpreise: 'immobilienpreise',
+    mietpreise: 'mietpreise',
+    mietrendite: 'mietrendite',
+    wohnmarktsituation: 'wohnmarktsituation',
+    wohnlagencheck: 'wohnlagencheck',
+    wirtschaft: 'wirtschaft',
+    grundstueckspreise: 'grundstueckspreise',
+  };
+  return map[tabId] ?? null;
+}
+
 function TextEditorField({
     label,
     sectionKey,
+    sectionGroup,
     type,
     rawText,
     dbEntry,
@@ -419,7 +633,7 @@ function TextEditorField({
     const hasOverride = Boolean(dbEntry?.optimized_content);
 
     return (
-        <div style={fieldCardStyle}>
+        <div style={fieldCardStyle} id={`text-section-${sectionKey}`}>
             <div style={fieldHeaderStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>{label}</h4>
@@ -447,7 +661,7 @@ function TextEditorField({
                     <textarea 
                         value={currentText}
                         onChange={(e) => setLocalValue(e.target.value)}
-                        onBlur={(e) => onSave(sectionKey, e.target.value, type)}
+                        onBlur={(e) => onSave(sectionKey, e.target.value, type, sectionGroup)}
                         style={textareaStyle}
                         placeholder="Inhalt bearbeiten..."
                     />
@@ -516,7 +730,29 @@ const promptLabelStyle = { fontSize: '10px', textTransform: 'uppercase' as const
 const promptContentStyle = { fontSize: '12px', color: '#475569', marginBottom: '10px', lineHeight: 1.5 };
 const promptInputLabelStyle = { display: 'flex', flexDirection: 'column' as const, gap: '6px', fontSize: '11px', fontWeight: '600', color: '#1e293b' };
 const promptInputStyle = { width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', lineHeight: '1.4', fontFamily: 'inherit' };
-const typeTagStyle = (type: string) => ({ fontSize: '9px', padding: '2px 7px', borderRadius: '4px', backgroundColor: type === 'individual' ? '#fef3c7' : (type === 'data_driven' ? '#dcfce7' : '#f1f5f9'), color: type === 'individual' ? '#92400e' : (type === 'data_driven' ? '#166534' : '#64748b'), fontWeight: '700', textTransform: 'uppercase' as const });
+const typeTagStyle = (type: string) => ({
+  fontSize: '9px',
+  padding: '2px 7px',
+  borderRadius: '4px',
+  backgroundColor:
+    type === 'individual'
+      ? '#fef3c7'
+      : type === 'data_driven'
+        ? '#dcfce7'
+        : type === 'marketing'
+          ? '#e0f2fe'
+          : '#f1f5f9',
+  color:
+    type === 'individual'
+      ? '#92400e'
+      : type === 'data_driven'
+        ? '#166534'
+        : type === 'marketing'
+          ? '#0369a1'
+          : '#64748b',
+  fontWeight: '700',
+  textTransform: 'uppercase' as const,
+});
 const savedBadgeStyle = { color: '#10b981', fontSize: '11px', fontWeight: '700' };
 const statusBadgeStyle = (approved: boolean) => ({
   fontSize: '10px',

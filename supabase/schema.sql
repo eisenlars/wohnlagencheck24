@@ -111,6 +111,37 @@ CREATE POLICY partner_local_site_texts_deny_delete
   ON public.partner_local_site_texts FOR DELETE USING (false);
 
 -- ------------------------------
+-- Online-Marketing Texte (partner_marketing_texts)
+-- ------------------------------
+CREATE TABLE public.partner_marketing_texts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  area_id text NOT NULL,
+  section_key text NOT NULL,
+  text_type text,
+  raw_content text,
+  optimized_content text,
+  status text DEFAULT 'draft'::text,
+  last_updated timestamp with time zone DEFAULT now(),
+  CONSTRAINT partner_marketing_texts_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_marketing_texts_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_marketing_texts_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
+
+CREATE UNIQUE INDEX partner_marketing_texts_unique
+  ON public.partner_marketing_texts (partner_id, area_id, section_key);
+
+ALTER TABLE public.partner_marketing_texts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY partner_marketing_texts_deny_select
+  ON public.partner_marketing_texts FOR SELECT USING (false);
+CREATE POLICY partner_marketing_texts_deny_insert
+  ON public.partner_marketing_texts FOR INSERT WITH CHECK (false);
+CREATE POLICY partner_marketing_texts_deny_update
+  ON public.partner_marketing_texts FOR UPDATE USING (false);
+CREATE POLICY partner_marketing_texts_deny_delete
+  ON public.partner_marketing_texts FOR DELETE USING (false);
+
+-- ------------------------------
 -- CRM Integrations (partner_integrations)
 -- ------------------------------
 CREATE TABLE public.partner_integrations (
@@ -204,5 +235,4 @@ CREATE POLICY overrides_partner_update
   ON public.partner_property_overrides FOR UPDATE USING (auth.uid() = partner_id);
 CREATE POLICY overrides_partner_delete
   ON public.partner_property_overrides FOR DELETE USING (auth.uid() = partner_id);
-
 

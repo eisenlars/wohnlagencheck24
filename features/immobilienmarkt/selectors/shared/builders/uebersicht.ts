@@ -208,12 +208,12 @@ export function buildUebersichtVM(args: {
    * -> Wir lesen, falls vorhanden; sonst Fallback wie im Bestand.
    */
   const kaufmarktValue =
-    toNumberOrNull(data.immobilienmarkt_situation?.[0]?.kaufmarkt_value) ??
+    toNumberOrNull(data.immobilienmarkt_situation?.[0]?.immobilienmarkt_index) ??
     toNumberOrNull(data.marktspannung?.[0]?.kaufmarkt_value) ??
     20;
 
   const mietmarktValue =
-    toNumberOrNull(data.immobilienmarkt_situation?.[0]?.mietmarkt_value) ??
+    toNumberOrNull(data.immobilienmarkt_situation?.[0]?.mietmarkt_index) ??
     toNumberOrNull(data.marktspannung?.[0]?.mietmarkt_value) ??
     -15;
 

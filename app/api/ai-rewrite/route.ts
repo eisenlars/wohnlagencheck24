@@ -36,6 +36,69 @@ function buildPrompt(args: { text: string; areaName: string; type?: string; sect
   const { text, areaName, type, sectionLabel } = args;
   const label = (sectionLabel ?? '').toLowerCase();
 
+  if (label.includes('primary keyword')) {
+    return {
+      system: 'Du bist ein deutscher SEO-Redakteur. Formuliere prägnante Keywords.',
+      user:
+        `Gib ein prägnantes Haupt-Keyword für die Themenseite in ${areaName}. ` +
+        `Keine Zahlen, keine neuen Fakten.\n\nOriginal:\n${text}`,
+    };
+  }
+
+  if (label.includes('secondary keywords')) {
+    return {
+      system: 'Du bist ein deutscher SEO-Redakteur. Erstelle relevante Keyword-Listen.',
+      user:
+        `Gib 3–6 sekundäre Keywords als CSV für ${areaName}. ` +
+        `Keine Zahlen, keine neuen Fakten.\n\nOriginal:\n${text}`,
+    };
+  }
+
+  if (label.includes('entities')) {
+    return {
+      system: 'Du bist ein deutscher SEO-Redakteur. Erstelle Entitäten-Listen.',
+      user:
+        `Gib relevante Entitäten als CSV (Ort, Kreis, Bundesland, Thema) für ${areaName}. ` +
+        `Keine neuen Fakten.\n\nOriginal:\n${text}`,
+    };
+  }
+
+  if (label.includes('summary')) {
+    return {
+      system: 'Du bist ein deutscher Redakteur. Schreibe kurze, sachliche Zusammenfassungen.',
+      user:
+        `Schreibe eine 2–3 Sätze Zusammenfassung zur Themenseite in ${areaName}. ` +
+        `Keine Zahlen, keine neuen Fakten.\n\nOriginal:\n${text}`,
+    };
+  }
+
+  if (label.includes('cta')) {
+    return {
+      system: 'Du bist ein deutscher Marketing-Redakteur. Schreibe kurze, neutrale CTAs.',
+      user:
+        `Formuliere eine kurze, neutrale Handlungsaufforderung für ${areaName}. ` +
+        `Keine übertriebenen Versprechen.\n\nOriginal:\n${text}`,
+    };
+  }
+
+  if (label.includes('description') && !label.includes('seo')) {
+    return {
+      system: 'Du bist ein deutscher SEO-Redakteur. Schreibe prägnante Meta-Descriptions.',
+      user:
+        `Schreibe eine Meta-Description (140–160 Zeichen) mit lokalem Bezug für ${areaName}. ` +
+        `Keine Zahlen, keine neuen Fakten.\n\nOriginal:\n${text}`,
+    };
+  }
+
+  if (label.includes('title') && !label.includes('seo')) {
+    return {
+      system: 'Du bist ein deutscher SEO-Redakteur. Schreibe prägnante Titles.',
+      user:
+        `Schreibe einen SEO-Title (max. 60 Zeichen) für die Themenseite in ${areaName}. ` +
+        `Keine Zahlen, keine neuen Fakten.\n\nOriginal:\n${text}`,
+    };
+  }
+
   if (label.includes('objekt-titel') || label.includes('h1') || (label.includes('titel') && !label.includes('seo'))) {
     return {
       system: 'Du bist ein deutscher Immobilien-SEO-Redakteur. Schreibe klare, prägnante Objekt-Titel ohne erfundene Fakten.',
