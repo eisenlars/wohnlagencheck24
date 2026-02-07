@@ -8,6 +8,8 @@ import TextEditorForm from './TextEditorForm';
 import OffersManager from './OffersManager';
 import BlogManager from './BlogManager';
 
+type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog';
+
 export default function DashboardClient() {
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
@@ -24,7 +26,6 @@ export default function DashboardClient() {
   const [textFocusKey, setTextFocusKey] = useState<string | null>(null);
 
   // Werkzeug-Modus umschalten
-  type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog';
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('factors');
 
   const headerConfig = useMemo(() => {
