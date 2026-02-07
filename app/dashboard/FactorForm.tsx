@@ -470,7 +470,6 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
       <div style={{ marginBottom: '15px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
           <span style={{ fontSize: '16px', fontWeight: '600', color: '#1a202c' }}>{label}</span>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Index {displayIndex}</span>
         </div>
         <div
           style={{
@@ -498,7 +497,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
               style={{ width: '100%' }}
             />
             <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569' }}>
-              Basis {baseLabel} · Δ {displayDelta}
+              Basis {baseLabel} · Index {displayIndex} · Δ {displayDelta}
             </div>
           </div>
           {showActivate && isDirty ? (
