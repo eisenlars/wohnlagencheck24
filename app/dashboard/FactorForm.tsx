@@ -282,10 +282,10 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
           const prevVal = Number(prevSnapshot?.[key]?.[yearKey] ?? 1);
           const nextVal = Number(nextSnapshot?.[key]?.[yearKey] ?? 1);
           if (prevVal === nextVal) continue;
-          const currentValRaw = row?.[key]?.[yearKey];
+          const currentValRaw = (row as any)?.[key]?.[yearKey];
           const currentVal = currentValRaw === undefined || currentValRaw === null ? null : Number(currentValRaw);
           if (force || currentVal === null || Number.isNaN(currentVal) || currentVal === prevVal || currentVal === 1) {
-            update[key] = { ...(row[key] ?? {}), [yearKey]: nextVal };
+            update[key] = { ...((row as any)[key] ?? {}), [yearKey]: nextVal };
             changed = true;
           }
         }
