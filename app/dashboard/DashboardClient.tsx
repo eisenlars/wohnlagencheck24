@@ -24,9 +24,8 @@ export default function DashboardClient() {
   const [textFocusKey, setTextFocusKey] = useState<string | null>(null);
 
   // Werkzeug-Modus umschalten
-  const [activeMainTab, setActiveMainTab] = useState<
-    'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog'
-  >('factors');
+  type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog';
+  const [activeMainTab, setActiveMainTab] = useState<MainTab>('factors');
 
   const headerConfig = useMemo(() => {
     switch (activeMainTab) {
@@ -108,7 +107,7 @@ export default function DashboardClient() {
     router.push('/login');
   };
 
-  const handleToolSelect = (tab: 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog') => {
+  const handleToolSelect = (tab: MainTab) => {
     setActiveMainTab(tab);
     setShowWelcome(false);
     if (!utilityUserToggled) setUtilityCollapsed(false);
@@ -566,7 +565,7 @@ const emptyStateStyle = {
   color: '#94a3b8'
 };
 
-const welcomeTools = [
+const welcomeTools: Array<{ key: MainTab; title: string; description: string; icon: string }> = [
   {
     key: 'factors',
     title: 'Preisfaktoren',
