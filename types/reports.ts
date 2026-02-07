@@ -647,6 +647,8 @@ export type FlaechenPreisRow = {
 export type ImmobilienmarktSituationRow = {
   kaufmarkt_value?: number | string;
   mietmarkt_value?: number | string;
+  immobilienmarkt_index?: number | string;
+  mietmarkt_index?: number | string;
 };
 
 export type StandortAllgemeinRow = {
