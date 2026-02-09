@@ -834,7 +834,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
     beginBusy();
     try {
       setBusyStep(isOrtslage ? 'Ortslage speichern…' : 'Kreis speichern…', 1, isOrtslage ? 1 : 2);
-      const reset = (obj: Record<string, number>) => {
+      const reset = <T extends Record<string, number>>(obj: T): T => {
         const n = { ...obj };
         Object.keys(n).forEach(k => n[k] = 1);
         return n;
