@@ -154,7 +154,7 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
   const tMiete = factors.immobilienmarkt_trend?.mietmarkt ?? 0;
   const immoFactor = meanOf([kh, kw]) ?? 1;
   const rentFactor = meanOf([mh, mw]) ?? 1;
-  const kreisName = meta?.kreis_name ?? meta?.amtlicher_name ?? "";
+  const kreisName = String(meta?.kreis_name ?? meta?.amtlicher_name ?? "");
   const clamp = (value: number, min = -100, max = 100) => Math.max(min, Math.min(max, value));
   const addIndex = (value: unknown, delta: number) => {
     if (typeof value !== "number" || !Number.isFinite(value)) return value;
