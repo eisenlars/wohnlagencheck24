@@ -177,81 +177,81 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
   scaleRow(getFirstRow(data, "immobilien_kaufpreis"), ["kaufpreis_immobilien"], immoFactor);
   scaleRow(getFirstRow(data, "haus_kaufpreis"), ["kaufpreis_haus"], kh);
   scaleRow(getFirstRow(data, "haus_kaufpreisspanne"), ["preis_haus_min", "preis_haus_avg", "preis_haus_max"], kh);
-  scaleRowByLabel(data?.haus_kaufpreise_im_ueberregionalen_vergleich ?? [], "Ø Preis", ["preis"], kh);
-  for (const row of data?.haus_kaufpreise_lage ?? []) {
+  scaleRowByLabel(getRows(data, "haus_kaufpreise_im_ueberregionalen_vergleich") as DataRow[], "Ø Preis", ["preis"], kh);
+  for (const row of getRows(data, "haus_kaufpreise_lage")) {
     scaleRow(row, ["preis_einfache_lage", "preis_mittlere_lage", "preis_gute_lage", "preis_sehr_gute_lage", "preis_top_lage"], kh);
   }
-  for (const row of data?.haus_kaufpreis_haustypen ?? []) {
+  for (const row of getRows(data, "haus_kaufpreis_haustypen")) {
     scaleRow(row, ["reihenhaus", "doppelhaushaelfte", "einfamilienhaus"], kh);
   }
-  scaleAllYearsByYear(data?.haus_kaufpreisentwicklung ?? [], "preis_k", year01, factors.kauf_haus);
-  scaleAllYearsByYear(data?.haus_kaufpreisentwicklung ?? [], "preis_ol", year01, factors.kauf_haus);
+  scaleAllYearsByYear(getRows(data, "haus_kaufpreisentwicklung") as DataRow[], "preis_k", year01, factors.kauf_haus);
+  scaleAllYearsByYear(getRows(data, "haus_kaufpreisentwicklung") as DataRow[], "preis_ol", year01, factors.kauf_haus);
 
   scaleRow(getFirstRow(data, "wohnung_kaufpreis"), ["kaufpreis_wohnung"], kw);
   scaleRow(getFirstRow(data, "wohnung_kaufpreisspanne"), ["preis_wohnung_min", "preis_wohnung_avg", "preis_wohnung_max"], kw);
-  scaleRowByLabel(data?.wohnung_kaufpreise_im_ueberregionalen_vergleich ?? [], "Ø Preis", ["preis"], kw);
-  for (const row of data?.wohnung_kaufpreise_lage ?? []) {
+  scaleRowByLabel(getRows(data, "wohnung_kaufpreise_im_ueberregionalen_vergleich") as DataRow[], "Ø Preis", ["preis"], kw);
+  for (const row of getRows(data, "wohnung_kaufpreise_lage")) {
     scaleRow(row, ["preis_einfache_lage", "preis_mittlere_lage", "preis_gute_lage", "preis_sehr_gute_lage", "preis_top_lage"], kw);
   }
-  for (const row of data?.wohnung_kaufpreise_nach_zimmern ?? []) {
+  for (const row of getRows(data, "wohnung_kaufpreise_nach_zimmern")) {
     scaleRow(row, ["preis"], kw);
   }
-  for (const row of data?.wohnung_kaufpreise_nach_flaechen ?? []) {
+  for (const row of getRows(data, "wohnung_kaufpreise_nach_flaechen")) {
     scaleRow(row, ["preis"], kw);
   }
-  scaleAllYearsByYear(data?.wohnung_kaufpreisentwicklung ?? [], "preis_k", year01, factors.kauf_wohnung);
-  scaleAllYearsByYear(data?.wohnung_kaufpreisentwicklung ?? [], "preis_ol", year01, factors.kauf_wohnung);
+  scaleAllYearsByYear(getRows(data, "wohnung_kaufpreisentwicklung") as DataRow[], "preis_k", year01, factors.kauf_wohnung);
+  scaleAllYearsByYear(getRows(data, "wohnung_kaufpreisentwicklung") as DataRow[], "preis_ol", year01, factors.kauf_wohnung);
 
   scaleRow(getFirstRow(data, "grundstueck_kaufpreis"), ["kaufpreis_grundstueck"], kg);
   scaleRow(getFirstRow(data, "grundstueck_kaufpreisspanne"), ["preis_grundstueck_min", "preis_grundstueck_avg", "preis_grundstueck_max"], kg);
-  scaleRowByLabel(data?.grundstueck_kaufpreise_im_ueberregionalen_vergleich ?? [], "Ø Preis", ["preis"], kg);
-  scaleRegionRow(data?.grundstueckspreise_ueberregionaler_vergleich ?? [], kreisName, "grundstueckspreis", kg);
+  scaleRowByLabel(getRows(data, "grundstueck_kaufpreise_im_ueberregionalen_vergleich") as DataRow[], "Ø Preis", ["preis"], kg);
+  scaleRegionRow(getRows(data, "grundstueckspreise_ueberregionaler_vergleich") as DataRow[], kreisName, "grundstueckspreis", kg);
 
   scaleRow(getFirstRow(data, "mietpreise_wohnung_gesamt"), ["preis_wohnung_min", "preis_wohnung_avg", "preis_wohnung_max"], mw);
-  for (const row of data?.mietpreise_wohnung_nach_zimmern ?? []) {
+  for (const row of getRows(data, "mietpreise_wohnung_nach_zimmern")) {
     scaleRow(row, ["kaltmiete"], mw);
   }
-  for (const row of data?.mietpreise_wohnung_nach_flaechen ?? []) {
+  for (const row of getRows(data, "mietpreise_wohnung_nach_flaechen")) {
     scaleRow(row, ["kaltmiete"], mw);
   }
-  for (const row of data?.mietpreise_wohnung_nach_baujahr ?? []) {
+  for (const row of getRows(data, "mietpreise_wohnung_nach_baujahr")) {
     scaleRow(row, ["kaltmiete_bestand", "kaltmiete_neubau"], mw);
   }
-  scaleAllYearsByYear(data?.mietpreisentwicklung_wohnung ?? [], "preis_k", year01, factors.miete_wohnung);
-  scaleAllYearsByYear(data?.mietpreisentwicklung_wohnung ?? [], "preis_ol", year01, factors.miete_wohnung);
-  scaleRegionRow(data?.mietpreise_ueberregionaler_vergleich ?? [], kreisName, "kaltmiete", rentFactor);
+  scaleAllYearsByYear(getRows(data, "mietpreisentwicklung_wohnung") as DataRow[], "preis_k", year01, factors.miete_wohnung);
+  scaleAllYearsByYear(getRows(data, "mietpreisentwicklung_wohnung") as DataRow[], "preis_ol", year01, factors.miete_wohnung);
+  scaleRegionRow(getRows(data, "mietpreise_ueberregionaler_vergleich") as DataRow[], kreisName, "kaltmiete", rentFactor);
 
   scaleRow(getFirstRow(data, "mietpreise_haus_gesamt"), ["preis_haus_min", "preis_haus_avg", "preis_haus_max"], mh);
-  scaleAllYearsByYear(data?.mietpreisentwicklung_haus ?? [], "preis_k", year01, factors.miete_haus);
-  scaleAllYearsByYear(data?.mietpreisentwicklung_haus ?? [], "preis_ol", year01, factors.miete_haus);
+  scaleAllYearsByYear(getRows(data, "mietpreisentwicklung_haus") as DataRow[], "preis_k", year01, factors.miete_haus);
+  scaleAllYearsByYear(getRows(data, "mietpreisentwicklung_haus") as DataRow[], "preis_ol", year01, factors.miete_haus);
 
-  for (const row of data?.ortslagen_uebersicht ?? []) {
+  for (const row of getRows(data, "ortslagen_uebersicht")) {
     scaleRow(row, ["immobilienpreise_wert"], immoFactor);
     scaleRow(row, ["grundstueckspreise_wert"], kg);
     scaleRow(row, ["mietpreise_wert"], rentFactor);
   }
 
   scaleAllYearsByYearWithPairMean(
-    data?.immobilie_kaufpreisentwicklung ?? [],
+    getRows(data, "immobilie_kaufpreisentwicklung") as DataRow[],
     "kaufpreisentwicklung_immobilie",
     year01,
     factors.kauf_haus,
     factors.kauf_wohnung,
   );
-  scaleAllYearsByYear(data?.grundstueck_kaufpreisentwicklung ?? [], "kaufpreisentwicklung_grundstueck", year01, factors.kauf_grundstueck);
+  scaleAllYearsByYear(getRows(data, "grundstueck_kaufpreisentwicklung") as DataRow[], "kaufpreisentwicklung_grundstueck", year01, factors.kauf_grundstueck);
   scaleAllYearsByYearWithPairMean(
-    data?.immobilie_mietpreisentwicklung ?? [],
+    getRows(data, "immobilie_mietpreisentwicklung") as DataRow[],
     "mietpreisentwicklung_immobilie",
     year01,
     factors.miete_haus,
     factors.miete_wohnung,
   );
-  scaleAllYearsByYear(data?.grundstueck_preisentwicklung ?? [], "angebotspreisentwicklung_grundstueck_k", year01, factors.kauf_grundstueck);
-  scaleAllYearsByYear(data?.grundstueck_preisentwicklung ?? [], "verkaufspreisentwicklung_grundstueck_k", year01, factors.kauf_grundstueck);
-  scaleAllYearsByYear(data?.grundstueck_preisentwicklung ?? [], "angebotspreisentwicklung_grundstueck_ol", year01, factors.kauf_grundstueck);
-  scaleAllYearsByYear(data?.grundstueck_preisentwicklung ?? [], "verkaufspreisentwicklung_grundstueck_ol", year01, factors.kauf_grundstueck);
+  scaleAllYearsByYear(getRows(data, "grundstueck_preisentwicklung") as DataRow[], "angebotspreisentwicklung_grundstueck_k", year01, factors.kauf_grundstueck);
+  scaleAllYearsByYear(getRows(data, "grundstueck_preisentwicklung") as DataRow[], "verkaufspreisentwicklung_grundstueck_k", year01, factors.kauf_grundstueck);
+  scaleAllYearsByYear(getRows(data, "grundstueck_preisentwicklung") as DataRow[], "angebotspreisentwicklung_grundstueck_ol", year01, factors.kauf_grundstueck);
+  scaleAllYearsByYear(getRows(data, "grundstueck_preisentwicklung") as DataRow[], "verkaufspreisentwicklung_grundstueck_ol", year01, factors.kauf_grundstueck);
 
-  scaleRegionRow(data?.immobilienpreise_ueberregionaler_vergleich ?? [], kreisName, "immobilienpreis", immoFactor);
+  scaleRegionRow(getRows(data, "immobilienpreise_ueberregionaler_vergleich") as DataRow[], kreisName, "immobilienpreis", immoFactor);
 }
 
 function applyFactorsToTextInputs(inputs: AnyRecord, factors: NormalizedFactors, year01: number | null) {
@@ -394,7 +394,7 @@ function computeIndex(current: number | null, base: number | null) {
 }
 
 function recomputeOrtslagenMinMax(data: AnyRecord, textScopeInputs: AnyRecord) {
-  const rows = (data?.ortslagen_uebersicht ?? []) as DataRow[];
+  const rows = getRows(data, "ortslagen_uebersicht") as DataRow[];
   if (!Array.isArray(rows) || rows.length === 0) return;
 
   const pick = (key: string) => {
@@ -513,7 +513,7 @@ function recomputeAggregatedPrices(
 
   if (kaufpreisGesamt !== null) {
     setRegionValue(
-      data?.immobilienpreise_ueberregionaler_vergleich ?? [],
+      getRows(data, "immobilienpreise_ueberregionaler_vergleich") as DataRow[],
       regionName,
       "immobilienpreis",
       kaufpreisGesamt,
@@ -521,7 +521,7 @@ function recomputeAggregatedPrices(
   }
   if (mieteGesamt !== null) {
     setRegionValue(
-      data?.mietpreise_ueberregionaler_vergleich ?? [],
+      getRows(data, "mietpreise_ueberregionaler_vergleich") as DataRow[],
       regionName,
       "kaltmiete",
       mieteGesamt,
@@ -530,14 +530,14 @@ function recomputeAggregatedPrices(
 
   if (kaufpreisGesamt !== null) {
     setLatestYearValue(
-      data?.immobilie_kaufpreisentwicklung ?? [],
+      getRows(data, "immobilie_kaufpreisentwicklung") as DataRow[],
       "kaufpreisentwicklung_immobilie",
       kaufpreisGesamt,
     );
   }
   if (mieteGesamt !== null) {
     setLatestYearValue(
-      data?.immobilie_mietpreisentwicklung ?? [],
+      getRows(data, "immobilie_mietpreisentwicklung") as DataRow[],
       "mietpreisentwicklung_immobilie",
       mieteGesamt,
     );
@@ -550,12 +550,12 @@ function recomputeAggregatedPrices(
   const basisPlot = toNumber(basis?.basisjahr_grundstueckspreisindex);
   const basisMiete = toNumber(basis?.basisjahr_mietpreisindex);
 
-  const immoSeries = data?.immobilie_kaufpreisentwicklung ?? [];
-  const plotSeries = data?.grundstueck_kaufpreisentwicklung ?? [];
-  const rentSeries = data?.immobilie_mietpreisentwicklung ?? [];
-  const houseSeries = data?.haus_kaufpreisentwicklung ?? [];
-  const wohnungSeries = data?.wohnung_kaufpreisentwicklung ?? [];
-  const rentWohnungSeries = data?.mietpreisentwicklung_wohnung ?? [];
+  const immoSeries = getRows(data, "immobilie_kaufpreisentwicklung") as DataRow[];
+  const plotSeries = getRows(data, "grundstueck_kaufpreisentwicklung") as DataRow[];
+  const rentSeries = getRows(data, "immobilie_mietpreisentwicklung") as DataRow[];
+  const houseSeries = getRows(data, "haus_kaufpreisentwicklung") as DataRow[];
+  const wohnungSeries = getRows(data, "wohnung_kaufpreisentwicklung") as DataRow[];
+  const rentWohnungSeries = getRows(data, "mietpreisentwicklung_wohnung") as DataRow[];
 
   const immoIndex = computeIndex(
     getLatestYearValue(immoSeries, "kaufpreisentwicklung_immobilie"),
