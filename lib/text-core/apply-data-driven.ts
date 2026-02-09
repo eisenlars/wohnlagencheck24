@@ -3,7 +3,7 @@ import { createSeededRng } from "@/lib/text-core/core";
 
 type AnyRecord = Record<string, unknown>;
 
-export function applyDataDrivenTexts(report: AnyRecord, areaId?: string) {
+export function applyDataDrivenTexts<T extends AnyRecord>(report: T, areaId?: string): T {
   if (!report || typeof report !== "object") return report;
   const data = (report.data ?? {}) as AnyRecord;
   const textgenInputs = data.textgen_inputs as AnyRecord | undefined;
@@ -36,5 +36,5 @@ export function applyDataDrivenTexts(report: AnyRecord, areaId?: string) {
       ...data,
       text: updatedText,
     },
-  };
+  } as T;
 }
