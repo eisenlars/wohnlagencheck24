@@ -235,10 +235,11 @@ function FactorGrid({
   yearLabelByFactor,
   fmt,
 }: FactorGridProps) {
+  const factorKeys: Array<keyof FactorValues> = ['f01', 'f02', 'f03', 'f04', 'f05', 'f06'];
   return (
     <div style={{ padding: '15px 0' }}>
       <h5 style={gridTitleStyle}>{title}</h5>
-      {['f01', 'f02', 'f03', 'f04', 'f05', 'f06'].map(f => (
+      {factorKeys.map((f) => (
         <InputRow
           key={f}
           label={yearLabelByFactor[f] ?? f}
