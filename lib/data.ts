@@ -94,7 +94,7 @@ type SupabaseQuery = {
   ) => Promise<TResult1 | TResult2>;
 };
 
-type SupabaseClientLike = {
+export type SupabaseClientLike = {
   from: (table: string) => SupabaseQuery;
 };
 
