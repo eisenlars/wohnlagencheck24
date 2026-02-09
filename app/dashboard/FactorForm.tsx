@@ -702,7 +702,13 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
         return { rowsCount: rows?.length ?? 0, updatesCount: 0, error: error?.message ?? null };
       }
 
-      const groups: Array<keyof FactorSnapshot> = ['kauf_haus', 'kauf_wohnung', 'kauf_grundstueck', 'miete_haus', 'miete_wohnung'];
+      const groups: Array<'kauf_haus' | 'kauf_wohnung' | 'kauf_grundstueck' | 'miete_haus' | 'miete_wohnung'> = [
+        'kauf_haus',
+        'kauf_wohnung',
+        'kauf_grundstueck',
+        'miete_haus',
+        'miete_wohnung',
+      ];
       const yearKeys: Array<keyof FactorValues> = ['f01', 'f02', 'f03', 'f04', 'f05', 'f06'];
       type SettingsRow = { id: string; area_id: string } & Record<string, unknown>;
       type UpdateRow = { id: string } & Record<string, unknown>;
@@ -716,8 +722,10 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
 
         for (const key of groups) {
           for (const yearKey of yearKeys) {
-            const prevVal = Number(prevSnapshot?.[key]?.[yearKey] ?? 1);
-            const nextVal = Number(nextSnapshot?.[key]?.[yearKey] ?? 1);
+            const prevGroup = prevSnapshot?.[key] as FactorValues | undefined;
+            const nextGroup = nextSnapshot?.[key] as FactorValues | undefined;
+            const prevVal = Number(prevGroup?.[yearKey] ?? 1);
+            const nextVal = Number(nextGroup?.[yearKey] ?? 1);
             if (!force && prevVal === nextVal) continue;
           const rowGroup = row[key] as Record<string, unknown> | undefined;
           const currentValRaw = rowGroup?.[yearKey];
