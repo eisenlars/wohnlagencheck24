@@ -288,7 +288,7 @@ export function generateDynamicPlaceholders(
     let renderedAux = "";
     if (phrasesBlock) {
       const category = classifyOver100Level(value);
-      const phraseEntry = selectPhraseEntry(category, phrasesBlock, true, rng);
+      const phraseEntry = selectPhraseEntry(category, phrasesBlock, true, rng) as AnyRecord;
       renderedPhrase = fullyRenderTemplate(phraseEntry.phrase ?? "", { ...resultPlaceholders, value }).trim();
       renderedAux = phraseEntry.auxiliar ?? "";
     } else {
