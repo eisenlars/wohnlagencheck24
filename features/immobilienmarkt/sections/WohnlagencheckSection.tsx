@@ -16,6 +16,7 @@ import { FaqSection } from "@/components/FaqSection";
 import { ImageModal } from "@/components/ImageModal";
 
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
+import { formatMetric } from "@/utils/format";
 
 import type { WohnlagencheckVM } from "@/features/immobilienmarkt/selectors/shared/types/wohnlagencheck";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";

@@ -103,11 +103,12 @@ export async function getApprovedReportTexts(
   areaId: string,
 ): Promise<ReportTextOverride[]> {
   try {
-    const { data, error } = await supabaseClient
+    const res = await supabaseClient
       .from("report_texts")
       .select("section_key, optimized_content, status")
       .eq("area_id", areaId)
       .eq("status", "approved");
+    const { data, error } = res as { data?: unknown; error?: { message: string } | null };
 
     if (error) {
       console.warn("report_texts fetch failed:", error.message);
@@ -125,11 +126,12 @@ export async function getApprovedMarketingTexts(
   areaId: string,
 ): Promise<ReportTextOverride[]> {
   try {
-    const { data, error } = await supabaseClient
+    const res = await supabaseClient
       .from("partner_marketing_texts")
       .select("section_key, optimized_content, status")
       .eq("area_id", areaId)
       .eq("status", "approved");
+    const { data, error } = res as { data?: unknown; error?: { message: string } | null };
 
     if (error) {
       console.warn("partner_marketing_texts fetch failed:", error.message);

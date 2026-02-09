@@ -9,7 +9,7 @@ import ortslagePhrases from "@/lib/text-core/phrases/ortslage/immobilienpreise.j
 import ortslageWohnraumPhrases from "@/lib/text-core/phrases/ortslage/wohnraumsituation.json";
 import ortslageWirtschaftPhrases from "@/lib/text-core/phrases/ortslage/wirtschaft.json";
 
-type AnyRecord = Record<string, unknown>;
+type AnyRecord = Record<string, any>;
 
 export const ORTSLAGE_TEXT_MAP: Array<[string, string]> = [
   ["immobilienpreise", "immobilienpreise_haus_allgemein"],

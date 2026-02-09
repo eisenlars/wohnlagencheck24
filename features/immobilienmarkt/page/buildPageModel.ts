@@ -4,7 +4,7 @@ import type { RouteModel, ReportSection, RouteLevel } from "../types/route";
 import { isSectionAllowed } from "../types/route";
 import { IMMOBILIENMARKT_THEME } from "../config/theme";
 
-import type { Report } from "@/lib/data";
+import type { Report, SupabaseClientLike } from "@/lib/data";
 import {
   getReportBySlugs,
   getOrteForKreis,
@@ -159,7 +159,7 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
 
   // DB-Overrides: approved report_texts überschreiben JSON-Texte (if present)
   if (areaId) {
-    const supabase = createClient();
+    const supabase = createClient() as unknown as SupabaseClientLike;
     const overrides = await getApprovedReportTexts(supabase, areaId);
     if (overrides.length > 0) {
       const mergedText = { ...(asRecord(report["text"]) ?? {}) };

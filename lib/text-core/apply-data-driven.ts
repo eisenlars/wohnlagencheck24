@@ -12,7 +12,7 @@ export function applyDataDrivenTexts<T extends AnyRecord>(report: T, areaId?: st
   const scope = textgenInputs.ortslage ? "ortslage" : textgenInputs.kreis ? "kreis" : null;
   if (!scope) return report;
 
-  const inputs = textgenInputs[scope];
+  const inputs = textgenInputs[scope] as AnyRecord | undefined;
   if (!inputs || typeof inputs !== "object") return report;
 
   const baseText = (report.text ?? data.text ?? {}) as AnyRecord;
