@@ -514,10 +514,11 @@ function recomputeAggregatedPrices(
     }
   }
 
-  const regionName =
+  const regionName = String(
     scope === "ortslage"
       ? (meta?.ortslage_name ?? meta?.amtlicher_name ?? meta?.kreis_name ?? "")
-      : (meta?.kreis_name ?? meta?.amtlicher_name ?? "");
+      : (meta?.kreis_name ?? meta?.amtlicher_name ?? ""),
+  );
 
   if (kaufpreisGesamt !== null) {
     setRegionValue(
