@@ -278,7 +278,7 @@ export default function DashboardClient() {
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
             {mainDistricts.map(district => {
-              const isSelected = selectedConfig?.area_id.startsWith(district.area_id);
+              const isSelected = Boolean(selectedConfig?.area_id?.startsWith(district.area_id));
               const isExpanded = expandedDistrict === district.area_id;
               const allowSubAreas = activeMainTab !== 'blog';
               const subAreas = allowSubAreas
