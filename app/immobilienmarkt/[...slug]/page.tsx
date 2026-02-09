@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const overrides =
     areaId.length > 0
-      ? await getApprovedMarketingTexts(createClient() as SupabaseClientLike, areaId)
+      ? await getApprovedMarketingTexts(createClient() as unknown as SupabaseClientLike, areaId)
       : [];
 
   const getOverride = (field: string) =>
