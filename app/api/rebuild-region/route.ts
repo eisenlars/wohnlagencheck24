@@ -665,58 +665,68 @@ function safeTrendDelta(value: unknown) {
 }
 
 function normalizeFactors(raw: AnyRecord | null | undefined): NormalizedFactors {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const kaufHaus = source.kauf_haus && typeof source.kauf_haus === "object" ? (source.kauf_haus as AnyRecord) : {};
+  const kaufWohnung = source.kauf_wohnung && typeof source.kauf_wohnung === "object" ? (source.kauf_wohnung as AnyRecord) : {};
+  const kaufGrundstueck = source.kauf_grundstueck && typeof source.kauf_grundstueck === "object" ? (source.kauf_grundstueck as AnyRecord) : {};
+  const mieteHaus = source.miete_haus && typeof source.miete_haus === "object" ? (source.miete_haus as AnyRecord) : {};
+  const mieteWohnung = source.miete_wohnung && typeof source.miete_wohnung === "object" ? (source.miete_wohnung as AnyRecord) : {};
+  const immobilienmarktTrend = source.immobilienmarkt_trend && typeof source.immobilienmarkt_trend === "object"
+    ? (source.immobilienmarkt_trend as AnyRecord)
+    : {};
+  const rendite = source.rendite && typeof source.rendite === "object" ? (source.rendite as AnyRecord) : {};
   return {
     kauf_haus: {
-      f01: safeFactor(raw?.kauf_haus?.f01),
-      f02: safeFactor(raw?.kauf_haus?.f02),
-      f03: safeFactor(raw?.kauf_haus?.f03),
-      f04: safeFactor(raw?.kauf_haus?.f04),
-      f05: safeFactor(raw?.kauf_haus?.f05),
-      f06: safeFactor(raw?.kauf_haus?.f06),
+      f01: safeFactor(kaufHaus.f01),
+      f02: safeFactor(kaufHaus.f02),
+      f03: safeFactor(kaufHaus.f03),
+      f04: safeFactor(kaufHaus.f04),
+      f05: safeFactor(kaufHaus.f05),
+      f06: safeFactor(kaufHaus.f06),
     },
     kauf_wohnung: {
-      f01: safeFactor(raw?.kauf_wohnung?.f01),
-      f02: safeFactor(raw?.kauf_wohnung?.f02),
-      f03: safeFactor(raw?.kauf_wohnung?.f03),
-      f04: safeFactor(raw?.kauf_wohnung?.f04),
-      f05: safeFactor(raw?.kauf_wohnung?.f05),
-      f06: safeFactor(raw?.kauf_wohnung?.f06),
+      f01: safeFactor(kaufWohnung.f01),
+      f02: safeFactor(kaufWohnung.f02),
+      f03: safeFactor(kaufWohnung.f03),
+      f04: safeFactor(kaufWohnung.f04),
+      f05: safeFactor(kaufWohnung.f05),
+      f06: safeFactor(kaufWohnung.f06),
     },
     kauf_grundstueck: {
-      f01: safeFactor(raw?.kauf_grundstueck?.f01),
-      f02: safeFactor(raw?.kauf_grundstueck?.f02),
-      f03: safeFactor(raw?.kauf_grundstueck?.f03),
-      f04: safeFactor(raw?.kauf_grundstueck?.f04),
-      f05: safeFactor(raw?.kauf_grundstueck?.f05),
-      f06: safeFactor(raw?.kauf_grundstueck?.f06),
+      f01: safeFactor(kaufGrundstueck.f01),
+      f02: safeFactor(kaufGrundstueck.f02),
+      f03: safeFactor(kaufGrundstueck.f03),
+      f04: safeFactor(kaufGrundstueck.f04),
+      f05: safeFactor(kaufGrundstueck.f05),
+      f06: safeFactor(kaufGrundstueck.f06),
     },
     miete_haus: {
-      f01: safeFactor(raw?.miete_haus?.f01),
-      f02: safeFactor(raw?.miete_haus?.f02),
-      f03: safeFactor(raw?.miete_haus?.f03),
-      f04: safeFactor(raw?.miete_haus?.f04),
-      f05: safeFactor(raw?.miete_haus?.f05),
-      f06: safeFactor(raw?.miete_haus?.f06),
+      f01: safeFactor(mieteHaus.f01),
+      f02: safeFactor(mieteHaus.f02),
+      f03: safeFactor(mieteHaus.f03),
+      f04: safeFactor(mieteHaus.f04),
+      f05: safeFactor(mieteHaus.f05),
+      f06: safeFactor(mieteHaus.f06),
     },
     miete_wohnung: {
-      f01: safeFactor(raw?.miete_wohnung?.f01),
-      f02: safeFactor(raw?.miete_wohnung?.f02),
-      f03: safeFactor(raw?.miete_wohnung?.f03),
-      f04: safeFactor(raw?.miete_wohnung?.f04),
-      f05: safeFactor(raw?.miete_wohnung?.f05),
-      f06: safeFactor(raw?.miete_wohnung?.f06),
+      f01: safeFactor(mieteWohnung.f01),
+      f02: safeFactor(mieteWohnung.f02),
+      f03: safeFactor(mieteWohnung.f03),
+      f04: safeFactor(mieteWohnung.f04),
+      f05: safeFactor(mieteWohnung.f05),
+      f06: safeFactor(mieteWohnung.f06),
     },
     immobilienmarkt_trend: {
-      immobilienmarkt: safeTrendDelta(raw?.immobilienmarkt_trend?.immobilienmarkt),
-      mietmarkt: safeTrendDelta(raw?.immobilienmarkt_trend?.mietmarkt),
+      immobilienmarkt: safeTrendDelta(immobilienmarktTrend.immobilienmarkt),
+      mietmarkt: safeTrendDelta(immobilienmarktTrend.mietmarkt),
     },
     rendite: {
-      mietrendite_etw: safeFactor(raw?.rendite?.mietrendite_etw),
-      kaufpreisfaktor_etw: safeFactor(raw?.rendite?.kaufpreisfaktor_etw),
-      mietrendite_efh: safeFactor(raw?.rendite?.mietrendite_efh),
-      kaufpreisfaktor_efh: safeFactor(raw?.rendite?.kaufpreisfaktor_efh),
-      mietrendite_mfh: safeFactor(raw?.rendite?.mietrendite_mfh),
-      kaufpreisfaktor_mfh: safeFactor(raw?.rendite?.kaufpreisfaktor_mfh),
+      mietrendite_etw: safeFactor(rendite.mietrendite_etw),
+      kaufpreisfaktor_etw: safeFactor(rendite.kaufpreisfaktor_etw),
+      mietrendite_efh: safeFactor(rendite.mietrendite_efh),
+      kaufpreisfaktor_efh: safeFactor(rendite.kaufpreisfaktor_efh),
+      mietrendite_mfh: safeFactor(rendite.mietrendite_mfh),
+      kaufpreisfaktor_mfh: safeFactor(rendite.kaufpreisfaktor_mfh),
     },
   };
 }
