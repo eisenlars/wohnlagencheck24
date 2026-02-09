@@ -144,8 +144,8 @@ export default function DashboardClient() {
 
   const handleSelectConfig = async (nextConfig: PartnerAreaConfig) => {
     const current = selectedConfig;
-    const currentIsKreis = current?.area_id?.split?.('-')?.length <= 3;
-    const nextIsOrt = nextConfig?.area_id?.split?.('-')?.length > 3;
+    const currentIsKreis = (current?.area_id?.split?.('-')?.length ?? 0) <= 3;
+    const nextIsOrt = (nextConfig?.area_id?.split?.('-')?.length ?? 0) > 3;
     if (activeMainTab === 'factors' && currentIsKreis && nextIsOrt && factorFormRef.current) {
       await factorFormRef.current.autoSyncIfDirty();
     }
