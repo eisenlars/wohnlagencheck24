@@ -220,6 +220,9 @@ Separater Online-Flow (ohne Python-Lauf) für Partneränderungen:
 6. `helpers.applied_factors` wird auf Zielstand gesetzt
 7. `helpers.textgen_signatures` werden aktualisiert; bei Änderungen werden `report_texts` für die betroffenen `section_key`s gelöscht
 
+Wichtig: Änderungen/Resets der Faktoren im Dashboard wirken **zuerst nur in `data_value_settings`**.  
+Die Website/Reports werden **erst nach „Neu berechnen & live schalten“** aktualisiert (Rebuild).
+
 API-Optionen:
 - `mode = "textgen_only"` berechnet nur Texte neu (keine Faktor-Anwendung).
 - `debug = true` liefert Debug-Payload (Vorher/Nachher + Pfade/Links).

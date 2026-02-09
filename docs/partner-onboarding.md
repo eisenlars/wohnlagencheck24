@@ -112,6 +112,10 @@ Migrations‑Snippets:
    - Listen: `/immobilienangebote` / `/mietangebote`  
    - Detail: `/immobilienangebote/<id>_<slug>`
 
+Hinweis (Partnerbereich – Faktoren):
+- Faktoren/Resets schreiben zuerst nur nach `data_value_settings`.
+- Sichtbar auf der Website werden Änderungen erst nach „Neu berechnen & live schalten“ (Rebuild).
+
 ---
 
 ## 4) LLM‑Anbindung (KI‑API pro Partner)

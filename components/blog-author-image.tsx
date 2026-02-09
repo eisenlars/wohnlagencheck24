@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import Image from 'next/image';
 
 type BlogAuthorImageProps = {
   src: string | null;
@@ -9,32 +10,33 @@ type BlogAuthorImageProps = {
   className?: string;
 };
 
+const passthroughLoader = ({ src }: { src: string }) => src;
+
 export default function BlogAuthorImage({
   src,
   fallbackSrc,
   alt,
   className,
 }: BlogAuthorImageProps) {
-  const [currentSrc, setCurrentSrc] = useState<string | null>(fallbackSrc || src);
-
-  useEffect(() => {
-    if (src) {
-      setCurrentSrc(src);
-    } else {
-      setCurrentSrc(fallbackSrc);
-    }
-  }, [src, fallbackSrc]);
-
-  if (!currentSrc) return null;
+  const [errorForSrc, setErrorForSrc] = useState<string | null>(null);
+  const baseSrc = src || fallbackSrc;
+  if (!baseSrc) return null;
+  const shouldFallback = Boolean(fallbackSrc && errorForSrc === baseSrc);
+  const effectiveSrc = shouldFallback ? fallbackSrc : baseSrc;
 
   return (
-    <img
-      src={currentSrc}
+    <Image
+      src={effectiveSrc}
       alt={alt}
       className={className}
+      width={64}
+      height={64}
+      sizes="64px"
+      loader={passthroughLoader}
+      unoptimized
       onError={() => {
-        if (currentSrc !== fallbackSrc) {
-          setCurrentSrc(fallbackSrc);
+        if (errorForSrc !== baseSrc) {
+          setErrorForSrc(baseSrc);
         }
       }}
     />

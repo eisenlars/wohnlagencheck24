@@ -85,8 +85,21 @@ async function fetchJson<T>(url: string | null, warnLabel: string): Promise<T | 
   }
 }
 
+type SupabaseQuery = {
+  select: (columns: string) => SupabaseQuery;
+  eq: (column: string, value: unknown) => SupabaseQuery;
+  then: <TResult1 = { data?: unknown; error?: { message: string } | null }, TResult2 = never>(
+    onfulfilled?: ((value: TResult1) => TResult2 | PromiseLike<TResult2>) | null,
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+  ) => Promise<TResult1 | TResult2>;
+};
+
+type SupabaseClientLike = {
+  from: (table: string) => SupabaseQuery;
+};
+
 export async function getApprovedReportTexts(
-  supabaseClient: { from: (table: string) => any },
+  supabaseClient: SupabaseClientLike,
   areaId: string,
 ): Promise<ReportTextOverride[]> {
   try {
@@ -108,7 +121,7 @@ export async function getApprovedReportTexts(
 }
 
 export async function getApprovedMarketingTexts(
-  supabaseClient: { from: (table: string) => any },
+  supabaseClient: SupabaseClientLike,
   areaId: string,
 ): Promise<ReportTextOverride[]> {
   try {

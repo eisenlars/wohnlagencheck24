@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 
 import type { Offer, OfferMode, OfferObjectType } from "@/lib/angebote";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
@@ -37,6 +38,7 @@ type AngebotePageProps = {
 };
 
 const priceFormatter = new Intl.NumberFormat("de-DE");
+const passthroughLoader = ({ src }: { src: string }) => src;
 
 function formatCurrency(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "—";
@@ -146,9 +148,14 @@ export function AngebotePage(props: AngebotePageProps) {
             <div className="angebote-top-media">
               <a href={buildDetailHref(activeTopOffer)} className="angebote-media-link">
                 {activeTopOffer.imageUrl ? (
-                  <img
+                  <Image
                     src={activeTopOffer.imageUrl}
                     alt={activeTopOffer.title}
+                    fill
+                    sizes="(max-width: 1200px) 100vw, 60vw"
+                    loader={passthroughLoader}
+                    unoptimized
+                    style={{ objectFit: "cover" }}
                     loading="lazy"
                   />
                 ) : (
@@ -258,7 +265,16 @@ export function AngebotePage(props: AngebotePageProps) {
                 <div className="angebote-card-media">
                   <a href={buildDetailHref(offer)} className="angebote-media-link">
                     {offer.imageUrl ? (
-                      <img src={offer.imageUrl} alt={offer.title} loading="lazy" />
+                      <Image
+                        src={offer.imageUrl}
+                        alt={offer.title}
+                        fill
+                        sizes="(max-width: 1200px) 100vw, 33vw"
+                        loader={passthroughLoader}
+                        unoptimized
+                        style={{ objectFit: "cover" }}
+                        loading="lazy"
+                      />
                     ) : (
                       <div className="angebote-card-placeholder">Kein Bild</div>
                     )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 
 type ImageModalProps = {
   src: string;
@@ -8,6 +9,8 @@ type ImageModalProps = {
   thumbStyle?: React.CSSProperties;
   thumbClassName?: string;
 };
+
+const passthroughLoader = ({ src }: { src: string }) => src;
 
 export function ImageModal({ src, alt, thumbStyle, thumbClassName }: ImageModalProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,10 +29,15 @@ export function ImageModal({ src, alt, thumbStyle, thumbClassName }: ImageModalP
 
   return (
     <>
-      <img
+      <Image
         src={src}
         alt={alt}
-        style={{ cursor: "zoom-in", ...thumbStyle }}
+        width={400}
+        height={300}
+        sizes="(max-width: 768px) 50vw, 200px"
+        loader={passthroughLoader}
+        unoptimized
+        style={{ cursor: "zoom-in", width: "100%", height: "auto", ...thumbStyle }}
         className={thumbClassName}
         onClick={open}
       />
@@ -50,7 +58,16 @@ export function ImageModal({ src, alt, thumbStyle, thumbClassName }: ImageModalP
             >
               ×
             </button>
-            <img src={src} alt={alt} className="popup-image" />
+            <Image
+              src={src}
+              alt={alt}
+              width={1200}
+              height={800}
+              sizes="(max-width: 1100px) 95vw, 1100px"
+              loader={passthroughLoader}
+              unoptimized
+              className="popup-image"
+            />
           </div>
         </div>
       ) : null}

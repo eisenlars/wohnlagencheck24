@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import FactorForm, { type FactorFormHandle } from './FactorForm';
 import TextEditorForm from './TextEditorForm';
@@ -10,13 +11,27 @@ import BlogManager from './BlogManager';
 
 type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog';
 
+type PartnerArea = {
+  id?: string;
+  name?: string;
+  slug?: string;
+  parent_slug?: string;
+  bundesland_slug?: string;
+};
+
+type PartnerAreaConfig = {
+  area_id: string;
+  areas?: PartnerArea;
+  is_active?: boolean;
+  [key: string]: unknown;
+};
+
 export default function DashboardClient() {
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
+  const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const factorFormRef = useRef<FactorFormHandle | null>(null);
-  const [configs, setConfigs] = useState<any[]>([]);
-  const [selectedConfig, setSelectedConfig] = useState<any>(null);
+  const [configs, setConfigs] = useState<PartnerAreaConfig[]>([]);
+  const [selectedConfig, setSelectedConfig] = useState<PartnerAreaConfig | null>(null);
   const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastLogin, setLastLogin] = useState<string | null>(null);
@@ -80,7 +95,9 @@ export default function DashboardClient() {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      setLastLogin(user.last_sign_in_at ?? null);
+      queueMicrotask(() => {
+        setLastLogin(user.last_sign_in_at ?? null);
+      });
 
       const { data } = await supabase
         .from('partner_area_map')
@@ -88,20 +105,17 @@ export default function DashboardClient() {
         .eq('auth_user_id', user.id)
         .order('area_id', { ascending: true });
 
-      if (data && data.length > 0) {
-        setConfigs(data);
-        setSelectedConfig(data[0]);
-        setExpandedDistrict(data[0].area_id.split('-').slice(0, 3).join('-'));
-      }
-      setLoading(false);
+      queueMicrotask(() => {
+        if (data && data.length > 0) {
+          setConfigs(data);
+          setSelectedConfig(data[0]);
+          setExpandedDistrict(data[0].area_id.split('-').slice(0, 3).join('-'));
+        }
+        setLoading(false);
+      });
     }
     loadData();
-  }, []);
-
-  useEffect(() => {
-    if (utilityUserToggled) return;
-    setUtilityCollapsed(showWelcome);
-  }, [showWelcome, utilityUserToggled]);
+  }, [supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -111,7 +125,6 @@ export default function DashboardClient() {
   const handleToolSelect = (tab: MainTab) => {
     setActiveMainTab(tab);
     setShowWelcome(false);
-    if (!utilityUserToggled) setUtilityCollapsed(false);
     if (tab === 'blog') {
       const kreis = configs.find((c) => c.area_id.split('-').length <= 3);
       if (kreis) setSelectedConfig(kreis);
@@ -119,15 +132,17 @@ export default function DashboardClient() {
   };
 
   const handleToggleUtility = () => {
+    const effectiveCollapsed = utilityUserToggled ? utilityCollapsed : showWelcome;
     setUtilityUserToggled(true);
-    setUtilityCollapsed(prev => !prev);
+    setUtilityCollapsed(!effectiveCollapsed);
   };
 
   if (loading) return <div style={{ padding: '40px' }}>Dashboard wird geladen...</div>;
 
   const mainDistricts = configs.filter(c => c.area_id.split('-').length <= 3);
+  const effectiveUtilityCollapsed = utilityUserToggled ? utilityCollapsed : showWelcome;
 
-  const handleSelectConfig = async (nextConfig: any) => {
+  const handleSelectConfig = async (nextConfig: PartnerAreaConfig) => {
     const current = selectedConfig;
     const currentIsKreis = current?.area_id?.split?.('-')?.length <= 3;
     const nextIsOrt = nextConfig?.area_id?.split?.('-')?.length > 3;
@@ -148,13 +163,14 @@ export default function DashboardClient() {
           onClick={() => setShowWelcome(true)}
           title="Zur Willkommensseite"
         >
-          <img
+          <Image
             alt="Immobilienmarkt & Standortprofile"
             width={48}
             height={48}
             src="/logo/wohnlagencheck24.svg"
             className="brand-icon"
             style={{ display: 'block' }}
+            priority
           />
           <span className="brand-text">
             <span className="brand-title">
@@ -171,16 +187,16 @@ export default function DashboardClient() {
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
       {/* 1. SPALTE: WERKZEUGE (Ganz links, schmal) */}
-      <aside style={utilityBarStyle(utilityCollapsed)}>
+      <aside style={utilityBarStyle(effectiveUtilityCollapsed)}>
         <div style={toolIconsGroupStyle}>
           <button
             onClick={handleToggleUtility}
             style={toolIconButtonStyle(false)}
-            title={utilityCollapsed ? 'Menü ausklappen' : 'Menü einklappen'}
+            title={effectiveUtilityCollapsed ? 'Menü ausklappen' : 'Menü einklappen'}
           >
-            {utilityCollapsed ? '»' : '«'}
+            {effectiveUtilityCollapsed ? '»' : '«'}
           </button>
-          {!utilityCollapsed ? (
+          {!effectiveUtilityCollapsed ? (
             <>
           <button
             onClick={() => handleToolSelect('factors')}
@@ -548,14 +564,6 @@ const regionTitleStyle = {
   color: '#0f172a',
   margin: 0,
   letterSpacing: '-0.01em'
-};
-
-const cardStyle = {
-  backgroundColor: '#fff',
-  borderRadius: '16px',
-  padding: '30px',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-  border: '1px solid #e2e8f0'
 };
 
 const emptyStateStyle = {

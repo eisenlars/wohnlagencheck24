@@ -61,11 +61,15 @@ function extractImages(elements: Record<string, unknown>): string[] {
   if (!rawImg) return [];
   if (Array.isArray(rawImg)) {
     return rawImg
-      .map((item) => (item && typeof item === "object" ? (item as any).url : null))
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const url = (item as Record<string, unknown>).url;
+        return typeof url === "string" ? url : null;
+      })
       .filter((url): url is string => typeof url === "string" && url.length > 0);
   }
   if (typeof rawImg === "object") {
-    const url = (rawImg as any).url;
+    const url = (rawImg as Record<string, unknown>).url;
     return typeof url === "string" ? [url] : [];
   }
   return [];

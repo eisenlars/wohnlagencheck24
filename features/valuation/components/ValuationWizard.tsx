@@ -5,13 +5,13 @@
 import { useState } from "react";
 
 interface ValuationWizardProps {
-  ctx?: any;
+  ctx?: Record<string, string | undefined>;
   basePrice?: number;
   level: 'kreis' | 'ort' | 'global';
 }
 
 // WICHTIG: Named Export passend zu deinem Import { ValuationWizard }
-export function ValuationWizard({ ctx, basePrice, level }: ValuationWizardProps) {
+export function ValuationWizard({ ctx, basePrice }: ValuationWizardProps) {
   const [step, setStep] = useState(1);
   const [street, setStreet] = useState("");
 
