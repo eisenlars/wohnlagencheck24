@@ -11,7 +11,7 @@ import { ValuationWizard } from "@/features/valuation/components/ValuationWizard
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatValueCtx } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
-import { getApprovedMarketingTexts, getReportBySlugs } from "@/lib/data";
+import { getApprovedMarketingTexts, getReportBySlugs, type SupabaseClientLike } from "@/lib/data";
 import { createClient } from "@/utils/supabase/server";
 
 type PageParams = { slug?: string[] };
@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const overrides =
     areaId.length > 0
-      ? await getApprovedMarketingTexts(createClient(), areaId)
+      ? await getApprovedMarketingTexts(createClient() as SupabaseClientLike, areaId)
       : [];
 
   const getOverride = (field: string) =>
