@@ -239,7 +239,7 @@ export function generateDynamicPlaceholders(
     else if ("index50" in trendData) category = determineIndex50Category(trendData.index50);
 
     const templateCategory = mapTrendCategoryToTemplateKey(category);
-    const phraseEntry = selectPhraseEntry(templateCategory, phrasesBlock, true, rng);
+    const phraseEntry = selectPhraseEntry(templateCategory, phrasesBlock, true, rng) as AnyRecord;
     const renderedPhrase = fullyRenderTemplate(phraseEntry.phrase ?? "", resultPlaceholders);
     resultPlaceholders[trendKey] = renderedPhrase;
 
