@@ -151,18 +151,16 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
     return clamp(value + delta);
   };
 
-  if (data?.immobilienmarkt_situation?.[0]) {
-    if (typeof data.immobilienmarkt_situation[0].immobilienmarkt_index === "number") {
-      data.immobilienmarkt_situation[0].immobilienmarkt_index = addIndex(
-        data.immobilienmarkt_situation[0].immobilienmarkt_index,
-        tImmo,
-      );
+  const immoSituation = Array.isArray(data?.immobilienmarkt_situation)
+    ? (data.immobilienmarkt_situation as AnyRecord[])
+    : null;
+  const firstSituation = immoSituation?.[0] as AnyRecord | undefined;
+  if (firstSituation) {
+    if (typeof firstSituation.immobilienmarkt_index === "number") {
+      firstSituation.immobilienmarkt_index = addIndex(firstSituation.immobilienmarkt_index, tImmo);
     }
-    if (typeof data.immobilienmarkt_situation[0].mietmarkt_index === "number") {
-      data.immobilienmarkt_situation[0].mietmarkt_index = addIndex(
-        data.immobilienmarkt_situation[0].mietmarkt_index,
-        tMiete,
-      );
+    if (typeof firstSituation.mietmarkt_index === "number") {
+      firstSituation.mietmarkt_index = addIndex(firstSituation.mietmarkt_index, tMiete);
     }
   }
 
