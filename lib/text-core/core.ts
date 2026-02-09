@@ -451,10 +451,11 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
   const buildFromSequencesFixed = () => {
     const seqs = preisCfg.sequences_fixed ?? [];
     if (!seqs.length) return null;
-    const seq = pickRandom(seqs, rng);
+    const seq = pickRandom(seqs, rng) as AnyRecord;
     const out: string[] = [];
     const used = new Set<string>();
-    for (const step of seq.steps ?? []) {
+    const steps = Array.isArray(seq.steps) ? (seq.steps as AnyRecord[]) : [];
+    for (const step of steps) {
       let score = step.score ?? "any";
       const tpl = step.template ?? "";
       if (!tpl) continue;
