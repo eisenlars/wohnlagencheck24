@@ -400,11 +400,19 @@ function recomputeOrtslagenMinMax(data: AnyRecord, textScopeInputs: AnyRecord) {
   const pick = (key: string) => {
     let minRow: DataRow | null = null;
     let maxRow: DataRow | null = null;
+    let minVal: number | null = null;
+    let maxVal: number | null = null;
     for (const row of rows) {
       const val = typeof row?.[key] === "number" ? row[key] : null;
       if (val === null) continue;
-      if (!minRow || val < minRow[key]) minRow = row;
-      if (!maxRow || val > maxRow[key]) maxRow = row;
+      if (minVal === null || val < minVal) {
+        minVal = val;
+        minRow = row;
+      }
+      if (maxVal === null || val > maxVal) {
+        maxVal = val;
+        maxRow = row;
+      }
     }
     return { minRow, maxRow };
   };
