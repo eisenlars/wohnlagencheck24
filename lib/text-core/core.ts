@@ -318,9 +318,10 @@ export function renderFinalText(templates: AnyRecord, placeholders: AnyRecord, h
     throw new Error(`Kein Template für Modus '${templateMode}'.`);
   }
   const chosen = pickRandom(filtered, rng);
-  const firstPass = renderTemplate(chosen, placeholders);
+  const chosenText = String(chosen);
+  const firstPass = renderTemplate(chosenText, placeholders);
   const finalPass = renderTemplate(firstPass, placeholders);
-  return [finalPass, chosen, templateMode] as const;
+  return [finalPass, chosenText, templateMode] as const;
 }
 
 export function generateTextFromMultiblock(
