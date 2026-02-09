@@ -41,6 +41,16 @@ function toNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function getRows(source: AnyRecord | null | undefined, key: string): AnyRecord[] {
+  if (!source || typeof source !== "object") return [];
+  const rows = (source as AnyRecord)[key];
+  return Array.isArray(rows) ? (rows as AnyRecord[]) : [];
+}
+
+function getFirstRow(source: AnyRecord | null | undefined, key: string): AnyRecord | undefined {
+  return getRows(source, key)[0];
+}
+
 function scaleRow(row: AnyRecord | null | undefined, keys: string[], factor: number) {
   if (!row || typeof row !== "object") return;
   for (const key of keys) {
@@ -164,9 +174,9 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
     }
   }
 
-  scaleRow(data?.immobilien_kaufpreis?.[0], ["kaufpreis_immobilien"], immoFactor);
-  scaleRow(data?.haus_kaufpreis?.[0], ["kaufpreis_haus"], kh);
-  scaleRow(data?.haus_kaufpreisspanne?.[0], ["preis_haus_min", "preis_haus_avg", "preis_haus_max"], kh);
+  scaleRow(getFirstRow(data, "immobilien_kaufpreis"), ["kaufpreis_immobilien"], immoFactor);
+  scaleRow(getFirstRow(data, "haus_kaufpreis"), ["kaufpreis_haus"], kh);
+  scaleRow(getFirstRow(data, "haus_kaufpreisspanne"), ["preis_haus_min", "preis_haus_avg", "preis_haus_max"], kh);
   scaleRowByLabel(data?.haus_kaufpreise_im_ueberregionalen_vergleich ?? [], "Ø Preis", ["preis"], kh);
   for (const row of data?.haus_kaufpreise_lage ?? []) {
     scaleRow(row, ["preis_einfache_lage", "preis_mittlere_lage", "preis_gute_lage", "preis_sehr_gute_lage", "preis_top_lage"], kh);
@@ -177,8 +187,8 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
   scaleAllYearsByYear(data?.haus_kaufpreisentwicklung ?? [], "preis_k", year01, factors.kauf_haus);
   scaleAllYearsByYear(data?.haus_kaufpreisentwicklung ?? [], "preis_ol", year01, factors.kauf_haus);
 
-  scaleRow(data?.wohnung_kaufpreis?.[0], ["kaufpreis_wohnung"], kw);
-  scaleRow(data?.wohnung_kaufpreisspanne?.[0], ["preis_wohnung_min", "preis_wohnung_avg", "preis_wohnung_max"], kw);
+  scaleRow(getFirstRow(data, "wohnung_kaufpreis"), ["kaufpreis_wohnung"], kw);
+  scaleRow(getFirstRow(data, "wohnung_kaufpreisspanne"), ["preis_wohnung_min", "preis_wohnung_avg", "preis_wohnung_max"], kw);
   scaleRowByLabel(data?.wohnung_kaufpreise_im_ueberregionalen_vergleich ?? [], "Ø Preis", ["preis"], kw);
   for (const row of data?.wohnung_kaufpreise_lage ?? []) {
     scaleRow(row, ["preis_einfache_lage", "preis_mittlere_lage", "preis_gute_lage", "preis_sehr_gute_lage", "preis_top_lage"], kw);
@@ -192,12 +202,12 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
   scaleAllYearsByYear(data?.wohnung_kaufpreisentwicklung ?? [], "preis_k", year01, factors.kauf_wohnung);
   scaleAllYearsByYear(data?.wohnung_kaufpreisentwicklung ?? [], "preis_ol", year01, factors.kauf_wohnung);
 
-  scaleRow(data?.grundstueck_kaufpreis?.[0], ["kaufpreis_grundstueck"], kg);
-  scaleRow(data?.grundstueck_kaufpreisspanne?.[0], ["preis_grundstueck_min", "preis_grundstueck_avg", "preis_grundstueck_max"], kg);
+  scaleRow(getFirstRow(data, "grundstueck_kaufpreis"), ["kaufpreis_grundstueck"], kg);
+  scaleRow(getFirstRow(data, "grundstueck_kaufpreisspanne"), ["preis_grundstueck_min", "preis_grundstueck_avg", "preis_grundstueck_max"], kg);
   scaleRowByLabel(data?.grundstueck_kaufpreise_im_ueberregionalen_vergleich ?? [], "Ø Preis", ["preis"], kg);
   scaleRegionRow(data?.grundstueckspreise_ueberregionaler_vergleich ?? [], kreisName, "grundstueckspreis", kg);
 
-  scaleRow(data?.mietpreise_wohnung_gesamt?.[0], ["preis_wohnung_min", "preis_wohnung_avg", "preis_wohnung_max"], mw);
+  scaleRow(getFirstRow(data, "mietpreise_wohnung_gesamt"), ["preis_wohnung_min", "preis_wohnung_avg", "preis_wohnung_max"], mw);
   for (const row of data?.mietpreise_wohnung_nach_zimmern ?? []) {
     scaleRow(row, ["kaltmiete"], mw);
   }
@@ -211,7 +221,7 @@ function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: Normalize
   scaleAllYearsByYear(data?.mietpreisentwicklung_wohnung ?? [], "preis_ol", year01, factors.miete_wohnung);
   scaleRegionRow(data?.mietpreise_ueberregionaler_vergleich ?? [], kreisName, "kaltmiete", rentFactor);
 
-  scaleRow(data?.mietpreise_haus_gesamt?.[0], ["preis_haus_min", "preis_haus_avg", "preis_haus_max"], mh);
+  scaleRow(getFirstRow(data, "mietpreise_haus_gesamt"), ["preis_haus_min", "preis_haus_avg", "preis_haus_max"], mh);
   scaleAllYearsByYear(data?.mietpreisentwicklung_haus ?? [], "preis_k", year01, factors.miete_haus);
   scaleAllYearsByYear(data?.mietpreisentwicklung_haus ?? [], "preis_ol", year01, factors.miete_haus);
 
@@ -403,25 +413,28 @@ function recomputeOrtslagenMinMax(data: AnyRecord, textScopeInputs: AnyRecord) {
   const plot = pick("grundstueckspreise_wert");
   const rent = pick("mietpreise_wert");
 
-  if (data?.ortslagen_preisgrenzen_immobilie?.[0] && immo.minRow && immo.maxRow) {
-    data.ortslagen_preisgrenzen_immobilie[0].guenstigste_ortslage_immobilienpreis = immo.minRow.immobilienpreise_wert;
-    data.ortslagen_preisgrenzen_immobilie[0].teuerste_ortslage_immobilienpreis = immo.maxRow.immobilienpreise_wert;
-    data.ortslagen_preisgrenzen_immobilie[0].guenstigste_ortslage_immobilie = immo.minRow.ortslage;
-    data.ortslagen_preisgrenzen_immobilie[0].teuerste_ortslage_immobilie = immo.maxRow.ortslage;
+  const ortslagenImmo = getFirstRow(data, "ortslagen_preisgrenzen_immobilie");
+  if (ortslagenImmo && immo.minRow && immo.maxRow) {
+    ortslagenImmo.guenstigste_ortslage_immobilienpreis = immo.minRow.immobilienpreise_wert;
+    ortslagenImmo.teuerste_ortslage_immobilienpreis = immo.maxRow.immobilienpreise_wert;
+    ortslagenImmo.guenstigste_ortslage_immobilie = immo.minRow.ortslage;
+    ortslagenImmo.teuerste_ortslage_immobilie = immo.maxRow.ortslage;
   }
 
-  if (data?.ortslagen_preisgrenzen_grundstueck?.[0] && plot.minRow && plot.maxRow) {
-    data.ortslagen_preisgrenzen_grundstueck[0].guenstigste_ortslage_grundstueckspreis = plot.minRow.grundstueckspreise_wert;
-    data.ortslagen_preisgrenzen_grundstueck[0].teuerste_ortslage_grundstueckspreis = plot.maxRow.grundstueckspreise_wert;
-    data.ortslagen_preisgrenzen_grundstueck[0].guenstigste_ortslage_grundstueck = plot.minRow.ortslage;
-    data.ortslagen_preisgrenzen_grundstueck[0].teuerste_ortslage_grundstueck = plot.maxRow.ortslage;
+  const ortslagenPlot = getFirstRow(data, "ortslagen_preisgrenzen_grundstueck");
+  if (ortslagenPlot && plot.minRow && plot.maxRow) {
+    ortslagenPlot.guenstigste_ortslage_grundstueckspreis = plot.minRow.grundstueckspreise_wert;
+    ortslagenPlot.teuerste_ortslage_grundstueckspreis = plot.maxRow.grundstueckspreise_wert;
+    ortslagenPlot.guenstigste_ortslage_grundstueck = plot.minRow.ortslage;
+    ortslagenPlot.teuerste_ortslage_grundstueck = plot.maxRow.ortslage;
   }
 
-  if (data?.ortslagen_preisgrenzen_miete?.[0] && rent.minRow && rent.maxRow) {
-    data.ortslagen_preisgrenzen_miete[0].guenstigste_ortslage_mietpreis = rent.minRow.mietpreise_wert;
-    data.ortslagen_preisgrenzen_miete[0].teuerste_ortslage_mietpreis = rent.maxRow.mietpreise_wert;
-    data.ortslagen_preisgrenzen_miete[0].guenstigste_ortslage_miete = rent.minRow.ortslage;
-    data.ortslagen_preisgrenzen_miete[0].teuerste_ortslage_miete = rent.maxRow.ortslage;
+  const ortslagenRent = getFirstRow(data, "ortslagen_preisgrenzen_miete");
+  if (ortslagenRent && rent.minRow && rent.maxRow) {
+    ortslagenRent.guenstigste_ortslage_mietpreis = rent.minRow.mietpreise_wert;
+    ortslagenRent.teuerste_ortslage_mietpreis = rent.maxRow.mietpreise_wert;
+    ortslagenRent.guenstigste_ortslage_miete = rent.minRow.ortslage;
+    ortslagenRent.teuerste_ortslage_miete = rent.maxRow.ortslage;
   }
 
   if (textScopeInputs?.ortslagenValues_dict && typeof textScopeInputs.ortslagenValues_dict === "object") {
@@ -453,12 +466,13 @@ function recomputeAggregatedPrices(
   scope: "kreis" | "ortslage",
   meta: AnyRecord,
 ) {
-  const hausKauf = toNumber(data?.haus_kaufpreis?.[0]?.kaufpreis_haus);
-  const wohnungKauf = toNumber(data?.wohnung_kaufpreis?.[0]?.kaufpreis_wohnung);
+  const hausKauf = toNumber(getFirstRow(data, "haus_kaufpreis")?.kaufpreis_haus);
+  const wohnungKauf = toNumber(getFirstRow(data, "wohnung_kaufpreis")?.kaufpreis_wohnung);
   const kaufpreisGesamt = meanOf([hausKauf, wohnungKauf]);
   if (kaufpreisGesamt !== null) {
-    if (Array.isArray(data?.immobilien_kaufpreis) && data.immobilien_kaufpreis[0]) {
-      data.immobilien_kaufpreis[0].kaufpreis_immobilien = kaufpreisGesamt;
+    const immobilienRow = getFirstRow(data, "immobilien_kaufpreis");
+    if (immobilienRow) {
+      immobilienRow.kaufpreis_immobilien = kaufpreisGesamt;
     }
   if (textScopeInputs?.marketValues_generallyPrices_dict && typeof textScopeInputs.marketValues_generallyPrices_dict === "object") {
     const marketValues = textScopeInputs.marketValues_generallyPrices_dict as AnyRecord;
@@ -472,12 +486,13 @@ function recomputeAggregatedPrices(
     }
   }
 
-  const hausMiete = toNumber(data?.mietpreise_haus_gesamt?.[0]?.preis_haus_avg);
-  const wohnungMiete = toNumber(data?.mietpreise_wohnung_gesamt?.[0]?.preis_wohnung_avg);
+  const hausMiete = toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_avg);
+  const wohnungMiete = toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_avg);
   const mieteGesamt = meanOf([hausMiete, wohnungMiete]);
   if (mieteGesamt !== null) {
-    if (Array.isArray(data?.mietpreise_gesamt) && data.mietpreise_gesamt[0]) {
-      data.mietpreise_gesamt[0].preis_kaltmiete = mieteGesamt;
+    const mieteRow = getFirstRow(data, "mietpreise_gesamt");
+    if (mieteRow) {
+      mieteRow.preis_kaltmiete = mieteGesamt;
     }
   if (textScopeInputs?.marketValues_generallyPrices_dict && typeof textScopeInputs.marketValues_generallyPrices_dict === "object") {
     const marketValues = textScopeInputs.marketValues_generallyPrices_dict as AnyRecord;
@@ -530,7 +545,7 @@ function recomputeAggregatedPrices(
 
   recomputeOrtslagenMinMax(data, textScopeInputs);
 
-  const basis = data?.basisjahr?.[0] ?? {};
+  const basis = getFirstRow(data, "basisjahr") ?? {};
   const basisImmo = toNumber(basis?.basisjahr_immobilienpreisindex);
   const basisPlot = toNumber(basis?.basisjahr_grundstueckspreisindex);
   const basisMiete = toNumber(basis?.basisjahr_mietpreisindex);
@@ -555,10 +570,11 @@ function recomputeAggregatedPrices(
     getYearValue(rentSeries, basisMiete, "mietpreisentwicklung_immobilie"),
   );
 
-  if (data?.preisindex?.[0]) {
-    if (immoIndex !== null) data.preisindex[0].immobilienpreisindex = immoIndex;
-    if (plotIndex !== null) data.preisindex[0].grundstueckspreisindex = plotIndex;
-    if (rentIndex !== null) data.preisindex[0].mietpreisindex = rentIndex;
+  const preisindexRow = getFirstRow(data, "preisindex");
+  if (preisindexRow) {
+    if (immoIndex !== null) preisindexRow.immobilienpreisindex = immoIndex;
+    if (plotIndex !== null) preisindexRow.grundstueckspreisindex = plotIndex;
+    if (rentIndex !== null) preisindexRow.mietpreisindex = rentIndex;
   }
 
   const houseIndex = computeIndex(
@@ -569,26 +585,29 @@ function recomputeAggregatedPrices(
     getLatestYearValue(wohnungSeries, "preis_k"),
     getYearValue(wohnungSeries, basisImmo, "preis_k"),
   );
-  if (data?.immobilienpreisindex_regional?.[0]) {
-    if (immoIndex !== null) data.immobilienpreisindex_regional[0].immobilienpreisindex = immoIndex;
-    if (houseIndex !== null) data.immobilienpreisindex_regional[0].immobilienpreisindex_haus = houseIndex;
-    if (wohnungIndex !== null) data.immobilienpreisindex_regional[0].immobilienpreisindex_wohnung = wohnungIndex;
+  const regionalIndexRow = getFirstRow(data, "immobilienpreisindex_regional");
+  if (regionalIndexRow) {
+    if (immoIndex !== null) regionalIndexRow.immobilienpreisindex = immoIndex;
+    if (houseIndex !== null) regionalIndexRow.immobilienpreisindex_haus = houseIndex;
+    if (wohnungIndex !== null) regionalIndexRow.immobilienpreisindex_wohnung = wohnungIndex;
   }
 
   const grundstueckIndex = computeIndex(
     getLatestYearValue(plotSeries, "kaufpreisentwicklung_grundstueck"),
     getYearValue(plotSeries, basisPlot, "kaufpreisentwicklung_grundstueck"),
   );
-  if (data?.grundstueckspreisindex_regional?.[0] && grundstueckIndex !== null) {
-    data.grundstueckspreisindex_regional[0].grundstueckspreisindex = grundstueckIndex;
+  const grundstueckIndexRow = getFirstRow(data, "grundstueckspreisindex_regional");
+  if (grundstueckIndexRow && grundstueckIndex !== null) {
+    grundstueckIndexRow.grundstueckspreisindex = grundstueckIndex;
   }
 
   const mietpreisIndexWohnung = computeIndex(
     getLatestYearValue(rentWohnungSeries, "preis_k"),
     getYearValue(rentWohnungSeries, basisMiete, "preis_k"),
   );
-  if (data?.mietpreisindex_regional?.[0] && mietpreisIndexWohnung !== null) {
-    data.mietpreisindex_regional[0].mietpreisindex_wohnung = mietpreisIndexWohnung;
+  const mietpreisIndexRow = getFirstRow(data, "mietpreisindex_regional");
+  if (mietpreisIndexRow && mietpreisIndexWohnung !== null) {
+    mietpreisIndexRow.mietpreisindex_wohnung = mietpreisIndexWohnung;
   }
 }
 
@@ -866,8 +885,8 @@ export async function POST(req: Request) {
           publicUrl,
           publicUrlFresh: publicUrl ? `${publicUrl}?ts=${Date.now()}` : null,
           before: {
-            haus_kaufpreis: toNumber(data?.haus_kaufpreis?.[0]?.kaufpreis_haus),
-            immobilien_kaufpreis: toNumber(data?.immobilien_kaufpreis?.[0]?.kaufpreis_immobilien),
+            haus_kaufpreis: toNumber(getFirstRow(data, "haus_kaufpreis")?.kaufpreis_haus),
+            immobilien_kaufpreis: toNumber(getFirstRow(data, "immobilien_kaufpreis")?.kaufpreis_immobilien),
             market_immobilienpreise: toNumber(
               scopeInputs?.marketValues_generallyPrices_dict?.immobilienpreise_mittel_jahr01_kreis ??
               scopeInputs?.marketValues_generallyPrices_dict?.immobilienpreise_mittel_jahr01_ortslage,
@@ -881,13 +900,13 @@ export async function POST(req: Request) {
         meta.base_values = {
           ...(meta.base_values ?? {}),
           [scopeKey]: {
-            haus_kaufpreis: toNumber(data?.haus_kaufpreis?.[0]?.kaufpreis_haus),
-            wohnung_kaufpreis: toNumber(data?.wohnung_kaufpreis?.[0]?.kaufpreis_wohnung),
-            grundstueck_kaufpreis: toNumber(data?.grundstueck_kaufpreis?.[0]?.kaufpreis_grundstueck),
-            miete_haus_avg: toNumber(data?.mietpreise_haus_gesamt?.[0]?.preis_haus_avg),
-            miete_wohnung_avg: toNumber(data?.mietpreise_wohnung_gesamt?.[0]?.preis_wohnung_avg),
-            immobilien_kaufpreis: toNumber(data?.immobilien_kaufpreis?.[0]?.kaufpreis_immobilien),
-            mietpreise_gesamt: toNumber(data?.mietpreise_gesamt?.[0]?.preis_kaltmiete),
+            haus_kaufpreis: toNumber(getFirstRow(data, "haus_kaufpreis")?.kaufpreis_haus),
+            wohnung_kaufpreis: toNumber(getFirstRow(data, "wohnung_kaufpreis")?.kaufpreis_wohnung),
+            grundstueck_kaufpreis: toNumber(getFirstRow(data, "grundstueck_kaufpreis")?.kaufpreis_grundstueck),
+            miete_haus_avg: toNumber(getFirstRow(data, "mietpreise_haus_gesamt")?.preis_haus_avg),
+            miete_wohnung_avg: toNumber(getFirstRow(data, "mietpreise_wohnung_gesamt")?.preis_wohnung_avg),
+            immobilien_kaufpreis: toNumber(getFirstRow(data, "immobilien_kaufpreis")?.kaufpreis_immobilien),
+            mietpreise_gesamt: toNumber(getFirstRow(data, "mietpreise_gesamt")?.preis_kaltmiete),
           },
         };
       }
@@ -906,8 +925,8 @@ export async function POST(req: Request) {
       recomputeAggregatedPrices(data, scopeInputs, scope, meta);
       if (debugPayload) {
         debugPayload.after = {
-          haus_kaufpreis: toNumber(data?.haus_kaufpreis?.[0]?.kaufpreis_haus),
-          immobilien_kaufpreis: toNumber(data?.immobilien_kaufpreis?.[0]?.kaufpreis_immobilien),
+          haus_kaufpreis: toNumber(getFirstRow(data, "haus_kaufpreis")?.kaufpreis_haus),
+          immobilien_kaufpreis: toNumber(getFirstRow(data, "immobilien_kaufpreis")?.kaufpreis_immobilien),
           market_immobilienpreise: toNumber(
             scopeInputs?.marketValues_generallyPrices_dict?.immobilienpreise_mittel_jahr01_kreis ??
             scopeInputs?.marketValues_generallyPrices_dict?.immobilienpreise_mittel_jahr01_ortslage,
