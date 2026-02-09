@@ -837,7 +837,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
       const reset = <T extends Record<string, number>>(obj: T): T => {
         const n = { ...obj };
         (Object.keys(n) as Array<keyof T>).forEach((k) => {
-          n[k] = 1;
+          n[k] = 1 as T[keyof T];
         });
         return n;
       };
