@@ -702,8 +702,8 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
         return { rowsCount: rows?.length ?? 0, updatesCount: 0, error: error?.message ?? null };
       }
 
-      const groups = ['kauf_haus', 'kauf_wohnung', 'kauf_grundstueck', 'miete_haus', 'miete_wohnung'];
-      const yearKeys = ['f01', 'f02', 'f03', 'f04', 'f05', 'f06'];
+      const groups: Array<keyof FactorSnapshot> = ['kauf_haus', 'kauf_wohnung', 'kauf_grundstueck', 'miete_haus', 'miete_wohnung'];
+      const yearKeys: Array<keyof FactorValues> = ['f01', 'f02', 'f03', 'f04', 'f05', 'f06'];
       type SettingsRow = { id: string; area_id: string } & Record<string, unknown>;
       type UpdateRow = { id: string } & Record<string, unknown>;
       const updates: UpdateRow[] = [];
