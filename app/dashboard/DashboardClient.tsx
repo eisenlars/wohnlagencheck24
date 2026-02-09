@@ -286,7 +286,7 @@ export default function DashboardClient() {
                 : [];
 
               return (
-                <div key={district.id} style={{ marginBottom: '8px' }}>
+                <div key={district.area_id} style={{ marginBottom: '8px' }}>
                   <button
                     onClick={() => {
                       handleSelectConfig(district);
@@ -302,7 +302,7 @@ export default function DashboardClient() {
                     <div style={subAreaListStyle}>
                       {subAreas.map(ort => (
                         <button
-                          key={ort.id}
+                          key={ort.area_id}
                           onClick={() => handleSelectConfig(ort)}
                           style={subAreaButtonStyle(selectedConfig?.id === ort.id)}
                         >
