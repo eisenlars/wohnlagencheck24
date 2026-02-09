@@ -485,7 +485,7 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
     }
     const caseBlocks = cfg[caseKey] ?? [];
     if (!caseBlocks.length) return null;
-    const block = pickRandom(caseBlocks, rng);
+    const block = pickRandom(caseBlocks, rng) as AnyRecord;
     const templates = block.templates ?? [];
     if (!templates.length) return null;
     const tpl = pickRandom(templates, rng);
@@ -590,7 +590,7 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
     };
     if (labels.length >= 3 && templates.range && rng() < 0.4) {
       const tpl = pickRandom(templates.range, rng);
-      return ensureSentence(renderTemplate(tpl, ctx));
+      return ensureSentence(renderTemplate(String(tpl), ctx));
     }
     let candidates: string[] = [];
     if (labels.length === 1 && templates.single) candidates = templates.single;
@@ -601,7 +601,7 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
     else candidates = templates.list ?? [];
     if (!candidates.length) return "";
     const tpl = pickRandom(candidates, rng);
-    return ensureSentence(renderTemplate(tpl, ctx));
+    return ensureSentence(renderTemplate(String(tpl), ctx));
   };
 
   const buildPriceFallback = () => {
