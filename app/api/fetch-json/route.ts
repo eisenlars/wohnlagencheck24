@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
     const jsonData = await res.json();
     return NextResponse.json(jsonData.text);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Datei nicht gefunden' }, { status: 404 });
   }
 }

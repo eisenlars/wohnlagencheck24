@@ -347,7 +347,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ optimizedText });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('AI Route Error:', error);
     return NextResponse.json({ error: 'Fehler in der KI-Schnittstelle' }, { status: 500 });
   }

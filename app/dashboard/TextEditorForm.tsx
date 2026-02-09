@@ -243,8 +243,22 @@ type TextEntry = {
     last_updated?: string | null;
 };
 
+type PartnerArea = {
+  id?: string;
+  name?: string;
+  slug?: string;
+  parent_slug?: string;
+  bundesland_slug?: string;
+};
+
+type PartnerAreaConfig = {
+  area_id: string;
+  areas?: PartnerArea;
+  [key: string]: unknown;
+};
+
 type TextEditorFormProps = {
-    config: any;
+    config: PartnerAreaConfig;
     tableName?: 'report_texts' | 'partner_local_site_texts' | 'partner_marketing_texts';
     enableApproval?: boolean;
     initialTabId?: string;
@@ -263,8 +277,8 @@ export default function TextEditorForm({
   const supabase = useMemo(() => createClient(), []);
   const [activeTab, setActiveTab] = useState('marktueberblick');
   const [loading, setLoading] = useState(true);
-  const [baseTexts, setBaseTexts] = useState<any>(null);
-    const [dbTexts, setDbTexts] = useState<TextEntry[]>([]);
+  const [baseTexts, setBaseTexts] = useState<{ text: Record<string, Record<string, string>> } | null>(null);
+  const [dbTexts, setDbTexts] = useState<TextEntry[]>([]);
   const [saving, setSaving] = useState(false);
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const parts = config?.area_id ? config.area_id.split('-') : [];
@@ -314,7 +328,7 @@ export default function TextEditorForm({
     }
   }
   loadTexts();
-}, [config, supabase, tableName]);
+}, [config, supabase, tableName, isOrtslage]);
 
   const tabConfig = isMarketing ? MARKETING_TAB_CONFIG : TAB_CONFIG;
   const hiddenTabIds = new Set(['berater', 'makler', 'marktueberblick']);
@@ -494,7 +508,7 @@ export default function TextEditorForm({
           const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
           return (
           <TextEditorField 
-            key={section.key}
+            key={`${section.key}:${dbTexts.find(t => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
             label={section.label}
             sectionKey={section.key}
             sectionGroup={sectionGroup}
@@ -574,11 +588,11 @@ function getStandardPromptText(label: string, type: string, areaName: string) {
     return `Optimiere den Text für bessere Lesbarkeit und SEO. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
 }
 
-function getValueByPath(root: any, pathParts: string[]) {
-    let current = root;
+function getValueByPath(root: unknown, pathParts: string[]) {
+    let current: unknown = root;
     for (const part of pathParts) {
         if (!current || typeof current !== 'object') return undefined;
-        current = current[part];
+        current = (current as Record<string, unknown>)[part];
     }
     return current;
 }
@@ -598,6 +612,21 @@ function resolveGroupForTab(tabId: string | undefined): string | null {
   return map[tabId] ?? null;
 }
 
+type TextEditorFieldProps = {
+  label: string;
+  sectionKey: string;
+  sectionGroup: string | null;
+  type: string;
+  rawText: string;
+  dbEntry?: TextEntry;
+  areaName: string;
+  onSave: (key: string, content: string, type: string, sourceGroup?: string | null) => void;
+  onAiRewrite: (key: string, currentText: string, type: string, label: string, customPrompt?: string) => void;
+  onReset: (key: string) => void;
+  enableApproval: boolean;
+  isRewriting: boolean;
+};
+
 function TextEditorField({
     label,
     sectionKey,
@@ -611,20 +640,11 @@ function TextEditorField({
     onReset,
     enableApproval,
     isRewriting,
-}: any) {
+}: TextEditorFieldProps) {
     const [localValue, setLocalValue] = useState(dbEntry?.optimized_content ?? rawText ?? '');
     const [showPrompt, setShowPrompt] = useState(false);
     const [customPrompt, setCustomPrompt] = useState('');
     
-    // Update local state when DB entry changes (e.g. after AI rewrite)
-    useEffect(() => {
-        if (dbEntry?.optimized_content !== undefined && dbEntry?.optimized_content !== null) {
-            setLocalValue(dbEntry.optimized_content);
-        } else {
-            setLocalValue(rawText ?? '');
-        }
-    }, [dbEntry, rawText]);
-
     const currentText = localValue || rawText;
     const isIndividual = type === 'individual';
     const standardPrompt = getStandardPromptText(label, type, areaName);

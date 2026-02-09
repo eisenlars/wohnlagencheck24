@@ -26,6 +26,7 @@ import { buildWebAssetUrl } from "@/utils/assets";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { getRegionDisplayName } from "@/utils/regionName";
 import { createClient } from "@/utils/supabase/server";
+import { applyDataDrivenTexts } from "@/lib/text-core";
 
 export type PageModel = {
   route: RouteModel;
@@ -147,12 +148,16 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
     };
   }
 
-  // DB-Overrides: approved report_texts überschreiben JSON-Texte (if present)
   const meta = asRecord(asArray(report.meta)[0] ?? report.meta) ?? {};
   const areaId =
     (asString(meta["ortslage_schluessel"]) ??
       asString(meta["kreis_schluessel"]) ??
       "") || "";
+  if (areaId) {
+    report = applyDataDrivenTexts(report, areaId);
+  }
+
+  // DB-Overrides: approved report_texts überschreiben JSON-Texte (if present)
   if (areaId) {
     const supabase = createClient();
     const overrides = await getApprovedReportTexts(supabase, areaId);

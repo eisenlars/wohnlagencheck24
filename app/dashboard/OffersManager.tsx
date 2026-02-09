@@ -73,7 +73,7 @@ export default function OffersManager() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [supabase]);
 
   const filteredOffers = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -158,7 +158,7 @@ export default function OffersManager() {
     });
   }, [selectedOffer, selectedOverride, effectiveExternalId, effectiveSource, rawDescription, rawLocation, rawFeatures, rawHighlights, rawImageAltTexts]);
 
-  const updateField = (key: keyof OverrideRow, value: any) => {
+  const updateField = (key: keyof OverrideRow, value: OverrideRow[keyof OverrideRow]) => {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
@@ -227,7 +227,7 @@ export default function OffersManager() {
     }
   };
 
-  const resetField = async (key: keyof OverrideRow, fallback: any) => {
+  const resetField = async (key: keyof OverrideRow, fallback: OverrideRow[keyof OverrideRow]) => {
     if (!form) return;
     const updated = { ...form, [key]: fallback };
     setForm(updated);

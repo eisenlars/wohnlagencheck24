@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
+import { applyDataDrivenTexts } from "@/lib/text-core";
 
 export const runtime = "nodejs";
 
@@ -126,9 +127,16 @@ function stripGroups(
   return cleaned;
 }
 
+type OverrideRow = {
+  optimized_content?: string | null;
+  status?: string | null;
+};
+
+type OverrideMap = Record<string, OverrideRow>;
+
 function mergeTexts(
   baseTexts: Record<string, Record<string, string>>,
-  overrides: Record<string, any>,
+  overrides: OverrideMap,
 ) {
   const merged: Record<string, Record<string, string>> = {};
   Object.entries(baseTexts || {}).forEach(([groupKey, group]) => {
@@ -198,8 +206,9 @@ export async function GET(req: Request) {
 
   const kreisReportJson = await fetchReportJson(["reports", "deutschland", bundesland, `${kreis}.json`]);
   if (kreisReportJson) {
+    const reportJson = applyDataDrivenTexts(kreisReportJson, kreisAreaId);
     const baseTexts = stripGroups(
-      (kreisReportJson.text ?? {}) as Record<string, Record<string, string>>,
+      (reportJson.text ?? {}) as Record<string, Record<string, string>>,
       ["berater", "makler"],
     );
     const { data: kreisOverrides } = await supabase
@@ -208,14 +217,14 @@ export async function GET(req: Request) {
       .eq("partner_id", integration.partner_id)
       .eq("area_id", kreisAreaId);
 
-    const overrideMap = (kreisOverrides ?? []).reduce<Record<string, any>>((acc, row) => {
+    const overrideMap = (kreisOverrides ?? []).reduce<OverrideMap>((acc, row) => {
       acc[String(row.section_key)] = row;
       return acc;
     }, {});
 
     const mergedText = mergeTexts(baseTexts, overrideMap);
     const kreisPayload = {
-      ...kreisReportJson,
+      ...reportJson,
       text: mergedText,
       local_site: {
         partner_id: integration.partner_id,
@@ -232,8 +241,9 @@ export async function GET(req: Request) {
   for (const ort of orts ?? []) {
     const ortSlug = String(ort.slug ?? "");
     if (!ortSlug) continue;
-    const reportJson = await fetchReportJson(["reports", "deutschland", bundesland, kreis, `${ortSlug}.json`]);
-    if (!reportJson) continue;
+    const reportJsonRaw = await fetchReportJson(["reports", "deutschland", bundesland, kreis, `${ortSlug}.json`]);
+    if (!reportJsonRaw) continue;
+    const reportJson = applyDataDrivenTexts(reportJsonRaw, ort.id);
 
     const baseTexts = stripGroups(
       (reportJson.text ?? {}) as Record<string, Record<string, string>>,
@@ -245,7 +255,7 @@ export async function GET(req: Request) {
       .eq("partner_id", integration.partner_id)
       .eq("area_id", ort.id);
 
-    const overrideMap = (ortOverrides ?? []).reduce<Record<string, any>>((acc, row) => {
+    const overrideMap = (ortOverrides ?? []).reduce<OverrideMap>((acc, row) => {
       acc[String(row.section_key)] = row;
       return acc;
     }, {});

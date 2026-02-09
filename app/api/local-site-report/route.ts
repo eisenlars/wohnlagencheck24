@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
+import { applyDataDrivenTexts } from "@/lib/text-core";
 
 export const runtime = "nodejs";
 
@@ -17,12 +18,21 @@ function buildSupabaseReportUrl(pathParts: string[]): string | null {
   return `${base}/${SUPABASE_BUCKET}/${rel}`;
 }
 
+type OverrideRow = {
+  optimized_content?: string | null;
+  status?: string | null;
+  last_updated?: string | null;
+  text_type?: string | null;
+};
+
+type OverrideMap = Record<string, OverrideRow>;
+
 function mergeTexts(
   baseTexts: Record<string, Record<string, string>>,
-  overrides: Record<string, any>,
+  overrides: OverrideMap,
 ) {
   const merged: Record<string, Record<string, string>> = {};
-  const meta: Record<string, any> = {};
+  const meta: Record<string, Record<string, string | null>> = {};
 
   Object.entries(baseTexts || {}).forEach(([groupKey, group]) => {
     merged[groupKey] = {};
@@ -42,11 +52,12 @@ function mergeTexts(
 
   Object.keys(overrides).forEach((sectionKey) => {
     if (!meta[sectionKey]) {
+      const override = overrides[sectionKey];
       meta[sectionKey] = {
-        status: overrides[sectionKey]?.status ?? "raw",
-        last_updated: overrides[sectionKey]?.last_updated ?? null,
-        text_type: overrides[sectionKey]?.text_type ?? null,
-        source: overrides[sectionKey]?.status === "approved" ? "override" : "raw",
+        status: override?.status ?? "raw",
+        last_updated: override?.last_updated ?? null,
+        text_type: override?.text_type ?? null,
+        source: override?.status === "approved" ? "override" : "raw",
       };
     }
   });
@@ -123,7 +134,8 @@ export async function GET(req: Request) {
   if (!reportRes.ok) {
     return NextResponse.json({ error: "Report nicht gefunden" }, { status: 404 });
   }
-  const reportJson = await reportRes.json();
+  let reportJson = await reportRes.json();
+  reportJson = applyDataDrivenTexts(reportJson, areaId);
   const baseTextsRaw = (reportJson?.text ?? {}) as Record<string, Record<string, string>>;
   const baseTexts = stripGroups(baseTextsRaw, ["berater", "makler"]);
 
@@ -136,15 +148,15 @@ export async function GET(req: Request) {
   const allowedKeys = new Set(
     Object.values(baseTexts).flatMap((group) => Object.keys(group || {})),
   );
-  const overridesMap = (overrides ?? []).reduce<Record<string, any>>((acc, row) => {
+  const overridesMap = (overrides ?? []).reduce<OverrideMap>((acc, row) => {
     const key = String(row.section_key);
     if (allowedKeys.has(key)) {
-      acc[key] = row;
+      acc[key] = row as OverrideRow;
     }
     return acc;
   }, {});
 
-  const { merged, meta } = mergeTexts(baseTexts, overridesMap);
+  const { merged } = mergeTexts(baseTexts, overridesMap);
 
   return NextResponse.json({
     ...reportJson,

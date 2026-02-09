@@ -11,6 +11,7 @@ export function KreisSubnavScrollHandle({ targetId }: KreisSubnavScrollHandlePro
   const [isActive, setIsActive] = useState(false);
   const [thumbWidth, setThumbWidth] = useState(0);
   const [thumbLeft, setThumbLeft] = useState(0);
+  const thumbWidthRef = useRef(0);
   const targetRef = useRef<HTMLElement | null>(null);
   const railRef = useRef<HTMLDivElement | null>(null);
   const pointerStartX = useRef<number | null>(null);
@@ -66,6 +67,7 @@ export function KreisSubnavScrollHandle({ targetId }: KreisSubnavScrollHandlePro
         Math.max(0, (target.scrollLeft / maxScroll) * maxThumbLeft),
       );
 
+      thumbWidthRef.current = nextThumbWidth;
       setThumbWidth(nextThumbWidth);
       setThumbLeft(nextThumbLeft);
     };
@@ -104,7 +106,7 @@ export function KreisSubnavScrollHandle({ targetId }: KreisSubnavScrollHandlePro
 
       const delta = event.clientX - pointerStartX.current;
       const railWidth = rail.clientWidth;
-      const maxThumbLeft = Math.max(0, railWidth - Math.max(48, thumbWidth));
+      const maxThumbLeft = Math.max(0, railWidth - Math.max(48, thumbWidthRef.current));
       const nextThumbLeft = Math.min(
         maxThumbLeft,
         Math.max(0, thumbStartLeft.current + delta),

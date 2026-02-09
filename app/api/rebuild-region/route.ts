@@ -16,8 +16,19 @@ type RebuildRequest = {
   area_id?: string;
   scope?: "kreis" | "ortslage";
   mode?: "full" | "textgen_only";
-  previous_factors?: any;
+  previous_factors?: unknown;
   debug?: boolean;
+};
+
+type AnyRecord = Record<string, unknown>;
+type DataRow = AnyRecord & { jahr?: number; region?: string; ortslage?: string };
+type FactorGroup = {
+  f01?: number;
+  f02?: number;
+  f03?: number;
+  f04?: number;
+  f05?: number;
+  f06?: number;
 };
 
 function isEnabled() {
@@ -26,25 +37,21 @@ function isEnabled() {
 
 const SUPABASE_BUCKET = "immobilienmarkt";
 
-function toNumber(value: any) {
+function toNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function scaleValue(value: any, factor: number) {
-  if (typeof value !== "number" || !Number.isFinite(value)) return value;
-  return value * factor;
-}
-
-function scaleRow(row: any, keys: string[], factor: number) {
+function scaleRow(row: AnyRecord | null | undefined, keys: string[], factor: number) {
   if (!row || typeof row !== "object") return;
   for (const key of keys) {
-    if (typeof row[key] === "number") {
-      row[key] = row[key] * factor;
+    const raw = row[key];
+    if (typeof raw === "number") {
+      row[key] = raw * factor;
     }
   }
 }
 
-function scaleRowByLabel(rows: any[], label: string, keys: string[], factor: number, labelKey = "preisinfo_label") {
+function scaleRowByLabel(rows: DataRow[] | undefined, label: string, keys: string[], factor: number, labelKey = "preisinfo_label") {
   if (!Array.isArray(rows)) return;
   const target = String(label ?? "").trim().toLowerCase();
   for (const row of rows) {
@@ -55,39 +62,18 @@ function scaleRowByLabel(rows: any[], label: string, keys: string[], factor: num
   }
 }
 
-function scaleLatestYear(rows: any[], key: string, factor: number) {
-  if (!Array.isArray(rows) || rows.length === 0) return;
-  const years = rows.map((r) => (typeof r?.jahr === "number" ? r.jahr : null)).filter((v) => v !== null) as number[];
-  if (!years.length) return;
-  const latest = Math.max(...years);
-  for (const row of rows) {
-    if (row?.jahr === latest && typeof row[key] === "number") {
-      row[key] = row[key] * factor;
-    }
-  }
-}
-
-function scaleAllYears(rows: any[], key: string, factor: number) {
-  if (!Array.isArray(rows) || rows.length === 0) return;
-  for (const row of rows) {
-    if (typeof row?.[key] === "number") {
-      row[key] = row[key] * factor;
-    }
-  }
-}
-
-function factorByYear(year: number | null, year01: number | null, group: any) {
+function factorByYear(year: number | null, year01: number | null, group: FactorGroup | null | undefined) {
   if (typeof year01 !== "number" || typeof year !== "number") return group?.f01 ?? 1;
   const offset = year01 - year;
   if (offset < 0) return group?.f01 ?? 1;
   const index = offset + 1;
   if (index < 1 || index > 6) return group?.f01 ?? 1;
   const key = `f0${index}`;
-  const value = group?.[key];
+  const value = group?.[key as keyof FactorGroup];
   return typeof value === "number" && Number.isFinite(value) ? value : group?.f01 ?? 1;
 }
 
-function scaleAllYearsByYear(rows: any[], key: string, year01: number | null, group: any) {
+function scaleAllYearsByYear(rows: DataRow[] | undefined, key: string, year01: number | null, group: FactorGroup | null | undefined) {
   if (!Array.isArray(rows) || rows.length === 0) return;
   for (const row of rows) {
     if (typeof row?.[key] !== "number") continue;
@@ -97,11 +83,11 @@ function scaleAllYearsByYear(rows: any[], key: string, year01: number | null, gr
 }
 
 function scaleAllYearsByYearWithPairMean(
-  rows: any[],
+  rows: DataRow[] | undefined,
   key: string,
   year01: number | null,
-  groupA: any,
-  groupB: any,
+  groupA: FactorGroup | null | undefined,
+  groupB: FactorGroup | null | undefined,
 ) {
   if (!Array.isArray(rows) || rows.length === 0) return;
   for (const row of rows) {
@@ -112,7 +98,7 @@ function scaleAllYearsByYearWithPairMean(
   }
 }
 
-function setLatestYearValue(rows: any[], key: string, value: number) {
+function setLatestYearValue(rows: DataRow[] | undefined, key: string, value: number) {
   if (!Array.isArray(rows) || rows.length === 0) return;
   const years = rows.map((r) => (typeof r?.jahr === "number" ? r.jahr : null)).filter((v) => v !== null) as number[];
   if (!years.length) return;
@@ -124,7 +110,7 @@ function setLatestYearValue(rows: any[], key: string, value: number) {
   }
 }
 
-function scaleRegionRow(rows: any[], regionName: string, key: string, factor: number) {
+function scaleRegionRow(rows: DataRow[] | undefined, regionName: string, key: string, factor: number) {
   if (!Array.isArray(rows)) return;
   const target = String(regionName ?? "").toLowerCase();
   for (const row of rows) {
@@ -135,7 +121,7 @@ function scaleRegionRow(rows: any[], regionName: string, key: string, factor: nu
   }
 }
 
-function setRegionValue(rows: any[], regionName: string, key: string, value: number) {
+function setRegionValue(rows: DataRow[] | undefined, regionName: string, key: string, value: number) {
   if (!Array.isArray(rows)) return;
   const target = String(regionName ?? "").toLowerCase();
   for (const row of rows) {
@@ -147,7 +133,7 @@ function setRegionValue(rows: any[], regionName: string, key: string, value: num
   }
 }
 
-function applyFactorsToData(data: any, meta: any, factors: any, year01: number | null) {
+function applyFactorsToData(data: AnyRecord, meta: AnyRecord, factors: NormalizedFactors, year01: number | null) {
   if (!data || typeof data !== "object") return;
   const kh = factors.kauf_haus?.f01 ?? 1;
   const kw = factors.kauf_wohnung?.f01 ?? 1;
@@ -160,7 +146,7 @@ function applyFactorsToData(data: any, meta: any, factors: any, year01: number |
   const rentFactor = meanOf([mh, mw]) ?? 1;
   const kreisName = meta?.kreis_name ?? meta?.amtlicher_name ?? "";
   const clamp = (value: number, min = -100, max = 100) => Math.max(min, Math.min(max, value));
-  const addIndex = (value: any, delta: number) => {
+  const addIndex = (value: unknown, delta: number) => {
     if (typeof value !== "number" || !Number.isFinite(value)) return value;
     return clamp(value + delta);
   };
@@ -260,7 +246,7 @@ function applyFactorsToData(data: any, meta: any, factors: any, year01: number |
   scaleRegionRow(data?.immobilienpreise_ueberregionaler_vergleich ?? [], kreisName, "immobilienpreis", immoFactor);
 }
 
-function applyFactorsToTextInputs(inputs: any, factors: any, year01: number | null) {
+function applyFactorsToTextInputs(inputs: AnyRecord, factors: NormalizedFactors, year01: number | null) {
   if (!inputs) return;
   const kh = factors.kauf_haus?.f01 ?? 1;
   const kw = factors.kauf_wohnung?.f01 ?? 1;
@@ -282,10 +268,10 @@ function applyFactorsToTextInputs(inputs: any, factors: any, year01: number | nu
     if (key.includes("vorjahr")) return 2;
     return null;
   };
-  const factorByIndex = (group: any, index: number | null) => {
+  const factorByIndex = (group: FactorGroup | null | undefined, index: number | null) => {
     if (!index) return group?.f01 ?? 1;
     const key = `f0${index}`;
-    const value = group?.[key];
+    const value = group?.[key as keyof FactorGroup];
     return typeof value === "number" && Number.isFinite(value) ? value : group?.f01 ?? 1;
   };
   const rentFactorByIndex = (index: number | null) =>
@@ -293,7 +279,7 @@ function applyFactorsToTextInputs(inputs: any, factors: any, year01: number | nu
   const immoFactorByIndex = (index: number | null) =>
     meanOf([factorByIndex(factors.kauf_haus, index), factorByIndex(factors.kauf_wohnung, index)]) ?? 1;
 
-  const applyMap = (obj: any, fn: (key: string, value: number) => number) => {
+  const applyMap = (obj: AnyRecord | null | undefined, fn: (key: string, value: number) => number) => {
     if (!obj || typeof obj !== "object") return;
     for (const [key, value] of Object.entries(obj)) {
       if (typeof value !== "number") continue;
@@ -301,20 +287,20 @@ function applyFactorsToTextInputs(inputs: any, factors: any, year01: number | nu
     }
   };
 
-  applyMap(inputs.priceValues_properties_dict, (key, value) => {
+  applyMap(inputs.priceValues_properties_dict as AnyRecord | undefined, (key, value) => {
     const index = yearIndexFromKey(key);
     if (key.includes("haus")) return value * factorByIndex(factors.kauf_haus, index);
     if (key.includes("wohnung")) return value * factorByIndex(factors.kauf_wohnung, index);
     return value;
   });
 
-  applyMap(inputs.priceValues_plots_dict, (key, value) => {
+  applyMap(inputs.priceValues_plots_dict as AnyRecord | undefined, (key, value) => {
     const index = yearIndexFromKey(key);
     if (key.includes("grundstueck")) return value * factorByIndex(factors.kauf_grundstueck, index);
     return value;
   });
 
-  applyMap(inputs.priceValues_rent_dict, (key, value) => {
+  applyMap(inputs.priceValues_rent_dict as AnyRecord | undefined, (key, value) => {
     const index = yearIndexFromKey(key);
     if (key.includes("haus")) return value * factorByIndex(factors.miete_haus, index);
     if (key.includes("wohnung")) return value * factorByIndex(factors.miete_wohnung, index);
@@ -322,7 +308,7 @@ function applyFactorsToTextInputs(inputs: any, factors: any, year01: number | nu
     return value;
   });
 
-  applyMap(inputs.priceValues_rendite_dict, (key, value) => {
+  applyMap(inputs.priceValues_rendite_dict as AnyRecord | undefined, (key, value) => {
     if (key.includes("etw")) {
       if (key.includes("kaufpreisfaktor")) return value * (rend.kaufpreisfaktor_etw ?? 1);
       return value * (rend.mietrendite_etw ?? 1);
@@ -338,7 +324,7 @@ function applyFactorsToTextInputs(inputs: any, factors: any, year01: number | nu
     return value;
   });
 
-  applyMap(inputs.marketValues_generallyPrices_dict, (key, value) => {
+  applyMap(inputs.marketValues_generallyPrices_dict as AnyRecord | undefined, (key, value) => {
     const index = yearIndexFromKey(key);
     if (key.includes("immobilienpreise")) return value * immoFactorByIndex(index);
     if (key.includes("grundstueckspreise")) return value * factorByIndex(factors.kauf_grundstueck, index);
@@ -346,7 +332,7 @@ function applyFactorsToTextInputs(inputs: any, factors: any, year01: number | nu
     return value;
   });
 
-  applyMap(inputs.ortslagenValues_dict, (key, value) => {
+  applyMap(inputs.ortslagenValues_dict as AnyRecord | undefined, (key, value) => {
     if (key.includes("immobilienpreis")) return value * immoFactor;
     if (key.includes("grundstueckspreis")) return value * kg;
     if (key.includes("mietpreis")) return value * rentFactor;
@@ -360,7 +346,7 @@ function meanOf(values: Array<number | null>) {
   return filtered.reduce((sum, value) => sum + value, 0) / filtered.length;
 }
 
-function setMarketValue(obj: any, keyCandidates: string[], value: number) {
+function setMarketValue(obj: AnyRecord | null | undefined, keyCandidates: string[], value: number) {
   if (!obj || typeof obj !== "object") return;
   for (const key of keyCandidates) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -371,7 +357,7 @@ function setMarketValue(obj: any, keyCandidates: string[], value: number) {
   obj[keyCandidates[0]] = value;
 }
 
-function getLatestYearValue(rows: any[], key: string) {
+function getLatestYearValue(rows: DataRow[] | undefined, key: string) {
   if (!Array.isArray(rows) || rows.length === 0) return null;
   let latest = -Infinity;
   let value: number | null = null;
@@ -380,16 +366,16 @@ function getLatestYearValue(rows: any[], key: string) {
     if (year === null) continue;
     if (year > latest && typeof row?.[key] === "number") {
       latest = year;
-      value = row[key];
+      value = row[key] as number;
     }
   }
   return value;
 }
 
-function getYearValue(rows: any[], year: number | null, key: string) {
+function getYearValue(rows: DataRow[] | undefined, year: number | null, key: string) {
   if (!Array.isArray(rows) || year === null) return null;
   for (const row of rows) {
-    if (row?.jahr === year && typeof row?.[key] === "number") return row[key];
+    if (row?.jahr === year && typeof row?.[key] === "number") return row[key] as number;
   }
   return null;
 }
@@ -399,13 +385,13 @@ function computeIndex(current: number | null, base: number | null) {
   return Math.round((current / base) * 100 * 100) / 100;
 }
 
-function recomputeOrtslagenMinMax(data: any, textScopeInputs: any) {
-  const rows = data?.ortslagen_uebersicht ?? [];
+function recomputeOrtslagenMinMax(data: AnyRecord, textScopeInputs: AnyRecord) {
+  const rows = (data?.ortslagen_uebersicht ?? []) as DataRow[];
   if (!Array.isArray(rows) || rows.length === 0) return;
 
   const pick = (key: string) => {
-    let minRow: any = null;
-    let maxRow: any = null;
+    let minRow: DataRow | null = null;
+    let maxRow: DataRow | null = null;
     for (const row of rows) {
       const val = typeof row?.[key] === "number" ? row[key] : null;
       if (val === null) continue;
@@ -441,32 +427,33 @@ function recomputeOrtslagenMinMax(data: any, textScopeInputs: any) {
   }
 
   if (textScopeInputs?.ortslagenValues_dict && typeof textScopeInputs.ortslagenValues_dict === "object") {
+    const ortslagenValues = textScopeInputs.ortslagenValues_dict as AnyRecord;
     if (immo.minRow && immo.maxRow) {
-      textScopeInputs.ortslagenValues_dict.guenstigster_immobilienpreis_ortslage = immo.minRow.ortslage;
-      textScopeInputs.ortslagenValues_dict.guenstigster_immobilienpreis_wert = immo.minRow.immobilienpreise_wert;
-      textScopeInputs.ortslagenValues_dict.teuerster_immobilienpreis_ortslage = immo.maxRow.ortslage;
-      textScopeInputs.ortslagenValues_dict.teuerster_immobilienpreis_wert = immo.maxRow.immobilienpreise_wert;
+      ortslagenValues.guenstigster_immobilienpreis_ortslage = immo.minRow.ortslage;
+      ortslagenValues.guenstigster_immobilienpreis_wert = immo.minRow.immobilienpreise_wert;
+      ortslagenValues.teuerster_immobilienpreis_ortslage = immo.maxRow.ortslage;
+      ortslagenValues.teuerster_immobilienpreis_wert = immo.maxRow.immobilienpreise_wert;
     }
     if (plot.minRow && plot.maxRow) {
-      textScopeInputs.ortslagenValues_dict.guenstigster_grundstueckspreis_ortslage = plot.minRow.ortslage;
-      textScopeInputs.ortslagenValues_dict.guenstigster_grundstueckspreis_wert = plot.minRow.grundstueckspreise_wert;
-      textScopeInputs.ortslagenValues_dict.teuerster_grundstueckspreis_ortslage = plot.maxRow.ortslage;
-      textScopeInputs.ortslagenValues_dict.teuerster_grundstueckspreis_wert = plot.maxRow.grundstueckspreise_wert;
+      ortslagenValues.guenstigster_grundstueckspreis_ortslage = plot.minRow.ortslage;
+      ortslagenValues.guenstigster_grundstueckspreis_wert = plot.minRow.grundstueckspreise_wert;
+      ortslagenValues.teuerster_grundstueckspreis_ortslage = plot.maxRow.ortslage;
+      ortslagenValues.teuerster_grundstueckspreis_wert = plot.maxRow.grundstueckspreise_wert;
     }
     if (rent.minRow && rent.maxRow) {
-      textScopeInputs.ortslagenValues_dict.guenstigster_mietpreis_ortslage = rent.minRow.ortslage;
-      textScopeInputs.ortslagenValues_dict.guenstigster_mietpreis_wert = rent.minRow.mietpreise_wert;
-      textScopeInputs.ortslagenValues_dict.teuerster_mietpreis_ortslage = rent.maxRow.ortslage;
-      textScopeInputs.ortslagenValues_dict.teuerster_mietpreis_wert = rent.maxRow.mietpreise_wert;
+      ortslagenValues.guenstigster_mietpreis_ortslage = rent.minRow.ortslage;
+      ortslagenValues.guenstigster_mietpreis_wert = rent.minRow.mietpreise_wert;
+      ortslagenValues.teuerster_mietpreis_ortslage = rent.maxRow.ortslage;
+      ortslagenValues.teuerster_mietpreis_wert = rent.maxRow.mietpreise_wert;
     }
   }
 }
 
 function recomputeAggregatedPrices(
-  data: any,
-  textScopeInputs: any,
+  data: AnyRecord,
+  textScopeInputs: AnyRecord,
   scope: "kreis" | "ortslage",
-  meta: any,
+  meta: AnyRecord,
 ) {
   const hausKauf = toNumber(data?.haus_kaufpreis?.[0]?.kaufpreis_haus);
   const wohnungKauf = toNumber(data?.wohnung_kaufpreis?.[0]?.kaufpreis_wohnung);
@@ -475,13 +462,14 @@ function recomputeAggregatedPrices(
     if (Array.isArray(data?.immobilien_kaufpreis) && data.immobilien_kaufpreis[0]) {
       data.immobilien_kaufpreis[0].kaufpreis_immobilien = kaufpreisGesamt;
     }
-    if (textScopeInputs?.marketValues_generallyPrices_dict && typeof textScopeInputs.marketValues_generallyPrices_dict === "object") {
-      setMarketValue(
-        textScopeInputs.marketValues_generallyPrices_dict,
-        scope === "ortslage"
-          ? ["immobilienpreise_mittel_jahr01_ortslage", "immobilienpreise_mittel_jahr01_kreis"]
-          : ["immobilienpreise_mittel_jahr01_kreis"],
-        kaufpreisGesamt,
+  if (textScopeInputs?.marketValues_generallyPrices_dict && typeof textScopeInputs.marketValues_generallyPrices_dict === "object") {
+    const marketValues = textScopeInputs.marketValues_generallyPrices_dict as AnyRecord;
+    setMarketValue(
+      marketValues,
+      scope === "ortslage"
+        ? ["immobilienpreise_mittel_jahr01_ortslage", "immobilienpreise_mittel_jahr01_kreis"]
+        : ["immobilienpreise_mittel_jahr01_kreis"],
+      kaufpreisGesamt,
       );
     }
   }
@@ -493,13 +481,14 @@ function recomputeAggregatedPrices(
     if (Array.isArray(data?.mietpreise_gesamt) && data.mietpreise_gesamt[0]) {
       data.mietpreise_gesamt[0].preis_kaltmiete = mieteGesamt;
     }
-    if (textScopeInputs?.marketValues_generallyPrices_dict && typeof textScopeInputs.marketValues_generallyPrices_dict === "object") {
-      setMarketValue(
-        textScopeInputs.marketValues_generallyPrices_dict,
-        scope === "ortslage"
-          ? ["mietpreise_mittel_ortslage", "mietpreise_mittel_kreis"]
-          : ["mietpreise_mittel_kreis"],
-        mieteGesamt,
+  if (textScopeInputs?.marketValues_generallyPrices_dict && typeof textScopeInputs.marketValues_generallyPrices_dict === "object") {
+    const marketValues = textScopeInputs.marketValues_generallyPrices_dict as AnyRecord;
+    setMarketValue(
+      marketValues,
+      scope === "ortslage"
+        ? ["mietpreise_mittel_ortslage", "mietpreise_mittel_kreis"]
+        : ["mietpreise_mittel_kreis"],
+      mieteGesamt,
       );
     }
   }
@@ -639,17 +628,17 @@ const DEFAULT_FACTORS: NormalizedFactors = {
   },
 };
 
-function safeFactor(value: any) {
+function safeFactor(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 1;
 }
 
-function safeTrendDelta(value: any) {
+function safeTrendDelta(value: unknown) {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0;
   if (value === 1) return 0;
   return Math.max(-100, Math.min(100, value));
 }
 
-function normalizeFactors(raw: any): NormalizedFactors {
+function normalizeFactors(raw: AnyRecord | null | undefined): NormalizedFactors {
   return {
     kauf_haus: {
       f01: safeFactor(raw?.kauf_haus?.f01),
@@ -850,7 +839,7 @@ export async function POST(req: Request) {
     }
 
     let targetFactors = normalizeFactors(helpers?.applied_factors ?? DEFAULT_FACTORS);
-    let debugPayload: Record<string, any> | null = null;
+    let debugPayload: Record<string, unknown> | null = null;
     if (mode === "full") {
       const { data: settings } = await admin
         .from("data_value_settings")
@@ -994,9 +983,10 @@ export async function POST(req: Request) {
 
     revalidateTag("reports", "max");
     return NextResponse.json({ ok: true, area_id: areaId, scope, mode, upload_summary: null, debug: debugPayload });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : null;
     return NextResponse.json(
-      { error: error?.message ?? "Rebuild failed." },
+      { error: message ?? "Rebuild failed." },
       { status: 500 },
     );
   }

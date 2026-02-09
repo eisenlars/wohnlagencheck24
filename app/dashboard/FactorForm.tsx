@@ -9,53 +9,448 @@ export type FactorFormHandle = {
   autoSyncIfDirty: () => Promise<void>;
 };
 
-const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function FactorForm({ config }, ref) {
+type FactorValues = {
+  f01: number;
+  f02: number;
+  f03: number;
+  f04: number;
+  f05: number;
+  f06: number;
+};
+
+type TrendValues = {
+  immobilienmarkt: number;
+  mietmarkt: number;
+};
+
+type StandortFaktoren = {
+  gesundheit: number;
+  bildung: number;
+  nahversorgung: number;
+  mobilitaet: number;
+  lebenserhaltungskosten: number;
+  arbeitsplatz: number;
+  naherholung: number;
+};
+
+type RenditeValues = {
+  mietrendite_etw: number;
+  kaufpreisfaktor_etw: number;
+  mietrendite_efh: number;
+  kaufpreisfaktor_efh: number;
+  mietrendite_mfh: number;
+  kaufpreisfaktor_mfh: number;
+};
+
+type FactorSnapshot = {
+  standortfaktoren: StandortFaktoren;
+  immobilienmarkt_trend: TrendValues;
+  kauf_haus: FactorValues;
+  kauf_wohnung: FactorValues;
+  kauf_grundstueck: FactorValues;
+  miete_haus: FactorValues;
+  miete_wohnung: FactorValues;
+  rendite: RenditeValues;
+};
+
+type PreviewBase = {
+  immobilienmarkt_index?: number | null;
+  mietmarkt_index?: number | null;
+  haus_kaufpreis?: FactorValues;
+  wohnung_kaufpreis?: FactorValues;
+  grundstueck_kaufpreis?: FactorValues;
+  miete_haus_avg?: FactorValues;
+  miete_wohnung_avg?: FactorValues;
+};
+
+const defaultSf: StandortFaktoren = {
+  gesundheit: 1,
+  bildung: 1,
+  nahversorgung: 1,
+  mobilitaet: 1,
+  lebenserhaltungskosten: 1,
+  arbeitsplatz: 1,
+  naherholung: 1,
+};
+const defaultTrend: TrendValues = { immobilienmarkt: 0, mietmarkt: 0 };
+const defaultF: FactorValues = { f01: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 };
+const defaultRendite: RenditeValues = {
+  mietrendite_etw: 1,
+  kaufpreisfaktor_etw: 1,
+  mietrendite_efh: 1,
+  kaufpreisfaktor_efh: 1,
+  mietrendite_mfh: 1,
+  kaufpreisfaktor_mfh: 1,
+};
+
+const makeFactorSnapshot = (
+  nextSf: StandortFaktoren = defaultSf,
+  nextTrend: TrendValues = defaultTrend,
+  nextKh: FactorValues = defaultF,
+  nextKw: FactorValues = defaultF,
+  nextKg: FactorValues = defaultF,
+  nextMh: FactorValues = defaultF,
+  nextMw: FactorValues = defaultF,
+  nextRendite: RenditeValues = defaultRendite,
+): FactorSnapshot => ({
+  standortfaktoren: nextSf,
+  immobilienmarkt_trend: nextTrend,
+  kauf_haus: nextKh,
+  kauf_wohnung: nextKw,
+  kauf_grundstueck: nextKg,
+  miete_haus: nextMh,
+  miete_wohnung: nextMw,
+  rendite: nextRendite,
+});
+
+type PartnerArea = {
+  id?: string;
+  name?: string;
+  slug?: string;
+  parent_slug?: string;
+  bundesland_slug?: string;
+};
+
+type PartnerAreaConfig = {
+  area_id: string;
+  areas?: PartnerArea;
+  [key: string]: unknown;
+};
+
+type TrendRowProps = {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  showActivate: boolean;
+  onActivate?: (delta: number) => void;
+  isDirty: boolean;
+  baseValue?: number | null;
+};
+
+function TrendRow({
+  label,
+  value,
+  onChange,
+  showActivate,
+  onActivate,
+  isDirty,
+  baseValue,
+}: TrendRowProps) {
+  const base = typeof baseValue === 'number' ? baseValue : 0;
+  const delta = Math.round(Number(value) || 0);
+  const currentIndex = Math.max(-100, Math.min(100, base + delta));
+  const displayIndex = currentIndex.toFixed(1).replace('.', ',');
+  const displayDelta = delta > 0 ? `+${delta}` : `${delta}`;
+  const baseLabel = typeof baseValue === 'number' ? baseValue.toFixed(1).replace('.', ',') : '—';
+  return (
+    <div style={{ marginBottom: '15px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+        <span style={{ fontSize: '16px', fontWeight: '600', color: '#1a202c' }}>{label}</span>
+      </div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: showActivate ? '1fr 140px' : '1fr',
+          gap: '10px',
+          alignItems: 'center',
+        }}
+      >
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>
+            <span>-100</span>
+            <span>-50</span>
+            <span>0</span>
+            <span>+50</span>
+            <span>+100</span>
+          </div>
+          <input
+            type="range"
+            min={-100}
+            max={100}
+            step={1}
+            value={currentIndex}
+            onChange={(e) => onChange(Number(e.target.value) - base)}
+            style={{ width: '100%' }}
+          />
+          <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569' }}>
+            Basis {baseLabel} · Δ {displayDelta} → <span style={{ fontWeight: 700, color: '#0f172a' }}>Index {displayIndex}</span>
+          </div>
+        </div>
+        {showActivate && isDirty ? (
+          <button
+            onClick={() => onActivate?.(delta)}
+            style={{
+              padding: '10px 14px',
+              borderRadius: '8px',
+              border: '2px solid #2b6cb0',
+              backgroundColor: '#2b6cb0',
+              color: '#fff',
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Aktivieren
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+type InputRowProps = {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  previewBase?: number | null;
+  unitLabel?: string;
+  onActivate?: (value: number) => void;
+  showActivate: boolean;
+  isDirty: boolean;
+  fmt: (v: number | null | undefined, digits?: number) => string;
+};
+
+type FactorGridProps = {
+  title: string;
+  data: FactorValues;
+  setter: (next: FactorValues) => void;
+  previewBase?: FactorValues;
+  unitLabel?: string;
+  onActivate?: (value: number) => void;
+  showActivate: boolean;
+  persistedData: FactorValues;
+  yearLabelByFactor: Record<string, string>;
+  fmt: (v: number | null | undefined, digits?: number) => string;
+};
+
+function FactorGrid({
+  title,
+  data,
+  setter,
+  previewBase,
+  unitLabel,
+  onActivate,
+  showActivate,
+  persistedData,
+  yearLabelByFactor,
+  fmt,
+}: FactorGridProps) {
+  return (
+    <div style={{ padding: '15px 0' }}>
+      <h5 style={gridTitleStyle}>{title}</h5>
+      {['f01', 'f02', 'f03', 'f04', 'f05', 'f06'].map(f => (
+        <InputRow
+          key={f}
+          label={yearLabelByFactor[f] ?? f}
+          value={data[f]}
+          onChange={(v) => {
+            const key = f as keyof FactorValues;
+            setter({ ...data, [key]: v });
+          }}
+          previewBase={previewBase?.[f]}
+          unitLabel={unitLabel}
+          showActivate={showActivate}
+          onActivate={onActivate}
+          isDirty={Number(data?.[f]) !== Number(persistedData?.[f])}
+          fmt={fmt}
+        />
+      ))}
+    </div>
+  );
+}
+
+function InputRow({
+  label,
+  value,
+  onChange,
+  previewBase,
+  unitLabel = "",
+  onActivate,
+  showActivate,
+  isDirty,
+  fmt,
+}: InputRowProps) {
+  const numericValue = typeof value === 'number' ? value : 1;
+  const [draft, setDraft] = useState(
+    Number.isFinite(numericValue) ? numericValue.toFixed(2) : '',
+  );
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (!isEditing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDraft(Number.isFinite(numericValue) ? numericValue.toFixed(2) : '');
+    }
+  }, [numericValue, isEditing]);
+
+  const deltaPercent = (numericValue - 1) * 100;
+  const deltaColor = deltaPercent > 0 ? '#166534' : deltaPercent < 0 ? '#b91c1c' : '#64748b';
+
+  const commitValue = (raw: string) => {
+    const parsed = parseFloat(String(raw).replace(',', '.'));
+    if (!Number.isFinite(parsed)) {
+      setDraft(Number.isFinite(numericValue) ? numericValue.toFixed(2) : '');
+      return;
+    }
+    const newVal = Math.min(5.0, Math.max(0.1, Math.round(parsed * 100) / 100));
+    onChange(newVal);
+    setDraft(newVal.toFixed(2));
+  };
+
+  return (
+    <div style={{ marginBottom: '15px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+        <span style={{ fontSize: '16px', fontWeight: '600', color: '#1a202c' }}>{label}</span>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: showActivate ? '140px 1fr' : '140px',
+          gap: '10px',
+          alignItems: 'center',
+        }}
+      >
+        <input
+          type="text"
+          inputMode="decimal"
+          pattern="[0-9]*[.,]?[0-9]*"
+          min={0.1}
+          max={5.0}
+          step={0.01}
+          value={draft}
+          onPointerDown={(e) => {
+            const el = e.currentTarget;
+            if (document.activeElement !== el) {
+              el.focus({ preventScroll: true });
+            }
+          }}
+          onMouseDown={(e) => {
+            const el = e.currentTarget;
+            if (document.activeElement !== el) {
+              el.focus({ preventScroll: true });
+            }
+          }}
+          onFocus={() => {
+            setIsEditing(true);
+          }}
+          onBlur={() => {
+            setIsEditing(false);
+            commitValue(draft);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              (e.currentTarget as HTMLInputElement).blur();
+            }
+          }}
+          onChange={(e) => {
+            const next = e.target.value;
+            setDraft(next);
+            const parsed = parseFloat(next.replace(',', '.'));
+            if (Number.isFinite(parsed)) {
+              const newVal = Math.min(5.0, Math.max(0.1, Math.round(parsed * 100) / 100));
+              onChange(newVal);
+            }
+          }}
+          style={{
+            width: '100%',
+            padding: '10px',
+            borderRadius: '8px',
+            border: '2px solid #2b6cb0',
+            fontSize: '18px',
+            fontWeight: 700,
+            color: '#2b6cb0',
+            backgroundColor: '#ebf8ff',
+            textAlign: 'center',
+            appearance: 'textfield',
+            WebkitAppearance: 'none',
+            MozAppearance: 'textfield',
+          }}
+        />
+        {showActivate && isDirty ? (
+          <button
+            onClick={() => onActivate?.(numericValue)}
+            style={{
+              padding: '10px 14px',
+              borderRadius: '8px',
+              border: '2px solid #2b6cb0',
+              backgroundColor: '#2b6cb0',
+              color: '#fff',
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Aktivieren
+          </button>
+        ) : null}
+      </div>
+
+      <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569' }}>
+        {typeof previewBase === 'number' ? (
+          <>
+            Basis {fmt(previewBase)}{unitLabel ? ` ${unitLabel}` : ''} · Neu {fmt(previewBase * numericValue)}{unitLabel ? ` ${unitLabel}` : ''} ·{" "}
+            <span style={{ color: deltaColor, fontWeight: 700 }}>
+              {deltaPercent >= 0 ? '+' : ''}{deltaPercent.toFixed(1)}%
+            </span>
+            <div style={{ marginTop: '4px', fontSize: '11px', color: '#64748b' }}>
+              Basis = Originalwert (vor Faktorisierung)
+            </div>
+          </>
+        ) : (
+          <span style={{ color: deltaColor, fontWeight: 700 }}>
+            Änderung ggü. Basis: {deltaPercent >= 0 ? '+' : ''}{deltaPercent.toFixed(1)}%
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(function FactorForm({ config }, ref) {
   const supabase = createClient();
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [rebuildMessage, setRebuildMessage] = useState('');
   const [rebuildLoading, setRebuildLoading] = useState(false);
   const [comment, setComment] = useState("");
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewBase, setPreviewBase] = useState<any | null>(null);
+  const [previewBase, setPreviewBase] = useState<PreviewBase | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [syncInfo, setSyncInfo] = useState<string>('');
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [saveModalMessage, setSaveModalMessage] = useState('');
   const [rebuildSuccessOpen, setRebuildSuccessOpen] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
-  const syncTimerRef = useRef<any>(null);
+  const [resetModalMessage, setResetModalMessage] = useState('');
+  const [isBusy, setIsBusy] = useState(false);
+  const [busyStepLabel, setBusyStepLabel] = useState<string | null>(null);
+  const [busyStepIndex, setBusyStepIndex] = useState(0);
+  const [busyStepTotal, setBusyStepTotal] = useState(0);
+  const busyCountRef = useRef(0);
   const loadedRef = useRef(false);
-  const lastPropagatedRef = useRef<any | null>(null);
+  const lastPropagatedRef = useRef<FactorSnapshot | null>(null);
 
-  const defaultSf = { gesundheit: 1, bildung: 1, nahversorgung: 1, mobilitaet: 1, lebenserhaltungskosten: 1, arbeitsplatz: 1, naherholung: 1 };
-  const defaultTrend = { immobilienmarkt: 0, mietmarkt: 0 };
-  const defaultF = { f01: 1, f02: 1, f03: 1, f04: 1, f05: 1, f06: 1 };
-  const defaultRendite = {
-    mietrendite_etw: 1, kaufpreisfaktor_etw: 1,
-    mietrendite_efh: 1, kaufpreisfaktor_efh: 1,
-    mietrendite_mfh: 1, kaufpreisfaktor_mfh: 1
+  const beginBusy = () => {
+    busyCountRef.current += 1;
+    if (!isBusy) setIsBusy(true);
   };
 
-  const makeFactorSnapshot = (
-    nextSf = defaultSf,
-    nextTrend = defaultTrend,
-    nextKh = defaultF,
-    nextKw = defaultF,
-    nextKg = defaultF,
-    nextMh = defaultF,
-    nextMw = defaultF,
-    nextRendite = defaultRendite,
-  ) => ({
-    standortfaktoren: nextSf,
-    immobilienmarkt_trend: nextTrend,
-    kauf_haus: nextKh,
-    kauf_wohnung: nextKw,
-    kauf_grundstueck: nextKg,
-    miete_haus: nextMh,
-    miete_wohnung: nextMw,
-    rendite: nextRendite,
-  });
+  const endBusy = () => {
+    busyCountRef.current = Math.max(0, busyCountRef.current - 1);
+    if (busyCountRef.current === 0) {
+      setIsBusy(false);
+      setBusyStepLabel(null);
+      setBusyStepIndex(0);
+      setBusyStepTotal(0);
+    }
+  };
+
+  const setBusyStep = (label: string, index: number, total: number) => {
+    setBusyStepLabel(label);
+    setBusyStepIndex(index);
+    setBusyStepTotal(total);
+  };
 
   // States basierend auf deinen Datenbankvorgaben
   const [sf, setSf] = useState(defaultSf);
@@ -83,9 +478,11 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
         JSON.stringify(persistedFactors.miete_haus) !== JSON.stringify(currentSnapshot.miete_haus) ||
         JSON.stringify(persistedFactors.miete_wohnung) !== JSON.stringify(currentSnapshot.miete_wohnung);
       if (!changed) return;
+      setBusyStep('Kreis speichern…', 1, 2);
       const saved = await saveSettings();
       if (!saved) return;
       setPersistedFactors(currentSnapshot);
+      setBusyStep('Ortslagen synchronisieren…', 2, 2);
       await triggerOrtslagenSync(currentSnapshot);
     },
   }));
@@ -94,10 +491,8 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
     let alive = true;
     async function loadSettings() {
       if (!config?.area_id) return;
-      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        if (alive) setLoading(false);
         return;
       }
       setUserId(user.id);
@@ -112,7 +507,6 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
 
       if (error) {
         setMessage('❌ Fehler beim Laden: ' + error.message);
-        setLoading(false);
         return;
       }
 
@@ -155,7 +549,6 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
         setPersistedFactors(snapshot);
         lastPropagatedRef.current = snapshot;
       }
-      setLoading(false);
       loadedRef.current = true;
     }
     loadSettings();
@@ -185,134 +578,184 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
     return () => { alive = false; };
   }, [config?.area_id]);
 
-  const saveSettings = async (snapshot?: any) => {
-    setLoading(true);
+  const saveSettings = async (snapshot?: FactorSnapshot) => {
+    beginBusy();
     setMessage('');
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setMessage('❌ Fehler: nicht eingeloggt.');
-      setLoading(false);
-      return false;
-    }
-
-    const factors = snapshot ?? makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite);
-    const payload = {
-      auth_user_id: user.id,
-      area_id: config.area_id,
-      standortfaktoren: factors.standortfaktoren,
-      immobilienmarkt_trend: factors.immobilienmarkt_trend,
-      kauf_haus: factors.kauf_haus,
-      kauf_wohnung: factors.kauf_wohnung,
-      kauf_grundstueck: factors.kauf_grundstueck,
-      miete_haus: factors.miete_haus,
-      miete_wohnung: factors.miete_wohnung,
-      rendite: factors.rendite,
-    };
-
-    let error = null;
-    if (settingsId) {
-      const res = await supabase
-        .from('data_value_settings')
-        .update(payload)
-        .eq('id', settingsId);
-      error = res.error;
-    } else {
-      const res = await supabase
-        .from('data_value_settings')
-        .upsert(payload, { onConflict: 'auth_user_id,area_id' })
-        .select('id')
-        .single();
-      error = res.error;
-      if (!error && res.data?.id) setSettingsId(res.data.id);
-    }
-
-    if (error) { setMessage('❌ Fehler: ' + error.message); }
-    setLoading(false);
-    return !error;
-  };
-
-  const syncOrtslagenFactors = async (userId: string, prevSnapshot: any, nextSnapshot: any, force = false) => {
-    const areaId = String(config?.area_id ?? '');
-    const isKreis = areaId.split('-').length <= 3;
-    if (!isKreis) return { rowsCount: 0, updatesCount: 0, error: null };
-
-    let { data: rows, error } = await supabase
-      .from('data_value_settings')
-      .select('id, area_id, kauf_haus, kauf_wohnung, kauf_grundstueck, miete_haus, miete_wohnung')
-      .eq('auth_user_id', userId)
-      .like('area_id', `${areaId}-%`);
-
-    if ((!rows || rows.length === 0) && !error) {
-      const { data: mapRows, error: mapError } = await supabase
-        .from('partner_area_map')
-        .select('area_id')
-        .eq('auth_user_id', userId);
-      if (mapError) {
-        return { rowsCount: 0, updatesCount: 0, error: mapError.message };
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setMessage('❌ Fehler: nicht eingeloggt.');
+        return false;
       }
-      const ortIds = (mapRows ?? [])
-        .map((r: any) => String(r.area_id ?? ''))
-        .filter((id: string) => id.startsWith(`${areaId}-`));
-      if (ortIds.length > 0) {
+
+      const factors = snapshot ?? makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite);
+      const payload = {
+        auth_user_id: user.id,
+        area_id: config.area_id,
+        standortfaktoren: factors.standortfaktoren,
+        immobilienmarkt_trend: factors.immobilienmarkt_trend,
+        kauf_haus: factors.kauf_haus,
+        kauf_wohnung: factors.kauf_wohnung,
+        kauf_grundstueck: factors.kauf_grundstueck,
+        miete_haus: factors.miete_haus,
+        miete_wohnung: factors.miete_wohnung,
+        rendite: factors.rendite,
+      };
+
+      let error = null;
+      if (settingsId) {
         const res = await supabase
           .from('data_value_settings')
-          .select('id, area_id, kauf_haus, kauf_wohnung, kauf_grundstueck, miete_haus, miete_wohnung')
-          .eq('auth_user_id', userId)
-          .in('area_id', ortIds);
-        rows = res.data ?? rows;
-        error = res.error ?? error;
-      }
-    }
-
-    if (error || !rows || rows.length === 0) {
-      return { rowsCount: rows?.length ?? 0, updatesCount: 0, error: error?.message ?? null };
-    }
-
-    const groups = ['kauf_haus', 'kauf_wohnung', 'kauf_grundstueck', 'miete_haus', 'miete_wohnung'];
-    const yearKeys = ['f01', 'f02', 'f03', 'f04', 'f05', 'f06'];
-    const updates: any[] = [];
-
-    for (const row of rows) {
-      if (row.area_id === areaId) continue;
-      let changed = false;
-      const update: any = { id: row.id };
-
-      for (const key of groups) {
-        for (const yearKey of yearKeys) {
-          const prevVal = Number(prevSnapshot?.[key]?.[yearKey] ?? 1);
-          const nextVal = Number(nextSnapshot?.[key]?.[yearKey] ?? 1);
-          if (prevVal === nextVal) continue;
-          const currentValRaw = (row as any)?.[key]?.[yearKey];
-          const currentVal = currentValRaw === undefined || currentValRaw === null ? null : Number(currentValRaw);
-          if (force || currentVal === null || Number.isNaN(currentVal) || currentVal === prevVal || currentVal === 1) {
-            update[key] = { ...((row as any)[key] ?? {}), [yearKey]: nextVal };
-            changed = true;
-          }
-        }
-      }
-
-      if (changed && update.id) updates.push(update);
-    }
-
-    if (updates.length > 0) {
-      let updated = 0;
-      for (const update of updates) {
-        const { id, ...payload } = update;
-        const { error: updateError } = await supabase
-          .from('data_value_settings')
           .update(payload)
-          .eq('id', id);
-        if (updateError) {
-          return { rowsCount: rows.length, updatesCount: updated, error: updateError.message };
-        }
-        updated += 1;
+          .eq('id', settingsId);
+        error = res.error;
+      } else {
+        const res = await supabase
+          .from('data_value_settings')
+          .upsert(payload, { onConflict: 'auth_user_id,area_id' })
+          .select('id')
+          .single();
+        error = res.error;
+        if (!error && res.data?.id) setSettingsId(res.data.id);
       }
-      return { rowsCount: rows.length, updatesCount: updated, error: null };
+
+      if (error) { setMessage('❌ Fehler: ' + error.message); }
+      return !error;
+    } finally {
+      endBusy();
     }
-    return { rowsCount: rows.length, updatesCount: 0, error: null };
   };
 
-  const triggerOrtslagenSync = async (overrideSnapshot?: any, force = false) => {
+  const syncOrtslagenFactors = async (userId: string, prevSnapshot: FactorSnapshot, nextSnapshot: FactorSnapshot, force = false) => {
+    beginBusy();
+    const areaId = String(config?.area_id ?? '');
+    const isKreis = areaId.split('-').length <= 3;
+    if (!isKreis) {
+      endBusy();
+      return { rowsCount: 0, updatesCount: 0, error: null };
+    }
+
+    try {
+      let { data: rows, error } = await supabase
+        .from('data_value_settings')
+        .select('id, area_id, kauf_haus, kauf_wohnung, kauf_grundstueck, miete_haus, miete_wohnung')
+        .eq('auth_user_id', userId)
+        .like('area_id', `${areaId}-%`);
+
+      let ortIds: string[] = [];
+      let missingIds: string[] = [];
+      if ((force || (!rows || rows.length === 0)) && !error) {
+        const { data: mapRows, error: mapError } = await supabase
+          .from('partner_area_map')
+          .select('area_id')
+          .eq('auth_user_id', userId);
+        if (mapError) {
+          return { rowsCount: 0, updatesCount: 0, error: mapError.message };
+        }
+        ortIds = (mapRows ?? [])
+          .map((r) => String((r as { area_id?: string }).area_id ?? ''))
+          .filter((id: string) => id.startsWith(`${areaId}-`));
+        if ((!rows || rows.length === 0) && ortIds.length > 0) {
+          const res = await supabase
+            .from('data_value_settings')
+            .select('id, area_id, kauf_haus, kauf_wohnung, kauf_grundstueck, miete_haus, miete_wohnung')
+            .eq('auth_user_id', userId)
+            .in('area_id', ortIds);
+          rows = res.data ?? rows;
+          error = res.error ?? error;
+        }
+      }
+
+      if (force && ortIds.length > 0) {
+        const existingIds = new Set((rows ?? []).map((row) => String((row as { area_id?: string }).area_id ?? "")));
+        missingIds = ortIds.filter((id) => !existingIds.has(id));
+        if (missingIds.length > 0) {
+          const basePayload = {
+            auth_user_id: userId,
+            kauf_haus: nextSnapshot.kauf_haus,
+            kauf_wohnung: nextSnapshot.kauf_wohnung,
+            kauf_grundstueck: nextSnapshot.kauf_grundstueck,
+            miete_haus: nextSnapshot.miete_haus,
+            miete_wohnung: nextSnapshot.miete_wohnung,
+          };
+          const { error: upsertError } = await supabase
+            .from('data_value_settings')
+            .upsert(
+              missingIds.map((id) => ({ ...basePayload, area_id: id })),
+              { onConflict: 'auth_user_id,area_id' },
+          );
+          if (upsertError) {
+            return { rowsCount: rows?.length ?? 0, updatesCount: 0, error: upsertError.message };
+          }
+          const res = await supabase
+            .from('data_value_settings')
+            .select('id, area_id, kauf_haus, kauf_wohnung, kauf_grundstueck, miete_haus, miete_wohnung')
+            .eq('auth_user_id', userId)
+            .in('area_id', ortIds);
+          rows = res.data ?? rows;
+          error = res.error ?? error;
+        }
+      }
+
+      if (error || !rows || rows.length === 0) {
+        return { rowsCount: rows?.length ?? 0, updatesCount: 0, error: error?.message ?? null };
+      }
+
+      const groups = ['kauf_haus', 'kauf_wohnung', 'kauf_grundstueck', 'miete_haus', 'miete_wohnung'];
+      const yearKeys = ['f01', 'f02', 'f03', 'f04', 'f05', 'f06'];
+      type SettingsRow = { id: string; area_id: string } & Record<string, unknown>;
+      type UpdateRow = { id: string } & Record<string, unknown>;
+      const updates: UpdateRow[] = [];
+
+      for (const rowRaw of rows) {
+        const row = rowRaw as SettingsRow;
+        if (row.area_id === areaId) continue;
+        let changed = false;
+        const update: UpdateRow = { id: row.id };
+
+        for (const key of groups) {
+          for (const yearKey of yearKeys) {
+            const prevVal = Number(prevSnapshot?.[key]?.[yearKey] ?? 1);
+            const nextVal = Number(nextSnapshot?.[key]?.[yearKey] ?? 1);
+            if (!force && prevVal === nextVal) continue;
+          const rowGroup = row[key] as Record<string, unknown> | undefined;
+          const currentValRaw = rowGroup?.[yearKey];
+          const currentVal = currentValRaw === undefined || currentValRaw === null ? null : Number(currentValRaw);
+          if (force || currentVal === null || Number.isNaN(currentVal) || currentVal === prevVal || currentVal === 1) {
+            const base = (update[key] as Record<string, number> | undefined)
+              ?? (row[key] as Record<string, number> | undefined)
+              ?? {};
+            update[key] = { ...base, [yearKey]: nextVal };
+            changed = true;
+          }
+          }
+        }
+
+        if (changed && update.id) updates.push(update);
+      }
+
+      if (updates.length > 0) {
+        let updated = 0;
+        for (const update of updates) {
+          const { id, ...payload } = update;
+          const { error: updateError } = await supabase
+            .from('data_value_settings')
+            .update(payload)
+            .eq('id', id);
+          if (updateError) {
+            return { rowsCount: rows.length, updatesCount: updated, error: updateError.message };
+          }
+          updated += 1;
+        }
+        return { rowsCount: rows.length, updatesCount: updated, error: null };
+      }
+      return { rowsCount: rows.length, updatesCount: 0, error: null };
+    } finally {
+      endBusy();
+    }
+  };
+
+  const triggerOrtslagenSync = async (overrideSnapshot?: FactorSnapshot, force = false) => {
     const areaId = String(config?.area_id ?? '');
     const isKreis = areaId.split('-').length <= 3;
     if (!isKreis || !userId || !loadedRef.current) return;
@@ -325,43 +768,33 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
       JSON.stringify(prevSnapshot.kauf_grundstueck) === JSON.stringify(nextSnapshot.kauf_grundstueck) &&
       JSON.stringify(prevSnapshot.miete_haus) === JSON.stringify(nextSnapshot.miete_haus) &&
       JSON.stringify(prevSnapshot.miete_wohnung) === JSON.stringify(nextSnapshot.miete_wohnung);
-    if (same) return;
-    setSyncInfo('Ortslagen werden übernommen…');
+    if (same && !force) return;
     const res = await syncOrtslagenFactors(userId, prevSnapshot, nextSnapshot, force);
     lastPropagatedRef.current = nextSnapshot;
-    if (res?.error) {
-      setSyncInfo(`❌ Ortslagen-Update fehlgeschlagen: ${res.error}`);
-    } else {
-      setSyncInfo(`Ortslagen übernommen ✓ (${res?.updatesCount ?? 0}/${res?.rowsCount ?? 0})`);
-    }
     return res;
-  };
-
-  const scheduleOrtslagenSync = () => {
-    const areaId = String(config?.area_id ?? '');
-    const isKreis = areaId.split('-').length <= 3;
-    if (!isKreis || !userId || !loadedRef.current) return;
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    syncTimerRef.current = setTimeout(() => {
-      triggerOrtslagenSync();
-      syncTimerRef.current = null;
-    }, 350);
   };
 
   const handleRebuild = async () => {
     if (!config?.area_id) return;
     const previousFactors = persistedFactors;
+    const isOrtslage = config.area_id.split('-').length > 3;
+    const totalSteps = isOrtslage ? 2 : 3;
+    setBusyStep(isOrtslage ? 'Ortslage speichern…' : 'Kreis speichern…', 1, totalSteps);
     const saved = await saveSettings();
     if (!saved) return;
+    let shouldOpenSuccess = false;
+    beginBusy();
     setRebuildLoading(true);
     setRebuildMessage('Neuberechnung & Liveschaltung läuft...');
     try {
+      if (!isOrtslage) setBusyStep('Ortslagen synchronisieren…', 2, totalSteps);
       const scope = config.area_id.split('-').length > 3 ? 'ortslage' : 'kreis';
       const nextSnapshot = makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await syncOrtslagenFactors(user.id, previousFactors, nextSnapshot);
       }
+      setBusyStep('Neuberechnung starten…', totalSteps, totalSteps);
       const res = await fetch('/api/rebuild-region', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -372,25 +805,33 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
         setRebuildMessage(`❌ ${data?.error ?? 'Fehler beim Start.'}`);
       } else {
         setRebuildMessage('✅ Erfolgreich Live-geschalten. Bitte prüfen Sie Ihre Berichtseiten.');
-        setRebuildSuccessOpen(true);
+        shouldOpenSuccess = true;
         setPersistedFactors(makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite));
       }
-    } catch (error: any) {
-      setRebuildMessage(`❌ ${error?.message ?? 'Fehler beim Start.'}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : null;
+      setRebuildMessage(`❌ ${message ?? 'Fehler beim Start.'}`);
     } finally {
       setRebuildLoading(false);
+      endBusy();
+      if (shouldOpenSuccess) setRebuildSuccessOpen(true);
     }
   };
 
-  const handleReset = () => {
-    if (confirm("Möchten Sie alle Werte dieses Gebiets auf 1.0 zurücksetzen?")) {
-      const reset = (obj: any) => {
+  const handleReset = async () => {
+    if (!confirm("Möchten Sie alle Werte dieses Gebiets auf 1.0 zurücksetzen?")) return;
+    let shouldOpen = false;
+    let modalMessage = '';
+    beginBusy();
+    try {
+      setBusyStep(isOrtslage ? 'Ortslage speichern…' : 'Kreis speichern…', 1, isOrtslage ? 1 : 2);
+      const reset = (obj: Record<string, number>) => {
         const n = { ...obj };
         Object.keys(n).forEach(k => n[k] = 1);
         return n;
       };
       const nextSf = reset(sf);
-      const nextTrend = reset(trend);
+      const nextTrend = { immobilienmarkt: 0, mietmarkt: 0 };
       const nextKh = reset(kh);
       const nextKw = reset(kw);
       const nextKg = reset(kg);
@@ -405,220 +846,104 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
       setMh(nextMh);
       setMw(nextMw);
       setRendite(nextRendite);
-      if (isOrtslage) {
-        void (async () => {
-          const nextSnapshot = makeFactorSnapshot(nextSf, nextTrend, nextKh, nextKw, nextKg, nextMh, nextMw, nextRendite);
-          const saved = await saveSettings(nextSnapshot);
-          if (saved) {
-            setPersistedFactors(nextSnapshot);
-            setResetModalOpen(true);
-          }
-        })();
-      } else {
-        void (async () => {
-          const nextSnapshot = makeFactorSnapshot(nextSf, nextTrend, nextKh, nextKw, nextKg, nextMh, nextMw, nextRendite);
-          const saved = await saveSettings(nextSnapshot);
-          if (saved) {
-            setPersistedFactors(nextSnapshot);
-            await triggerOrtslagenSync(nextSnapshot, true);
-            setResetModalOpen(true);
-          }
-        })();
+      const nextSnapshot = makeFactorSnapshot(nextSf, nextTrend, nextKh, nextKw, nextKg, nextMh, nextMw, nextRendite);
+      const saved = await saveSettings(nextSnapshot);
+      if (saved) {
+        setPersistedFactors(nextSnapshot);
+        if (!isOrtslage) {
+          setBusyStep('Ortslagen synchronisieren…', 2, 2);
+          await triggerOrtslagenSync(nextSnapshot, true);
+          modalMessage = 'Kreis und alle Ortslagen angepasst';
+        } else {
+          modalMessage = 'Ortslage angepasst';
+        }
+        shouldOpen = true;
+      }
+    } finally {
+      endBusy();
+      if (shouldOpen) {
+        setResetModalMessage(modalMessage);
+        setResetModalOpen(true);
       }
     }
   };
 
+  const handleGlobalReset = async () => {
+    if (!isKreis) return;
+    if (!confirm("Achtung: Damit werden alle Faktoren des Kreises und aller Ortslagen auf 1.0 zurückgesetzt. Individuelle Ortslagen-Werte werden überschrieben. Fortfahren?")) {
+      return;
+    }
+    let shouldOpen = false;
+    let modalMessage = '';
+    beginBusy();
+    try {
+    setBusyStep('Kreis speichern…', 1, 2);
+      const reset = (obj: Record<string, number>) => {
+        const n = { ...obj };
+        Object.keys(n).forEach(k => n[k] = 1);
+        return n;
+      };
+      const nextSf = reset(sf);
+      const nextTrend = { immobilienmarkt: 0, mietmarkt: 0 };
+      const nextKh = reset(kh);
+      const nextKw = reset(kw);
+      const nextKg = reset(kg);
+      const nextMh = reset(mh);
+      const nextMw = reset(mw);
+      const nextRendite = reset(rendite);
+      setSf(nextSf);
+      setTrend(nextTrend);
+      setKh(nextKh);
+      setKw(nextKw);
+      setKg(nextKg);
+      setMh(nextMh);
+      setMw(nextMw);
+      setRendite(nextRendite);
+
+      const nextSnapshot = makeFactorSnapshot(nextSf, nextTrend, nextKh, nextKw, nextKg, nextMh, nextMw, nextRendite);
+      const saved = await saveSettings(nextSnapshot);
+      if (saved) {
+        setPersistedFactors(nextSnapshot);
+        setBusyStep('Ortslagen synchronisieren…', 2, 2);
+        await triggerOrtslagenSync(nextSnapshot, true);
+        modalMessage = 'Kreis und alle Ortslagen angepasst';
+        shouldOpen = true;
+      }
+    } finally {
+      endBusy();
+      if (shouldOpen) {
+        setResetModalMessage(modalMessage);
+        setResetModalOpen(true);
+      }
+    }
+  };
   const isOrtslage = String(config?.area_id ?? '').split('-').length > 3;
   const isKreis = !isOrtslage;
 
   const handleOrtslageActivate = async () => {
+    setBusyStep('Ortslage speichern…', 1, 1);
     const saved = await saveSettings();
     if (saved) {
       setPersistedFactors(makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite));
+      setSaveModalMessage('Ortslage gespeichert ✓');
       setSaveModalOpen(true);
     }
   };
 
   const handleKreisActivate = async () => {
+    setBusyStep('Kreis speichern…', 1, 2);
     const saved = await saveSettings();
     if (!saved) return;
     const nextSnapshot = makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite);
     setPersistedFactors(nextSnapshot);
+    setBusyStep('Ortslagen synchronisieren…', 2, 2);
     await triggerOrtslagenSync(nextSnapshot);
+    setSaveModalMessage('Kreis und Ortslagen gespeichert ✓');
     setSaveModalOpen(true);
   };
 
   const showActivate = true;
   const handleActivate = isOrtslage ? handleOrtslageActivate : handleKreisActivate;
-
-  const TrendRow = ({
-    label,
-    value,
-    onChange,
-    showActivate,
-    onActivate,
-    isDirty,
-    baseValue,
-  }: any) => {
-    const base = typeof baseValue === 'number' ? baseValue : 0;
-    const delta = Math.round(Number(value) || 0);
-    const currentIndex = Math.max(-100, Math.min(100, base + delta));
-    const displayIndex = currentIndex.toFixed(1).replace('.', ',');
-    const displayDelta = delta > 0 ? `+${delta}` : `${delta}`;
-    const baseLabel = typeof baseValue === 'number' ? baseValue.toFixed(1).replace('.', ',') : '—';
-    return (
-      <div style={{ marginBottom: '15px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-          <span style={{ fontSize: '16px', fontWeight: '600', color: '#1a202c' }}>{label}</span>
-        </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: showActivate ? '1fr 140px' : '1fr',
-            gap: '10px',
-            alignItems: 'center',
-          }}
-        >
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>
-              <span>-100</span>
-              <span>-50</span>
-              <span>0</span>
-              <span>+50</span>
-              <span>+100</span>
-            </div>
-            <input
-              type="range"
-              min={-100}
-              max={100}
-              step={1}
-              value={currentIndex}
-              onChange={(e) => onChange(Number(e.target.value) - base)}
-              style={{ width: '100%' }}
-            />
-            <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569' }}>
-              Basis {baseLabel} · Index {displayIndex} · Δ {displayDelta}
-            </div>
-          </div>
-          {showActivate && isDirty ? (
-            <button
-              onClick={() => onActivate?.(delta)}
-              style={{
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '2px solid #2b6cb0',
-                backgroundColor: '#2b6cb0',
-                color: '#fff',
-                fontWeight: 700,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Aktivieren
-            </button>
-          ) : null}
-        </div>
-      </div>
-    );
-  };
-
-  // VERBESSERTE INPUT-ZEILE: Wert + Vorschau
-  const InputRow = ({
-    label,
-    value,
-    onChange,
-    previewBase,
-    unitLabel = "",
-    onActivate,
-    showActivate,
-    isDirty,
-  }: any) => {
-    const numericValue = typeof value === 'number' ? value : 1;
-    const deltaPercent = (numericValue - 1) * 100;
-    const deltaColor = deltaPercent > 0 ? '#166534' : deltaPercent < 0 ? '#b91c1c' : '#64748b';
-
-    const setValue = (raw: any) => {
-      const parsed = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(',', '.'));
-      if (!Number.isFinite(parsed)) return;
-      const newVal = Math.min(5.0, Math.max(0.1, Math.round(parsed * 100) / 100));
-      onChange(newVal);
-    };
-
-    return (
-      <div style={{ marginBottom: '15px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-            <span style={{ fontSize: '16px', fontWeight: '600', color: '#1a202c' }}>{label}</span>
-        </div>
-        
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: showActivate ? '140px 1fr' : '140px',
-            gap: '10px',
-            alignItems: 'center',
-          }}
-        >
-          <input
-            type="number"
-            min={0.1}
-            max={5.0}
-            step={0.01}
-            value={Number.isFinite(numericValue) ? numericValue.toFixed(2) : ''}
-            onChange={(e) => setValue(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '10px',
-              borderRadius: '8px',
-              border: '2px solid #2b6cb0',
-              fontSize: '18px',
-              fontWeight: 700,
-              color: '#2b6cb0',
-              backgroundColor: '#ebf8ff',
-              textAlign: 'center',
-              appearance: 'textfield',
-              WebkitAppearance: 'none',
-              MozAppearance: 'textfield',
-            }}
-          />
-          {showActivate && isDirty ? (
-            <button
-              onClick={() => onActivate?.(numericValue)}
-              style={{
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '2px solid #2b6cb0',
-                backgroundColor: '#2b6cb0',
-                color: '#fff',
-                fontWeight: 700,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Aktivieren
-            </button>
-          ) : null}
-        </div>
-
-        <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569' }}>
-          {typeof previewBase === 'number' ? (
-            <>
-              Basis {fmt(previewBase)}{unitLabel ? ` ${unitLabel}` : ''} · Neu {fmt(previewBase * numericValue)}{unitLabel ? ` ${unitLabel}` : ''} ·{" "}
-              <span style={{ color: deltaColor, fontWeight: 700 }}>
-                {deltaPercent >= 0 ? '+' : ''}{deltaPercent.toFixed(1)}%
-              </span>
-              <div style={{ marginTop: '4px', fontSize: '11px', color: '#64748b' }}>
-                Basis = Originalwert (vor Faktorisierung)
-              </div>
-            </>
-          ) : (
-            <span style={{ color: deltaColor, fontWeight: 700 }}>
-              Änderung ggü. Basis: {deltaPercent >= 0 ? '+' : ''}{deltaPercent.toFixed(1)}%
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   const currentYear = new Date().getFullYear();
   const yearLabelByFactor: Record<string, string> = {
@@ -630,26 +955,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
     f06: `${currentYear - 5}`,
   };
 
-  const FactorGrid = ({ title, data, setter, previewBase, unitLabel, onActivate, showActivate, persistedData }: any) => (
-    <div style={{ padding: '15px 0' }}>
-      <h5 style={gridTitleStyle}>{title}</h5>
-      {['f01', 'f02', 'f03', 'f04', 'f05', 'f06'].map(f => (
-        <InputRow
-          key={f}
-          label={yearLabelByFactor[f] ?? f}
-          value={data[f]}
-          onChange={(v: any) => setter({...data, [f]: v})}
-          previewBase={previewBase?.[f]}
-          unitLabel={unitLabel}
-          showActivate={showActivate}
-          onActivate={onActivate}
-          isDirty={Number(data?.[f]) !== Number(persistedData?.[f])}
-        />
-      ))}
-    </div>
-  );
-
-  const fmt = (v: any, digits = 3) => (typeof v === 'number' ? v.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits }) : '—');
+  const fmt = (v: number | null | undefined, digits = 3) => (typeof v === 'number' ? v.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits }) : '—');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
@@ -663,6 +969,18 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
           -moz-appearance: textfield;
           appearance: textfield;
         }
+        .reset-spinner {
+          width: 44px;
+          height: 44px;
+          border: 4px solid #e2e8f0;
+          border-top-color: #486b7a;
+          border-right-color: #ffe000;
+          border-radius: 50%;
+          animation: reset-spin 0.8s linear infinite;
+        }
+        @keyframes reset-spin {
+          to { transform: rotate(360deg); }
+        }
       `}</style>
       
       {/* 1. Markttrends */}
@@ -673,7 +991,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
             <TrendRow
               label="Trend Immobilienmarkt"
               value={trend.immobilienmarkt}
-              onChange={(v:any) => setTrend({...trend, immobilienmarkt: v})}
+              onChange={(v) => setTrend({ ...trend, immobilienmarkt: v })}
               showActivate={showActivate}
               onActivate={handleActivate}
               isDirty={Number(trend.immobilienmarkt) !== Number(persistedFactors.immobilienmarkt_trend?.immobilienmarkt)}
@@ -682,7 +1000,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
             <TrendRow
               label="Trend Mietmarkt"
               value={trend.mietmarkt}
-              onChange={(v:any) => setTrend({...trend, mietmarkt: v})}
+              onChange={(v) => setTrend({ ...trend, mietmarkt: v })}
               showActivate={showActivate}
               onActivate={handleActivate}
               isDirty={Number(trend.mietmarkt) !== Number(persistedFactors.immobilienmarkt_trend?.mietmarkt)}
@@ -705,6 +1023,8 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
             showActivate={showActivate}
             onActivate={handleActivate}
             persistedData={persistedFactors.kauf_haus}
+            yearLabelByFactor={yearLabelByFactor}
+            fmt={fmt}
           />
           <FactorGrid
             title="Wohnungen"
@@ -715,6 +1035,8 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
             showActivate={showActivate}
             onActivate={handleActivate}
             persistedData={persistedFactors.kauf_wohnung}
+            yearLabelByFactor={yearLabelByFactor}
+            fmt={fmt}
           />
           <FactorGrid
             title="Grundstücke"
@@ -725,6 +1047,8 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
             showActivate={showActivate}
             onActivate={handleActivate}
             persistedData={persistedFactors.kauf_grundstueck}
+            yearLabelByFactor={yearLabelByFactor}
+            fmt={fmt}
           />
         </div>
       </details>
@@ -742,6 +1066,8 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
             showActivate={showActivate}
             onActivate={handleActivate}
             persistedData={persistedFactors.miete_haus}
+            yearLabelByFactor={yearLabelByFactor}
+            fmt={fmt}
           />
           <FactorGrid
             title="Miete Wohnungen"
@@ -752,6 +1078,8 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
             showActivate={showActivate}
             onActivate={handleActivate}
             persistedData={persistedFactors.miete_wohnung}
+            yearLabelByFactor={yearLabelByFactor}
+            fmt={fmt}
           />
         </div>
       </details>
@@ -763,50 +1091,56 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
           <InputRow
             label="Mietrendite ETW"
             value={rendite.mietrendite_etw}
-            onChange={(v:any) => setRendite({...rendite, mietrendite_etw: v})}
+            onChange={(v) => setRendite({ ...rendite, mietrendite_etw: v })}
             showActivate={showActivate}
             onActivate={handleActivate}
             isDirty={Number(rendite.mietrendite_etw) !== Number(persistedFactors.rendite?.mietrendite_etw)}
+            fmt={fmt}
           />
           <InputRow
             label="Kaufpreisfaktor ETW"
             value={rendite.kaufpreisfaktor_etw}
-            onChange={(v:any) => setRendite({...rendite, kaufpreisfaktor_etw: v})}
+            onChange={(v) => setRendite({ ...rendite, kaufpreisfaktor_etw: v })}
             showActivate={showActivate}
             onActivate={handleActivate}
             isDirty={Number(rendite.kaufpreisfaktor_etw) !== Number(persistedFactors.rendite?.kaufpreisfaktor_etw)}
+            fmt={fmt}
           />
           <InputRow
             label="Mietrendite EFH"
             value={rendite.mietrendite_efh}
-            onChange={(v:any) => setRendite({...rendite, mietrendite_efh: v})}
+            onChange={(v) => setRendite({ ...rendite, mietrendite_efh: v })}
             showActivate={showActivate}
             onActivate={handleActivate}
             isDirty={Number(rendite.mietrendite_efh) !== Number(persistedFactors.rendite?.mietrendite_efh)}
+            fmt={fmt}
           />
           <InputRow
             label="Kaufpreisfaktor EFH"
             value={rendite.kaufpreisfaktor_efh}
-            onChange={(v:any) => setRendite({...rendite, kaufpreisfaktor_efh: v})}
+            onChange={(v) => setRendite({ ...rendite, kaufpreisfaktor_efh: v })}
             showActivate={showActivate}
             onActivate={handleActivate}
             isDirty={Number(rendite.kaufpreisfaktor_efh) !== Number(persistedFactors.rendite?.kaufpreisfaktor_efh)}
+            fmt={fmt}
           />
           <InputRow
             label="Mietrendite MFH"
             value={rendite.mietrendite_mfh}
-            onChange={(v:any) => setRendite({...rendite, mietrendite_mfh: v})}
+            onChange={(v) => setRendite({ ...rendite, mietrendite_mfh: v })}
             showActivate={showActivate}
             onActivate={handleActivate}
             isDirty={Number(rendite.mietrendite_mfh) !== Number(persistedFactors.rendite?.mietrendite_mfh)}
+            fmt={fmt}
           />
           <InputRow
             label="Kaufpreisfaktor MFH"
             value={rendite.kaufpreisfaktor_mfh}
-            onChange={(v:any) => setRendite({...rendite, kaufpreisfaktor_mfh: v})}
+            onChange={(v) => setRendite({ ...rendite, kaufpreisfaktor_mfh: v })}
             showActivate={showActivate}
             onActivate={handleActivate}
             isDirty={Number(rendite.kaufpreisfaktor_mfh) !== Number(persistedFactors.rendite?.kaufpreisfaktor_mfh)}
+            fmt={fmt}
           />
         </div>
       </details>
@@ -820,10 +1154,11 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
               key={key}
               label={key.charAt(0).toUpperCase() + key.slice(1)}
               value={sf[key]}
-              onChange={(v:any) => setSf({ ...sf, [key]: v })}
+              onChange={(v) => setSf({ ...sf, [key]: v })}
               showActivate={showActivate}
               onActivate={handleActivate}
               isDirty={Number(sf[key]) !== Number(persistedFactors.standortfaktoren?.[key])}
+              fmt={fmt}
             />
           ))}
         </div>
@@ -852,7 +1187,9 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
               textAlign: 'center',
             }}
           >
-            <div style={{ fontWeight: 800, fontSize: '18px', marginBottom: '8px', color: '#0f172a' }}>Gespeichert ✓</div>
+            <div style={{ fontWeight: 800, fontSize: '18px', marginBottom: '8px', color: '#0f172a' }}>
+              {saveModalMessage || 'Gespeichert ✓'}
+            </div>
             <button
               onClick={() => setSaveModalOpen(false)}
               style={{
@@ -893,7 +1230,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
             }}
           >
             <div style={{ fontWeight: 800, fontSize: '18px', marginBottom: '8px', color: '#0f172a' }}>
-              Zurückgesetzt ✓
+              {resetModalMessage || 'Zurückgesetzt ✓'}
             </div>
             <button
               onClick={() => setResetModalOpen(false)}
@@ -909,6 +1246,42 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
             >
               Schließen
             </button>
+          </div>
+        </div>
+      ) : null}
+      {isBusy ? (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '14px',
+              padding: '24px 28px',
+              minWidth: '280px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '12px',
+            }}
+          >
+            <div className="reset-spinner" />
+            <div style={{ fontWeight: 700, color: '#0f172a' }}>
+              {busyStepLabel ? `Schritt ${busyStepIndex}/${busyStepTotal}: ${busyStepLabel}` : 'Bitte warten…'}
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748b' }}>
+              Änderungen werden übernommen. Bitte nicht schließen.
+            </div>
           </div>
         </div>
       ) : null}
@@ -965,6 +1338,9 @@ const FactorForm = forwardRef<FactorFormHandle, { config: any }>(function Factor
 
       <div style={footerStyle}>
         <button onClick={handleReset} style={resetButtonStyle}>🔄 Zurücksetzen</button>
+        {isKreis ? (
+          <button onClick={handleGlobalReset} style={resetButtonStyle}>🌐 Global zurücksetzen</button>
+        ) : null}
         <div style={{ flex: 1 }}></div>
         {rebuildMessage && null}
         {/* Upload-Summary bewusst ausgeblendet */}
@@ -997,12 +1373,6 @@ const gridStyle = {
 const gridTitleStyle = {
   borderBottom: '3px solid #2d3748', marginBottom: '20px', paddingBottom: '8px', 
   color: '#2d3748', fontSize: '15px', textTransform: 'uppercase' as const, letterSpacing: '1px'
-};
-
-const stepButtonStyle = {
-  width: '50px', height: '50px', backgroundColor: '#edf2f7', border: 'none', 
-  borderRadius: '8px', fontSize: '24px', fontWeight: 'bold', cursor: 'pointer',
-  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2d3748'
 };
 
 const textareaStyle = {

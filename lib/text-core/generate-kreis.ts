@@ -7,8 +7,10 @@ import {
 
 import kreisPreisPhrases from "@/lib/text-core/phrases/kreis/immobilienpreise.json";
 import kreisUeberblickPhrases from "@/lib/text-core/phrases/kreis/immobilienmarkt.json";
+import kreisWohnraumPhrases from "@/lib/text-core/phrases/kreis/wohnraumsituation.json";
+import kreisWirtschaftPhrases from "@/lib/text-core/phrases/kreis/wirtschaft.json";
 
-type AnyRecord = Record<string, any>;
+type AnyRecord = Record<string, unknown>;
 
 export const KREIS_TEXT_MAP: Array<[string, string]> = [
   ["immobilienmarkt_ueberblick", "immobilienmarkt_beschreibung_01"],
@@ -34,6 +36,25 @@ export const KREIS_TEXT_MAP: Array<[string, string]> = [
   ["mietrendite", "mietrendite_etw"],
   ["mietrendite", "mietrendite_efh"],
   ["mietrendite", "mietrendite_mfh"],
+  ["wohnmarktsituation", "wohnmarktsituation_allgemein"],
+  ["wohnmarktsituation", "wohnmarktsituation_bevoelkerungsentwicklung"],
+  ["wohnmarktsituation", "wohnmarktsituation_haushalte"],
+  ["wohnmarktsituation", "wohnmarktsituation_natuerlicher_saldo"],
+  ["wohnmarktsituation", "wohnmarktsituation_wanderungssaldo"],
+  ["wohnmarktsituation", "wohnmarktsituation_alterstruktur"],
+  ["wohnmarktsituation", "wohnmarktsituation_jugendquotient_altenquotient"],
+  ["wohnmarktsituation", "wohnmarktsituation_wohnungsbestand_anzahl"],
+  ["wohnmarktsituation", "wohnmarktsituation_wohnungsbestand_wohnflaeche"],
+  ["wohnmarktsituation", "wohnmarktsituation_baufertigstellungen"],
+  ["wohnmarktsituation", "wohnmarktsituation_baugenehmigungen"],
+  ["wohnmarktsituation", "wohnmarktsituation_bauueberhang_baufortschritt"],
+  ["wirtschaft", "wirtschaft_bruttoinlandsprodukt"],
+  ["wirtschaft", "wirtschaft_einkommen"],
+  ["wirtschaft", "wirtschaft_sv_beschaeftigte_arbeitsort"],
+  ["wirtschaft", "wirtschaft_sv_beschaeftigte_wohnort"],
+  ["wirtschaft", "wirtschaft_arbeitsplatzzentralitaet"],
+  ["wirtschaft", "wirtschaft_pendler"],
+  ["wirtschaft", "wirtschaft_arbeitslosigkeit"],
 ];
 
 function formatNumber(value: number, decimals = 0) {
@@ -120,7 +141,7 @@ function buildInputData(inputs: AnyRecord) {
   return { inputData, raw };
 }
 
-function toFinite(value: any) {
+function toFinite(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
@@ -275,6 +296,96 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
       continue;
     }
 
+    const tenTrend = base.match(/^(.*)_10jahrestrend_(kreis)$/);
+    if (tenTrend) {
+      const stem = tenTrend[1];
+      const a = raw[`${stem}_jahr01_kreis`];
+      const b = raw[`${stem}_jahr10_kreis`];
+      if (typeof a === "number" && typeof b === "number" && b !== 0) {
+        trends[trendKey] = { rel_change: ((a - b) / b) * 100 };
+      }
+      continue;
+    }
+
+    const tenSaldo = base.match(/^(.*)_10jahressaldo_(kreis)$/);
+    if (tenSaldo) {
+      const stem = tenSaldo[1];
+      const a = raw[`${stem}_jahr01_kreis`];
+      const b = raw[`${stem}_jahr10_kreis`];
+      if (typeof a === "number" && typeof b === "number" && b !== 0) {
+        trends[trendKey] = { rel_change: ((a - b) / b) * 100 };
+      }
+      continue;
+    }
+
+    const fiveSaldo = base.match(/^(.*)_5jahresSaldo_(kreis)$/);
+    if (fiveSaldo) {
+      const stem = fiveSaldo[1];
+      const a = raw[`${stem}_jahr01_kreis`];
+      const b = raw[`${stem}_jahr05_kreis`];
+      if (typeof a === "number" && typeof b === "number") {
+        trends[trendKey] = { abs_delta: a - b };
+      }
+      continue;
+    }
+
+    const vorjahrTrend = base.match(/^(.*)_vorjahrestrend_(kreis)$/);
+    if (vorjahrTrend) {
+      const stem = vorjahrTrend[1];
+      const a = raw[`${stem}_jahr01_kreis`];
+      const b = raw[`${stem}_jahr02_kreis`];
+      if (typeof a === "number" && typeof b === "number" && b !== 0) {
+        trends[trendKey] = { rel_change: ((a - b) / b) * 100 };
+      }
+      continue;
+    }
+
+    const vorjahrSaldo = base.match(/^(.*)_vorjahressaldo_(kreis)$/);
+    if (vorjahrSaldo) {
+      const stem = vorjahrSaldo[1];
+      const a = raw[`${stem}_jahr01_kreis`];
+      const b = raw[`${stem}_jahr02_kreis`];
+      if (typeof a === "number" && typeof b === "number") {
+        trends[trendKey] = { abs_delta: a - b };
+      }
+      continue;
+    }
+
+    if (base.includes("jugendquotient_altenquotient_vergleich")) {
+      const a = raw["altenquotient_kreis"];
+      const b = raw["jugendquotient_kreis"];
+      if (typeof a === "number" && typeof b === "number") {
+        trends[trendKey] = { direct_comparison: { value_a: a, value_b: b } };
+      }
+      continue;
+    }
+
+    if (base.startsWith("regionentyp_")) {
+      const a = raw["einwohneranzahl_jahr01_kreis"];
+      const b = raw["einwohneranzahl_jahr05_kreis"];
+      if (typeof a === "number" && typeof b === "number" && b !== 0) {
+        trends[trendKey] = { rel_change: ((a - b) / b) * 100 };
+      }
+      continue;
+    }
+
+    const indexMatch = base.match(/^(.*)_index(?:_jahr01)?_kreis$/);
+    if (indexMatch) {
+      const stem = indexMatch[1];
+      let v = raw[base];
+      if (typeof v !== "number") {
+        const a = raw[`${stem}_jahr01_kreis`];
+        const b = raw[`${stem}_jahr01_land`];
+        if (typeof a === "number" && typeof b === "number" && b !== 0) {
+          v = (a / b) * 100;
+        }
+      }
+      if (typeof v === "number") {
+        trends[trendKey] = { index100: v };
+      }
+      continue;
+    }
+
     if (base.includes("vergleich_neubau_bestand")) {
       const a = raw["quadratmeterkaltmiete_avg_wohnung_neubau_jahr01_kreis"];
       const b = raw["quadratmeterkaltmiete_avg_wohnung_bestand_jahr01_kreis"];
@@ -350,6 +461,67 @@ function collectTrendDependencyKeys(definition: AnyRecord) {
       continue;
     }
 
+    const tenTrend = base.match(/^(.*)_10jahrestrend_(kreis)$/);
+    if (tenTrend) {
+      const stem = tenTrend[1];
+      deps.add(`${stem}_jahr01_kreis`);
+      deps.add(`${stem}_jahr10_kreis`);
+      continue;
+    }
+
+    const tenSaldo = base.match(/^(.*)_10jahressaldo_(kreis)$/);
+    if (tenSaldo) {
+      const stem = tenSaldo[1];
+      deps.add(`${stem}_jahr01_kreis`);
+      deps.add(`${stem}_jahr10_kreis`);
+      continue;
+    }
+
+    const fiveSaldo = base.match(/^(.*)_5jahresSaldo_(kreis)$/);
+    if (fiveSaldo) {
+      const stem = fiveSaldo[1];
+      deps.add(`${stem}_jahr01_kreis`);
+      deps.add(`${stem}_jahr05_kreis`);
+      continue;
+    }
+
+    const vorjahrTrend = base.match(/^(.*)_vorjahrestrend_(kreis)$/);
+    if (vorjahrTrend) {
+      const stem = vorjahrTrend[1];
+      deps.add(`${stem}_jahr01_kreis`);
+      deps.add(`${stem}_jahr02_kreis`);
+      continue;
+    }
+
+    const vorjahrSaldo = base.match(/^(.*)_vorjahressaldo_(kreis)$/);
+    if (vorjahrSaldo) {
+      const stem = vorjahrSaldo[1];
+      deps.add(`${stem}_jahr01_kreis`);
+      deps.add(`${stem}_jahr02_kreis`);
+      continue;
+    }
+
+    if (base.includes("jugendquotient_altenquotient_vergleich")) {
+      deps.add("altenquotient_kreis");
+      deps.add("jugendquotient_kreis");
+      continue;
+    }
+
+    if (base.startsWith("regionentyp_")) {
+      deps.add("einwohneranzahl_jahr01_kreis");
+      deps.add("einwohneranzahl_jahr05_kreis");
+      continue;
+    }
+
+    const indexMatch = base.match(/^(.*)_index(?:_jahr01)?_kreis$/);
+    if (indexMatch) {
+      const stem = indexMatch[1];
+      deps.add(base);
+      deps.add(`${stem}_jahr01_kreis`);
+      deps.add(`${stem}_jahr01_land`);
+      continue;
+    }
+
     if (base.includes("vergleich_neubau_bestand")) {
       deps.add("quadratmeterkaltmiete_avg_wohnung_neubau_jahr01_kreis");
       deps.add("quadratmeterkaltmiete_avg_wohnung_bestand_jahr01_kreis");
@@ -385,32 +557,53 @@ function buildDefinitionSignature(definition: AnyRecord, raw: AnyRecord, inputDa
   return hashString(JSON.stringify(stable));
 }
 
+function resolveDefinitionKey(key: string) {
+  if (key === "wohnmarktsituation_bauueberhang_baufortschritt") return "wohnmarktsituation_bauueberhang";
+  if (key === "wirtschaft_sv_beschaeftigte_arbeitsort") return "wirtschaft_sv_beschaeftigte_arbeits_und_wohnort";
+  return key;
+}
+
 export function buildKreisSectionSignatures(inputs: AnyRecord) {
   const { inputData, raw } = buildInputData(inputs);
   const signatures: Record<string, string> = {};
   for (const [, key] of KREIS_TEXT_MAP) {
-    const definition = (kreisPreisPhrases as AnyRecord)[key] ?? (kreisUeberblickPhrases as AnyRecord)[key];
+    const defKey = resolveDefinitionKey(key);
+    const definition =
+      (kreisPreisPhrases as AnyRecord)[defKey] ??
+      (kreisUeberblickPhrases as AnyRecord)[defKey] ??
+      (kreisWohnraumPhrases as AnyRecord)[defKey] ??
+      (kreisWirtschaftPhrases as AnyRecord)[defKey];
     if (!definition) continue;
     signatures[key] = buildDefinitionSignature(definition, raw, inputData);
   }
   return signatures;
 }
 
-function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRecord) {
-  const definition = (kreisPreisPhrases as AnyRecord)[defKey] ?? (kreisUeberblickPhrases as AnyRecord)[defKey];
+function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRecord, rng?: () => number) {
+  const resolvedKey = resolveDefinitionKey(defKey);
+  const definition =
+    (kreisPreisPhrases as AnyRecord)[resolvedKey] ??
+    (kreisUeberblickPhrases as AnyRecord)[resolvedKey] ??
+    (kreisWohnraumPhrases as AnyRecord)[resolvedKey] ??
+    (kreisWirtschaftPhrases as AnyRecord)[resolvedKey];
   if (!definition) return null;
   const trendValues = computeTrendValues(definition, raw);
-  return generateTextFromMultiblock(definition, inputData, trendValues, defKey);
+  return generateTextFromMultiblock(definition, inputData, trendValues, resolvedKey, undefined, undefined, rng);
 }
 
-export function generateKreisPriceTexts(text: AnyRecord, inputs: AnyRecord, allowedKeys?: Set<string>) {
+export function generateKreisPriceTexts(
+  text: AnyRecord,
+  inputs: AnyRecord,
+  allowedKeys?: Set<string>,
+  rngByKey?: (key: string) => () => number,
+) {
   const { inputData, raw } = buildInputData(inputs);
   const updated = { ...text };
 
   for (const [group, key] of KREIS_TEXT_MAP) {
     if (allowedKeys && !allowedKeys.has(key)) continue;
     if (!updated[group]) continue;
-    const textValue = generateFromDefinition(key, inputData, raw);
+    const textValue = generateFromDefinition(key, inputData, raw, rngByKey ? rngByKey(key) : undefined);
     if (textValue) {
       updated[group] = { ...updated[group], [key]: textValue };
     }

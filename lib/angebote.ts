@@ -232,7 +232,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     })
     .filter(Boolean);
 
-  let overridesMap = new Map<string, OfferOverrides>();
+  const overridesMap = new Map<string, OfferOverrides>();
   if (overrideKeys.length > 0) {
     const { data: overridesData, error: overridesError } = await supabase
       .from("partner_property_overrides")

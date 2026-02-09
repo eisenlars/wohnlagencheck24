@@ -69,7 +69,6 @@ export function VergleichBarChart({
 
   valueKind,
   unitKey = "none",
-  ctx = "chart",
 
   svgWidth = 720,
   svgHeight = 300,
@@ -140,9 +139,6 @@ export function VergleichBarChart({
   const scaledBarGap = barGap * xScale;
   const scaledGroupGap = groupGap * xScale;
   const groupWidth = baseGroupWidth * xScale;
-
-  const fmtNoUnit = (v: number | null) =>
-    formatMetric(v, { kind: valueKind, ctx, unit: "none" });
 
   const fmtWithUnit = (v: number | null) =>
     formatMetric(v, { kind: valueKind, ctx: tableCtx, unit: unitKey });

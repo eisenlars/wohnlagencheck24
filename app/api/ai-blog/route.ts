@@ -128,7 +128,7 @@ function buildPrompt(args: {
   return { system, user: baseUser + extra };
 }
 
-function extractJson(text: string): Record<string, any> | null {
+function extractJson(text: string): Record<string, unknown> | null {
   const cleaned = text
     .replace(/```json/gi, '')
     .replace(/```/g, '')
@@ -220,7 +220,7 @@ export async function POST(req: Request) {
       subline: String(parsed.subline || fallback.subline),
       body_md: String(parsed.body_md || fallback.body_md),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('AI Blog Route Error:', error);
     return NextResponse.json({ error: 'Fehler in der KI-Schnittstelle' }, { status: 500 });
   }

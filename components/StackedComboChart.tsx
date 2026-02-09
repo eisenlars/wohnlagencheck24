@@ -54,7 +54,6 @@ export function StackedComboChart({
   lines = [],
   valueKind,
   unitKey = "none",
-  ctx = "chart",
   tableCtx = "table",
   stacked = true,
   svgWidth = 720,

@@ -12,11 +12,13 @@ type PreviewRequest = {
   scope?: "kreis" | "ortslage";
 };
 
-function num(value: any) {
+type DataRow = { jahr?: number; [key: string]: unknown };
+
+function num(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function getLatestYear(rows: any[]) {
+function getLatestYear(rows: DataRow[]) {
   if (!Array.isArray(rows) || rows.length === 0) return null;
   let latest: number | null = null;
   for (const row of rows) {
@@ -27,17 +29,17 @@ function getLatestYear(rows: any[]) {
   return latest;
 }
 
-function getYearValue(rows: any[], year: number | null, key: string) {
+function getYearValue(rows: DataRow[], year: number | null, key: string) {
   if (!Array.isArray(rows) || year === null) return null;
   for (const row of rows) {
     if (row?.jahr === year && typeof row?.[key] === "number") {
-      return row[key];
+      return row[key] as number;
     }
   }
   return null;
 }
 
-function buildYearMap(rows: any[], key: string, baseValue: number | null) {
+function buildYearMap(rows: DataRow[], key: string, baseValue: number | null) {
   const latest = getLatestYear(rows);
   const result: Record<string, number | null> = {};
   for (let offset = 0; offset <= 5; offset += 1) {

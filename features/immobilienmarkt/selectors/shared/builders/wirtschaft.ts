@@ -116,9 +116,6 @@ export function buildWirtschaftVM(args: {
   const aktualisierung = asString(meta["aktualisierung"]);
   const jahrLabel = parseYear(aktualisierung);
   
-  const regionaleZuordnung = typeof meta["regionale_zuordnung"] === "string" ? meta["regionale_zuordnung"] : "";
-  
-  
   const isLandkreis = (kreisName ?? formatRegionFallback(kreisSlug ?? "")).toLowerCase().includes("landkreis");
 
 

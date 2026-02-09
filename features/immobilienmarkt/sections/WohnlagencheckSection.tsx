@@ -17,8 +17,6 @@ import { ImageModal } from "@/components/ImageModal";
 
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
-import { formatMetric } from "@/utils/format";
-
 import type { WohnlagencheckVM } from "@/features/immobilienmarkt/selectors/shared/types/wohnlagencheck";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
 
@@ -42,11 +40,6 @@ export function WohnlagencheckSection(
       ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
       : "/immobilienmarkt";
   const gallery = vm.gallery ?? [];
-
-  const flaecheFormatted =
-    vm.flaecheGesamt !== null
-      ? formatMetric(vm.flaecheGesamt, { kind: "anzahl", ctx: "kpi", unit: "ha" })
-      : "–";
 
   const factorMapSvgs = props.assets?.wohnlagencheckMapSvgs ?? {};
   const factorLegendHtml = props.assets?.wohnlagencheckLegendHtml ?? {};

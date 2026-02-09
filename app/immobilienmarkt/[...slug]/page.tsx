@@ -18,10 +18,10 @@ type PageParams = { slug?: string[] };
 type PageProps = { params: Promise<PageParams> };
 
 function getValueByPath(root: unknown, pathParts: string[]): unknown {
-  let current: any = root;
+  let current: unknown = root;
   for (const part of pathParts) {
     if (!current || typeof current !== "object") return undefined;
-    current = current[part];
+    current = (current as Record<string, unknown>)[part];
   }
   return current;
 }

@@ -9,7 +9,6 @@ type Props = {
 };
 
 export function FaqSection({
-  title = "Häufige Fragen",
   items,
   id = "faq",
 }: Props) {

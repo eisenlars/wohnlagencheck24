@@ -4,8 +4,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { buildWebAssetUrl } from '@/utils/assets';
 
+type PartnerArea = {
+  id?: string;
+  name?: string;
+  slug?: string;
+  parent_slug?: string;
+  bundesland_slug?: string;
+};
+
+type PartnerAreaConfig = {
+  area_id: string;
+  areas?: PartnerArea;
+  [key: string]: unknown;
+};
+
 type BlogManagerProps = {
-  config: any;
+  config: PartnerAreaConfig;
   onNavigateToTexts?: (sectionKey: string) => void;
 };
 

@@ -43,14 +43,6 @@ export function GrundstueckspreiseSection(props: Props) {
   const heroImageSrc = props.assets?.heroImageSrc ?? vm.hero.imageSrc;
   const grundstueckspreisMapSvg = props.assets?.grundstueckspreisMapSvg ?? null;
 
-  const berater: BeraterInfo = props.berater?.name
-    ? props.berater
-    : {
-        name: vm.berater.name,
-        taetigkeit: vm.berater.taetigkeit,
-        imageSrc: vm.berater.imageSrc,
-      };
-
   return (
     <div className="text-dark">
       {tocItems.length > 0 && <RightEdgeControls tocItems={tocItems} />}

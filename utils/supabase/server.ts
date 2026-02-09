@@ -21,7 +21,7 @@ export function createClient() {
           const store = await cookieStore
           try {
             store.set({ name, value, ...options })
-          } catch (error) {
+          } catch {
             // Ignoriert in Server Components
           }
         },
@@ -29,7 +29,7 @@ export function createClient() {
           const store = await cookieStore
           try {
             store.set({ name, value: '', ...options })
-          } catch (error) {
+          } catch {
             // Ignoriert in Server Components
           }
         },

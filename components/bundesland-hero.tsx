@@ -1,7 +1,6 @@
 import React from "react";
 import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
 import { BundeslandHeroMedia } from "@/components/bundesland-hero-media";
-import { BundeslandHeroSlideshow } from "@/components/bundesland-hero-slideshow";
 
 type MapMode = "singleValue" | "overview";
 type MapFormatKind = FormatKind | "kaufpreisfaktor";
@@ -23,8 +22,6 @@ type BundeslandHeroProps = {
 };
 
 export function BundeslandHero({
-  title,
-  subtitle,
   imageSrc,
   imageSrcs,
   mapSvg,

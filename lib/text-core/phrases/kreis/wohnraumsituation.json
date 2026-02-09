@@ -1,0 +1,2554 @@
+{
+  "wohnmarktsituation_allgemein": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "In {{ ortslage_name }} leben aktuell rund {{ einwohneranzahl_jahr01_kreis }} Menschen auf einer Gesamtfläche von {{ flaeche_gesamt_kreis }} ha, davon entfallen {{ siedlungsflaeche_gesamt_kreis }} ha auf Siedlungsfläche. Die Bevölkerungsdichte beträgt durchschnittlich {{ einwohnerdichte_kreis }} Einwohner je km². {{ verbkonstrukt_trendText_einwohneranzahl_5jahrestrend_kreis }}. Aktuell wird {{ ortslage_name }} als {{ trendText_regionentyp_kreis }} eingestuft. Insgesamt gibt es hier etwa {{ haushaltsanzahl_jahr01_kreis }} Haushalte, die durchschnittlich aus {{ personen_pro_haushalt_kreis }} Personen bestehen."
+          ],
+          "ohne_verbkonstrukt": [
+            "In {{ ortslage_name }} leben derzeit rund {{ einwohneranzahl_jahr01_kreis }} Menschen auf einer Gesamtfläche von {{ flaeche_gesamt_kreis }} ha, wovon {{ siedlungsflaeche_gesamt_kreis }} ha Siedlungsfläche sind. Die Bevölkerungsdichte liegt bei etwa {{ einwohnerdichte_kreis }} Einwohnern je km² und zeigt die kompakte bzw. großzügige Bebauungsstruktur des Stadtteils. {{ ortslage_name }} wird aktuell als {{ trendText_regionentyp_kreis }} eingestuft. Insgesamt existieren rund {{ haushaltsanzahl_jahr01_kreis }} Haushalte mit durchschnittlich {{ personen_pro_haushalt_kreis }} Personen pro Haushalt."
+          ]
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_einwohneranzahl_5jahrestrend_kreis": {
+            "gleich": [
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren {{ phrase }}, was auf eine insgesamt stabile Entwicklung hindeutet",
+              "Über einen Zeitraum von fünf Jahren {{ auxiliar }} die Bevölkerungzahl nahezu {{ phrase }}, was eine weitgehend unveränderte Tendenz erkennen lässt"
+            ],
+            "leicht_groesser": [
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was auch auf zukünftiges Wachstum hoffen lässt",
+              "Über die letzten fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}, was für vergleichbare Regionen typisch ist",
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was positive Entwicklungsperspektiven für die Region eröffnet",
+              "Über fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Binnen fünf Jahren {{ auxiliar }} die Zahl der Einwohner um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Die Zahl der Einwohner {{ auxiliar }} über einen Zeitraum von fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was den Wachstumstrend der Region unterstreicht",
+              "Im Verlauf der letzten fünf Jahre {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}"
+            ],
+            "groesser": [
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was auch auf zukünftiges Wachstum hoffen lässt",
+              "Über die letzten fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}, was für vergleichbare Regionen typisch ist",
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was positive Entwicklungsperspektiven für die Region eröffnet",
+              "Über fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Binnen fünf Jahren {{ auxiliar }} die Zahl der Einwohner um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Die Zahl der Einwohner {{ auxiliar }} über einen Zeitraum von fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was den Wachstumstrend der Region unterstreicht",
+              "Im Verlauf der letzten fünf Jahre {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was auch auf zukünftiges Wachstum hoffen lässt",
+              "Über die letzten fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}, was für vergleichbare Regionen typisch ist",
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was positive Entwicklungsperspektiven für die Region eröffnet",
+              "Über fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Binnen fünf Jahren {{ auxiliar }} die Zahl der Einwohner um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Die Zahl der Einwohner {{ auxiliar }} über einen Zeitraum von fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was den Wachstumstrend der Region unterstreicht",
+              "Im Verlauf der letzten fünf Jahre {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren mit {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was der Region perspektivisch nicht gut tut",
+              "Über fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was typisch für vergleichbare Regionen ist",
+              "Über fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}, was strukturelle Herausforderungen für die Region verdeutlicht",
+              "Binnen fünf Jahren {{ auxiliar }} die Zahl der Einwohner um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Die Zahl der Einwohner {{ auxiliar }} über einen Zeitraum von fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}",
+              "Im Verlauf der letzten fünf Jahre {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was auf demografische Belastungen hinweist"
+            ],
+            "kleiner": [
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren mit {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was der Region perspektivisch nicht gut tut",
+              "Über fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was typisch für vergleichbare Regionen ist",
+              "Über fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}, was strukturelle Herausforderungen für die Region verdeutlicht",
+              "Binnen fünf Jahren {{ auxiliar }} die Zahl der Einwohner um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Die Zahl der Einwohner {{ auxiliar }} über einen Zeitraum von fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}",
+              "Im Verlauf der letzten fünf Jahre {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was auf demografische Belastungen hinweist"
+            ],
+            "viel_kleiner": [
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren mit {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was der Region perspektivisch nicht gut tut",
+              "Über fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Die Einwohnerzahl {{ auxiliar }} in den letzten fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was typisch für vergleichbare Regionen ist",
+              "Über fünf Jahre hinweg {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}, was strukturelle Herausforderungen für die Region verdeutlicht",
+              "Binnen fünf Jahren {{ auxiliar }} die Zahl der Einwohner um {{ einwohneranzahl_5jahressaldo_kreis }} Personen {{ phrase }}",
+              "Die Zahl der Einwohner {{ auxiliar }} über einen Zeitraum von fünf Jahren um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}",
+              "Im Verlauf der letzten fünf Jahre {{ auxiliar }} die Bevölkerung um {{ einwohneranzahl_5jahressaldo_kreis }} Menschen {{ phrase }}, was auf demografische Belastungen hinweist"
+            ]
+          },
+          "phrases_trendText_einwohneranzahl_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nicht verändert",
+                "auxiliar": "hat sich"
+              },
+              {
+                "phrase": "gleich geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht erhöht",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark erhöht",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark gesunken",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "phrases_trendText_regionentyp_kreis": {
+            "gleich": [
+              {
+                "phrase": "stagnierende Region",
+                "auxiliar": null
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht wachsende Region",
+                "auxiliar": null
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "wachsende Region",
+                "auxiliar": null
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark wachsende Region",
+                "auxiliar": null
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht schrumpfende Region",
+                "auxiliar": null
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "schrumpfende Region",
+                "auxiliar": null
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark schrumpfende Region",
+                "auxiliar": null
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_bevoelkerungsentwicklung": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "Die Einwohnerzahl in der Region {{ verbkonstrukt_trendText_einwohneranzahl_10jahressaldo_kreis }}. Über die letzten 10 Jahre {{ verbkonstrukt_trendText_einwohneranzahl_10jahrestrend_kreis }}.",
+            "Die Entwicklung der Einwohnerzahlen ist für jede Region Zukunftsprägend. Die Bevölkerung {{ verbkonstrukt_trendText_einwohneranzahl_10jahressaldo_kreis }}. Im Zehnjahresvergleich {{ verbkonstrukt_trendText_einwohneranzahl_10jahrestrend_kreis }}.",
+            "Die Bevölkerungsdynamik ist der Treibstoff regionaler Entwicklung. Die Zahl der Einwohner {{ verbkonstrukt_trendText_einwohneranzahl_10jahressaldo_kreis }}. Über zehn Jahre betrachtet {{ verbkonstrukt_trendText_einwohneranzahl_10jahrestrend_kreis }}."
+          ],
+          "ohne_verbkonstrukt": [
+            "Seit {{ jahr10_einwohneranzahl_trend }} hat sich die Einwohnerzahl in {{ ortslage_name }} um {{ einwohnersaldo_kreis }} Menschen verändert. Das entspricht einer Rate von {{ einwohneranzahl_10jahrestrend_kreis }} über zehn Jahre und liefert wichtige Einblicke in die Bevölkerungsentwicklung."
+          ]
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_einwohneranzahl_10jahressaldo_kreis": {
+            "gleich": [
+              "{{ auxiliar }} gegenüber {{ jahr10_einwohneranzahl_trend }} {{ phrase }}, was auf ausgeglichene Bevölkerungsbewegungen hindeutet"
+            ],
+            "leicht_groesser": [
+              "{{ auxiliar }} mit {{ einwohneranzahl_10jahressaldo_kreis }} Personen {{ phrase }} von {{ jahr10_einwohneranzahl_trend }}, was {{ ortslage_name }} als polarisierende Gegend kennzeichnet"
+            ],
+            "groesser": [
+              "{{ auxiliar }} mit {{ einwohneranzahl_10jahressaldo_kreis }} Personen {{ phrase }} von {{ jahr10_einwohneranzahl_trend }}, was {{ ortslage_name }} als polarisierende Gegend kennzeichnet"
+            ],
+            "viel_groesser": [
+              "{{ auxiliar }} mit {{ einwohneranzahl_10jahressaldo_kreis }} Personen {{ phrase }} von {{ jahr10_einwohneranzahl_trend }}, was {{ ortslage_name }} als polarisierende Gegend kennzeichnet"
+            ],
+            "leicht_kleiner": [
+              "{{ auxiliar }} mit {{ einwohneranzahl_10jahressaldo_kreis }} Personen {{ phrase }} des Jahres {{ jahr10_einwohneranzahl_trend }}"
+            ],
+            "kleiner": [
+              "{{ auxiliar }} mit {{ einwohneranzahl_10jahressaldo_kreis }} Personen {{ phrase }} des Jahres {{ jahr10_einwohneranzahl_trend }}"
+            ],
+            "viel_kleiner": [
+              "{{ auxiliar }} mit {{ einwohneranzahl_10jahressaldo_kreis }} Personen {{ phrase }} des Jahres {{ jahr10_einwohneranzahl_trend }}"
+            ]
+          },
+          "phrases_trendText_einwohneranzahl_10jahressaldo_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "nahezu konstant",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem Niveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "leicht oberhalb des Niveaus",
+                "auxiliar": "liegt"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Niveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "oberhalb des Niveaus",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark über dem Niveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "stark oberhalb des Niveaus",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem Niveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "leicht unterhalb des Niveaus",
+                "auxiliar": "liegt"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Niveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "unterhalb des Niveaus",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark unter dem Niveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "stark unterhalb des Niveaus",
+                "auxiliar": "liegt"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_einwohneranzahl_10jahrestrend_kreis": {
+            "gleich": [
+              "{{ auxiliar }} hier {{ phrase }}",
+              "{{ auxiliar }} dabei {{ phrase }}",
+              "{{ auxiliar }} insgesamt {{ phrase }}",
+              "{{ auxiliar }} generell {{ phrase }}",
+              "{{ auxiliar }} im Großen und Ganzen {{ phrase }}",
+              "{{ auxiliar }} tendenziell {{ phrase }}",
+              "{{ auxiliar }} insgesamt gesehen {{ phrase }}",
+              "{{ auxiliar }} unterm Strich {{ phrase }}",
+              "{{ auxiliar }} im Wesentlichen {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "{{ auxiliar }} diese Entwicklung {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} dabei {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} insgesamt {{ phrase }} in Höhe von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} damit {{ phrase }} von rund {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} hier {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} letztlich {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %"
+            ],
+            "groesser": [
+              "{{ auxiliar }} diese Entwicklung {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} dabei {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} insgesamt {{ phrase }} in Höhe von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} damit {{ phrase }} von rund {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} hier {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} letztlich {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %"
+            ],
+            "viel_groesser": [
+              "{{ auxiliar }} diese Entwicklung {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} dabei {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} insgesamt {{ phrase }} in Höhe von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} damit {{ phrase }} von rund {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} hier {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %",
+              "{{ auxiliar }} letztlich {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %"
+            ],
+            "leicht_kleiner": [
+              "{{ auxiliar }} das {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %"
+            ],
+            "kleiner": [
+              "{{ auxiliar }} das {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %"
+            ],
+            "viel_kleiner": [
+              "{{ auxiliar }} das {{ phrase }} von {{ einwohneranzahl_10jahrestrend_kreis }} %"
+            ]
+          },
+          "phrases_trendText_einwohneranzahl_10jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "wenig bis keine Dynamik",
+                "auxiliar": "gab es"
+              },
+              {
+                "phrase": "die Anzahl nahezu unverändert",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "kaum Bewegung",
+                "auxiliar": "gab es"
+              },
+              {
+                "phrase": "nahezu konstant",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "weitestgehend stabil",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "einen leichten Anstieg",
+                "auxiliar": "bedeutet"
+              },
+              {
+                "phrase": "ein moderates Wachstum",
+                "auxiliar": "zeigt"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "einen normalen Anstieg",
+                "auxiliar": "bedeutet"
+              },
+              {
+                "phrase": "ein normales Wachstum",
+                "auxiliar": "zeigt"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "einen deutlichen Anstieg",
+                "auxiliar": "bedeutet"
+              },
+              {
+                "phrase": "ein starkes Wachstum",
+                "auxiliar": "zeigt"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "einen deutlichen Rückgang",
+                "auxiliar": "bedeutet"
+              },
+              {
+                "phrase": "eine moderate Abnahme",
+                "auxiliar": "zeigt"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "einen Rückgang",
+                "auxiliar": "bedeutet"
+              },
+              {
+                "phrase": "eine Abnahme",
+                "auxiliar": "zeigt"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "einen starken Rückgang",
+                "auxiliar": "bedeutet"
+              },
+              {
+                "phrase": "ein starke Abnahme",
+                "auxiliar": "zeigt"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_haushalte": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "Die aktuelle Anzahl der privaten Haushalte beträgt {{ haushaltsanzahl_jahr01_kreis }}. {{ verbkonstrukt_trendText_haushaltsanzahl_10jahressaldo_kreis }}, {{ verbkonstrukt_trendText_haushaltsanzahl_10jahrestrend_kreis }}."
+          ],
+          "ohne_verbkonstrukt": [
+            ""
+          ]
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_haushaltsanzahl_10jahressaldo_kreis": {
+            "gleich": [
+              "In den letzten zehn Jahren {{ auxiliar }} die Zahl {{ phrase }}, was auf eine insgesamt stabile Entwicklung hindeutet"
+            ],
+            "leicht_groesser": [
+              "In den letzten zehn Jahren {{ auxiliar }} {{ haushaltsanzahl_10jahressaldo_kreis }} {{ phrase }}"
+            ],
+            "groesser": [
+              "In den letzten zehn Jahren {{ auxiliar }} {{ haushaltsanzahl_10jahressaldo_kreis }} {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "In den letzten zehn Jahren {{ auxiliar }} {{ haushaltsanzahl_10jahressaldo_kreis }} {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "In den letzten zehn Jahren  {{ auxiliar }} {{ haushaltsanzahl_10jahressaldo_kreis }} {{ phrase }}"
+            ],
+            "kleiner": [
+              "In den letzten zehn Jahren  {{ auxiliar }} {{ haushaltsanzahl_10jahressaldo_kreis }} {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "In den letzten zehn Jahren  {{ auxiliar }} {{ haushaltsanzahl_10jahressaldo_kreis }} {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_haushaltsanzahl_10jahressaldo_kreis": {
+            "gleich": [
+              {
+                "phrase": "nicht verändert",
+                "auxiliar": "hat sich"
+              },
+              {
+                "phrase": "gleich geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "erhöht",
+                "auxiliar": "hat sich die Zahl um"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "erhöht",
+                "auxiliar": "hat sich die Zahl um"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "erhöht",
+                "auxiliar": "hat sich die Zahl um"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "gesunken",
+                "auxiliar": "ist die Zahl um"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "gesunken",
+                "auxiliar": "ist die Zahl um"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "gesunken",
+                "auxiliar": "ist die Zahl um"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_haushaltsanzahl_10jahrestrend_kreis": {
+            "gleich": [
+              "was auf eine insgesamt stabile Entwicklung hindeutet"
+            ],
+            "leicht_groesser": [
+              "{{ phrase }} {{ haushaltsanzahl_10jahrestrend_kreis }} % {{ auxiliar }}"
+            ],
+            "groesser": [
+              "{{ phrase }} {{ haushaltsanzahl_10jahrestrend_kreis }} % {{ auxiliar }}"
+            ],
+            "viel_groesser": [
+              "{{ phrase }} {{ haushaltsanzahl_10jahrestrend_kreis }} % {{ auxiliar }}"
+            ],
+            "leicht_kleiner": [
+              "{{ phrase }} {{ haushaltsanzahl_10jahrestrend_kreis }} % {{ auxiliar }}"
+            ],
+            "kleiner": [
+              "{{ phrase }} {{ haushaltsanzahl_10jahrestrend_kreis }} % {{ auxiliar }}"
+            ],
+            "viel_kleiner": [
+              "{{ phrase }} {{ haushaltsanzahl_10jahrestrend_kreis }} % {{ auxiliar }}"
+            ]
+          },
+          "phrases_trendText_haushaltsanzahl_10jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "stagnierende Region",
+                "auxiliar": null
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "was einem leichten Wachstum von",
+                "auxiliar": "entspricht"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "was einem starken Wachstum von",
+                "auxiliar": "entspricht"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "was einem sehr starken Wachstum von",
+                "auxiliar": "entspricht"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "was einem leichten Rückgang von",
+                "auxiliar": "entspricht"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "was einem starken Rückgang von",
+                "auxiliar": "entspricht"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "was einem sehr starken Rückgang von",
+                "auxiliar": "entspricht"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_natuerlicher_saldo": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_natuerliches_bevoelkerungssaldo_geburten_jahr01 }} {{ verbkonstrukt_trendText_natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} {{ verbkonstrukt_staticText_natuerliches_bevoelkerungssaldo_sterbefaelle_jahr01 }} {{ verbkonstrukt_trendText_natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }}"
+          ]
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_natuerliches_bevoelkerungssaldo_geburten_5jahrestrend": {
+            "gleich": [
+              "was {{ trendText_natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} % im 5 Jahrestrend {{ auxiliar }} und auf eine insgesamt ausgeglichende Entwicklung hindeutet"
+            ],
+            "leicht_groesser": [
+              "was {{ trendText_natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} % im 5 Jahrestrend {{ auxiliar }} und auf eine insgesamt stabile Entwicklung hindeutet"
+            ],
+            "groesser": [
+              "was {{ trendText_natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} % im 5 Jahrestrend {{ auxiliar }} und auf eine insgesamt stabile Entwicklung hindeutet"
+            ],
+            "viel_groesser": [
+              "was {{ trendText_natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} % im 5 Jahrestrend {{ auxiliar }} und auf eine insgesamt stabile Entwicklung hindeutet"
+            ],
+            "leicht_kleiner": [
+              "was {{ trendText_natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} % im 5 Jahrestrend {{ auxiliar }} und auf eine schleichend rückwärtsgerichtete Entwicklung hindeutet."
+            ],
+            "kleiner": [
+              "was {{ trendText_natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} % im 5 Jahrestrend {{ auxiliar }} und auf eine schleichend rückwärtsgerichtete Entwicklung hindeutet."
+            ],
+            "viel_kleiner": [
+              "was {{ trendText_natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_geburten_5jahrestrend }} % im 5 Jahrestrend {{ auxiliar }} und auf eine schleichend rückwärtsgerichtete Entwicklung hindeutet."
+            ]
+          },
+          "phrases_trendText_natuerliches_bevoelkerungssaldo_geburten_5jahrestrend": {
+            "gleich": [
+              {
+                "phrase": "nicht verändert",
+                "auxiliar": "hat sich"
+              },
+              {
+                "phrase": "gleich geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "einem leichten Anstieg",
+                "auxiliar": "entspricht"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "einem Anstieg",
+                "auxiliar": "entspricht"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "einem starken Anstieg",
+                "auxiliar": "entspricht"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "einem leichten Rückgang",
+                "auxiliar": "entspricht"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "einem Rückgang",
+                "auxiliar": "entspricht"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "einem starken Rückgang",
+                "auxiliar": "entspricht"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend": {
+            "gleich": [
+              "was einer {{ trendText_natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} im Vergleich zu {{ jahr05_natuerliches_bevoelkerungssaldo_trend }} bedeutet."
+            ],
+            "leicht_groesser": [
+              "was einer {{ trendText_natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} im Vergleich zu {{ jahr05_natuerliches_bevoelkerungssaldo_trend }} bedeutet."
+            ],
+            "groesser": [
+              "was einer {{ trendText_natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} im Vergleich zu {{ jahr05_natuerliches_bevoelkerungssaldo_trend }} bedeutet."
+            ],
+            "viel_groesser": [
+              "was einer {{ trendText_natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} im Vergleich zu {{ jahr05_natuerliches_bevoelkerungssaldo_trend }} bedeutet."
+            ],
+            "leicht_kleiner": [
+              "was einer {{ trendText_natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} im Vergleich zu {{ jahr05_natuerliches_bevoelkerungssaldo_trend }} bedeutet."
+            ],
+            "kleiner": [
+              "was einer {{ trendText_natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} im Vergleich zu {{ jahr05_natuerliches_bevoelkerungssaldo_trend }} bedeutet."
+            ],
+            "viel_kleiner": [
+              "was einer {{ trendText_natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} von {{ natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend }} im Vergleich zu {{ jahr05_natuerliches_bevoelkerungssaldo_trend }} bedeutet."
+            ]
+          },
+          "phrases_trendText_natuerliches_bevoelkerungssaldo_sterbefaelle_5jahrestrend": {
+            "gleich": [
+              {
+                "phrase": "Stagnation",
+                "auxiliar": "bedeutet"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leichten Zuwachs",
+                "auxiliar": "bedeutet"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "Zuwachs",
+                "auxiliar": "bedeutet"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "starken Zuwachs",
+                "auxiliar": "bedeutet"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leichten Rückgang",
+                "auxiliar": "bedeutet"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "Rückgang",
+                "auxiliar": "bedeutet"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "starken Rückgang",
+                "auxiliar": "bedeutet"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_natuerliches_bevoelkerungssaldo_geburten_jahr01": [
+            "Aktuell weist {{ der_oder_ }} {{ region_name }} einen natürlichen Bevölkerungssaldo von {{ natuerliches_bevoelkerungssaldo_je_1000ew }} (je 1.000 Einwohner) oder {{ natuerliches_bevoelkerungssaldo_jahr01 }} Personen auf. {{ jahr01_natuerliches_bevoelkerungssaldo_trend }} {{ phrase }} {{ natuerliches_bevoelkerungssaldo_geburten_jahr01 }} Geburten {{ auxiliar }},"
+          ],
+          "phrases_staticText_natuerliches_bevoelkerungssaldo_geburten_jahr01": [
+            {
+              "phrase": "wurden hier insgesamt",
+              "auxiliar": "registriert"
+            }
+          ],
+          "verbkonstrukt_staticText_natuerliches_bevoelkerungssaldo_sterbefaelle_jahr01": [
+            "Demgegenüber {{ auxiliar }} {{ natuerliches_bevoelkerungssaldo_sterbefaelle_jahr01 }} Sterbefälle, "
+          ],
+          "phrases_staticText_natuerliches_bevoelkerungssaldo_sterbefaelle_jahr01": [
+            {
+              "phrase": "",
+              "auxiliar": "standen"
+            }
+          ]
+        },
+        "special_cases_template": {
+          "templates": [
+            "{{ sondertext_geburten }} {{ sondertext_sterbefaelle }}",
+            "Beobachtungen: {{ sondertext_geburten }}. Ergänzend dazu: {{ sondertext_sterbefaelle }}.",
+            "{{ sondertext_geburten }} (Sterbefälle: {{ sondertext_sterbefaelle }})"
+          ],
+          "fallback_text": "Zu den aktuellen Entwicklungen bei Geburten und Sterbefällen liegen keine ausreichenden Daten vor."
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_wanderungssaldo": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_trendText_wanderungssaldo_zuzuege_5jahrestrend_kreis }}. {{ verbkonstrukt_trendText_wanderungssaldo_fortzuege_5jahrestrend_kreis }}. {{ verbkonstrukt_trendText_wanderungssaldo_5jahresSaldo_kreis }}. {{ verbkonstrukt_staticText_wanderungssaldo_jahr01_kreis }}."
+          ],
+          "ohne_verbkonstrukt": [
+            "Der Wanderungssaldo beträgt {{ wanderungssaldo_jahr01_kreis }} Personen."
+          ]
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_wanderungssaldo_zuzuege_5jahrestrend_kreis": {
+            "gleich": [
+              "die Zuzüge {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Über die letzten fünf Jahre {{ auxiliar }} {{ phrase }}, was auf eine allmählich wachsende Anziehungskraft der Region schließen läßt",
+              "Innerhalb der letzten fünf Jahre {{ auxiliar }} {{ phrase }}, woraus man eine langsam steigende Attraktivität ableiten kann",
+              "Im Verlauf der vergangenen fünf Jahre {{ auxiliar }} {{ phrase }}, woraus man eine langsam zunehmende Attraktivität ableiten kann"
+            ],
+            "groesser": [
+              "Über die letzten fünf Jahre {{ auxiliar }} {{ phrase }}, was auf den wachsenden Reiz der Region schließen lässt",
+              "Innerhalb der letzten fünf Jahre  {{ auxiliar }} {{ phrase }}, woraus man eine steigende Attraktivität ableiten kann",
+              "Im Verlauf der vergangenen fünf Jahre {{ auxiliar }} {{ phrase }}, woraus man eine zunehmende Attraktivität ableiten kann"
+            ],
+            "viel_groesser": [
+              "Über die letzten fünf Jahre {{ auxiliar }} {{ phrase }}, was eine stark wachsende Attraktivität der Region vermuten läßt",
+              "Innerhalb der letzten fünf Jahre  {{ auxiliar }} {{ phrase }}, was eine zunehmende Anziehungskraft der Region erkennen lässt",
+              "Im Verlauf der vergangenen fünf Jahre {{ auxiliar }} {{ phrase }}, woraus man eine stark zunehmende Attraktivität ableiten kann"
+            ],
+            "leicht_kleiner": [
+              "Über die letzten fünf Jahre {{ auxiliar }} {{ phrase }}, was auf nachlassende Perspektiven schließen lässt",
+              "Innerhalb der letzten fünf Jahre  {{ auxiliar }} {{ phrase }}"
+            ],
+            "kleiner": [
+              "Über die letzten fünf Jahre {{ auxiliar }} {{ phrase }}, was eine negative Außenwahrnehmung vermuten läßt",
+              "Innerhalb der letzten fünf Jahre  {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Über die letzten fünf Jahre {{ auxiliar }} {{ phrase }}, was auf eine starke negative Außenwahrnehmung schließen lässt",
+              "Innerhalb der letzten fünf Jahre  {{ auxiliar }} {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_wanderungssaldo_zuzuege_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "auf konstantem Niveau blieben",
+                "auxiliar": "sind die"
+              },
+              {
+                "phrase": "gleich blieben",
+                "auxiliar": "sind die"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "die Zahl der Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % moderat gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "die Anzahl neuer Bürger um {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % leicht zugenommen",
+                "auxiliar": "hat"
+              },
+              {
+                "phrase": "die Zuzügler mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % leicht mehr geworden",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "die Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % etwas zugenommen",
+                "auxiliar": "haben"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "die Zahl der Zuzüge um {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % deutlich gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "die Anzahl neuer Bürger um {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % deutlich zugenommen",
+                "auxiliar": "hat"
+              },
+              {
+                "phrase": "die Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % deutlich angestiegen",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "die Zuzügler mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % deutlich mehr geworden",
+                "auxiliar": "haben"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "die Zahl der Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % stark gestiegen",
+                "auxiliar": "sind die"
+              },
+              {
+                "phrase": "die Anzahl neuer Bürger mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % stark zugenommen",
+                "auxiliar": "hat"
+              },
+              {
+                "phrase": "die Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % stark angestiegen",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "die Zuzügler mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % prozentual stark zugelegt",
+                "auxiliar": "haben"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "die Zahl der Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % leicht zurückgegangen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "die Anzahl neuer Bürger mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % leicht abgenommen",
+                "auxiliar": "hat"
+              },
+              {
+                "phrase": "die Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % leicht angestiegen",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "die Zuzügler mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % leicht mehr geworden",
+                "auxiliar": "haben"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "die Zahl der Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % zurückgegangen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "die Anzahl neuer Bürger mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % abgenommen",
+                "auxiliar": "hat"
+              },
+              {
+                "phrase": "die Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % weniger geworden",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "die Zuzügler mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % mehr geworden",
+                "auxiliar": "haben"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "die Zahl der Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % stark zurückgegangen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "die Anzahl neuer Bürger mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % leicht abgenommen",
+                "auxiliar": "hat"
+              },
+              {
+                "phrase": "die Zuzüge mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % weniger geworden",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "die Zuzügler mit {{ wanderungssaldo_zuzuege_5jahrestrend_kreis }} % prozentual stark abgenommen",
+                "auxiliar": "haben"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_wanderungssaldo_fortzuege_5jahrestrend_kreis": {
+            "gleich": [
+              "Die Fortzüge {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Währenddessen {{ auxiliar }} {{ link_connector }} {{ phrase }}, was für die Gegend weniger vorteilhaft ist",
+              "Parallel dazu {{ auxiliar }} {{ link_connector }} {{ phrase }}, was für die Gegend als kleiner Nachteil zu werten ist",
+              "Gleichzeitig {{ auxiliar }} {{ link_connector }} {{ phrase }}, was für die Gegend als kleiner Nachteil zu werten ist"
+            ],
+            "groesser": [
+              "Währenddessen {{ auxiliar }} {{ link_connector }} {{ phrase }}, was für die Gegend durchaus nachteilig ist",
+              "Parallel dazu {{ auxiliar }} {{ link_connector }} {{ phrase }}, was für die Entwicklungsperspektiven unerfreulich ist"
+            ],
+            "viel_groesser": [
+              "Währenddessen {{ auxiliar }} {{ link_connector }} {{ phrase }}, was sich für die Gegend deutlich ungünstig auswirkt",
+              "Parallel dazu {{ auxiliar }} {{ link_connector }} {{ phrase }}, was für die Gegend leider ausgesprochen negativ ist"
+            ],
+            "leicht_kleiner": [
+              "Währenddessen {{ auxiliar }} {{ link_connector }} {{ phrase }}, was auf eine stärkere Bindung an den Ort schließen lässt",
+              "Parallel dazu {{ auxiliar }} {{ link_connector }} {{ phrase }}, was eine hohe Akzeptanz der Gegend vermuten lässt"
+            ],
+            "kleiner": [
+              "Währenddessen {{ auxiliar }} {{ link_connector }} {{ phrase }}, was auf eine stärkere Bindung an den Ort schließen lässt",
+              "Parallel dazu {{ auxiliar }} {{ link_connector }} {{ phrase }}, was eine hohe Akzeptanz der Gegend vermuten lässt"
+            ],
+            "viel_kleiner": [
+              "Währenddessen {{ auxiliar }} {{ link_connector }} {{ phrase }}, was auf eine stärkere Bindung an den Ort schließen lässt",
+              "Parallel dazu {{ auxiliar }} {{ link_connector }} {{ phrase }}, was eine hohe Akzeptanz der Gegend vermuten lässt"
+            ]
+          },
+          "phrases_trendText_wanderungssaldo_fortzuege_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "auf konstantem Niveau geblieben",
+                "auxiliar": "sind"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "Im selben Zeitraum die Fortzüge aus {{ ortslage_name }} um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % etwas gestiegen",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "Im selben Zeitfenster die Wegzüge aus {{ ortslage_name }} um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % leicht zugenommen",
+                "auxiliar": "haben"
+              },
+              {
+                "phrase": "Im selben Zeitfenster die Zahl der Fortzüge aus {{ ortslage_name }} mit {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % leicht weniger geworden",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "Im selben Zeitraum die Zahl der Fortzüge aus {{ ortslage_name }} mit {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % moderat zugelegt",
+                "auxiliar": "hat"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "Im selben Zeitraum die Fortzüge aus {{ ortslage_name }} um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "Im selben Zeitfenster die Wegzüge aus {{ ortslage_name }} um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % deutlich zugenommen",
+                "auxiliar": "haben"
+              },
+              {
+                "phrase": "Im selben Zeitfenster die Zahl der Fortzüge aus {{ ortslage_name }} mit {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % weniger geworden",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "Im selben Zeitraum die Zahl der Wegzügler aus {{ ortslage_name }} mit {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % zugelegt",
+                "auxiliar": "hat"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "Im selben Zeitraum die Fortzüge aus {{ ortslage_name }} um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % stark gestiegen",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "Im selben Zeitfenster die Wegzüge aus {{ ortslage_name }} um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % erheblich zugenommen",
+                "auxiliar": "haben"
+              },
+              {
+                "phrase": "Im selben Zeitfenster die Zahl der Fortzüge aus {{ ortslage_name }} mit {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % deutlich mehr geworden",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "Im selben Zeitraum die Zahl der Wegzügler aus {{ ortslage_name }} mit {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % deutlich zugelegt",
+                "auxiliar": "hat"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "Die Wegzüge über die gleiche Zeit leicht um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % gesunken",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "Die Fortzüge von Personen im gleichen Zeitraum um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % etwas abgenommen",
+                "auxiliar": "haben"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "Die Wegzüge um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % deutlich gesunken",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "Die Fortzüge von Personen im gleichen Zeitraum um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % klar abgenommen",
+                "auxiliar": "haben"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "Die Wegzüge um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % stark gesunken",
+                "auxiliar": "sind"
+              },
+              {
+                "phrase": "Die Fortzüge von Personen um {{ wanderungssaldo_fortzuege_5jahrestrend_kreis }} % erheblich abgenommen",
+                "auxiliar": "haben"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_wanderungssaldo_5jahresSaldo_kreis": {
+            "gleich": [
+              "{{ auxiliar }} der Saldo {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Als Ergebnis dieser Entwicklung {{ auxiliar }} {{ phrase }}",
+              "Folglich {{ auxiliar }} {{ phrase }}"
+            ],
+            "groesser": [
+              "Gestützt auf diese Beobachtungen {{ auxiliar }} {{ phrase }}",
+              "Daher {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "So {{ auxiliar }} {{ phrase }}",
+              "Aus diesen Entwicklungen heraus {{ auxiliar }} {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Dadurch {{ auxiliar }} {{ phrase }}",
+              "Vor dem Hintergrund dieser Zahlen {{ auxiliar }} {{ phrase }}"
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} der Saldo {{ phrase }}",
+              "Unter Berücksichtigung dieser Tendenzen {{ auxiliar }} {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Folglich {{ auxiliar }} {{ phrase }}",
+              "Auf Basis dieser Veränderungen {{ auxiliar }} {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_wanderungssaldo_5jahresSaldo_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert",
+                "auxiliar": "geblieben"
+              },
+              {
+                "phrase": "konstant gleich",
+                "auxiliar": "geblieben"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "mit {{ wanderungssaldo_5jahresSaldo_kreis }} Personen der Saldo leicht positiv",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "die Gegend einen leicht positiven Wanderungssaldo von {{ wanderungssaldo_5jahresSaldo_kreis }}",
+                "auxiliar": "hat"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "mit {{ wanderungssaldo_5jahresSaldo_kreis }} Menschen der Saldo leicht positiv",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "die Gegend einen leicht positiven Wanderungssaldo von {{ wanderungssaldo_5jahresSaldo_kreis }}",
+                "auxiliar": "hat"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "mit {{ wanderungssaldo_5jahresSaldo_kreis }} Personen der Saldo leicht positiv",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "die Gegend einen leicht positiven Wanderungssaldo von {{ wanderungssaldo_5jahresSaldo_kreis }}",
+                "auxiliar": "hat"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "mit {{ wanderungssaldo_5jahresSaldo_kreis }} leicht gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "mit {{ wanderungssaldo_5jahresSaldo_kreis }} leicht abgenommen",
+                "auxiliar": "hat"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "mit {{ wanderungssaldo_5jahresSaldo_kreis }} deutlich gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "mit {{ wanderungssaldo_5jahresSaldo_kreis }} deutlich abgenommen",
+                "auxiliar": "hat"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "mit {{ wanderungssaldo_5jahresSaldo_kreis }} stark gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "mit {{ wanderungssaldo_5jahresSaldo_kreis }} stark abgenommen",
+                "auxiliar": "hat"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_wanderungssaldo_jahr01_kreis": [
+            "Schauen wir jetzt auf die jüngste Entwicklung. In der letzten statistischen Erhebung {{ jahr01_wanderungssaldo_trend }} {{ auxiliar }} {{ phrase }}",
+            "Wenn wir auf die aktuellste Entwicklung in {{ jahr01_wanderungssaldo_trend  }} blicken, {{ auxiliar }} {{ phrase }}",
+            "Schauen wir ins aktuelle Jahr {{ jahr01_wanderungssaldo_trend  }}, dann sehen wir einen Wanderungssaldo von {{ wanderungssaldo_jahr01_kreis }}."
+          ],
+          "phrases_staticText_wanderungssaldo_jahr01_kreis": [
+            {
+              "phrase": "der Wanderungssaldo {{ wanderungssaldo_jahr01_kreis }} Personen betragen",
+              "auxiliar": "hat"
+            },
+            {
+              "phrase": "der Saldo {{ wanderungssaldo_jahr01_kreis }}",
+              "auxiliar": "ist"
+            },
+            {
+              "phrase": "die Region einen Wanderungssaldo von {{ wanderungssaldo_jahr01_kreis }} Menschen",
+              "auxiliar": "hat"
+            },
+            {
+              "phrase": "dann sehen wir einen Wanderungssaldo von {{ wanderungssaldo_jahr01_kreis }}"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_alterstruktur": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_durchschnittsalter_jahr01 }} {{ verbkonstrukt_trendText_durchschnittsalter_5jahresSaldo_kreis }} {{ verbkonstrukt_trendText_durchschnittsalter_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_durchschnittsalter_vergleich_kreis_land }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_durchschnittsalter_5jahresSaldo_kreis": {
+            "gleich": [
+              "In den letzten fünf Jahren {{ auxiliar }} es {{ phrase }}.",
+              "Blickt man auf die letzten 5 Jahre, {{ auxiliar }} es {{ phrase }}.",
+              "In der 5-Jahres Entwicklung {{ auxiliar }} der Wert dabei {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "In den letzten fünf Jahren {{ auxiliar }} es {{ phrase }}, was auf eine schleichende Überalterung der Region hinweist."
+            ],
+            "groesser": [
+              "In den letzten fünf Jahren {{ auxiliar }} es {{ phrase }}, was auf eine langsame Überalterung der Region hinweist."
+            ],
+            "viel_groesser": [
+              "In den letzten fünf Jahren {{ auxiliar }} es {{ phrase }}, was eine schnelle Überalterung der Bevölkerung zeigt."
+            ],
+            "leicht_kleiner": [
+              "In den letzten fünf Jahren {{ auxiliar }} es {{ phrase }}, was eine langsame Verjüngung der Altersstruktur in der Bevölkerung zeigt."
+            ],
+            "kleiner": [
+              "In den letzten fünf Jahren {{ auxiliar }} es {{ phrase }}, was auf eine langsame Verjüngung der Region hinweist."
+            ],
+            "viel_kleiner": [
+              "In den letzten fünf Jahren {{ auxiliar }} es {{ phrase }}, was eine starke Verjüngung der Bevölkerung zeigt."
+            ]
+          },
+          "phrases_trendText_durchschnittsalter_5jahresSaldo_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "nahezu konstant geblieben",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "kaum verändert",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "normal gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "normal gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark gesunken",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_durchschnittsalter_vergleich_kreis_bundesland": {
+            "gleich": [
+              "Im direkten Vergleich mit dem Bundesland {{ auxiliar }} die Alterstruktur des Kreises {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Im Vergleich zu {{ bundesland_name }} {{ auxiliar }} das Alter der Bevölkerung im Kreis {{ phrase }} dem des Bundeslandes"
+            ],
+            "groesser": [
+              "Im Vergleich zu {{ bundesland_name }} {{ auxiliar }} das Alter der Bevölkerung im Kreis {{ phrase }} dem des Bundeslandes"
+            ],
+            "viel_groesser": [
+              "Im Vergleich zu {{ bundesland_name }} {{ auxiliar }} das Alter der Bevölkerung im Kreis {{ phrase }} dem des Bundeslandes"
+            ],
+            "leicht_kleiner": [
+              "Im Vergleich zu {{ bundesland_name }} {{ auxiliar }} das Alter der Bevölkerung im Kreis {{ phrase }} dem des Bundeslandes"
+            ],
+            "kleiner": [
+              "Im Vergleich zu {{ bundesland_name }} {{ auxiliar }} das Alter der Bevölkerung im Kreis {{ phrase }} dem des Bundeslandes"
+            ],
+            "viel_kleiner": [
+              "Im Vergleich zu {{ bundesland_name }} {{ auxiliar }} das Alter der Bevölkerung im Kreis {{ phrase }} dem des Bundeslandes"
+            ]
+          },
+          "phrases_trendText_durchschnittsalter_vergleich_kreis_bundesland": {
+            "gleich": [
+              {
+                "phrase": "auf ähnlichem Niveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über",
+                "auxiliar": "liegt"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "weit über",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter",
+                "auxiliar": "liegt"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "weit unter",
+                "auxiliar": "liegt"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_durchschnittsalter_vergleich_kreis_land": {
+            "gleich": [
+              "und deutschlandweit {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "und deutschlandweit {{ phrase }} dem Bundesdurchschnitt."
+            ],
+            "groesser": [
+              "und deutschlandweit {{ phrase }} dem Mittel im Land."
+            ],
+            "viel_groesser": [
+              "und im Bundesvergleich {{ phrase }} "
+            ],
+            "leicht_kleiner": [
+              "und im Bundesvergleich {{ phrase }} dem Bundesdurchschnitt."
+            ],
+            "kleiner": [
+              "und im Bundesvergleich {{ phrase }} dem Mittel im Land."
+            ],
+            "viel_kleiner": [
+              "und im Bundesvergleich {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_durchschnittsalter_vergleich_kreis_land": {
+            "gleich": [
+              {
+                "phrase": "nahe am Bundesdurchschnitt",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über",
+                "auxiliar": ""
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über",
+                "auxiliar": ""
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark darüber",
+                "auxiliar": ""
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht über",
+                "auxiliar": ""
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "über",
+                "auxiliar": ""
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark darüber",
+                "auxiliar": ""
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_durchschnittsalter_jahr01": [
+            "{{ phrase }} {{ in_oder_im }} {{ region_name }} {{ auxiliar }} {{ durchschnittsalter_jahr01_kreis }} Jahre.",
+            "{{ phrase }} {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ durchschnittsalter_jahr01_kreis }} Jahre."
+          ],
+          "phrases_staticText_durchschnittsalter_jahr01": [
+            {
+              "phrase": "Das Durchschnittsalter",
+              "auxiliar": "ist"
+            },
+            {
+              "phrase": "Das mittlere Alter",
+              "auxiliar": "beträgt"
+            },
+            {
+              "phrase": "Der Altersdurchschnitt",
+              "auxiliar": "erreicht"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_jugendquotient_altenquotient": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_altenquotient_kreis_jugendquotient_kreis }} {{ verbkonstrukt_trendText_jugendquotient_altenquotient_vergleich_kreis }} {{ verbkonstrukt_trendText_jugendquotient_vergleich_kreis_land }} {{ verbkonstrukt_trendText_altenquotient_vergleich_kreis_land }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_jugendquotient_altenquotient_vergleich_kreis": {
+            "gleich": [
+              "{{ ortslage_name }} {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} die Region {{ phrase }}, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht."
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} die Region {{ phrase }}, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht."
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} die Region {{ phrase }}, was planerische Herausforderungen für altersgerechten Wohnraum unterstreicht."
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} die Region {{ phrase }}, was sich auch auf die Nachfrage nach familiengerechtem Wohnraum auswirken kann."
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} die Region {{ phrase }}, was sich auch auf die Nachfrage nach familiengerechtem Wohnraum auswirken kann."
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} die Region {{ phrase }}, was sich auch auf die Nachfrage nach familiengerechtem Wohnraum auswirken kann."
+            ]
+          },
+          "phrases_trendText_jugendquotient_altenquotient_vergleich_kreis": {
+            "gleich": [
+              {
+                "phrase": "altersstrukturell ausgewogen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "stärker durch eine ältere Bevölkerung geprägt",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "stärker durch eine ältere Bevölkerung geprägt",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stärker durch eine ältere Bevölkerung geprägt",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "eher von einer jüngeren Bevölkerung geprägt",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "eher von einer jüngeren Bevölkerung geprägt",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "eher von einer jüngeren Bevölkerung geprägt",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_jugendquotient_vergleich_kreis_land": {
+            "gleich": [
+              "Der Jugendquotient {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Der Jugendquotient {{ auxiliar }} {{ phrase }}, was auf eine vergleichsweise junge Altersstruktur schließen lässt."
+            ],
+            "groesser": [
+              "Der Jugendquotient {{ auxiliar }} {{ phrase }}, was auf eine vergleichsweise junge Altersstruktur schließen lässt."
+            ],
+            "viel_groesser": [
+              "Der Jugendquotient {{ auxiliar }} {{ phrase }}, was auf eine vergleichsweise junge Altersstruktur schließen lässt."
+            ],
+            "leicht_kleiner": [
+              "Der Jugendquotient {{ auxiliar }} {{ phrase }}, was einen geringeren Anteil an jungen Menschen vermuten lässt."
+            ],
+            "kleiner": [
+              "Der Jugendquotient {{ auxiliar }} {{ phrase }}, was einen geringeren Anteil an jungen Menschen vermuten lässt."
+            ],
+            "viel_kleiner": [
+              "Der Jugendquotient {{ auxiliar }} {{ phrase }}, was einen geringeren Anteil an jungen Menschen vermuten lässt."
+            ]
+          },
+          "phrases_trendText_jugendquotient_vergleich_kreis_land": {
+            "gleich": [
+              {
+                "phrase": "nahe am Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "deutlich über dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "klar über dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich unter dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "klar unter dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_altenquotient_vergleich_kreis_land": {
+            "gleich": [
+              "Der Altenquotient {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Der Altenquotient {{ auxiliar }} {{ phrase }}, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist."
+            ],
+            "groesser": [
+              "Der Altenquotient {{ auxiliar }} {{ phrase }}, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist."
+            ],
+            "viel_groesser": [
+              "Der Altenquotient {{ auxiliar }} {{ phrase }}, was auf einen überdurchschnittlich hohen Seniorenanteil hinweist."
+            ],
+            "leicht_kleiner": [
+              "Der Altenquotient {{ auxiliar }} {{ phrase }}, was einen vergleichsweise jüngeren Altersaufbau signalisiert."
+            ],
+            "kleiner": [
+              "Der Altenquotient {{ auxiliar }} {{ phrase }}, was einen vergleichsweise jüngeren Altersaufbau signalisiert."
+            ],
+            "viel_kleiner": [
+              "Der Altenquotient {{ auxiliar }} {{ phrase }}, was einen vergleichsweise jüngeren Altersaufbau signalisiert."
+            ]
+          },
+          "phrases_trendText_altenquotient_vergleich_kreis_land": {
+            "gleich": [
+              {
+                "phrase": "nahe am Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "deutlich über dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "klar über dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich unter dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "klar unter dem Landesniveau",
+                "auxiliar": "liegt"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_altenquotient_kreis_jugendquotient_kreis": [
+            "Aktuell {{ auxiliar }} der Altenquotient {{ in_oder_im }} {{ region_name }} bei {{ altenquotient_kreis }} und der Jugendquotient bei {{ jugendquotient_kreis }}.",
+            "{{ in_oder_im }} {{ region_name }} {{ auxiliar }} der Jugendquotient bei {{ jugendquotient_kreis }} und der Altenquotienten bei {{ altenquotient_kreis }}."
+          ],
+          "phrases_staticText_altenquotient_kreis_jugendquotient_kreis": [
+            {
+              "phrase": "",
+              "auxiliar": "liegt"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_wohnungsbestand_anzahl": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_wohnungsanzahl_jahr01_kreis }} {{ verbkonstrukt_staticText_wohnungsanzahl_per_1000_ew_jahr01_kreis }} {{ verbkonstrukt_trendText_wohnungsanzahl_per_1000_ew_5jahrestrend_kreis }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_wohnungsanzahl_per_1000_ew_5jahrestrend_kreis": {
+            "gleich": [
+              "Über die letzten fünf Jahre {{ auxiliar }} der Bestand dabei {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Über die letzten fünf Jahre {{ auxiliar }} der Bestand dabei {{ phrase }}."
+            ],
+            "groesser": [
+              "Über die letzten fünf Jahre {{ auxiliar }} der Bestand dabei {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Über die letzten fünf Jahre {{ auxiliar }} der Bestand dabei {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Über die letzten fünf Jahre {{ auxiliar }} der Bestand dabei {{ phrase }}."
+            ],
+            "kleiner": [
+              "Über die letzten fünf Jahre {{ auxiliar }} der Bestand dabei {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Über die letzten fünf Jahre {{ auxiliar }} der Bestand dabei {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_wohnungsanzahl_per_1000_ew_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu stabil",
+                "auxiliar": "blieb"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark gesunken",
+                "auxiliar": "ist"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_wohnungsanzahl_jahr01_kreis": [
+            "{{ phrase }} {{ in_oder_im }} {{ region_name }} {{ auxiliar }} {{ wohnungsanzahl_jahr01_kreis }} Wohnungen."
+          ],
+          "phrases_staticText_wohnungsanzahl_jahr01_kreis": [
+            {
+              "phrase": "Der aktuelle Wohnungsbestand",
+              "auxiliar": "beträgt ca."
+            }
+          ],
+          "verbkonstrukt_staticText_wohnungsanzahl_per_1000_ew_jahr01_kreis": [
+            "Pro 1.000 Einwohner {{ auxiliar }} also um die {{ wohnungsanzahl_per_1000_ew_jahr01_kreis }} {{ phrase }}."
+          ],
+          "phrases_staticText_wohnungsanzahl_per_1000_ew_jahr01_kreis": [
+            {
+              "phrase": "Wohneinheiten zur Verfügung",
+              "auxiliar": "stehen"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_wohnungsbestand_wohnflaeche": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_wohnflaeche_jahr01_kreis }} {{ verbkonstrukt_staticText_wohnflaeche_per_ew_jahr01_kreis }} {{ verbkonstrukt_trendText_wohnflaeche_per_ew_vergleich_kreis_land }} {{ verbkonstrukt_trendText_wohnflaeche_per_ew_5jahresSaldo_kreis }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_wohnflaeche_per_ew_5jahresSaldo_kreis": {
+            "gleich": [
+              "Im 5-Jahres Trend {{ auxiliar }} die durchschnittliche Wohnfläche pro Person {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Im 5-Jahres Trend {{ auxiliar }} die durchschnittliche Wohnfläche pro Person {{ phrase }}, was auf eine verbesserte Wohnraumausstattung hindeutet."
+            ],
+            "groesser": [
+              "Im 5-Jahres Trend {{ auxiliar }} die durchschnittliche Wohnfläche pro Person {{ phrase }}, was auf eine verbesserte Wohnraumausstattung hindeutet."
+            ],
+            "viel_groesser": [
+              "Im 5-Jahres Trend {{ auxiliar }} die durchschnittliche Wohnfläche pro Person {{ phrase }}, was auf eine verbesserte Wohnraumausstattung hindeutet."
+            ],
+            "leicht_kleiner": [
+              "Im 5-Jahres Trend {{ auxiliar }} die durchschnittliche Wohnfläche pro Person {{ phrase }}, was auf eine dichtere Belegung schließen lässt."
+            ],
+            "kleiner": [
+              "Im 5-Jahres Trend {{ auxiliar }} die durchschnittliche Wohnfläche pro Person {{ phrase }}, was auf eine dichtere Belegung schließen lässt."
+            ],
+            "viel_kleiner": [
+              "Im 5-Jahres Trend {{ auxiliar }} die durchschnittliche Wohnfläche pro Person {{ phrase }}, was auf eine dichtere Belegung schließen lässt."
+            ]
+          },
+          "phrases_trendText_wohnflaeche_per_ew_5jahresSaldo_kreis": {
+            "gleich": [
+              {
+                "phrase": "kaum verändert",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht vergrößert",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "deutlich vergrößert",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark vergrößert",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht verringert",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich verringert",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark verringert",
+                "auxiliar": "hat sich"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_wohnflaeche_per_ew_vergleich_kreis_land": {
+            "gleich": [
+              "Die Wohnfläche pro Person {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Sie {{ auxiliar }} dabei pro Person {{ phrase }}."
+            ],
+            "groesser": [
+              "Sie {{ auxiliar }} dabei pro Person {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Sie {{ auxiliar }} dabei pro Person {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Sie {{ auxiliar }} dabei pro Person {{ phrase }}."
+            ],
+            "kleiner": [
+              "Sie {{ auxiliar }} dadabei pro Personbei {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Sie {{ auxiliar }} dabei pro Person {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_wohnflaeche_per_ew_vergleich_kreis_land": {
+            "gleich": [
+              {
+                "phrase": "auf Bundesniveau",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem Bundesdurchschnitt",
+                "auxiliar": "liegt"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "deutlich über dem Bundesdurchschnitt",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark über dem Bundesdurchschnitt",
+                "auxiliar": "liegt"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem Bundesdurchschnitt",
+                "auxiliar": "liegt"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich unter dem Bundesdurchschnitt",
+                "auxiliar": "liegt"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark unter dem Bundesdurchschnitt",
+                "auxiliar": "liegt"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_wohnflaeche_jahr01_kreis": [
+            "{{ phrase }} {{ auxiliar }} {{ in_oder_im }} {{ region_name }} aktuell ca. {{ wohnflaeche_jahr01_kreis }} m²."
+          ],
+          "phrases_staticText_wohnflaeche_jahr01_kreis": [
+            {
+              "phrase": "Die gesamte für Wohnraum nutzbare Fläche",
+              "auxiliar": "beträgt"
+            }
+          ],
+          "verbkonstrukt_staticText_wohnflaeche_per_ew_jahr01_kreis": [
+            "Pro Kopf {{ auxiliar }} hier durchschnittlich {{ wohnflaeche_per_ew_jahr01_kreis }} m² zur Verfügung."
+          ],
+          "phrases_staticText_wohnflaeche_per_ew_jahr01_kreis": [
+            {
+              "phrase": "Wohneinheiten zur Verfügung",
+              "auxiliar": "stehen"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_baufertigstellungen": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_baufertigstellungen_jahr01_kreis }} {{ verbkonstrukt_staticText_baufertigstellungen_per_1000_ew_jahr01_kreis }} {{ verbkonstrukt_trendText_baufertigstellungen_5jahresSaldo_kreis }}"
+          ],
+          "ohne_verbkonstrukt": [
+            ""
+          ]
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_baufertigstellungen_5jahresSaldo_kreis": {
+            "gleich": [
+              "In den vergangenen 5 Jahren {{ auxiliar }} die Zahl der Fertigstellungen {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "In den vergangenen 5 Jahren {{ auxiliar }} die Zahl der Fertigstellungen {{ phrase }}, was auf eine leicht erhöhte Bautätigkeit hinweist."
+            ],
+            "groesser": [
+              "In den vergangenen 5 Jahren {{ auxiliar }} die Zahl der Fertigstellungen {{ phrase }}, was auf eine erhöhte Bautätigkeit hinweist."
+            ],
+            "viel_groesser": [
+              "In den vergangenen 5 Jahren {{ auxiliar }} die Zahl der Fertigstellungen {{ phrase }}, was auf eine stark erhöhte Bautätigkeit hinweist."
+            ],
+            "kleiner": [
+              "In den vergangenen 5 Jahren {{ auxiliar }} die Zahl der Fertigstellungen {{ phrase }}, was auf eine leicht schwächelnde Bautätigkeit hindeutet."
+            ],
+            "leicht_kleiner": [
+              "In den vergangenen 5 Jahren {{ auxiliar }} die Zahl der Fertigstellungen {{ phrase }}, was auf eine schwächelnde Bautätigkeit hindeutet."
+            ],
+            "viel_kleiner": [
+              "In den vergangenen 5 Jahren {{ auxiliar }} die Zahl der Fertigstellungen {{ phrase }}, was auf eine stark schwächelnde Bautätigkeit hindeutet."
+            ]
+          },
+          "phrases_trendText_baufertigstellungen_5jahresSaldo_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um einige Einheiten gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um einige Einheiten gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark gesunken",
+                "auxiliar": "ist"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_baufertigstellungen_jahr01_kreis": [
+            "{{ phrase }} {{ in_oder_im }} {{ region_name }} {{ baufertigstellungen_jahr01_kreis }} neue Wohnungen {{ auxiliar }},"
+          ],
+          "phrases_staticText_baufertigstellungen_jahr01_kreis": [
+            {
+              "phrase": "Im Jahr {{ jahr01_baufertigstellungen_trend }} wurden",
+              "auxiliar": "fertiggestellt"
+            }
+          ],
+          "verbkonstrukt_staticText_baufertigstellungen_per_1000_ew_jahr01_kreis": [
+            "{{ phrase }} {{ baufertigstellungen_per_1000_ew_jahr01_kreis }} Fertigstellungen pro 1.000 Einwohner {{ auxiliar }}."
+          ],
+          "phrases_staticText_baufertigstellungen_per_1000_ew_jahr01_kreis": [
+            {
+              "phrase": "was",
+              "auxiliar": "entspricht"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_baugenehmigungen": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_baugenehmigungen_jahr01_kreis }} {{ verbkonstrukt_trendText_baugenehmigungen_5jahrestrend_kreis }} {{ verbkonstrukt_trendText_baugenehmigungen_5jahresSaldo_kreis }}"
+          ],
+          "ohne_verbkonstrukt": [
+            ""
+          ]
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_baugenehmigungen_5jahresSaldo_kreis": {
+            "gleich": [
+              "Die absolute Veränderung {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Die Zahl der Baugenehmigungen {{ auxiliar }} {{ phrase }}, was den Bedarf an neuem Wohnraum unterstreicht."
+            ],
+            "groesser": [
+              "Die Zahl der Baugenehmigungen {{ auxiliar }} {{ phrase }}, was den Bedarf an neuem Wohnraum unterstreicht."
+            ],
+            "viel_groesser": [
+              "Die Zahl der Baugenehmigungen {{ auxiliar }} {{ phrase }}, was den Bedarf an neuem Wohnraum unterstreicht."
+            ],
+            "leicht_kleiner": [
+              "Die Zahl der Baugenehmigungen {{ auxiliar }} {{ phrase }}, was auf eine schwächere Nachfrage hindeutet."
+            ],
+            "kleiner": [
+              "Die Zahl der Baugenehmigungen {{ auxiliar }} {{ phrase }}, was auf eine schwächere Nachfrage hindeutet."
+            ],
+            "viel_kleiner": [
+              "Die Zahl der Baugenehmigungen {{ auxiliar }} {{ phrase }}, was auf eine schwächere Nachfrage hindeutet."
+            ]
+          },
+          "phrases_trendText_baugenehmigungen_5jahresSaldo_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert",
+                "auxiliar": "bleibt"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "um einige Genehmigungen gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "um einige Genehmigungen gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark gesunken",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_baugenehmigungen_5jahrestrend_kreis": {
+            "gleich": [
+              "Über fünf Jahre {{ auxiliar }} die Zahl der Baugenehmigungen {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Über fünf Jahre {{ auxiliar }} die Zahl der Baugenehmigungen {{ phrase }}, was auf eine verstärkte Bautätigkeit hindeutet."
+            ],
+            "groesser": [
+              "Über fünf Jahre {{ auxiliar }} die Zahl der Baugenehmigungen {{ phrase }}, was auf eine verstärkte Bautätigkeit hindeutet."
+            ],
+            "viel_groesser": [
+              "Über fünf Jahre {{ auxiliar }} die Zahl der Baugenehmigungen {{ phrase }}, was auf eine verstärkte Bautätigkeit hindeutet."
+            ],
+            "leicht_kleiner": [
+              "Über fünf Jahre {{ auxiliar }} die Zahl der Baugenehmigungen {{ phrase }}, was auf eine nachlassende Bautätigkeit schließen lässt."
+            ],
+            "kleiner": [
+              "Über fünf Jahre {{ auxiliar }} die Zahl der Baugenehmigungen {{ phrase }}, was auf eine nachlassende Bautätigkeit schließen lässt."
+            ],
+            "viel_kleiner": [
+              "Über fünf Jahre {{ auxiliar }} die Zahl der Baugenehmigungen {{ phrase }}, was auf eine nachlassende Bautätigkeit schließen lässt."
+            ]
+          },
+          "phrases_trendText_baugenehmigungen_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "kaum verändert",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht erhöht",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "deutlich erhöht",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark erhöht",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht verringert",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich verringert",
+                "auxiliar": "hat sich"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark verringert",
+                "auxiliar": "hat sich"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_baugenehmigungen_jahr01_kreis": [
+            "{{ phrase }} {{ in_oder_im }} {{ region_name }} {{ baugenehmigungen_jahr01_kreis }} neue Baugenehmigungen {{ auxiliar }}."
+          ],
+          "phrases_staticText_baugenehmigungen_jahr01_kreis": [
+            {
+              "phrase": "Im Jahr {{ jahr01_baugenehmigungen_trend }} wurden",
+              "auxiliar": "erteilt"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "wohnmarktsituation_bauueberhang": {
+    "text_blocks": [
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_bauueberhangsquote_jahr01_kreis }} {{ verbkonstrukt_quoteText_bauueberhangsquote_kreis }} {{ verbkonstrukt_trendText_bauueberhangsquote_2jahrestrend_kreis }} {{ verbkonstrukt_trendText_bauueberhangsquote_5jahrestrend_kreis }}\n{{ verbkonstrukt_staticText_fertigstellungsquote_jahr01_kreis }} {{ verbkonstrukt_quoteText_fertigstellungsquote_kreis }} {{ verbkonstrukt_trendText_fertigstellungsquote_2jahrestrend_kreis }} {{ verbkonstrukt_trendText_fertigstellungsquote_5jahrestrend_kreis }}"
+          ],
+          "ohne_verbkonstrukt": []
+        },
+        "quote_verbkonstrukte": {
+          "phrases_quote_bauueberhangsquote_kreis": {
+            "normal": [
+              {
+                "phrase": "und damit ungefähr auf dem Niveu der Genehmigungen"
+              }
+            ],
+            "factor_1_5": [
+              {
+                "phrase": "also in etwa 1,5-fach der Genehmigungen"
+              },
+              {
+                "phrase": "cirka das 1,5-fache der Genehmigungen"
+              }
+            ],
+            "factor_2": [
+              {
+                "phrase": "also etwa doppelt so hoch wie die Genehmigungen"
+              },
+              {
+                "phrase": "cirka das 2-fache der Genehmigungen"
+              }
+            ],
+            "factor_3": [
+              {
+                "phrase": "also in etwa dreifach so hoch wie die Genehmigungen"
+              },
+              {
+                "phrase": "cirka das 3-fache der Genehmigungen"
+              }
+            ],
+            "factor_3plus": [
+              {
+                "phrase": "also mehr als dreifach so hoch wie die Genehmigungen"
+              },
+              {
+                "phrase": "deutlich über dem dreifachen Niveau"
+              }
+            ]
+          },
+          "phrases_quote_fertigstellungsquote_kreis": {
+            "normal": [
+              {
+                "phrase": "und damit ungefähr auf dem Niveu der Genehmigungen"
+              }
+            ],
+            "factor_1_5": [
+              {
+                "phrase": "also leicht über dem Niveau der Genehmigungen"
+              },
+              {
+                "phrase": "cirka 1,5-fach des jährlichen Niveaus"
+              }
+            ],
+            "factor_2": [
+              {
+                "phrase": "also deutlich über dem Niveau der Genehmigungen"
+              },
+              {
+                "phrase": "cirka doppelt so hoch wie das Niveau"
+              }
+            ],
+            "factor_3": [
+              {
+                "phrase": "also stark über dem Niveau der Genehmigungen"
+              },
+              {
+                "phrase": "cirka das 3-fache des Niveaus"
+              }
+            ],
+            "factor_3plus": [
+              {
+                "phrase": "also weit über dem Niveau der Genehmigungen"
+              },
+              {
+                "phrase": "mehr als das dreifache Niveau"
+              }
+            ]
+          },
+          "verbkonstrukt_quoteText_bauueberhangsquote_kreis": [
+            "{{ phrase }}."
+          ],
+          "verbkonstrukt_quoteText_fertigstellungsquote_kreis": [
+            "{{ phrase }}."
+          ]
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_bauueberhangsquote_2jahrestrend_kreis": {
+            "gleich": [
+              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist."
+            ],
+            "groesser": [
+              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist."
+            ],
+            "viel_groesser": [
+              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist."
+            ],
+            "leicht_kleiner": [
+              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert."
+            ],
+            "kleiner": [
+              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert."
+            ],
+            "viel_kleiner": [
+              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert."
+            ]
+          },
+          "phrases_trendText_bauueberhangsquote_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert",
+                "auxiliar": "blieb"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark gesunken",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_bauueberhangsquote_5jahrestrend_kreis": {
+            "gleich": [
+              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht."
+            ],
+            "groesser": [
+              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht."
+            ],
+            "viel_groesser": [
+              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht."
+            ],
+            "leicht_kleiner": [
+              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet."
+            ],
+            "kleiner": [
+              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet."
+            ],
+            "viel_kleiner": [
+              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet."
+            ]
+          },
+          "phrases_trendText_bauueberhangsquote_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "über fünf Jahre nahezu unverändert",
+                "auxiliar": "blieb"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "über fünf Jahre leicht gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über fünf Jahre deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "über fünf Jahre stark gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "über fünf Jahre leicht gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "über fünf Jahre deutlich gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "über fünf Jahre stark gesunken",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_fertigstellungsquote_2jahrestrend_kreis": {
+            "gleich": [
+              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet."
+            ],
+            "groesser": [
+              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet."
+            ],
+            "viel_groesser": [
+              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet."
+            ],
+            "leicht_kleiner": [
+              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt."
+            ],
+            "kleiner": [
+              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt."
+            ],
+            "viel_kleiner": [
+              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt."
+            ]
+          },
+          "phrases_trendText_fertigstellungsquote_2jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "nahezu unverändert",
+                "auxiliar": "blieb"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "stark gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "deutlich gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "stark gesunken",
+                "auxiliar": "ist"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_fertigstellungsquote_5jahrestrend_kreis": {
+            "gleich": [
+              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt."
+            ],
+            "groesser": [
+              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt."
+            ],
+            "viel_groesser": [
+              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt."
+            ],
+            "leicht_kleiner": [
+              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt."
+            ],
+            "kleiner": [
+              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt."
+            ],
+            "viel_kleiner": [
+              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt."
+            ]
+          },
+          "phrases_trendText_fertigstellungsquote_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "phrase": "damit über fünf Jahre nahezu unverändert",
+                "auxiliar": "blieb"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "damit über fünf Jahre leicht gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "damit über fünf Jahre deutlich gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "damit über fünf Jahre stark gestiegen",
+                "auxiliar": "ist"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "damit über fünf Jahre leicht gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "damit über fünf Jahre deutlich gesunken",
+                "auxiliar": "ist"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "damit über fünf Jahre stark gesunken",
+                "auxiliar": "ist"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_bauueberhangsquote_jahr01_kreis": [
+            "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. {{ auxiliar }} {{ phrase }},"
+          ],
+          "phrases_staticText_bauueberhangsquote_jahr01_kreis": [
+            {
+              "phrase": "bei {{ bauueberhangsquote_jahr01_kreis }} %",
+              "auxiliar": "Sie liegt aktuell"
+            }
+          ],
+          "verbkonstrukt_staticText_fertigstellungsquote_jahr01_kreis": [
+            "Darüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. {{ auxiliar }} {{ phrase }},"
+          ],
+          "phrases_staticText_fertigstellungsquote_jahr01_kreis": [
+            {
+              "phrase": "{{ fertigstellungsquote_jahr01_kreis }} %",
+              "auxiliar": "Sie beträgt"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

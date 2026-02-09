@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type TocItem = {
   id: string;
@@ -47,14 +47,7 @@ export function RightEdgeControls({
   tocItems: TocItem[];
   showTocInitially?: boolean;
 }) {
-  const [mounted, setMounted] = useState(false);
   const [tocVisible, setTocVisible] = useState(showTocInitially);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
 
   const handleToggleToc = () => {
     setTocVisible((v) => !v);
