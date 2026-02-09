@@ -108,6 +108,11 @@ export default async function ImmobilienmarktHierarchiePage({ params }: PageProp
   });
 
   const Component = entry.Component as SectionComponent<typeof vm>;
+  const valuationCtx: Record<string, string | undefined> = {
+    bundeslandSlug: ctx.bundeslandSlug,
+    kreisSlug: ctx.kreisSlug,
+    ortSlug: ctx.ortSlug,
+  };
 
   // Bestimmung des Kontext-Labels für den Wizard
   const locationName = ctx.ortSlug || ctx.kreisSlug || "Ihrer Region";
@@ -144,7 +149,7 @@ export default async function ImmobilienmarktHierarchiePage({ params }: PageProp
             
             <div className="col-lg-10">
               <ValuationWizard 
-                ctx={ctx}
+                ctx={valuationCtx}
                 basePrice={averagePrice ?? undefined}
                 level={level}
               />
