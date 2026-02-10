@@ -102,12 +102,12 @@ export function applyDataDrivenTexts<T extends AnyRecord>(report: T, areaId?: st
       ? generateOrtslagePriceTexts(baseText, inputs, undefined, rngByKey)
       : generateKreisPriceTexts(baseText, inputs, undefined, rngByKey);
 
-  return {
+  return ({
     ...(mappedReport as AnyRecord),
     text: updatedText,
     data: {
       ...data,
       text: updatedText,
     },
-  } as T;
+  } as unknown) as T;
 }
