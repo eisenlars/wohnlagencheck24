@@ -1,5 +1,5 @@
 import {
-  generateTextFromMultiblock,
+  generateText,
   formatPriceValue,
   capitalizeWords,
   umlauteUmwandeln,
@@ -11,6 +11,14 @@ import kreisWohnraumPhrases from "@/lib/text-core/phrases/kreis/wohnraumsituatio
 import kreisWirtschaftPhrases from "@/lib/text-core/phrases/kreis/wirtschaft.json";
 
 type AnyRecord = Record<string, any>;
+
+function pickRandom<T>(items: T[], rng?: () => number): T {
+  if (!items.length) {
+    throw new Error("pickRandom: empty array");
+  }
+  const r = rng ?? Math.random;
+  return items[Math.floor(r() * items.length)];
+}
 
 export const KREIS_TEXT_MAP: Array<[string, string]> = [
   ["immobilienmarkt_ueberblick", "immobilienmarkt_beschreibung_01"],
@@ -96,6 +104,11 @@ function buildInputData(inputs: AnyRecord) {
     ortslagenValues_dict,
   } = inputs;
 
+  const rentYear01 = marketValues_generallyPrices_dict?.mietpreise_mittel_kreis ?? marketValues_generallyPrices_dict?.mietpreise_mittel_jahr01_kreis;
+  const rentYear02 = marketValues_generallyPrices_dict?.mietpreise_mittel_kreis_vorjahr ?? marketValues_generallyPrices_dict?.mietpreise_mittel_jahr02_kreis;
+  const rentYear05 = marketValues_generallyPrices_dict?.mietpreise_mittel_kreis_vor_5_jahren ?? marketValues_generallyPrices_dict?.mietpreise_mittel_jahr05_kreis;
+  const rentBl = marketValues_generallyPrices_dict?.mietpreise_mittel_bundesland ?? marketValues_generallyPrices_dict?.mietpreise_mittel_jahr01_bundesland;
+
   const kreisName = capitalizeWords(umlauteUmwandeln(String(kreis_name ?? "")));
   const bundeslandName = capitalizeWords(umlauteUmwandeln(String(bundesland_name ?? "")));
   const inOderIm = regionale_zuordnung === "landkreis" ? "im" : "in";
@@ -124,6 +137,10 @@ function buildInputData(inputs: AnyRecord) {
     ...priceValues_rent_dict,
     ...priceValues_rendite_dict,
     ...ortslagenValues_dict,
+    mietpreise_mittel_jahr01_kreis: rentYear01,
+    mietpreise_mittel_jahr02_kreis: rentYear02,
+    mietpreise_mittel_jahr05_kreis: rentYear05,
+    mietpreise_mittel_jahr01_bundesland: rentBl,
   };
 
   const inputData: AnyRecord = { ...raw };
@@ -360,6 +377,17 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
       continue;
     }
 
+    if (base === "guenstigster_immobilienpreis_vergleich_kreis_bundesland") {
+      const aRaw = raw["guenstigster_immobilienpreis_wert"];
+      const bRaw = raw["immobilienpreise_mittel_jahr01_bundesland"];
+      const a = typeof aRaw === "number" ? aRaw : Number(aRaw);
+      const b = typeof bRaw === "number" ? bRaw : Number(bRaw);
+      if (Number.isFinite(a) && Number.isFinite(b)) {
+        trends[trendKey] = { direct_comparison: { value_a: a, value_b: b } };
+      }
+      continue;
+    }
+
     if (base.startsWith("regionentyp_")) {
       const a = raw["einwohneranzahl_jahr01_kreis"];
       const b = raw["einwohneranzahl_jahr05_kreis"];
@@ -587,8 +615,23 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
     (kreisWohnraumPhrases as AnyRecord)[resolvedKey] ??
     (kreisWirtschaftPhrases as AnyRecord)[resolvedKey];
   if (!definition) return null;
-  const trendValues = computeTrendValues(definition, raw);
-  return generateTextFromMultiblock(definition, inputData, trendValues, resolvedKey, undefined, undefined, rng);
+  const blocks = definition?.text_blocks;
+  if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
+    throw new Error(`'text_blocks' fehlt oder ist keine Liste in Definition '${resolvedKey}'.`);
+  }
+  const block = pickRandom(blocks, rng);
+  const trendValues = computeTrendValues(block, raw);
+  const guardKey = "trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland";
+  if (!(guardKey in trendValues)) {
+    const aRaw = raw["guenstigster_immobilienpreis_wert"];
+    const bRaw = raw["immobilienpreise_mittel_jahr01_bundesland"];
+    const a = typeof aRaw === "number" ? aRaw : Number(aRaw);
+    const b = typeof bRaw === "number" ? bRaw : Number(bRaw);
+    if (Number.isFinite(a) && Number.isFinite(b)) {
+      trendValues[guardKey] = { direct_comparison: { value_a: a, value_b: b } };
+    }
+  }
+  return generateText(block, inputData, trendValues, resolvedKey, undefined, undefined, rng);
 }
 
 export function generateKreisPriceTexts(

@@ -788,7 +788,17 @@ export function UebersichtSection(
             </div>
           </div>
 
-          {vm.texts.beschreibung01 ? <div><p className="my-5 w-75 mx-auto">{vm.texts.beschreibung01}</p></div> : null}
+          {vm.texts.beschreibung01 ? (
+            <div>
+              {vm.texts.beschreibung01
+                .split(/\n\s*\n/)
+                .map((p) => p.trim())
+                .filter(Boolean)
+                .map((p, index) => (
+                  <p key={`beschreibung01-${index}`} className="my-5 w-75 mx-auto">{p}</p>
+                ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
 
@@ -816,7 +826,17 @@ export function UebersichtSection(
             ctx="table"
           />
 
-          {vm.texts.beschreibung02 ? <div style={{ margin: "2.5rem 0" }}><p className="my-5 w-75 mx-auto">{vm.texts.beschreibung02}</p></div> : null}
+          {vm.texts.beschreibung02 ? (
+            <div style={{ margin: "2.5rem 0" }}>
+              {vm.texts.beschreibung02
+                .split(/\n\s*\n/)
+                .map((p) => p.trim())
+                .filter(Boolean)
+                .map((p, index) => (
+                  <p key={`beschreibung02-${index}`} className="my-5 w-75 mx-auto">{p}</p>
+                ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
 

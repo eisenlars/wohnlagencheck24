@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { applyDataDrivenTexts } from "@/lib/text-core";
+import { getOrteForKreis } from "@/lib/data";
 
 export const runtime = "nodejs";
 
@@ -135,7 +136,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Report nicht gefunden" }, { status: 404 });
   }
   let reportJson = await reportRes.json();
-  reportJson = applyDataDrivenTexts(reportJson, areaId);
+  let ortslageNameMap: Record<string, string> | undefined = undefined;
+  if (!ortslage) {
+    const orte = await getOrteForKreis(bundesland, kreis);
+    ortslageNameMap = Object.fromEntries(orte.map((o) => [o.slug, o.name]));
+  }
+  reportJson = applyDataDrivenTexts(reportJson, areaId, ortslageNameMap);
   const baseTextsRaw = (reportJson?.text ?? {}) as Record<string, Record<string, string>>;
   const baseTexts = stripGroups(baseTextsRaw, ["berater", "makler"]);
 

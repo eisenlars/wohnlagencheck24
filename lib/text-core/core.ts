@@ -98,7 +98,7 @@ export function determineIndex50Category(value: number, thresholds = [5, 10, 20]
   return "viel_kleiner";
 }
 
-export function determineTrendCategory(relativeChange: number, thresholds = [0.02, 0.05, 0.10]) {
+export function determineTrendCategory(relativeChange: number, thresholds = [2, 5, 10]) {
   const absChange = Math.abs(relativeChange);
   if (absChange <= thresholds[0]) return "gleich";
   if (relativeChange > 0) {
@@ -230,6 +230,7 @@ export function generateDynamicPlaceholders(
     const verbBlock = trendVerbkonstrukte?.[verbKey];
     if (!phrasesBlock) continue;
 
+    const baseVarKey = trendKey.replace(/^trendText_/, "");
     let category = "gleich";
     if ("index1" in trendData) category = determineIndex1Category(trendData.index1);
     else if ("index100" in trendData) category = determineIndex100Category(trendData.index100);
@@ -237,6 +238,30 @@ export function generateDynamicPlaceholders(
     else if ("abs_delta" in trendData) category = determineAbsoluteCategoryWithDirection(trendData.abs_delta);
     else if ("direct_comparison" in trendData) category = determineSimpleComparisonCategory(trendData.direct_comparison.value_a, trendData.direct_comparison.value_b);
     else if ("index50" in trendData) category = determineIndex50Category(trendData.index50);
+
+    if (!(baseVarKey in resultPlaceholders)) {
+      if ("rel_change" in trendData && typeof trendData.rel_change === "number") {
+        resultPlaceholders[baseVarKey] = Math.abs(trendData.rel_change).toLocaleString("de-DE", {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        });
+      } else if ("abs_delta" in trendData && typeof trendData.abs_delta === "number") {
+        resultPlaceholders[baseVarKey] = trendData.abs_delta.toLocaleString("de-DE", {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        });
+      } else if ("index1" in trendData && typeof trendData.index1 === "number") {
+        resultPlaceholders[baseVarKey] = trendData.index1.toLocaleString("de-DE", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+      } else if ("index100" in trendData && typeof trendData.index100 === "number") {
+        resultPlaceholders[baseVarKey] = trendData.index100.toLocaleString("de-DE", {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        });
+      }
+    }
 
     const templateCategory = mapTrendCategoryToTemplateKey(category);
     const phraseEntry = selectPhraseEntry(templateCategory, phrasesBlock, true, rng) as AnyRecord;
@@ -350,9 +375,18 @@ export function generateText(
   connectorConfig?: AnyRecord,
   rng: Rng = Math.random,
 ) {
+  const asset = textLabel.includes("_haus_") ? "haus" : "wohnung";
+  let baseInput = inputData;
+  if (textDefinition?.scoring_dynamic_subblocks_preisangaben || textDefinition?.scoring_dynamic_subblocks_lagekombination) {
+    const scoringTexts = generateScoringTextbausteine(textDefinition, inputData, asset, rng);
+    baseInput = {
+      ...inputData,
+      ...scoringTexts,
+    };
+  }
   const [placeholders, hasVerbkonstrukt] = generateDynamicPlaceholders(
     textDefinition,
-    inputData,
+    baseInput,
     trendValues,
     quoteValues ?? {},
     connectorConfig,
@@ -360,7 +394,7 @@ export function generateText(
   );
   const specialTemplate = textDefinition?.special_cases_template;
   if (specialTemplate) {
-    const specialText = renderSpecialCasesTemplate(specialTemplate, inputData, rng);
+    const specialText = renderSpecialCasesTemplate(specialTemplate, baseInput, rng);
     if (specialText) return specialText;
   }
   const [finalText] = renderFinalText(textDefinition.templates, placeholders, hasVerbkonstrukt, rng);
@@ -381,7 +415,14 @@ export function renderSpecialCasesTemplate(specialTemplateBlock: AnyRecord, inpu
 
 export function generateScoringTextbausteine(textDefinition: AnyRecord, inputData: AnyRecord, asset = "wohnung", rng: Rng = Math.random) {
   const SCORES = ["01", "02", "03", "04", "05"];
-  const priceKey = (metric: string, score: string) => `quadratmeterpreis_${metric}_${asset}_lagescore${score}`;
+  const detectSuffix = () => {
+    const base = `quadratmeterpreis_avg_${asset}_lagescore01`;
+    if (inputData[`${base}_kreis`] !== undefined) return "_kreis";
+    if (inputData[`${base}_ortslage`] !== undefined) return "_ortslage";
+    return "";
+  };
+  const suffix = detectSuffix();
+  const priceKey = (metric: string, score: string) => `quadratmeterpreis_${metric}_${asset}_lagescore${score}${suffix}`;
   const fmtEur = (v: number | null) => {
     if (v === null || v === undefined) return "";
     try {
@@ -392,7 +433,9 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
     }
   };
   const availableScores = () => SCORES.filter((s) => inputData[priceKey("avg", s)] !== null && inputData[priceKey("avg", s)] !== undefined);
-  const block = (textDefinition?.text_blocks ?? [{}])[0];
+  const block = (textDefinition?.scoring_dynamic_subblocks_preisangaben || textDefinition?.scoring_dynamic_subblocks_lagekombination)
+    ? textDefinition
+    : (textDefinition?.text_blocks ?? [{}])[0];
   const preisCfg = block?.scoring_dynamic_subblocks_preisangaben?.text_wohnlagen_liste ?? {};
   const lageCfg = block?.scoring_dynamic_subblocks_lagekombination?.text_lageverteilung ?? {};
 

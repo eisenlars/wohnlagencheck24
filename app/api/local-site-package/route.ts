@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { applyDataDrivenTexts } from "@/lib/text-core";
+import { getOrteForKreis } from "@/lib/data";
 
 export const runtime = "nodejs";
 
@@ -206,7 +207,9 @@ export async function GET(req: Request) {
 
   const kreisReportJson = await fetchReportJson(["reports", "deutschland", bundesland, `${kreis}.json`]);
   if (kreisReportJson) {
-    const reportJson = applyDataDrivenTexts(kreisReportJson, kreisAreaId);
+    const orte = await getOrteForKreis(bundesland, kreis);
+    const ortslageNameMap = Object.fromEntries(orte.map((o) => [o.slug, o.name]));
+    const reportJson = applyDataDrivenTexts(kreisReportJson, kreisAreaId, ortslageNameMap);
     const baseTexts = stripGroups(
       (reportJson.text ?? {}) as Record<string, Record<string, string>>,
       ["berater", "makler"],

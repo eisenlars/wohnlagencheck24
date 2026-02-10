@@ -154,7 +154,13 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
       asString(meta["kreis_schluessel"]) ??
       "") || "";
   if (areaId) {
-    report = applyDataDrivenTexts(report, areaId);
+    let ortslageNameMap: Record<string, string> | undefined = undefined;
+    if (route.level === "kreis" && route.regionSlugs.length >= 2) {
+      const [bundeslandSlug, kreisSlug] = route.regionSlugs;
+      const orte = await getOrteForKreis(bundeslandSlug, kreisSlug);
+      ortslageNameMap = Object.fromEntries(orte.map((o) => [o.slug, o.name]));
+    }
+    report = applyDataDrivenTexts(report, areaId, ortslageNameMap);
   }
 
   // DB-Overrides: approved report_texts überschreiben JSON-Texte (if present)

@@ -1,5 +1,5 @@
 import {
-  generateTextFromMultiblock,
+  generateText,
   formatPriceValue,
   capitalizeWords,
   umlauteUmwandeln,
@@ -10,6 +10,14 @@ import ortslageWohnraumPhrases from "@/lib/text-core/phrases/ortslage/wohnraumsi
 import ortslageWirtschaftPhrases from "@/lib/text-core/phrases/ortslage/wirtschaft.json";
 
 type AnyRecord = Record<string, any>;
+
+function pickRandom<T>(items: T[], rng?: () => number): T {
+  if (!items.length) {
+    throw new Error("pickRandom: empty array");
+  }
+  const r = rng ?? Math.random;
+  return items[Math.floor(r() * items.length)];
+}
 
 export const ORTSLAGE_TEXT_MAP: Array<[string, string]> = [
   ["immobilienpreise", "immobilienpreise_haus_allgemein"],
@@ -502,8 +510,13 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
     (ortslageWohnraumPhrases as AnyRecord)[resolvedKey] ??
     (ortslageWirtschaftPhrases as AnyRecord)[resolvedKey];
   if (!definition) return null;
-  const trendValues = computeTrendValues(definition, raw);
-  return generateTextFromMultiblock(definition, inputData, trendValues, resolvedKey, undefined, undefined, rng);
+  const blocks = definition?.text_blocks;
+  if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
+    throw new Error(`'text_blocks' fehlt oder ist keine Liste in Definition '${resolvedKey}'.`);
+  }
+  const block = pickRandom(blocks, rng);
+  const trendValues = computeTrendValues(block, raw);
+  return generateText(block, inputData, trendValues, resolvedKey, undefined, undefined, rng);
 }
 
 export function generateOrtslagePriceTexts(
