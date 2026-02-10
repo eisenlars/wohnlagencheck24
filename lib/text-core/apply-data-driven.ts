@@ -64,13 +64,13 @@ function applyOrtslageNameMapping<T extends AnyRecord>(report: T, nameMap?: Orts
   mapPreisgrenzen("ortslagen_preisgrenzen_miete", "guenstigste_ortslage_miete");
   mapPreisgrenzen("ortslagen_preisgrenzen_miete", "teuerste_ortslage_miete");
 
-  return {
+  return ({
     ...(report as AnyRecord),
     data: {
       ...data,
       textgen_inputs: textgen,
     },
-  } as T;
+  } as unknown) as T;
 }
 
 export function applyDataDrivenTexts<T extends AnyRecord>(report: T, areaId?: string, ortslageNameMap?: OrtslageNameMap): T {
