@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
 import { BundeslandHeroDesktop } from "@/components/bundesland-hero-desktop";
 import { BundeslandHeroMobile } from "@/components/bundesland-hero-mobile";
@@ -23,46 +23,35 @@ type BundeslandHeroMediaProps = {
 };
 
 export function BundeslandHeroMedia(props: BundeslandHeroMediaProps) {
-  const [isMobile, setIsMobile] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const mediaQuery = window.matchMedia("(max-width: 767.98px)");
-    const updateIsMobile = () => setIsMobile(mediaQuery.matches);
-
-    updateIsMobile();
-
-    mediaQuery.addEventListener("change", updateIsMobile);
-    return () => mediaQuery.removeEventListener("change", updateIsMobile);
-  }, []);
-
-  if (isMobile === null) return null;
-
-  return isMobile ? (
-    <BundeslandHeroMobile
-      mapSvg={props.mapSvg}
-      mapTheme={props.mapTheme}
-      mapMode={props.mapMode}
-      mapKind={props.mapKind}
-      mapUnitKey={props.mapUnitKey}
-      mapCtx={props.mapCtx}
-      mapFractionDigits={props.mapFractionDigits}
-      mapNote={props.mapNote}
-    />
-  ) : (
-    <BundeslandHeroDesktop
-      imageSrc={props.imageSrc}
-      imageSrcs={props.imageSrcs}
-      mapSvg={props.mapSvg}
-      mapTheme={props.mapTheme}
-      mapMode={props.mapMode}
-      mapKind={props.mapKind}
-      mapUnitKey={props.mapUnitKey}
-      mapCtx={props.mapCtx}
-      mapFractionDigits={props.mapFractionDigits}
-      mapNote={props.mapNote}
-      cta={props.cta}
-    />
+  return (
+    <>
+      <div className="d-none d-md-block">
+        <BundeslandHeroDesktop
+          imageSrc={props.imageSrc}
+          imageSrcs={props.imageSrcs}
+          mapSvg={props.mapSvg}
+          mapTheme={props.mapTheme}
+          mapMode={props.mapMode}
+          mapKind={props.mapKind}
+          mapUnitKey={props.mapUnitKey}
+          mapCtx={props.mapCtx}
+          mapFractionDigits={props.mapFractionDigits}
+          mapNote={props.mapNote}
+          cta={props.cta}
+        />
+      </div>
+      <div className="d-md-none">
+        <BundeslandHeroMobile
+          mapSvg={props.mapSvg}
+          mapTheme={props.mapTheme}
+          mapMode={props.mapMode}
+          mapKind={props.mapKind}
+          mapUnitKey={props.mapUnitKey}
+          mapCtx={props.mapCtx}
+          mapFractionDigits={props.mapFractionDigits}
+          mapNote={props.mapNote}
+        />
+      </div>
+    </>
   );
 }

@@ -201,7 +201,8 @@ function StandortTeaserBlock(props: { regionName: string; teaserText: string; im
                 src={imageSrc}
                 alt={`Standort ${regionName}`}
                 fill
-                sizes="(max-width: 768px) 100vw, 400px"
+                sizes="(max-width: 768px) 340px, 400px"
+                quality={72}
                 style={{ objectFit: "cover" }}
               />
             ) : null}
@@ -246,7 +247,8 @@ function MaklerEmpfehlungBlock(props: {
                 src={imageSrc}
                 alt={`Maklerempfehlung ${regionName}`}
                 fill
-                sizes="(max-width: 768px) 100vw, 400px"
+                sizes="(max-width: 768px) 340px, 400px"
+                quality={72}
                 style={{ objectFit: "cover" }}
               />
             ) : null}
