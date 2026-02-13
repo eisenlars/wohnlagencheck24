@@ -232,41 +232,56 @@ export function generateDynamicPlaceholders(
 ) {
   const resultPlaceholders: AnyRecord = { ...inputData };
 
-  const trendVerbkonstrukte = textDefinition.trend_verbkonstrukte ?? {};
+  const trendVerbkonstrukteRaw = textDefinition.trend_verbkonstrukte;
+  const trendVerbkonstrukte =
+    trendVerbkonstrukteRaw && typeof trendVerbkonstrukteRaw === "object"
+      ? (trendVerbkonstrukteRaw as Record<string, unknown>)
+      : {};
   for (const [trendKey, trendData] of Object.entries(trendValues ?? {})) {
     const phrasesKey = `phrases_${trendKey}`;
     const verbKey = `verbkonstrukt_${trendKey}`;
-    const phrasesBlock = trendVerbkonstrukte?.[phrasesKey];
-    const verbBlock = trendVerbkonstrukte?.[verbKey];
+    const phrasesBlock = trendVerbkonstrukte[phrasesKey];
+    const verbBlock = trendVerbkonstrukte[verbKey];
     if (!phrasesBlock) continue;
+    if (!trendData || typeof trendData !== "object") continue;
+    const trendDataObj = trendData as Record<string, unknown>;
+    if (typeof phrasesBlock !== "object" || phrasesBlock === null) continue;
+    const phrasesBlockRecord = phrasesBlock as Record<string, unknown>;
 
     const baseVarKey = trendKey.replace(/^trendText_/, "");
     let category = "gleich";
-    if ("index1" in trendData) category = determineIndex1Category(trendData.index1);
-    else if ("index100" in trendData) category = determineIndex100Category(trendData.index100);
-    else if ("rel_change" in trendData) category = determineTrendCategory(trendData.rel_change);
-    else if ("abs_delta" in trendData) category = determineAbsoluteCategoryWithDirection(trendData.abs_delta);
-    else if ("direct_comparison" in trendData) category = determineSimpleComparisonCategory(trendData.direct_comparison.value_a, trendData.direct_comparison.value_b);
-    else if ("index50" in trendData) category = determineIndex50Category(trendData.index50);
+    if (typeof trendDataObj.index1 === "number") category = determineIndex1Category(trendDataObj.index1);
+    else if (typeof trendDataObj.index100 === "number") category = determineIndex100Category(trendDataObj.index100);
+    else if (typeof trendDataObj.rel_change === "number") category = determineTrendCategory(trendDataObj.rel_change);
+    else if (typeof trendDataObj.abs_delta === "number") category = determineAbsoluteCategoryWithDirection(trendDataObj.abs_delta);
+    else if (
+      trendDataObj.direct_comparison &&
+      typeof trendDataObj.direct_comparison === "object"
+    ) {
+      const directComparison = trendDataObj.direct_comparison as Record<string, unknown>;
+      if (typeof directComparison.value_a === "number" && typeof directComparison.value_b === "number") {
+        category = determineSimpleComparisonCategory(directComparison.value_a, directComparison.value_b);
+      }
+    } else if (typeof trendDataObj.index50 === "number") category = determineIndex50Category(trendDataObj.index50);
 
     if (!(baseVarKey in resultPlaceholders)) {
-      if ("rel_change" in trendData && typeof trendData.rel_change === "number") {
-        resultPlaceholders[baseVarKey] = Math.abs(trendData.rel_change).toLocaleString("de-DE", {
+      if (typeof trendDataObj.rel_change === "number") {
+        resultPlaceholders[baseVarKey] = Math.abs(trendDataObj.rel_change).toLocaleString("de-DE", {
           minimumFractionDigits: 1,
           maximumFractionDigits: 1,
         });
-      } else if ("abs_delta" in trendData && typeof trendData.abs_delta === "number") {
-        resultPlaceholders[baseVarKey] = trendData.abs_delta.toLocaleString("de-DE", {
+      } else if (typeof trendDataObj.abs_delta === "number") {
+        resultPlaceholders[baseVarKey] = trendDataObj.abs_delta.toLocaleString("de-DE", {
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         });
-      } else if ("index1" in trendData && typeof trendData.index1 === "number") {
-        resultPlaceholders[baseVarKey] = trendData.index1.toLocaleString("de-DE", {
+      } else if (typeof trendDataObj.index1 === "number") {
+        resultPlaceholders[baseVarKey] = trendDataObj.index1.toLocaleString("de-DE", {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         });
-      } else if ("index100" in trendData && typeof trendData.index100 === "number") {
-        resultPlaceholders[baseVarKey] = trendData.index100.toLocaleString("de-DE", {
+      } else if (typeof trendDataObj.index100 === "number") {
+        resultPlaceholders[baseVarKey] = trendDataObj.index100.toLocaleString("de-DE", {
           minimumFractionDigits: 1,
           maximumFractionDigits: 1,
         });
@@ -274,12 +289,14 @@ export function generateDynamicPlaceholders(
     }
 
     const templateCategory = mapTrendCategoryToTemplateKey(category);
-    const phraseEntry = selectPhraseEntry(templateCategory, phrasesBlock, true, rng) as AnyRecord;
+    const phraseEntry = selectPhraseEntry(templateCategory, phrasesBlockRecord, true, rng) as AnyRecord;
     const renderedPhrase = fullyRenderTemplate(phraseEntry.phrase ?? "", resultPlaceholders);
     resultPlaceholders[trendKey] = renderedPhrase;
 
-    if (verbBlock) {
-      const patterns = verbBlock[templateCategory] ?? [];
+    if (verbBlock && typeof verbBlock === "object") {
+      const verbBlockRecord = verbBlock as Record<string, unknown>;
+      const patternsRaw = verbBlockRecord[templateCategory];
+      const patterns = Array.isArray(patternsRaw) ? patternsRaw : [];
       if (!patterns.length) {
         throw new Error(`Verbkonstrukt fehlt für Kategorie '${templateCategory}' im Block '${verbKey}'.`);
       }
