@@ -1177,9 +1177,33 @@ h6 {
   inset: 0;
 }
 
+.region-hero-desktop-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  display: none;
+}
+
 .region-hero-image {
   object-fit: cover;
   object-position: center top;
+}
+
+.region-hero-mobile-image-layer {
+  display: block;
+}
+
+@media (min-width: 992px) {
+  .region-hero-desktop-bg {
+    display: block;
+  }
+
+  .region-hero-mobile-image-layer {
+    display: none;
+  }
 }
 
 .region-hero-slide {

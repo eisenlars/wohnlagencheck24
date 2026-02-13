@@ -38,17 +38,24 @@ export function RegionHero({
           style={slides ? undefined : { backgroundColor: "#0f1a1f" }}
         >
           {!slides ? (
-            <div className="region-hero-image-layer" aria-hidden="true">
-              <Image
-                src={imageSrc}
-                alt=""
-                fill
-                priority
-                sizes="100vw"
-                quality={72}
-                className="region-hero-image"
+            <>
+              <div
+                className="region-hero-desktop-bg"
+                aria-hidden="true"
+                style={{ backgroundImage: `url(${imageSrc})` }}
               />
-            </div>
+              <div className="region-hero-image-layer region-hero-mobile-image-layer" aria-hidden="true">
+                <Image
+                  src={imageSrc}
+                  alt=""
+                  fill
+                  priority
+                  sizes="100vw"
+                  quality={72}
+                  className="region-hero-image"
+                />
+              </div>
+            </>
           ) : null}
 
           {slides ? (
