@@ -375,8 +375,9 @@ export function renderFinalText(templates: AnyRecord, placeholders: AnyRecord, h
   if (!templates || !templates[templateMode]) {
     throw new Error(`Template-Modus '${templateMode}' fehlt.`);
   }
-  const filtered = templates[templateMode];
-  if (!filtered || filtered.length === 0) {
+  const filteredRaw = templates[templateMode];
+  const filtered = Array.isArray(filteredRaw) ? filteredRaw : [];
+  if (!filtered.length) {
     throw new Error(`Kein Template für Modus '${templateMode}'.`);
   }
   const chosen = pickRandom(filtered, rng);
