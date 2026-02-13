@@ -1,6 +1,18 @@
 import React from "react";
+import dynamic from "next/dynamic";
 import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
-import { InteractiveMap } from "@/components/interactive-map";
+
+const InteractiveMapLazy = dynamic(
+  () => import("@/components/interactive-map").then((m) => m.InteractiveMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bundesland-hero-map-placeholder" aria-hidden="true">
+        Karte wird geladen...
+      </div>
+    ),
+  },
+);
 
 type MapMode = "singleValue" | "overview";
 type MapFormatKind = FormatKind | "kaufpreisfaktor";
@@ -30,7 +42,7 @@ export function BundeslandHeroMobile({
 
   return (
     <div className="bundesland-hero-map">
-      <InteractiveMap
+      <InteractiveMapLazy
         svg={mapSvg}
         theme={mapTheme}
         mode={mapMode}
