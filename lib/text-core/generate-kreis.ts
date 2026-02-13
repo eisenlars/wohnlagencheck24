@@ -18,7 +18,7 @@ import kreisUeberblickPhrases from "@/lib/text-core/phrases/kreis/immobilienmark
 import kreisWohnraumPhrases from "@/lib/text-core/phrases/kreis/wohnraumsituation.json";
 import kreisWirtschaftPhrases from "@/lib/text-core/phrases/kreis/wirtschaft.json";
 
-type AnyRecord = Record<string, any>;
+type AnyRecord = Record<string, unknown>;
 
 function pickRandom<T>(items: T[], rng?: () => number): T {
   if (!items.length) {
@@ -583,7 +583,7 @@ function expandTemplates(templates: AnyRecord, baseVars: AnyRecord, options: Any
   return results;
 }
 
-function countTemplateVariants(raw: string, options: AnyRecord, baseVars: AnyRecord) {
+function countTemplateVariants(raw: string, options: AnyRecord) {
   const keys = Array.from(new Set(raw.match(/{{\s*([^}]+)\s*}}/g) ?? []))
     .map((m) => m.replace(/{{\s*|\s*}}/g, ""));
   return keys.reduce((acc, key) => {
@@ -870,7 +870,7 @@ export function countKreisTextVariants(key: string, inputs: AnyRecord) {
     for (const list of Object.values(templates)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
-        total += countTemplateVariants(String(tpl), options, baseVars);
+        total += countTemplateVariants(String(tpl), options);
       }
     }
   }
@@ -923,7 +923,7 @@ export function sampleKreisTextVariants(key: string, inputs: AnyRecord, sampleSi
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
         const rawTpl = String(tpl);
-        const count = countTemplateVariants(rawTpl, options, baseVars);
+        const count = countTemplateVariants(rawTpl, options);
         total += count;
         templates.push({ template: rawTpl, options, baseVars, count });
       }

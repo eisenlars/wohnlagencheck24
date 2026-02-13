@@ -1,4 +1,4 @@
-type AnyRecord = Record<string, any>;
+type AnyRecord = Record<string, unknown>;
 type Rng = () => number;
 
 export function createSeededRng(seed: string): Rng {

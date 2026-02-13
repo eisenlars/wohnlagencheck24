@@ -3,7 +3,11 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { applyDataDrivenTexts } from "@/lib/text-core";
 import { getOrteForKreis } from "@/lib/data";
-import { extractLocalSiteToken, loadLocalSiteIntegrationByToken } from "@/lib/security/local-site-auth";
+import {
+  extractLocalSiteToken,
+  loadLocalSiteIntegrationByToken,
+  type LocalSiteIntegrationLookupClient,
+} from "@/lib/security/local-site-auth";
 
 export const runtime = "nodejs";
 
@@ -92,7 +96,7 @@ export async function GET(req: Request) {
 
   const supabase = createAdminClient();
 
-  const integration = await loadLocalSiteIntegrationByToken(supabase as any, token);
+  const integration = await loadLocalSiteIntegrationByToken(supabase as unknown as LocalSiteIntegrationLookupClient, token);
   if (!integration?.partner_id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

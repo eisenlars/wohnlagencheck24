@@ -1450,13 +1450,6 @@ const sidebarListStyle: React.CSSProperties = {
   gap: 8,
 };
 
-const sidebarRowStyle = (active: boolean): React.CSSProperties => ({
-  border: `1px solid ${active ? "#0f766e" : "#e2e8f0"}`,
-  borderRadius: 8,
-  background: active ? "#f0fdfa" : "#ffffff",
-  padding: "8px 10px",
-});
-
 const contentPaneStyle: React.CSSProperties = {
   minWidth: 0,
   padding: "0 0 0 14px",

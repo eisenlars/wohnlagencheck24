@@ -25,7 +25,7 @@ import {
 import { buildWebAssetUrl } from "@/utils/assets";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { getRegionDisplayName } from "@/utils/regionName";
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { applyDataDrivenTexts } from "@/lib/text-core";
 
 export type PageModel = {
@@ -165,7 +165,7 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
 
   // DB-Overrides: approved report_texts überschreiben JSON-Texte (if present)
   if (areaId) {
-    const supabase = createClient() as unknown as SupabaseClientLike;
+    const supabase = createAdminClient() as unknown as SupabaseClientLike;
     const partnerMapRes = await (supabase as unknown as {
       from: (table: string) => {
         select: (columns: string) => {

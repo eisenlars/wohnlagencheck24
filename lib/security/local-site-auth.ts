@@ -1,8 +1,24 @@
 import { createHash } from "crypto";
 
-type IntegrationRow = {
+type IntegrationLookupRow = {
   partner_id?: string | null;
-  auth_config?: Record<string, unknown> | null;
+};
+
+type IntegrationLookupResponse = {
+  data?: IntegrationLookupRow | null;
+  error?: { message?: string } | null;
+};
+
+type IntegrationLookupQuery = {
+  eq: (column: string, value: unknown) => IntegrationLookupQuery;
+  contains: (column: string, value: Record<string, unknown>) => IntegrationLookupQuery;
+  maybeSingle: () => Promise<IntegrationLookupResponse>;
+};
+
+export type LocalSiteIntegrationLookupClient = {
+  from: (table: string) => {
+    select: (columns: string) => IntegrationLookupQuery;
+  };
 };
 
 export function extractLocalSiteToken(req: Request): string {
@@ -18,13 +34,7 @@ function hashToken(token: string) {
 }
 
 export async function loadLocalSiteIntegrationByToken(
-  supabase: {
-    from: (table: string) => {
-      select: (columns: string) => {
-        eq: (column: string, value: unknown) => unknown;
-      };
-    };
-  },
+  supabase: LocalSiteIntegrationLookupClient,
   token: string,
 ): Promise<{ partner_id: string } | null> {
   const trimmed = String(token ?? "").trim();
@@ -32,7 +42,7 @@ export async function loadLocalSiteIntegrationByToken(
 
   const tokenHash = hashToken(trimmed);
 
-  const hashedRes = await (supabase as any)
+  const hashedRes = await supabase
     .from("partner_integrations")
     .select("partner_id, auth_config")
     .eq("kind", "local_site")
@@ -45,7 +55,7 @@ export async function loadLocalSiteIntegrationByToken(
   }
 
   // Legacy fallback: plaintext token in auth_config.token
-  const plainRes = await (supabase as any)
+  const plainRes = await supabase
     .from("partner_integrations")
     .select("partner_id, auth_config")
     .eq("kind", "local_site")

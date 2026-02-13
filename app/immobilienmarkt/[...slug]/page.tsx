@@ -12,7 +12,9 @@ import { asArray, asRecord, asString } from "@/utils/records";
 import { formatValueCtx } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getApprovedMarketingTexts, getReportBySlugs, type SupabaseClientLike } from "@/lib/data";
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+
+export const revalidate = 3600;
 
 type PageParams = { slug?: string[] };
 type PageProps = { params: Promise<PageParams> };
@@ -46,7 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const overrides =
     areaId.length > 0
-      ? await getApprovedMarketingTexts(createClient() as unknown as SupabaseClientLike, areaId)
+      ? await getApprovedMarketingTexts(createAdminClient() as unknown as SupabaseClientLike, areaId)
       : [];
 
   const getOverride = (field: string) =>

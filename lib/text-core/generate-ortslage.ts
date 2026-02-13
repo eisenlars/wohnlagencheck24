@@ -17,7 +17,7 @@ import ortslagePhrases from "@/lib/text-core/phrases/ortslage/immobilienpreise.j
 import ortslageWohnraumPhrases from "@/lib/text-core/phrases/ortslage/wohnraumsituation.json";
 import ortslageWirtschaftPhrases from "@/lib/text-core/phrases/ortslage/wirtschaft.json";
 
-type AnyRecord = Record<string, any>;
+type AnyRecord = Record<string, unknown>;
 
 function pickRandom<T>(items: T[], rng?: () => number): T {
   if (!items.length) {
@@ -464,7 +464,7 @@ function expandTemplates(templates: AnyRecord, baseVars: AnyRecord, options: Any
   return results;
 }
 
-function countTemplateVariants(raw: string, options: AnyRecord, baseVars: AnyRecord) {
+function countTemplateVariants(raw: string, options: AnyRecord) {
   const keys = Array.from(new Set(raw.match(/{{\s*([^}]+)\s*}}/g) ?? []))
     .map((m) => m.replace(/{{\s*|\s*}}/g, ""));
   return keys.reduce((acc, key) => {
@@ -817,7 +817,7 @@ export function countOrtslageTextVariants(key: string, inputs: AnyRecord) {
     for (const list of Object.values(templates)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
-        total += countTemplateVariants(String(tpl), options, baseVars);
+        total += countTemplateVariants(String(tpl), options);
       }
     }
   }
@@ -870,7 +870,7 @@ export function sampleOrtslageTextVariants(key: string, inputs: AnyRecord, sampl
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
         const rawTpl = String(tpl);
-        const count = countTemplateVariants(rawTpl, options, baseVars);
+        const count = countTemplateVariants(rawTpl, options);
         total += count;
         templates.push({ template: rawTpl, options, baseVars, count });
       }
