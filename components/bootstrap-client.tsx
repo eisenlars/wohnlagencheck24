@@ -18,24 +18,25 @@ export function BootstrapClient() {
       });
     };
 
-    let timeoutId: number | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     let idleId: number | null = null;
+    const win = typeof window !== "undefined" ? window : null;
 
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      idleId = window.requestIdleCallback(() => loadBootstrap(), { timeout: 4000 });
-    } else if (typeof window !== "undefined") {
-      timeoutId = window.setTimeout(loadBootstrap, 2200);
+    if (win && "requestIdleCallback" in win) {
+      idleId = win.requestIdleCallback(() => loadBootstrap(), { timeout: 4000 });
+    } else if (win) {
+      timeoutId = setTimeout(loadBootstrap, 2200);
     } else {
       loadBootstrap();
     }
 
     return () => {
       cancelled = true;
-      if (typeof window !== "undefined" && idleId !== null && "cancelIdleCallback" in window) {
-        window.cancelIdleCallback(idleId);
+      if (win && idleId !== null && "cancelIdleCallback" in win) {
+        win.cancelIdleCallback(idleId);
       }
-      if (typeof window !== "undefined" && timeoutId !== null) {
-        window.clearTimeout(timeoutId);
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
       }
     };
   }, []);
