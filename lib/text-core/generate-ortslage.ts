@@ -17,7 +17,7 @@ import ortslagePhrases from "@/lib/text-core/phrases/ortslage/immobilienpreise.j
 import ortslageWohnraumPhrases from "@/lib/text-core/phrases/ortslage/wohnraumsituation.json";
 import ortslageWirtschaftPhrases from "@/lib/text-core/phrases/ortslage/wirtschaft.json";
 
-type AnyRecord = Record<string, unknown>;
+type AnyRecord = Record<string, any>;
 
 function pickRandom<T>(items: T[], rng?: () => number): T {
   if (!items.length) {

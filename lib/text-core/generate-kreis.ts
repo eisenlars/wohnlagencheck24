@@ -18,7 +18,7 @@ import kreisUeberblickPhrases from "@/lib/text-core/phrases/kreis/immobilienmark
 import kreisWohnraumPhrases from "@/lib/text-core/phrases/kreis/wohnraumsituation.json";
 import kreisWirtschaftPhrases from "@/lib/text-core/phrases/kreis/wirtschaft.json";
 
-type AnyRecord = Record<string, unknown>;
+type AnyRecord = Record<string, any>;
 
 function pickRandom<T>(items: T[], rng?: () => number): T {
   if (!items.length) {
