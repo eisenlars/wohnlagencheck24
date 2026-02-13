@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import type { FormatContext, FormatKind, UnitKey } from "@/utils/format";
 import { InteractiveMap } from "@/components/interactive-map";
