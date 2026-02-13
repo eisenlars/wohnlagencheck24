@@ -335,7 +335,11 @@ export function generateDynamicPlaceholders(
     resultPlaceholders[staticKey] = rendered;
   }
 
-  const quoteVerbkonstrukte = textDefinition.quote_verbkonstrukte ?? {};
+  const quoteVerbkonstrukteRaw = textDefinition.quote_verbkonstrukte;
+  const quoteVerbkonstrukte =
+    quoteVerbkonstrukteRaw && typeof quoteVerbkonstrukteRaw === "object"
+      ? (quoteVerbkonstrukteRaw as Record<string, unknown>)
+      : {};
   for (const [varname, rawValue] of Object.entries(quoteValues ?? {})) {
     const value = Number(rawValue);
     if (!Number.isFinite(value)) continue;
@@ -343,19 +347,20 @@ export function generateDynamicPlaceholders(
     const phrasesBlock = quoteVerbkonstrukte[phrasesKey] ?? trendVerbkonstrukte[phrasesKey];
     let renderedPhrase = "";
     let renderedAux = "";
-    if (phrasesBlock) {
+    if (phrasesBlock && typeof phrasesBlock === "object") {
       const category = classifyOver100Level(value);
-      const phraseEntry = selectPhraseEntry(category, phrasesBlock, true, rng) as AnyRecord;
-      renderedPhrase = fullyRenderTemplate(phraseEntry.phrase ?? "", { ...resultPlaceholders, value }).trim();
-      renderedAux = phraseEntry.auxiliar ?? "";
+      const phraseEntry = selectPhraseEntry(category, phrasesBlock as Record<string, unknown>, true, rng) as AnyRecord;
+      renderedPhrase = fullyRenderTemplate(String(phraseEntry.phrase ?? ""), { ...resultPlaceholders, value }).trim();
+      renderedAux = String(phraseEntry.auxiliar ?? "");
     } else {
       renderedPhrase = `${Math.round(value * 10) / 10} %`;
     }
     resultPlaceholders[`quoteText_${varname}`] = renderedPhrase;
 
     const vkKey = `verbkonstrukt_quoteText_${varname}`;
-    const vkPatterns = quoteVerbkonstrukte[vkKey] ?? trendVerbkonstrukte?.quote_verbkonstrukte?.[vkKey];
-    if (vkPatterns) {
+    const vkPatternsRaw = quoteVerbkonstrukte[vkKey];
+    const vkPatterns = Array.isArray(vkPatternsRaw) ? vkPatternsRaw : [];
+    if (vkPatterns.length) {
       const [verbtext] = generateVerbkonstrukt(vkPatterns, { ...resultPlaceholders, phrase: renderedPhrase, auxiliar: renderedAux }, connectorConfig, rng);
       resultPlaceholders[vkKey] = verbtext;
     }
