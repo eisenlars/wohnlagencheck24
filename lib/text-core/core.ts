@@ -430,12 +430,21 @@ export function generateText(
     connectorConfig,
     rng,
   );
-  const specialTemplate = textDefinition?.special_cases_template;
+  const specialTemplateRaw = textDefinition?.special_cases_template;
+  const specialTemplate =
+    specialTemplateRaw && typeof specialTemplateRaw === "object"
+      ? (specialTemplateRaw as AnyRecord)
+      : null;
   if (specialTemplate) {
     const specialText = renderSpecialCasesTemplate(specialTemplate, baseInput, rng);
     if (specialText) return specialText;
   }
-  const [finalText] = renderFinalText(textDefinition.templates, placeholders, hasVerbkonstrukt, rng);
+  const templatesRaw = textDefinition.templates;
+  const templates =
+    templatesRaw && typeof templatesRaw === "object"
+      ? (templatesRaw as AnyRecord)
+      : {};
+  const [finalText] = renderFinalText(templates, placeholders, hasVerbkonstrukt, rng);
   return finalText;
 }
 
@@ -443,11 +452,12 @@ export function renderSpecialCasesTemplate(specialTemplateBlock: AnyRecord, inpu
   const availableKeys = Object.keys(inputData).filter((k) => k.startsWith("sondertext_") && inputData[k]);
   if (!availableKeys.length) return null;
   for (const key of availableKeys) inputData[key] = inputData[key];
-  const templates = specialTemplateBlock?.templates ?? [];
-  if (!templates.length) return specialTemplateBlock?.fallback_text ?? null;
+  const templatesRaw = specialTemplateBlock?.templates;
+  const templates = Array.isArray(templatesRaw) ? templatesRaw : [];
+  if (!templates.length) return String(specialTemplateBlock?.fallback_text ?? "") || null;
   const chosen = pickRandom(templates, rng);
   const rendered = renderTemplate(String(chosen), inputData);
-  const fallbackText = specialTemplateBlock?.fallback_text;
+  const fallbackText = String(specialTemplateBlock?.fallback_text ?? "");
   return rendered.trim() || fallbackText || null;
 }
 
