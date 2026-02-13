@@ -486,6 +486,24 @@ h6 {
   --popup-gap: 12px;
 }
 
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateY(-120%);
+  background: #111827;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 0 0 8px 0;
+  z-index: 2000;
+  text-decoration: none;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 
 /* --- Subnavigation: Tabs mit Icons --- */
 

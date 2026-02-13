@@ -82,6 +82,7 @@ export function RightEdgeControls({
         data-bs-toggle="offcanvas"
         data-bs-target="#kreisKontaktOffcanvas"
         aria-controls="kreisKontaktOffcanvas"
+        aria-label="Kontakt öffnen"
       >
         <svg
           width="18"

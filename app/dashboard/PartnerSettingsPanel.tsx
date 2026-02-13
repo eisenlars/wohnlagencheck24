@@ -167,6 +167,7 @@ export default function PartnerSettingsPanel({ section }: { section: SettingsSec
             <input
               type="password"
               placeholder="Neues Passwort"
+              aria-label="Neues Passwort"
               style={inputStyle}
               value={passwordDraft.password}
               onChange={(e) => setPasswordDraft((v) => ({ ...v, password: e.target.value }))}
@@ -174,6 +175,7 @@ export default function PartnerSettingsPanel({ section }: { section: SettingsSec
             <input
               type="password"
               placeholder="Passwort wiederholen"
+              aria-label="Passwort wiederholen"
               style={inputStyle}
               value={passwordDraft.password_confirm}
               onChange={(e) => setPasswordDraft((v) => ({ ...v, password_confirm: e.target.value }))}
@@ -207,24 +209,28 @@ export default function PartnerSettingsPanel({ section }: { section: SettingsSec
           <div style={grid2Style}>
             <input
               placeholder="Firmenname"
+              aria-label="Firmenname"
               style={inputStyle}
               value={profileDraft.company_name}
               onChange={(e) => setProfileDraft((v) => ({ ...v, company_name: e.target.value }))}
             />
             <input
               placeholder="Kontakt-E-Mail"
+              aria-label="Kontakt-E-Mail"
               style={inputStyle}
               value={profileDraft.contact_email}
               onChange={(e) => setProfileDraft((v) => ({ ...v, contact_email: e.target.value }))}
             />
             <input
               placeholder="Kontaktperson"
+              aria-label="Kontaktperson"
               style={inputStyle}
               value={profileDraft.contact_person}
               onChange={(e) => setProfileDraft((v) => ({ ...v, contact_person: e.target.value }))}
             />
             <input
               placeholder="Website URL"
+              aria-label="Website URL"
               style={inputStyle}
               value={profileDraft.website_url}
               onChange={(e) => setProfileDraft((v) => ({ ...v, website_url: e.target.value }))}
@@ -254,6 +260,7 @@ export default function PartnerSettingsPanel({ section }: { section: SettingsSec
           <div style={grid3Style}>
             <select
               style={inputStyle}
+              aria-label="Integrationstyp"
               value={integrationDraft.kind}
               onChange={(e) =>
                 setIntegrationDraft((v) => {
@@ -271,6 +278,7 @@ export default function PartnerSettingsPanel({ section }: { section: SettingsSec
             </select>
             <select
               style={inputStyle}
+              aria-label="Provider"
               value={integrationDraft.provider}
               onChange={(e) =>
                 setIntegrationDraft((v) => ({
@@ -288,6 +296,7 @@ export default function PartnerSettingsPanel({ section }: { section: SettingsSec
             </select>
             <select
               style={inputStyle}
+              aria-label="Authentifizierungstyp"
               value={integrationDraft.auth_type}
               onChange={(e) => setIntegrationDraft((v) => ({ ...v, auth_type: e.target.value }))}
             >
@@ -299,12 +308,14 @@ export default function PartnerSettingsPanel({ section }: { section: SettingsSec
             </select>
             <input
               placeholder="Base URL"
+              aria-label="Base URL"
               style={inputStyle}
               value={integrationDraft.base_url}
               onChange={(e) => setIntegrationDraft((v) => ({ ...v, base_url: e.target.value }))}
             />
             <input
               placeholder="Detail URL Template"
+              aria-label="Detail URL Template"
               style={inputStyle}
               value={integrationDraft.detail_url_template}
               onChange={(e) => setIntegrationDraft((v) => ({ ...v, detail_url_template: e.target.value }))}
@@ -367,6 +378,7 @@ export default function PartnerSettingsPanel({ section }: { section: SettingsSec
                       <div style={grid3Style}>
                         <input
                           placeholder="api_key"
+                          aria-label={`API Key für ${integration.provider}`}
                           style={inputStyle}
                           value={draft.api_key}
                           onChange={(e) =>
@@ -378,6 +390,7 @@ export default function PartnerSettingsPanel({ section }: { section: SettingsSec
                         />
                         <input
                           placeholder="token"
+                          aria-label={`Token für ${integration.provider}`}
                           style={inputStyle}
                           value={draft.token}
                           onChange={(e) =>
@@ -389,6 +402,7 @@ export default function PartnerSettingsPanel({ section }: { section: SettingsSec
                         />
                         <input
                           placeholder="secret"
+                          aria-label={`Secret für ${integration.provider}`}
                           style={inputStyle}
                           value={draft.secret}
                           onChange={(e) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getProviderSpec, getProvidersForKind } from "@/lib/integrations/providers";
@@ -240,6 +240,34 @@ export default function AdminClient() {
     created_to: "",
     limit: 100,
   });
+  const successModalRef = useRef<HTMLDivElement | null>(null);
+  const handoverConfirmModalRef = useRef<HTMLDivElement | null>(null);
+  const handoverStatusModalRef = useRef<HTMLDivElement | null>(null);
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const anyModalOpen =
+      successModal.open || handoverConfirmModal.open || handoverStatusModal.open;
+
+    if (anyModalOpen) {
+      if (!lastFocusedElementRef.current && document.activeElement instanceof HTMLElement) {
+        lastFocusedElementRef.current = document.activeElement;
+      }
+      const target =
+        (successModal.open ? successModalRef.current : null) ??
+        (handoverConfirmModal.open ? handoverConfirmModalRef.current : null) ??
+        (handoverStatusModal.open ? handoverStatusModalRef.current : null);
+      if (target) {
+        window.setTimeout(() => target.focus(), 0);
+      }
+      return;
+    }
+
+    if (lastFocusedElementRef.current) {
+      lastFocusedElementRef.current.focus();
+      lastFocusedElementRef.current = null;
+    }
+  }, [successModal.open, handoverConfirmModal.open, handoverStatusModal.open]);
 
   const selectedPartnerLabel = selectedPartner
     ? `${selectedPartner.company_name} (${selectedPartner.id})`
@@ -568,10 +596,25 @@ export default function AdminClient() {
   return (
     <div style={wrapStyle}>
       {successModal.open ? (
-        <div style={modalOverlayStyle} onClick={() => setSuccessModal((v) => ({ ...v, open: false }))}>
-          <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
-            <h3 style={modalTitleStyle}>{successModal.title}</h3>
-            <p style={modalMessageStyle}>{successModal.message}</p>
+        <div
+          style={modalOverlayStyle}
+          onClick={() => setSuccessModal((v) => ({ ...v, open: false }))}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setSuccessModal((v) => ({ ...v, open: false }));
+          }}
+        >
+          <div
+            style={modalCardStyle}
+            ref={successModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="success-modal-title"
+            aria-describedby="success-modal-message"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="success-modal-title" style={modalTitleStyle}>{successModal.title}</h3>
+            <p id="success-modal-message" style={modalMessageStyle}>{successModal.message}</p>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button
                 style={btnStyle}
@@ -584,10 +627,25 @@ export default function AdminClient() {
         </div>
       ) : null}
       {handoverConfirmModal.open ? (
-        <div style={modalOverlayStyle} onClick={() => setHandoverConfirmModal((v) => ({ ...v, open: false }))}>
-          <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
-            <h3 style={modalTitleStyle}>Gebietsübergabe bestätigen</h3>
-            <p style={modalMessageStyle}>
+        <div
+          style={modalOverlayStyle}
+          onClick={() => setHandoverConfirmModal((v) => ({ ...v, open: false }))}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setHandoverConfirmModal((v) => ({ ...v, open: false }));
+          }}
+        >
+          <div
+            style={modalCardStyle}
+            ref={handoverConfirmModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="handover-confirm-title"
+            aria-describedby="handover-confirm-message"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="handover-confirm-title" style={modalTitleStyle}>Gebietsübergabe bestätigen</h3>
+            <p id="handover-confirm-message" style={modalMessageStyle}>
               Kreis <strong>{handoverConfirmModal.areaId}</strong> wird von
               {" "}
               <strong>{selectedPartner?.company_name ?? handoverConfirmModal.oldPartnerId}</strong>
@@ -632,9 +690,22 @@ export default function AdminClient() {
             if (!handoverStatusModal.done) return;
             setHandoverStatusModal((m) => ({ ...m, open: false }));
           }}
+          onKeyDown={(e) => {
+            if (e.key !== "Escape" || !handoverStatusModal.done) return;
+            setHandoverStatusModal((m) => ({ ...m, open: false }));
+          }}
         >
-          <div style={modalCardStyle} onClick={(e) => e.stopPropagation()}>
-            <h3 style={modalTitleStyle}>{handoverStatusModal.title}</h3>
+          <div
+            style={modalCardStyle}
+            ref={handoverStatusModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="handover-status-title"
+            aria-describedby="handover-status-message"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="handover-status-title" style={modalTitleStyle}>{handoverStatusModal.title}</h3>
             <div style={{ display: "grid", gap: 6, marginBottom: 14 }}>
               {handoverStatusModal.lines.map((line, idx) => (
                 <div key={`${idx}:${line}`} style={{ fontSize: 13, color: "#334155" }}>
@@ -642,6 +713,9 @@ export default function AdminClient() {
                 </div>
               ))}
             </div>
+            <span id="handover-status-message" className="visually-hidden">
+              Status der Gebietsübergabe
+            </span>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button
                 style={handoverStatusModal.done ? (handoverStatusModal.hasError ? btnDangerStyle : btnStyle) : btnGhostStyle}
@@ -710,6 +784,7 @@ export default function AdminClient() {
             <input
               style={inputStyle}
               placeholder={navMode === "partners" ? "Suche: Name, E-Mail oder ID" : "Suche: Kreisname, ID oder Partner"}
+              aria-label={navMode === "partners" ? "Partner suchen" : "Gebiet suchen"}
               value={navMode === "partners" ? partnerFilter : areaFilter}
               onChange={(e) => (navMode === "partners" ? setPartnerFilter(e.target.value) : setAreaFilter(e.target.value))}
             />
@@ -755,24 +830,28 @@ export default function AdminClient() {
         <div style={grid2Style}>
           <input
             placeholder="Firmenname"
+            aria-label="Firmenname"
             style={inputStyle}
             value={createPartner.company_name}
             onChange={(e) => setCreatePartner((v) => ({ ...v, company_name: e.target.value }))}
           />
           <input
             placeholder="Kontakt-E-Mail"
+            aria-label="Kontakt-E-Mail"
             style={inputStyle}
             value={createPartner.contact_email}
             onChange={(e) => setCreatePartner((v) => ({ ...v, contact_email: e.target.value }))}
           />
           <input
             placeholder="Kontaktperson"
+            aria-label="Kontaktperson"
             style={inputStyle}
             value={createPartner.contact_person}
             onChange={(e) => setCreatePartner((v) => ({ ...v, contact_person: e.target.value }))}
           />
           <input
             placeholder="Website URL"
+            aria-label="Website URL"
             style={inputStyle}
             value={createPartner.website_url}
             onChange={(e) => setCreatePartner((v) => ({ ...v, website_url: e.target.value }))}
@@ -824,6 +903,7 @@ export default function AdminClient() {
         <div style={grid2Style}>
           <input
             placeholder="Firmenname"
+            aria-label="Firmenname bearbeiten"
             style={inputStyle}
             value={editPartner.company_name}
             onChange={(e) => setEditPartner((v) => ({ ...v, company_name: e.target.value }))}
@@ -831,6 +911,7 @@ export default function AdminClient() {
           />
           <input
             placeholder="Kontakt-E-Mail"
+            aria-label="Kontakt-E-Mail bearbeiten"
             style={inputStyle}
             value={editPartner.contact_email}
             onChange={(e) => setEditPartner((v) => ({ ...v, contact_email: e.target.value }))}
@@ -838,6 +919,7 @@ export default function AdminClient() {
           />
           <input
             placeholder="Kontaktperson"
+            aria-label="Kontaktperson bearbeiten"
             style={inputStyle}
             value={editPartner.contact_person}
             onChange={(e) => setEditPartner((v) => ({ ...v, contact_person: e.target.value }))}
@@ -845,6 +927,7 @@ export default function AdminClient() {
           />
           <input
             placeholder="Website URL"
+            aria-label="Website URL bearbeiten"
             style={inputStyle}
             value={editPartner.website_url}
             onChange={(e) => setEditPartner((v) => ({ ...v, website_url: e.target.value }))}
@@ -887,6 +970,7 @@ export default function AdminClient() {
         <div style={rowStyle}>
           <input
             placeholder="Kreis suchen (Name oder ID, z. B. Leipzig oder 14)"
+            aria-label="Kreis zuordnen"
             style={inputStyle}
             value={assignAreaId}
             onChange={(e) => {
@@ -999,6 +1083,7 @@ export default function AdminClient() {
         <div style={grid2Style}>
           <select
             style={inputStyle}
+            aria-label="Kreis für Übergabe auswählen"
             value={handoverDraft.area_id}
             disabled={!selectedPartner}
             onChange={(e) => setHandoverDraft((v) => ({ ...v, area_id: e.target.value }))}
@@ -1012,6 +1097,7 @@ export default function AdminClient() {
           </select>
           <select
             style={inputStyle}
+            aria-label="Neuen Partner für Übergabe auswählen"
             value={handoverDraft.new_partner_id}
             disabled={!selectedPartner}
             onChange={(e) => setHandoverDraft((v) => ({ ...v, new_partner_id: e.target.value }))}
@@ -1078,6 +1164,7 @@ export default function AdminClient() {
         <div style={grid2Style}>
           <select
             style={inputStyle}
+            aria-label="Integrationstyp"
             value={createIntegration.kind}
             onChange={(e) =>
               setCreateIntegration((v) => {
@@ -1095,6 +1182,7 @@ export default function AdminClient() {
           </select>
           <select
             style={inputStyle}
+            aria-label="Integrationsprovider"
             value={createIntegration.provider}
             onChange={(e) =>
               setCreateIntegration((v) => ({
@@ -1112,12 +1200,14 @@ export default function AdminClient() {
           </select>
           <input
             placeholder="Base URL"
+            aria-label="Integrations Base URL"
             style={inputStyle}
             value={createIntegration.base_url}
             onChange={(e) => setCreateIntegration((v) => ({ ...v, base_url: e.target.value }))}
           />
           <select
             style={inputStyle}
+            aria-label="Authentifizierungstyp"
             value={createIntegration.auth_type}
             onChange={(e) => setCreateIntegration((v) => ({ ...v, auth_type: e.target.value }))}
           >
@@ -1129,6 +1219,7 @@ export default function AdminClient() {
           </select>
           <input
             placeholder="Detail URL Template"
+            aria-label="Detail URL Template"
             style={inputStyle}
             value={createIntegration.detail_url_template}
             onChange={(e) => setCreateIntegration((v) => ({ ...v, detail_url_template: e.target.value }))}
@@ -1189,6 +1280,7 @@ export default function AdminClient() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
                       <input
                         placeholder="api_key"
+                        aria-label={`API Key für ${integration.provider}`}
                         style={inputStyle}
                         value={draft.api_key}
                         onChange={(e) =>
@@ -1200,6 +1292,7 @@ export default function AdminClient() {
                       />
                       <input
                         placeholder="token"
+                        aria-label={`Token für ${integration.provider}`}
                         style={inputStyle}
                         value={draft.token}
                         onChange={(e) =>
@@ -1211,6 +1304,7 @@ export default function AdminClient() {
                       />
                       <input
                         placeholder="secret"
+                        aria-label={`Secret für ${integration.provider}`}
                         style={inputStyle}
                         value={draft.secret}
                         onChange={(e) =>
@@ -1277,30 +1371,35 @@ export default function AdminClient() {
         <div style={grid3Style}>
           <input
             placeholder="entity_type"
+            aria-label="Audit-Filter entity_type"
             style={inputStyle}
             value={auditFilters.entity_type}
             onChange={(e) => setAuditFilters((v) => ({ ...v, entity_type: e.target.value }))}
           />
           <input
             placeholder="event_type"
+            aria-label="Audit-Filter event_type"
             style={inputStyle}
             value={auditFilters.event_type}
             onChange={(e) => setAuditFilters((v) => ({ ...v, event_type: e.target.value }))}
           />
           <input
             placeholder="actor_user_id"
+            aria-label="Audit-Filter actor_user_id"
             style={inputStyle}
             value={auditFilters.actor_user_id}
             onChange={(e) => setAuditFilters((v) => ({ ...v, actor_user_id: e.target.value }))}
           />
           <input
             type="datetime-local"
+            aria-label="Audit-Filter Startzeit"
             style={inputStyle}
             value={auditFilters.created_from}
             onChange={(e) => setAuditFilters((v) => ({ ...v, created_from: e.target.value }))}
           />
           <input
             type="datetime-local"
+            aria-label="Audit-Filter Endzeit"
             style={inputStyle}
             value={auditFilters.created_to}
             onChange={(e) => setAuditFilters((v) => ({ ...v, created_to: e.target.value }))}
@@ -1309,6 +1408,7 @@ export default function AdminClient() {
             type="number"
             min={1}
             max={500}
+            aria-label="Audit-Filter Ergebnislimit"
             style={inputStyle}
             value={auditFilters.limit}
             onChange={(e) =>

@@ -13,9 +13,14 @@ export default async function PublicLayout({ children }: { children: React.React
     <KontaktProvider>
       <div className="d-flex flex-column min-vh-100">
         <BootstrapClient />
+        <a href="#main-content" className="skip-link">
+          Zum Inhalt springen
+        </a>
         <HeaderSwitch bundeslaender={bundeslaender} />
 
-        <main className="flex-grow-1 py-2 py-md-4">{children}</main>
+        <main id="main-content" className="flex-grow-1 py-2 py-md-4" tabIndex={-1}>
+          {children}
+        </main>
 
         <div
           className="offcanvas offcanvas-end text-dark"
