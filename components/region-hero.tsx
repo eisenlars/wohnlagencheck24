@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 
 type RegionHeroProps = {
   title: string;
@@ -34,8 +35,22 @@ export function RegionHero({
       <div className="position-relative overflow-hidden rounded-4 shadow-sm">
         <div
           className={mediaClasses}
-          style={slides ? undefined : { backgroundImage: `url(${imageSrc})` }}
+          style={slides ? undefined : { backgroundColor: "#0f1a1f" }}
         >
+          {!slides ? (
+            <div className="region-hero-image-layer" aria-hidden="true">
+              <Image
+                src={imageSrc}
+                alt=""
+                fill
+                priority
+                sizes="100vw"
+                quality={72}
+                className="region-hero-image"
+              />
+            </div>
+          ) : null}
+
           {slides ? (
             <div className="region-hero-slideshow" aria-hidden="true">
               {slides.map((src, index) => (

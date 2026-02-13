@@ -1154,6 +1154,16 @@ h6 {
   inset: 0;
 }
 
+.region-hero-image-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.region-hero-image {
+  object-fit: cover;
+  object-position: center top;
+}
+
 .region-hero-slide {
   position: absolute;
   inset: 0;
