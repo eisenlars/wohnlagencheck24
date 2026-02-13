@@ -167,7 +167,8 @@ export function classifyOver100Level(value: number) {
 }
 
 export function selectPhraseEntry(category: string, phraseJson: AnyRecord, strict = true, rng: Rng = Math.random) {
-  const options = phraseJson?.[category] ?? [];
+  const rawOptions = phraseJson?.[category];
+  const options = Array.isArray(rawOptions) ? rawOptions : [];
   if (!options.length) {
     if (strict) {
       throw new Error(`Phrasen fehlen für Kategorie '${category}'. Vorhandene Keys: ${Object.keys(phraseJson ?? {})}`);
