@@ -281,6 +281,11 @@ export default function TextEditorForm({
   const [dbTexts, setDbTexts] = useState<TextEntry[]>([]);
   const [saving, setSaving] = useState(false);
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
+  const [bulkRewriteState, setBulkRewriteState] = useState<{
+    scope: 'tab' | 'all';
+    done: number;
+    total: number;
+  } | null>(null);
   const parts = config?.area_id ? config.area_id.split('-') : [];
   const isOrtslage = parts.length > 3;
   const isMarketing = tableName === 'partner_marketing_texts';
@@ -403,6 +408,7 @@ export default function TextEditorForm({
     await supabase
       .from(tableName)
       .delete()
+      .eq('partner_id', user.id)
       .eq('area_id', config.area_id)
       .eq('section_key', key);
     setDbTexts((prev) => prev.filter((t) => t.section_key !== key));
@@ -436,14 +442,13 @@ export default function TextEditorForm({
     );
   };
 
-  const handleAiRewrite = async (
+  const requestAiRewrite = async (
     key: string,
     currentText: string,
     type: string,
     label: string,
     customPrompt?: string,
   ) => {
-    setRewritingKey(key);
     try {
       const res = await fetch('/api/ai-rewrite', {
         method: 'POST',
@@ -457,11 +462,75 @@ export default function TextEditorForm({
         }),
       });
       const data = await res.json();
-      if (data.optimizedText) {
-        saveText(key, data.optimizedText, type);
+      if (typeof data?.optimizedText === 'string' && data.optimizedText.trim().length > 0) {
+        return data.optimizedText;
       }
-    } catch (err) { console.error(err); }
-    finally { setRewritingKey(null); }
+      return null;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  };
+
+  const handleAiRewrite = async (
+    key: string,
+    currentText: string,
+    type: string,
+    label: string,
+    customPrompt?: string,
+  ) => {
+    setRewritingKey(key);
+    const optimizedText = await requestAiRewrite(key, currentText, type, label, customPrompt);
+    if (optimizedText) {
+      await saveText(key, optimizedText, type);
+    }
+    setRewritingKey(null);
+  };
+
+  const getCurrentTextForSection = (sectionKey: string, sectionGroup: string | null) => {
+    const dbEntry = dbTexts.find((t) => t.section_key === sectionKey);
+    return dbEntry?.optimized_content ?? getRawTextFromJSON(sectionKey, sectionGroup);
+  };
+
+  const runBulkDataDrivenAi = async (scope: 'tab' | 'all') => {
+    if (bulkRewriteState || !visibleTabs.length) return;
+    const tabsToProcess = scope === 'tab'
+      ? visibleTabs.filter((tab) => tab.id === activeTab)
+      : visibleTabs;
+    const tasks = tabsToProcess.flatMap((tab) => {
+      const sectionGroup = resolveGroupForTab(tab.id);
+      return tab.sections
+        .filter((section) => section.type === 'data_driven')
+        .map((section) => ({
+          key: section.key,
+          label: section.label,
+          type: section.type,
+          sectionGroup,
+        }));
+    });
+    if (tasks.length === 0) return;
+
+    setBulkRewriteState({ scope, done: 0, total: tasks.length });
+    try {
+      for (let i = 0; i < tasks.length; i += 1) {
+        const task = tasks[i];
+        setRewritingKey(task.key);
+        const sourceText = getCurrentTextForSection(task.key, task.sectionGroup);
+        const optimizedText = await requestAiRewrite(
+          task.key,
+          sourceText,
+          task.type,
+          task.label,
+        );
+        if (optimizedText) {
+          await saveText(task.key, optimizedText, task.type, task.sectionGroup);
+        }
+        setBulkRewriteState({ scope, done: i + 1, total: tasks.length });
+      }
+    } finally {
+      setRewritingKey(null);
+      setBulkRewriteState(null);
+    }
   };
 
   const getRawTextFromJSON = (key: string, preferredGroup?: string | null) => {
@@ -482,9 +551,27 @@ export default function TextEditorForm({
     return '';
   };
 
-  if (loading) return <div style={{ padding: '40px', color: '#64748b' }}>Sektionen werden geladen...</div>;
+  if (loading) {
+    return (
+      <div style={loadingWrapperStyle}>
+        <div style={loadingSpinnerStyle} />
+        <div>Sektionen werden geladen...</div>
+        <style jsx global>{`
+          @keyframes text-editor-spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   const activeTabConfig = visibleTabs.find(t => t.id === activeTab);
+  const activeTabDataDrivenCount = activeTabConfig?.sections.filter((section) => section.type === 'data_driven').length ?? 0;
+  const allDataDrivenCount = visibleTabs.reduce(
+    (sum, tab) => sum + tab.sections.filter((section) => section.type === 'data_driven').length,
+    0,
+  );
+  const isBulkRewriting = Boolean(bulkRewriteState);
 
   return (
     <div style={{ width: '100%' }}>
@@ -504,6 +591,30 @@ export default function TextEditorForm({
 
       {/* CONTENT AREA */}
       <div style={contentWrapperStyle}>
+        {activeTabDataDrivenCount > 0 ? (
+          <div style={bulkActionBarStyle}>
+            <button
+              type="button"
+              onClick={() => runBulkDataDrivenAi('tab')}
+              disabled={isBulkRewriting}
+              style={bulkActionButtonStyle(isBulkRewriting)}
+            >
+              {bulkRewriteState?.scope === 'tab'
+                ? `KI optimiert Data-Driven (${bulkRewriteState.done}/${bulkRewriteState.total})`
+                : `KI optimiert alle Data-Driven im Tab (${activeTabDataDrivenCount})`}
+            </button>
+            <button
+              type="button"
+              onClick={() => runBulkDataDrivenAi('all')}
+              disabled={isBulkRewriting || allDataDrivenCount === 0}
+              style={bulkActionSecondaryButtonStyle(isBulkRewriting || allDataDrivenCount === 0)}
+            >
+              {bulkRewriteState?.scope === 'all'
+                ? `Region läuft (${bulkRewriteState.done}/${bulkRewriteState.total})`
+                : `Global: alle Data-Driven der Region (${allDataDrivenCount})`}
+            </button>
+          </div>
+        ) : null}
         {activeTabConfig?.sections.map((section) => {
           const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
           return (
@@ -644,9 +755,12 @@ function TextEditorField({
     const [localValue, setLocalValue] = useState(dbEntry?.optimized_content ?? rawText ?? '');
     const [showPrompt, setShowPrompt] = useState(false);
     const [customPrompt, setCustomPrompt] = useState('');
+    const [isDataDrivenUnlocked, setIsDataDrivenUnlocked] = useState(false);
     
     const currentText = localValue || rawText;
     const isIndividual = type === 'individual';
+    const isDataDriven = type === 'data_driven';
+    const isLockedDataDriven = isDataDriven && !isDataDrivenUnlocked;
     const standardPrompt = getStandardPromptText(label, type, areaName);
     const status = dbEntry?.status ?? null;
     const showStatus = enableApproval && Boolean(dbEntry?.status);
@@ -666,6 +780,9 @@ function TextEditorField({
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     {hasOverride && <span style={savedBadgeStyle}>✓ Individuell angepasst</span>}
+                    {isLockedDataDriven ? (
+                      <span style={lockedBadgeStyle}>Gesperrt (Data-Driven)</span>
+                    ) : null}
                     <button
                         type="button"
                         onClick={() => onReset(sectionKey)}
@@ -678,46 +795,73 @@ function TextEditorField({
             
             <div style={editorGridStyle}>
                 <div style={textareaWrapperStyle}>
+                    {isDataDriven ? (
+                      <div style={dataDrivenHintStyle}>
+                        Datengetriebener Text. Manuelle Änderungen können den Kontext verfälschen.
+                      </div>
+                    ) : null}
                     <textarea 
                         value={currentText}
                         onChange={(e) => setLocalValue(e.target.value)}
                         onBlur={(e) => onSave(sectionKey, e.target.value, type, sectionGroup)}
-                        style={textareaStyle}
+                        style={textareaStyle(isLockedDataDriven)}
+                        readOnly={isLockedDataDriven}
                         placeholder="Inhalt bearbeiten..."
                     />
-                    {!isIndividual && (
+                    {isDataDriven ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isDataDrivenUnlocked) {
+                            setIsDataDrivenUnlocked(false);
+                            return;
+                          }
+                          const ok = window.confirm(
+                            'Achtung: Kontextverlust moeglich. Manuelle Aenderung von Data-Driven Texten ist nicht erwuenscht. Wirklich freischalten?',
+                          );
+                          if (ok) setIsDataDrivenUnlocked(true);
+                        }}
+                        style={unlockButtonStyle(isDataDrivenUnlocked)}
+                      >
+                        {isDataDrivenUnlocked ? 'Bearbeitung sperren' : 'Manuelle Bearbeitung freischalten'}
+                      </button>
+                    ) : null}
+                    <button 
+                        style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle} 
+                        onClick={() => onAiRewrite(sectionKey, currentText, type, label, customPrompt)}
+                        disabled={isRewriting}
+                    >
+                        {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
+                    </button>
+                    {isIndividual ? (
+                      <div style={individualHintStyle}>
+                        Hinweis: Hier sollte Ihre persoenliche Markteinschaetzung stehen.
+                      </div>
+                    ) : null}
+                    <button
+                        type="button"
+                        onClick={() => setShowPrompt((prev) => !prev)}
+                        style={promptToggleStyle}
+                    >
+                        {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+                    </button>
+                    {showPrompt ? (
                         <>
-                            <button 
-                                style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle} 
-                                onClick={() => onAiRewrite(sectionKey, currentText, type, label, customPrompt)}
-                                disabled={isRewriting}
-                            >
-                                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setShowPrompt((prev) => !prev)}
-                                style={promptToggleStyle}
-                            >
-                                {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-                            </button>
-                            {showPrompt ? (
-                                <div style={promptPanelStyle}>
-                                    <div style={promptLabelStyle}>Standard-Prompt</div>
-                                    <div style={promptContentStyle}>{standardPrompt}</div>
-                                    <label style={promptInputLabelStyle}>
-                                        Eigener Prompt (optional)
-                                        <textarea
-                                            value={customPrompt}
-                                            onChange={(e) => setCustomPrompt(e.target.value)}
-                                            style={promptInputStyle}
-                                            placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
-                                        />
-                                    </label>
-                                </div>
-                            ) : null}
+                            <div style={promptPanelStyle}>
+                                <div style={promptLabelStyle}>Standard-Prompt</div>
+                                <div style={promptContentStyle}>{standardPrompt}</div>
+                                <label style={promptInputLabelStyle}>
+                                    Eigener Prompt (optional)
+                                    <textarea
+                                        value={customPrompt}
+                                        onChange={(e) => setCustomPrompt(e.target.value)}
+                                        style={promptInputStyle}
+                                        placeholder="Eigenen Prompt eingeben (zusatzlich zum Standard-Prompt)"
+                                    />
+                                </label>
+                            </div>
                         </>
-                    )}
+                    ) : null}
                 </div>
                 
                 <div style={previewBoxStyle}>
@@ -734,11 +878,24 @@ function TextEditorField({
 const tabContainerStyle = { display: 'flex', backgroundColor: '#fff', padding: '8px 8px 0 8px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #e2e8f0', gap: '4px', overflowX: 'auto' as const };
 const tabButtonStyle = (active: boolean) => ({ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', border: 'none', borderBottom: active ? '3px solid #3b82f6' : '3px solid transparent', backgroundColor: active ? '#f8fafc' : 'transparent', color: active ? '#2563eb' : '#64748b', fontWeight: active ? '700' : '500', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' as const, transition: 'all 0.2s', borderRadius: '8px 8px 0 0' });
 const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px', borderRadius: '0 0 12px 12px', border: '1px solid #e2e8f0', borderTop: 'none' };
+const loadingWrapperStyle = { display: 'flex', alignItems: 'center', gap: '12px', padding: '40px', color: '#64748b' };
+const loadingSpinnerStyle = { width: '18px', height: '18px', borderRadius: '50%', border: '2px solid #e2e8f0', borderTopColor: '#2563eb', animation: 'text-editor-spin 0.8s linear infinite' };
 const fieldCardStyle = { marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #f1f5f9' };
 const fieldHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' };
 const editorGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px' };
 const textareaWrapperStyle = { display: 'flex', flexDirection: 'column' as const, gap: '12px' };
-const textareaStyle = { width: '100%', minHeight: '200px', padding: '18px', borderRadius: '10px', border: '1px solid #cbd5e0', fontSize: '14.5px', lineHeight: '1.6', fontFamily: 'inherit', color: '#334155' };
+const textareaStyle = (readOnly = false) => ({
+  width: '100%',
+  minHeight: '200px',
+  padding: '18px',
+  borderRadius: '10px',
+  border: readOnly ? '1px dashed #f59e0b' : '1px solid #cbd5e0',
+  backgroundColor: readOnly ? '#fffbeb' : '#fff',
+  fontSize: '14.5px',
+  lineHeight: '1.6',
+  fontFamily: 'inherit',
+  color: '#334155',
+});
 const previewBoxStyle = { backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', height: 'fit-content' };
 const previewHeaderStyle = { padding: '10px 15px', fontSize: '9px', fontWeight: '800', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', letterSpacing: '0.05em' };
 const previewContentStyle = { padding: '15px', fontSize: '12.5px', color: '#64748b', lineHeight: '1.5', fontStyle: 'italic' };
@@ -774,6 +931,15 @@ const typeTagStyle = (type: string) => ({
   textTransform: 'uppercase' as const,
 });
 const savedBadgeStyle = { color: '#10b981', fontSize: '11px', fontWeight: '700' };
+const lockedBadgeStyle = {
+  color: '#92400e',
+  backgroundColor: '#fef3c7',
+  border: '1px solid #fde68a',
+  fontSize: '10px',
+  fontWeight: 700,
+  borderRadius: '6px',
+  padding: '3px 8px',
+};
 const statusBadgeStyle = (approved: boolean) => ({
   fontSize: '10px',
   padding: '2px 6px',
@@ -811,4 +977,57 @@ const approvalHintStyle: React.CSSProperties = {
   fontSize: '12px',
   color: '#64748b',
 };
+const dataDrivenHintStyle = {
+  fontSize: '12px',
+  color: '#92400e',
+  backgroundColor: '#fffbeb',
+  border: '1px solid #fde68a',
+  borderRadius: '8px',
+  padding: '10px 12px',
+};
+const individualHintStyle = {
+  fontSize: '12px',
+  color: '#1e40af',
+  backgroundColor: '#eff6ff',
+  border: '1px solid #bfdbfe',
+  borderRadius: '8px',
+  padding: '10px 12px',
+};
+const unlockButtonStyle = (unlocked: boolean) => ({
+  alignSelf: 'flex-start',
+  padding: '9px 14px',
+  borderRadius: '8px',
+  border: unlocked ? '1px solid #e2e8f0' : '1px solid #fcd34d',
+  backgroundColor: unlocked ? '#f8fafc' : '#fef3c7',
+  color: unlocked ? '#334155' : '#92400e',
+  fontSize: '12px',
+  fontWeight: '600',
+  cursor: 'pointer',
+});
+const bulkActionBarStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '10px',
+  marginBottom: '20px',
+  flexWrap: 'wrap',
+};
+const bulkActionButtonStyle = (disabled: boolean): React.CSSProperties => ({
+  borderRadius: '9px',
+  border: '1px solid #bfdbfe',
+  backgroundColor: disabled ? '#f1f5f9' : '#dbeafe',
+  color: '#1e40af',
+  padding: '10px 14px',
+  fontSize: '12px',
+  fontWeight: 700,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+});
+const bulkActionSecondaryButtonStyle = (disabled: boolean): React.CSSProperties => ({
+  borderRadius: '9px',
+  border: '1px solid #e2e8f0',
+  backgroundColor: disabled ? '#f8fafc' : '#fff',
+  color: '#334155',
+  padding: '10px 14px',
+  fontSize: '12px',
+  fontWeight: 700,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+});
 const saveIndicatorStyle: React.CSSProperties = { position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#0f172a', color: '#fff', padding: '12px 24px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)', zIndex: 100, fontSize: '13px' };

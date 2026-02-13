@@ -166,7 +166,31 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
   // DB-Overrides: approved report_texts überschreiben JSON-Texte (if present)
   if (areaId) {
     const supabase = createClient() as unknown as SupabaseClientLike;
-    const overrides = await getApprovedReportTexts(supabase, areaId);
+    const partnerMapRes = await (supabase as unknown as {
+      from: (table: string) => {
+        select: (columns: string) => {
+          eq: (column: string, value: unknown) => {
+            eq: (column: string, value: unknown) => Promise<{ data?: Array<{ auth_user_id?: string | null }> | null }>;
+          };
+        };
+      };
+    })
+      .from("partner_area_map")
+      .select("auth_user_id")
+      .eq("area_id", areaId)
+      .eq("is_active", true);
+
+    const partnerIds = Array.from(
+      new Set(
+        (partnerMapRes?.data ?? [])
+          .map((row) => String(row?.auth_user_id ?? "").trim())
+          .filter((value) => value.length > 0),
+      ),
+    );
+    const scopedPartnerId = partnerIds.length === 1 ? partnerIds[0] : null;
+    const overrides = scopedPartnerId
+      ? await getApprovedReportTexts(supabase, areaId, scopedPartnerId)
+      : [];
     if (overrides.length > 0) {
       const mergedText = { ...(asRecord(report["text"]) ?? {}) };
       const topGroups = Object.keys(mergedText);

@@ -293,6 +293,21 @@ In `next.config.ts`:
 - `www.praxiswissen-immobilien.de`
 - `<project-ref>.supabase.co`
 
+### 7.3 Access Gates & Session Scope (Admin/Partner)
+
+Routen sind serverseitig hart getrennt:
+- `/admin/*`: nur fuer Admin-User (z. B. `ADMIN_SUPER_USER_IDS`)
+- `/dashboard/*`: nur fuer User mit vorhandenem `public.partners`-Profil (`partners.id = auth.user.id`)
+
+Redirect-Verhalten:
+- Keine Session auf `/dashboard/*` -> `/partner/login`
+- Session vorhanden, aber kein Partnerprofil -> `/partner/login?message=Kein-Partnerprofil`
+- Keine Admin-Berechtigung auf `/admin/*` -> `/admin/login`
+
+Wichtig zur Session-Isolation:
+- Admin- und Partner-Login teilen im selben Browser standardmaessig denselben Supabase-Session-Kontext.
+- Parallelbetrieb (Admin + Partner gleichzeitig) daher in getrennten Browser-Profilen/Incognito durchfuehren.
+
 ---
 
 ## 8) Erweiterungspunkte
@@ -319,6 +334,8 @@ Ziel: Mehrere Partner mit unterschiedlichen CRMs (Propstack, onOffice, …).
 Pro Partner **genau ein CRM**, aber zusätzliche APIs (z. B. LLMs) möglich.
 
 Weitere Details: `docs/partner-onboarding.md`
+Settings-Vertrag fuer `partner_integrations.settings`: `docs/integration_settings_schema.md`
+Offboarding/Uebergabe-Runbook: `docs/partner_handover_process.md`
 
 ### 9.1 Datenmodell (Supabase)
 

@@ -73,7 +73,9 @@ function buildSupabaseUrl(...parts: string[]): string | null {
 async function fetchJson<T>(url: string | null, warnLabel: string): Promise<T | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, {
+      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags: ["reports"] },
+    });
     if (!res.ok) {
       console.warn(`${warnLabel} nicht gefunden:`, url, res.status);
       return null;
@@ -101,13 +103,18 @@ export type SupabaseClientLike = {
 export async function getApprovedReportTexts(
   supabaseClient: SupabaseClientLike,
   areaId: string,
+  partnerId?: string,
 ): Promise<ReportTextOverride[]> {
   try {
-    const res = await supabaseClient
+    let query = supabaseClient
       .from("report_texts")
       .select("section_key, optimized_content, status")
       .eq("area_id", areaId)
       .eq("status", "approved");
+    if (partnerId) {
+      query = query.eq("partner_id", partnerId);
+    }
+    const res = await query;
     const { data, error } = res as { data?: unknown; error?: { message: string } | null };
 
     if (error) {
@@ -147,7 +154,9 @@ export async function getApprovedMarketingTexts(
 async function fetchText(url: string | null, warnLabel: string): Promise<string | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, {
+      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags: ["reports"] },
+    });
     if (!res.ok) {
       console.warn(`${warnLabel} nicht gefunden:`, url, res.status);
       return null;
@@ -186,8 +195,10 @@ export async function getDeutschlandReport(): Promise<Report | null> {
 /**
  * Alle Bundesländer aus reports/index.json
  */
-export async function getBundeslaender(): Promise<{ slug: string; name: string }[]> {
-  const index = await getReportsIndex();
+export async function getBundeslaender(
+  indexArg?: ReportsIndex | null,
+): Promise<{ slug: string; name: string }[]> {
+  const index = indexArg ?? (await getReportsIndex());
   if (!index) return [];
 
   const result = index.bundeslaender.map((bl) => ({
@@ -204,8 +215,9 @@ export async function getBundeslaender(): Promise<{ slug: string; name: string }
  */
 export async function getKreiseForBundesland(
   bundeslandSlug: string,
+  indexArg?: ReportsIndex | null,
 ): Promise<{ slug: string; name: string }[]> {
-  const index = await getReportsIndex();
+  const index = indexArg ?? (await getReportsIndex());
   if (!index) return [];
 
   const bl = index.bundeslaender.find((b) => b.slug === bundeslandSlug);
@@ -222,8 +234,9 @@ export async function getKreiseForBundesland(
 export async function getOrteForKreis(
   bundeslandSlug: string,
   kreisSlug: string,
+  indexArg?: ReportsIndex | null,
 ): Promise<{ slug: string; name: string }[]> {
-  const index = await getReportsIndex();
+  const index = indexArg ?? (await getReportsIndex());
   if (!index) return [];
 
   const bl = index.bundeslaender.find((b) => b.slug === bundeslandSlug);

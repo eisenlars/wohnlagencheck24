@@ -4,8 +4,8 @@
       {
         "templates": {
           "mit_verbkonstrukt": [
-            "Der durchschnittliche Quadratmeterpreis beim Immobilienkauf liegt aktuell bei {{ immobilienpreise_mittel_jahr01_kreis_eur }}. {{ verbkonstrukt_trendText_immobilienpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_5jahrestrend_kreis }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_vorjahrestrend_kreis }}\n\nNimmt man den Vorjahresvergleich bei Grundstücken, {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vorjahrestrend_kreis }}. {{ verbkonstrukt_trendText_grundstueckspreise_mittel_5jahrestrend_kreis }} {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vergleich_kreis_bundesland }}\n\nViele Menschen spielen aufgrund der aktuellen Zinspolitik mit dem Gedanken eine Immobilie zu mieten. Die Durchschnittsmieten liegen in {{ kreis_name }} bei {{ mietpreise_mittel_kreis_eur }}. {{ verbkonstrukt_trendText_mietpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_mietpreise_mittel_vorjahrestrend_kreis }} {{ verbkonstrukt_trendText_mietpreise_mittel_5jahrestrend_kreis }}",
-            "Aktuell kostet der Quadratmeter beim Immobilienkauf im Schnitt {{ immobilienpreise_mittel_jahr01_kreis_eur }}. {{ verbkonstrukt_trendText_immobilienpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_5jahrestrend_kreis }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_vorjahrestrend_kreis }}\n\nIm Grundstücksmarkt {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vorjahrestrend_kreis }}. {{ verbkonstrukt_trendText_grundstueckspreise_mittel_5jahrestrend_kreis }} {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vergleich_kreis_bundesland }}\n\nDie Durchschnittsmieten liegen in {{ kreis_name }} bei {{ mietpreise_mittel_kreis_eur }}. {{ verbkonstrukt_trendText_mietpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_mietpreise_mittel_vorjahrestrend_kreis }} {{ verbkonstrukt_trendText_mietpreise_mittel_5jahrestrend_kreis }}"
+            "{{ verbkonstrukt_staticText_immobilienpreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_vorjahrestrend_kreis }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_5jahrestrend_kreis }}\n\n{{ verbkonstrukt_staticText_grundstueckspreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vorjahrestrend_kreis }}. {{ verbkonstrukt_trendText_grundstueckspreise_mittel_5jahrestrend_kreis }} {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vergleich_kreis_bundesland }}\n\n{{ verbkonstrukt_staticText_mietpreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_mietpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_mietpreise_mittel_vorjahrestrend_kreis }} {{ verbkonstrukt_trendText_mietpreise_mittel_5jahrestrend_kreis }}",
+            "{{ verbkonstrukt_staticText_mietpreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_mietpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_mietpreise_mittel_vorjahrestrend_kreis }} {{ verbkonstrukt_trendText_mietpreise_mittel_5jahrestrend_kreis }}\n\n{{ verbkonstrukt_staticText_immobilienpreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_vorjahrestrend_kreis }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_5jahrestrend_kreis }}\n\n{{ verbkonstrukt_staticText_grundstueckspreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vorjahrestrend_kreis }}. {{ verbkonstrukt_trendText_grundstueckspreise_mittel_5jahrestrend_kreis }} {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vergleich_kreis_bundesland }}"
           ],
           "ohne_verbkonstrukt": [
             "Der durchschnittliche Quadratmeterpreis beim Immobilienkauf liegt aktuell bei {{ immobilienpreise_mittel_jahr01_kreis_eur }}. Im Rückblick auf {{ jahr05 }} lag das Niveau bei {{ immobilienpreise_mittel_jahr05_kreis_eur }}. Im Vorjahresvergleich haben sich die Preise um {{ immobilienpreise_mittel_vorjahrestrend_kreis_pct }} verändert.\n\nDer durchschnittliche Grundstücks‑Quadratmeterpreis liegt bei {{ grundstueckspreise_mittel_jahr01_kreis_eur }}.\n\nDie Durchschnittsmieten liegen in {{ kreis_name }} bei {{ mietpreise_mittel_kreis_eur }}."
@@ -14,25 +14,39 @@
         "trend_verbkonstrukte": {
           "verbkonstrukt_trendText_immobilienpreise_mittel_vergleich_kreis_bundesland": {
             "gleich": [
-              "Damit {{ auxiliar }} er {{ phrase }}."
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Damit {{ auxiliar }} er {{ phrase }}."
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
             ],
             "groesser": [
-              "Damit {{ auxiliar }} er {{ phrase }}."
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
             ],
             "viel_groesser": [
-              "Damit {{ auxiliar }} er {{ phrase }}."
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
             ],
             "leicht_kleiner": [
-              "Damit {{ auxiliar }} er {{ phrase }}."
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
             ],
             "kleiner": [
-              "Damit {{ auxiliar }} er {{ phrase }}."
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
             ],
             "viel_kleiner": [
-              "Damit {{ auxiliar }} er {{ phrase }}."
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
             ]
           },
           "phrases_trendText_immobilienpreise_mittel_vergleich_kreis_bundesland": {
@@ -40,334 +54,684 @@
               {
                 "phrase": "auf dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "im Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "im Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "leicht über dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "leicht über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "groesser": [
               {
-                "phrase": "über dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "deutlich über dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "deutlich über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "leicht unter dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "leicht unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "kleiner": [
               {
-                "phrase": "unter dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "deutlich unter dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "deutlich unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ]
           },
           "verbkonstrukt_trendText_immobilienpreise_mittel_5jahrestrend_kreis": {
             "gleich": [
-              "Im 5‑Jahres‑Trend {{ auxiliar }} {{ phrase }}."
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Im 5‑Jahres‑Trend {{ auxiliar }} {{ phrase }}."
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "groesser": [
-              "Im 5‑Jahres‑Trend {{ auxiliar }} {{ phrase }}."
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "viel_groesser": [
-              "Im 5‑Jahres‑Trend {{ auxiliar }} {{ phrase }}."
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "leicht_kleiner": [
-              "Im 5‑Jahres‑Trend {{ auxiliar }} {{ phrase }}."
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "kleiner": [
-              "Im 5‑Jahres‑Trend {{ auxiliar }} {{ phrase }}."
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "viel_kleiner": [
-              "Im 5‑Jahres‑Trend {{ auxiliar }} {{ phrase }}."
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
             ]
           },
           "phrases_trendText_immobilienpreise_mittel_5jahrestrend_kreis": {
             "gleich": [
               {
-                "phrase": "nahezu stabil geblieben",
-                "auxiliar": "sind die Preise"
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % leicht gestiegen",
-                "auxiliar": "sind die Preise"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "groesser": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % gestiegen",
-                "auxiliar": "sind die Preise"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % deutlich gestiegen",
-                "auxiliar": "sind die Preise"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % leicht gesunken",
-                "auxiliar": "sind die Preise"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "kleiner": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % gesunken",
-                "auxiliar": "sind die Preise"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % deutlich gesunken",
-                "auxiliar": "sind die Preise"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
               }
             ]
           },
           "verbkonstrukt_trendText_immobilienpreise_mittel_vorjahrestrend_kreis": {
             "gleich": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "groesser": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "viel_groesser": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "leicht_kleiner": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "kleiner": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
             ],
             "viel_kleiner": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
             ]
           },
           "phrases_trendText_immobilienpreise_mittel_vorjahrestrend_kreis": {
             "gleich": [
               {
-                "phrase": "nahezu unverändert geblieben",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % leicht gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "groesser": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % stark gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % leicht gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "kleiner": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % deutlich gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ]
           },
           "verbkonstrukt_trendText_grundstueckspreise_mittel_vorjahrestrend_kreis": {
             "gleich": [
-              "sind die Preise {{ phrase }}"
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
             ],
             "leicht_groesser": [
-              "sind die Preise {{ phrase }}"
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
             ],
             "groesser": [
-              "sind die Preise {{ phrase }}"
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
             ],
             "viel_groesser": [
-              "sind die Preise {{ phrase }}"
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "sind die Preise {{ phrase }}"
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
             ],
             "kleiner": [
-              "sind die Preise {{ phrase }}"
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
             ],
             "viel_kleiner": [
-              "sind die Preise {{ phrase }}"
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
             ]
           },
           "phrases_trendText_grundstueckspreise_mittel_vorjahrestrend_kreis": {
             "gleich": [
               {
-                "phrase": "nahezu unverändert geblieben",
-                "auxiliar": ""
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % leicht gestiegen",
-                "auxiliar": ""
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "groesser": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % gestiegen",
-                "auxiliar": ""
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % stark gestiegen",
-                "auxiliar": ""
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % leicht gesunken",
-                "auxiliar": ""
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "kleiner": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % gesunken",
-                "auxiliar": ""
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % deutlich gesunken",
-                "auxiliar": ""
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
               }
             ]
           },
           "verbkonstrukt_trendText_grundstueckspreise_mittel_5jahrestrend_kreis": {
             "gleich": [
-              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}."
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
             ],
             "leicht_groesser": [
-              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}."
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
             ],
             "groesser": [
-              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}."
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
             ],
             "viel_groesser": [
-              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}."
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
             ],
             "leicht_kleiner": [
-              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}."
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
             ],
             "kleiner": [
-              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}."
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
             ],
             "viel_kleiner": [
-              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}."
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
             ]
           },
           "phrases_trendText_grundstueckspreise_mittel_5jahrestrend_kreis": {
             "gleich": [
               {
-                "phrase": "nahezu stabil geblieben",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % leicht gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "groesser": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % deutlich gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % leicht gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "kleiner": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % deutlich gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
               }
             ]
           },
           "verbkonstrukt_trendText_grundstueckspreise_mittel_vergleich_kreis_bundesland": {
             "gleich": [
-              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
             ],
             "groesser": [
-              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
             ],
             "viel_groesser": [
-              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
             ],
             "leicht_kleiner": [
-              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
             ],
             "kleiner": [
-              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
             ],
             "viel_kleiner": [
-              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
             ]
           },
           "phrases_trendText_grundstueckspreise_mittel_vergleich_kreis_bundesland": {
@@ -375,66 +739,136 @@
               {
                 "phrase": "auf dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "im Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "im Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "leicht über dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "leicht über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "groesser": [
               {
-                "phrase": "über dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "deutlich über dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "deutlich über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "leicht unter dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "leicht unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "kleiner": [
               {
-                "phrase": "unter dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "deutlich unter dem Durchschnitt von {{ bundesland_name }}",
+                "phrase": "deutlich unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ]
           },
           "verbkonstrukt_trendText_mietpreise_mittel_vergleich_kreis_bundesland": {
             "gleich": [
-              "Damit {{ auxiliar }} sie {{ phrase }}."
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Damit {{ auxiliar }} sie {{ phrase }}."
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
             ],
             "groesser": [
-              "Damit {{ auxiliar }} sie {{ phrase }}."
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
             ],
             "viel_groesser": [
-              "Damit {{ auxiliar }} sie {{ phrase }}."
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
             ],
             "leicht_kleiner": [
-              "Damit {{ auxiliar }} sie {{ phrase }}."
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
             ],
             "kleiner": [
-              "Damit {{ auxiliar }} sie {{ phrase }}."
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
             ],
             "viel_kleiner": [
-              "Damit {{ auxiliar }} sie {{ phrase }}."
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
             ]
           },
           "phrases_trendText_mietpreise_mittel_vergleich_kreis_bundesland": {
@@ -442,179 +876,1797 @@
               {
                 "phrase": "auf dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegen"
+              },
+              {
+                "phrase": "im Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "im Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "leicht über dem Mittel in {{ bundesland_name }}",
+                "phrase": "leicht über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegen"
+              },
+              {
+                "phrase": "etwas über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "leicht über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
               }
             ],
             "groesser": [
               {
-                "phrase": "über dem Mittel in {{ bundesland_name }}",
+                "phrase": "über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegen"
+              },
+              {
+                "phrase": "über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "deutlich über dem Mittel in {{ bundesland_name }}",
+                "phrase": "deutlich über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegen"
+              },
+              {
+                "phrase": "klar über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "weit über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "leicht unter dem Mittel in {{ bundesland_name }}",
+                "phrase": "leicht unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegen"
+              },
+              {
+                "phrase": "etwas unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "leicht unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
               }
             ],
             "kleiner": [
               {
-                "phrase": "unter dem Mittel in {{ bundesland_name }}",
+                "phrase": "unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegen"
+              },
+              {
+                "phrase": "unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "deutlich unter dem Mittel in {{ bundesland_name }}",
+                "phrase": "deutlich unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegen"
+              },
+              {
+                "phrase": "klar unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "weit unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
               }
             ]
           },
           "verbkonstrukt_trendText_mietpreise_mittel_vorjahrestrend_kreis": {
             "gleich": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "groesser": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "viel_groesser": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "leicht_kleiner": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "kleiner": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "viel_kleiner": [
-              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}."
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
             ]
           },
           "phrases_trendText_mietpreise_mittel_vorjahrestrend_kreis": {
             "gleich": [
               {
-                "phrase": "nahezu unverändert geblieben",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % leicht gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "groesser": [
               {
-                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % stark gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % leicht gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "kleiner": [
               {
-                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % deutlich gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
               }
             ]
           },
           "verbkonstrukt_trendText_mietpreise_mittel_5jahrestrend_kreis": {
             "gleich": [
-              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}."
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}."
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "groesser": [
-              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}."
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "viel_groesser": [
-              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}."
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "leicht_kleiner": [
-              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}."
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "kleiner": [
-              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}."
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
             ],
             "viel_kleiner": [
-              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}."
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
             ]
           },
           "phrases_trendText_mietpreise_mittel_5jahrestrend_kreis": {
             "gleich": [
               {
-                "phrase": "nahezu stabil geblieben",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % leicht gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "groesser": [
               {
-                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % deutlich gestiegen",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % leicht gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "kleiner": [
               {
-                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % deutlich gesunken",
-                "auxiliar": "sind"
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
               }
             ]
           }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_immobilienpreise_mittel_jahr01_kreis": [
+            "Der durchschnittliche Quadratmeterpreis beim Immobilienkauf {{ auxiliar }} {{ phrase }}.",
+            "Der durchschnittliche Kaufpreis pro Quadratmeter {{ auxiliar }} {{ phrase }}.",
+            "Der mittlere Angebotspreis für den Kauf einer Immobilie in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Der mittlere Angebotspreis für Immobilien in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Der Quadratmeterpreis für den Immobilienkauf {{ auxiliar }} {{ phrase }}.",
+            "Der Durchschnittspreis pro Quadratmeter beim Immobilienkauf {{ auxiliar }} {{ phrase }}.",
+            "Der Quadratmeterpreis für Immobilien in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Der durchschnittliche Preis je Quadratmeter beim Immobilienkauf {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_immobilienpreise_mittel_jahr01_kreis": [
+            {
+              "auxiliar": "liegt aktuell bei",
+              "phrase": "{{ immobilienpreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "beträgt derzeit",
+              "phrase": "{{ immobilienpreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "liegt derzeit bei",
+              "phrase": "{{ immobilienpreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "liegt momentan bei",
+              "phrase": "{{ immobilienpreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "beläuft sich aktuell auf",
+              "phrase": "{{ immobilienpreise_mittel_jahr01_kreis_eur }}"
+            }
+          ],
+          "verbkonstrukt_staticText_grundstueckspreise_mittel_jahr01_kreis": [
+            "Der durchschnittliche Grundstücks‑Quadratmeterpreis {{ auxiliar }} {{ phrase }}.",
+            "Der mittlere Quadratmeterpreis für Grundstücke {{ auxiliar }} {{ phrase }}.",
+            "Für Grundstücke liegt der aktuelle Wert bei {{ phrase }}.",
+            "Für Grundstücke liegt der aktuelle Quadratmeterpreis bei {{ phrase }}.",
+            "Der Quadratmeterpreis für Grundstücke {{ auxiliar }} {{ phrase }}.",
+            "Der durchschnittliche Quadratmeterpreis für Grundstücke {{ auxiliar }} {{ phrase }}.",
+            "Der Durchschnittspreis pro Quadratmeter bei Grundstücken {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_grundstueckspreise_mittel_jahr01_kreis": [
+            {
+              "auxiliar": "liegt bei",
+              "phrase": "{{ grundstueckspreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "beträgt",
+              "phrase": "{{ grundstueckspreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "liegt derzeit bei",
+              "phrase": "{{ grundstueckspreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "beläuft sich aktuell auf",
+              "phrase": "{{ grundstueckspreise_mittel_jahr01_kreis_eur }}"
+            }
+          ],
+          "verbkonstrukt_staticText_mietpreise_mittel_jahr01_kreis": [
+            "Mietpreise spiegeln Angebot und Nachfrage am Wohnungsmarkt wider. Die Durchschnittsmieten in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Die Mietpreise spiegeln die Lage am Wohnungsmarkt wider. Die Durchschnittsmieten in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Ein Blick auf die Mieten zeigt die Marktdynamik. In {{ kreis_name }} {{ auxiliar }} die Durchschnittsmieten {{ phrase }}.",
+            "Ein Blick auf die Mieten zeigt die Marktdynamik. In {{ kreis_name }} {{ auxiliar }} die mittleren Mieten {{ phrase }}.",
+            "Im Mietsegment {{ auxiliar }} die Durchschnittsmieten in {{ kreis_name }} {{ phrase }}.",
+            "Bei den Mieten {{ auxiliar }} die Durchschnittsmieten in {{ kreis_name }} {{ phrase }}.",
+            "Auf dem Mietmarkt {{ auxiliar }} die durchschnittlichen Mieten in {{ kreis_name }} {{ phrase }}."
+          ],
+          "phrases_staticText_mietpreise_mittel_jahr01_kreis": [
+            {
+              "auxiliar": "liegen",
+              "phrase": "bei {{ mietpreise_mittel_kreis_eur }}"
+            },
+            {
+              "auxiliar": "betragen",
+              "phrase": "{{ mietpreise_mittel_kreis_eur }}"
+            },
+            {
+              "auxiliar": "liegen",
+              "phrase": "im Schnitt bei {{ mietpreise_mittel_kreis_eur }}"
+            },
+            {
+              "auxiliar": "erreichen",
+              "phrase": "{{ mietpreise_mittel_kreis_eur }}"
+            }
+          ]
+        }
+      },
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_immobilienpreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_vorjahrestrend_kreis }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_5jahrestrend_kreis }}\n\n{{ verbkonstrukt_staticText_grundstueckspreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vorjahrestrend_kreis }}. {{ verbkonstrukt_trendText_grundstueckspreise_mittel_5jahrestrend_kreis }} {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vergleich_kreis_bundesland }}\n\n{{ verbkonstrukt_staticText_mietpreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_mietpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_mietpreise_mittel_vorjahrestrend_kreis }} {{ verbkonstrukt_trendText_mietpreise_mittel_5jahrestrend_kreis }}",
+            "{{ verbkonstrukt_staticText_mietpreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_mietpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_mietpreise_mittel_vorjahrestrend_kreis }} {{ verbkonstrukt_trendText_mietpreise_mittel_5jahrestrend_kreis }}\n\n{{ verbkonstrukt_staticText_immobilienpreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_vergleich_kreis_bundesland }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_vorjahrestrend_kreis }} {{ verbkonstrukt_trendText_immobilienpreise_mittel_5jahrestrend_kreis }}\n\n{{ verbkonstrukt_staticText_grundstueckspreise_mittel_jahr01_kreis }} {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vorjahrestrend_kreis }}. {{ verbkonstrukt_trendText_grundstueckspreise_mittel_5jahrestrend_kreis }} {{ verbkonstrukt_trendText_grundstueckspreise_mittel_vergleich_kreis_bundesland }}"
+          ],
+          "ohne_verbkonstrukt": [
+            "Der durchschnittliche Quadratmeterpreis beim Immobilienkauf liegt aktuell bei {{ immobilienpreise_mittel_jahr01_kreis_eur }}. Im Rückblick auf {{ jahr05 }} lag das Niveau bei {{ immobilienpreise_mittel_jahr05_kreis_eur }}. Im Vorjahresvergleich haben sich die Preise um {{ immobilienpreise_mittel_vorjahrestrend_kreis_pct }} verändert.\n\nDer durchschnittliche Grundstücks‑Quadratmeterpreis liegt bei {{ grundstueckspreise_mittel_jahr01_kreis_eur }}.\n\nDie Durchschnittsmieten liegen in {{ kreis_name }} bei {{ mietpreise_mittel_kreis_eur }}."
+          ]
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_immobilienpreise_mittel_vergleich_kreis_bundesland": {
+            "gleich": [
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} er {{ phrase }}.",
+              "Hiermit {{ auxiliar }} er {{ phrase }}.",
+              "Somit {{ auxiliar }} er {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_immobilienpreise_mittel_vergleich_kreis_bundesland": {
+            "gleich": [
+              {
+                "phrase": "auf dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "im Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "im Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "deutlich über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_immobilienpreise_mittel_5jahrestrend_kreis": {
+            "gleich": [
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "groesser": [
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "kleiner": [
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Im 5‑Jahres‑Trend {{ auxiliar }} die Preise {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Preise {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_immobilienpreise_mittel_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_5jahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ immobilienpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_immobilienpreise_mittel_vorjahrestrend_kreis": {
+            "gleich": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Preise {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Preise {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Preise {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_immobilienpreise_mittel_vorjahrestrend_kreis": {
+            "gleich": [
+              {
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ immobilienpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_grundstueckspreise_mittel_vorjahrestrend_kreis": {
+            "gleich": [
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
+            ],
+            "leicht_groesser": [
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
+            ],
+            "groesser": [
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
+            ],
+            "viel_groesser": [
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
+            ],
+            "leicht_kleiner": [
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
+            ],
+            "kleiner": [
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
+            ],
+            "viel_kleiner": [
+              "Im Vorjahresvergleich sind die Preise {{ phrase }}",
+              "Gegenüber dem Vorjahr sind die Preise {{ phrase }}",
+              "Im Vergleich zum Vorjahr sind die Preise {{ phrase }}"
+            ]
+          },
+          "phrases_trendText_grundstueckspreise_mittel_vorjahrestrend_kreis": {
+            "gleich": [
+              {
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ grundstueckspreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_grundstueckspreise_mittel_5jahrestrend_kreis": {
+            "gleich": [
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "groesser": [
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "kleiner": [
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "In der 5‑Jahres‑Betrachtung {{ auxiliar }} sie {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} sie {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} sie {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_grundstueckspreise_mittel_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ grundstueckspreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_grundstueckspreise_mittel_vergleich_kreis_bundesland": {
+            "gleich": [
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+            ],
+            "groesser": [
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+            ],
+            "kleiner": [
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Der durchschnittliche Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}.",
+              "Der mittlere Grundstücks‑Quadratmeterpreis von {{ grundstueckspreise_mittel_jahr01_kreis_eur }} {{ auxiliar }} {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_grundstueckspreise_mittel_vergleich_kreis_bundesland": {
+            "gleich": [
+              {
+                "phrase": "auf dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "im Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "im Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "deutlich über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_mietpreise_mittel_vergleich_kreis_bundesland": {
+            "gleich": [
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} sie {{ phrase }}.",
+              "Hiermit {{ auxiliar }} sie {{ phrase }}.",
+              "Somit {{ auxiliar }} sie {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_mietpreise_mittel_vergleich_kreis_bundesland": {
+            "gleich": [
+              {
+                "phrase": "auf dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              },
+              {
+                "phrase": "im Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "im Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              },
+              {
+                "phrase": "etwas über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "leicht über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              },
+              {
+                "phrase": "über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "deutlich über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              },
+              {
+                "phrase": "klar über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "weit über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              },
+              {
+                "phrase": "etwas unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "leicht unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              },
+              {
+                "phrase": "unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegen"
+              },
+              {
+                "phrase": "klar unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "stehen"
+              },
+              {
+                "phrase": "weit unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangieren"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_mietpreise_mittel_vorjahrestrend_kreis": {
+            "gleich": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Im Vorjahresvergleich {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Gegenüber dem Vorjahr {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im Vergleich zum Vorjahr {{ auxiliar }} die Mieten {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_mietpreise_mittel_vorjahrestrend_kreis": {
+            "gleich": [
+              {
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_vorjahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ mietpreise_mittel_vorjahrestrend_kreis }} %"
+              }
+            ]
+          },
+          "verbkonstrukt_trendText_mietpreise_mittel_5jahrestrend_kreis": {
+            "gleich": [
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "groesser": [
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "kleiner": [
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Langfristig {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Über fünf Jahre {{ auxiliar }} die Mieten {{ phrase }}.",
+              "Im 5‑Jahres‑Vergleich {{ auxiliar }} die Mieten {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_mietpreise_mittel_5jahrestrend_kreis": {
+            "gleich": [
+              {
+                "auxiliar": "sind",
+                "phrase": "nahezu unverändert geblieben"
+              },
+              {
+                "auxiliar": "blieben",
+                "phrase": "nahezu konstant"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "kaum verändert"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % leicht gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % leicht erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Anstieg um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Anstieg um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % stark gestiegen"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % deutlich erhöht"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Anstieg um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % leicht gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % leicht verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen leichten Rückgang um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen Rückgang um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "auxiliar": "sind",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % deutlich gesunken"
+              },
+              {
+                "auxiliar": "haben sich",
+                "phrase": "um {{ mietpreise_mittel_5jahrestrend_kreis }} % stark verringert"
+              },
+              {
+                "auxiliar": "zeigen",
+                "phrase": "einen deutlichen Rückgang um {{ mietpreise_mittel_5jahrestrend_kreis }} %"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_immobilienpreise_mittel_jahr01_kreis": [
+            "Der durchschnittliche Quadratmeterpreis beim Immobilienkauf {{ auxiliar }} {{ phrase }}.",
+            "Der durchschnittliche Kaufpreis pro Quadratmeter {{ auxiliar }} {{ phrase }}.",
+            "Der mittlere Angebotspreis für den Kauf einer Immobilie in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Der mittlere Angebotspreis für Immobilien in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Der Quadratmeterpreis für den Immobilienkauf {{ auxiliar }} {{ phrase }}.",
+            "Der Durchschnittspreis pro Quadratmeter beim Immobilienkauf {{ auxiliar }} {{ phrase }}.",
+            "Der Quadratmeterpreis für Immobilien in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Der durchschnittliche Preis je Quadratmeter beim Immobilienkauf {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_immobilienpreise_mittel_jahr01_kreis": [
+            {
+              "auxiliar": "liegt aktuell bei",
+              "phrase": "{{ immobilienpreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "beträgt derzeit",
+              "phrase": "{{ immobilienpreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "liegt derzeit bei",
+              "phrase": "{{ immobilienpreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "liegt momentan bei",
+              "phrase": "{{ immobilienpreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "beläuft sich aktuell auf",
+              "phrase": "{{ immobilienpreise_mittel_jahr01_kreis_eur }}"
+            }
+          ],
+          "verbkonstrukt_staticText_grundstueckspreise_mittel_jahr01_kreis": [
+            "Der durchschnittliche Grundstücks‑Quadratmeterpreis {{ auxiliar }} {{ phrase }}.",
+            "Der mittlere Quadratmeterpreis für Grundstücke {{ auxiliar }} {{ phrase }}.",
+            "Für Grundstücke liegt der aktuelle Wert bei {{ phrase }}.",
+            "Für Grundstücke liegt der aktuelle Quadratmeterpreis bei {{ phrase }}.",
+            "Der Quadratmeterpreis für Grundstücke {{ auxiliar }} {{ phrase }}.",
+            "Der durchschnittliche Quadratmeterpreis für Grundstücke {{ auxiliar }} {{ phrase }}.",
+            "Der Durchschnittspreis pro Quadratmeter bei Grundstücken {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_grundstueckspreise_mittel_jahr01_kreis": [
+            {
+              "auxiliar": "liegt bei",
+              "phrase": "{{ grundstueckspreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "beträgt",
+              "phrase": "{{ grundstueckspreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "liegt derzeit bei",
+              "phrase": "{{ grundstueckspreise_mittel_jahr01_kreis_eur }}"
+            },
+            {
+              "auxiliar": "beläuft sich aktuell auf",
+              "phrase": "{{ grundstueckspreise_mittel_jahr01_kreis_eur }}"
+            }
+          ],
+          "verbkonstrukt_staticText_mietpreise_mittel_jahr01_kreis": [
+            "Mietpreise spiegeln Angebot und Nachfrage am Wohnungsmarkt wider. Die Durchschnittsmieten in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Die Mietpreise spiegeln die Lage am Wohnungsmarkt wider. Die Durchschnittsmieten in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Ein Blick auf die Mieten zeigt die Marktdynamik. In {{ kreis_name }} {{ auxiliar }} die Durchschnittsmieten {{ phrase }}.",
+            "Ein Blick auf die Mieten zeigt die Marktdynamik. In {{ kreis_name }} {{ auxiliar }} die mittleren Mieten {{ phrase }}.",
+            "Im Mietsegment {{ auxiliar }} die Durchschnittsmieten in {{ kreis_name }} {{ phrase }}.",
+            "Bei den Mieten {{ auxiliar }} die Durchschnittsmieten in {{ kreis_name }} {{ phrase }}.",
+            "Auf dem Mietmarkt {{ auxiliar }} die durchschnittlichen Mieten in {{ kreis_name }} {{ phrase }}."
+          ],
+          "phrases_staticText_mietpreise_mittel_jahr01_kreis": [
+            {
+              "auxiliar": "liegen",
+              "phrase": "bei {{ mietpreise_mittel_kreis_eur }}"
+            },
+            {
+              "auxiliar": "betragen",
+              "phrase": "{{ mietpreise_mittel_kreis_eur }}"
+            },
+            {
+              "auxiliar": "liegen",
+              "phrase": "im Schnitt bei {{ mietpreise_mittel_kreis_eur }}"
+            },
+            {
+              "auxiliar": "erreichen",
+              "phrase": "{{ mietpreise_mittel_kreis_eur }}"
+            }
+          ]
         }
       }
     ]
@@ -624,34 +2676,48 @@
       {
         "templates": {
           "mit_verbkonstrukt": [
-            "Der Immobilienmarktbericht {{ kreis_name }} behandelt {{ ortslagen_anzahl }} {{ ortslagen_art }}. Diese Vielfalt spiegelt sich auch in den Immobilienpreisen wider. Die günstigsten Durchschnittspreise finden sich {{ kreiszuordnung }} in {{ guenstigster_immobilienpreis_ortslage }} mit {{ guenstigster_immobilienpreis_wert_eur }}. {{ verbkonstrukt_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland }} Am oberen Ende steht {{ teuerster_immobilienpreis_ortslage }} mit {{ teuerster_immobilienpreis_wert_eur }}. Am günstigsten lässt es sich aktuell in {{ guenstigster_mietpreis_ortslage }} mieten ({{ guenstigster_mietpreis_wert_eur }}), während die teuersten Mieten in {{ teuerster_mietpreis_ortslage }} mit {{ teuerster_mietpreis_wert_eur }} zu finden sind."
+            "{{ verbkonstrukt_staticText_bericht_intro }} {{ verbkonstrukt_staticText_vielfalt_preise }} {{ verbkonstrukt_staticText_guenstigste_preise }} {{ verbkonstrukt_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland }} {{ verbkonstrukt_staticText_teuerste_preise }} {{ verbkonstrukt_staticText_guenstigste_mieten }} {{ verbkonstrukt_staticText_teuerste_mieten }}"
           ],
           "ohne_verbkonstrukt": [
-            "Der Immobilienmarktbericht {{ kreis_name }} umfasst {{ ortslagen_anzahl }} {{ ortslagen_art }}. Die günstigsten Durchschnittspreise finden sich {{ kreiszuordnung }} in {{ guenstigster_immobilienpreis_ortslage }} mit {{ guenstigster_immobilienpreis_wert_eur }}. Am oberen Ende steht {{ teuerster_immobilienpreis_ortslage }} mit {{ teuerster_immobilienpreis_wert_eur }}. Am günstigsten lässt es sich aktuell in {{ guenstigster_mietpreis_ortslage }} mieten ({{ guenstigster_mietpreis_wert_eur }}), während die teuersten Mieten in {{ teuerster_mietpreis_ortslage }} mit {{ teuerster_mietpreis_wert_eur }} zu finden sind."
+            "{{ verbkonstrukt_staticText_bericht_intro }} {{ verbkonstrukt_staticText_vielfalt_preise }} {{ verbkonstrukt_staticText_guenstigste_preise }} {{ verbkonstrukt_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland }} {{ verbkonstrukt_staticText_teuerste_preise }} {{ verbkonstrukt_staticText_guenstigste_mieten }} {{ verbkonstrukt_staticText_teuerste_mieten }}"
           ]
         },
         "trend_verbkonstrukte": {
           "verbkonstrukt_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland": {
             "gleich": [
-              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
             ],
             "groesser": [
-              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
             ],
             "viel_groesser": [
-              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
             ],
             "leicht_kleiner": [
-              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
             ],
             "kleiner": [
-              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
             ],
             "viel_kleiner": [
-              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
             ]
           },
           "phrases_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland": {
@@ -659,45 +2725,560 @@
               {
                 "phrase": "auf dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "im Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "im Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "leicht über dem Mittel von {{ bundesland_name }}",
+                "phrase": "leicht über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "groesser": [
               {
-                "phrase": "über dem Mittel von {{ bundesland_name }}",
+                "phrase": "über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "deutlich über dem Mittel von {{ bundesland_name }}",
+                "phrase": "deutlich über dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "leicht unter dem Mittel von {{ bundesland_name }}",
+                "phrase": "leicht unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "kleiner": [
               {
-                "phrase": "unter dem Mittel von {{ bundesland_name }}",
+                "phrase": "unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "deutlich unter dem Mittel von {{ bundesland_name }}",
+                "phrase": "deutlich unter dem Niveau von {{ bundesland_name }}",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
               }
             ]
           }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_bericht_intro": [
+            "Der Immobilienmarktbericht {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Der Marktbericht für {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Im Bericht zum Immobilienmarkt {{ kreis_name }} {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_bericht_intro": [
+            {
+              "auxiliar": "umfasst",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }}"
+            },
+            {
+              "auxiliar": "behandelt",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }}"
+            },
+            {
+              "auxiliar": "deckt",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }} ab"
+            }
+          ],
+          "verbkonstrukt_staticText_vielfalt_preise": [
+            "Diese Vielfalt {{ auxiliar }} {{ phrase }}.",
+            "Die Vielfalt der Lagen {{ auxiliar }} {{ phrase }}.",
+            "Die große Bandbreite {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_vielfalt_preise": [
+            {
+              "auxiliar": "spiegelt sich",
+              "phrase": "in den Immobilienpreisen wider"
+            },
+            {
+              "auxiliar": "zeigt sich",
+              "phrase": "auch in den Immobilienpreisen"
+            },
+            {
+              "auxiliar": "ist",
+              "phrase": "bei den Immobilienpreisen sichtbar"
+            }
+          ],
+          "verbkonstrukt_staticText_guenstigste_preise": [
+            "Die günstigsten Durchschnittspreise {{ auxiliar }} {{ phrase }}.",
+            "Die niedrigsten Durchschnittspreise {{ auxiliar }} {{ phrase }}.",
+            "Die günstigsten Preise {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_guenstigste_preise": [
+            {
+              "auxiliar": "finden sich",
+              "phrase": "{{ kreiszuordnung }} in {{ guenstigster_immobilienpreis_ortslage }} mit {{ guenstigster_immobilienpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "liegen",
+              "phrase": "{{ kreiszuordnung }} in {{ guenstigster_immobilienpreis_ortslage }} bei {{ guenstigster_immobilienpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "zeigen sich",
+              "phrase": "{{ kreiszuordnung }} in {{ guenstigster_immobilienpreis_ortslage }} mit {{ guenstigster_immobilienpreis_wert_eur }}"
+            }
+          ],
+          "verbkonstrukt_staticText_teuerste_preise": [
+            "Am oberen Ende {{ auxiliar }} {{ phrase }}.",
+            "Den höchsten Wert {{ auxiliar }} {{ phrase }}.",
+            "Die teuersten Preise {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_teuerste_preise": [
+            {
+              "auxiliar": "steht",
+              "phrase": "{{ teuerster_immobilienpreis_ortslage }} mit {{ teuerster_immobilienpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "erreicht",
+              "phrase": "{{ teuerster_immobilienpreis_ortslage }} mit {{ teuerster_immobilienpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "zeigt",
+              "phrase": "{{ teuerster_immobilienpreis_ortslage }} mit {{ teuerster_immobilienpreis_wert_eur }}"
+            }
+          ],
+          "verbkonstrukt_staticText_guenstigste_mieten": [
+            "Am günstigsten {{ auxiliar }} {{ phrase }}.",
+            "Die niedrigsten Mieten {{ auxiliar }} {{ phrase }}.",
+            "Die günstigsten Mieten {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_guenstigste_mieten": [
+            {
+              "auxiliar": "lässt es sich aktuell",
+              "phrase": "in {{ guenstigster_mietpreis_ortslage }} mieten ({{ guenstigster_mietpreis_wert_eur }})"
+            },
+            {
+              "auxiliar": "finden sich",
+              "phrase": "in {{ guenstigster_mietpreis_ortslage }} ({{ guenstigster_mietpreis_wert_eur }})"
+            },
+            {
+              "auxiliar": "liegen",
+              "phrase": "in {{ guenstigster_mietpreis_ortslage }} bei {{ guenstigster_mietpreis_wert_eur }}"
+            }
+          ],
+          "verbkonstrukt_staticText_teuerste_mieten": [
+            "Die teuersten Mieten {{ auxiliar }} {{ phrase }}.",
+            "Am teuersten {{ auxiliar }} {{ phrase }}.",
+            "Die höchsten Mieten {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_teuerste_mieten": [
+            {
+              "auxiliar": "finden sich",
+              "phrase": "in {{ teuerster_mietpreis_ortslage }} mit {{ teuerster_mietpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "liegen",
+              "phrase": "in {{ teuerster_mietpreis_ortslage }} bei {{ teuerster_mietpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "sind",
+              "phrase": "in {{ teuerster_mietpreis_ortslage }} mit {{ teuerster_mietpreis_wert_eur }} zu finden"
+            }
+          ],
+          "verbkonstrukt_staticText_preisspanne": [
+            "Die Preisspanne im Kreis {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Die Preisspanne in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Die Preisspanne {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_preisspanne": [
+            {
+              "auxiliar": "reicht",
+              "phrase": "von {{ guenstigster_immobilienpreis_ortslage }} ({{ guenstigster_immobilienpreis_wert_eur }}) bis {{ teuerster_immobilienpreis_ortslage }} ({{ teuerster_immobilienpreis_wert_eur }})"
+            },
+            {
+              "auxiliar": "spannt sich",
+              "phrase": "von {{ guenstigster_immobilienpreis_ortslage }} ({{ guenstigster_immobilienpreis_wert_eur }}) bis {{ teuerster_immobilienpreis_ortslage }} ({{ teuerster_immobilienpreis_wert_eur }})"
+            },
+            {
+              "auxiliar": "geht",
+              "phrase": "von {{ guenstigster_immobilienpreis_ortslage }} ({{ guenstigster_immobilienpreis_wert_eur }}) bis {{ teuerster_immobilienpreis_ortslage }} ({{ teuerster_immobilienpreis_wert_eur }})"
+            }
+          ],
+          "verbkonstrukt_staticText_bericht_umfang": [
+            "Insgesamt {{ auxiliar }} der Bericht {{ phrase }}.",
+            "Der Bericht {{ auxiliar }} insgesamt {{ phrase }}.",
+            "In Summe {{ auxiliar }} der Bericht {{ phrase }}."
+          ],
+          "phrases_staticText_bericht_umfang": [
+            {
+              "auxiliar": "umfasst",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }}"
+            },
+            {
+              "auxiliar": "behandelt",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }}"
+            },
+            {
+              "auxiliar": "deckt",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }} ab"
+            }
+          ]
+        }
+      },
+      {
+        "templates": {
+          "mit_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_preisspanne }} {{ verbkonstrukt_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland }} {{ verbkonstrukt_staticText_bericht_umfang }} {{ verbkonstrukt_staticText_guenstigste_mieten }} {{ verbkonstrukt_staticText_teuerste_mieten }}",
+            "{{ verbkonstrukt_staticText_bericht_umfang }} {{ verbkonstrukt_staticText_preisspanne }} {{ verbkonstrukt_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland }} {{ verbkonstrukt_staticText_guenstigste_mieten }} {{ verbkonstrukt_staticText_teuerste_mieten }}"
+          ],
+          "ohne_verbkonstrukt": [
+            "{{ verbkonstrukt_staticText_preisspanne }} {{ verbkonstrukt_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland }} {{ verbkonstrukt_staticText_bericht_umfang }} {{ verbkonstrukt_staticText_guenstigste_mieten }} {{ verbkonstrukt_staticText_teuerste_mieten }}",
+            "{{ verbkonstrukt_staticText_bericht_umfang }} {{ verbkonstrukt_staticText_preisspanne }} {{ verbkonstrukt_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland }} {{ verbkonstrukt_staticText_guenstigste_mieten }} {{ verbkonstrukt_staticText_teuerste_mieten }}"
+          ]
+        },
+        "trend_verbkonstrukte": {
+          "verbkonstrukt_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland": {
+            "gleich": [
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+            ],
+            "leicht_groesser": [
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+            ],
+            "groesser": [
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+            ],
+            "viel_groesser": [
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+            ],
+            "leicht_kleiner": [
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+            ],
+            "kleiner": [
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+            ],
+            "viel_kleiner": [
+              "Damit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Hiermit {{ auxiliar }} der günstigste Wert {{ phrase }}.",
+              "Somit {{ auxiliar }} der günstigste Wert {{ phrase }}."
+            ]
+          },
+          "phrases_trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland": {
+            "gleich": [
+              {
+                "phrase": "auf dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "im Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "im Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "leicht_groesser": [
+              {
+                "phrase": "leicht über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "groesser": [
+              {
+                "phrase": "über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "viel_groesser": [
+              {
+                "phrase": "deutlich über dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar über dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit über dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "leicht_kleiner": [
+              {
+                "phrase": "leicht unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "etwas unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "leicht unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "kleiner": [
+              {
+                "phrase": "unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ],
+            "viel_kleiner": [
+              {
+                "phrase": "deutlich unter dem Niveau von {{ bundesland_name }}",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "klar unter dem Schnitt von {{ bundesland_name }}",
+                "auxiliar": "steht"
+              },
+              {
+                "phrase": "weit unter dem Mittel von {{ bundesland_name }}",
+                "auxiliar": "rangiert"
+              }
+            ]
+          }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_bericht_intro": [
+            "Der Immobilienmarktbericht {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Der Marktbericht für {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Im Bericht zum Immobilienmarkt {{ kreis_name }} {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_bericht_intro": [
+            {
+              "auxiliar": "umfasst",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }}"
+            },
+            {
+              "auxiliar": "behandelt",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }}"
+            },
+            {
+              "auxiliar": "deckt",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }} ab"
+            }
+          ],
+          "verbkonstrukt_staticText_vielfalt_preise": [
+            "Diese Vielfalt {{ auxiliar }} {{ phrase }}.",
+            "Die Vielfalt der Lagen {{ auxiliar }} {{ phrase }}.",
+            "Die große Bandbreite {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_vielfalt_preise": [
+            {
+              "auxiliar": "spiegelt sich",
+              "phrase": "in den Immobilienpreisen wider"
+            },
+            {
+              "auxiliar": "zeigt sich",
+              "phrase": "auch in den Immobilienpreisen"
+            },
+            {
+              "auxiliar": "ist",
+              "phrase": "bei den Immobilienpreisen sichtbar"
+            }
+          ],
+          "verbkonstrukt_staticText_guenstigste_preise": [
+            "Die günstigsten Durchschnittspreise {{ auxiliar }} {{ phrase }}.",
+            "Die niedrigsten Durchschnittspreise {{ auxiliar }} {{ phrase }}.",
+            "Die günstigsten Preise {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_guenstigste_preise": [
+            {
+              "auxiliar": "finden sich",
+              "phrase": "{{ kreiszuordnung }} in {{ guenstigster_immobilienpreis_ortslage }} mit {{ guenstigster_immobilienpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "liegen",
+              "phrase": "{{ kreiszuordnung }} in {{ guenstigster_immobilienpreis_ortslage }} bei {{ guenstigster_immobilienpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "zeigen sich",
+              "phrase": "{{ kreiszuordnung }} in {{ guenstigster_immobilienpreis_ortslage }} mit {{ guenstigster_immobilienpreis_wert_eur }}"
+            }
+          ],
+          "verbkonstrukt_staticText_teuerste_preise": [
+            "Am oberen Ende {{ auxiliar }} {{ phrase }}.",
+            "Den höchsten Wert {{ auxiliar }} {{ phrase }}.",
+            "Die teuersten Preise {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_teuerste_preise": [
+            {
+              "auxiliar": "steht",
+              "phrase": "{{ teuerster_immobilienpreis_ortslage }} mit {{ teuerster_immobilienpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "erreicht",
+              "phrase": "{{ teuerster_immobilienpreis_ortslage }} mit {{ teuerster_immobilienpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "zeigt",
+              "phrase": "{{ teuerster_immobilienpreis_ortslage }} mit {{ teuerster_immobilienpreis_wert_eur }}"
+            }
+          ],
+          "verbkonstrukt_staticText_guenstigste_mieten": [
+            "Am günstigsten {{ auxiliar }} {{ phrase }}.",
+            "Die niedrigsten Mieten {{ auxiliar }} {{ phrase }}.",
+            "Die günstigsten Mieten {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_guenstigste_mieten": [
+            {
+              "auxiliar": "lässt es sich aktuell",
+              "phrase": "in {{ guenstigster_mietpreis_ortslage }} mieten ({{ guenstigster_mietpreis_wert_eur }})"
+            },
+            {
+              "auxiliar": "finden sich",
+              "phrase": "in {{ guenstigster_mietpreis_ortslage }} ({{ guenstigster_mietpreis_wert_eur }})"
+            },
+            {
+              "auxiliar": "liegen",
+              "phrase": "in {{ guenstigster_mietpreis_ortslage }} bei {{ guenstigster_mietpreis_wert_eur }}"
+            }
+          ],
+          "verbkonstrukt_staticText_teuerste_mieten": [
+            "Die teuersten Mieten {{ auxiliar }} {{ phrase }}.",
+            "Am teuersten {{ auxiliar }} {{ phrase }}.",
+            "Die höchsten Mieten {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_teuerste_mieten": [
+            {
+              "auxiliar": "finden sich",
+              "phrase": "in {{ teuerster_mietpreis_ortslage }} mit {{ teuerster_mietpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "liegen",
+              "phrase": "in {{ teuerster_mietpreis_ortslage }} bei {{ teuerster_mietpreis_wert_eur }}"
+            },
+            {
+              "auxiliar": "sind",
+              "phrase": "in {{ teuerster_mietpreis_ortslage }} mit {{ teuerster_mietpreis_wert_eur }} zu finden"
+            }
+          ],
+          "verbkonstrukt_staticText_preisspanne": [
+            "Die Preisspanne im Kreis {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Die Preisspanne in {{ kreis_name }} {{ auxiliar }} {{ phrase }}.",
+            "Die Preisspanne {{ auxiliar }} {{ phrase }}."
+          ],
+          "phrases_staticText_preisspanne": [
+            {
+              "auxiliar": "reicht",
+              "phrase": "von {{ guenstigster_immobilienpreis_ortslage }} ({{ guenstigster_immobilienpreis_wert_eur }}) bis {{ teuerster_immobilienpreis_ortslage }} ({{ teuerster_immobilienpreis_wert_eur }})"
+            },
+            {
+              "auxiliar": "spannt sich",
+              "phrase": "von {{ guenstigster_immobilienpreis_ortslage }} ({{ guenstigster_immobilienpreis_wert_eur }}) bis {{ teuerster_immobilienpreis_ortslage }} ({{ teuerster_immobilienpreis_wert_eur }})"
+            },
+            {
+              "auxiliar": "geht",
+              "phrase": "von {{ guenstigster_immobilienpreis_ortslage }} ({{ guenstigster_immobilienpreis_wert_eur }}) bis {{ teuerster_immobilienpreis_ortslage }} ({{ teuerster_immobilienpreis_wert_eur }})"
+            }
+          ],
+          "verbkonstrukt_staticText_bericht_umfang": [
+            "Insgesamt {{ auxiliar }} der Bericht {{ phrase }}.",
+            "Der Bericht {{ auxiliar }} insgesamt {{ phrase }}.",
+            "In Summe {{ auxiliar }} der Bericht {{ phrase }}."
+          ],
+          "phrases_staticText_bericht_umfang": [
+            {
+              "auxiliar": "umfasst",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }}"
+            },
+            {
+              "auxiliar": "behandelt",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }}"
+            },
+            {
+              "auxiliar": "deckt",
+              "phrase": "{{ ortslagen_anzahl }} {{ ortslagen_art }} ab"
+            }
+          ]
         }
       }
     ]

@@ -8,8 +8,9 @@ import FactorForm, { type FactorFormHandle } from './FactorForm';
 import TextEditorForm from './TextEditorForm';
 import OffersManager from './OffersManager';
 import BlogManager from './BlogManager';
+import PartnerSettingsPanel, { type SettingsSection } from './PartnerSettingsPanel';
 
-type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog';
+type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog' | 'settings';
 
 type PartnerArea = {
   id?: string;
@@ -39,6 +40,8 @@ export default function DashboardClient() {
   const [utilityCollapsed, setUtilityCollapsed] = useState(false);
   const [utilityUserToggled, setUtilityUserToggled] = useState(false);
   const [textFocusKey, setTextFocusKey] = useState<string | null>(null);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>('konto');
 
   // Werkzeug-Modus umschalten
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('factors');
@@ -81,6 +84,12 @@ export default function DashboardClient() {
           description: 'Gesuche für die ausgewählte Region verwalten.',
           isRegionBased: true,
         };
+      case 'settings':
+        return {
+          title: 'Einstellungen',
+          description: 'Konto, Partnerprofil und Integrationen verwalten.',
+          isRegionBased: false,
+        };
       case 'immobilien':
       default:
         return {
@@ -119,16 +128,24 @@ export default function DashboardClient() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push('/login');
+    router.push('/partner/login');
   };
 
   const handleToolSelect = (tab: MainTab) => {
     setActiveMainTab(tab);
     setShowWelcome(false);
+    setShowSettingsMenu(false);
     if (tab === 'blog') {
       const kreis = configs.find((c) => c.area_id.split('-').length <= 3);
       if (kreis) setSelectedConfig(kreis);
     }
+  };
+
+  const handleSettingsSelect = (section: SettingsSection) => {
+    setSettingsSection(section);
+    setActiveMainTab('settings');
+    setShowWelcome(false);
+    setShowSettingsMenu(false);
   };
 
   const handleToggleUtility = () => {
@@ -140,6 +157,7 @@ export default function DashboardClient() {
   if (loading) return <div style={{ padding: '40px' }}>Dashboard wird geladen...</div>;
 
   const mainDistricts = configs.filter(c => c.area_id.split('-').length <= 3);
+  const hasRegionAssignments = configs.length > 0;
   const effectiveUtilityCollapsed = utilityUserToggled ? utilityCollapsed : showWelcome;
 
   const handleSelectConfig = async (nextConfig: PartnerAreaConfig) => {
@@ -180,7 +198,31 @@ export default function DashboardClient() {
           </span>
         </div>
         <div style={dashboardStatusStyle}>
-          {lastLogin ? `Letzter Login: ${new Date(lastLogin).toLocaleString('de-DE')}` : 'Letzter Login: –'}
+          <div>{lastLogin ? `Letzter Login: ${new Date(lastLogin).toLocaleString('de-DE')}` : 'Letzter Login: –'}</div>
+          <div className="navbar navbar-light p-0 m-0" style={menuWrapStyle}>
+            <button
+              className="navbar-toggler"
+              style={dashboardBurgerButtonStyle}
+              onClick={() => setShowSettingsMenu((v) => !v)}
+              title="Einstellungen-Menü"
+              aria-label="Einstellungen öffnen"
+            >
+              <span className="navbar-toggler-icon" />
+            </button>
+            {showSettingsMenu ? (
+              <div style={menuDropdownStyle}>
+                <button style={menuItemStyle} onClick={() => handleSettingsSelect('konto')}>
+                  Konto
+                </button>
+                <button style={menuItemStyle} onClick={() => handleSettingsSelect('profil')}>
+                  Profil
+                </button>
+                <button style={menuItemStyle} onClick={() => handleSettingsSelect('integrationen')}>
+                  Integrationen
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -267,7 +309,7 @@ export default function DashboardClient() {
       </aside>
 
       {/* 2. SPALTE: REGIONEN-NAVIGATION (Mitte) */}
-      {activeMainTab !== 'immobilien' && !showWelcome ? (
+      {activeMainTab !== 'immobilien' && activeMainTab !== 'settings' && !showWelcome ? (
         <aside style={regionSidebarStyle}>
           <div style={sidebarHeaderStyle}>
             <h2 style={{ fontSize: '14px', fontWeight: '800', margin: 0 }}>Regionen</h2>
@@ -349,6 +391,16 @@ export default function DashboardClient() {
               ))}
             </div>
           </div>
+        ) : activeMainTab === 'settings' ? (
+          <div style={{ width: '100%' }}>
+            <header style={settingsHeaderWrapStyle}>
+              <div style={{ marginBottom: '6px' }}>
+                <h1 style={mainTitleStyle}>{headerConfig.title}</h1>
+                <p style={headerDescriptionStyle}>{headerConfig.description}</p>
+              </div>
+            </header>
+            <PartnerSettingsPanel section={settingsSection} />
+          </div>
         ) : selectedConfig ? (
           /* Hier entfernen wir das maxWidth: '1000px' damit die Formulare die Breite nutzen */
           <div style={{ width: '100%' }}>
@@ -412,7 +464,11 @@ export default function DashboardClient() {
             )}
           </div>
         ) : (
-          <div style={emptyStateStyle}>Wählen Sie eine Region aus der mittleren Spalte.</div>
+          <div style={emptyStateStyle}>
+            {hasRegionAssignments
+              ? "Waehlen Sie eine Region aus der mittleren Spalte."
+              : "Ihrem Konto ist aktuell keine Region zugewiesen. Bitte wenden Sie sich an den Administrator. Nach der Zuweisung wird der Bereich automatisch aktiv."}
+          </div>
         )}
       </main>
       </div>
@@ -484,8 +540,48 @@ const dashboardHeaderStyle: React.CSSProperties = {
 };
 
 const dashboardStatusStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
   fontSize: '12px',
   color: '#94a3b8'
+};
+
+const dashboardBurgerButtonStyle: React.CSSProperties = {
+  border: '3px solid #486b7a',
+  borderRadius: '8px',
+  background: 'transparent',
+  padding: '0.2rem 0.45rem',
+  cursor: 'pointer'
+};
+
+const menuWrapStyle: React.CSSProperties = {
+  position: 'relative'
+};
+
+const menuDropdownStyle: React.CSSProperties = {
+  position: 'absolute',
+  right: 0,
+  top: '42px',
+  minWidth: '180px',
+  border: '1px solid #e2e8f0',
+  borderRadius: '10px',
+  background: '#fff',
+  boxShadow: '0 12px 24px rgba(15, 23, 42, 0.15)',
+  padding: '6px',
+  zIndex: 200
+};
+
+const menuItemStyle: React.CSSProperties = {
+  width: '100%',
+  textAlign: 'left',
+  border: 'none',
+  background: '#fff',
+  borderRadius: '8px',
+  padding: '10px 10px',
+  fontSize: '14px',
+  color: '#0f172a',
+  cursor: 'pointer'
 };
 
 const regionSidebarStyle: React.CSSProperties = {
@@ -684,4 +780,10 @@ const welcomeCardTextStyle = {
   fontSize: '13px',
   color: '#64748b',
   lineHeight: 1.4,
+};
+
+const settingsHeaderWrapStyle: React.CSSProperties = {
+  maxWidth: '980px',
+  margin: '0 auto 30px',
+  padding: '0 8px'
 };

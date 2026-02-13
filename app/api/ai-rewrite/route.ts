@@ -4,6 +4,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
+import { checkRateLimitPersistent, extractClientIpFromHeaders } from '@/lib/security/rate-limit';
 
 type LlmConfig = {
   provider: string;
@@ -30,6 +31,42 @@ function asNumber(value: unknown): number | null {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+}
+
+function normalizeNumericToken(token: string): string {
+  const trimmed = String(token ?? '').trim();
+  if (!trimmed) return '';
+  const hasPercent = trimmed.endsWith('%');
+  const coreRaw = hasPercent ? trimmed.slice(0, -1) : trimmed;
+  const coreNoSpaces = coreRaw.replace(/\s+/g, '');
+
+  let normalized = coreNoSpaces;
+  if (coreNoSpaces.includes(',') && coreNoSpaces.includes('.')) {
+    normalized = coreNoSpaces.replace(/\./g, '').replace(',', '.');
+  } else if (coreNoSpaces.includes(',')) {
+    normalized = coreNoSpaces.replace(',', '.');
+  }
+
+  const parsed = Number(normalized);
+  const canonical = Number.isFinite(parsed) ? String(parsed) : coreNoSpaces;
+  return hasPercent ? `${canonical}%` : canonical;
+}
+
+function extractNumericTokens(text: string): string[] {
+  return (String(text ?? '').match(/[-+]?\d+(?:[.,]\d+)?%?/g) ?? [])
+    .map((token) => normalizeNumericToken(token))
+    .filter((token) => token.length > 0)
+    .sort();
+}
+
+function hasSameNumericTokens(source: string, rewritten: string): boolean {
+  const sourceTokens = extractNumericTokens(source);
+  const rewrittenTokens = extractNumericTokens(rewritten);
+  if (sourceTokens.length !== rewrittenTokens.length) return false;
+  for (let i = 0; i < sourceTokens.length; i += 1) {
+    if (sourceTokens[i] !== rewrittenTokens[i]) return false;
+  }
+  return true;
 }
 
 function buildPrompt(args: { text: string; areaName: string; type?: string; sectionLabel?: string }) {
@@ -285,48 +322,63 @@ async function loadPartnerLlmConfig(partnerId: string): Promise<LlmConfig | null
  */
 export async function POST(req: Request) {
   try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const ip = extractClientIpFromHeaders(req.headers);
+    const limit = await checkRateLimitPersistent(`ai-rewrite:${user.id}:${ip}`, { windowMs: 60_000, max: 20 });
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Retry in ${limit.retryAfterSec}s.` },
+        { status: 429 },
+      );
+    }
+
     const body = await req.json();
     const { text, areaName, type, sectionLabel, customPrompt } = body;
 
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
     const custom = asString(customPrompt);
+    const basePrompt = buildPrompt({ text, areaName, type, sectionLabel });
     const prompt = custom
-      ? { system: '', user: custom }
-      : buildPrompt({ text, areaName, type, sectionLabel });
+      ? {
+          system: basePrompt.system,
+          user: `${basePrompt.user}\n\nZusaetzliche Nutzeranweisung:\n${custom}`,
+        }
+      : basePrompt;
 
     let optimizedText: string | null = null;
 
-    if (user?.id) {
-      const partnerConfig = await loadPartnerLlmConfig(user.id);
-      if (partnerConfig?.provider) {
-        const apiKey = asString(partnerConfig.auth_config?.api_key);
-        const model =
-          asString(partnerConfig.settings?.model) ||
-          asString(partnerConfig.settings?.model_name) ||
-          '';
-        const baseUrl =
-          asString(partnerConfig.base_url) ||
-          asString(partnerConfig.settings?.base_url) ||
-          'https://api.openai.com/v1';
-        const temperature = asNumber(partnerConfig.settings?.temperature);
-        const maxTokens = asNumber(partnerConfig.settings?.max_tokens);
+    const partnerConfig = await loadPartnerLlmConfig(user.id);
+    if (partnerConfig?.provider) {
+      const apiKey = asString(partnerConfig.auth_config?.api_key);
+      const model =
+        asString(partnerConfig.settings?.model) ||
+        asString(partnerConfig.settings?.model_name) ||
+        '';
+      const baseUrl =
+        asString(partnerConfig.base_url) ||
+        asString(partnerConfig.settings?.base_url) ||
+        'https://api.openai.com/v1';
+      const temperature = asNumber(partnerConfig.settings?.temperature);
+      const maxTokens = asNumber(partnerConfig.settings?.max_tokens);
 
-        if (partnerConfig.provider === 'openai') {
-          optimizedText = await callOpenAICompatible({
-            apiKey: apiKey ?? '',
-            baseUrl,
-            model,
-            temperature,
-            maxTokens,
-            system: prompt.system,
-            user: prompt.user,
-          });
-        }
+      if (partnerConfig.provider === 'openai') {
+        optimizedText = await callOpenAICompatible({
+          apiKey: apiKey ?? '',
+          baseUrl,
+          model,
+          temperature,
+          maxTokens,
+          system: prompt.system,
+          user: prompt.user,
+        });
       }
     }
 
+    // Nur authentifizierte Partner duerfen auf den systemweiten Fallback zugreifen.
     if (!optimizedText && DEFAULT_PROVIDER === 'openai' && DEFAULT_API_KEY && DEFAULT_MODEL) {
       optimizedText = await callOpenAICompatible({
         apiKey: DEFAULT_API_KEY,
@@ -343,6 +395,13 @@ export async function POST(req: Request) {
       // Fallback (wie bisher)
       await new Promise((resolve) => setTimeout(resolve, 600));
       optimizedText = `[KI-FALLBACK]\nOptimierte Fassung für ${areaName}: ${text}`;
+    }
+
+    if (type === 'data_driven' && optimizedText && !hasSameNumericTokens(String(text ?? ''), optimizedText)) {
+      return NextResponse.json(
+        { error: 'Data-driven guard: Zahlen/Fakten wurden veraendert.' },
+        { status: 422 },
+      );
     }
 
     return NextResponse.json({ optimizedText });

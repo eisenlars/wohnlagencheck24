@@ -416,6 +416,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
   const [rebuildLoading, setRebuildLoading] = useState(false);
   const [comment, setComment] = useState("");
   const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(true);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewBase, setPreviewBase] = useState<PreviewBase | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -491,66 +492,71 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
   useEffect(() => {
     let alive = true;
     async function loadSettings() {
-      if (!config?.area_id) return;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return;
-      }
-      setUserId(user.id);
-      const { data, error } = await supabase
-        .from('data_value_settings')
-        .select('*')
-        .eq('auth_user_id', user.id)
-        .eq('area_id', config.area_id)
-        .maybeSingle();
+      setSettingsLoading(true);
+      try {
+        if (!config?.area_id) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          return;
+        }
+        setUserId(user.id);
+        const { data, error } = await supabase
+          .from('data_value_settings')
+          .select('*')
+          .eq('auth_user_id', user.id)
+          .eq('area_id', config.area_id)
+          .maybeSingle();
 
-      if (!alive) return;
+        if (!alive) return;
 
-      if (error) {
-        setMessage('❌ Fehler beim Laden: ' + error.message);
-        return;
-      }
+        if (error) {
+          setMessage('❌ Fehler beim Laden: ' + error.message);
+          return;
+        }
 
-      if (data) {
-        setSettingsId(data.id ?? null);
-        const nextSf = data.standortfaktoren || defaultSf;
-        const rawTrend = data.immobilienmarkt_trend || defaultTrend;
-        const nextTrend = {
-          immobilienmarkt: Number(rawTrend?.immobilienmarkt) === 1 ? 0 : Number(rawTrend?.immobilienmarkt ?? 0),
-          mietmarkt: Number(rawTrend?.mietmarkt) === 1 ? 0 : Number(rawTrend?.mietmarkt ?? 0),
-        };
-        const nextKh = data.kauf_haus || defaultF;
-        const nextKw = data.kauf_wohnung || defaultF;
-        const nextKg = data.kauf_grundstueck || defaultF;
-        const nextMh = data.miete_haus || defaultF;
-        const nextMw = data.miete_wohnung || defaultF;
-        const nextRendite = data.rendite || defaultRendite;
-        setSf(nextSf);
-        setTrend(nextTrend);
-        setKh(nextKh);
-        setKw(nextKw);
-        setKg(nextKg);
-        setMh(nextMh);
-        setMw(nextMw);
-        setRendite(nextRendite);
-        const snapshot = makeFactorSnapshot(nextSf, nextTrend, nextKh, nextKw, nextKg, nextMh, nextMw, nextRendite);
-        setPersistedFactors(snapshot);
-        lastPropagatedRef.current = snapshot;
-      } else {
-        setSettingsId(null);
-        setSf(defaultSf);
-        setTrend(defaultTrend);
-        setKh(defaultF);
-        setKw(defaultF);
-        setKg(defaultF);
-        setMh(defaultF);
-        setMw(defaultF);
-        setRendite(defaultRendite);
-        const snapshot = makeFactorSnapshot(defaultSf, defaultTrend, defaultF, defaultF, defaultF, defaultF, defaultF, defaultRendite);
-        setPersistedFactors(snapshot);
-        lastPropagatedRef.current = snapshot;
+        if (data) {
+          setSettingsId(data.id ?? null);
+          const nextSf = data.standortfaktoren || defaultSf;
+          const rawTrend = data.immobilienmarkt_trend || defaultTrend;
+          const nextTrend = {
+            immobilienmarkt: Number(rawTrend?.immobilienmarkt) === 1 ? 0 : Number(rawTrend?.immobilienmarkt ?? 0),
+            mietmarkt: Number(rawTrend?.mietmarkt) === 1 ? 0 : Number(rawTrend?.mietmarkt ?? 0),
+          };
+          const nextKh = data.kauf_haus || defaultF;
+          const nextKw = data.kauf_wohnung || defaultF;
+          const nextKg = data.kauf_grundstueck || defaultF;
+          const nextMh = data.miete_haus || defaultF;
+          const nextMw = data.miete_wohnung || defaultF;
+          const nextRendite = data.rendite || defaultRendite;
+          setSf(nextSf);
+          setTrend(nextTrend);
+          setKh(nextKh);
+          setKw(nextKw);
+          setKg(nextKg);
+          setMh(nextMh);
+          setMw(nextMw);
+          setRendite(nextRendite);
+          const snapshot = makeFactorSnapshot(nextSf, nextTrend, nextKh, nextKw, nextKg, nextMh, nextMw, nextRendite);
+          setPersistedFactors(snapshot);
+          lastPropagatedRef.current = snapshot;
+        } else {
+          setSettingsId(null);
+          setSf(defaultSf);
+          setTrend(defaultTrend);
+          setKh(defaultF);
+          setKw(defaultF);
+          setKg(defaultF);
+          setMh(defaultF);
+          setMw(defaultF);
+          setRendite(defaultRendite);
+          const snapshot = makeFactorSnapshot(defaultSf, defaultTrend, defaultF, defaultF, defaultF, defaultF, defaultF, defaultRendite);
+          setPersistedFactors(snapshot);
+          lastPropagatedRef.current = snapshot;
+        }
+        loadedRef.current = true;
+      } finally {
+        if (alive) setSettingsLoading(false);
       }
-      loadedRef.current = true;
     }
     loadSettings();
     return () => { alive = false; };
@@ -971,7 +977,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
   const fmt = (v: number | null | undefined, digits = 3) => (typeof v === 'number' ? v.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits }) : '—');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', position: 'relative' }}>
       <style jsx global>{`
         input[type='number']::-webkit-inner-spin-button,
         input[type='number']::-webkit-outer-spin-button {
@@ -994,7 +1000,19 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
         @keyframes reset-spin {
           to { transform: rotate(360deg); }
         }
+        @keyframes loading-spin {
+          to { transform: rotate(360deg); }
+        }
       `}</style>
+
+      {(settingsLoading || previewLoading) ? (
+        <div style={loadingOverlayStyle}>
+          <div style={loadingCardStyle}>
+            <div style={loadingSpinnerStyle} />
+            <div>Lade Faktoren...</div>
+          </div>
+        </div>
+      ) : null}
       
       {/* 1. Markttrends */}
       {!isOrtslage ? (
@@ -1412,4 +1430,34 @@ const rebuildButtonStyle = (loading: boolean) => ({
 const resetButtonStyle = {
   padding: '15px 25px', backgroundColor: 'transparent', color: '#e53e3e',
   border: '2px solid #feb2b2', borderRadius: '10px', fontSize: '15px', fontWeight: '700', cursor: 'pointer'
+};
+const loadingOverlayStyle = {
+  position: 'absolute' as const,
+  inset: 0,
+  backgroundColor: 'rgba(248, 250, 252, 0.85)',
+  borderRadius: '12px',
+  zIndex: 5,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+const loadingCardStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  backgroundColor: '#fff',
+  border: '1px solid #e2e8f0',
+  padding: '12px 18px',
+  borderRadius: '999px',
+  fontSize: '13px',
+  color: '#475569',
+  boxShadow: '0 6px 16px rgba(15, 23, 42, 0.08)',
+};
+const loadingSpinnerStyle = {
+  width: '18px',
+  height: '18px',
+  borderRadius: '50%',
+  border: '2px solid #e2e8f0',
+  borderTopColor: '#2563eb',
+  animation: 'loading-spin 0.8s linear infinite',
 };

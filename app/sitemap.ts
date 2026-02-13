@@ -3,6 +3,7 @@
 import type { MetadataRoute } from "next";
 import {
   getBundeslaender,
+  getReportsIndex,
   getKreiseForBundesland,
   getOrteForKreis,
 } from "@/lib/data";
@@ -33,7 +34,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // 2) Dynamische Immobilienmarkt-Hierarchie aus Reports
-  const bundeslaender = await getBundeslaender();
+  const reportsIndex = await getReportsIndex();
+  const bundeslaender = await getBundeslaender(reportsIndex);
 
   for (const bl of bundeslaender) {
     // Bundesland-URL
@@ -44,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     });
 
-    const kreise = await getKreiseForBundesland(bl.slug);
+    const kreise = await getKreiseForBundesland(bl.slug, reportsIndex);
 
     for (const kreis of kreise) {
       // Kreis-URL
@@ -55,7 +57,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
       });
 
-      const orte = await getOrteForKreis(bl.slug, kreis.slug);
+      const orte = await getOrteForKreis(bl.slug, kreis.slug, reportsIndex);
 
       for (const ort of orte) {
         // Ortslagen-URL

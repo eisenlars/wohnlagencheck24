@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { applyDataDrivenTexts } from "@/lib/text-core";
 import { getOrteForKreis } from "@/lib/data";
+import { extractLocalSiteToken, loadLocalSiteIntegrationByToken } from "@/lib/security/local-site-auth";
 
 export const runtime = "nodejs";
 
@@ -162,7 +163,7 @@ async function fetchReportJson(pathParts: string[]) {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const token = url.searchParams.get("token") ?? "";
+  const token = extractLocalSiteToken(req);
   const bundesland = url.searchParams.get("bundesland") ?? "";
   const kreis = url.searchParams.get("kreis") ?? "";
 
@@ -172,15 +173,8 @@ export async function GET(req: Request) {
 
   const supabase = createAdminClient();
 
-  const { data: integration, error: integrationError } = await supabase
-    .from("partner_integrations")
-    .select("partner_id, auth_config")
-    .eq("kind", "local_site")
-    .eq("is_active", true)
-    .contains("auth_config", { token })
-    .maybeSingle();
-
-  if (integrationError || !integration?.partner_id) {
+  const integration = await loadLocalSiteIntegrationByToken(supabase as any, token);
+  if (!integration?.partner_id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

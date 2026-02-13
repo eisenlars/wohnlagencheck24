@@ -978,6 +978,7 @@ export async function POST(req: Request) {
       const { error: resetError } = await admin
         .from("report_texts")
         .delete()
+        .eq("partner_id", user.id)
         .eq("area_id", areaId)
         .in("section_key", keysToReset);
       if (resetError) {

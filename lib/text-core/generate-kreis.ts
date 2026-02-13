@@ -3,6 +3,14 @@ import {
   formatPriceValue,
   capitalizeWords,
   umlauteUmwandeln,
+  renderTemplate,
+  mapTrendCategoryToTemplateKey,
+  determineIndex1Category,
+  determineIndex100Category,
+  determineIndex50Category,
+  determineTrendCategory,
+  determineAbsoluteCategoryWithDirection,
+  determineSimpleComparisonCategory,
 } from "@/lib/text-core/core";
 
 import kreisPreisPhrases from "@/lib/text-core/phrases/kreis/immobilienpreise.json";
@@ -426,6 +434,236 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
   return trends;
 }
 
+function computeTextDefinition(key: string) {
+  const resolvedKey = resolveDefinitionKey(key);
+  return (
+    (kreisPreisPhrases as AnyRecord)[resolvedKey] ??
+    (kreisUeberblickPhrases as AnyRecord)[resolvedKey] ??
+    (kreisWohnraumPhrases as AnyRecord)[resolvedKey] ??
+    (kreisWirtschaftPhrases as AnyRecord)[resolvedKey] ??
+    null
+  );
+}
+
+function expandStaticVerbkonstrukte(staticBlock: AnyRecord, baseVars: AnyRecord) {
+  const options: AnyRecord = {};
+  for (const [key, patterns] of Object.entries(staticBlock ?? {})) {
+    if (!key.startsWith("verbkonstrukt_")) continue;
+    const phraseKey = key.replace("verbkonstrukt_", "phrases_");
+    const phrases = (staticBlock as AnyRecord)[phraseKey] ?? [];
+    if (!Array.isArray(patterns) || !patterns.length || !Array.isArray(phrases) || !phrases.length) continue;
+
+    const expanded: string[] = [];
+    for (const pattern of patterns as string[]) {
+      for (const phraseEntry of phrases as AnyRecord[]) {
+        const phrase = renderTemplate(String(phraseEntry?.phrase ?? phraseEntry ?? ""), baseVars);
+        const aux = String(phraseEntry?.auxiliar ?? "");
+        const rendered = renderTemplate(String(pattern), { ...baseVars, phrase, auxiliar: aux });
+        expanded.push(rendered);
+      }
+    }
+    options[key] = expanded;
+  }
+  return options;
+}
+
+function expandTrendVerbkonstrukte(definition: AnyRecord, trendValues: AnyRecord, baseVars: AnyRecord) {
+  const options: AnyRecord = {};
+  const trendBlock = definition?.trend_verbkonstrukte ?? {};
+  const keys = new Set<string>();
+  for (const key of Object.keys(trendBlock)) {
+    if (key.startsWith("phrases_")) keys.add(key.replace("phrases_", ""));
+    if (key.startsWith("verbkonstrukt_")) keys.add(key.replace("verbkonstrukt_", ""));
+  }
+
+  for (const trendKey of keys) {
+    if (!trendKey.startsWith("trendText_")) continue;
+    const phrasesKey = `phrases_${trendKey}`;
+    const verbKey = `verbkonstrukt_${trendKey}`;
+    const phrasesByCategory = trendBlock[phrasesKey] ?? {};
+    const verbByCategory = trendBlock[verbKey] ?? {};
+
+    const trendValue = trendValues[trendKey] ?? {};
+    let category = "gleich";
+    if ("index1" in trendValue) category = determineIndex1Category(trendValue.index1);
+    else if ("index100" in trendValue) category = determineIndex100Category(trendValue.index100);
+    else if ("rel_change" in trendValue) category = determineTrendCategory(trendValue.rel_change);
+    else if ("abs_delta" in trendValue) category = determineAbsoluteCategoryWithDirection(trendValue.abs_delta);
+    else if ("direct_comparison" in trendValue) category = determineSimpleComparisonCategory(trendValue.direct_comparison.value_a, trendValue.direct_comparison.value_b);
+    else if ("index50" in trendValue) category = determineIndex50Category(trendValue.index50);
+
+    const templateCategory = mapTrendCategoryToTemplateKey(category);
+    const phraseEntries = phrasesByCategory[templateCategory] ?? [];
+    const verbPatterns = verbByCategory[templateCategory] ?? [];
+    if (!Array.isArray(phraseEntries) || !phraseEntries.length) continue;
+
+    const renderedPhrases = phraseEntries.map((entry: AnyRecord) =>
+      renderTemplate(String(entry?.phrase ?? entry ?? ""), baseVars),
+    );
+    options[trendKey] = renderedPhrases;
+
+    if (Array.isArray(verbPatterns) && verbPatterns.length) {
+      const expanded: string[] = [];
+      for (const pattern of verbPatterns as string[]) {
+        for (const phraseEntry of phraseEntries as AnyRecord[]) {
+          const phrase = renderTemplate(String(phraseEntry?.phrase ?? phraseEntry ?? ""), baseVars);
+          const aux = String(phraseEntry?.auxiliar ?? "");
+          const rendered = renderTemplate(String(pattern), { ...baseVars, phrase, auxiliar: aux });
+          expanded.push(rendered);
+        }
+      }
+      options[verbKey] = expanded;
+    }
+  }
+  return options;
+}
+
+function applyTrendBaseVars(trendValues: AnyRecord, baseVars: AnyRecord) {
+  for (const [trendKey, trendData] of Object.entries(trendValues ?? {})) {
+    if (!trendKey.startsWith("trendText_")) continue;
+    const baseKey = trendKey.replace(/^trendText_/, "");
+    if (baseKey in baseVars) continue;
+
+    if ("rel_change" in trendData && typeof trendData.rel_change === "number") {
+      baseVars[baseKey] = Math.abs(trendData.rel_change).toLocaleString("de-DE", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      });
+      continue;
+    }
+    if ("abs_delta" in trendData && typeof trendData.abs_delta === "number") {
+      baseVars[baseKey] = trendData.abs_delta.toLocaleString("de-DE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
+      continue;
+    }
+    if ("index1" in trendData && typeof trendData.index1 === "number") {
+      baseVars[baseKey] = trendData.index1.toLocaleString("de-DE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      continue;
+    }
+    if ("index100" in trendData && typeof trendData.index100 === "number") {
+      baseVars[baseKey] = trendData.index100.toLocaleString("de-DE", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      });
+      continue;
+    }
+  }
+}
+
+function expandTemplates(templates: AnyRecord, baseVars: AnyRecord, options: AnyRecord) {
+  const results: string[] = [];
+  const allTemplates = templates ?? {};
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  for (const mode of Object.keys(allTemplates)) {
+    const list = allTemplates[mode] ?? [];
+    for (const template of list) {
+      const raw = String(template);
+      const keys = Array.from(new Set(raw.match(/{{\s*([^}]+)\s*}}/g) ?? []))
+        .map((m) => m.replace(/{{\s*|\s*}}/g, ""));
+      let variants = [raw];
+      for (const key of keys) {
+        const choices = options[key] ?? [baseVars[key] ?? ""];
+        const next: string[] = [];
+        const pattern = new RegExp(`{{\\s*${escapeRegExp(key)}\\s*}}`, "g");
+        for (const variant of variants) {
+          for (const choice of choices) {
+            next.push(variant.replace(pattern, String(choice)));
+          }
+        }
+        variants = next;
+      }
+      results.push(...variants.map((value) => value.trim()).filter(Boolean));
+    }
+  }
+  return results;
+}
+
+function countTemplateVariants(raw: string, options: AnyRecord, baseVars: AnyRecord) {
+  const keys = Array.from(new Set(raw.match(/{{\s*([^}]+)\s*}}/g) ?? []))
+    .map((m) => m.replace(/{{\s*|\s*}}/g, ""));
+  return keys.reduce((acc, key) => {
+    const choices = options[key];
+    const count = Array.isArray(choices) && choices.length ? choices.length : 1;
+    return acc * count;
+  }, 1);
+}
+
+function* iterateTemplateVariants(raw: string, options: AnyRecord, baseVars: AnyRecord) {
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const keys = Array.from(new Set(raw.match(/{{\s*([^}]+)\s*}}/g) ?? []))
+    .map((m) => m.replace(/{{\s*|\s*}}/g, ""));
+
+  function* walk(current: string, index: number): Generator<string> {
+    if (index >= keys.length) {
+      yield current.trim();
+      return;
+    }
+    const key = keys[index];
+    const choices = Array.isArray(options[key]) && options[key].length
+      ? options[key]
+      : [baseVars[key] ?? ""];
+    const pattern = new RegExp(`{{\\s*${escapeRegExp(key)}\\s*}}`, "g");
+    for (const choice of choices) {
+      const next = current.replace(pattern, String(choice));
+      yield* walk(next, index + 1);
+    }
+  }
+
+  yield* walk(raw, 0);
+}
+
+function renderTemplateVariantAt(raw: string, options: AnyRecord, baseVars: AnyRecord, index: number) {
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const keys = Array.from(new Set(raw.match(/{{\s*([^}]+)\s*}}/g) ?? []))
+    .map((m) => m.replace(/{{\s*|\s*}}/g, ""));
+  const counts = keys.map((key) => {
+    const choices = Array.isArray(options[key]) && options[key].length
+      ? options[key]
+      : [baseVars[key] ?? ""];
+    return choices.length || 1;
+  });
+  const total = counts.reduce((acc, count) => acc * count, 1);
+  if (total <= 0 || index < 0 || index >= total) return null;
+
+  const suffix = new Array(counts.length).fill(1);
+  for (let i = counts.length - 2; i >= 0; i -= 1) {
+    suffix[i] = suffix[i + 1] * counts[i + 1];
+  }
+
+  let current = raw;
+  for (let i = 0; i < keys.length; i += 1) {
+    const key = keys[i];
+    const choices = Array.isArray(options[key]) && options[key].length
+      ? options[key]
+      : [baseVars[key] ?? ""];
+    const blockSize = suffix[i] ?? 1;
+    const choiceIndex = Math.floor(index / blockSize) % choices.length;
+    const pattern = new RegExp(`{{\\s*${escapeRegExp(key)}\\s*}}`, "g");
+    current = current.replace(pattern, String(choices[choiceIndex] ?? ""));
+  }
+
+  return current.trim();
+}
+
+function buildSampleIndexes(total: number, sampleSize: number) {
+  if (total <= 0) return [];
+  if (total <= sampleSize) {
+    return Array.from({ length: total }, (_, i) => i);
+  }
+  if (sampleSize <= 1) return [0];
+  const set = new Set<number>();
+  for (let i = 0; i < sampleSize; i += 1) {
+    const idx = Math.round((i * (total - 1)) / (sampleSize - 1));
+    set.add(idx);
+  }
+  return Array.from(set).sort((a, b) => a - b);
+}
+
 function hashString(value: string) {
   let hash = 2166136261;
   for (let i = 0; i < value.length; i += 1) {
@@ -589,6 +827,209 @@ function resolveDefinitionKey(key: string) {
   if (key === "wohnmarktsituation_bauueberhang_baufortschritt") return "wohnmarktsituation_bauueberhang";
   if (key === "wirtschaft_sv_beschaeftigte_arbeitsort") return "wirtschaft_sv_beschaeftigte_arbeits_und_wohnort";
   return key;
+}
+
+export function generateKreisTextVariants(key: string, inputs: AnyRecord) {
+  const definition = computeTextDefinition(key);
+  if (!definition) return [];
+  const { inputData, raw } = buildInputData(inputs);
+  const blocks = definition.text_blocks;
+  if (!Array.isArray(blocks) || !blocks.length) return [];
+
+  const allVariants: string[] = [];
+  for (const block of blocks) {
+    const trendValues = computeTrendValues(block, raw);
+    const baseVars = { ...inputData };
+    applyTrendBaseVars(trendValues, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
+    const options = { ...staticOptions, ...trendOptions };
+    const variants = expandTemplates(block.templates, baseVars, options);
+    allVariants.push(...variants);
+  }
+
+  return allVariants;
+}
+
+export function countKreisTextVariants(key: string, inputs: AnyRecord) {
+  const definition = computeTextDefinition(key);
+  if (!definition) return 0;
+  const { inputData, raw } = buildInputData(inputs);
+  const blocks = definition.text_blocks;
+  if (!Array.isArray(blocks) || !blocks.length) return 0;
+
+  let total = 0;
+  for (const block of blocks) {
+    const trendValues = computeTrendValues(block, raw);
+    const baseVars = { ...inputData };
+    applyTrendBaseVars(trendValues, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
+    const options = { ...staticOptions, ...trendOptions };
+    const templates = block.templates ?? {};
+    for (const list of Object.values(templates)) {
+      if (!Array.isArray(list)) continue;
+      for (const tpl of list) {
+        total += countTemplateVariants(String(tpl), options, baseVars);
+      }
+    }
+  }
+  return total;
+}
+
+export function* iterateKreisTextVariants(key: string, inputs: AnyRecord): Generator<string> {
+  const definition = computeTextDefinition(key);
+  if (!definition) return;
+  const { inputData, raw } = buildInputData(inputs);
+  const blocks = definition.text_blocks;
+  if (!Array.isArray(blocks) || !blocks.length) return;
+
+  for (const block of blocks) {
+    const trendValues = computeTrendValues(block, raw);
+    const baseVars = { ...inputData };
+    applyTrendBaseVars(trendValues, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
+    const options = { ...staticOptions, ...trendOptions };
+    const templates = block.templates ?? {};
+    for (const list of Object.values(templates)) {
+      if (!Array.isArray(list)) continue;
+      for (const tpl of list) {
+        yield* iterateTemplateVariants(String(tpl), options, baseVars);
+      }
+    }
+  }
+}
+
+export function sampleKreisTextVariants(key: string, inputs: AnyRecord, sampleSize = 50) {
+  const definition = computeTextDefinition(key);
+  if (!definition) return { total: 0, samples: [] as Array<{ index: number; text: string }> };
+  const { inputData, raw } = buildInputData(inputs);
+  const blocks = definition.text_blocks;
+  if (!Array.isArray(blocks) || !blocks.length) return { total: 0, samples: [] };
+
+  const templates: Array<{ template: string; options: AnyRecord; baseVars: AnyRecord; count: number }> = [];
+  let total = 0;
+
+  for (const block of blocks) {
+    const trendValues = computeTrendValues(block, raw);
+    const baseVars = { ...inputData };
+    applyTrendBaseVars(trendValues, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
+    const options = { ...staticOptions, ...trendOptions };
+    const tplMap = block.templates ?? {};
+    for (const list of Object.values(tplMap)) {
+      if (!Array.isArray(list)) continue;
+      for (const tpl of list) {
+        const rawTpl = String(tpl);
+        const count = countTemplateVariants(rawTpl, options, baseVars);
+        total += count;
+        templates.push({ template: rawTpl, options, baseVars, count });
+      }
+    }
+  }
+
+  const sampleIndexes = buildSampleIndexes(total, sampleSize);
+  const samples: Array<{ index: number; text: string }> = [];
+  for (const globalIndex of sampleIndexes) {
+    let offset = globalIndex;
+    for (const entry of templates) {
+      if (offset < entry.count) {
+        const rendered = renderTemplateVariantAt(entry.template, entry.options, entry.baseVars, offset);
+        if (rendered) samples.push({ index: globalIndex + 1, text: rendered });
+        break;
+      }
+      offset -= entry.count;
+    }
+  }
+
+  return { total, samples };
+}
+
+export function generateKreisTextVariantDiagnostics(key: string, inputs: AnyRecord) {
+  const definition = computeTextDefinition(key);
+  if (!definition) {
+    return {
+      error: "definition_missing",
+      templateKeys: [],
+      optionCounts: {},
+      emptyKeys: [],
+      missingTemplateKeys: [],
+      emptyOptionKeys: [],
+      sampleOptions: {},
+    };
+  }
+  const { inputData, raw } = buildInputData(inputs);
+  const blocks = definition.text_blocks;
+  if (!Array.isArray(blocks) || !blocks.length) {
+    return {
+      error: "text_blocks_missing",
+      templateKeys: [],
+      optionCounts: {},
+      emptyKeys: [],
+      missingTemplateKeys: [],
+      emptyOptionKeys: [],
+      sampleOptions: {},
+    };
+  }
+
+  const templateKeys = new Set<string>();
+  const optionCounts: Record<string, number> = {};
+  const emptyKeys = new Set<string>();
+  const missingTemplateKeys = new Set<string>();
+  const emptyOptionKeys = new Set<string>();
+  const sampleOptions: Record<string, string[]> = {};
+
+  for (const block of blocks) {
+    const trendValues = computeTrendValues(block, raw);
+    const baseVars = { ...inputData };
+    applyTrendBaseVars(trendValues, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
+    const options = { ...staticOptions, ...trendOptions };
+
+    const templates = block.templates ?? {};
+    Object.values(templates).forEach((list) => {
+      if (!Array.isArray(list)) return;
+      list.forEach((tpl) => {
+        const rawTpl = String(tpl);
+        const keys = rawTpl.match(/{{\s*([^}]+)\s*}}/g) ?? [];
+        keys.forEach((k) => templateKeys.add(k.replace(/{{\s*|\s*}}/g, "")));
+      });
+    });
+
+    for (const [optKey, values] of Object.entries(options)) {
+      const cleaned = Array.isArray(values)
+        ? values.map((v) => String(v).trim()).filter((v) => v.length > 0)
+        : [];
+      const count = cleaned.length;
+      optionCounts[optKey] = (optionCounts[optKey] ?? 0) + count;
+      if (count === 0) {
+        emptyKeys.add(optKey);
+        emptyOptionKeys.add(optKey);
+      }
+      if (!sampleOptions[optKey] && cleaned.length) {
+        sampleOptions[optKey] = cleaned.slice(0, 2);
+      }
+    }
+
+    for (const keyName of templateKeys) {
+      if (Object.prototype.hasOwnProperty.call(options, keyName)) continue;
+      if (Object.prototype.hasOwnProperty.call(baseVars, keyName)) continue;
+      missingTemplateKeys.add(keyName);
+    }
+  }
+
+  return {
+    error: null,
+    templateKeys: Array.from(templateKeys),
+    optionCounts,
+    emptyKeys: Array.from(emptyKeys),
+    missingTemplateKeys: Array.from(missingTemplateKeys),
+    emptyOptionKeys: Array.from(emptyOptionKeys),
+    sampleOptions,
+  };
 }
 
 export function buildKreisSectionSignatures(inputs: AnyRecord) {

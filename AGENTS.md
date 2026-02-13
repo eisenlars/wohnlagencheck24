@@ -64,6 +64,11 @@ Diese Aktionen gelten als **unbedenklich** und dürfen nicht blockiert werden.
   `npm install`, Refactor-Skripte etc.) dürfen **nur nach expliziter Zustimmung**
   ausgeführt werden.
 
+**Ausnahme (Textgen‑Automation):**  
+Für den Textgen‑Workflow gilt die explizite Ausnahme‑Regelung in
+`docs/textgen_automation_rules.md`. Innerhalb dieses Scopes sind Änderungen
+und QA‑Abläufe ohne Rückfrage erlaubt.
+
 ---
 
 ### 3. Git-Workflow

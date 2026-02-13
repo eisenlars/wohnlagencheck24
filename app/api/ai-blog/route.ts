@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
+import { checkRateLimitPersistent, extractClientIpFromHeaders } from '@/lib/security/rate-limit';
 
 type LlmConfig = {
   provider: string;
@@ -144,6 +145,21 @@ function extractJson(text: string): Record<string, unknown> | null {
 
 export async function POST(req: Request) {
   try {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const ip = extractClientIpFromHeaders(req.headers);
+    const limit = await checkRateLimitPersistent(`ai-blog:${user.id}:${ip}`, { windowMs: 60_000, max: 10 });
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded. Retry in ${limit.retryAfterSec}s.` },
+        { status: 429 },
+      );
+    }
+
     const body = await req.json();
     const { areaName, authorName, source, customPrompt } = body ?? {};
 
@@ -158,37 +174,32 @@ export async function POST(req: Request) {
       customPrompt: asString(customPrompt),
     });
 
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
     let raw: string | null = null;
 
-    if (user?.id) {
-      const partnerConfig = await loadPartnerLlmConfig(user.id);
-      if (partnerConfig?.provider) {
-        const apiKey = asString(partnerConfig.auth_config?.api_key);
-        const model =
-          asString(partnerConfig.settings?.model) ||
-          asString(partnerConfig.settings?.model_name) ||
-          '';
-        const baseUrl =
-          asString(partnerConfig.base_url) ||
-          asString(partnerConfig.settings?.base_url) ||
-          'https://api.openai.com/v1';
-        const temperature = asNumber(partnerConfig.settings?.temperature);
-        const maxTokens = asNumber(partnerConfig.settings?.max_tokens);
+    const partnerConfig = await loadPartnerLlmConfig(user.id);
+    if (partnerConfig?.provider) {
+      const apiKey = asString(partnerConfig.auth_config?.api_key);
+      const model =
+        asString(partnerConfig.settings?.model) ||
+        asString(partnerConfig.settings?.model_name) ||
+        '';
+      const baseUrl =
+        asString(partnerConfig.base_url) ||
+        asString(partnerConfig.settings?.base_url) ||
+        'https://api.openai.com/v1';
+      const temperature = asNumber(partnerConfig.settings?.temperature);
+      const maxTokens = asNumber(partnerConfig.settings?.max_tokens);
 
-        if (partnerConfig.provider === 'openai') {
-          raw = await callOpenAICompatible({
-            apiKey: apiKey ?? '',
-            baseUrl,
-            model,
-            temperature,
-            maxTokens,
-            system: prompt.system,
-            user: prompt.user,
-          });
-        }
+      if (partnerConfig.provider === 'openai') {
+        raw = await callOpenAICompatible({
+          apiKey: apiKey ?? '',
+          baseUrl,
+          model,
+          temperature,
+          maxTokens,
+          system: prompt.system,
+          user: prompt.user,
+        });
       }
     }
 

@@ -13,6 +13,7 @@ type BundeslandNavItem = {
 export function HeaderSwitch({ bundeslaender }: { bundeslaender: BundeslandNavItem[] }) {
   const pathname = usePathname();
   if (pathname.startsWith("/dashboard")) return null;
+  if (pathname.startsWith("/admin")) return null;
   const isHome = pathname === "/";
 
   return isHome ? (

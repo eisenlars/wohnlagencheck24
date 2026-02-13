@@ -8,12 +8,14 @@ const SYNC_KIND = "crm";
 
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const url = new URL(req.url);
-    const token = url.searchParams.get("token");
-    if (token !== secret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  if (!secret) {
+    return NextResponse.json({ error: "CRON_SECRET is not configured" }, { status: 500 });
+  }
+
+  const url = new URL(req.url);
+  const token = url.searchParams.get("token") ?? "";
+  if (!token || token !== secret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = createAdminClient();

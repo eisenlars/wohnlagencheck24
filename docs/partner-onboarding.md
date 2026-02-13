@@ -111,6 +111,12 @@ Migrations‑Snippets:
 3. Frontend:  
    - Listen: `/immobilienangebote` / `/mietangebote`  
    - Detail: `/immobilienangebote/<id>_<slug>`
+4. Partner-Login pruefen:
+   - Zugriff auf `/dashboard` nur mit vorhandenem Datensatz in `public.partners` (`partners.id = auth_user_id`)
+   - fehlt das Profil, erfolgt Redirect auf `/partner/login?message=Kein-Partnerprofil`
+5. Betriebsregel:
+   - Admin- und Partner-Login nicht parallel im selben Browser-Kontext testen
+   - fuer parallele Tests getrennte Browser-Profile/Incognito verwenden
 
 Hinweis (Partnerbereich – Faktoren):
 - Faktoren/Resets schreiben zuerst nur nach `data_value_settings`.

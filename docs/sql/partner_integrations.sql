@@ -19,11 +19,15 @@ create unique index if not exists partner_integrations_kind_unique
 
 alter table public.partner_integrations enable row level security;
 
+drop policy if exists "partner_integrations_deny_select" on public.partner_integrations;
 create policy "partner_integrations_deny_select"
   on public.partner_integrations for select using (false);
+drop policy if exists "partner_integrations_deny_insert" on public.partner_integrations;
 create policy "partner_integrations_deny_insert"
   on public.partner_integrations for insert with check (false);
+drop policy if exists "partner_integrations_deny_update" on public.partner_integrations;
 create policy "partner_integrations_deny_update"
   on public.partner_integrations for update using (false);
+drop policy if exists "partner_integrations_deny_delete" on public.partner_integrations;
 create policy "partner_integrations_deny_delete"
   on public.partner_integrations for delete using (false);
