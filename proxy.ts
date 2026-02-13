@@ -2,8 +2,6 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-const BASIC_USER = process.env.BASIC_AUTH_USER ?? "";
-const BASIC_PASS = process.env.BASIC_AUTH_PASS ?? "";
 const ADMIN_SUPER_USER_IDS = process.env.ADMIN_SUPER_USER_IDS ?? "";
 
 function parseCsv(value: string): string[] {
@@ -18,6 +16,7 @@ function unauthorized() {
     status: 401,
     headers: {
       "WWW-Authenticate": 'Basic realm="Protected"',
+      "x-wc24-auth-source": "proxy-basic",
     },
   });
 }
@@ -25,6 +24,13 @@ function unauthorized() {
 function isBasicAuthDisabled(): boolean {
   const raw = String(process.env.BASIC_AUTH_DISABLED ?? "").trim().toLowerCase();
   return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
+}
+
+function getBasicCredentials() {
+  return {
+    user: String(process.env.BASIC_AUTH_USER ?? "").trim(),
+    pass: String(process.env.BASIC_AUTH_PASS ?? "").trim(),
+  };
 }
 
 export async function proxy(request: NextRequest) {
@@ -40,8 +46,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const basicUser = BASIC_USER.trim();
-  const basicPass = BASIC_PASS.trim();
+  const { user: basicUser, pass: basicPass } = getBasicCredentials();
   if (!isBasicAuthDisabled() && basicUser && basicPass) {
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Basic ")) {
