@@ -290,7 +290,7 @@ export function generateDynamicPlaceholders(
 
     const templateCategory = mapTrendCategoryToTemplateKey(category);
     const phraseEntry = selectPhraseEntry(templateCategory, phrasesBlockRecord, true, rng) as AnyRecord;
-    const renderedPhrase = fullyRenderTemplate(phraseEntry.phrase ?? "", resultPlaceholders);
+    const renderedPhrase = fullyRenderTemplate(String(phraseEntry.phrase ?? ""), resultPlaceholders);
     resultPlaceholders[trendKey] = renderedPhrase;
 
     if (verbBlock && typeof verbBlock === "object") {
