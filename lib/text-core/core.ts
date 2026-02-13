@@ -204,9 +204,18 @@ export function generateVerbkonstrukt(
   }
 
   if (connectorConfig) {
-    const connectorType = renderContext.connector_type ?? "neutral";
-    const linkOptions = connectorConfig?.[connectorType]?.link ?? [];
-    renderContext = { ...renderContext, link_word: linkOptions.length ? pickRandom(linkOptions, rng) : "" };
+    const connectorTypeRaw = renderContext.connector_type;
+    const connectorType = typeof connectorTypeRaw === "string" && connectorTypeRaw.trim().length > 0
+      ? connectorTypeRaw
+      : "neutral";
+    const connectorEntry = connectorConfig[connectorType];
+    const connectorRecord =
+      connectorEntry && typeof connectorEntry === "object"
+        ? (connectorEntry as Record<string, unknown>)
+        : null;
+    const linkRaw = connectorRecord?.link;
+    const linkOptions = Array.isArray(linkRaw) ? linkRaw : [];
+    renderContext = { ...renderContext, link_word: linkOptions.length ? String(pickRandom(linkOptions, rng)) : "" };
   }
 
   const result = renderTemplate(pattern, renderContext);
