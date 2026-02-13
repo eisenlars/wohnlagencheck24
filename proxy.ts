@@ -4,6 +4,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 const BASIC_USER = process.env.BASIC_AUTH_USER ?? "";
 const BASIC_PASS = process.env.BASIC_AUTH_PASS ?? "";
+const BASIC_AUTH_DISABLED = process.env.BASIC_AUTH_DISABLED === "1";
 const ADMIN_SUPER_USER_IDS = process.env.ADMIN_SUPER_USER_IDS ?? "";
 
 function parseCsv(value: string): string[] {
@@ -35,7 +36,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (BASIC_USER && BASIC_PASS) {
+  if (!BASIC_AUTH_DISABLED && BASIC_USER && BASIC_PASS) {
     const authHeader = request.headers.get("authorization");
     if (!authHeader?.startsWith("Basic ")) {
       return unauthorized();
