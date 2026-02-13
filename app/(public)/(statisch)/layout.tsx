@@ -1,6 +1,6 @@
 // app/(statisch)/layout.tsx
 
-import "../globals.css";
+import "../../globals.css";
 import "./static.css";
 import type { ReactNode } from "react";
 

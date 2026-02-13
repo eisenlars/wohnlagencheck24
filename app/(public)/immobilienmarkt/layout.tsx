@@ -1,7 +1,7 @@
 // app/immobilienmarkt/layout.tsx
 
 import type { ReactNode } from "react";
-import "../globals.css";
+import "../../globals.css";
 
 export default function ImmobilienmarktLayout({
   children,
