@@ -305,12 +305,17 @@ export function generateDynamicPlaceholders(
     }
   }
 
-  const staticVerbkonstrukte = textDefinition.static_verbkonstrukte ?? {};
+  const staticVerbkonstrukteRaw = textDefinition.static_verbkonstrukte;
+  const staticVerbkonstrukte =
+    staticVerbkonstrukteRaw && typeof staticVerbkonstrukteRaw === "object"
+      ? (staticVerbkonstrukteRaw as Record<string, unknown>)
+      : {};
   for (const [staticKey, verbPatterns] of Object.entries(staticVerbkonstrukte)) {
     if (!staticKey.startsWith("verbkonstrukt_")) continue;
     if (!Array.isArray(verbPatterns) || verbPatterns.length === 0) continue;
     const phraseKey = staticKey.replace("verbkonstrukt_", "phrases_");
-    const phrasesList = staticVerbkonstrukte[phraseKey] ?? [];
+    const phrasesRaw = staticVerbkonstrukte[phraseKey];
+    const phrasesList = Array.isArray(phrasesRaw) ? phrasesRaw : [];
     let phraseEntry: AnyRecord = { phrase: "", auxiliar: "" };
     if (Array.isArray(phrasesList) && phrasesList.length) {
       const pick = pickRandom(phrasesList, rng);
