@@ -1,4 +1,5 @@
 import React from "react";
+import { NeedleRotateEnter } from "@/components/needle-rotate-enter";
 
 type GaugeTachoProps = {
   value: number; // z. B. -100 .. 100
@@ -36,6 +37,7 @@ export function GaugeTacho({
   height = 120,
 }: GaugeTachoProps) {
   const angle = valueToAngle(value, { min, max, start: -90, end: 90 });
+  const overshoot = angle + (angle >= 0 ? 6 : -6);
 
   // Geometrie
   const cx = width / 2;
@@ -178,8 +180,13 @@ export function GaugeTacho({
         {renderLabelLines(rightLabelLines)}
       </text>
 
-      {/* Zeiger – komplette Gruppe rotiert um cx, cy */}
-      <g transform={`rotate(${angle} ${cx} ${cy})`}>
+      {/* Zeiger – radiale Einfahrbewegung um die Nabe */}
+      <NeedleRotateEnter
+        cx={cx}
+        cy={cy}
+        targetAngle={angle}
+        overshootAngle={overshoot}
+      >
         {/* Schaft – an der Basis des Dreiecks ansetzend */}
         <rect
           x={cx - shaftW / 2}
@@ -202,7 +209,7 @@ export function GaugeTacho({
           r={hubR}
           fill="#000000"
         />
-      </g>
+      </NeedleRotateEnter>
     </svg>
   );
 }

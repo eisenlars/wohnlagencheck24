@@ -22,6 +22,7 @@ import { PreisindexBox } from "@/components/PreisindexBox";
 import { OrtslagenUebersichtTable } from "@/components/OrtslagenUebersichtTable";
 import { PreisgrenzenRow } from "@/components/PreisgrenzenRow";
 import { FaqSection } from "@/components/FaqSection";
+import { NeedleRotateEnter } from "@/components/needle-rotate-enter";
 import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
 type GaugeMode = "trend" | "saldo";
@@ -79,8 +80,9 @@ function TrendGaugeCircle(props: {
   value: number;
   mode?: GaugeMode;
   extraText?: string;
+  animateOnVisible?: boolean;
 }) {
-  const { label, value, mode = "trend", extraText } = props;
+  const { label, value, mode = "trend", extraText, animateOnVisible = false } = props;
 
   const C = GAUGE_STYLE.circleR;
   const W = GAUGE_STYLE.trackWidth;
@@ -92,6 +94,7 @@ function TrendGaugeCircle(props: {
   const gradId = `grad-${label.replace(/\s+/g, "-").toLowerCase()}-${mode}`;
 
   const deg = clampAngleFromPercent(value);
+  const overshoot = deg + (deg >= 0 ? 6 : -6);
   const formattedValue = (value > 0 ? "+" : "") + value.toFixed(1).replace(".", ",") + " %";
 
   const needleColor = GAUGE_STYLE.needleColor;
@@ -156,7 +159,13 @@ function TrendGaugeCircle(props: {
           <line x1={x1 - 36} y1={y} x2={x1 - 18} y2={y} />
         </g>
 
-        <g transform={`rotate(${deg} 120 120)`}>
+        <NeedleRotateEnter
+          cx={120}
+          cy={120}
+          targetAngle={deg}
+          overshootAngle={overshoot}
+          animateOnVisible={animateOnVisible}
+        >
           <rect
             x={120 - N.shaftW / 2}
             y={shaftY}
@@ -168,7 +177,7 @@ function TrendGaugeCircle(props: {
           />
           <polygon points={`120,${headTopY} ${120 - 8},${headBaseY} ${120 + 8},${headBaseY}`} fill={needleColor} />
           <circle cx={120} cy={120} r={N.hubR} fill={needleColor} />
-        </g>
+        </NeedleRotateEnter>
       </svg>
 
       <div className="mt-2 text-center">
@@ -472,7 +481,12 @@ export function UebersichtSection(
                 <div className="card bg-transparent border-0">
                   <div className="card-body d-flex flex-column align-items-center">
                     <h5 className="h5 mb-3 w-100 text-start text-center">Bevölkerungsdynamik</h5>
-                    <TrendGaugeCircle label="Bevölkerungsdynamik" value={vm.standort.bevoelkerungsdynamik} mode="trend" />
+                    <TrendGaugeCircle
+                      label="Bevölkerungsdynamik"
+                      value={vm.standort.bevoelkerungsdynamik}
+                      mode="trend"
+                      animateOnVisible
+                    />
                   </div>
                 </div>
               </div>
@@ -483,7 +497,12 @@ export function UebersichtSection(
                 <div className="card bg-transparent border-0">
                   <div className="card-body d-flex flex-column align-items-center">
                     <h5 className="h5 mb-3 w-100 text-start text-center">Arbeitsmarktdynamik</h5>
-                    <TrendGaugeCircle label="Arbeitsmarktdynamik" value={vm.standort.arbeitsmarktdynamik} mode="trend" />
+                    <TrendGaugeCircle
+                      label="Arbeitsmarktdynamik"
+                      value={vm.standort.arbeitsmarktdynamik}
+                      mode="trend"
+                      animateOnVisible
+                    />
                   </div>
                 </div>
               </div>
@@ -494,7 +513,12 @@ export function UebersichtSection(
                 <div className="card bg-transparent border-0">
                   <div className="card-body d-flex flex-column align-items-center">
                     <h5 className="h5 mb-3 w-100 text-start text-center">Wirtschaftskraft</h5>
-                    <TrendGaugeCircle label="Wirtschaftskraft" value={vm.standort.wirtschaftskraft} mode="trend" />
+                    <TrendGaugeCircle
+                      label="Wirtschaftskraft"
+                      value={vm.standort.wirtschaftskraft}
+                      mode="trend"
+                      animateOnVisible
+                    />
                   </div>
                 </div>
               </div>
