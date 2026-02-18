@@ -47,8 +47,8 @@ export function NeedleRotateEnter(props: NeedleRotateEnterProps) {
     if (!animateOnVisible || entered) return;
     const el = ref.current;
     if (!el || typeof IntersectionObserver === "undefined") {
-      setEntered(true);
-      return;
+      const raf = window.requestAnimationFrame(() => setEntered(true));
+      return () => window.cancelAnimationFrame(raf);
     }
 
     const observer = new IntersectionObserver(

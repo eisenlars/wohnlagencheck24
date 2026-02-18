@@ -1,5 +1,6 @@
 import { buildKreisSectionSignatures, buildOrtslageSectionSignatures, generateKreisPriceTexts, generateOrtslagePriceTexts } from "@/lib/text-core";
 import {
+  findKreisTextVariantIndex,
   generateKreisTextVariantDiagnostics,
   sampleKreisTextVariants,
 } from "@/lib/text-core/generate-kreis";
@@ -117,6 +118,20 @@ function writePreviewVariantLog(payload: AnyRecord) {
   fs.appendFileSync(logPath, `${JSON.stringify(payload)}\n`, "utf8");
 }
 
+function pickPreviewSectionText(text: AnyRecord, sectionKey: string) {
+  if (!text || typeof text !== "object" || !sectionKey) return undefined;
+  if (Object.prototype.hasOwnProperty.call(text, sectionKey)) {
+    return text[sectionKey];
+  }
+  for (const group of Object.values(text)) {
+    if (!group || typeof group !== "object") continue;
+    if (Object.prototype.hasOwnProperty.call(group, sectionKey)) {
+      return (group as AnyRecord)[sectionKey];
+    }
+  }
+  return undefined;
+}
+
 export function applyDataDrivenTexts<T extends AnyRecord>(report: T, areaId?: string, ortslageNameMap?: OrtslageNameMap): T {
   if (!report || typeof report !== "object") return report;
   const mappedReport = applyOrtslageNameMapping(report, ortslageNameMap);
@@ -149,22 +164,24 @@ export function applyDataDrivenTexts<T extends AnyRecord>(report: T, areaId?: st
   if (shouldPreview()) {
     const previewKey = getPreviewKey();
     if (previewKey && updatedText && typeof updatedText === "object") {
-      writePreviewLog(areaId, scope, { [previewKey]: (updatedText as AnyRecord)[previewKey] });
+      writePreviewLog(areaId, scope, { [previewKey]: pickPreviewSectionText(updatedText as AnyRecord, previewKey) });
     } else {
       writePreviewLog(areaId, scope, updatedText as AnyRecord);
     }
     const previewAll = process.env.TEXTGEN_PREVIEW_ALL === "1";
     const previewVariantsKey = previewAll ? getPreviewKey() : null;
     if (previewAll && previewVariantsKey && scope === "kreis") {
-      const diagnostics = generateKreisTextVariantDiagnostics(previewVariantsKey, inputs);
+      const previewSeed = `${areaId ?? "unknown"}|${scope}|${previewVariantsKey}|${signatures[previewVariantsKey] ?? ""}`;
+      const diagnostics = generateKreisTextVariantDiagnostics(previewVariantsKey, inputs, createSeededRng(previewSeed));
       writePreviewVariantLog({
         at: new Date().toISOString(),
         scope,
         areaId,
         key: previewVariantsKey,
+        seed: previewSeed,
         diagnostics,
       });
-      const { total, samples } = sampleKreisTextVariants(previewVariantsKey, inputs, 50);
+      const { total, samples } = sampleKreisTextVariants(previewVariantsKey, inputs, 50, createSeededRng(previewSeed));
       for (const sample of samples) {
         writePreviewVariantLog({
           at: new Date().toISOString(),
@@ -174,6 +191,19 @@ export function applyDataDrivenTexts<T extends AnyRecord>(report: T, areaId?: st
           variantIndex: sample.index,
           total,
           text: sample.text,
+        });
+      }
+      const liveText = pickPreviewSectionText(updatedText as AnyRecord, previewVariantsKey);
+      if (typeof liveText === "string" && liveText.trim().length) {
+        const liveVariant = findKreisTextVariantIndex(previewVariantsKey, inputs, liveText, createSeededRng(previewSeed));
+        writePreviewVariantLog({
+          at: new Date().toISOString(),
+          scope,
+          areaId,
+          key: previewVariantsKey,
+          seed: previewSeed,
+          liveVariant,
+          text: liveText,
         });
       }
     }

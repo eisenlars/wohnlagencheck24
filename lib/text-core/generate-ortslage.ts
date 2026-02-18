@@ -11,13 +11,14 @@ import {
   determineTrendCategory,
   determineAbsoluteCategoryWithDirection,
   determineSimpleComparisonCategory,
+  determineGenericConnectorType,
 } from "@/lib/text-core/core";
 
 import ortslagePhrases from "@/lib/text-core/phrases/ortslage/immobilienpreise.json";
 import ortslageWohnraumPhrases from "@/lib/text-core/phrases/ortslage/wohnraumsituation.json";
 import ortslageWirtschaftPhrases from "@/lib/text-core/phrases/ortslage/wirtschaft.json";
 
-type AnyRecord = Record<string, any>;
+type AnyRecord = Record<string, unknown>;
 
 function pickRandom<T>(items: T[], rng?: () => number): T {
   if (!items.length) {
@@ -77,6 +78,33 @@ function formatNumber(value: number, decimals = 0) {
   });
 }
 
+function parseNumericValue(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const compact = trimmed.replace(/\s+/g, "");
+  const deThousands = /^[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?$/;
+  const usThousands = /^[+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?$/;
+  const plainNumber = /^[+-]?\d+(?:[.,]\d+)?$/;
+  if (!deThousands.test(compact) && !usThousands.test(compact) && !plainNumber.test(compact)) {
+    return null;
+  }
+
+  let normalized = compact;
+  if (deThousands.test(compact)) {
+    normalized = compact.replace(/\./g, "").replace(",", ".");
+  } else if (usThousands.test(compact)) {
+    normalized = compact.replace(/,/g, "");
+  } else if (compact.includes(",") && !compact.includes(".")) {
+    normalized = compact.replace(",", ".");
+  }
+
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : null;
+}
+
 function formatValueForKey(key: string, value: number) {
   if (key.startsWith("jahr")) {
     return String(Math.round(value));
@@ -93,7 +121,6 @@ function formatValueForKey(key: string, value: number) {
 function buildInputData(inputs: AnyRecord) {
   const {
     year01,
-    regionale_zuordnung,
     regionale_zuordnung_kreis,
     ortslage_name,
     kreis_name,
@@ -109,12 +136,30 @@ function buildInputData(inputs: AnyRecord) {
     priceValues_rendite_dict,
   } = inputs;
 
-  let ortName = capitalizeWords(umlauteUmwandeln(String(ortslage_name ?? ""))).replace("ortslage_", "");
+  const rawOrtslageName = String(ortslage_name ?? "").trim();
+  const normalizedOrtslageSlug = umlauteUmwandeln(rawOrtslageName)
+    .replace(/^ortslage[_\-\s]*/i, "")
+    .replace(/_/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  let ortName = capitalizeWords(normalizedOrtslageSlug);
+  if (!ortName) {
+    ortName = capitalizeWords(umlauteUmwandeln(rawOrtslageName).replace(/_/g, "-"));
+  }
   const kreisName = capitalizeWords(umlauteUmwandeln(String(kreis_name ?? "")));
   const bundeslandName = capitalizeWords(umlauteUmwandeln(String(bundesland_name ?? "")));
 
-  if (regionale_zuordnung === "stadtteil") {
-    ortName = `${kreisName} ${ortName}`;
+  const isLandkreis = String(regionale_zuordnung_kreis ?? "").toLowerCase() === "landkreis";
+  const cityStateSet = new Set(["hamburg", "berlin", "bremen"]);
+  const bundeslandKey = String(bundesland_name ?? "").trim().toLowerCase();
+  const namePrefix = isLandkreis ? "" : cityStateSet.has(bundeslandKey) ? bundeslandName : kreisName;
+  if (namePrefix) {
+    const current = ortName.toLowerCase();
+    const pref = `${namePrefix.toLowerCase()} `;
+    if (!current.startsWith(pref)) {
+      ortName = `${namePrefix} ${ortName}`.trim();
+    }
   }
 
   const inOderIm = regionale_zuordnung_kreis === "landkreis" ? "im" : "in";
@@ -128,7 +173,10 @@ function buildInputData(inputs: AnyRecord) {
     jahr01: year01,
     jahr02: year01 - 1,
     jahr05: year01 - 4,
+    jahr10: year01 - 9,
     jahr01_minus_1: year01 - 1,
+    jahr10_einwohneranzahl_trend: year01 - 9,
+    jahr10_haushaltsanzahl_trend: year01 - 9,
     ...statValues_locationFactors_dict,
     ...statValues_generally_dict,
     ...statValues_livingSpaceDemand_dict,
@@ -142,15 +190,162 @@ function buildInputData(inputs: AnyRecord) {
 
   const inputData: AnyRecord = { ...raw };
   for (const [key, value] of Object.entries(raw)) {
-    if (typeof value !== "number" || Number.isNaN(value)) continue;
+    const numeric = parseNumericValue(value);
+    if (numeric === null) continue;
+    raw[key] = numeric;
+  }
+  normalizeOrtslageWohnflaecheUnit(raw);
+  for (const [key, value] of Object.entries(raw)) {
+    const numeric = parseNumericValue(value);
+    if (numeric === null) continue;
     if (key.includes("lagescore")) {
-      inputData[key] = value;
+      inputData[key] = numeric;
       continue;
     }
-    inputData[key] = formatValueForKey(key, value);
+    inputData[key] = formatValueForKey(key, numeric);
   }
 
+  normalizeOrtslageBevoelkerungSaldo(inputData, raw);
+  normalizeOrtslageHaushaltsSaldo(inputData, raw);
+  normalizeOrtslageNatuerlicherSaldo(inputData, raw);
+  normalizeOrtslageWanderungssaldo(inputData, raw);
+
   return { inputData, raw };
+}
+
+function toFinite(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function normalizeOrtslageWohnflaecheUnit(raw: AnyRecord) {
+  const total = toFinite(raw.wohnflaeche_jahr01_ortslage);
+  const perEw = toFinite(raw.wohnflaeche_per_ew_jahr01_ortslage);
+  const population = toFinite(raw.einwohneranzahl_jahr01_ortslage);
+  if (total === null || perEw === null || population === null || total <= 0 || perEw <= 0 || population <= 0) return;
+
+  const impliedTotal = population * perEw;
+  const factor = impliedTotal / total;
+  // Legacy source values for total living space are sometimes delivered in thousand m².
+  if (factor > 700 && factor < 1300) {
+    raw.wohnflaeche_jahr01_ortslage = total * 1000;
+  }
+}
+
+function normalizeOrtslageBevoelkerungSaldo(inputData: AnyRecord, raw: AnyRecord) {
+  const current = toFinite(raw.einwohneranzahl_jahr01_ortslage);
+  const past = toFinite(raw.einwohneranzahl_jahr10_ortslage);
+  if (current === null || past === null) return;
+  const saldoAbs = Math.abs(current - past);
+  raw.einwohneranzahl_10jahressaldo_ortslage = saldoAbs;
+  inputData.einwohneranzahl_10jahressaldo_ortslage = formatValueForKey("einwohneranzahl_10jahressaldo_ortslage", saldoAbs);
+}
+
+function normalizeOrtslageHaushaltsSaldo(inputData: AnyRecord, raw: AnyRecord) {
+  const current = toFinite(raw.haushaltsanzahl_jahr01_ortslage);
+  const past = toFinite(raw.haushaltsanzahl_jahr10_ortslage);
+  if (current === null || past === null) return;
+  const saldoAbs = Math.abs(current - past);
+  raw.haushaltsanzahl_10jahressaldo_ortslage = saldoAbs;
+  inputData.haushaltsanzahl_10jahressaldo_ortslage = formatValueForKey("haushaltsanzahl_10jahressaldo_ortslage", saldoAbs);
+}
+
+function normalizeOrtslageNatuerlicherSaldo(inputData: AnyRecord, raw: AnyRecord) {
+  const saldo = toFinite(raw.natuerliches_bevoelkerungssaldo_jahr01_ortslage);
+  if (saldo !== null) {
+    const saldoAbs = Math.abs(saldo);
+    raw.natuerliches_bevoelkerungssaldo_jahr01_ortslage = saldoAbs;
+    inputData.natuerliches_bevoelkerungssaldo_jahr01_ortslage = formatValueForKey(
+      "natuerliches_bevoelkerungssaldo_jahr01_ortslage",
+      saldoAbs,
+    );
+    inputData.natuerliches_bevoelkerungssaldo_richtung_ortslage =
+      saldo < 0 ? "negativen" : saldo > 0 ? "positiven" : "ausgeglichenen";
+  }
+
+  const per1000Raw = toFinite(raw.natuerliches_bevoelkerungssaldo_je_1000ew_ortslage);
+  const population = toFinite(raw.einwohneranzahl_jahr01_ortslage);
+  let per1000Abs: number | null = null;
+  if (per1000Raw !== null) per1000Abs = Math.abs(per1000Raw);
+  else if (saldo !== null && population !== null && population > 0) per1000Abs = Math.abs((saldo / population) * 1000);
+  if (per1000Abs !== null) {
+    inputData.natuerliches_bevoelkerungssaldo_je_1000ew_ortslage = formatNumber(per1000Abs, 1).replace(".", ",");
+  }
+}
+
+function normalizeOrtslageWanderungssaldo(inputData: AnyRecord, raw: AnyRecord) {
+  const calcTrendStatus = (current: number | null, previous: number | null) => {
+    if (current === null || previous === null) return { status: "no_data" as const, pctAbs: null as number | null };
+    if (previous === 0) {
+      if (current === 0) return { status: "no_data" as const, pctAbs: null as number | null };
+      return { status: "second_value_is_0" as const, pctAbs: null as number | null };
+    }
+    if (current === 0) return { status: "first_value_is_0" as const, pctAbs: null as number | null };
+    return {
+      status: "valid" as const,
+      pctAbs: Math.abs(((current - previous) / previous) * 100),
+    };
+  };
+
+  const formatTrendValue = (value: number | null) =>
+    value === null ? "" : formatNumber(value, 1).replace(".", ",");
+
+  const current = toFinite(raw.wanderungssaldo_jahr01_ortslage);
+  if (current !== null) {
+    const currentAbs = Math.abs(current);
+    raw.wanderungssaldo_jahr01_ortslage = currentAbs;
+    inputData.wanderungssaldo_jahr01_ortslage = formatValueForKey("wanderungssaldo_jahr01_ortslage", currentAbs);
+    inputData.wanderungssaldo_richtung_jahr01_ortslage =
+      current < 0 ? "negativen" : current > 0 ? "positiven" : "ausgeglichenen";
+  }
+
+  const year05 = toFinite(raw.wanderungssaldo_jahr05_ortslage);
+  if (current !== null && year05 !== null) {
+    const delta = current - year05;
+    inputData.wanderungssaldo_5jahresSaldo_ortslage_abs = formatValueForKey(
+      "wanderungssaldo_5jahresSaldo_ortslage",
+      Math.abs(delta),
+    );
+    inputData.wanderungssaldo_5jahresrichtung_ortslage =
+      delta < 0 ? "negativer" : delta > 0 ? "positiver" : "ausgeglichener";
+  }
+
+  const zuz01 = toFinite(raw.wanderungssaldo_zuzuege_jahr01_ortslage);
+  const zuz05 = toFinite(raw.wanderungssaldo_zuzuege_jahr05_ortslage);
+  const fort01 = toFinite(raw.wanderungssaldo_fortzuege_jahr01_ortslage);
+  const fort05 = toFinite(raw.wanderungssaldo_fortzuege_jahr05_ortslage);
+
+  const zuzStatus = calcTrendStatus(zuz01, zuz05);
+  const fortStatus = calcTrendStatus(fort01, fort05);
+
+  if (zuzStatus.status === "valid") {
+    inputData.wanderungssaldo_zuzuege_5jahrestrend_ortslage = formatTrendValue(zuzStatus.pctAbs);
+  } else {
+    const fallback = toFinite(raw.wanderungssaldo_zuzuege_5jahrestrend_ortslage);
+    inputData.wanderungssaldo_zuzuege_5jahrestrend_ortslage = formatTrendValue(fallback === null ? null : Math.abs(fallback));
+  }
+
+  if (fortStatus.status === "valid") {
+    inputData.wanderungssaldo_fortzuege_5jahrestrend_ortslage = formatTrendValue(fortStatus.pctAbs);
+  } else {
+    const fallback = toFinite(raw.wanderungssaldo_fortzuege_5jahrestrend_ortslage);
+    inputData.wanderungssaldo_fortzuege_5jahrestrend_ortslage = formatTrendValue(fallback === null ? null : Math.abs(fallback));
+  }
+
+  if (zuzStatus.status === "second_value_is_0") {
+    inputData.sondertext_zuzuege = "Nach Jahren ohne Zuzüge werden inzwischen wieder Zuzüge verzeichnet.";
+  } else if (zuzStatus.status === "first_value_is_0") {
+    inputData.sondertext_zuzuege = "Aktuell werden keine Zuzüge mehr verzeichnet.";
+  }
+
+  if (fortStatus.status === "second_value_is_0") {
+    inputData.sondertext_fortzuege = "Nach Jahren ohne Fortzüge werden inzwischen wieder Fortzüge verzeichnet.";
+  } else if (fortStatus.status === "first_value_is_0") {
+    inputData.sondertext_fortzuege = "Aktuell werden keine Fortzüge mehr verzeichnet.";
+  }
+
+  if (zuzStatus.status === "no_data" && fortStatus.status === "no_data") {
+    inputData.wanderungssaldo_no_data_beide_ortslage = true;
+  }
 }
 
 function trendKeyCandidates(definition: AnyRecord) {
@@ -165,13 +360,15 @@ function trendKeyCandidates(definition: AnyRecord) {
 
 function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
   const trends: AnyRecord = {};
+  const normalizeYear01Stem = (stem: string) => (stem.endsWith("_jahr01") ? stem.slice(0, -7) : stem);
   for (const trendKey of trendKeyCandidates(definition)) {
     if (!trendKey.startsWith("trendText_")) continue;
     const base = trendKey.replace(/^trendText_/, "");
 
     if (base.endsWith("_vergleich_ortslage_kreis")) {
-      const stem = base.replace(/_vergleich_ortslage_kreis$/, "");
-      const mode = stem.includes("kaltmiete") || stem.includes("miet") ? "index1" : "index100";
+      const stemRaw = base.replace(/_vergleich_ortslage_kreis$/, "");
+      const stem = normalizeYear01Stem(stemRaw);
+      const mode = stemRaw.includes("kaltmiete") || stemRaw.includes("miet") ? "index1" : "index100";
       const a = raw[`${stem}_jahr01_ortslage`];
       const b = raw[`${stem}_jahr01_kreis`];
       if (typeof a === "number" && typeof b === "number" && b !== 0) {
@@ -181,8 +378,9 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
     }
 
     if (base.endsWith("_vergleich_ortslage_bundesland")) {
-      const stem = base.replace(/_vergleich_ortslage_bundesland$/, "");
-      const mode = stem.includes("kaltmiete") || stem.includes("miet") ? "index1" : "index100";
+      const stemRaw = base.replace(/_vergleich_ortslage_bundesland$/, "");
+      const stem = normalizeYear01Stem(stemRaw);
+      const mode = stemRaw.includes("kaltmiete") || stemRaw.includes("miet") ? "index1" : "index100";
       const a = raw[`${stem}_jahr01_ortslage`];
       const b = raw[`${stem}_jahr01_bundesland`];
       if (typeof a === "number" && typeof b === "number" && b !== 0) {
@@ -192,8 +390,9 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
     }
 
     if (base.endsWith("_vergleich_ortslage_land")) {
-      const stem = base.replace(/_vergleich_ortslage_land$/, "");
-      const mode = stem.includes("kaltmiete") || stem.includes("miet") ? "index1" : "index100";
+      const stemRaw = base.replace(/_vergleich_ortslage_land$/, "");
+      const stem = normalizeYear01Stem(stemRaw);
+      const mode = stemRaw.includes("kaltmiete") || stemRaw.includes("miet") ? "index1" : "index100";
       const a = raw[`${stem}_jahr01_ortslage`];
       const b = raw[`${stem}_jahr01_land`];
       if (typeof a === "number" && typeof b === "number" && b !== 0) {
@@ -219,7 +418,10 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
       const a = raw[`${stem}_jahr01_ortslage`];
       const b = raw[`${stem}_jahr10_ortslage`];
       if (typeof a === "number" && typeof b === "number" && b !== 0) {
-        trends[trendKey] = { rel_change: ((a - b) / b) * 100 };
+        trends[trendKey] = {
+          abs_delta: a - b,
+          rel_change: ((a - b) / b) * 100,
+        };
       }
       continue;
     }
@@ -313,6 +515,15 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
       }
       continue;
     }
+
+    if (base.includes("vergleich_neubau_bestand")) {
+      const a = raw["quadratmeterkaltmiete_avg_wohnung_neubau_jahr01_ortslage"];
+      const b = raw["quadratmeterkaltmiete_avg_wohnung_bestand_jahr01_ortslage"];
+      if (typeof a === "number" && typeof b === "number") {
+        trends[trendKey] = { direct_comparison: { value_a: a, value_b: b } };
+      }
+      continue;
+    }
   }
   return trends;
 }
@@ -324,6 +535,110 @@ function computeTextDefinition(key: string) {
     (ortslageWirtschaftPhrases as AnyRecord)[key] ??
     null
   );
+}
+
+function enrichBaseVarsForScoring(block: AnyRecord, baseVars: AnyRecord, key: string, rng?: () => number) {
+  const hasScoring =
+    !!block?.scoring_dynamic_subblocks_preisangaben ||
+    !!block?.scoring_dynamic_subblocks_lagekombination;
+  if (!hasScoring) return baseVars;
+  const asset = key.includes("_haus_") ? "haus" : "wohnung";
+  const scoringTexts = generateScoringTextbausteine(block, baseVars, asset, rng);
+  return { ...baseVars, ...scoringTexts };
+}
+
+function buildScoringPlaceholderOptions(block: AnyRecord, baseVars: AnyRecord, key: string) {
+  const scoringRaw = block?.scoring_dynamic_subblocks_preisangaben?.text_wohnlagen_liste;
+  if (!scoringRaw || typeof scoringRaw !== "object") return {} as Record<string, string[]>;
+
+  const scoringCfg = scoringRaw as AnyRecord;
+  const sequences = Array.isArray(scoringCfg.sequences_fixed) ? scoringCfg.sequences_fixed : [];
+  if (!sequences.length) return {} as Record<string, string[]>;
+
+  const asset = key.includes("_haus_") ? "haus" : "wohnung";
+  const detectSuffix = () => {
+    const base = `quadratmeterpreis_avg_${asset}_lagescore01`;
+    if (baseVars[`${base}_kreis`] !== undefined) return "_kreis";
+    if (baseVars[`${base}_ortslage`] !== undefined) return "_ortslage";
+    return "";
+  };
+  const suffix = detectSuffix();
+  const priceKey = (metric: "avg" | "min" | "max", score: string) =>
+    `quadratmeterpreis_${metric}_${asset}_lagescore${score}${suffix}`;
+  const fmtEur = (v: number | null | undefined) => {
+    if (v === null || v === undefined) return "";
+    return `${Math.round(v).toLocaleString("de-DE")} €`;
+  };
+  const normalize = (text: string) =>
+    text
+      .replace(/\s+/g, " ")
+      .replace(/\s+,/g, ",")
+      .replace(/\s+\./g, ".")
+      .replace(/Top-\s+Lagen/g, "Top-Lagen")
+      .trim();
+  const ensureSentence = (text: string) => {
+    const t = normalize(text);
+    if (!t) return "";
+    return /[.!?]$/.test(t) ? t : `${t}.`;
+  };
+
+  const labels = (scoringCfg.label_by_score && typeof scoringCfg.label_by_score === "object")
+    ? (scoringCfg.label_by_score as AnyRecord)
+    : {};
+  const availableScores = ["01", "02", "03", "04", "05"].filter((s) => baseVars[priceKey("avg", s)] != null);
+
+  const expandSequenceSteps = (steps: AnyRecord[], idx: number, used: Set<string>): string[] => {
+    if (idx >= steps.length) return [""];
+    const step = steps[idx] ?? {};
+    const tpl = String(step.template ?? "").trim();
+    if (!tpl) return expandSequenceSteps(steps, idx + 1, used);
+    const rawScore = String(step.score ?? "any");
+    const candidates =
+      rawScore === "any"
+        ? availableScores.filter((s) => !used.has(s))
+        : [rawScore];
+    if (!candidates.length) return expandSequenceSteps(steps, idx + 1, used);
+    const out: string[] = [];
+    for (const score of candidates) {
+      const avg = baseVars[priceKey("avg", score)];
+      if (avg == null) continue;
+      const min = baseVars[priceKey("min", score)];
+      const max = baseVars[priceKey("max", score)];
+      const ctx: AnyRecord = {
+        region_name: baseVars.region_name ?? "",
+        label: labels[score] ?? "",
+        preis_avg: fmtEur(avg),
+        preis_min: fmtEur(min),
+        preis_max: fmtEur(max),
+      };
+      const renderedStep = ensureSentence(renderTemplate(tpl, ctx));
+      const nextUsed = new Set(used);
+      nextUsed.add(score);
+      const tails = expandSequenceSteps(steps, idx + 1, nextUsed);
+      for (const tail of tails) {
+        out.push(normalize(`${renderedStep} ${tail}`));
+      }
+    }
+    if (!out.length) return expandSequenceSteps(steps, idx + 1, used);
+    return out;
+  };
+
+  const variants: string[] = [];
+  for (const seq of sequences) {
+    const steps = Array.isArray((seq as AnyRecord)?.steps) ? ((seq as AnyRecord).steps as AnyRecord[]) : [];
+    if (!steps.length) continue;
+    const rendered = expandSequenceSteps(steps, 0, new Set<string>());
+    variants.push(...rendered.map((v) => normalize(v)).filter(Boolean));
+  }
+
+  const unique = Array.from(new Set(variants.map((v) => normalize(v)).filter(Boolean)));
+  if (!unique.length) return {} as Record<string, string[]>;
+  return { text_wohnlagen_liste: unique };
+}
+
+function consumeBlockSelectionRng(rng?: () => number) {
+  if (!rng) return;
+  rng();
 }
 
 function expandStaticVerbkonstrukte(staticBlock: AnyRecord, baseVars: AnyRecord) {
@@ -351,6 +666,23 @@ function expandStaticVerbkonstrukte(staticBlock: AnyRecord, baseVars: AnyRecord)
 function expandTrendVerbkonstrukte(definition: AnyRecord, trendValues: AnyRecord, baseVars: AnyRecord) {
   const options: AnyRecord = {};
   const trendBlock = definition?.trend_verbkonstrukte ?? {};
+  const connectorMap: Record<string, { note: string[]; link: string[] }> = {
+    optimal: { note: ["glücklicherweise", "erfreulich"], link: ["Gleichzeitig", "Parallel dazu", "Ebenso"] },
+    "ungünstig": { note: ["leider", "bedauerlich"], link: ["Gleichzeitig", "Parallel dazu", "Ebenso"] },
+    neutral: { note: [""], link: ["Jedoch", "Hingegen"] },
+  };
+  const connectorType = String(baseVars.connector_type ?? "neutral");
+  const connector = connectorMap[connectorType] ?? connectorMap.neutral;
+  const connectorVars = {
+    note_word: connector.note[0] ?? "",
+    link_word: connector.link[0] ?? "Zudem",
+  };
+  const coarseFallback: Record<string, string> = {
+    leicht_groesser: "groesser",
+    viel_groesser: "groesser",
+    leicht_kleiner: "kleiner",
+    viel_kleiner: "kleiner",
+  };
   const keys = new Set<string>();
   for (const key of Object.keys(trendBlock)) {
     if (key.startsWith("phrases_")) keys.add(key.replace("phrases_", ""));
@@ -374,8 +706,15 @@ function expandTrendVerbkonstrukte(definition: AnyRecord, trendValues: AnyRecord
     else if ("index50" in trendValue) category = determineIndex50Category(trendValue.index50);
 
     const templateCategory = mapTrendCategoryToTemplateKey(category);
-    const phraseEntries = phrasesByCategory[templateCategory] ?? [];
-    const verbPatterns = verbByCategory[templateCategory] ?? [];
+    const fallbackCategory = coarseFallback[templateCategory];
+    const phraseEntries =
+      phrasesByCategory[templateCategory] ??
+      (fallbackCategory ? phrasesByCategory[fallbackCategory] : []) ??
+      [];
+    const verbPatterns =
+      verbByCategory[templateCategory] ??
+      (fallbackCategory ? verbByCategory[fallbackCategory] : []) ??
+      [];
     if (!Array.isArray(phraseEntries) || !phraseEntries.length) continue;
 
     const renderedPhrases = phraseEntries.map((entry: AnyRecord) =>
@@ -389,7 +728,7 @@ function expandTrendVerbkonstrukte(definition: AnyRecord, trendValues: AnyRecord
         for (const phraseEntry of phraseEntries as AnyRecord[]) {
           const phrase = renderTemplate(String(phraseEntry?.phrase ?? phraseEntry ?? ""), baseVars);
           const aux = String(phraseEntry?.auxiliar ?? "");
-          const rendered = renderTemplate(String(pattern), { ...baseVars, phrase, auxiliar: aux });
+          const rendered = renderTemplate(String(pattern), { ...baseVars, ...connectorVars, phrase, auxiliar: aux });
           expanded.push(rendered);
         }
       }
@@ -404,6 +743,15 @@ function applyTrendBaseVars(trendValues: AnyRecord, baseVars: AnyRecord) {
     if (!trendKey.startsWith("trendText_")) continue;
     const baseKey = trendKey.replace(/^trendText_/, "");
     if (baseKey in baseVars) continue;
+
+    const isSaldoKey = /saldo/i.test(baseKey);
+    if (isSaldoKey && "abs_delta" in trendData && typeof trendData.abs_delta === "number") {
+      baseVars[baseKey] = Math.abs(trendData.abs_delta).toLocaleString("de-DE", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
+      continue;
+    }
 
     if ("rel_change" in trendData && typeof trendData.rel_change === "number") {
       baseVars[baseKey] = Math.abs(trendData.rel_change).toLocaleString("de-DE", {
@@ -458,10 +806,17 @@ function expandTemplates(templates: AnyRecord, baseVars: AnyRecord, options: Any
         }
         variants = next;
       }
-      results.push(...variants.map((value) => value.trim()).filter(Boolean));
+      results.push(...variants.map((value) => normalizeGeneratedText(value)).filter(Boolean));
     }
   }
   return results;
+}
+
+function normalizeGeneratedText(text: string) {
+  return String(text)
+    .replace(/ {2,}/g, " ")
+    .replace(/ +([,.!?;:])/g, "$1")
+    .trim();
 }
 
 function countTemplateVariants(raw: string, options: AnyRecord) {
@@ -481,7 +836,7 @@ function* iterateTemplateVariants(raw: string, options: AnyRecord, baseVars: Any
 
   function* walk(current: string, index: number): Generator<string> {
     if (index >= keys.length) {
-      yield current.trim();
+      yield normalizeGeneratedText(current);
       return;
     }
     const key = keys[index];
@@ -528,7 +883,7 @@ function renderTemplateVariantAt(raw: string, options: AnyRecord, baseVars: AnyR
     current = current.replace(pattern, String(choices[choiceIndex] ?? ""));
   }
 
-  return current.trim();
+  return normalizeGeneratedText(current);
 }
 
 function buildSampleIndexes(total: number, sampleSize: number) {
@@ -574,26 +929,27 @@ function collectTemplatePlaceholders(definition: AnyRecord) {
 
 function collectTrendDependencyKeys(definition: AnyRecord) {
   const deps = new Set<string>();
+  const normalizeYear01Stem = (stem: string) => (stem.endsWith("_jahr01") ? stem.slice(0, -7) : stem);
   for (const trendKey of trendKeyCandidates(definition)) {
     if (!trendKey.startsWith("trendText_")) continue;
     const base = trendKey.replace(/^trendText_/, "");
 
     if (base.endsWith("_vergleich_ortslage_kreis")) {
-      const stem = base.replace(/_vergleich_ortslage_kreis$/, "");
+      const stem = normalizeYear01Stem(base.replace(/_vergleich_ortslage_kreis$/, ""));
       deps.add(`${stem}_jahr01_ortslage`);
       deps.add(`${stem}_jahr01_kreis`);
       continue;
     }
 
     if (base.endsWith("_vergleich_ortslage_bundesland")) {
-      const stem = base.replace(/_vergleich_ortslage_bundesland$/, "");
+      const stem = normalizeYear01Stem(base.replace(/_vergleich_ortslage_bundesland$/, ""));
       deps.add(`${stem}_jahr01_ortslage`);
       deps.add(`${stem}_jahr01_bundesland`);
       continue;
     }
 
     if (base.endsWith("_vergleich_ortslage_land")) {
-      const stem = base.replace(/_vergleich_ortslage_land$/, "");
+      const stem = normalizeYear01Stem(base.replace(/_vergleich_ortslage_land$/, ""));
       deps.add(`${stem}_jahr01_ortslage`);
       deps.add(`${stem}_jahr01_land`);
       continue;
@@ -675,6 +1031,12 @@ function collectTrendDependencyKeys(definition: AnyRecord) {
       deps.add(`${stem}_jahr01_land`);
       continue;
     }
+
+    if (base.includes("vergleich_neubau_bestand")) {
+      deps.add("quadratmeterkaltmiete_avg_wohnung_neubau_jahr01_ortslage");
+      deps.add("quadratmeterkaltmiete_avg_wohnung_bestand_jahr01_ortslage");
+      continue;
+    }
   }
   return deps;
 }
@@ -752,7 +1114,47 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
   }
   const block = pickRandom(blocks, rng);
   const trendValues = computeTrendValues(block, raw);
-  return generateText(block, inputData, trendValues, resolvedKey, undefined, undefined, rng);
+  const localInput = { ...inputData };
+  let connectorConfig: AnyRecord | undefined;
+
+  if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
+    if (localInput.wanderungssaldo_no_data_beide_ortslage) {
+      return null;
+    }
+
+    const relZuzPct = Number(trendValues?.trendText_wanderungssaldo_zuzuege_5jahrestrend_ortslage?.rel_change ?? 0);
+    const relFortPct = Number(trendValues?.trendText_wanderungssaldo_fortzuege_5jahrestrend_ortslage?.rel_change ?? 0);
+    const relZuz = Number.isFinite(relZuzPct) ? relZuzPct / 100 : 0;
+    const relFort = Number.isFinite(relFortPct) ? relFortPct / 100 : 0;
+
+    const connectorType = determineGenericConnectorType(relZuz, relFort, 0.02);
+    connectorConfig = {
+      optimal: {
+        note: ["glücklicherweise", "erfreulich"],
+        link: ["Gleichzeitig", "Parallel dazu", "Ebenso"],
+      },
+      ungünstig: {
+        note: ["leider", "bedauerlich"],
+        link: ["Gleichzeitig", "Parallel dazu", "Ebenso"],
+      },
+      neutral: {
+        note: [""],
+        link: ["Jedoch", "Hingegen"],
+      },
+    };
+
+    localInput.connector_type = connectorType;
+  }
+
+  return generateText(block, localInput, trendValues, resolvedKey, undefined, connectorConfig, rng);
+}
+
+function deriveWanderungConnectorTypeOrtslage(trendValues: AnyRecord) {
+  const relZuzPct = Number(trendValues?.trendText_wanderungssaldo_zuzuege_5jahrestrend_ortslage?.rel_change ?? 0);
+  const relFortPct = Number(trendValues?.trendText_wanderungssaldo_fortzuege_5jahrestrend_ortslage?.rel_change ?? 0);
+  const relZuz = Number.isFinite(relZuzPct) ? relZuzPct / 100 : 0;
+  const relFort = Number.isFinite(relFortPct) ? relFortPct / 100 : 0;
+  return determineGenericConnectorType(relZuz, relFort, 0.02);
 }
 
 export function generateOrtslagePriceTexts(
@@ -780,17 +1182,27 @@ export function generateOrtslageTextVariants(key: string, inputs: AnyRecord) {
   const definition = computeTextDefinition(key);
   if (!definition) return [];
   const { inputData, raw } = buildInputData(inputs);
+  const resolvedKey = resolveDefinitionKey(key, raw);
   const blocks = definition.text_blocks;
   if (!Array.isArray(blocks) || !blocks.length) return [];
+  if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) return [];
 
+  consumeBlockSelectionRng();
   const allVariants: string[] = [];
   for (const block of blocks) {
     const trendValues = computeTrendValues(block, raw);
-    const baseVars = { ...inputData };
-    applyTrendBaseVars(trendValues, baseVars);
+    const baseVarsRaw = { ...inputData };
+    if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
+      baseVarsRaw.connector_type = deriveWanderungConnectorTypeOrtslage(trendValues);
+    }
+    applyTrendBaseVars(trendValues, baseVarsRaw);
+    const scoringOptions = buildScoringPlaceholderOptions(block, baseVarsRaw, key);
+    const baseVars = Object.keys(scoringOptions).length
+      ? baseVarsRaw
+      : enrichBaseVarsForScoring(block, baseVarsRaw, key);
     const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
-    const options = { ...staticOptions, ...trendOptions };
+    const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
     const variants = expandTemplates(block.templates, baseVars, options);
     allVariants.push(...variants);
   }
@@ -802,17 +1214,27 @@ export function countOrtslageTextVariants(key: string, inputs: AnyRecord) {
   const definition = computeTextDefinition(key);
   if (!definition) return 0;
   const { inputData, raw } = buildInputData(inputs);
+  const resolvedKey = resolveDefinitionKey(key, raw);
   const blocks = definition.text_blocks;
   if (!Array.isArray(blocks) || !blocks.length) return 0;
+  if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) return 0;
 
+  consumeBlockSelectionRng();
   let total = 0;
   for (const block of blocks) {
     const trendValues = computeTrendValues(block, raw);
-    const baseVars = { ...inputData };
-    applyTrendBaseVars(trendValues, baseVars);
+    const baseVarsRaw = { ...inputData };
+    if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
+      baseVarsRaw.connector_type = deriveWanderungConnectorTypeOrtslage(trendValues);
+    }
+    applyTrendBaseVars(trendValues, baseVarsRaw);
+    const scoringOptions = buildScoringPlaceholderOptions(block, baseVarsRaw, key);
+    const baseVars = Object.keys(scoringOptions).length
+      ? baseVarsRaw
+      : enrichBaseVarsForScoring(block, baseVarsRaw, key);
     const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
-    const options = { ...staticOptions, ...trendOptions };
+    const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
     const templates = block.templates ?? {};
     for (const list of Object.values(templates)) {
       if (!Array.isArray(list)) continue;
@@ -828,16 +1250,26 @@ export function* iterateOrtslageTextVariants(key: string, inputs: AnyRecord): Ge
   const definition = computeTextDefinition(key);
   if (!definition) return;
   const { inputData, raw } = buildInputData(inputs);
+  const resolvedKey = resolveDefinitionKey(key, raw);
   const blocks = definition.text_blocks;
   if (!Array.isArray(blocks) || !blocks.length) return;
+  if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) return;
 
+  consumeBlockSelectionRng();
   for (const block of blocks) {
     const trendValues = computeTrendValues(block, raw);
-    const baseVars = { ...inputData };
-    applyTrendBaseVars(trendValues, baseVars);
+    const baseVarsRaw = { ...inputData };
+    if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
+      baseVarsRaw.connector_type = deriveWanderungConnectorTypeOrtslage(trendValues);
+    }
+    applyTrendBaseVars(trendValues, baseVarsRaw);
+    const scoringOptions = buildScoringPlaceholderOptions(block, baseVarsRaw, key);
+    const baseVars = Object.keys(scoringOptions).length
+      ? baseVarsRaw
+      : enrichBaseVarsForScoring(block, baseVarsRaw, key);
     const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
-    const options = { ...staticOptions, ...trendOptions };
+    const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
     const templates = block.templates ?? {};
     for (const list of Object.values(templates)) {
       if (!Array.isArray(list)) continue;
@@ -852,19 +1284,31 @@ export function sampleOrtslageTextVariants(key: string, inputs: AnyRecord, sampl
   const definition = computeTextDefinition(key);
   if (!definition) return { total: 0, samples: [] as Array<{ index: number; text: string }> };
   const { inputData, raw } = buildInputData(inputs);
+  const resolvedKey = resolveDefinitionKey(key, raw);
   const blocks = definition.text_blocks;
   if (!Array.isArray(blocks) || !blocks.length) return { total: 0, samples: [] };
+  if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) {
+    return { total: 0, samples: [] };
+  }
 
+  consumeBlockSelectionRng();
   const templates: Array<{ template: string; options: AnyRecord; baseVars: AnyRecord; count: number }> = [];
   let total = 0;
 
   for (const block of blocks) {
     const trendValues = computeTrendValues(block, raw);
-    const baseVars = { ...inputData };
-    applyTrendBaseVars(trendValues, baseVars);
+    const baseVarsRaw = { ...inputData };
+    if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
+      baseVarsRaw.connector_type = deriveWanderungConnectorTypeOrtslage(trendValues);
+    }
+    applyTrendBaseVars(trendValues, baseVarsRaw);
+    const scoringOptions = buildScoringPlaceholderOptions(block, baseVarsRaw, key);
+    const baseVars = Object.keys(scoringOptions).length
+      ? baseVarsRaw
+      : enrichBaseVarsForScoring(block, baseVarsRaw, key);
     const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
-    const options = { ...staticOptions, ...trendOptions };
+    const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
     const tplMap = block.templates ?? {};
     for (const list of Object.values(tplMap)) {
       if (!Array.isArray(list)) continue;

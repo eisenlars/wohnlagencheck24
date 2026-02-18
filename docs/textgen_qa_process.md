@@ -258,6 +258,44 @@ Keep this section short. Add only if a new, reusable lesson was learned.
   **Zusatz:** Varianten müssen **unterschiedliche Wortgruppen** verwenden (z. B. Auxiliar nicht identisch).
 
 **Referenz‑Satz für neue Keys:**  
+
+## 10b) Wohnraumsituation Missing‑Data‑Checkliste (Kreis vs. Ortslage)
+
+Diese Checkliste ist vor jeder Optimierung eines `wohnmarktsituation_*`-Keys verpflichtend.
+Sie basiert auf dem Altverhalten aus den Python-Skripten und dient zur Vermeidung von Regressionen
+bei kleinräumig lückenhaften Daten.
+
+1. **Katalog-Parität prüfen**  
+   Für jeden betroffenen Key müssen Kreis/Ortslage dieselbe Baustein-Logik haben
+   (gleiche Verbkonstrukte, nur Suffix-/Region-Variablen unterschiedlich).
+
+2. **Fehlende Basisdaten explizit behandeln**  
+   Bei bekannten Null-/No‑Data-Fällen keine leeren Platzhalter zulassen.
+   Entweder:
+   - `special_cases_template` + `sondertext_*` nutzen, oder
+   - dedizierte Default-Textvariante mit stabilen Ersatzwerten einsetzen.
+
+3. **Historische Guard-Logik je Key gegenprüfen**  
+   Vor Änderungen pro Key kurz prüfen, ob im Altprojekt ein Guard existierte:
+   - `wohnmarktsituation_haushalte`: Default bei `haushaltsanzahl == 0`
+   - `wohnmarktsituation_natuerlicher_saldo`: `final_text = None` bei doppeltem `no_data`
+   - `wohnmarktsituation_wanderungssaldo`: `final_text = None` bei doppeltem `no_data`
+   - `wohnmarktsituation_bauueberhang_baufortschritt`: leer bei fehlendem Bauüberhang-Basissignal
+
+4. **Ortslage-spezifische Datenlücken bevorzugt defensiv abfangen**  
+   Ortslagen haben häufiger Nullwerte; daher bei Ortslage-Keys zuerst die
+   Fallback-Strategie definieren, dann Stiloptimierung durchführen.
+
+5. **QA-Exit-Kriterium erweitern (zusätzlich zu 5a)**  
+   Ein Key gilt nur dann als „fertig“, wenn in 50 Varianten:
+   - kein leerer Platzhalter,
+   - keine inhaltlich entkernten Sätze,
+   - keine ungeplanten Key-Drops (Text darf nicht stillschweigend fehlen).
+
+6. **Next.js-Migrationshinweis**  
+   Die Engine unterstützt `special_cases_template`, setzt aber `sondertext_*` nicht automatisch.
+   Bei Keys mit Alt-Guard-Logik muss die Sondertext-Befüllung bewusst im Generator ergänzt werden,
+   falls das Altverhalten 1:1 benötigt wird.
 „Bitte gemäß `docs/textgen_qa_process.md` arbeiten: keine Fließtexte in `templates`, 3‑Varianten‑Pflicht für alle Bausteine, danach QA‑Sampling.“
 
 ### Pattern‑Learnings

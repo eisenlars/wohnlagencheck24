@@ -32,6 +32,13 @@ function shuffleInPlace<T>(items: T[], rng: Rng) {
 
 const DEFAULT_MAX_PASSES = 5;
 
+function normalizeGeneratedText(text: string): string {
+  return String(text)
+    .replace(/ {2,}/g, " ")
+    .replace(/ +([,.!?;:])/g, "$1")
+    .trim();
+}
+
 export function renderTemplate(template: string, context: AnyRecord): string {
   return template.replace(/{{\s*([^}]+)\s*}}/g, (_, key) => {
     const value = context[key.trim()];
@@ -172,6 +179,22 @@ export function selectPhraseEntry(category: string, phraseJson: AnyRecord, stric
   const rawOptions = phraseJson?.[category];
   const options = Array.isArray(rawOptions) ? rawOptions : [];
   if (!options.length) {
+    // Backward-compatible fallback for legacy phrase blocks that only define
+    // coarse buckets (gleich/groesser/kleiner).
+    const coarseFallback: Record<string, string> = {
+      leicht_groesser: "groesser",
+      viel_groesser: "groesser",
+      leicht_kleiner: "kleiner",
+      viel_kleiner: "kleiner",
+    };
+    const fallbackCategory = coarseFallback[category];
+    if (fallbackCategory) {
+      const fallbackRaw = phraseJson?.[fallbackCategory];
+      const fallbackOptions = Array.isArray(fallbackRaw) ? fallbackRaw : [];
+      if (fallbackOptions.length) {
+        return pickRandom(fallbackOptions, rng);
+      }
+    }
     if (strict) {
       throw new Error(`Phrasen fehlen für Kategorie '${category}'. Vorhandene Keys: ${Object.keys(phraseJson ?? {})}`);
     }
@@ -206,18 +229,56 @@ export function generateVerbkonstrukt(
   }
 
   if (connectorConfig) {
+    const normalizeConnectorKey = (value: unknown) =>
+      String(value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+
     const connectorTypeRaw = renderContext.connector_type;
     const connectorType = typeof connectorTypeRaw === "string" && connectorTypeRaw.trim().length > 0
       ? connectorTypeRaw
       : "neutral";
-    const connectorEntry = connectorConfig[connectorType];
+    const connectorEntryDirect = connectorConfig[connectorType];
+    let connectorEntry = connectorEntryDirect;
+    if (!connectorEntry || typeof connectorEntry !== "object") {
+      const wanted = normalizeConnectorKey(connectorType);
+      for (const [candidateKey, candidateValue] of Object.entries(connectorConfig)) {
+        if (normalizeConnectorKey(candidateKey) === wanted) {
+          connectorEntry = candidateValue;
+          break;
+        }
+      }
+    }
+    if (!connectorEntry || typeof connectorEntry !== "object") {
+      connectorEntry = connectorConfig.neutral;
+    }
     const connectorRecord =
       connectorEntry && typeof connectorEntry === "object"
         ? (connectorEntry as Record<string, unknown>)
         : null;
+    const noteRaw = connectorRecord?.note;
+    const noteOptions = Array.isArray(noteRaw) ? noteRaw : [];
     const linkRaw = connectorRecord?.link;
     const linkOptions = Array.isArray(linkRaw) ? linkRaw : [];
-    renderContext = { ...renderContext, link_word: linkOptions.length ? String(pickRandom(linkOptions, rng)) : "" };
+    const neutralRaw = connectorConfig?.neutral;
+    const neutralRecord =
+      neutralRaw && typeof neutralRaw === "object"
+        ? (neutralRaw as Record<string, unknown>)
+        : null;
+    const neutralLinkRaw = neutralRecord?.link;
+    const neutralLinkOptions = Array.isArray(neutralLinkRaw) ? neutralLinkRaw : [];
+    const selectedLink = linkOptions.length
+      ? String(pickRandom(linkOptions, rng))
+      : neutralLinkOptions.length
+        ? String(pickRandom(neutralLinkOptions, rng))
+        : "Zudem";
+    renderContext = {
+      ...renderContext,
+      note_word: noteOptions.length ? String(pickRandom(noteOptions, rng)) : "",
+      link_word: selectedLink,
+    };
   }
 
   const result = renderTemplate(pattern, renderContext);
@@ -239,14 +300,22 @@ export function generateDynamicPlaceholders(
     trendVerbkonstrukteRaw && typeof trendVerbkonstrukteRaw === "object"
       ? (trendVerbkonstrukteRaw as Record<string, unknown>)
       : {};
-  for (const [trendKey, trendData] of Object.entries(trendValues ?? {})) {
+  const trendKeys = new Set<string>();
+  for (const key of Object.keys(trendValues ?? {})) {
+    if (key.startsWith("trendText_")) trendKeys.add(key);
+  }
+
+  for (const trendKey of trendKeys) {
+    const trendData = (trendValues ?? {})[trendKey];
     const phrasesKey = `phrases_${trendKey}`;
     const verbKey = `verbkonstrukt_${trendKey}`;
     const phrasesBlock = trendVerbkonstrukte[phrasesKey];
     const verbBlock = trendVerbkonstrukte[verbKey];
     if (!phrasesBlock) continue;
-    if (!trendData || typeof trendData !== "object") continue;
-    const trendDataObj = trendData as Record<string, unknown>;
+    const trendDataObj =
+      trendData && typeof trendData === "object"
+        ? (trendData as Record<string, unknown>)
+        : {};
     if (typeof phrasesBlock !== "object" || phrasesBlock === null) continue;
     const phrasesBlockRecord = phrasesBlock as Record<string, unknown>;
 
@@ -298,7 +367,20 @@ export function generateDynamicPlaceholders(
     if (verbBlock && typeof verbBlock === "object") {
       const verbBlockRecord = verbBlock as Record<string, unknown>;
       const patternsRaw = verbBlockRecord[templateCategory];
-      const patterns = Array.isArray(patternsRaw) ? patternsRaw : [];
+      let patterns = Array.isArray(patternsRaw) ? patternsRaw : [];
+      if (!patterns.length) {
+        const coarseFallback: Record<string, string> = {
+          leicht_groesser: "groesser",
+          viel_groesser: "groesser",
+          leicht_kleiner: "kleiner",
+          viel_kleiner: "kleiner",
+        };
+        const fallbackCategory = coarseFallback[templateCategory];
+        if (fallbackCategory) {
+          const fallbackRaw = verbBlockRecord[fallbackCategory];
+          patterns = Array.isArray(fallbackRaw) ? fallbackRaw : [];
+        }
+      }
       if (!patterns.length) {
         throw new Error(`Verbkonstrukt fehlt für Kategorie '${templateCategory}' im Block '${verbKey}'.`);
       }
@@ -386,7 +468,7 @@ export function renderFinalText(templates: AnyRecord, placeholders: AnyRecord, h
   const chosenText = String(chosen);
   const firstPass = renderTemplate(chosenText, placeholders);
   const finalPass = renderTemplate(firstPass, placeholders);
-  return [finalPass, chosenText, templateMode] as const;
+  return [normalizeGeneratedText(finalPass), chosenText, templateMode] as const;
 }
 
 export function generateTextFromMultiblock(
@@ -825,7 +907,6 @@ export function umlauteUmwandeln(text: string) {
     Ae: "Ä",
     Oe: "Ö",
     Ue: "Ü",
-    ss: "ß",
   };
   let out = text;
   for (const [src, dest] of Object.entries(replacements)) {
