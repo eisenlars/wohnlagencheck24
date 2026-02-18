@@ -1,5 +1,6 @@
 import {
   generateText,
+  generateScoringTextbausteine,
   formatPriceValue,
   capitalizeWords,
   umlauteUmwandeln,
@@ -541,13 +542,24 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
   return trends;
 }
 
-function computeTextDefinition(key: string) {
-  return (
+function computeTextDefinition(key: string): AnyRecord | null {
+  return ((
     (ortslagePhrases as AnyRecord)[key] ??
     (ortslageWohnraumPhrases as AnyRecord)[key] ??
     (ortslageWirtschaftPhrases as AnyRecord)[key] ??
     null
-  );
+  ) as AnyRecord | null);
+}
+
+function getTrendRelChange(trendValues: AnyRecord, trendKey: string) {
+  const trend = trendValues?.[trendKey];
+  if (!trend || typeof trend !== "object") return 0;
+  const rel = (trend as AnyRecord).rel_change;
+  return typeof rel === "number" && Number.isFinite(rel) ? rel : 0;
+}
+
+function toRecord(value: unknown): AnyRecord {
+  return value && typeof value === "object" ? (value as AnyRecord) : {};
 }
 
 function enrichBaseVarsForScoring(block: AnyRecord, baseVars: AnyRecord, key: string, rng?: () => number) {
@@ -1130,7 +1142,7 @@ export function buildOrtslageSectionSignatures(inputs: AnyRecord) {
       (ortslageWohnraumPhrases as AnyRecord)[defKey] ??
       (ortslageWirtschaftPhrases as AnyRecord)[defKey];
     if (!definition) continue;
-    signatures[key] = buildDefinitionSignature(definition, raw, inputData);
+    signatures[key] = buildDefinitionSignature(definition as AnyRecord, raw, inputData);
   }
   return signatures;
 }
@@ -1142,8 +1154,10 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
     (ortslageWohnraumPhrases as AnyRecord)[resolvedKey] ??
     (ortslageWirtschaftPhrases as AnyRecord)[resolvedKey];
   if (!definition) return null;
-  const blocks = definition?.text_blocks;
-  if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
+  const definitionObj = definition as AnyRecord;
+  const blocksRaw = definitionObj.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (blocks.length === 0) {
     throw new Error(`'text_blocks' fehlt oder ist keine Liste in Definition '${resolvedKey}'.`);
   }
   const block = pickRandom(blocks, rng);
@@ -1156,8 +1170,8 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
       return null;
     }
 
-    const relZuzPct = Number(trendValues?.trendText_wanderungssaldo_zuzuege_5jahrestrend_ortslage?.rel_change ?? 0);
-    const relFortPct = Number(trendValues?.trendText_wanderungssaldo_fortzuege_5jahrestrend_ortslage?.rel_change ?? 0);
+    const relZuzPct = getTrendRelChange(trendValues, "trendText_wanderungssaldo_zuzuege_5jahrestrend_ortslage");
+    const relFortPct = getTrendRelChange(trendValues, "trendText_wanderungssaldo_fortzuege_5jahrestrend_ortslage");
     const relZuz = Number.isFinite(relZuzPct) ? relZuzPct / 100 : 0;
     const relFort = Number.isFinite(relFortPct) ? relFortPct / 100 : 0;
 
@@ -1184,8 +1198,8 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
 }
 
 function deriveWanderungConnectorTypeOrtslage(trendValues: AnyRecord) {
-  const relZuzPct = Number(trendValues?.trendText_wanderungssaldo_zuzuege_5jahrestrend_ortslage?.rel_change ?? 0);
-  const relFortPct = Number(trendValues?.trendText_wanderungssaldo_fortzuege_5jahrestrend_ortslage?.rel_change ?? 0);
+  const relZuzPct = getTrendRelChange(trendValues, "trendText_wanderungssaldo_zuzuege_5jahrestrend_ortslage");
+  const relFortPct = getTrendRelChange(trendValues, "trendText_wanderungssaldo_fortzuege_5jahrestrend_ortslage");
   const relZuz = Number.isFinite(relZuzPct) ? relZuzPct / 100 : 0;
   const relFort = Number.isFinite(relFortPct) ? relFortPct / 100 : 0;
   return determineGenericConnectorType(relZuz, relFort, 0.02);
@@ -1217,8 +1231,9 @@ export function generateOrtslageTextVariants(key: string, inputs: AnyRecord) {
   if (!definition) return [];
   const { inputData, raw } = buildInputData(inputs);
   const resolvedKey = resolveDefinitionKey(key, raw);
-  const blocks = definition.text_blocks;
-  if (!Array.isArray(blocks) || !blocks.length) return [];
+  const blocksRaw = definition.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (!blocks.length) return [];
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) return [];
 
   consumeBlockSelectionRng();
@@ -1234,10 +1249,10 @@ export function generateOrtslageTextVariants(key: string, inputs: AnyRecord) {
     const baseVars = Object.keys(scoringOptions).length
       ? baseVarsRaw
       : enrichBaseVarsForScoring(block, baseVarsRaw, key);
-    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
     const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
-    const variants = expandTemplates(block.templates, baseVars, options);
+    const variants = expandTemplates(toRecord(block.templates), baseVars, options);
     allVariants.push(...variants);
   }
 
@@ -1249,8 +1264,9 @@ export function countOrtslageTextVariants(key: string, inputs: AnyRecord) {
   if (!definition) return 0;
   const { inputData, raw } = buildInputData(inputs);
   const resolvedKey = resolveDefinitionKey(key, raw);
-  const blocks = definition.text_blocks;
-  if (!Array.isArray(blocks) || !blocks.length) return 0;
+  const blocksRaw = definition.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (!blocks.length) return 0;
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) return 0;
 
   consumeBlockSelectionRng();
@@ -1266,10 +1282,10 @@ export function countOrtslageTextVariants(key: string, inputs: AnyRecord) {
     const baseVars = Object.keys(scoringOptions).length
       ? baseVarsRaw
       : enrichBaseVarsForScoring(block, baseVarsRaw, key);
-    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
     const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
-    const templates = block.templates ?? {};
+    const templates = toRecord(block.templates);
     for (const list of Object.values(templates)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
@@ -1285,8 +1301,9 @@ export function* iterateOrtslageTextVariants(key: string, inputs: AnyRecord): Ge
   if (!definition) return;
   const { inputData, raw } = buildInputData(inputs);
   const resolvedKey = resolveDefinitionKey(key, raw);
-  const blocks = definition.text_blocks;
-  if (!Array.isArray(blocks) || !blocks.length) return;
+  const blocksRaw = definition.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (!blocks.length) return;
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) return;
 
   consumeBlockSelectionRng();
@@ -1301,10 +1318,10 @@ export function* iterateOrtslageTextVariants(key: string, inputs: AnyRecord): Ge
     const baseVars = Object.keys(scoringOptions).length
       ? baseVarsRaw
       : enrichBaseVarsForScoring(block, baseVarsRaw, key);
-    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
     const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
-    const templates = block.templates ?? {};
+    const templates = toRecord(block.templates);
     for (const list of Object.values(templates)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
@@ -1319,8 +1336,9 @@ export function sampleOrtslageTextVariants(key: string, inputs: AnyRecord, sampl
   if (!definition) return { total: 0, samples: [] as Array<{ index: number; text: string }> };
   const { inputData, raw } = buildInputData(inputs);
   const resolvedKey = resolveDefinitionKey(key, raw);
-  const blocks = definition.text_blocks;
-  if (!Array.isArray(blocks) || !blocks.length) return { total: 0, samples: [] };
+  const blocksRaw = definition.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (!blocks.length) return { total: 0, samples: [] };
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) {
     return { total: 0, samples: [] };
   }
@@ -1340,10 +1358,10 @@ export function sampleOrtslageTextVariants(key: string, inputs: AnyRecord, sampl
     const baseVars = Object.keys(scoringOptions).length
       ? baseVarsRaw
       : enrichBaseVarsForScoring(block, baseVarsRaw, key);
-    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
     const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
-    const tplMap = block.templates ?? {};
+    const tplMap = toRecord(block.templates);
     for (const list of Object.values(tplMap)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {

@@ -630,15 +630,26 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
   return trends;
 }
 
-function computeTextDefinition(key: string) {
+function computeTextDefinition(key: string): AnyRecord | null {
   const resolvedKey = resolveDefinitionKey(key);
-  return (
+  return ((
     (kreisPreisPhrases as AnyRecord)[resolvedKey] ??
     (kreisUeberblickPhrases as AnyRecord)[resolvedKey] ??
     (kreisWohnraumPhrases as AnyRecord)[resolvedKey] ??
     (kreisWirtschaftPhrases as AnyRecord)[resolvedKey] ??
     null
-  );
+  ) as AnyRecord | null);
+}
+
+function getTrendRelChange(trendValues: AnyRecord, trendKey: string) {
+  const trend = trendValues?.[trendKey];
+  if (!trend || typeof trend !== "object") return 0;
+  const rel = (trend as AnyRecord).rel_change;
+  return typeof rel === "number" && Number.isFinite(rel) ? rel : 0;
+}
+
+function toRecord(value: unknown): AnyRecord {
+  return value && typeof value === "object" ? (value as AnyRecord) : {};
 }
 
 function expandStaticVerbkonstrukte(staticBlock: AnyRecord, baseVars: AnyRecord) {
@@ -1196,8 +1207,9 @@ export function generateKreisTextVariants(key: string, inputs: AnyRecord, rng?: 
   if (!definition) return [];
   const resolvedKey = resolveDefinitionKey(key);
   const { inputData, raw } = buildInputData(inputs);
-  const blocks = definition.text_blocks;
-  if (!Array.isArray(blocks) || !blocks.length) return [];
+  const blocksRaw = definition.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (!blocks.length) return [];
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_kreis) return [];
   consumeBlockSelectionRng(rng);
 
@@ -1213,10 +1225,10 @@ export function generateKreisTextVariants(key: string, inputs: AnyRecord, rng?: 
     const baseVars = Object.keys(scoringOptions).length
       ? baseVarsRaw
       : enrichBaseVarsForScoring(block, baseVarsRaw, key, rng);
-    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
     const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
-    const variants = expandTemplates(block.templates, baseVars, options);
+    const variants = expandTemplates(toRecord(block.templates), baseVars, options);
     allVariants.push(...variants);
   }
 
@@ -1228,8 +1240,9 @@ export function countKreisTextVariants(key: string, inputs: AnyRecord, rng?: () 
   if (!definition) return 0;
   const resolvedKey = resolveDefinitionKey(key);
   const { inputData, raw } = buildInputData(inputs);
-  const blocks = definition.text_blocks;
-  if (!Array.isArray(blocks) || !blocks.length) return 0;
+  const blocksRaw = definition.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (!blocks.length) return 0;
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_kreis) return 0;
   consumeBlockSelectionRng(rng);
 
@@ -1245,10 +1258,10 @@ export function countKreisTextVariants(key: string, inputs: AnyRecord, rng?: () 
     const baseVars = Object.keys(scoringOptions).length
       ? baseVarsRaw
       : enrichBaseVarsForScoring(block, baseVarsRaw, key, rng);
-    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
     const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
-    const templates = block.templates ?? {};
+    const templates = toRecord(block.templates);
     for (const list of Object.values(templates)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
@@ -1264,8 +1277,9 @@ export function* iterateKreisTextVariants(key: string, inputs: AnyRecord, rng?: 
   if (!definition) return;
   const resolvedKey = resolveDefinitionKey(key);
   const { inputData, raw } = buildInputData(inputs);
-  const blocks = definition.text_blocks;
-  if (!Array.isArray(blocks) || !blocks.length) return;
+  const blocksRaw = definition.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (!blocks.length) return;
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_kreis) return;
   consumeBlockSelectionRng(rng);
 
@@ -1280,10 +1294,10 @@ export function* iterateKreisTextVariants(key: string, inputs: AnyRecord, rng?: 
     const baseVars = Object.keys(scoringOptions).length
       ? baseVarsRaw
       : enrichBaseVarsForScoring(block, baseVarsRaw, key, rng);
-    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
     const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
-    const templates = block.templates ?? {};
+    const templates = toRecord(block.templates);
     for (const list of Object.values(templates)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
@@ -1298,8 +1312,9 @@ export function sampleKreisTextVariants(key: string, inputs: AnyRecord, sampleSi
   if (!definition) return { total: 0, samples: [] as Array<{ index: number; text: string }> };
   const resolvedKey = resolveDefinitionKey(key);
   const { inputData, raw } = buildInputData(inputs);
-  const blocks = definition.text_blocks;
-  if (!Array.isArray(blocks) || !blocks.length) return { total: 0, samples: [] };
+  const blocksRaw = definition.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (!blocks.length) return { total: 0, samples: [] };
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_kreis) {
     return { total: 0, samples: [] };
   }
@@ -1319,10 +1334,10 @@ export function sampleKreisTextVariants(key: string, inputs: AnyRecord, sampleSi
     const baseVars = Object.keys(scoringOptions).length
       ? baseVarsRaw
       : enrichBaseVarsForScoring(block, baseVarsRaw, key, rng);
-    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
     const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
-    const tplMap = block.templates ?? {};
+    const tplMap = toRecord(block.templates);
     for (const list of Object.values(tplMap)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
@@ -1382,8 +1397,9 @@ export function generateKreisTextVariantDiagnostics(key: string, inputs: AnyReco
   }
   const { inputData, raw } = buildInputData(inputs);
   const resolvedKey = resolveDefinitionKey(key);
-  const blocks = definition.text_blocks;
-  if (!Array.isArray(blocks) || !blocks.length) {
+  const blocksRaw = definition.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (!blocks.length) {
     return {
       error: "text_blocks_missing",
       templateKeys: [],
@@ -1415,11 +1431,11 @@ export function generateKreisTextVariantDiagnostics(key: string, inputs: AnyReco
     const baseVars = Object.keys(scoringOptions).length
       ? baseVarsRaw
       : enrichBaseVarsForScoring(block, baseVarsRaw, key, rng);
-    const staticOptions = expandStaticVerbkonstrukte(block.static_verbkonstrukte ?? {}, baseVars);
+    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
     const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
     const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
 
-    const templates = block.templates ?? {};
+    const templates = toRecord(block.templates);
     Object.values(templates).forEach((list) => {
       if (!Array.isArray(list)) return;
       list.forEach((tpl) => {
@@ -1473,7 +1489,7 @@ export function buildKreisSectionSignatures(inputs: AnyRecord) {
       (kreisWohnraumPhrases as AnyRecord)[defKey] ??
       (kreisWirtschaftPhrases as AnyRecord)[defKey];
     if (!definition) continue;
-    signatures[key] = buildDefinitionSignature(definition, raw, inputData);
+    signatures[key] = buildDefinitionSignature(definition as AnyRecord, raw, inputData);
   }
   return signatures;
 }
@@ -1486,8 +1502,10 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
     (kreisWohnraumPhrases as AnyRecord)[resolvedKey] ??
     (kreisWirtschaftPhrases as AnyRecord)[resolvedKey];
   if (!definition) return null;
-  const blocks = definition?.text_blocks;
-  if (!blocks || !Array.isArray(blocks) || blocks.length === 0) {
+  const definitionObj = definition as AnyRecord;
+  const blocksRaw = definitionObj.text_blocks;
+  const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
+  if (blocks.length === 0) {
     throw new Error(`'text_blocks' fehlt oder ist keine Liste in Definition '${resolvedKey}'.`);
   }
   const block = pickRandom(blocks, rng);
@@ -1500,8 +1518,8 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
       return null;
     }
 
-    const relZuzPct = Number(trendValues?.trendText_wanderungssaldo_zuzuege_5jahrestrend_kreis?.rel_change ?? 0);
-    const relFortPct = Number(trendValues?.trendText_wanderungssaldo_fortzuege_5jahrestrend_kreis?.rel_change ?? 0);
+    const relZuzPct = getTrendRelChange(trendValues, "trendText_wanderungssaldo_zuzuege_5jahrestrend_kreis");
+    const relFortPct = getTrendRelChange(trendValues, "trendText_wanderungssaldo_fortzuege_5jahrestrend_kreis");
     const relZuz = Number.isFinite(relZuzPct) ? relZuzPct / 100 : 0;
     const relFort = Number.isFinite(relFortPct) ? relFortPct / 100 : 0;
 
@@ -1538,8 +1556,8 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
 }
 
 function deriveWanderungConnectorTypeKreis(trendValues: AnyRecord) {
-  const relZuzPct = Number(trendValues?.trendText_wanderungssaldo_zuzuege_5jahrestrend_kreis?.rel_change ?? 0);
-  const relFortPct = Number(trendValues?.trendText_wanderungssaldo_fortzuege_5jahrestrend_kreis?.rel_change ?? 0);
+  const relZuzPct = getTrendRelChange(trendValues, "trendText_wanderungssaldo_zuzuege_5jahrestrend_kreis");
+  const relFortPct = getTrendRelChange(trendValues, "trendText_wanderungssaldo_fortzuege_5jahrestrend_kreis");
   const relZuz = Number.isFinite(relZuzPct) ? relZuzPct / 100 : 0;
   const relFort = Number.isFinite(relFortPct) ? relFortPct / 100 : 0;
   return determineGenericConnectorType(relZuz, relFort, 0.02);
