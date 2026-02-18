@@ -124,6 +124,7 @@ function formatValueForKey(key: string, value: number) {
 }
 
 function buildInputData(inputs: AnyRecord) {
+  const source = (inputs ?? {}) as AnyRecord;
   const {
     year01,
     regionale_zuordnung,
@@ -140,12 +141,14 @@ function buildInputData(inputs: AnyRecord) {
     priceValues_rent_dict,
     priceValues_rendite_dict,
     ortslagenValues_dict,
-  } = inputs;
+  } = source;
 
-  const rentYear01 = marketValues_generallyPrices_dict?.mietpreise_mittel_kreis ?? marketValues_generallyPrices_dict?.mietpreise_mittel_jahr01_kreis;
-  const rentYear02 = marketValues_generallyPrices_dict?.mietpreise_mittel_kreis_vorjahr ?? marketValues_generallyPrices_dict?.mietpreise_mittel_jahr02_kreis;
-  const rentYear05 = marketValues_generallyPrices_dict?.mietpreise_mittel_kreis_vor_5_jahren ?? marketValues_generallyPrices_dict?.mietpreise_mittel_jahr05_kreis;
-  const rentBl = marketValues_generallyPrices_dict?.mietpreise_mittel_bundesland ?? marketValues_generallyPrices_dict?.mietpreise_mittel_jahr01_bundesland;
+  const marketValues = (marketValues_generallyPrices_dict ?? {}) as AnyRecord;
+
+  const rentYear01 = marketValues.mietpreise_mittel_kreis ?? marketValues.mietpreise_mittel_jahr01_kreis;
+  const rentYear02 = marketValues.mietpreise_mittel_kreis_vorjahr ?? marketValues.mietpreise_mittel_jahr02_kreis;
+  const rentYear05 = marketValues.mietpreise_mittel_kreis_vor_5_jahren ?? marketValues.mietpreise_mittel_jahr05_kreis;
+  const rentBl = marketValues.mietpreise_mittel_bundesland ?? marketValues.mietpreise_mittel_jahr01_bundesland;
 
   const kreisName = capitalizeWords(umlauteUmwandeln(String(kreis_name ?? "")));
   const bundeslandName = capitalizeWords(umlauteUmwandeln(String(bundesland_name ?? "")));
