@@ -561,7 +561,11 @@ function enrichBaseVarsForScoring(block: AnyRecord, baseVars: AnyRecord, key: st
 }
 
 function buildScoringPlaceholderOptions(block: AnyRecord, baseVars: AnyRecord, key: string) {
-  const scoringRaw = block?.scoring_dynamic_subblocks_preisangaben?.text_wohnlagen_liste;
+  const scoringBlockRaw = block?.scoring_dynamic_subblocks_preisangaben;
+  const scoringBlock = scoringBlockRaw && typeof scoringBlockRaw === "object"
+    ? (scoringBlockRaw as AnyRecord)
+    : null;
+  const scoringRaw = scoringBlock?.text_wohnlagen_liste;
   if (!scoringRaw || typeof scoringRaw !== "object") return {} as Record<string, string[]>;
 
   const scoringCfg = scoringRaw as AnyRecord;
