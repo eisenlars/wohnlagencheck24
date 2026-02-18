@@ -139,6 +139,15 @@ function buildInputData(inputs: AnyRecord) {
 
   const year01Parsed = typeof year01Raw === "number" ? year01Raw : Number(year01Raw);
   const year01 = Number.isFinite(year01Parsed) ? year01Parsed : new Date().getFullYear();
+  const locationFactors = (statValues_locationFactors_dict ?? {}) as AnyRecord;
+  const generallyValues = (statValues_generally_dict ?? {}) as AnyRecord;
+  const livingSpaceDemandValues = (statValues_livingSpaceDemand_dict ?? {}) as AnyRecord;
+  const livingSpaceOfferValues = (statValues_livingSpaceOffer_dict ?? {}) as AnyRecord;
+  const economyValues = (statValues_economy_dict ?? {}) as AnyRecord;
+  const propertyValues = (priceValues_properties_dict ?? {}) as AnyRecord;
+  const plotValues = (priceValues_plots_dict ?? {}) as AnyRecord;
+  const rentValues = (priceValues_rent_dict ?? {}) as AnyRecord;
+  const renditeValues = (priceValues_rendite_dict ?? {}) as AnyRecord;
 
   const rawOrtslageName = String(ortslage_name ?? "").trim();
   const normalizedOrtslageSlug = umlauteUmwandeln(rawOrtslageName)
@@ -181,15 +190,15 @@ function buildInputData(inputs: AnyRecord) {
     jahr01_minus_1: year01 - 1,
     jahr10_einwohneranzahl_trend: year01 - 9,
     jahr10_haushaltsanzahl_trend: year01 - 9,
-    ...statValues_locationFactors_dict,
-    ...statValues_generally_dict,
-    ...statValues_livingSpaceDemand_dict,
-    ...statValues_livingSpaceOffer_dict,
-    ...statValues_economy_dict,
-    ...priceValues_properties_dict,
-    ...priceValues_plots_dict,
-    ...priceValues_rent_dict,
-    ...priceValues_rendite_dict,
+    ...locationFactors,
+    ...generallyValues,
+    ...livingSpaceDemandValues,
+    ...livingSpaceOfferValues,
+    ...economyValues,
+    ...propertyValues,
+    ...plotValues,
+    ...rentValues,
+    ...renditeValues,
   };
 
   const inputData: AnyRecord = { ...raw };
