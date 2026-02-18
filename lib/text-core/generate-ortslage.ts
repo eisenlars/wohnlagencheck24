@@ -617,10 +617,13 @@ function buildScoringPlaceholderOptions(block: AnyRecord, baseVars: AnyRecord, k
     if (!candidates.length) return expandSequenceSteps(steps, idx + 1, used);
     const out: string[] = [];
     for (const score of candidates) {
-      const avg = baseVars[priceKey("avg", score)];
+      const avgRaw = baseVars[priceKey("avg", score)];
+      const minRaw = baseVars[priceKey("min", score)];
+      const maxRaw = baseVars[priceKey("max", score)];
+      const avg = typeof avgRaw === "number" ? avgRaw : null;
       if (avg == null) continue;
-      const min = baseVars[priceKey("min", score)];
-      const max = baseVars[priceKey("max", score)];
+      const min = typeof minRaw === "number" ? minRaw : null;
+      const max = typeof maxRaw === "number" ? maxRaw : null;
       const ctx: AnyRecord = {
         region_name: baseVars.region_name ?? "",
         label: labels[score] ?? "",
