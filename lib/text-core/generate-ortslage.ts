@@ -678,7 +678,7 @@ function expandStaticVerbkonstrukte(staticBlock: AnyRecord, baseVars: AnyRecord)
 
 function expandTrendVerbkonstrukte(definition: AnyRecord, trendValues: AnyRecord, baseVars: AnyRecord) {
   const options: AnyRecord = {};
-  const trendBlock = definition?.trend_verbkonstrukte ?? {};
+  const trendBlock = (definition?.trend_verbkonstrukte ?? {}) as Record<string, unknown>;
   const connectorMap: Record<string, { note: string[]; link: string[] }> = {
     optimal: { note: ["glücklicherweise", "erfreulich"], link: ["Gleichzeitig", "Parallel dazu", "Ebenso"] },
     "ungünstig": { note: ["leider", "bedauerlich"], link: ["Gleichzeitig", "Parallel dazu", "Ebenso"] },
@@ -706,8 +706,8 @@ function expandTrendVerbkonstrukte(definition: AnyRecord, trendValues: AnyRecord
     if (!trendKey.startsWith("trendText_")) continue;
     const phrasesKey = `phrases_${trendKey}`;
     const verbKey = `verbkonstrukt_${trendKey}`;
-    const phrasesByCategory = trendBlock[phrasesKey] ?? {};
-    const verbByCategory = trendBlock[verbKey] ?? {};
+    const phrasesByCategory = (trendBlock[phrasesKey] ?? {}) as Record<string, unknown>;
+    const verbByCategory = (trendBlock[verbKey] ?? {}) as Record<string, unknown>;
 
     const trendValue = trendValues[trendKey] ?? {};
     let category = "gleich";
