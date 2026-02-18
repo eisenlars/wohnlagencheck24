@@ -701,12 +701,19 @@ function expandTrendVerbkonstrukte(definition: AnyRecord, trendValues: AnyRecord
       ? (trendValueRaw as AnyRecord)
       : {};
     let category = "gleich";
-    if ("index1" in trendValue) category = determineIndex1Category(trendValue.index1);
-    else if ("index100" in trendValue) category = determineIndex100Category(trendValue.index100);
-    else if ("rel_change" in trendValue) category = determineTrendCategory(trendValue.rel_change);
-    else if ("abs_delta" in trendValue) category = determineAbsoluteCategoryWithDirection(trendValue.abs_delta);
-    else if ("direct_comparison" in trendValue) category = determineSimpleComparisonCategory(trendValue.direct_comparison.value_a, trendValue.direct_comparison.value_b);
-    else if ("index50" in trendValue) category = determineIndex50Category(trendValue.index50);
+    if (typeof trendValue.index1 === "number") category = determineIndex1Category(trendValue.index1);
+    else if (typeof trendValue.index100 === "number") category = determineIndex100Category(trendValue.index100);
+    else if (typeof trendValue.rel_change === "number") category = determineTrendCategory(trendValue.rel_change);
+    else if (typeof trendValue.abs_delta === "number") category = determineAbsoluteCategoryWithDirection(trendValue.abs_delta);
+    else if (
+      trendValue.direct_comparison &&
+      typeof trendValue.direct_comparison === "object" &&
+      typeof (trendValue.direct_comparison as AnyRecord).value_a === "number" &&
+      typeof (trendValue.direct_comparison as AnyRecord).value_b === "number"
+    ) {
+      const directComparison = trendValue.direct_comparison as AnyRecord;
+      category = determineSimpleComparisonCategory(directComparison.value_a as number, directComparison.value_b as number);
+    } else if (typeof trendValue.index50 === "number") category = determineIndex50Category(trendValue.index50);
 
     const templateCategory = mapTrendCategoryToTemplateKey(category);
     const fallbackCategory = coarseFallback[templateCategory];
