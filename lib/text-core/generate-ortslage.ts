@@ -766,39 +766,41 @@ function applyTrendBaseVars(trendValues: AnyRecord, baseVars: AnyRecord) {
     if (!trendKey.startsWith("trendText_")) continue;
     const baseKey = trendKey.replace(/^trendText_/, "");
     if (baseKey in baseVars) continue;
+    if (!trendData || typeof trendData !== "object") continue;
+    const trendDataObj = trendData as AnyRecord;
 
     const isSaldoKey = /saldo/i.test(baseKey);
-    if (isSaldoKey && "abs_delta" in trendData && typeof trendData.abs_delta === "number") {
-      baseVars[baseKey] = Math.abs(trendData.abs_delta).toLocaleString("de-DE", {
+    if (isSaldoKey && typeof trendDataObj.abs_delta === "number") {
+      baseVars[baseKey] = Math.abs(trendDataObj.abs_delta).toLocaleString("de-DE", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       });
       continue;
     }
 
-    if ("rel_change" in trendData && typeof trendData.rel_change === "number") {
-      baseVars[baseKey] = Math.abs(trendData.rel_change).toLocaleString("de-DE", {
+    if (typeof trendDataObj.rel_change === "number") {
+      baseVars[baseKey] = Math.abs(trendDataObj.rel_change).toLocaleString("de-DE", {
         minimumFractionDigits: 1,
         maximumFractionDigits: 1,
       });
       continue;
     }
-    if ("abs_delta" in trendData && typeof trendData.abs_delta === "number") {
-      baseVars[baseKey] = trendData.abs_delta.toLocaleString("de-DE", {
+    if (typeof trendDataObj.abs_delta === "number") {
+      baseVars[baseKey] = trendDataObj.abs_delta.toLocaleString("de-DE", {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
       });
       continue;
     }
-    if ("index1" in trendData && typeof trendData.index1 === "number") {
-      baseVars[baseKey] = trendData.index1.toLocaleString("de-DE", {
+    if (typeof trendDataObj.index1 === "number") {
+      baseVars[baseKey] = trendDataObj.index1.toLocaleString("de-DE", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
       continue;
     }
-    if ("index100" in trendData && typeof trendData.index100 === "number") {
-      baseVars[baseKey] = trendData.index100.toLocaleString("de-DE", {
+    if (typeof trendDataObj.index100 === "number") {
+      baseVars[baseKey] = trendDataObj.index100.toLocaleString("de-DE", {
         minimumFractionDigits: 1,
         maximumFractionDigits: 1,
       });
