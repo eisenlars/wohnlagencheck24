@@ -126,7 +126,7 @@ function formatValueForKey(key: string, value: number) {
 function buildInputData(inputs: AnyRecord) {
   const source = (inputs ?? {}) as AnyRecord;
   const {
-    year01,
+    year01: year01Raw,
     regionale_zuordnung,
     kreis_name,
     bundesland_name,
@@ -142,6 +142,9 @@ function buildInputData(inputs: AnyRecord) {
     priceValues_rendite_dict,
     ortslagenValues_dict,
   } = source;
+
+  const year01Parsed = typeof year01Raw === "number" ? year01Raw : Number(year01Raw);
+  const year01 = Number.isFinite(year01Parsed) ? year01Parsed : new Date().getFullYear();
 
   const marketValues = (marketValues_generallyPrices_dict ?? {}) as AnyRecord;
 
