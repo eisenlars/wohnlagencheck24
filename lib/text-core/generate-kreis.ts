@@ -809,7 +809,8 @@ function expandTemplates(templates: AnyRecord, baseVars: AnyRecord, options: Any
         .map((m) => m.replace(/{{\s*|\s*}}/g, ""));
       let variants = [raw];
       for (const key of keys) {
-        const choices = options[key] ?? [baseVars[key] ?? ""];
+        const choicesRaw = options[key];
+        const choices = Array.isArray(choicesRaw) ? choicesRaw : [baseVars[key] ?? ""];
         const next: string[] = [];
         const pattern = new RegExp(`{{\\s*${escapeRegExp(key)}\\s*}}`, "g");
         for (const variant of variants) {
