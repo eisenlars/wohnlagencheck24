@@ -801,7 +801,8 @@ function expandTemplates(templates: AnyRecord, baseVars: AnyRecord, options: Any
   const allTemplates = templates ?? {};
   const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   for (const mode of Object.keys(allTemplates)) {
-    const list = allTemplates[mode] ?? [];
+    const listRaw = allTemplates[mode];
+    const list = Array.isArray(listRaw) ? listRaw : [];
     for (const template of list) {
       const raw = String(template);
       const keys = Array.from(new Set(raw.match(/{{\s*([^}]+)\s*}}/g) ?? []))
