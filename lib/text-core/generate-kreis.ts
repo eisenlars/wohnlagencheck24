@@ -696,7 +696,10 @@ function expandTrendVerbkonstrukte(definition: AnyRecord, trendValues: AnyRecord
     const phrasesByCategory = (trendBlock[phrasesKey] ?? {}) as Record<string, unknown>;
     const verbByCategory = (trendBlock[verbKey] ?? {}) as Record<string, unknown>;
 
-    const trendValue = trendValues[trendKey] ?? {};
+    const trendValueRaw = trendValues[trendKey];
+    const trendValue = trendValueRaw && typeof trendValueRaw === "object"
+      ? (trendValueRaw as AnyRecord)
+      : {};
     let category = "gleich";
     if ("index1" in trendValue) category = determineIndex1Category(trendValue.index1);
     else if ("index100" in trendValue) category = determineIndex100Category(trendValue.index100);
