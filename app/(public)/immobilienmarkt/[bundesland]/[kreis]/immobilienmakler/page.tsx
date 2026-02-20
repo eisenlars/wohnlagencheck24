@@ -8,6 +8,7 @@ import { asRecord, asString } from "@/utils/records";
 import { formatRegionFallback } from "@/utils/regionName";
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
+import { getRandomReferencesForKreis } from "@/lib/referenzen";
 
 type PageParams = { bundesland?: string; kreis?: string };
 type PageProps = { params: Promise<PageParams> };
@@ -37,6 +38,11 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
 
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
   const tabs = IMMOBILIENMARKT_THEME.tabsByLevel.kreis ?? [];
+  const references = await getRandomReferencesForKreis({
+    bundeslandSlug,
+    kreisSlug,
+    limit: 6,
+  });
 
   return (
     <>
@@ -64,6 +70,7 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
         report={report}
         bundeslandSlug={bundeslandSlug}
         kreisSlug={kreisSlug}
+        references={references}
       />
     </>
   );

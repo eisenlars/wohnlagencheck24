@@ -5,17 +5,21 @@ import { asRecord, asString } from "@/utils/records";
 import type { Report } from "@/lib/data";
 import styles from "./ImmobilienmaklerSection.module.css";
 import { KontaktForm } from "@/components/kontakt/KontaktForm";
+import type { RegionalReference } from "@/lib/referenzen";
+import { ReferenceSlideshow } from "@/components/referenzen/ReferenceSlideshow";
 
 type ImmobilienmaklerSectionProps = {
   report: Report;
   bundeslandSlug: string;
   kreisSlug: string;
+  references?: RegionalReference[];
 };
 
 export function ImmobilienmaklerSection({
   report,
   bundeslandSlug,
   kreisSlug,
+  references = [],
 }: ImmobilienmaklerSectionProps) {
   const text = asRecord(report["text"]) ?? asRecord(asRecord(report.data)?.["text"]) ?? {};
   const makler = asRecord(text["makler"]) ?? {};
@@ -144,6 +148,10 @@ export function ImmobilienmaklerSection({
             <h2>Maklerprovision & Kosten</h2>
             <p className={styles.text}>{provision}</p>
           </section>
+        ) : null}
+
+        {references.length > 0 ? (
+          <ReferenceSlideshow items={references.slice(0, 6)} />
         ) : null}
       </div>
     </div>

@@ -42,6 +42,10 @@ values ('<partner-uuid>', '<kreis-area-id>', true);
 
 Migrations‑Snippets:  
 - `docs/sql/partner_integrations.sql`  
+- `docs/sql/partner_listings.sql`
+- `docs/sql/partner_references.sql`
+- `docs/sql/partner_requests.sql`
+- `docs/sql/partner_requests_region_targets_debug.sql`
 - `docs/sql/partner_property_offers_extensions.sql`  
 - `docs/sql/partner_property_overrides.sql`
 
@@ -93,6 +97,10 @@ values ('<partner-uuid>', '<kreis-area-id>', true);
 
 Migrations‑Snippets:  
 - `docs/sql/partner_integrations.sql`  
+- `docs/sql/partner_listings.sql`
+- `docs/sql/partner_references.sql`
+- `docs/sql/partner_requests.sql`
+- `docs/sql/partner_requests_region_targets_debug.sql`
 - `docs/sql/partner_property_offers_extensions.sql`  
 - `docs/sql/partner_property_overrides.sql`
 
@@ -107,16 +115,33 @@ Migrations‑Snippets:
 
 1. Cron‑Sync auslösen  
    `/api/partner-sync?token=<CRON_SECRET>`
-2. Prüfen: `partner_property_offers` gefüllt
-3. Frontend:  
+2. Pruefen: `partner_listings` gefuellt (Rohdaten-Sync)
+3. Optional je Capability pruefen: `partner_references`, `partner_requests`
+4. Pruefen: `partner_property_offers` gefuellt (Portal-Readmodell)
+5. Frontend:  
    - Listen: `/immobilienangebote` / `/mietangebote`  
    - Detail: `/immobilienangebote/<id>_<slug>`
-4. Partner-Login pruefen:
+6. Partner-Login pruefen:
    - Zugriff auf `/dashboard` nur mit vorhandenem Datensatz in `public.partners` (`partners.id = auth_user_id`)
    - fehlt das Profil, erfolgt Redirect auf `/partner/login?message=Kein-Partnerprofil`
-5. Betriebsregel:
+7. Betriebsregel:
    - Admin- und Partner-Login nicht parallel im selben Browser-Kontext testen
    - fuer parallele Tests getrennte Browser-Profile/Incognito verwenden
+
+Lifecycle-Hinweis (Angebote):
+- Identitaet ueber `(partner_id, provider/source, external_id)`.
+- Sync aktualisiert Raw/Readmodell; bestehende Inhalte in `partner_property_overrides` werden nicht ueberschrieben.
+
+Lifecycle-Hinweis (Referenzen):
+- In `partner_references.normalized_payload` keine exakte Adresse und keine Preisangaben fuehren.
+- Erlaubt fuer Ausspielung: `title`, `image_url`, kurzer Beschreibungstext (z. B. `reference_text_seed`) sowie grobe Lage (`city`, optional `district`).
+- Zielausgabe Portal: genau 1 Bild + Titel + Beschreibung.
+
+Lifecycle-Hinweis (Gesuche):
+- In `partner_requests.normalized_payload` regionale Angaben strukturiert als Liste speichern:
+  - `region_targets: [{ city, district, label }]`
+  - `region_target_keys: ["city::district", ...]`
+- Hintergrund: Gesuche koennen mehrere Zielregionen enthalten und muessen pro Ortslage adressierbar sein.
 
 Hinweis (Partnerbereich – Faktoren):
 - Faktoren/Resets schreiben zuerst nur nach `data_value_settings`.

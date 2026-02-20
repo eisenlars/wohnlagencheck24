@@ -60,6 +60,7 @@ export function MietpreiseSection(
 
   const basePath = props.basePath ?? vm.basePath;
   const angebotHref = kreisSlug ? `${basePath}/mietangebote` : undefined;
+  const gesuchHref = kreisSlug ? `${basePath}/mietgesuche` : undefined;
   const kontaktHref =
     bundeslandSlug && kreisSlug
       ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
@@ -89,7 +90,7 @@ export function MietpreiseSection(
           title={vm.regionName}
           subtitle="regionaler Standortberater"
           imageSrc={heroImageSrc}
-          rightOverlay={<HeroOverlayActions variant="miete" hrefLeft={angebotHref} />}
+          rightOverlay={<HeroOverlayActions variant="miete" hrefLeft={angebotHref} hrefRight={gesuchHref} />}
           rightOverlayMode="buttons"
 
         />

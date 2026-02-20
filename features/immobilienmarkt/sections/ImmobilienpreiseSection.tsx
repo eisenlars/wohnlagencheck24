@@ -47,6 +47,7 @@ export function ImmobilienpreiseSection(props: Props) {
 
   const basePath = props.basePath ?? vm.basePath;
   const angebotHref = kreisSlug ? `${basePath}/immobilienangebote` : undefined;
+  const gesuchHref = kreisSlug ? `${basePath}/immobiliengesuche` : undefined;
   const kontaktHref =
     bundeslandSlug && kreisSlug
       ? `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung`
@@ -102,7 +103,7 @@ export function ImmobilienpreiseSection(props: Props) {
             title={vm.regionName}
             subtitle="regionaler Standortberater"
             imageSrc={heroImageSrc}
-            rightOverlay={<HeroOverlayActions variant="immo" hrefLeft={angebotHref} />}
+            rightOverlay={<HeroOverlayActions variant="immo" hrefLeft={angebotHref} hrefRight={gesuchHref} />}
             rightOverlayMode="buttons"
 
           />

@@ -40,6 +40,19 @@ type AngebotePageProps = {
 const priceFormatter = new Intl.NumberFormat("de-DE");
 const passthroughLoader = ({ src }: { src: string }) => src;
 
+function sanitizeImageUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const compact = value.replace(/\s+/g, "").trim();
+  if (!compact) return null;
+  try {
+    const parsed = new URL(compact);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 function formatCurrency(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "—";
   return `${priceFormatter.format(value)} €`;
@@ -89,6 +102,7 @@ export function AngebotePage(props: AngebotePageProps) {
   }, [filter, offers]);
 
   const activeTopOffer = topOffers[activeIndex] ?? null;
+  const activeTopImageUrl = sanitizeImageUrl(activeTopOffer?.imageUrl ?? null);
   const priceLabel = mode === "miete" ? "Warmmiete" : "Kaufpreis";
   const priceSuffix = mode === "miete" ? "/Monat" : "";
   const buildDetailHref = (offer: Offer) =>
@@ -147,9 +161,9 @@ export function AngebotePage(props: AngebotePageProps) {
           <div className="angebote-top-card">
             <div className="angebote-top-media">
               <a href={buildDetailHref(activeTopOffer)} className="angebote-media-link">
-                {activeTopOffer.imageUrl ? (
+                {activeTopImageUrl ? (
                   <Image
-                    src={activeTopOffer.imageUrl}
+                    src={activeTopImageUrl}
                     alt={activeTopOffer.title}
                     fill
                     sizes="(max-width: 1200px) 100vw, 60vw"
@@ -260,58 +274,61 @@ export function AngebotePage(props: AngebotePageProps) {
           </div>
         ) : (
           <div className="angebote-grid">
-            {filteredOffers.map((offer) => (
-              <article className="angebote-card" key={offer.id}>
-                <div className="angebote-card-media">
-                  <a href={buildDetailHref(offer)} className="angebote-media-link">
-                    {offer.imageUrl ? (
-                      <Image
-                        src={offer.imageUrl}
-                        alt={offer.title}
-                        fill
-                        sizes="(max-width: 1200px) 100vw, 33vw"
-                        loader={passthroughLoader}
-                        unoptimized
-                        style={{ objectFit: "cover" }}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="angebote-card-placeholder">Kein Bild</div>
-                    )}
-                  </a>
-                  {offer.isTop ? (
-                    <span className="angebote-pill angebote-pill--dark angebote-pill--floating">
-                      Top
-                    </span>
-                  ) : null}
-                </div>
-                <div className="angebote-card-body">
-                  <div className="angebote-card-meta">
-                    <span className="angebote-pill">{offer.objectType}</span>
-                    <span className="angebote-price">
-                      {formatCurrency(mode === "miete" ? offer.rent : offer.price)}
-                      {priceSuffix ? <span className="angebote-price-suffix">{priceSuffix}</span> : null}
-                    </span>
-                  </div>
-                  <h3 className="h6 mb-2">{offer.title || "Objekt"}</h3>
-                  {offer.address ? (
-                    <p className="angebote-address mb-3">{offer.address}</p>
-                  ) : null}
-                  <div className="angebote-card-facts">
-                    <span>{formatArea(offer.areaSqm)}</span>
-                    <span>{formatRooms(offer.rooms)} Zimmer</span>
-                  </div>
-                  {offer.detailUrl ? (
-                    <a
-                      className="btn btn-outline-dark btn-sm angebote-card-cta"
-                      href={buildDetailHref(offer)}
-                    >
-                      Zum Exposé
+            {filteredOffers.map((offer) => {
+              const imageUrl = sanitizeImageUrl(offer.imageUrl);
+              return (
+                <article className="angebote-card" key={offer.id}>
+                  <div className="angebote-card-media">
+                    <a href={buildDetailHref(offer)} className="angebote-media-link">
+                      {imageUrl ? (
+                        <Image
+                          src={imageUrl}
+                          alt={offer.title}
+                          fill
+                          sizes="(max-width: 1200px) 100vw, 33vw"
+                          loader={passthroughLoader}
+                          unoptimized
+                          style={{ objectFit: "cover" }}
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="angebote-card-placeholder">Kein Bild</div>
+                      )}
                     </a>
-                  ) : null}
-                </div>
-              </article>
-            ))}
+                    {offer.isTop ? (
+                      <span className="angebote-pill angebote-pill--dark angebote-pill--floating">
+                        Top
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="angebote-card-body">
+                    <div className="angebote-card-meta">
+                      <span className="angebote-pill">{offer.objectType}</span>
+                      <span className="angebote-price">
+                        {formatCurrency(mode === "miete" ? offer.rent : offer.price)}
+                        {priceSuffix ? <span className="angebote-price-suffix">{priceSuffix}</span> : null}
+                      </span>
+                    </div>
+                    <h3 className="h6 mb-2">{offer.title || "Objekt"}</h3>
+                    {offer.address ? (
+                      <p className="angebote-address mb-3">{offer.address}</p>
+                    ) : null}
+                    <div className="angebote-card-facts">
+                      <span>{formatArea(offer.areaSqm)}</span>
+                      <span>{formatRooms(offer.rooms)} Zimmer</span>
+                    </div>
+                    {offer.detailUrl ? (
+                      <a
+                        className="btn btn-outline-dark btn-sm angebote-card-cta"
+                        href={buildDetailHref(offer)}
+                      >
+                        Zum Exposé
+                      </a>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
