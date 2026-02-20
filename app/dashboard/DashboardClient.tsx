@@ -7,10 +7,12 @@ import { createClient } from '@/utils/supabase/client';
 import FactorForm, { type FactorFormHandle } from './FactorForm';
 import TextEditorForm from './TextEditorForm';
 import OffersManager from './OffersManager';
+import ReferencesManager from './ReferencesManager';
+import RequestsManager from './RequestsManager';
 import BlogManager from './BlogManager';
 import PartnerSettingsPanel, { type SettingsSection } from './PartnerSettingsPanel';
 
-type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'gesuche' | 'blog' | 'settings';
+type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'referenzen' | 'gesuche' | 'blog' | 'settings';
 
 type PartnerArea = {
   id?: string;
@@ -81,8 +83,14 @@ export default function DashboardClient() {
       case 'gesuche':
         return {
           title: 'Gesuche',
-          description: 'Gesuche für die ausgewählte Region verwalten.',
-          isRegionBased: true,
+          description: 'Gesuche aus dem CRM prüfen und individuell anpassen.',
+          isRegionBased: false,
+        };
+      case 'referenzen':
+        return {
+          title: 'Referenzen',
+          description: 'Referenzobjekte aus dem CRM prüfen und individuell anpassen.',
+          isRegionBased: false,
         };
       case 'settings':
         return {
@@ -283,6 +291,13 @@ export default function DashboardClient() {
             🏠
           </button>
           <button
+            onClick={() => handleToolSelect('referenzen')}
+            style={toolIconButtonStyle(activeMainTab === 'referenzen')}
+            title="Referenzen"
+          >
+            🗂️
+          </button>
+          <button
             onClick={() => handleToolSelect('gesuche')}
             style={toolIconButtonStyle(activeMainTab === 'gesuche')}
             title="Gesuche"
@@ -309,7 +324,7 @@ export default function DashboardClient() {
       </aside>
 
       {/* 2. SPALTE: REGIONEN-NAVIGATION (Mitte) */}
-      {activeMainTab !== 'immobilien' && activeMainTab !== 'settings' && !showWelcome ? (
+      {activeMainTab !== 'immobilien' && activeMainTab !== 'referenzen' && activeMainTab !== 'gesuche' && activeMainTab !== 'settings' && !showWelcome ? (
         <aside style={regionSidebarStyle}>
           <div style={sidebarHeaderStyle}>
             <h2 style={{ fontSize: '14px', fontWeight: '800', margin: 0 }}>Regionen</h2>
@@ -457,6 +472,10 @@ export default function DashboardClient() {
               />
             ) : activeMainTab === 'immobilien' ? (
               <OffersManager />
+            ) : activeMainTab === 'referenzen' ? (
+              <ReferencesManager />
+            ) : activeMainTab === 'gesuche' ? (
+              <RequestsManager />
             ) : (
               <div style={{ padding: '20px', color: '#64748b' }}>
                 Bereich in Vorbereitung.
@@ -708,9 +727,15 @@ const welcomeTools: Array<{ key: MainTab; title: string; description: string; ic
     icon: '🏠',
   },
   {
+    key: 'referenzen',
+    title: 'Referenzen',
+    description: 'Referenzobjekte aus dem CRM prüfen und individuell anpassen.',
+    icon: '🗂️',
+  },
+  {
     key: 'gesuche',
     title: 'Gesuche',
-    description: 'Gesuche für die ausgewählte Region verwalten.',
+    description: 'Gesuche aus dem CRM prüfen und individuell anpassen.',
     icon: '🔎',
   },
 ];

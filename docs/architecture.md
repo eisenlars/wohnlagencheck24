@@ -331,7 +331,7 @@ Wichtig zur Session-Isolation:
 ## 9) Partner‑Integrationen & CRM‑Sync
 
 Ziel: Mehrere Partner mit unterschiedlichen CRMs (Propstack, onOffice, …).  
-Pro Partner **genau ein CRM**, aber zusätzliche APIs (z. B. LLMs) möglich.
+Pro Partner sind mehrere Integrationen moeglich (z. B. CRM + LLM + Local Site; bei Bedarf auch mehrere CRM-Provider).
 
 Weitere Details: `docs/partner-onboarding.md`
 Settings-Vertrag fuer `partner_integrations.settings`: `docs/integration_settings_schema.md`
@@ -376,7 +376,81 @@ create policy "partner_integrations_deny_delete"
   on public.partner_integrations for delete using (false);
 ```
 
-**`partner_property_offers`** – Erweiterung für externe IDs
+**`partner_listings`** – CRM‑Rohdaten: Angebote/Objekte
+```sql
+create table if not exists public.partner_listings (
+  id uuid primary key default gen_random_uuid(),
+  partner_id uuid not null references public.partners(id),
+  provider text not null,
+  external_id text not null,
+  title text,
+  status text,
+  source_updated_at timestamptz,
+  normalized_payload jsonb not null default '{}'::jsonb,
+  source_payload jsonb not null default '{}'::jsonb,
+  is_active boolean not null default true,
+  sync_status text not null default 'ok',
+  last_seen_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists partner_listings_partner_provider_external_unique
+  on public.partner_listings (partner_id, provider, external_id);
+```
+
+**`partner_references`** – CRM‑Rohdaten: Referenzobjekte
+```sql
+create table if not exists public.partner_references (
+  id uuid primary key default gen_random_uuid(),
+  partner_id uuid not null references public.partners(id),
+  provider text not null,
+  external_id text not null,
+  title text,
+  status text,
+  source_updated_at timestamptz,
+  normalized_payload jsonb not null default '{}'::jsonb,
+  source_payload jsonb not null default '{}'::jsonb,
+  is_active boolean not null default true,
+  sync_status text not null default 'ok',
+  last_seen_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists partner_references_partner_provider_external_unique
+  on public.partner_references (partner_id, provider, external_id);
+```
+
+**`partner_requests`** – CRM‑Rohdaten: Immobiliengesuche
+```sql
+create table if not exists public.partner_requests (
+  id uuid primary key default gen_random_uuid(),
+  partner_id uuid not null references public.partners(id),
+  provider text not null,
+  external_id text not null,
+  title text,
+  status text,
+  source_updated_at timestamptz,
+  normalized_payload jsonb not null default '{}'::jsonb,
+  source_payload jsonb not null default '{}'::jsonb,
+  is_active boolean not null default true,
+  sync_status text not null default 'ok',
+  last_seen_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists partner_requests_partner_provider_external_unique
+  on public.partner_requests (partner_id, provider, external_id);
+```
+
+Migrations‑Snippets:
+- `docs/sql/partner_listings.sql`
+- `docs/sql/partner_references.sql`
+- `docs/sql/partner_requests.sql`
+
+**`partner_property_offers`** – Portal‑Readmodell (kanonisches Angebotsmodell fuer Rendering/SEO)
 ```sql
 alter table public.partner_property_offers
   add column if not exists source text,
@@ -510,9 +584,18 @@ GET /api/partner-sync?token=<CRON_SECRET>
 
 Flow:
 1. `partner_integrations` (kind=`crm`) laden
-2. Provider‑Adapter (Propstack, später onOffice)
-3. Mapping → `partner_property_offers`
-4. Upsert mit `onConflict: partner_id,source,external_id`
+2. Provider‑Adapter (Propstack, spaeter onOffice)
+3. Raw‑Sync je Ressource:
+   - Angebote -> `partner_listings`
+   - Referenzen -> `partner_references`
+   - Gesuche -> `partner_requests`
+4. Nachgelagerte Transformation ins Portal‑Readmodell `partner_property_offers` (nur Angebote)
+5. Upserts auf eindeutige Keys `(partner_id, provider|source, external_id)`
+
+Verbindliche Schichtung:
+1. Raw-Sync (`partner_listings`, `partner_references`, `partner_requests`)
+2. Portal-Readmodell (`partner_property_offers`)
+3. Redaktioneller Layer (`partner_property_overrides`)
 
 **Wichtig:**  
 `SUPABASE_SERVICE_ROLE_KEY` darf **nie** im Client verwendet werden.
@@ -555,7 +638,8 @@ insert into public.partner_integrations (
    - `partner_integrations` (provider, auth_config, detail_url_template)
 4. **Sync testen**  
    - `/api/partner-sync?token=<CRON_SECRET>`  
-   - Prüfen: neue Einträge in `partner_property_offers`
+   - Pruefen: neue Eintraege in `partner_listings` (und je nach Capabilities auch `partner_references`/`partner_requests`)
+   - Pruefen: Angebote wurden in `partner_property_offers` uebernommen
 5. **Frontend prüfen**  
    - Liste: `/immobilienangebote` bzw. `/mietangebote`  
    - Detailseite: `/immobilienangebote/<id>_<slug>`
@@ -567,6 +651,7 @@ insert into public.partner_integrations (
 **Keine Angebote sichtbar**
 - Prüfen: `partner_area_map` enthält den Kreis/Ort und `is_active = true`
 - Prüfen: `partner_integrations` aktiv (`is_active = true`) + korrekter `provider`
+- Pruefen: `partner_listings` enthaelt Datensaetze mit passendem `partner_id/provider`
 - Prüfen: `partner_property_offers` enthält Datensätze mit passendem `area_id` + `offer_type`
 
 **Sync schlägt fehl (HTTP 401/403)**
@@ -582,6 +667,17 @@ insert into public.partner_integrations (
 **Pagination leer/fehlerhaft**
 - `partner_property_offers_area_offer_idx` vorhanden?
 - `offer_type`‑Werte korrekt (`kauf` / `miete`)
+
+### 9.8 Objekt-Lifecycle (verbindlich)
+
+Schluessel:
+- fachlich stabil ueber `(partner_id, provider/source, external_id)`
+
+Regeln:
+1. Neues Objekt im CRM -> Raw upsert -> Readmodell upsert; Override optional `draft`.
+2. Update im CRM -> Raw/Readmodell aktualisieren; Override bleibt unangetastet.
+3. Objekt nicht mehr im CRM gesehen -> `is_active=false` (oder `sync_status`) auf Raw/Readmodell, kein Hard-Delete im Standardsync.
+4. Objekt kommt spaeter mit gleicher `external_id` zurueck -> vorhandenen Override reaktivieren.
 
 ---
 
@@ -645,13 +741,14 @@ create policy "overrides_partner_delete"
 
 Priorität:
 1. Override‑Feld (falls gesetzt)  
-2. CRM‑Feld  
-3. Fallback/Leer
+2. Readmodell‑Feld (`partner_property_offers`)  
+3. Raw‑Feld (`normalized_payload`)  
+4. Fallback/Leer
 
 Beispiel:
 ```
-seo_title = override.seo_title ?? crm.title
-long_description = override.long_description ?? crm.description
+seo_title = override.seo_title ?? offer.title ?? raw.title
+long_description = override.long_description ?? offer.long_description ?? raw.description
 ```
 
 ### 10.3 KI‑Hilfsmodus (Empfehlung)

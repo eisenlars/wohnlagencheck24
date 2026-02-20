@@ -29,14 +29,17 @@ Pflichtpruefung bei jeder Uebergabe:
 
 Pruefung je nach Fachregel:
 
-1. `public.partner_property_offers`
-2. `public.partner_property_overrides`
-3. `public.partner_marketing_texts`
-4. `public.partner_local_site_texts`
-5. `public.partner_blog_posts`
-6. `public.data_value_settings`
+1. `public.partner_listings`
+2. `public.partner_references`
+3. `public.partner_requests`
+4. `public.partner_property_offers`
+5. `public.partner_property_overrides`
+6. `public.partner_marketing_texts`
+7. `public.partner_local_site_texts`
+8. `public.partner_blog_posts`
+9. `public.data_value_settings`
 
-Hinweis: Diese Tabellen werden standardmaessig **nicht** migriert, sondern verbleiben beim alten Partner (Historie).
+Hinweis: Diese Tabellen werden standardmaessig **nicht** migriert, sondern verbleiben beim alten Partner (Historie). Das gilt explizit auch fuer `partner_property_overrides` (keine automatische Uebernahme/Loeschung im Standardsync).
 
 ## Standardprozess (Uebergabe)
 

@@ -1,11 +1,36 @@
-import type { PartnerIntegration, MappedOffer } from "@/lib/providers/types";
-import { fetchPropstackUnits, mapPropstackUnit } from "@/lib/providers/propstack";
-import { fetchOnOfficeEstates, mapOnOfficeEstate } from "@/lib/providers/onoffice";
+import type {
+  PartnerIntegration,
+  MappedOffer,
+  RawListing,
+  RawReference,
+  RawRequest,
+} from "@/lib/providers/types";
+import { syncPropstackResources } from "@/lib/providers/propstack";
+import { syncOnOfficeResources } from "@/lib/providers/onoffice";
 
-export async function syncIntegrationOffers(
+export type IntegrationSyncResult = {
+  offers: MappedOffer[];
+  listings: RawListing[];
+  references: RawReference[];
+  requests: RawRequest[];
+  referencesFetched: boolean;
+  requestsFetched: boolean;
+  notes?: string[];
+};
+
+export async function syncIntegrationResources(
   integration: PartnerIntegration,
-): Promise<MappedOffer[]> {
-  if (!integration.is_active || integration.kind !== "crm") return [];
+): Promise<IntegrationSyncResult> {
+  if (!integration.is_active || integration.kind !== "crm") {
+    return {
+      offers: [],
+      listings: [],
+      references: [],
+      requests: [],
+      referencesFetched: false,
+      requestsFetched: false,
+    };
+  }
 
   const auth = integration.auth_config ?? {};
   const apiKey =
@@ -20,8 +45,7 @@ export async function syncIntegrationOffers(
   }
 
   if (integration.provider === "propstack") {
-    const units = await fetchPropstackUnits(integration, apiKey);
-    return units.map((unit) => mapPropstackUnit(integration.partner_id, integration, unit));
+    return syncPropstackResources(integration, apiKey);
   }
 
   if (integration.provider === "onoffice") {
@@ -39,8 +63,7 @@ export async function syncIntegrationOffers(
       throw new Error("onOffice token/secret fehlt");
     }
 
-    const records = await fetchOnOfficeEstates(integration, token, secret);
-    return records.map((record) => mapOnOfficeEstate(integration.partner_id, integration, record));
+    return syncOnOfficeResources(integration, token, secret);
   }
 
   throw new Error(`Provider nicht unterstützt: ${integration.provider}`);

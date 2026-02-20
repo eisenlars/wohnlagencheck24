@@ -11,6 +11,14 @@ Der Vertrag dient als gemeinsame Grundlage fuer:
 
 Wichtig: Stand heute ist dies ein **Dokumentations-Entwurf**. Die Validierung ist erst wirksam, wenn sie aktiv in den API-Routen eingebaut wird.
 
+Verbindliches Datenziel:
+- `capabilities.listings = true` zielt auf `public.partner_listings`
+- `capabilities.references = true` zielt auf `public.partner_references`
+- `capabilities.requests = true` zielt auf `public.partner_requests`
+
+Laufzeitregel:
+- Nur Ressourcentypen mit `capabilities.* = true` duerfen im Sync verarbeitet und geschrieben werden.
+
 ## Scope
 
 Der Entwurf gilt fuer Integrationen in `public.partner_integrations`, insbesondere:

@@ -91,6 +91,23 @@ Alternative kurzfristig:
   - `user_agent`
   - `created_at`
 
+### 3.6 CRM Content Layer (verbindlich)
+- Raw-Sync:
+  - `partner_listings` (Angebote)
+  - `partner_references` (Referenzen)
+  - `partner_requests` (Gesuche)
+- Readmodell:
+  - `partner_property_offers` (portaloptimierte Angebotsausgabe)
+- Override:
+  - `partner_property_overrides` (redaktionelle Unique-Content-Felder pro Objekt)
+
+Regel:
+- Sync schreibt Raw + Readmodell.
+- Sync darf keine Override-Felder ueberschreiben.
+- Objektidentitaet ueber `(partner_id, provider/source, external_id)`.
+- Referenzen: keine exakte Adresse/Preis in der Portal-Ausgabe; Zielausgabe ist `image + title + text`.
+- Gesuche: Mehrfach-Regionen strukturiert in `normalized_payload.region_targets` und `normalized_payload.region_target_keys`.
+
 ---
 
 ## 4. Rollenmodell
@@ -244,3 +261,5 @@ Prefix: `/api/admin/*`
 3. Jede Integration-Aenderung erzeugt Audit-Log.
 4. Token-Rotation invalidiert alte Tokens.
 5. Python-Sync laeuft auf Basis DB-Daten ohne manuelle Datei-Edits.
+6. CRM-Sync befuellt je nach `capabilities` die passenden Raw-Tabellen (`listings/references/requests`).
+7. `partner_property_overrides` bleibt bei CRM-Updates erhalten und wird nicht vom Sync ueberschrieben.
