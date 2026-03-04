@@ -45,17 +45,24 @@ async function resolveTransferAreaIds(
 
   const { data: childAreas, error: childError } = await admin
     .from("areas")
-    .select("id")
-    .eq("parent_slug", kreisSlug)
+    .select("id, parent_slug")
     .eq("bundesland_slug", bundeslandSlug);
   if (childError) return [areaId];
+
+  const childIds = (childAreas ?? [])
+    .filter((row) => {
+      const id = String((row as { id?: string | null }).id ?? "").trim();
+      const parentSlug = String((row as { parent_slug?: string | null }).parent_slug ?? "").trim();
+      if (!id) return false;
+      return parentSlug === kreisSlug || id.startsWith(`${areaId}-`);
+    })
+    .map((row) => String((row as { id?: string | null }).id ?? "").trim())
+    .filter((id) => id.length > 0);
 
   return Array.from(
     new Set([
       areaId,
-      ...(childAreas ?? [])
-        .map((row) => String((row as { id?: string | null }).id ?? "").trim())
-        .filter((id) => id.length > 0),
+      ...childIds,
     ]),
   );
 }

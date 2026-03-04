@@ -652,17 +652,37 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
 
       let ortIds: string[] = [];
       let missingIds: string[] = [];
-      if ((force || (!rows || rows.length === 0)) && !error) {
+      if (!error) {
         const { data: mapRows, error: mapError } = await supabase
           .from('partner_area_map')
           .select('area_id')
           .eq('auth_user_id', userId);
         if (mapError) {
-          return { rowsCount: 0, updatesCount: 0, error: mapError.message };
+          return { rowsCount: rows?.length ?? 0, updatesCount: 0, error: mapError.message };
         }
         ortIds = (mapRows ?? [])
           .map((r) => String((r as { area_id?: string }).area_id ?? ''))
           .filter((id: string) => id.startsWith(`${areaId}-`));
+
+        // Fallback: falls die Mapping-Tabelle unvollständig ist, Ortslagen direkt aus areas via ID-Hierarchie auflösen.
+        if (ortIds.length === 0) {
+          const bundeslandSlug = String(config?.areas?.bundesland_slug ?? '').trim();
+          let areasQuery = supabase
+            .from('areas')
+            .select('id')
+            .like('id', `${areaId}-%`);
+          if (bundeslandSlug) {
+            areasQuery = areasQuery.eq('bundesland_slug', bundeslandSlug);
+          }
+          const { data: areaRows, error: areaError } = await areasQuery;
+          if (areaError) {
+            return { rowsCount: rows?.length ?? 0, updatesCount: 0, error: areaError.message };
+          }
+          ortIds = (areaRows ?? [])
+            .map((row) => String((row as { id?: string | null }).id ?? '').trim())
+            .filter((id) => id.length > 0);
+        }
+
         if ((!rows || rows.length === 0) && ortIds.length > 0) {
           const res = await supabase
             .from('data_value_settings')
@@ -674,7 +694,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
         }
       }
 
-      if (force && ortIds.length > 0) {
+      if (ortIds.length > 0) {
         const existingIds = new Set((rows ?? []).map((row) => String((row as { area_id?: string }).area_id ?? "")));
         missingIds = ortIds.filter((id) => !existingIds.has(id));
         if (missingIds.length > 0) {

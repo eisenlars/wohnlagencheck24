@@ -138,7 +138,10 @@ export async function POST(
       ...allAreas.filter(
         (area) =>
           area.bundesland_slug === rootArea.bundesland_slug &&
-          String(area.parent_slug ?? "") === rootArea.slug,
+          (
+            String(area.parent_slug ?? "") === rootArea.slug
+            || String(area.id ?? "").startsWith(`${rootArea.id}-`)
+          ),
       ),
     ];
     const assignmentAreaIds = toUniqueAreaIds(bootstrapTargets);
