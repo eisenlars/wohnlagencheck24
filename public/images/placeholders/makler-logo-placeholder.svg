@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Makler Logo Platzhalter">
+  <rect width="512" height="512" rx="96" fill="#e2e8f0"/>
+  <rect x="96" y="124" width="320" height="264" rx="20" fill="#94a3b8"/>
+  <path d="M96 220l160-112 160 112" fill="none" stroke="#64748b" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="228" y="268" width="56" height="120" rx="8" fill="#64748b"/>
+</svg>
