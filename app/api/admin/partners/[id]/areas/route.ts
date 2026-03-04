@@ -31,6 +31,16 @@ function isKreisAreaId(areaId: string): boolean {
   return parts.length === 3;
 }
 
+function toUniqueAreaIds(areas: AreaRow[]): string[] {
+  return Array.from(
+    new Set(
+      areas
+        .map((area) => String(area.id ?? "").trim())
+        .filter((id) => id.length > 0),
+    ),
+  );
+}
+
 export async function POST(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
@@ -86,23 +96,6 @@ export async function POST(
       return NextResponse.json({ error: "Area not found" }, { status: 404 });
     }
 
-    const { data: activeAssignedRows, error: activeAssignedError } = await admin
-      .from("partner_area_map")
-      .select("auth_user_id")
-      .eq("area_id", areaId)
-      .eq("is_active", true)
-      .neq("auth_user_id", partnerId)
-      .limit(1);
-    if (activeAssignedError) {
-      return NextResponse.json({ error: activeAssignedError.message }, { status: 500 });
-    }
-    if (Array.isArray(activeAssignedRows) && activeAssignedRows.length > 0) {
-      return NextResponse.json(
-        { error: "Area already assigned to another partner" },
-        { status: 409 },
-      );
-    }
-
     const standardPayload = await fetchStandardPayload(admin as never);
     if (!standardPayload) {
       return NextResponse.json(
@@ -148,6 +141,33 @@ export async function POST(
           String(area.parent_slug ?? "") === rootArea.slug,
       ),
     ];
+    const assignmentAreaIds = toUniqueAreaIds(bootstrapTargets);
+
+    const { data: activeAssignedRows, error: activeAssignedError } = await admin
+      .from("partner_area_map")
+      .select("auth_user_id, area_id")
+      .in("area_id", assignmentAreaIds)
+      .eq("is_active", true)
+      .neq("auth_user_id", partnerId);
+    if (activeAssignedError) {
+      return NextResponse.json({ error: activeAssignedError.message }, { status: 500 });
+    }
+    if (Array.isArray(activeAssignedRows) && activeAssignedRows.length > 0) {
+      const blockedAreaIds = Array.from(
+        new Set(
+          activeAssignedRows
+            .map((row) => String((row as { area_id?: string | null }).area_id ?? "").trim())
+            .filter((id) => id.length > 0),
+        ),
+      );
+      return NextResponse.json(
+        {
+          error: "Area already assigned to another partner",
+          blocked_area_ids: blockedAreaIds,
+        },
+        { status: 409 },
+      );
+    }
 
     const bootstrapResults = [];
     for (const target of bootstrapTargets) {
@@ -182,54 +202,57 @@ export async function POST(
 
     // Workflow-Regel: neue Zuordnung wird immer inaktiv angelegt.
     // Aktivierung erfolgt erst im separaten PATCH-Flow inkl. Mandatory-Gate.
-    const assignmentPayload = {
+    const assignmentPayload = assignmentAreaIds.map((targetAreaId) => ({
       auth_user_id: partnerId,
-      area_id: areaId,
+      area_id: targetAreaId,
       is_active: false,
       activation_status: "assigned",
-    };
+    }));
 
     let { data, error } = await admin
       .from("partner_area_map")
       .upsert(assignmentPayload, { onConflict: "auth_user_id,area_id" })
-      .select("id, auth_user_id, area_id, is_active, activation_status, created_at")
-      .single();
+      .select("id, auth_user_id, area_id, is_active, activation_status, created_at");
 
     if (error && isMissingActivationStatusColumn(error)) {
       const fallback = await admin
         .from("partner_area_map")
         .upsert(
-          {
+          assignmentAreaIds.map((targetAreaId) => ({
             auth_user_id: partnerId,
-            area_id: areaId,
+            area_id: targetAreaId,
             is_active: false,
-          },
+          })),
           { onConflict: "auth_user_id,area_id" },
         )
-        .select("id, auth_user_id, area_id, is_active, created_at")
-        .single();
-      data = fallback.data ? { ...fallback.data, activation_status: "assigned" } : null;
+        .select("id, auth_user_id, area_id, is_active, created_at");
+      data = Array.isArray(fallback.data)
+        ? fallback.data.map((row) => ({ ...row, activation_status: "assigned" }))
+        : null;
       error = fallback.error;
     }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    if (!data) {
+    if (!data || data.length === 0) {
       return NextResponse.json({ error: "Area assignment returned no data" }, { status: 500 });
     }
+    const rootMapping = data.find((row) => String((row as { area_id?: string | null }).area_id ?? "") === areaId) ?? data[0];
 
     await writeSecurityAuditLog({
       actorUserId: adminUser.userId,
       actorRole: adminUser.role,
       eventType: "create",
       entityType: "partner_area_map",
-      entityId: String(data.id),
+      entityId: String(rootMapping.id),
       payload: {
         auth_user_id: partnerId,
         area_id: areaId,
-        is_active: data.is_active,
-        activation_status: String((data as { activation_status?: string | null }).activation_status ?? "assigned"),
+        assigned_area_ids: assignmentAreaIds,
+        assigned_area_count: assignmentAreaIds.length,
+        is_active: Boolean((rootMapping as { is_active?: boolean | null }).is_active),
+        activation_status: String((rootMapping as { activation_status?: string | null }).activation_status ?? "assigned"),
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -284,7 +307,9 @@ export async function POST(
     return NextResponse.json(
       {
         ok: true,
-        mapping: data,
+        mapping: rootMapping,
+        mappings_count: data.length,
+        assigned_area_ids: assignmentAreaIds,
         bootstrap: {
           total: bootstrapResults.length,
           updated: bootstrapResults.filter((row) => row.status === "updated").length,

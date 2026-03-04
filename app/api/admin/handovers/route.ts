@@ -28,6 +28,38 @@ function isMissingActivationStatusColumn(error: unknown): boolean {
   return msg.includes("partner_area_map.activation_status") && msg.includes("does not exist");
 }
 
+async function resolveTransferAreaIds(
+  admin: ReturnType<typeof createAdminClient>,
+  areaId: string,
+): Promise<string[]> {
+  const { data: kreisArea, error: kreisError } = await admin
+    .from("areas")
+    .select("id, slug, bundesland_slug")
+    .eq("id", areaId)
+    .maybeSingle();
+  if (kreisError || !kreisArea) return [areaId];
+
+  const kreisSlug = String((kreisArea as { slug?: string | null }).slug ?? "").trim();
+  const bundeslandSlug = String((kreisArea as { bundesland_slug?: string | null }).bundesland_slug ?? "").trim();
+  if (!kreisSlug || !bundeslandSlug) return [areaId];
+
+  const { data: childAreas, error: childError } = await admin
+    .from("areas")
+    .select("id")
+    .eq("parent_slug", kreisSlug)
+    .eq("bundesland_slug", bundeslandSlug);
+  if (childError) return [areaId];
+
+  return Array.from(
+    new Set([
+      areaId,
+      ...(childAreas ?? [])
+        .map((row) => String((row as { id?: string | null }).id ?? "").trim())
+        .filter((id) => id.length > 0),
+    ]),
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
@@ -77,29 +109,27 @@ export async function POST(req: Request) {
 
     const { data: areaExists, error: areaError } = await admin
       .from("areas")
-      .select("id, name")
+      .select("id, name, slug, bundesland_slug")
       .eq("id", areaId)
       .maybeSingle();
     if (areaError) return NextResponse.json({ error: areaError.message }, { status: 500 });
     if (!areaExists) return NextResponse.json({ error: "Area not found" }, { status: 404 });
+    const transferAreaIds = await resolveTransferAreaIds(admin, areaId);
 
     const { data: activeMappings, error: activeMappingsError } = await admin
       .from("partner_area_map")
       .select("id, auth_user_id, area_id, is_active")
-      .eq("area_id", areaId)
+      .in("area_id", transferAreaIds)
       .eq("is_active", true);
     if (activeMappingsError) return NextResponse.json({ error: activeMappingsError.message }, { status: 500 });
 
-    const activeRows = activeMappings ?? [];
-    if (activeRows.length > 1) {
-      return NextResponse.json(
-        { error: "Multiple active mappings found for area. Resolve data first." },
-        { status: 409 },
+    const activeRows = (activeMappings ?? []).filter((row) => String(row.auth_user_id ?? "") !== oldPartnerId);
+    if (activeRows.length > 0) {
+      const blockedAreaIds = Array.from(
+        new Set(activeRows.map((row) => String(row.area_id ?? "").trim()).filter((id) => id.length > 0)),
       );
-    }
-    if (activeRows.length === 1 && String(activeRows[0].auth_user_id ?? "") !== oldPartnerId) {
       return NextResponse.json(
-        { error: "Area is currently active on another partner" },
+        { error: "Area is currently active on another partner", blocked_area_ids: blockedAreaIds },
         { status: 409 },
       );
     }
@@ -113,6 +143,8 @@ export async function POST(req: Request) {
       payload: {
         action: "handover_start",
         area_id: areaId,
+        transferred_area_ids: transferAreaIds,
+        transferred_area_count: transferAreaIds.length,
         old_partner_id: oldPartnerId,
         new_partner_id: newPartnerId,
       },
@@ -123,7 +155,7 @@ export async function POST(req: Request) {
     const { data: oldMappingUpdated, error: deactivateMapError } = await admin
       .from("partner_area_map")
       .update({ is_active: false })
-      .eq("area_id", areaId)
+      .in("area_id", transferAreaIds)
       .eq("auth_user_id", oldPartnerId)
       .eq("is_active", true)
       .select("id, auth_user_id, area_id, is_active");
@@ -142,41 +174,42 @@ export async function POST(req: Request) {
       }
     }
 
-    let { data: newMapping, error: upsertMappingError } = await admin
+    let { data: newMappings, error: upsertMappingError } = await admin
       .from("partner_area_map")
       .upsert(
-        {
+        transferAreaIds.map((targetAreaId) => ({
           auth_user_id: newPartnerId,
-          area_id: areaId,
+          area_id: targetAreaId,
           is_active: false,
           activation_status: "assigned",
-        },
+        })),
         { onConflict: "auth_user_id,area_id" },
       )
-      .select("id, auth_user_id, area_id, is_active, activation_status")
-      .single();
+      .select("id, auth_user_id, area_id, is_active, activation_status");
     if (upsertMappingError && isMissingActivationStatusColumn(upsertMappingError)) {
       const fallback = await admin
         .from("partner_area_map")
         .upsert(
-          {
+          transferAreaIds.map((targetAreaId) => ({
             auth_user_id: newPartnerId,
-            area_id: areaId,
+            area_id: targetAreaId,
             is_active: false,
-          },
+          })),
           { onConflict: "auth_user_id,area_id" },
         )
-        .select("id, auth_user_id, area_id, is_active")
-        .single();
-      newMapping = fallback.data ? { ...fallback.data, activation_status: "assigned" } : null;
+        .select("id, auth_user_id, area_id, is_active");
+      newMappings = Array.isArray(fallback.data)
+        ? fallback.data.map((row) => ({ ...row, activation_status: "assigned" }))
+        : null;
       upsertMappingError = fallback.error;
     }
     if (upsertMappingError) {
       return NextResponse.json({ error: upsertMappingError.message }, { status: 500 });
     }
-    if (!newMapping) {
+    if (!newMappings || newMappings.length === 0) {
       return NextResponse.json({ error: "New mapping could not be created" }, { status: 500 });
     }
+    const newRootMapping = newMappings.find((row) => String((row as { area_id?: string | null }).area_id ?? "") === areaId) ?? newMappings[0];
 
     let oldPartnerDeactivated = false;
     let oldPartnerDeactivateSkippedReason: string | null = null;
@@ -213,6 +246,7 @@ export async function POST(req: Request) {
       payload: {
         action: "deactivate_old_mapping",
         area_id: areaId,
+        transferred_area_ids: transferAreaIds,
         old_partner_id: oldPartnerId,
         affected_rows: Array.isArray(oldMappingUpdated) ? oldMappingUpdated.length : 0,
       },
@@ -225,13 +259,15 @@ export async function POST(req: Request) {
       actorRole: adminUser.role,
       eventType: "create",
       entityType: "partner_area_map",
-      entityId: String(newMapping.id),
+      entityId: String(newRootMapping.id),
       payload: {
         action: "assign_new_mapping",
         area_id: areaId,
+        transferred_area_ids: transferAreaIds,
+        assigned_area_count: transferAreaIds.length,
         new_partner_id: newPartnerId,
         is_active: false,
-        activation_status: String((newMapping as { activation_status?: string | null }).activation_status ?? "assigned"),
+        activation_status: String((newRootMapping as { activation_status?: string | null }).activation_status ?? "assigned"),
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -246,6 +282,8 @@ export async function POST(req: Request) {
       payload: {
         action: "handover_done",
         area_id: areaId,
+        transferred_area_ids: transferAreaIds,
+        transferred_area_count: transferAreaIds.length,
         old_partner_id: oldPartnerId,
         new_partner_id: newPartnerId,
         deactivate_old_partner: deactivateOldPartner,
@@ -280,7 +318,8 @@ export async function POST(req: Request) {
         deactivate_old_partner_applied: oldPartnerDeactivated,
         deactivate_old_partner_skipped_reason: oldPartnerDeactivateSkippedReason,
         deactivate_old_integrations: deactivateOldIntegrations,
-        new_mapping_status: String((newMapping as { activation_status?: string | null }).activation_status ?? "assigned"),
+        transferred_area_count: transferAreaIds.length,
+        new_mapping_status: String((newRootMapping as { activation_status?: string | null }).activation_status ?? "assigned"),
         new_mapping_is_active: false,
       },
     });
