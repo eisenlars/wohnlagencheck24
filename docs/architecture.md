@@ -199,6 +199,21 @@ Damit bleibt die Sitemap schnell, auch bei vielen Ortslagen.
 
 ---
 
+## 5.1) Text-Workflow (General + Individual)
+
+Der operative Textprozess fuer General/Individual liegt in Next.js und ist getrennt vom Data-Driven-Rebuild.
+
+Details und verbindliche Key-Definitionen:
+- `docs/text-workflow-general-individual.md`
+
+Kernaussagen:
+- Standardtexte aus Storage: `immobilienmarkt/text-standards/kreis/text_standard_kreis.json`
+- Key-Klassen in `lib/text-key-registry.ts`
+- Aktivierungs-Gate bei `PATCH /api/admin/partners/[id]/areas/[area_id]` nur auf `INDIVIDUAL_MANDATORY_KEYS`
+- Global-KI-Hilfslaeufe nur fuer `general` im aktiven Themenblock
+
+---
+
 ## 6) Updates (monatlich)
 
 **Workflow (Python)**
@@ -344,7 +359,7 @@ Offboarding/Uebergabe-Runbook: `docs/partner_handover_process.md`
 create table if not exists public.partner_integrations (
   id uuid primary key default gen_random_uuid(),
   partner_id uuid not null references public.partners(id),
-  kind text not null,              -- 'crm' | 'llm' | 'other'
+  kind text not null,              -- 'crm' | 'llm' | 'local_site' | 'other'
   provider text not null,          -- 'propstack' | 'onoffice' | ...
   base_url text,
   auth_type text,
@@ -355,8 +370,12 @@ create table if not exists public.partner_integrations (
   last_sync_at timestamptz
 );
 
-create unique index if not exists partner_integrations_kind_unique
-  on public.partner_integrations (partner_id, kind);
+-- Mehrere LLM-Integrationen erlaubt:
+-- unique nur fuer kinds ungleich 'llm'
+drop index if exists public.partner_integrations_kind_unique;
+create unique index if not exists partner_integrations_kind_unique_non_llm
+  on public.partner_integrations (partner_id, kind)
+  where kind <> 'llm';
 ```
 
 Migrations‑Snippets:  
@@ -781,6 +800,42 @@ Kurzlogik:
   - Legacy‑Spalten entfernt (2026‑02‑05): `price_factor_houses`, `price_factor_apartments`, `custom_intro_text`, `custom_market_report`
 
 ---
+
+## 8.3) Sync-Guardrails (Reports + Visuals + Texte)
+
+### Problemursache (bereits behoben)
+- Die Textstruktur wird seit der Umstellung in Next.js verwaltet (nicht mehr durch Python erzeugt).
+- Beim Python-Upload konnten Reports ohne `text`/`data.text*` vorhandene Inhalte im Storage überschreiben.
+- Folge: General-/Standard- und Data-driven-Texte verschwanden im Frontend, obwohl Routen/Daten vorhanden waren.
+
+### Verbindliche Guardrails für den Python-Sync
+- `visuals/map_interactive/**` muss immer vollständig mitdeployt werden.
+- Bei Report-Upload gilt Merge statt Blind-Overwrite:
+  - Wenn lokal nicht vorhanden, aus Remote beibehalten:
+    - top-level `text`
+    - `data.textgen_inputs`
+    - `data.text`
+    - `helpers`
+- Nur fachliche Report-Daten aktualisieren; Textstrukturen nie implizit löschen.
+
+### Recovery / Bootstrap (nach historischem Verlust)
+- Endpoint: `POST /api/admin/bootstrap-area-texts`
+- Zweck: fehlende Textstruktur robust aus Standardtexten + Inputs neu aufbauen.
+- Beispiel (lokal):
+
+```bash
+curl -X POST "http://localhost:3000/api/admin/bootstrap-area-texts?token=wc24_bootstrap_2026_very_secret" \
+  -H "Content-Type: application/json" \
+  -d '{"area_id":"14-6-27","include_ortslagen":true,"mode":"all","dry_run":false}'
+```
+
+### Smoke-Checks nach jedem Sync
+- Storage-Spotcheck: Report enthält top-level `text`.
+- Frontend-Check Bundesland/Kreis/Ort:
+  - General-/Standardtexte sichtbar.
+  - Data-driven-Texte sichtbar.
+- Karte:
+  - `kreisuebersicht_<bundesland>.svg` enthält alle aktiven Kreise (Href-Slugs prüfen).
 
 ## 9) Risiken & Tradeoffs
 

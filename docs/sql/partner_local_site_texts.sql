@@ -1,4 +1,6 @@
 -- partner_local_site_texts (Lokale Website Texte je Partner/Region)
+-- Hinweis: Im aktuellen Supabase-Schema-Snapshot ist diese Tabelle nicht standardmaessig vorhanden.
+-- Nur ausfuehren, wenn der separate Local-Site-Textkanal aktiv genutzt werden soll.
 
 create table if not exists public.partner_local_site_texts (
   id uuid primary key default gen_random_uuid(),

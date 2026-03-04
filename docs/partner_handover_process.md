@@ -35,9 +35,11 @@ Pruefung je nach Fachregel:
 4. `public.partner_property_offers`
 5. `public.partner_property_overrides`
 6. `public.partner_marketing_texts`
-7. `public.partner_local_site_texts`
-8. `public.partner_blog_posts`
-9. `public.data_value_settings`
+7. `public.partner_blog_posts`
+8. `public.data_value_settings`
+
+Optional/Legacy (nur falls in eurer Umgebung vorhanden):
+- `public.partner_local_site_texts`
 
 Hinweis: Diese Tabellen werden standardmaessig **nicht** migriert, sondern verbleiben beim alten Partner (Historie). Das gilt explizit auch fuer `partner_property_overrides` (keine automatische Uebernahme/Loeschung im Standardsync).
 
@@ -56,7 +58,9 @@ Hinweis: Diese Tabellen werden standardmaessig **nicht** migriert, sondern verbl
 
 3. Onboarding neuer Partner
 - Auth-Invite (Setz-Link) senden
-- neue aktive Kreiszuordnung in `partner_area_map` anlegen
+- neue inaktive Kreiszuordnung in `partner_area_map` anlegen (`is_active = false`, `activation_status = assigned`)
+- Partner fuellt Mandatory-Texte und sendet `Freigabe anfordern`
+- Admin aktiviert erst nach Pruefung (`is_active = true`)
 - erforderliche Integrationen fuer den neuen Partner aktivieren/anlegen
 
 4. Audit
@@ -110,11 +114,12 @@ set is_active = false
 where partner_id = :old_partner_id
   and is_active = true;
 
--- 3) Neue aktive Zuordnung setzen
-insert into public.partner_area_map (auth_user_id, area_id, is_active)
-values (:new_partner_id, :kreis_id, true)
+-- 3) Neue inaktive Zuordnung setzen
+insert into public.partner_area_map (auth_user_id, area_id, is_active, activation_status)
+values (:new_partner_id, :kreis_id, false, 'assigned')
 on conflict (auth_user_id, area_id)
-do update set is_active = excluded.is_active;
+do update set is_active = excluded.is_active,
+              activation_status = excluded.activation_status;
 
 commit;
 ```

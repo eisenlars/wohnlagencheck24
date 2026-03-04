@@ -3,7 +3,7 @@
 create table if not exists public.partner_integrations (
   id uuid primary key default gen_random_uuid(),
   partner_id uuid not null references public.partners(id),
-  kind text not null,              -- 'crm' | 'llm' | 'other'
+  kind text not null,              -- 'crm' | 'llm' | 'local_site' | 'other'
   provider text not null,          -- 'propstack' | 'onoffice' | ...
   base_url text,
   auth_type text,
@@ -14,8 +14,12 @@ create table if not exists public.partner_integrations (
   last_sync_at timestamptz
 );
 
-create unique index if not exists partner_integrations_kind_unique
-  on public.partner_integrations (partner_id, kind);
+-- Historisch: 1 Integration pro partner_id+kind.
+-- Neu: Mehrere LLM-Integrationen erlaubt, fuer alle anderen kinds weiterhin unique.
+drop index if exists public.partner_integrations_kind_unique;
+create unique index if not exists partner_integrations_kind_unique_non_llm
+  on public.partner_integrations (partner_id, kind)
+  where kind <> 'llm';
 
 alter table public.partner_integrations enable row level security;
 

@@ -4,6 +4,11 @@ Stand: 2026-02-06
 
 ## 1) Ziel
 
+Hinweis zur Abgrenzung:
+- Das Mandatory-Textgate fuer Gebietsaktivierung (`is_active=true`) gehoert **nicht** zum Rebuild-Prozess.
+- Es ist separat in `PATCH /api/admin/partners/[id]/areas/[area_id]` umgesetzt (siehe `docs/text-workflow-general-individual.md`).
+
+
 Der Rebuild-Prozess aktualisiert für eine konkrete Region:
 - preisrelevante Datenfelder in `data.*`
 - Text-Inputs in `data.textgen_inputs.*`

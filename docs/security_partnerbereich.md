@@ -1,6 +1,6 @@
 # Sicherheit Partnerbereich
 
-Stand: 2026-02-13
+Stand: 2026-03-04
 
 ## Ziel
 Absicherung von:
@@ -32,11 +32,12 @@ Absicherung von:
 ## Umgesetzt (Code/Stand)
 - Debug-Endpoint entfernt: `app/api/debug/env/route.ts`
 - `partner-sync` fail-closed (`CRON_SECRET` zwingend): `app/api/partner-sync/route.ts`
-- Dashboard-Session-Gate in Middleware: `middleware.ts`
 - Hartes Partnerprofil-Gate fuer `/dashboard/*`: `app/dashboard/layout.tsx`
 - KI-Endpunkte nur mit Login + Rate-Limit:
   - `app/api/ai-rewrite/route.ts`
   - `app/api/ai-blog/route.ts`
+- Partner-Submit-Review mit Login + Rate-Limit:
+  - `app/api/partner/areas/[area_id]/submit-review/route.ts`
 - Login-Rate-Limit in Server Action: `app/partner/login/actions.ts`
 - Rate-Limit-Utility:
   - in-memory fallback
@@ -56,6 +57,10 @@ Absicherung von:
 - `CRON_SECRET` muss gesetzt sein.
 - `ADMIN_SUPER_USER_IDS` muss gepflegt sein.
 - Optional: `RATE_LIMIT_BACKEND=supabase` aktivieren.
+- Optionaler Legacy-Schalter (nur temporaer fuer Migration):
+  - `ALLOW_LEGACY_QUERY_TOKENS=1` erlaubt Query-Token auf internen Endpoints (`partner-sync`, `bootstrap-area-texts`).
+  - `LOCAL_SITE_ALLOW_PLAINTEXT_TOKEN_FALLBACK=1` erlaubt Local-Site Plaintext-Token-Fallback.
+  - Zielzustand Livegang: beide **nicht gesetzt**.
 - Optional Basic-Schutz:
   - `BASIC_AUTH_USER`
   - `BASIC_AUTH_PASS`
@@ -64,6 +69,23 @@ Absicherung von:
 1. Gibt es `auth.users` ohne zugehoeriges `partners`-Profil?
 2. Sind aktive `partner_area_map`-Zuordnungen konsistent?
 3. Gibt es fehlgeschlagene Login-/Admin-Aktionen mit Haeufung (Rate-Limit/Audit)?
+
+## Security Advisor Follow-up (2026-03-04)
+
+### WARN: Leaked Password Protection Disabled
+- Status: offen bis in Supabase Auth aktiviert.
+- Einordnung: sicherheitsrelevant vor Livegang.
+- Umsetzung in Supabase:
+1. Dashboard -> Authentication -> (Security/Password settings).
+2. "Leaked password protection" aktivieren.
+3. Speichern und einen Test mit bewusst schwachem/geleaktem Passwort machen.
+
+Hinweis: Das ist eine Auth-Provider-Einstellung, kein SQL-Migrationsschritt.
+
+### INFO: `public.market_data` (RLS enabled, no policy)
+- Entscheidung: Tabelle wird nicht genutzt und wird entfernt.
+- Umsetzung: Runbook `docs/sql/security_advisor_followup_2026-03-04.sql`.
+- Erwartetes Ergebnis: Info-Hinweis verschwindet nach dem Drop der Tabelle.
 
 ## Passwort-/Nutzerprozess (vergeben, keine Self-Registration)
 Empfohlen:
@@ -76,3 +98,7 @@ Empfohlen:
 - Rate-Limit-Store: `docs/sql/security_rate_limits.sql`
 - Local-Site Token-Hash-Migration: `docs/sql/local_site_token_hash_migration.sql`
 - Offboarding/Uebergabe: `docs/partner_handover_process.md`
+- Live Security Preflight (read-only): `docs/sql/live_security_preflight.sql`
+- Live RLS Hardening (write migration): `docs/sql/live_rls_hardening.sql`
+- Policy Cleanup (redundante Policies entfernen): `docs/sql/policy_cleanup.sql`
+- Security Advisor Follow-up (Leaked Password + market_data): `docs/sql/security_advisor_followup_2026-03-04.sql`

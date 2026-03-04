@@ -39,7 +39,9 @@ Grundsatz:
 - `id` (uuid, PK)
 - `company_name`
 - `contact_email`
-- optional: `contact_person`, `website_url`
+- `contact_first_name`
+- `contact_last_name`
+- optional: `website_url`
 - optional (neu): `is_active` boolean default true
 
 ### 3.2 `partner_area_map`
@@ -64,8 +66,16 @@ Empfohlene Constraint:
 - `is_active`
 
 Empfohlene Erweiterung:
-- Eindeutigkeit mindestens auf (`partner_id`, `kind`)
-- optional mehrere CRM pro Partner: (`partner_id`, `kind`, `provider`)
+- Eindeutigkeit fuer Nicht-LLM auf (`partner_id`, `kind`) mit Partial Unique Index
+- mehrere LLM-Integrationen pro Partner erlauben
+
+Beispiel:
+```sql
+drop index if exists public.partner_integrations_kind_unique;
+create unique index if not exists partner_integrations_kind_unique_non_llm
+  on public.partner_integrations (partner_id, kind)
+  where kind <> 'llm';
+```
 
 ### 3.4 Secrets (neu)
 Empfohlen:

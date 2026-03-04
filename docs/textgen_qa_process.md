@@ -325,3 +325,31 @@ bei kleinräumig lückenhaften Daten.
 ### Kollisionsregeln
 - **Punkt‑Kollision:** Punkt im Verbkonstrukt + Punkt im Template erzeugt `..`  
   **Fix:** Punkt im Verbkonstrukt entfernen, wenn Template bereits punktiert.
+
+## 10c) Wirtschafts‑Keys – Session Learnings (2026-02-21)
+
+- **Gültiger Wert `0` ist kein Missing‑Data.**  
+  Bei Resolvern für Ortslage‑Fallbacks nie `!value` verwenden.  
+  Stattdessen immer `Number.isFinite(parsedValue)` prüfen.  
+  Betroffen waren u. a. Pendler/Arbeitslosigkeit.
+
+- **Live‑Pfad und Varianten‑Enumerator müssen dieselbe Normalisierung nutzen.**  
+  Doppelpunkte (`..`) können trotz sauberer Templates entstehen, wenn ein Slot leer bleibt.  
+  Deshalb Normalisierung in `core.ts`, `generate-kreis.ts` und `generate-ortslage.ts` konsistent halten.
+
+- **Fallback‑Template ohne fragile Trendslots vorsehen.**  
+  Für Keys mit potenziell fehlenden Trends (z. B. `0/0` oder keine Vorjahresbasis) ein zusätzliches
+  `mit_verbkonstrukt`-Template mit rein statischem Satz aufnehmen, damit kein leerer Satzteil bleibt.
+
+- **Formale Zielwerte für Data‑Driven‑Keys (bewährt):**
+  - `static_verbkonstrukte`: mindestens **3** Varianten
+  - `verbkonstrukt_trendText_*`: mindestens **2** Varianten pro Kategorie
+  - Trend‑Phrases sollten Prozent-/Indexlogik konsistent und ohne semantische Doppelung formuliert sein.
+
+- **Stilregel für Vergleichssätze:**  
+  Keine tautologischen Formulierungen wie „liegt … über dem Landeswert … über dem Landeswert“.  
+  Besser: „liegt darüber/darunter (Index …; Land: … %)“.
+
+- **Python‑Parität im aktuellen Repo:**  
+  Für die bearbeiteten Wirtschafts‑Keys liegt die aktive Textlogik in Next.js (`lib/text-core/**`).  
+  Falls keine passenden `*.py`-Treffer vorhanden sind, gilt Next.js als führende Implementierung.

@@ -18,8 +18,8 @@ Ziel: Alle benötigten Zugangsdaten und Schritte kompakt dokumentieren.
 ### Interne Einrichtung (Supabase)
 ```sql
 -- Partner (falls nicht vorhanden)
-insert into public.partners (id, company_name, contact_email)
-values ('<partner-uuid>', 'Partner GmbH', 'kontakt@partner.de');
+insert into public.partners (id, company_name, contact_email, contact_first_name, contact_last_name)
+values ('<partner-uuid>', 'Partner GmbH', 'kontakt@partner.de', 'Max', 'Mustermann');
 
 -- CRM‑Integration
 insert into public.partner_integrations (
@@ -36,8 +36,8 @@ insert into public.partner_integrations (
 );
 
 -- Gebiet zuordnen
-insert into public.partner_area_map (auth_user_id, area_id, is_active)
-values ('<partner-uuid>', '<kreis-area-id>', true);
+insert into public.partner_area_map (auth_user_id, area_id, is_active, activation_status)
+values ('<partner-uuid>', '<kreis-area-id>', false, 'assigned');
 ```
 
 Migrations‑Snippets:  
@@ -73,8 +73,8 @@ Migrations‑Snippets:
 ### Interne Einrichtung (Supabase)
 ```sql
 -- Partner (falls nicht vorhanden)
-insert into public.partners (id, company_name, contact_email)
-values ('<partner-uuid>', 'Partner GmbH', 'kontakt@partner.de');
+insert into public.partners (id, company_name, contact_email, contact_first_name, contact_last_name)
+values ('<partner-uuid>', 'Partner GmbH', 'kontakt@partner.de', 'Max', 'Mustermann');
 
 -- CRM‑Integration
 insert into public.partner_integrations (
@@ -91,8 +91,8 @@ insert into public.partner_integrations (
 );
 
 -- Gebiet zuordnen
-insert into public.partner_area_map (auth_user_id, area_id, is_active)
-values ('<partner-uuid>', '<kreis-area-id>', true);
+insert into public.partner_area_map (auth_user_id, area_id, is_active, activation_status)
+values ('<partner-uuid>', '<kreis-area-id>', false, 'assigned');
 ```
 
 Migrations‑Snippets:  
@@ -179,6 +179,16 @@ insert into public.partner_integrations (
 );
 ```
 
+Mehrere LLM-Integrationen pro Partner:
+- vorgesehen (z. B. OpenAI + Anthropic parallel)
+- Voraussetzung in DB:
+```sql
+drop index if exists public.partner_integrations_kind_unique;
+create unique index if not exists partner_integrations_kind_unique_non_llm
+  on public.partner_integrations (partner_id, kind)
+  where kind <> 'llm';
+```
+
 ### Default‑LLM (Fallback via ENV)
 Wenn ein Partner **keine** LLM‑Integration hat, wird der Default‑LLM genutzt:
 ```
@@ -196,6 +206,71 @@ DEFAULT_LLM_MAX_TOKENS=800
 
 ---
 
+## 4.1) Gebietsfreischaltung: Mandatory-Textgate
+
+Bei der **einmaligen Aktivierung** einer Gebietszuordnung (`is_active=true`) wird ein Mandatory-Check ausgefuehrt.
+
+API:
+- `PATCH /api/admin/partners/[id]/areas/[area_id]`
+- `POST /api/partner/areas/[area_id]/submit-review` (Partner meldet Gebiet freigabebereit)
+
+Gate-Regel:
+- geprueft werden ausschliesslich `INDIVIDUAL_MANDATORY_KEYS` (siehe `lib/text-key-registry.ts`)
+- wenn Pflichtfelder fehlen oder nur auf Standard stehen, wird Aktivierung mit `409` blockiert
+
+Status-Workflow:
+1. Admin weist Gebiet zu: `is_active=false`, `activation_status=assigned`
+2. Partner bearbeitet Pflichttexte und klickt `Freigabe anfordern`
+3. System prueft Mandatory und setzt bei Erfolg `activation_status=ready_for_review`
+4. Admin aktiviert Gebiet (`is_active=true`) nach finaler Pruefung
+
+Wichtig:
+- Das Gate ist **nicht** Teil von Preisfaktoren/Rebuild (`Neu berechnen & live schalten`), sondern ein separater Admin-Aktivierungsprozess.
+
+Details:
+- `docs/text-workflow-general-individual.md`
+
+---
+
+## 4.2) Erstinitialisierung `report.text` fuer neue Gebiete (TS)
+
+Wenn Python neue Reports/Visuals in den Storage synced, aber keine Texte mehr vorbefuellt,
+wird die Textbasis in Next.js initialisiert.
+
+Endpoint:
+- `POST /api/admin/bootstrap-area-texts`
+- Auth:
+  - Admin-Session (`admin_super`/`admin_ops`) oder
+  - Service-Token `AREA_BOOTSTRAP_TOKEN` via Header `x-area-bootstrap-token` (oder `?token=...`)
+
+Body-Beispiele:
+```json
+{
+  "area_id": "14-6-27",
+  "include_ortslagen": true,
+  "mode": "missing_only"
+}
+```
+
+```json
+{
+  "include_ortslagen": true,
+  "mode": "all",
+  "dry_run": false
+}
+```
+
+Was der TS-Bootstrap macht:
+1. laedt Standardtexte aus `text-standards/kreis/text_standard_kreis.json`
+2. initialisiert `report.text` / `report.data.text`
+3. setzt alle Mandatory-Keys (`INDIVIDUAL_MANDATORY_KEYS`) leer
+4. rendert data-driven Texte mit `applyDataDrivenTexts`
+5. schreibt Report-JSON zurueck in den Storage
+
+Damit ist Python fuer Textgenerierung/Partnertexte nicht mehr erforderlich.
+
+---
+
 ## 5) Lokale Website (Texte + Export)
 
 ### Ziel
@@ -203,8 +278,11 @@ Die lokale Maklerwebsite nutzt dieselbe **Report‑Struktur** wie das Portal.
 Partner können **Texte individuell anpassen** und **freigeben**, danach werden sie per API im Original‑JSON‑Schema ausgeliefert.
 
 ### Datenmodell
-Neue Tabelle: `partner_local_site_texts`  
-Speichert Texte analog zu `report_texts`, aber **separat** für den lokalen Website‑Channel.
+Aktueller Schema-Snapshot enthaelt **keine** Tabelle `partner_local_site_texts`.
+Falls ihr den separaten Local-Site-Channel nutzen wollt, zuerst Migration ausfuehren:
+- `docs/sql/partner_local_site_texts.sql`
+
+Ohne diese Migration bleibt der Local-Site-Export auf den im Report verfuegbaren Texten/Overrides.
 
 ### Interne Einrichtung (Supabase)
 ```sql
