@@ -1,8 +1,6 @@
 
 /* Farb-Definitionen */
 :root {
-  /*--brand-bg: #bcaf9d;      /* warme Grundfläche */
-  --brand-bg: rgba(188, 175, 157, 0.3);
   --brand-bg: #ffffff;
   --brand-primary: #486b7a; /* Blau: Links / Akzente */
   --brand-accent: #ffe000;  /* Gelb: Highlights */
@@ -32,11 +30,11 @@ body {
 }
 
 section {
-  padding: 0 0 2em 0
+  padding: 0 0 2em 0;
 }
 
 .no-underspace {
-  padding: 0
+  padding: 0;
 }
 
 .card.text-center.d-flex.align-items-center > .card-body {
@@ -155,24 +153,23 @@ h6 {
    Inhaltselemente / Boxen / Tabellen / Charts
 ------------------------------ */
 
-@layer components {
-  /* neutrale Content-Box */
-  .content-box {
-    background: #ffffff;
-    border-radius: 1rem;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    padding: 1rem 1.25rem;
-  }
+/* neutrale Content-Box */
+.content-box {
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 1rem 1.25rem;
+}
 
-  /* gelbe Highlight-Box */
-  .content-highlight {
-    background: #ffe000;
-    border-radius: 1rem;
-    padding: 1rem 1.25rem;
-    color: #000000;
-  }
+/* gelbe Highlight-Box */
+.content-highlight {
+  background: #ffe000;
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  color: #000000;
+}
 
-  /* Hinweis-/Infobox schmal */
+/* Hinweis-/Infobox schmal */
 .content-note {
   background: rgba(255, 224, 0, 0.2);
   border-left: 4px solid #ffe000;
@@ -187,33 +184,32 @@ h6 {
   justify-content: center;
 }
 
-  /* Tabellen-Basis */
-  .content-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-  }
+/* Tabellen-Basis */
+.content-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
 
-  .content-table th {
-    background: rgba(0, 0, 0, 0.05);
-    text-align: left;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.15);
-    font-weight: 600;
-  }
+.content-table th {
+  background: rgba(0, 0, 0, 0.05);
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+}
 
-  .content-table td {
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  }
+.content-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
 
-  /* Chart-Container */
-  .content-chart {
-    background: #ffffff;
-    border-radius: 1rem;
-    border: 1px solid rgba(0, 0, 0, 0.12);
-    padding: 1rem 1.25rem;
-  }
+/* Chart-Container */
+.content-chart {
+  background: #ffffff;
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 1rem 1.25rem;
 }
 
 

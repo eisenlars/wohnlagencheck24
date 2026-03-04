@@ -6,6 +6,7 @@ import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { buildTableModel } from "@/utils/buildTableModel";
 import { buildBarModel } from "@/utils/barModel";
 import { buildWebAssetUrl } from "@/utils/assets";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 import type {
   MietpreiseVM,
@@ -98,8 +99,9 @@ export function buildMietpreiseVM(args: {
     (typeof berater["berater_email"] === "string" ? berater["berater_email"] : undefined) ??
     "kontakt@wohnlagencheck24.de";
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
-  const beraterImageSrc = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  const beraterImageSrc = resolveMandatoryMediaSrc(
+    "media_berater_avatar",
+    asString(berater["media_berater_avatar"]),
   );
 
   const mietpreiseGesamt = data.mietpreise_gesamt?.[0];

@@ -77,15 +77,6 @@ export function MainNav({ bundeslaender }: MainNavProps) {
           Weitere Inhalte
         </Link>
       </li>
-      <li className="nav-item">
-        <Link
-          href="/musterseite"
-          className="nav-link px-0"
-          onClick={handleNavClick}
-        >
-          Musterseite
-        </Link>
-      </li>
     </ul>
   );
 }

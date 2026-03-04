@@ -100,12 +100,19 @@ function ensurePreviewLogReady(logPath: string) {
   previewLogReset = true;
 }
 
-function writePreviewLog(areaId: string | undefined, scope: "kreis" | "ortslage", text: AnyRecord) {
+function writePreviewLog(
+  areaId: string | undefined,
+  scope: "kreis" | "ortslage",
+  text: AnyRecord,
+  meta?: { key?: string; seed?: string },
+) {
   const logPath = path.join(process.cwd(), "tmp", "textgen-preview.log");
   const payload = {
     at: new Date().toISOString(),
     scope,
     areaId,
+    ...(meta?.key ? { key: meta.key } : {}),
+    ...(meta?.seed ? { seed: meta.seed } : {}),
     text,
   };
   ensurePreviewLogReady(logPath);
@@ -164,7 +171,13 @@ export function applyDataDrivenTexts<T extends AnyRecord>(report: T, areaId?: st
   if (shouldPreview()) {
     const previewKey = getPreviewKey();
     if (previewKey && updatedText && typeof updatedText === "object") {
-      writePreviewLog(areaId, scope, { [previewKey]: pickPreviewSectionText(updatedText as AnyRecord, previewKey) });
+      const previewSeed = `${areaId ?? "unknown"}|${scope}|${previewKey}|${signatures[previewKey] ?? ""}`;
+      writePreviewLog(
+        areaId,
+        scope,
+        { [previewKey]: pickPreviewSectionText(updatedText as AnyRecord, previewKey) },
+        { key: previewKey, seed: previewSeed },
+      );
     } else {
       writePreviewLog(areaId, scope, updatedText as AnyRecord);
     }
@@ -208,6 +221,7 @@ export function applyDataDrivenTexts<T extends AnyRecord>(report: T, areaId?: st
       }
     }
     if (previewAll && previewVariantsKey && scope === "ortslage") {
+      const previewSeed = `${areaId ?? "unknown"}|${scope}|${previewVariantsKey}|${signatures[previewVariantsKey] ?? ""}`;
       const { total, samples } = sampleOrtslageTextVariants(previewVariantsKey, inputs, 50);
       for (const sample of samples) {
         writePreviewVariantLog({
@@ -215,6 +229,7 @@ export function applyDataDrivenTexts<T extends AnyRecord>(report: T, areaId?: st
           scope,
           areaId,
           key: previewVariantsKey,
+          seed: previewSeed,
           variantIndex: sample.index,
           total,
           text: sample.text,

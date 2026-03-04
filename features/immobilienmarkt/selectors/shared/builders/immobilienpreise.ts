@@ -7,7 +7,7 @@ import { buildTableModel } from "@/utils/buildTableModel";
 import { buildBarModel } from "@/utils/barModel";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
-import { buildWebAssetUrl } from "@/utils/assets";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 import type { ImmobilienpreiseReportData } from "@/types/reports";
 
 import type { ImmobilienpreiseVM, Zeitreihenpunkt, ZeitreiheSeries } from "../types/immobilienpreise";
@@ -152,8 +152,9 @@ export function buildImmobilienpreiseVM(args: {
     (typeof beraterRecord["berater_email"] === "string" ? beraterRecord["berater_email"] : undefined) ??
     "kontakt@wohnlagencheck24.de";
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
-  const beraterImageSrc = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  const beraterImageSrc = resolveMandatoryMediaSrc(
+    "media_berater_avatar",
+    asString(beraterRecord["media_berater_avatar"]),
   );
 
   const immobilienKaufpreis = data.immobilien_kaufpreis?.[0];

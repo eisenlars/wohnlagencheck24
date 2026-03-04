@@ -11,25 +11,32 @@
         "trend_verbkonstrukte": {
           "verbkonstrukt_trendText_bruttoinlandsprodukt_5jahrestrend_kreis": {
             "gleich": [
-              "das BIP {{ auxiliar }} {{ phrase }}"
+              "Über fünf Jahre {{ auxiliar }} das BIP {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} das BIP {{ phrase }}"
             ],
             "leicht_groesser": [
-              "In den letzten fünf Jahren {{ auxiliar }} es dabei {{ phrase }}"
+              "Über fünf Jahre {{ auxiliar }} das BIP {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} das BIP {{ phrase }}"
             ],
             "groesser": [
-              "Über die vergangenen fünf Jahre {{ auxiliar }} es {{ phrase }}"
+              "Über fünf Jahre {{ auxiliar }} das BIP {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} das BIP {{ phrase }}"
             ],
             "viel_groesser": [
-              "Innerhalb der zurückliegenden fünf Jahre {{ auxiliar }} es {{ phrase }}"
+              "Über fünf Jahre {{ auxiliar }} das BIP {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} das BIP {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "In den letzten fünf Jahren {{ auxiliar }} es {{ phrase }}"
+              "Über fünf Jahre {{ auxiliar }} das BIP {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} das BIP {{ phrase }}"
             ],
             "kleiner": [
-              "Über die vergangenen fünf Jahre {{ auxiliar }} es {{ phrase }}"
+              "Über fünf Jahre {{ auxiliar }} das BIP {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} das BIP {{ phrase }}"
             ],
             "viel_kleiner": [
-              "Innerhalb der zurückliegenden fünf Jahre {{ auxiliar }} es {{ phrase }}"
+              "Über fünf Jahre {{ auxiliar }} das BIP {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} das BIP {{ phrase }}"
             ]
           },
           "phrases_trendText_bruttoinlandsprodukt_5jahrestrend_kreis": {
@@ -37,11 +44,19 @@
               {
                 "phrase": "nahezu unverändert geblieben",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "weitgehend stabil geblieben",
+                "auxiliar": "ist"
               }
             ],
             "leicht_groesser": [
               {
                 "phrase": "mit {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % leicht gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat um {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % gewachsen",
                 "auxiliar": "ist"
               }
             ],
@@ -49,17 +64,29 @@
               {
                 "phrase": "um {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % gewachsen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "deutlich um {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
                 "phrase": "um {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % stark gestiegen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "kräftig um {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % zugelegt",
+                "auxiliar": "hat"
               }
             ],
             "leicht_kleiner": [
               {
                 "phrase": "mit {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % leicht gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat um {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % zurückgegangen",
                 "auxiliar": "ist"
               }
             ],
@@ -67,36 +94,51 @@
               {
                 "phrase": "um {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "spürbar um {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % nachgegeben",
+                "auxiliar": "hat"
               }
             ],
             "viel_kleiner": [
               {
                 "phrase": "um {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % deutlich zurückgegangen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "deutlich um {{ bruttoinlandsprodukt_5jahrestrend_kreis }} % eingebrochen",
+                "auxiliar": "ist"
               }
             ]
           },
           "verbkonstrukt_trendText_bruttoinlandsprodukt_per_ew_vergleich_kreis_land": {
             "gleich": [
-              "Pro Kopf {{ auxiliar }} {{ phrase }}"
+              "Beim BIP je Einwohner {{ auxiliar }} die Region {{ phrase }}",
+              "Pro Kopf {{ auxiliar }} die Wirtschaftsleistung {{ phrase }}"
             ],
             "leicht_groesser": [
-              "Pro-Kopf betrachtet {{ auxiliar }} {{ phrase }}"
+              "Beim BIP je Einwohner {{ auxiliar }} die Region {{ phrase }}",
+              "Pro Kopf {{ auxiliar }} die Wirtschaftsleistung {{ phrase }}"
             ],
             "groesser": [
-              "pro Kopf {{ auxiliar }} {{ phrase }}"
+              "Beim BIP je Einwohner {{ auxiliar }} die Region {{ phrase }}",
+              "Pro Kopf {{ auxiliar }} die Wirtschaftsleistung {{ phrase }}"
             ],
             "viel_groesser": [
-              "Pro-Kopf betrachtet {{ auxiliar }} {{ phrase }}"
+              "Beim BIP je Einwohner {{ auxiliar }} die Region {{ phrase }}",
+              "Pro Kopf {{ auxiliar }} die Wirtschaftsleistung {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "Pro Kopf {{ auxiliar }} {{ phrase }}"
+              "Beim BIP je Einwohner {{ auxiliar }} die Region {{ phrase }}",
+              "Pro Kopf {{ auxiliar }} die Wirtschaftsleistung {{ phrase }}"
             ],
             "kleiner": [
-              "Pro-Kopf betrachtet {{ auxiliar }} {{ phrase }}"
+              "Beim BIP je Einwohner {{ auxiliar }} die Region {{ phrase }}",
+              "Pro Kopf {{ auxiliar }} die Wirtschaftsleistung {{ phrase }}"
             ],
             "viel_kleiner": [
-              "Pro-Kopf {{ auxiliar }} {{ phrase }}"
+              "Beim BIP je Einwohner {{ auxiliar }} die Region {{ phrase }}",
+              "Pro Kopf {{ auxiliar }} die Wirtschaftsleistung {{ phrase }}"
             ]
           },
           "phrases_trendText_bruttoinlandsprodukt_per_ew_vergleich_kreis_land": {
@@ -104,41 +146,69 @@
               {
                 "phrase": "auf Landesniveau (Index 100)",
                 "auxiliar": "liegt"
+              },
+              {
+                "phrase": "nahe am Landesdurchschnitt (Index 100)",
+                "auxiliar": "liegt"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "es mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} leicht über dem Landesniveau",
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} leicht über dem Landesniveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} geringfügig über dem Landesdurchschnitt",
                 "auxiliar": "liegt"
               }
             ],
             "groesser": [
               {
-                "phrase": "es mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} deutlich über dem Landesniveau",
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} deutlich über dem Landesniveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} spürbar über dem Landesdurchschnitt",
                 "auxiliar": "liegt"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "es mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} klar über dem Landesniveau",
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} klar über dem Landesniveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} weit über dem Landesdurchschnitt",
                 "auxiliar": "liegt"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "es mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} leicht unter dem Landesniveau",
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} leicht unter dem Landesniveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} geringfügig unter dem Landesdurchschnitt",
                 "auxiliar": "liegt"
               }
             ],
             "kleiner": [
               {
-                "phrase": "es mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} deutlich unter dem Landesniveau",
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} deutlich unter dem Landesniveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} spürbar unter dem Landesdurchschnitt",
                 "auxiliar": "liegt"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "es mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} klar unter dem Landesniveau",
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} klar unter dem Landesniveau",
+                "auxiliar": "liegt"
+              },
+              {
+                "phrase": "mit Index {{ bruttoinlandsprodukt_per_ew_vergleich_kreis_land }} weit unter dem Landesdurchschnitt",
                 "auxiliar": "liegt"
               }
             ]
@@ -147,11 +217,20 @@
         "static_verbkonstrukte": {
           "verbkonstrukt_staticText_bruttoinlandsprodukt_jahr01_kreis": [
             "Das BIP {{ auxiliar }} aktuell bei {{ phrase }}",
-            "Das aktuelle BIP {{ auxiliar }} bei {{ phrase }}"
+            "Der aktuelle Gesamtwert des BIP {{ auxiliar }} bei {{ phrase }}",
+            "Im jüngsten Berichtsjahr {{ auxiliar }} das BIP bei {{ phrase }}"
           ],
           "phrases_staticText_bruttoinlandsprodukt_jahr01_kreis": [
             {
-              "phrase": "{{ bruttoinlandsprodukt_jahr01_kreis }}",
+              "phrase": "{{ bruttoinlandsprodukt_jahr01_kreis }} Euro",
+              "auxiliar": "liegt"
+            },
+            {
+              "phrase": "rund {{ bruttoinlandsprodukt_jahr01_kreis }} Euro",
+              "auxiliar": "liegt"
+            },
+            {
+              "phrase": "etwa {{ bruttoinlandsprodukt_jahr01_kreis }} Euro",
               "auxiliar": "liegt"
             }
           ]
@@ -167,73 +246,108 @@
             "{{ verbkonstrukt_staticText_verfuegbares_einkommen_jahr01_kreis }}. {{ verbkonstrukt_trendText_verfuegbares_einkommen_5jahrestrend_kreis }}."
           ],
           "ohne_verbkonstrukt": [
-            "Das verfügbare Einkommen beträgt aktuell {{ verfuegbares_einkommen_jahr01_kreis }}."
+            "{{ verbkonstrukt_staticText_verfuegbares_einkommen_jahr01_kreis }}."
           ]
         },
         "trend_verbkonstrukte": {
           "verbkonstrukt_trendText_verfuegbares_einkommen_5jahrestrend_kreis": {
             "gleich": [
-              "In den letzten fünf Jahren {{ auxiliar }} {{ phrase }}"
+              "Im Fünfjahresvergleich {{ auxiliar }} das verfügbare Einkommen {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} das verfügbare Einkommen {{ phrase }}"
             ],
             "leicht_groesser": [
-              "In den letzten fünf Jahren {{ auxiliar }} {{ phrase }}"
+              "Im Fünfjahresvergleich {{ auxiliar }} das verfügbare Einkommen {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} das verfügbare Einkommen {{ phrase }}"
             ],
             "groesser": [
-              "Über fünf Jahre {{ auxiliar }} {{ phrase }}"
+              "Im Fünfjahresvergleich {{ auxiliar }} das verfügbare Einkommen {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} das verfügbare Einkommen {{ phrase }}"
             ],
             "viel_groesser": [
-              "In den vergangenen fünf Jahren {{ auxiliar }} {{ phrase }}"
+              "Im Fünfjahresvergleich {{ auxiliar }} das verfügbare Einkommen {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} das verfügbare Einkommen {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "Über die letzten fünf Jahre {{ auxiliar }} {{ phrase }}"
+              "Im Fünfjahresvergleich {{ auxiliar }} das verfügbare Einkommen {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} das verfügbare Einkommen {{ phrase }}"
             ],
             "kleiner": [
-              "In den letzten fünf Jahren {{ auxiliar }} {{ phrase }}"
+              "Im Fünfjahresvergleich {{ auxiliar }} das verfügbare Einkommen {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} das verfügbare Einkommen {{ phrase }}"
             ],
             "viel_kleiner": [
-              "In den vergangenen fünf Jahren {{ auxiliar }} {{ phrase }}"
+              "Im Fünfjahresvergleich {{ auxiliar }} das verfügbare Einkommen {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} das verfügbare Einkommen {{ phrase }}"
             ]
           },
           "phrases_trendText_verfuegbares_einkommen_5jahrestrend_kreis": {
             "gleich": [
               {
-                "phrase": "die Entwicklung nahezu unverändert geblieben",
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "weitgehend stabil geblieben",
                 "auxiliar": "ist"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "es mit {{ verfuegbares_einkommen_5jahrestrend_kreis }} % leicht gestiegen",
+                "phrase": "leicht um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % gewachsen",
                 "auxiliar": "ist"
               }
             ],
             "groesser": [
               {
-                "phrase": "es um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % gestiegen",
+                "phrase": "spürbar um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "deutlich um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % gewachsen",
                 "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "es um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % stark gestiegen",
+                "phrase": "um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % stark gestiegen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "kräftig um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % zugelegt",
+                "auxiliar": "hat"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "es mit {{ verfuegbares_einkommen_5jahrestrend_kreis }} % leicht gesunken",
+                "phrase": "leicht um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % zurückgegangen",
                 "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
-                "phrase": "es um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % gesunken",
+                "phrase": "spürbar um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "deutlich um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % nachgegeben",
+                "auxiliar": "hat"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "es um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % deutlich zurückgegangen",
+                "phrase": "deutlich um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % zurückgegangen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "markant um {{ verfuegbares_einkommen_5jahrestrend_kreis }} % eingebrochen",
                 "auxiliar": "ist"
               }
             ]
@@ -241,11 +355,21 @@
         },
         "static_verbkonstrukte": {
           "verbkonstrukt_staticText_verfuegbares_einkommen_jahr01_kreis": [
-            "Das gesamte verfügbare Einkommen {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}"
+            "Das gesamte verfügbare Einkommen {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}",
+            "Aktuell {{ auxiliar }} das verfügbare Einkommen {{ in_oder_im }} {{ region_name }} {{ phrase }}",
+            "Im jüngsten Berichtsjahr {{ auxiliar }} das verfügbare Einkommen {{ in_oder_im }} {{ region_name }} {{ phrase }}"
           ],
           "phrases_staticText_verfuegbares_einkommen_jahr01_kreis": [
             {
-              "phrase": "bei {{ verfuegbares_einkommen_jahr01_kreis }} €, auf die Einwohner gerechnet {{ verfuegbares_einkommen_per_ew_jahr01_kreis }} € und pro Haushalt {{ verfuegbares_einkommen_per_hh_jahr01_kreis }} €",
+              "phrase": "bei {{ verfuegbares_einkommen_jahr01_kreis }} Euro; je Einwohner sind das {{ verfuegbares_einkommen_per_ew_jahr01_kreis }} Euro, je Haushalt {{ verfuegbares_einkommen_per_hh_jahr01_kreis }} Euro",
+              "auxiliar": "liegt"
+            },
+            {
+              "phrase": "bei {{ verfuegbares_einkommen_jahr01_kreis }} Euro. Pro Kopf entspricht das {{ verfuegbares_einkommen_per_ew_jahr01_kreis }} Euro; pro Haushalt sind es {{ verfuegbares_einkommen_per_hh_jahr01_kreis }} Euro",
+              "auxiliar": "liegt"
+            },
+            {
+              "phrase": "bei {{ verfuegbares_einkommen_jahr01_kreis }} Euro. Daraus leiten sich {{ verfuegbares_einkommen_per_ew_jahr01_kreis }} Euro je Einwohner sowie {{ verfuegbares_einkommen_per_hh_jahr01_kreis }} Euro je Haushalt ab",
               "auxiliar": "liegt"
             }
           ]
@@ -275,26 +399,32 @@
         "trend_verbkonstrukte": {
           "verbkonstrukt_trendText_sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis": {
             "gleich": [
-              "die Zahl der Arbeitsort-Beschäftigten {{ auxiliar }} {{ phrase }}"
+              "die Zahl der Arbeitsort-Beschäftigten {{ auxiliar }} {{ phrase }}",
+              "bei den Beschäftigten am Arbeitsort {{ auxiliar }} {{ phrase }}"
             ],
             "leicht_groesser": [
               "In den letzten fünf Jahren {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}",
               "Innerhalb der vergangenen fünf Jahre {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
             ],
             "groesser": [
-              "Über fünf Jahre {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
+              "Über fünf Jahre {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
             ],
             "viel_groesser": [
-              "In den vergangenen fünf Jahren {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
+              "In den vergangenen fünf Jahren {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "Über die letzten fünf Jahre {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
+              "Über die letzten fünf Jahre {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
             ],
             "kleiner": [
-              "In den letzten fünf Jahren {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
+              "In den letzten fünf Jahren {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
             ],
             "viel_kleiner": [
-              "In den vergangenen fünf Jahren {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
+              "In den vergangenen fünf Jahren {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} die Zahl der sozialversicherungspflichtig Beschäftigten am Arbeitsort {{ phrase }}"
             ]
           },
           "phrases_trendText_sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis": {
@@ -302,17 +432,29 @@
               {
                 "phrase": "konstant geblieben",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "ist"
               }
             ],
             "leicht_groesser": [
               {
                 "phrase": "mit {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % leicht gestiegen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % gewachsen",
+                "auxiliar": "ist"
               }
             ],
             "groesser": [
               {
-                "phrase": "um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % gestiegen",
+                "phrase": "spürbar um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "deutlich um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % gewachsen",
                 "auxiliar": "ist"
               }
             ],
@@ -320,17 +462,29 @@
               {
                 "phrase": "um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % stark gestiegen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "kräftig um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % zugelegt",
+                "auxiliar": "hat"
               }
             ],
             "leicht_kleiner": [
               {
                 "phrase": "mit {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % leicht gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % zurückgegangen",
+                "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
-                "phrase": "um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % gesunken",
+                "phrase": "spürbar um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "deutlich um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % nachgegeben",
                 "auxiliar": "ist"
               }
             ],
@@ -338,85 +492,134 @@
               {
                 "phrase": "um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % deutlich zurückgegangen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "markant um {{ sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis }} % eingebrochen",
+                "auxiliar": "ist"
               }
             ]
           },
           "verbkonstrukt_trendText_sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis": {
             "gleich": [
-              "Auf der anderen Seite {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
+              "Bei den Wohnort-Beschäftigten {{ auxiliar }} die Entwicklung {{ phrase }}",
+              "Parallel dazu {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "leicht_groesser": [
-              "Bei den Wohnort-Beschäftigten {{ auxiliar }} im selben Zeitraum {{ phrase }}"
+              "Bei den Wohnort-Beschäftigten {{ auxiliar }} die Entwicklung im selben Zeitraum {{ phrase }}",
+              "Parallel dazu {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "groesser": [
-              "Bei den Wohnort-Beschäftigten {{ auxiliar }} im selben Zeitraum {{ phrase }}"
+              "Bei den Wohnort-Beschäftigten {{ auxiliar }} die Entwicklung im selben Zeitraum {{ phrase }}",
+              "Parallel dazu {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "viel_groesser": [
-              "Bei den Wohnort-Beschäftigten {{ auxiliar }} im selben Zeitraum {{ phrase }}"
+              "Bei den Wohnort-Beschäftigten {{ auxiliar }} die Entwicklung im selben Zeitraum {{ phrase }}",
+              "Parallel dazu {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "Bei den Wohnort-Beschäftigten {{ auxiliar }} im selben Zeitraum {{ phrase }}"
+              "Bei den Wohnort-Beschäftigten {{ auxiliar }} die Entwicklung im selben Zeitraum {{ phrase }}",
+              "Parallel dazu {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "kleiner": [
-              "Bei den Wohnort-Beschäftigten {{ auxiliar }} im selben Zeitraum {{ phrase }}"
+              "Bei den Wohnort-Beschäftigten {{ auxiliar }} die Entwicklung im selben Zeitraum {{ phrase }}",
+              "Parallel dazu {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "viel_kleiner": [
-              "Bei den Wohnort-Beschäftigten {{ auxiliar }} im selben Zeitraum {{ phrase }}"
+              "Bei den Wohnort-Beschäftigten {{ auxiliar }} die Entwicklung im selben Zeitraum {{ phrase }}",
+              "Parallel dazu {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ]
           },
           "phrases_trendText_sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis": {
             "gleich": [
               {
-                "phrase": "konstant geblieben",
+                "phrase": "stabil geblieben",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "nahezu unverändert geblieben",
                 "auxiliar": "ist"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "mit {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % einen leichten Anstieg",
-                "auxiliar": "gab es"
+                "phrase": "leicht um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gewachsen",
+                "auxiliar": "ist"
               }
             ],
             "groesser": [
               {
-                "phrase": "einen Anstieg um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} %",
-                "auxiliar": "gab es"
+                "phrase": "spürbar um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "deutlich um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gewachsen",
+                "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "mit {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % einen starken gestiegen",
-                "auxiliar": "gab es"
+                "phrase": "um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % stark gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "kräftig um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % zugelegt",
+                "auxiliar": "hat"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "mit {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % einen leichten Rückgang",
-                "auxiliar": "gab es"
+                "phrase": "leicht um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % zurückgegangen",
+                "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
-                "phrase": "einen Rückgang um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} %",
-                "auxiliar": "gab es"
+                "phrase": "spürbar um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "deutlich um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % nachgegeben",
+                "auxiliar": "ist"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "mit {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % einen deutlichen Rückgang",
-                "auxiliar": "gab es"
+                "phrase": "um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % deutlich zurückgegangen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "markant um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % eingebrochen",
+                "auxiliar": "ist"
               }
             ]
           }
         },
         "static_verbkonstrukte": {
           "verbkonstrukt_staticText_sv_pflichtig_beschaeftigte_jahr01_kreis": [
-            "Zuletzt {{ auxiliar }} {{ phrase }}"
+            "Zuletzt {{ auxiliar }} {{ phrase }}",
+            "Im jüngsten Berichtsjahr {{ auxiliar }} {{ phrase }}",
+            "Aktuell {{ auxiliar }} {{ phrase }}"
           ],
           "phrases_staticText_sv_pflichtig_beschaeftigte_jahr01_kreis": [
             {
               "phrase": "die Zahl der Beschäftigten am Arbeitsort bei {{ sv_pflichtig_beschaeftigte_arbeitsort_jahr01_kreis }} und am Wohnort bei {{ sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis }}",
               "auxiliar": "lag"
+            },
+            {
+              "phrase": "am Arbeitsort {{ sv_pflichtig_beschaeftigte_arbeitsort_jahr01_kreis }} Beschäftigte und am Wohnort {{ sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis }} Beschäftigte registriert",
+              "auxiliar": "wurden"
+            },
+            {
+              "phrase": "die Bestände bei {{ sv_pflichtig_beschaeftigte_arbeitsort_jahr01_kreis }} am Arbeitsort sowie {{ sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis }} am Wohnort",
+              "auxiliar": "lagen"
             }
           ]
         }
@@ -431,7 +634,7 @@
             "{{ verbkonstrukt_trendText_sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }}. {{ verbkonstrukt_staticText_sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis }}."
           ],
           "ohne_verbkonstrukt": [
-            "Die Zahl der SV-pflichtig Beschäftigten (Wohnort) beträgt aktuell {{ sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis }}."
+            "Die Zahl der sozialversicherungspflichtig Beschäftigten am Wohnort beträgt aktuell {{ sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis }}."
           ]
         },
         "special_cases_template": {
@@ -443,25 +646,32 @@
         "trend_verbkonstrukte": {
           "verbkonstrukt_trendText_sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis": {
             "gleich": [
-              "die Zahl der Wohnort-Beschäftigten {{ auxiliar }} {{ phrase }}"
+              "Die Zahl der Wohnort-Beschäftigten {{ auxiliar }} {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "leicht_groesser": [
-              "In den letzten fünf Jahren {{ auxiliar }} {{ phrase }}"
+              "In den letzten fünf Jahren {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "groesser": [
-              "Über fünf Jahre {{ auxiliar }} {{ phrase }}"
+              "Über fünf Jahre {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "viel_groesser": [
-              "In den vergangenen fünf Jahren {{ auxiliar }} {{ phrase }}"
+              "In den vergangenen fünf Jahren {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}",
+              "Über fünf Jahre {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "Über die letzten fünf Jahre {{ auxiliar }} {{ phrase }}"
+              "Über die letzten fünf Jahre {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}",
+              "Auf Sicht von fünf Jahren {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "kleiner": [
-              "In den letzten fünf Jahren {{ auxiliar }} {{ phrase }}"
+              "In den letzten fünf Jahren {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ],
             "viel_kleiner": [
-              "In den vergangenen fünf Jahren {{ auxiliar }} {{ phrase }}"
+              "In den vergangenen fünf Jahren {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}",
+              "Über fünf Jahre {{ auxiliar }} die Zahl der Wohnort-Beschäftigten {{ phrase }}"
             ]
           },
           "phrases_trendText_sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis": {
@@ -469,11 +679,19 @@
               {
                 "phrase": "konstant geblieben",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "weitgehend unverändert geblieben",
+                "auxiliar": "ist"
               }
             ],
             "leicht_groesser": [
               {
                 "phrase": "mit {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % leicht gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "leicht um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gewachsen",
                 "auxiliar": "ist"
               }
             ],
@@ -481,11 +699,19 @@
               {
                 "phrase": "um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gestiegen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "spürbar um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gewachsen",
+                "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
                 "phrase": "um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % stark gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "deutlich um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gewachsen",
                 "auxiliar": "ist"
               }
             ],
@@ -493,11 +719,19 @@
               {
                 "phrase": "mit {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % leicht gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "leicht um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % zurückgegangen",
+                "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
                 "phrase": "um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "spürbar um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % zurückgegangen",
                 "auxiliar": "ist"
               }
             ],
@@ -505,17 +739,31 @@
               {
                 "phrase": "um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % deutlich zurückgegangen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "deutlich um {{ sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis }} % gesunken",
+                "auxiliar": "ist"
               }
             ]
           }
         },
         "static_verbkonstrukte": {
           "verbkonstrukt_staticText_sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis": [
-            "Im jüngsten Jahr {{ auxiliar }} {{ phrase }}"
+            "Im jüngsten Berichtsjahr {{ auxiliar }} {{ phrase }}",
+            "Aktuell {{ auxiliar }} {{ phrase }}",
+            "Zum aktuellen Stand {{ auxiliar }} {{ phrase }}"
           ],
           "phrases_staticText_sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis": [
             {
               "phrase": "die Zahl der Wohnort-Beschäftigten bei {{ sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis }}",
+              "auxiliar": "liegt"
+            },
+            {
+              "phrase": "am Wohnort {{ sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis }} Beschäftigte registriert worden",
+              "auxiliar": "sind"
+            },
+            {
+              "phrase": "der Bestand der Wohnort-Beschäftigten bei {{ sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis }}",
               "auxiliar": "liegt"
             }
           ]
@@ -530,80 +778,119 @@
           "mit_verbkonstrukt": [
             "{{ verbkonstrukt_staticText_arbeitsplatzzentralitaet }}. {{ verbkonstrukt_trendText_arbeitsplatzzentralitaet }}."
           ],
-          "ohne_verbkonstrukt": []
+          "ohne_verbkonstrukt": [
+            "Die Arbeitsplatzzentralität liegt im Kreis aktuell bei {{ arbeitsplatzzentralitaet }}."
+          ]
         },
         "trend_verbkonstrukte": {
           "verbkonstrukt_trendText_arbeitsplatzzentralitaet": {
             "gleich": [
-              "Mit {{ arbeitsplatzzentralitaet }} {{ auxiliar }} der Wert {{ in_oder_im }} {{ region_name }} {{ phrase }}. Die Zahl der Ein- und Auspendler ist praktisch gleich, was auf eine ausgewogene Funktion der Region sowohl als Wohn- als auch als Arbeitsort hinweist"
+              "Mit einem Arbeitsplatzzentralitätsindex von {{ arbeitsplatzzentralitaet }} {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}",
+              "Der Arbeitsplatzzentralitätsindex liegt bei {{ arbeitsplatzzentralitaet }}; damit {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}"
             ],
             "leicht_groesser": [
-              "Mit {{ arbeitsplatzzentralitaet }} {{ auxiliar }} der Wert {{ in_oder_im }} {{ region_name }} {{ phrase }} 1. Damit ist die Region leicht als Arbeitsstandort einzustufen. Es pendeln etwas mehr Menschen in die Region zur Arbeit, als dort wohnen, was auf ein kleines, aber vorhandenes Arbeitsplatzübergewicht hinweist"
+              "Mit einem Arbeitsplatzzentralitätsindex von {{ arbeitsplatzzentralitaet }} {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}",
+              "Der Arbeitsplatzzentralitätsindex liegt bei {{ arbeitsplatzzentralitaet }}; damit {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}"
             ],
             "groesser": [
-              "Mit {{ arbeitsplatzzentralitaet }} {{ auxiliar }} der Wert {{ in_oder_im }} {{ region_name }} {{ phrase }} 1. Damit ist die Region klar als Arbeitsstandort zu bewerten. Deutlich mehr Menschen pendeln zur Arbeit in die Region ein, als dort wohnen, was auf eine überdurchschnittliche Arbeitsplatzkonzentration und eine gewisse Anziehungskraft für Beschäftigte aus dem Umland hinweist"
+              "Mit einem Arbeitsplatzzentralitätsindex von {{ arbeitsplatzzentralitaet }} {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}",
+              "Der Arbeitsplatzzentralitätsindex liegt bei {{ arbeitsplatzzentralitaet }}; damit {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}"
             ],
             "viel_groesser": [
-              "Mit {{ arbeitsplatzzentralitaet }} {{ auxiliar }} der Wert {{ in_oder_im }} {{ region_name }} {{ phrase }} 1. Mit diesem Wert handelt es sich um einen ausgeprägten Arbeitsstandort. Es arbeiten deutlich mehr Menschen in der Region, als dort wohnen, was auf eine starke Funktion als Beschäftigungszentrum und hohe Einpendelung aus dem Umland schließen lässt"
+              "Mit einem Arbeitsplatzzentralitätsindex von {{ arbeitsplatzzentralitaet }} {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}",
+              "Der Arbeitsplatzzentralitätsindex liegt bei {{ arbeitsplatzzentralitaet }}; damit {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "Mit {{ arbeitsplatzzentralitaet }} {{ auxiliar }} der Wert {{ in_oder_im }} {{ region_name }} {{ phrase }} 1. Damit weist die Region ein fast ausgeglichenes Verhältnis von Wohn- und Arbeitsplätzen auf, bleibt aber noch leicht als Wohnstandort einzustufen. Die Zahl der Auspendler übersteigt die der Einpendler nur geringfügig, was auf eine relativ gute Arbeitsplatzversorgung vor Ort hindeutet"
+              "Mit einem Arbeitsplatzzentralitätsindex von {{ arbeitsplatzzentralitaet }} {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}",
+              "Der Arbeitsplatzzentralitätsindex liegt bei {{ arbeitsplatzzentralitaet }}; damit {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}"
             ],
             "kleiner": [
-              "Mit {{ arbeitsplatzzentralitaet }} {{ auxiliar }} der Wert {{ in_oder_im }} {{ region_name }} {{ phrase }} 1. Die Region ist damit überwiegend Wohnstandort, liegt aber näher an einem ausgeglichenen Verhältnis zwischen Wohnen und Arbeiten. Es gibt hier also bereits eine vergleichsweise höhere Arbeitsplatzdichte, dennoch pendeln mehr Menschen zur Arbeit in andere Regionen als umgekehrt"
+              "Mit einem Arbeitsplatzzentralitätsindex von {{ arbeitsplatzzentralitaet }} {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}",
+              "Der Arbeitsplatzzentralitätsindex liegt bei {{ arbeitsplatzzentralitaet }}; damit {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}"
             ],
             "viel_kleiner": [
-              "Mit {{ arbeitsplatzzentralitaet }} {{ auxiliar }} der Wert {{ in_oder_im }} {{ region_name }} {{ phrase }} 1. Damit hat die Region gerade noch den Charakter einer Wohnregion, es pendeln mehr Menschen aus der Region zur Arbeit in andere Orte, als umgekehrt einpendeln. Das spricht für einen eher geringen Stellenanteil vor Ort und eine stärkere Funktion als Wohnstandort statt als Beschäftigungszentrum"
+              "Mit einem Arbeitsplatzzentralitätsindex von {{ arbeitsplatzzentralitaet }} {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}",
+              "Der Arbeitsplatzzentralitätsindex liegt bei {{ arbeitsplatzzentralitaet }}; damit {{ auxiliar }} {{ in_oder_im }} {{ region_name }} {{ phrase }}"
             ]
           },
           "phrases_trendText_arbeitsplatzzentralitaet": {
             "gleich": [
               {
-                "phrase": "ausgeglichen",
+                "phrase": "ein weitgehend ausgeglichenes Verhältnis zwischen Ein- und Auspendlung zu beobachten",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "eine balancierte Pendlerstruktur erkennbar",
+                "auxiliar": "bleibt"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "leicht über",
-                "auxiliar": "liegt"
+                "phrase": "ein leichtes Arbeitsplatzübergewicht",
+                "auxiliar": "zeigt sich"
+              },
+              {
+                "phrase": "eine tendenzielle Ausrichtung als Arbeitsstandort erkennbar",
+                "auxiliar": "ist"
               }
             ],
             "groesser": [
               {
-                "phrase": "über",
-                "auxiliar": "liegt"
+                "phrase": "ein klares Arbeitsplatzübergewicht",
+                "auxiliar": "zeigt sich"
+              },
+              {
+                "phrase": "eine deutliche Positionierung als Arbeitsstandort erkennbar",
+                "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "klar über",
-                "auxiliar": "liegt"
+                "phrase": "eine ausgeprägte Funktion als Arbeitsstandort",
+                "auxiliar": "zeigt sich"
+              },
+              {
+                "phrase": "eine klare Einordnung als Beschäftigungszentrum möglich",
+                "auxiliar": "ist"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "leicht unter",
-                "auxiliar": "liegt"
+                "phrase": "ein leichtes Übergewicht der Auspendlung",
+                "auxiliar": "zeigt sich"
+              },
+              {
+                "phrase": "die Region eher als Wohnstandort geprägt",
+                "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
-                "phrase": "unter",
-                "auxiliar": "liegt"
+                "phrase": "eine klare Funktion als Wohnstandort",
+                "auxiliar": "zeigt sich"
+              },
+              {
+                "phrase": "die Auspendlung deutlich stärker als die Einpendlung",
+                "auxiliar": "ist"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "klar unter",
-                "auxiliar": "liegt"
+                "phrase": "eine stark ausgeprägte Funktion als Wohnstandort",
+                "auxiliar": "zeigt sich"
+              },
+              {
+                "phrase": "die Region klar von Auspendlung geprägt",
+                "auxiliar": "ist"
               }
             ]
           }
         },
         "static_verbkonstrukte": {
           "verbkonstrukt_staticText_arbeitsplatzzentralitaet": [
-            "Eine Region mit einem Arbeitsplatzzentralitätswert über 1 gilt als bevorzugter Arbeitsort, da dort mehr Menschen arbeiten als wohnen. Ein Wert unter 1 zeigt, dass mehr Personen in der Region wohnen als dort arbeiten"
+            "Der Arbeitsplatzzentralitätsindex zeigt das Verhältnis von Ein- und Auspendlung und ordnet die Region zwischen Wohn- und Arbeitsortfunktion ein",
+            "Werte über 1 stehen für ein Übergewicht der Einpendlung, Werte unter 1 für ein Übergewicht der Auspendlung",
+            "Ein Index nahe 1 spricht für ein weitgehend ausgeglichenes Verhältnis zwischen Wohn- und Arbeitsortfunktion"
           ],
           "phrases_staticText_arbeitsplatzzentralitaet": [
             {
@@ -620,7 +907,9 @@
       {
         "templates": {
           "mit_verbkonstrukt": [
-            "{{ verbkonstrukt_trendText_pendlervolumen_vorjahressaldo_kreis }}. {{ verbkonstrukt_trendText_einpendler_vorjahrestrend_kreis }}. {{ verbkonstrukt_trendText_auspendler_vorjahrestrend_kreis }}."
+            "{{ verbkonstrukt_staticText_pendler_jahr01_kreis }}. {{ verbkonstrukt_trendText_pendlervolumen_vorjahressaldo_kreis }}. {{ verbkonstrukt_trendText_einpendler_vorjahrestrend_kreis }}. {{ verbkonstrukt_trendText_auspendler_vorjahrestrend_kreis }}.",
+            "{{ verbkonstrukt_staticText_pendler_jahr01_kreis }}. {{ verbkonstrukt_trendText_einpendler_vorjahrestrend_kreis }}. {{ verbkonstrukt_trendText_auspendler_vorjahrestrend_kreis }}.",
+            "{{ verbkonstrukt_staticText_pendler_jahr01_kreis }}."
           ],
           "ohne_verbkonstrukt": [
             "Im Kreis wurden {{ einpendler_jahr01_kreis }} Einpendler und {{ auspendler_jahr01_kreis }} Auspendler gezählt. Der Pendlersaldo beträgt {{ pendlersaldo_jahr01_kreis }}."
@@ -629,32 +918,39 @@
         "trend_verbkonstrukte": {
           "verbkonstrukt_trendText_pendlervolumen_vorjahressaldo_kreis": {
             "gleich": [
-              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}"
+              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}",
+              "Das gesamte Pendlervolumen {{ auxiliar }} {{ phrase }}"
             ],
             "leicht_groesser": [
-              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}"
+              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}",
+              "Das gesamte Pendlervolumen {{ auxiliar }} {{ phrase }}"
             ],
             "groesser": [
-              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}"
+              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}",
+              "Das gesamte Pendlervolumen {{ auxiliar }} {{ phrase }}"
             ],
             "viel_groesser": [
-              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}"
+              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}",
+              "Das gesamte Pendlervolumen {{ auxiliar }} {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}"
+              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}",
+              "Das gesamte Pendlervolumen {{ auxiliar }} {{ phrase }}"
             ],
             "kleiner": [
-              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}"
+              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}",
+              "Das gesamte Pendlervolumen {{ auxiliar }} {{ phrase }}"
             ],
             "viel_kleiner": [
-              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}"
+              "Das Pendlervolumen {{ auxiliar }} {{ phrase }}",
+              "Das gesamte Pendlervolumen {{ auxiliar }} {{ phrase }}"
             ]
           },
           "phrases_trendText_pendlervolumen_vorjahressaldo_kreis": {
             "gleich": [
               {
-                "phrase": "blieb nahezu unverändert",
-                "auxiliar": ""
+                "phrase": "zuletzt kaum verändert",
+                "auxiliar": "hat sich"
               }
             ],
             "leicht_groesser": [
@@ -677,50 +973,57 @@
             ],
             "leicht_kleiner": [
               {
-                "phrase": "zuletzt leicht um {{ pendlervolumen_vorjahressaldo_kreis }} Personen veringert",
+                "phrase": "zuletzt leicht um {{ pendlervolumen_vorjahressaldo_kreis }} Personen verringert",
                 "auxiliar": "hat sich"
               }
             ],
             "kleiner": [
               {
-                "phrase": "zuletzt um {{ pendlervolumen_vorjahressaldo_kreis }} Personen veringert",
+                "phrase": "zuletzt um {{ pendlervolumen_vorjahressaldo_kreis }} Personen verringert",
                 "auxiliar": "hat sich"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "zuletzt deutlich um {{ pendlervolumen_vorjahressaldo_kreis }} Personen veringert",
+                "phrase": "zuletzt deutlich um {{ pendlervolumen_vorjahressaldo_kreis }} Personen verringert",
                 "auxiliar": "hat sich"
               }
             ]
           },
           "verbkonstrukt_trendText_einpendler_vorjahrestrend_kreis": {
             "gleich": [
-              "Die Zahl der Einpendler {{ auxiliar }} dabei {{ phrase }}"
+              "Die Zahl der Einpendler {{ auxiliar }} {{ phrase }}",
+              "Die Einpendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "leicht_groesser": [
-              "Die Zahl der Einpendler {{ auxiliar }} dabei {{ phrase }}"
+              "Die Zahl der Einpendler {{ auxiliar }} {{ phrase }}",
+              "Die Einpendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "groesser": [
-              "Die Zahl der Einpendler {{ auxiliar }} dabei {{ phrase }}"
+              "Die Zahl der Einpendler {{ auxiliar }} {{ phrase }}",
+              "Die Einpendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "viel_groesser": [
-              "Die Zahl der Einpendler {{ auxiliar }} dabei {{ phrase }}"
+              "Die Zahl der Einpendler {{ auxiliar }} {{ phrase }}",
+              "Die Einpendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "Die Zahl der Einpendler {{ auxiliar }} dabei {{ phrase }}"
+              "Die Zahl der Einpendler {{ auxiliar }} {{ phrase }}",
+              "Die Einpendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "kleiner": [
-              "Die Zahl der Einpendler {{ auxiliar }} dabei {{ phrase }}"
+              "Die Zahl der Einpendler {{ auxiliar }} {{ phrase }}",
+              "Die Einpendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "viel_kleiner": [
-              "Die Zahl der Einpendler {{ auxiliar }} dabei {{ phrase }}"
+              "Die Zahl der Einpendler {{ auxiliar }} {{ phrase }}",
+              "Die Einpendlerzahl {{ auxiliar }} {{ phrase }}"
             ]
           },
           "phrases_trendText_einpendler_vorjahrestrend_kreis": {
             "gleich": [
               {
-                "phrase": "blieb stabil",
+                "phrase": "stabil geblieben",
                 "auxiliar": "ist"
               }
             ],
@@ -732,13 +1035,13 @@
             ],
             "groesser": [
               {
-                "phrase": "mit {{ einpendler_vorjahrestrend_kreis }} % gestiegen",
+                "phrase": "um {{ einpendler_vorjahrestrend_kreis }} % gestiegen",
                 "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "mit {{ einpendler_vorjahrestrend_kreis }} % stark gestiegen",
+                "phrase": "um {{ einpendler_vorjahrestrend_kreis }} % deutlich gestiegen",
                 "auxiliar": "ist"
               }
             ],
@@ -750,84 +1053,104 @@
             ],
             "kleiner": [
               {
-                "phrase": "mit {{ einpendler_vorjahrestrend_kreis }} % gesunken",
+                "phrase": "um {{ einpendler_vorjahrestrend_kreis }} % gesunken",
                 "auxiliar": "ist"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "mit {{ einpendler_vorjahrestrend_kreis }} % stark zurückgegangen",
+                "phrase": "um {{ einpendler_vorjahrestrend_kreis }} % deutlich gesunken",
                 "auxiliar": "ist"
               }
             ]
           },
           "verbkonstrukt_trendText_auspendler_vorjahrestrend_kreis": {
             "gleich": [
-              "Bei den Auspendlern {{ auxiliar }} {{ phrase }}"
+              "Die Zahl der Auspendler {{ auxiliar }} {{ phrase }}",
+              "Die Auspendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "leicht_groesser": [
-              "Bei den Auspendlern {{ auxiliar }} {{ phrase }}"
+              "Die Zahl der Auspendler {{ auxiliar }} {{ phrase }}",
+              "Die Auspendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "groesser": [
-              "Bei den Auspendlern {{ auxiliar }} {{ phrase }}"
+              "Die Zahl der Auspendler {{ auxiliar }} {{ phrase }}",
+              "Die Auspendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "viel_groesser": [
-              "Bei den Auspendlern {{ auxiliar }} {{ phrase }}"
+              "Die Zahl der Auspendler {{ auxiliar }} {{ phrase }}",
+              "Die Auspendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "Bei den Auspendlern {{ auxiliar }} {{ phrase }}"
+              "Die Zahl der Auspendler {{ auxiliar }} {{ phrase }}",
+              "Die Auspendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "kleiner": [
-              "Bei den Auspendlern {{ auxiliar }} {{ phrase }}"
+              "Die Zahl der Auspendler {{ auxiliar }} {{ phrase }}",
+              "Die Auspendlerzahl {{ auxiliar }} {{ phrase }}"
             ],
             "viel_kleiner": [
-              "Bei den Auspendlern {{ auxiliar }} {{ phrase }}"
+              "Die Zahl der Auspendler {{ auxiliar }} {{ phrase }}",
+              "Die Auspendlerzahl {{ auxiliar }} {{ phrase }}"
             ]
           },
           "phrases_trendText_auspendler_vorjahrestrend_kreis": {
             "gleich": [
               {
-                "phrase": "eine stabile Entwicklung zu beobachten",
+                "phrase": "blieb stabil",
                 "auxiliar": "ist"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "{{ link_connector }} eine leichte Zunahme um {{ auspendler_vorjahrestrend_kreis }} % zu beobachten. {{ note_connector }}",
+                "phrase": "mit {{ auspendler_vorjahrestrend_kreis }} % leicht gestiegen",
                 "auxiliar": "ist"
               }
             ],
             "groesser": [
               {
-                "phrase": "{{ link_connector }} eine leichte Zunahme um {{ auspendler_vorjahrestrend_kreis }} % zu beobachten. {{ note_connector }}",
+                "phrase": "um {{ auspendler_vorjahrestrend_kreis }} % gestiegen",
                 "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "{{ link_connector }} eine Zunahme um {{ auspendler_vorjahrestrend_kreis }} % zu beobachten. {{ note_connector }}",
+                "phrase": "um {{ auspendler_vorjahrestrend_kreis }} % deutlich gestiegen",
                 "auxiliar": "ist"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "{{ link_connector }} ein leichter Rückgang um {{ auspendler_vorjahrestrend_kreis }} % zu beobachten. {{ note_connector }}",
+                "phrase": "mit {{ auspendler_vorjahrestrend_kreis }} % leicht gesunken",
                 "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
-                "phrase": "{{ link_connector }} ein Rückgang um {{ auspendler_vorjahrestrend_kreis }} % zu beobachten. {{ note_connector }}",
+                "phrase": "um {{ auspendler_vorjahrestrend_kreis }} % gesunken",
                 "auxiliar": "ist"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "{{ link_connector }} ein starker Rückgang um {{ auspendler_vorjahrestrend_kreis }} % zu beobachten. {{ note_connector }}",
+                "phrase": "um {{ auspendler_vorjahrestrend_kreis }} % deutlich gesunken",
                 "auxiliar": "ist"
               }
             ]
           }
+        },
+        "static_verbkonstrukte": {
+          "verbkonstrukt_staticText_pendler_jahr01_kreis": [
+            "Im jüngsten Berichtsjahr wurden {{ einpendler_jahr01_kreis }} Einpendler und {{ auspendler_jahr01_kreis }} Auspendler erfasst; der Pendlersaldo liegt bei {{ pendlersaldo_jahr01_kreis }}",
+            "Aktuell stehen {{ einpendler_jahr01_kreis }} Einpendlern insgesamt {{ auspendler_jahr01_kreis }} Auspendler gegenüber, der Saldo beträgt {{ pendlersaldo_jahr01_kreis }}",
+            "Zuletzt wurden im Kreis {{ einpendler_jahr01_kreis }} Einpendler und {{ auspendler_jahr01_kreis }} Auspendler gezählt; daraus ergibt sich ein Pendlersaldo von {{ pendlersaldo_jahr01_kreis }}"
+          ],
+          "phrases_staticText_pendler_jahr01_kreis": [
+            {
+              "phrase": "",
+              "auxiliar": ""
+            }
+          ]
         }
       }
     ]
@@ -839,173 +1162,155 @@
           "mit_verbkonstrukt": [
             "{{ verbkonstrukt_staticText_arbeitslosenquote_jahr01 }}. {{ verbkonstrukt_trendText_arbeitslosenquote_5jahresSaldo_kreis }}. {{ verbkonstrukt_trendText_arbeitslosenquote_vergleich_kreis_land }}."
           ],
-          "ohne_verbkonstrukt": []
+          "ohne_verbkonstrukt": [
+            "Die Arbeitslosenquote liegt {{ in_oder_im }} {{ region_name }} aktuell bei {{ arbeitslosenquote_jahr01_kreis }} %."
+          ]
         },
         "trend_verbkonstrukte": {
           "verbkonstrukt_trendText_arbeitslosenquote_5jahresSaldo_kreis": {
             "gleich": [
-              "Damit {{ auxiliar }} in den letzten fünf Jahren {{ phrase }}"
+              "In den letzten fünf Jahren {{ auxiliar }} die Arbeitslosenquote {{ phrase }}",
+              "Über fünf Jahre {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "leicht_groesser": [
-              "In den letzten 5 Jahren {{ auxiliar }} dabei um {{ arbeitslosenquote_5jahresSaldo_kreis }} {{ phrase }}",
-              "Über die vergangenen 5 Jahre {{ auxiliar }} um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte {{ phrase }}"
+              "In den letzten fünf Jahren {{ auxiliar }} die Arbeitslosenquote {{ phrase }}",
+              "Über fünf Jahre {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "groesser": [
-              "In den letzten 5 Jahren {{ auxiliar }} dabei um {{ arbeitslosenquote_5jahresSaldo_kreis }} {{ phrase }}",
-              "Über die vergangenen 5 Jahre {{ auxiliar }} um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte {{ phrase }}"
+              "In den letzten fünf Jahren {{ auxiliar }} die Arbeitslosenquote {{ phrase }}",
+              "Über fünf Jahre {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "viel_groesser": [
-              "In den letzten 5 Jahren {{ auxiliar }} dabei um {{ arbeitslosenquote_5jahresSaldo_kreis }} {{ phrase }}",
-              "Über die vergangenen 5 Jahre {{ auxiliar }} um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte {{ phrase }}"
+              "In den letzten fünf Jahren {{ auxiliar }} die Arbeitslosenquote {{ phrase }}",
+              "Über fünf Jahre {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "In den letzten 5 Jahren {{ auxiliar }} dabei um {{ arbeitslosenquote_5jahresSaldo_kreis }} {{ phrase }}",
-              "Über die vergangenen 5 Jahre {{ auxiliar }} um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte {{ phrase }}"
+              "In den letzten fünf Jahren {{ auxiliar }} die Arbeitslosenquote {{ phrase }}",
+              "Über fünf Jahre {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "kleiner": [
-              "In den letzten 5 Jahren {{ auxiliar }} dabei um {{ arbeitslosenquote_5jahresSaldo_kreis }} {{ phrase }}",
-              "Über die vergangenen 5 Jahre {{ auxiliar }} um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte {{ phrase }}"
+              "In den letzten fünf Jahren {{ auxiliar }} die Arbeitslosenquote {{ phrase }}",
+              "Über fünf Jahre {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "viel_kleiner": [
-              "In den letzten 5 Jahren {{ auxiliar }} dabei um {{ arbeitslosenquote_5jahresSaldo_kreis }} {{ phrase }}",
-              "Über die vergangenen 5 Jahre {{ auxiliar }} um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte {{ phrase }}"
+              "In den letzten fünf Jahren {{ auxiliar }} die Arbeitslosenquote {{ phrase }}",
+              "Über fünf Jahre {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ]
           },
           "phrases_trendText_arbeitslosenquote_5jahresSaldo_kreis": {
             "gleich": [
               {
-                "phrase": "weitestgehend stabil geblieben",
-                "auxiliar": "ist sie"
-              },
-              {
-                "phrase": "kaum verändert",
-                "auxiliar": "hat sie sich"
+                "phrase": "nahezu unverändert geblieben",
+                "auxiliar": "ist"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "leicht gestiegen",
-                "auxiliar": "ist sie"
-              },
-              {
-                "phrase": "gestiegen aber nur leicht",
-                "auxiliar": "ist dieser Wert"
+                "phrase": "um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte leicht gestiegen",
+                "auxiliar": "ist"
               }
             ],
             "groesser": [
               {
-                "phrase": "gestiegen",
-                "auxiliar": "ist sie"
-              },
-              {
-                "phrase": "gestiegen",
-                "auxiliar": "ist dieser Wert"
+                "phrase": "um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte gestiegen",
+                "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "deutlich gestiegen",
-                "auxiliar": "ist sie"
-              },
-              {
-                "phrase": "gestiegen und zwar deutlich",
-                "auxiliar": "ist dieser Wert"
+                "phrase": "um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte deutlich gestiegen",
+                "auxiliar": "ist"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "leicht gesunken",
-                "auxiliar": "ist sie"
-              },
-              {
-                "phrase": "gesunken aber nur leicht",
-                "auxiliar": "ist dieser Wert"
+                "phrase": "um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte leicht gesunken",
+                "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
-                "phrase": "gesunken",
-                "auxiliar": "ist sie"
-              },
-              {
-                "phrase": "gesunken",
-                "auxiliar": "ist dieser Wert"
+                "phrase": "um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte gesunken",
+                "auxiliar": "ist"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "deutlich zurückgegangen",
-                "auxiliar": "ist sie"
-              },
-              {
-                "phrase": "zurückgegangen und zwar deutlich",
-                "auxiliar": "ist dieser Wert"
+                "phrase": "um {{ arbeitslosenquote_5jahresSaldo_kreis }} Prozentpunkte deutlich gesunken",
+                "auxiliar": "ist"
               }
             ]
           },
           "verbkonstrukt_trendText_arbeitslosenquote_vergleich_kreis_land": {
             "gleich": [
-              "Im bundesweiten Vergleich {{ auxiliar }} {{ phrase }}"
+              "Im Vergleich zum Landeswert {{ auxiliar }} die Quote {{ phrase }}",
+              "Gegenüber dem Landesdurchschnitt {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "leicht_groesser": [
-              "Im Vergleich zum Bundesdurchschnitt {{ auxiliar }} die Region mit einem Wert von {{ arbeitslosenquote_vergleich_kreis_land }} {{ phrase }} dem Landesniveau ({{ arbeitslosenquote_jahr01_land }} %)"
+              "Im Vergleich zum Landeswert {{ auxiliar }} die Quote {{ phrase }}",
+              "Gegenüber dem Landesdurchschnitt {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "groesser": [
-              "Im bundesweiten Vergleich {{ auxiliar }} die Region damit {{ phrase }} dem Deutschlandniveau ({{ arbeitslosenquote_jahr01_land }} %)"
+              "Im Vergleich zum Landeswert {{ auxiliar }} die Quote {{ phrase }}",
+              "Gegenüber dem Landesdurchschnitt {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "viel_groesser": [
-              "Im landesweiten Vergleich {{ auxiliar }} die Region damit {{ phrase }} dem Deutschlandwert von {{ arbeitslosenquote_jahr01_land }} %"
+              "Im Vergleich zum Landeswert {{ auxiliar }} die Quote {{ phrase }}",
+              "Gegenüber dem Landesdurchschnitt {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "leicht_kleiner": [
-              "Im Vergleich mit dem deutschlandweiten Wert {{ auxiliar }} die Gegend  {{ phrase }} dem Niveau der Bundesrepublik ({{ arbeitslosenquote_jahr01_land }} %)"
+              "Im Vergleich zum Landeswert {{ auxiliar }} die Quote {{ phrase }}",
+              "Gegenüber dem Landesdurchschnitt {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "kleiner": [
-              "Im bundesweiten Vergleich{{ auxiliar }} die Gegend {{ phrase }} dem Landesniveau ({{ arbeitslosenquote_jahr01_land }} %)"
+              "Im Vergleich zum Landeswert {{ auxiliar }} die Quote {{ phrase }}",
+              "Gegenüber dem Landesdurchschnitt {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ],
             "viel_kleiner": [
-              "Vergleicht man hier die Gegend mit der deutschlandweiten Arbeitslosenquote, so {{ auxiliar }} die Region {{ phrase }} diesem Niveau"
+              "Im Vergleich zum Landeswert {{ auxiliar }} die Quote {{ phrase }}",
+              "Gegenüber dem Landesdurchschnitt {{ auxiliar }} die Arbeitslosenquote {{ phrase }}"
             ]
           },
           "phrases_trendText_arbeitslosenquote_vergleich_kreis_land": {
             "gleich": [
               {
-                "phrase": "entspricht die Quote etwa dem Deutschlandniveau",
-                "auxiliar": ""
+                "phrase": "auf Landesniveau (Index 100; Land: {{ arbeitslosenquote_jahr01_land }} %)",
+                "auxiliar": "liegt"
               }
             ],
             "leicht_groesser": [
               {
-                "phrase": "leicht über",
+                "phrase": "leicht darüber (Index {{ arbeitslosenquote_vergleich_kreis_land }}; Land: {{ arbeitslosenquote_jahr01_land }} %)",
                 "auxiliar": "liegt"
               }
             ],
             "groesser": [
               {
-                "phrase": "über",
+                "phrase": "darüber (Index {{ arbeitslosenquote_vergleich_kreis_land }}; Land: {{ arbeitslosenquote_jahr01_land }} %)",
                 "auxiliar": "liegt"
               }
             ],
             "viel_groesser": [
               {
-                "phrase": "weit über",
+                "phrase": "deutlich darüber (Index {{ arbeitslosenquote_vergleich_kreis_land }}; Land: {{ arbeitslosenquote_jahr01_land }} %)",
                 "auxiliar": "liegt"
               }
             ],
             "leicht_kleiner": [
               {
-                "phrase": "leicht unter",
+                "phrase": "leicht darunter (Index {{ arbeitslosenquote_vergleich_kreis_land }}; Land: {{ arbeitslosenquote_jahr01_land }} %)",
                 "auxiliar": "liegt"
               }
             ],
             "kleiner": [
               {
-                "phrase": "unter",
+                "phrase": "darunter (Index {{ arbeitslosenquote_vergleich_kreis_land }}; Land: {{ arbeitslosenquote_jahr01_land }} %)",
                 "auxiliar": "liegt"
               }
             ],
             "viel_kleiner": [
               {
-                "phrase": "weit unter",
+                "phrase": "deutlich darunter (Index {{ arbeitslosenquote_vergleich_kreis_land }}; Land: {{ arbeitslosenquote_jahr01_land }} %)",
                 "auxiliar": "liegt"
               }
             ]
@@ -1013,33 +1318,14 @@
         },
         "static_verbkonstrukte": {
           "verbkonstrukt_staticText_arbeitslosenquote_jahr01": [
-            "{{ phrase }} {{ auxiliar }} {{ arbeitslosenquote_jahr01_kreis }} %",
-            "{{ phrase }} {{ auxiliar }} {{ arbeitslosenquote_jahr01_kreis }} %"
+            "Die Arbeitslosenquote liegt {{ in_oder_im }} {{ region_name }} aktuell bei {{ arbeitslosenquote_jahr01_kreis }} %",
+            "Aktuell beträgt die Arbeitslosenquote {{ in_oder_im }} {{ region_name }} {{ arbeitslosenquote_jahr01_kreis }} %",
+            "Im jüngsten Berichtsjahr liegt die Arbeitslosenquote {{ in_oder_im }} {{ region_name }} bei {{ arbeitslosenquote_jahr01_kreis }} %"
           ],
           "phrases_staticText_arbeitslosenquote_jahr01": [
             {
-              "phrase": "Die Arbeitslosenquote ist der Anteil der registrierten Arbeitslosen an allen zivilen Erwerbspersonen, angegeben in Prozent. ",
-              "auxiliar": "Sie liegt {{ in_oder_im }} {{ region_name }} aktuell bei"
-            },
-            {
-              "phrase": "Die Arbeitslosenquote ist der Anteil der registrierten Arbeitslosen an allen zivilen Erwerbspersonen, angegeben in Prozent. ",
-              "auxiliar": "Ihr Wert ist aktuell ca."
-            },
-            {
-              "phrase": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben.",
-              "auxiliar": "Sie beträgt {{ in_oder_im }} {{ region_name }} derzeit cirka"
-            },
-            {
-              "phrase": "Die Arbeitslosenquote dient als zentraler Indikator für die Lage am Arbeitsmarkt und zeigt, wie viele Menschen aktiv Arbeit suchen, aber derzeit keine Stelle haben.",
-              "auxiliar": "Ihr Wert liegt bei"
-            },
-            {
-              "phrase": "Die Arbeitslosenquote reflektiert das Ausmaß der Arbeitslosigkeit in einer Region und berücksichtigt Personen mit Anspruch auf Bürgergeld (SGB II) oder Arbeitslosengeld (SGB III). Die Basis hierfür bildet die Gesamtzahl der zivilen Erwerbspersonen.",
-              "auxiliar": "Sie liegt bei"
-            },
-            {
-              "phrase": "Die Arbeitslosenquote reflektiert das Ausmaß der Arbeitslosigkeit in einer Region und berücksichtigt Personen mit Anspruch auf Bürgergeld (SGB II) oder Arbeitslosengeld (SGB III). Die Basis hierfür bildet die Gesamtzahl der zivilen Erwerbspersonen.",
-              "auxiliar": "Ihr Wert beträgt zur Zeit"
+              "phrase": "",
+              "auxiliar": ""
             }
           ]
         }

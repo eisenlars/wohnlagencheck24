@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { buildWebAssetUrl } from "@/utils/assets";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 import { asRecord, asString } from "@/utils/records";
 import type { Report } from "@/lib/data";
@@ -10,14 +10,12 @@ import { ReferenceSlideshow } from "@/components/referenzen/ReferenceSlideshow";
 
 type ImmobilienmaklerSectionProps = {
   report: Report;
-  bundeslandSlug: string;
   kreisSlug: string;
   references?: RegionalReference[];
 };
 
 export function ImmobilienmaklerSection({
   report,
-  bundeslandSlug,
   kreisSlug,
   references = [],
 }: ImmobilienmaklerSectionProps) {
@@ -35,21 +33,16 @@ export function ImmobilienmaklerSection({
     .map((line) => line.trim())
     .filter(Boolean);
 
-  const imageSrc = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.webp`,
-  );
+  const logoOverride = asString(makler["media_makler_logo"]) ?? "";
+  const imageSrc = resolveMandatoryMediaSrc("media_makler_logo", logoOverride);
   const berater = asRecord(text["berater"]) ?? {};
   const emailTarget =
     asString(makler["makler_email"]) ??
     asString(berater["berater_email"]) ??
     "kontakt@wohnlagencheck24.de";
   const gallery = [
-    buildWebAssetUrl(
-      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-01.webp`,
-    ),
-    buildWebAssetUrl(
-      `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-02.webp`,
-    ),
+    resolveMandatoryMediaSrc("media_makler_bild_01", asString(makler["media_makler_bild_01"])),
+    resolveMandatoryMediaSrc("media_makler_bild_02", asString(makler["media_makler_bild_02"])),
   ];
 
   const meta = asRecord(report.meta) ?? {};

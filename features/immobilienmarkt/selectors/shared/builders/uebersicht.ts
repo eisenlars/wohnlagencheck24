@@ -9,6 +9,7 @@ import type { UebersichtReportData } from "@/types/reports";
 import type { UnitKey } from "@/utils/format";
 import { getRegionDisplayName } from "@/utils/regionName";
 import { buildWebAssetUrl } from "@/utils/assets";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 import type {
   UebersichtVM,
@@ -123,8 +124,9 @@ export function buildUebersichtVM(args: {
 
   const meta = pickMeta(report);
   const data = report.data ?? {};
-  const text = data.text ?? {};
-  const berater = text.berater ?? {};
+  const text = asRecord(data.text) ?? {};
+  const berater = asRecord(text["berater"]) ?? {};
+  const makler = asRecord(text["makler"]) ?? {};
 
   // Region Name: robustes Fallback auf Kreis/Bundesland-Slug
   const regionName = getRegionDisplayName({
@@ -194,12 +196,10 @@ export function buildUebersichtVM(args: {
 
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
 
-  const beraterImageSrc =
-    (bundeslandSlug && (kreisSlug || level === "bundesland"))
-      ? buildWebAssetUrl(
-          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug || bundeslandSlug}/immobilienberatung-${kreisSlug || bundeslandSlug}.png`,
-        )
-      : undefined;
+  const beraterImageSrc = resolveMandatoryMediaSrc(
+    "media_berater_avatar",
+    asString(berater["media_berater_avatar"]),
+  );
 
   /**
    * Tachowerte:
@@ -355,12 +355,10 @@ export function buildUebersichtVM(args: {
           )
         : undefined;
 
-  const agentSuggestImage =
-    bundeslandSlug && kreisSlug
-      ? buildWebAssetUrl(
-          `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.webp`,
-        )
-      : undefined;
+  const agentSuggestImage = resolveMandatoryMediaSrc(
+    "media_makler_logo",
+    asString(makler["media_makler_logo"]),
+  );
 
   return {
     level,

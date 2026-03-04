@@ -1,6 +1,10 @@
 // lib/data.ts
 
 import { buildWebAssetUrl } from "@/utils/assets";
+import {
+  REPORTS_TAG,
+  reportScopeTagsForRouteSlugs,
+} from "@/lib/cache-tags";
 
 export type ReportType = "deutschland" | "bundesland" | "kreis" | "ortslage";
 
@@ -70,11 +74,11 @@ function buildSupabaseUrl(...parts: string[]): string | null {
   return `${SUPABASE_ROOT}/${rel}`;
 }
 
-async function fetchJson<T>(url: string | null, warnLabel: string): Promise<T | null> {
+async function fetchJson<T>(url: string | null, warnLabel: string, tags: string[] = [REPORTS_TAG]): Promise<T | null> {
   if (!url) return null;
   try {
     const res = await fetch(url, {
-      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags: ["reports"] },
+      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags },
     });
     if (!res.ok) {
       console.warn(`${warnLabel} nicht gefunden:`, url, res.status);
@@ -131,13 +135,18 @@ export async function getApprovedReportTexts(
 export async function getApprovedMarketingTexts(
   supabaseClient: SupabaseClientLike,
   areaId: string,
+  partnerId?: string,
 ): Promise<ReportTextOverride[]> {
   try {
-    const res = await supabaseClient
+    let query = supabaseClient
       .from("partner_marketing_texts")
       .select("section_key, optimized_content, status")
       .eq("area_id", areaId)
       .eq("status", "approved");
+    if (partnerId) {
+      query = query.eq("partner_id", partnerId);
+    }
+    const res = await query;
     const { data, error } = res as { data?: unknown; error?: { message: string } | null };
 
     if (error) {
@@ -151,11 +160,15 @@ export async function getApprovedMarketingTexts(
   }
 }
 
-async function fetchText(url: string | null, warnLabel: string): Promise<string | null> {
+async function fetchText(
+  url: string | null,
+  warnLabel: string,
+  tags: string[] = [REPORTS_TAG],
+): Promise<string | null> {
   if (!url) return null;
   try {
     const res = await fetch(url, {
-      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags: ["reports"] },
+      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags },
     });
     if (!res.ok) {
       console.warn(`${warnLabel} nicht gefunden:`, url, res.status);
@@ -168,12 +181,39 @@ async function fetchText(url: string | null, warnLabel: string): Promise<string 
   }
 }
 
-async function assetExists(url: string | null): Promise<boolean> {
+function withAssetVersion(url: string): string {
+  const assetVersion =
+    process.env.ASSET_VERSION?.trim() ||
+    process.env.NEXT_PUBLIC_ASSET_VERSION?.trim() ||
+    "";
+  if (!assetVersion) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}v=${encodeURIComponent(assetVersion)}`;
+}
+
+async function fetchTextNoStore(url: string | null, warnLabel: string): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, {
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      console.warn(`${warnLabel} nicht gefunden:`, url, res.status);
+      return null;
+    }
+    return await res.text();
+  } catch (err) {
+    console.error(`Fehler beim Laden von ${warnLabel}:`, err);
+    return null;
+  }
+}
+
+async function assetExists(url: string | null, tags: string[] = [REPORTS_TAG]): Promise<boolean> {
   if (!url) return false;
   try {
     const res = await fetch(url, {
       method: "HEAD",
-      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags: ["reports"] },
+      next: { revalidate: DEFAULT_REVALIDATE_SECONDS, tags },
     });
     return res.ok;
   } catch (err) {
@@ -184,12 +224,12 @@ async function assetExists(url: string | null): Promise<boolean> {
 
 export async function getReportsIndex(): Promise<ReportsIndex | null> {
   const url = buildSupabaseUrl("reports", "index.json");
-  return fetchJson<ReportsIndex>(url, "Reports-Index");
+  return fetchJson<ReportsIndex>(url, "Reports-Index", [REPORTS_TAG, ...reportScopeTagsForRouteSlugs([])]);
 }
 
 export async function getDeutschlandReport(): Promise<Report | null> {
   const url = buildSupabaseUrl("reports", "deutschland.json");
-  return fetchJson<Report>(url, "Deutschland-Report");
+  return fetchJson<Report>(url, "Deutschland-Report", [REPORTS_TAG, ...reportScopeTagsForRouteSlugs([])]);
 }
 
 /**
@@ -282,17 +322,56 @@ export async function getReportBySlugs(slugs: string[]): Promise<Report | null> 
     );
   }
 
-  return fetchJson<Report>(url, "Report");
+  return fetchJson<Report>(url, "Report", [REPORTS_TAG, ...reportScopeTagsForRouteSlugs(slugs)]);
 }
 
 async function readInteractiveSvg(relPath: string, warnLabel: string): Promise<string | null> {
-  const url = buildSupabaseUrl(relPath);
-  return fetchText(url, warnLabel);
+  const rawUrl = buildSupabaseUrl(relPath);
+  const url = rawUrl ? withAssetVersion(rawUrl) : null;
+  return fetchTextNoStore(url, warnLabel);
+}
+
+function filterBundeslandKreisMapSvg(svg: string, bundeslandSlug: string, allowedKreisSlugs: Set<string>): string {
+  if (allowedKreisSlugs.size === 0) return svg;
+
+  const hrefPattern =
+    /(?:xlink:href|href)="\/immobilienmarkt\/([^/]+)\/([^/"?#]+)\/?"/g;
+  const anchorPattern =
+    /<a\b[^>]*(?:xlink:href|href)="\/immobilienmarkt\/([^/]+)\/([^/"?#]+)\/?"[^>]*>[\s\S]*?<\/a>/g;
+  const svgKreisSlugs = new Set<string>();
+  const anchorMatchedKreisSlugs = new Set<string>();
+
+  let hrefMatch: RegExpExecArray | null;
+  while ((hrefMatch = hrefPattern.exec(svg)) !== null) {
+    const bl = String(hrefMatch[1] ?? "").trim().toLowerCase();
+    const kreis = String(hrefMatch[2] ?? "").trim().toLowerCase();
+    if (bl === bundeslandSlug.toLowerCase() && kreis) {
+      svgKreisSlugs.add(kreis);
+    }
+  }
+
+  const filtered = svg.replace(anchorPattern, (full, blRaw, kreisRaw) => {
+    const bl = String(blRaw ?? "").trim().toLowerCase();
+    const kreis = String(kreisRaw ?? "").trim().toLowerCase();
+    if (bl === bundeslandSlug.toLowerCase() && kreis) anchorMatchedKreisSlugs.add(kreis);
+    if (bl !== bundeslandSlug.toLowerCase()) return "";
+    if (!allowedKreisSlugs.has(kreis)) return "";
+    return full;
+  });
+
+  // Safety fallback: if anchor-block parsing is incomplete, return unfiltered SVG.
+  // This avoids dropping active areas due to regex limitations on specific SVG variants.
+  if (anchorMatchedKreisSlugs.size > 0 && anchorMatchedKreisSlugs.size < svgKreisSlugs.size) {
+    return svg;
+  }
+
+  return filtered;
 }
 
 // SVG Maps für Bundesland aus visuals/map_interactive holen
 export async function getKreisUebersichtMapSvg(
   bundeslandSlug: string,
+  allowedKreisSlugs?: Set<string>,
 ): Promise<string | null> {
   const relPath = joinPath(
     "visuals",
@@ -302,7 +381,10 @@ export async function getKreisUebersichtMapSvg(
     `kreisuebersicht_${bundeslandSlug}.svg`,
   );
 
-  return readInteractiveSvg(relPath, "Kreisübersicht-SVG");
+  const svg = await readInteractiveSvg(relPath, "Kreisübersicht-SVG");
+  if (!svg) return null;
+  if (!allowedKreisSlugs) return svg;
+  return filterBundeslandKreisMapSvg(svg, bundeslandSlug, allowedKreisSlugs);
 }
 
 // SVG Maps für Kreis aus visuals/map_interactive holen
@@ -506,5 +588,5 @@ export async function getLegendHtml(theme: string): Promise<string | null> {
   const filename = `legend_${theme}.html`;
   const relPath = joinPath("visuals", "legend", filename);
   const url = buildSupabaseUrl(relPath);
-  return fetchText(url, "Legend-HTML");
+  return fetchText(url, "Legend-HTML", [REPORTS_TAG]);
 }

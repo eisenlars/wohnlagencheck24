@@ -5,9 +5,15 @@ import { HeaderSwitch } from "@/components/header-switch";
 import { KontaktOffcanvas } from "@/components/kontakt/KontaktOffcanvas";
 import { KontaktProvider } from "@/components/kontakt/contact-context";
 import { getBundeslaender } from "@/lib/data";
+import { isBundeslandVisible } from "@/lib/area-visibility";
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const bundeslaender = await getBundeslaender();
+  const bundeslaenderRaw = await getBundeslaender();
+  const bundeslaender = (
+    await Promise.all(
+      bundeslaenderRaw.map(async (bl) => ((await isBundeslandVisible(bl.slug)) ? bl : null)),
+    )
+  ).filter((value): value is NonNullable<typeof value> => Boolean(value));
 
   return (
     <KontaktProvider>

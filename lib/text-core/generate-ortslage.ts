@@ -79,6 +79,15 @@ function formatNumber(value: number, decimals = 0) {
   });
 }
 
+function formatLargeEconomyValue(value: number) {
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+  if (abs >= 1e9) return `${sign}${formatNumber(abs / 1e9, 2)} Mrd.`;
+  if (abs >= 1e6) return `${sign}${formatNumber(abs / 1e6, 2)} Mio.`;
+  if (abs >= 1e3) return `${sign}${formatNumber(abs / 1e3, 2)} Tsd.`;
+  return `${sign}${formatNumber(abs, 0)}`;
+}
+
 function parseNumericValue(value: unknown): number | null {
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
   if (typeof value !== "string") return null;
@@ -223,6 +232,10 @@ function buildInputData(inputs: AnyRecord) {
   normalizeOrtslageHaushaltsSaldo(inputData, raw);
   normalizeOrtslageNatuerlicherSaldo(inputData, raw);
   normalizeOrtslageWanderungssaldo(inputData, raw);
+  normalizeOrtslageBauueberhangFortschritt(inputData, raw);
+  normalizeOrtslageEinkommenDisplay(inputData, raw);
+  normalizeOrtslageBipDisplay(inputData, raw);
+  normalizeOrtslageArbeitsplatzzentralitaetDisplay(inputData, raw);
 
   return { inputData, raw };
 }
@@ -362,6 +375,160 @@ function normalizeOrtslageWanderungssaldo(inputData: AnyRecord, raw: AnyRecord) 
   }
 }
 
+function normalizeOrtslageBipDisplay(inputData: AnyRecord, raw: AnyRecord) {
+  const bipJahr01Kreis = toFinite(raw.bruttoinlandsprodukt_jahr01_kreis);
+  if (bipJahr01Kreis !== null) {
+    inputData.bruttoinlandsprodukt_jahr01_kreis = formatLargeEconomyValue(bipJahr01Kreis);
+  }
+  const bipJahr05Kreis = toFinite(raw.bruttoinlandsprodukt_jahr05_kreis);
+  if (bipJahr05Kreis !== null) {
+    inputData.bruttoinlandsprodukt_jahr05_kreis = formatLargeEconomyValue(bipJahr05Kreis);
+  }
+}
+
+function normalizeOrtslageArbeitsplatzzentralitaetDisplay(inputData: AnyRecord, raw: AnyRecord) {
+  const keys = [
+    "arbeitsplatzzentralitaet_ortslage",
+    "arbeitsplatzzentralitaet_ol",
+    "arbeitsplatzzentralitaet_kreis",
+    "arbeitsplatzzentralitaet_k",
+  ];
+  for (const key of keys) {
+    const value = toFinite(raw[key]);
+    if (value === null) continue;
+    inputData[key] = formatNumber(value, 2);
+  }
+}
+
+function normalizeOrtslageEinkommenDisplay(inputData: AnyRecord, raw: AnyRecord) {
+  const totalKeys = [
+    "verfuegbares_einkommen_jahr01_ortslage",
+    "verfuegbares_einkommen_jahr05_ortslage",
+  ];
+  for (const key of totalKeys) {
+    const value = toFinite(raw[key]);
+    if (value === null) continue;
+    inputData[key] = formatLargeEconomyValue(value);
+  }
+
+  const detailedKeys = [
+    "verfuegbares_einkommen_per_ew_jahr01_ortslage",
+    "verfuegbares_einkommen_per_ew_jahr05_ortslage",
+    "verfuegbares_einkommen_per_hh_jahr01_ortslage",
+  ];
+  for (const key of detailedKeys) {
+    const value = toFinite(raw[key]);
+    if (value === null) continue;
+    inputData[key] = formatNumber(Math.round(value), 0);
+  }
+}
+
+function readFirstFinite(raw: AnyRecord, keys: string[]) {
+  for (const key of keys) {
+    const value = toFinite(raw[key]);
+    if (value !== null) return value;
+  }
+  return null;
+}
+
+function normalizeOrtslageBauueberhangFortschritt(inputData: AnyRecord, raw: AnyRecord) {
+  const readSeries = (scope: "ortslage" | "kreis") => {
+    const suffixes = scope === "ortslage" ? ["ortslage", "ol"] : ["kreis", "k"];
+    const pick = (metric: string, year: "jahr01" | "jahr02" | "jahr05", isGenehmigung = false) => {
+      const keys: string[] = [];
+      for (const suffix of suffixes) {
+        if (isGenehmigung) {
+          keys.push(`anzahl_genehmigungen_${year}_${suffix}`);
+          keys.push(`anzahl_genehmigung_${year}_${suffix}`);
+        } else {
+          keys.push(`anzahl_${metric}_${year}_${suffix}`);
+        }
+      }
+      return readFirstFinite(raw, keys);
+    };
+
+    const nnb01 = pick("bauueberhang_noch_nicht_begonnen", "jahr01");
+    const nnu01 = pick("bauueberhang_noch_nicht_unter_dach", "jahr01");
+    const ud01 = pick("bauueberhang_unter_dach", "jahr01");
+    const g01 = pick("", "jahr01", true);
+    const nnb02 = pick("bauueberhang_noch_nicht_begonnen", "jahr02");
+    const nnu02 = pick("bauueberhang_noch_nicht_unter_dach", "jahr02");
+    const ud02 = pick("bauueberhang_unter_dach", "jahr02");
+    const g02 = pick("", "jahr02", true);
+    const nnb05 = pick("bauueberhang_noch_nicht_begonnen", "jahr05");
+    const nnu05 = pick("bauueberhang_noch_nicht_unter_dach", "jahr05");
+    const ud05 = pick("bauueberhang_unter_dach", "jahr05");
+    const g05 = pick("", "jahr05", true);
+
+    const complete =
+      nnb01 !== null && nnu01 !== null && ud01 !== null && g01 !== null && g01 > 0 &&
+      nnb02 !== null && nnu02 !== null && ud02 !== null && g02 !== null && g02 > 0 &&
+      nnb05 !== null && nnu05 !== null && ud05 !== null && g05 !== null && g05 > 0;
+
+    return {
+      complete,
+      nnb01,
+      nnu01,
+      ud01,
+      g01,
+      nnb02,
+      nnu02,
+      ud02,
+      g02,
+      nnb05,
+      nnu05,
+      ud05,
+      g05,
+    };
+  };
+
+  const ortslageSeries = readSeries("ortslage");
+  const kreisSeries = readSeries("kreis");
+  const useOrtslage = ortslageSeries.complete && (ortslageSeries.nnb01 ?? 0) > 0;
+  const useKreis = !useOrtslage && kreisSeries.complete && (kreisSeries.nnb01 ?? 0) > 0;
+  const series = useOrtslage ? ortslageSeries : useKreis ? kreisSeries : null;
+
+  if (!series) {
+    inputData.bauueberhang_no_data_basis_kreis = true;
+    return;
+  }
+
+  inputData.bauueberhang_datenbasis = useOrtslage ? "ortslage" : "kreis";
+  inputData.bauueberhang_datenbasis_hinweis = useKreis ? "__kreis__" : "__ortslage__";
+
+  const nnb01 = series.nnb01 as number;
+  const nnu01 = series.nnu01 as number;
+  const ud01 = series.ud01 as number;
+  const g01 = series.g01 as number;
+  const nnb02 = series.nnb02 as number;
+  const nnu02 = series.nnu02 as number;
+  const ud02 = series.ud02 as number;
+  const g02 = series.g02 as number;
+  const nnb05 = series.nnb05 as number;
+  const nnu05 = series.nnu05 as number;
+  const ud05 = series.ud05 as number;
+  const g05 = series.g05 as number;
+
+  const bauQ01 = ((nnb01 + nnu01) / g01) * 100;
+  const bauQ02 = ((nnb02 + nnu02) / g02) * 100;
+  const bauQ05 = ((nnb05 + nnu05) / g05) * 100;
+  const fertQ01 = (ud01 / g01) * 100;
+  const fertQ02 = (ud02 / g02) * 100;
+  const fertQ05 = (ud05 / g05) * 100;
+
+  raw.bauueberhangsquote_jahr01_kreis = bauQ01;
+  raw.bauueberhangsquote_jahr02_kreis = bauQ02;
+  raw.bauueberhangsquote_jahr05_kreis = bauQ05;
+  raw.fertigstellungsquote_jahr01_kreis = fertQ01;
+  raw.fertigstellungsquote_jahr02_kreis = fertQ02;
+  raw.fertigstellungsquote_jahr05_kreis = fertQ05;
+  raw.bauueberhangsquote_kreis = bauQ01;
+  raw.fertigstellungsquote_kreis = fertQ01;
+
+  inputData.bauueberhangsquote_jahr01_kreis = formatValueForKey("bauueberhangsquote_jahr01_kreis", Math.round(bauQ01));
+  inputData.fertigstellungsquote_jahr01_kreis = formatValueForKey("fertigstellungsquote_jahr01_kreis", Math.round(fertQ01));
+}
+
 function trendKeyCandidates(definition: AnyRecord) {
   const trend = definition?.trend_verbkonstrukte ?? {};
   const keys = new Set<string>();
@@ -451,11 +618,33 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
       continue;
     }
 
+    const twoTrendKreis = base.match(/^(.*)_2jahrestrend_(kreis)$/);
+    if (twoTrendKreis) {
+      const stem = twoTrendKreis[1];
+      const a = raw[`${stem}_jahr01_kreis`];
+      const b = raw[`${stem}_jahr02_kreis`];
+      if (typeof a === "number" && typeof b === "number" && b !== 0) {
+        trends[trendKey] = { rel_change: ((a - b) / b) * 100 };
+      }
+      continue;
+    }
+
     const fiveTrend = base.match(/^(.*)_5jahrestrend_(ortslage)$/);
     if (fiveTrend) {
       const stem = fiveTrend[1];
       const a = raw[`${stem}_jahr01_ortslage`];
       const b = raw[`${stem}_jahr05_ortslage`];
+      if (typeof a === "number" && typeof b === "number" && b !== 0) {
+        trends[trendKey] = { rel_change: ((a - b) / b) * 100 };
+      }
+      continue;
+    }
+
+    const fiveTrendKreis = base.match(/^(.*)_5jahrestrend_(kreis)$/);
+    if (fiveTrendKreis) {
+      const stem = fiveTrendKreis[1];
+      const a = raw[`${stem}_jahr01_kreis`];
+      const b = raw[`${stem}_jahr05_kreis`];
       if (typeof a === "number" && typeof b === "number" && b !== 0) {
         trends[trendKey] = { rel_change: ((a - b) / b) * 100 };
       }
@@ -509,6 +698,26 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
       const b = raw["einwohneranzahl_jahr05_ortslage"];
       if (typeof a === "number" && typeof b === "number" && b !== 0) {
         trends[trendKey] = { rel_change: ((a - b) / b) * 100 };
+      }
+      continue;
+    }
+
+    if (base === "arbeitsplatzzentralitaet_kreis") {
+      const direct = raw.arbeitsplatzzentralitaet_kreis;
+      const fallback = raw.arbeitsplatzzentralitaet_k;
+      const v = typeof direct === "number" ? direct : typeof fallback === "number" ? fallback : null;
+      if (typeof v === "number" && Number.isFinite(v) && v > 0) {
+        trends[trendKey] = { index1: v };
+      }
+      continue;
+    }
+
+    if (base === "arbeitsplatzzentralitaet_ortslage") {
+      const direct = raw.arbeitsplatzzentralitaet_ortslage;
+      const fallback = raw.arbeitsplatzzentralitaet_ol;
+      const v = typeof direct === "number" ? direct : typeof fallback === "number" ? fallback : null;
+      if (typeof v === "number" && Number.isFinite(v) && v > 0) {
+        trends[trendKey] = { index1: v };
       }
       continue;
     }
@@ -861,7 +1070,10 @@ function expandTemplates(templates: AnyRecord, baseVars: AnyRecord, options: Any
 function normalizeGeneratedText(text: string) {
   return String(text)
     .replace(/ {2,}/g, " ")
+    .replace(/\.{2,}/g, ".")
+    .replace(/\.\s*\./g, ".")
     .replace(/ +([,.!?;:])/g, "$1")
+    .replace(/\.{2,}/g, ".")
     .trim();
 }
 
@@ -1009,11 +1221,27 @@ function collectTrendDependencyKeys(definition: AnyRecord) {
       continue;
     }
 
+    const twoTrendKreis = base.match(/^(.*)_2jahrestrend_(kreis)$/);
+    if (twoTrendKreis) {
+      const stem = twoTrendKreis[1];
+      deps.add(`${stem}_jahr01_kreis`);
+      deps.add(`${stem}_jahr02_kreis`);
+      continue;
+    }
+
     const fiveTrend = base.match(/^(.*)_5jahrestrend_(ortslage)$/);
     if (fiveTrend) {
       const stem = fiveTrend[1];
       deps.add(`${stem}_jahr01_ortslage`);
       deps.add(`${stem}_jahr05_ortslage`);
+      continue;
+    }
+
+    const fiveTrendKreis = base.match(/^(.*)_5jahrestrend_(kreis)$/);
+    if (fiveTrendKreis) {
+      const stem = fiveTrendKreis[1];
+      deps.add(`${stem}_jahr01_kreis`);
+      deps.add(`${stem}_jahr05_kreis`);
       continue;
     }
 
@@ -1121,13 +1349,18 @@ function resolveDefinitionKey(key: string, raw: AnyRecord) {
     return !v ? "wirtschaft_arbeitsplatzzentralitaet_kreis" : "wirtschaft_arbeitsplatzzentralitaet_ortslage";
   }
   if (key === "wirtschaft_pendler") {
-    const ein = raw?.einpendler_jahr01_ortslage;
-    const aus = raw?.auspendler_jahr01_ortslage;
-    return !ein || !aus ? "wirtschaft_pendler_kreis" : "wirtschaft_pendler_ortslage";
+    const einRaw = raw?.einpendler_jahr01_ortslage;
+    const ausRaw = raw?.auspendler_jahr01_ortslage;
+    const ein = typeof einRaw === "number" ? einRaw : Number(einRaw);
+    const aus = typeof ausRaw === "number" ? ausRaw : Number(ausRaw);
+    const hasEin = Number.isFinite(ein);
+    const hasAus = Number.isFinite(aus);
+    return !hasEin || !hasAus ? "wirtschaft_pendler_kreis" : "wirtschaft_pendler_ortslage";
   }
   if (key === "wirtschaft_arbeitslosigkeit") {
-    const q = raw?.arbeitslosenquote_jahr01_ortslage;
-    return !q ? "wirtschaft_arbeitslosigkeit_kreis" : "wirtschaft_arbeitslosigkeit_ortslage";
+    const qRaw = raw?.arbeitslosenquote_jahr01_ortslage;
+    const q = typeof qRaw === "number" ? qRaw : Number(qRaw);
+    return Number.isFinite(q) ? "wirtschaft_arbeitslosigkeit_ortslage" : "wirtschaft_arbeitslosigkeit_kreis";
   }
   return key;
 }
@@ -1164,6 +1397,7 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
   const trendValues = computeTrendValues(block, raw);
   const localInput = { ...inputData };
   let connectorConfig: AnyRecord | undefined;
+  let quoteValues: AnyRecord | undefined;
 
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
     if (localInput.wanderungssaldo_no_data_beide_ortslage) {
@@ -1194,7 +1428,65 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
     localInput.connector_type = connectorType;
   }
 
-  return generateText(block, localInput, trendValues, resolvedKey, undefined, connectorConfig, rng);
+  if (resolvedKey === "wohnmarktsituation_bauueberhang") {
+    if (localInput.bauueberhang_no_data_basis_kreis) {
+      return "";
+    }
+    const datenbasis = String(localInput.bauueberhang_datenbasis ?? "");
+    if (datenbasis === "kreis") {
+      localInput.bauueberhang_datenbasis_hinweis = pickRandom(
+        [
+          "Hinweis: Für diese Ortslage basieren die Kennzahlen auf Kreisdaten.",
+          "Hinweis: Für diese Auswertung wurden mangels belastbarer Ortslagedaten die Kreisdaten herangezogen.",
+          "Hinweis: Da für diese Ortslage keine konsistente Zeitreihe vorliegt, wird auf Kreisdaten zurückgegriffen.",
+        ],
+        rng,
+      );
+    } else {
+      localInput.bauueberhang_datenbasis_hinweis = "";
+    }
+    const bauQuote = toFinite(raw.bauueberhangsquote_kreis);
+    const fertQuote = toFinite(raw.fertigstellungsquote_kreis);
+    if (bauQuote !== null && fertQuote !== null) {
+      quoteValues = {
+        bauueberhangsquote_kreis: Math.round(bauQuote),
+        fertigstellungsquote_kreis: Math.round(fertQuote),
+      };
+    }
+  }
+
+  if (resolvedKey === "wirtschaft_sv_beschaeftigte_arbeits_und_wohnort") {
+    const hasArbeitsortTrend = Boolean(trendValues.trendText_sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_ortslage);
+    const hasWohnortTrend = Boolean(trendValues.trendText_sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_ortslage);
+
+    if (!hasArbeitsortTrend && hasWohnortTrend) {
+      localInput.sondertext_beschaeftigte_arbeitsort =
+        "Für den Arbeitsort liegen in dieser Ortslage derzeit keine belastbaren Vergleichsdaten vor.";
+      localInput.sondertext_beschaeftigte_wohnort =
+        `Am Wohnort liegt die Zahl der Beschäftigten aktuell bei ${localInput.sv_pflichtig_beschaeftigte_wohnort_jahr01_ortslage}.`;
+    } else if (hasArbeitsortTrend && !hasWohnortTrend) {
+      localInput.sondertext_beschaeftigte_wohnort =
+        "Für den Wohnort liegen in dieser Ortslage derzeit keine belastbaren Vergleichsdaten vor.";
+      localInput.sondertext_beschaeftigte_arbeitsort =
+        `Am Arbeitsort liegt die Zahl der Beschäftigten aktuell bei ${localInput.sv_pflichtig_beschaeftigte_arbeitsort_jahr01_ortslage}.`;
+    } else if (!hasArbeitsortTrend && !hasWohnortTrend) {
+      localInput.sondertext_beschaeftigte_arbeitsort =
+        "Für Arbeits- und Wohnort liegen in dieser Ortslage derzeit keine belastbaren Vergleichsdaten vor.";
+      localInput.sondertext_beschaeftigte_wohnort = "";
+    }
+  }
+
+  if (resolvedKey === "wirtschaft_sv_beschaeftigte_wohnort") {
+    const hasWohnortTrend = Boolean(trendValues.trendText_sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_ortslage);
+    if (!hasWohnortTrend) {
+      const current = String(localInput.sv_pflichtig_beschaeftigte_wohnort_jahr01_ortslage ?? "").trim();
+      localInput.sondertext_beschaeftigte_wohnort = current
+        ? `Aktuell liegt die Zahl der Wohnort-Beschäftigten bei ${current}. Für den Fünfjahrestrend liegen in dieser Ortslage derzeit keine belastbaren Vergleichsdaten vor.`
+        : "Für die Wohnort-Beschäftigten liegen in dieser Ortslage derzeit keine belastbaren Vergleichsdaten vor.";
+    }
+  }
+
+  return generateText(block, localInput, trendValues, resolvedKey, quoteValues, connectorConfig, rng);
 }
 
 function deriveWanderungConnectorTypeOrtslage(trendValues: AnyRecord) {
@@ -1218,7 +1510,7 @@ export function generateOrtslagePriceTexts(
     if (allowedKeys && !allowedKeys.has(key)) continue;
     if (!updated[group]) continue;
     const textValue = generateFromDefinition(key, inputData, raw, rngByKey ? rngByKey(key) : undefined);
-    if (textValue) {
+    if (textValue !== null && textValue !== undefined) {
       updated[group] = { ...updated[group], [key]: textValue };
     }
   }
@@ -1235,6 +1527,7 @@ export function generateOrtslageTextVariants(key: string, inputs: AnyRecord) {
   const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
   if (!blocks.length) return [];
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) return [];
+  if (resolvedKey === "wohnmarktsituation_bauueberhang" && inputData.bauueberhang_no_data_basis_kreis) return [];
 
   consumeBlockSelectionRng();
   const allVariants: string[] = [];
@@ -1268,6 +1561,7 @@ export function countOrtslageTextVariants(key: string, inputs: AnyRecord) {
   const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
   if (!blocks.length) return 0;
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) return 0;
+  if (resolvedKey === "wohnmarktsituation_bauueberhang" && inputData.bauueberhang_no_data_basis_kreis) return 0;
 
   consumeBlockSelectionRng();
   let total = 0;
@@ -1305,6 +1599,7 @@ export function* iterateOrtslageTextVariants(key: string, inputs: AnyRecord): Ge
   const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
   if (!blocks.length) return;
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) return;
+  if (resolvedKey === "wohnmarktsituation_bauueberhang" && inputData.bauueberhang_no_data_basis_kreis) return;
 
   consumeBlockSelectionRng();
   for (const block of blocks) {
@@ -1340,6 +1635,9 @@ export function sampleOrtslageTextVariants(key: string, inputs: AnyRecord, sampl
   const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
   if (!blocks.length) return { total: 0, samples: [] };
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_ortslage) {
+    return { total: 0, samples: [] };
+  }
+  if (resolvedKey === "wohnmarktsituation_bauueberhang" && inputData.bauueberhang_no_data_basis_kreis) {
     return { total: 0, samples: [] };
   }
 

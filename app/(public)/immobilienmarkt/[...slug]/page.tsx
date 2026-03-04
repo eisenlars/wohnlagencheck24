@@ -13,30 +13,42 @@ import { formatValueCtx } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getApprovedMarketingTexts, getReportBySlugs, type SupabaseClientLike } from "@/lib/data";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { buildMarketingDefaults, type MarketingContext } from "@/lib/marketing-defaults";
+import {
+  isBundeslandVisible,
+  isKreisVisible,
+  isOrtslageVisible,
+} from "@/lib/area-visibility";
 
 export const revalidate = 3600;
 
 type PageParams = { slug?: string[] };
 type PageProps = { params: Promise<PageParams> };
 
-function getValueByPath(root: unknown, pathParts: string[]): unknown {
-  let current: unknown = root;
-  for (const part of pathParts) {
-    if (!current || typeof current !== "object") return undefined;
-    current = (current as Record<string, unknown>)[part];
-  }
-  return current;
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const slugs = resolvedParams.slug ?? [];
   const route = resolveRoute(slugs);
+  const [bundeslandSlug, kreisSlug, ortSlug] = route.regionSlugs;
+  if (route.level === "bundesland" && bundeslandSlug) {
+    if (!(await isBundeslandVisible(bundeslandSlug))) {
+      return { robots: { index: false, follow: false } };
+    }
+  }
+  if (route.level === "kreis" && bundeslandSlug && kreisSlug) {
+    if (!(await isKreisVisible(bundeslandSlug, kreisSlug))) {
+      return { robots: { index: false, follow: false } };
+    }
+  }
+  if (route.level === "ort" && bundeslandSlug && kreisSlug && ortSlug) {
+    if (!(await isOrtslageVisible(bundeslandSlug, kreisSlug, ortSlug))) {
+      return { robots: { index: false, follow: false } };
+    }
+  }
+
   const report = await getReportBySlugs(route.regionSlugs);
   if (!report) return {};
 
-  const baseText =
-    asRecord(report.text ?? asRecord(asRecord(report.data)?.text) ?? {}) ?? {};
   const meta = asRecord(asArray(report.meta)[0] ?? report.meta) ?? {};
   const areaId =
     (asString(meta["ortslage_schluessel"]) ??
@@ -46,38 +58,92 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const marketingSection =
     route.section === "uebersicht" ? "immobilienmarkt_ueberblick" : route.section;
 
+  const admin = createAdminClient();
+  const { data: activePartnerMappings } = await admin
+    .from("partner_area_map")
+    .select("auth_user_id")
+    .eq("area_id", areaId)
+    .eq("is_active", true);
+  const partnerIds = Array.from(
+    new Set(
+      (activePartnerMappings ?? [])
+        .map((row) => asString((row as { auth_user_id?: string | null }).auth_user_id) ?? "")
+        .filter((value) => value.length > 0),
+    ),
+  );
+  const activePartnerId = partnerIds.length === 1 ? partnerIds[0] : undefined;
+
   const overrides =
     areaId.length > 0
-      ? await getApprovedMarketingTexts(createAdminClient() as unknown as SupabaseClientLike, areaId)
+      ? await getApprovedMarketingTexts(
+          admin as unknown as SupabaseClientLike,
+          areaId,
+          activePartnerId,
+        )
       : [];
+
+  const routeLevel = route.level === "ort" ? "ortslage" : "kreis";
+  const kreisName = asString(meta["kreis_name"]) ?? asString(meta["amtlicher_name"]) ?? route.regionSlugs[1] ?? "";
+  const ortslageName =
+    routeLevel === "ortslage"
+      ? (asString(meta["ortslage_name"]) ?? asString(meta["amtlicher_name"]) ?? route.regionSlugs[2] ?? "")
+      : undefined;
+  const bundeslandName = asString(meta["bundesland_name"]) ?? route.regionSlugs[0] ?? "";
+  const marketingCtx: MarketingContext = {
+    level: routeLevel,
+    kreisName,
+    ortslageName,
+    bundeslandName,
+    regionaleZuordnungKreis: asString(meta["regionale_zuordnung"]) ?? null,
+  };
+  const defaults = buildMarketingDefaults(marketingCtx);
+  const defaultEntry = defaults[marketingSection as keyof typeof defaults] ?? defaults.immobilienmarkt_ueberblick;
 
   const getOverride = (field: string) =>
     overrides.find(
       (entry) => entry.section_key === `marketing.${marketingSection}.${field}`,
     )?.optimized_content ?? null;
 
-  const getBase = (field: string) => {
-    const value = getValueByPath(baseText, [
-      "marketing",
-      marketingSection,
-      field,
-    ]);
-    return typeof value === "string" ? value : null;
-  };
-
   const title =
     getOverride("title") ??
-    getBase("title") ??
+    defaultEntry.title ??
     "Immobilienmarkt & Standortprofile";
   const description =
     getOverride("description") ??
-    getBase("description") ??
+    defaultEntry.description ??
     "Wohnlagencheck24 bietet strukturierte Informationen zu Wohnlagen, Standorten und Märkten in Deutschland.";
+  const primaryKeyword = getOverride("primary_keyword") ?? defaultEntry.primary_keyword;
+  const secondaryKeywords = getOverride("secondary_keywords") ?? defaultEntry.secondary_keywords;
+  const entities = getOverride("entities") ?? defaultEntry.entities;
+  const keywords = Array.from(
+    new Set(
+      [primaryKeyword, secondaryKeywords, entities]
+        .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+        .flatMap((value) => value.split(","))
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0),
+    ),
+  );
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
+  const pagePath = `/immobilienmarkt/${route.regionSlugs.join("/")}`;
+  const pageUrl = siteUrl ? `${siteUrl}${pagePath}` : undefined;
 
   return {
     title,
     description,
-    openGraph: { title, description },
+    keywords: keywords.length > 0 ? keywords : undefined,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url: pageUrl,
+      siteName: "Wohnlagencheck24",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
   };
 }
 

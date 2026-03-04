@@ -11,7 +11,7 @@ export default async function AdminLoginPage({
     <div style={{ maxWidth: '420px', margin: '100px auto', fontFamily: 'sans-serif' }}>
       <form style={{ display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid #ddd', padding: '24px', borderRadius: '8px' }}>
         <h2 style={{ margin: '0 0 10px 0' }}>Admin Zugriff</h2>
-        <p style={{ fontSize: '14px', color: '#666' }}>Nur für Master-Administratoren.</p>
+        <p style={{ fontSize: '14px', color: '#666' }}>Nur für berechtigte Administratoren.</p>
 
         <label htmlFor="email">E-Mail</label>
         <input name="email" type="email" placeholder="admin@email.de" required style={{ padding: '8px' }} />
@@ -32,4 +32,3 @@ export default async function AdminLoginPage({
     </div>
   )
 }
-

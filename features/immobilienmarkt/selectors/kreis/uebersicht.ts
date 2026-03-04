@@ -8,6 +8,7 @@ import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { buildWebAssetUrl } from "@/utils/assets";
 import type { UebersichtReportData } from "@/types/reports";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 export type VergleichItem = { region: string; value: number };
 export type Zeitpunkt = { jahr: number; value: number };
@@ -153,8 +154,9 @@ export function buildKreisUebersichtVM(args: {
 
   const meta = asRecord(report.meta) ?? {};
   const data = report.data ?? {};
-  const text = data.text ?? {};
-  const berater = text.berater ?? {};
+  const text = asRecord(data.text) ?? {};
+  const berater = asRecord(text["berater"]) ?? {};
+  const makler = asRecord(text["makler"]) ?? {};
 
   const kreisName = getRegionDisplayName({
     meta,
@@ -184,8 +186,9 @@ export function buildKreisUebersichtVM(args: {
     "kontakt@wohnlagencheck24.de";
 
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${kreisName}`;
-  const beraterImageSrc = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  const beraterImageSrc = resolveMandatoryMediaSrc(
+    "media_berater_avatar",
+    asString(berater["media_berater_avatar"]),
   );
 
   // Texte
@@ -247,8 +250,9 @@ export function buildKreisUebersichtVM(args: {
   const teaserImage = buildWebAssetUrl(
     `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}-preview.webp`,
   );
-  const agentSuggestImage = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.webp`,
+  const agentSuggestImage = resolveMandatoryMediaSrc(
+    "media_makler_logo",
+    asString(makler["media_makler_logo"]),
   );
 
   // Standortindikatoren

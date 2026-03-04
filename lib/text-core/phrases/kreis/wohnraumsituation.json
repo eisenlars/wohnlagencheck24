@@ -2856,7 +2856,8 @@
       {
         "templates": {
           "mit_verbkonstrukt": [
-            "{{ verbkonstrukt_staticText_bauueberhangsquote_jahr01_kreis }} {{ verbkonstrukt_quoteText_bauueberhangsquote_kreis }} {{ verbkonstrukt_trendText_bauueberhangsquote_2jahrestrend_kreis }} {{ verbkonstrukt_trendText_bauueberhangsquote_5jahrestrend_kreis }}\n{{ verbkonstrukt_staticText_fertigstellungsquote_jahr01_kreis }} {{ verbkonstrukt_quoteText_fertigstellungsquote_kreis }} {{ verbkonstrukt_trendText_fertigstellungsquote_2jahrestrend_kreis }} {{ verbkonstrukt_trendText_fertigstellungsquote_5jahrestrend_kreis }}"
+            "{{ verbkonstrukt_staticText_bauueberhangsquote_jahr01_kreis }} {{ verbkonstrukt_quoteText_bauueberhangsquote_kreis }} {{ verbkonstrukt_trendText_bauueberhangsquote_2jahrestrend_kreis }} {{ verbkonstrukt_trendText_bauueberhangsquote_5jahrestrend_kreis }}\n{{ verbkonstrukt_staticText_fertigstellungsquote_jahr01_kreis }} {{ verbkonstrukt_quoteText_fertigstellungsquote_kreis }} {{ verbkonstrukt_trendText_fertigstellungsquote_2jahrestrend_kreis }} {{ verbkonstrukt_trendText_fertigstellungsquote_5jahrestrend_kreis }}",
+            "{{ verbkonstrukt_staticText_fertigstellungsquote_jahr01_kreis }} {{ verbkonstrukt_quoteText_fertigstellungsquote_kreis }} {{ verbkonstrukt_trendText_fertigstellungsquote_2jahrestrend_kreis }} {{ verbkonstrukt_trendText_fertigstellungsquote_5jahrestrend_kreis }}\n{{ verbkonstrukt_staticText_bauueberhangsquote_jahr01_kreis }} {{ verbkonstrukt_quoteText_bauueberhangsquote_kreis }} {{ verbkonstrukt_trendText_bauueberhangsquote_2jahrestrend_kreis }} {{ verbkonstrukt_trendText_bauueberhangsquote_5jahrestrend_kreis }}"
           ],
           "ohne_verbkonstrukt": []
         },
@@ -2864,110 +2865,117 @@
           "phrases_quote_bauueberhangsquote_kreis": {
             "normal": [
               {
-                "phrase": "und damit ungefähr auf dem Niveu der Genehmigungen"
+                "phrase": "dem Niveau der Genehmigungen"
               }
             ],
             "factor_1_5": [
               {
-                "phrase": "also in etwa 1,5-fach der Genehmigungen"
+                "phrase": "dem etwa 1,5-fachen Niveau der Genehmigungen"
               },
               {
-                "phrase": "cirka das 1,5-fache der Genehmigungen"
+                "phrase": "dem rund 1,5-fachen Niveau der Genehmigungen"
               }
             ],
             "factor_2": [
               {
-                "phrase": "also etwa doppelt so hoch wie die Genehmigungen"
+                "phrase": "dem etwa doppelt so hohen Niveau der Genehmigungen"
               },
               {
-                "phrase": "cirka das 2-fache der Genehmigungen"
+                "phrase": "dem rund doppelt so hohen Niveau der Genehmigungen"
               }
             ],
             "factor_3": [
               {
-                "phrase": "also in etwa dreifach so hoch wie die Genehmigungen"
+                "phrase": "dem etwa dreifach so hohen Niveau der Genehmigungen"
               },
               {
-                "phrase": "cirka das 3-fache der Genehmigungen"
+                "phrase": "dem rund dreifach so hohen Niveau der Genehmigungen"
               }
             ],
             "factor_3plus": [
               {
-                "phrase": "also mehr als dreifach so hoch wie die Genehmigungen"
+                "phrase": "einem mehr als dreifach so hohen Niveau der Genehmigungen"
               },
               {
-                "phrase": "deutlich über dem dreifachen Niveau"
+                "phrase": "einem deutlich über dem dreifachen Niveau der Genehmigungen"
               }
             ]
           },
           "phrases_quote_fertigstellungsquote_kreis": {
             "normal": [
               {
-                "phrase": "und damit ungefähr auf dem Niveu der Genehmigungen"
+                "phrase": "dem Niveau der Genehmigungen"
               }
             ],
             "factor_1_5": [
               {
-                "phrase": "also leicht über dem Niveau der Genehmigungen"
+                "phrase": "einem leicht über dem Niveau der Genehmigungen liegenden Wert"
               },
               {
-                "phrase": "cirka 1,5-fach des jährlichen Niveaus"
+                "phrase": "dem rund 1,5-fachen jährlichen Niveau"
               }
             ],
             "factor_2": [
               {
-                "phrase": "also deutlich über dem Niveau der Genehmigungen"
+                "phrase": "einem deutlich über dem Niveau der Genehmigungen liegenden Wert"
               },
               {
-                "phrase": "cirka doppelt so hoch wie das Niveau"
+                "phrase": "dem rund doppelt so hohen jährlichen Niveau"
               }
             ],
             "factor_3": [
               {
-                "phrase": "also stark über dem Niveau der Genehmigungen"
+                "phrase": "einem stark über dem Niveau der Genehmigungen liegenden Wert"
               },
               {
-                "phrase": "cirka das 3-fache des Niveaus"
+                "phrase": "dem rund dreifach so hohen jährlichen Niveau"
               }
             ],
             "factor_3plus": [
               {
-                "phrase": "also weit über dem Niveau der Genehmigungen"
+                "phrase": "einem weit über dem Niveau der Genehmigungen liegenden Wert"
               },
               {
-                "phrase": "mehr als das dreifache Niveau"
+                "phrase": "einem Wert von mehr als dem Dreifachen des jährlichen Niveaus"
               }
             ]
           },
           "verbkonstrukt_quoteText_bauueberhangsquote_kreis": [
-            "{{ phrase }}."
+            "Das entspricht {{ phrase }}."
           ],
           "verbkonstrukt_quoteText_fertigstellungsquote_kreis": [
-            "{{ phrase }}."
+            "Das entspricht {{ phrase }}."
           ]
         },
         "trend_verbkonstrukte": {
           "verbkonstrukt_trendText_bauueberhangsquote_2jahrestrend_kreis": {
             "gleich": [
-              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}."
+              "Kurzfristig betrachtet {{ auxiliar }} die Quote {{ phrase }}.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} die Quote {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist."
+              "Kurzfristig betrachtet {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist."
             ],
             "groesser": [
-              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist."
+              "Kurzfristig betrachtet {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist."
             ],
             "viel_groesser": [
-              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist."
+              "Kurzfristig betrachtet {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} die Quote {{ phrase }}, was auf zunehmende Verzögerungen hinweist."
             ],
             "leicht_kleiner": [
-              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert."
+              "Kurzfristig betrachtet {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert."
             ],
             "kleiner": [
-              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert."
+              "Kurzfristig betrachtet {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert."
             ],
             "viel_kleiner": [
-              "Kurzfristig betrachtet, {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert."
+              "Kurzfristig betrachtet {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} die Quote {{ phrase }}, was eine Entspannung signalisiert."
             ]
           },
           "phrases_trendText_bauueberhangsquote_2jahrestrend_kreis": {
@@ -2975,11 +2983,19 @@
               {
                 "phrase": "nahezu unverändert",
                 "auxiliar": "blieb"
+              },
+              {
+                "phrase": "weitgehend stabil",
+                "auxiliar": "blieb"
               }
             ],
             "leicht_groesser": [
               {
                 "phrase": "leicht gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat gestiegen",
                 "auxiliar": "ist"
               }
             ],
@@ -2987,11 +3003,19 @@
               {
                 "phrase": "deutlich gestiegen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "spürbar gestiegen",
+                "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
                 "phrase": "stark gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "klar gestiegen",
                 "auxiliar": "ist"
               }
             ],
@@ -2999,11 +3023,19 @@
               {
                 "phrase": "leicht gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat gesunken",
+                "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
                 "phrase": "deutlich gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "spürbar gesunken",
                 "auxiliar": "ist"
               }
             ],
@@ -3011,30 +3043,41 @@
               {
                 "phrase": "stark gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "klar gesunken",
+                "auxiliar": "ist"
               }
             ]
           },
           "verbkonstrukt_trendText_bauueberhangsquote_5jahrestrend_kreis": {
             "gleich": [
-              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}."
+              "Langfristig gesehen {{ auxiliar }} die Quote {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Quote {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht."
+              "Langfristig gesehen {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht."
             ],
             "groesser": [
-              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht."
+              "Langfristig gesehen {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht."
             ],
             "viel_groesser": [
-              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht."
+              "Langfristig gesehen {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Quote {{ phrase }}, was strukturelle Probleme verdeutlicht."
             ],
             "leicht_kleiner": [
-              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet."
+              "Langfristig gesehen {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet."
             ],
             "kleiner": [
-              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet."
+              "Langfristig gesehen {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet."
             ],
             "viel_kleiner": [
-              "Langfristig gesehen, {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet."
+              "Langfristig gesehen {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Quote {{ phrase }}, was auf Verbesserungen hindeutet."
             ]
           },
           "phrases_trendText_bauueberhangsquote_5jahrestrend_kreis": {
@@ -3042,11 +3085,19 @@
               {
                 "phrase": "über fünf Jahre nahezu unverändert",
                 "auxiliar": "blieb"
+              },
+              {
+                "phrase": "über fünf Jahre weitgehend stabil",
+                "auxiliar": "blieb"
               }
             ],
             "leicht_groesser": [
               {
                 "phrase": "über fünf Jahre leicht gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "über fünf Jahre moderat gestiegen",
                 "auxiliar": "ist"
               }
             ],
@@ -3054,11 +3105,19 @@
               {
                 "phrase": "über fünf Jahre deutlich gestiegen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "über fünf Jahre spürbar gestiegen",
+                "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
                 "phrase": "über fünf Jahre stark gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "über fünf Jahre klar gestiegen",
                 "auxiliar": "ist"
               }
             ],
@@ -3066,11 +3125,19 @@
               {
                 "phrase": "über fünf Jahre leicht gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "über fünf Jahre moderat gesunken",
+                "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
                 "phrase": "über fünf Jahre deutlich gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "über fünf Jahre spürbar gesunken",
                 "auxiliar": "ist"
               }
             ],
@@ -3078,30 +3145,41 @@
               {
                 "phrase": "über fünf Jahre stark gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "über fünf Jahre klar gesunken",
+                "auxiliar": "ist"
               }
             ]
           },
           "verbkonstrukt_trendText_fertigstellungsquote_2jahrestrend_kreis": {
             "gleich": [
-              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}."
+              "Kurzfristig betrachtet {{ auxiliar }} sie {{ phrase }}.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} sie {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet."
+              "Kurzfristig betrachtet {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet."
             ],
             "groesser": [
-              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet."
+              "Kurzfristig betrachtet {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet."
             ],
             "viel_groesser": [
-              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet."
+              "Kurzfristig betrachtet {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} sie {{ phrase }}, was auf Fortschritte beim Baufortschritt hindeutet."
             ],
             "leicht_kleiner": [
-              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt."
+              "Kurzfristig betrachtet {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt."
             ],
             "kleiner": [
-              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt."
+              "Kurzfristig betrachtet {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt."
             ],
             "viel_kleiner": [
-              "Kurzfristig betrachtet, {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt."
+              "Kurzfristig betrachtet {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt.",
+              "Im kurzfristigen Vergleich {{ auxiliar }} sie {{ phrase }}, was auf zunehmende Verzögerungen schließen lässt."
             ]
           },
           "phrases_trendText_fertigstellungsquote_2jahrestrend_kreis": {
@@ -3109,11 +3187,19 @@
               {
                 "phrase": "nahezu unverändert",
                 "auxiliar": "blieb"
+              },
+              {
+                "phrase": "weitgehend stabil",
+                "auxiliar": "blieb"
               }
             ],
             "leicht_groesser": [
               {
                 "phrase": "leicht gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat gestiegen",
                 "auxiliar": "ist"
               }
             ],
@@ -3121,11 +3207,19 @@
               {
                 "phrase": "deutlich gestiegen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "spürbar gestiegen",
+                "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
                 "phrase": "stark gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "klar gestiegen",
                 "auxiliar": "ist"
               }
             ],
@@ -3133,11 +3227,19 @@
               {
                 "phrase": "leicht gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "moderat gesunken",
+                "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
                 "phrase": "deutlich gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "spürbar gesunken",
                 "auxiliar": "ist"
               }
             ],
@@ -3145,30 +3247,41 @@
               {
                 "phrase": "stark gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "klar gesunken",
+                "auxiliar": "ist"
               }
             ]
           },
           "verbkonstrukt_trendText_fertigstellungsquote_5jahrestrend_kreis": {
             "gleich": [
-              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}."
+              "Langfristig gesehen {{ auxiliar }} die Fertigstellungsquote {{ phrase }}.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Fertigstellungsquote {{ phrase }}."
             ],
             "leicht_groesser": [
-              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt."
+              "Langfristig gesehen {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt."
             ],
             "groesser": [
-              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt."
+              "Langfristig gesehen {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt."
             ],
             "viel_groesser": [
-              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt."
+              "Langfristig gesehen {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was eine Verbesserung über Zeit zeigt."
             ],
             "leicht_kleiner": [
-              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt."
+              "Langfristig gesehen {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt."
             ],
             "kleiner": [
-              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt."
+              "Langfristig gesehen {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt."
             ],
             "viel_kleiner": [
-              "Langfristig gesehen, {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt."
+              "Langfristig gesehen {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt.",
+              "Im Fünfjahresvergleich {{ auxiliar }} die Fertigstellungsquote {{ phrase }}, was auf anhaltende Engpässe schließen lässt."
             ]
           },
           "phrases_trendText_fertigstellungsquote_5jahrestrend_kreis": {
@@ -3176,11 +3289,19 @@
               {
                 "phrase": "damit über fünf Jahre nahezu unverändert",
                 "auxiliar": "blieb"
+              },
+              {
+                "phrase": "damit über fünf Jahre weitgehend stabil",
+                "auxiliar": "blieb"
               }
             ],
             "leicht_groesser": [
               {
                 "phrase": "damit über fünf Jahre leicht gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "damit über fünf Jahre moderat gestiegen",
                 "auxiliar": "ist"
               }
             ],
@@ -3188,11 +3309,19 @@
               {
                 "phrase": "damit über fünf Jahre deutlich gestiegen",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "damit über fünf Jahre spürbar gestiegen",
+                "auxiliar": "ist"
               }
             ],
             "viel_groesser": [
               {
                 "phrase": "damit über fünf Jahre stark gestiegen",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "damit über fünf Jahre klar gestiegen",
                 "auxiliar": "ist"
               }
             ],
@@ -3200,11 +3329,19 @@
               {
                 "phrase": "damit über fünf Jahre leicht gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "damit über fünf Jahre moderat gesunken",
+                "auxiliar": "ist"
               }
             ],
             "kleiner": [
               {
                 "phrase": "damit über fünf Jahre deutlich gesunken",
+                "auxiliar": "ist"
+              },
+              {
+                "phrase": "damit über fünf Jahre spürbar gesunken",
                 "auxiliar": "ist"
               }
             ],
@@ -3212,27 +3349,39 @@
               {
                 "phrase": "damit über fünf Jahre stark gesunken",
                 "auxiliar": "ist"
+              },
+              {
+                "phrase": "damit über fünf Jahre klar gesunken",
+                "auxiliar": "ist"
               }
             ]
           }
         },
         "static_verbkonstrukte": {
           "verbkonstrukt_staticText_bauueberhangsquote_jahr01_kreis": [
-            "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. {{ auxiliar }} {{ phrase }},"
+            "Die Bauüberhangquote beschreibt, wie viele genehmigte Wohnungen noch nicht fertiggestellt sind. {{ auxiliar }} {{ phrase }}."
           ],
           "phrases_staticText_bauueberhangsquote_jahr01_kreis": [
             {
               "phrase": "bei {{ bauueberhangsquote_jahr01_kreis }} %",
               "auxiliar": "Sie liegt aktuell"
+            },
+            {
+              "phrase": "bei {{ bauueberhangsquote_jahr01_kreis }} %",
+              "auxiliar": "Aktuell liegt sie"
             }
           ],
           "verbkonstrukt_staticText_fertigstellungsquote_jahr01_kreis": [
-            "Darüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. {{ auxiliar }} {{ phrase }},"
+            "Darüber hinaus zeigt eine Fertigstellungsquote, wie viele genehmigte Wohnungen bereits abgeschlossen sind. {{ auxiliar }} {{ phrase }}."
           ],
           "phrases_staticText_fertigstellungsquote_jahr01_kreis": [
             {
               "phrase": "{{ fertigstellungsquote_jahr01_kreis }} %",
               "auxiliar": "Sie beträgt"
+            },
+            {
+              "phrase": "{{ fertigstellungsquote_jahr01_kreis }} %",
+              "auxiliar": "Der aktuelle Wert liegt bei"
             }
           ]
         }

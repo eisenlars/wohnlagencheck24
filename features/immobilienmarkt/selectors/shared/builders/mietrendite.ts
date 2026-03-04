@@ -6,6 +6,7 @@ import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { buildTableModel } from "@/utils/buildTableModel";
 import type { UnitKey } from "@/utils/format";
 import { buildWebAssetUrl } from "@/utils/assets";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 import type {
   MietrenditeVM,
@@ -95,8 +96,9 @@ export function buildMietrenditeVM(args: {
     (typeof berater["berater_email"] === "string" ? berater["berater_email"] : undefined) ??
     "kontakt@wohnlagencheck24.de";
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
-  const beraterImageSrc = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  const beraterImageSrc = resolveMandatoryMediaSrc(
+    "media_berater_avatar",
+    asString(berater["media_berater_avatar"]),
   );
 
   const mietrenditeGesamt = data.mietrendite_gesamt?.[0];

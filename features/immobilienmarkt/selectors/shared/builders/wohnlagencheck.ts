@@ -5,6 +5,7 @@ import { getText } from "@/utils/getText";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { buildWebAssetUrl } from "@/utils/assets";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 import type {
   WohnlagencheckBildung,
@@ -296,8 +297,9 @@ export function buildWohnlagencheckVM(args: {
     (typeof berater["berater_name"] === "string" ? berater["berater_name"] : undefined) ??
     "Lars Hofmann";
   const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
-  const beraterImageSrc = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
+  const beraterImageSrc = resolveMandatoryMediaSrc(
+    "media_berater_avatar",
+    asString(berater["media_berater_avatar"]),
   );
 
   const mobilitaetIndex = pickStandortfaktorIndex(data["standortfaktoren"], "mobilitaet");

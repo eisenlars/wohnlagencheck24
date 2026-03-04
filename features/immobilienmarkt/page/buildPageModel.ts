@@ -27,6 +27,14 @@ import { asArray, asRecord, asString } from "@/utils/records";
 import { getRegionDisplayName } from "@/utils/regionName";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { applyDataDrivenTexts } from "@/lib/text-core";
+import {
+  getActiveKreisSlugsForBundesland,
+  getActiveOrtSlugsForKreis,
+  isBundeslandVisible,
+  isKreisVisible,
+  isOrtslageVisible,
+} from "@/lib/area-visibility";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 export type PageModel = {
   route: RouteModel;
@@ -119,6 +127,181 @@ function normalizeActiveTab(args: {
   return (tabsForLevel[0]?.id ?? "uebersicht") as ReportSection;
 }
 
+type TextTree = Record<string, Record<string, string>>;
+
+function toTextTree(value: unknown): TextTree {
+  const rec = asRecord(value);
+  if (!rec) return {};
+  const out: TextTree = {};
+  for (const [groupKey, groupValue] of Object.entries(rec)) {
+    const group = asRecord(groupValue);
+    if (!group) continue;
+    out[groupKey] = {};
+    for (const [textKey, textValue] of Object.entries(group)) {
+      out[groupKey][textKey] = String(textValue ?? "");
+    }
+  }
+  return out;
+}
+
+function getTextTree(report: Report): TextTree {
+  const data = asRecord(report.data) ?? {};
+  const top = toTextTree(report["text"]);
+  if (Object.keys(top).length > 0) return top;
+  return toTextTree(data["text"]);
+}
+
+function inferGroupBySectionKey(sectionKey: string): string {
+  if (sectionKey.startsWith("berater_")) return "berater";
+  if (sectionKey.startsWith("makler_")) return "makler";
+  if (sectionKey === "media_berater_avatar") return "berater";
+  if (sectionKey.startsWith("media_makler_")) return "makler";
+  if (sectionKey.startsWith("immobilienmarkt_")) return "immobilienmarkt_ueberblick";
+  return "immobilienmarkt_ueberblick";
+}
+
+function findTextBySectionKey(textTree: TextTree, sectionKey: string): string {
+  for (const group of Object.values(textTree)) {
+    if (Object.prototype.hasOwnProperty.call(group, sectionKey)) {
+      return String(group[sectionKey] ?? "");
+    }
+  }
+  return "";
+}
+
+function applyOverridesToTextTree(
+  baseTree: TextTree,
+  overrides: Array<{ section_key: string; optimized_content: string | null }>,
+): TextTree {
+  const next: TextTree = {};
+  for (const [groupKey, group] of Object.entries(baseTree)) {
+    next[groupKey] = { ...group };
+  }
+
+  for (const entry of overrides) {
+    const key = String(entry.section_key ?? "").trim();
+    const content = String(entry.optimized_content ?? "");
+    if (!key || !content) continue;
+
+    let applied = false;
+    for (const groupKey of Object.keys(next)) {
+      if (Object.prototype.hasOwnProperty.call(next[groupKey], key)) {
+        next[groupKey][key] = content;
+        applied = true;
+        break;
+      }
+    }
+    if (!applied) {
+      const groupKey = inferGroupBySectionKey(key);
+      next[groupKey] = {
+        ...(next[groupKey] ?? {}),
+        [key]: content,
+      };
+    }
+  }
+
+  return next;
+}
+
+function withTextTree(report: Report, textTree: TextTree): Report {
+  return {
+    ...report,
+    text: textTree,
+    data: {
+      ...(asRecord(report.data) ?? {}),
+      text: textTree,
+    },
+  };
+}
+
+function setTextIfMissing(textTree: TextTree, sectionKey: string, value: string): boolean {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) return false;
+  const current = findTextBySectionKey(textTree, sectionKey).trim();
+  if (current) return false;
+  const groupKey = inferGroupBySectionKey(sectionKey);
+  textTree[groupKey] = {
+    ...(textTree[groupKey] ?? {}),
+    [sectionKey]: normalized,
+  };
+  return true;
+}
+
+async function loadActiveKreisSlugsForBundeslandLive(bundeslandSlug: string): Promise<Set<string>> {
+  const fallback = await getActiveKreisSlugsForBundesland(bundeslandSlug);
+  try {
+    const admin = createAdminClient() as unknown as {
+      from: (table: string) => {
+        select: (columns: string) => {
+          eq: (column: string, value: unknown) => Promise<{
+            data?: Array<Record<string, unknown>> | null;
+            error?: { message?: string } | null;
+          }>;
+        } | Promise<{
+          data?: Array<Record<string, unknown>> | null;
+          error?: { message?: string } | null;
+        }>;
+      };
+    };
+
+    const { data: activeRows, error: activeError } = await (
+      admin
+        .from("partner_area_map")
+        .select("area_id, is_active") as Promise<{
+        data?: Array<{ area_id?: string | null; is_active?: boolean | null }> | null;
+        error?: { message?: string } | null;
+      }>
+    );
+
+    if (activeError || !activeRows?.length) return fallback;
+
+    const areaIds = Array.from(
+      new Set(
+        (activeRows ?? [])
+          .filter((row) => row?.is_active === true)
+          .map((row) => String(row?.area_id ?? "").trim())
+          .filter(Boolean),
+      ),
+    );
+    if (areaIds.length === 0) return fallback;
+
+    const areaIdSet = new Set(areaIds);
+    const { data: areaRows, error: areaError } = await admin
+      .from("areas")
+      .select("id, slug, parent_slug, bundesland_slug") as {
+      data?: Array<{
+        id?: string | null;
+        slug?: string | null;
+        parent_slug?: string | null;
+        bundesland_slug?: string | null;
+      }> | null;
+      error?: { message?: string } | null;
+    };
+    if (areaError || !areaRows?.length) return fallback;
+
+    const out = new Set<string>();
+    for (const row of areaRows) {
+      const id = String(row.id ?? "").trim();
+      if (!id || !areaIdSet.has(id)) continue;
+      const bl = String(row.bundesland_slug ?? "").trim();
+      if (bl !== bundeslandSlug) continue;
+      const slug = String(row.slug ?? "").trim();
+      const parent = String(row.parent_slug ?? "").trim();
+      if (!slug) continue;
+
+      if (parent === bl) {
+        out.add(slug);
+      } else if (parent) {
+        out.add(parent);
+      }
+    }
+
+    return out.size > 0 ? out : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function buildPageModel(route: RouteModel): Promise<PageModel | null> {
   console.log("\n=== buildPageModel ===");
   console.log("ROUTE", {
@@ -134,16 +317,34 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
     return null;
   }
 
+  const [routeBundeslandSlug, routeKreisSlug, routeOrtSlug] = route.regionSlugs;
+  if (route.level === "bundesland" && routeBundeslandSlug) {
+    if (!(await isBundeslandVisible(routeBundeslandSlug))) return null;
+  }
+  if (route.level === "kreis" && routeBundeslandSlug && routeKreisSlug) {
+    if (!(await isKreisVisible(routeBundeslandSlug, routeKreisSlug))) return null;
+  }
+  if (route.level === "ort" && routeBundeslandSlug && routeKreisSlug && routeOrtSlug) {
+    if (!(await isOrtslageVisible(routeBundeslandSlug, routeKreisSlug, routeOrtSlug))) return null;
+  }
+
   // Sicherstellen, dass text auch unter data.text vorhanden ist (einheitliche Quelle für Builder)
   const rawData = asRecord(report.data) ?? {};
   const rawDataText = asRecord(rawData["text"]);
   const rawTopText = asRecord(report["text"]);
-  if (rawTopText && !rawDataText) {
+  const mergedInitialText = rawTopText || rawDataText
+    ? {
+        ...(rawTopText ?? {}),
+        ...(rawDataText ?? {}),
+      }
+    : null;
+  if (mergedInitialText) {
     report = {
       ...report,
+      text: mergedInitialText,
       data: {
         ...rawData,
-        text: rawTopText,
+        text: mergedInitialText,
       },
     };
   }
@@ -192,34 +393,14 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
       ? await getApprovedReportTexts(supabase, areaId, scopedPartnerId)
       : [];
     if (overrides.length > 0) {
-      const mergedText = { ...(asRecord(report["text"]) ?? {}) };
-      const topGroups = Object.keys(mergedText);
-      for (const entry of overrides) {
-        if (!entry.section_key || !entry.optimized_content) continue;
-        let applied = false;
-        for (const groupKey of topGroups) {
-          const group = asRecord(mergedText[groupKey]);
-          if (group && Object.prototype.hasOwnProperty.call(group, entry.section_key)) {
-            mergedText[groupKey] = {
-              ...group,
-              [entry.section_key]: entry.optimized_content,
-            };
-            applied = true;
-            break;
-          }
-        }
-        if (!applied) {
-          mergedText[entry.section_key] = entry.optimized_content;
-        }
-      }
-      report = {
-        ...report,
-        text: mergedText,
-        data: {
-          ...(asRecord(report.data) ?? {}),
-          text: mergedText,
-        },
-      };
+      const mergedText = applyOverridesToTextTree(
+        getTextTree(report),
+        overrides.map((entry) => ({
+          section_key: entry.section_key,
+          optimized_content: entry.optimized_content,
+        })),
+      );
+      report = withTextTree(report, mergedText);
     }
   }
 
@@ -305,61 +486,110 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
 
   // Bundesland: "orte" = Kreise (für Navigation unten)
   if (route.level === "bundesland" && bundeslandSlug) {
+    const admin = createAdminClient() as unknown as SupabaseClientLike;
     const kreise = await getKreiseForBundesland(bundeslandSlug);
+    const activeKreisSlugs = await loadActiveKreisSlugsForBundeslandLive(bundeslandSlug);
+    const visibleKreise = kreise.filter((k) => activeKreisSlugs.has(k.slug));
     orte = kreise.map((k) => ({
       slug: k.slug,
       name: k.name,
     }));
+    orte = visibleKreise.map((k) => ({
+      slug: k.slug,
+      name: k.name,
+    }));
+
+    const kreisTextRows = (
+      await Promise.all(
+        visibleKreise.map(async (kreis) => {
+          const kreisReport = await getReportBySlugs([bundeslandSlug, kreis.slug]);
+          if (!kreisReport) return null;
+
+          const kreisMeta = asRecord(asArray(kreisReport.meta)[0] ?? kreisReport.meta) ?? {};
+          const kreisAreaId = asString(kreisMeta["kreis_schluessel"]) ?? "";
+          let textTree = getTextTree(kreisReport);
+          if (kreisAreaId) {
+            const overrides = await getApprovedReportTexts(admin, kreisAreaId);
+            if (overrides.length > 0) {
+              textTree = applyOverridesToTextTree(
+                textTree,
+                overrides.map((entry) => ({
+                  section_key: entry.section_key,
+                  optimized_content: entry.optimized_content,
+                })),
+              );
+            }
+          }
+
+          return { kreis, textTree };
+        }),
+      )
+    ).filter((entry): entry is { kreis: { slug: string; name: string }; textTree: TextTree } => Boolean(entry));
+
+    const fallbackKeys = [
+      "immobilienmarkt_allgemein",
+      "immobilienmarkt_standort_teaser",
+      "immobilienmarkt_individuell_01",
+      "immobilienmarkt_zitat",
+      "immobilienmarkt_individuell_02",
+      "immobilienmarkt_beschreibung_01",
+      "immobilienmarkt_beschreibung_02",
+      "immobilienmarkt_besonderheiten",
+      "immobilienmarkt_maklerempfehlung",
+      "berater_name",
+    ];
+    const bundeslandTextTree = getTextTree(report);
+    let bundeslandChanged = false;
+    for (const key of fallbackKeys) {
+      const sourceText =
+        kreisTextRows
+          .map((row) => findTextBySectionKey(row.textTree, key))
+          .find((value) => String(value ?? "").trim().length > 0) ?? "";
+      bundeslandChanged = setTextIfMissing(bundeslandTextTree, key, sourceText) || bundeslandChanged;
+    }
+    if (bundeslandChanged) {
+      report = withTextTree(report, bundeslandTextTree);
+    }
 
     const maklerSeen = new Set<string>();
-    const maklerEntries = (await Promise.all(
-      kreise.map(async (kreis) => {
-        const kreisReport = await getReportBySlugs([bundeslandSlug, kreis.slug]);
-        if (!kreisReport) return null;
-
-        const kreisData = asRecord(kreisReport.data) ?? {};
-        const text = asRecord(kreisReport["text"]) ?? asRecord(kreisData["text"]) ?? {};
-        const maklerRecord = asRecord(text["makler"]) ?? {};
-        const maklerName = asString(maklerRecord["makler_name"]) ?? "";
+    const maklerEntries = kreisTextRows
+      .map((row) => {
+        const maklerName = findTextBySectionKey(row.textTree, "makler_name");
         if (!maklerName) return null;
         if (maklerSeen.has(maklerName)) return null;
         maklerSeen.add(maklerName);
 
         return {
-          slug: kreis.slug,
+          slug: row.kreis.slug,
           name: maklerName,
-          imageSrc: buildWebAssetUrl(
-            `/images/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/makler-${kreis.slug}-logo.webp`,
+          imageSrc: resolveMandatoryMediaSrc(
+            "media_makler_logo",
+            findTextBySectionKey(row.textTree, "media_makler_logo"),
           ),
-          kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienmakler`,
+          kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${row.kreis.slug}/immobilienmakler`,
         };
-      }),
-    )).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
     const beraterSeen = new Set<string>();
-    const beraterEntries = (await Promise.all(
-      kreise.map(async (kreis) => {
-        const kreisReport = await getReportBySlugs([bundeslandSlug, kreis.slug]);
-        if (!kreisReport) return null;
-
-        const kreisData = asRecord(kreisReport.data) ?? {};
-        const text = asRecord(kreisReport["text"]) ?? asRecord(kreisData["text"]) ?? {};
-        const beraterRecord = asRecord(text["berater"]) ?? {};
-        const beraterName = asString(beraterRecord["berater_name"]) ?? "";
+    const beraterEntries = kreisTextRows
+      .map((row) => {
+        const beraterName = findTextBySectionKey(row.textTree, "berater_name");
         if (!beraterName) return null;
         if (beraterSeen.has(beraterName)) return null;
         beraterSeen.add(beraterName);
 
         return {
-          slug: kreis.slug,
+          slug: row.kreis.slug,
           name: beraterName,
-          imageSrc: buildWebAssetUrl(
-            `/images/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienberatung-${kreis.slug}.png`,
+          imageSrc: resolveMandatoryMediaSrc(
+            "media_berater_avatar",
+            findTextBySectionKey(row.textTree, "media_berater_avatar"),
           ),
-          kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${kreis.slug}/immobilienberatung`,
+          kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${row.kreis.slug}/immobilienberatung`,
         };
-      }),
-    )).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
 
     berater = beraterEntries.length > 0 ? beraterEntries : undefined;
     makler = maklerEntries.length > 0 ? maklerEntries : undefined;
@@ -367,14 +597,18 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
     const heroImageSrc = buildWebAssetUrl(
       `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.webp`,
     );
-    const kreisuebersichtMapSvg = await getKreisUebersichtMapSvg(bundeslandSlug);
+    const kreisuebersichtMapSvg = await getKreisUebersichtMapSvg(bundeslandSlug, activeKreisSlugs);
 
     assets = { heroImageSrc, kreisuebersichtMapSvg };
   }
 
   // Ort + Kreis: (Ort nutzt dieselben Kreis-Assets)
   if ((route.level === "kreis" || route.level === "ort") && bundeslandSlug && kreisSlug) {
-    orte = await getOrteForKreis(bundeslandSlug, kreisSlug);
+    const allOrte = await getOrteForKreis(bundeslandSlug, kreisSlug);
+    const activeOrtSlugs = await getActiveOrtSlugsForKreis(bundeslandSlug, kreisSlug);
+    orte = activeOrtSlugs.size > 0
+      ? allOrte.filter((ort) => activeOrtSlugs.has(ort.slug))
+      : allOrte;
 
     const heroImageSrc = buildWebAssetUrl(
       `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
@@ -490,9 +724,7 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
 
     const beraterImageSrc =
       bundeslandSlug && kreisSlug
-        ? buildWebAssetUrl(
-            `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
-          )
+        ? resolveMandatoryMediaSrc("media_berater_avatar", asString(berater["media_berater_avatar"]))
         : undefined;
 
     kontakt = {

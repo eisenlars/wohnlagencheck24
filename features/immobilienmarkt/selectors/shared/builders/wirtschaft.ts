@@ -4,6 +4,7 @@ import { getText } from "@/utils/getText";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { buildWebAssetUrl } from "@/utils/assets";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 import type { WirtschaftReportData } from "@/types/reports";
 import type {
@@ -198,6 +199,20 @@ export function buildWirtschaftVM(args: {
   const arbeitsplatzzentralitaetUsesKreisFallback =
     level === "ort" && (arbeitsplatzzentralitaetOl === null || arbeitsplatzzentralitaetOl === 0);
   const pendlersaldoUsesKreisFallback = level === "ort" && (pendlersaldoOl === null || pendlersaldoOl === 0);
+  const beraterName =
+    (typeof berater["berater_name"] === "string" ? berater["berater_name"] : undefined) ??
+    "Lars Hofmann";
+  const beraterTelefon =
+    (typeof berater["berater_telefon"] === "string" ? berater["berater_telefon"] : undefined) ??
+    "+49 351/287051-0";
+  const beraterEmail =
+    (typeof berater["berater_email"] === "string" ? berater["berater_email"] : undefined) ??
+    "kontakt@wohnlagencheck24.de";
+  const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
+  const beraterImageSrc = resolveMandatoryMediaSrc(
+    "media_berater_avatar",
+    asString(berater["media_berater_avatar"]),
+  );
 
   const kpis = {
     kaufkraftindex:
@@ -386,20 +401,6 @@ export function buildWirtschaftVM(args: {
     },
     { key: "l", label: "Deutschland", valueKey: "quote_l", color: "rgba(54,162,235,1)" },
   ]);
-
-  const beraterName =
-    (typeof berater["berater_name"] === "string" ? berater["berater_name"] : undefined) ??
-    "Lars Hofmann";
-  const beraterTelefon =
-    (typeof berater["berater_telefon"] === "string" ? berater["berater_telefon"] : undefined) ??
-    "+49 351/287051-0";
-  const beraterEmail =
-    (typeof berater["berater_email"] === "string" ? berater["berater_email"] : undefined) ??
-    "kontakt@wohnlagencheck24.de";
-  const beraterTaetigkeit = `Standort- / Immobilienberatung – ${regionName}`;
-  const beraterImageSrc = buildWebAssetUrl(
-    `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
-  );
 
   return {
     level,

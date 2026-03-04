@@ -30,11 +30,10 @@ export async function login(formData: FormData) {
   }
 
   const role = getAdminRoleForUser(data.user.id)
-  if (role !== 'admin_super') {
+  if (role !== 'admin_super' && role !== 'admin_ops') {
     await supabase.auth.signOut()
     return redirect('/admin/login?message=Kein Admin-Zugriff')
   }
 
   return redirect('/admin')
 }
-

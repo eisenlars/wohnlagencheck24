@@ -6,19 +6,35 @@ import {
   getKreiseForBundesland,
   getOrteForKreis,
 } from "@/lib/data";
+import {
+  getActiveKreisSlugsForBundesland,
+  getActiveOrtSlugsForKreis,
+  isBundeslandVisible,
+} from "@/lib/area-visibility";
 
 export default async function ImmobilienmarktOverviewPage() {
-  const bundeslaender = await getBundeslaender();
+  const bundeslaenderRaw = await getBundeslaender();
+  const bundeslaender = (
+    await Promise.all(
+      bundeslaenderRaw.map(async (bl) => ((await isBundeslandVisible(bl.slug)) ? bl : null)),
+    )
+  ).filter((value): value is NonNullable<typeof value> => Boolean(value));
   const struktur = await Promise.all(
     bundeslaender.map(async (bl) => {
-      const kreise = await getKreiseForBundesland(bl.slug);
-      const kreiseWithOrte = await Promise.all(
-        kreise.map(async (kreis) => ({
-          ...kreis,
-          orte: await getOrteForKreis(bl.slug, kreis.slug),
-        })),
+      const kreiseRaw = await getKreiseForBundesland(bl.slug);
+      const activeKreise = await getActiveKreisSlugsForBundesland(bl.slug);
+      const kreise = kreiseRaw.filter((kreis) => activeKreise.has(kreis.slug));
+      const kreiseWithVisibleOrte = await Promise.all(
+        kreise.map(async (kreis) => {
+          const activeOrte = await getActiveOrtSlugsForKreis(bl.slug, kreis.slug);
+          const orte = await getOrteForKreis(bl.slug, kreis.slug);
+          return {
+            ...kreis,
+            orte: orte.filter((ort) => activeOrte.has(ort.slug)),
+          };
+        }),
       );
-      return { ...bl, kreise: kreiseWithOrte };
+      return { ...bl, kreise: kreiseWithVisibleOrte };
     }),
   );
 

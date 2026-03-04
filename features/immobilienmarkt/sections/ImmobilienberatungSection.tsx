@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { buildWebAssetUrl } from "@/utils/assets";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 import { asRecord, asString } from "@/utils/records";
 import type { Report } from "@/lib/data";
@@ -25,6 +25,8 @@ export function ImmobilienberatungSection({
 }: ImmobilienberatungSectionProps) {
   const text = asRecord(report["text"]) ?? asRecord(asRecord(report.data)?.["text"]) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
+  const avatarOverride = asString(berater["media_berater_avatar"]) ?? "";
+  const avatarSrc = resolveMandatoryMediaSrc("media_berater_avatar", avatarOverride);
 
   const name = asString(berater["berater_name"]) ?? "Berater";
   const beschreibung = asString(berater["berater_beschreibung"]) ?? "";
@@ -61,9 +63,7 @@ export function ImmobilienberatungSection({
           <div className={styles.portrait}>
             <div className={styles.avatar}>
               <Image
-                src={buildWebAssetUrl(
-                  `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienberatung-${kreisSlug}.png`,
-                )}
+                src={avatarSrc}
                 alt={`Berater: ${name}`}
                 width={220}
                 height={220}

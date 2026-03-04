@@ -35,7 +35,10 @@ const DEFAULT_MAX_PASSES = 5;
 function normalizeGeneratedText(text: string): string {
   return String(text)
     .replace(/ {2,}/g, " ")
+    .replace(/\.{2,}/g, ".")
+    .replace(/\.\s*\./g, ".")
     .replace(/ +([,.!?;:])/g, "$1")
+    .replace(/\.{2,}/g, ".")
     .trim();
 }
 

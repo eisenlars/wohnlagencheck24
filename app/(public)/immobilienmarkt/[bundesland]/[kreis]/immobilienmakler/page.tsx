@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { getReportBySlugs } from "@/lib/data";
-import { buildWebAssetUrl } from "@/utils/assets";
+import { getApprovedReportTexts, getReportBySlugs, type SupabaseClientLike } from "@/lib/data";
 import { ImmobilienmaklerSection } from "@/features/immobilienmarkt/sections/ImmobilienmaklerSection";
 import { KontaktContextSetter } from "@/components/kontakt/KontaktContextSetter";
 import { asRecord, asString } from "@/utils/records";
@@ -9,6 +8,8 @@ import { formatRegionFallback } from "@/utils/regionName";
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { getRandomReferencesForKreis } from "@/lib/referenzen";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 type PageParams = { bundesland?: string; kreis?: string };
 type PageProps = { params: Promise<PageParams> };
@@ -24,13 +25,62 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
   if (!report) notFound();
 
   const meta = asRecord(report.meta) ?? {};
-  const text = asRecord(report["text"]) ?? {};
+  let reportWithMedia = report;
+  const areaId = asString(meta["kreis_schluessel"]) ?? "";
+  if (areaId) {
+    const admin = createAdminClient() as unknown as SupabaseClientLike & {
+      from: (table: string) => {
+        select: (columns: string) => {
+          eq: (column: string, value: unknown) => {
+            eq: (column: string, value: unknown) => Promise<{ data?: Array<{ auth_user_id?: string | null }> | null }>;
+          };
+        };
+      };
+    };
+    const partnerMapRes = (await admin
+      .from("partner_area_map")
+      .select("auth_user_id")
+      .eq("area_id", areaId)
+      .eq("is_active", true)) as { data?: Array<{ auth_user_id?: string | null }> | null };
+    const partnerIds = Array.from(
+      new Set(
+        (partnerMapRes?.data ?? [])
+          .map((row) => String(row?.auth_user_id ?? "").trim())
+          .filter(Boolean),
+      ),
+    );
+    const partnerId = partnerIds.length === 1 ? partnerIds[0] : null;
+    if (partnerId) {
+      const overrides = await getApprovedReportTexts(admin, areaId, partnerId);
+      if (overrides.length > 0) {
+        const textBase = asRecord(report["text"]) ?? {};
+        const makler = asRecord(textBase["makler"]) ?? {};
+        for (const entry of overrides) {
+          const key = String(entry.section_key ?? "");
+          const value = String(entry.optimized_content ?? "");
+          if ((key === "media_makler_logo" || key === "media_makler_bild_01" || key === "media_makler_bild_02") && value) {
+            makler[key] = value;
+          }
+        }
+        reportWithMedia = {
+          ...report,
+          text: {
+            ...textBase,
+            makler,
+          },
+        };
+      }
+    }
+  }
+
+  const text = asRecord(reportWithMedia["text"]) ?? {};
   const makler = asRecord(text["makler"]) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
   const kreisName = asString(meta["kreis_name"]) ?? formatRegionFallback(kreisSlug);
   const bundeslandNameRaw = asString(meta["bundesland_name"]) ?? "";
   const bundeslandName = bundeslandNameRaw ? formatRegionFallback(bundeslandNameRaw) : formatRegionFallback(bundeslandSlug);
   const name = asString(makler["makler_name"]) ?? "Maklerempfehlung";
+  const logoOverride = asString(makler["media_makler_logo"]) ?? "";
   const email =
     asString(makler["makler_email"]) ??
     asString(berater["berater_email"]) ??
@@ -52,9 +102,7 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
           title: "Maklerkontakt",
           name,
           email,
-          imageSrc: buildWebAssetUrl(
-            `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/makler-${kreisSlug}-logo.webp`,
-          ),
+          imageSrc: resolveMandatoryMediaSrc("media_makler_logo", logoOverride),
           regionLabel: `Maklerempfehlung – ${kreisSlug}`,
           subjectDefault: `Makleranfrage – ${kreisSlug}`,
         }}
@@ -67,8 +115,7 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
         names={{ regionName: kreisName, bundeslandName, kreisName }}
       />
       <ImmobilienmaklerSection
-        report={report}
-        bundeslandSlug={bundeslandSlug}
+        report={reportWithMedia}
         kreisSlug={kreisSlug}
         references={references}
       />

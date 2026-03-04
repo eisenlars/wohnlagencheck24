@@ -16,7 +16,7 @@ export const INTEGRATION_PROVIDER_SPECS: IntegrationProviderSpec[] = [
     label: "Propstack API",
     kind: "crm",
     description: "REST API fuer Objekt- und Marktdaten.",
-    authTypes: ["api_key", "bearer"],
+    authTypes: ["api_key"],
     defaultAuthType: "api_key",
     requiresBaseUrl: true,
   },

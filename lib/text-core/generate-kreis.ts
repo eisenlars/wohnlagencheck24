@@ -14,6 +14,7 @@ import {
   determineAbsoluteCategoryWithDirection,
   determineSimpleComparisonCategory,
   determineGenericConnectorType,
+  classifyOver100Level,
 } from "@/lib/text-core/core";
 
 import kreisPreisPhrases from "@/lib/text-core/phrases/kreis/immobilienpreise.json";
@@ -81,6 +82,15 @@ function formatNumber(value: number, decimals = 0) {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
+}
+
+function formatLargeEconomyValue(value: number) {
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+  if (abs >= 1e9) return `${sign}${formatNumber(abs / 1e9, 2)} Mrd.`;
+  if (abs >= 1e6) return `${sign}${formatNumber(abs / 1e6, 2)} Mio.`;
+  if (abs >= 1e3) return `${sign}${formatNumber(abs / 1e3, 2)} Tsd.`;
+  return `${sign}${formatNumber(abs, 0)}`;
 }
 
 function parseNumericValue(value: unknown): number | null {
@@ -222,6 +232,10 @@ function buildInputData(inputs: AnyRecord) {
   normalizeKreisHaushaltsSaldo(inputData, raw);
   normalizeKreisNatuerlicherSaldo(inputData, raw);
   normalizeKreisWanderungssaldo(inputData, raw);
+  normalizeKreisBauueberhangFortschritt(inputData, raw);
+  normalizeKreisEinkommenDisplay(inputData, raw);
+  normalizeKreisBipDisplay(inputData, raw);
+  normalizeKreisArbeitsplatzzentralitaetDisplay(inputData, raw);
 
   return { inputData, raw };
 }
@@ -358,6 +372,153 @@ function normalizeKreisWanderungssaldo(inputData: AnyRecord, raw: AnyRecord) {
   if (zuzStatus.status === "no_data" && fortStatus.status === "no_data") {
     inputData.wanderungssaldo_no_data_beide_kreis = true;
   }
+}
+
+function normalizeKreisBipDisplay(inputData: AnyRecord, raw: AnyRecord) {
+  const bipJahr01 = toFinite(raw.bruttoinlandsprodukt_jahr01_kreis);
+  if (bipJahr01 !== null) {
+    inputData.bruttoinlandsprodukt_jahr01_kreis = formatLargeEconomyValue(bipJahr01);
+  }
+  const bipJahr05 = toFinite(raw.bruttoinlandsprodukt_jahr05_kreis);
+  if (bipJahr05 !== null) {
+    inputData.bruttoinlandsprodukt_jahr05_kreis = formatLargeEconomyValue(bipJahr05);
+  }
+}
+
+function normalizeKreisArbeitsplatzzentralitaetDisplay(inputData: AnyRecord, raw: AnyRecord) {
+  const keys = [
+    "arbeitsplatzzentralitaet",
+    "arbeitsplatzzentralitaet_k",
+    "arbeitsplatzzentralitaet_kreis",
+  ];
+  for (const key of keys) {
+    const value = toFinite(raw[key]);
+    if (value === null) continue;
+    inputData[key] = formatNumber(value, 2);
+  }
+}
+
+function normalizeKreisEinkommenDisplay(inputData: AnyRecord, raw: AnyRecord) {
+  const totalKeys = [
+    "verfuegbares_einkommen_jahr01_kreis",
+    "verfuegbares_einkommen_jahr05_kreis",
+  ];
+  for (const key of totalKeys) {
+    const value = toFinite(raw[key]);
+    if (value === null) continue;
+    inputData[key] = formatLargeEconomyValue(value);
+  }
+
+  const detailedKeys = [
+    "verfuegbares_einkommen_per_ew_jahr01_kreis",
+    "verfuegbares_einkommen_per_ew_jahr05_kreis",
+    "verfuegbares_einkommen_per_hh_jahr01_kreis",
+  ];
+  for (const key of detailedKeys) {
+    const value = toFinite(raw[key]);
+    if (value === null) continue;
+    inputData[key] = formatNumber(Math.round(value), 0);
+  }
+}
+
+function readFirstFinite(raw: AnyRecord, keys: string[]) {
+  for (const key of keys) {
+    const value = toFinite(raw[key]);
+    if (value !== null) return value;
+  }
+  return null;
+}
+
+function normalizeKreisBauueberhangFortschritt(inputData: AnyRecord, raw: AnyRecord) {
+  const nnb01 = readFirstFinite(raw, [
+    "anzahl_bauueberhang_noch_nicht_begonnen_jahr01_kreis",
+    "anzahl_bauueberhang_noch_nicht_begonnen_jahr01_k",
+  ]);
+  const nnu01 = readFirstFinite(raw, [
+    "anzahl_bauueberhang_noch_nicht_unter_dach_jahr01_kreis",
+    "anzahl_bauueberhang_noch_nicht_unter_dach_jahr01_k",
+  ]);
+  const ud01 = readFirstFinite(raw, [
+    "anzahl_bauueberhang_unter_dach_jahr01_kreis",
+    "anzahl_bauueberhang_unter_dach_jahr01_k",
+  ]);
+  const g01 = readFirstFinite(raw, [
+    "anzahl_genehmigungen_jahr01_kreis",
+    "anzahl_genehmigungen_jahr01_k",
+    "anzahl_genehmigung_jahr01_kreis",
+    "anzahl_genehmigung_jahr01_k",
+  ]);
+
+  const nnb02 = readFirstFinite(raw, [
+    "anzahl_bauueberhang_noch_nicht_begonnen_jahr02_kreis",
+    "anzahl_bauueberhang_noch_nicht_begonnen_jahr02_k",
+  ]);
+  const nnu02 = readFirstFinite(raw, [
+    "anzahl_bauueberhang_noch_nicht_unter_dach_jahr02_kreis",
+    "anzahl_bauueberhang_noch_nicht_unter_dach_jahr02_k",
+  ]);
+  const ud02 = readFirstFinite(raw, [
+    "anzahl_bauueberhang_unter_dach_jahr02_kreis",
+    "anzahl_bauueberhang_unter_dach_jahr02_k",
+  ]);
+  const g02 = readFirstFinite(raw, [
+    "anzahl_genehmigungen_jahr02_kreis",
+    "anzahl_genehmigungen_jahr02_k",
+    "anzahl_genehmigung_jahr02_kreis",
+    "anzahl_genehmigung_jahr02_k",
+  ]);
+
+  const nnb05 = readFirstFinite(raw, [
+    "anzahl_bauueberhang_noch_nicht_begonnen_jahr05_kreis",
+    "anzahl_bauueberhang_noch_nicht_begonnen_jahr05_k",
+  ]);
+  const nnu05 = readFirstFinite(raw, [
+    "anzahl_bauueberhang_noch_nicht_unter_dach_jahr05_kreis",
+    "anzahl_bauueberhang_noch_nicht_unter_dach_jahr05_k",
+  ]);
+  const ud05 = readFirstFinite(raw, [
+    "anzahl_bauueberhang_unter_dach_jahr05_kreis",
+    "anzahl_bauueberhang_unter_dach_jahr05_k",
+  ]);
+  const g05 = readFirstFinite(raw, [
+    "anzahl_genehmigungen_jahr05_kreis",
+    "anzahl_genehmigungen_jahr05_k",
+    "anzahl_genehmigung_jahr05_kreis",
+    "anzahl_genehmigung_jahr05_k",
+  ]);
+
+  if (nnb01 === 0) {
+    inputData.bauueberhang_no_data_basis_kreis = true;
+    return;
+  }
+
+  const hasBaseSeries =
+    nnb01 !== null && nnu01 !== null && ud01 !== null && g01 !== null && g01 > 0 &&
+    nnb02 !== null && nnu02 !== null && ud02 !== null && g02 !== null && g02 > 0 &&
+    nnb05 !== null && nnu05 !== null && ud05 !== null && g05 !== null && g05 > 0;
+  if (!hasBaseSeries) {
+    inputData.bauueberhang_no_data_basis_kreis = true;
+    return;
+  }
+
+  const bauQ01 = ((nnb01 + nnu01) / g01) * 100;
+  const bauQ02 = ((nnb02 + nnu02) / g02) * 100;
+  const bauQ05 = ((nnb05 + nnu05) / g05) * 100;
+  const fertQ01 = (ud01 / g01) * 100;
+  const fertQ02 = (ud02 / g02) * 100;
+  const fertQ05 = (ud05 / g05) * 100;
+
+  raw.bauueberhangsquote_jahr01_kreis = bauQ01;
+  raw.bauueberhangsquote_jahr02_kreis = bauQ02;
+  raw.bauueberhangsquote_jahr05_kreis = bauQ05;
+  raw.fertigstellungsquote_jahr01_kreis = fertQ01;
+  raw.fertigstellungsquote_jahr02_kreis = fertQ02;
+  raw.fertigstellungsquote_jahr05_kreis = fertQ05;
+  raw.bauueberhangsquote_kreis = bauQ01;
+  raw.fertigstellungsquote_kreis = fertQ01;
+
+  inputData.bauueberhangsquote_jahr01_kreis = formatValueForKey("bauueberhangsquote_jahr01_kreis", Math.round(bauQ01));
+  inputData.fertigstellungsquote_jahr01_kreis = formatValueForKey("fertigstellungsquote_jahr01_kreis", Math.round(fertQ01));
 }
 
 function pctAbs(current: number | null, previous: number | null) {
@@ -601,6 +762,21 @@ function computeTrendValues(definition: AnyRecord, raw: AnyRecord) {
       continue;
     }
 
+    if (base === "arbeitsplatzzentralitaet") {
+      const direct = raw.arbeitsplatzzentralitaet;
+      const fromK = raw.arbeitsplatzzentralitaet_k;
+      const fromKreis = raw.arbeitsplatzzentralitaet_kreis;
+      const v =
+        typeof direct === "number" ? direct :
+        typeof fromK === "number" ? fromK :
+        typeof fromKreis === "number" ? fromKreis :
+        null;
+      if (typeof v === "number" && Number.isFinite(v) && v > 0) {
+        trends[trendKey] = { index1: v };
+      }
+      continue;
+    }
+
     const indexMatch = base.match(/^(.*)_index(?:_jahr01)?_kreis$/);
     if (indexMatch) {
       const stem = indexMatch[1];
@@ -759,6 +935,60 @@ function expandTrendVerbkonstrukte(definition: AnyRecord, trendValues: AnyRecord
   return options;
 }
 
+function expandQuoteVerbkonstrukte(definition: AnyRecord, baseVars: AnyRecord) {
+  const options: AnyRecord = {};
+  const quoteBlockRaw = definition?.quote_verbkonstrukte;
+  const quoteBlock = quoteBlockRaw && typeof quoteBlockRaw === "object"
+    ? (quoteBlockRaw as Record<string, unknown>)
+    : {};
+
+  const keys = new Set<string>();
+  for (const key of Object.keys(quoteBlock)) {
+    if (key.startsWith("phrases_quote_")) keys.add(key.replace("phrases_quote_", ""));
+    if (key.startsWith("verbkonstrukt_quoteText_")) keys.add(key.replace("verbkonstrukt_quoteText_", ""));
+  }
+
+  for (const varname of keys) {
+    const rawValue = baseVars[varname];
+    const value = typeof rawValue === "number" ? rawValue : Number(rawValue);
+    if (!Number.isFinite(value)) continue;
+
+    const phrasesKey = `phrases_quote_${varname}`;
+    const phrasesByCategoryRaw = quoteBlock[phrasesKey];
+    const phrasesByCategory = phrasesByCategoryRaw && typeof phrasesByCategoryRaw === "object"
+      ? (phrasesByCategoryRaw as Record<string, unknown>)
+      : null;
+    if (!phrasesByCategory) continue;
+
+    const category = classifyOver100Level(value);
+    const phraseEntriesRaw = phrasesByCategory[category];
+    const phraseEntries = Array.isArray(phraseEntriesRaw) ? phraseEntriesRaw : [];
+    if (!phraseEntries.length) continue;
+
+    const renderedPhraseEntries = phraseEntries.map((entry) => ({
+      phrase: renderTemplate(String((entry as AnyRecord)?.phrase ?? entry ?? ""), baseVars),
+      auxiliar: String((entry as AnyRecord)?.auxiliar ?? ""),
+    }));
+
+    options[`quoteText_${varname}`] = renderedPhraseEntries.map((entry) => entry.phrase);
+
+    const vkKey = `verbkonstrukt_quoteText_${varname}`;
+    const vkPatternsRaw = quoteBlock[vkKey];
+    const vkPatterns = Array.isArray(vkPatternsRaw) ? vkPatternsRaw : [];
+    if (!vkPatterns.length) continue;
+
+    const expanded: string[] = [];
+    for (const pattern of vkPatterns as string[]) {
+      for (const entry of renderedPhraseEntries) {
+        expanded.push(renderTemplate(String(pattern), { ...baseVars, phrase: entry.phrase, auxiliar: entry.auxiliar }));
+      }
+    }
+    options[vkKey] = expanded;
+  }
+
+  return options;
+}
+
 function applyTrendBaseVars(trendValues: AnyRecord, baseVars: AnyRecord) {
   for (const [trendKey, trendData] of Object.entries(trendValues ?? {})) {
     if (!trendKey.startsWith("trendText_")) continue;
@@ -840,7 +1070,10 @@ function expandTemplates(templates: AnyRecord, baseVars: AnyRecord, options: Any
 function normalizeGeneratedText(text: string) {
   return String(text)
     .replace(/ {2,}/g, " ")
+    .replace(/\.{2,}/g, ".")
+    .replace(/\.\s*\./g, ".")
     .replace(/ +([,.!?;:])/g, "$1")
+    .replace(/\.{2,}/g, ".")
     .trim();
 }
 
@@ -1202,6 +1435,54 @@ function consumeBlockSelectionRng(rng?: () => number) {
   rng();
 }
 
+function prepareKreisBlockContext(
+  resolvedKey: string,
+  key: string,
+  block: AnyRecord,
+  inputData: AnyRecord,
+  raw: AnyRecord,
+  rng?: () => number,
+) {
+  const trendValues = computeTrendValues(block, raw);
+  const baseVarsRaw = { ...inputData };
+
+  if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
+    if (baseVarsRaw.wanderungssaldo_no_data_beide_kreis) return null;
+    baseVarsRaw.connector_type = deriveWanderungConnectorTypeKreis(trendValues);
+  }
+
+  if (resolvedKey === "wohnmarktsituation_bauueberhang") {
+    if (baseVarsRaw.bauueberhang_no_data_basis_kreis) return null;
+    const bauQuote = toFinite(raw.bauueberhangsquote_kreis);
+    const fertQuote = toFinite(raw.fertigstellungsquote_kreis);
+    if (bauQuote !== null) baseVarsRaw.bauueberhangsquote_kreis = Math.round(bauQuote);
+    if (fertQuote !== null) baseVarsRaw.fertigstellungsquote_kreis = Math.round(fertQuote);
+  }
+
+  const guardKey = "trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland";
+  if (!(guardKey in trendValues)) {
+    const aRaw = raw["guenstigster_immobilienpreis_wert"];
+    const bRaw = raw["immobilienpreise_mittel_jahr01_bundesland"];
+    const a = typeof aRaw === "number" ? aRaw : Number(aRaw);
+    const b = typeof bRaw === "number" ? bRaw : Number(bRaw);
+    if (Number.isFinite(a) && Number.isFinite(b)) {
+      trendValues[guardKey] = { direct_comparison: { value_a: a, value_b: b } };
+    }
+  }
+
+  applyTrendBaseVars(trendValues, baseVarsRaw);
+  const scoringOptions = buildScoringPlaceholderOptions(block, baseVarsRaw, key);
+  const baseVars = Object.keys(scoringOptions).length
+    ? baseVarsRaw
+    : enrichBaseVarsForScoring(block, baseVarsRaw, key, rng);
+  const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
+  const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
+  const quoteOptions = expandQuoteVerbkonstrukte(block, baseVars);
+  const options = { ...staticOptions, ...trendOptions, ...quoteOptions, ...scoringOptions };
+
+  return { baseVars, options };
+}
+
 export function generateKreisTextVariants(key: string, inputs: AnyRecord, rng?: () => number) {
   const definition = computeTextDefinition(key);
   if (!definition) return [];
@@ -1211,24 +1492,14 @@ export function generateKreisTextVariants(key: string, inputs: AnyRecord, rng?: 
   const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
   if (!blocks.length) return [];
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_kreis) return [];
+  if (resolvedKey === "wohnmarktsituation_bauueberhang" && inputData.bauueberhang_no_data_basis_kreis) return [];
   consumeBlockSelectionRng(rng);
 
   const allVariants: string[] = [];
   for (const block of blocks) {
-    const trendValues = computeTrendValues(block, raw);
-    const baseVarsRaw = { ...inputData };
-    if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
-      baseVarsRaw.connector_type = deriveWanderungConnectorTypeKreis(trendValues);
-    }
-    applyTrendBaseVars(trendValues, baseVarsRaw);
-    const scoringOptions = buildScoringPlaceholderOptions(block, baseVarsRaw, key);
-    const baseVars = Object.keys(scoringOptions).length
-      ? baseVarsRaw
-      : enrichBaseVarsForScoring(block, baseVarsRaw, key, rng);
-    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
-    const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
-    const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
-    const variants = expandTemplates(toRecord(block.templates), baseVars, options);
+    const prepared = prepareKreisBlockContext(resolvedKey, key, block, inputData, raw, rng);
+    if (!prepared) continue;
+    const variants = expandTemplates(toRecord(block.templates), prepared.baseVars, prepared.options);
     allVariants.push(...variants);
   }
 
@@ -1244,28 +1515,18 @@ export function countKreisTextVariants(key: string, inputs: AnyRecord, rng?: () 
   const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
   if (!blocks.length) return 0;
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_kreis) return 0;
+  if (resolvedKey === "wohnmarktsituation_bauueberhang" && inputData.bauueberhang_no_data_basis_kreis) return 0;
   consumeBlockSelectionRng(rng);
 
   let total = 0;
   for (const block of blocks) {
-    const trendValues = computeTrendValues(block, raw);
-    const baseVarsRaw = { ...inputData };
-    if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
-      baseVarsRaw.connector_type = deriveWanderungConnectorTypeKreis(trendValues);
-    }
-    applyTrendBaseVars(trendValues, baseVarsRaw);
-    const scoringOptions = buildScoringPlaceholderOptions(block, baseVarsRaw, key);
-    const baseVars = Object.keys(scoringOptions).length
-      ? baseVarsRaw
-      : enrichBaseVarsForScoring(block, baseVarsRaw, key, rng);
-    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
-    const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
-    const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
+    const prepared = prepareKreisBlockContext(resolvedKey, key, block, inputData, raw, rng);
+    if (!prepared) continue;
     const templates = toRecord(block.templates);
     for (const list of Object.values(templates)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
-        total += countTemplateVariants(String(tpl), options);
+        total += countTemplateVariants(String(tpl), prepared.options);
       }
     }
   }
@@ -1281,27 +1542,17 @@ export function* iterateKreisTextVariants(key: string, inputs: AnyRecord, rng?: 
   const blocks = Array.isArray(blocksRaw) ? (blocksRaw as AnyRecord[]) : [];
   if (!blocks.length) return;
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_kreis) return;
+  if (resolvedKey === "wohnmarktsituation_bauueberhang" && inputData.bauueberhang_no_data_basis_kreis) return;
   consumeBlockSelectionRng(rng);
 
   for (const block of blocks) {
-    const trendValues = computeTrendValues(block, raw);
-    const baseVarsRaw = { ...inputData };
-    if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
-      baseVarsRaw.connector_type = deriveWanderungConnectorTypeKreis(trendValues);
-    }
-    applyTrendBaseVars(trendValues, baseVarsRaw);
-    const scoringOptions = buildScoringPlaceholderOptions(block, baseVarsRaw, key);
-    const baseVars = Object.keys(scoringOptions).length
-      ? baseVarsRaw
-      : enrichBaseVarsForScoring(block, baseVarsRaw, key, rng);
-    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
-    const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
-    const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
+    const prepared = prepareKreisBlockContext(resolvedKey, key, block, inputData, raw, rng);
+    if (!prepared) continue;
     const templates = toRecord(block.templates);
     for (const list of Object.values(templates)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
-        yield* iterateTemplateVariants(String(tpl), options, baseVars);
+        yield* iterateTemplateVariants(String(tpl), prepared.options, prepared.baseVars);
       }
     }
   }
@@ -1318,33 +1569,25 @@ export function sampleKreisTextVariants(key: string, inputs: AnyRecord, sampleSi
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo" && inputData.wanderungssaldo_no_data_beide_kreis) {
     return { total: 0, samples: [] };
   }
+  if (resolvedKey === "wohnmarktsituation_bauueberhang" && inputData.bauueberhang_no_data_basis_kreis) {
+    return { total: 0, samples: [] };
+  }
   consumeBlockSelectionRng(rng);
 
   const templates: Array<{ template: string; options: AnyRecord; baseVars: AnyRecord; count: number }> = [];
   let total = 0;
 
   for (const block of blocks) {
-    const trendValues = computeTrendValues(block, raw);
-    const baseVarsRaw = { ...inputData };
-    if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
-      baseVarsRaw.connector_type = deriveWanderungConnectorTypeKreis(trendValues);
-    }
-    applyTrendBaseVars(trendValues, baseVarsRaw);
-    const scoringOptions = buildScoringPlaceholderOptions(block, baseVarsRaw, key);
-    const baseVars = Object.keys(scoringOptions).length
-      ? baseVarsRaw
-      : enrichBaseVarsForScoring(block, baseVarsRaw, key, rng);
-    const staticOptions = expandStaticVerbkonstrukte(toRecord(block.static_verbkonstrukte), baseVars);
-    const trendOptions = expandTrendVerbkonstrukte(block, trendValues, baseVars);
-    const options = { ...staticOptions, ...trendOptions, ...scoringOptions };
+    const prepared = prepareKreisBlockContext(resolvedKey, key, block, inputData, raw, rng);
+    if (!prepared) continue;
     const tplMap = toRecord(block.templates);
     for (const list of Object.values(tplMap)) {
       if (!Array.isArray(list)) continue;
       for (const tpl of list) {
         const rawTpl = String(tpl);
-        const count = countTemplateVariants(rawTpl, options);
+        const count = countTemplateVariants(rawTpl, prepared.options);
         total += count;
-        templates.push({ template: rawTpl, options, baseVars, count });
+        templates.push({ template: rawTpl, options: prepared.options, baseVars: prepared.baseVars, count });
       }
     }
   }
@@ -1512,6 +1755,7 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
   const trendValues = computeTrendValues(block, raw);
   const localInput = { ...inputData };
   let connectorConfig: AnyRecord | undefined;
+  let quoteValues: AnyRecord | undefined;
 
   if (resolvedKey === "wohnmarktsituation_wanderungssaldo") {
     if (localInput.wanderungssaldo_no_data_beide_kreis) {
@@ -1542,6 +1786,51 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
     localInput.connector_type = connectorType;
   }
 
+  if (resolvedKey === "wohnmarktsituation_bauueberhang") {
+    if (localInput.bauueberhang_no_data_basis_kreis) {
+      return "";
+    }
+    const bauQuote = toFinite(raw.bauueberhangsquote_kreis);
+    const fertQuote = toFinite(raw.fertigstellungsquote_kreis);
+    if (bauQuote !== null && fertQuote !== null) {
+      quoteValues = {
+        bauueberhangsquote_kreis: Math.round(bauQuote),
+        fertigstellungsquote_kreis: Math.round(fertQuote),
+      };
+    }
+  }
+
+  if (resolvedKey === "wirtschaft_sv_beschaeftigte_arbeits_und_wohnort") {
+    const hasArbeitsortTrend = Boolean(trendValues.trendText_sv_pflichtig_beschaeftigte_arbeitsort_5jahrestrend_kreis);
+    const hasWohnortTrend = Boolean(trendValues.trendText_sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis);
+
+    if (!hasArbeitsortTrend && hasWohnortTrend) {
+      localInput.sondertext_beschaeftigte_arbeitsort =
+        "Für den Arbeitsort liegen derzeit keine belastbaren Vergleichsdaten vor.";
+      localInput.sondertext_beschaeftigte_wohnort =
+        `Am Wohnort liegt die Zahl der Beschäftigten aktuell bei ${localInput.sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis}.`;
+    } else if (hasArbeitsortTrend && !hasWohnortTrend) {
+      localInput.sondertext_beschaeftigte_wohnort =
+        "Für den Wohnort liegen derzeit keine belastbaren Vergleichsdaten vor.";
+      localInput.sondertext_beschaeftigte_arbeitsort =
+        `Am Arbeitsort liegt die Zahl der Beschäftigten aktuell bei ${localInput.sv_pflichtig_beschaeftigte_arbeitsort_jahr01_kreis}.`;
+    } else if (!hasArbeitsortTrend && !hasWohnortTrend) {
+      localInput.sondertext_beschaeftigte_arbeitsort =
+        "Für Arbeits- und Wohnort liegen derzeit keine belastbaren Vergleichsdaten vor.";
+      localInput.sondertext_beschaeftigte_wohnort = "";
+    }
+  }
+
+  if (resolvedKey === "wirtschaft_sv_beschaeftigte_wohnort") {
+    const hasWohnortTrend = Boolean(trendValues.trendText_sv_pflichtig_beschaeftigte_wohnort_5jahrestrend_kreis);
+    if (!hasWohnortTrend) {
+      const current = String(localInput.sv_pflichtig_beschaeftigte_wohnort_jahr01_kreis ?? "").trim();
+      localInput.sondertext_beschaeftigte_wohnort = current
+        ? `Aktuell liegt die Zahl der Wohnort-Beschäftigten bei ${current}. Für den Fünfjahrestrend liegen derzeit keine belastbaren Vergleichsdaten vor.`
+        : "Für die Wohnort-Beschäftigten liegen derzeit keine belastbaren Vergleichsdaten vor.";
+    }
+  }
+
   const guardKey = "trendText_guenstigster_immobilienpreis_vergleich_kreis_bundesland";
   if (!(guardKey in trendValues)) {
     const aRaw = raw["guenstigster_immobilienpreis_wert"];
@@ -1552,7 +1841,7 @@ function generateFromDefinition(defKey: string, inputData: AnyRecord, raw: AnyRe
       trendValues[guardKey] = { direct_comparison: { value_a: a, value_b: b } };
     }
   }
-  return generateText(block, localInput, trendValues, resolvedKey, undefined, connectorConfig, rng);
+  return generateText(block, localInput, trendValues, resolvedKey, quoteValues, connectorConfig, rng);
 }
 
 function deriveWanderungConnectorTypeKreis(trendValues: AnyRecord) {
@@ -1576,7 +1865,7 @@ export function generateKreisPriceTexts(
     if (allowedKeys && !allowedKeys.has(key)) continue;
     if (!updated[group]) continue;
     const textValue = generateFromDefinition(key, inputData, raw, rngByKey ? rngByKey(key) : undefined);
-    if (textValue) {
+    if (textValue !== null && textValue !== undefined) {
       updated[group] = { ...updated[group], [key]: textValue };
     }
   }
