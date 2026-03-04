@@ -1,177 +1,87 @@
-// app/page.tsx
-
-import Link from "next/link";
-import {
-  getBundeslaender,
-  getKreiseForBundesland,
-  getOrteForKreis,
-} from "@/lib/data";
-
-export default async function HomePage() {
-  const bundeslaender = await getBundeslaender();
-
-  // Struktur: Bundesland -> Kreise -> Ortslagen
-  const struktur = await Promise.all(
-    bundeslaender.map(async (bl) => {
-      const kreise = await getKreiseForBundesland(bl.slug);
-      const kreiseWithOrte = await Promise.all(
-        kreise.map(async (kreis) => ({
-          ...kreis,
-          orte: await getOrteForKreis(bl.slug, kreis.slug),
-        })),
-      );
-      return { ...bl, kreise: kreiseWithOrte };
-    }),
-  );
-
+export default function ImpressumPage() {
   return (
-    <div className="text-dark">
-      {/* Konzept */}
-      <section id="konzept" className="mb-5">
-        <div className="d-inline-flex align-items-center gap-2 rounded-pill border border-warning bg-warning px-3 py-1 text-uppercase small fw-semibold">
-          <span
-            style={{
-              width: "6px",
-              height: "6px",
-              borderRadius: "50%",
-              backgroundColor: "#000",
-              display: "inline-block",
-            }}
-          />
-          Technisches Demo · GEO &amp; LLM-ready
-        </div>
+    <div className="container py-4 text-dark">
+      <h1 className="h2 mb-4">Impressum</h1>
 
-        <h1 className="mt-3 mb-2 h3">
-          Wohnlagencheck24 – Immobilienmarkt &amp; Standortprofile
-        </h1>
-        <p className="small text-muted mb-2">
-          Wohnlagencheck24 stellt strukturierte Informationen zu Wohnlagen,
-          Standorten und regionalen Immobilienmärkten bereit. Die Inhalte sind
-          so aufgebaut, dass sie für Nutzer, klassische Suchmaschinen und
-          KI-Suchsysteme gleichermaßen gut auswertbar sind.
+      <section className="mb-4">
+        <h2 className="h5">ANGABEN GEMASS §5 TMG:</h2>
+        <p className="mb-0">wohnlagencheck24 UG (haftungsbeschrankt)</p>
+        <p className="mb-0">Racknitzhohe 35A</p>
+        <p className="mb-0">01217 Dresden</p>
+        <p className="mb-0 mt-3">Handelsregister: in Grundung beantragt</p>
+        <p className="mb-0">Registergericht: Amtsgericht Dresden</p>
+        <p className="mb-0 mt-3">Vertreten durch die Geschaftsfuhrer:</p>
+        <p className="mb-0">Christopher Kossack</p>
+      </section>
+
+      <section className="mb-4">
+        <h2 className="h5">KONTAKT</h2>
+        <p className="mb-0">Telefon: 0351 / 28 70 51 - 0</p>
+        <p className="mb-0">Telefax: 0351 / 28 70 51 - 90</p>
+        <p className="mb-0">E-Mail: info@praxiswissen-immobilien.de</p>
+        <p className="mb-0">E-Mail: info@wohnlagencheck24.de</p>
+      </section>
+
+      <section className="mb-4">
+        <h2 className="h5">UMSATZSTEUER-ID</h2>
+        <p className="mb-0">
+          Umsatzsteuer-Identifikationsnummer gemaß §27 a Umsatzsteuergesetz
         </p>
-        <p className="small text-muted mb-0">
-          Dieses Demo bildet den technischen Unterbau für ein späteres Portal
-          mit vielen tausend Wohnlagen – inklusive klarer URL-Struktur und
-          Einstieg über Bundesländer, Landkreise und Wohnlagen.
+        <p className="mb-0">in Grundung beantragt</p>
+      </section>
+
+      <section className="mb-4">
+        <p className="mb-0">
+          Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer
+          Verbraucherschlichtungsstelle teilzunehmen.
         </p>
       </section>
 
-      {/* Immobilienmarkt & Standortprofile */}
-      <section
-        id="immobilienmarkt-standortprofile"
-        className="mb-4"
-        aria-labelledby="immobilienmarkt-standortprofile-heading"
-      >
-        <h2 id="immobilienmarkt-standortprofile-heading" className="h4 mb-2">
-          Immobilienmarkt &amp; Standortprofile
-        </h2>
-        <p className="small text-muted mb-3">
-          Der Einstieg in die Standortprofile erfolgt über die Bundesländer.
-          Innerhalb eines Bundeslandes sind die erfassten Landkreise und
-          ausgewählte Wohnlagen aufgeführt. Die Detailseiten folgen der
-          Hierarchie:
-          <br />
-          <code>/immobilienmarkt/&lt;bundesland&gt;/&lt;kreis&gt;/&lt;wohnlage&gt;</code>
+      <section className="mb-4">
+        <h2 className="h5">HAFTUNG FUR INHALTE</h2>
+        <p>
+          Als Diensteanbieter sind wir gemaß § 7 Abs.1 TMG fur eigene Inhalte auf diesen Seiten nach den allgemeinen
+          Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet,
+          ubermittelte oder gespeicherte fremde Informationen zu uberwachen oder nach Umstanden zu forschen, die auf
+          eine rechtswidrige Tatigkeit hinweisen.
         </p>
-
-        <p className="small mb-3">
-          Alternativ kannst du direkt über den Menüpunkt{" "}
-          <Link href="/immobilienmarkt" className="link-primary">
-            Immobilienmarkt &amp; Standortprofile
-          </Link>{" "}
-          in die hierarchische Übersicht einsteigen.
+        <p>
+          Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen
+          bleiben hiervon unberuhrt. Eine diesbezugliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer
+          konkreten Rechtsverletzung moglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese
+          Inhalte umgehend entfernen.
         </p>
       </section>
 
-      {/* Bundesländer + Kreise + Wohnlagen */}
-      <section
-        aria-label="Wohnlagen nach Bundesland und Landkreis"
-        className="mb-5"
-      >
-        {struktur.map((bl) => (
-          <section
-            key={bl.slug}
-            id={`bundeslaender-${bl.slug}`}
-            className="mb-4"
-          >
-            <h3 className="h5 mb-3">
-              <Link
-                href={`/immobilienmarkt/${bl.slug}`}
-                className="link-dark text-decoration-none"
-              >
-                {bl.name}
-              </Link>
-            </h3>
-
-            <div className="row g-3">
-              {bl.kreise.map((kreis) => (
-                <div key={kreis.slug} className="col-12 col-md-6">
-                  <div className="card border-0 shadow-sm h-100">
-                    <div className="card-body">
-                      <h4 className="h6 mb-2">
-                        <Link
-                          href={`/immobilienmarkt/${bl.slug}/${kreis.slug}`}
-                          className="link-dark text-decoration-none"
-                        >
-                          Landkreis {kreis.name}
-                        </Link>
-                      </h4>
-                      <ul className="list-unstyled mb-0 small">
-                        {kreis.orte.map((ort) => (
-                          <li key={ort.slug} className="mb-1">
-                            <Link
-                              href={`/immobilienmarkt/${bl.slug}/${kreis.slug}/${ort.slug}`}
-                              className="link-primary"
-                            >
-                              {ort.name}
-                            </Link>
-                          </li>
-                        ))}
-                        {kreis.orte.length === 0 && (
-                          <li className="text-muted">
-                            (Für diesen Landkreis sind noch keine einzelnen
-                            Wohnlagen hinterlegt.)
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {bl.kreise.length === 0 && (
-                <div className="col-12">
-                  <p className="small text-muted mb-0">
-                    Für dieses Bundesland liegen aktuell noch keine Kreisdaten
-                    vor.
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-        ))}
-
-        {struktur.length === 0 && (
-          <p className="small text-muted mb-0">
-            Es wurden noch keine Reports in der Datenstruktur hinterlegt.
-          </p>
-        )}
+      <section className="mb-4">
+        <h2 className="h5">HAFTUNG FUR LINKS</h2>
+        <p>
+          Unser Angebot enthalt Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen Einfluss haben.
+          Deshalb konnen wir fur diese fremden Inhalte auch keine Gewahr ubernehmen. Fur die Inhalte der verlinkten
+          Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten
+          wurden zum Zeitpunkt der Verlinkung auf mogliche Rechtsverstoße uberpruft. Rechtswidrige Inhalte waren zum
+          Zeitpunkt der Verlinkung nicht erkennbar.
+        </p>
+        <p>
+          Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer
+          Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links
+          umgehend entfernen.
+        </p>
       </section>
 
-      {/* Weitere Inhalte */}
-      <section id="inhalte" className="pt-3 border-top">
-        <h2 className="h4 mb-2">Weitere Inhalte</h2>
-        <p className="small text-muted mb-1">
-          Hier können später zusätzliche Inhalte entstehen – zum Beispiel
-          methodische Erläuterungen zum Wohnlagenmodell, regionale
-          Vergleichsanalysen oder ein Glossar wichtiger Begriffe rund um
-          Immobilienmärkte und Standorte.
+      <section>
+        <h2 className="h5">URHEBERRECHT</h2>
+        <p>
+          Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen
+          Urheberrecht. Die Vervielfaltigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der
+          Grenzen des Urheberrechtes bedurfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.
+          Downloads und Kopien dieser Seite sind nur fur den privaten, nicht kommerziellen Gebrauch gestattet.
         </p>
-        <p className="small text-muted mb-0">
-          Die Musterseite zeigt verschiedene Inhaltstypen, die später auf
-          Wohnlagen- und Marktprofilseiten eingesetzt werden können: Tabellen,
-          Grids, Formulare und Chart-Platzhalter.
+        <p>
+          Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter
+          beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine
+          Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von
+          Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.
         </p>
       </section>
     </div>
