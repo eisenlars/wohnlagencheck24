@@ -227,6 +227,70 @@ function setTextIfMissing(textTree: TextTree, sectionKey: string, value: string)
   return true;
 }
 
+const ORTSLAGE_BERATER_FALLBACK_KEYS = [
+  "berater_name",
+  "berater_email",
+  "berater_telefon_fest",
+  "berater_telefon_mobil",
+  "berater_telefon",
+  "berater_adresse_strasse",
+  "berater_adresse_hnr",
+  "berater_adresse_plz",
+  "berater_adresse_ort",
+  "berater_beschreibung",
+  "berater_ausbildung",
+  "media_berater_avatar",
+] as const;
+
+const ORTSLAGE_MAKLER_FALLBACK_KEYS = [
+  "makler_name",
+  "makler_email",
+  "makler_telefon_fest",
+  "makler_telefon_mobil",
+  "makler_adresse_strasse",
+  "makler_adresse_hnr",
+  "makler_adresse_plz",
+  "makler_adresse_ort",
+  "makler_empfehlung",
+  "makler_beschreibung",
+  "makler_benefits",
+  "makler_provision",
+  "media_makler_logo",
+  "media_makler_bild_01",
+  "media_makler_bild_02",
+] as const;
+
+async function resolveScopedPartnerIdForArea(
+  supabase: SupabaseClientLike,
+  areaId: string,
+): Promise<string | null> {
+  const normalizedAreaId = String(areaId ?? "").trim();
+  if (!normalizedAreaId) return null;
+
+  const partnerMapRes = await (supabase as unknown as {
+    from: (table: string) => {
+      select: (columns: string) => {
+        eq: (column: string, value: unknown) => {
+          eq: (column: string, value: unknown) => Promise<{ data?: Array<{ auth_user_id?: string | null }> | null }>;
+        };
+      };
+    };
+  })
+    .from("partner_area_map")
+    .select("auth_user_id")
+    .eq("area_id", normalizedAreaId)
+    .eq("is_active", true);
+
+  const partnerIds = Array.from(
+    new Set(
+      (partnerMapRes?.data ?? [])
+        .map((row) => String(row?.auth_user_id ?? "").trim())
+        .filter((value) => value.length > 0),
+    ),
+  );
+  return partnerIds.length === 1 ? partnerIds[0] : null;
+}
+
 async function loadActiveKreisSlugsForBundeslandLive(bundeslandSlug: string): Promise<Set<string>> {
   const fallback = await getActiveKreisSlugsForBundesland(bundeslandSlug);
   try {
@@ -367,28 +431,7 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
   // DB-Overrides: approved report_texts überschreiben JSON-Texte (if present)
   if (areaId) {
     const supabase = createAdminClient() as unknown as SupabaseClientLike;
-    const partnerMapRes = await (supabase as unknown as {
-      from: (table: string) => {
-        select: (columns: string) => {
-          eq: (column: string, value: unknown) => {
-            eq: (column: string, value: unknown) => Promise<{ data?: Array<{ auth_user_id?: string | null }> | null }>;
-          };
-        };
-      };
-    })
-      .from("partner_area_map")
-      .select("auth_user_id")
-      .eq("area_id", areaId)
-      .eq("is_active", true);
-
-    const partnerIds = Array.from(
-      new Set(
-        (partnerMapRes?.data ?? [])
-          .map((row) => String(row?.auth_user_id ?? "").trim())
-          .filter((value) => value.length > 0),
-      ),
-    );
-    const scopedPartnerId = partnerIds.length === 1 ? partnerIds[0] : null;
+    const scopedPartnerId = await resolveScopedPartnerIdForArea(supabase, areaId);
     const overrides = scopedPartnerId
       ? await getApprovedReportTexts(supabase, areaId, scopedPartnerId)
       : [];
@@ -404,34 +447,58 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
     }
   }
 
-  // Ortsebene: fehlende Berater-/Maklerdaten aus Kreisreport ergänzen
+  // Ortsebene: Berater-/Maklerdaten key-basiert aus Kreisreport ergänzen
   if (route.level === "ort") {
-    const kreisReport =
+    let kreisReport =
       route.regionSlugs.length >= 2
         ? await getReportBySlugs(route.regionSlugs.slice(0, 2))
         : null;
-    const ortText = asRecord(report["text"]) ?? {};
-    const ortHasBerater = Boolean(asRecord(ortText["berater"])?.["berater_name"]);
-    const ortHasMakler = Boolean(asRecord(ortText["makler"])?.["makler_name"]);
 
-    if (kreisReport && (!ortHasBerater || !ortHasMakler)) {
+    if (kreisReport) {
+      const supabase = createAdminClient() as unknown as SupabaseClientLike;
+      const kreisMeta = asRecord(asArray(kreisReport.meta)[0] ?? kreisReport.meta) ?? {};
+      const kreisAreaId = asString(kreisMeta["kreis_schluessel"]) ?? "";
+      if (kreisAreaId) {
+        const scopedPartnerId = await resolveScopedPartnerIdForArea(supabase, kreisAreaId);
+        const overrides = scopedPartnerId
+          ? await getApprovedReportTexts(supabase, kreisAreaId, scopedPartnerId)
+          : [];
+        if (overrides.length > 0) {
+          const mergedKreisText = applyOverridesToTextTree(
+            getTextTree(kreisReport),
+            overrides.map((entry) => ({
+              section_key: entry.section_key,
+              optimized_content: entry.optimized_content,
+            })),
+          );
+          kreisReport = withTextTree(kreisReport, mergedKreisText);
+        }
+      }
+
+      const ortText = asRecord(report["text"]) ?? {};
       const kreisData = asRecord(kreisReport.data) ?? {};
       const kreisText = asRecord(kreisReport["text"]) ?? asRecord(kreisData["text"]) ?? {};
       const mergedText = {
         ...kreisText,
         ...ortText,
-        berater: ortHasBerater ? ortText["berater"] : kreisText["berater"],
-        makler: ortHasMakler ? ortText["makler"] : kreisText["makler"],
-      };
-
-      report = {
-        ...report,
-        text: mergedText,
-        data: {
-          ...(asRecord(report.data) ?? {}),
-          text: mergedText,
+        berater: {
+          ...(asRecord(kreisText["berater"]) ?? {}),
+          ...(asRecord(ortText["berater"]) ?? {}),
+        },
+        makler: {
+          ...(asRecord(kreisText["makler"]) ?? {}),
+          ...(asRecord(ortText["makler"]) ?? {}),
         },
       };
+      const mergedTree = toTextTree(mergedText);
+      const kreisTree = toTextTree(kreisText);
+      for (const key of ORTSLAGE_BERATER_FALLBACK_KEYS) {
+        setTextIfMissing(mergedTree, key, findTextBySectionKey(kreisTree, key));
+      }
+      for (const key of ORTSLAGE_MAKLER_FALLBACK_KEYS) {
+        setTextIfMissing(mergedTree, key, findTextBySectionKey(kreisTree, key));
+      }
+      report = withTextTree(report, mergedTree);
     }
   }
 
