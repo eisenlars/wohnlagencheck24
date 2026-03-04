@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { validateOutboundUrl } from "@/lib/security/outbound-url";
 
 type IntegrationRow = {
   id: string;
@@ -19,6 +20,15 @@ type IntegrationRow = {
 function asText(value: unknown): string | null {
   const v = String(value ?? "").trim();
   return v.length > 0 ? v : null;
+}
+
+function asFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 async function requirePartnerUser(req: Request): Promise<string> {
@@ -127,7 +137,21 @@ export async function POST(
       });
     }
 
-    if (!baseUrl) {
+    const defaultLlmBaseUrlByProvider: Record<string, string> = {
+      openai: "https://api.openai.com/v1",
+      azure_openai: "https://api.openai.com/v1",
+      mistral: "https://api.mistral.ai/v1",
+      generic_llm: "https://api.openai.com/v1",
+      anthropic: "https://api.anthropic.com/v1",
+      google_gemini: "https://generativelanguage.googleapis.com/v1beta",
+    };
+    const llmSettings = (integration.settings ?? {}) as Record<string, unknown>;
+    const resolvedBaseUrl =
+      baseUrl ??
+      asText(llmSettings.base_url) ??
+      (integration.kind === "llm" ? defaultLlmBaseUrlByProvider[integration.provider] ?? null : null);
+
+    if (!resolvedBaseUrl) {
       const result = {
         status: "error" as const,
         message: "Keine base_url konfiguriert.",
@@ -138,22 +162,140 @@ export async function POST(
         result,
       });
     }
+    const baseUrlCheck = await validateOutboundUrl(resolvedBaseUrl);
+    if (!baseUrlCheck.ok) {
+      const result = {
+        status: "error" as const,
+        message: `Base URL blockiert (${baseUrlCheck.reason}).`,
+      };
+      await persistTestResult(admin, integration, result);
+      return NextResponse.json({ ok: true, result });
+    }
 
-    const headers: HeadersInit = { accept: "application/json, text/plain, */*" };
     const authType = asText(integration.auth_type)?.toLowerCase() ?? "";
     const token = asText(authConfig.token);
     const apiKey = asText(authConfig.api_key);
-    if (authType.includes("bearer") && token) {
-      headers["authorization"] = `Bearer ${token}`;
-    } else if (apiKey) {
-      headers["x-api-key"] = apiKey;
-    }
+    const model = asText(integration.settings?.model) ?? asText(integration.settings?.model_name);
 
     let res: Response;
     try {
-      res = await fetchWithTimeout(baseUrl, { method: "HEAD", headers });
-      if (res.status === 405 || res.status === 501) {
-        res = await fetchWithTimeout(baseUrl, { method: "GET", headers });
+      if (integration.kind === "crm" && integration.provider === "propstack") {
+        if (!apiKey) {
+          const result = {
+            status: "error" as const,
+            message: "Propstack API-Key fehlt (Secret api_key).",
+          };
+          await persistTestResult(admin, integration, result);
+          return NextResponse.json({ ok: true, result });
+        }
+        const url = `${resolvedBaseUrl.replace(/\/+$/, "")}/units?per=1&page=1`;
+        const targetCheck = await validateOutboundUrl(url);
+        if (!targetCheck.ok) {
+          const result = {
+            status: "error" as const,
+            message: `Ziel-URL blockiert (${targetCheck.reason}).`,
+          };
+          await persistTestResult(admin, integration, result);
+          return NextResponse.json({ ok: true, result });
+        }
+        res = await fetchWithTimeout(url, {
+          method: "GET",
+          headers: {
+            accept: "application/json, text/plain, */*",
+            "x-api-key": apiKey,
+          },
+        });
+      } else if (integration.kind === "llm") {
+        if (!apiKey) {
+          const result = {
+            status: "error" as const,
+            message: "LLM API-Key fehlt (Secret api_key).",
+          };
+          await persistTestResult(admin, integration, result);
+          return NextResponse.json({ ok: true, result });
+        }
+        if (!model) {
+          const result = {
+            status: "error" as const,
+            message: "LLM Modell fehlt (settings.model).",
+          };
+          await persistTestResult(admin, integration, result);
+          return NextResponse.json({ ok: true, result });
+        }
+
+        if (integration.provider === "google_gemini") {
+          const normalizedBase = resolvedBaseUrl.replace(/\/+$/, "");
+          const url = `${normalizedBase}/models?key=${encodeURIComponent(apiKey)}`;
+          const targetCheck = await validateOutboundUrl(url);
+          if (!targetCheck.ok) {
+            const result = {
+              status: "error" as const,
+              message: `Ziel-URL blockiert (${targetCheck.reason}).`,
+            };
+            await persistTestResult(admin, integration, result);
+            return NextResponse.json({ ok: true, result });
+          }
+          res = await fetchWithTimeout(url, {
+            method: "GET",
+            headers: { accept: "application/json, text/plain, */*" },
+          });
+        } else if (integration.provider === "anthropic") {
+          const normalizedBase = resolvedBaseUrl.replace(/\/+$/, "");
+          const url = `${normalizedBase}/messages`;
+          const targetCheck = await validateOutboundUrl(url);
+          if (!targetCheck.ok) {
+            const result = {
+              status: "error" as const,
+              message: `Ziel-URL blockiert (${targetCheck.reason}).`,
+            };
+            await persistTestResult(admin, integration, result);
+            return NextResponse.json({ ok: true, result });
+          }
+          res = await fetchWithTimeout(url, {
+            method: "POST",
+            headers: {
+              accept: "application/json, text/plain, */*",
+              "content-type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+              model,
+              max_tokens: Math.max(1, Math.floor(asFiniteNumber(llmSettings.max_tokens) ?? 64)),
+              messages: [{ role: "user", content: "ping" }],
+            }),
+          });
+        } else {
+          const normalizedBase = resolvedBaseUrl.replace(/\/+$/, "");
+          const url = `${normalizedBase}/models`;
+          const targetCheck = await validateOutboundUrl(url);
+          if (!targetCheck.ok) {
+            const result = {
+              status: "error" as const,
+              message: `Ziel-URL blockiert (${targetCheck.reason}).`,
+            };
+            await persistTestResult(admin, integration, result);
+            return NextResponse.json({ ok: true, result });
+          }
+          res = await fetchWithTimeout(url, {
+            method: "GET",
+            headers: {
+              accept: "application/json, text/plain, */*",
+              authorization: `Bearer ${apiKey}`,
+            },
+          });
+        }
+      } else {
+        const headers: HeadersInit = { accept: "application/json, text/plain, */*" };
+        if (authType.includes("bearer") && token) {
+          headers.authorization = `Bearer ${token}`;
+        } else if (apiKey) {
+          headers["x-api-key"] = apiKey;
+        }
+        res = await fetchWithTimeout(resolvedBaseUrl, { method: "HEAD", headers });
+        if (res.status === 405 || res.status === 501) {
+          res = await fetchWithTimeout(resolvedBaseUrl, { method: "GET", headers });
+        }
       }
     } catch (error) {
       const result = {

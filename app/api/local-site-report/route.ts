@@ -120,6 +120,38 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Area not found" }, { status: 404 });
   }
 
+  let { data: accessMapping } = await supabase
+    .from("partner_area_map")
+    .select("id")
+    .eq("auth_user_id", integration.partner_id)
+    .eq("area_id", areaId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (!accessMapping && ortslage) {
+    const { data: parentKreis } = await supabase
+      .from("areas")
+      .select("id")
+      .eq("bundesland_slug", bundesland)
+      .eq("slug", kreis)
+      .eq("parent_slug", bundesland)
+      .maybeSingle();
+    if (parentKreis?.id) {
+      const parentAccess = await supabase
+        .from("partner_area_map")
+        .select("id")
+        .eq("auth_user_id", integration.partner_id)
+        .eq("area_id", parentKreis.id)
+        .eq("is_active", true)
+        .maybeSingle();
+      accessMapping = parentAccess.data ?? null;
+    }
+  }
+
+  if (!accessMapping) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const reportPath = ortslage
     ? ["reports", "deutschland", bundesland, kreis, `${ortslage}.json`]
     : ["reports", "deutschland", bundesland, `${kreis}.json`];

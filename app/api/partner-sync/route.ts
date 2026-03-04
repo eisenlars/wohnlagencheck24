@@ -36,8 +36,7 @@ function extractToken(req: Request): string {
   }
   const cronHeader = req.headers.get("x-cron-token");
   if (cronHeader) return cronHeader.trim();
-  const url = new URL(req.url);
-  return (url.searchParams.get("token") ?? "").trim();
+  return "";
 }
 
 function readBoolean(value: unknown): boolean | null {

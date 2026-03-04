@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from '@/lib/security/rate-limit';
+import { validateOutboundUrl } from '@/lib/security/outbound-url';
 
 type LlmConfig = {
   provider: string;
@@ -48,6 +49,11 @@ async function callOpenAICompatible({
   user: string;
 }) {
   const url = `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
+  const outboundCheck = await validateOutboundUrl(url);
+  if (!outboundCheck.ok) {
+    console.error('LLM URL blocked:', outboundCheck.reason);
+    return null;
+  }
   const payload = {
     model,
     messages: [
@@ -116,8 +122,8 @@ function buildPrompt(args: {
     `Region: ${areaName}\n` +
     (authorName ? `Autor: ${authorName}\n` : '') +
     '\nQuellen:\n' +
-    `- Individueller Text 01:\n${source.individual01}\n\n` +
-    `- Individueller Text 02:\n${source.individual02}\n\n` +
+    `- Experteneinschätzung Text 01:\n${source.individual01}\n\n` +
+    `- Experteneinschätzung Text 02:\n${source.individual02}\n\n` +
     `- Zitat:\n${source.zitat}\n\n` +
     'Aufgaben:\n' +
     '- Erstelle Headline, Subline und einen Blogartikel (Markdown).\n' +

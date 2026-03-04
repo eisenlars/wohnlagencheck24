@@ -8,7 +8,8 @@ import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/securi
 type CreatePartnerBody = {
   company_name?: string;
   contact_email?: string | null;
-  contact_person?: string | null;
+  contact_first_name?: string | null;
+  contact_last_name?: string | null;
   website_url?: string | null;
   is_active?: boolean;
 };
@@ -16,6 +17,28 @@ type CreatePartnerBody = {
 function isMissingIsActiveColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return msg.includes("partners.is_active") && msg.includes("does not exist");
+}
+
+function isMissingPartnerNameColumns(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  if (!msg.includes("does not exist")) return false;
+  return (
+    msg.includes("partners.contact_first_name")
+    || msg.includes("partners.contact_last_name")
+  );
+}
+
+function withPartnerFallback<T extends Record<string, unknown>>(row: T, includeIsActive: boolean): T & {
+  contact_first_name: null;
+  contact_last_name: null;
+  is_active: boolean;
+} {
+  return {
+    ...row,
+    contact_first_name: null,
+    contact_last_name: null,
+    is_active: includeIsActive ? Boolean((row as { is_active?: unknown }).is_active) : true,
+  };
 }
 
 function normalizeNullableString(value: unknown): string | null {
@@ -38,18 +61,24 @@ export async function POST(req: Request) {
     const body = (await req.json()) as CreatePartnerBody;
     const companyName = normalizeNullableString(body.company_name);
     const contactEmail = normalizeNullableString(body.contact_email)?.toLowerCase() ?? null;
+    const contactFirstName = normalizeNullableString(body.contact_first_name);
+    const contactLastName = normalizeNullableString(body.contact_last_name);
 
-    if (!companyName || !contactEmail) {
+    if (!companyName || !contactEmail || !contactFirstName || !contactLastName) {
       return NextResponse.json(
-        { error: "Missing required fields: company_name, contact_email" },
+        { error: "Missing required fields: company_name, contact_email, contact_first_name, contact_last_name" },
         { status: 400 },
       );
     }
 
     const admin = createAdminClient();
-    const inviteRedirectTo =
-      process.env.PARTNER_INVITE_REDIRECT_URL ??
-      `${new URL(req.url).origin}/partner/setup`;
+    const inviteRedirectTo = normalizeNullableString(process.env.PARTNER_INVITE_REDIRECT_URL);
+    if (!inviteRedirectTo) {
+      return NextResponse.json(
+        { error: "PARTNER_INVITE_REDIRECT_URL missing" },
+        { status: 500 },
+      );
+    }
     const invite = await admin.auth.admin.inviteUserByEmail(contactEmail, {
       redirectTo: inviteRedirectTo,
       data: { role: "partner", company_name: companyName },
@@ -75,30 +104,55 @@ export async function POST(req: Request) {
       id: authUserId,
       company_name: companyName,
       contact_email: contactEmail,
-      contact_person: normalizeNullableString(body.contact_person),
+      contact_first_name: contactFirstName,
+      contact_last_name: contactLastName,
       website_url: normalizeNullableString(body.website_url),
-      is_active: body.is_active === false ? false : true,
+      // Neu angelegte Partner bleiben inaktiv, bis sie ihren Account-Flow abgeschlossen haben.
+      is_active: body.is_active === true ? true : false,
     };
 
     let { data, error } = await admin
       .from("partners")
       .upsert(payload, { onConflict: "id" })
-      .select("id, company_name, contact_email, contact_person, website_url, is_active, created_at")
+      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, created_at")
       .single();
 
-    if (error && isMissingIsActiveColumn(error)) {
+    if (error && (isMissingIsActiveColumn(error) || isMissingPartnerNameColumns(error))) {
+      const missingIsActive = isMissingIsActiveColumn(error);
+      const missingNames = isMissingPartnerNameColumns(error);
+      const fallbackPayload: Record<string, unknown> = {
+        id: authUserId,
+        company_name: companyName,
+        contact_email: contactEmail,
+        website_url: normalizeNullableString(body.website_url),
+      };
+      if (!missingNames) {
+        fallbackPayload.contact_first_name = contactFirstName;
+        fallbackPayload.contact_last_name = contactLastName;
+      }
+      if (!missingIsActive) {
+        fallbackPayload.is_active = body.is_active === true ? true : false;
+      }
+      const fallbackSelect = [
+        "id",
+        "company_name",
+        "contact_email",
+        ...(!missingNames ? ["contact_first_name", "contact_last_name"] : []),
+        "website_url",
+        ...(!missingIsActive ? ["is_active"] : []),
+        "created_at",
+      ].join(", ");
       const fallback = await admin
         .from("partners")
-        .upsert({
-          id: authUserId,
-          company_name: companyName,
-          contact_email: contactEmail,
-          contact_person: normalizeNullableString(body.contact_person),
-          website_url: normalizeNullableString(body.website_url),
-        }, { onConflict: "id" })
-        .select("id, company_name, contact_email, contact_person, website_url, created_at")
+        .upsert(fallbackPayload, { onConflict: "id" })
+        .select(fallbackSelect)
         .single();
-      data = fallback.data ? { ...fallback.data, is_active: true } : null;
+      data = fallback.data
+        ? (withPartnerFallback(
+            fallback.data as unknown as Record<string, unknown>,
+            !missingIsActive,
+          ) as typeof data)
+        : null;
       error = fallback.error;
     }
 
@@ -170,7 +224,7 @@ export async function GET(req: Request) {
     const admin = createAdminClient();
     let query = admin
       .from("partners")
-      .select("id, company_name, contact_email, contact_person, website_url, is_active, created_at")
+      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, created_at")
       .order("company_name", { ascending: true });
 
     if (!includeInactive) {
@@ -178,13 +232,26 @@ export async function GET(req: Request) {
     }
 
     let { data, error } = await query;
-    if (error && isMissingIsActiveColumn(error)) {
+    if (error && (isMissingIsActiveColumn(error) || isMissingPartnerNameColumns(error))) {
+      const missingIsActive = isMissingIsActiveColumn(error);
+      const missingNames = isMissingPartnerNameColumns(error);
+      const fallbackSelect = [
+        "id",
+        "company_name",
+        "contact_email",
+        ...(!missingNames ? ["contact_first_name", "contact_last_name"] : []),
+        "website_url",
+        ...(!missingIsActive ? ["is_active"] : []),
+        "created_at",
+      ].join(", ");
       const fallback = await admin
         .from("partners")
-        .select("id, company_name, contact_email, contact_person, website_url, created_at")
+        .select(fallbackSelect)
         .order("company_name", { ascending: true });
       if (fallback.error) return NextResponse.json({ error: fallback.error.message }, { status: 500 });
-      data = (fallback.data ?? []).map((row) => ({ ...row, is_active: true }));
+      data = (fallback.data ?? []).map((row) =>
+        withPartnerFallback(row as unknown as Record<string, unknown>, !missingIsActive),
+      ) as typeof data;
       error = null;
     }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

@@ -54,19 +54,6 @@ export async function loadLocalSiteIntegrationByToken(
     return { partner_id: String(hashedRes.data.partner_id) };
   }
 
-  // Legacy fallback: plaintext token in auth_config.token
-  const plainRes = await supabase
-    .from("partner_integrations")
-    .select("partner_id, auth_config")
-    .eq("kind", "local_site")
-    .eq("is_active", true)
-    .contains("auth_config", { token: trimmed })
-    .maybeSingle();
-
-  if (!plainRes?.error && plainRes?.data?.partner_id) {
-    return { partner_id: String(plainRes.data.partner_id) };
-  }
-
   return null;
 }
 

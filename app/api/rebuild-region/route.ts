@@ -3,12 +3,14 @@ import { revalidateTag } from "next/cache";
 
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import {
   buildKreisSectionSignatures,
   buildOrtslageSectionSignatures,
   generateKreisPriceTexts,
   generateOrtslagePriceTexts,
 } from "@/lib/text-core";
+import { reportScopeTagsFromSlugs } from "@/lib/cache-tags";
 
 export const runtime = "nodejs";
 
@@ -818,11 +820,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const ip = extractClientIpFromHeaders(req.headers);
+  const rate = await checkRateLimitPersistent(
+    `rebuild_region:${user.id}:${areaId}:${ip}`,
+    { windowMs: 10 * 60 * 1000, max: 5 },
+  );
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+    );
+  }
+
   const { data: hasAccess, error: accessError } = await supabase
     .from("partner_area_map")
     .select("id")
     .eq("auth_user_id", user.id)
     .eq("area_id", areaId)
+    .eq("is_active", true)
     .maybeSingle();
 
   if (accessError) {
@@ -1018,7 +1033,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: uploadRes.error.message }, { status: 500 });
     }
 
-    revalidateTag("reports", "max");
+    const reportTags =
+      scope === "ortslage"
+        ? reportScopeTagsFromSlugs({
+            bundeslandSlug: String(area.bundesland_slug ?? ""),
+            kreisSlug: String(area.parent_slug ?? ""),
+            ortSlug: String(area.slug ?? ""),
+          })
+        : reportScopeTagsFromSlugs({
+            bundeslandSlug: String(area.bundesland_slug ?? ""),
+            kreisSlug: String(area.slug ?? ""),
+          });
+    for (const tag of reportTags) {
+      revalidateTag(tag, "max");
+    }
     return NextResponse.json({ ok: true, area_id: areaId, scope, mode, upload_summary: null, debug: debugPayload });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : null;

@@ -7,6 +7,7 @@ import type {
 } from "@/lib/providers/types";
 import { syncPropstackResources } from "@/lib/providers/propstack";
 import { syncOnOfficeResources } from "@/lib/providers/onoffice";
+import { validateOutboundUrl } from "@/lib/security/outbound-url";
 
 export type IntegrationSyncResult = {
   offers: MappedOffer[];
@@ -44,8 +45,21 @@ export async function syncIntegrationResources(
     throw new Error(`API-Key fehlt für Provider ${integration.provider}`);
   }
 
+  const baseUrl = String(integration.base_url ?? "").trim();
+  if (!baseUrl) {
+    throw new Error(`Base URL fehlt für Provider ${integration.provider}`);
+  }
+  const outboundCheck = await validateOutboundUrl(baseUrl);
+  if (!outboundCheck.ok) {
+    throw new Error(`Base URL blockiert (${outboundCheck.reason})`);
+  }
+  const sanitizedIntegration: PartnerIntegration = {
+    ...integration,
+    base_url: outboundCheck.url,
+  };
+
   if (integration.provider === "propstack") {
-    return syncPropstackResources(integration, apiKey);
+    return syncPropstackResources(sanitizedIntegration, apiKey);
   }
 
   if (integration.provider === "onoffice") {
@@ -63,7 +77,7 @@ export async function syncIntegrationResources(
       throw new Error("onOffice token/secret fehlt");
     }
 
-    return syncOnOfficeResources(integration, token, secret);
+    return syncOnOfficeResources(sanitizedIntegration, token, secret);
   }
 
   throw new Error(`Provider nicht unterstützt: ${integration.provider}`);

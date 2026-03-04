@@ -194,6 +194,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Area not found" }, { status: 404 });
   }
 
+  const { data: accessMapping } = await supabase
+    .from("partner_area_map")
+    .select("id")
+    .eq("auth_user_id", integration.partner_id)
+    .eq("area_id", kreisAreaId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (!accessMapping) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { data: orts } = await supabase
     .from("areas")
     .select("id, slug")

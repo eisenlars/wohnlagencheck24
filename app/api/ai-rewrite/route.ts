@@ -5,8 +5,10 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from '@/lib/security/rate-limit';
+import { validateOutboundUrl } from '@/lib/security/outbound-url';
 
 type LlmConfig = {
+  id?: string;
   provider: string;
   base_url?: string | null;
   auth_config?: Record<string, unknown> | null;
@@ -262,6 +264,11 @@ async function callOpenAICompatible({
 }): Promise<string | null> {
   if (!apiKey || !model) return null;
   const url = `${baseUrl.replace(/\/$/, '')}/chat/completions`;
+  const outboundCheck = await validateOutboundUrl(url);
+  if (!outboundCheck.ok) {
+    console.error('LLM URL blocked:', outboundCheck.reason);
+    return null;
+  }
   const messages = [];
   if (system.trim().length > 0) {
     messages.push({ role: 'system', content: system });
@@ -293,15 +300,22 @@ async function callOpenAICompatible({
   return typeof content === 'string' ? content.trim() : null;
 }
 
-async function loadPartnerLlmConfig(partnerId: string): Promise<LlmConfig | null> {
+async function loadPartnerLlmConfig(partnerId: string, integrationId?: string | null): Promise<LlmConfig | null> {
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let query = admin
     .from('partner_integrations')
-    .select('provider, base_url, auth_config, settings, is_active')
+    .select('id, provider, base_url, auth_config, settings, is_active')
     .eq('partner_id', partnerId)
     .eq('kind', 'llm')
-    .eq('is_active', true)
-    .maybeSingle();
+    .eq('is_active', true);
+
+  if (integrationId) {
+    query = query.eq('id', integrationId).limit(1);
+  } else {
+    query = query.order('id', { ascending: true }).limit(1);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     console.error('partner_integrations llm lookup failed:', error.message);
@@ -309,6 +323,7 @@ async function loadPartnerLlmConfig(partnerId: string): Promise<LlmConfig | null
   }
   if (!data) return null;
   return {
+    id: String(data.id ?? ''),
     provider: String(data.provider ?? ''),
     base_url: data.base_url ?? null,
     auth_config: (data.auth_config as Record<string, unknown> | null) ?? null,
@@ -339,6 +354,25 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { text, areaName, type, sectionLabel, customPrompt } = body;
+    const areaId = asString(body?.area_id);
+    const selectedLlmIntegrationId = asString(body?.llm_integration_id);
+
+    if (areaId) {
+      const admin = createAdminClient();
+      const { data: assignment, error: assignmentError } = await admin
+        .from('partner_area_map')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .eq('area_id', areaId)
+        .limit(1)
+        .maybeSingle();
+      if (assignmentError) {
+        return NextResponse.json({ error: 'Area entitlement check failed.' }, { status: 500 });
+      }
+      if (!assignment) {
+        return NextResponse.json({ error: 'Forbidden: area not assigned to user.' }, { status: 403 });
+      }
+    }
 
     const custom = asString(customPrompt);
     const basePrompt = buildPrompt({ text, areaName, type, sectionLabel });
@@ -351,7 +385,14 @@ export async function POST(req: Request) {
 
     let optimizedText: string | null = null;
 
-    const partnerConfig = await loadPartnerLlmConfig(user.id);
+    const partnerConfig = await loadPartnerLlmConfig(user.id, selectedLlmIntegrationId);
+    const hasOwnLlmConfig = Boolean(partnerConfig?.provider);
+    if (selectedLlmIntegrationId && !partnerConfig) {
+      return NextResponse.json(
+        { error: 'Ausgewaehlte LLM-Integration nicht gefunden oder inaktiv.' },
+        { status: 400 },
+      );
+    }
     if (partnerConfig?.provider) {
       const apiKey = asString(partnerConfig.auth_config?.api_key);
       const model =
@@ -364,8 +405,9 @@ export async function POST(req: Request) {
         'https://api.openai.com/v1';
       const temperature = asNumber(partnerConfig.settings?.temperature);
       const maxTokens = asNumber(partnerConfig.settings?.max_tokens);
-
-      if (partnerConfig.provider === 'openai') {
+      const provider = String(partnerConfig.provider).toLowerCase();
+      const openAiCompatibleProviders = new Set(['openai', 'mistral', 'azure_openai', 'generic_llm']);
+      if (openAiCompatibleProviders.has(provider)) {
         optimizedText = await callOpenAICompatible({
           apiKey: apiKey ?? '',
           baseUrl,
@@ -378,8 +420,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // Nur authentifizierte Partner duerfen auf den systemweiten Fallback zugreifen.
-    if (!optimizedText && DEFAULT_PROVIDER === 'openai' && DEFAULT_API_KEY && DEFAULT_MODEL) {
+    // Systemweiter Fallback nur in area-scoped Kontexten (kein allgemeiner Rewrite-Proxy).
+    if (!optimizedText && areaId && DEFAULT_PROVIDER === 'openai' && DEFAULT_API_KEY && DEFAULT_MODEL) {
       optimizedText = await callOpenAICompatible({
         apiKey: DEFAULT_API_KEY,
         baseUrl: DEFAULT_BASE_URL || 'https://api.openai.com/v1',
@@ -389,6 +431,13 @@ export async function POST(req: Request) {
         system: prompt.system,
         user: prompt.user,
       });
+    }
+
+    if (!optimizedText && !areaId && !hasOwnLlmConfig) {
+      return NextResponse.json(
+        { error: 'No partner LLM integration configured for non-area rewrite.' },
+        { status: 403 },
+      );
     }
 
     if (!optimizedText) {
