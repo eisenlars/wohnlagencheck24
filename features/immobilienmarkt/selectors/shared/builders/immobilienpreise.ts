@@ -146,6 +146,8 @@ export function buildImmobilienpreiseVM(args: {
     (typeof beraterRecord["berater_name"] === "string" ? beraterRecord["berater_name"] : undefined) ??
     "Lars Hofmann";
   const beraterTelefon =
+    (typeof beraterRecord["berater_telefon_mobil"] === "string" ? beraterRecord["berater_telefon_mobil"] : undefined) ??
+    (typeof beraterRecord["berater_telefon_fest"] === "string" ? beraterRecord["berater_telefon_fest"] : undefined) ??
     (typeof beraterRecord["berater_telefon"] === "string" ? beraterRecord["berater_telefon"] : undefined) ??
     "+49 351/287051-0";
   const beraterEmail =

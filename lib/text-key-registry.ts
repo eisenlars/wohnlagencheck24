@@ -18,10 +18,8 @@ export const INDIVIDUAL_MANDATORY_KEYS = [
   "immobilienmarkt_maklerempfehlung",
   "berater_name",
   "berater_email",
-  "berater_telefon",
   "berater_telefon_fest",
   "berater_telefon_mobil",
-  "berater_telefon_whatsApp",
   "berater_adresse_strasse",
   "berater_adresse_hnr",
   "berater_adresse_plz",
@@ -36,7 +34,6 @@ export const INDIVIDUAL_MANDATORY_KEYS = [
   "makler_email",
   "makler_telefon_fest",
   "makler_telefon_mobil",
-  "makler_telefon_whatsApp",
   "makler_adresse_strasse",
   "makler_adresse_hnr",
   "makler_adresse_plz",
@@ -83,4 +80,4 @@ export const GENERAL_STANDARD_KEYS = [
   "wohnlagencheck_faktor_sicherheit",
 ] as const;
 
-export const TEXT_KEY_REGISTRY_VERSION = "v1";
+export const TEXT_KEY_REGISTRY_VERSION = "v2";

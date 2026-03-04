@@ -179,6 +179,8 @@ export function buildKreisUebersichtVM(args: {
     (typeof berater.berater_name === "string" ? berater.berater_name : undefined) ??
     "Lars Hofmann";
   const beraterTelefon =
+    (typeof berater.berater_telefon_mobil === "string" ? berater.berater_telefon_mobil : undefined) ??
+    (typeof berater.berater_telefon_fest === "string" ? berater.berater_telefon_fest : undefined) ??
     (typeof berater.berater_telefon === "string" ? berater.berater_telefon : undefined) ??
     "+49 351/287051-0";
   const beraterEmail =

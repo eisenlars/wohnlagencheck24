@@ -17,10 +17,8 @@ import FullscreenLoader from '@/components/ui/FullscreenLoader';
 const SINGLE_LINE_TEXT_KEYS = new Set([
   'berater_name',
   'berater_email',
-  'berater_telefon',
   'berater_telefon_fest',
   'berater_telefon_mobil',
-  'berater_telefon_whatsApp',
   'berater_adresse_strasse',
   'berater_adresse_hnr',
   'berater_adresse_plz',
@@ -29,7 +27,6 @@ const SINGLE_LINE_TEXT_KEYS = new Set([
   'makler_email',
   'makler_telefon_fest',
   'makler_telefon_mobil',
-  'makler_telefon_whatsApp',
   'makler_adresse_strasse',
   'makler_adresse_hnr',
   'makler_adresse_plz',
@@ -42,7 +39,7 @@ function isAdvisorOrBrokerKey(key: string) {
 
 function resolveInputType(sectionKey: string): 'text' | 'email' | 'tel' {
   if (sectionKey.endsWith('_email')) return 'email';
-  if (sectionKey.includes('telefon') || sectionKey.includes('whatsApp')) return 'tel';
+  if (sectionKey.includes('telefon')) return 'tel';
   return 'text';
 }
 
@@ -65,10 +62,8 @@ const TAB_CONFIG = [
   { id: 'berater', label: 'Berater', icon: '👤', sections: [
     { key: 'berater_name', label: 'Name', type: 'individual' },
     { key: 'berater_email', label: 'E-Mail', type: 'individual' },
-    { key: 'berater_telefon', label: 'Telefon', type: 'individual' },
     { key: 'berater_telefon_fest', label: 'Telefon (Festnetz)', type: 'individual' },
     { key: 'berater_telefon_mobil', label: 'Telefon (Mobil)', type: 'individual' },
-    { key: 'berater_telefon_whatsApp', label: 'WhatsApp', type: 'individual' },
     { key: 'berater_adresse_strasse', label: 'Straße', type: 'individual' },
     { key: 'berater_adresse_hnr', label: 'Hausnummer', type: 'individual' },
     { key: 'berater_adresse_plz', label: 'PLZ', type: 'individual' },
@@ -81,7 +76,6 @@ const TAB_CONFIG = [
     { key: 'makler_email', label: 'E-Mail', type: 'individual' },
     { key: 'makler_telefon_fest', label: 'Telefon (Festnetz)', type: 'individual' },
     { key: 'makler_telefon_mobil', label: 'Telefon (Mobil)', type: 'individual' },
-    { key: 'makler_telefon_whatsApp', label: 'WhatsApp', type: 'individual' },
     { key: 'makler_adresse_strasse', label: 'Straße', type: 'individual' },
     { key: 'makler_adresse_hnr', label: 'Hausnummer', type: 'individual' },
     { key: 'makler_adresse_plz', label: 'PLZ', type: 'individual' },

@@ -714,6 +714,8 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
 
     const beraterName = asString(berater["berater_name"]) ?? "Lars Hofmann";
     const beraterTelefon =
+      asString(berater["berater_telefon_mobil"]) ??
+      asString(berater["berater_telefon_fest"]) ??
       asString(berater["berater_telefon"]) ??
       "+49 351/287051-0";
     const beraterEmail =

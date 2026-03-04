@@ -38,8 +38,10 @@ export function ImmobilienberatungSection({
 
   const email = asString(berater["berater_email"]) ?? "";
   const emailTarget = email || "kontakt@wohnlagencheck24.de";
-  const tel = asString(berater["berater_telefon"]) ?? "";
-  const telWhatsApp = asString(berater["berater_telefon_whatsApp"]) ?? "";
+  const telMobil = asString(berater["berater_telefon_mobil"]) ?? "";
+  const telFestnetz = asString(berater["berater_telefon_fest"]) ?? "";
+  const telLegacy = asString(berater["berater_telefon"]) ?? "";
+  const telPrimary = telMobil || telFestnetz || telLegacy;
 
   const strasse = asString(berater["berater_adresse_strasse"]) ?? "";
   const hnr = asString(berater["berater_adresse_hnr"]) ?? "";
@@ -51,8 +53,11 @@ export function ImmobilienberatungSection({
 
   const contactItems: ContactItem[] = [
     email ? { label: "E-Mail", value: email, href: `mailto:${email}` } : null,
-    tel ? { label: "Telefon", value: tel, href: `tel:${normalizePhone(tel)}` } : null,
-    telWhatsApp ? { label: "WhatsApp", value: telWhatsApp, href: `https://wa.me/${normalizePhone(telWhatsApp)}` } : null,
+    telMobil ? { label: "Telefon (Mobil)", value: telMobil, href: `tel:${normalizePhone(telMobil)}` } : null,
+    telFestnetz ? { label: "Telefon (Festnetz)", value: telFestnetz, href: `tel:${normalizePhone(telFestnetz)}` } : null,
+    (!telMobil && !telFestnetz && telLegacy)
+      ? { label: "Telefon", value: telLegacy, href: `tel:${normalizePhone(telLegacy)}` }
+      : null,
     adresse ? { label: "Adresse", value: adresse } : null,
   ].filter(Boolean) as ContactItem[];
 
@@ -79,8 +84,8 @@ export function ImmobilienberatungSection({
                     Kontakt aufnehmen
                   </a>
                 ) : null}
-                {tel ? (
-                  <a className={`${styles.btn} ${styles.btnSecondary}`} href={`tel:${normalizePhone(tel)}`}>
+                {telPrimary ? (
+                  <a className={`${styles.btn} ${styles.btnSecondary}`} href={`tel:${normalizePhone(telPrimary)}`}>
                     Rueckruf anfordern
                   </a>
                 ) : null}

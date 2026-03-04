@@ -83,6 +83,8 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
     asString(berater["berater_email"]) ??
     "kontakt@wohnlagencheck24.de";
   const phone =
+    asString(berater["berater_telefon_mobil"]) ??
+    asString(berater["berater_telefon_fest"]) ??
     asString(berater["berater_telefon"]) ??
     "";
 
