@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
 type RawAssetRow = {
   id: string;
@@ -47,6 +48,29 @@ type RegionTarget = {
   district?: string | null;
   label?: string;
 };
+
+type LlmIntegrationOption = {
+  id: string;
+  label: string;
+};
+
+type PartnerIntegrationRow = {
+  id?: string;
+  kind?: string;
+  provider?: string;
+  is_active?: boolean;
+  settings?: Record<string, unknown> | null;
+};
+
+function formatProviderLabel(provider: string): string {
+  const p = String(provider ?? '').toLowerCase();
+  if (p === 'openai') return 'OpenAI';
+  if (p === 'anthropic') return 'Anthropic';
+  if (p === 'google_gemini') return 'Gemini';
+  if (p === 'azure_openai') return 'Azure OpenAI';
+  if (p === 'mistral') return 'Mistral';
+  return provider || 'LLM';
+}
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value : '';
@@ -138,6 +162,8 @@ export default function CrmAssetManager(props: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<OverrideRow | null>(null);
   const [query, setQuery] = useState('');
+  const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
+  const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -174,6 +200,33 @@ export default function CrmAssetManager(props: Props) {
         setStatus(`Overrides konnten nicht geladen werden (${overrideTable}): ${overrideError.message}`);
       } else {
         setStatus('Daten geladen.');
+      }
+
+      const integrationsRes = await fetch('/api/partner/integrations');
+      if (integrationsRes.ok) {
+        const payload = await integrationsRes.json().catch(() => ({}));
+        const items: PartnerIntegrationRow[] = Array.isArray(payload?.integrations)
+          ? (payload.integrations as PartnerIntegrationRow[])
+          : [];
+        const llmItems: LlmIntegrationOption[] = items
+          .filter((entry) => String(entry?.kind ?? '').toLowerCase() === 'llm' && entry?.is_active === true)
+          .map((entry) => {
+            const settings = (entry?.settings ?? {}) as Record<string, unknown>;
+            const model = String(settings?.model ?? settings?.model_name ?? '').trim() || 'Standardmodell';
+            return {
+              id: String(entry?.id ?? ''),
+              label: `${formatProviderLabel(String(entry?.provider ?? ''))} · ${model}`,
+            };
+          })
+          .filter((entry) => entry.id.length > 0);
+        setLlmOptions(llmItems);
+        setSelectedLlmIntegrationId((prev) => {
+          if (prev && llmItems.some((item) => item.id === prev)) return prev;
+          return llmItems[0]?.id ?? '';
+        });
+      } else {
+        setLlmOptions([]);
+        setSelectedLlmIntegrationId('');
       }
 
       const list = (rawData ?? []) as RawAssetRow[];
@@ -278,11 +331,16 @@ export default function CrmAssetManager(props: Props) {
           areaName: selectedRow.title || selectedRow.external_id,
           type: 'general',
           sectionLabel: label,
+          llm_integration_id: selectedLlmIntegrationId || llmOptions[0]?.id || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setStatus(String(data?.error ?? 'KI-Optimierung fehlgeschlagen.'));
+        if (res.status === 403) {
+          setStatus('KI-Optimierung nicht erlaubt: bitte aktive Partner-LLM-Integration hinterlegen.');
+        } else {
+          setStatus(String(data?.error ?? 'KI-Optimierung fehlgeschlagen.'));
+        }
         return;
       }
       const optimized = String(data?.optimizedText ?? '');
@@ -321,7 +379,7 @@ export default function CrmAssetManager(props: Props) {
     ? (getRegionTargetLabels(selectedPayload).join(', ') || asText(selectedPayload.region) || '—')
     : (asText(selectedPayload.location) || [asText(selectedPayload.city), asText(selectedPayload.district)].filter(Boolean).join(' ') || '—');
 
-  if (loading) return <div style={{ padding: 8, color: '#64748b' }}>Lade {title}...</div>;
+  if (loading) return <FullscreenLoader show label={`${title} werden geladen...`} />;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: 14 }}>
@@ -466,10 +524,37 @@ export default function CrmAssetManager(props: Props) {
                   style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 10px' }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                  {llmOptions.length > 0 ? (
+                    <select
+                      value={selectedLlmIntegrationId || llmOptions[0].id}
+                      onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                      style={{
+                        minWidth: 220,
+                        border: '1px solid #dbeafe',
+                        borderRadius: 8,
+                        background: '#fff',
+                        color: '#0f172a',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: '6px 10px',
+                      }}
+                      aria-label="KI-Modell auswählen"
+                    >
+                      {llmOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span style={{ fontSize: 12, color: '#64748b', alignSelf: 'center' }}>
+                      Keine aktive LLM-Integration
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => runAiRewrite(key, label)}
-                    disabled={rewritingKey === String(key)}
+                    disabled={rewritingKey === String(key) || llmOptions.length === 0}
                     style={{
                       border: '1px solid #94a3b8',
                       borderRadius: 8,

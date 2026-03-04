@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
 type OfferRow = {
   id: string;
@@ -37,6 +38,29 @@ type OverrideRow = {
   image_alt_texts?: string[] | null;
 };
 
+type LlmIntegrationOption = {
+  id: string;
+  label: string;
+};
+
+type PartnerIntegrationRow = {
+  id?: string;
+  kind?: string;
+  provider?: string;
+  is_active?: boolean;
+  settings?: Record<string, unknown> | null;
+};
+
+function formatProviderLabel(provider: string): string {
+  const p = String(provider ?? '').toLowerCase();
+  if (p === 'openai') return 'OpenAI';
+  if (p === 'anthropic') return 'Anthropic';
+  if (p === 'google_gemini') return 'Gemini';
+  if (p === 'azure_openai') return 'Azure OpenAI';
+  if (p === 'mistral') return 'Mistral';
+  return provider || 'LLM';
+}
+
 export default function OffersManager() {
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
@@ -50,6 +74,8 @@ export default function OffersManager() {
   const [filterType, setFilterType] = useState<'all' | 'haus' | 'wohnung'>('all');
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
+  const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
+  const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -66,6 +92,33 @@ export default function OffersManager() {
         .from('partner_property_overrides')
         .select('*')
         .eq('partner_id', user.id);
+
+      const integrationsRes = await fetch('/api/partner/integrations');
+      if (integrationsRes.ok) {
+        const payload = await integrationsRes.json().catch(() => ({}));
+        const items: PartnerIntegrationRow[] = Array.isArray(payload?.integrations)
+          ? (payload.integrations as PartnerIntegrationRow[])
+          : [];
+        const llmItems: LlmIntegrationOption[] = items
+          .filter((entry) => String(entry?.kind ?? '').toLowerCase() === 'llm' && entry?.is_active === true)
+          .map((entry) => {
+            const settings = (entry?.settings ?? {}) as Record<string, unknown>;
+            const model = String(settings?.model ?? settings?.model_name ?? '').trim() || 'Standardmodell';
+            return {
+              id: String(entry?.id ?? ''),
+              label: `${formatProviderLabel(String(entry?.provider ?? ''))} · ${model}`,
+            };
+          })
+          .filter((entry) => entry.id.length > 0);
+        setLlmOptions(llmItems);
+        setSelectedLlmIntegrationId((prev) => {
+          if (prev && llmItems.some((item) => item.id === prev)) return prev;
+          return llmItems[0]?.id ?? '';
+        });
+      } else {
+        setLlmOptions([]);
+        setSelectedLlmIntegrationId('');
+      }
 
       setOffers(offersData || []);
       setOverrides(overridesData || []);
@@ -209,9 +262,14 @@ export default function OffersManager() {
           type: 'general',
           sectionLabel: label,
           customPrompt: customPrompt || undefined,
+          llm_integration_id: selectedLlmIntegrationId || llmOptions[0]?.id || undefined,
         }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        console.error('AI rewrite failed:', data?.error ?? res.statusText);
+        return;
+      }
       if (data.optimizedText) {
         const nextValue = isListField
           ? String(data.optimizedText).split('\n').filter(Boolean)
@@ -319,14 +377,32 @@ export default function OffersManager() {
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
             )}
-            <button
-              type="button"
-              style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
-              onClick={() => handleAiRewrite(key, value, label, customPrompt)}
-              disabled={isRewriting}
-            >
-              {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
-            </button>
+            <div style={aiActionsRowStyle}>
+              {llmOptions.length > 0 ? (
+                <select
+                  value={selectedLlmIntegrationId || llmOptions[0].id}
+                  onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                  style={aiSelectStyle}
+                  aria-label="KI-Modell auswählen"
+                >
+                  {llmOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span style={aiMissingHintStyle}>Keine aktive LLM-Integration</span>
+              )}
+              <button
+                type="button"
+                style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
+                onClick={() => handleAiRewrite(key, value, label, customPrompt)}
+                disabled={isRewriting || llmOptions.length === 0}
+              >
+                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
+              </button>
+            </div>
             <button
               type="button"
               onClick={() =>
@@ -404,14 +480,32 @@ export default function OffersManager() {
               style={textareaStyle}
               placeholder={placeholder}
             />
-            <button
-              type="button"
-              style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
-              onClick={() => handleAiRewrite(key, value, label, customPrompt)}
-              disabled={isRewriting}
-            >
-              {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
-            </button>
+            <div style={aiActionsRowStyle}>
+              {llmOptions.length > 0 ? (
+                <select
+                  value={selectedLlmIntegrationId || llmOptions[0].id}
+                  onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                  style={aiSelectStyle}
+                  aria-label="KI-Modell auswählen"
+                >
+                  {llmOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span style={aiMissingHintStyle}>Keine aktive LLM-Integration</span>
+              )}
+              <button
+                type="button"
+                style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
+                onClick={() => handleAiRewrite(key, value, label, customPrompt)}
+                disabled={isRewriting || llmOptions.length === 0}
+              >
+                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
+              </button>
+            </div>
             <button
               type="button"
               onClick={() =>
@@ -450,7 +544,7 @@ export default function OffersManager() {
     );
   };
 
-  if (loading) return <div style={{ padding: '20px' }}>Immobilien werden geladen...</div>;
+  if (loading) return <FullscreenLoader show label="Immobilien werden geladen..." />;
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '520px 1fr', gap: '20px' }}>
@@ -820,6 +914,31 @@ const aiButtonLoadingStyle: React.CSSProperties = {
   opacity: 0.6,
   cursor: 'not-allowed',
   backgroundColor: '#f1f5f9',
+};
+
+const aiActionsRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  flexWrap: 'wrap',
+};
+
+const aiSelectStyle: React.CSSProperties = {
+  minWidth: '240px',
+  maxWidth: '100%',
+  height: '38px',
+  border: '1px solid #dbeafe',
+  borderRadius: '8px',
+  backgroundColor: '#fff',
+  color: '#1e293b',
+  fontSize: '12px',
+  fontWeight: 600,
+  padding: '6px 10px',
+};
+
+const aiMissingHintStyle: React.CSSProperties = {
+  fontSize: '12px',
+  color: '#64748b',
 };
 
 const promptToggleStyle: React.CSSProperties = {

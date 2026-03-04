@@ -7,9 +7,30 @@ import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/secu
 type ProfilePatchBody = {
   company_name?: string;
   contact_email?: string | null;
-  contact_person?: string | null;
+  contact_first_name?: string | null;
+  contact_last_name?: string | null;
   website_url?: string | null;
 };
+
+function isMissingPartnerNameColumns(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  if (!msg.includes("does not exist")) return false;
+  return (
+    msg.includes("partners.contact_first_name")
+    || msg.includes("partners.contact_last_name")
+  );
+}
+
+function withPartnerNameFallback<T extends Record<string, unknown>>(row: T): T & {
+  contact_first_name: null;
+  contact_last_name: null;
+} {
+  return {
+    ...row,
+    contact_first_name: null,
+    contact_last_name: null,
+  };
+}
 
 function normNullable(value: unknown): string | null {
   if (value === null || value === undefined) return null;
@@ -41,11 +62,20 @@ export async function GET(req: Request) {
   try {
     const userId = await requirePartnerUser(req);
     const admin = createAdminClient();
-    const { data, error } = await admin
+    let { data, error } = await admin
       .from("partners")
-      .select("id, company_name, contact_email, contact_person, website_url, created_at")
+      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, created_at")
       .eq("id", userId)
       .maybeSingle();
+    if (error && isMissingPartnerNameColumns(error)) {
+      const fallback = await admin
+        .from("partners")
+        .select("id, company_name, contact_email, website_url, created_at")
+        .eq("id", userId)
+        .maybeSingle();
+      data = fallback.data ? withPartnerNameFallback(fallback.data) : null;
+      error = fallback.error;
+    }
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data) return NextResponse.json({ error: "Partner profile not found" }, { status: 404 });
@@ -73,7 +103,8 @@ export async function PATCH(req: Request) {
       patch.company_name = companyName;
     }
     if (body.contact_email !== undefined) patch.contact_email = normNullable(body.contact_email);
-    if (body.contact_person !== undefined) patch.contact_person = normNullable(body.contact_person);
+    if (body.contact_first_name !== undefined) patch.contact_first_name = normNullable(body.contact_first_name);
+    if (body.contact_last_name !== undefined) patch.contact_last_name = normNullable(body.contact_last_name);
     if (body.website_url !== undefined) patch.website_url = normNullable(body.website_url);
 
     if (Object.keys(patch).length === 0) {
@@ -81,12 +112,35 @@ export async function PATCH(req: Request) {
     }
 
     const admin = createAdminClient();
-    const { data, error } = await admin
+    let { data, error } = await admin
       .from("partners")
       .update(patch)
       .eq("id", userId)
-      .select("id, company_name, contact_email, contact_person, website_url, created_at")
+      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, created_at")
       .maybeSingle();
+    if (error && isMissingPartnerNameColumns(error)) {
+      const patchWithoutNames = { ...patch };
+      delete patchWithoutNames.contact_first_name;
+      delete patchWithoutNames.contact_last_name;
+      if (Object.keys(patchWithoutNames).length === 0) {
+        const legacyRead = await admin
+          .from("partners")
+          .select("id, company_name, contact_email, website_url, created_at")
+          .eq("id", userId)
+          .maybeSingle();
+        if (legacyRead.error) return NextResponse.json({ error: legacyRead.error.message }, { status: 500 });
+        if (!legacyRead.data) return NextResponse.json({ error: "Partner profile not found" }, { status: 404 });
+        return NextResponse.json({ ok: true, profile: withPartnerNameFallback(legacyRead.data) });
+      }
+      const fallback = await admin
+        .from("partners")
+        .update(patchWithoutNames)
+        .eq("id", userId)
+        .select("id, company_name, contact_email, website_url, created_at")
+        .maybeSingle();
+      data = fallback.data ? withPartnerNameFallback(fallback.data) : null;
+      error = fallback.error;
+    }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data) return NextResponse.json({ error: "Partner profile not found" }, { status: 404 });
 
@@ -102,4 +156,3 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
-

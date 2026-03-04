@@ -4,6 +4,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
 export type FactorFormHandle = {
   autoSyncIfDirty: () => Promise<void>;
@@ -1000,18 +1001,10 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
         @keyframes reset-spin {
           to { transform: rotate(360deg); }
         }
-        @keyframes loading-spin {
-          to { transform: rotate(360deg); }
-        }
       `}</style>
 
       {(settingsLoading || previewLoading) ? (
-        <div style={loadingOverlayStyle}>
-          <div style={loadingCardStyle}>
-            <div style={loadingSpinnerStyle} />
-            <div>Lade Faktoren...</div>
-          </div>
-        </div>
+        <FullscreenLoader show label="Faktoren werden geladen..." fixed={false} />
       ) : null}
       
       {/* 1. Markttrends */}
@@ -1195,7 +1188,6 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
         </div>
       </details>
 
-      {previewLoading ? <div style={{ color: '#64748b' }}>Lade Basiswerte…</div> : null}
       {saveModalOpen ? (
         <div
           style={{
@@ -1430,34 +1422,4 @@ const rebuildButtonStyle = (loading: boolean) => ({
 const resetButtonStyle = {
   padding: '15px 25px', backgroundColor: 'transparent', color: '#e53e3e',
   border: '2px solid #feb2b2', borderRadius: '10px', fontSize: '15px', fontWeight: '700', cursor: 'pointer'
-};
-const loadingOverlayStyle = {
-  position: 'absolute' as const,
-  inset: 0,
-  backgroundColor: 'rgba(248, 250, 252, 0.85)',
-  borderRadius: '12px',
-  zIndex: 5,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
-const loadingCardStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px',
-  backgroundColor: '#fff',
-  border: '1px solid #e2e8f0',
-  padding: '12px 18px',
-  borderRadius: '999px',
-  fontSize: '13px',
-  color: '#475569',
-  boxShadow: '0 6px 16px rgba(15, 23, 42, 0.08)',
-};
-const loadingSpinnerStyle = {
-  width: '18px',
-  height: '18px',
-  borderRadius: '50%',
-  border: '2px solid #e2e8f0',
-  borderTopColor: '#2563eb',
-  animation: 'loading-spin 0.8s linear infinite',
 };

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { buildWebAssetUrl } from '@/utils/assets';
+import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
 type PartnerArea = {
   id?: string;
@@ -75,8 +76,8 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
 
   const hasAllSources = Boolean(source.individual01 && source.individual02 && source.zitat);
   const missingSources: Array<{ key: string; label: string }> = [
-    { key: 'immobilienmarkt_individuell_01', label: 'Individueller Text 01' },
-    { key: 'immobilienmarkt_individuell_02', label: 'Individueller Text 02' },
+    { key: 'immobilienmarkt_individuell_01', label: 'Experteneinschätzung Text 01' },
+    { key: 'immobilienmarkt_individuell_02', label: 'Experteneinschätzung Text 02' },
     { key: 'immobilienmarkt_zitat', label: 'Zitat' },
   ].filter((item) => {
     if (item.key.endsWith('01')) return !source.individual01;
@@ -298,7 +299,7 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
     }
   };
 
-  if (loading) return <div style={{ padding: '40px', color: '#64748b' }}>Blog-Bausteine werden geladen...</div>;
+  if (loading) return <FullscreenLoader show label="Blog-Bausteine werden geladen..." />;
 
   return (
     <div style={{ width: '100%' }}>
@@ -386,11 +387,11 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
               </div>
               <div style={sourceGridStyle(isNarrow)}>
                 <div>
-                  <div style={sourceLabelStyle}>Individueller Text 01</div>
+                  <div style={sourceLabelStyle}>Experteneinschätzung Text 01</div>
                   <div style={sourceBoxStyle}>{source.individual01 || 'Kein Override vorhanden.'}</div>
                 </div>
                 <div>
-                  <div style={sourceLabelStyle}>Individueller Text 02</div>
+                  <div style={sourceLabelStyle}>Experteneinschätzung Text 02</div>
                   <div style={sourceBoxStyle}>{source.individual02 || 'Kein Override vorhanden.'}</div>
                 </div>
               </div>

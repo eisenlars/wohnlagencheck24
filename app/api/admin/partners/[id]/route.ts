@@ -8,7 +8,8 @@ import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/securi
 type UpdatePartnerBody = {
   company_name?: string;
   contact_email?: string | null;
-  contact_person?: string | null;
+  contact_first_name?: string | null;
+  contact_last_name?: string | null;
   website_url?: string | null;
   is_active?: boolean;
 };
@@ -18,10 +19,37 @@ function isMissingIsActiveColumn(error: unknown): boolean {
   return msg.includes("partners.is_active") && msg.includes("does not exist");
 }
 
+function isMissingPartnerNameColumns(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  if (!msg.includes("does not exist")) return false;
+  return (
+    msg.includes("partners.contact_first_name")
+    || msg.includes("partners.contact_last_name")
+  );
+}
+
+function isMissingAreaActivationStatusColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partner_area_map.activation_status") && msg.includes("does not exist");
+}
+
 function normalizeNullableString(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   const normalized = String(value).trim();
   return normalized.length > 0 ? normalized : null;
+}
+
+function withPartnerFallback<T extends Record<string, unknown>>(row: T, includeIsActive: boolean): T & {
+  contact_first_name: null;
+  contact_last_name: null;
+  is_active: boolean;
+} {
+  return {
+    ...row,
+    contact_first_name: null,
+    contact_last_name: null,
+    is_active: includeIsActive ? Boolean((row as { is_active?: unknown }).is_active) : true,
+  };
 }
 
 export async function PATCH(
@@ -54,7 +82,8 @@ export async function PATCH(
       patch.company_name = companyName;
     }
     if (body.contact_email !== undefined) patch.contact_email = normalizeNullableString(body.contact_email);
-    if (body.contact_person !== undefined) patch.contact_person = normalizeNullableString(body.contact_person);
+    if (body.contact_first_name !== undefined) patch.contact_first_name = normalizeNullableString(body.contact_first_name);
+    if (body.contact_last_name !== undefined) patch.contact_last_name = normalizeNullableString(body.contact_last_name);
     if (body.website_url !== undefined) patch.website_url = normalizeNullableString(body.website_url);
     if (body.is_active !== undefined) patch.is_active = Boolean(body.is_active);
 
@@ -67,19 +96,59 @@ export async function PATCH(
       .from("partners")
       .update(patch)
       .eq("id", partnerId)
-      .select("id, company_name, contact_email, contact_person, website_url, is_active, created_at")
+      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, created_at")
       .maybeSingle();
 
-    if (error && isMissingIsActiveColumn(error)) {
+    if (error && (isMissingIsActiveColumn(error) || isMissingPartnerNameColumns(error))) {
       const patchNoIsActive = { ...patch };
       delete patchNoIsActive.is_active;
+      const missingIsActive = isMissingIsActiveColumn(error);
+      const missingNames = isMissingPartnerNameColumns(error);
+      if (missingNames) {
+        delete patchNoIsActive.contact_first_name;
+        delete patchNoIsActive.contact_last_name;
+      }
+      if (Object.keys(patchNoIsActive).length === 0) {
+        const readSelect = [
+          "id",
+          "company_name",
+          "contact_email",
+          "website_url",
+          "created_at",
+        ].join(", ");
+        const legacyRead = await admin
+          .from("partners")
+          .select(readSelect)
+          .eq("id", partnerId)
+          .maybeSingle();
+        if (legacyRead.error) return NextResponse.json({ error: legacyRead.error.message }, { status: 500 });
+        if (!legacyRead.data) return NextResponse.json({ error: "Partner not found" }, { status: 404 });
+        return NextResponse.json({
+          ok: true,
+          partner: withPartnerFallback(legacyRead.data as unknown as Record<string, unknown>, false),
+        });
+      }
+      const fallbackSelect = [
+        "id",
+        "company_name",
+        "contact_email",
+        ...(!missingNames ? ["contact_first_name", "contact_last_name"] : []),
+        "website_url",
+        ...(!missingIsActive ? ["is_active"] : []),
+        "created_at",
+      ].join(", ");
       const fallback = await admin
         .from("partners")
         .update(patchNoIsActive)
         .eq("id", partnerId)
-        .select("id, company_name, contact_email, contact_person, website_url, created_at")
+        .select(fallbackSelect)
         .maybeSingle();
-      data = fallback.data ? { ...fallback.data, is_active: true } : null;
+      data = fallback.data
+        ? (withPartnerFallback(
+            fallback.data as unknown as Record<string, unknown>,
+            !missingIsActive,
+          ) as typeof data)
+        : null;
       error = fallback.error;
     }
 
@@ -138,28 +207,54 @@ export async function GET(
     const admin = createAdminClient();
     let { data: partner, error: partnerError } = await admin
       .from("partners")
-      .select("id, company_name, contact_email, contact_person, website_url, is_active, created_at")
+      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, created_at")
       .eq("id", partnerId)
       .maybeSingle();
 
-    if (partnerError && isMissingIsActiveColumn(partnerError)) {
+    if (partnerError && (isMissingIsActiveColumn(partnerError) || isMissingPartnerNameColumns(partnerError))) {
+      const missingIsActive = isMissingIsActiveColumn(partnerError);
+      const missingNames = isMissingPartnerNameColumns(partnerError);
+      const fallbackSelect = [
+        "id",
+        "company_name",
+        "contact_email",
+        ...(!missingNames ? ["contact_first_name", "contact_last_name"] : []),
+        "website_url",
+        ...(!missingIsActive ? ["is_active"] : []),
+        "created_at",
+      ].join(", ");
       const fallback = await admin
         .from("partners")
-        .select("id, company_name, contact_email, contact_person, website_url, created_at")
+        .select(fallbackSelect)
         .eq("id", partnerId)
         .maybeSingle();
-      partner = fallback.data ? { ...fallback.data, is_active: true } : null;
+      partner = fallback.data
+        ? (withPartnerFallback(
+            fallback.data as unknown as Record<string, unknown>,
+            !missingIsActive,
+          ) as typeof partner)
+        : null;
       partnerError = fallback.error;
     }
 
     if (partnerError) return NextResponse.json({ error: partnerError.message }, { status: 500 });
     if (!partner) return NextResponse.json({ error: "Partner not found" }, { status: 404 });
 
-    const { data: mappings, error: mappingError } = await admin
+    let { data: mappings, error: mappingError } = await admin
       .from("partner_area_map")
-      .select("id, auth_user_id, area_id, is_active, created_at, areas(name, slug, parent_slug, bundesland_slug)")
+      .select("id, auth_user_id, area_id, is_active, activation_status, created_at, areas(name, slug, parent_slug, bundesland_slug)")
       .eq("auth_user_id", partnerId)
       .order("area_id", { ascending: true });
+
+    if (mappingError && isMissingAreaActivationStatusColumn(mappingError)) {
+      const fallback = await admin
+        .from("partner_area_map")
+        .select("id, auth_user_id, area_id, is_active, created_at, areas(name, slug, parent_slug, bundesland_slug)")
+        .eq("auth_user_id", partnerId)
+        .order("area_id", { ascending: true });
+      mappings = (fallback.data ?? []).map((row) => ({ ...row, activation_status: null }));
+      mappingError = fallback.error;
+    }
 
     if (mappingError) return NextResponse.json({ error: mappingError.message }, { status: 500 });
 

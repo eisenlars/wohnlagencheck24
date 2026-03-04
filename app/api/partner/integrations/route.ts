@@ -7,6 +7,7 @@ import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
 import { validateIntegrationConfig } from "@/lib/integrations/providers";
 
 type IntegrationBody = {
+  integration_id?: string;
   kind?: string;
   provider?: string;
   base_url?: string | null;
@@ -22,6 +23,35 @@ function norm(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   const v = String(value).trim();
   return v.length > 0 ? v : null;
+}
+
+function asFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function normalizeSettings(kind: string, settings: Record<string, unknown> | null | undefined) {
+  if (!settings || typeof settings !== "object") return null;
+  if (kind !== "llm") return settings;
+
+  const model = norm(settings.model) ?? norm(settings.model_name);
+  const baseUrl = norm(settings.base_url);
+  const temperature = asFiniteNumber(settings.temperature);
+  const maxTokens = asFiniteNumber(settings.max_tokens);
+
+  if (!model) {
+    return { error: "Für LLM-Integrationen ist settings.model erforderlich." } as const;
+  }
+
+  const out: Record<string, unknown> = { model };
+  if (baseUrl) out.base_url = baseUrl;
+  if (temperature !== null) out.temperature = temperature;
+  if (maxTokens !== null) out.max_tokens = Math.max(1, Math.floor(maxTokens));
+  return out;
 }
 
 async function requirePartnerUser(req: Request): Promise<string> {
@@ -91,6 +121,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
+    const normalizedSettings = normalizeSettings(kind, body.settings ?? null);
+    if (normalizedSettings && "error" in normalizedSettings) {
+      return NextResponse.json({ error: normalizedSettings.error }, { status: 400 });
+    }
+
     const payload = {
       partner_id: userId,
       kind,
@@ -99,19 +134,47 @@ export async function POST(req: Request) {
       auth_type: validation.authType,
       detail_url_template: norm(body.detail_url_template),
       is_active: body.is_active === false ? false : true,
-      settings: body.settings ?? null,
+      settings: normalizedSettings,
     };
+    const integrationId = norm(body.integration_id);
+    let data: Record<string, unknown> | null = null;
+    let error: { message: string } | null = null;
 
-    const { data, error } = await admin
-      .from("partner_integrations")
-      .upsert(payload, { onConflict: "partner_id,kind" })
-      .select("id, partner_id, kind, provider, base_url, auth_type, auth_config, detail_url_template, is_active, settings, last_sync_at")
-      .single();
+    if (kind === "llm") {
+      if (integrationId) {
+        const result = await admin
+          .from("partner_integrations")
+          .update(payload)
+          .eq("id", integrationId)
+          .eq("partner_id", userId)
+          .select("id, partner_id, kind, provider, base_url, auth_type, auth_config, detail_url_template, is_active, settings, last_sync_at")
+          .maybeSingle();
+        data = (result.data as Record<string, unknown> | null) ?? null;
+        error = result.error ? { message: result.error.message } : null;
+      } else {
+        const result = await admin
+          .from("partner_integrations")
+          .insert(payload)
+          .select("id, partner_id, kind, provider, base_url, auth_type, auth_config, detail_url_template, is_active, settings, last_sync_at")
+          .single();
+        data = (result.data as Record<string, unknown> | null) ?? null;
+        error = result.error ? { message: result.error.message } : null;
+      }
+    } else {
+      const result = await admin
+        .from("partner_integrations")
+        .upsert(payload, { onConflict: "partner_id,kind" })
+        .select("id, partner_id, kind, provider, base_url, auth_type, auth_config, detail_url_template, is_active, settings, last_sync_at")
+        .single();
+      data = (result.data as Record<string, unknown> | null) ?? null;
+      error = result.error ? { message: result.error.message } : null;
+    }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data) return NextResponse.json({ error: "Integration konnte nicht gespeichert werden." }, { status: 500 });
 
     return NextResponse.json({
       ok: true,
-      integration: maskIntegrationForResponse(data as Record<string, unknown>),
+      integration: maskIntegrationForResponse(data),
     });
   } catch (error) {
     if (error instanceof Error) {

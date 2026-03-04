@@ -2,8 +2,63 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import NextImage from 'next/image';
 import { createClient } from '@/utils/supabase/client';
+import { buildGlobalPromptPrefill } from '@/lib/text-prompt-generator';
+import { GENERAL_REGION_FOCUS_KEYS, GENERAL_STANDARD_KEYS } from '@/lib/text-key-registry';
+import { INDIVIDUAL_MANDATORY_KEYS } from '@/lib/text-key-registry';
+import {
+  MANDATORY_MEDIA_SPECS,
+  type MandatoryMediaKey,
+} from '@/lib/mandatory-media';
+import FullscreenLoader from '@/components/ui/FullscreenLoader';
+
+const SINGLE_LINE_TEXT_KEYS = new Set([
+  'berater_name',
+  'berater_email',
+  'berater_telefon',
+  'berater_telefon_fest',
+  'berater_telefon_mobil',
+  'berater_telefon_whatsApp',
+  'berater_adresse_strasse',
+  'berater_adresse_hnr',
+  'berater_adresse_plz',
+  'berater_adresse_ort',
+  'makler_name',
+  'makler_email',
+  'makler_telefon_fest',
+  'makler_telefon_mobil',
+  'makler_telefon_whatsApp',
+  'makler_adresse_strasse',
+  'makler_adresse_hnr',
+  'makler_adresse_plz',
+  'makler_adresse_ort',
+]);
+
+function isAdvisorOrBrokerKey(key: string) {
+  return key.startsWith('berater_') || key.startsWith('makler_');
+}
+
+function resolveInputType(sectionKey: string): 'text' | 'email' | 'tel' {
+  if (sectionKey.endsWith('_email')) return 'email';
+  if (sectionKey.includes('telefon') || sectionKey.includes('whatsApp')) return 'tel';
+  return 'text';
+}
+
+function isIconPath(value: string): boolean {
+  return typeof value === 'string' && value.startsWith('/');
+}
+
+function formatProviderLabel(provider: string): string {
+  const p = String(provider ?? '').toLowerCase();
+  if (p === 'openai') return 'OpenAI';
+  if (p === 'anthropic') return 'Anthropic';
+  if (p === 'google_gemini') return 'Gemini';
+  if (p === 'azure_openai') return 'Azure OpenAI';
+  if (p === 'mistral') return 'Mistral';
+  return provider || 'LLM';
+}
 
 // 1. Die vollständige Konfiguration basierend auf deinen Vorgaben
 const TAB_CONFIG = [
@@ -11,6 +66,8 @@ const TAB_CONFIG = [
     { key: 'berater_name', label: 'Name', type: 'individual' },
     { key: 'berater_email', label: 'E-Mail', type: 'individual' },
     { key: 'berater_telefon', label: 'Telefon', type: 'individual' },
+    { key: 'berater_telefon_fest', label: 'Telefon (Festnetz)', type: 'individual' },
+    { key: 'berater_telefon_mobil', label: 'Telefon (Mobil)', type: 'individual' },
     { key: 'berater_telefon_whatsApp', label: 'WhatsApp', type: 'individual' },
     { key: 'berater_adresse_strasse', label: 'Straße', type: 'individual' },
     { key: 'berater_adresse_hnr', label: 'Hausnummer', type: 'individual' },
@@ -21,23 +78,31 @@ const TAB_CONFIG = [
   ]},
   { id: 'makler', label: 'Makler', icon: '🏢', sections: [
     { key: 'makler_name', label: 'Firma / Name', type: 'individual' },
+    { key: 'makler_email', label: 'E-Mail', type: 'individual' },
+    { key: 'makler_telefon_fest', label: 'Telefon (Festnetz)', type: 'individual' },
+    { key: 'makler_telefon_mobil', label: 'Telefon (Mobil)', type: 'individual' },
+    { key: 'makler_telefon_whatsApp', label: 'WhatsApp', type: 'individual' },
+    { key: 'makler_adresse_strasse', label: 'Straße', type: 'individual' },
+    { key: 'makler_adresse_hnr', label: 'Hausnummer', type: 'individual' },
+    { key: 'makler_adresse_plz', label: 'PLZ', type: 'individual' },
+    { key: 'makler_adresse_ort', label: 'Ort', type: 'individual' },
     { key: 'makler_empfehlung', label: 'Empfehlungstext', type: 'individual' },
     { key: 'makler_beschreibung', label: 'Leistungsbeschreibung', type: 'individual' },
     { key: 'makler_benefits', label: 'Vorteile / Benefits', type: 'individual' },
     { key: 'makler_provision', label: 'Provisionshinweis', type: 'individual' },
   ]},
-  { id: 'marktueberblick', label: 'Marktüberblick', icon: '📊', sections: [
+  { id: 'marktueberblick', label: 'Marktüberblick', icon: '/icons/ws24_marktbericht_ueberblick.svg', sections: [
     { key: 'immobilienmarkt_allgemein', label: 'Berater-Ansprache (Teaser)', type: 'general' },
     { key: 'immobilienmarkt_standort_teaser', label: 'Standort Teaser', type: 'general' },
-    { key: 'immobilienmarkt_individuell_01', label: 'Individueller Text 01', type: 'individual' },
+    { key: 'immobilienmarkt_individuell_01', label: 'Experteneinschätzung Text 01', type: 'individual' },
     { key: 'immobilienmarkt_zitat', label: 'Experten-Zitat', type: 'individual' },
-    { key: 'immobilienmarkt_individuell_02', label: 'Individueller Text 02', type: 'individual' },
+    { key: 'immobilienmarkt_individuell_02', label: 'Experteneinschätzung Text 02', type: 'individual' },
     { key: 'immobilienmarkt_beschreibung_01', label: 'Marktanalyse Teil 1', type: 'data_driven' },
     { key: 'immobilienmarkt_beschreibung_02', label: 'Marktanalyse Teil 2', type: 'data_driven' },
     { key: 'immobilienmarkt_besonderheiten', label: 'Kaufnebenkosten Info', type: 'general' },
     { key: 'immobilienmarkt_maklerempfehlung', label: 'Maklerempfehlung', type: 'individual' },
   ]},
-  { id: 'immobilienpreise', label: 'Immobilienpreise', icon: '🏠', sections: [
+  { id: 'immobilienpreise', label: 'Immobilienpreise', icon: '/icons/ws24_marktbericht_immobilienpreise.svg', sections: [
     { key: 'immobilienpreise_intro', label: 'Einleitung Preise', type: 'general' },
     { key: 'ueberschrift_immobilienpreise_haus', label: 'H2 Überschrift Haus', type: 'individual' },
     { key: 'immobilienpreise_haus_intro', label: 'Intro Hauspreise', type: 'general' },
@@ -52,7 +117,7 @@ const TAB_CONFIG = [
     { key: 'immobilienpreise_wohnung_preisentwicklung', label: 'Preisentwicklung Wohnung', type: 'data_driven' },
     { key: 'immobilienpreise_wohnung_nach_flaechen_und_zimmern', label: 'Preise nach Zimmer/Fläche', type: 'data_driven' },
   ]},
-  { id: 'mietpreise', label: 'Mietpreise', icon: '🔑', sections: [
+  { id: 'mietpreise', label: 'Mietpreise', icon: '/icons/ws24_marktbericht_mietpreise.svg', sections: [
     { key: 'mietpreise_intro', label: 'Einleitung Mieten', type: 'general' },
     { key: 'mietpreise_allgemein', label: 'Mietmarkt Übersicht', type: 'data_driven' },
     { key: 'ueberschrift_mietpreise_wohnung', label: 'H2 Mietpreise Wohnung', type: 'individual' },
@@ -63,7 +128,7 @@ const TAB_CONFIG = [
     { key: 'mietpreise_haus_allgemein', label: 'Hausmieten Allgemein', type: 'data_driven' },
     { key: 'mietpreise_haus_preisentwicklung', label: 'Preisentwicklung Miete (Haus)', type: 'data_driven' },
   ]},
-  { id: 'mietrendite', label: 'Mietrendite', icon: '📈', sections: [
+  { id: 'mietrendite', label: 'Mietrendite', icon: '/icons/ws24_marktbericht_mietrendite.svg', sections: [
     { key: 'mietrendite_intro', label: 'Einleitung Rendite', type: 'general' },
     { key: 'mietrendite_kaufpreisfaktor', label: 'Kaufpreisfaktor Info', type: 'general' },
     { key: 'ueberschrift_mietrendite_bruttomietrendite', label: 'H2 Bruttomietrendite', type: 'individual' },
@@ -73,8 +138,17 @@ const TAB_CONFIG = [
     { key: 'mietrendite_efh', label: 'Rendite EFH', type: 'data_driven' },
     { key: 'mietrendite_mfh', label: 'Rendite MFH', type: 'data_driven' },
   ]},
-  { id: 'wohnmarktsituation', label: 'Wohnmarkt', icon: '🏢', sections: [
+  { id: 'wohnmarktsituation', label: 'Wohnmarkt', icon: '/icons/ws24_marktbericht_wohnmarktsituation.svg', sections: [
     { key: 'wohnmarktsituation_intro', label: 'Einleitung Markt', type: 'general' },
+    { key: 'wohnmarktsituation_wohnraumnachfrage', label: 'Nachfrage Introtext', type: 'general' },
+    { key: 'wohnmarktsituation_wohnraumangebot_intro', label: 'Wohnraumangebot Introtext', type: 'general' },
+    { key: 'wohnmarktsituation_wohnungsbestand_intro', label: 'Wohnungsbestand Introtext', type: 'general' },
+    { key: 'wohnmarktsituation_baufertigstellungen_intro', label: 'Baufertigstellungen Introtext', type: 'general' },
+    { key: 'wohnmarktsituation_baugenehmigungen_intro', label: 'Baugenehmigungen Introtext', type: 'general' },
+    { key: 'wohnmarktsituation_bautaetigkeit_intro', label: 'Bautätigkeit Introtext', type: 'general' },
+    { key: 'wohnmarktsituation_natuerlicher_saldo_intro', label: 'Natürlicher Saldo Introtext', type: 'general' },
+    { key: 'wohnmarktsituation_wanderungssaldo_intro', label: 'Wanderungssaldo Introtext', type: 'general' },
+    { key: 'wohnmarktsituation_jugendquotient_altenquotient_intro', label: 'Jugend-/Altenquotient Introtext', type: 'general' },
     { key: 'ueberschrift_wohnmarktsituation_wohnraumnachfrage_individuell', label: 'H2 Nachfrage individuell', type: 'individual' },
     { key: 'wohnmarktsituation_allgemein', label: 'Nachfrage Analyse', type: 'data_driven' },
     { key: 'wohnmarktsituation_bevoelkerungsentwicklung', label: 'Bevölkerung', type: 'data_driven' },
@@ -89,10 +163,11 @@ const TAB_CONFIG = [
     { key: 'wohnmarktsituation_baugenehmigungen', label: 'Genehmigungen Daten', type: 'data_driven' },
     { key: 'wohnmarktsituation_bauueberhang_baufortschritt', label: 'Bauüberhang', type: 'data_driven' },
   ]},
-  { id: 'wohnlagencheck', label: 'Lagecheck', icon: '📍', sections: [
+  { id: 'wohnlagencheck', label: 'Lagecheck', icon: '/icons/ws24_marktbericht_wohnlagencheck.svg', sections: [
     { key: 'ueberschrift_wohnlagencheck_allgemein', label: 'H2 Wohnlagencheck', type: 'general' },
     { key: 'wohnlagencheck_allgemein', label: 'Allgemeine Lage', type: 'general' },
     { key: 'wohnlagencheck_lage', label: 'Detail-Lage', type: 'general' },
+    { key: 'wohnlagencheck_standortfaktoren_intro', label: 'Standortfaktoren Intro', type: 'general' },
     { key: 'ueberschrift_wohnlagencheck_faktoren', label: 'H2 Standortfaktoren', type: 'individual' },
     { key: 'wohnlagencheck_faktor_mobilitaet', label: 'Mobilität', type: 'general' },
     { key: 'wohnlagencheck_faktor_bildung', label: 'Bildung', type: 'general' },
@@ -100,9 +175,16 @@ const TAB_CONFIG = [
     { key: 'wohnlagencheck_faktor_nahversorgung', label: 'Nahversorgung', type: 'general' },
     { key: 'wohnlagencheck_faktor_naherholung', label: 'Naherholung', type: 'general' },
     { key: 'wohnlagencheck_faktor_kultur_freizeit', label: 'Kultur & Freizeit', type: 'general' },
+    { key: 'wohnlagencheck_faktor_arbeitsplatz', label: 'Arbeitsplatz', type: 'general' },
+    { key: 'wohnlagencheck_faktor_lebenserhaltungskosten', label: 'Lebenserhaltungskosten', type: 'general' },
+    { key: 'wohnlagencheck_faktor_sicherheit', label: 'Sicherheit', type: 'general' },
   ]},
-  { id: 'wirtschaft', label: 'Wirtschaft', icon: '🏭', sections: [
+  { id: 'wirtschaft', label: 'Wirtschaft', icon: '/icons/ws24_marktbericht_wirtschaft.svg', sections: [
     { key: 'wirtschaft_intro', label: 'Einleitung Wirtschaft', type: 'general' },
+    { key: 'wirtschaft_arbeitsmarkt', label: 'Arbeitsmarkt Introtext', type: 'general' },
+    { key: 'wirtschaft_gewerbesaldo', label: 'Gewerbesaldo Introtext', type: 'general' },
+    { key: 'wirtschaft_arbeitslosendichte', label: 'Arbeitslosendichte Introtext', type: 'general' },
+    { key: 'wirtschaft_sv_beschaeftigte_wohnort', label: 'SvB Wohnort Introtext', type: 'general' },
     { key: 'ueberschrift_wirtschaft_individuell', label: 'H2 Wirtschaft individuell', type: 'individual' },
     { key: 'wirtschaft_bruttoinlandsprodukt', label: 'BIP Analyse', type: 'data_driven' },
     { key: 'wirtschaft_einkommen', label: 'Einkommen', type: 'data_driven' },
@@ -112,7 +194,7 @@ const TAB_CONFIG = [
     { key: 'wirtschaft_sv_beschaeftigte_arbeitsort', label: 'Beschäftigte Arbeitsort', type: 'data_driven' },
     { key: 'wirtschaft_arbeitslosigkeit', label: 'Arbeitslosenquote', type: 'data_driven' },
   ]},
-  { id: 'grundstueckspreise', label: 'Grundstücke', icon: '🌱', sections: [
+  { id: 'grundstueckspreise', label: 'Grundstücke', icon: '/icons/ws24_marktbericht_grundstueckspreise.svg', sections: [
     { key: 'grundstueckspreise_intro', label: 'Einleitung Grundstücke', type: 'general' },
     { key: 'ueberschrift_grundstueckspreise', label: 'H2 Grundstückspreise', type: 'individual' },
     { key: 'grundstueckspreise_allgemein', label: 'Grundstückspreise Daten', type: 'data_driven' },
@@ -124,7 +206,7 @@ const MARKETING_TAB_CONFIG = [
   {
     id: 'immobilienmarkt_ueberblick',
     label: 'Marktüberblick',
-    icon: '🧭',
+    icon: '/icons/ws24_marktbericht_ueberblick.svg',
     sections: [
       { key: 'marketing.immobilienmarkt_ueberblick.title', label: 'Title', type: 'marketing' },
       { key: 'marketing.immobilienmarkt_ueberblick.description', label: 'Description', type: 'marketing' },
@@ -138,7 +220,7 @@ const MARKETING_TAB_CONFIG = [
   {
     id: 'immobilienpreise',
     label: 'Immobilienpreise',
-    icon: '🏠',
+    icon: '/icons/ws24_marktbericht_immobilienpreise.svg',
     sections: [
       { key: 'marketing.immobilienpreise.title', label: 'Title', type: 'marketing' },
       { key: 'marketing.immobilienpreise.description', label: 'Description', type: 'marketing' },
@@ -152,7 +234,7 @@ const MARKETING_TAB_CONFIG = [
   {
     id: 'mietpreise',
     label: 'Mietpreise',
-    icon: '🔑',
+    icon: '/icons/ws24_marktbericht_mietpreise.svg',
     sections: [
       { key: 'marketing.mietpreise.title', label: 'Title', type: 'marketing' },
       { key: 'marketing.mietpreise.description', label: 'Description', type: 'marketing' },
@@ -166,7 +248,7 @@ const MARKETING_TAB_CONFIG = [
   {
     id: 'mietrendite',
     label: 'Mietrendite',
-    icon: '📈',
+    icon: '/icons/ws24_marktbericht_mietrendite.svg',
     sections: [
       { key: 'marketing.mietrendite.title', label: 'Title', type: 'marketing' },
       { key: 'marketing.mietrendite.description', label: 'Description', type: 'marketing' },
@@ -180,7 +262,7 @@ const MARKETING_TAB_CONFIG = [
   {
     id: 'wohnmarktsituation',
     label: 'Wohnmarktsituation',
-    icon: '🏢',
+    icon: '/icons/ws24_marktbericht_wohnmarktsituation.svg',
     sections: [
       { key: 'marketing.wohnmarktsituation.title', label: 'Title', type: 'marketing' },
       { key: 'marketing.wohnmarktsituation.description', label: 'Description', type: 'marketing' },
@@ -194,7 +276,7 @@ const MARKETING_TAB_CONFIG = [
   {
     id: 'grundstueckspreise',
     label: 'Grundstücke',
-    icon: '🌱',
+    icon: '/icons/ws24_marktbericht_grundstueckspreise.svg',
     sections: [
       { key: 'marketing.grundstueckspreise.title', label: 'Title', type: 'marketing' },
       { key: 'marketing.grundstueckspreise.description', label: 'Description', type: 'marketing' },
@@ -208,7 +290,7 @@ const MARKETING_TAB_CONFIG = [
   {
     id: 'wohnlagencheck',
     label: 'Wohnlagencheck',
-    icon: '📍',
+    icon: '/icons/ws24_marktbericht_wohnlagencheck.svg',
     sections: [
       { key: 'marketing.wohnlagencheck.title', label: 'Title', type: 'marketing' },
       { key: 'marketing.wohnlagencheck.description', label: 'Description', type: 'marketing' },
@@ -222,7 +304,7 @@ const MARKETING_TAB_CONFIG = [
   {
     id: 'wirtschaft',
     label: 'Wirtschaft',
-    icon: '🏭',
+    icon: '/icons/ws24_marktbericht_wirtschaft.svg',
     sections: [
       { key: 'marketing.wirtschaft.title', label: 'Title', type: 'marketing' },
       { key: 'marketing.wirtschaft.description', label: 'Description', type: 'marketing' },
@@ -243,6 +325,33 @@ type TextEntry = {
     last_updated?: string | null;
 };
 
+type MediaFieldState = {
+  uploading: boolean;
+  error: string | null;
+};
+
+const MEDIA_BY_SECTION_KEY: Partial<Record<string, MandatoryMediaKey>> = {
+  berater_name: 'media_berater_avatar',
+  makler_name: 'media_makler_logo',
+};
+
+const MAKLER_MEDIA_KEYS: MandatoryMediaKey[] = ['media_makler_bild_01', 'media_makler_bild_02'];
+const INDIVIDUAL_MANDATORY_KEY_SET = new Set<string>(INDIVIDUAL_MANDATORY_KEYS);
+
+type AreaListItem = {
+  id: string;
+  name?: string | null;
+  slug?: string | null;
+  parent_slug?: string | null;
+  bundesland_slug?: string | null;
+};
+
+type GlobalBulkReport = {
+  processed: string[];
+  skipped: string[];
+  failed: Array<{ key: string; error: string }>;
+};
+
 type PartnerArea = {
   id?: string;
   name?: string;
@@ -257,6 +366,20 @@ type PartnerAreaConfig = {
   [key: string]: unknown;
 };
 
+type LlmIntegrationOption = {
+  id: string;
+  provider: string;
+  model: string;
+};
+
+type PartnerIntegrationRow = {
+  id?: string;
+  kind?: string;
+  provider?: string;
+  is_active?: boolean;
+  settings?: Record<string, unknown> | null;
+};
+
 type TextEditorFormProps = {
     config: PartnerAreaConfig;
     tableName?: 'report_texts' | 'partner_local_site_texts' | 'partner_marketing_texts';
@@ -264,6 +387,10 @@ type TextEditorFormProps = {
     initialTabId?: string;
     focusSectionKey?: string;
     onFocusHandled?: () => void;
+    lockedToMandatory?: boolean;
+    allowedTabIds?: string[];
+    allowedSectionKeys?: string[];
+    onPersistSuccess?: () => void;
 };
 
 export default function TextEditorForm({
@@ -273,19 +400,38 @@ export default function TextEditorForm({
     initialTabId,
     focusSectionKey,
     onFocusHandled,
+    lockedToMandatory = false,
+    allowedTabIds,
+    allowedSectionKeys,
+    onPersistSuccess,
 }: TextEditorFormProps) {
   const supabase = useMemo(() => createClient(), []);
+  const appliedInitialTabRef = useRef<string | null>(null);
   const [activeTab, setActiveTab] = useState('marktueberblick');
   const [loading, setLoading] = useState(true);
   const [baseTexts, setBaseTexts] = useState<{ text: Record<string, Record<string, string>> } | null>(null);
+  const [standardTexts, setStandardTexts] = useState<{ text: Record<string, Record<string, string>> } | null>(null);
   const [dbTexts, setDbTexts] = useState<TextEntry[]>([]);
   const [saving, setSaving] = useState(false);
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
-  const [bulkRewriteState, setBulkRewriteState] = useState<{
-    scope: 'tab' | 'all';
+  const [generalBulkState, setGeneralBulkState] = useState<{
+    scope: 'tab' | 'kreis_ortslagen';
     done: number;
     total: number;
   } | null>(null);
+  const [showGlobalPrompts, setShowGlobalPrompts] = useState(false);
+  const [tabGeneralPrompt, setTabGeneralPrompt] = useState('');
+  const [globalKreisPrompt, setGlobalKreisPrompt] = useState('');
+  const [globalOrtslagenPrompt, setGlobalOrtslagenPrompt] = useState('');
+  const [globalBulkReport, setGlobalBulkReport] = useState<GlobalBulkReport | null>(null);
+  const [mediaState, setMediaState] = useState<Record<MandatoryMediaKey, MediaFieldState>>({
+    media_berater_avatar: { uploading: false, error: null },
+    media_makler_logo: { uploading: false, error: null },
+    media_makler_bild_01: { uploading: false, error: null },
+    media_makler_bild_02: { uploading: false, error: null },
+  });
+  const [llmIntegrations, setLlmIntegrations] = useState<LlmIntegrationOption[]>([]);
+  const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState<string>('');
   const parts = config?.area_id ? config.area_id.split('-') : [];
   const isOrtslage = parts.length > 3;
   const isMarketing = tableName === 'partner_marketing_texts';
@@ -301,22 +447,42 @@ export default function TextEditorForm({
     const ortSlug = isOrtslage ? String(config?.areas?.slug || '') : '';
 
     try {
-      if (bundeslandSlug && kreisSlug) {
-        const res = await fetch('/api/fetch-json', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-              bundesland: bundeslandSlug,
-              kreis: kreisSlug,
-              ortslage: ortSlug || null
-          }),
-        });
-        
-        const jsonTexts = await res.json();
-        // Wir setzen das ganze Objekt, da dein API-Endpunkt direkt `jsonData.text` zurückgibt
-        setBaseTexts({ text: jsonTexts });
+      if (isMarketing) {
+        const marketingRes = await fetch(`/api/marketing-defaults?area_id=${encodeURIComponent(config.area_id)}`);
+        if (marketingRes.ok) {
+          const marketingJson = await marketingRes.json();
+          setBaseTexts({ text: { marketing: marketingJson?.marketing ?? {} } as Record<string, Record<string, string>> });
+        } else {
+          setBaseTexts({ text: { marketing: {} } as Record<string, Record<string, string>> });
+        }
+        setStandardTexts({ text: {} });
       } else {
-        setBaseTexts({ text: {} });
+        const standardScope = isOrtslage ? 'ortslage' : 'kreis';
+        const standardRes = await fetch(`/api/fetch-text-standards?scope=${standardScope}`);
+        if (standardRes.ok) {
+          const standardJson = await standardRes.json();
+          setStandardTexts({ text: standardJson?.text ?? {} });
+        } else {
+          setStandardTexts({ text: {} });
+        }
+
+        if (bundeslandSlug && kreisSlug) {
+          const res = await fetch('/api/fetch-json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                bundesland: bundeslandSlug,
+                kreis: kreisSlug,
+                ortslage: ortSlug || null
+            }),
+          });
+
+          const jsonTexts = await res.json();
+          // Wir setzen das ganze Objekt, da dein API-Endpunkt direkt `jsonData.text` zurückgibt
+          setBaseTexts({ text: jsonTexts });
+        } else {
+          setBaseTexts({ text: {} });
+        }
       }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -326,6 +492,35 @@ export default function TextEditorForm({
         .eq('area_id', config.area_id)
         .eq('partner_id', user?.id);
       setDbTexts(data || []);
+
+      const integrationsRes = await fetch('/api/partner/integrations');
+      if (integrationsRes.ok) {
+        const integrationsPayload = await integrationsRes.json().catch(() => ({}));
+        const items: PartnerIntegrationRow[] = Array.isArray(integrationsPayload?.integrations)
+          ? (integrationsPayload.integrations as PartnerIntegrationRow[])
+          : [];
+        const llmItems: LlmIntegrationOption[] = items
+          .filter((entry) => String(entry?.kind ?? '').toLowerCase() === 'llm' && entry?.is_active === true)
+          .map((entry) => {
+            const provider = String(entry?.provider ?? '').trim() || 'LLM';
+            const settings = (entry?.settings ?? {}) as Record<string, unknown>;
+            const model = String(settings?.model ?? settings?.model_name ?? '').trim() || 'Standardmodell';
+            return {
+              id: String(entry?.id ?? ''),
+              provider,
+              model,
+            };
+          })
+          .filter((entry) => entry.id.length > 0);
+        setLlmIntegrations(llmItems);
+        setSelectedLlmIntegrationId((prev) => {
+          if (prev && llmItems.some((item) => item.id === prev)) return prev;
+          return llmItems[0]?.id ?? '';
+        });
+      } else {
+        setLlmIntegrations([]);
+        setSelectedLlmIntegrationId('');
+      }
     } catch (err) { 
       console.error("Fehler beim Laden der JSON:", err); 
     } finally { 
@@ -333,7 +528,7 @@ export default function TextEditorForm({
     }
   }
   loadTexts();
-}, [config, supabase, tableName, isOrtslage]);
+}, [config, supabase, tableName, isOrtslage, isMarketing]);
 
   const tabConfig = isMarketing ? MARKETING_TAB_CONFIG : TAB_CONFIG;
   const hiddenTabIds = new Set(['berater', 'makler', 'marktueberblick']);
@@ -344,9 +539,25 @@ export default function TextEditorForm({
   let visibleTabs = shouldHideTabs
     ? tabConfig.filter((tab) => !hiddenTabIds.has(tab.id))
     : tabConfig;
+  if (Array.isArray(allowedTabIds) && allowedTabIds.length > 0) {
+    const allowed = new Set(allowedTabIds);
+    visibleTabs = visibleTabs.filter((tab) => allowed.has(tab.id));
+  }
   if (isMarketing && isOrtslage) {
     visibleTabs = visibleTabs.filter((tab) => tab.id !== 'immobilienmarkt_ueberblick');
   }
+  const allowedSectionSet = useMemo(
+    () => (Array.isArray(allowedSectionKeys) && allowedSectionKeys.length > 0 ? new Set(allowedSectionKeys) : null),
+    [allowedSectionKeys],
+  );
+  const allowedGeneralKeys = useMemo(
+    () =>
+      new Set<string>([
+        ...GENERAL_STANDARD_KEYS,
+        ...GENERAL_REGION_FOCUS_KEYS,
+      ]),
+    [],
+  );
 
   useEffect(() => {
     if (visibleTabs.length === 0) return;
@@ -356,8 +567,12 @@ export default function TextEditorForm({
 
   useEffect(() => {
     if (!initialTabId) return;
+    if (appliedInitialTabRef.current === initialTabId) return;
     const exists = visibleTabs.some((tab) => tab.id === initialTabId);
-    if (exists) setActiveTab(initialTabId);
+    if (exists) {
+      setActiveTab(initialTabId);
+      appliedInitialTabRef.current = initialTabId;
+    }
   }, [initialTabId, visibleTabs]);
 
   useEffect(() => {
@@ -379,12 +594,19 @@ export default function TextEditorForm({
     return () => window.clearTimeout(t);
   }, [focusSectionKey, onFocusHandled]);
 
+  useEffect(() => {
+    const areaName = config?.areas?.name || config?.area_id || 'Region';
+    setTabGeneralPrompt(buildGlobalPromptPrefill(activeTab, 'tab_general', areaName));
+    setGlobalKreisPrompt(buildGlobalPromptPrefill(activeTab, 'kreis_text', areaName));
+    setGlobalOrtslagenPrompt(buildGlobalPromptPrefill(activeTab, 'ort_template', areaName));
+  }, [activeTab, config?.area_id, config?.areas?.name]);
+
   const saveText = async (key: string, content: string, type: string, sourceGroup?: string | null) => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const status = enableApproval ? 'draft' : 'approved';
-      await supabase.from(tableName).upsert({
+      const { error } = await supabase.from(tableName).upsert({
         partner_id: user.id,
         area_id: config.area_id,
         section_key: key,
@@ -394,24 +616,15 @@ export default function TextEditorForm({
         status,
         last_updated: new Date().toISOString()
       }, { onConflict: 'partner_id,area_id,section_key' });
-      setDbTexts(prev => {
-        const filtered = prev.filter(t => t.section_key !== key);
-        return [...filtered, { section_key: key, optimized_content: content, status, text_type: type }];
-      });
+      if (!error) {
+        setDbTexts(prev => {
+          const filtered = prev.filter(t => t.section_key !== key);
+          return [...filtered, { section_key: key, optimized_content: content, status, text_type: type }];
+        });
+        onPersistSuccess?.();
+      }
     }
     setSaving(false);
-  };
-
-  const resetToOriginal = async (key: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !config?.area_id) return;
-    await supabase
-      .from(tableName)
-      .delete()
-      .eq('partner_id', user.id)
-      .eq('area_id', config.area_id)
-      .eq('section_key', key);
-    setDbTexts((prev) => prev.filter((t) => t.section_key !== key));
   };
 
   const approveAllTexts = async () => {
@@ -442,6 +655,104 @@ export default function TextEditorForm({
     );
   };
 
+  const getMediaEntry = (key: MandatoryMediaKey): TextEntry | undefined =>
+    dbTexts.find((entry) => entry.section_key === key);
+
+  const compressImageToWebp = async (
+    file: File,
+    maxWidth: number,
+    maxHeight: number,
+    maxUploadBytes: number,
+  ): Promise<File> => {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Bild konnte nicht gelesen werden.'));
+      };
+      img.src = objectUrl;
+    });
+    const ratio = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+    const targetWidth = Math.max(1, Math.round(image.width * ratio));
+    const targetHeight = Math.max(1, Math.round(image.height * ratio));
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas nicht verfügbar.');
+    ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    const qualitySteps = [0.84, 0.76, 0.68, 0.6];
+    let bestBlob: Blob | null = null;
+
+    for (const quality of qualitySteps) {
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((next) => resolve(next), 'image/webp', quality),
+      );
+      if (!blob) continue;
+      bestBlob = blob;
+      if (blob.size <= maxUploadBytes) break;
+    }
+
+    if (!bestBlob) throw new Error('Bildkonvertierung fehlgeschlagen.');
+    return new File([bestBlob], file.name.replace(/\.[a-z0-9]+$/i, '') + '.webp', { type: 'image/webp' });
+  };
+
+  const uploadMandatoryMedia = async (assetKey: MandatoryMediaKey, rawFile: File) => {
+    const spec = MANDATORY_MEDIA_SPECS[assetKey];
+    setMediaState((prev) => ({ ...prev, [assetKey]: { uploading: true, error: null } }));
+    try {
+      const file = await compressImageToWebp(rawFile, spec.maxWidth, spec.maxHeight, spec.maxUploadBytes);
+      if (file.size > spec.maxUploadBytes) {
+        throw new Error(
+          `Datei zu groß nach Konvertierung (${Math.round(file.size / 1024)} KB). Ziel: max. ${Math.round(
+            spec.maxUploadBytes / 1024,
+          )} KB.`,
+        );
+      }
+
+      const form = new FormData();
+      form.append('asset_key', assetKey);
+      form.append('file', file);
+
+      const res = await fetch(`/api/partner/areas/${encodeURIComponent(config.area_id)}/media/upload`, {
+        method: 'POST',
+        body: form,
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(String(payload?.error ?? `Upload fehlgeschlagen (${res.status})`));
+      }
+
+      const url = String(payload?.url ?? '');
+      if (!url) throw new Error('Upload erfolgreich, aber ohne URL.');
+
+      setDbTexts((prev) => {
+        const filtered = prev.filter((entry) => entry.section_key !== assetKey);
+        return [
+          ...filtered,
+          {
+            section_key: assetKey,
+            optimized_content: url,
+            status: 'draft',
+            text_type: 'individual',
+            last_updated: new Date().toISOString(),
+          },
+        ];
+      });
+      onPersistSuccess?.();
+      setMediaState((prev) => ({ ...prev, [assetKey]: { uploading: false, error: null } }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Upload fehlgeschlagen.';
+      setMediaState((prev) => ({ ...prev, [assetKey]: { uploading: false, error: message } }));
+    }
+  };
+
   const requestAiRewrite = async (
     key: string,
     currentText: string,
@@ -456,9 +767,11 @@ export default function TextEditorForm({
         body: JSON.stringify({ 
           text: currentText, 
           areaName: config?.areas?.name || config.area_id,
+          area_id: config?.area_id,
           type: type,
           sectionLabel: label,
           customPrompt: customPrompt || undefined,
+          llm_integration_id: selectedLlmIntegrationId || llmIntegrations[0]?.id || undefined,
         }),
       });
       const data = await res.json();
@@ -487,91 +800,206 @@ export default function TextEditorForm({
     setRewritingKey(null);
   };
 
+  const upsertTextForArea = async (
+    areaId: string,
+    key: string,
+    content: string,
+    type: string,
+    rawContent: string,
+  ) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const status = enableApproval ? 'draft' : 'approved';
+    await supabase.from(tableName).upsert({
+      partner_id: user.id,
+      area_id: areaId,
+      section_key: key,
+      text_type: type,
+      raw_content: rawContent,
+      optimized_content: content,
+      status,
+      last_updated: new Date().toISOString()
+    }, { onConflict: 'partner_id,area_id,section_key' });
+  };
+
   const getCurrentTextForSection = (sectionKey: string, sectionGroup: string | null) => {
     const dbEntry = dbTexts.find((t) => t.section_key === sectionKey);
     return dbEntry?.optimized_content ?? getRawTextFromJSON(sectionKey, sectionGroup);
   };
 
-  const runBulkDataDrivenAi = async (scope: 'tab' | 'all') => {
-    if (bulkRewriteState || !visibleTabs.length) return;
-    const tabsToProcess = scope === 'tab'
-      ? visibleTabs.filter((tab) => tab.id === activeTab)
-      : visibleTabs;
-    const tasks = tabsToProcess.flatMap((tab) => {
-      const sectionGroup = resolveGroupForTab(tab.id);
-      return tab.sections
-        .filter((section) => section.type === 'data_driven')
-        .map((section) => ({
-          key: section.key,
-          label: section.label,
-          type: section.type,
-          sectionGroup,
-        }));
-    });
+  const runBulkGeneralAi = async (scope: 'tab' | 'kreis_ortslagen') => {
+    if (generalBulkState || !visibleTabs.length) return;
+    const active = visibleTabs.find((tab) => tab.id === activeTab);
+    if (!active) return;
+    const sectionGroup = resolveGroupForTab(active.id);
+    const tasks = active.sections
+      .filter((section) => section.type === 'general' && allowedGeneralKeys.has(section.key))
+      .map((section) => ({
+        key: section.key,
+        label: section.label,
+        type: section.type,
+        sectionGroup,
+      }));
     if (tasks.length === 0) return;
 
-    setBulkRewriteState({ scope, done: 0, total: tasks.length });
+    const perTaskOps = scope === 'tab' ? 1 : 2;
+    setGeneralBulkState({ scope, done: 0, total: tasks.length * perTaskOps });
+    setGlobalBulkReport({ processed: [], skipped: [], failed: [] });
     try {
+      let done = 0;
       for (let i = 0; i < tasks.length; i += 1) {
         const task = tasks[i];
         setRewritingKey(task.key);
         const sourceText = getCurrentTextForSection(task.key, task.sectionGroup);
-        const optimizedText = await requestAiRewrite(
+        if (!String(sourceText || '').trim()) {
+          done += perTaskOps;
+          setGeneralBulkState((prev) => prev ? { ...prev, done } : null);
+          setGlobalBulkReport((prev) =>
+            prev
+              ? { ...prev, skipped: [...prev.skipped, `${task.key} (kein Quelltext)`] }
+              : prev,
+          );
+          continue;
+        }
+        const kreisTextPrompt = scope === 'kreis_ortslagen'
+          ? (globalKreisPrompt || undefined)
+          : (tabGeneralPrompt || undefined);
+        const kreisText = await requestAiRewrite(
           task.key,
           sourceText,
           task.type,
           task.label,
+          kreisTextPrompt,
         );
-        if (optimizedText) {
-          await saveText(task.key, optimizedText, task.type, task.sectionGroup);
+        if (kreisText) {
+          try {
+            await saveText(task.key, kreisText, task.type, task.sectionGroup);
+            setGlobalBulkReport((prev) =>
+              prev
+                ? { ...prev, processed: [...prev.processed, `${task.key} (Kreis)`] }
+                : prev,
+            );
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'save failed';
+            setGlobalBulkReport((prev) =>
+              prev
+                ? { ...prev, failed: [...prev.failed, { key: task.key, error: message }] }
+                : prev,
+            );
+          }
+        } else {
+          setGlobalBulkReport((prev) =>
+            prev
+              ? { ...prev, failed: [...prev.failed, { key: task.key, error: 'KI-Antwort leer' }] }
+              : prev,
+          );
         }
-        setBulkRewriteState({ scope, done: i + 1, total: tasks.length });
+        done += 1;
+        setGeneralBulkState((prev) => prev ? { ...prev, done } : null);
+
+        if (scope === 'kreis_ortslagen') {
+          const ortTemplate = await requestAiRewrite(
+            task.key,
+            sourceText,
+            task.type,
+            `${task.label} (Ortslagen-Template)`,
+            globalOrtslagenPrompt || undefined,
+          );
+
+          if (ortTemplate) {
+            const bundeslandSlug = String(config?.areas?.bundesland_slug || '');
+            const kreisSlug = String(config?.areas?.slug || '');
+            const { data: ortAreas } = await supabase
+              .from('areas')
+              .select('id, name, slug, parent_slug, bundesland_slug')
+              .eq('bundesland_slug', bundeslandSlug)
+              .eq('parent_slug', kreisSlug);
+
+            for (const ort of (ortAreas || []) as AreaListItem[]) {
+              const ortName = String(ort.name || ort.slug || '').trim();
+              const ortText = ortTemplate
+                .replace(/\{ortsname\}/g, ortName)
+                .replace(/\[\[ORTSLAGE_NAME\]\]/g, ortName);
+              try {
+                await upsertTextForArea(ort.id, task.key, ortText, task.type, sourceText);
+              } catch (error) {
+                const message = error instanceof Error ? error.message : 'upsert failed';
+                setGlobalBulkReport((prev) =>
+                  prev
+                    ? { ...prev, failed: [...prev.failed, { key: `${task.key}:${ort.id}`, error: message }] }
+                    : prev,
+                );
+              }
+            }
+            setGlobalBulkReport((prev) =>
+              prev
+                ? { ...prev, processed: [...prev.processed, `${task.key} (Ortslagen-Template)`] }
+                : prev,
+            );
+          } else {
+            setGlobalBulkReport((prev) =>
+              prev
+                ? { ...prev, failed: [...prev.failed, { key: `${task.key}:template`, error: 'KI-Template leer' }] }
+                : prev,
+            );
+          }
+          done += 1;
+          setGeneralBulkState((prev) => prev ? { ...prev, done } : null);
+        }
       }
     } finally {
       setRewritingKey(null);
-      setBulkRewriteState(null);
+      setGeneralBulkState(null);
     }
   };
 
   const getRawTextFromJSON = (key: string, preferredGroup?: string | null) => {
     if (!baseTexts?.text) return '';
+    const fallbackText = standardTexts?.text ?? {};
+    const allowStandardFallback = !isAdvisorOrBrokerKey(key);
     if (key.includes('.')) {
       const value = getValueByPath(baseTexts.text, key.split('.'));
-      return typeof value === 'string' ? value : '';
+      if (typeof value === 'string') return value;
+      if (!allowStandardFallback) return '';
+      const fallback = getValueByPath(fallbackText, key.split('.'));
+      return typeof fallback === 'string' ? fallback : '';
     }
     if (preferredGroup && baseTexts.text[preferredGroup] && typeof baseTexts.text[preferredGroup] === 'object') {
       const preferred = baseTexts.text[preferredGroup][key];
       if (typeof preferred === 'string') return preferred;
+      if (!allowStandardFallback) return '';
+      const fallbackPreferred = fallbackText[preferredGroup]?.[key];
+      if (typeof fallbackPreferred === 'string') return fallbackPreferred;
     }
     const groups = Object.keys(baseTexts.text);
     for (const group of groups) {
       const value = baseTexts.text[group]?.[key];
       if (typeof value === 'string' && value.length > 0) return value;
     }
+    if (!allowStandardFallback) return '';
+    const fallbackGroups = Object.keys(fallbackText);
+    for (const group of fallbackGroups) {
+      const value = fallbackText[group]?.[key];
+      if (typeof value === 'string' && value.length > 0) return value;
+    }
     return '';
   };
 
   if (loading) {
-    return (
-      <div style={loadingWrapperStyle}>
-        <div style={loadingSpinnerStyle} />
-        <div>Sektionen werden geladen...</div>
-        <style jsx global>{`
-          @keyframes text-editor-spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
-    );
+    return <FullscreenLoader show label="Sektionen werden geladen..." />;
   }
 
   const activeTabConfig = visibleTabs.find(t => t.id === activeTab);
-  const activeTabDataDrivenCount = activeTabConfig?.sections.filter((section) => section.type === 'data_driven').length ?? 0;
-  const allDataDrivenCount = visibleTabs.reduce(
-    (sum, tab) => sum + tab.sections.filter((section) => section.type === 'data_driven').length,
-    0,
-  );
-  const isBulkRewriting = Boolean(bulkRewriteState);
+  const sections = activeTabConfig?.sections ?? [];
+  const activeSections = allowedSectionSet
+    ? sections.filter((section) => allowedSectionSet.has(section.key))
+    : sections;
+  const activeTabGeneralCount = activeTabConfig?.sections.filter(
+    (section) => section.type === 'general' && allowedGeneralKeys.has(section.key),
+  ).length ?? 0;
+  const isBulkRewriting = Boolean(generalBulkState);
+  const showGeneralBulkActions = tableName === 'report_texts' && activeTabGeneralCount > 0 && !lockedToMandatory;
+  const canRunKreisOrtslagen = showGeneralBulkActions && !isOrtslage;
 
   return (
     <div style={{ width: '100%' }}>
@@ -583,40 +1011,109 @@ export default function TextEditorForm({
             onClick={() => setActiveTab(tab.id)}
             style={tabButtonStyle(activeTab === tab.id)}
           >
-            <span style={{ fontSize: '18px' }}>{tab.icon}</span>
-            <span>{tab.label}</span>
+            {isIconPath(tab.icon) ? (
+              <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
+            ) : (
+              <span style={tabIconEmojiStyle}>{tab.icon}</span>
+            )}
+            <span style={tabLabelStyle}>{tab.label}</span>
           </button>
         ))}
       </div>
 
       {/* CONTENT AREA */}
       <div style={contentWrapperStyle}>
-        {activeTabDataDrivenCount > 0 ? (
-          <div style={bulkActionBarStyle}>
-            <button
-              type="button"
-              onClick={() => runBulkDataDrivenAi('tab')}
-              disabled={isBulkRewriting}
-              style={bulkActionButtonStyle(isBulkRewriting)}
-            >
-              {bulkRewriteState?.scope === 'tab'
-                ? `KI optimiert Data-Driven (${bulkRewriteState.done}/${bulkRewriteState.total})`
-                : `KI optimiert alle Data-Driven im Tab (${activeTabDataDrivenCount})`}
-            </button>
-            <button
-              type="button"
-              onClick={() => runBulkDataDrivenAi('all')}
-              disabled={isBulkRewriting || allDataDrivenCount === 0}
-              style={bulkActionSecondaryButtonStyle(isBulkRewriting || allDataDrivenCount === 0)}
-            >
-              {bulkRewriteState?.scope === 'all'
-                ? `Region läuft (${bulkRewriteState.done}/${bulkRewriteState.total})`
-                : `Global: alle Data-Driven der Region (${allDataDrivenCount})`}
-            </button>
+        {showGeneralBulkActions ? (
+          <div>
+            <div style={bulkActionBarStyle}>
+              <button
+                type="button"
+                onClick={() => runBulkGeneralAi('tab')}
+                disabled={isBulkRewriting}
+                style={bulkActionButtonStyle(isBulkRewriting)}
+              >
+                {generalBulkState?.scope === 'tab'
+                  ? `KI optimiert GENERAL (${generalBulkState.done}/${generalBulkState.total})`
+                  : `KI optimiert GENERAL im Themenblock (${activeTabGeneralCount})`}
+              </button>
+              <button
+                type="button"
+                onClick={() => runBulkGeneralAi('kreis_ortslagen')}
+                disabled={isBulkRewriting || !canRunKreisOrtslagen}
+                style={bulkActionSecondaryButtonStyle(isBulkRewriting || !canRunKreisOrtslagen)}
+              >
+                {generalBulkState?.scope === 'kreis_ortslagen'
+                  ? `GLOBAL Kreis + Ortslagen (${generalBulkState.done}/${generalBulkState.total})`
+                  : 'GLOBAL Kreis + Ortslagen (GENERAL)'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowGlobalPrompts((prev) => !prev)}
+                disabled={isBulkRewriting}
+                style={bulkActionSecondaryButtonStyle(isBulkRewriting)}
+              >
+                {showGlobalPrompts ? 'Global-Prompts ausblenden' : 'Global-Prompts anzeigen'}
+              </button>
+            </div>
+            {showGlobalPrompts ? (
+              <div style={globalPromptPanelStyle}>
+                <label style={promptInputLabelStyle}>
+                  Prompt: GENERAL im Themenblock
+                  <textarea
+                    value={tabGeneralPrompt}
+                    onChange={(e) => setTabGeneralPrompt(e.target.value)}
+                    style={promptInputStyle}
+                    placeholder="Prompt für GENERAL im Themenblock"
+                  />
+                </label>
+                <label style={promptInputLabelStyle}>
+                  Prompt: GLOBAL Kreistext
+                  <textarea
+                    value={globalKreisPrompt}
+                    onChange={(e) => setGlobalKreisPrompt(e.target.value)}
+                    style={promptInputStyle}
+                    placeholder="Prompt für Kreistext"
+                  />
+                </label>
+                <label style={promptInputLabelStyle}>
+                  Prompt: GLOBAL Ortslagen-Template
+                  <textarea
+                    value={globalOrtslagenPrompt}
+                    onChange={(e) => setGlobalOrtslagenPrompt(e.target.value)}
+                    style={promptInputStyle}
+                    placeholder="Prompt für Ortslagen-Template"
+                  />
+                </label>
+              </div>
+            ) : null}
+            {globalBulkReport ? (
+              <div style={globalReportStyle}>
+                <div style={globalReportTitleStyle}>Laufbericht</div>
+                <div style={globalReportRowStyle}>
+                  <strong>Verarbeitet:</strong> {globalBulkReport.processed.length}
+                </div>
+                <div style={globalReportRowStyle}>
+                  <strong>Übersprungen:</strong> {globalBulkReport.skipped.length}
+                </div>
+                <div style={globalReportRowStyle}>
+                  <strong>Fehler:</strong> {globalBulkReport.failed.length}
+                </div>
+                {globalBulkReport.failed.length > 0 ? (
+                  <div style={globalReportErrorListStyle}>
+                    {globalBulkReport.failed.slice(0, 8).map((item) => (
+                      <div key={`${item.key}:${item.error}`}>- {item.key}: {item.error}</div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ) : null}
-        {activeTabConfig?.sections.map((section) => {
+        {activeSections.map((section) => {
           const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
+          const mediaKey = MEDIA_BY_SECTION_KEY[section.key];
+          const mediaSpec = mediaKey ? MANDATORY_MEDIA_SPECS[mediaKey] : null;
+          const mediaEntry = mediaKey ? getMediaEntry(mediaKey) : undefined;
           return (
           <TextEditorField 
             key={`${section.key}:${dbTexts.find(t => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
@@ -629,12 +1126,56 @@ export default function TextEditorForm({
             areaName={config?.areas?.name || config.area_id}
             onSave={saveText}
             onAiRewrite={handleAiRewrite}
-            onReset={resetToOriginal}
+            llmOptions={llmIntegrations.map((item) => ({
+              id: item.id,
+              label: `${formatProviderLabel(item.provider)} · ${item.model}`,
+            }))}
+            selectedLlmIntegrationId={selectedLlmIntegrationId}
+            onSelectLlmIntegration={setSelectedLlmIntegrationId}
             enableApproval={enableApproval}
             isRewriting={rewritingKey === section.key}
+            isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
+            mediaUpload={mediaSpec && tableName === 'report_texts' ? {
+              key: mediaSpec.key,
+              label: mediaSpec.label,
+              maxWidth: mediaSpec.maxWidth,
+              maxHeight: mediaSpec.maxHeight,
+              maxUploadBytes: mediaSpec.maxUploadBytes,
+              currentUrl: String(mediaEntry?.optimized_content ?? ''),
+              hasOverride: Boolean(mediaEntry?.optimized_content),
+              uploading: mediaState[mediaSpec.key]?.uploading ?? false,
+              error: mediaState[mediaSpec.key]?.error ?? null,
+              onUpload: uploadMandatoryMedia,
+            } : null}
           />
           );
         })}
+        {tableName === 'report_texts' && activeTab === 'makler' ? (
+          <div style={mediaBottomWrapStyle}>
+            <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>Makler-Bilder (Pflicht)</h4>
+            <div style={mediaBottomGridStyle}>
+              {MAKLER_MEDIA_KEYS.map((key) => {
+                const spec = MANDATORY_MEDIA_SPECS[key];
+                const mediaEntry = getMediaEntry(key);
+                return (
+                  <MandatoryMediaUploadCard
+                    key={key}
+                    label={spec.label}
+                    assetKey={spec.key}
+                    maxWidth={spec.maxWidth}
+                    maxHeight={spec.maxHeight}
+                    maxUploadBytes={spec.maxUploadBytes}
+                    currentUrl={String(mediaEntry?.optimized_content ?? '')}
+                    hasOverride={Boolean(mediaEntry?.optimized_content)}
+                    uploading={mediaState[key]?.uploading ?? false}
+                    error={mediaState[key]?.error ?? null}
+                    onUpload={uploadMandatoryMedia}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {enableApproval ? (
@@ -733,9 +1274,24 @@ type TextEditorFieldProps = {
   areaName: string;
   onSave: (key: string, content: string, type: string, sourceGroup?: string | null) => void;
   onAiRewrite: (key: string, currentText: string, type: string, label: string, customPrompt?: string) => void;
-  onReset: (key: string) => void;
+  llmOptions?: Array<{ id: string; label: string }>;
+  selectedLlmIntegrationId?: string;
+  onSelectLlmIntegration?: (integrationId: string) => void;
   enableApproval: boolean;
   isRewriting: boolean;
+  isMandatory: boolean;
+  mediaUpload?: {
+    key: MandatoryMediaKey;
+    label: string;
+    maxWidth: number;
+    maxHeight: number;
+    maxUploadBytes: number;
+    currentUrl: string;
+    hasOverride: boolean;
+    uploading: boolean;
+    error: string | null;
+    onUpload: (assetKey: MandatoryMediaKey, file: File) => Promise<void>;
+  } | null;
 };
 
 function TextEditorField({
@@ -748,19 +1304,26 @@ function TextEditorField({
     areaName,
     onSave,
     onAiRewrite,
-    onReset,
+    llmOptions = [],
+    selectedLlmIntegrationId = '',
+    onSelectLlmIntegration,
     enableApproval,
     isRewriting,
+    isMandatory,
+    mediaUpload = null,
 }: TextEditorFieldProps) {
-    const [localValue, setLocalValue] = useState(dbEntry?.optimized_content ?? rawText ?? '');
+    const [localValue, setLocalValue] = useState<string | null>(dbEntry?.optimized_content ?? null);
     const [showPrompt, setShowPrompt] = useState(false);
     const [customPrompt, setCustomPrompt] = useState('');
     const [isDataDrivenUnlocked, setIsDataDrivenUnlocked] = useState(false);
     
-    const currentText = localValue || rawText;
+    const currentText = localValue ?? rawText ?? '';
     const isIndividual = type === 'individual';
     const isDataDriven = type === 'data_driven';
     const isLockedDataDriven = isDataDriven && !isDataDrivenUnlocked;
+    const isAdvisorOrBroker = isAdvisorOrBrokerKey(sectionKey);
+    const isSingleLine = SINGLE_LINE_TEXT_KEYS.has(sectionKey);
+    const showAiTools = !isAdvisorOrBroker;
     const standardPrompt = getStandardPromptText(label, type, areaName);
     const status = dbEntry?.status ?? null;
     const showStatus = enableApproval && Boolean(dbEntry?.status);
@@ -768,29 +1331,29 @@ function TextEditorField({
 
     return (
         <div style={fieldCardStyle} id={`text-section-${sectionKey}`}>
-            <div style={fieldHeaderStyle}>
+            <div style={fieldHeaderGridStyle}>
+              <div style={fieldHeaderStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>{label}</h4>
-                    <span style={typeTagStyle(type)}>{type.replace('_', ' ')}</span>
-                    {showStatus ? (
-                        <span style={statusBadgeStyle(status === 'approved')}>
-                            {status === 'approved' ? 'Freigegeben' : 'Entwurf'}
-                        </span>
-                    ) : null}
+                  <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>{label}</h4>
+                  <span style={typeTagStyle(type)}>{type.replace('_', ' ')}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    {hasOverride && <span style={savedBadgeStyle}>✓ Individuell angepasst</span>}
-                    {isLockedDataDriven ? (
-                      <span style={lockedBadgeStyle}>Gesperrt (Data-Driven)</span>
-                    ) : null}
-                    <button
-                        type="button"
-                        onClick={() => onReset(sectionKey)}
-                        style={resetButtonStyle(hasOverride)}
-                    >
-                        Original nutzen
-                    </button>
+                  {isMandatory ? (
+                    <span style={statePillStyle(hasOverride)}>
+                      {hasOverride ? '✓ Individuell angepasst' : 'Pflichtfeld offen'}
+                    </span>
+                  ) : null}
+                  {showStatus ? (
+                    <span style={statusBadgeStyle(status === 'approved')}>
+                      {status === 'approved' ? 'Freigegeben' : 'Entwurf'}
+                    </span>
+                  ) : null}
+                  {isLockedDataDriven ? (
+                    <span style={lockedBadgeStyle}>Gesperrt (Data-Driven)</span>
+                  ) : null}
                 </div>
+              </div>
+              <div />
             </div>
             
             <div style={editorGridStyle}>
@@ -800,14 +1363,26 @@ function TextEditorField({
                         Datengetriebener Text. Manuelle Änderungen können den Kontext verfälschen.
                       </div>
                     ) : null}
-                    <textarea 
+                    {isSingleLine ? (
+                      <input
+                        type={resolveInputType(sectionKey)}
                         value={currentText}
                         onChange={(e) => setLocalValue(e.target.value)}
                         onBlur={(e) => onSave(sectionKey, e.target.value, type, sectionGroup)}
-                        style={textareaStyle(isLockedDataDriven)}
+                        style={inputStyle(isLockedDataDriven)}
                         readOnly={isLockedDataDriven}
                         placeholder="Inhalt bearbeiten..."
-                    />
+                      />
+                    ) : (
+                      <textarea 
+                          value={currentText}
+                          onChange={(e) => setLocalValue(e.target.value)}
+                          onBlur={(e) => onSave(sectionKey, e.target.value, type, sectionGroup)}
+                          style={textareaStyle(isLockedDataDriven)}
+                          readOnly={isLockedDataDriven}
+                          placeholder="Inhalt bearbeiten..."
+                      />
+                    )}
                     {isDataDriven ? (
                       <button
                         type="button"
@@ -826,26 +1401,46 @@ function TextEditorField({
                         {isDataDrivenUnlocked ? 'Bearbeitung sperren' : 'Manuelle Bearbeitung freischalten'}
                       </button>
                     ) : null}
-                    <button 
-                        style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle} 
-                        onClick={() => onAiRewrite(sectionKey, currentText, type, label, customPrompt)}
-                        disabled={isRewriting}
-                    >
-                        {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
-                    </button>
                     {isIndividual ? (
                       <div style={individualHintStyle}>
-                        Hinweis: Hier sollte Ihre persoenliche Markteinschaetzung stehen.
+                        {`Hinweis: Bitte pflegen Sie hier „${label}“.`}
                       </div>
                     ) : null}
-                    <button
-                        type="button"
-                        onClick={() => setShowPrompt((prev) => !prev)}
-                        style={promptToggleStyle}
-                    >
-                        {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-                    </button>
-                    {showPrompt ? (
+                    {showAiTools ? (
+                      <div style={aiRewriteControlsStyle}>
+                        {llmOptions.length > 0 ? (
+                          <select
+                            value={selectedLlmIntegrationId || llmOptions[0].id}
+                            onChange={(e) => onSelectLlmIntegration?.(e.target.value)}
+                            style={aiModelSelectStyle}
+                            aria-label="KI-Modell auswählen"
+                          >
+                            {llmOptions.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : null}
+                        <button
+                            style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
+                            onClick={() => onAiRewrite(sectionKey, currentText, type, label, customPrompt)}
+                            disabled={isRewriting}
+                        >
+                            {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
+                        </button>
+                      </div>
+                    ) : null}
+                    {showAiTools ? (
+                      <button
+                          type="button"
+                          onClick={() => setShowPrompt((prev) => !prev)}
+                          style={promptToggleStyle}
+                      >
+                          {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+                      </button>
+                    ) : null}
+                    {showAiTools && showPrompt ? (
                         <>
                             <div style={promptPanelStyle}>
                                 <div style={promptLabelStyle}>Standard-Prompt</div>
@@ -863,27 +1458,141 @@ function TextEditorField({
                         </>
                     ) : null}
                 </div>
-                
-                <div style={previewBoxStyle}>
-                    <div style={previewHeaderStyle}>ORIGINAL BASIS-TEXT (SYSTEM)</div>
-                    <div style={previewContentStyle}>{rawText || 'Keine System-Vorlage vorhanden.'}</div>
-                </div>
+                {mediaUpload ? (
+                  <MandatoryMediaUploadCard
+                    label={mediaUpload.label}
+                    assetKey={mediaUpload.key}
+                    maxWidth={mediaUpload.maxWidth}
+                    maxHeight={mediaUpload.maxHeight}
+                    maxUploadBytes={mediaUpload.maxUploadBytes}
+                    currentUrl={mediaUpload.currentUrl}
+                    hasOverride={mediaUpload.hasOverride}
+                    uploading={mediaUpload.uploading}
+                    error={mediaUpload.error}
+                    onUpload={mediaUpload.onUpload}
+                  />
+                ) : !isIndividual ? (
+                  <div style={previewBoxStyle}>
+                      <div style={previewHeaderStyle}>ORIGINAL BASIS-TEXT (SYSTEM)</div>
+                      <div style={previewContentStyle}>{rawText || 'Keine System-Vorlage vorhanden.'}</div>
+                  </div>
+                ) : null}
             </div>
         </div>
     );
 }
 
+type MandatoryMediaUploadCardProps = {
+  label: string;
+  assetKey: MandatoryMediaKey;
+  maxWidth: number;
+  maxHeight: number;
+  maxUploadBytes: number;
+  currentUrl: string;
+  hasOverride: boolean;
+  uploading: boolean;
+  error: string | null;
+  onUpload: (assetKey: MandatoryMediaKey, file: File) => Promise<void>;
+};
+
+function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
+  const {
+    label,
+    assetKey,
+    maxWidth,
+    maxHeight,
+    maxUploadBytes,
+    currentUrl,
+    hasOverride,
+    uploading,
+    error,
+    onUpload,
+  } = props;
+  const inputId = `media-upload-${assetKey}`;
+  const maxKb = Math.round(maxUploadBytes / 1024);
+
+  return (
+    <div style={mandatoryMediaCardStyle}>
+      <div style={mandatoryMediaCardHeaderStyle}>
+        <div style={mandatoryMediaCardTitleStyle}>{label}</div>
+        <span style={statePillStyle(hasOverride)}>
+          {hasOverride ? '✓ Individuell angepasst' : 'Pflichtfeld offen'}
+        </span>
+      </div>
+      {currentUrl ? (
+        <NextImage src={currentUrl} alt={label} width={maxWidth} height={maxHeight} unoptimized style={mandatoryMediaPreviewStyle} />
+      ) : (
+        <div style={mandatoryMediaEmptyStyle}>Noch kein Upload vorhanden.</div>
+      )}
+      <div style={mandatoryMediaMetaStyle}>
+        Ziel: {maxWidth} × {maxHeight} px
+      </div>
+      <div style={mandatoryMediaMetaStyle}>Format: WebP · max. {maxKb} KB</div>
+      <label htmlFor={inputId} style={mandatoryMediaUploadButtonStyle(uploading)}>
+        {uploading ? 'Upload läuft...' : 'Bild auswählen'}
+        <input
+          id={inputId}
+          type="file"
+          accept="image/*"
+          disabled={uploading}
+          style={mandatoryMediaInputHiddenStyle}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            void onUpload(assetKey, file);
+            e.currentTarget.value = '';
+          }}
+        />
+      </label>
+      {!uploading ? <div style={mandatoryMediaHintStyle}>Datei wird automatisch skaliert und komprimiert.</div> : null}
+      {error ? <div style={mandatoryMediaErrorStyle}>{error}</div> : null}
+    </div>
+  );
+}
+
 // --- STYLES (FULL WIDTH) ---
 
-const tabContainerStyle = { display: 'flex', backgroundColor: '#fff', padding: '8px 8px 0 8px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #e2e8f0', gap: '4px', overflowX: 'auto' as const };
-const tabButtonStyle = (active: boolean) => ({ display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 24px', border: 'none', borderBottom: active ? '3px solid #3b82f6' : '3px solid transparent', backgroundColor: active ? '#f8fafc' : 'transparent', color: active ? '#2563eb' : '#64748b', fontWeight: active ? '700' : '500', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' as const, transition: 'all 0.2s', borderRadius: '8px 8px 0 0' });
+const tabContainerStyle = { display: 'flex', backgroundColor: '#fff', padding: '8px 8px 0 8px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #e2e8f0', gap: '6px', overflowX: 'auto' as const };
+const tabButtonStyle = (active: boolean) => ({
+  display: 'flex',
+  flexDirection: 'column' as const,
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '7px',
+  minWidth: '118px',
+  padding: '12px 14px',
+  border: 'none',
+  borderBottom: active ? '3px solid #3b82f6' : '3px solid transparent',
+  backgroundColor: active ? '#f8fafc' : 'transparent',
+  color: active ? '#2563eb' : '#64748b',
+  fontWeight: active ? '700' : '500',
+  fontSize: '13px',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap' as const,
+  transition: 'all 0.2s',
+  borderRadius: '8px 8px 0 0',
+});
+const tabIconImageStyle: React.CSSProperties = { width: '30px', height: '30px', objectFit: 'contain', display: 'block' };
+const tabIconEmojiStyle: React.CSSProperties = { fontSize: '24px', lineHeight: 1, display: 'block' };
+const tabLabelStyle: React.CSSProperties = { fontSize: '14px', lineHeight: 1.2, textAlign: 'center' };
 const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px', borderRadius: '0 0 12px 12px', border: '1px solid #e2e8f0', borderTop: 'none' };
-const loadingWrapperStyle = { display: 'flex', alignItems: 'center', gap: '12px', padding: '40px', color: '#64748b' };
-const loadingSpinnerStyle = { width: '18px', height: '18px', borderRadius: '50%', border: '2px solid #e2e8f0', borderTopColor: '#2563eb', animation: 'text-editor-spin 0.8s linear infinite' };
 const fieldCardStyle = { marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #f1f5f9' };
-const fieldHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' };
+const fieldHeaderGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', marginBottom: '16px' };
+const fieldHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
 const editorGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px' };
 const textareaWrapperStyle = { display: 'flex', flexDirection: 'column' as const, gap: '12px' };
+const inputStyle = (readOnly = false) => ({
+  width: '100%',
+  height: '44px',
+  padding: '10px 12px',
+  borderRadius: '10px',
+  border: readOnly ? '1px dashed #f59e0b' : '1px solid #cbd5e0',
+  backgroundColor: readOnly ? '#fffbeb' : '#fff',
+  fontSize: '14px',
+  lineHeight: '1.4',
+  fontFamily: 'inherit',
+  color: '#334155',
+});
 const textareaStyle = (readOnly = false) => ({
   width: '100%',
   minHeight: '200px',
@@ -899,6 +1608,24 @@ const textareaStyle = (readOnly = false) => ({
 const previewBoxStyle = { backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', height: 'fit-content' };
 const previewHeaderStyle = { padding: '10px 15px', fontSize: '9px', fontWeight: '800', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', letterSpacing: '0.05em' };
 const previewContentStyle = { padding: '15px', fontSize: '12.5px', color: '#64748b', lineHeight: '1.5', fontStyle: 'italic' };
+const aiRewriteControlsStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  flexWrap: 'wrap' as const,
+};
+const aiModelSelectStyle = {
+  minWidth: '240px',
+  maxWidth: '100%',
+  height: '40px',
+  padding: '8px 10px',
+  borderRadius: '8px',
+  border: '1px solid #dbeafe',
+  backgroundColor: '#ffffff',
+  color: '#1e293b',
+  fontSize: '12px',
+  fontWeight: 600,
+};
 const aiButtonStyle = { alignSelf: 'flex-start', padding: '10px 18px', backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #dbeafe', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' };
 const aiButtonLoadingStyle = { ...aiButtonStyle, opacity: 0.6, cursor: 'not-allowed', backgroundColor: '#f1f5f9' };
 const promptToggleStyle = { alignSelf: 'flex-start', background: 'transparent', border: 'none', color: '#2563eb', fontSize: '12px', fontWeight: '600', cursor: 'pointer', padding: 0 };
@@ -930,7 +1657,15 @@ const typeTagStyle = (type: string) => ({
   fontWeight: '700',
   textTransform: 'uppercase' as const,
 });
-const savedBadgeStyle = { color: '#10b981', fontSize: '11px', fontWeight: '700' };
+const statePillStyle = (completed: boolean): React.CSSProperties => ({
+  fontSize: '10px',
+  fontWeight: 700,
+  borderRadius: '999px',
+  padding: '4px 9px',
+  border: completed ? '1px solid #86efac' : '1px solid #fca5a5',
+  backgroundColor: completed ? '#dcfce7' : '#fee2e2',
+  color: completed ? '#166534' : '#991b1b',
+});
 const lockedBadgeStyle = {
   color: '#92400e',
   backgroundColor: '#fef3c7',
@@ -948,15 +1683,6 @@ const statusBadgeStyle = (approved: boolean) => ({
   color: approved ? '#166534' : '#92400e',
   fontWeight: '700',
   textTransform: 'uppercase' as const,
-});
-const resetButtonStyle = (hasOverride: boolean) => ({
-  backgroundColor: hasOverride ? '#f1f5f9' : '#ecfdf3',
-  color: hasOverride ? '#475569' : '#15803d',
-  border: hasOverride ? '1px solid #e2e8f0' : '1px solid #bbf7d0',
-  padding: '4px 8px',
-  borderRadius: '6px',
-  fontSize: '10px',
-  cursor: 'pointer',
 });
 const approvalFooterStyle: React.CSSProperties = {
   marginTop: '24px',
@@ -987,9 +1713,9 @@ const dataDrivenHintStyle = {
 };
 const individualHintStyle = {
   fontSize: '12px',
-  color: '#1e40af',
-  backgroundColor: '#eff6ff',
-  border: '1px solid #bfdbfe',
+  color: '#475569',
+  backgroundColor: '#f8fafc',
+  border: 'none',
   borderRadius: '8px',
   padding: '10px 12px',
 };
@@ -1009,6 +1735,42 @@ const bulkActionBarStyle: React.CSSProperties = {
   gap: '10px',
   marginBottom: '20px',
   flexWrap: 'wrap',
+};
+const globalPromptPanelStyle: React.CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: '10px',
+  backgroundColor: '#f8fafc',
+  padding: '12px',
+  display: 'grid',
+  gap: '10px',
+  marginBottom: '20px',
+};
+const globalReportStyle: React.CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: '10px',
+  backgroundColor: '#ffffff',
+  padding: '10px 12px',
+  marginBottom: '20px',
+};
+const globalReportTitleStyle: React.CSSProperties = {
+  fontSize: '12px',
+  fontWeight: 700,
+  color: '#0f172a',
+  marginBottom: '6px',
+};
+const globalReportRowStyle: React.CSSProperties = {
+  fontSize: '12px',
+  color: '#334155',
+  marginBottom: '3px',
+};
+const globalReportErrorListStyle: React.CSSProperties = {
+  marginTop: '8px',
+  paddingTop: '8px',
+  borderTop: '1px dashed #e2e8f0',
+  fontSize: '11px',
+  color: '#b91c1c',
+  display: 'grid',
+  gap: '3px',
 };
 const bulkActionButtonStyle = (disabled: boolean): React.CSSProperties => ({
   borderRadius: '9px',
@@ -1030,4 +1792,88 @@ const bulkActionSecondaryButtonStyle = (disabled: boolean): React.CSSProperties 
   fontWeight: 700,
   cursor: disabled ? 'not-allowed' : 'pointer',
 });
+const mediaBottomWrapStyle: React.CSSProperties = {
+  borderTop: '1px solid #e2e8f0',
+  paddingTop: '14px',
+  marginTop: '14px',
+  display: 'grid',
+  gap: '12px',
+};
+const mediaBottomGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: '16px',
+};
+const mandatoryMediaCardStyle: React.CSSProperties = {
+  backgroundColor: '#f8fafc',
+  borderRadius: '12px',
+  border: '1px solid #e2e8f0',
+  height: 'fit-content',
+  padding: '12px',
+};
+const mandatoryMediaCardHeaderStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '10px',
+  gap: '8px',
+};
+const mandatoryMediaCardTitleStyle: React.CSSProperties = {
+  fontSize: '13px',
+  fontWeight: 700,
+  color: '#1e293b',
+};
+const mandatoryMediaPreviewStyle: React.CSSProperties = {
+  width: '100%',
+  maxHeight: '210px',
+  objectFit: 'cover',
+  borderRadius: '10px',
+  marginBottom: '10px',
+  border: '1px solid #e2e8f0',
+};
+const mandatoryMediaEmptyStyle: React.CSSProperties = {
+  padding: '16px',
+  borderRadius: '10px',
+  border: '1px dashed #cbd5e1',
+  color: '#64748b',
+  fontSize: '12px',
+  marginBottom: '10px',
+  backgroundColor: '#fff',
+};
+const mandatoryMediaMetaStyle: React.CSSProperties = {
+  fontSize: '11px',
+  color: '#64748b',
+  marginBottom: '4px',
+};
+const mandatoryMediaUploadButtonStyle = (disabled: boolean): React.CSSProperties => ({
+  marginTop: '10px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '10px 12px',
+  borderRadius: '10px',
+  border: disabled ? '1px solid #cbd5e1' : '1px solid #93c5fd',
+  backgroundColor: disabled ? '#e2e8f0' : '#dbeafe',
+  color: disabled ? '#64748b' : '#1e40af',
+  fontWeight: 700,
+  fontSize: '12px',
+  cursor: disabled ? 'not-allowed' : 'pointer',
+});
+const mandatoryMediaInputHiddenStyle: React.CSSProperties = {
+  display: 'none',
+};
+const mandatoryMediaHintStyle: React.CSSProperties = {
+  marginTop: '8px',
+  fontSize: '11px',
+  color: '#475569',
+};
+const mandatoryMediaErrorStyle: React.CSSProperties = {
+  marginTop: '8px',
+  fontSize: '11px',
+  borderRadius: '8px',
+  backgroundColor: '#fef2f2',
+  border: '1px solid #fecaca',
+  padding: '8px 10px',
+  color: '#b91c1c',
+};
 const saveIndicatorStyle: React.CSSProperties = { position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#0f172a', color: '#fff', padding: '12px 24px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)', zIndex: 100, fontSize: '13px' };

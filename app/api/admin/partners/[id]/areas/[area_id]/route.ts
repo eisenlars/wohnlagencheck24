@@ -4,10 +4,17 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { checkPartnerAreaMandatoryTexts } from "@/lib/partner-area-mandatory";
+import { publishVisibilityIndex } from "@/lib/visibility-index";
 
 type AreaToggleBody = {
   is_active?: boolean;
 };
+
+function isMissingActivationStatusColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partner_area_map.activation_status") && msg.includes("does not exist");
+}
 
 export async function PATCH(
   req: Request,
@@ -36,13 +43,68 @@ export async function PATCH(
     }
 
     const admin = createAdminClient();
-    const { data, error } = await admin
+
+    if (body.is_active === true) {
+      const { data: activeAssignedRows, error: activeAssignedError } = await admin
+        .from("partner_area_map")
+        .select("auth_user_id")
+        .eq("area_id", areaId)
+        .eq("is_active", true)
+        .neq("auth_user_id", partnerId)
+        .limit(1);
+      if (activeAssignedError) {
+        return NextResponse.json({ error: activeAssignedError.message }, { status: 500 });
+      }
+      if (Array.isArray(activeAssignedRows) && activeAssignedRows.length > 0) {
+        return NextResponse.json(
+          { error: "Area is already active on another partner" },
+          { status: 409 },
+        );
+      }
+
+      const mandatoryCheck = await checkPartnerAreaMandatoryTexts({
+        admin,
+        partnerId,
+        areaId,
+        requireApprovedMedia: true,
+      });
+      if (!mandatoryCheck.ok) {
+        return NextResponse.json(
+          {
+            error: mandatoryCheck.error,
+            missing_keys: mandatoryCheck.missing ?? [],
+            scope: mandatoryCheck.scope,
+            gate: "INDIVIDUAL_MANDATORY",
+          },
+          { status: mandatoryCheck.status },
+        );
+      }
+    }
+
+    let { data, error } = await admin
       .from("partner_area_map")
-      .update({ is_active: Boolean(body.is_active) })
+      .update({
+        is_active: Boolean(body.is_active),
+        activation_status: body.is_active ? "active" : "in_progress",
+      })
       .eq("auth_user_id", partnerId)
       .eq("area_id", areaId)
-      .select("id, auth_user_id, area_id, is_active, created_at")
+      .select("id, auth_user_id, area_id, is_active, activation_status, created_at")
       .maybeSingle();
+
+    if (error && isMissingActivationStatusColumn(error)) {
+      const fallback = await admin
+        .from("partner_area_map")
+        .update({ is_active: Boolean(body.is_active) })
+        .eq("auth_user_id", partnerId)
+        .eq("area_id", areaId)
+        .select("id, auth_user_id, area_id, is_active, created_at")
+        .maybeSingle();
+      data = fallback.data
+        ? { ...fallback.data, activation_status: body.is_active ? "active" : "in_progress" }
+        : null;
+      error = fallback.error;
+    }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -61,6 +123,12 @@ export async function PATCH(
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
     });
+
+    try {
+      await publishVisibilityIndex(admin as never);
+    } catch (publishErr) {
+      console.warn("visibility index publish failed after area toggle:", publishErr);
+    }
 
     return NextResponse.json({ ok: true, mapping: data });
   } catch (error) {
@@ -132,6 +200,12 @@ export async function DELETE(
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
     });
+
+    try {
+      await publishVisibilityIndex(admin as never);
+    } catch (publishErr) {
+      console.warn("visibility index publish failed after area delete:", publishErr);
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

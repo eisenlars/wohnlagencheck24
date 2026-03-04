@@ -165,3 +165,64 @@ export async function PATCH(
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: Request,
+  ctx: { params: Promise<{ integration_id: string }> },
+) {
+  try {
+    const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
+    const adminRate = await checkAdminApiRateLimit(req, adminUser.userId);
+    if (!adminRate.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(adminRate.retryAfterSec) } },
+      );
+    }
+
+    const params = await ctx.params;
+    const integrationId = String(params.integration_id ?? "").trim();
+    if (!integrationId) {
+      return NextResponse.json({ error: "Missing integration id" }, { status: 400 });
+    }
+
+    const admin = createAdminClient();
+    const { data: existing, error: existingError } = await admin
+      .from("partner_integrations")
+      .select("id, partner_id, kind, provider, is_active")
+      .eq("id", integrationId)
+      .maybeSingle();
+    if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 });
+    if (!existing) return NextResponse.json({ error: "Integration not found" }, { status: 404 });
+
+    const { error: deleteError } = await admin
+      .from("partner_integrations")
+      .delete()
+      .eq("id", integrationId);
+    if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 });
+
+    await writeSecurityAuditLog({
+      actorUserId: adminUser.userId,
+      actorRole: adminUser.role,
+      eventType: "delete",
+      entityType: "partner_integration",
+      entityId: integrationId,
+      payload: {
+        partner_id: String(existing.partner_id ?? ""),
+        kind: String(existing.kind ?? ""),
+        provider: String(existing.provider ?? ""),
+        is_active: Boolean(existing.is_active),
+      },
+      ip: extractClientIpFromHeaders(req.headers),
+      userAgent: req.headers.get("user-agent"),
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (error.message === "FORBIDDEN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+  }
+}

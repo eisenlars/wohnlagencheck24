@@ -2,14 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { getProviderSpec, getProvidersForKind } from "@/lib/integrations/providers";
+import { getMandatoryMediaLabel, isMandatoryMediaKey } from "@/lib/mandatory-media";
+import FullscreenLoader from "@/components/ui/FullscreenLoader";
 
 type Partner = {
   id: string;
   company_name: string;
   contact_email?: string | null;
-  contact_person?: string | null;
+  contact_first_name?: string | null;
+  contact_last_name?: string | null;
   website_url?: string | null;
   is_active?: boolean;
 };
@@ -19,6 +23,7 @@ type AreaMapping = {
   auth_user_id: string;
   area_id: string;
   is_active: boolean;
+  activation_status?: string | null;
   areas?: {
     name?: string | null;
     slug?: string | null;
@@ -77,10 +82,58 @@ type AreaOverviewRow = {
   partnerId: string;
   partnerName: string;
   isActive: boolean;
+  activationStatus: string;
 };
 
-type AdminView = "new_partner" | "partner_edit" | "partner_integrations" | "audit";
+type MandatoryMissingEntry = {
+  key?: string;
+  reason?: "missing" | "default" | "unapproved";
+};
+
+type ReviewField = {
+  key: string;
+  content: string;
+  status: "approved" | "draft";
+  present: boolean;
+};
+
+type AreaReviewPayload = {
+  ok?: boolean;
+  mapping?: AreaMapping;
+  mandatory?: {
+    ok?: boolean;
+    status?: number;
+    error?: string;
+    missing?: MandatoryMissingEntry[];
+  };
+  fields?: ReviewField[];
+  notification?: {
+    partner?: {
+      sent?: boolean;
+      reason?: string | null;
+    };
+  } | null;
+};
+
+type PartnerPurgeCheckPayload = {
+  ok?: boolean;
+  partner?: { id?: string; company_name?: string | null };
+  can_purge?: boolean;
+  blockers?: string[];
+  summary?: {
+    areaMappingsTotal?: number;
+    areaMappingsActive?: number;
+    areaMappingsPending?: number;
+    integrationsTotal?: number;
+    integrationsActive?: number;
+    storageFiles?: number;
+  };
+  affected_counts?: Record<string, number>;
+};
+
+type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "audit";
 type AdminNavMode = "partners" | "areas";
+type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations";
 
 type HandoverApiResponse = {
   ok?: boolean;
@@ -103,6 +156,56 @@ const AUTH_TYPE_LABELS: Record<string, string> = {
   basic: "Basic",
   none: "Keine Authentifizierung",
 };
+
+function normalizeActivationStatus(value: unknown, isActive: boolean): string {
+  if (isActive) return "active";
+  const raw = String(value ?? "").trim().toLowerCase();
+  if (raw === "assigned" || raw === "in_progress" || raw === "ready_for_review" || raw === "in_review" || raw === "changes_requested" || raw === "active") {
+    return raw;
+  }
+  return "assigned";
+}
+
+function formatAreaStateLabel(isActive: boolean, activationStatus: unknown): string {
+  const state = normalizeActivationStatus(activationStatus, isActive);
+  if (state === "active") return "aktiv";
+  if (state === "ready_for_review") return "freigabebereit";
+  if (state === "in_review") return "in prüfung";
+  if (state === "changes_requested") return "nachbesserung";
+  if (state === "in_progress") return "in bearbeitung";
+  return "zugewiesen";
+}
+
+function getMaskedAuthSummary(integration: Pick<Integration, "auth_config">): string {
+  const auth = (integration.auth_config ?? {}) as Record<string, unknown>;
+  const hasApiKey = Boolean(String(auth.api_key ?? "").trim());
+  const hasToken = Boolean(String(auth.token ?? "").trim());
+  const hasSecret = Boolean(String(auth.secret ?? "").trim());
+  const parts: string[] = [];
+  if (hasApiKey) parts.push("api_****");
+  if (hasToken) parts.push("to*****");
+  if (hasSecret) parts.push("se*****");
+  if (parts.length === 0) return "Keine hinterlegt";
+  return parts.join(" · ");
+}
+
+function getIntegrationHealthSummary(integration: Pick<Integration, "settings" | "last_sync_at">): string {
+  const settings = (integration.settings ?? {}) as Record<string, unknown>;
+  const testedAt = String(settings.last_tested_at ?? "").trim();
+  const testStatus = String(settings.last_test_status ?? "").trim();
+  const syncAt = String(integration.last_sync_at ?? "").trim();
+  const chunks: string[] = [];
+  if (testStatus) chunks.push(`Test: ${testStatus}`);
+  if (testedAt) chunks.push(`Zuletzt getestet: ${new Date(testedAt).toLocaleString("de-DE")}`);
+  if (syncAt) chunks.push(`Letzter Sync: ${new Date(syncAt).toLocaleString("de-DE")}`);
+  return chunks.length > 0 ? chunks.join(" | ") : "Kein Test-/Sync-Status";
+}
+
+function formatMandatoryKeyLabel(key: string): string {
+  if (!key) return key;
+  if (isMandatoryMediaKey(key)) return getMandatoryMediaLabel(key);
+  return key;
+}
 
 function getDefaultProviderId(kind: string): string {
   const options = getProvidersForKind(kind);
@@ -148,6 +251,7 @@ export default function AdminClient() {
   const [areaMappings, setAreaMappings] = useState<AreaMapping[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [status, setStatus] = useState<string>("Lade Admin-Daten...");
+  const [adminDisplayName, setAdminDisplayName] = useState<string>("Admin");
   const [busy, setBusy] = useState<boolean>(false);
   const [areaQuery, setAreaQuery] = useState<string>("");
   const [areaOptions, setAreaOptions] = useState<AreaOption[]>([]);
@@ -155,14 +259,23 @@ export default function AdminClient() {
   const [createPartner, setCreatePartner] = useState({
     company_name: "",
     contact_email: "",
-    contact_person: "",
+    contact_first_name: "",
+    contact_last_name: "",
     website_url: "",
   });
+  const [createdPartnerSuccess, setCreatedPartnerSuccess] = useState<{
+    mode: "created" | "existing";
+    id: string;
+    company_name: string;
+    contact_email: string;
+  } | null>(null);
+  const [createPartnerError, setCreatePartnerError] = useState<string | null>(null);
 
   const [editPartner, setEditPartner] = useState({
     company_name: "",
     contact_email: "",
-    contact_person: "",
+    contact_first_name: "",
+    contact_last_name: "",
     website_url: "",
     is_active: true,
   });
@@ -189,12 +302,17 @@ export default function AdminClient() {
     [createIntegration.provider, providerOptions],
   );
 
-  const [secretDraft, setSecretDraft] = useState<Record<string, { api_key: string; token: string; secret: string }>>(
-    {},
-  );
   const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
   const [areaOverview, setAreaOverview] = useState<AreaOverviewRow[]>([]);
-  const [activeView, setActiveView] = useState<AdminView>("partner_edit");
+  const [reviewAreaId, setReviewAreaId] = useState<string>("");
+  const [reviewData, setReviewData] = useState<AreaReviewPayload | null>(null);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewActionError, setReviewActionError] = useState<string | null>(null);
+  const [reviewMediaBusyKey, setReviewMediaBusyKey] = useState<string | null>(null);
+  const [clearReviewOnSuccessClose, setClearReviewOnSuccessClose] = useState(false);
+  const [reviewContentDismissed, setReviewContentDismissed] = useState(false);
+  const [activeView, setActiveView] = useState<AdminView>("home");
+  const [partnerTab, setPartnerTab] = useState<PartnerPanelTab>("profile");
   const [navMode, setNavMode] = useState<AdminNavMode>("partners");
   const [partnerFilter, setPartnerFilter] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
@@ -232,6 +350,59 @@ export default function AdminClient() {
     done: false,
     hasError: false,
   });
+  const [areaDeleteConfirmModal, setAreaDeleteConfirmModal] = useState<{
+    open: boolean;
+    areaId: string;
+    areaName: string;
+    isActive: boolean;
+  }>({
+    open: false,
+    areaId: "",
+    areaName: "",
+    isActive: false,
+  });
+  const [integrationDeleteConfirmModal, setIntegrationDeleteConfirmModal] = useState<{
+    open: boolean;
+    integrationId: string;
+    provider: string;
+    kind: string;
+  }>({
+    open: false,
+    integrationId: "",
+    provider: "",
+    kind: "",
+  });
+  const [partnerPurgeModal, setPartnerPurgeModal] = useState<{
+    open: boolean;
+    partnerId: string;
+    partnerName: string;
+    loading: boolean;
+    deleting: boolean;
+    canPurge: boolean;
+    blockers: string[];
+    summary: {
+      areaMappingsTotal: number;
+      integrationsActive: number;
+      storageFiles: number;
+    };
+    confirmText: string;
+    reason: string;
+  }>({
+    open: false,
+    partnerId: "",
+    partnerName: "",
+    loading: false,
+    deleting: false,
+    canPurge: false,
+    blockers: [],
+    summary: {
+      areaMappingsTotal: 0,
+      integrationsActive: 0,
+      storageFiles: 0,
+    },
+    confirmText: "",
+    reason: "",
+  });
   const [auditFilters, setAuditFilters] = useState({
     entity_type: "",
     event_type: "",
@@ -243,11 +414,14 @@ export default function AdminClient() {
   const successModalRef = useRef<HTMLDivElement | null>(null);
   const handoverConfirmModalRef = useRef<HTMLDivElement | null>(null);
   const handoverStatusModalRef = useRef<HTMLDivElement | null>(null);
+  const areaDeleteConfirmModalRef = useRef<HTMLDivElement | null>(null);
+  const integrationDeleteConfirmModalRef = useRef<HTMLDivElement | null>(null);
+  const partnerPurgeModalRef = useRef<HTMLDivElement | null>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const anyModalOpen =
-      successModal.open || handoverConfirmModal.open || handoverStatusModal.open;
+      successModal.open || handoverConfirmModal.open || handoverStatusModal.open || areaDeleteConfirmModal.open || integrationDeleteConfirmModal.open || partnerPurgeModal.open;
 
     if (anyModalOpen) {
       if (!lastFocusedElementRef.current && document.activeElement instanceof HTMLElement) {
@@ -256,7 +430,10 @@ export default function AdminClient() {
       const target =
         (successModal.open ? successModalRef.current : null) ??
         (handoverConfirmModal.open ? handoverConfirmModalRef.current : null) ??
-        (handoverStatusModal.open ? handoverStatusModalRef.current : null);
+        (handoverStatusModal.open ? handoverStatusModalRef.current : null) ??
+        (areaDeleteConfirmModal.open ? areaDeleteConfirmModalRef.current : null) ??
+        (integrationDeleteConfirmModal.open ? integrationDeleteConfirmModalRef.current : null) ??
+        (partnerPurgeModal.open ? partnerPurgeModalRef.current : null);
       if (target) {
         window.setTimeout(() => target.focus(), 0);
       }
@@ -267,27 +444,51 @@ export default function AdminClient() {
       lastFocusedElementRef.current.focus();
       lastFocusedElementRef.current = null;
     }
-  }, [successModal.open, handoverConfirmModal.open, handoverStatusModal.open]);
+  }, [successModal.open, handoverConfirmModal.open, handoverStatusModal.open, areaDeleteConfirmModal.open, integrationDeleteConfirmModal.open, partnerPurgeModal.open]);
 
   const selectedPartnerLabel = selectedPartner
     ? `${selectedPartner.company_name} (${selectedPartner.id})`
     : "Kein Partner ausgewählt";
 
+  const partnerIdsWithAreaMapping = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of areaOverview) ids.add(row.partnerId);
+    return ids;
+  }, [areaOverview]);
+
+  const partnerNeedsAssignment = useMemo(() => {
+    const pending = new Set<string>();
+    for (const p of partners) {
+      if (!partnerIdsWithAreaMapping.has(p.id)) pending.add(p.id);
+    }
+    return pending;
+  }, [partners, partnerIdsWithAreaMapping]);
+
   const filteredPartners = useMemo(() => {
     const q = partnerFilter.trim().toLowerCase();
-    return partners.filter((p) => {
-      if (onlyActiveList && !p.is_active) return false;
-      if (!q) return true;
-      const hay = [
-        p.company_name ?? "",
-        p.contact_email ?? "",
-        p.id ?? "",
-      ]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [partners, partnerFilter, onlyActiveList]);
+    return partners
+      .filter((p) => {
+        if (onlyActiveList && !p.is_active) return false;
+        if (!q) return true;
+        const hay = [
+          p.company_name ?? "",
+          p.contact_email ?? "",
+          p.id ?? "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      })
+      .sort((a, b) => {
+        const aPending = partnerNeedsAssignment.has(a.id) ? 1 : 0;
+        const bPending = partnerNeedsAssignment.has(b.id) ? 1 : 0;
+        if (aPending !== bPending) return bPending - aPending;
+        const aInactive = a.is_active ? 0 : 1;
+        const bInactive = b.is_active ? 0 : 1;
+        if (aInactive !== bInactive) return bInactive - aInactive;
+        return String(a.company_name ?? "").localeCompare(String(b.company_name ?? ""), "de");
+      });
+  }, [partners, partnerFilter, onlyActiveList, partnerNeedsAssignment]);
 
   const filteredAreaOverview = useMemo(() => {
     const q = areaFilter.trim().toLowerCase();
@@ -304,6 +505,14 @@ export default function AdminClient() {
       return hay.includes(q);
     });
   }, [areaOverview, areaFilter, onlyActiveList]);
+
+  const pendingAreaAssignmentCount = useMemo(() => partnerNeedsAssignment.size, [partnerNeedsAssignment]);
+
+  useEffect(() => {
+    if (navMode !== "partners") return;
+    if (pendingAreaAssignmentCount <= 0) return;
+    setOnlyActiveList(false);
+  }, [navMode, pendingAreaAssignmentCount]);
 
   async function loadAreaOverview(partnerList?: Partner[]) {
     const source = partnerList ?? partners;
@@ -337,6 +546,7 @@ export default function AdminClient() {
           partnerId: detail.partner.id,
           partnerName: detail.partner.company_name,
           isActive: Boolean(mapping.is_active),
+          activationStatus: normalizeActivationStatus(mapping.activation_status, Boolean(mapping.is_active)),
         });
       }
     }
@@ -388,6 +598,25 @@ export default function AdminClient() {
     }));
   }, [areaMappings]);
 
+  const selectedPartnerNeedsAreaAssignment = Boolean(selectedPartner) && displayAreaRows.length === 0;
+
+  const reviewAreaOptions = useMemo(
+    () =>
+      displayAreaRows.filter((row) => {
+        const state = normalizeActivationStatus(row.mapping.activation_status, row.mapping.is_active);
+        return state === "ready_for_review" || state === "in_review" || state === "changes_requested";
+      }),
+    [displayAreaRows],
+  );
+  const pendingReviewCount = useMemo(
+    () =>
+      reviewAreaOptions.filter((row) => {
+        const state = normalizeActivationStatus(row.mapping.activation_status, row.mapping.is_active);
+        return state === "ready_for_review";
+      }).length,
+    [reviewAreaOptions],
+  );
+
   const handoverAreaOptions = useMemo(
     () => displayAreaRows.map((row) => ({ id: row.displayKreisId, label: row.mapping.areas?.name ?? row.displayKreisId })),
     [displayAreaRows],
@@ -406,7 +635,10 @@ export default function AdminClient() {
     setPartners(data.partners ?? []);
     await loadAreaOverview(data.partners ?? []);
 
-    const nextId = selectId ?? selectedPartnerId ?? data.partners?.[0]?.id ?? "";
+    const existingSelected = selectedPartnerId
+      ? (data.partners ?? []).find((p) => p.id === selectedPartnerId)?.id ?? ""
+      : "";
+    const nextId = selectId ?? existingSelected;
     if (nextId) {
       setSelectedPartnerId(nextId);
       await loadPartnerDetails(nextId);
@@ -426,13 +658,88 @@ export default function AdminClient() {
     setSelectedPartner(partnerData.partner);
     setAreaMappings(partnerData.area_mappings ?? []);
     setIntegrations(integrationsData.integrations ?? []);
+    const reviewCandidate = (partnerData.area_mappings ?? []).find((mapping) => {
+      const state = normalizeActivationStatus(mapping.activation_status, Boolean(mapping.is_active));
+      return state === "ready_for_review" || state === "in_review" || state === "changes_requested";
+    });
+    setReviewAreaId(String(reviewCandidate?.area_id ?? ""));
+    setReviewData(null);
     setEditPartner({
       company_name: partnerData.partner.company_name ?? "",
       contact_email: partnerData.partner.contact_email ?? "",
-      contact_person: partnerData.partner.contact_person ?? "",
+      contact_first_name: partnerData.partner.contact_first_name ?? "",
+      contact_last_name: partnerData.partner.contact_last_name ?? "",
       website_url: partnerData.partner.website_url ?? "",
       is_active: Boolean(partnerData.partner.is_active),
     });
+  }
+
+  async function loadAreaReview(areaId: string) {
+    if (!selectedPartnerId || !areaId) {
+      setReviewData(null);
+      setReviewActionError(null);
+      return;
+    }
+    setReviewBusy(true);
+    try {
+      const data = await api<AreaReviewPayload>(`/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(areaId)}/review`);
+      setReviewData(data);
+      setReviewActionError(null);
+    } catch (error) {
+      setReviewData(null);
+      setStatus(error instanceof Error ? error.message : "Freigabeprüfung konnte nicht geladen werden.");
+    } finally {
+      setReviewBusy(false);
+    }
+  }
+
+  async function applyAreaReviewAction(action: "in_review" | "changes_requested" | "approve") {
+    if (!selectedPartnerId || !reviewAreaId) return;
+    setReviewBusy(true);
+    try {
+      const response = await api<AreaReviewPayload>(`/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(reviewAreaId)}/review`, {
+        method: "PATCH",
+        body: JSON.stringify({ action }),
+      });
+      await loadPartnerDetails(selectedPartnerId);
+      await loadAreaOverview();
+      await loadAreaReview(reviewAreaId);
+      if (action === "approve" && response?.notification?.partner?.sent === false) {
+        const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
+        setReviewActionError(`Gebiet wurde freigegeben, Partner-Mail aber nicht versendet (${reason}).`);
+        return;
+      }
+      setReviewActionError(null);
+    } catch (error) {
+      setReviewActionError(error instanceof Error ? error.message : "Aktion konnte nicht ausgeführt werden.");
+      throw error;
+    } finally {
+      setReviewBusy(false);
+    }
+  }
+
+  async function updateReviewMediaStatus(sectionKey: string, nextStatus: "approved" | "draft") {
+    if (!selectedPartnerId || !reviewAreaId) return;
+    const busyKey = `${sectionKey}:${nextStatus}`;
+    setReviewMediaBusyKey(busyKey);
+    try {
+      await api<{ ok?: boolean }>(
+        `/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(reviewAreaId)}/review-media`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            section_key: sectionKey,
+            status: nextStatus,
+          }),
+        },
+      );
+      await loadAreaReview(reviewAreaId);
+      setReviewActionError(null);
+    } catch (error) {
+      setReviewActionError(error instanceof Error ? error.message : "Bildstatus konnte nicht aktualisiert werden.");
+    } finally {
+      setReviewMediaBusyKey(null);
+    }
   }
 
   async function loadAuditLogs() {
@@ -451,6 +758,15 @@ export default function AdminClient() {
   useEffect(() => {
     (async () => {
       try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        const fromMeta = String((user?.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name
+          ?? (user?.user_metadata as { full_name?: string; name?: string } | undefined)?.name
+          ?? "")
+          .trim();
+        const label = fromMeta || String(user?.email ?? "Admin").trim() || "Admin";
+        setAdminDisplayName(label);
         await loadPartners();
         await loadAuditLogs();
         setStatus("Admin-Bereich bereit.");
@@ -479,19 +795,121 @@ export default function AdminClient() {
     return () => clearTimeout(timer);
   }, [areaQuery]);
 
-  async function run(label: string, fn: () => Promise<void>) {
+  useEffect(() => {
+    if (!selectedPartnerId || !reviewAreaId) {
+      setReviewData(null);
+      return;
+    }
+    void loadAreaReview(reviewAreaId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPartnerId, reviewAreaId]);
+
+  function closeSuccessModal() {
+    setSuccessModal((v) => ({ ...v, open: false }));
+    if (clearReviewOnSuccessClose) {
+      setReviewData(null);
+      setReviewAreaId("");
+      setReviewActionError(null);
+      setReviewContentDismissed(true);
+      setClearReviewOnSuccessClose(false);
+    }
+  }
+
+  async function run(label: string, fn: () => Promise<void>, options?: { clearReviewOnClose?: boolean }) {
     setBusy(true);
     setStatus(label);
     try {
       await fn();
+      setClearReviewOnSuccessClose(Boolean(options?.clearReviewOnClose));
       setStatus(`${label} erfolgreich.`);
+      const successTitle = label === "Gebiet zuordnen" ? "Gebiet zugeordnet" : "Erfolgreich";
+      const successMessage = label === "Gebiet zuordnen"
+        ? "Der Partner wird per E-Mail informiert und kann anschließend die Pflichtangaben zur finalen Freigabe machen."
+        : `${label} wurde erfolgreich ausgefuehrt.`;
       setSuccessModal({
         open: true,
-        title: "Erfolgreich",
-        message: `${label} wurde erfolgreich ausgefuehrt.`,
+        title: successTitle,
+        message: successMessage,
       });
     } catch (error) {
       setStatus(error instanceof Error ? error.message : `${label} fehlgeschlagen.`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleCreatePartnerSubmit() {
+    setBusy(true);
+    setStatus("Partner anlegen");
+    setCreatePartnerError(null);
+    try {
+      if (!createPartner.company_name.trim() || !createPartner.contact_email.trim()) {
+        throw new Error("Bitte Firmenname, Kontakt-E-Mail, Vorname und Nachname ausfuellen.");
+      }
+      if (!createPartner.contact_first_name.trim() || !createPartner.contact_last_name.trim()) {
+        throw new Error("Bitte Vorname und Nachname ausfuellen.");
+      }
+      const created = await api<{ partner: { id: string; company_name?: string | null; contact_email?: string | null } }>(
+        "/api/admin/partners",
+        {
+          method: "POST",
+          body: JSON.stringify(createPartner),
+        },
+      );
+
+      const createdId = String(created.partner?.id ?? "").trim();
+      if (!createdId) {
+        throw new Error("Partner wurde angelegt, aber ohne gueltige ID.");
+      }
+
+      setCreatePartner({
+        company_name: "",
+        contact_email: "",
+        contact_first_name: "",
+        contact_last_name: "",
+        website_url: "",
+      });
+      await loadPartners(createdId);
+      setCreatedPartnerSuccess({
+        mode: "created",
+        id: createdId,
+        company_name: String(created.partner?.company_name ?? "").trim() || createPartner.company_name.trim(),
+        contact_email: String(created.partner?.contact_email ?? "").trim() || createPartner.contact_email.trim(),
+      });
+      setActiveView("new_partner_success");
+      setStatus("Partner angelegt.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Partner konnte nicht angelegt werden.";
+      const lower = message.toLowerCase();
+      const requestedEmail = String(createPartner.contact_email ?? "").trim().toLowerCase();
+
+      if (
+        (lower.includes("already exists") || lower.includes("bereits")) &&
+        requestedEmail.length > 0
+      ) {
+        try {
+          const data = await api<{ partners: Partner[] }>("/api/admin/partners?include_inactive=1");
+          const existing = (data.partners ?? []).find(
+            (p) => String(p.contact_email ?? "").trim().toLowerCase() === requestedEmail,
+          );
+          if (existing?.id) {
+            setCreatedPartnerSuccess({
+              mode: "existing",
+              id: existing.id,
+              company_name: String(existing.company_name ?? "").trim() || "Bestehender Partner",
+              contact_email: String(existing.contact_email ?? "").trim() || requestedEmail,
+            });
+            setActiveView("new_partner_success");
+            setStatus("Partner existiert bereits.");
+            return;
+          }
+        } catch {
+          // Fallback: show inline error below.
+        }
+      }
+
+      setStatus(message);
+      setCreatePartnerError(message);
     } finally {
       setBusy(false);
     }
@@ -502,14 +920,105 @@ export default function AdminClient() {
     setBusy(true);
     setStatus("Partner wird geladen...");
     try {
+      setReviewAreaId("");
+      setReviewData(null);
+      setReviewActionError(null);
+      setReviewContentDismissed(false);
       setSelectedPartnerId(partnerId);
       await loadPartnerDetails(partnerId);
       setActiveView(view);
+      setPartnerTab("profile");
       setStatus("Partner geladen.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Partner konnte nicht geladen werden.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function openPartnerPurgeModal() {
+    if (!selectedPartnerId || !selectedPartner) return;
+    setPartnerPurgeModal({
+      open: true,
+      partnerId: selectedPartnerId,
+      partnerName: selectedPartner.company_name ?? selectedPartnerId,
+      loading: true,
+      deleting: false,
+      canPurge: false,
+      blockers: [],
+      summary: {
+        areaMappingsTotal: 0,
+        integrationsActive: 0,
+        storageFiles: 0,
+      },
+      confirmText: "",
+      reason: "",
+    });
+    try {
+      const data = await api<PartnerPurgeCheckPayload>(`/api/admin/partners/${selectedPartnerId}/purge-check`);
+      const blockers = Array.isArray(data.blockers) ? data.blockers.map((v) => String(v)) : [];
+      const summary = {
+        areaMappingsTotal: Number(data.summary?.areaMappingsTotal ?? 0),
+        integrationsActive: Number(data.summary?.integrationsActive ?? 0),
+        storageFiles: Number(data.summary?.storageFiles ?? 0),
+      };
+      const canPurge =
+        Boolean(data.can_purge)
+        && blockers.length === 0
+        && summary.areaMappingsTotal === 0
+        && summary.integrationsActive === 0;
+      setPartnerPurgeModal((prev) => ({
+        ...prev,
+        loading: false,
+        canPurge,
+        blockers,
+        summary,
+      }));
+    } catch (error) {
+      setPartnerPurgeModal((prev) => ({
+        ...prev,
+        loading: false,
+        canPurge: false,
+        blockers: [error instanceof Error ? error.message : "Purge-Check fehlgeschlagen."],
+      }));
+    }
+  }
+
+  async function executePartnerPurge() {
+    if (!partnerPurgeModal.partnerId || partnerPurgeModal.deleting) return;
+    setPartnerPurgeModal((prev) => ({ ...prev, deleting: true }));
+    setStatus("Partner wird endgültig entfernt...");
+    try {
+      const res = await fetch(`/api/admin/partners/${encodeURIComponent(partnerPurgeModal.partnerId)}/purge`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          confirm_text: partnerPurgeModal.confirmText,
+          reason: partnerPurgeModal.reason,
+        }),
+      });
+      const data = await readJsonSafe(res);
+      if (!res.ok) {
+        const errorText = String(data?.error ?? `HTTP ${res.status}`);
+        const blockers = Array.isArray(data?.blockers) ? data.blockers.map((v: unknown) => String(v)).join(" | ") : "";
+        throw new Error(blockers ? `${errorText}: ${blockers}` : errorText);
+      }
+      setPartnerPurgeModal((prev) => ({ ...prev, open: false, deleting: false }));
+      setSelectedPartner(null);
+      setSelectedPartnerId("");
+      setActiveView("home");
+      setPartnerTab("profile");
+      await loadPartners();
+      await loadAreaOverview();
+      setSuccessModal({
+        open: true,
+        title: "Erfolgreich",
+        message: `Partner wurde endgültig entfernt.${data?.dump_path ? ` Sicherheitsdump: ${String(data.dump_path)}` : ""}`,
+      });
+      setStatus("Partner wurde endgültig entfernt.");
+    } catch (error) {
+      setPartnerPurgeModal((prev) => ({ ...prev, deleting: false }));
+      setStatus(error instanceof Error ? error.message : "Partner konnte nicht entfernt werden.");
     }
   }
 
@@ -595,12 +1104,16 @@ export default function AdminClient() {
 
   return (
     <div style={wrapStyle}>
+      <FullscreenLoader
+        show={busy || reviewBusy || status === "Lade Admin-Daten..."}
+        label="Daten werden geladen..."
+      />
       {successModal.open ? (
         <div
           style={modalOverlayStyle}
-          onClick={() => setSuccessModal((v) => ({ ...v, open: false }))}
+          onClick={closeSuccessModal}
           onKeyDown={(e) => {
-            if (e.key === "Escape") setSuccessModal((v) => ({ ...v, open: false }));
+            if (e.key === "Escape") closeSuccessModal();
           }}
         >
           <div
@@ -618,7 +1131,7 @@ export default function AdminClient() {
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button
                 style={btnStyle}
-                onClick={() => setSuccessModal((v) => ({ ...v, open: false }))}
+                onClick={closeSuccessModal}
               >
                 OK
               </button>
@@ -679,6 +1192,241 @@ export default function AdminClient() {
               >
                 Übergabe jetzt ausführen
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {areaDeleteConfirmModal.open ? (
+        <div
+          style={modalOverlayStyle}
+          onClick={() => setAreaDeleteConfirmModal((v) => ({ ...v, open: false }))}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setAreaDeleteConfirmModal((v) => ({ ...v, open: false }));
+          }}
+        >
+          <div
+            style={modalCardStyle}
+            ref={areaDeleteConfirmModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="area-delete-confirm-title"
+            aria-describedby="area-delete-confirm-message"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="area-delete-confirm-title" style={modalTitleStyle}>Gebietszuordnung löschen?</h3>
+            <p id="area-delete-confirm-message" style={modalMessageStyle}>
+              Das Gebiet <strong>{areaDeleteConfirmModal.areaName || areaDeleteConfirmModal.areaId}</strong> wird vom Partner entfernt.
+            </p>
+            <p style={{ ...modalMessageStyle, marginTop: -4 }}>
+              Folge: Der Partner verliert den Zugriff auf dieses Gebiet im Dashboard. Bereits erfasste Eingaben bleiben in der Datenbank erhalten, sind aber nicht mehr über die Zuordnung sichtbar.
+            </p>
+            {areaDeleteConfirmModal.isActive ? (
+              <p style={{ ...modalMessageStyle, marginTop: -4, color: "#991b1b", fontWeight: 700 }}>
+                Achtung: Das Gebiet ist aktuell aktiv.
+              </p>
+            ) : null}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button
+                style={btnGhostStyle}
+                onClick={() => setAreaDeleteConfirmModal((v) => ({ ...v, open: false }))}
+              >
+                Abbrechen
+              </button>
+              <button
+                style={btnDangerStyle}
+                onClick={() => {
+                  const payload = areaDeleteConfirmModal;
+                  setAreaDeleteConfirmModal((v) => ({ ...v, open: false }));
+                  void run("Mapping löschen", async () => {
+                    await api(`/api/admin/partners/${selectedPartnerId}/areas/${payload.areaId}`, {
+                      method: "DELETE",
+                    });
+                    await loadPartnerDetails(selectedPartnerId);
+                    await loadAreaOverview();
+                  });
+                }}
+              >
+                Löschen bestätigen
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {integrationDeleteConfirmModal.open ? (
+        <div
+          style={modalOverlayStyle}
+          onClick={() => setIntegrationDeleteConfirmModal((v) => ({ ...v, open: false }))}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setIntegrationDeleteConfirmModal((v) => ({ ...v, open: false }));
+          }}
+        >
+          <div
+            style={modalCardStyle}
+            ref={integrationDeleteConfirmModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="integration-delete-confirm-title"
+            aria-describedby="integration-delete-confirm-message"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="integration-delete-confirm-title" style={modalTitleStyle}>Integration löschen?</h3>
+            <p id="integration-delete-confirm-message" style={modalMessageStyle}>
+              Die Integration <strong>{integrationDeleteConfirmModal.kind}</strong> / <strong>{integrationDeleteConfirmModal.provider}</strong> wird endgültig entfernt.
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button
+                style={btnGhostStyle}
+                onClick={() => setIntegrationDeleteConfirmModal((v) => ({ ...v, open: false }))}
+              >
+                Abbrechen
+              </button>
+              <button
+                style={btnDangerStyle}
+                onClick={() => {
+                  const payload = integrationDeleteConfirmModal;
+                  setIntegrationDeleteConfirmModal((v) => ({ ...v, open: false }));
+                  void run("Integration löschen", async () => {
+                    if (!selectedPartnerId || !payload.integrationId) return;
+                    await api(`/api/admin/integrations/${payload.integrationId}`, { method: "DELETE" });
+                    await loadPartnerDetails(selectedPartnerId);
+                  });
+                }}
+              >
+                Löschen bestätigen
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {partnerPurgeModal.open ? (
+        <div
+          style={modalOverlayStyle}
+          onClick={() => {
+            if (partnerPurgeModal.deleting) return;
+            setPartnerPurgeModal((v) => ({ ...v, open: false }));
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "Escape" || partnerPurgeModal.deleting) return;
+            setPartnerPurgeModal((v) => ({ ...v, open: false }));
+          }}
+        >
+          <div
+            style={modalCardStyle}
+            ref={partnerPurgeModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="partner-purge-title"
+            aria-describedby="partner-purge-message"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="partner-purge-title" style={modalTitleStyle}>Partner endgültig entfernen</h3>
+            <p id="partner-purge-message" style={modalMessageStyle}>
+              Partner <strong>{partnerPurgeModal.partnerName || partnerPurgeModal.partnerId}</strong> wird vollständig gelöscht (inkl. Auth-User).
+            </p>
+            {partnerPurgeModal.loading ? (
+              <p style={{ ...modalMessageStyle, marginTop: -4 }}>Prüfe Voraussetzungen...</p>
+            ) : (
+              <>
+                <p style={{ ...modalMessageStyle, marginTop: -4 }}>
+                  {partnerPurgeModal.summary.areaMappingsTotal > 0 ? (
+                    <button
+                      type="button"
+                      style={inlineLinkButtonStyle}
+                      disabled={partnerPurgeModal.deleting}
+                      onClick={() => {
+                        setPartnerPurgeModal((v) => ({ ...v, open: false }));
+                        setPartnerTab("areas");
+                        setStatus("Bitte zuerst die Gebietszuordnungen entfernen/übergeben.");
+                      }}
+                    >
+                      Gebietszuordnungen
+                    </button>
+                  ) : (
+                    "Gebietszuordnungen"
+                  )}
+                  : {partnerPurgeModal.summary.areaMappingsTotal} |{" "}
+                  {partnerPurgeModal.summary.integrationsActive > 0 ? (
+                    <button
+                      type="button"
+                      style={inlineLinkButtonStyle}
+                      disabled={partnerPurgeModal.deleting}
+                      onClick={() => {
+                        setPartnerPurgeModal((v) => ({ ...v, open: false }));
+                        setPartnerTab("integrations");
+                        setStatus("Bitte zuerst alle aktiven Integrationen deaktivieren.");
+                      }}
+                    >
+                      Aktive Integrationen
+                    </button>
+                  ) : (
+                    "Aktive Integrationen"
+                  )}
+                  : {partnerPurgeModal.summary.integrationsActive} | Storage-Dateien: {partnerPurgeModal.summary.storageFiles}
+                </p>
+                {partnerPurgeModal.summary.storageFiles > 0 ? (
+                  <p style={{ ...modalMessageStyle, marginTop: -2 }}>
+                    Hinweis: Storage-Dateien werden beim endgültigen Löschen automatisch mit entfernt.
+                  </p>
+                ) : null}
+                {partnerPurgeModal.blockers.length > 0 ? (
+                  <div style={{ marginTop: 6, marginBottom: 10, fontSize: 12, color: "#991b1b" }}>
+                    {partnerPurgeModal.blockers.join(" | ")}
+                  </div>
+                ) : null}
+                <input
+                  style={inputStyle}
+                  placeholder='Bestätigungstext: LOESCHEN'
+                  value={partnerPurgeModal.confirmText}
+                  onChange={(e) => setPartnerPurgeModal((v) => ({ ...v, confirmText: e.target.value }))}
+                  disabled={partnerPurgeModal.deleting || !partnerPurgeModal.canPurge}
+                />
+                <input
+                  style={{ ...inputStyle, marginTop: 8 }}
+                  placeholder="Grund (optional)"
+                  value={partnerPurgeModal.reason}
+                  onChange={(e) => setPartnerPurgeModal((v) => ({ ...v, reason: e.target.value }))}
+                  disabled={partnerPurgeModal.deleting || !partnerPurgeModal.canPurge}
+                />
+              </>
+            )}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
+              <button
+                style={btnGhostStyle}
+                disabled={partnerPurgeModal.deleting}
+                onClick={() => setPartnerPurgeModal((v) => ({ ...v, open: false }))}
+              >
+                Abbrechen
+              </button>
+              {(() => {
+                const purgeDisabled =
+                  partnerPurgeModal.loading
+                  || partnerPurgeModal.deleting
+                  || !partnerPurgeModal.canPurge
+                  || partnerPurgeModal.blockers.length > 0
+                  || partnerPurgeModal.summary.areaMappingsTotal > 0
+                  || partnerPurgeModal.summary.integrationsActive > 0
+                  || String(partnerPurgeModal.confirmText).trim().toUpperCase() !== "LOESCHEN";
+                return (
+                  <button
+                    style={{
+                      ...btnDangerStyle,
+                      background: purgeDisabled ? "#f1f5f9" : btnDangerStyle.background,
+                      borderColor: purgeDisabled ? "#cbd5e1" : "#ef4444",
+                      color: purgeDisabled ? "#94a3b8" : "#b91c1c",
+                      cursor: purgeDisabled ? "not-allowed" : "pointer",
+                    }}
+                    disabled={purgeDisabled}
+                    onClick={() => {
+                      void executePartnerPurge();
+                    }}
+                  >
+                    {partnerPurgeModal.deleting ? "Lösche..." : "Endgültig löschen"}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -750,6 +1498,20 @@ export default function AdminClient() {
             title="Partner"
           >
             👥
+            {pendingAreaAssignmentCount > 0 ? (
+              <span
+                aria-label={`${pendingAreaAssignmentCount} Partner ohne Gebietszuordnung`}
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#dc2626",
+                }}
+              />
+            ) : null}
           </button>
           <button
             style={modeButtonStyle(navMode === "areas")}
@@ -792,6 +1554,7 @@ export default function AdminClient() {
               <input
                 type="checkbox"
                 checked={onlyActiveList}
+                disabled={navMode === "partners" && pendingAreaAssignmentCount > 0}
                 onChange={(e) => setOnlyActiveList(e.target.checked)}
               />
               nur aktiv
@@ -805,7 +1568,21 @@ export default function AdminClient() {
                     style={listLinkRowStyle(selectedPartnerId === p.id)}
                     onClick={() => selectPartnerView(p.id, "partner_edit")}
                   >
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>{p.company_name}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span>{p.company_name}</span>
+                      {partnerNeedsAssignment.has(p.id) ? (
+                        <span
+                          aria-label="Gebietszuordnung fehlt"
+                          style={{
+                            display: "inline-block",
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: "#dc2626",
+                          }}
+                        />
+                      ) : null}
+                    </div>
                     <div style={{ fontSize: 12, color: "#64748b" }}>{p.is_active ? "aktiv" : "inaktiv"}</div>
                   </button>
                 ))
@@ -824,6 +1601,15 @@ export default function AdminClient() {
         </aside>
 
         <div style={contentPaneStyle}>
+      {activeView === "home" ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Willkommen {adminDisplayName} in der Admin-Konsole</h2>
+        <p style={mutedStyle}>
+          Wähle links einen Partner oder ein Gebiet, um konkrete Verwaltungsaufgaben zu öffnen.
+        </p>
+      </section>
+      ) : null}
+
       {activeView === "new_partner" ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Partner anlegen (Invite-Link)</h2>
@@ -843,11 +1629,18 @@ export default function AdminClient() {
             onChange={(e) => setCreatePartner((v) => ({ ...v, contact_email: e.target.value }))}
           />
           <input
-            placeholder="Kontaktperson"
-            aria-label="Kontaktperson"
+            placeholder="Vorname"
+            aria-label="Vorname"
             style={inputStyle}
-            value={createPartner.contact_person}
-            onChange={(e) => setCreatePartner((v) => ({ ...v, contact_person: e.target.value }))}
+            value={createPartner.contact_first_name}
+            onChange={(e) => setCreatePartner((v) => ({ ...v, contact_first_name: e.target.value }))}
+          />
+          <input
+            placeholder="Nachname"
+            aria-label="Nachname"
+            style={inputStyle}
+            value={createPartner.contact_last_name}
+            onChange={(e) => setCreatePartner((v) => ({ ...v, contact_last_name: e.target.value }))}
           />
           <input
             placeholder="Website URL"
@@ -861,27 +1654,64 @@ export default function AdminClient() {
           <button
             style={btnStyle}
             disabled={busy}
-            onClick={() =>
-              run("Partner anlegen", async () => {
-                if (!createPartner.company_name.trim() || !createPartner.contact_email.trim()) {
-                  throw new Error("Bitte Firmenname und Kontakt-E-Mail ausfuellen.");
-                }
-                const created = await api<{ partner: { id: string } }>("/api/admin/partners", {
-                  method: "POST",
-                  body: JSON.stringify(createPartner),
-                });
-                setCreatePartner({
-                  company_name: "",
-                  contact_email: "",
-                  contact_person: "",
-                  website_url: "",
-                });
-                await loadPartners(created.partner.id);
-                setActiveView("partner_edit");
-              })
-            }
+            onClick={() => {
+              void handleCreatePartnerSubmit();
+            }}
           >
             Einladung senden und Partner anlegen
+          </button>
+          {createPartnerError ? (
+            <p style={{ marginTop: 10, color: "#b91c1c", fontSize: 13, fontWeight: 600 }}>
+              {createPartnerError}
+            </p>
+          ) : null}
+        </div>
+      </section>
+      ) : null}
+
+      {activeView === "new_partner_success" ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>
+          {createdPartnerSuccess?.mode === "existing" ? "Partner bereits vorhanden" : "Partner erfolgreich angelegt"}
+        </h2>
+        <p style={mutedStyle}>
+          {createdPartnerSuccess?.mode === "existing"
+            ? "Für diese E-Mail existiert bereits ein Partnerkonto. Du kannst direkt in die Partnerdetails springen."
+            : "Die Einladung wurde ausgelöst und der Partnerdatensatz wurde erstellt."}
+        </p>
+        <div style={{ marginTop: 12, border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, background: "#f8fafc" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8 }}>Angelegt</div>
+          <div style={rowStyle}>
+            <span style={{ fontWeight: 600, color: "#334155" }}>Firma</span>
+            <span>{createdPartnerSuccess?.company_name || "—"}</span>
+          </div>
+          <div style={rowStyle}>
+            <span style={{ fontWeight: 600, color: "#334155" }}>Kontakt-E-Mail</span>
+            <span>{createdPartnerSuccess?.contact_email || "—"}</span>
+          </div>
+          <div style={rowStyle}>
+            <span style={{ fontWeight: 600, color: "#334155" }}>Partner-ID</span>
+            <span>{createdPartnerSuccess?.id || "—"}</span>
+          </div>
+        </div>
+        <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            style={btnStyle}
+            onClick={() => {
+              if (!createdPartnerSuccess?.id) return;
+              void selectPartnerView(createdPartnerSuccess.id, "partner_edit");
+            }}
+          >
+            Partnerdetails öffnen
+          </button>
+          <button
+            style={btnGhostStyle}
+            onClick={() => {
+              setCreatedPartnerSuccess(null);
+              setActiveView("new_partner");
+            }}
+          >
+            Weiteren Partner anlegen
           </button>
         </div>
       </section>
@@ -893,10 +1723,51 @@ export default function AdminClient() {
         <p style={{ margin: 0, color: "#475569" }}>
           {selectedPartner ? `${selectedPartner.company_name} (${selectedPartner.id})` : "Bitte links einen Partner auswählen."}
         </p>
+        {selectedPartner ? (
+          <div style={partnerTabBarStyle}>
+            <button style={partnerTabButtonStyle(partnerTab === "profile")} onClick={() => setPartnerTab("profile")}>Profil</button>
+            <button style={partnerTabButtonStyle(partnerTab === "areas")} onClick={() => setPartnerTab("areas")}>
+              Gebiete
+              {selectedPartnerNeedsAreaAssignment ? (
+                <span
+                  aria-label="Gebiete zuweisen erforderlich"
+                  style={{
+                    display: "inline-block",
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: "#dc2626",
+                    marginLeft: 8,
+                    verticalAlign: "middle",
+                  }}
+                />
+              ) : null}
+            </button>
+            <button style={partnerTabButtonStyle(partnerTab === "review")} onClick={() => setPartnerTab("review")}>
+              Freigabeprüfung
+              {pendingReviewCount > 0 ? (
+                <span
+                  aria-label={`${pendingReviewCount} neue Freigabeprüfung${pendingReviewCount === 1 ? "" : "en"}`}
+                  style={{
+                    display: "inline-block",
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: "#dc2626",
+                    marginLeft: 8,
+                    verticalAlign: "middle",
+                  }}
+                />
+              ) : null}
+            </button>
+            <button style={partnerTabButtonStyle(partnerTab === "integrations")} onClick={() => setPartnerTab("integrations")}>Integrationen</button>
+            <button style={partnerTabButtonStyle(partnerTab === "handover")} onClick={() => setPartnerTab("handover")}>Übergabe</button>
+          </div>
+        ) : null}
       </section>
       ) : null}
 
-      {activeView === "partner_edit" ? (
+      {activeView === "partner_edit" && partnerTab === "profile" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Partner bearbeiten</h2>
         <p style={mutedStyle}>{selectedPartnerLabel}</p>
@@ -918,11 +1789,19 @@ export default function AdminClient() {
             disabled={!selectedPartner}
           />
           <input
-            placeholder="Kontaktperson"
-            aria-label="Kontaktperson bearbeiten"
+            placeholder="Vorname"
+            aria-label="Vorname bearbeiten"
             style={inputStyle}
-            value={editPartner.contact_person}
-            onChange={(e) => setEditPartner((v) => ({ ...v, contact_person: e.target.value }))}
+            value={editPartner.contact_first_name}
+            onChange={(e) => setEditPartner((v) => ({ ...v, contact_first_name: e.target.value }))}
+            disabled={!selectedPartner}
+          />
+          <input
+            placeholder="Nachname"
+            aria-label="Nachname bearbeiten"
+            style={inputStyle}
+            value={editPartner.contact_last_name}
+            onChange={(e) => setEditPartner((v) => ({ ...v, contact_last_name: e.target.value }))}
             disabled={!selectedPartner}
           />
           <input
@@ -961,10 +1840,24 @@ export default function AdminClient() {
             Speichern
           </button>
         </div>
+        <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
+          <div style={{ fontSize: 13, color: "#7f1d1d", fontWeight: 600, marginBottom: 8 }}>
+            Gefahrenbereich
+          </div>
+          <button
+            style={btnDangerStyle}
+            disabled={busy || !selectedPartner}
+            onClick={() => {
+              void openPartnerPurgeModal();
+            }}
+          >
+            Partner endgültig entfernen
+          </button>
+        </div>
       </section>
       ) : null}
 
-      {activeView === "partner_edit" ? (
+      {activeView === "partner_edit" && partnerTab === "areas" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Gebietszuordnung</h2>
         <div style={rowStyle}>
@@ -987,7 +1880,7 @@ export default function AdminClient() {
                 if (!selectedPartnerId || !assignAreaId.trim()) return;
                 await api(`/api/admin/partners/${selectedPartnerId}/areas`, {
                   method: "POST",
-                  body: JSON.stringify({ area_id: assignAreaId.trim(), is_active: true }),
+                  body: JSON.stringify({ area_id: assignAreaId.trim(), is_active: false }),
                 });
                 setAssignAreaId("");
                 setAreaQuery("");
@@ -1025,45 +1918,49 @@ export default function AdminClient() {
             </tr>
           </thead>
           <tbody>
+            {displayAreaRows.length === 0 ? (
+              <tr>
+                <td style={tdStyle} colSpan={3}>
+                  <div
+                    style={{
+                      border: "1px solid #ef4444",
+                      background: "rgba(239, 68, 68, 0.08)",
+                      borderRadius: 10,
+                      padding: 12,
+                      color: "#7f1d1d",
+                      fontSize: 13,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Für diesen Partner sind noch keine Gebiete zugeordnet. Bitte jetzt Gebiete zuweisen.
+                  </div>
+                </td>
+              </tr>
+            ) : null}
             {displayAreaRows.map((row) => (
               <tr key={row.key}>
                 <td style={tdStyle}>
                   <div>{row.mapping.areas?.name ?? row.displayKreisId}</div>
                   <small style={mutedStyle}>{row.displayKreisId}</small>
                 </td>
-                <td style={tdStyle}>{row.mapping.is_active ? "aktiv" : "inaktiv"}</td>
+                <td style={tdStyle}>
+                  {formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status)}
+                </td>
                 <td style={tdStyle}>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
-                      style={btnGhostStyle}
+                      style={handoverLinkButtonStyle}
                       disabled={busy || !selectedPartner || row.derivedFromOrtslagen}
-                      onClick={() =>
-                        run("Mapping Status ändern", async () => {
-                          await api(`/api/admin/partners/${selectedPartnerId}/areas/${row.mapping.area_id}`, {
-                            method: "PATCH",
-                            body: JSON.stringify({ is_active: !row.mapping.is_active }),
-                          });
-                          await loadPartnerDetails(selectedPartnerId);
-                          await loadAreaOverview();
-                        })
-                      }
+                      onClick={() => {
+                        setPartnerTab("handover");
+                        setHandoverDraft((prev) => ({
+                          ...prev,
+                          area_id: row.mapping.area_id,
+                        }));
+                        setStatus(`Übergabe vorbereitet: ${row.mapping.areas?.name ?? row.mapping.area_id}`);
+                      }}
                     >
-                      {row.mapping.is_active ? "Deaktivieren" : "Aktivieren"}
-                    </button>
-                    <button
-                      style={btnDangerStyle}
-                      disabled={busy || !selectedPartner || row.derivedFromOrtslagen}
-                      onClick={() =>
-                        run("Mapping löschen", async () => {
-                          await api(`/api/admin/partners/${selectedPartnerId}/areas/${row.mapping.area_id}`, {
-                            method: "DELETE",
-                          });
-                          await loadPartnerDetails(selectedPartnerId);
-                          await loadAreaOverview();
-                        })
-                      }
-                    >
-                      Löschen
+                      Übergabe
                     </button>
                   </div>
                 </td>
@@ -1074,7 +1971,172 @@ export default function AdminClient() {
       </section>
       ) : null}
 
-      {activeView === "partner_edit" ? (
+      {activeView === "partner_edit" && partnerTab === "review" && Boolean(selectedPartner) ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Freigabeprüfung</h2>
+        {reviewAreaOptions.length > 0 ? (
+          <p style={mutedStyle}>Pflichtangaben prüfen und Workflow-Status setzen.</p>
+        ) : null}
+        {reviewAreaOptions.length === 0 ? (
+          <div style={{ marginTop: 12, color: "#475569", fontSize: 14 }}>
+            Aktuell liegen keine Freigabeprüfungen vor.
+          </div>
+        ) : (
+          <div style={rowStyle}>
+            <select
+              style={inputStyle}
+              aria-label="Gebiet für Freigabeprüfung"
+              value={reviewAreaId}
+              onChange={(e) => {
+                setReviewAreaId(e.target.value);
+                setReviewActionError(null);
+                setReviewContentDismissed(false);
+              }}
+              disabled={!selectedPartner}
+            >
+              <option value="">Gebiet wählen</option>
+              {reviewAreaOptions.map((row) => (
+                <option key={row.mapping.area_id} value={row.mapping.area_id}>
+                  {row.mapping.areas?.name ?? row.mapping.area_id} ({formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status)})
+                </option>
+              ))}
+            </select>
+            <button
+              style={btnGhostStyle}
+              disabled={reviewBusy || !reviewAreaId}
+              onClick={() => {
+                setReviewContentDismissed(false);
+                void loadAreaReview(reviewAreaId);
+              }}
+            >
+              Prüfdaten laden
+            </button>
+          </div>
+        )}
+
+        {!reviewContentDismissed && reviewAreaOptions.length > 0 && reviewAreaId && reviewData ? (
+          <>
+            <div style={{ marginTop: 10, marginBottom: 10, fontSize: 13, color: "#334155" }}>
+              Status:
+              {" "}
+              <strong>{formatAreaStateLabel(Boolean(reviewData.mapping?.is_active), reviewData.mapping?.activation_status)}</strong>
+              {" · "}
+              Mandatory:
+              {" "}
+              <strong>{reviewData.mandatory?.ok ? "ok" : "offen"}</strong>
+            </div>
+
+            {!reviewData.mandatory?.ok && Array.isArray(reviewData.mandatory?.missing) && reviewData.mandatory?.missing.length > 0 ? (
+              <div style={{ marginBottom: 10, fontSize: 12, color: "#991b1b" }}>
+                {reviewData.mandatory.missing
+                  .slice(0, 10)
+                  .map((entry) => `${formatMandatoryKeyLabel(String(entry.key ?? ""))} (${entry.reason})`)
+                  .join(", ")}
+              </div>
+            ) : null}
+
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Pflichtfeld</th>
+                  <th style={thStyle}>Status</th>
+                  <th style={thStyle}>Inhalt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(reviewData.fields ?? []).map((field) => (
+                  <tr key={field.key}>
+                    <td style={tdStyle}>{formatMandatoryKeyLabel(field.key)}</td>
+                    <td style={tdStyle}>
+                      {field.status === "approved" && field.present ? "ok" : "offen"}
+                    </td>
+                    <td style={tdStyle}>
+                      {isMandatoryMediaKey(field.key) ? (
+                        <div style={{ display: "grid", gap: 8 }}>
+                          {field.content ? (
+                            <Image
+                              src={field.content}
+                              alt={formatMandatoryKeyLabel(field.key)}
+                              width={280}
+                              height={180}
+                              unoptimized
+                              style={{ maxWidth: 280, maxHeight: 180, objectFit: "cover", borderRadius: 8, border: "1px solid #e2e8f0" }}
+                            />
+                          ) : (
+                            <div style={{ fontSize: 12, color: "#64748b" }}>—</div>
+                          )}
+                          {field.content ? (
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <button
+                                type="button"
+                                style={btnStyle}
+                                disabled={reviewMediaBusyKey === `${field.key}:approved`}
+                                onClick={() => void updateReviewMediaStatus(field.key, "approved")}
+                              >
+                                Bild prüfen
+                              </button>
+                              <button
+                                type="button"
+                                style={btnGhostStyle}
+                                disabled={reviewMediaBusyKey === `${field.key}:draft`}
+                                onClick={() => void updateReviewMediaStatus(field.key, "draft")}
+                              >
+                                Zurückstellen
+                              </button>
+                            </div>
+                          ) : null}
+                          <div style={{ fontSize: 11, color: "#64748b", wordBreak: "break-all" }}>{field.content || "—"}</div>
+                        </div>
+                      ) : (
+                        <div style={{ maxWidth: 560, whiteSpace: "pre-wrap", fontSize: 12, color: "#334155" }}>
+                          {field.content || "—"}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                style={btnDangerStyle}
+                disabled={busy || reviewBusy || !reviewAreaId}
+                onClick={() =>
+                  run("Nachbesserung anfordern", async () => {
+                    await applyAreaReviewAction("changes_requested");
+                  })
+                }
+              >
+                Nachbesserung anfordern
+              </button>
+              <button
+                style={btnStyle}
+                disabled={busy || reviewBusy || !reviewAreaId}
+                onClick={() =>
+                  run("Gebiet freigeben", async () => {
+                    await applyAreaReviewAction("approve");
+                  }, { clearReviewOnClose: true })
+                }
+              >
+                Freigeben
+              </button>
+            </div>
+            {reviewActionError ? (
+              <div style={{ marginTop: 8, fontSize: 12, color: "#991b1b" }}>
+                {reviewActionError}
+              </div>
+            ) : null}
+          </>
+        ) : (!reviewContentDismissed && reviewAreaOptions.length > 0) ? (
+          <p style={{ marginTop: 10, ...mutedStyle }}>
+            Kein Gebiet mit Freigabestatus ausgewählt.
+          </p>
+        ) : null}
+      </section>
+      ) : null}
+
+      {activeView === "partner_edit" && partnerTab === "handover" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Gebiet übergeben</h2>
         <p style={mutedStyle}>
@@ -1158,7 +2220,7 @@ export default function AdminClient() {
       </section>
       ) : null}
 
-      {activeView === "partner_integrations" ? (
+      {activeView === "partner_edit" && partnerTab === "integrations" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Integrationen</h2>
         <div style={grid2Style}>
@@ -1264,82 +2326,24 @@ export default function AdminClient() {
               <th style={thStyle}>Kind</th>
               <th style={thStyle}>Provider</th>
               <th style={thStyle}>Status</th>
-              <th style={thStyle}>Secrets</th>
+              <th style={thStyle}>Zugang (maskiert)</th>
+              <th style={thStyle}>Sync/Test</th>
               <th style={thStyle}>Aktion</th>
             </tr>
           </thead>
           <tbody>
             {integrations.map((integration) => {
-              const draft = secretDraft[integration.id] ?? { api_key: "", token: "", secret: "" };
               return (
                 <tr key={integration.id}>
                   <td style={tdStyle}>{integration.kind}</td>
                   <td style={tdStyle}>{integration.provider}</td>
                   <td style={tdStyle}>{integration.is_active ? "aktiv" : "inaktiv"}</td>
+                  <td style={tdStyle}>{getMaskedAuthSummary(integration)}</td>
                   <td style={tdStyle}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-                      <input
-                        placeholder="api_key"
-                        aria-label={`API Key für ${integration.provider}`}
-                        style={inputStyle}
-                        value={draft.api_key}
-                        onChange={(e) =>
-                          setSecretDraft((prev) => ({
-                            ...prev,
-                            [integration.id]: { ...draft, api_key: e.target.value },
-                          }))
-                        }
-                      />
-                      <input
-                        placeholder="token"
-                        aria-label={`Token für ${integration.provider}`}
-                        style={inputStyle}
-                        value={draft.token}
-                        onChange={(e) =>
-                          setSecretDraft((prev) => ({
-                            ...prev,
-                            [integration.id]: { ...draft, token: e.target.value },
-                          }))
-                        }
-                      />
-                      <input
-                        placeholder="secret"
-                        aria-label={`Secret für ${integration.provider}`}
-                        style={inputStyle}
-                        value={draft.secret}
-                        onChange={(e) =>
-                          setSecretDraft((prev) => ({
-                            ...prev,
-                            [integration.id]: { ...draft, secret: e.target.value },
-                          }))
-                        }
-                      />
-                    </div>
+                    <span style={{ fontSize: 12, color: "#334155" }}>{getIntegrationHealthSummary(integration)}</span>
                   </td>
                   <td style={tdStyle}>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button
-                        style={btnStyle}
-                        disabled={busy}
-                        onClick={() =>
-                          run("Secret speichern", async () => {
-                            const payload: Record<string, string> = {};
-                            if (draft.api_key.trim()) payload.api_key = draft.api_key.trim();
-                            if (draft.token.trim()) payload.token = draft.token.trim();
-                            if (draft.secret.trim()) payload.secret = draft.secret.trim();
-                            await api(`/api/admin/integrations/${integration.id}/secrets`, {
-                              method: "POST",
-                              body: JSON.stringify(payload),
-                            });
-                            setSecretDraft((prev) => ({
-                              ...prev,
-                              [integration.id]: { api_key: "", token: "", secret: "" },
-                            }));
-                          })
-                        }
-                      >
-                        Secret speichern
-                      </button>
                       <button
                         style={btnGhostStyle}
                         disabled={busy}
@@ -1354,6 +2358,20 @@ export default function AdminClient() {
                         }
                       >
                         {integration.is_active ? "Deaktivieren" : "Aktivieren"}
+                      </button>
+                      <button
+                        style={btnDangerStyle}
+                        disabled={busy}
+                        onClick={() => {
+                          setIntegrationDeleteConfirmModal({
+                            open: true,
+                            integrationId: integration.id,
+                            provider: integration.provider,
+                            kind: integration.kind,
+                          });
+                        }}
+                      >
+                        Löschen
                       </button>
                     </div>
                   </td>
@@ -1512,6 +2530,7 @@ const modeBarStyle: React.CSSProperties = {
 };
 
 const modeButtonStyle = (active: boolean): React.CSSProperties => ({
+  position: "relative",
   width: "100%",
   height: 76,
   border: `1px solid ${active ? "#facc15" : "rgba(255,255,255,0.25)"}`,
@@ -1576,6 +2595,24 @@ const cardStyle: React.CSSProperties = {
   marginBottom: 16,
 };
 
+const partnerTabBarStyle: React.CSSProperties = {
+  marginTop: 14,
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap",
+};
+
+const partnerTabButtonStyle = (active: boolean): React.CSSProperties => ({
+  border: active ? "1px solid #0f766e" : "1px solid #cbd5e1",
+  background: active ? "#ecfdf5" : "#ffffff",
+  color: active ? "#065f46" : "#0f172a",
+  borderRadius: 999,
+  padding: "7px 12px",
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: "pointer",
+});
+
 const h2Style: React.CSSProperties = {
   marginTop: 0,
   marginBottom: 12,
@@ -1633,6 +2670,26 @@ const btnDangerStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: "8px 12px",
   cursor: "pointer",
+};
+
+const handoverLinkButtonStyle: React.CSSProperties = {
+  border: "1px solid #16a34a",
+  background: "#ffffff",
+  color: "#166534",
+  borderRadius: 8,
+  padding: "8px 12px",
+  cursor: "pointer",
+  fontWeight: 700,
+};
+
+const inlineLinkButtonStyle: React.CSSProperties = {
+  border: "none",
+  background: "transparent",
+  color: "#0f766e",
+  fontWeight: 700,
+  padding: 0,
+  cursor: "pointer",
+  textDecoration: "underline",
 };
 
 const tableStyle: React.CSSProperties = {

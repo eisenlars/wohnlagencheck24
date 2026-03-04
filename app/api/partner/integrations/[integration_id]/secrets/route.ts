@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { buildLocalSiteTokenHash } from "@/lib/security/local-site-auth";
+import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 
 type SecretsBody = {
   api_key?: string;
@@ -83,6 +84,24 @@ export async function POST(
       .eq("partner_id", userId);
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
+    await writeSecurityAuditLog({
+      actorUserId: userId,
+      actorRole: "system",
+      eventType: "update",
+      entityType: "partner_secret",
+      entityId: integrationId,
+      payload: {
+        integration_id: integrationId,
+        changed_keys: [
+          apiKey ? "api_key" : null,
+          token ? (integration.kind === "local_site" ? "token_hash" : "token") : null,
+          secret ? "secret" : null,
+        ].filter(Boolean),
+      },
+      ip: extractClientIpFromHeaders(req.headers),
+      userAgent: req.headers.get("user-agent"),
+    });
+
     return NextResponse.json({ ok: true, integration_id: integrationId });
   } catch (error) {
     if (error instanceof Error) {
@@ -95,4 +114,3 @@ export async function POST(
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
-

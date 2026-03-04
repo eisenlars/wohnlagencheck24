@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { publishVisibilityIndex } from "@/lib/visibility-index";
 
 type HandoverBody = {
   area_id?: string;
@@ -20,6 +21,11 @@ function normalize(value: unknown): string {
 function isKreisAreaId(areaId: string): boolean {
   const parts = areaId.split("-").filter((p) => p.length > 0);
   return parts.length === 3;
+}
+
+function isMissingActivationStatusColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partner_area_map.activation_status") && msg.includes("does not exist");
 }
 
 export async function POST(req: Request) {
@@ -136,20 +142,40 @@ export async function POST(req: Request) {
       }
     }
 
-    const { data: newMapping, error: upsertMappingError } = await admin
+    let { data: newMapping, error: upsertMappingError } = await admin
       .from("partner_area_map")
       .upsert(
         {
           auth_user_id: newPartnerId,
           area_id: areaId,
-          is_active: true,
+          is_active: false,
+          activation_status: "assigned",
         },
         { onConflict: "auth_user_id,area_id" },
       )
-      .select("id, auth_user_id, area_id, is_active")
+      .select("id, auth_user_id, area_id, is_active, activation_status")
       .single();
+    if (upsertMappingError && isMissingActivationStatusColumn(upsertMappingError)) {
+      const fallback = await admin
+        .from("partner_area_map")
+        .upsert(
+          {
+            auth_user_id: newPartnerId,
+            area_id: areaId,
+            is_active: false,
+          },
+          { onConflict: "auth_user_id,area_id" },
+        )
+        .select("id, auth_user_id, area_id, is_active")
+        .single();
+      newMapping = fallback.data ? { ...fallback.data, activation_status: "assigned" } : null;
+      upsertMappingError = fallback.error;
+    }
     if (upsertMappingError) {
       return NextResponse.json({ error: upsertMappingError.message }, { status: 500 });
+    }
+    if (!newMapping) {
+      return NextResponse.json({ error: "New mapping could not be created" }, { status: 500 });
     }
 
     let oldPartnerDeactivated = false;
@@ -204,6 +230,8 @@ export async function POST(req: Request) {
         action: "assign_new_mapping",
         area_id: areaId,
         new_partner_id: newPartnerId,
+        is_active: false,
+        activation_status: String((newMapping as { activation_status?: string | null }).activation_status ?? "assigned"),
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -229,6 +257,12 @@ export async function POST(req: Request) {
       userAgent: req.headers.get("user-agent"),
     });
 
+    try {
+      await publishVisibilityIndex(admin as never);
+    } catch (publishErr) {
+      console.warn("visibility index publish failed after handover:", publishErr);
+    }
+
     return NextResponse.json({
       ok: true,
       handover: {
@@ -246,6 +280,8 @@ export async function POST(req: Request) {
         deactivate_old_partner_applied: oldPartnerDeactivated,
         deactivate_old_partner_skipped_reason: oldPartnerDeactivateSkippedReason,
         deactivate_old_integrations: deactivateOldIntegrations,
+        new_mapping_status: String((newMapping as { activation_status?: string | null }).activation_status ?? "assigned"),
+        new_mapping_is_active: false,
       },
     });
   } catch (error) {
