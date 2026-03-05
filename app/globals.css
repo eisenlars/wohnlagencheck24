@@ -1905,6 +1905,8 @@ h6 {
 }
 
 .angebote-mode-btn:hover {
+  background: #fff4a8;
+  border-color: #d7be56;
   transform: translateY(-1px);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
 }
@@ -1912,6 +1914,12 @@ h6 {
 .angebote-mode-btn.is-active {
   background: #111;
   color: #ffffff;
+}
+
+.angebote-mode-btn.is-active:hover {
+  background: #111;
+  color: #ffffff;
+  border-color: #111;
 }
 
 .angebote-page-title-text {
