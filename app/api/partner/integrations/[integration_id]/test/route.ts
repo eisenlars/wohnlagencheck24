@@ -122,19 +122,40 @@ export async function POST(
 
     const baseUrl = asText(integration.base_url);
     const authConfig = (integration.auth_config ?? {}) as Record<string, unknown>;
-    if (integration.kind === "local_site" && !baseUrl) {
+    if (integration.kind === "local_site") {
       const hasTokenHash = Boolean(asText(authConfig.token_hash));
+      const { data: activeArea } = await admin
+        .from("partner_area_map")
+        .select("id")
+        .eq("auth_user_id", integration.partner_id)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (!hasTokenHash) {
+        const result = {
+          status: "error" as const,
+          message: "Kein API-Key hinterlegt. Bitte zuerst im Schritt 'API-Key und Verbindungstest' speichern.",
+        };
+        await persistTestResult(admin, integration, result);
+        return NextResponse.json({ ok: true, result });
+      }
+
+      if (!activeArea?.id) {
+        const result = {
+          status: "warning" as const,
+          message: "Zugangsschluessel ist gespeichert, aber es ist noch kein aktives Gebiet zugeordnet.",
+        };
+        await persistTestResult(admin, integration, result);
+        return NextResponse.json({ ok: true, result });
+      }
+
       const result = {
-        status: (hasTokenHash ? "warning" : "error") as "warning" | "error",
-        message: hasTokenHash
-          ? "Token-Hash vorhanden, aber keine base_url konfiguriert."
-          : "Weder base_url noch token_hash konfiguriert.",
+        status: "ok" as const,
+        message: "Konfiguration ist bereit: Zugangsschluessel gespeichert und aktives Gebiet vorhanden.",
       };
       await persistTestResult(admin, integration, result);
-      return NextResponse.json({
-        ok: true,
-        result,
-      });
+      return NextResponse.json({ ok: true, result });
     }
 
     const defaultLlmBaseUrlByProvider: Record<string, string> = {

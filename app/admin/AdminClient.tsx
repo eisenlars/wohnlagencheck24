@@ -1760,7 +1760,7 @@ export default function AdminClient() {
                 />
               ) : null}
             </button>
-            <button style={partnerTabButtonStyle(partnerTab === "integrations")} onClick={() => setPartnerTab("integrations")}>Integrationen</button>
+            <button style={partnerTabButtonStyle(partnerTab === "integrations")} onClick={() => setPartnerTab("integrations")}>Anbindungen</button>
             <button style={partnerTabButtonStyle(partnerTab === "handover")} onClick={() => setPartnerTab("handover")}>Übergabe</button>
           </div>
         ) : null}
@@ -2222,11 +2222,11 @@ export default function AdminClient() {
 
       {activeView === "partner_edit" && partnerTab === "integrations" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
-        <h2 style={h2Style}>Integrationen</h2>
+        <h2 style={h2Style}>Anbindungen</h2>
         <div style={grid2Style}>
           <select
             style={inputStyle}
-            aria-label="Integrationstyp"
+            aria-label="Anbindungstyp"
             value={createIntegration.kind}
             onChange={(e) =>
               setCreateIntegration((v) => {
@@ -2244,7 +2244,7 @@ export default function AdminClient() {
           </select>
           <select
             style={inputStyle}
-            aria-label="Integrationsprovider"
+            aria-label="Anbindungsprovider"
             value={createIntegration.provider}
             onChange={(e) =>
               setCreateIntegration((v) => ({
@@ -2262,7 +2262,7 @@ export default function AdminClient() {
           </select>
           <input
             placeholder="Base URL"
-            aria-label="Integrations Base URL"
+            aria-label="Anbindungs Base URL"
             style={inputStyle}
             value={createIntegration.base_url}
             onChange={(e) => setCreateIntegration((v) => ({ ...v, base_url: e.target.value }))}
@@ -2298,7 +2298,7 @@ export default function AdminClient() {
             style={btnStyle}
             disabled={busy || !selectedPartner}
             onClick={() =>
-              run("Integration anlegen", async () => {
+              run("Anbindung anlegen", async () => {
                 if (!selectedPartnerId) return;
                 await api(`/api/admin/partners/${selectedPartnerId}/integrations`, {
                   method: "POST",
@@ -2316,7 +2316,7 @@ export default function AdminClient() {
               })
             }
           >
-            Integration speichern
+            Anbindung speichern
           </button>
         </div>
 

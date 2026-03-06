@@ -18,6 +18,7 @@ type IntegrationBody = {
 };
 
 const ALLOWED_KINDS = new Set(["crm", "llm", "local_site", "other"]);
+const ON_CONFLICT_MISSING_CONSTRAINT_RE = /no unique or exclusion constraint matching the ON CONFLICT specification/i;
 
 function norm(value: unknown): string | null {
   if (value === null || value === undefined) return null;
@@ -32,6 +33,12 @@ function asFiniteNumber(value: unknown): number | null {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+}
+
+function isMissingOnConflictConstraint(error: { message?: string; code?: string } | null | undefined) {
+  if (!error) return false;
+  if (String(error.code ?? "") === "42P10") return true;
+  return ON_CONFLICT_MISSING_CONSTRAINT_RE.test(String(error.message ?? ""));
 }
 
 function normalizeSettings(kind: string, settings: Record<string, unknown> | null | undefined) {
@@ -161,13 +168,46 @@ export async function POST(req: Request) {
         error = result.error ? { message: result.error.message } : null;
       }
     } else {
-      const result = await admin
+      const upsertResult = await admin
         .from("partner_integrations")
         .upsert(payload, { onConflict: "partner_id,kind" })
         .select("id, partner_id, kind, provider, base_url, auth_type, auth_config, detail_url_template, is_active, settings, last_sync_at")
         .single();
-      data = (result.data as Record<string, unknown> | null) ?? null;
-      error = result.error ? { message: result.error.message } : null;
+
+      if (!upsertResult.error) {
+        data = (upsertResult.data as Record<string, unknown> | null) ?? null;
+      } else if (isMissingOnConflictConstraint(upsertResult.error)) {
+        // Defensive fallback for environments missing the partial unique index.
+        const existing = await admin
+          .from("partner_integrations")
+          .select("id")
+          .eq("partner_id", userId)
+          .eq("kind", kind)
+          .maybeSingle();
+        if (existing.error) {
+          error = { message: existing.error.message };
+        } else if (existing.data?.id) {
+          const updateResult = await admin
+            .from("partner_integrations")
+            .update(payload)
+            .eq("id", existing.data.id)
+            .eq("partner_id", userId)
+            .select("id, partner_id, kind, provider, base_url, auth_type, auth_config, detail_url_template, is_active, settings, last_sync_at")
+            .single();
+          data = (updateResult.data as Record<string, unknown> | null) ?? null;
+          error = updateResult.error ? { message: updateResult.error.message } : null;
+        } else {
+          const insertResult = await admin
+            .from("partner_integrations")
+            .insert(payload)
+            .select("id, partner_id, kind, provider, base_url, auth_type, auth_config, detail_url_template, is_active, settings, last_sync_at")
+            .single();
+          data = (insertResult.data as Record<string, unknown> | null) ?? null;
+          error = insertResult.error ? { message: insertResult.error.message } : null;
+        }
+      } else {
+        error = { message: upsertResult.error.message };
+      }
     }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data) return NextResponse.json({ error: "Integration konnte nicht gespeichert werden." }, { status: 500 });

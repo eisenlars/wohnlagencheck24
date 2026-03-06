@@ -201,7 +201,7 @@ export default function DashboardClient() {
       case 'settings':
         return {
           title: 'Einstellungen',
-          description: 'Konto, Partnerprofil und Integrationen verwalten.',
+          description: 'Konto, Partnerprofil und Anbindungen verwalten.',
           isRegionBased: false,
         };
       case 'immobilien':
@@ -756,7 +756,7 @@ export default function DashboardClient() {
                   Profil
                 </button>
                 <button style={menuItemStyle} onClick={() => handleSettingsSelect('integrationen')}>
-                  Integrationen
+                  Anbindungen
                 </button>
               </div>
             ) : null}

@@ -56,6 +56,10 @@ const AUTH_TYPE_LABELS: Record<string, string> = {
   basic: "Basic",
   none: "Keine Authentifizierung",
 };
+const LEGACY_LOCAL_SITE_BAD_BASE_URLS = new Set([
+  "https://api.propstack.de/v1",
+  "http://api.propstack.de/v1",
+]);
 
 function getDefaultProviderId(kind: string): string {
   const options = getProvidersForKind(kind);
@@ -174,6 +178,19 @@ function asText(value: unknown): string | null {
   return v.length > 0 ? v : null;
 }
 
+function getHostnameLabelFromUrl(value: unknown): string | null {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const parsed = new URL(withScheme);
+    const host = parsed.hostname.trim().toLowerCase();
+    return host || null;
+  } catch {
+    return raw;
+  }
+}
+
 function asFiniteNumber(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -232,15 +249,22 @@ function getRelevantSecretFields(integration: Pick<PartnerIntegration, "kind" | 
   return ["api_key", "token", "secret"];
 }
 
-function getIntegrationPrimaryLabel(integration: Pick<PartnerIntegration, "kind" | "provider">): string {
-  if (integration.kind === "local_site" && String(integration.provider ?? "").toLowerCase() === "token") {
-    return "Local Site";
+function getIntegrationPrimaryLabel(integration: Pick<PartnerIntegration, "kind" | "provider" | "base_url">): string {
+  if (integration.kind === "local_site") {
+    const host = getHostnameLabelFromUrl(integration.base_url);
+    return host ? `Local Site · ${host}` : "Local Site · ohne URL";
   }
   const spec = getProviderSpec(integration.provider);
   if (spec?.label) return spec.label;
-  if (integration.kind === "local_site") return "Local Site";
   const provider = String(integration.provider ?? "").trim();
   return provider || "Unbekannter Provider";
+}
+
+function getIntegrationListLabel(integration: Pick<PartnerIntegration, "kind" | "provider" | "base_url">): string {
+  if (integration.kind === "local_site") {
+    return getHostnameLabelFromUrl(integration.base_url) ?? "ohne URL";
+  }
+  return getIntegrationPrimaryLabel(integration);
 }
 
 function getKindLabel(kind: string): string {
@@ -255,7 +279,8 @@ function getKindLabel(kind: string): string {
 function getIntegrationMetaText(integration: Pick<PartnerIntegration, "kind" | "is_active" | "auth_type">): string {
   const auth = String(integration.auth_type ?? "").toLowerCase();
   const authLabel = auth ? AUTH_TYPE_LABELS[auth] ?? auth : "nicht gesetzt";
-  return `Typ: ${getKindLabel(integration.kind)} · Authentifizierung: ${authLabel} · Status: ${integration.is_active ? "aktiv" : "inaktiv"}`;
+  const direction = String(integration.kind ?? "").toLowerCase() === "local_site" ? "Ausspielkanal" : "Datenquelle";
+  return `Typ: ${getKindLabel(integration.kind)} · Rolle: ${direction} · Authentifizierung: ${authLabel} · Status: ${integration.is_active ? "aktiv" : "inaktiv"}`;
 }
 
 function getSecretFieldMeta(
@@ -273,7 +298,7 @@ function getSecretFieldMeta(
     return { label: "API Token", placeholder: "onOffice Token eingeben" };
   }
   if (provider === "local_site" || integration.kind === "local_site") {
-    return { label: "API Token", placeholder: "Token eingeben" };
+    return { label: "API-Key", placeholder: "z. B. mein-lokaler-api-schluessel-2026" };
   }
   if (provider === "openimmo" && field === "token") {
     return authType.includes("basic")
@@ -308,7 +333,7 @@ function getProviderBeginnerHint(kind: string, provider: string): string {
     return "Für LLM reicht meist API Key + Modell. Base URL nur bei speziellen Setups.";
   }
   if (k === "local_site") {
-    return "Für Local Site: Base URL + Token des Zielsystems.";
+    return "Für Local Site brauchst du nur einen geheimen Token. Diesen hinterlegst du einmal und trägst ihn danach auf deiner Website als Bearer-Token ein.";
   }
   return "Wähle den Anbieter, den du wirklich nutzt. Nicht benötigte Felder kannst du leer lassen.";
 }
@@ -367,6 +392,22 @@ function getLlmModelHint(provider: string): string {
   return "Wähle ein vorgeschlagenes Modell oder trage ein eigenes Modell manuell ein.";
 }
 
+function generateAccessKey() {
+  const alphabet = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const len = 40;
+  const bytes = new Uint8Array(len);
+  if (typeof globalThis !== "undefined" && globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < len; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  let token = "wc24ls_";
+  for (let i = 0; i < len; i += 1) {
+    token += alphabet[bytes[i] % alphabet.length];
+  }
+  return token;
+}
+
 async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const res = await fetch(input, {
     ...init,
@@ -422,6 +463,7 @@ export default function PartnerSettingsPanel({
   );
   const hasResourcesTab = integrationDraft.kind === "crm";
   const isLlmDraft = integrationDraft.kind === "llm";
+  const isLocalSiteDraft = integrationDraft.kind === "local_site";
   const currentDefaults = useMemo(
     () => getDraftDefaults(integrationDraft.kind, integrationDraft.provider),
     [integrationDraft.kind, integrationDraft.provider],
@@ -446,6 +488,13 @@ export default function PartnerSettingsPanel({
     if (!fallback) return;
     setIntegrationDraft((v) => ({ ...v, llm_model: fallback }));
   }, [isLlmDraft, llmCustomModelMode, integrationDraft.provider, integrationDraft.llm_model]);
+
+  useEffect(() => {
+    if (!isLocalSiteDraft) return;
+    const current = String(integrationDraft.base_url ?? "").trim().toLowerCase();
+    if (!LEGACY_LOCAL_SITE_BAD_BASE_URLS.has(current)) return;
+    setIntegrationDraft((prev) => ({ ...prev, base_url: "" }));
+  }, [isLocalSiteDraft, integrationDraft.base_url]);
 
   function getDefaultTintStyle(field: keyof IntegrationDraft): React.CSSProperties {
     const current = String(integrationDraft[field] ?? "").trim();
@@ -559,7 +608,7 @@ export default function PartnerSettingsPanel({
             style={settingsTabButtonStyle(section === "integrationen")}
             onClick={() => onSectionChange?.("integrationen")}
           >
-            Integrationen
+            Anbindungen
           </button>
         </div>
         <p style={statusStyle}>{status}</p>
@@ -672,11 +721,11 @@ export default function PartnerSettingsPanel({
         </section> : null}
 
         {section === "integrationen" ? <section style={sectionStyle}>
-          <h3 style={integrationTitleStyle}>Integrationen</h3>
+          <h3 style={integrationTitleStyle}>Anbindungen</h3>
           <div style={integrationIntroCardStyle}>
-            <p style={integrationIntroHeadlineStyle}>Integration in 3 Schritten</p>
+            <p style={integrationIntroHeadlineStyle}>Anbindung in 3 Schritten</p>
             <p style={integrationIntroTextStyle}>
-              1. Anbieter auswählen, 2. Basisdaten speichern, 3. Verbindung testen.
+              1. Anbieter auswählen, 2. Basisdaten speichern, 3. Verbindung testen. CRM/LLM sind Datenquellen, Local Site ist ein Ausspielkanal.
             </p>
           </div>
           <div style={integrationCreateRowStyle}>
@@ -685,17 +734,17 @@ export default function PartnerSettingsPanel({
               disabled={busy}
               onClick={beginCreateIntegration}
             >
-              Neue Integration anlegen
+              Neue Anbindung anlegen
             </button>
           </div>
           <div style={integrationLayoutStyle}>
             <aside style={integrationListPaneStyle}>
               <div style={integrationListHeaderStyle}>
-                <strong style={integrationListHeadingStyle}>Gespeicherte Integrationen</strong>
+                <strong style={integrationListHeadingStyle}>Gespeicherte Anbindungen</strong>
               </div>
               <div style={integrationListStyle}>
                 {integrations.length === 0 ? (
-                  <p style={emptyHintStyle}>Noch keine Integration gespeichert.</p>
+                  <p style={emptyHintStyle}>Noch keine Anbindung gespeichert.</p>
                 ) : (
                   integrations.map((integration) => (
                     <button
@@ -704,7 +753,7 @@ export default function PartnerSettingsPanel({
                       onClick={() => selectIntegration(integration)}
                       disabled={busy}
                     >
-                      <strong>{getIntegrationPrimaryLabel(integration)}</strong>
+                      <strong>{getIntegrationListLabel(integration)}</strong>
                       <span style={integrationMetaSubStyle}>{getIntegrationMetaText(integration)}</span>
                     </button>
                   ))
@@ -714,13 +763,13 @@ export default function PartnerSettingsPanel({
 
             <div style={integrationDetailPaneStyle}>
               <div style={integrationDetailHeaderStyle}>
-                <strong>{isCreateMode ? "Neue Integration" : "Integration bearbeiten"}</strong>
+                <strong style={{ color: "#0f172a" }}>{isCreateMode ? "Neue Anbindung" : "Anbindung bearbeiten"}</strong>
                 {!isCreateMode && selectedIntegration ? (
                   <button
                     style={integrationToggleButtonStyle(selectedIntegration.is_active)}
                     disabled={busy}
                     onClick={() =>
-                      run(selectedIntegration.is_active ? "Integration deaktivieren" : "Integration aktivieren", async () => {
+                      run(selectedIntegration.is_active ? "Anbindung deaktivieren" : "Anbindung aktivieren", async () => {
                         await api("/api/partner/integrations", {
                           method: "POST",
                           body: JSON.stringify({
@@ -737,7 +786,7 @@ export default function PartnerSettingsPanel({
                       })
                     }
                   >
-                    {selectedIntegration.is_active ? "Integration deaktivieren" : "Integration aktivieren"}
+                    {selectedIntegration.is_active ? "Anbindung deaktivieren" : "Anbindung aktivieren"}
                   </button>
                 ) : null}
               </div>
@@ -764,7 +813,7 @@ export default function PartnerSettingsPanel({
                   style={integrationFlowTabButtonStyle(integrationFlowTab === "zugangstest")}
                   onClick={() => setIntegrationFlowTab("zugangstest")}
                 >
-                  {hasResourcesTab ? "3. Zugangstest" : "2. Zugangstest"}
+                  {hasResourcesTab ? "3. API-Key" : "2. API-Key"}
                 </button>
               </div>
 
@@ -773,10 +822,10 @@ export default function PartnerSettingsPanel({
                   {isCreateMode ? (
                     <div style={grid3Style}>
                       <div style={fieldWrapStyle}>
-                        <label style={fieldLabelStyle}>Integrationstyp</label>
+                        <label style={fieldLabelStyle}>Anbindungstyp</label>
                         <select
                           style={selectStyle}
-                          aria-label="Integrationstyp"
+                          aria-label="Anbindungstyp"
                           value={integrationDraft.kind}
                           disabled={!isCreateMode}
                           onChange={(e) =>
@@ -784,12 +833,21 @@ export default function PartnerSettingsPanel({
                               const nextKind = e.target.value;
                               const nextProvider = getDefaultProviderId(nextKind);
                               const nextAuth = getDefaultAuthType(nextKind, nextProvider);
+                              const nextDefaults = getDraftDefaults(nextKind, nextProvider);
                               return {
                                 ...v,
                                 kind: nextKind,
                                 provider: nextProvider,
                                 auth_type: nextAuth,
-                                ...getDraftDefaults(nextKind, nextProvider),
+                                base_url: nextDefaults.base_url ?? "",
+                                detail_url_template: nextDefaults.detail_url_template ?? "",
+                                ...(nextKind === "llm"
+                                  ? {
+                                      llm_model: nextDefaults.llm_model ?? v.llm_model,
+                                      llm_temperature: nextDefaults.llm_temperature ?? v.llm_temperature,
+                                      llm_max_tokens: nextDefaults.llm_max_tokens ?? v.llm_max_tokens,
+                                    }
+                                  : {}),
                               };
                             })
                           }
@@ -801,30 +859,43 @@ export default function PartnerSettingsPanel({
                         </select>
                         <span style={fieldHintStyle}>Was willst du anbinden? CRM für Objekte, LLM für KI-Texte, Local Site für deine Website.</span>
                       </div>
-                      <div style={fieldWrapStyle}>
-                        <label style={fieldLabelStyle}>Provider</label>
-                        <select
-                          style={selectStyle}
-                          aria-label="Provider"
-                          value={integrationDraft.provider}
-                          disabled={!isCreateMode}
-                          onChange={(e) =>
-                            setIntegrationDraft((v) => ({
-                              ...v,
-                              provider: e.target.value,
-                              auth_type: getDefaultAuthType(v.kind, e.target.value),
-                              ...getDraftDefaults(v.kind, e.target.value),
-                            }))
-                          }
-                        >
-                          {providerOptions.map((provider) => (
-                            <option key={provider.id} value={provider.id}>
-                              {provider.label}
-                            </option>
-                          ))}
-                        </select>
-                        <span style={fieldHintStyle}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
-                      </div>
+                      {isLocalSiteDraft ? (
+                        <div style={fieldWrapStyle}>
+                          <label style={fieldLabelStyle}>Kanal</label>
+                          <input
+                            style={inputMutedStyle}
+                            aria-label="Kanal"
+                            value="Local Site (Ausspielkanal)"
+                            readOnly
+                          />
+                          <span style={fieldHintStyle}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
+                        </div>
+                      ) : (
+                        <div style={fieldWrapStyle}>
+                          <label style={fieldLabelStyle}>Provider</label>
+                          <select
+                            style={selectStyle}
+                            aria-label="Provider"
+                            value={integrationDraft.provider}
+                            disabled={!isCreateMode}
+                            onChange={(e) =>
+                              setIntegrationDraft((v) => ({
+                                ...v,
+                                provider: e.target.value,
+                                auth_type: getDefaultAuthType(v.kind, e.target.value),
+                                ...getDraftDefaults(v.kind, e.target.value),
+                              }))
+                            }
+                          >
+                            {providerOptions.map((provider) => (
+                              <option key={provider.id} value={provider.id}>
+                                {provider.label}
+                              </option>
+                            ))}
+                          </select>
+                          <span style={fieldHintStyle}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
+                        </div>
+                      )}
                       {(selectedProviderSpec?.authTypes?.length ?? 0) > 1 ? (
                         <div style={fieldWrapStyle}>
                           <label style={fieldLabelStyle}>Authentifizierung (Erweitert)</label>
@@ -872,7 +943,9 @@ export default function PartnerSettingsPanel({
                           lineHeight: 1.2,
                         }}
                       >
-                        {getKindLabel(integrationDraft.kind)} · {getIntegrationPrimaryLabel(integrationDraft)}
+                        {isLocalSiteDraft
+                          ? getIntegrationPrimaryLabel(integrationDraft)
+                          : `${getKindLabel(integrationDraft.kind)} · ${getIntegrationPrimaryLabel(integrationDraft)}`}
                       </div>
                       {hasResourcesTab ? (
                         <p style={{ marginTop: 0, marginBottom: 14, fontSize: 13, color: "#475569" }}>
@@ -881,44 +954,73 @@ export default function PartnerSettingsPanel({
                       ) : null}
                     </>
                   )}
+
+                  {isLocalSiteDraft ? (
+                    <div style={integrationIntroCardStyle}>
+                      <p style={integrationIntroHeadlineStyle}>So richtest du Local Site ein (ohne Technikkenntnisse)</p>
+                      <p style={integrationIntroTextStyle}>
+                        1. Speichere diese Anbindung. 2. Erzeuge im Schritt "API-Key" einen API-Key und speichere ihn. 3. Trage diesen Schlüssel auf deiner Website ein, damit sie Daten aus dem Portal laden darf.
+                      </p>
+                    </div>
+                  ) : null}
+
                   {isLlmDraft && !isCreateMode ? (
                     <p style={{ marginTop: -8, marginBottom: 14, fontSize: 13, color: "#475569" }}>
                       Wähle hier dein bevorzugtes Modell dieses Anbieters zur Textaufbereitung.
                     </p>
                   ) : null}
 
-                  <div style={{ ...grid2Style, marginTop: 14 }}>
-                    <div style={fieldWrapStyle}>
-                      <label style={fieldLabelStyle}>Base URL</label>
-                      <input
-                        placeholder={isLlmDraft ? "https://api.openai.com/v1" : "https://api.propstack.de/v1"}
-                        aria-label="Base URL"
-                        style={getDefaultTintStyle("base_url")}
-                        value={integrationDraft.base_url}
-                        onChange={(e) => setIntegrationDraft((v) => ({ ...v, base_url: e.target.value }))}
-                      />
-                      <span style={fieldHintStyle}>
-                        API-Startadresse des Anbieters. Beispiel: `https://api.propstack.de/v1`
-                      </span>
-                    </div>
-                    {!isLlmDraft ? (
+                  {!isLocalSiteDraft ? (
+                    <div style={{ ...grid2Style, marginTop: 14 }}>
                       <div style={fieldWrapStyle}>
-                        <label style={fieldLabelStyle}>Detail URL Template</label>
+                        <label style={fieldLabelStyle}>Base URL</label>
                         <input
-                          placeholder="https://www.partnerdomain.de/expose/{exposee_id}"
-                          aria-label="Detail URL Template"
-                          style={getDefaultTintStyle("detail_url_template")}
-                          value={integrationDraft.detail_url_template}
-                          onChange={(e) => setIntegrationDraft((v) => ({ ...v, detail_url_template: e.target.value }))}
+                          placeholder={isLlmDraft ? "https://api.openai.com/v1" : "https://api.propstack.de/v1"}
+                          aria-label="Base URL"
+                          style={getDefaultTintStyle("base_url")}
+                          value={integrationDraft.base_url}
+                          onChange={(e) => setIntegrationDraft((v) => ({ ...v, base_url: e.target.value }))}
                         />
                         <span style={fieldHintStyle}>
-                          Optional. Nur erforderlich, wenn ein externer Partner-Exposé-Link erzeugt werden soll.
+                          API-Startadresse des Anbieters. Beispiel: `https://api.propstack.de/v1`
                         </span>
                       </div>
-                    ) : (
+                      {!isLlmDraft ? (
+                        <div style={fieldWrapStyle}>
+                          <label style={fieldLabelStyle}>Detail URL Template</label>
+                          <input
+                            placeholder="https://www.partnerdomain.de/expose/{exposee_id}"
+                            aria-label="Detail URL Template"
+                            style={getDefaultTintStyle("detail_url_template")}
+                            value={integrationDraft.detail_url_template}
+                            onChange={(e) => setIntegrationDraft((v) => ({ ...v, detail_url_template: e.target.value }))}
+                          />
+                          <span style={fieldHintStyle}>
+                            Optional. Nur erforderlich, wenn ein externer Partner-Exposé-Link erzeugt werden soll.
+                          </span>
+                        </div>
+                      ) : (
+                        <div />
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ ...grid2Style, marginTop: 14 }}>
+                      <div style={fieldWrapStyle}>
+                        <label style={fieldLabelStyle}>URL deiner Website</label>
+                        <input
+                          placeholder="https://www.deine-website.de"
+                          aria-label="URL deiner Website"
+                          style={getDefaultTintStyle("base_url")}
+                          value={integrationDraft.base_url}
+                          onChange={(e) => setIntegrationDraft((v) => ({ ...v, base_url: e.target.value }))}
+                        />
+                        <span style={fieldHintStyle}>
+                          Diese URL wird als Kennung der Local-Site-Anbindung angezeigt (z. B. links in der Anbindungsliste).
+                        </span>
+                      </div>
                       <div />
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {isLlmDraft ? (
                     <div style={{ ...grid3Style, marginTop: 16 }}>
@@ -992,16 +1094,15 @@ export default function PartnerSettingsPanel({
                     </div>
                   ) : null}
 
-                  <p style={{ marginTop: 16, marginBottom: 0, fontSize: 11, color: "#64748b" }}>
-                    Hinweis: Pro Integrationstyp wird genau eine aktive Konfiguration gespeichert.
-                  </p>
-
                   <div style={{ marginTop: 10 }}>
                     <button
                       style={buttonGreenGhostStyle}
                       disabled={busy}
                       onClick={() =>
-                        run(isCreateMode ? "Integration anlegen" : "Basisdaten speichern", async () => {
+                        run(isCreateMode ? "Anbindung anlegen" : "Basisdaten speichern", async () => {
+                          if (isLocalSiteDraft && !integrationDraft.base_url.trim()) {
+                            throw new Error("Bitte URL deiner Website eintragen.");
+                          }
                           const settings = buildIntegrationSettings(integrationDraft, selectedIntegration?.settings ?? null);
                           const response = await api<{ integration?: PartnerIntegration }>("/api/partner/integrations", {
                             method: "POST",
@@ -1018,7 +1119,7 @@ export default function PartnerSettingsPanel({
                         })
                       }
                     >
-                      {isCreateMode ? "Integration anlegen" : "Basisdaten bearbeiten"}
+                      {isCreateMode ? "Anbindung anlegen" : "Basisdaten bearbeiten"}
                     </button>
                   </div>
                 </>
@@ -1092,19 +1193,22 @@ export default function PartnerSettingsPanel({
                     ) : null}
                   </div>
                 ) : (
-                  <p style={emptyHintStyle}>Für diesen Integrationstyp gibt es keine separaten Ressourcen.</p>
+                  <p style={emptyHintStyle}>Für diesen Anbindungstyp gibt es keine separaten Ressourcen.</p>
                 )
               ) : null}
 
               {integrationFlowTab === "zugangstest" ? (
                 !isCreateMode && selectedIntegration ? (
                 <div style={integrationSecretsSectionStyle}>
-                  <h4 style={h4Style}>Zugangsdaten und Test</h4>
-                  <p style={secretPrivacyHintStyle}>
-                    Anfänger-Hinweis: Trage nur die Felder ein, die dein Anbieter wirklich verlangt. Speichere danach und teste die Verbindung.
-                  </p>
+                  <h4 style={h4Style}>{selectedIntegration.kind === "local_site" ? "API-Key" : "Zugangsdaten und Test"}</h4>
+                  {selectedIntegration.kind === "local_site" ? (
+                    <p style={secretPrivacyHintStyle}>
+                      Lege einen API-Key fest. Diesen Schlüssel trägt deine Website später ein, um auf die Portal-API zuzugreifen.
+                    </p>
+                  ) : null}
                   {(() => {
                     const integration = selectedIntegration;
+                    const isLocalSiteIntegration = String(integration.kind ?? "").toLowerCase() === "local_site";
                     const draft = secretDraft[integration.id] ?? { api_key: "", token: "", secret: "" };
                     const settings = (integration.settings ?? {}) as Record<string, unknown>;
                     const lastTestedAt = asText(settings.last_tested_at);
@@ -1114,6 +1218,22 @@ export default function PartnerSettingsPanel({
                     const supportsSecrets = relevantSecretFields.length > 0;
                     return (
                       <>
+                        {supportsSecrets && isLocalSiteIntegration ? (
+                          <div style={{ marginTop: 0, marginBottom: 8 }}>
+                            <button
+                              style={buttonGhostStyle}
+                              disabled={busy}
+                              onClick={() =>
+                                setSecretDraft((prev) => ({
+                                  ...prev,
+                                  [integration.id]: { ...draft, token: generateAccessKey() },
+                                }))
+                              }
+                            >
+                              API-Key erzeugen
+                            </button>
+                          </div>
+                        ) : null}
                         {supportsSecrets ? (
                           <div style={secretGridStyle(relevantSecretFields.length)}>
                             {relevantSecretFields.map((field) => (
@@ -1131,25 +1251,27 @@ export default function PartnerSettingsPanel({
                                     }))
                                   }
                                 />
+                                {isLocalSiteIntegration && field === "token" ? (
+                                  <span style={fieldHintStyle}>
+                                    Das ist dein geheimer API-Key. Gib ihn nicht öffentlich weiter.
+                                  </span>
+                                ) : null}
                               </div>
                             ))}
                           </div>
                         ) : (
                           <p style={{ marginTop: 0, marginBottom: 8, fontSize: 12, color: "#475569" }}>
-                            Für diese Integration sind bei der gewählten Authentifizierung keine zusätzlichen Zugangsdaten erforderlich.
+                            Für diese Anbindung sind bei der gewählten Authentifizierung keine zusätzlichen Zugangsdaten erforderlich.
                           </p>
                         )}
                         <div style={secretActionsWrapStyle}>
-                          <p style={secretPrivacyHintStyle}>
-                            Datenschutz: Zugangsdaten nur eintragen, wenn sie für die API-Verbindung zwingend erforderlich sind.
-                          </p>
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                             {supportsSecrets ? (
                               <button
                                 style={buttonStyle}
                                 disabled={busy}
                                 onClick={() =>
-                                  run("Secrets speichern", async () => {
+                                  run(isLocalSiteIntegration ? "API-Key speichern" : "Secrets speichern", async () => {
                                     const payload: Record<string, string> = {};
                                     relevantSecretFields.forEach((field) => {
                                       const value = draft[field].trim();
@@ -1160,10 +1282,12 @@ export default function PartnerSettingsPanel({
                                       method: "POST",
                                       body: JSON.stringify(payload),
                                     });
-                                    setSecretDraft((prev) => ({
-                                      ...prev,
-                                      [integration.id]: { api_key: "", token: "", secret: "" },
-                                    }));
+                                    if (!isLocalSiteIntegration) {
+                                      setSecretDraft((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { api_key: "", token: "", secret: "" },
+                                      }));
+                                    }
                                     await loadAll(integration.id);
                                   })
                                 }
@@ -1171,55 +1295,58 @@ export default function PartnerSettingsPanel({
                                 Speichern
                               </button>
                             ) : null}
-                            <button
-                              style={buttonGhostStyle}
-                              disabled={busy}
-                              onClick={() =>
-                                run("Verbindung testen", async () => {
-                                  const res = await api<{
-                                    result?: { status?: "ok" | "warning" | "error"; message?: string };
-                                  }>(`/api/partner/integrations/${integration.id}/test`, {
-                                    method: "POST",
-                                  });
-                                  setTestResult((prev) => ({
-                                    ...prev,
-                                    [integration.id]: {
-                                      status: res.result?.status ?? "warning",
-                                      message: res.result?.message ?? "Kein Ergebnis",
-                                    },
-                                  }));
-                                })
-                              }
-                            >
-                              Verbindung testen
-                            </button>
+                            {!isLocalSiteIntegration ? (
+                              <button
+                                style={buttonGhostStyle}
+                                disabled={busy}
+                                onClick={() =>
+                                  run("Verbindung testen", async () => {
+                                    const res = await api<{
+                                      result?: { status?: "ok" | "warning" | "error"; message?: string };
+                                    }>(`/api/partner/integrations/${integration.id}/test`, {
+                                      method: "POST",
+                                    });
+                                    setTestResult((prev) => ({
+                                      ...prev,
+                                      [integration.id]: {
+                                        status: res.result?.status ?? "warning",
+                                        message: res.result?.message ?? "Kein Ergebnis",
+                                      },
+                                    }));
+                                  })
+                                }
+                              >
+                                Verbindung testen
+                              </button>
+                            ) : null}
                           </div>
-                          <p style={fieldHintStyle}>
-                            Nach dem Test siehst du sofort, ob die Verbindung ok ist oder welche Eingabe fehlt.
-                          </p>
-                          {testResult[integration.id] ? (
-                            <p
-                              style={{
-                                marginTop: 8,
-                                marginBottom: 0,
-                                fontSize: 12,
-                                color:
-                                  testResult[integration.id].status === "ok"
-                                    ? "#15803d"
-                                    : testResult[integration.id].status === "warning"
-                                      ? "#b45309"
-                                      : "#b91c1c",
-                              }}
-                            >
-                              {testResult[integration.id].message}
-                            </p>
-                          ) : null}
-                          {lastTestedAt ? (
-                            <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                              Zuletzt getestet: {new Date(lastTestedAt).toLocaleString("de-DE")}
-                              {lastTestStatus ? ` - ${lastTestStatus}` : ""}
-                              {lastTestMessage ? ` - ${lastTestMessage}` : ""}
-                            </p>
+                          {!isLocalSiteIntegration ? (
+                            <>
+                              {testResult[integration.id] ? (
+                                <p
+                                  style={{
+                                    marginTop: 8,
+                                    marginBottom: 0,
+                                    fontSize: 12,
+                                    color:
+                                      testResult[integration.id].status === "ok"
+                                        ? "#15803d"
+                                        : testResult[integration.id].status === "warning"
+                                          ? "#b45309"
+                                          : "#b91c1c",
+                                  }}
+                                >
+                                  {testResult[integration.id].message}
+                                </p>
+                              ) : null}
+                              {lastTestedAt ? (
+                                <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                  Zuletzt getestet: {new Date(lastTestedAt).toLocaleString("de-DE")}
+                                  {lastTestStatus ? ` - ${lastTestStatus}` : ""}
+                                  {lastTestMessage ? ` - ${lastTestMessage}` : ""}
+                                </p>
+                              ) : null}
+                            </>
                           ) : null}
                         </div>
                       </>
