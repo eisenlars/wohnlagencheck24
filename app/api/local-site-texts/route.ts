@@ -4,15 +4,22 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { applyDataDrivenTexts } from "@/lib/text-core";
 import { getOrteForKreis } from "@/lib/data";
 import {
+  loadTextSourcesByAreaIds,
+  mergeTextsWithPriority,
+  type LocalSiteTextMergeClient,
+} from "@/lib/local-site-text-merge";
+import {
   extractLocalSiteToken,
   loadLocalSiteIntegrationByToken,
   type LocalSiteIntegrationLookupClient,
 } from "@/lib/security/local-site-auth";
+import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 
 const SUPABASE_PUBLIC_BASE_URL = process.env.SUPABASE_PUBLIC_BASE_URL ?? "";
 const SUPABASE_BUCKET = "immobilienmarkt";
+const LOCAL_SITE_TEXTS_RATE_LIMIT = { windowMs: 60_000, max: 120 };
 
 function buildSupabaseReportUrl(pathParts: string[]): string | null {
   if (!SUPABASE_PUBLIC_BASE_URL) return null;
@@ -22,53 +29,6 @@ function buildSupabaseReportUrl(pathParts: string[]): string | null {
     .filter(Boolean)
     .join("/");
   return `${base}/${SUPABASE_BUCKET}/${rel}`;
-}
-
-type OverrideRow = {
-  optimized_content?: string | null;
-  status?: string | null;
-  last_updated?: string | null;
-  text_type?: string | null;
-};
-
-type OverrideMap = Record<string, OverrideRow>;
-
-function buildMergedTexts(
-  baseTexts: Record<string, Record<string, string>>,
-  overrides: OverrideMap,
-) {
-  const merged: Record<string, Record<string, string>> = {};
-  const meta: Record<string, Record<string, string | null>> = {};
-
-  Object.entries(baseTexts || {}).forEach(([groupKey, group]) => {
-    merged[groupKey] = {};
-    Object.entries(group || {}).forEach(([sectionKey, rawValue]) => {
-      const override = overrides[sectionKey];
-      const approved = override?.status === "approved";
-      const value = approved && override?.optimized_content ? override.optimized_content : rawValue;
-      merged[groupKey][sectionKey] = value;
-      meta[sectionKey] = {
-        status: override?.status ?? "raw",
-        last_updated: override?.last_updated ?? null,
-        text_type: override?.text_type ?? null,
-        source: approved ? "override" : "raw",
-      };
-    });
-  });
-
-  Object.keys(overrides).forEach((sectionKey) => {
-    if (!meta[sectionKey]) {
-      const override = overrides[sectionKey];
-      meta[sectionKey] = {
-        status: override?.status ?? "raw",
-        last_updated: override?.last_updated ?? null,
-        text_type: override?.text_type ?? null,
-        source: override?.status === "approved" ? "override" : "raw",
-      };
-    }
-  });
-
-  return { merged, meta };
 }
 
 function stripGroups(
@@ -84,6 +44,18 @@ function stripGroups(
 }
 
 export async function GET(req: Request) {
+  const ip = extractClientIpFromHeaders(req.headers);
+  const rateLimit = await checkRateLimitPersistent(
+    `local_site_texts:${ip}`,
+    LOCAL_SITE_TEXTS_RATE_LIMIT,
+  );
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSec) } },
+    );
+  }
+
   const url = new URL(req.url);
   const token = extractLocalSiteToken(req);
   const bundesland = url.searchParams.get("bundesland") ?? "";
@@ -175,24 +147,16 @@ export async function GET(req: Request) {
   const baseTextsRaw = (reportJson?.text ?? {}) as Record<string, Record<string, string>>;
   const baseTexts = stripGroups(baseTextsRaw, ["berater", "makler"]);
 
-  const { data: overrides } = await supabase
-    .from("partner_local_site_texts")
-    .select("section_key, optimized_content, status, text_type, last_updated")
-    .eq("partner_id", integration.partner_id)
-    .eq("area_id", areaId);
-
-  const allowedKeys = new Set(
-    Object.values(baseTexts).flatMap((group) => Object.keys(group || {})),
+  const { localByArea, reportByArea } = await loadTextSourcesByAreaIds(
+    supabase as unknown as LocalSiteTextMergeClient,
+    integration.partner_id,
+    [areaId],
   );
-  const overridesMap = (overrides ?? []).reduce<OverrideMap>((acc, row) => {
-    const key = String(row.section_key);
-    if (allowedKeys.has(key)) {
-      acc[key] = row as OverrideRow;
-    }
-    return acc;
-  }, {});
-
-  const { merged, meta } = buildMergedTexts(baseTexts, overridesMap);
+  const { merged, meta } = mergeTextsWithPriority(
+    baseTexts,
+    localByArea[areaId],
+    reportByArea[areaId],
+  );
 
   return NextResponse.json({
     partner_id: integration.partner_id,
