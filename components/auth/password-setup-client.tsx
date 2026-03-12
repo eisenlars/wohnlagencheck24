@@ -226,7 +226,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
     } catch {
       // Absichtlich ignoriert: Redirect zur Login-Seite soll trotzdem erfolgen.
     } finally {
-      window.location.assign(`${loginTarget}?message=${encodeURIComponent("Bitte neuen Link anfordern.")}`);
+      window.location.assign(`${loginTarget}?message=${encodeURIComponent("Einladungslink abgelaufen. Bitte unten einen neuen Einladungs-/Zugangslink senden.")}`);
     }
   }
 

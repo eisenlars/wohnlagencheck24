@@ -26,6 +26,8 @@ export default async function PartnerLoginPage({
   }
 
   const params = await searchParams;
+  const message = String(params?.message ?? "");
+  const isExpiredInviteHint = message.toLowerCase().includes("einladungslink abgelaufen");
 
   return (
     <div style={{ maxWidth: "400px", margin: "100px auto", fontFamily: "sans-serif" }}>
@@ -45,7 +47,7 @@ export default async function PartnerLoginPage({
           </button>
         </form>
 
-        <form action={requestPasswordReset} style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px", marginTop: "4px", display: "grid", gap: "10px" }}>
+        <form id="pw-reset-form" action={requestPasswordReset} style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px", marginTop: "4px", display: "grid", gap: "10px" }}>
           <strong style={{ fontSize: "14px", color: "#111827" }}>Passwort vergessen?</strong>
           <input
             name="reset_email"
@@ -66,7 +68,7 @@ export default async function PartnerLoginPage({
               fontWeight: 700,
             }}
           >
-            Link zum Zurücksetzen senden
+            Neuen Einladungs-/Zugangslink senden
           </button>
         </form>
 
@@ -86,17 +88,25 @@ export default async function PartnerLoginPage({
           }}
         />
 
-        {params?.message && (
-          <p
-            style={{
-              color: String(params.message).toLowerCase().includes("gesendet") ? "#166534" : "#b91c1c",
-              fontSize: "14px",
-              textAlign: "center",
-            }}
-          >
-            {params.message}
-          </p>
-        )}
+        {message ? (
+          isExpiredInviteHint ? (
+            <div style={{ border: "1px solid #cbd5e1", background: "#f8fafc", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "#0f172a" }}>
+              <div style={{ fontWeight: 700, marginBottom: 6 }}>Einladungslink abgelaufen</div>
+              <div style={{ marginBottom: 8 }}>Bitte gib unten deine E-Mail ein und sende einen neuen Einladungs-/Zugangslink.</div>
+              <a href="#pw-reset-form" style={{ color: "#0f766e", fontWeight: 700, textDecoration: "none" }}>Zum Formular Passwort vergessen</a>
+            </div>
+          ) : (
+            <p
+              style={{
+                color: message.toLowerCase().includes("gesendet") ? "#166534" : "#b91c1c",
+                fontSize: "14px",
+                textAlign: "center",
+              }}
+            >
+              {message}
+            </p>
+          )
+        ) : null}
       </div>
     </div>
   );
