@@ -55,6 +55,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
   const [busy, setBusy] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [headline, setHeadline] = useState(title);
 
   useEffect(() => {
     let mounted = true;
@@ -72,8 +73,15 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
       const legacyToken = search.get("token");
       const queryType = search.get("type");
       const type = hashType || queryType;
+      if (type === "recovery") {
+        setHeadline("Passwort neu setzen");
+      } else if (type === "invite") {
+        setHeadline("Partnerkonto aktivieren");
+      } else {
+        setHeadline(title);
+      }
       const otpToken = tokenHash || legacyToken;
-      const invalidLinkMessage = "Reset-Link ist ungueltig oder abgelaufen. Bitte Passwort-Reset erneut anfordern.";
+      const invalidLinkMessage = "Der Link ist ungueltig oder abgelaufen. Bitte fordere einen neuen Einladungs- oder Passwort-Link an.";
       const hasAuthLinkPayload = Boolean(code || (otpToken && type) || (accessToken && refreshToken));
 
       if (code) {
@@ -192,7 +200,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
       }
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw new Error(error.message);
-      setStatus("Passwort erfolgreich gesetzt. Weiterleitung...");
+      setStatus("Passwort erfolgreich gespeichert. Du wirst jetzt sicher weitergeleitet.");
       const target = await resolvePostSetupTarget(fallbackAppPath);
       setTimeout(() => router.push(target), 450);
     } catch (error) {
@@ -206,7 +214,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
     return (
       <div style={{ maxWidth: 420, margin: "90px auto", fontFamily: "sans-serif" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, border: "1px solid #ddd", padding: 24, borderRadius: 8 }}>
-          <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>{title}</h2>
+          <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>{headline}</h2>
           <p style={{ fontSize: 14, color: "#475569", margin: 0 }}>Weiterleitung wird vorbereitet...</p>
         </div>
       </div>
@@ -216,7 +224,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
   return (
     <div style={{ maxWidth: 420, margin: "90px auto", fontFamily: "sans-serif" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, border: "1px solid #ddd", padding: 24, borderRadius: 8 }}>
-        <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>{title}</h2>
+        <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>{headline}</h2>
         <p style={{ fontSize: 14, color: "#475569", margin: 0 }}>{status}</p>
         {viewMode === "form" ? (
           <>
