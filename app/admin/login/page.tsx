@@ -1,15 +1,31 @@
 import { login, requestPasswordReset } from './actions'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
+import { getAdminRoleForUser } from '@/lib/security/admin-auth'
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminLoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ message?: string }>
 }) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (user?.id) {
+    const role = getAdminRoleForUser(user.id)
+    if (role === 'admin_super' || role === 'admin_ops') {
+      redirect('/admin')
+    }
+  }
+
   const params = await searchParams
 
   return (
-    <div style={{ maxWidth: '420px', margin: '100px auto', fontFamily: 'sans-serif' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', border: '1px solid #ddd', padding: '24px', borderRadius: '8px' }}>
+    <div style={{ maxWidth: "400px", margin: "100px auto", fontFamily: "sans-serif" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px", border: "1px solid #ddd", padding: "24px", borderRadius: "8px" }}>
         <h2 style={{ margin: '0 0 10px 0' }}>Admin Zugriff</h2>
         <p style={{ fontSize: '14px', color: '#666' }}>Nur für berechtigte Administratoren.</p>
 
@@ -20,8 +36,8 @@ export default async function AdminLoginPage({
           <label htmlFor="password">Passwort</label>
           <input name="password" type="password" placeholder="••••••••" required style={{ padding: '8px' }} />
 
-          <button type="submit" style={{ padding: '10px', background: '#111827', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-            Admin anmelden
+          <button type="submit" style={{ padding: "10px", background: "#0f766e", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: 700 }}>
+            Anmelden
           </button>
         </form>
 
@@ -67,7 +83,7 @@ export default async function AdminLoginPage({
         />
 
         {params?.message && (
-          <p style={{ color: '#b91c1c', fontSize: '14px', textAlign: 'center' }}>
+          <p style={{ color: String(params.message).toLowerCase().includes("gesendet") ? "#166534" : '#b91c1c', fontSize: '14px', textAlign: 'center' }}>
             {params.message}
           </p>
         )}
