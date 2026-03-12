@@ -222,7 +222,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
     return (
       <div style={{ maxWidth: 420, margin: "90px auto", fontFamily: "sans-serif" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, border: "1px solid #ddd", padding: 24, borderRadius: 8 }}>
-          <h2 style={{ margin: "0 0 8px 0" }}>{title}</h2>
+          <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>{title}</h2>
           <p style={{ fontSize: 14, color: "#475569", margin: 0 }}>Weiterleitung wird vorbereitet...</p>
         </div>
       </div>
@@ -232,11 +232,11 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
   return (
     <div style={{ maxWidth: 420, margin: "90px auto", fontFamily: "sans-serif" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, border: "1px solid #ddd", padding: 24, borderRadius: 8 }}>
-        <h2 style={{ margin: "0 0 8px 0" }}>{title}</h2>
+        <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>{title}</h2>
         <p style={{ fontSize: 14, color: "#475569", margin: 0 }}>{status}</p>
         {viewMode === "form" ? (
           <>
-            <label htmlFor="password">Neues Passwort</label>
+            <label htmlFor="password" style={{ color: "#111827" }}>Neues Passwort</label>
             <input
               name="password"
               type="password"
@@ -247,7 +247,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
               disabled={!ready || busy}
             />
 
-            <label htmlFor="password_confirm">Passwort wiederholen</label>
+            <label htmlFor="password_confirm" style={{ color: "#111827" }}>Passwort wiederholen</label>
             <input
               name="password_confirm"
               type="password"
