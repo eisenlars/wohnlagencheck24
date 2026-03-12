@@ -21,11 +21,12 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   const admin = createAdminClient();
   const { data: partnerProfile, error } = await admin
     .from("partners")
-    .select("id")
+    .select("id, is_active")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (error || !partnerProfile) {
+  const isActive = Boolean((partnerProfile as { is_active?: boolean } | null)?.is_active);
+  if (error || !partnerProfile || !isActive) {
     redirect("/partner/login?message=Kein-Partnerprofil");
   }
 

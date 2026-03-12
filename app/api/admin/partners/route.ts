@@ -96,7 +96,7 @@ export async function POST(req: Request) {
     }
     const invite = await admin.auth.admin.inviteUserByEmail(contactEmail, {
       redirectTo: inviteRedirectTo,
-      data: { role: "partner", company_name: companyName },
+      data: { role: "partner", company_name: companyName, activation_pending: true },
     });
     if (invite.error) {
       const msg = String(invite.error.message ?? "");

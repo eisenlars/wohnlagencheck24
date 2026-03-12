@@ -1,6 +1,7 @@
 import { login, requestPasswordReset } from "./actions";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -11,8 +12,17 @@ export default async function PartnerLoginPage({
 }) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    redirect("/dashboard");
+  if (user?.id) {
+    const admin = createAdminClient();
+    const { data: partnerProfile } = await admin
+      .from("partners")
+      .select("id, is_active")
+      .eq("id", user.id)
+      .maybeSingle();
+    const isActive = Boolean((partnerProfile as { is_active?: boolean } | null)?.is_active);
+    if (partnerProfile && isActive) {
+      redirect("/dashboard");
+    }
   }
 
   const params = await searchParams;

@@ -141,14 +141,41 @@ export async function checkRateLimitPersistent(
       };
     }
 
-    await admin
+    const { data: updatedRows, error: updateError } = await admin
       .from("security_rate_limits")
       .update({ count: count + 1, updated_at: nowIso })
-      .eq("key_hash", keyHash);
+      .eq("key_hash", keyHash)
+      .lt("count", config.max)
+      .gt("reset_at", nowIso)
+      .select("count, reset_at");
+
+    if (updateError) {
+      return checkRateLimit(key, config);
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      const { data: latestRow } = await admin
+        .from("security_rate_limits")
+        .select("count, reset_at")
+        .eq("key_hash", keyHash)
+        .maybeSingle();
+      const latestCount = Number(latestRow?.count ?? config.max);
+      const latestResetMs = latestRow?.reset_at ? Date.parse(String(latestRow.reset_at)) : ts + config.windowMs;
+      if (latestCount >= config.max || latestResetMs <= ts) {
+        return {
+          allowed: false,
+          remaining: 0,
+          retryAfterSec: Math.max(1, Math.ceil((latestResetMs - ts) / 1000)),
+        };
+      }
+      return checkRateLimit(key, config);
+    }
+
+    const nextCount = Number(updatedRows[0]?.count ?? count + 1);
 
     return {
       allowed: true,
-      remaining: Math.max(0, config.max - (count + 1)),
+      remaining: Math.max(0, config.max - nextCount),
       retryAfterSec: Math.max(1, Math.ceil((resetAtMs - ts) / 1000)),
     };
   } catch {

@@ -57,6 +57,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
   const [confirm, setConfirm] = useState("");
   const [headline, setHeadline] = useState(title);
   const [loginTarget, setLoginTarget] = useState(loginPathForAudience(defaultAudience));
+  const [redirectBusy, setRedirectBusy] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -202,6 +203,11 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
       }
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw new Error(error.message);
+      try {
+        await fetch("/api/auth/complete-setup", { method: "POST" });
+      } catch {
+        // Aktivierungsabschluss ist best-effort; Redirect-Logik greift anschließend serverseitig.
+      }
       setStatus("Passwort erfolgreich gespeichert. Du wirst jetzt sicher weitergeleitet.");
       const target = await resolvePostSetupTarget(fallbackAppPath);
       setTimeout(() => router.push(target), 450);
@@ -209,6 +215,18 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
       setStatus(error instanceof Error ? error.message : "Passwort konnte nicht gesetzt werden.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function goToLinkRequest() {
+    if (redirectBusy) return;
+    setRedirectBusy(true);
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Absichtlich ignoriert: Redirect zur Login-Seite soll trotzdem erfolgen.
+    } finally {
+      window.location.assign(`${loginTarget}?message=${encodeURIComponent("Bitte neuen Link anfordern.")}`);
     }
   }
 
@@ -273,17 +291,19 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
         {viewMode === "error" ? (
           <button
             type="button"
-            onClick={() => router.push(loginTarget)}
+            onClick={goToLinkRequest}
             style={{
               padding: "10px",
               background: "#111827",
               color: "#fff",
               border: "none",
               borderRadius: 6,
-              cursor: "pointer",
+              cursor: redirectBusy ? "default" : "pointer",
               fontWeight: 700,
               marginTop: 8,
+              opacity: redirectBusy ? 0.75 : 1,
             }}
+            disabled={redirectBusy}
           >
             Neuen Link anfordern
           </button>
