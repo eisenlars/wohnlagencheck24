@@ -1,49 +1,46 @@
 import { resolveAppBaseUrl, resolvePartnerInviteRedirectUrl } from "@/lib/auth/resolve-app-base-url";
-
 type PartnerAccessLinkResult = {
   contactEmail: string;
   linkType: "invite" | "recovery";
   redirectTo: string;
 };
 
-type AdminClientLike = {
-  from: (table: string) => {
-    select: (columns: string) => {
-      eq: (column: string, value: unknown) => {
-        maybeSingle: () => Promise<{ data: unknown; error: { message?: string } | null }>;
-      };
-    };
-  };
-  auth: {
-    admin: {
-      getUserById: (userId: string) => Promise<{
-        data: { user: { id?: string } | null };
-        error: { message?: string } | null;
-      }>;
-      inviteUserByEmail: (
-        email: string,
-        options: { redirectTo: string; data: Record<string, unknown> },
-      ) => Promise<{ error: { message?: string } | null }>;
-    };
-  };
-};
-
-type ServerSupabaseLike = {
-  auth: {
-    resetPasswordForEmail: (
-      email: string,
-      options: { redirectTo: string },
-    ) => Promise<{ error: { message?: string } | null }>;
-  };
-};
-
 export async function sendPartnerAccessLink(args: {
-  admin: AdminClientLike;
-  supabase: ServerSupabaseLike;
+  admin: unknown;
+  supabase: unknown;
   partnerId: string;
   headers: Headers;
 }): Promise<PartnerAccessLinkResult> {
-  const { admin, supabase, partnerId, headers } = args;
+  const { partnerId, headers } = args;
+  const admin = args.admin as {
+    from: (table: string) => {
+      select: (columns: string) => {
+        eq: (column: string, value: unknown) => {
+          maybeSingle: () => Promise<{ data: unknown; error: { message?: string } | null }>;
+        };
+      };
+    };
+    auth: {
+      admin: {
+        getUserById: (userId: string) => Promise<{
+          data: { user: { id?: string } | null };
+          error: { message?: string } | null;
+        }>;
+        inviteUserByEmail: (
+          email: string,
+          options: { redirectTo: string; data: Record<string, unknown> },
+        ) => Promise<{ error: { message?: string } | null }>;
+      };
+    };
+  };
+  const supabase = args.supabase as {
+    auth: {
+      resetPasswordForEmail: (
+        email: string,
+        options: { redirectTo: string },
+      ) => Promise<{ error: { message?: string } | null }>;
+    };
+  };
 
   const { data: partner, error: partnerError } = await admin
     .from("partners")
