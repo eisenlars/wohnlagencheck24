@@ -36,7 +36,7 @@ export default async function AdminLoginPage({
           <label htmlFor="password" style={{ color: "#111827" }}>Passwort</label>
           <input name="password" type="password" placeholder="••••••••" required style={{ padding: '8px' }} />
 
-          <button type="submit" style={{ padding: "10px", background: "#0f766e", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: 700 }}>
+          <button type="submit" style={{ padding: "10px", background: "#111827", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: 700 }}>
             Anmelden
           </button>
         </form>
@@ -55,8 +55,8 @@ export default async function AdminLoginPage({
             style={{
               padding: "10px",
               background: "#ffffff",
-              color: "#0f766e",
-              border: "3px solid #0f766e",
+              color: "#111827",
+              border: "3px solid #111827",
               borderRadius: "4px",
               cursor: "pointer",
               fontWeight: 700,
