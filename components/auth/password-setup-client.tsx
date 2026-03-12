@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 type SetupAudience = "partner" | "admin";
+type LinkKind = "invite" | "recovery" | "generic";
 
 type PasswordSetupClientProps = {
   title: string;
@@ -57,6 +58,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
   const [confirm, setConfirm] = useState("");
   const [headline, setHeadline] = useState(title);
   const [loginTarget, setLoginTarget] = useState(loginPathForAudience(defaultAudience));
+  const [linkKind, setLinkKind] = useState<LinkKind>("generic");
   const [accessEmail, setAccessEmail] = useState("");
   const [requestBusy, setRequestBusy] = useState(false);
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
@@ -82,13 +84,18 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
       if (prefEmail) setAccessEmail(prefEmail);
       if (type === "recovery") {
         setHeadline("Passwort neu setzen");
+        setLinkKind("recovery");
       } else if (type === "invite") {
         setHeadline("Partnerkonto aktivieren");
+        setLinkKind("invite");
       } else {
         setHeadline(title);
+        setLinkKind(defaultAudience === "partner" ? "invite" : "generic");
       }
       const otpToken = tokenHash || legacyToken;
-      const invalidLinkMessage = "Der Link ist ungueltig oder abgelaufen. Bitte fordere einen neuen Einladungs- oder Passwort-Link an.";
+      const invalidLinkMessage = type === "recovery"
+        ? "Der Passwort-Link ist ungueltig oder abgelaufen. Bitte fordere einen neuen Passwort-Link an."
+        : "Der Einladungslink ist ungueltig oder abgelaufen. Bitte fordere einen neuen Einladungslink an.";
       const hasAuthLinkPayload = Boolean(code || (otpToken && type) || (accessToken && refreshToken));
 
       if (code) {
@@ -243,7 +250,11 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
         setRequestStatus(retry > 0 ? `Zu viele Anfragen. Bitte in ${retry}s erneut versuchen.` : "Zu viele Anfragen. Bitte später erneut versuchen.");
         return;
       }
-      setRequestStatus("Wenn die E-Mail existiert, wurde ein neuer Zugangslink versendet.");
+      setRequestStatus(
+        linkKind === "recovery"
+          ? "Wenn die E-Mail existiert, wurde ein neuer Passwort-Link versendet."
+          : "Wenn die E-Mail existiert, wurde ein neuer Einladungslink versendet.",
+      );
     } catch {
       setRequestStatus("Anfrage konnte nicht gesendet werden. Bitte erneut versuchen.");
     } finally {
@@ -312,7 +323,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
         {viewMode === "error" ? (
           <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
             <label htmlFor="request_email" style={{ color: "#111827", fontWeight: 700 }}>
-              E-Mail für neuen Zugangslink
+              {linkKind === "recovery" ? "E-Mail für neuen Passwort-Link" : "E-Mail für neuen Einladungslink"}
             </label>
             <input
               id="request_email"
@@ -339,28 +350,13 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
               }}
               disabled={requestBusy}
             >
-              Neuen Zugangslink senden
+              {linkKind === "recovery" ? "Neuen Passwort-Link senden" : "Neuen Einladungslink senden"}
             </button>
             {requestStatus ? (
               <p style={{ margin: 0, fontSize: 14, color: requestStatus.toLowerCase().includes("versendet") ? "#166534" : "#b91c1c" }}>
                 {requestStatus}
               </p>
             ) : null}
-            <button
-              type="button"
-              onClick={() => router.push(loginTarget)}
-              style={{
-                padding: "10px",
-                background: "#ffffff",
-                color: "#111827",
-                border: "2px solid #111827",
-                borderRadius: 6,
-                cursor: "pointer",
-                fontWeight: 700,
-              }}
-            >
-              Zur Anmeldung
-            </button>
           </div>
         ) : null}
       </div>
