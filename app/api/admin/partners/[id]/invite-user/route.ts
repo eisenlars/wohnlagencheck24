@@ -5,7 +5,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
-import { resolveAppBaseUrl, resolvePartnerInviteRedirectUrl } from "@/lib/auth/resolve-app-base-url";
+import { sendPartnerAccessLink } from "@/lib/auth/partner-access-link";
 
 export async function POST(
   req: Request,
@@ -28,54 +28,13 @@ export async function POST(
     }
 
     const admin = createAdminClient();
-    const { data: partner, error: partnerError } = await admin
-      .from("partners")
-      .select("id, company_name, contact_email, is_active")
-      .eq("id", partnerId)
-      .maybeSingle();
-
-    if (partnerError) {
-      return NextResponse.json({ error: partnerError.message }, { status: 500 });
-    }
-    if (!partner) {
-      return NextResponse.json({ error: "Partner not found" }, { status: 404 });
-    }
-
-    const email = String((partner as { contact_email?: string | null }).contact_email ?? "").trim().toLowerCase();
-    if (!email) {
-      return NextResponse.json({ error: "Partner has no contact email" }, { status: 400 });
-    }
-
-    const { data: authUserRes, error: authUserError } = await admin.auth.admin.getUserById(partnerId);
-    if (authUserError || !authUserRes.user) {
-      return NextResponse.json({ error: authUserError?.message ?? "Auth user not found" }, { status: 404 });
-    }
-
-    const isActive = Boolean((partner as { is_active?: boolean | null }).is_active);
-    let linkType: "invite" | "recovery" = "recovery";
-    let redirectTo = `${resolveAppBaseUrl(req.headers)}/auth/setup?aud=partner`;
-
-    if (!isActive) {
-      redirectTo = resolvePartnerInviteRedirectUrl(req.headers);
-      const invite = await admin.auth.admin.inviteUserByEmail(email, {
-        redirectTo,
-        data: {
-          role: "partner",
-          company_name: String((partner as { company_name?: string | null }).company_name ?? "").trim(),
-          activation_pending: true,
-        },
-      });
-      if (invite.error) {
-        return NextResponse.json({ error: String(invite.error.message ?? "Invite failed") }, { status: 500 });
-      }
-      linkType = "invite";
-    } else {
-      const supabase = createClient();
-      const reset = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-      if (reset.error) {
-        return NextResponse.json({ error: String(reset.error.message ?? "Password reset failed") }, { status: 500 });
-      }
-    }
+    const supabase = createClient();
+    const delivery = await sendPartnerAccessLink({
+      admin,
+      supabase,
+      partnerId,
+      headers: req.headers,
+    });
 
     await writeSecurityAuditLog({
       actorUserId: adminUser.userId,
@@ -84,10 +43,10 @@ export async function POST(
       entityType: "auth_user",
       entityId: partnerId,
       payload: {
-        contact_email: email,
-        redirect_to: redirectTo,
+        contact_email: delivery.contactEmail,
+        redirect_to: delivery.redirectTo,
         resend: true,
-        link_type: linkType,
+        link_type: delivery.linkType,
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -96,9 +55,9 @@ export async function POST(
     return NextResponse.json({
       ok: true,
       partner_id: partnerId,
-      contact_email: email,
-      link_type: linkType,
-      redirect_to: redirectTo,
+      contact_email: delivery.contactEmail,
+      link_type: delivery.linkType,
+      redirect_to: delivery.redirectTo,
     });
   } catch (error) {
     if (error instanceof Error) {

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
+import { createClient } from "@/utils/supabase/server";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
-import { resolvePartnerInviteRedirectUrl } from "@/lib/auth/resolve-app-base-url";
+import { sendPartnerAccessLink } from "@/lib/auth/partner-access-link";
 
 type CreatePartnerBody = {
   company_name?: string;
@@ -88,13 +89,13 @@ export async function POST(req: Request) {
     }
 
     const admin = createAdminClient();
-    const inviteRedirectTo = resolvePartnerInviteRedirectUrl(req.headers);
-    const invite = await admin.auth.admin.inviteUserByEmail(contactEmail, {
-      redirectTo: inviteRedirectTo,
-      data: { role: "partner", company_name: companyName, activation_pending: true },
+    const createdAuthUser = await admin.auth.admin.createUser({
+      email: contactEmail,
+      email_confirm: false,
+      user_metadata: { role: "partner", company_name: companyName, activation_pending: true },
     });
-    if (invite.error) {
-      const msg = String(invite.error.message ?? "");
+    if (createdAuthUser.error) {
+      const msg = String(createdAuthUser.error.message ?? "");
       const lower = msg.toLowerCase();
       if (lower.includes("already") || lower.includes("exists") || lower.includes("registered")) {
         const { data: existingPartner } = await admin
@@ -110,12 +111,12 @@ export async function POST(req: Request) {
           { status: 409 },
         );
       }
-      return NextResponse.json({ error: msg || "Invite failed" }, { status: 500 });
+      return NextResponse.json({ error: msg || "Auth user create failed" }, { status: 500 });
     }
 
-    const authUserId = normalizeNullableString(invite.data.user?.id);
+    const authUserId = normalizeNullableString(createdAuthUser.data.user?.id);
     if (!authUserId) {
-      return NextResponse.json({ error: "Invite succeeded but user id missing" }, { status: 500 });
+      return NextResponse.json({ error: "Auth user created but user id missing" }, { status: 500 });
     }
 
     const payload = {
@@ -189,6 +190,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Partner could not be created" }, { status: 500 });
     }
 
+    const supabase = createClient();
+    const delivery = await sendPartnerAccessLink({
+      admin,
+      supabase,
+      partnerId: authUserId,
+      headers: req.headers,
+    });
+
     await writeSecurityAuditLog({
       actorUserId: adminUser.userId,
       actorRole: adminUser.role,
@@ -202,7 +211,8 @@ export async function POST(req: Request) {
         llm_partner_managed_allowed: (data as Record<string, unknown>).llm_partner_managed_allowed,
         llm_mode_default: (data as Record<string, unknown>).llm_mode_default,
         auth_user_id: authUserId,
-        invite_sent: true,
+        invite_sent: delivery.linkType === "invite",
+        access_link_type: delivery.linkType,
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -215,8 +225,10 @@ export async function POST(req: Request) {
       entityType: "auth_user",
       entityId: authUserId,
       payload: {
-        contact_email: contactEmail,
-        redirect_to: inviteRedirectTo,
+        contact_email: delivery.contactEmail,
+        redirect_to: delivery.redirectTo,
+        link_type: delivery.linkType,
+        resend: false,
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
