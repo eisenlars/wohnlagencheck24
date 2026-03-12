@@ -56,6 +56,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [headline, setHeadline] = useState(title);
+  const [loginTarget, setLoginTarget] = useState(loginPathForAudience(defaultAudience));
 
   useEffect(() => {
     let mounted = true;
@@ -63,6 +64,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
       const aud = readAudience(defaultAudience);
       const fallbackAppPath = appPathForAudience(aud);
       const fallbackLoginPath = loginPathForAudience(aud);
+      setLoginTarget(fallbackLoginPath);
       const hash = readHashParams();
       const search = readSearchParams();
       const accessToken = hash.get("access_token");
@@ -267,6 +269,24 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
               Passwort setzen
             </button>
           </>
+        ) : null}
+        {viewMode === "error" ? (
+          <button
+            type="button"
+            onClick={() => router.push(loginTarget)}
+            style={{
+              padding: "10px",
+              background: "#111827",
+              color: "#fff",
+              border: "none",
+              borderRadius: 6,
+              cursor: "pointer",
+              fontWeight: 700,
+              marginTop: 8,
+            }}
+          >
+            Neuen Link anfordern
+          </button>
         ) : null}
       </div>
     </div>
