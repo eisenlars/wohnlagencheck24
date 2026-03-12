@@ -5,9 +5,13 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import NextImage from 'next/image';
 import { createClient } from '@/utils/supabase/client';
-import { buildGlobalPromptPrefill } from '@/lib/text-prompt-generator';
-import { GENERAL_REGION_FOCUS_KEYS, GENERAL_STANDARD_KEYS } from '@/lib/text-key-registry';
 import { INDIVIDUAL_MANDATORY_KEYS } from '@/lib/text-key-registry';
+import { resolveFieldHint, type HintTable } from '@/lib/text-field-hints';
+import {
+  resolveDisplayTextClass,
+  displayTextClassLabel,
+  displayTextBadgeStyle,
+} from '@/lib/text-display-class';
 import {
   MANDATORY_MEDIA_SPECS,
   type MandatoryMediaKey,
@@ -346,6 +350,9 @@ type GlobalBulkReport = {
   failed: Array<{ key: string; error: string }>;
 };
 
+type BulkScope = 'kreis' | 'kreis_ortslagen';
+type GlobalClassKey = 'general' | 'data_driven' | 'market_expert' | 'profile';
+
 type PartnerArea = {
   id?: string;
   name?: string;
@@ -362,16 +369,20 @@ type PartnerAreaConfig = {
 
 type LlmIntegrationOption = {
   id: string;
+  source: 'partner' | 'global';
   provider: string;
   model: string;
+  partnerIntegrationId: string | null;
+  globalProviderId: string | null;
 };
 
-type PartnerIntegrationRow = {
+type LlmOptionApiRow = {
   id?: string;
-  kind?: string;
+  source?: 'partner' | 'global';
   provider?: string;
-  is_active?: boolean;
-  settings?: Record<string, unknown> | null;
+  model?: string;
+  partner_integration_id?: string | null;
+  global_provider_id?: string | null;
 };
 
 type TextEditorFormProps = {
@@ -385,6 +396,40 @@ type TextEditorFormProps = {
     allowedTabIds?: string[];
     allowedSectionKeys?: string[];
     onPersistSuccess?: () => void;
+};
+
+const GLOBAL_CLASS_ORDER: GlobalClassKey[] = ['general', 'data_driven', 'market_expert', 'profile'];
+
+const GLOBAL_CLASS_META: Record<GlobalClassKey, {
+  title: string;
+  description: string;
+  cycle: string;
+  defaultPrompt: string;
+}> = {
+  general: {
+    title: 'General',
+    description: 'Teaser, einleitende Erklärungstexte und allgemein verständliche Orientierung für Besucher.',
+    cycle: 'Empfehlung: bei inhaltlichen Anpassungen und spätestens quartalsweise prüfen.',
+    defaultPrompt: 'Optimiere den General-Text klar, professionell und verständlich. Keine neuen Fakten erfinden.',
+  },
+  data_driven: {
+    title: 'Data-Driven',
+    description: 'Kennzahlennahe Analysen zu Preisen, Nachfrage, Rendite, Wirtschaft und anderen Datenpunkten.',
+    cycle: 'Empfehlung: nach jedem Datenupdate bzw. Preisfaktorisierungs-Update neu prüfen.',
+    defaultPrompt: 'Optimiere den data-driven Text sprachlich. Zahlen, Fakten und Aussagen müssen exakt erhalten bleiben.',
+  },
+  market_expert: {
+    title: 'Market Expert',
+    description: 'Experteneinschätzungen und marktspezifische Einordnungen mit regionalem Bezug.',
+    cycle: 'Empfehlung: mindestens quartalsweise und nach Marktänderungen aktualisieren.',
+    defaultPrompt: 'Formuliere die Experteneinschätzung präzise und hochwertig. Keine neuen Fakten ergänzen.',
+  },
+  profile: {
+    title: 'Profile',
+    description: 'Profiltexte rund um Berater und Makler, die persönliche Kompetenz und Leistungen erklären.',
+    cycle: 'Empfehlung: bei Personal-/Leistungsänderungen aktualisieren, sonst selten nötig.',
+    defaultPrompt: 'Optimiere den Profiltext professionell, vertrauenswürdig und prägnant. Faktentreu bleiben.',
+  },
 };
 
 export default function TextEditorForm({
@@ -408,15 +453,24 @@ export default function TextEditorForm({
   const [dbTexts, setDbTexts] = useState<TextEntry[]>([]);
   const [saving, setSaving] = useState(false);
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
-  const [generalBulkState, setGeneralBulkState] = useState<{
-    scope: 'tab' | 'kreis_ortslagen';
+  const [classBulkState, setClassBulkState] = useState<{
+    classKey: GlobalClassKey;
+    scope: BulkScope;
     done: number;
     total: number;
   } | null>(null);
-  const [showGlobalPrompts, setShowGlobalPrompts] = useState(false);
-  const [tabGeneralPrompt, setTabGeneralPrompt] = useState('');
-  const [globalKreisPrompt, setGlobalKreisPrompt] = useState('');
-  const [globalOrtslagenPrompt, setGlobalOrtslagenPrompt] = useState('');
+  const [globalPrompts, setGlobalPrompts] = useState<Record<GlobalClassKey, string>>({
+    general: GLOBAL_CLASS_META.general.defaultPrompt,
+    data_driven: GLOBAL_CLASS_META.data_driven.defaultPrompt,
+    market_expert: GLOBAL_CLASS_META.market_expert.defaultPrompt,
+    profile: GLOBAL_CLASS_META.profile.defaultPrompt,
+  });
+  const [globalScopeByClass, setGlobalScopeByClass] = useState<Record<GlobalClassKey, BulkScope>>({
+    general: 'kreis',
+    data_driven: 'kreis',
+    market_expert: 'kreis',
+    profile: 'kreis',
+  });
   const [globalBulkReport, setGlobalBulkReport] = useState<GlobalBulkReport | null>(null);
   const [mediaState, setMediaState] = useState<Record<MandatoryMediaKey, MediaFieldState>>({
     media_berater_avatar: { uploading: false, error: null },
@@ -426,10 +480,24 @@ export default function TextEditorForm({
   });
   const [llmIntegrations, setLlmIntegrations] = useState<LlmIntegrationOption[]>([]);
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState<string>('');
+  const [i18nLocales, setI18nLocales] = useState<string[]>(['en']);
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishStatus, setPublishStatus] = useState<string>('Bereit.');
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishDone, setPublishDone] = useState(0);
+  const [publishTotal, setPublishTotal] = useState(0);
+  const [publishing, setPublishing] = useState(false);
   const parts = config?.area_id ? config.area_id.split('-') : [];
   const isOrtslage = parts.length > 3;
   const isMarketing = tableName === 'partner_marketing_texts';
   const isLocalSite = tableName === 'partner_local_site_texts';
+  const hasPublishableChanges = useMemo(
+    () => dbTexts.some((entry) => (
+      Boolean(String(entry?.optimized_content ?? '').trim())
+      && String(entry?.status ?? '').trim().toLowerCase() !== 'approved'
+    )),
+    [dbTexts],
+  );
 
   useEffect(() => {
   async function loadTexts() {
@@ -487,28 +555,39 @@ export default function TextEditorForm({
         .eq('partner_id', user?.id);
       setDbTexts(data || []);
 
-      const integrationsRes = await fetch('/api/partner/integrations');
+      const integrationsRes = await fetch('/api/partner/llm/options');
       if (integrationsRes.ok) {
         const integrationsPayload = await integrationsRes.json().catch(() => ({}));
-        const items: PartnerIntegrationRow[] = Array.isArray(integrationsPayload?.integrations)
-          ? (integrationsPayload.integrations as PartnerIntegrationRow[])
+        const items: LlmOptionApiRow[] = Array.isArray(integrationsPayload?.options)
+          ? (integrationsPayload.options as LlmOptionApiRow[])
           : [];
+        const llmModeDefault = String(integrationsPayload?.llm_mode_default ?? '').trim().toLowerCase();
         const llmItems: LlmIntegrationOption[] = items
-          .filter((entry) => String(entry?.kind ?? '').toLowerCase() === 'llm' && entry?.is_active === true)
           .map((entry) => {
+            const id = String(entry?.id ?? '').trim();
+            if (!id) return null;
             const provider = String(entry?.provider ?? '').trim() || 'LLM';
-            const settings = (entry?.settings ?? {}) as Record<string, unknown>;
-            const model = String(settings?.model ?? settings?.model_name ?? '').trim() || 'Standardmodell';
+            const model = String(entry?.model ?? '').trim() || 'Standardmodell';
+            const source = String(entry?.source ?? '').toLowerCase() === 'global' ? 'global' : 'partner';
             return {
-              id: String(entry?.id ?? ''),
+              id,
+              source,
               provider,
               model,
-            };
+              partnerIntegrationId: String(entry?.partner_integration_id ?? '').trim() || null,
+              globalProviderId: String(entry?.global_provider_id ?? '').trim() || null,
+            } satisfies LlmIntegrationOption;
           })
-          .filter((entry) => entry.id.length > 0);
+          .filter((entry): entry is LlmIntegrationOption => Boolean(entry));
         setLlmIntegrations(llmItems);
         setSelectedLlmIntegrationId((prev) => {
           if (prev && llmItems.some((item) => item.id === prev)) return prev;
+          if (llmModeDefault === 'central_managed') {
+            return llmItems.find((item) => item.source === 'global')?.id ?? llmItems[0]?.id ?? '';
+          }
+          if (llmModeDefault === 'partner_managed') {
+            return llmItems.find((item) => item.source === 'partner')?.id ?? llmItems[0]?.id ?? '';
+          }
           return llmItems[0]?.id ?? '';
         });
       } else {
@@ -544,15 +623,6 @@ export default function TextEditorForm({
     () => (Array.isArray(allowedSectionKeys) && allowedSectionKeys.length > 0 ? new Set(allowedSectionKeys) : null),
     [allowedSectionKeys],
   );
-  const allowedGeneralKeys = useMemo(
-    () =>
-      new Set<string>([
-        ...GENERAL_STANDARD_KEYS,
-        ...GENERAL_REGION_FOCUS_KEYS,
-      ]),
-    [],
-  );
-
   useEffect(() => {
     if (visibleTabs.length === 0) return;
     const exists = visibleTabs.some((tab) => tab.id === activeTab);
@@ -589,11 +659,29 @@ export default function TextEditorForm({
   }, [focusSectionKey, onFocusHandled]);
 
   useEffect(() => {
-    const areaName = config?.areas?.name || config?.area_id || 'Region';
-    setTabGeneralPrompt(buildGlobalPromptPrefill(activeTab, 'tab_general', areaName));
-    setGlobalKreisPrompt(buildGlobalPromptPrefill(activeTab, 'kreis_text', areaName));
-    setGlobalOrtslagenPrompt(buildGlobalPromptPrefill(activeTab, 'ort_template', areaName));
-  }, [activeTab, config?.area_id, config?.areas?.name]);
+    (async () => {
+      try {
+        const res = await fetch('/api/partner/billing/features', { method: 'GET', cache: 'no-store' });
+        if (!res.ok) return;
+        const payload = await res.json().catch(() => null) as {
+          rows?: Array<{ key?: string | null; enabled?: boolean | null }>;
+        } | null;
+        const locales = (Array.isArray(payload?.rows) ? payload.rows : [])
+          .map((row) => {
+            const code = String(row?.key ?? '').trim().toLowerCase();
+            if (!code.startsWith('international')) return null;
+            if (row?.enabled !== true) return null;
+            const suffix = code.replace(/^international[_-]?/, '').trim();
+            return suffix || 'en';
+          })
+          .filter((v): v is string => typeof v === 'string' && /^[a-z]{2}(-[a-z]{2})?$/.test(v));
+        const unique = Array.from(new Set(locales));
+        if (unique.length > 0) setI18nLocales(unique);
+      } catch {
+        // Fallback bleibt bei ['en']
+      }
+    })();
+  }, []);
 
   const saveText = async (key: string, content: string, type: string, sourceGroup?: string | null) => {
     setSaving(true);
@@ -621,32 +709,142 @@ export default function TextEditorForm({
     setSaving(false);
   };
 
-  const approveAllTexts = async () => {
+  const resetTextToSystem = async (key: string) => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .eq('partner_id', user.id)
+        .eq('area_id', config.area_id)
+        .eq('section_key', key);
+      if (!error) {
+        setDbTexts((prev) => prev.filter((entry) => entry.section_key !== key));
+        onPersistSuccess?.();
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const approveAllTextsStrict = async (): Promise<{ approvedCount: number; changedKeys: string[] }> => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const entriesToApprove = dbTexts
-      .filter((entry) => Boolean(entry.optimized_content))
+    if (!user) return { approvedCount: 0, changedKeys: [] };
+    const { data: currentRows } = await supabase
+      .from(tableName)
+      .select('section_key, optimized_content, status, text_type')
+      .eq('area_id', config.area_id)
+      .eq('partner_id', user.id);
+    const rows = Array.isArray(currentRows) ? (currentRows as TextEntry[]) : [];
+    const nowIso = new Date().toISOString();
+    const changedRows = rows.filter((entry) => (
+      Boolean(String(entry.optimized_content ?? '').trim())
+      && String(entry.status ?? '').trim().toLowerCase() !== 'approved'
+    ));
+    const changedKeys = changedRows.map((entry) => String(entry.section_key ?? '').trim()).filter(Boolean);
+    const entriesToApprove = changedRows
+      .filter((entry) => Boolean(String(entry.optimized_content ?? '').trim()))
       .map((entry) => ({
         partner_id: user.id,
         area_id: config.area_id,
         section_key: entry.section_key,
         text_type: entry.text_type ?? null,
         raw_content: getRawTextFromJSON(entry.section_key),
-        optimized_content: entry.optimized_content ?? '',
+        optimized_content: String(entry.optimized_content ?? ''),
         status: 'approved',
-        last_updated: new Date().toISOString(),
+        last_updated: nowIso,
       }));
-    if (entriesToApprove.length === 0) return;
-    await supabase
+    if (entriesToApprove.length === 0) return { approvedCount: 0, changedKeys: [] };
+    const { error } = await supabase
       .from(tableName)
       .upsert(entriesToApprove, { onConflict: 'partner_id,area_id,section_key' });
+    if (error) throw error;
     setDbTexts((prev) =>
       prev.map((entry) =>
-        entry.optimized_content
-          ? { ...entry, status: 'approved' }
+        String(entry.optimized_content ?? '').trim()
+          ? { ...entry, status: 'approved', last_updated: nowIso }
           : entry,
       ),
     );
+    return { approvedCount: entriesToApprove.length, changedKeys };
+  };
+
+  const runI18nSyncForLocale = async (locale: string, channel: 'portal' | 'local_site', changedKeys: string[]) => {
+    const maxRuns = 30;
+    let loops = 0;
+    let syncedSum = 0;
+    let failedSum = 0;
+    while (loops < maxRuns) {
+      loops += 1;
+      const params = new URLSearchParams({
+        area_id: String(config.area_id),
+        locale,
+        channel,
+      });
+      if (changedKeys.length > 0) params.set('section_keys', changedKeys.join(','));
+      const res = await fetch(`/api/partner/i18n/texts?${params.toString()}`, { method: 'GET', cache: 'no-store' });
+      const payload = await res.json().catch(() => null) as {
+        summary?: { auto_synced?: number; auto_sync_failed?: number };
+        error?: string;
+      } | null;
+      if (!res.ok) throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
+      const autoSynced = Number(payload?.summary?.auto_synced ?? 0);
+      const autoFailed = Number(payload?.summary?.auto_sync_failed ?? 0);
+      syncedSum += autoSynced;
+      failedSum += autoFailed;
+      if (autoSynced === 0) break;
+    }
+    return { syncedSum, failedSum, loops };
+  };
+
+  const handleSaveAndApprove = async () => {
+    if (publishing) return;
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+      await new Promise((resolve) => window.setTimeout(resolve, 40));
+    }
+    const syncChannel: 'portal' | 'local_site' = isLocalSite ? 'local_site' : 'portal';
+    const locales = i18nLocales.length > 0 ? i18nLocales : ['en'];
+    setPublishModalOpen(true);
+    setPublishError(null);
+    setPublishDone(0);
+    setPublishTotal(locales.length + 1);
+    setPublishStatus('Änderungen werden gespeichert und freigegeben …');
+    setPublishing(true);
+    setSaving(true);
+    try {
+      const { approvedCount, changedKeys } = await approveAllTextsStrict();
+      setPublishDone(1);
+      if (changedKeys.length === 0) {
+        setPublishStatus('Keine geänderten Textfelder gefunden. Es wurden keine Übersetzungen angestoßen.');
+        onPersistSuccess?.();
+        return;
+      }
+      setPublishStatus(`${approvedCount} Textfelder freigegeben. Starte Übersetzungen für geänderte Inhalte …`);
+      let syncedTotal = 0;
+      let failedTotal = 0;
+      for (let i = 0; i < locales.length; i += 1) {
+        const locale = locales[i];
+        setPublishStatus(`Übersetzungen für ${locale.toUpperCase()} werden erzeugt (${i + 1}/${locales.length}) …`);
+        const result = await runI18nSyncForLocale(locale, syncChannel, changedKeys);
+        syncedTotal += result.syncedSum;
+        failedTotal += result.failedSum;
+        setPublishDone(i + 2);
+      }
+      setPublishStatus(
+        `Fertig. Auto-Übersetzungen aktualisiert: ${syncedTotal}, Fehler: ${failedTotal}. ` +
+        'Du kannst jetzt im Bereich „Internationalisierung“ nachbearbeiten.',
+      );
+      onPersistSuccess?.();
+    } catch (error) {
+      setPublishError(error instanceof Error ? error.message : 'Speichern & Freigeben fehlgeschlagen.');
+      setPublishStatus('Der Vorgang wurde mit Fehler beendet.');
+    } finally {
+      setPublishing(false);
+      setSaving(false);
+    }
   };
 
   const getMediaEntry = (key: MandatoryMediaKey): TextEntry | undefined =>
@@ -754,6 +952,7 @@ export default function TextEditorForm({
     label: string,
     customPrompt?: string,
   ) => {
+    const selectedOption = llmIntegrations.find((item) => item.id === (selectedLlmIntegrationId || llmIntegrations[0]?.id));
     try {
       const res = await fetch('/api/ai-rewrite', {
         method: 'POST',
@@ -765,7 +964,8 @@ export default function TextEditorForm({
           type: type,
           sectionLabel: label,
           customPrompt: customPrompt || undefined,
-          llm_integration_id: selectedLlmIntegrationId || llmIntegrations[0]?.id || undefined,
+          llm_integration_id: selectedOption?.partnerIntegrationId || undefined,
+          llm_global_provider_id: selectedOption?.globalProviderId || undefined,
         }),
       });
       const data = await res.json();
@@ -821,133 +1021,118 @@ export default function TextEditorForm({
     return dbEntry?.optimized_content ?? getRawTextFromJSON(sectionKey, sectionGroup);
   };
 
-  const runBulkGeneralAi = async (scope: 'tab' | 'kreis_ortslagen') => {
-    if (generalBulkState || !visibleTabs.length) return;
-    const active = visibleTabs.find((tab) => tab.id === activeTab);
-    if (!active) return;
-    const sectionGroup = resolveGroupForTab(active.id);
-    const tasks = active.sections
-      .filter((section) => section.type === 'general' && allowedGeneralKeys.has(section.key))
-      .map((section) => ({
-        key: section.key,
-        label: section.label,
-        type: section.type,
-        sectionGroup,
-      }));
-    if (tasks.length === 0) return;
+  const isProfileAiEligible = (sectionKey: string): boolean => {
+    const key = String(sectionKey ?? '').toLowerCase();
+    if (!key) return false;
+    if (
+      key.endsWith('_name')
+      || key.endsWith('_email')
+      || key.includes('telefon')
+      || key.includes('adresse_')
+      || key.endsWith('_plz')
+      || key.endsWith('_hnr')
+    ) return false;
+    return true;
+  };
 
-    const perTaskOps = scope === 'tab' ? 1 : 2;
-    setGeneralBulkState({ scope, done: 0, total: tasks.length * perTaskOps });
-    setGlobalBulkReport({ processed: [], skipped: [], failed: [] });
+  const collectBulkTasks = (classKey: GlobalClassKey) => {
+    const tasks: Array<{ key: string; label: string; type: string; sectionGroup: string | null }> = [];
+    const dedupe = new Set<string>();
+    for (const tab of visibleTabs) {
+      const sectionGroup = resolveGroupForTab(tab.id);
+      for (const section of tab.sections) {
+        if (allowedSectionSet && !allowedSectionSet.has(section.key)) continue;
+        if (dedupe.has(section.key)) continue;
+        const displayClass = resolveDisplayTextClass(section.key, section.type);
+        if (displayClass !== classKey) continue;
+        if (classKey === 'profile' && !isProfileAiEligible(section.key)) continue;
+        dedupe.add(section.key);
+        tasks.push({ key: section.key, label: section.label, type: section.type, sectionGroup });
+      }
+    }
+    return tasks;
+  };
+
+  const runBulkByTextClass = async (classKey: GlobalClassKey) => {
+    if (classBulkState) return;
+    const tasks = collectBulkTasks(classKey);
+    if (tasks.length === 0) return;
+    const scope = globalScopeByClass[classKey];
+    const withOrtslagen = scope === 'kreis_ortslagen' && !isOrtslage;
     try {
       let done = 0;
-      for (let i = 0; i < tasks.length; i += 1) {
-        const task = tasks[i];
+      const customPrompt = String(globalPrompts[classKey] ?? '').trim() || undefined;
+      let ortAreas: AreaListItem[] = [];
+      if (withOrtslagen) {
+        const bundeslandSlug = String(config?.areas?.bundesland_slug || '');
+        const kreisSlug = String(config?.areas?.slug || '');
+        const { data } = await supabase
+          .from('areas')
+          .select('id, name, slug, parent_slug, bundesland_slug')
+          .eq('bundesland_slug', bundeslandSlug)
+          .eq('parent_slug', kreisSlug);
+        ortAreas = (data ?? []) as AreaListItem[];
+      }
+      const total = withOrtslagen ? (tasks.length * (1 + ortAreas.length)) : tasks.length;
+      setClassBulkState({ classKey, scope, done: 0, total });
+      setGlobalBulkReport({ processed: [], skipped: [], failed: [] });
+      for (const task of tasks) {
         setRewritingKey(task.key);
         const sourceText = getCurrentTextForSection(task.key, task.sectionGroup);
         if (!String(sourceText || '').trim()) {
-          done += perTaskOps;
-          setGeneralBulkState((prev) => prev ? { ...prev, done } : null);
-          setGlobalBulkReport((prev) =>
-            prev
-              ? { ...prev, skipped: [...prev.skipped, `${task.key} (kein Quelltext)`] }
-              : prev,
-          );
+          done += withOrtslagen ? (1 + ortAreas.length) : 1;
+          setClassBulkState((prev) => prev ? { ...prev, done } : null);
+          setGlobalBulkReport((prev) => prev ? { ...prev, skipped: [...prev.skipped, `${task.key} (kein Quelltext)`] } : prev);
           continue;
         }
-        const kreisTextPrompt = scope === 'kreis_ortslagen'
-          ? (globalKreisPrompt || undefined)
-          : (tabGeneralPrompt || undefined);
-        const kreisText = await requestAiRewrite(
-          task.key,
-          sourceText,
-          task.type,
-          task.label,
-          kreisTextPrompt,
-        );
+        const kreisText = await requestAiRewrite(task.key, sourceText, task.type, task.label, customPrompt);
         if (kreisText) {
           try {
             await saveText(task.key, kreisText, task.type, task.sectionGroup);
-            setGlobalBulkReport((prev) =>
-              prev
-                ? { ...prev, processed: [...prev.processed, `${task.key} (Kreis)`] }
-                : prev,
-            );
+            setGlobalBulkReport((prev) => prev ? { ...prev, processed: [...prev.processed, `${task.key} (Kreis)`] } : prev);
           } catch (error) {
             const message = error instanceof Error ? error.message : 'save failed';
-            setGlobalBulkReport((prev) =>
-              prev
-                ? { ...prev, failed: [...prev.failed, { key: task.key, error: message }] }
-                : prev,
-            );
+            setGlobalBulkReport((prev) => prev ? { ...prev, failed: [...prev.failed, { key: task.key, error: message }] } : prev);
           }
         } else {
-          setGlobalBulkReport((prev) =>
-            prev
-              ? { ...prev, failed: [...prev.failed, { key: task.key, error: 'KI-Antwort leer' }] }
-              : prev,
-          );
+          setGlobalBulkReport((prev) => prev ? { ...prev, failed: [...prev.failed, { key: task.key, error: 'KI-Antwort leer' }] } : prev);
         }
         done += 1;
-        setGeneralBulkState((prev) => prev ? { ...prev, done } : null);
+        setClassBulkState((prev) => prev ? { ...prev, done } : null);
 
-        if (scope === 'kreis_ortslagen') {
-          const ortTemplate = await requestAiRewrite(
-            task.key,
-            sourceText,
-            task.type,
-            `${task.label} (Ortslagen-Template)`,
-            globalOrtslagenPrompt || undefined,
-          );
-
-          if (ortTemplate) {
-            const bundeslandSlug = String(config?.areas?.bundesland_slug || '');
-            const kreisSlug = String(config?.areas?.slug || '');
-            const { data: ortAreas } = await supabase
-              .from('areas')
-              .select('id, name, slug, parent_slug, bundesland_slug')
-              .eq('bundesland_slug', bundeslandSlug)
-              .eq('parent_slug', kreisSlug);
-
-            for (const ort of (ortAreas || []) as AreaListItem[]) {
-              const ortName = String(ort.name || ort.slug || '').trim();
-              const ortText = ortTemplate
-                .replace(/\{ortsname\}/g, ortName)
-                .replace(/\[\[ORTSLAGE_NAME\]\]/g, ortName);
-              try {
-                await upsertTextForArea(ort.id, task.key, ortText, task.type, sourceText);
-              } catch (error) {
-                const message = error instanceof Error ? error.message : 'upsert failed';
-                setGlobalBulkReport((prev) =>
-                  prev
-                    ? { ...prev, failed: [...prev.failed, { key: `${task.key}:${ort.id}`, error: message }] }
-                    : prev,
-                );
-              }
+        if (withOrtslagen) {
+          for (const ort of ortAreas) {
+            const ortName = String(ort.name || ort.slug || '').trim();
+            const ortText = String(kreisText ?? '')
+              .replace(/\{ortsname\}/g, ortName)
+              .replace(/\[\[ORTSLAGE_NAME\]\]/g, ortName);
+            if (!ortText.trim()) continue;
+            try {
+              await upsertTextForArea(ort.id, task.key, ortText, task.type, sourceText);
+            } catch (error) {
+              const message = error instanceof Error ? error.message : 'upsert failed';
+              setGlobalBulkReport((prev) =>
+                prev ? { ...prev, failed: [...prev.failed, { key: `${task.key}:${ort.id}`, error: message }] } : prev,
+              );
             }
-            setGlobalBulkReport((prev) =>
-              prev
-                ? { ...prev, processed: [...prev.processed, `${task.key} (Ortslagen-Template)`] }
-                : prev,
-            );
-          } else {
-            setGlobalBulkReport((prev) =>
-              prev
-                ? { ...prev, failed: [...prev.failed, { key: `${task.key}:template`, error: 'KI-Template leer' }] }
-                : prev,
-            );
+            done += 1;
+            setClassBulkState((prev) => prev ? { ...prev, done } : null);
           }
-          done += 1;
-          setGeneralBulkState((prev) => prev ? { ...prev, done } : null);
+          setGlobalBulkReport((prev) => prev ? { ...prev, processed: [...prev.processed, `${task.key} (Ortslagen)`] } : prev);
         }
       }
     } finally {
       setRewritingKey(null);
-      setGeneralBulkState(null);
+      setClassBulkState(null);
     }
   };
 
   const getRawTextFromJSON = (key: string, preferredGroup?: string | null) => {
+    if (isOrtslage && !isMarketing && isOrtslageMarketExpertHeadingKey(key)) {
+      // Ortslagen sollen diese Überschriften nur bei expliziter Partner-Eingabe führen.
+      // Ohne Override bleibt das Feld leer und das Frontend nutzt den Fallback.
+      return '';
+    }
     if (!baseTexts?.text) return '';
     const fallbackText = standardTexts?.text ?? {};
     const allowStandardFallback = !isAdvisorOrBrokerKey(key);
@@ -988,121 +1173,150 @@ export default function TextEditorForm({
   const activeSections = allowedSectionSet
     ? sections.filter((section) => allowedSectionSet.has(section.key))
     : sections;
-  const activeTabGeneralCount = activeTabConfig?.sections.filter(
-    (section) => section.type === 'general' && allowedGeneralKeys.has(section.key),
-  ).length ?? 0;
-  const isBulkRewriting = Boolean(generalBulkState);
-  const showGeneralBulkActions = tableName === 'report_texts' && activeTabGeneralCount > 0 && !lockedToMandatory;
-  const canRunKreisOrtslagen = showGeneralBulkActions && !isOrtslage;
+  const isBulkRewriting = Boolean(classBulkState);
+  const showGlobalClassActions = !isMarketing && !lockedToMandatory;
 
   return (
     <div style={{ width: '100%' }}>
-      {/* TABS */}
-      <div style={tabContainerStyle}>
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={tabButtonStyle(activeTab === tab.id)}
-          >
-            {isIconPath(tab.icon) ? (
-              <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
-            ) : (
-              <span style={tabIconEmojiStyle}>{tab.icon}</span>
-            )}
-            <span style={tabLabelStyle}>{tab.label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* CONTENT AREA */}
-      <div style={contentWrapperStyle}>
-        {showGeneralBulkActions ? (
-          <div>
-            <div style={bulkActionBarStyle}>
-              <button
-                type="button"
-                onClick={() => runBulkGeneralAi('tab')}
-                disabled={isBulkRewriting}
-                style={bulkActionButtonStyle(isBulkRewriting)}
+      {showGlobalClassActions ? (
+        <div style={globalHeaderPanelStyle}>
+          <div style={globalHeaderTopStyle}>
+            <label style={topControlFieldStyle}>
+              KI-Modell
+              <select
+                value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
+                onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                style={selectControlStyle}
+                aria-label="KI-Modell auswählen"
+                disabled={llmIntegrations.length === 0}
               >
-                {generalBulkState?.scope === 'tab'
-                  ? `KI optimiert GENERAL (${generalBulkState.done}/${generalBulkState.total})`
-                  : `KI optimiert GENERAL im Themenblock (${activeTabGeneralCount})`}
-              </button>
-              <button
-                type="button"
-                onClick={() => runBulkGeneralAi('kreis_ortslagen')}
-                disabled={isBulkRewriting || !canRunKreisOrtslagen}
-                style={bulkActionSecondaryButtonStyle(isBulkRewriting || !canRunKreisOrtslagen)}
-              >
-                {generalBulkState?.scope === 'kreis_ortslagen'
-                  ? `GLOBAL Kreis + Ortslagen (${generalBulkState.done}/${generalBulkState.total})`
-                  : 'GLOBAL Kreis + Ortslagen (GENERAL)'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowGlobalPrompts((prev) => !prev)}
-                disabled={isBulkRewriting}
-                style={bulkActionSecondaryButtonStyle(isBulkRewriting)}
-              >
-                {showGlobalPrompts ? 'Global-Prompts ausblenden' : 'Global-Prompts anzeigen'}
-              </button>
-            </div>
-            {showGlobalPrompts ? (
-              <div style={globalPromptPanelStyle}>
-                <label style={promptInputLabelStyle}>
-                  Prompt: GENERAL im Themenblock
-                  <textarea
-                    value={tabGeneralPrompt}
-                    onChange={(e) => setTabGeneralPrompt(e.target.value)}
-                    style={promptInputStyle}
-                    placeholder="Prompt für GENERAL im Themenblock"
-                  />
-                </label>
-                <label style={promptInputLabelStyle}>
-                  Prompt: GLOBAL Kreistext
-                  <textarea
-                    value={globalKreisPrompt}
-                    onChange={(e) => setGlobalKreisPrompt(e.target.value)}
-                    style={promptInputStyle}
-                    placeholder="Prompt für Kreistext"
-                  />
-                </label>
-                <label style={promptInputLabelStyle}>
-                  Prompt: GLOBAL Ortslagen-Template
-                  <textarea
-                    value={globalOrtslagenPrompt}
-                    onChange={(e) => setGlobalOrtslagenPrompt(e.target.value)}
-                    style={promptInputStyle}
-                    placeholder="Prompt für Ortslagen-Template"
-                  />
-                </label>
-              </div>
-            ) : null}
-            {globalBulkReport ? (
-              <div style={globalReportStyle}>
-                <div style={globalReportTitleStyle}>Laufbericht</div>
-                <div style={globalReportRowStyle}>
-                  <strong>Verarbeitet:</strong> {globalBulkReport.processed.length}
-                </div>
-                <div style={globalReportRowStyle}>
-                  <strong>Übersprungen:</strong> {globalBulkReport.skipped.length}
-                </div>
-                <div style={globalReportRowStyle}>
-                  <strong>Fehler:</strong> {globalBulkReport.failed.length}
-                </div>
-                {globalBulkReport.failed.length > 0 ? (
-                  <div style={globalReportErrorListStyle}>
-                    {globalBulkReport.failed.slice(0, 8).map((item) => (
-                      <div key={`${item.key}:${item.error}`}>- {item.key}: {item.error}</div>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
+                {llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+                {llmIntegrations.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {`${formatProviderLabel(item.provider)} · ${item.model}${item.source === 'global' ? ' (Global)' : ''}`}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-        ) : null}
+
+          <div style={globalIntroStyle}>
+            <h3 style={globalIntroTitleStyle}>Globale Textoptimierung nach Texttyp</h3>
+            <p style={globalIntroTextStyle}>
+              Diese Boxen helfen dir, viele Texte auf einmal zu verbessern. Wähle den Texttyp, passe bei Bedarf den
+              Standardprompt an und starte dann die KI-Optimierung für diesen Typ.
+            </p>
+          </div>
+
+          <div style={classCardGridStyle}>
+            {GLOBAL_CLASS_ORDER.map((classKey) => {
+              const meta = GLOBAL_CLASS_META[classKey];
+              const scope = globalScopeByClass[classKey];
+              const classBadgeStyle = displayTextBadgeStyle(classKey);
+              const outlineColor = String(classBadgeStyle.border ?? '1px solid #cbd5e1');
+              const bgColor = String(classBadgeStyle.background ?? '#fff');
+              const textColor = String(classBadgeStyle.color ?? '#0f172a');
+              const buttonStyle = globalActionButtonStyle(outlineColor, bgColor, textColor, isBulkRewriting);
+              const isRunningThisCard = classBulkState?.classKey === classKey;
+              return (
+                <div key={classKey} style={globalClassCardStyle(outlineColor, bgColor)}>
+                  <div style={globalClassHeadStyle}>
+                    <span style={displayTextBadgeStyle(classKey)}>{meta.title}</span>
+                    <select
+                      value={scope}
+                      onChange={(e) =>
+                        setGlobalScopeByClass((prev) => ({
+                          ...prev,
+                          [classKey]: e.target.value as BulkScope,
+                        }))
+                      }
+                      style={selectControlStyle}
+                      disabled={isBulkRewriting || isOrtslage}
+                    >
+                      <option value="kreis">Nur Kreis</option>
+                      <option value="kreis_ortslagen" disabled={isOrtslage}>Kreis + Ortslagen</option>
+                    </select>
+                  </div>
+                  <p style={globalClassTextStyle}>{meta.description}</p>
+                  <p style={globalClassCycleStyle}>{meta.cycle}</p>
+                  <label style={globalPromptLabelStyle}>
+                    Standardprompt (anpassbar)
+                    <textarea
+                      value={globalPrompts[classKey]}
+                      onChange={(e) =>
+                        setGlobalPrompts((prev) => ({
+                          ...prev,
+                          [classKey]: e.target.value,
+                        }))
+                      }
+                      style={globalPromptTextareaStyle}
+                      placeholder={meta.defaultPrompt}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => runBulkByTextClass(classKey)}
+                    disabled={isBulkRewriting}
+                    style={buttonStyle}
+                  >
+                    {isRunningThisCard
+                      ? `${meta.title} wird optimiert (${classBulkState?.done ?? 0}/${classBulkState?.total ?? 0})`
+                      : `Alle ${meta.title} Texte KI-optimieren`}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {globalBulkReport ? (
+            <div style={globalReportStyle}>
+              <div style={globalReportTitleStyle}>Laufbericht</div>
+              <div style={globalReportRowStyle}>
+                <strong>Verarbeitet:</strong> {globalBulkReport.processed.length}
+              </div>
+              <div style={globalReportRowStyle}>
+                <strong>Übersprungen:</strong> {globalBulkReport.skipped.length}
+              </div>
+              <div style={globalReportRowStyle}>
+                <strong>Fehler:</strong> {globalBulkReport.failed.length}
+              </div>
+              {globalBulkReport.failed.length > 0 ? (
+                <div style={globalReportErrorListStyle}>
+                  {globalBulkReport.failed.slice(0, 8).map((item) => (
+                    <div key={`${item.key}:${item.error}`}>- {item.key}: {item.error}</div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div style={!isMarketing ? sectionEditorCardStyle : undefined}>
+        {/* TABS */}
+        <div style={sectionTabsIntroStyle}>
+          <h3 style={sectionTabsIntroTitleStyle}>Sektionen/Themen bearbeiten</h3>
+          <p style={sectionTabsIntroTextStyle}>Wähle einen Bereich aus und bearbeite die zugehörigen Inhalte.</p>
+        </div>
+        <div style={tabContainerStyle}>
+          {visibleTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={tabButtonStyle(activeTab === tab.id)}
+            >
+              {isIconPath(tab.icon) ? (
+                <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
+              ) : (
+                <span style={tabIconEmojiStyle}>{tab.icon}</span>
+              )}
+              <span style={tabLabelStyle}>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* CONTENT AREA */}
+        <div style={contentWrapperStyle}>
         {activeSections.map((section) => {
           const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
           const mediaKey = MEDIA_BY_SECTION_KEY[section.key];
@@ -1119,13 +1333,9 @@ export default function TextEditorForm({
             dbEntry={dbTexts.find(t => t.section_key === section.key)}
             areaName={config?.areas?.name || config.area_id}
             onSave={saveText}
+            onResetToSystem={resetTextToSystem}
             onAiRewrite={handleAiRewrite}
-            llmOptions={llmIntegrations.map((item) => ({
-              id: item.id,
-              label: `${formatProviderLabel(item.provider)} · ${item.model}`,
-            }))}
-            selectedLlmIntegrationId={selectedLlmIntegrationId}
-            onSelectLlmIntegration={setSelectedLlmIntegrationId}
+            tableName={tableName as HintTable}
             enableApproval={enableApproval}
             isRewriting={rewritingKey === section.key}
             isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
@@ -1170,20 +1380,48 @@ export default function TextEditorForm({
             </div>
           </div>
         ) : null}
+        </div>
+
+        {enableApproval ? (
+          <div style={approvalFooterStyle}>
+            <button
+              type="button"
+              onClick={handleSaveAndApprove}
+              style={approveAllButtonStyle(!publishing && hasPublishableChanges)}
+              disabled={publishing || !hasPublishableChanges}
+            >
+              {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
+            </button>
+            <span style={approvalHintStyle}>
+              Speichert den aktuellen Stand, setzt ihn auf „freigegeben“ und startet die Übersetzungen für aktive Sprachen.
+            </span>
+          </div>
+        ) : null}
       </div>
 
-      {enableApproval ? (
-        <div style={approvalFooterStyle}>
-          <button type="button" onClick={approveAllTexts} style={approveAllButtonStyle}>
-            Texte freigeben
-          </button>
-          <span style={approvalHintStyle}>
-            Freigabe setzt alle geänderten Textblöcke dieser Region auf „approved“.
-          </span>
+      {saving && <div style={saveIndicatorStyle}>Speichere Änderungen...</div>}
+      {publishModalOpen ? (
+        <div style={publishOverlayStyle}>
+          <div style={publishModalStyle}>
+            <h3 style={publishTitleStyle}>Speichern & Freigeben läuft</h3>
+            <p style={publishTextStyle}>{publishStatus}</p>
+            <p style={publishProgressStyle}>
+              Fortschritt: {publishDone}/{publishTotal}
+            </p>
+            {publishError ? <p style={publishErrorStyle}>{publishError}</p> : null}
+            <div style={publishActionsStyle}>
+              <button
+                type="button"
+                style={publishCloseButtonStyle}
+                onClick={() => setPublishModalOpen(false)}
+                disabled={publishing}
+              >
+                {publishing ? 'Bitte warten …' : 'Schließen'}
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
-
-      {saving && <div style={saveIndicatorStyle}>Speichere Änderungen...</div>}
     </div>
   );
 }
@@ -1258,6 +1496,31 @@ function resolveGroupForTab(tabId: string | undefined): string | null {
   return map[tabId] ?? null;
 }
 
+function isOrtslageMarketExpertHeadingKey(sectionKey: string): boolean {
+  const key = String(sectionKey ?? '').trim().toLowerCase();
+  if (!key.startsWith('ueberschrift_')) return false;
+  if (key.startsWith('ueberschrift_berater_') || key.startsWith('ueberschrift_makler_')) return false;
+  return true;
+}
+
+function FieldInfoHint({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span
+      style={fieldInfoWrapStyle}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
+      tabIndex={0}
+      aria-label={text}
+    >
+      <span style={fieldInfoIconStyle}>i</span>
+      {open ? <span style={fieldInfoTooltipStyle}>{text}</span> : null}
+    </span>
+  );
+}
+
 type TextEditorFieldProps = {
   label: string;
   sectionKey: string;
@@ -1267,10 +1530,9 @@ type TextEditorFieldProps = {
   dbEntry?: TextEntry;
   areaName: string;
   onSave: (key: string, content: string, type: string, sourceGroup?: string | null) => void;
+  onResetToSystem: (key: string) => Promise<void>;
   onAiRewrite: (key: string, currentText: string, type: string, label: string, customPrompt?: string) => void;
-  llmOptions?: Array<{ id: string; label: string }>;
-  selectedLlmIntegrationId?: string;
-  onSelectLlmIntegration?: (integrationId: string) => void;
+  tableName: HintTable;
   enableApproval: boolean;
   isRewriting: boolean;
   isMandatory: boolean;
@@ -1297,10 +1559,9 @@ function TextEditorField({
     dbEntry,
     areaName,
     onSave,
+    onResetToSystem,
     onAiRewrite,
-    llmOptions = [],
-    selectedLlmIntegrationId = '',
-    onSelectLlmIntegration,
+    tableName,
     enableApproval,
     isRewriting,
     isMandatory,
@@ -1319,6 +1580,9 @@ function TextEditorField({
     const isSingleLine = SINGLE_LINE_TEXT_KEYS.has(sectionKey);
     const showAiTools = !isAdvisorOrBroker;
     const standardPrompt = getStandardPromptText(label, type, areaName);
+    const displayClass = resolveDisplayTextClass(sectionKey, type);
+    const fieldHint = resolveFieldHint({ tableName, type, sectionKey });
+    const showSourceState = !isIndividual && (type === 'general' || type === 'data_driven' || type === 'marketing');
     const status = dbEntry?.status ?? null;
     const showStatus = enableApproval && Boolean(dbEntry?.status);
     const hasOverride = Boolean(dbEntry?.optimized_content);
@@ -1327,12 +1591,15 @@ function TextEditorField({
         <div style={fieldCardStyle} id={`text-section-${sectionKey}`}>
             <div style={fieldHeaderGridStyle}>
               <div style={fieldHeaderStyle}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>{label}</h4>
-                  <span style={typeTagStyle(type)}>{type.replace('_', ' ')}</span>
+                  <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
+                  {fieldHint ? (
+                    <FieldInfoHint text={fieldHint} />
+                  ) : null}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {isMandatory ? (
+                  {isMandatory && displayClass === 'profile' ? (
                     <span style={statePillStyle(hasOverride)}>
                       {hasOverride ? '✓ Individuell angepasst' : 'Pflichtfeld offen'}
                     </span>
@@ -1347,16 +1614,36 @@ function TextEditorField({
                   ) : null}
                 </div>
               </div>
-              <div />
+              <div style={headerRightSlotStyle}>
+                {showSourceState ? (
+                  <div style={previewSourceRowStyle}>
+                    <span style={previewSourceLabelStyle}>
+                      Quelle:{' '}
+                      <span style={hasOverride ? sourceOverrideTextStyle : sourceSystemTextStyle}>
+                        {hasOverride ? 'Individuell angepasst' : 'System'}
+                      </span>
+                    </span>
+                    {hasOverride ? (
+                      <button
+                        type="button"
+                        style={previewResetButtonStyle}
+                        title="Systemtext nutzen"
+                        aria-label="Systemtext nutzen"
+                        onClick={async () => {
+                          await onResetToSystem(sectionKey);
+                          setLocalValue(null);
+                        }}
+                      >
+                        ↺
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
             
             <div style={editorGridStyle}>
                 <div style={textareaWrapperStyle}>
-                    {isDataDriven ? (
-                      <div style={dataDrivenHintStyle}>
-                        Datengetriebener Text. Manuelle Änderungen können den Kontext verfälschen.
-                      </div>
-                    ) : null}
                     {isSingleLine ? (
                       <input
                         type={resolveInputType(sectionKey)}
@@ -1395,27 +1682,8 @@ function TextEditorField({
                         {isDataDrivenUnlocked ? 'Bearbeitung sperren' : 'Manuelle Bearbeitung freischalten'}
                       </button>
                     ) : null}
-                    {isIndividual ? (
-                      <div style={individualHintStyle}>
-                        {`Hinweis: Bitte pflegen Sie hier „${label}“.`}
-                      </div>
-                    ) : null}
                     {showAiTools ? (
                       <div style={aiRewriteControlsStyle}>
-                        {llmOptions.length > 0 ? (
-                          <select
-                            value={selectedLlmIntegrationId || llmOptions[0].id}
-                            onChange={(e) => onSelectLlmIntegration?.(e.target.value)}
-                            style={aiModelSelectStyle}
-                            aria-label="KI-Modell auswählen"
-                          >
-                            {llmOptions.map((option) => (
-                              <option key={option.id} value={option.id}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : null}
                         <button
                             style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
                             onClick={() => onAiRewrite(sectionKey, currentText, type, label, customPrompt)}
@@ -1466,9 +1734,11 @@ function TextEditorField({
                     onUpload={mediaUpload.onUpload}
                   />
                 ) : !isIndividual ? (
-                  <div style={previewBoxStyle}>
+                  <div style={previewPaneStyle}>
+                    <div style={previewBoxStyle}>
                       <div style={previewHeaderStyle}>ORIGINAL BASIS-TEXT (SYSTEM)</div>
                       <div style={previewContentStyle}>{rawText || 'Keine System-Vorlage vorhanden.'}</div>
+                    </div>
                   </div>
                 ) : null}
             </div>
@@ -1546,6 +1816,28 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
 
 // --- STYLES (FULL WIDTH) ---
 
+const sectionTabsIntroStyle: React.CSSProperties = {
+  marginTop: '2px',
+  marginBottom: '8px',
+};
+const sectionTabsIntroTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: '14px',
+  fontWeight: 800,
+  color: '#0f172a',
+};
+const sectionTabsIntroTextStyle: React.CSSProperties = {
+  margin: '4px 0 0',
+  fontSize: '12px',
+  color: '#64748b',
+};
+const sectionEditorCardStyle: React.CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: 12,
+  backgroundColor: '#fff',
+  padding: '12px',
+  marginTop: '8px',
+};
 const tabContainerStyle = { display: 'flex', backgroundColor: '#fff', padding: '8px 8px 0 8px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #e2e8f0', gap: '6px', overflowX: 'auto' as const };
 const tabButtonStyle = (active: boolean) => ({
   display: 'flex',
@@ -1570,18 +1862,150 @@ const tabIconImageStyle: React.CSSProperties = { width: '30px', height: '30px', 
 const tabIconEmojiStyle: React.CSSProperties = { fontSize: '24px', lineHeight: 1, display: 'block' };
 const tabLabelStyle: React.CSSProperties = { fontSize: '14px', lineHeight: 1.2, textAlign: 'center' };
 const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px', borderRadius: '0 0 12px 12px', border: '1px solid #e2e8f0', borderTop: 'none' };
+const globalHeaderPanelStyle: React.CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: 12,
+  backgroundColor: '#fff',
+  padding: '18px',
+  display: 'grid',
+  gap: '16px',
+  marginBottom: '28px',
+};
+const globalHeaderTopStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(260px, 460px)',
+  gap: 10,
+  alignItems: 'end',
+};
+const topControlFieldStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 6,
+  fontSize: 12,
+  color: '#334155',
+  fontWeight: 600,
+};
+const globalIntroStyle: React.CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: 10,
+  backgroundColor: '#f8fafc',
+  padding: '12px 14px',
+};
+const globalIntroTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 14,
+  fontWeight: 800,
+  color: '#0f172a',
+};
+const globalIntroTextStyle: React.CSSProperties = {
+  margin: '6px 0 0',
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: '#475569',
+};
+const selectControlStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  borderRadius: 10,
+  padding: '9px 12px',
+  paddingRight: 30,
+  height: 42,
+  fontSize: 13,
+  lineHeight: 1.3,
+  color: '#0f172a',
+  backgroundColor: '#fff',
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  MozAppearance: 'none',
+  boxShadow: 'none',
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")",
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 10px center',
+  backgroundSize: '12px',
+};
+const classCardGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(280px, 1fr))',
+  gap: '12px',
+};
+const globalClassCardStyle = (borderColor: string, bgColor: string): React.CSSProperties => ({
+  border: borderColor,
+  borderRadius: 12,
+  background: bgColor,
+  padding: '12px',
+  display: 'grid',
+  gap: 10,
+});
+const globalClassHeadStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr minmax(160px, 210px)',
+  alignItems: 'center',
+  gap: 10,
+};
+const globalClassTextStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 12,
+  color: '#334155',
+  lineHeight: 1.45,
+};
+const globalClassCycleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 12,
+  color: '#475569',
+  lineHeight: 1.45,
+  fontWeight: 600,
+};
+const globalPromptLabelStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 6,
+  fontSize: 11,
+  color: '#334155',
+  fontWeight: 600,
+};
+const globalPromptTextareaStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 74,
+  padding: '10px 12px',
+  borderRadius: 10,
+  border: '1px solid #cbd5e1',
+  fontSize: 12,
+  lineHeight: 1.45,
+  fontFamily: 'inherit',
+  color: '#0f172a',
+  backgroundColor: '#fff',
+};
+const globalActionButtonStyle = (
+  borderColor: string,
+  bgColor: string,
+  textColor: string,
+  disabled: boolean,
+): React.CSSProperties => ({
+  borderRadius: 10,
+  border: borderColor,
+  backgroundColor: disabled ? '#f1f5f9' : bgColor,
+  color: disabled ? '#64748b' : textColor,
+  padding: '10px 12px',
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+});
 const fieldCardStyle = { marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #f1f5f9' };
 const fieldHeaderGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', marginBottom: '16px' };
 const fieldHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const editorGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px' };
-const textareaWrapperStyle = { display: 'flex', flexDirection: 'column' as const, gap: '12px' };
+const headerRightSlotStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  minHeight: 24,
+};
+const editorGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', alignItems: 'stretch' as const };
+const textareaWrapperStyle = { display: 'flex', flexDirection: 'column' as const, gap: '12px', height: '100%' };
 const inputStyle = (readOnly = false) => ({
   width: '100%',
   height: '44px',
   padding: '10px 12px',
   borderRadius: '10px',
-  border: readOnly ? '1px dashed #f59e0b' : '1px solid #cbd5e0',
-  backgroundColor: readOnly ? '#fffbeb' : '#fff',
+  border: readOnly ? '1px dashed #ef4444' : '1px solid #cbd5e0',
+  backgroundColor: readOnly ? '#fef2f2' : '#fff',
   fontSize: '14px',
   lineHeight: '1.4',
   fontFamily: 'inherit',
@@ -1592,33 +2016,74 @@ const textareaStyle = (readOnly = false) => ({
   minHeight: '200px',
   padding: '18px',
   borderRadius: '10px',
-  border: readOnly ? '1px dashed #f59e0b' : '1px solid #cbd5e0',
-  backgroundColor: readOnly ? '#fffbeb' : '#fff',
+  border: readOnly ? '1px dashed #ef4444' : '1px solid #cbd5e0',
+  backgroundColor: readOnly ? '#fef2f2' : '#fff',
   fontSize: '14.5px',
   lineHeight: '1.6',
   fontFamily: 'inherit',
   color: '#334155',
 });
-const previewBoxStyle = { backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', height: 'fit-content' };
+const previewPaneStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 8,
+  height: '100%',
+};
+const previewSourceRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 10,
+};
+const previewSourceLabelStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#64748b',
+  fontWeight: 600,
+};
+const sourceSystemTextStyle: React.CSSProperties = {
+  color: '#64748b',
+  fontWeight: 700,
+};
+const sourceOverrideTextStyle: React.CSSProperties = {
+  color: '#047857',
+  fontWeight: 700,
+};
+const previewResetButtonStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  borderRadius: '999px',
+  width: 24,
+  height: 24,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: '#fff',
+  color: '#334155',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+const previewBoxStyle: React.CSSProperties = {
+  backgroundColor: '#f8fafc',
+  borderRadius: '10px',
+  border: '1px solid #e2e8f0',
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+};
 const previewHeaderStyle = { padding: '10px 15px', fontSize: '9px', fontWeight: '800', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', letterSpacing: '0.05em' };
-const previewContentStyle = { padding: '15px', fontSize: '12.5px', color: '#64748b', lineHeight: '1.5', fontStyle: 'italic' };
+const previewContentStyle: React.CSSProperties = {
+  padding: '15px',
+  fontSize: '12.5px',
+  color: '#64748b',
+  lineHeight: '1.5',
+  fontStyle: 'italic',
+  minHeight: 200,
+  flex: 1,
+};
 const aiRewriteControlsStyle = {
   display: 'flex',
   alignItems: 'center',
   gap: '10px',
   flexWrap: 'wrap' as const,
-};
-const aiModelSelectStyle = {
-  minWidth: '240px',
-  maxWidth: '100%',
-  height: '40px',
-  padding: '8px 10px',
-  borderRadius: '8px',
-  border: '1px solid #dbeafe',
-  backgroundColor: '#ffffff',
-  color: '#1e293b',
-  fontSize: '12px',
-  fontWeight: 600,
 };
 const aiButtonStyle = { alignSelf: 'flex-start', padding: '10px 18px', backgroundColor: '#eff6ff', color: '#2563eb', border: '1px solid #dbeafe', borderRadius: '8px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' };
 const aiButtonLoadingStyle = { ...aiButtonStyle, opacity: 0.6, cursor: 'not-allowed', backgroundColor: '#f1f5f9' };
@@ -1628,29 +2093,6 @@ const promptLabelStyle = { fontSize: '10px', textTransform: 'uppercase' as const
 const promptContentStyle = { fontSize: '12px', color: '#475569', marginBottom: '10px', lineHeight: 1.5 };
 const promptInputLabelStyle = { display: 'flex', flexDirection: 'column' as const, gap: '6px', fontSize: '11px', fontWeight: '600', color: '#1e293b' };
 const promptInputStyle = { width: '100%', minHeight: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', lineHeight: '1.4', fontFamily: 'inherit' };
-const typeTagStyle = (type: string) => ({
-  fontSize: '9px',
-  padding: '2px 7px',
-  borderRadius: '4px',
-  backgroundColor:
-    type === 'individual'
-      ? '#fef3c7'
-      : type === 'data_driven'
-        ? '#dcfce7'
-        : type === 'marketing'
-          ? '#e0f2fe'
-          : '#f1f5f9',
-  color:
-    type === 'individual'
-      ? '#92400e'
-      : type === 'data_driven'
-        ? '#166534'
-        : type === 'marketing'
-          ? '#0369a1'
-          : '#64748b',
-  fontWeight: '700',
-  textTransform: 'uppercase' as const,
-});
 const statePillStyle = (completed: boolean): React.CSSProperties => ({
   fontSize: '10px',
   fontWeight: 700,
@@ -1661,9 +2103,9 @@ const statePillStyle = (completed: boolean): React.CSSProperties => ({
   color: completed ? '#166534' : '#991b1b',
 });
 const lockedBadgeStyle = {
-  color: '#92400e',
-  backgroundColor: '#fef3c7',
-  border: '1px solid #fde68a',
+  color: '#991b1b',
+  backgroundColor: '#fee2e2',
+  border: '1px solid #fecaca',
   fontSize: '10px',
   fontWeight: 700,
   borderRadius: '6px',
@@ -1678,73 +2120,85 @@ const statusBadgeStyle = (approved: boolean) => ({
   fontWeight: '700',
   textTransform: 'uppercase' as const,
 });
+const fieldInfoIconStyle: React.CSSProperties = {
+  width: 18,
+  height: 18,
+  borderRadius: '999px',
+  border: '1px solid #cbd5e1',
+  color: '#64748b',
+  backgroundColor: '#f8fafc',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 11,
+  fontWeight: 700,
+  cursor: 'help',
+  userSelect: 'none',
+};
+const fieldInfoWrapStyle: React.CSSProperties = {
+  position: 'relative',
+  display: 'inline-flex',
+  alignItems: 'center',
+  zIndex: 3,
+  outline: 'none',
+};
+const fieldInfoTooltipStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: 'calc(100% + 8px)',
+  left: 0,
+  minWidth: 240,
+  maxWidth: 360,
+  padding: '9px 10px',
+  borderRadius: 10,
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#ffffff',
+  color: '#334155',
+  fontSize: 12,
+  lineHeight: 1.4,
+  boxShadow: '0 10px 24px rgba(15, 23, 42, 0.16)',
+  whiteSpace: 'normal',
+};
 const approvalFooterStyle: React.CSSProperties = {
   marginTop: '24px',
   display: 'flex',
-  alignItems: 'center',
+  flexDirection: 'column',
+  alignItems: 'flex-end',
   gap: '12px',
 };
-const approveAllButtonStyle: React.CSSProperties = {
-  padding: '10px 14px',
+const approveAllButtonStyle = (active: boolean): React.CSSProperties => ({
+  width: '300px',
+  height: '54px',
   borderRadius: '10px',
-  border: 'none',
-  backgroundColor: '#0f172a',
-  color: '#fff',
+  border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
+  backgroundColor: active ? '#0f766e' : '#e2e8f0',
+  color: active ? '#fff' : '#64748b',
+  fontSize: '14px',
   fontWeight: 700,
-  cursor: 'pointer',
-};
+  cursor: active ? 'pointer' : 'not-allowed',
+  opacity: active ? 1 : 0.75,
+});
 const approvalHintStyle: React.CSSProperties = {
   fontSize: '12px',
   color: '#64748b',
-};
-const dataDrivenHintStyle = {
-  fontSize: '12px',
-  color: '#92400e',
-  backgroundColor: '#fffbeb',
-  border: '1px solid #fde68a',
-  borderRadius: '8px',
-  padding: '10px 12px',
-};
-const individualHintStyle = {
-  fontSize: '12px',
-  color: '#475569',
-  backgroundColor: '#f8fafc',
-  border: 'none',
-  borderRadius: '8px',
-  padding: '10px 12px',
+  textAlign: 'right',
 };
 const unlockButtonStyle = (unlocked: boolean) => ({
   alignSelf: 'flex-start',
   padding: '9px 14px',
   borderRadius: '8px',
-  border: unlocked ? '1px solid #e2e8f0' : '1px solid #fcd34d',
-  backgroundColor: unlocked ? '#f8fafc' : '#fef3c7',
-  color: unlocked ? '#334155' : '#92400e',
+  border: unlocked ? '1px solid #e2e8f0' : '1px solid #fca5a5',
+  backgroundColor: unlocked ? '#f8fafc' : '#fee2e2',
+  color: unlocked ? '#334155' : '#991b1b',
   fontSize: '12px',
   fontWeight: '600',
   cursor: 'pointer',
 });
-const bulkActionBarStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '10px',
-  marginBottom: '20px',
-  flexWrap: 'wrap',
-};
-const globalPromptPanelStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: '10px',
-  backgroundColor: '#f8fafc',
-  padding: '12px',
-  display: 'grid',
-  gap: '10px',
-  marginBottom: '20px',
-};
 const globalReportStyle: React.CSSProperties = {
   border: '1px solid #e2e8f0',
   borderRadius: '10px',
   backgroundColor: '#ffffff',
   padding: '10px 12px',
-  marginBottom: '20px',
+  marginTop: '4px',
 };
 const globalReportTitleStyle: React.CSSProperties = {
   fontSize: '12px',
@@ -1766,26 +2220,6 @@ const globalReportErrorListStyle: React.CSSProperties = {
   display: 'grid',
   gap: '3px',
 };
-const bulkActionButtonStyle = (disabled: boolean): React.CSSProperties => ({
-  borderRadius: '9px',
-  border: '1px solid #bfdbfe',
-  backgroundColor: disabled ? '#f1f5f9' : '#dbeafe',
-  color: '#1e40af',
-  padding: '10px 14px',
-  fontSize: '12px',
-  fontWeight: 700,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-});
-const bulkActionSecondaryButtonStyle = (disabled: boolean): React.CSSProperties => ({
-  borderRadius: '9px',
-  border: '1px solid #e2e8f0',
-  backgroundColor: disabled ? '#f8fafc' : '#fff',
-  color: '#334155',
-  padding: '10px 14px',
-  fontSize: '12px',
-  fontWeight: 700,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-});
 const mediaBottomWrapStyle: React.CSSProperties = {
   borderTop: '1px solid #e2e8f0',
   paddingTop: '14px',
@@ -1871,3 +2305,67 @@ const mandatoryMediaErrorStyle: React.CSSProperties = {
   color: '#b91c1c',
 };
 const saveIndicatorStyle: React.CSSProperties = { position: 'fixed', bottom: '30px', right: '30px', backgroundColor: '#0f172a', color: '#fff', padding: '12px 24px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)', zIndex: 100, fontSize: '13px' };
+
+const publishOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(15, 23, 42, 0.48)',
+  zIndex: 1200,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 20,
+};
+
+const publishModalStyle: React.CSSProperties = {
+  width: 'min(620px, 96vw)',
+  background: '#ffffff',
+  borderRadius: 14,
+  border: '1px solid #e2e8f0',
+  boxShadow: '0 24px 48px rgba(2, 6, 23, 0.22)',
+  padding: 18,
+  display: 'grid',
+  gap: 12,
+};
+
+const publishTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 18,
+  color: '#0f172a',
+};
+
+const publishTextStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 14,
+  color: '#334155',
+  lineHeight: 1.45,
+};
+
+const publishProgressStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 13,
+  color: '#0f172a',
+  fontWeight: 700,
+};
+
+const publishErrorStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 13,
+  color: '#b91c1c',
+};
+
+const publishActionsStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+};
+
+const publishCloseButtonStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  borderRadius: 8,
+  background: '#fff',
+  color: '#0f172a',
+  padding: '8px 12px',
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: 'pointer',
+};

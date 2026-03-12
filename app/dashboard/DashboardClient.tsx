@@ -11,12 +11,29 @@ import OffersManager from './OffersManager';
 import ReferencesManager from './ReferencesManager';
 import RequestsManager from './RequestsManager';
 import BlogManager from './BlogManager';
+import InternationalizationManager from './InternationalizationManager';
 import PartnerSettingsPanel, { type SettingsSection } from './PartnerSettingsPanel';
 import { INDIVIDUAL_MANDATORY_KEYS } from '@/lib/text-key-registry';
 import { MANDATORY_MEDIA_KEYS, getMandatoryMediaLabel, isMandatoryMediaKey } from '@/lib/mandatory-media';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
-type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'referenzen' | 'gesuche' | 'blog' | 'settings';
+type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'referenzen' | 'gesuche' | 'blog' | 'international' | 'settings';
+type WelcomeTool = {
+  key: MainTab;
+  title: string;
+  description: string;
+  icon: string;
+  comingSoon?: boolean;
+};
+
+type PartnerFeatureRow = {
+  key: string;
+  label: string;
+  enabled: boolean;
+  monthly_price_eur: number;
+  billing_unit?: string | null;
+  note?: string | null;
+};
 
 type PartnerArea = {
   id?: string;
@@ -53,9 +70,15 @@ type PersistedDashboardState = {
 const MANDATORY_TAB_IDS = ['berater', 'makler', 'marktueberblick'] as const;
 const DASHBOARD_UI_STATE_KEY = 'partner_dashboard_ui_state_v1';
 
+const FEATURE_TAB_CODES: Partial<Record<MainTab, string>> = {
+  immobilien: 'immobilien',
+  referenzen: 'referenzen',
+  gesuche: 'gesuche',
+};
+
 function isMainTab(value: unknown): value is MainTab {
   return typeof value === 'string'
-    && ['texts', 'factors', 'marketing', 'local_site', 'immobilien', 'referenzen', 'gesuche', 'blog', 'settings'].includes(value);
+    && ['texts', 'factors', 'marketing', 'local_site', 'immobilien', 'referenzen', 'gesuche', 'blog', 'international', 'settings'].includes(value);
 }
 
 function formatMandatoryLabel(key: string): string {
@@ -140,6 +163,7 @@ export default function DashboardClient() {
   const [submitReviewMessage, setSubmitReviewMessage] = useState<string | null>(null);
   const [submitReviewTone, setSubmitReviewTone] = useState<'info' | 'success' | 'error'>('info');
   const [submitReviewSuccessOpen, setSubmitReviewSuccessOpen] = useState(false);
+  const [partnerFeatures, setPartnerFeatures] = useState<PartnerFeatureRow[]>([]);
   const [mandatoryProgress, setMandatoryProgress] = useState<{ completed: number; total: number }>({
     completed: 0,
     total: INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length,
@@ -164,8 +188,8 @@ export default function DashboardClient() {
         };
       case 'factors':
         return {
-          title: 'Preisfaktoren',
-          description: 'Preisfaktoren der Region prüfen und bei Bedarf anpassen.',
+          title: 'Wertanpassungen',
+          description: 'Werte, Faktoren und Kennzahlen der Region prüfen und bei Bedarf anpassen.',
           isRegionBased: true,
         };
       case 'marketing':
@@ -186,6 +210,12 @@ export default function DashboardClient() {
           description: 'Blogbeiträge aus Marktüberblick-Texten generieren und veröffentlichen.',
           isRegionBased: true,
         };
+      case 'international':
+        return {
+          title: 'Internationalisierung',
+          description: 'Sprachen und Übersetzungsstand für Portal und lokale Website verwalten.',
+          isRegionBased: true,
+        };
       case 'gesuche':
         return {
           title: 'Gesuche',
@@ -201,7 +231,7 @@ export default function DashboardClient() {
       case 'settings':
         return {
           title: 'Einstellungen',
-          description: 'Konto, Partnerprofil und Anbindungen verwalten.',
+          description: 'Konto, Partnerprofil, Anbindungen und Kostenmonitor verwalten.',
           isRegionBased: false,
         };
       case 'immobilien':
@@ -222,7 +252,7 @@ export default function DashboardClient() {
         setLastLogin(user.last_sign_in_at ?? null);
       });
 
-      const [{ data }, profileFirstName] = await Promise.all([
+      const [{ data }, profileFirstName, featuresPayload] = await Promise.all([
         supabase
           .from('partner_area_map')
           .select(`*, areas ( name, id, slug, parent_slug, bundesland_slug )`)
@@ -242,9 +272,20 @@ export default function DashboardClient() {
             return null;
           }
         })(),
+        (async () => {
+          try {
+            const res = await fetch('/api/partner/billing/features', { method: 'GET', cache: 'no-store' });
+            if (!res.ok) return [] as PartnerFeatureRow[];
+            const payload = await res.json().catch(() => null) as { rows?: PartnerFeatureRow[] } | null;
+            return Array.isArray(payload?.rows) ? payload.rows : [];
+          } catch {
+            return [] as PartnerFeatureRow[];
+          }
+        })(),
       ]);
       queueMicrotask(() => {
         setPartnerFirstName(profileFirstName);
+        setPartnerFeatures(featuresPayload);
       });
 
       let mergedConfigs: PartnerAreaConfig[] = (data ?? []) as PartnerAreaConfig[];
@@ -330,6 +371,51 @@ export default function DashboardClient() {
     loadData();
   }, [supabase]);
 
+  const featuresByCode = useMemo(() => {
+    const map = new Map<string, PartnerFeatureRow>();
+    for (const row of partnerFeatures) {
+      const code = String(row.key ?? '').trim().toLowerCase();
+      if (code) map.set(code, row);
+    }
+    return map;
+  }, [partnerFeatures]);
+
+  const hasInternationalFeature = useMemo(
+    () => partnerFeatures.some((row) => String(row.key ?? '').trim().toLowerCase().startsWith('international')),
+    [partnerFeatures],
+  );
+
+  const hasInternationalEnabled = useMemo(
+    () => partnerFeatures.some((row) => {
+      const code = String(row.key ?? '').trim().toLowerCase();
+      return code.startsWith('international') && row.enabled === true;
+    }),
+    [partnerFeatures],
+  );
+
+  const internationalLocales = useMemo(() => {
+    const locales = partnerFeatures
+      .map((row) => {
+        const code = String(row.key ?? '').trim().toLowerCase();
+        if (!code.startsWith('international')) return null;
+        const suffix = code.replace(/^international[_-]?/, '').trim();
+        if (!suffix) return 'en';
+        return suffix;
+      })
+      .filter((v): v is string => typeof v === 'string' && /^[a-z]{2}(-[a-z]{2})?$/.test(v));
+    const unique = Array.from(new Set(locales));
+    return unique.length > 0 ? unique : ['en'];
+  }, [partnerFeatures]);
+
+  const isTabEnabled = (tab: MainTab): boolean => {
+    if (tab === 'international') return hasInternationalFeature ? hasInternationalEnabled : false;
+    const featureCode = FEATURE_TAB_CODES[tab];
+    if (!featureCode) return true;
+    const row = featuresByCode.get(featureCode);
+    if (!row) return true;
+    return row.enabled === true;
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/partner/login');
@@ -337,6 +423,7 @@ export default function DashboardClient() {
 
   const handleToolSelect = (tab: MainTab) => {
     if (!canUseTool()) return;
+    if (!isTabEnabled(tab)) return;
     setActiveMainTab(tab);
     setShowWelcome(false);
     if (tab === 'texts') {
@@ -531,6 +618,12 @@ export default function DashboardClient() {
   const welcomeActivationStatusKey = resolveActivationStatusKey(effectiveWelcomeActivationConfig);
   const isWelcomeAwaitingAdminApproval = showActivationPanelForWelcomeSelected
     && (welcomeActivationStatusKey === 'ready_for_review' || welcomeActivationStatusKey === 'in_review');
+
+  useEffect(() => {
+    if (activeMainTab === 'settings') return;
+    if (isTabEnabled(activeMainTab)) return;
+    setActiveMainTab('factors');
+  }, [activeMainTab, partnerFeatures]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!hasActiveAreas) return;
@@ -737,6 +830,27 @@ export default function DashboardClient() {
         </div>
         <div style={dashboardStatusStyle}>
           <div>{lastLogin ? `Letzter Login: ${new Date(lastLogin).toLocaleString('de-DE')}` : 'Letzter Login: –'}</div>
+          <button
+            type="button"
+            style={headerActionButtonStyle}
+            onClick={() => {
+              setShowWelcome(true);
+              setShowSettingsMenu(false);
+            }}
+            title="Startseite"
+          >
+            <span aria-hidden>⌂</span>
+            <span>Home</span>
+          </button>
+          <button
+            type="button"
+            style={headerActionButtonStyle}
+            onClick={handleLogout}
+            title="Abmelden"
+          >
+            <span aria-hidden>⎋</span>
+            <span>Ausloggen</span>
+          </button>
           <div className="navbar navbar-light p-0 m-0" style={menuWrapStyle}>
             <button
               className="navbar-toggler"
@@ -758,6 +872,9 @@ export default function DashboardClient() {
                 <button style={menuItemStyle} onClick={() => handleSettingsSelect('integrationen')}>
                   Anbindungen
                 </button>
+                <button style={menuItemStyle} onClick={() => handleSettingsSelect('kostenmonitor')}>
+                  Monitor
+                </button>
               </div>
             ) : null}
           </div>
@@ -771,19 +888,9 @@ export default function DashboardClient() {
       <aside style={utilityBarStyle}>
         <div style={toolIconsGroupStyle}>
           <button
-            onClick={() => {
-              setShowWelcome(true);
-              setShowSettingsMenu(false);
-            }}
-            style={toolIconButtonStyle(false)}
-            title="Startseite"
-          >
-            ⌂
-          </button>
-          <button
             onClick={() => handleToolSelect('factors')}
             style={toolIconButtonStyle(activeMainTab === 'factors')}
-            title="Preisfaktoren"
+            title="Wertanpassungen"
           >
             📊
           </button>
@@ -795,18 +902,29 @@ export default function DashboardClient() {
             ✍️
           </button>
           <button
-            onClick={() => handleToolSelect('marketing')}
-            style={toolIconButtonStyle(activeMainTab === 'marketing')}
-            title="SEO & GEO"
-          >
-            📈
-          </button>
-          <button
             onClick={() => handleToolSelect('local_site')}
             style={toolIconButtonStyle(activeMainTab === 'local_site')}
             title="Lokale Website"
           >
             🧭
+          </button>
+          {hasInternationalFeature ? (
+            <button
+              onClick={() => handleToolSelect('international')}
+              style={toolIconButtonStyle(activeMainTab === 'international', !isTabEnabled('international'))}
+              disabled={!isTabEnabled('international')}
+              title={isTabEnabled('international') ? 'Internationalisierung' : 'Internationalisierung (nicht freigeschaltet)'}
+            >
+              🌐
+            </button>
+          ) : null}
+          <div style={toolGroupDividerStyle} />
+          <button
+            onClick={() => handleToolSelect('marketing')}
+            style={toolIconButtonStyle(activeMainTab === 'marketing')}
+            title="SEO & GEO"
+          >
+            📈
           </button>
           <button
             onClick={() => handleToolSelect('blog')}
@@ -816,39 +934,79 @@ export default function DashboardClient() {
             📝
           </button>
           <button
+            style={toolIconButtonStyle(false, true)}
+            disabled
+            title="Social Media (Bald verfügbar)"
+          >
+            📢
+          </button>
+          <button
+            style={toolIconButtonStyle(false, true)}
+            disabled
+            title="E-Mail (Bald verfügbar)"
+          >
+            ✉️
+          </button>
+          <div style={toolGroupDividerStyle} />
+          <button
             onClick={() => handleToolSelect('immobilien')}
-            style={toolIconButtonStyle(activeMainTab === 'immobilien')}
-            title="Immobilien"
+            style={toolIconButtonStyle(activeMainTab === 'immobilien', !isTabEnabled('immobilien'))}
+            disabled={!isTabEnabled('immobilien')}
+            title={isTabEnabled('immobilien') ? 'Immobilien' : 'Immobilien (nicht freigeschaltet)'}
           >
             🏠
           </button>
           <button
             onClick={() => handleToolSelect('referenzen')}
-            style={toolIconButtonStyle(activeMainTab === 'referenzen')}
-            title="Referenzen"
+            style={toolIconButtonStyle(activeMainTab === 'referenzen', !isTabEnabled('referenzen'))}
+            disabled={!isTabEnabled('referenzen')}
+            title={isTabEnabled('referenzen') ? 'Referenzen' : 'Referenzen (nicht freigeschaltet)'}
           >
             🗂️
           </button>
           <button
             onClick={() => handleToolSelect('gesuche')}
-            style={toolIconButtonStyle(activeMainTab === 'gesuche')}
-            title="Gesuche"
+            style={toolIconButtonStyle(activeMainTab === 'gesuche', !isTabEnabled('gesuche'))}
+            disabled={!isTabEnabled('gesuche')}
+            title={isTabEnabled('gesuche') ? 'Gesuche' : 'Gesuche (nicht freigeschaltet)'}
           >
             🔎
           </button>
           <button
             style={toolIconButtonStyle(false, true)}
             disabled
-            title="Werbung (In Kürze)"
+            title="Wizards (Bald verfügbar)"
           >
-            📢
+            🪄
           </button>
           <button
-            onClick={handleLogout}
-            style={logoutButtonStyle}
-            title="Abmelden"
+            style={toolIconButtonStyle(false, true)}
+            disabled
+            title="Prognosemonitor (Bald verfügbar)"
           >
-            <span aria-hidden>⎋</span>
+            🔮
+          </button>
+          <div style={toolGroupDividerStyle} />
+          <button
+            style={toolIconButtonStyle(false, true)}
+            disabled
+            title="Partnerwerbung (Bald verfügbar)"
+          >
+            📣
+          </button>
+          <button
+            style={toolIconButtonStyle(false, true)}
+            disabled
+            title="Partner-Immobilien (Bald verfügbar)"
+          >
+            🏠
+          </button>
+          <button
+            style={toolIconButtonStyle(false, true)}
+            disabled
+            title="Partner-Gesuche (Bald verfügbar)"
+          >
+            🔎
           </button>
         </div>
       </aside>
@@ -926,7 +1084,7 @@ export default function DashboardClient() {
                 {partnerFirstName ? `Willkommen ${partnerFirstName}` : 'Willkommen'}
               </h1>
               <p style={welcomeTextStyle}>
-                Hier verwaltest du Preisfaktoren, Texte und Marketing-Inhalte für deine Regionen.
+                Hier verwaltest du Wertanpassungen, Texte und Marketing-Inhalte für deine Regionen.
                 Wähl einfach einen Bereich aus und leg los.
               </p>
             </div>
@@ -1050,18 +1208,28 @@ export default function DashboardClient() {
                 ) : null}
               </div>
             ) : null}
-            <div style={welcomeGridStyle}>
-              {welcomeTools.map(tool => (
-                <button
-                  key={tool.key}
-                  onClick={() => handleToolSelect(tool.key)}
-                  disabled={!canUseTool()}
-                  style={welcomeCardStyle(!canUseTool())}
-                >
-                  <div style={welcomeCardIconStyle}>{tool.icon}</div>
-                  <div style={welcomeCardTitleStyle}>{tool.title}</div>
-                  <div style={welcomeCardTextStyle}>{tool.description}</div>
-                </button>
+            <div style={welcomeGroupsStyle}>
+              {welcomeToolGroups(hasInternationalFeature).map((group) => (
+                <section key={group.title} style={welcomeGroupCardStyle}>
+                  <h3 style={welcomeGroupTitleStyle}>{group.title}</h3>
+                  <div style={welcomeGridStyle}>
+                    {group.tools.map((tool) => (
+                      <button
+                        key={`${tool.key}:${tool.title}`}
+                        onClick={() => handleToolSelect(tool.key)}
+                        disabled={Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key)}
+                        style={welcomeCardStyle(Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key))}
+                      >
+                        <div style={welcomeCardIconStyle}>{tool.icon}</div>
+                        <div style={welcomeCardTitleStyle}>{tool.title}</div>
+                        <div style={welcomeCardTextStyle}>
+                          {tool.description}
+                          {tool.comingSoon ? ' (bald verfügbar)' : (!isTabEnabled(tool.key) ? ' (derzeit nicht freigeschaltet)' : '')}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           </div>
@@ -1256,6 +1424,7 @@ export default function DashboardClient() {
                 <TextEditorForm
                   key={`t-${effectiveSelectedConfig.id}`}
                   config={effectiveSelectedConfig}
+                  enableApproval
                   initialTabId={textFocusTarget?.tabId}
                   focusSectionKey={textFocusTarget?.sectionKey}
                   lockedToMandatory={Boolean(!effectiveSelectedConfig?.is_active)}
@@ -1286,6 +1455,11 @@ export default function DashboardClient() {
                 onNavigateToTexts={(sectionKey) => {
                   openTextEditorAt(sectionKey);
                 }}
+              />
+            ) : activeMainTab === 'international' ? (
+              <InternationalizationManager
+                config={effectiveSelectedConfig}
+                availableLocales={internationalLocales}
               />
             ) : activeMainTab === 'immobilien' ? (
               <OffersManager />
@@ -1337,29 +1511,44 @@ export default function DashboardClient() {
 
 const utilityBarStyle: React.CSSProperties = {
   width: '80px',
+  minWidth: '80px',
   backgroundColor: 'rgb(72, 107, 122)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '20px 0px',
+  padding: '12px 0px',
+  overflow: 'hidden',
   zIndex: 10
 };
 
 const toolIconsGroupStyle = {
   display: 'flex',
   flexDirection: 'column' as const,
-  gap: '16px',
+  alignItems: 'center',
+  gap: '8px',
   height: '100%',
+  width: '100%',
+  overflowY: 'auto' as const,
+  padding: '4px 0 10px',
+};
+
+const toolGroupDividerStyle: React.CSSProperties = {
+  width: '40px',
+  height: '2px',
+  background: '#cbd5e1',
+  opacity: 0.9,
+  borderRadius: '2px',
+  margin: '4px auto',
 };
 
 const toolIconButtonStyle = (active: boolean, disabled = false) => ({
-  width: '48px',
-  height: '48px',
-  borderRadius: '12px',
+  width: '44px',
+  height: '44px',
+  borderRadius: '10px',
   border: 'none',
   backgroundColor: active ? '#e2e8f0' : '#fff',
   boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-  fontSize: '20px',
+  fontSize: '18px',
   cursor: disabled ? 'not-allowed' : 'pointer',
   opacity: disabled ? 0.3 : 1,
   transition: 'all 0.2s',
@@ -1367,21 +1556,6 @@ const toolIconButtonStyle = (active: boolean, disabled = false) => ({
   alignItems: 'center',
   justifyContent: 'center'
 });
-
-const logoutButtonStyle: React.CSSProperties = {
-  marginTop: 'auto',
-  width: '48px',
-  height: '48px',
-  borderRadius: '12px',
-  border: '1px solid #e2e8f0',
-  backgroundColor: '#fff',
-  color: '#0f172a',
-  fontSize: '18px',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-};
 
 const dashboardHeaderStyle: React.CSSProperties = {
   minHeight: '72px',
@@ -1403,6 +1577,20 @@ const dashboardStatusStyle: React.CSSProperties = {
   gap: '10px',
   fontSize: '12px',
   color: '#94a3b8'
+};
+
+const headerActionButtonStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  borderRadius: '8px',
+  background: '#ffffff',
+  color: '#0f172a',
+  padding: '6px 10px',
+  fontSize: '12px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
 };
 
 const dashboardBurgerButtonStyle: React.CSSProperties = {
@@ -1781,56 +1969,137 @@ const successButtonStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
-const welcomeTools: Array<{ key: MainTab; title: string; description: string; icon: string }> = [
-  {
-    key: 'factors',
-    title: 'Preisfaktoren',
-    description: 'Preisfaktoren der Region prüfen und bei Bedarf anpassen.',
-    icon: '📊',
-  },
-  {
-    key: 'texts',
-    title: 'Berichte & Texte',
-    description: 'Texte und Berichte für die ausgewählte Region verwalten und optimieren.',
-    icon: '✍️',
-  },
-  {
-    key: 'marketing',
-    title: 'SEO & GEO',
-    description: 'SEO- und GEO-Inhalte der Region pflegen und ausrichten.',
-    icon: '📈',
-  },
-  {
-    key: 'local_site',
-    title: 'Lokale Website',
-    description: 'Regionale Inhalte für die lokale Website bearbeiten.',
-    icon: '🧭',
-  },
-  {
-    key: 'blog',
-    title: 'Blog',
-    description: 'Blogbeiträge aus Marktüberblick-Texten generieren.',
-    icon: '📝',
-  },
-  {
-    key: 'immobilien',
-    title: 'Immobilien',
-    description: 'SEO-Texte und Exposé-Inhalte pro Objekt individuell optimieren.',
-    icon: '🏠',
-  },
-  {
-    key: 'referenzen',
-    title: 'Referenzen',
-    description: 'Referenzobjekte aus dem CRM prüfen und individuell anpassen.',
-    icon: '🗂️',
-  },
-  {
-    key: 'gesuche',
-    title: 'Gesuche',
-    description: 'Gesuche aus dem CRM prüfen und individuell anpassen.',
-    icon: '🔎',
-  },
-];
+function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: string; tools: WelcomeTool[] }> {
+  const regionTools: WelcomeTool[] = [
+    {
+      key: 'factors',
+      title: 'Wertanpassungen',
+      description: 'Werte, Faktoren und Kennzahlen der Region prüfen und bei Bedarf anpassen.',
+      icon: '📊',
+    },
+    {
+      key: 'texts',
+      title: 'Berichte & Texte',
+      description: 'Texte und Berichte für die ausgewählte Region verwalten und optimieren.',
+      icon: '✍️',
+    },
+    {
+      key: 'local_site',
+      title: 'Lokale Website',
+      description: 'Regionale Inhalte für die lokale Website bearbeiten.',
+      icon: '🧭',
+    },
+  ];
+  if (hasInternationalFeature) {
+    regionTools.push({
+      key: 'international',
+      title: 'Internationalisierung',
+      description: 'Sprachvarianten für Portal und lokale Website steuern.',
+      icon: '🌐',
+    });
+  }
+
+  return [
+    {
+      title: 'Region & Inhalte',
+      tools: regionTools,
+    },
+    {
+      title: 'Marketing',
+      tools: [
+        {
+          key: 'marketing',
+          title: 'SEO & GEO',
+          description: 'SEO- und GEO-Inhalte der Region pflegen und ausrichten.',
+          icon: '📈',
+        },
+        {
+          key: 'blog',
+          title: 'Blog',
+          description: 'Blogbeiträge aus Marktüberblick-Texten generieren.',
+          icon: '📝',
+        },
+        {
+          key: 'blog',
+          title: 'Social Media',
+          description: 'Bereich wird als Zusatzfeature vorbereitet.',
+          icon: '📢',
+          comingSoon: true,
+        },
+        {
+          key: 'blog',
+          title: 'E-Mail',
+          description: 'Bereich wird als Zusatzfeature vorbereitet.',
+          icon: '✉️',
+          comingSoon: true,
+        },
+      ],
+    },
+    {
+      title: 'Vertrieb & Assets',
+      tools: [
+        {
+          key: 'immobilien',
+          title: 'Immobilien',
+          description: 'SEO-Texte und Exposé-Inhalte pro Objekt individuell optimieren.',
+          icon: '🏠',
+        },
+        {
+          key: 'referenzen',
+          title: 'Referenzen',
+          description: 'Referenzobjekte aus dem CRM prüfen und individuell anpassen.',
+          icon: '🗂️',
+        },
+        {
+          key: 'gesuche',
+          title: 'Gesuche',
+          description: 'Gesuche aus dem CRM prüfen und individuell anpassen.',
+          icon: '🔎',
+        },
+        {
+          key: 'blog',
+          title: 'Wizards',
+          description: 'Bereich wird als Zusatzfeature vorbereitet.',
+          icon: '🪄',
+          comingSoon: true,
+        },
+        {
+          key: 'blog',
+          title: 'Prognosemonitor',
+          description: 'Bereich wird als Zusatzfeature vorbereitet.',
+          icon: '🔮',
+          comingSoon: true,
+        },
+      ],
+    },
+    {
+      title: 'Regionale Partner',
+      tools: [
+        {
+          key: 'blog',
+          title: 'Partnerwerbung',
+          description: 'Bereich wird als Zusatzfeature vorbereitet.',
+          icon: '📣',
+          comingSoon: true,
+        },
+        {
+          key: 'blog',
+          title: 'Partner-Immobilien',
+          description: 'Bereich wird als Zusatzfeature vorbereitet.',
+          icon: '🏠',
+          comingSoon: true,
+        },
+        {
+          key: 'blog',
+          title: 'Partner-Gesuche',
+          description: 'Bereich wird als Zusatzfeature vorbereitet.',
+          icon: '🔎',
+          comingSoon: true,
+        },
+      ],
+    },
+  ];
+}
 
 const welcomeWrapStyle = {
   maxWidth: '1100px',
@@ -1839,6 +2108,26 @@ const welcomeWrapStyle = {
   display: 'flex',
   flexDirection: 'column' as const,
   gap: '28px',
+};
+
+const welcomeGroupsStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: '18px',
+};
+
+const welcomeGroupCardStyle: React.CSSProperties = {
+  backgroundColor: '#ffffff',
+  border: '1px solid #e2e8f0',
+  borderRadius: '16px',
+  padding: '20px',
+  boxShadow: '0 6px 14px rgba(15, 23, 42, 0.04)',
+};
+
+const welcomeGroupTitleStyle: React.CSSProperties = {
+  margin: '0 0 14px',
+  fontSize: '16px',
+  fontWeight: 800,
+  color: '#0f172a',
 };
 
 const welcomeHeaderStyle = {

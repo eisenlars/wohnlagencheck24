@@ -5,6 +5,9 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
 import { validateIntegrationConfig } from "@/lib/integrations/providers";
+import { decryptLocalSiteToken } from "@/lib/security/secret-crypto";
+import { normalizeLlmRuntimeMode } from "@/lib/llm/mode";
+import { loadPartnerLlmPolicy } from "@/lib/llm/partner-policy";
 
 type IntegrationBody = {
   integration_id?: string;
@@ -41,24 +44,43 @@ function isMissingOnConflictConstraint(error: { message?: string; code?: string 
   return ON_CONFLICT_MISSING_CONSTRAINT_RE.test(String(error.message ?? ""));
 }
 
-function normalizeSettings(kind: string, settings: Record<string, unknown> | null | undefined) {
+function normalizeSettings(kind: string, provider: string, settings: Record<string, unknown> | null | undefined) {
   if (!settings || typeof settings !== "object") return null;
   if (kind !== "llm") return settings;
 
   const model = norm(settings.model) ?? norm(settings.model_name);
   const baseUrl = norm(settings.base_url);
+  const apiVersion = norm(settings.api_version);
   const temperature = asFiniteNumber(settings.temperature);
   const maxTokens = asFiniteNumber(settings.max_tokens);
+  const llmMode = normalizeLlmRuntimeMode(settings.llm_mode);
+  const normalizedProvider = norm(provider)?.toLowerCase();
 
-  if (!model) {
+  if (!model && llmMode === "partner_managed") {
     return { error: "Für LLM-Integrationen ist settings.model erforderlich." } as const;
   }
+  if (normalizedProvider === "azure_openai" && llmMode === "partner_managed" && !apiVersion) {
+    return { error: "Für Azure OpenAI ist settings.api_version erforderlich (z. B. 2024-10-21)." } as const;
+  }
 
-  const out: Record<string, unknown> = { model };
+  const out: Record<string, unknown> = { llm_mode: llmMode };
+  if (model) out.model = model;
   if (baseUrl) out.base_url = baseUrl;
+  if (apiVersion) out.api_version = apiVersion;
   if (temperature !== null) out.temperature = temperature;
   if (maxTokens !== null) out.max_tokens = Math.max(1, Math.floor(maxTokens));
   return out;
+}
+
+function enrichLocalSiteApiKey(row: Record<string, unknown>) {
+  const kind = String(row.kind ?? "").toLowerCase();
+  if (kind !== "local_site") return row;
+  const auth = (row.auth_config ?? {}) as Record<string, unknown>;
+  const apiKey = decryptLocalSiteToken(auth.token_encrypted);
+  return {
+    ...row,
+    local_site_api_key: apiKey,
+  };
 }
 
 async function requirePartnerUser(req: Request): Promise<string> {
@@ -88,9 +110,18 @@ export async function GET(req: Request) {
       .order("kind", { ascending: true });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const policy = await loadPartnerLlmPolicy(admin, userId);
+    const visible = (data ?? []).filter((row) =>
+      String(row.kind ?? "").toLowerCase() === "llm"
+        ? policy.llm_partner_managed_allowed
+        : true,
+    );
     return NextResponse.json({
       ok: true,
-      integrations: (data ?? []).map((row) => maskIntegrationForResponse(row as Record<string, unknown>)),
+      policy,
+      integrations: visible.map((row) =>
+        maskIntegrationForResponse(enrichLocalSiteApiKey(row as Record<string, unknown>)),
+      ),
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -118,6 +149,13 @@ export async function POST(req: Request) {
     }
 
     const admin = createAdminClient();
+    const policy = await loadPartnerLlmPolicy(admin, userId);
+    if (kind === "llm" && !policy.llm_partner_managed_allowed) {
+      return NextResponse.json(
+        { error: "LLM-Anbindungen sind für diesen Partner nicht freigeschaltet." },
+        { status: 403 },
+      );
+    }
     const validation = validateIntegrationConfig({
       kind,
       provider,
@@ -128,7 +166,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const normalizedSettings = normalizeSettings(kind, body.settings ?? null);
+    const normalizedSettings = normalizeSettings(kind, validation.provider, body.settings ?? null);
     if (normalizedSettings && "error" in normalizedSettings) {
       return NextResponse.json({ error: normalizedSettings.error }, { status: 400 });
     }

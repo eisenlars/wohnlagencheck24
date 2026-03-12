@@ -34,37 +34,73 @@ export default function PartnerSetupPage() {
       const hashType = hash.get("type");
       const code = search.get("code");
       const tokenHash = search.get("token_hash");
+      const legacyToken = search.get("token");
       const queryType = search.get("type");
       const type = hashType || queryType;
-
-      // Newer Supabase invite/recovery flow: one-time `code` in query params.
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (!mounted) return;
-        if (error) {
-          setStatus("Einladungslink ist ungueltig oder abgelaufen. Bitte Einladung erneut anfordern.");
-          setReady(false);
-          setViewMode("error");
-          return;
-        }
+      const otpToken = tokenHash || legacyToken;
+      const invalidLinkMessage = "Reset-Link ist ungueltig oder abgelaufen. Bitte Passwort-Reset erneut anfordern.";
+      const openFormIfSessionExists = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!mounted || !user) return false;
         setReady(true);
         setViewMode("form");
         setStatus(type === "invite" ? "Bitte vergeben Sie jetzt Ihr Passwort." : "Bitte bestaetigen Sie Ihr neues Passwort.");
         if (window.location.search || window.location.hash) {
           window.history.replaceState({}, document.title, window.location.pathname);
         }
+        return true;
+      };
+
+      // Newer Supabase invite/recovery flow: one-time `code` in query params.
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!mounted) return;
+        if (!error) {
+          setReady(true);
+          setViewMode("form");
+          setStatus(type === "invite" ? "Bitte vergeben Sie jetzt Ihr Passwort." : "Bitte bestaetigen Sie Ihr neues Passwort.");
+          if (window.location.search || window.location.hash) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+          return;
+        }
+
+        // Fallback: manche Recovery-Links enthalten zusaetzlich token_hash/type.
+        if (otpToken && type) {
+          const { error: otpError } = await supabase.auth.verifyOtp({
+            token_hash: otpToken,
+            type: type as "invite" | "recovery" | "magiclink" | "signup" | "email",
+          });
+          if (!mounted) return;
+          if (!otpError) {
+            setReady(true);
+            setViewMode("form");
+            setStatus(type === "invite" ? "Bitte vergeben Sie jetzt Ihr Passwort." : "Bitte bestaetigen Sie Ihr neues Passwort.");
+            if (window.location.search || window.location.hash) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            return;
+          }
+        }
+
+        if (await openFormIfSessionExists()) return;
+
+        setStatus(invalidLinkMessage);
+        setReady(false);
+        setViewMode("error");
         return;
       }
 
       // Legacy/OTP flow: token_hash + type in query params.
-      if (tokenHash && type) {
+      if (otpToken && type) {
         const { error } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
+          token_hash: otpToken,
           type: type as "invite" | "recovery" | "magiclink" | "signup" | "email",
         });
         if (!mounted) return;
         if (error) {
-          setStatus("Einladungslink ist ungueltig oder abgelaufen. Bitte Einladung erneut anfordern.");
+          if (await openFormIfSessionExists()) return;
+          setStatus(invalidLinkMessage);
           setReady(false);
           setViewMode("error");
           return;

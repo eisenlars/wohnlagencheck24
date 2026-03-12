@@ -7,7 +7,7 @@ Stand: 2026-02-11
 Die Admin-UI wird die zentrale Schaltstelle fuer:
 - Partner-Stammdaten (`partners`)
 - Gebietszuordnung (`partner_area_map`)
-- Integrationen und Secrets (`partner_integrations`)
+- Anbindungen und Secrets (`partner_integrations`)
 
 Grundsatz:
 - **DB ist Source of Truth**
@@ -22,7 +22,7 @@ Grundsatz:
 - Partner anlegen/aktualisieren/deaktivieren
 - Partner-User (Auth) zuordnen
 - Gebiete zuweisen/entziehen/aktivieren/deaktivieren
-- Integrationen (`crm`, `llm`, `local_site`) verwalten
+- Anbindungen (`crm`, `llm`, `local_site`) verwalten
 - Secrets write-only + token rotation
 - Audit-Logging sicherheitsrelevanter Aktionen
 
@@ -43,6 +43,8 @@ Grundsatz:
 - `contact_last_name`
 - optional: `website_url`
 - optional (neu): `is_active` boolean default true
+- optional (neu): `llm_partner_managed_allowed` boolean default false
+- optional (neu): `llm_mode_default` text default `central_managed`
 
 ### 3.2 `partner_area_map`
 - `id` (uuid, PK)
@@ -68,6 +70,7 @@ Empfohlene Constraint:
 Empfohlene Erweiterung:
 - Eindeutigkeit fuer Nicht-LLM auf (`partner_id`, `kind`) mit Partial Unique Index
 - mehrere LLM-Integrationen pro Partner erlauben
+- LLM-Integrationen im Partner-Dashboard nur anzeigen, wenn `partners.llm_partner_managed_allowed = true`
 
 Beispiel:
 ```sql
@@ -152,16 +155,36 @@ Prefix: `/api/admin/*`
 - `DELETE /api/admin/partners/:id/areas/:area_id` (unassign)
 - `PATCH /api/admin/partners/:id/areas/:area_id` (`is_active`)
 
-### Integrationen
+### Anbindungen
 - `POST /api/admin/partners/:id/integrations`
 - `PATCH /api/admin/integrations/:integration_id`
 - `POST /api/admin/integrations/:integration_id/deactivate`
 - `POST /api/admin/integrations/:integration_id/reactivate`
 
+Hinweis zur Richtung:
+- `crm`, `llm` sind i. d. R. **Datenquellen** (eingehend ins Portal)
+- `local_site` ist ein **Ausspielkanal** (ausgehend vom Portal zur lokalen Website)
+
 ### Secrets / Rotation
 - `POST /api/admin/integrations/:integration_id/secrets` (write-only upsert)
 - `POST /api/admin/integrations/:integration_id/rotate-token`
+
+### Globale LLM-Verwaltung
+- `GET/PATCH /api/admin/llm/global`
+- `GET/POST /api/admin/llm/providers`
+- `PATCH/DELETE /api/admin/llm/providers/:id`
+- `POST /api/admin/llm/providers/:id/secrets`
+- `POST /api/admin/llm/pricing-sync` (Fallback: Preise von offiziellen Provider-Seiten lesen)
+- `GET /api/admin/llm/usage`
+
+DB-Migration:
+- `docs/sql/llm_global_management.sql`
 - `POST /api/admin/integrations/:integration_id/revoke-token`
+
+Preis-Fallback (ohne API-Preisfeed):
+- `llm_global_providers` speichert `price_source`, `price_source_url`, `price_updated_at`
+- `llm_provider_price_observations` protokolliert gefundene/preisvorgeschlagene Werte inkl. Confidence
+- Abrechnung nutzt weiterhin die in `llm_global_providers` aktiven Preise
 
 ### User-Onboarding
 - `POST /api/admin/partners/:id/invite-user`
@@ -215,7 +238,7 @@ Prefix: `/api/admin/*`
 2. Partnerdetail
 - Stammdaten
 - User-Status (eingeladen/aktiv)
-- Integrationen (ohne Klartext-Secrets)
+- Anbindungen (ohne Klartext-Secrets)
 - Gebiete (aktiv/inaktiv)
 
 3. Area Assignment

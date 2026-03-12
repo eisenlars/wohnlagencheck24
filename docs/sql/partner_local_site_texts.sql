@@ -19,11 +19,32 @@ create unique index if not exists partner_local_site_texts_unique
 
 alter table public.partner_local_site_texts enable row level security;
 
-create policy "partner_local_site_texts_deny_select"
-  on public.partner_local_site_texts for select using (false);
-create policy "partner_local_site_texts_deny_insert"
-  on public.partner_local_site_texts for insert with check (false);
-create policy "partner_local_site_texts_deny_update"
-  on public.partner_local_site_texts for update using (false);
-create policy "partner_local_site_texts_deny_delete"
-  on public.partner_local_site_texts for delete using (false);
+drop policy if exists "partner_local_site_texts_deny_select" on public.partner_local_site_texts;
+drop policy if exists "partner_local_site_texts_deny_insert" on public.partner_local_site_texts;
+drop policy if exists "partner_local_site_texts_deny_update" on public.partner_local_site_texts;
+drop policy if exists "partner_local_site_texts_deny_delete" on public.partner_local_site_texts;
+
+drop policy if exists "partner_local_site_texts_self_select" on public.partner_local_site_texts;
+create policy "partner_local_site_texts_self_select"
+  on public.partner_local_site_texts
+  for select
+  using (auth.uid() = partner_id);
+
+drop policy if exists "partner_local_site_texts_self_insert" on public.partner_local_site_texts;
+create policy "partner_local_site_texts_self_insert"
+  on public.partner_local_site_texts
+  for insert
+  with check (auth.uid() = partner_id);
+
+drop policy if exists "partner_local_site_texts_self_update" on public.partner_local_site_texts;
+create policy "partner_local_site_texts_self_update"
+  on public.partner_local_site_texts
+  for update
+  using (auth.uid() = partner_id)
+  with check (auth.uid() = partner_id);
+
+drop policy if exists "partner_local_site_texts_self_delete" on public.partner_local_site_texts;
+create policy "partner_local_site_texts_self_delete"
+  on public.partner_local_site_texts
+  for delete
+  using (auth.uid() = partner_id);

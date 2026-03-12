@@ -2,7 +2,7 @@
 
 Stand: 2026-01-31
 
-Kurzes Template für die Anbindung neuer Partner‑Integrationen (CRM, LLM, Lokale Website).  
+Kurzes Template für die Anbindung neuer Partner‑Anbindungen (CRM, LLM, Lokale Website).  
 Ziel: Alle benötigten Zugangsdaten und Schritte kompakt dokumentieren.
 
 ---
@@ -84,7 +84,7 @@ insert into public.partner_integrations (
   'crm',
   'onoffice',
   'https://api.onoffice.de/api/stable/api.php',
-  'token_secret',
+  'basic',
   '{"token": "ONOFFICE_TOKEN", "secret": "ONOFFICE_SECRET"}',
   'https://partner.de/expose/{exposee_id}',
   true
@@ -138,6 +138,8 @@ Lifecycle-Hinweis (Referenzen):
 - Zielausgabe Portal: genau 1 Bild + Titel + Beschreibung.
 
 Lifecycle-Hinweis (Gesuche):
+- Propstack-Quelle: `saved_queries` (Suchprofile)
+- onOffice-Quelle: `searchcriteria`
 - In `partner_requests.normalized_payload` regionale Angaben strukturiert als Liste speichern:
   - `region_targets: [{ city, district, label }]`
   - `region_target_keys: ["city::district", ...]`
@@ -152,8 +154,12 @@ Hinweis (Partnerbereich – Faktoren):
 ## 4) LLM‑Anbindung (KI‑API pro Partner)
 
 ### Ziel
-Partner kann **eigene LLM‑API** nutzen. Falls nicht vorhanden:
-1) Default‑LLM (ENV)  
+Hybridbetrieb mit zwei Modi:
+1) `central_managed` (primaer): Nutzung zentraler Portal-LLM-Provider
+2) `partner_managed` (Ausnahme): Partner nutzt eigene LLM-Integration
+
+Falls kein aktiver LLM-Provider verfuegbar ist:
+1) Default‑LLM (ENV)
 2) Fallback‑Stub (interner Default‑Text)
 
 ### Benötigte Daten vom Partner
@@ -161,6 +167,8 @@ Partner kann **eigene LLM‑API** nutzen. Falls nicht vorhanden:
 - **API‑Key** (serverseitig)
 - **Model‑Name** (z. B. `gpt-4o-mini` o. ä.)
 - Optional: **Base‑URL**, **Temperature**, **Max Tokens**
+- **Betriebsmodus**: `settings.llm_mode` (`central_managed` | `partner_managed`)
+- Compliance-Nachweise (Pflicht fuer `partner_managed`): DPA, no-training/no-retention, Region
 
 ### Interne Einrichtung (Supabase)
 ```sql
@@ -174,7 +182,7 @@ insert into public.partner_integrations (
   'https://api.openai.com/v1',
   'api_key',
   '{"api_key": "PARTNER_LLM_API_KEY"}',
-  '{"model": "gpt-4o-mini", "temperature": 0.4, "max_tokens": 800}',
+  '{"model": "gpt-4o-mini", "temperature": 0.4, "max_tokens": 800, "llm_mode": "partner_managed"}',
   true
 );
 ```
@@ -203,6 +211,20 @@ DEFAULT_LLM_MAX_TOKENS=800
 ### Sicherheit (zwingend)
 - Keys nur serverseitig (Supabase `auth_config` oder ENV).
 - RLS verhindert Client‑Zugriff auf `partner_integrations`.
+- Standardmodus ist zentral verwaltet; partnereigene LLMs nur nach Compliance-Pruefung freigeben.
+- Bei `partner_managed` muessen no-training/no-retention und Region-Vorgaben dokumentiert sein.
+- Admin-Governance je Partner erfolgt ueber:
+  - `partners.llm_partner_managed_allowed`
+  - `partners.llm_mode_default`
+- Migration: `docs/sql/partner_llm_governance.sql`
+- Globale zentrale LLM-Steuerung (Provider/Fallback/Budgets/Monitoring):
+  - `docs/sql/llm_global_management.sql`
+
+### Crawler-Policy (SEO/GEO sichtbar, Trainingsnutzung begrenzen)
+- Datei: `public/robots.txt`
+- Erlaubt: klassische Suchindexierung und Suchcrawler mit Discovery-Zweck
+- Blockiert: bekannte Trainings-/Dataset-Crawler (`GPTBot`, `Google-Extended`, `ClaudeBot`, `CCBot`)
+- Hinweis: `robots.txt` ist ein Signal und ersetzt keine technischen Access-Controls fuer API/Exports.
 
 ---
 
@@ -276,31 +298,36 @@ Damit ist Python fuer Textgenerierung/Partnertexte nicht mehr erforderlich.
 ### Ziel
 Die lokale Maklerwebsite nutzt dieselbe **Report‑Struktur** wie das Portal.  
 Partner können **Texte individuell anpassen** und **freigeben**, danach werden sie per API im Original‑JSON‑Schema ausgeliefert.
+Local Site ist dabei ein **Ausspielkanal** (Consumer der Portal-API), keine eingehende CRM-Datenquelle.
 
 ### Datenmodell
 Aktueller Schema-Snapshot enthaelt **keine** Tabelle `partner_local_site_texts`.
 Falls ihr den separaten Local-Site-Channel nutzen wollt, zuerst Migration ausfuehren:
 - `docs/sql/partner_local_site_texts.sql`
 
-Ohne diese Migration bleibt der Local-Site-Export auf den im Report verfuegbaren Texten/Overrides.
+Ohne diese Migration greift der Local-Site-Export automatisch auf `report_texts` (approved) und sonst auf Rohtexte aus dem Report zurueck.
 
 ### Interne Einrichtung (Supabase)
 ```sql
 -- Lokale Website: Integrationstoken für API‑Zugriff
 insert into public.partner_integrations (
-  partner_id, kind, provider, auth_type, auth_config, is_active
+  partner_id, kind, provider, base_url, auth_type, auth_config, is_active
 ) values (
   '<partner-uuid>',
   'local_site',
+  'local_site',
+  'https://www.deine-website.de',
   'token',
-  'token',
-  '{"token": "S3HR_GEHEIM_123"}',
+  '{"token_hash": "<SHA256_HEX_DES_TOKENS>", "token_encrypted": "<APP_SEITIG_VERSCHLUESSELT>"}',
   true
 );
 ```
 
 **Wichtig:** Der Token ist ein **frei gewählter geheimer Schlüssel**.  
 `LOCAL_SITE_TOKEN` ist nur ein Platzhalter. Dieser Token muss geheim bleiben.
+Der Abruf erfolgt ausschließlich per `Authorization: Bearer <token>`.
+`base_url` enthält die URL der lokalen Website und dient als Pflicht-Kennung der Anbindung im Partnerbereich.
+Damit der API-Key im Partnerbereich erneut angezeigt werden kann, muss die App-Umgebung `LOCAL_SITE_TOKEN_ENCRYPTION_KEY` gesetzt haben.
 
 ### Freigabe‑Flow (Partnerbereich)
 - Texte bearbeiten → `draft`
@@ -308,7 +335,7 @@ insert into public.partner_integrations (
 
 ### Export‑API (nur freigegebene Texte)
 **A) Texte‑Only**  
-`GET /api/local-site-texts?token=...&bundesland=...&kreis=...&ortslage=...`
+`GET /api/local-site-texts?bundesland=...&kreis=...&ortslage=...`
 
 Antwort (gekürzt):
 ```json
@@ -326,14 +353,14 @@ Antwort (gekürzt):
       "status": "approved",
       "last_updated": "2026-02-01T11:30:00.000Z",
       "text_type": "general",
-      "source": "override"
+      "source": "local_site_override"
     }
   }
 }
 ```
 
 **B) Kombinierter Report (empfohlen)**  
-`GET /api/local-site-report?token=...&bundesland=...&kreis=...&ortslage=...`
+`GET /api/local-site-report?bundesland=...&kreis=...&ortslage=...`
 
 Antwort:
 ```json
@@ -341,7 +368,6 @@ Antwort:
   "meta": { "...": "..." },
   "data": { "...": "..." },
   "text": { "...": "..." },
-  "local_site_meta": { "...": "..." },
   "local_site": {
     "partner_id": "...",
     "area_id": "...",
@@ -351,23 +377,18 @@ Antwort:
 ```
 
 ### Hinweise
+- Prioritaet der Textquellen: `partner_local_site_texts` (approved) → `report_texts` (approved) → Rohtext aus Report.
 - `text` ist bereits gemerged (approved → optimized, sonst raw).
-- `local_site_meta` enthält Status/Last‑Updated pro `section_key`.
+- `meta` (Texte-Only Endpoint) enthält Status/Last‑Updated pro `section_key`.
+- `meta.source` ist einer von: `local_site_override`, `report_texts`, `raw`.
 - Partner kann die JSON 1:1 in die lokale Website‑Struktur übernehmen.
 
 **C) ZIP‑Package (Kreis + alle Ortslagen)**  
-`GET /api/local-site-package?token=...&bundesland=...&kreis=...`
+`GET /api/local-site-package?bundesland=...&kreis=...`
 
 Inhalt:
 - `kreis.json`
-- `orte/<ortslug>.json`
-- `manifest.json`
-
-`manifest.json` enthält:
-- `generated_at` (Zeitpunkt der Erstellung)
-- `partner_id`
-- Kreis‑Info (`slug`, `area_id`)
-- Liste aller Ortslagen (`slug`, `area_id`)
+- `ortslagen/<ortslug>.json`
 
 ### Checkliste für Partner
 1. Token erhalten und sicher speichern.
@@ -379,15 +400,22 @@ Inhalt:
 ### Beispiel‑Abrufe (curl)
 **Texte‑Only**
 ```bash
-curl -s "https://<domain>/api/local-site-texts?token=S3HR_GEHEIM_123&bundesland=sachsen&kreis=leipzig"
+curl -s \
+  -H "Authorization: Bearer S3HR_GEHEIM_123" \
+  "https://<domain>/api/local-site-texts?bundesland=sachsen&kreis=leipzig"
 ```
 
 **Kombinierter Report**
 ```bash
-curl -s "https://<domain>/api/local-site-report?token=S3HR_GEHEIM_123&bundesland=sachsen&kreis=leipzig"
+curl -s \
+  -H "Authorization: Bearer S3HR_GEHEIM_123" \
+  "https://<domain>/api/local-site-report?bundesland=sachsen&kreis=leipzig"
 ```
 
 **ZIP‑Package (Download)**
 ```bash
-curl -s "https://<domain>/api/local-site-package?token=S3HR_GEHEIM_123&bundesland=sachsen&kreis=leipzig" -o local-site-package.zip
+curl -s \
+  -H "Authorization: Bearer S3HR_GEHEIM_123" \
+  "https://<domain>/api/local-site-package?bundesland=sachsen&kreis=leipzig" \
+  -o local-site-package.zip
 ```

@@ -6,6 +6,17 @@ import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from '@/lib/security/rate-limit';
 import { validateOutboundUrl } from '@/lib/security/outbound-url';
+import { normalizeLlmRuntimeMode } from '@/lib/llm/mode';
+import { loadPartnerLlmPolicy } from '@/lib/llm/partner-policy';
+import { readSecretFromAuthConfig } from '@/lib/security/secret-crypto';
+import {
+  checkGlobalAndPartnerBudget,
+  estimateCostEur,
+  type GlobalLlmProvider,
+  loadActiveGlobalLlmProviders,
+  loadGlobalLlmConfig,
+  writeLlmUsageEvent,
+} from '@/lib/llm/global-governance';
 
 type LlmConfig = {
   id?: string;
@@ -21,6 +32,7 @@ const DEFAULT_MODEL = process.env.DEFAULT_LLM_MODEL ?? '';
 const DEFAULT_BASE_URL = process.env.DEFAULT_LLM_BASE_URL ?? '';
 const DEFAULT_TEMPERATURE = process.env.DEFAULT_LLM_TEMPERATURE ?? '';
 const DEFAULT_MAX_TOKENS = process.env.DEFAULT_LLM_MAX_TOKENS ?? '';
+const I18N_MOCK_TRANSLATION = String(process.env.I18N_MOCK_TRANSLATION ?? '').trim() === '1';
 
 function asString(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
@@ -33,6 +45,11 @@ function asNumber(value: unknown): number | null {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+}
+
+function buildMockTranslation(locale: string | null, text: string): string {
+  const tag = (locale && locale.trim() ? locale : 'xx').toUpperCase();
+  return `[${tag} MOCK] ${String(text ?? '').trim()}`;
 }
 
 function normalizeNumericToken(token: string): string {
@@ -245,29 +262,46 @@ function buildPrompt(args: { text: string; areaName: string; type?: string; sect
   };
 }
 
+type OpenAiCallResult = {
+  content: string | null;
+  promptTokens: number | null;
+  completionTokens: number | null;
+  totalTokens: number | null;
+  errorCode: string | null;
+};
+
 async function callOpenAICompatible({
+  provider,
   apiKey,
   baseUrl,
   model,
+  apiVersion,
   temperature,
   maxTokens,
   system,
   user,
 }: {
+  provider?: string;
   apiKey: string;
   baseUrl: string;
   model: string;
+  apiVersion?: string | null;
   temperature: number | null;
   maxTokens: number | null;
   system: string;
   user: string;
-}): Promise<string | null> {
-  if (!apiKey || !model) return null;
-  const url = `${baseUrl.replace(/\/$/, '')}/chat/completions`;
+}): Promise<OpenAiCallResult> {
+  if (!apiKey || !model) return { content: null, promptTokens: null, completionTokens: null, totalTokens: null, errorCode: 'MISSING_API_KEY_OR_MODEL' };
+  const normalizedProvider = String(provider ?? '').trim().toLowerCase();
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '');
+  const resolvedApiVersion = String(apiVersion ?? '').trim() || '2024-10-21';
+  const url = normalizedProvider === 'azure_openai'
+    ? `${normalizedBaseUrl}/openai/deployments/${encodeURIComponent(model)}/chat/completions?api-version=${encodeURIComponent(resolvedApiVersion)}`
+    : `${normalizedBaseUrl}/chat/completions`;
   const outboundCheck = await validateOutboundUrl(url);
   if (!outboundCheck.ok) {
     console.error('LLM URL blocked:', outboundCheck.reason);
-    return null;
+    return { content: null, promptTokens: null, completionTokens: null, totalTokens: null, errorCode: 'URL_BLOCKED' };
   }
   const messages = [];
   if (system.trim().length > 0) {
@@ -275,16 +309,20 @@ async function callOpenAICompatible({
   }
   messages.push({ role: 'user', content: user });
   const payload: Record<string, unknown> = {
-    model,
     messages,
   };
+  if (normalizedProvider !== 'azure_openai') {
+    payload.model = model;
+  }
   if (temperature !== null) payload.temperature = temperature;
   if (maxTokens !== null) payload.max_tokens = maxTokens;
 
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      ...(normalizedProvider === 'azure_openai'
+        ? { 'api-key': apiKey }
+        : { Authorization: `Bearer ${apiKey}` }),
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
@@ -293,11 +331,20 @@ async function callOpenAICompatible({
   if (!res.ok) {
     const text = await res.text();
     console.error('LLM error:', res.status, text);
-    return null;
+    return { content: null, promptTokens: null, completionTokens: null, totalTokens: null, errorCode: `HTTP_${res.status}` };
   }
   const data = await res.json();
   const content = data?.choices?.[0]?.message?.content;
-  return typeof content === 'string' ? content.trim() : null;
+  const promptTokens = asNumber(data?.usage?.prompt_tokens);
+  const completionTokens = asNumber(data?.usage?.completion_tokens);
+  const totalTokens = asNumber(data?.usage?.total_tokens);
+  return {
+    content: typeof content === 'string' ? content.trim() : null,
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    errorCode: typeof content === 'string' ? null : 'EMPTY_CONTENT',
+  };
 }
 
 async function loadPartnerLlmConfig(partnerId: string, integrationId?: string | null): Promise<LlmConfig | null> {
@@ -331,6 +378,13 @@ async function loadPartnerLlmConfig(partnerId: string, integrationId?: string | 
   };
 }
 
+async function loadGlobalLlmProviderById(providerId?: string | null): Promise<GlobalLlmProvider | null> {
+  const id = asString(providerId);
+  if (!id) return null;
+  const list = await loadActiveGlobalLlmProviders();
+  return list.providers.find((p) => String(p.id ?? "") === id) ?? null;
+}
+
 /**
  * KI-Veredelungs-Schnittstelle
  * Verarbeitet verschiedene Text-Typen mit spezifischen (simulierten) Prompts.
@@ -354,8 +408,15 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { text, areaName, type, sectionLabel, customPrompt } = body;
+    const mockContext = asString(body?.mock_context);
+    const targetLocale = asString(body?.target_locale);
     const areaId = asString(body?.area_id);
     const selectedLlmIntegrationId = asString(body?.llm_integration_id);
+    const selectedGlobalProviderId = asString(body?.llm_global_provider_id);
+
+    if (I18N_MOCK_TRANSLATION && mockContext === 'i18n') {
+      return NextResponse.json({ optimizedText: buildMockTranslation(targetLocale, String(text ?? '')) });
+    }
 
     if (areaId) {
       const admin = createAdminClient();
@@ -384,17 +445,52 @@ export async function POST(req: Request) {
       : basePrompt;
 
     let optimizedText: string | null = null;
+    let usagePromptTokens: number | null = null;
+    let usageCompletionTokens: number | null = null;
+    let usageTotalTokens: number | null = null;
+    let usageEstimatedCostEur: number | null = null;
+    let usageProvider = '';
+    let usageModel = '';
+    let usageMode: 'central_managed' | 'partner_managed' = 'central_managed';
+    let usageErrorCode: string | null = null;
 
+    const admin = createAdminClient();
+    const partnerPolicy = await loadPartnerLlmPolicy(admin, user.id);
     const partnerConfig = await loadPartnerLlmConfig(user.id, selectedLlmIntegrationId);
-    const hasOwnLlmConfig = Boolean(partnerConfig?.provider);
+    const selectedGlobalProvider = await loadGlobalLlmProviderById(selectedGlobalProviderId);
+    const llmMode = normalizeLlmRuntimeMode(partnerConfig?.settings?.llm_mode ?? partnerPolicy.llm_mode_default);
+    const hasOwnLlmConfig = llmMode === 'partner_managed'
+      && partnerPolicy.llm_partner_managed_allowed
+      && Boolean(partnerConfig?.provider);
     if (selectedLlmIntegrationId && !partnerConfig) {
       return NextResponse.json(
         { error: 'Ausgewaehlte LLM-Integration nicht gefunden oder inaktiv.' },
         { status: 400 },
       );
     }
-    if (partnerConfig?.provider) {
-      const apiKey = asString(partnerConfig.auth_config?.api_key);
+    if (selectedLlmIntegrationId && !partnerPolicy.llm_partner_managed_allowed) {
+      return NextResponse.json(
+        { error: 'Partnerverwaltete LLM-Anbindungen sind administrativ nicht freigeschaltet.' },
+        { status: 403 },
+      );
+    }
+    if (selectedGlobalProviderId && !selectedGlobalProvider) {
+      return NextResponse.json(
+        { error: 'Ausgewaehlter globaler LLM-Provider nicht gefunden oder inaktiv.' },
+        { status: 400 },
+      );
+    }
+
+    const budget = await checkGlobalAndPartnerBudget(user.id);
+    if (!budget.allowed) {
+      return NextResponse.json(
+        { error: `LLM-Budgetgrenze erreicht (${budget.reason}).` },
+        { status: 429 },
+      );
+    }
+
+    if (hasOwnLlmConfig && partnerConfig?.provider) {
+      const apiKey = readSecretFromAuthConfig(partnerConfig.auth_config ?? null, 'api_key');
       const model =
         asString(partnerConfig.settings?.model) ||
         asString(partnerConfig.settings?.model_name) ||
@@ -408,21 +504,118 @@ export async function POST(req: Request) {
       const provider = String(partnerConfig.provider).toLowerCase();
       const openAiCompatibleProviders = new Set(['openai', 'mistral', 'azure_openai', 'generic_llm']);
       if (openAiCompatibleProviders.has(provider)) {
-        optimizedText = await callOpenAICompatible({
+        const result = await callOpenAICompatible({
+          provider,
           apiKey: apiKey ?? '',
           baseUrl,
           model,
+          apiVersion: asString(partnerConfig.settings?.api_version),
           temperature,
           maxTokens,
           system: prompt.system,
           user: prompt.user,
         });
+        optimizedText = result.content;
+        usagePromptTokens = result.promptTokens;
+        usageCompletionTokens = result.completionTokens;
+        usageTotalTokens = result.totalTokens;
+        usageProvider = provider;
+        usageModel = model;
+        usageMode = 'partner_managed';
+        usageErrorCode = result.errorCode;
       }
     }
 
-    // Systemweiter Fallback nur in area-scoped Kontexten (kein allgemeiner Rewrite-Proxy).
-    if (!optimizedText && areaId && DEFAULT_PROVIDER === 'openai' && DEFAULT_API_KEY && DEFAULT_MODEL) {
-      optimizedText = await callOpenAICompatible({
+    if (!optimizedText && selectedGlobalProvider) {
+      const provider = String(selectedGlobalProvider.provider ?? '').toLowerCase();
+      const openAiCompatibleProviders = new Set(['openai', 'mistral', 'azure_openai', 'generic_llm']);
+      if (openAiCompatibleProviders.has(provider)) {
+        const apiKey =
+          readSecretFromAuthConfig(selectedGlobalProvider.auth_config ?? null, 'api_key')
+          || readSecretFromAuthConfig(selectedGlobalProvider.auth_config ?? null, 'token')
+          || '';
+        if (apiKey && selectedGlobalProvider.model) {
+          const result = await callOpenAICompatible({
+            provider: selectedGlobalProvider.provider,
+            apiKey,
+            baseUrl: selectedGlobalProvider.base_url || 'https://api.openai.com/v1',
+            model: selectedGlobalProvider.model,
+            apiVersion: asString((selectedGlobalProvider as { settings?: Record<string, unknown> | null }).settings?.api_version),
+            temperature: selectedGlobalProvider.temperature,
+            maxTokens: selectedGlobalProvider.max_tokens,
+            system: prompt.system,
+            user: prompt.user,
+          });
+          optimizedText = result.content;
+          usagePromptTokens = result.promptTokens;
+          usageCompletionTokens = result.completionTokens;
+          usageTotalTokens = result.totalTokens;
+          usageProvider = selectedGlobalProvider.provider;
+          usageModel = selectedGlobalProvider.model;
+          usageMode = 'central_managed';
+          usageErrorCode = result.errorCode;
+          usageEstimatedCostEur = estimateCostEur({
+            promptTokens: result.promptTokens,
+            completionTokens: result.completionTokens,
+            inputCostEurPer1k: selectedGlobalProvider.input_cost_eur_per_1k,
+            outputCostEurPer1k: selectedGlobalProvider.output_cost_eur_per_1k,
+          });
+        }
+      }
+    }
+
+    // Zentral verwaltete Provider mit Fallback-Reihenfolge (priority ASC).
+    if (!optimizedText && (areaId || llmMode === 'central_managed')) {
+      const globalConfig = await loadGlobalLlmConfig();
+      if (globalConfig.config.central_enabled) {
+        const globalProviders = await loadActiveGlobalLlmProviders();
+        const openAiCompatibleProviders = new Set(['openai', 'mistral', 'azure_openai', 'generic_llm']);
+        for (const p of globalProviders.providers) {
+          if (!openAiCompatibleProviders.has(String(p.provider ?? '').toLowerCase())) continue;
+          const apiKey =
+            readSecretFromAuthConfig(p.auth_config ?? null, 'api_key')
+            || readSecretFromAuthConfig(p.auth_config ?? null, 'token')
+            || '';
+          if (!apiKey || !p.model) continue;
+          const result = await callOpenAICompatible({
+            provider: p.provider,
+            apiKey,
+            baseUrl: p.base_url || 'https://api.openai.com/v1',
+            model: p.model,
+            apiVersion: asString((p as { settings?: Record<string, unknown> | null }).settings?.api_version),
+            temperature: p.temperature,
+            maxTokens: p.max_tokens,
+            system: prompt.system,
+            user: prompt.user,
+          });
+          if (result.content) {
+            optimizedText = result.content;
+            usagePromptTokens = result.promptTokens;
+            usageCompletionTokens = result.completionTokens;
+            usageTotalTokens = result.totalTokens;
+            usageProvider = p.provider;
+            usageModel = p.model;
+            usageMode = 'central_managed';
+            usageErrorCode = null;
+            usageEstimatedCostEur = estimateCostEur({
+              promptTokens: result.promptTokens,
+              completionTokens: result.completionTokens,
+              inputCostEurPer1k: p.input_cost_eur_per_1k,
+              outputCostEurPer1k: p.output_cost_eur_per_1k,
+            });
+            break;
+          }
+          usageErrorCode = result.errorCode;
+        }
+      }
+    }
+
+    // ENV-Fallback als letzte Sicherheitsstufe.
+    const defaultProvider = String(DEFAULT_PROVIDER || 'openai').toLowerCase();
+    const defaultOpenAiCompatibleProviders = new Set(['openai', 'mistral', 'azure_openai', 'generic_llm']);
+    if (!optimizedText && (areaId || llmMode === 'central_managed') && defaultOpenAiCompatibleProviders.has(defaultProvider) && DEFAULT_API_KEY && DEFAULT_MODEL) {
+      const result = await callOpenAICompatible({
+        provider: defaultProvider,
         apiKey: DEFAULT_API_KEY,
         baseUrl: DEFAULT_BASE_URL || 'https://api.openai.com/v1',
         model: DEFAULT_MODEL,
@@ -431,9 +624,17 @@ export async function POST(req: Request) {
         system: prompt.system,
         user: prompt.user,
       });
+      optimizedText = result.content;
+      usagePromptTokens = result.promptTokens;
+      usageCompletionTokens = result.completionTokens;
+      usageTotalTokens = result.totalTokens;
+      usageProvider = defaultProvider;
+      usageModel = DEFAULT_MODEL;
+      usageMode = 'central_managed';
+      usageErrorCode = result.errorCode;
     }
 
-    if (!optimizedText && !areaId && !hasOwnLlmConfig) {
+    if (!optimizedText && !areaId && !hasOwnLlmConfig && llmMode !== 'central_managed') {
       return NextResponse.json(
         { error: 'No partner LLM integration configured for non-area rewrite.' },
         { status: 403 },
@@ -444,6 +645,25 @@ export async function POST(req: Request) {
       // Fallback (wie bisher)
       await new Promise((resolve) => setTimeout(resolve, 600));
       optimizedText = `[KI-FALLBACK]\nOptimierte Fassung für ${areaName}: ${text}`;
+      if (!usageErrorCode) usageErrorCode = 'FALLBACK_USED';
+    }
+
+    try {
+      await writeLlmUsageEvent({
+        partner_id: user.id,
+        route_name: 'ai-rewrite',
+        mode: usageMode,
+        provider: usageErrorCode ? 'fallback' : (usageProvider || 'fallback'),
+        model: usageErrorCode ? 'fallback' : (usageModel || 'fallback'),
+        prompt_tokens: usagePromptTokens,
+        completion_tokens: usageCompletionTokens,
+        total_tokens: usageTotalTokens,
+        estimated_cost_eur: usageEstimatedCostEur,
+        status: usageErrorCode ? 'error' : 'ok',
+        error_code: usageErrorCode ?? null,
+      });
+    } catch (usageError) {
+      console.error('llm usage logging failed (ai-rewrite):', usageError);
     }
 
     if (type === 'data_driven' && optimizedText && !hasSameNumericTokens(String(text ?? ''), optimizedText)) {

@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { createHmac } from "node:crypto";
 
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
+import { loadPartnerLlmPolicy } from "@/lib/llm/partner-policy";
+import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
 
 type IntegrationRow = {
   id: string;
@@ -61,6 +64,48 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 8000
   }
 }
 
+function buildOnOfficeHmacV2(
+  args: { timestamp: string; token: string; resourceType: string; actionId: string },
+  secret: string,
+): string {
+  const payload = `${args.timestamp}${args.token}${args.resourceType}${args.actionId}`;
+  return createHmac("sha256", secret).update(payload).digest("base64");
+}
+
+function buildOnOfficeReadRequest(
+  token: string,
+  secret: string,
+  resourceType: string,
+  fields: string[],
+) {
+  const actionId = "urn:onoffice-de-ns:smart:2.5:smartml:action:read";
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const hmac = buildOnOfficeHmacV2({ timestamp, token, resourceType, actionId }, secret);
+  return {
+    token,
+    request: {
+      actions: [
+        {
+          actionid: actionId,
+          resourceid: "",
+          resourcetype: resourceType,
+          timestamp,
+          hmac,
+          hmac_version: 2,
+          parameters: {
+            data: fields,
+            listlimit: 1,
+            listoffset: 0,
+            filter: {
+              status: [{ op: "=", val: 1 }],
+            },
+          },
+        },
+      ],
+    },
+  };
+}
+
 async function persistTestResult(
   admin: ReturnType<typeof createAdminClient>,
   integration: IntegrationRow,
@@ -106,6 +151,15 @@ export async function POST(
     const integration = data as IntegrationRow;
     if (String(integration.partner_id) !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (integration.kind === "llm") {
+      const policy = await loadPartnerLlmPolicy(admin, userId);
+      if (!policy.llm_partner_managed_allowed) {
+        return NextResponse.json(
+          { error: "LLM-Anbindungen sind für diesen Partner nicht freigeschaltet." },
+          { status: 403 },
+        );
+      }
     }
 
     if (!integration.is_active) {
@@ -194,8 +248,8 @@ export async function POST(
     }
 
     const authType = asText(integration.auth_type)?.toLowerCase() ?? "";
-    const token = asText(authConfig.token);
-    const apiKey = asText(authConfig.api_key);
+    const token = readSecretFromAuthConfig(authConfig, "token");
+    const apiKey = readSecretFromAuthConfig(authConfig, "api_key");
     const model = asText(integration.settings?.model) ?? asText(integration.settings?.model_name);
 
     let res: Response;
@@ -226,6 +280,34 @@ export async function POST(
             "x-api-key": apiKey,
           },
         });
+      } else if (integration.kind === "crm" && integration.provider === "onoffice") {
+        const secret = readSecretFromAuthConfig(authConfig, "secret");
+        if (!token || !secret) {
+          const result = {
+            status: "error" as const,
+            message: "onOffice Zugangsdaten fehlen (Token + Secret erforderlich).",
+          };
+          await persistTestResult(admin, integration, result);
+          return NextResponse.json({ ok: true, result });
+        }
+        const targetCheck = await validateOutboundUrl(resolvedBaseUrl);
+        if (!targetCheck.ok) {
+          const result = {
+            status: "error" as const,
+            message: `Ziel-URL blockiert (${targetCheck.reason}).`,
+          };
+          await persistTestResult(admin, integration, result);
+          return NextResponse.json({ ok: true, result });
+        }
+        const body = buildOnOfficeReadRequest(token, secret, "estate", ["Id"]);
+        res = await fetchWithTimeout(targetCheck.url, {
+          method: "POST",
+          headers: {
+            accept: "application/json, text/plain, */*",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(body),
+        });
       } else if (integration.kind === "llm") {
         if (!apiKey) {
           const result = {
@@ -246,7 +328,7 @@ export async function POST(
 
         if (integration.provider === "google_gemini") {
           const normalizedBase = resolvedBaseUrl.replace(/\/+$/, "");
-          const url = `${normalizedBase}/models?key=${encodeURIComponent(apiKey)}`;
+          const url = `${normalizedBase}/models`;
           const targetCheck = await validateOutboundUrl(url);
           if (!targetCheck.ok) {
             const result = {
@@ -258,7 +340,10 @@ export async function POST(
           }
           res = await fetchWithTimeout(url, {
             method: "GET",
-            headers: { accept: "application/json, text/plain, */*" },
+            headers: {
+              accept: "application/json, text/plain, */*",
+              "x-goog-api-key": apiKey,
+            },
           });
         } else if (integration.provider === "anthropic") {
           const normalizedBase = resolvedBaseUrl.replace(/\/+$/, "");
@@ -284,6 +369,32 @@ export async function POST(
               model,
               max_tokens: Math.max(1, Math.floor(asFiniteNumber(llmSettings.max_tokens) ?? 64)),
               messages: [{ role: "user", content: "ping" }],
+            }),
+          });
+        } else if (integration.provider === "azure_openai") {
+          const normalizedBase = resolvedBaseUrl.replace(/\/+$/, "");
+          const apiVersion = asText(llmSettings.api_version) ?? "2024-10-21";
+          const url = `${normalizedBase}/openai/deployments/${encodeURIComponent(model)}/chat/completions?api-version=${encodeURIComponent(apiVersion)}`;
+          const targetCheck = await validateOutboundUrl(url);
+          if (!targetCheck.ok) {
+            const result = {
+              status: "error" as const,
+              message: `Ziel-URL blockiert (${targetCheck.reason}).`,
+            };
+            await persistTestResult(admin, integration, result);
+            return NextResponse.json({ ok: true, result });
+          }
+          res = await fetchWithTimeout(url, {
+            method: "POST",
+            headers: {
+              accept: "application/json, text/plain, */*",
+              "content-type": "application/json",
+              "api-key": apiKey,
+            },
+            body: JSON.stringify({
+              messages: [{ role: "user", content: "ping" }],
+              max_tokens: Math.max(1, Math.floor(asFiniteNumber(llmSettings.max_tokens) ?? 16)),
+              temperature: asFiniteNumber(llmSettings.temperature) ?? 0,
             }),
           });
         } else {

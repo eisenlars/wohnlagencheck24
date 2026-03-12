@@ -1,0 +1,27 @@
+# OpenAI search crawler
+User-agent: OAI-SearchBot
+Allow: /
+
+# OpenAI model training crawler
+User-agent: GPTBot
+Disallow: /
+
+# Google AI training/grounding control (separate from Google Search)
+User-agent: Google-Extended
+Disallow: /
+
+# Anthropic crawler
+User-agent: ClaudeBot
+Disallow: /
+
+# Perplexity search crawler
+User-agent: PerplexityBot
+Allow: /
+
+# Common Crawl
+User-agent: CCBot
+Disallow: /
+
+# Default: keep classic web indexing/crawling available
+User-agent: *
+Allow: /

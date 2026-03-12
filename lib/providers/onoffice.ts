@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 import type {
   MappedOffer,
   PartnerIntegration,
@@ -26,6 +28,7 @@ type OnOfficeResponse = {
 const ACTION_READ = "urn:onoffice-de-ns:smart:2.5:smartml:action:read";
 const RESOURCE_ESTATE = "estate";
 const RESOURCE_SEARCH_CRITERIA = "searchcriteria";
+const HMAC_VERSION = 2;
 
 type OnOfficeResourceSettings = {
   sold_status_id: number;
@@ -38,6 +41,43 @@ type RegionTarget = {
   label: string;
   key: string;
 };
+
+function buildOnOfficeHmacV2(
+  args: { timestamp: string; token: string; resourceType: string; actionId: string },
+  secret: string,
+): string {
+  const payload = `${args.timestamp}${args.token}${args.resourceType}${args.actionId}`;
+  return createHmac("sha256", secret).update(payload).digest("base64");
+}
+
+function buildOnOfficeReadRequest(
+  token: string,
+  secret: string,
+  resourceType: string,
+  parameters: Record<string, unknown>,
+) {
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const hmac = buildOnOfficeHmacV2(
+    { timestamp, token, resourceType, actionId: ACTION_READ },
+    secret,
+  );
+  return {
+    token,
+    request: {
+      actions: [
+        {
+          actionid: ACTION_READ,
+          resourceid: "",
+          resourcetype: resourceType,
+          timestamp,
+          hmac,
+          hmac_version: HMAC_VERSION,
+          parameters,
+        },
+      ],
+    },
+  };
+}
 
 function toSettings(settings: Record<string, unknown> | null): OnOfficeResourceSettings {
   const resourceFilters = (settings?.resource_filters ?? {}) as Record<string, unknown>;
@@ -459,18 +499,12 @@ async function fetchOnOfficeResource(
   let listoffset = 0;
 
   while (true) {
-    const body = {
-      token,
-      secret,
-      actionid: ACTION_READ,
-      resourceid: resourceId,
-      parameters: {
-        data: fields,
-        listlimit,
-        listoffset,
-        filter,
-      },
-    };
+    const body = buildOnOfficeReadRequest(token, secret, resourceId, {
+      data: fields,
+      listlimit,
+      listoffset,
+      filter,
+    });
 
     const res = await fetch(base, {
       method: "POST",

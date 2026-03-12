@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { buildLocalSiteTokenHash } from "@/lib/security/local-site-auth";
+import { encryptIntegrationSecret, encryptLocalSiteToken } from "@/lib/security/secret-crypto";
 
 type SecretsBody = {
   api_key?: string;
@@ -59,18 +60,54 @@ export async function POST(
       ...((integration.auth_config as Record<string, unknown> | null) ?? {}),
     };
 
-    if (apiKey) nextAuthConfig.api_key = apiKey;
+    if (apiKey) {
+      const encryptedApiKey = encryptIntegrationSecret(apiKey);
+      if (!encryptedApiKey) {
+        return NextResponse.json(
+          { error: "INTEGRATION_SECRETS_ENCRYPTION_KEY fehlt oder ist ungültig." },
+          { status: 500 },
+        );
+      }
+      nextAuthConfig.api_key_encrypted = encryptedApiKey;
+      delete nextAuthConfig.api_key;
+    }
 
     if (token) {
       if (integration.kind === "local_site") {
+        const encryptedToken = encryptLocalSiteToken(token);
+        if (!encryptedToken) {
+          return NextResponse.json(
+            { error: "LOCAL_SITE_TOKEN_ENCRYPTION_KEY fehlt oder ist ungültig." },
+            { status: 500 },
+          );
+        }
         nextAuthConfig.token_hash = buildLocalSiteTokenHash(token);
+        nextAuthConfig.token_encrypted = encryptedToken;
         delete nextAuthConfig.token;
       } else {
-        nextAuthConfig.token = token;
+        const encryptedToken = encryptIntegrationSecret(token);
+        if (!encryptedToken) {
+          return NextResponse.json(
+            { error: "INTEGRATION_SECRETS_ENCRYPTION_KEY fehlt oder ist ungültig." },
+            { status: 500 },
+          );
+        }
+        nextAuthConfig.token_encrypted = encryptedToken;
+        delete nextAuthConfig.token;
       }
     }
 
-    if (secret) nextAuthConfig.secret = secret;
+    if (secret) {
+      const encryptedSecret = encryptIntegrationSecret(secret);
+      if (!encryptedSecret) {
+        return NextResponse.json(
+          { error: "INTEGRATION_SECRETS_ENCRYPTION_KEY fehlt oder ist ungültig." },
+          { status: 500 },
+        );
+      }
+      nextAuthConfig.secret_encrypted = encryptedSecret;
+      delete nextAuthConfig.secret;
+    }
 
     const { error: updateError } = await admin
       .from("partner_integrations")
@@ -91,7 +128,8 @@ export async function POST(
         integration_id: integrationId,
         changed_keys: [
           apiKey ? "api_key" : null,
-          token ? (integration.kind === "local_site" ? "token_hash" : "token") : null,
+          token && integration.kind === "local_site" ? "token_hash" : token ? "token" : null,
+          token && integration.kind === "local_site" ? "token_encrypted" : null,
           secret ? "secret" : null,
         ].filter(Boolean),
       },

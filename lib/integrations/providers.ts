@@ -24,9 +24,9 @@ export const INTEGRATION_PROVIDER_SPECS: IntegrationProviderSpec[] = [
     id: "onoffice",
     label: "onOffice API",
     kind: "crm",
-    description: "onOffice API-Integration mit Token-basiertem Zugriff.",
-    authTypes: ["token", "bearer"],
-    defaultAuthType: "token",
+    description: "onOffice API-Integration mit Token + Secret (HMAC).",
+    authTypes: ["basic"],
+    defaultAuthType: "basic",
     requiresBaseUrl: true,
   },
   {

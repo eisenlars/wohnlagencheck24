@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
-import { getProviderSpec, getProvidersForKind } from "@/lib/integrations/providers";
+import { getProvidersForKind } from "@/lib/integrations/providers";
 import { getMandatoryMediaLabel, isMandatoryMediaKey } from "@/lib/mandatory-media";
 import FullscreenLoader from "@/components/ui/FullscreenLoader";
 
@@ -16,6 +16,8 @@ type Partner = {
   contact_last_name?: string | null;
   website_url?: string | null;
   is_active?: boolean;
+  llm_partner_managed_allowed?: boolean;
+  llm_mode_default?: string | null;
 };
 
 type AreaMapping = {
@@ -131,9 +133,9 @@ type PartnerPurgeCheckPayload = {
   affected_counts?: Record<string, number>;
 };
 
-type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "audit";
+type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "audit" | "llm_global" | "billing_defaults";
 type AdminNavMode = "partners" | "areas";
-type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations";
+type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations" | "billing";
 
 type HandoverApiResponse = {
   ok?: boolean;
@@ -149,12 +151,81 @@ type HandoverApiResponse = {
   };
 };
 
-const AUTH_TYPE_LABELS: Record<string, string> = {
-  api_key: "API Key",
-  token: "Token",
-  bearer: "Bearer",
-  basic: "Basic",
-  none: "Keine Authentifizierung",
+type LlmGlobalConfig = {
+  central_enabled: boolean;
+  monthly_token_budget: number | null;
+  monthly_cost_budget_eur: number | null;
+};
+
+type LlmGlobalProvider = {
+  id: string;
+  provider: string;
+  model: string;
+  base_url: string;
+  auth_type: string;
+  priority: number;
+  is_active: boolean;
+  temperature?: number | null;
+  max_tokens?: number | null;
+  input_cost_eur_per_1k?: number | null;
+  output_cost_eur_per_1k?: number | null;
+  price_source?: string | null;
+  price_source_url?: string | null;
+  price_source_url_override?: string | null;
+  price_updated_at?: string | null;
+};
+
+type LlmUsagePartnerRow = {
+  partner_id: string;
+  tokens: number;
+  cost_eur: number;
+};
+
+type LlmUsageItemRow = {
+  route_name: string;
+  provider: string;
+  model: string;
+  tokens: number;
+  cost_eur: number;
+};
+
+type LlmUsageStatusRow = {
+  status: string;
+  entries: number;
+  tokens: number;
+  cost_eur: number;
+};
+
+type BillingGlobalDefaults = {
+  portal_base_price_eur: number;
+  portal_ortslage_price_eur: number;
+  portal_export_ortslage_price_eur: number;
+};
+
+type BillingFeature = {
+  code: string;
+  label: string;
+  note?: string | null;
+  billing_unit?: string | null;
+  default_enabled: boolean;
+  default_monthly_price_eur: number;
+  sort_order: number;
+  is_active: boolean;
+};
+
+type PartnerBillingFeature = {
+  code: string;
+  label: string;
+  note?: string | null;
+  billing_unit?: string | null;
+  enabled: boolean;
+  monthly_price_eur: number;
+  default_enabled: boolean;
+  default_monthly_price_eur: number;
+  override_enabled?: boolean | null;
+  override_monthly_price_eur?: number | null;
+  is_active?: boolean;
+  sort_order?: number;
 };
 
 function normalizeActivationStatus(value: unknown, isActive: boolean): string {
@@ -178,9 +249,9 @@ function formatAreaStateLabel(isActive: boolean, activationStatus: unknown): str
 
 function getMaskedAuthSummary(integration: Pick<Integration, "auth_config">): string {
   const auth = (integration.auth_config ?? {}) as Record<string, unknown>;
-  const hasApiKey = Boolean(String(auth.api_key ?? "").trim());
-  const hasToken = Boolean(String(auth.token ?? "").trim());
-  const hasSecret = Boolean(String(auth.secret ?? "").trim());
+  const hasApiKey = Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
+  const hasToken = Boolean(String(auth.token ?? auth.token_encrypted ?? "").trim());
+  const hasSecret = Boolean(String(auth.secret ?? auth.secret_encrypted ?? "").trim());
   const parts: string[] = [];
   if (hasApiKey) parts.push("api_****");
   if (hasToken) parts.push("to*****");
@@ -207,15 +278,50 @@ function formatMandatoryKeyLabel(key: string): string {
   return key;
 }
 
-function getDefaultProviderId(kind: string): string {
-  const options = getProvidersForKind(kind);
-  return options[0]?.id ?? "";
+function getSuggestedLatestModel(provider: string): string {
+  const p = String(provider ?? "").trim().toLowerCase();
+  if (p === "openai") return "gpt-5.2";
+  if (p === "anthropic") return "claude-opus-4-1-20250805";
+  if (p === "google_gemini") return "gemini-2.5-pro";
+  if (p === "mistral") return "mistral-small-latest";
+  if (p === "azure_openai") return "gpt-4o-prod";
+  return "";
 }
 
-function getDefaultAuthType(kind: string, provider: string): string {
-  const spec = getProviderSpec(provider) ?? getProviderSpec(getDefaultProviderId(kind));
-  if (!spec) return "";
-  return spec.defaultAuthType ?? spec.authTypes[0] ?? "";
+function getDefaultLlmBaseUrl(provider: string): string {
+  const p = String(provider ?? "").trim().toLowerCase();
+  if (p === "openai") return "https://api.openai.com/v1";
+  if (p === "anthropic") return "https://api.anthropic.com/v1";
+  if (p === "google_gemini") return "https://generativelanguage.googleapis.com/v1beta";
+  if (p === "mistral") return "https://api.mistral.ai/v1";
+  if (p === "azure_openai") return "https://api.openai.com/v1";
+  return "https://api.openai.com/v1";
+}
+
+function getLlmModelSuggestions(provider: string): string[] {
+  const p = String(provider ?? "").trim().toLowerCase();
+  if (p === "openai") return ["gpt-5.2", "gpt-5.2-mini", "gpt-5.2-nano", "gpt-4.1", "gpt-4o"];
+  if (p === "anthropic") {
+    return ["claude-opus-4-1-20250805", "claude-sonnet-4-20250514", "claude-3-7-sonnet-latest", "claude-3-5-haiku-latest"];
+  }
+  if (p === "google_gemini") return ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"];
+  if (p === "mistral") return ["mistral-large-latest", "mistral-medium-latest", "mistral-small-latest", "codestral-latest"];
+  if (p === "azure_openai") return ["gpt-5-prod", "gpt-4.1-prod", "gpt-4o-prod"];
+  return [getSuggestedLatestModel(provider) || "gpt-4o-mini"];
+}
+
+function supportsAutomaticPricing(provider: string): boolean {
+  const p = String(provider ?? "").trim().toLowerCase();
+  const providersWithAutoPricing = new Set<string>(["openai", "anthropic", "google_gemini", "mistral"]);
+  return providersWithAutoPricing.has(p);
+}
+
+function parsePositiveNumber(value: string): number | null {
+  const v = String(value ?? "").trim();
+  if (!v) return null;
+  const parsed = Number(v);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return parsed;
 }
 
 async function readJsonSafe(res: Response) {
@@ -278,6 +384,7 @@ export default function AdminClient() {
     contact_last_name: "",
     website_url: "",
     is_active: true,
+    llm_partner_managed_allowed: false,
   });
 
   const [assignAreaId, setAssignAreaId] = useState("");
@@ -287,20 +394,6 @@ export default function AdminClient() {
     deactivate_old_partner: false,
     deactivate_old_integrations: true,
   });
-
-  const [createIntegration, setCreateIntegration] = useState({
-    kind: "crm",
-    provider: getDefaultProviderId("crm"),
-    base_url: "",
-    auth_type: getDefaultAuthType("crm", getDefaultProviderId("crm")),
-    detail_url_template: "",
-    is_active: true,
-  });
-  const providerOptions = useMemo(() => getProvidersForKind(createIntegration.kind), [createIntegration.kind]);
-  const selectedProviderSpec = useMemo(
-    () => getProviderSpec(createIntegration.provider) ?? providerOptions[0] ?? null,
-    [createIntegration.provider, providerOptions],
-  );
 
   const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
   const [areaOverview, setAreaOverview] = useState<AreaOverviewRow[]>([]);
@@ -313,6 +406,8 @@ export default function AdminClient() {
   const [reviewContentDismissed, setReviewContentDismissed] = useState(false);
   const [activeView, setActiveView] = useState<AdminView>("home");
   const [partnerTab, setPartnerTab] = useState<PartnerPanelTab>("profile");
+  const [integrationsAdminTab, setIntegrationsAdminTab] = useState<"overview" | "llm_partner">("overview");
+  const [llmGlobalTab, setLlmGlobalTab] = useState<"create" | "overview" | "pricing" | "usage">("create");
   const [navMode, setNavMode] = useState<AdminNavMode>("partners");
   const [partnerFilter, setPartnerFilter] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
@@ -418,6 +513,74 @@ export default function AdminClient() {
   const integrationDeleteConfirmModalRef = useRef<HTMLDivElement | null>(null);
   const partnerPurgeModalRef = useRef<HTMLDivElement | null>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  const [llmGlobalConfig, setLlmGlobalConfig] = useState<LlmGlobalConfig>({
+    central_enabled: true,
+    monthly_token_budget: null,
+    monthly_cost_budget_eur: null,
+  });
+  const [llmProviders, setLlmProviders] = useState<LlmGlobalProvider[]>([]);
+  const [llmUsageRows, setLlmUsageRows] = useState<LlmUsagePartnerRow[]>([]);
+  const [llmUsageTotals, setLlmUsageTotals] = useState<{ tokens: number; cost_eur: number }>({ tokens: 0, cost_eur: 0 });
+  const [llmUsageItems, setLlmUsageItems] = useState<LlmUsageItemRow[]>([]);
+  const [llmUsageStatusRows, setLlmUsageStatusRows] = useState<LlmUsageStatusRow[]>([]);
+  const [llmUsageMonth, setLlmUsageMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [partnerBillingRows, setPartnerBillingRows] = useState<LlmUsageItemRow[]>([]);
+  const [partnerBillingTotals, setPartnerBillingTotals] = useState<{ tokens: number; cost_eur: number }>({ tokens: 0, cost_eur: 0 });
+  const [partnerBillingMonth, setPartnerBillingMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [billingDefaultsDraft, setBillingDefaultsDraft] = useState({
+    portal_base_price_eur: "50.00",
+    portal_ortslage_price_eur: "1.00",
+    portal_export_ortslage_price_eur: "1.00",
+  });
+  const [billingFeatureCatalog, setBillingFeatureCatalog] = useState<BillingFeature[]>([]);
+  const [newBillingFeature, setNewBillingFeature] = useState({
+    code: "",
+    label: "",
+    note: "",
+    billing_unit: "pro Monat",
+    default_enabled: false,
+    default_monthly_price_eur: "5.00",
+    sort_order: "100",
+    is_active: true,
+  });
+  const [partnerPortalBillingDraft, setPartnerPortalBillingDraft] = useState({
+    portal_base_price_eur: "",
+    portal_ortslage_price_eur: "",
+    portal_export_ortslage_price_eur: "",
+  });
+  const [partnerFeatureBillingRows, setPartnerFeatureBillingRows] = useState<PartnerBillingFeature[]>([]);
+  const [llmProviderDrafts, setLlmProviderDrafts] = useState<Record<string, Partial<{
+    model: string;
+    base_url: string;
+    priority: string;
+    temperature: string;
+    max_tokens: string;
+    price_source_url_override: string;
+    input_cost_eur_per_1k: string;
+    output_cost_eur_per_1k: string;
+  }>>>({});
+  const [newLlmProvider, setNewLlmProvider] = useState({
+    provider: "openai",
+    model: "gpt-5.2",
+    base_url: "https://api.openai.com/v1",
+    api_version: "",
+    auth_type: "api_key",
+    priority: "10",
+    temperature: "0.4",
+    max_tokens: "900",
+    input_cost_eur_per_1k: "",
+    output_cost_eur_per_1k: "",
+    api_key: "",
+  });
+  const [llmCreateTestBusy, setLlmCreateTestBusy] = useState(false);
+  const [llmCreateTestResult, setLlmCreateTestResult] = useState<{
+    status: "ok" | "error";
+    message: string;
+  } | null>(null);
+
+  const llmProviderSpecs = useMemo(() => getProvidersForKind("llm"), []);
+  const llmModelOptions = useMemo(() => getLlmModelSuggestions(newLlmProvider.provider), [newLlmProvider.provider]);
 
   useEffect(() => {
     const anyModalOpen =
@@ -671,7 +834,21 @@ export default function AdminClient() {
       contact_last_name: partnerData.partner.contact_last_name ?? "",
       website_url: partnerData.partner.website_url ?? "",
       is_active: Boolean(partnerData.partner.is_active),
+      llm_partner_managed_allowed: Boolean(partnerData.partner.llm_partner_managed_allowed),
     });
+    setPartnerBillingRows([]);
+    setPartnerBillingTotals({ tokens: 0, cost_eur: 0 });
+    setPartnerFeatureBillingRows([]);
+    setPartnerPortalBillingDraft({
+      portal_base_price_eur: "",
+      portal_ortslage_price_eur: "",
+      portal_export_ortslage_price_eur: "",
+    });
+    try {
+      await loadPartnerBillingConfig(partnerId);
+    } catch {
+      setPartnerFeatureBillingRows([]);
+    }
   }
 
   async function loadAreaReview(areaId: string) {
@@ -755,6 +932,131 @@ export default function AdminClient() {
     setAuditLogs(data.logs ?? []);
   }
 
+  async function loadLlmGlobalConfig() {
+    const data = await api<{ config?: LlmGlobalConfig }>("/api/admin/llm/global");
+    if (data?.config) {
+      setLlmGlobalConfig({
+        central_enabled: data.config.central_enabled !== false,
+        monthly_token_budget: typeof data.config.monthly_token_budget === "number" ? data.config.monthly_token_budget : null,
+        monthly_cost_budget_eur: typeof data.config.monthly_cost_budget_eur === "number" ? data.config.monthly_cost_budget_eur : null,
+      });
+    }
+  }
+
+  async function loadLlmProviders() {
+    const data = await api<{ providers?: LlmGlobalProvider[] }>("/api/admin/llm/providers");
+    const providers = data.providers ?? [];
+    setLlmProviders(providers);
+    setLlmProviderDrafts(
+      providers.reduce((acc, p) => {
+        acc[p.id] = {
+          model: String(p.model ?? ""),
+          base_url: String(p.base_url ?? ""),
+          priority: String(p.priority ?? 100),
+          temperature: p.temperature === null || p.temperature === undefined ? "" : String(p.temperature),
+          max_tokens: p.max_tokens === null || p.max_tokens === undefined ? "" : String(p.max_tokens),
+          price_source_url_override: String(p.price_source_url_override ?? ""),
+          input_cost_eur_per_1k: p.input_cost_eur_per_1k === null || p.input_cost_eur_per_1k === undefined ? "" : String(p.input_cost_eur_per_1k),
+          output_cost_eur_per_1k: p.output_cost_eur_per_1k === null || p.output_cost_eur_per_1k === undefined ? "" : String(p.output_cost_eur_per_1k),
+        };
+        return acc;
+      }, {} as Record<string, Partial<{
+        model: string;
+        base_url: string;
+        priority: string;
+        temperature: string;
+        max_tokens: string;
+        price_source_url_override: string;
+        input_cost_eur_per_1k: string;
+        output_cost_eur_per_1k: string;
+      }>>),
+    );
+  }
+
+  async function loadLlmUsage(month = llmUsageMonth) {
+    const data = await api<{ by_partner?: LlmUsagePartnerRow[]; by_item?: LlmUsageItemRow[]; by_status?: LlmUsageStatusRow[]; totals?: { tokens?: number; cost_eur?: number } }>(
+      `/api/admin/llm/usage?month=${encodeURIComponent(`${month}-01`)}&status=all`,
+    );
+    setLlmUsageRows(data.by_partner ?? []);
+    setLlmUsageItems(data.by_item ?? []);
+    setLlmUsageStatusRows(data.by_status ?? []);
+    setLlmUsageTotals({
+      tokens: Number(data.totals?.tokens ?? 0),
+      cost_eur: Number(data.totals?.cost_eur ?? 0),
+    });
+  }
+
+  async function loadPartnerBilling(partnerId: string, month = partnerBillingMonth) {
+    if (!partnerId) return;
+    const data = await api<{ by_item?: LlmUsageItemRow[]; totals?: { tokens?: number; cost_eur?: number } }>(
+      `/api/admin/llm/usage?partner_id=${encodeURIComponent(partnerId)}&month=${encodeURIComponent(`${month}-01`)}&status=ok`,
+    );
+    setPartnerBillingRows(data.by_item ?? []);
+    setPartnerBillingTotals({
+      tokens: Number(data.totals?.tokens ?? 0),
+      cost_eur: Number(data.totals?.cost_eur ?? 0),
+    });
+  }
+
+  async function loadBillingDefaults() {
+    const data = await api<{
+      defaults?: BillingGlobalDefaults;
+      features?: BillingFeature[];
+    }>("/api/admin/billing/defaults");
+    const defaults = data.defaults ?? {
+      portal_base_price_eur: 50,
+      portal_ortslage_price_eur: 1,
+      portal_export_ortslage_price_eur: 1,
+    };
+    setBillingDefaultsDraft({
+      portal_base_price_eur: Number(defaults.portal_base_price_eur ?? 50).toFixed(2),
+      portal_ortslage_price_eur: Number(defaults.portal_ortslage_price_eur ?? 1).toFixed(2),
+      portal_export_ortslage_price_eur: Number(defaults.portal_export_ortslage_price_eur ?? 1).toFixed(2),
+    });
+    setBillingFeatureCatalog((data.features ?? []).map((feature) => ({
+      ...feature,
+      default_monthly_price_eur: Number(feature.default_monthly_price_eur ?? 0),
+      sort_order: Number(feature.sort_order ?? 100),
+      default_enabled: feature.default_enabled === true,
+      is_active: feature.is_active !== false,
+    })));
+  }
+
+  async function loadPartnerBillingConfig(partnerId: string) {
+    if (!partnerId) return;
+    const data = await api<{
+      portal?: {
+        overrides?: {
+          portal_base_price_eur?: number | null;
+          portal_ortslage_price_eur?: number | null;
+          portal_export_ortslage_price_eur?: number | null;
+        };
+      };
+      features?: PartnerBillingFeature[];
+    }>(`/api/admin/partners/${partnerId}/billing`);
+    const overrides = data.portal?.overrides ?? {};
+    setPartnerPortalBillingDraft({
+      portal_base_price_eur: overrides.portal_base_price_eur === null || overrides.portal_base_price_eur === undefined ? "" : String(overrides.portal_base_price_eur),
+      portal_ortslage_price_eur: overrides.portal_ortslage_price_eur === null || overrides.portal_ortslage_price_eur === undefined ? "" : String(overrides.portal_ortslage_price_eur),
+      portal_export_ortslage_price_eur: overrides.portal_export_ortslage_price_eur === null || overrides.portal_export_ortslage_price_eur === undefined ? "" : String(overrides.portal_export_ortslage_price_eur),
+    });
+    setPartnerFeatureBillingRows((data.features ?? []).map((row) => ({
+      ...row,
+      enabled: row.enabled === true,
+      monthly_price_eur: Number(row.monthly_price_eur ?? 0),
+      default_enabled: row.default_enabled === true,
+      default_monthly_price_eur: Number(row.default_monthly_price_eur ?? 0),
+    })));
+  }
+
+  async function loadLlmGlobalDashboard() {
+    await Promise.all([
+      loadLlmGlobalConfig(),
+      loadLlmProviders(),
+      loadLlmUsage(),
+    ]);
+  }
+
   useEffect(() => {
     (async () => {
       try {
@@ -833,6 +1135,60 @@ export default function AdminClient() {
       });
     } catch (error) {
       setStatus(error instanceof Error ? error.message : `${label} fehlgeschlagen.`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function syncProviderPricing() {
+    setBusy(true);
+    setStatus("Provider-Preise synchronisieren");
+    try {
+      const sync = await api<{
+        summary?: { total?: number; observed?: number; applied?: number; failed?: number };
+        results?: Array<{ provider?: string; model?: string; status?: string }>;
+      }>("/api/admin/llm/pricing-sync", {
+        method: "POST",
+        body: JSON.stringify({ apply: true }),
+      });
+
+      const total = Number(sync.summary?.total ?? 0);
+      const applied = Number(sync.summary?.applied ?? 0);
+      const failed = Number(sync.summary?.failed ?? 0);
+      const failedItems = (sync.results ?? [])
+        .filter((r) => String(r.status ?? "") !== "applied")
+        .map((r) => `${String(r.provider ?? "").trim()}:${String(r.model ?? "").trim()}`)
+        .filter(Boolean)
+        .slice(0, 3);
+
+      await loadLlmProviders();
+
+      if (total <= 0) {
+        throw new Error("Keine aktiven LLM-Provider für den Preis-Sync gefunden.");
+      }
+      if (applied <= 0) {
+        throw new Error("Es konnten keine Preise automatisch übernommen werden. Bitte Preise manuell eintragen.");
+      }
+      if (applied < total) {
+        setStatus(`Preise teilweise aktualisiert (${applied}/${total}).`);
+        setSuccessModal({
+          open: true,
+          title: "Teilweise aktualisiert",
+          message: failedItems.length > 0
+            ? `Aktualisiert: ${applied}/${total}. Manuell prüfen: ${failedItems.join(", ")}`
+            : `Aktualisiert: ${applied}/${total}. ${failed} Einträge konnten nicht automatisch übernommen werden.`,
+        });
+        return;
+      }
+
+      setStatus("Preise erfolgreich aktualisiert.");
+      setSuccessModal({
+        open: true,
+        title: "Erfolgreich",
+        message: `Preise wurden für alle ${total} Einträge aktualisiert.`,
+      });
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Preis-Sync fehlgeschlagen.");
     } finally {
       setBusy(false);
     }
@@ -928,6 +1284,7 @@ export default function AdminClient() {
       await loadPartnerDetails(partnerId);
       setActiveView(view);
       setPartnerTab("profile");
+      setIntegrationsAdminTab("overview");
       setStatus("Partner geladen.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Partner konnte nicht geladen werden.");
@@ -1490,11 +1847,21 @@ export default function AdminClient() {
 
       <p style={statusStyle}>{status}</p>
 
-      <div style={adminLayoutStyle}>
+      <div
+        style={{
+          ...adminLayoutStyle,
+          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults")
+            ? "56px minmax(0, 1fr)"
+            : adminLayoutStyle.gridTemplateColumns,
+        }}
+      >
         <aside style={modeBarStyle}>
           <button
-            style={modeButtonStyle(navMode === "partners")}
-            onClick={() => setNavMode("partners")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && navMode === "partners")}
+            onClick={() => {
+              setNavMode("partners");
+              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults") setActiveView("home");
+            }}
             title="Partner"
           >
             👥
@@ -1514,11 +1881,38 @@ export default function AdminClient() {
             ) : null}
           </button>
           <button
-            style={modeButtonStyle(navMode === "areas")}
-            onClick={() => setNavMode("areas")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && navMode === "areas")}
+            onClick={() => {
+              setNavMode("areas");
+              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults") setActiveView("home");
+            }}
             title="Gebiete"
           >
             🗺
+          </button>
+          <button
+            style={modeButtonStyle(activeView === "llm_global")}
+            onClick={() => {
+              setActiveView("llm_global");
+              void run("Globale LLM-Verwaltung laden", async () => {
+                await loadLlmGlobalDashboard();
+              });
+            }}
+            title="Globale LLM-Verwaltung"
+          >
+            AI
+          </button>
+          <button
+            style={modeButtonStyle(activeView === "billing_defaults")}
+            onClick={() => {
+              setActiveView("billing_defaults");
+              void run("Billing-Standards laden", async () => {
+                await loadBillingDefaults();
+              });
+            }}
+            title="Billing-Standards"
+          >
+            €
           </button>
           <div style={{ flex: 1 }} />
           <button
@@ -1540,65 +1934,67 @@ export default function AdminClient() {
           </button>
         </aside>
 
-        <aside style={listPaneStyle}>
-          <div style={sidebarSectionHeaderStyle}>{navMode === "partners" ? "Partnerübersicht" : "Gebietsübersicht"}</div>
-          <div style={{ display: "grid", gap: 8, marginBottom: 10 }}>
-            <input
-              style={inputStyle}
-              placeholder={navMode === "partners" ? "Suche: Name, E-Mail oder ID" : "Suche: Kreisname, ID oder Partner"}
-              aria-label={navMode === "partners" ? "Partner suchen" : "Gebiet suchen"}
-              value={navMode === "partners" ? partnerFilter : areaFilter}
-              onChange={(e) => (navMode === "partners" ? setPartnerFilter(e.target.value) : setAreaFilter(e.target.value))}
-            />
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}>
+        {activeView !== "llm_global" && activeView !== "billing_defaults" ? (
+          <aside style={listPaneStyle}>
+            <div style={sidebarSectionHeaderStyle}>{navMode === "partners" ? "Partnerübersicht" : "Gebietsübersicht"}</div>
+            <div style={{ display: "grid", gap: 8, marginBottom: 10 }}>
               <input
-                type="checkbox"
-                checked={onlyActiveList}
-                disabled={navMode === "partners" && pendingAreaAssignmentCount > 0}
-                onChange={(e) => setOnlyActiveList(e.target.checked)}
+                style={inputStyle}
+                placeholder={navMode === "partners" ? "Suche: Name, E-Mail oder ID" : "Suche: Kreisname, ID oder Partner"}
+                aria-label={navMode === "partners" ? "Partner suchen" : "Gebiet suchen"}
+                value={navMode === "partners" ? partnerFilter : areaFilter}
+                onChange={(e) => (navMode === "partners" ? setPartnerFilter(e.target.value) : setAreaFilter(e.target.value))}
               />
-              nur aktiv
-            </label>
-          </div>
-          <div style={sidebarListStyle}>
-            {navMode === "partners"
-              ? filteredPartners.map((p) => (
-                  <button
-                    key={p.id}
-                    style={listLinkRowStyle(selectedPartnerId === p.id)}
-                    onClick={() => selectPartnerView(p.id, "partner_edit")}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
-                      <span>{p.company_name}</span>
-                      {partnerNeedsAssignment.has(p.id) ? (
-                        <span
-                          aria-label="Gebietszuordnung fehlt"
-                          style={{
-                            display: "inline-block",
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            background: "#dc2626",
-                          }}
-                        />
-                      ) : null}
-                    </div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>{p.is_active ? "aktiv" : "inaktiv"}</div>
-                  </button>
-                ))
-              : filteredAreaOverview.map((row) => (
-                  <button
-                    key={row.key}
-                    style={listLinkRowStyle(selectedPartnerId === row.partnerId)}
-                    onClick={() => selectPartnerView(row.partnerId, "partner_edit")}
-                  >
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{row.kreisName}</div>
-                    <div style={{ fontSize: 11, color: "#64748b" }}>{row.kreisId}</div>
-                    <div style={{ fontSize: 12, color: "#475569" }}>{row.partnerName}</div>
-                  </button>
-                ))}
-          </div>
-        </aside>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}>
+                <input
+                  type="checkbox"
+                  checked={onlyActiveList}
+                  disabled={navMode === "partners" && pendingAreaAssignmentCount > 0}
+                  onChange={(e) => setOnlyActiveList(e.target.checked)}
+                />
+                nur aktiv
+              </label>
+            </div>
+            <div style={sidebarListStyle}>
+              {navMode === "partners"
+                ? filteredPartners.map((p) => (
+                    <button
+                      key={p.id}
+                      style={listLinkRowStyle(selectedPartnerId === p.id)}
+                      onClick={() => selectPartnerView(p.id, "partner_edit")}
+                    >
+                      <div style={{ fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+                        <span>{p.company_name}</span>
+                        {partnerNeedsAssignment.has(p.id) ? (
+                          <span
+                            aria-label="Gebietszuordnung fehlt"
+                            style={{
+                              display: "inline-block",
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              background: "#dc2626",
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#64748b" }}>{p.is_active ? "aktiv" : "inaktiv"}</div>
+                    </button>
+                  ))
+                : filteredAreaOverview.map((row) => (
+                    <button
+                      key={row.key}
+                      style={listLinkRowStyle(selectedPartnerId === row.partnerId)}
+                      onClick={() => selectPartnerView(row.partnerId, "partner_edit")}
+                    >
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{row.kreisName}</div>
+                      <div style={{ fontSize: 11, color: "#64748b" }}>{row.kreisId}</div>
+                      <div style={{ fontSize: 12, color: "#475569" }}>{row.partnerName}</div>
+                    </button>
+                  ))}
+            </div>
+          </aside>
+        ) : null}
 
         <div style={contentPaneStyle}>
       {activeView === "home" ? (
@@ -1760,7 +2156,18 @@ export default function AdminClient() {
                 />
               ) : null}
             </button>
-            <button style={partnerTabButtonStyle(partnerTab === "integrations")} onClick={() => setPartnerTab("integrations")}>Anbindungen</button>
+            <button
+              style={partnerTabButtonStyle(partnerTab === "integrations")}
+              onClick={() => {
+                setPartnerTab("integrations");
+                setIntegrationsAdminTab("llm_partner");
+              }}
+            >
+              Anbindungen
+            </button>
+            <button style={partnerTabButtonStyle(partnerTab === "billing")} onClick={() => setPartnerTab("billing")}>
+              Abrechnung
+            </button>
             <button style={partnerTabButtonStyle(partnerTab === "handover")} onClick={() => setPartnerTab("handover")}>Übergabe</button>
           </div>
         ) : null}
@@ -2223,103 +2630,59 @@ export default function AdminClient() {
       {activeView === "partner_edit" && partnerTab === "integrations" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Anbindungen</h2>
-        <div style={grid2Style}>
-          <select
-            style={inputStyle}
-            aria-label="Anbindungstyp"
-            value={createIntegration.kind}
-            onChange={(e) =>
-              setCreateIntegration((v) => {
-                const nextKind = e.target.value;
-                const nextProvider = getDefaultProviderId(nextKind);
-                const nextAuth = getDefaultAuthType(nextKind, nextProvider);
-                return { ...v, kind: nextKind, provider: nextProvider, auth_type: nextAuth };
-              })
-            }
-          >
-            <option value="crm">crm</option>
-            <option value="llm">llm</option>
-            <option value="local_site">local_site</option>
-            <option value="other">other</option>
-          </select>
-          <select
-            style={inputStyle}
-            aria-label="Anbindungsprovider"
-            value={createIntegration.provider}
-            onChange={(e) =>
-              setCreateIntegration((v) => ({
-                ...v,
-                provider: e.target.value,
-                auth_type: getDefaultAuthType(v.kind, e.target.value),
-              }))
-            }
-          >
-            {providerOptions.map((provider) => (
-              <option key={provider.id} value={provider.id}>
-                {provider.label}
-              </option>
-            ))}
-          </select>
-          <input
-            placeholder="Base URL"
-            aria-label="Anbindungs Base URL"
-            style={inputStyle}
-            value={createIntegration.base_url}
-            onChange={(e) => setCreateIntegration((v) => ({ ...v, base_url: e.target.value }))}
-          />
-          <select
-            style={inputStyle}
-            aria-label="Authentifizierungstyp"
-            value={createIntegration.auth_type}
-            onChange={(e) => setCreateIntegration((v) => ({ ...v, auth_type: e.target.value }))}
-          >
-            {(selectedProviderSpec?.authTypes ?? []).map((authType) => (
-              <option key={authType} value={authType}>
-                {AUTH_TYPE_LABELS[authType] ?? authType}
-              </option>
-            ))}
-          </select>
-          <input
-            placeholder="Detail URL Template"
-            aria-label="Detail URL Template"
-            style={inputStyle}
-            value={createIntegration.detail_url_template}
-            onChange={(e) => setCreateIntegration((v) => ({ ...v, detail_url_template: e.target.value }))}
-          />
-        </div>
-        {selectedProviderSpec ? (
-          <p style={{ marginTop: 8, marginBottom: 0, fontSize: 12, color: "#475569" }}>
-            {selectedProviderSpec.description}
-            {selectedProviderSpec.requiresBaseUrl ? " Base URL ist erforderlich." : " Base URL ist optional."}
-          </p>
-        ) : null}
-        <div style={{ marginTop: 12 }}>
+        <div style={partnerTabBarStyle}>
           <button
-            style={btnStyle}
-            disabled={busy || !selectedPartner}
-            onClick={() =>
-              run("Anbindung anlegen", async () => {
-                if (!selectedPartnerId) return;
-                await api(`/api/admin/partners/${selectedPartnerId}/integrations`, {
-                  method: "POST",
-                  body: JSON.stringify(createIntegration),
-                });
-                const nextProvider = getDefaultProviderId(createIntegration.kind);
-                setCreateIntegration((v) => ({
-                  ...v,
-                  provider: nextProvider,
-                  auth_type: getDefaultAuthType(v.kind, nextProvider),
-                  base_url: "",
-                  detail_url_template: "",
-                }));
-                await loadPartnerDetails(selectedPartnerId);
-              })
-            }
+            style={partnerTabButtonStyle(integrationsAdminTab === "overview")}
+            onClick={() => setIntegrationsAdminTab("overview")}
           >
-            Anbindung speichern
+            Übersicht
+          </button>
+          <button
+            style={partnerTabButtonStyle(integrationsAdminTab === "llm_partner")}
+            onClick={() => setIntegrationsAdminTab("llm_partner")}
+          >
+            Partner LLM-Anbindung
           </button>
         </div>
 
+        {integrationsAdminTab === "llm_partner" ? (
+          <div style={{ marginTop: 14, marginBottom: 14, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
+            <label style={{ display: "block", marginBottom: 8 }}>
+              <input
+                type="checkbox"
+                checked={editPartner.llm_partner_managed_allowed}
+                disabled={!selectedPartner}
+                onChange={(e) => setEditPartner((v) => ({ ...v, llm_partner_managed_allowed: e.target.checked }))}
+              />
+              <span style={{ marginLeft: 8 }}>Partner-eigene LLM-Anbindungen erlauben</span>
+            </label>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button
+                style={btnStyle}
+                disabled={busy || !selectedPartner}
+                onClick={() =>
+                  run("LLM-Freigabe speichern", async () => {
+                    if (!selectedPartnerId) return;
+                    await api(`/api/admin/partners/${selectedPartnerId}`, {
+                      method: "PATCH",
+                      body: JSON.stringify({
+                        llm_partner_managed_allowed: editPartner.llm_partner_managed_allowed,
+                      }),
+                    });
+                    await loadPartners(selectedPartnerId);
+                  })
+                }
+              >
+                Freigabe speichern
+              </button>
+              <span style={{ fontSize: 12, color: "#475569" }}>
+                Ohne Freigabe sieht der Partner den LLM-Anbindungstyp im Dashboard nicht.
+              </span>
+            </div>
+          </div>
+        ) : null}
+
+        {integrationsAdminTab === "overview" ? (
         <table style={tableStyle}>
           <thead>
             <tr>
@@ -2380,6 +2743,980 @@ export default function AdminClient() {
             })}
           </tbody>
         </table>
+        ) : null}
+      </section>
+      ) : null}
+
+      {activeView === "partner_edit" && partnerTab === "billing" && Boolean(selectedPartner) ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Abrechnung</h2>
+        <p style={mutedStyle}>
+          Portalabo/Feature-Freischaltungen und partnerbezogene Abrechnungseinstellungen.
+        </p>
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Portalabo Override (Partner)</div>
+          <div style={grid3Style}>
+            <label>
+              Grundpreis (EUR/Monat)
+              <input
+                style={inputStyle}
+                value={partnerPortalBillingDraft.portal_base_price_eur}
+                onChange={(e) => setPartnerPortalBillingDraft((v) => ({ ...v, portal_base_price_eur: e.target.value }))}
+                placeholder="leer = globaler Standard"
+              />
+            </label>
+            <label>
+              Preis je Ortslage (EUR)
+              <input
+                style={inputStyle}
+                value={partnerPortalBillingDraft.portal_ortslage_price_eur}
+                onChange={(e) => setPartnerPortalBillingDraft((v) => ({ ...v, portal_ortslage_price_eur: e.target.value }))}
+                placeholder="leer = globaler Standard"
+              />
+            </label>
+            <label>
+              Preis je Export-Ortslage (EUR)
+              <input
+                style={inputStyle}
+                value={partnerPortalBillingDraft.portal_export_ortslage_price_eur}
+                onChange={(e) => setPartnerPortalBillingDraft((v) => ({ ...v, portal_export_ortslage_price_eur: e.target.value }))}
+                placeholder="leer = globaler Standard"
+              />
+            </label>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <button
+              style={btnStyle}
+              disabled={busy || !selectedPartnerId}
+              onClick={() =>
+                run("Partner-Portalabo speichern", async () => {
+                  if (!selectedPartnerId) return;
+                  const parseOverride = (raw: string) => {
+                    const v = String(raw ?? "").trim();
+                    if (!v) return null;
+                    const n = Number(v);
+                    if (!Number.isFinite(n) || n < 0) throw new Error("Portalabo-Preise müssen >= 0 sein.");
+                    return Number(n.toFixed(2));
+                  };
+                  await api(`/api/admin/partners/${selectedPartnerId}/billing`, {
+                    method: "PATCH",
+                    body: JSON.stringify({
+                      portal_overrides: {
+                        portal_base_price_eur: parseOverride(partnerPortalBillingDraft.portal_base_price_eur),
+                        portal_ortslage_price_eur: parseOverride(partnerPortalBillingDraft.portal_ortslage_price_eur),
+                        portal_export_ortslage_price_eur: parseOverride(partnerPortalBillingDraft.portal_export_ortslage_price_eur),
+                      },
+                    }),
+                  });
+                  await loadPartnerBillingConfig(selectedPartnerId);
+                })
+              }
+            >
+              Portalabo speichern
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Features (Partner-Override)</div>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Feature</th>
+                <th style={thStyle}>Aktiv</th>
+                <th style={thStyle}>Preis EUR/Monat</th>
+                <th style={thStyle}>Default</th>
+              </tr>
+            </thead>
+            <tbody>
+              {partnerFeatureBillingRows.map((row, idx) => (
+                <tr key={row.code}>
+                  <td style={tdStyle}>
+                    <div style={{ fontWeight: 600 }}>{row.label}</div>
+                    {row.note ? <div style={{ fontSize: 12, color: "#64748b" }}>{row.note}</div> : null}
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      type="checkbox"
+                      checked={row.enabled}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setPartnerFeatureBillingRows((prev) => prev.map((item, itemIdx) => (itemIdx === idx ? { ...item, enabled: checked } : item)));
+                      }}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      style={{ ...inputStyle, maxWidth: 140 }}
+                      value={String(row.monthly_price_eur ?? 0)}
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        setPartnerFeatureBillingRows((prev) =>
+                          prev.map((item, itemIdx) => (itemIdx === idx ? { ...item, monthly_price_eur: Number.isFinite(next) ? next : 0 } : item)),
+                        );
+                      }}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    {row.default_enabled ? "Aktiv" : "Inaktiv"} · {Number(row.default_monthly_price_eur ?? 0).toFixed(2)} EUR
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ marginTop: 10 }}>
+            <button
+              style={btnStyle}
+              disabled={busy || !selectedPartnerId}
+              onClick={() =>
+                run("Partner-Features speichern", async () => {
+                  if (!selectedPartnerId) return;
+                  await api(`/api/admin/partners/${selectedPartnerId}/billing`, {
+                    method: "PATCH",
+                    body: JSON.stringify({
+                      feature_overrides: partnerFeatureBillingRows.map((row) => ({
+                        code: row.code,
+                        is_enabled: row.enabled,
+                        monthly_price_eur: Number(Number(row.monthly_price_eur ?? 0).toFixed(2)),
+                      })),
+                    }),
+                  });
+                  await loadPartnerBillingConfig(selectedPartnerId);
+                })
+              }
+            >
+              Features speichern
+            </button>
+          </div>
+        </div>
+
+        <p style={{ ...mutedStyle, marginTop: 14 }}>
+          Token- und Kostenverbrauch aus zentraler LLM-Nutzung.
+        </p>
+        <div style={{ ...rowStyle, marginTop: 10 }}>
+          <input
+            type="month"
+            style={inputStyle}
+            value={partnerBillingMonth}
+            onChange={(e) => setPartnerBillingMonth(e.target.value)}
+          />
+          <button
+            style={btnStyle}
+            onClick={() =>
+              run("Partner-Abrechnung laden", async () => {
+                if (!selectedPartnerId) return;
+                await loadPartnerBilling(selectedPartnerId, partnerBillingMonth);
+              })
+            }
+          >
+            Aktualisieren
+          </button>
+        </div>
+        <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
+          Gesamt Tokens: <strong>{partnerBillingTotals.tokens}</strong> · Gesamt Kosten (EUR): <strong>{partnerBillingTotals.cost_eur.toFixed(4)}</strong>
+        </div>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Route</th>
+              <th style={thStyle}>Provider</th>
+              <th style={thStyle}>Modell</th>
+              <th style={thStyle}>Tokens</th>
+              <th style={thStyle}>Kosten EUR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerBillingRows.map((row) => (
+              <tr key={`${row.route_name}:${row.provider}:${row.model}`}>
+                <td style={tdStyle}>{row.route_name}</td>
+                <td style={tdStyle}>{row.provider}</td>
+                <td style={tdStyle}>{row.model}</td>
+                <td style={tdStyle}>{row.tokens}</td>
+                <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+      ) : null}
+
+      {activeView === "billing_defaults" ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Billing-Standards</h2>
+        <p style={mutedStyle}>
+          Globale Standarddefinition für Portalabo und Feature-Katalog.
+        </p>
+
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Portalabo Standard</div>
+          <div style={grid3Style}>
+            <label>
+              Grundpreis (EUR/Monat)
+              <input
+                style={inputStyle}
+                value={billingDefaultsDraft.portal_base_price_eur}
+                onChange={(e) => setBillingDefaultsDraft((v) => ({ ...v, portal_base_price_eur: e.target.value }))}
+              />
+            </label>
+            <label>
+              Preis je Ortslage (EUR)
+              <input
+                style={inputStyle}
+                value={billingDefaultsDraft.portal_ortslage_price_eur}
+                onChange={(e) => setBillingDefaultsDraft((v) => ({ ...v, portal_ortslage_price_eur: e.target.value }))}
+              />
+            </label>
+            <label>
+              Preis je Export-Ortslage (EUR)
+              <input
+                style={inputStyle}
+                value={billingDefaultsDraft.portal_export_ortslage_price_eur}
+                onChange={(e) => setBillingDefaultsDraft((v) => ({ ...v, portal_export_ortslage_price_eur: e.target.value }))}
+              />
+            </label>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <button
+              style={btnStyle}
+              disabled={busy}
+              onClick={() =>
+                run("Billing-Standards speichern", async () => {
+                  const parseOrThrow = (raw: string, field: string) => {
+                    const n = Number(raw);
+                    if (!Number.isFinite(n) || n < 0) throw new Error(`${field} muss >= 0 sein.`);
+                    return Number(n.toFixed(2));
+                  };
+                  await api("/api/admin/billing/defaults", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      defaults: {
+                        portal_base_price_eur: parseOrThrow(billingDefaultsDraft.portal_base_price_eur, "Grundpreis"),
+                        portal_ortslage_price_eur: parseOrThrow(billingDefaultsDraft.portal_ortslage_price_eur, "Preis je Ortslage"),
+                        portal_export_ortslage_price_eur: parseOrThrow(billingDefaultsDraft.portal_export_ortslage_price_eur, "Preis je Export-Ortslage"),
+                      },
+                    }),
+                  });
+                  await loadBillingDefaults();
+                })
+              }
+            >
+              Standard speichern
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Feature-Katalog</div>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Code</th>
+                <th style={thStyle}>Label</th>
+                <th style={thStyle}>Aktiv (Default)</th>
+                <th style={thStyle}>Preis (Default)</th>
+                <th style={thStyle}>Einheit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {billingFeatureCatalog.map((feature, idx) => (
+                <tr key={feature.code}>
+                  <td style={tdStyle}>{feature.code}</td>
+                  <td style={tdStyle}>
+                    <input
+                      style={inputStyle}
+                      value={feature.label}
+                      onChange={(e) => setBillingFeatureCatalog((prev) => prev.map((row, rowIdx) => rowIdx === idx ? { ...row, label: e.target.value } : row))}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      type="checkbox"
+                      checked={feature.default_enabled}
+                      onChange={(e) => setBillingFeatureCatalog((prev) => prev.map((row, rowIdx) => rowIdx === idx ? { ...row, default_enabled: e.target.checked } : row))}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      style={{ ...inputStyle, maxWidth: 130 }}
+                      value={String(feature.default_monthly_price_eur)}
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        setBillingFeatureCatalog((prev) => prev.map((row, rowIdx) => rowIdx === idx ? { ...row, default_monthly_price_eur: Number.isFinite(next) ? next : 0 } : row));
+                      }}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      style={inputStyle}
+                      value={feature.billing_unit ?? "pro Monat"}
+                      onChange={(e) => setBillingFeatureCatalog((prev) => prev.map((row, rowIdx) => rowIdx === idx ? { ...row, billing_unit: e.target.value } : row))}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              style={btnStyle}
+              disabled={busy}
+              onClick={() =>
+                run("Feature-Katalog speichern", async () => {
+                  await api("/api/admin/billing/defaults", {
+                    method: "POST",
+                    body: JSON.stringify({ features: billingFeatureCatalog }),
+                  });
+                  await loadBillingDefaults();
+                })
+              }
+            >
+              Katalog speichern
+            </button>
+          </div>
+
+          <div style={{ marginTop: 12, borderTop: "1px solid #e2e8f0", paddingTop: 12 }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>Neues Feature</div>
+            <div style={grid3Style}>
+              <input
+                style={inputStyle}
+                placeholder="code (z. B. social_media)"
+                value={newBillingFeature.code}
+                onChange={(e) => setNewBillingFeature((v) => ({ ...v, code: e.target.value }))}
+              />
+              <input
+                style={inputStyle}
+                placeholder="Label"
+                value={newBillingFeature.label}
+                onChange={(e) => setNewBillingFeature((v) => ({ ...v, label: e.target.value }))}
+              />
+              <input
+                style={inputStyle}
+                placeholder="Preis EUR"
+                value={newBillingFeature.default_monthly_price_eur}
+                onChange={(e) => setNewBillingFeature((v) => ({ ...v, default_monthly_price_eur: e.target.value }))}
+              />
+            </div>
+            <div style={{ ...rowStyle, marginTop: 8 }}>
+              <input
+                style={inputStyle}
+                placeholder="Einheit (z. B. pro Monat)"
+                value={newBillingFeature.billing_unit}
+                onChange={(e) => setNewBillingFeature((v) => ({ ...v, billing_unit: e.target.value }))}
+              />
+              <input
+                style={inputStyle}
+                placeholder="Hinweis"
+                value={newBillingFeature.note}
+                onChange={(e) => setNewBillingFeature((v) => ({ ...v, note: e.target.value }))}
+              />
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                <input
+                  type="checkbox"
+                  checked={newBillingFeature.default_enabled}
+                  onChange={(e) => setNewBillingFeature((v) => ({ ...v, default_enabled: e.target.checked }))}
+                />
+                Default aktiv
+              </label>
+              <button
+                style={btnStyle}
+                disabled={busy}
+                onClick={() =>
+                  run("Neues Feature anlegen", async () => {
+                    await api("/api/admin/billing/defaults", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        features: [{
+                          ...newBillingFeature,
+                          code: newBillingFeature.code.trim().toLowerCase(),
+                          sort_order: Number(newBillingFeature.sort_order || "100"),
+                          default_monthly_price_eur: Number(newBillingFeature.default_monthly_price_eur || "0"),
+                        }],
+                      }),
+                    });
+                    await loadBillingDefaults();
+                    setNewBillingFeature({
+                      code: "",
+                      label: "",
+                      note: "",
+                      billing_unit: "pro Monat",
+                      default_enabled: false,
+                      default_monthly_price_eur: "5.00",
+                      sort_order: "100",
+                      is_active: true,
+                    });
+                  })
+                }
+              >
+                Feature anlegen
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      ) : null}
+
+      {activeView === "llm_global" ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Globale LLM-Verwaltung</h2>
+        <div style={partnerTabBarStyle}>
+          <button style={partnerTabButtonStyle(llmGlobalTab === "create")} onClick={() => setLlmGlobalTab("create")}>
+            LLM anlegen
+          </button>
+          <button style={partnerTabButtonStyle(llmGlobalTab === "pricing")} onClick={() => setLlmGlobalTab("pricing")}>
+            LLM Preise
+          </button>
+          <button style={partnerTabButtonStyle(llmGlobalTab === "overview")} onClick={() => setLlmGlobalTab("overview")}>
+            LLM Übersicht
+          </button>
+          <button style={partnerTabButtonStyle(llmGlobalTab === "usage")} onClick={() => setLlmGlobalTab("usage")}>
+            Partnerverbrauch Übersicht
+          </button>
+        </div>
+
+        {llmGlobalTab === "create" ? (
+          <>
+            <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+              <div style={grid2Style}>
+                <select
+                  style={inputStyle}
+                  value={newLlmProvider.provider}
+                  onChange={(e) => {
+                    const provider = e.target.value;
+                    const suggested = getLlmModelSuggestions(provider);
+                    setLlmCreateTestResult(null);
+                    setNewLlmProvider((v) => ({
+                      ...v,
+                      provider,
+                      model: suggested[0] ?? (getSuggestedLatestModel(provider) || v.model),
+                      base_url: getDefaultLlmBaseUrl(provider),
+                      api_version: provider === "azure_openai" ? (v.api_version || "2024-10-21") : "",
+                    }));
+                  }}
+                >
+                  {llmProviderSpecs.map((spec) => (
+                    <option key={spec.id} value={spec.id}>
+                      {spec.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  style={inputStyle}
+                  value={newLlmProvider.model}
+                  onChange={(e) => {
+                    setLlmCreateTestResult(null);
+                    setNewLlmProvider((v) => ({ ...v, model: e.target.value }));
+                  }}
+                >
+                  {llmModelOptions.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <input
+                  style={inputStyle}
+                  placeholder="Base URL"
+                  value={newLlmProvider.base_url}
+                  onChange={(e) => {
+                    setLlmCreateTestResult(null);
+                    setNewLlmProvider((v) => ({ ...v, base_url: e.target.value }));
+                  }}
+                />
+              </div>
+              {String(newLlmProvider.provider).toLowerCase() === "azure_openai" ? (
+                <div>
+                  <input
+                    style={inputStyle}
+                    placeholder="Azure API-Version (z. B. 2024-10-21)"
+                    value={newLlmProvider.api_version}
+                    onChange={(e) => {
+                      setLlmCreateTestResult(null);
+                      setNewLlmProvider((v) => ({ ...v, api_version: e.target.value }));
+                    }}
+                  />
+                </div>
+              ) : null}
+              <div style={grid2Style}>
+                <input
+                  style={inputStyle}
+                  placeholder="API-Key"
+                  value={newLlmProvider.api_key}
+                  onChange={(e) => {
+                    setLlmCreateTestResult(null);
+                    setNewLlmProvider((v) => ({ ...v, api_key: e.target.value }));
+                  }}
+                />
+                <button
+                  style={btnGhostStyle}
+                  disabled={busy || llmCreateTestBusy}
+                  onClick={() =>
+                    run("LLM-Verbindung testen", async () => {
+                      setLlmCreateTestBusy(true);
+                      setLlmCreateTestResult(null);
+                      try {
+                        const resp = await api<{ result?: { status?: string; message?: string } }>("/api/admin/llm/providers/test", {
+                          method: "POST",
+                          body: JSON.stringify({
+                            provider: newLlmProvider.provider,
+                            model: newLlmProvider.model,
+                            base_url: newLlmProvider.base_url,
+                            api_key: newLlmProvider.api_key,
+                            api_version: String(newLlmProvider.api_version || "").trim() || null,
+                          }),
+                        });
+                        const status = String(resp.result?.status ?? "").toLowerCase();
+                        setLlmCreateTestResult({
+                          status: status === "ok" ? "ok" : "error",
+                          message: String(resp.result?.message ?? "Kein Testergebnis."),
+                        });
+                      } finally {
+                        setLlmCreateTestBusy(false);
+                      }
+                    })
+                  }
+                >
+                  {llmCreateTestBusy ? "Teste..." : "Verbindung testen"}
+                </button>
+              </div>
+              {llmCreateTestResult ? (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: llmCreateTestResult.status === "ok" ? "#166534" : "#991b1b",
+                    background: llmCreateTestResult.status === "ok" ? "#f0fdf4" : "#fef2f2",
+                    border: `1px solid ${llmCreateTestResult.status === "ok" ? "#bbf7d0" : "#fecaca"}`,
+                    borderRadius: 8,
+                    padding: "8px 10px",
+                  }}
+                >
+                  {llmCreateTestResult.message}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <button
+                style={btnStyle}
+                disabled={busy}
+                onClick={() =>
+                  run("Globalen LLM-Provider anlegen", async () => {
+                    const created = await api<{ provider?: { id: string } }>("/api/admin/llm/providers", {
+                      method: "POST",
+                      body: JSON.stringify({
+                        provider: newLlmProvider.provider,
+                        model: newLlmProvider.model,
+                        base_url: newLlmProvider.base_url,
+                        auth_type: newLlmProvider.auth_type,
+                        priority: Number(newLlmProvider.priority || 100),
+                        temperature: newLlmProvider.temperature ? Number(newLlmProvider.temperature) : null,
+                        max_tokens: newLlmProvider.max_tokens ? Number(newLlmProvider.max_tokens) : null,
+                      }),
+                    });
+                    const providerId = String(created.provider?.id ?? "").trim();
+                    if (providerId && newLlmProvider.api_key.trim()) {
+                      await api(`/api/admin/llm/providers/${providerId}/secrets`, {
+                        method: "POST",
+                        body: JSON.stringify({ api_key: newLlmProvider.api_key }),
+                      });
+                    }
+                    setLlmCreateTestResult(null);
+                    setNewLlmProvider((v) => ({ ...v, api_key: "" }));
+                    await loadLlmProviders();
+                  })
+                }
+              >
+                LLM speichern
+              </button>
+            </div>
+          </>
+        ) : null}
+
+        {llmGlobalTab === "overview" ? (
+          <>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Prio</th>
+                  <th style={thStyle}>Provider</th>
+                  <th style={thStyle}>Modell</th>
+                  <th style={thStyle}>Base URL</th>
+                  <th style={thStyle}>Status</th>
+                  <th style={thStyle}>Aktion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {llmProviders.map((p) => (
+                  <tr key={p.id}>
+                    <td style={tdStyle}>
+                      <input
+                        style={inputStyle}
+                        value={llmProviderDrafts[p.id]?.priority ?? String(p.priority)}
+                        onChange={(e) =>
+                          setLlmProviderDrafts((v) => ({
+                            ...v,
+                            [p.id]: { ...(v[p.id] ?? {}), priority: e.target.value },
+                          }))
+                        }
+                      />
+                    </td>
+                    <td style={tdStyle}>{p.provider}</td>
+                    <td style={tdStyle}>
+                      <input
+                        style={inputStyle}
+                        value={llmProviderDrafts[p.id]?.model ?? p.model}
+                        onChange={(e) =>
+                          setLlmProviderDrafts((v) => ({
+                            ...v,
+                            [p.id]: { ...(v[p.id] ?? {}), model: e.target.value },
+                          }))
+                        }
+                      />
+                    </td>
+                    <td style={tdStyle}>
+                      <input
+                        style={inputStyle}
+                        value={llmProviderDrafts[p.id]?.base_url ?? p.base_url}
+                        onChange={(e) =>
+                          setLlmProviderDrafts((v) => ({
+                            ...v,
+                            [p.id]: { ...(v[p.id] ?? {}), base_url: e.target.value },
+                          }))
+                        }
+                      />
+                    </td>
+                    <td style={tdStyle}>{p.is_active ? "aktiv" : "inaktiv"}</td>
+                    <td style={tdStyle}>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          style={btnStyle}
+                          onClick={() =>
+                            run("Provider speichern", async () => {
+                              const draft = llmProviderDrafts[p.id];
+                              if (!draft) return;
+                              await api(`/api/admin/llm/providers/${p.id}`, {
+                                method: "PATCH",
+                                body: JSON.stringify({
+                                  model: draft.model,
+                                  base_url: draft.base_url,
+                                  priority: Number(draft.priority || p.priority),
+                                }),
+                              });
+                              await loadLlmProviders();
+                            })
+                          }
+                        >
+                          Speichern
+                        </button>
+                        <button
+                          style={btnGhostStyle}
+                          onClick={() =>
+                            setLlmProviderDrafts((v) => ({
+                              ...v,
+                              [p.id]: {
+                                ...(v[p.id] ?? {}),
+                                model: getSuggestedLatestModel(p.provider) || (v[p.id]?.model ?? p.model),
+                              },
+                            }))
+                          }
+                        >
+                          Neuestes Modell
+                        </button>
+                        <button
+                          style={btnGhostStyle}
+                          onClick={() =>
+                            run("Provider-Status ändern", async () => {
+                              await api(`/api/admin/llm/providers/${p.id}`, {
+                                method: "PATCH",
+                                body: JSON.stringify({ is_active: !p.is_active }),
+                              });
+                              await loadLlmProviders();
+                            })
+                          }
+                        >
+                          {p.is_active ? "Deaktivieren" : "Aktivieren"}
+                        </button>
+                        <button
+                          style={btnDangerStyle}
+                          onClick={() =>
+                            run("Provider löschen", async () => {
+                              await api(`/api/admin/llm/providers/${p.id}`, { method: "DELETE" });
+                              await loadLlmProviders();
+                            })
+                          }
+                        >
+                          Löschen
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ ...grid3Style, marginTop: 14 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
+                <input
+                  type="checkbox"
+                  checked={llmGlobalConfig.central_enabled}
+                  onChange={(e) => setLlmGlobalConfig((v) => ({ ...v, central_enabled: e.target.checked }))}
+                />
+                Zentrale LLM-Nutzung aktiv
+              </label>
+              <input
+                style={inputStyle}
+                placeholder="Monatliches Token-Budget (global)"
+                value={llmGlobalConfig.monthly_token_budget ?? ""}
+                onChange={(e) =>
+                  setLlmGlobalConfig((v) => ({
+                    ...v,
+                    monthly_token_budget: e.target.value.trim() ? Number(e.target.value) : null,
+                  }))
+                }
+              />
+              <input
+                style={inputStyle}
+                placeholder="Monatliches Kosten-Budget EUR (global)"
+                value={llmGlobalConfig.monthly_cost_budget_eur ?? ""}
+                onChange={(e) =>
+                  setLlmGlobalConfig((v) => ({
+                    ...v,
+                    monthly_cost_budget_eur: e.target.value.trim() ? Number(e.target.value) : null,
+                  }))
+                }
+              />
+              <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+                <button
+                  style={btnStyle}
+                  onClick={() =>
+                    run("Globale LLM-Konfiguration speichern", async () => {
+                      await api("/api/admin/llm/global", {
+                        method: "PATCH",
+                        body: JSON.stringify(llmGlobalConfig),
+                      });
+                      await loadLlmGlobalConfig();
+                    })
+                  }
+                >
+                  Konfiguration speichern
+                </button>
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {llmGlobalTab === "pricing" ? (
+          <>
+            <div style={{ ...rowStyle, marginTop: 12, marginBottom: 8 }}>
+              <div style={{ ...mutedStyle, fontSize: 12 }}>
+                Regelmäßige Preisaktualisierung pro Provider/Modell. Wenn keine Preise übernommen werden können, bitte manuell eintragen.
+              </div>
+              <button
+                style={btnGhostStyle}
+                disabled={busy}
+                onClick={() => {
+                  void syncProviderPricing();
+                }}
+              >
+                Preise aktualisieren
+              </button>
+            </div>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Provider</th>
+                  <th style={thStyle}>Modell</th>
+                  <th style={thStyle}>Parser-URL (optional)</th>
+                  <th style={thStyle}>Preis EUR/1k (In/Out)</th>
+                  <th style={thStyle}>Quelle</th>
+                  <th style={thStyle}>Aktion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {llmProviders.map((p) => (
+                  <tr key={`price:${p.id}`}>
+                    <td style={tdStyle}>{p.provider}</td>
+                    <td style={tdStyle}>{p.model}</td>
+                    <td style={tdStyle}>
+                      <input
+                        style={inputStyle}
+                        placeholder="https://.../pricing"
+                        value={llmProviderDrafts[p.id]?.price_source_url_override ?? ""}
+                        onChange={(e) =>
+                          setLlmProviderDrafts((v) => ({
+                            ...v,
+                            [p.id]: { ...(v[p.id] ?? {}), price_source_url_override: e.target.value },
+                          }))
+                        }
+                      />
+                    </td>
+                    <td style={tdStyle}>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <input
+                          style={inputStyle}
+                          placeholder="in"
+                          value={llmProviderDrafts[p.id]?.input_cost_eur_per_1k ?? ""}
+                          onChange={(e) =>
+                            setLlmProviderDrafts((v) => ({
+                              ...v,
+                              [p.id]: { ...(v[p.id] ?? {}), input_cost_eur_per_1k: e.target.value },
+                            }))
+                          }
+                        />
+                        <input
+                          style={inputStyle}
+                          placeholder="out"
+                          value={llmProviderDrafts[p.id]?.output_cost_eur_per_1k ?? ""}
+                          onChange={(e) =>
+                            setLlmProviderDrafts((v) => ({
+                              ...v,
+                              [p.id]: { ...(v[p.id] ?? {}), output_cost_eur_per_1k: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                      {!supportsAutomaticPricing(p.provider) ? (
+                        <div style={{ marginTop: 6, fontSize: 11, color: "#7c2d12" }}>
+                          Kein Auto-Preisabruf: manuelle Pflege
+                        </div>
+                      ) : null}
+                    </td>
+                    <td style={tdStyle}>
+                      {String(p.price_source ?? "").trim() === "provider_web" ? "Provider-Webseite" : "Manuell"}
+                      {p.price_updated_at ? (
+                        <div style={{ marginTop: 2, fontSize: 11, color: "#64748b" }}>
+                          Stand: {new Date(p.price_updated_at).toLocaleString("de-DE")}
+                        </div>
+                      ) : null}
+                      {p.price_source_url ? (
+                        <div style={{ marginTop: 2, fontSize: 11 }}>
+                          <a href={p.price_source_url} target="_blank" rel="noreferrer" style={{ color: "#0f766e" }}>
+                            Quelle öffnen
+                          </a>
+                        </div>
+                      ) : null}
+                    </td>
+                    <td style={tdStyle}>
+                      <button
+                        style={btnStyle}
+                        onClick={() =>
+                          run("Preis speichern", async () => {
+                            const draft = llmProviderDrafts[p.id];
+                            if (!draft) return;
+                            const inputCost = parsePositiveNumber(String(draft.input_cost_eur_per_1k ?? ""));
+                            const outputCost = parsePositiveNumber(String(draft.output_cost_eur_per_1k ?? ""));
+                            if (inputCost === null || outputCost === null) {
+                              throw new Error("Input- und Output-Kosten sind Pflichtfelder und müssen größer als 0 sein.");
+                            }
+                            await api(`/api/admin/llm/providers/${p.id}`, {
+                              method: "PATCH",
+                              body: JSON.stringify({
+                                price_source_url_override: String(draft.price_source_url_override ?? "").trim() || null,
+                                input_cost_eur_per_1k: inputCost,
+                                output_cost_eur_per_1k: outputCost,
+                              }),
+                            });
+                            await loadLlmProviders();
+                          })
+                        }
+                      >
+                        Speichern
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : null}
+
+        {llmGlobalTab === "usage" ? (
+          <>
+            <div style={{ ...rowStyle, marginTop: 14 }}>
+              <input
+                type="month"
+                style={inputStyle}
+                value={llmUsageMonth}
+                onChange={(e) => setLlmUsageMonth(e.target.value)}
+              />
+              <button
+                style={btnStyle}
+                onClick={() =>
+                  run("LLM-Monitoring laden", async () => {
+                    await loadLlmUsage(llmUsageMonth);
+                  })
+                }
+              >
+                Aktualisieren
+              </button>
+            </div>
+            <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
+              Gesamt Tokens: <strong>{llmUsageTotals.tokens}</strong> · Gesamt Kosten (EUR): <strong>{llmUsageTotals.cost_eur.toFixed(4)}</strong>
+            </div>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Status</th>
+                  <th style={thStyle}>Events</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>Kosten EUR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {llmUsageStatusRows.map((row) => (
+                  <tr key={`status:${row.status}`}>
+                    <td style={tdStyle}>{row.status}</td>
+                    <td style={tdStyle}>{row.entries}</td>
+                    <td style={tdStyle}>{row.tokens}</td>
+                    <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Partner-ID</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>Kosten EUR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {llmUsageRows.map((row) => (
+                  <tr key={row.partner_id}>
+                    <td style={tdStyle}>{row.partner_id}</td>
+                    <td style={tdStyle}>{row.tokens}</td>
+                    <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+              Aufschlüsselung nach Route/Provider/Modell
+            </div>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Route</th>
+                  <th style={thStyle}>Provider</th>
+                  <th style={thStyle}>Modell</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>Kosten EUR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {llmUsageItems.map((row) => (
+                  <tr key={`${row.route_name}:${row.provider}:${row.model}`}>
+                    <td style={tdStyle}>{row.route_name}</td>
+                    <td style={tdStyle}>{row.provider}</td>
+                    <td style={tdStyle}>{row.model}</td>
+                    <td style={tdStyle}>{row.tokens}</td>
+                    <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : null}
       </section>
       ) : null}
 
@@ -2512,7 +3849,7 @@ const statusStyle: React.CSSProperties = {
 
 const adminLayoutStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "112px 360px minmax(0, 1fr)",
+  gridTemplateColumns: "56px 320px minmax(0, 1fr)",
   gap: 0,
   alignItems: "stretch",
   minHeight: "calc(100vh - 120px)",
@@ -2520,10 +3857,10 @@ const adminLayoutStyle: React.CSSProperties = {
 
 const modeBarStyle: React.CSSProperties = {
   background: "rgb(72, 107, 122)",
-  padding: 12,
+  padding: 6,
   display: "flex",
   flexDirection: "column",
-  gap: 8,
+  gap: 6,
   position: "sticky",
   top: 0,
   minHeight: "calc(100vh - 120px)",
@@ -2532,13 +3869,14 @@ const modeBarStyle: React.CSSProperties = {
 const modeButtonStyle = (active: boolean): React.CSSProperties => ({
   position: "relative",
   width: "100%",
-  height: 76,
+  height: 44,
   border: `1px solid ${active ? "#facc15" : "rgba(255,255,255,0.25)"}`,
-  borderRadius: 10,
+  borderRadius: 8,
   background: active ? "rgba(15, 23, 42, 0.35)" : "rgba(255,255,255,0.08)",
   color: "#ffffff",
   cursor: "pointer",
-  fontSize: 26,
+  fontSize: 16,
+  fontWeight: 700,
 });
 
 const listPaneStyle: React.CSSProperties = {
@@ -2696,19 +4034,24 @@ const tableStyle: React.CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
   marginTop: 14,
+  fontSize: 12,
 };
 
 const thStyle: React.CSSProperties = {
   textAlign: "left",
   borderBottom: "1px solid #e2e8f0",
   padding: "8px 6px",
-  fontSize: 13,
+  fontSize: 12,
+  fontWeight: 700,
+  lineHeight: 1.35,
 };
 
 const tdStyle: React.CSSProperties = {
   borderBottom: "1px solid #f1f5f9",
   padding: "8px 6px",
   verticalAlign: "top",
+  fontSize: 12,
+  lineHeight: 1.35,
 };
 
 const mutedStyle: React.CSSProperties = {

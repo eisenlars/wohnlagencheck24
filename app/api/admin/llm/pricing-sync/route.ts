@@ -1,0 +1,234 @@
+import { NextResponse } from "next/server";
+
+import { requireAdmin } from "@/lib/security/admin-auth";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { writeSecurityAuditLog } from "@/lib/security/audit-log";
+import { fetchProviderPricingFromWeb } from "@/lib/llm/pricing-fallback";
+import { validateOutboundUrl } from "@/lib/security/outbound-url";
+
+type Body = {
+  apply?: boolean;
+  provider?: string;
+};
+
+type ProviderRow = {
+  id: string;
+  provider: string;
+  model: string;
+  input_cost_eur_per_1k?: number | null;
+  output_cost_eur_per_1k?: number | null;
+  price_source_url_override?: string | null;
+};
+
+function isMissingTable(error: unknown, table: string): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes(`public.${table}`) && msg.includes("does not exist");
+}
+
+function monthStartIsoUtc(): string {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
+  return d.toISOString().slice(0, 10);
+}
+
+function asFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+export async function POST(req: Request) {
+  try {
+    const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
+    const limit = await checkAdminApiRateLimit(req, adminUser.userId);
+    if (!limit.allowed) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } });
+    }
+    const body = (await req.json().catch(() => ({}))) as Body;
+    const apply = body.apply !== false;
+    const filterProvider = String(body.provider ?? "").trim().toLowerCase();
+
+    const admin = createAdminClient();
+    let query = admin
+      .from("llm_global_providers")
+      .select("id, provider, model, input_cost_eur_per_1k, output_cost_eur_per_1k, price_source_url_override")
+      .eq("is_active", true)
+      .order("provider", { ascending: true });
+    if (filterProvider) query = query.eq("provider", filterProvider);
+    const { data: providers, error: providersError } = await query;
+    if (providersError) {
+      if (isMissingTable(providersError, "llm_global_providers")) {
+        return NextResponse.json({ error: "Tabelle `llm_global_providers` fehlt. Bitte Migration ausführen." }, { status: 409 });
+      }
+      return NextResponse.json({ error: providersError.message }, { status: 500 });
+    }
+
+    const rows = (providers ?? []) as ProviderRow[];
+    const monthStart = monthStartIsoUtc();
+    const { data: fxRow, error: fxError } = await admin
+      .from("llm_fx_monthly_rates")
+      .select("rate")
+      .eq("from_currency", "USD")
+      .eq("to_currency", "EUR")
+      .eq("month_start", monthStart)
+      .maybeSingle();
+    if (fxError && !isMissingTable(fxError, "llm_fx_monthly_rates")) {
+      return NextResponse.json({ error: fxError.message }, { status: 500 });
+    }
+    const usdToEurRate = asFiniteNumber(fxRow?.rate);
+    if (!(usdToEurRate && usdToEurRate > 0)) {
+      return NextResponse.json(
+        { error: `FX-Rate fehlt: USD->EUR für Monat ${monthStart}. Bitte in llm_fx_monthly_rates pflegen.` },
+        { status: 409 },
+      );
+    }
+
+    const processRow = async (row: ProviderRow): Promise<Record<string, unknown>> => {
+      const fetched = await fetchProviderPricingFromWeb(row.provider, row.model, row.price_source_url_override ?? null);
+      const baseResult: Record<string, unknown> = {
+        provider_id: row.id,
+        provider: row.provider,
+        model: row.model,
+        source_url: fetched.sourceUrl,
+        parse_confidence: fetched.parseConfidence,
+        parse_message: fetched.parseMessage,
+        applied: false,
+      };
+
+      const sourceUrl = String(fetched.sourceUrl ?? "").trim();
+      if (sourceUrl) {
+        const sourceValidation = await validateOutboundUrl(sourceUrl);
+        if (!sourceValidation.ok) {
+          return {
+            ...baseResult,
+            status: "blocked",
+            parse_message: `Quelle blockiert (${sourceValidation.reason})`,
+            applied: false,
+          };
+        }
+      }
+
+      const isUsable = fetched.ok && fetched.inputCostEurPer1k > 0 && fetched.outputCostEurPer1k > 0;
+      if (!isUsable) {
+        return {
+          ...baseResult,
+          status: "failed",
+          applied: false,
+        };
+      } else {
+        const inputCostEur = Number((fetched.inputCostEurPer1k * usdToEurRate).toFixed(6));
+        const outputCostEur = Number((fetched.outputCostEurPer1k * usdToEurRate).toFixed(6));
+        const confidenceThreshold = 0.65;
+        const canApply = apply && fetched.parseConfidence >= confidenceThreshold;
+        let didApply = false;
+        if (canApply) {
+          const { error: patchError } = await admin
+            .from("llm_global_providers")
+            .update({
+              input_cost_eur_per_1k: inputCostEur,
+              output_cost_eur_per_1k: outputCostEur,
+              price_source: "provider_web",
+              price_source_url: fetched.sourceUrl,
+              price_updated_at: new Date().toISOString(),
+            })
+            .eq("id", row.id);
+          if (!patchError) {
+            didApply = true;
+          }
+        }
+
+        const { error: obsError } = await admin.from("llm_provider_price_observations").insert({
+          provider: row.provider,
+          model: row.model,
+          source_kind: "provider_web",
+          source_url: fetched.sourceUrl,
+          input_cost_eur_per_1k: inputCostEur,
+          output_cost_eur_per_1k: outputCostEur,
+          parse_confidence: fetched.parseConfidence,
+          parse_status: didApply ? "applied" : "proposed",
+          parse_message: `${fetched.parseMessage} (USD->EUR ${usdToEurRate})`,
+          raw_excerpt: fetched.rawExcerpt,
+          is_applied: didApply,
+          applied_at: didApply ? new Date().toISOString() : null,
+        });
+        if (obsError && !isMissingTable(obsError, "llm_provider_price_observations")) {
+          return {
+            ...baseResult,
+            status: "warning",
+            applied: didApply,
+            parse_message: `Preis gefunden, Observation konnte nicht gespeichert werden (${obsError.message}).`,
+          };
+        }
+        return {
+          ...baseResult,
+          status: didApply ? "applied" : "proposed",
+          applied: didApply,
+          input_cost_eur_per_1k: inputCostEur,
+          output_cost_eur_per_1k: outputCostEur,
+          fx_rate_usd_to_eur: usdToEurRate,
+        };
+      }
+    };
+
+    const results: Array<Record<string, unknown>> = [];
+    const batchSize = 4;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      const batchResults = await Promise.all(batch.map((row) => processRow(row)));
+      results.push(...batchResults);
+    }
+    const appliedCount = results.filter((r) => r.applied === true).length;
+    const observedCount = results.filter((r) => {
+      const status = String(r.status ?? "");
+      return status === "applied" || status === "proposed" || status === "warning";
+    }).length;
+    const failedCount = results.filter((r) => {
+      const status = String(r.status ?? "");
+      return status === "failed" || status === "blocked";
+    }).length;
+
+    await writeSecurityAuditLog({
+      actorUserId: adminUser.userId,
+      actorRole: adminUser.role,
+      eventType: "update",
+      entityType: "other",
+      entityId: "llm_pricing_sync",
+      payload: {
+        apply,
+        provider: filterProvider || null,
+        total: rows.length,
+        observed: observedCount,
+        applied: appliedCount,
+        failed: failedCount,
+        fx_month_start: monthStart,
+        fx_rate_usd_to_eur: usdToEurRate,
+      },
+      ip: extractClientIpFromHeaders(req.headers),
+      userAgent: req.headers.get("user-agent"),
+    });
+
+    return NextResponse.json({
+      ok: true,
+      summary: {
+        total: rows.length,
+        observed: observedCount,
+        applied: appliedCount,
+        failed: failedCount,
+        fx_month_start: monthStart,
+        fx_rate_usd_to_eur: usdToEurRate,
+      },
+      results,
+      note: "Preisquelle: Provider-Webseite. Wenn keine Preise übernommen wurden, bitte manuell pflegen.",
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (error.message === "FORBIDDEN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+  }
+}

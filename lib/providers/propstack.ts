@@ -49,13 +49,23 @@ type PropstackUnit = {
 type PropstackSearchProfile = {
   id?: number | string;
   title?: string | null;
+  name?: string | null;
+  query_title?: string | null;
   status?: string | null;
+  active?: boolean | null;
   request_type?: string | null;
+  marketing_type?: string | null;
   category?: string | null;
+  rs_types?: string[] | null;
   min_rooms?: number | null;
+  number_of_rooms?: number | null;
+  number_of_rooms_from?: number | null;
   max_price?: number | null;
+  price_to?: number | null;
   city?: string | null;
+  cities?: string[] | null;
   region?: string | null;
+  regions?: string[] | null;
   updated_at?: string | null;
   client_id?: number | string | null;
 };
@@ -182,9 +192,26 @@ function includeAsReference(unit: PropstackUnit, cfg: PropstackResourceSettings)
 }
 
 function requestTypeFromProfile(profile: PropstackSearchProfile): "kauf" | "miete" {
-  const v = String(profile.request_type ?? "").toLowerCase();
+  const v = String(profile.request_type ?? profile.marketing_type ?? "").toLowerCase();
   if (v === "rent" || v === "miete") return "miete";
   return "kauf";
+}
+
+function firstString(values: Array<unknown>): string | null {
+  for (const value of values) {
+    const asString = String(value ?? "").trim();
+    if (asString.length > 0) return asString;
+  }
+  return null;
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 function toRegionTarget(cityRaw: string, districtRaw?: string | null): RegionTarget | null {
@@ -327,15 +354,32 @@ function mapSearchProfileRequest(
   partnerId: string,
   profile: PropstackSearchProfile,
 ): RawRequest {
-  const targets = parseRegionTargetsFromHint(profile.region, profile.city);
+  const city = firstString([profile.city, profile.cities?.[0]]);
+  const region = firstString([profile.region, profile.regions?.[0]]);
+  const regionHint = [
+    ...(Array.isArray(profile.cities) ? profile.cities : []),
+    ...(Array.isArray(profile.regions) ? profile.regions : []),
+    profile.region ?? "",
+  ]
+    .map((v) => String(v ?? "").trim())
+    .filter(Boolean)
+    .join(", ");
+  const targets = parseRegionTargetsFromHint(regionHint || region, city);
+  const objectType = firstString([
+    profile.category,
+    Array.isArray(profile.rs_types) ? profile.rs_types[0] : null,
+  ]);
+  const minRooms = asNumber(profile.min_rooms) ?? asNumber(profile.number_of_rooms) ?? asNumber(profile.number_of_rooms_from);
+  const maxPrice = asNumber(profile.max_price) ?? asNumber(profile.price_to);
+  const title = firstString([profile.title, profile.query_title, profile.name]) ?? `Gesuch ${String(profile.id ?? "")}`.trim();
   const normalizedPayload: Record<string, unknown> = {
-    title: profile.title ?? null,
+    title,
     request_type: requestTypeFromProfile(profile),
-    object_type: String(profile.category ?? "").toLowerCase() || null,
-    min_rooms: profile.min_rooms ?? null,
-    max_price: profile.max_price ?? null,
-    city: profile.city ?? null,
-    region: profile.region ?? null,
+    object_type: objectType ? objectType.toLowerCase() : null,
+    min_rooms: minRooms,
+    max_price: maxPrice,
+    city,
+    region,
     region_targets: targets.map((target) => ({
       city: target.city,
       district: target.district,
@@ -344,12 +388,13 @@ function mapSearchProfileRequest(
     region_target_keys: targets.map((target) => target.key),
     client_id: profile.client_id ?? null,
     status: profile.status ?? null,
+    active: profile.active ?? null,
   };
   return makeRawRowBase(
     partnerId,
     "propstack",
     `request:${String(profile.id ?? "")}`,
-    profile.title ?? null,
+    title,
     profile.updated_at ?? null,
     normalizedPayload,
     profile as unknown as Record<string, unknown>,
@@ -556,10 +601,9 @@ export async function fetchPropstackSearchProfiles(
   let page = 1;
 
   while (true) {
-    const url = new URL(`${base.replace(/\/+$/, "")}/search_profiles`);
+    const url = new URL(`${base.replace(/\/+$/, "")}/saved_queries`);
     url.searchParams.set("page", String(page));
     url.searchParams.set("per", String(perPage));
-    url.searchParams.set("status", "active");
 
     const res = await fetch(url.toString(), {
       headers: {
@@ -571,7 +615,7 @@ export async function fetchPropstackSearchProfiles(
     if (res.status === 404 || res.status === 405) return [];
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`Propstack search_profiles fetch failed (${res.status}): ${body}`);
+      throw new Error(`Propstack saved_queries fetch failed (${res.status}): ${body}`);
     }
 
     const json = await res.json();
@@ -614,12 +658,12 @@ export async function syncPropstackResources(
 
   try {
     const profiles = await fetchPropstackSearchProfiles(integration, apiKey);
-    requests = profiles.filter((p) => String(p.status ?? "").toLowerCase() === "active").map((p) =>
-      mapSearchProfileRequest(integration.partner_id, p),
-    );
+    requests = profiles
+      .filter((p) => p.active !== false)
+      .map((p) => mapSearchProfileRequest(integration.partner_id, p));
     requestsFetched = true;
   } catch (error) {
-    notes.push(`propstack search_profiles live fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
+    notes.push(`propstack saved_queries live fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
   }
 
   let finalReferences = references;

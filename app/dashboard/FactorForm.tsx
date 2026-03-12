@@ -2,7 +2,7 @@
 
 'use client';
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
@@ -466,6 +466,14 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
   const [rendite, setRendite] = useState(defaultRendite);
   const [persistedFactors, setPersistedFactors] = useState(
     makeFactorSnapshot(defaultSf, defaultTrend, defaultF, defaultF, defaultF, defaultF, defaultF, defaultRendite),
+  );
+  const currentFactors = useMemo(
+    () => makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite),
+    [sf, trend, kh, kw, kg, mh, mw, rendite],
+  );
+  const hasFactorChanges = useMemo(
+    () => JSON.stringify(currentFactors) !== JSON.stringify(persistedFactors),
+    [currentFactors, persistedFactors],
   );
 
   useImperativeHandle(ref, () => ({
@@ -1388,7 +1396,11 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
         {rebuildMessage && null}
         {/* Upload-Summary bewusst ausgeblendet */}
         {message && <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#2f855a' }}>{message}</span>}
-        <button onClick={handleRebuild} disabled={rebuildLoading} style={rebuildButtonStyle(rebuildLoading)}>
+        <button
+          onClick={handleRebuild}
+          disabled={rebuildLoading || !hasFactorChanges}
+          style={rebuildButtonStyle(!rebuildLoading && hasFactorChanges)}
+        >
           {rebuildLoading ? 'Neuberechnung & Liveschaltung…' : '🔁 Neu berechnen & live schalten'}
         </button>
       </div>
@@ -1428,15 +1440,18 @@ const footerStyle = {
   display: 'flex', alignItems: 'center', gap: '20px', backgroundColor: '#f7fafc', borderRadius: '15px'
 };
 
-const rebuildButtonStyle = (loading: boolean) => ({
-  padding: '14px 22px',
-  backgroundColor: loading ? '#e2e8f0' : '#0f766e',
-  color: '#fff',
-  border: 'none',
+const rebuildButtonStyle = (active: boolean) => ({
+  width: '300px',
+  height: '54px',
+  backgroundColor: active ? '#0f766e' : '#e2e8f0',
+  color: active ? '#fff' : '#64748b',
+  border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
   borderRadius: '10px',
   fontSize: '14px',
   fontWeight: '700',
-  cursor: 'pointer'
+  cursor: active ? 'pointer' : 'not-allowed',
+  opacity: active ? 1 : 0.75,
+  marginLeft: 'auto',
 });
 
 const resetButtonStyle = {

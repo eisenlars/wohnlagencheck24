@@ -8,6 +8,7 @@ import type {
 import { syncPropstackResources } from "@/lib/providers/propstack";
 import { syncOnOfficeResources } from "@/lib/providers/onoffice";
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
+import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
 
 export type IntegrationSyncResult = {
   offers: MappedOffer[];
@@ -33,13 +34,10 @@ export async function syncIntegrationResources(
     };
   }
 
-  const auth = integration.auth_config ?? {};
+  const auth = (integration.auth_config ?? {}) as Record<string, unknown>;
   const apiKey =
-    typeof auth["api_key"] === "string"
-      ? auth["api_key"]
-      : typeof auth["token"] === "string"
-        ? auth["token"]
-        : null;
+    readSecretFromAuthConfig(auth, "api_key")
+    ?? readSecretFromAuthConfig(auth, "token");
 
   if (!apiKey) {
     throw new Error(`API-Key fehlt für Provider ${integration.provider}`);
@@ -63,15 +61,8 @@ export async function syncIntegrationResources(
   }
 
   if (integration.provider === "onoffice") {
-    const auth = integration.auth_config ?? {};
-    const token =
-      typeof auth["token"] === "string"
-        ? auth["token"]
-        : null;
-    const secret =
-      typeof auth["secret"] === "string"
-        ? auth["secret"]
-        : null;
+    const token = readSecretFromAuthConfig(auth, "token");
+    const secret = readSecretFromAuthConfig(auth, "secret");
 
     if (!token || !secret) {
       throw new Error("onOffice token/secret fehlt");

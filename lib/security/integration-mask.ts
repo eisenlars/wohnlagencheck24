@@ -2,9 +2,12 @@ type JsonObject = Record<string, unknown>;
 
 const SENSITIVE_KEYS = new Set([
   "api_key",
+  "api_key_encrypted",
   "token",
   "token_hash",
+  "token_encrypted",
   "secret",
+  "secret_encrypted",
   "password",
   "authorization",
 ]);

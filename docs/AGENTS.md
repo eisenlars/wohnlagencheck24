@@ -114,6 +114,7 @@ Vor Ausführung eines dieser Befehle ist immer Rückfrage zu halten.
 ### GitHub
 - Repository ist die primäre Quelle der Wahrheit.
 - Pull-Requests und Reviews erfolgen extern in GitHub.
+- SSH-Setup fuer Git ohne PAT: `docs/github_ssh_setup.md`
 
 ### Vercel
 - Projekt wird über Vercel deployt.
