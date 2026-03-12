@@ -57,7 +57,9 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
   const [confirm, setConfirm] = useState("");
   const [headline, setHeadline] = useState(title);
   const [loginTarget, setLoginTarget] = useState(loginPathForAudience(defaultAudience));
-  const [redirectBusy, setRedirectBusy] = useState(false);
+  const [accessEmail, setAccessEmail] = useState("");
+  const [requestBusy, setRequestBusy] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -76,6 +78,8 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
       const legacyToken = search.get("token");
       const queryType = search.get("type");
       const type = hashType || queryType;
+      const prefEmail = String(search.get("email") ?? "").trim();
+      if (prefEmail) setAccessEmail(prefEmail);
       if (type === "recovery") {
         setHeadline("Passwort neu setzen");
       } else if (type === "invite") {
@@ -218,15 +222,32 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
     }
   }
 
-  async function goToLinkRequest() {
-    if (redirectBusy) return;
-    setRedirectBusy(true);
+  async function requestNewAccessLink() {
+    const email = String(accessEmail ?? "").trim().toLowerCase();
+    if (!email) {
+      setRequestStatus("Bitte gib deine E-Mail-Adresse ein.");
+      return;
+    }
+    setRequestBusy(true);
+    setRequestStatus(null);
     try {
-      await supabase.auth.signOut();
+      const aud = readAudience(defaultAudience);
+      const res = await fetch("/api/auth/request-access-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, aud }),
+      });
+      const payload = (await res.json().catch(() => ({}))) as { error?: string; retry_after_sec?: number };
+      if (res.status === 429) {
+        const retry = Number(payload.retry_after_sec ?? 0);
+        setRequestStatus(retry > 0 ? `Zu viele Anfragen. Bitte in ${retry}s erneut versuchen.` : "Zu viele Anfragen. Bitte später erneut versuchen.");
+        return;
+      }
+      setRequestStatus("Wenn die E-Mail existiert, wurde ein neuer Zugangslink versendet.");
     } catch {
-      // Absichtlich ignoriert: Redirect zur Login-Seite soll trotzdem erfolgen.
+      setRequestStatus("Anfrage konnte nicht gesendet werden. Bitte erneut versuchen.");
     } finally {
-      window.location.assign(`${loginTarget}?message=${encodeURIComponent("Einladungslink abgelaufen. Bitte unten einen neuen Einladungs-/Zugangslink senden.")}`);
+      setRequestBusy(false);
     }
   }
 
@@ -289,24 +310,58 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
           </>
         ) : null}
         {viewMode === "error" ? (
-          <button
-            type="button"
-            onClick={goToLinkRequest}
-            style={{
-              padding: "10px",
-              background: "#111827",
-              color: "#fff",
-              border: "none",
-              borderRadius: 6,
-              cursor: redirectBusy ? "default" : "pointer",
-              fontWeight: 700,
-              marginTop: 8,
-              opacity: redirectBusy ? 0.75 : 1,
-            }}
-            disabled={redirectBusy}
-          >
-            Neuen Link anfordern
-          </button>
+          <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
+            <label htmlFor="request_email" style={{ color: "#111827", fontWeight: 700 }}>
+              E-Mail für neuen Zugangslink
+            </label>
+            <input
+              id="request_email"
+              name="request_email"
+              type="email"
+              placeholder="ihre@email.de"
+              style={{ padding: 8 }}
+              value={accessEmail}
+              onChange={(e) => setAccessEmail(e.target.value)}
+              disabled={requestBusy}
+            />
+            <button
+              type="button"
+              onClick={requestNewAccessLink}
+              style={{
+                padding: "10px",
+                background: "#111827",
+                color: "#fff",
+                border: "none",
+                borderRadius: 6,
+                cursor: requestBusy ? "default" : "pointer",
+                fontWeight: 700,
+                opacity: requestBusy ? 0.75 : 1,
+              }}
+              disabled={requestBusy}
+            >
+              Neuen Zugangslink senden
+            </button>
+            {requestStatus ? (
+              <p style={{ margin: 0, fontSize: 14, color: requestStatus.toLowerCase().includes("versendet") ? "#166534" : "#b91c1c" }}>
+                {requestStatus}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => router.push(loginTarget)}
+              style={{
+                padding: "10px",
+                background: "#ffffff",
+                color: "#111827",
+                border: "2px solid #111827",
+                borderRadius: 6,
+                cursor: "pointer",
+                fontWeight: 700,
+              }}
+            >
+              Zur Anmeldung
+            </button>
+          </div>
         ) : null}
       </div>
     </div>
