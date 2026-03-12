@@ -39,6 +39,13 @@ type SendPartnerAreaAssignedEmailArgs = {
   assignedAtIso?: string | null;
 };
 
+type SendAdminInviteResendRequestEmailArgs = {
+  email: string;
+  audience?: "partner" | "admin";
+  requestedAtIso?: string | null;
+  recipients?: string[] | null;
+};
+
 function parseCsv(value: string): string[] {
   return String(value ?? "")
     .split(/[,\n;]+/)
@@ -186,6 +193,28 @@ function buildPartnerAssignedText(args: SendPartnerAreaAssignedEmailArgs): strin
   ].join("\n");
 }
 
+function buildAdminInviteResendRequestSubject(args: SendAdminInviteResendRequestEmailArgs): string {
+  const aud = args.audience === "admin" ? "Admin" : "Partner";
+  return `Link-Anfrage (${aud}): ${args.email}`;
+}
+
+function buildAdminInviteResendRequestText(args: SendAdminInviteResendRequestEmailArgs): string {
+  const requestedAt = args.requestedAtIso
+    ? new Date(args.requestedAtIso).toLocaleString("de-DE")
+    : new Date().toLocaleString("de-DE");
+  const aud = args.audience === "admin" ? "admin" : "partner";
+
+  return [
+    "Es wurde ein neuer Zugangslink angefordert.",
+    "",
+    `Bereich: ${aud}`,
+    `E-Mail: ${args.email}`,
+    `Zeitpunkt: ${requestedAt}`,
+    "",
+    "Bitte im Adminbereich den Einladungslink erneut versenden.",
+  ].join("\n");
+}
+
 async function sendSmtpTextMail(params: {
   to: string[];
   subject: string;
@@ -328,5 +357,26 @@ export async function sendPartnerAreaAssignedEmail(args: SendPartnerAreaAssigned
     to: [recipient],
     subject: buildPartnerAssignedSubject(args),
     text: buildPartnerAssignedText(args),
+  });
+}
+
+export async function sendAdminInviteResendRequestEmail(args: SendAdminInviteResendRequestEmailArgs): Promise<{
+  sent: boolean;
+  reason?: string;
+}> {
+  const recipients = (args.recipients ?? []).length > 0
+    ? (args.recipients ?? []).map((v) => String(v).trim()).filter((v) => v.length > 0)
+    : Array.from(new Set([
+      ...parseCsv(String(process.env.ADMIN_PARTNER_NOTIFY_TO ?? "")),
+      ...parseCsv(String(process.env.ADMIN_REVIEW_NOTIFY_TO ?? "")),
+      ...parseCsv(String(process.env.SMTP_TO ?? "")),
+      ...parseCsv(String(process.env.SMTP_USER ?? "")),
+    ]));
+  if (recipients.length === 0) return { sent: false, reason: "ADMIN_PARTNER_NOTIFY_TO missing" };
+  return sendSmtpTextMail({
+    to: recipients,
+    subject: buildAdminInviteResendRequestSubject(args),
+    text: buildAdminInviteResendRequestText(args),
+    from: String(process.env.ADMIN_REVIEW_NOTIFY_FROM ?? "").trim() || null,
   });
 }

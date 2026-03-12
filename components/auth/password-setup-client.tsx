@@ -57,7 +57,6 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [headline, setHeadline] = useState(title);
-  const [loginTarget, setLoginTarget] = useState(loginPathForAudience(defaultAudience));
   const [linkKind, setLinkKind] = useState<LinkKind>("generic");
   const [accessEmail, setAccessEmail] = useState("");
   const [requestBusy, setRequestBusy] = useState(false);
@@ -68,8 +67,6 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
     (async () => {
       const aud = readAudience(defaultAudience);
       const fallbackAppPath = appPathForAudience(aud);
-      const fallbackLoginPath = loginPathForAudience(aud);
-      setLoginTarget(fallbackLoginPath);
       const hash = readHashParams();
       const search = readSearchParams();
       const accessToken = hash.get("access_token");
@@ -250,11 +247,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
         setRequestStatus(retry > 0 ? `Zu viele Anfragen. Bitte in ${retry}s erneut versuchen.` : "Zu viele Anfragen. Bitte später erneut versuchen.");
         return;
       }
-      setRequestStatus(
-        linkKind === "recovery"
-          ? "Wenn die E-Mail existiert, wurde ein neuer Passwort-Link versendet."
-          : "Wenn die E-Mail existiert, wurde ein neuer Einladungslink versendet.",
-      );
+      setRequestStatus("Anfrage gesendet. Der Admin versendet den neuen Link.");
     } catch {
       setRequestStatus("Anfrage konnte nicht gesendet werden. Bitte erneut versuchen.");
     } finally {
@@ -323,7 +316,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
         {viewMode === "error" ? (
           <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
             <label htmlFor="request_email" style={{ color: "#111827", fontWeight: 700 }}>
-              {linkKind === "recovery" ? "E-Mail für neuen Passwort-Link" : "E-Mail für neuen Einladungslink"}
+              E-Mail für Link-Anfrage
             </label>
             <input
               id="request_email"
@@ -350,7 +343,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
               }}
               disabled={requestBusy}
             >
-              {linkKind === "recovery" ? "Neuen Passwort-Link senden" : "Neuen Einladungslink senden"}
+              Neuen Link beantragen
             </button>
             {requestStatus ? (
               <p style={{ margin: 0, fontSize: 14, color: requestStatus.toLowerCase().includes("versendet") ? "#166534" : "#b91c1c" }}>
