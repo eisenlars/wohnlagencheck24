@@ -67,8 +67,9 @@ export default async function PartnerLoginPage({
                 try {
                   if (!window.location.hash) return;
                   var hash = window.location.hash;
-                  if (hash.indexOf("access_token=") === -1 || hash.indexOf("type=invite") === -1) return;
-                  window.location.replace("/partner/setup" + hash);
+                  if (hash.indexOf("access_token=") === -1) return;
+                  if (hash.indexOf("type=invite") === -1 && hash.indexOf("type=recovery") === -1) return;
+                  window.location.replace("/auth/setup?aud=partner" + hash);
                 } catch (_) {}
               })();
             `,

@@ -109,6 +109,21 @@ export default async function HomePage() {
 
   return (
     <div className="home-page-root">
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            (function () {
+              try {
+                if (!window.location.hash) return;
+                var hash = window.location.hash;
+                if (hash.indexOf("access_token=") === -1) return;
+                if (hash.indexOf("type=invite") === -1 && hash.indexOf("type=recovery") === -1) return;
+                window.location.replace("/auth/setup" + hash);
+              } catch (_) {}
+            })();
+          `,
+        }}
+      />
       {/* HERO: Deutschland-Maske links, Logo + Claim rechts */}
       <section className="home-cutout-section">
         <div className="home-cutout-inner">
