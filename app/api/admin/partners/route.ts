@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { resolvePartnerInviteRedirectUrl } from "@/lib/auth/resolve-app-base-url";
 
 type CreatePartnerBody = {
   company_name?: string;
@@ -87,13 +88,7 @@ export async function POST(req: Request) {
     }
 
     const admin = createAdminClient();
-    const inviteRedirectTo = normalizeNullableString(process.env.PARTNER_INVITE_REDIRECT_URL);
-    if (!inviteRedirectTo) {
-      return NextResponse.json(
-        { error: "PARTNER_INVITE_REDIRECT_URL missing" },
-        { status: 500 },
-      );
-    }
+    const inviteRedirectTo = resolvePartnerInviteRedirectUrl(req.headers);
     const invite = await admin.auth.admin.inviteUserByEmail(contactEmail, {
       redirectTo: inviteRedirectTo,
       data: { role: "partner", company_name: companyName, activation_pending: true },
@@ -102,8 +97,16 @@ export async function POST(req: Request) {
       const msg = String(invite.error.message ?? "");
       const lower = msg.toLowerCase();
       if (lower.includes("already") || lower.includes("exists") || lower.includes("registered")) {
+        const { data: existingPartner } = await admin
+          .from("partners")
+          .select("id")
+          .eq("contact_email", contactEmail)
+          .maybeSingle();
         return NextResponse.json(
-          { error: "Auth user already exists for this email. Please use existing user flow." },
+          {
+            error: "Auth user already exists for this email. Please use existing user flow.",
+            partner_id: String((existingPartner as { id?: string } | null)?.id ?? "").trim() || null,
+          },
           { status: 409 },
         );
       }

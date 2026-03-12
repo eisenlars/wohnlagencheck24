@@ -247,7 +247,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
         setRequestStatus(retry > 0 ? `Zu viele Anfragen. Bitte in ${retry}s erneut versuchen.` : "Zu viele Anfragen. Bitte später erneut versuchen.");
         return;
       }
-      setRequestStatus("Anfrage gesendet. Der Admin versendet den neuen Link.");
+      setRequestStatus("Wenn die E-Mail existiert, wurde ein neuer Zugangslink versendet.");
     } catch {
       setRequestStatus("Anfrage konnte nicht gesendet werden. Bitte erneut versuchen.");
     } finally {

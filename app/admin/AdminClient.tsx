@@ -1271,6 +1271,36 @@ export default function AdminClient() {
     }
   }
 
+  async function sendPartnerAccessLink(partnerId: string) {
+    if (!partnerId) return;
+    setBusy(true);
+    setStatus("Zugangslink wird versendet");
+    try {
+      const response = await api<{
+        contact_email?: string | null;
+        link_type?: "invite" | "recovery";
+      }>(`/api/admin/partners/${partnerId}/invite-user`, {
+        method: "POST",
+      });
+      await loadPartners(partnerId);
+      const linkType = String(response.link_type ?? "").trim().toLowerCase();
+      const email = String(response.contact_email ?? "").trim();
+      setSuccessModal({
+        open: true,
+        title: "Zugangslink versendet",
+        message:
+          linkType === "invite"
+            ? `Ein neuer Einladungslink wurde an ${email || "die Kontakt-E-Mail"} gesendet.`
+            : `Ein neuer Passwort-Link wurde an ${email || "die Kontakt-E-Mail"} gesendet.`,
+      });
+      setStatus("Zugangslink versendet.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Zugangslink konnte nicht versendet werden.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function selectPartnerView(partnerId: string, view: AdminView) {
     if (!partnerId) return;
     setBusy(true);
@@ -2102,6 +2132,16 @@ export default function AdminClient() {
           </button>
           <button
             style={btnGhostStyle}
+            disabled={busy || !createdPartnerSuccess?.id}
+            onClick={() => {
+              if (!createdPartnerSuccess?.id) return;
+              void sendPartnerAccessLink(createdPartnerSuccess.id);
+            }}
+          >
+            {createdPartnerSuccess?.mode === "existing" ? "Zugangslink senden" : "Einladung erneut senden"}
+          </button>
+          <button
+            style={btnGhostStyle}
             onClick={() => {
               setCreatedPartnerSuccess(null);
               setActiveView("new_partner");
@@ -2230,22 +2270,34 @@ export default function AdminClient() {
           <span style={{ marginLeft: 8 }}>Partner aktiv</span>
         </label>
         <div style={{ marginTop: 12 }}>
-          <button
-            style={btnStyle}
-            disabled={busy || !selectedPartner}
-            onClick={() =>
-              run("Partner aktualisieren", async () => {
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              style={btnStyle}
+              disabled={busy || !selectedPartner}
+              onClick={() =>
+                run("Partner aktualisieren", async () => {
+                  if (!selectedPartnerId) return;
+                  await api(`/api/admin/partners/${selectedPartnerId}`, {
+                    method: "PATCH",
+                    body: JSON.stringify(editPartner),
+                  });
+                  await loadPartners(selectedPartnerId);
+                })
+              }
+            >
+              Speichern
+            </button>
+            <button
+              style={btnGhostStyle}
+              disabled={busy || !selectedPartnerId}
+              onClick={() => {
                 if (!selectedPartnerId) return;
-                await api(`/api/admin/partners/${selectedPartnerId}`, {
-                  method: "PATCH",
-                  body: JSON.stringify(editPartner),
-                });
-                await loadPartners(selectedPartnerId);
-              })
-            }
-          >
-            Speichern
-          </button>
+                void sendPartnerAccessLink(selectedPartnerId);
+              }}
+            >
+              {selectedPartner?.is_active ? "Passwort-Link senden" : "Einladung erneut senden"}
+            </button>
+          </div>
         </div>
         <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
           <div style={{ fontSize: 13, color: "#7f1d1d", fontWeight: 600, marginBottom: 8 }}>
