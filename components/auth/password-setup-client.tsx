@@ -74,20 +74,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
       const type = hashType || queryType;
       const otpToken = tokenHash || legacyToken;
       const invalidLinkMessage = "Reset-Link ist ungueltig oder abgelaufen. Bitte Passwort-Reset erneut anfordern.";
-
-      const openFormIfSessionExists = async () => {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!mounted || !user) return false;
-        setReady(true);
-        setViewMode("form");
-        setStatus(type === "invite" ? "Bitte vergeben Sie jetzt Ihr Passwort." : "Bitte bestaetigen Sie Ihr neues Passwort.");
-        if (window.location.search || window.location.hash) {
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }
-        return true;
-      };
+      const hasAuthLinkPayload = Boolean(code || (otpToken && type) || (accessToken && refreshToken));
 
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -119,8 +106,6 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
           }
         }
 
-        if (await openFormIfSessionExists()) return;
-
         setStatus(invalidLinkMessage);
         setReady(false);
         setViewMode("error");
@@ -134,7 +119,6 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
         });
         if (!mounted) return;
         if (error) {
-          if (await openFormIfSessionExists()) return;
           setStatus(invalidLinkMessage);
           setReady(false);
           setViewMode("error");
@@ -149,19 +133,19 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
         return;
       }
 
-      if (!accessToken || !refreshToken) {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+      if (!hasAuthLinkPayload) {
         if (!mounted) return;
-        if (user) {
-          const target = await resolvePostSetupTarget(fallbackAppPath);
-          setViewMode("checking");
-          router.replace(target);
-          return;
-        }
-        setViewMode("checking");
-        router.replace(fallbackLoginPath);
+        setStatus(invalidLinkMessage);
+        setReady(false);
+        setViewMode("error");
+        return;
+      }
+
+      if (!accessToken || !refreshToken) {
+        if (!mounted) return;
+        setStatus(invalidLinkMessage);
+        setReady(false);
+        setViewMode("error");
         return;
       }
 
