@@ -1179,64 +1179,6 @@ export default function AdminClient() {
   }, []);
 
   useEffect(() => {
-    if (busy || reviewBusy) return;
-
-    let cancelled = false;
-    let refreshRunning = false;
-
-    async function refreshAdminSnapshot(includeSelectedDetails: boolean) {
-      if (cancelled || refreshRunning) return;
-      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
-      refreshRunning = true;
-      try {
-        await Promise.all([
-          loadPartners(undefined, { refreshSelectedDetails: includeSelectedDetails }),
-          loadAuditLogs(),
-        ]);
-      } catch {
-        // Hintergrund-Refresh soll die UI nicht in einen Fehlerzustand kippen.
-      } finally {
-        refreshRunning = false;
-      }
-    }
-
-    function handleWindowFocus() {
-      void refreshAdminSnapshot(true);
-    }
-
-    function handleVisibilityChange() {
-      if (document.visibilityState === "visible") {
-        void refreshAdminSnapshot(true);
-      }
-    }
-
-    window.addEventListener("focus", handleWindowFocus);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    const intervalId = window.setInterval(() => {
-      void refreshAdminSnapshot(false);
-    }, 30000);
-
-    return () => {
-      cancelled = true;
-      window.removeEventListener("focus", handleWindowFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.clearInterval(intervalId);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    busy,
-    reviewBusy,
-    selectedPartnerId,
-    auditFilters.entity_type,
-    auditFilters.event_type,
-    auditFilters.actor_user_id,
-    auditFilters.created_from,
-    auditFilters.created_to,
-    auditFilters.limit,
-  ]);
-
-  useEffect(() => {
     if (!areaQuery.trim()) {
       setAreaOptions([]);
       return;
