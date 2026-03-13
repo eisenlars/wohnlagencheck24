@@ -3282,7 +3282,7 @@ export default function AdminClient() {
                   />
                 </div>
               ) : null}
-              <div style={grid2Style}>
+              <div>
                 <input
                   style={inputStyle}
                   placeholder="API-Key"
@@ -3292,37 +3292,6 @@ export default function AdminClient() {
                     setNewLlmProvider((v) => ({ ...v, api_key: e.target.value }));
                   }}
                 />
-                <button
-                  style={btnGhostStyle}
-                  disabled={busy || llmCreateTestBusy}
-                  onClick={() =>
-                    run("LLM-Verbindung testen", async () => {
-                      setLlmCreateTestBusy(true);
-                      setLlmCreateTestResult(null);
-                      try {
-                        const resp = await api<{ result?: { status?: string; message?: string } }>("/api/admin/llm/providers/test", {
-                          method: "POST",
-                          body: JSON.stringify({
-                            provider: newLlmProvider.provider,
-                            model: newLlmProvider.model,
-                            base_url: newLlmProvider.base_url,
-                            api_key: newLlmProvider.api_key,
-                            api_version: String(newLlmProvider.api_version || "").trim() || null,
-                          }),
-                        });
-                        const status = String(resp.result?.status ?? "").toLowerCase();
-                        setLlmCreateTestResult({
-                          status: status === "ok" ? "ok" : "error",
-                          message: String(resp.result?.message ?? "Kein Testergebnis."),
-                        });
-                      } finally {
-                        setLlmCreateTestBusy(false);
-                      }
-                    })
-                  }
-                >
-                  {llmCreateTestBusy ? "Teste..." : "Verbindung testen"}
-                </button>
               </div>
               <div style={grid2Style}>
                 <input
@@ -3362,7 +3331,7 @@ export default function AdminClient() {
                 </div>
               ) : null}
             </div>
-            <div style={{ marginTop: 12 }}>
+            <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
               <button
                 style={btnStyle}
                 disabled={busy}
@@ -3401,6 +3370,43 @@ export default function AdminClient() {
                 }
               >
                 LLM speichern
+              </button>
+              <button
+                style={{
+                  ...btnGhostStyle,
+                  border: "4px solid #16a34a",
+                  color: "#166534",
+                  background: "#f0fdf4",
+                  fontWeight: 700,
+                }}
+                disabled={busy || llmCreateTestBusy}
+                onClick={() =>
+                  run("LLM-Verbindung testen", async () => {
+                    setLlmCreateTestBusy(true);
+                    setLlmCreateTestResult(null);
+                    try {
+                      const resp = await api<{ result?: { status?: string; message?: string } }>("/api/admin/llm/providers/test", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          provider: newLlmProvider.provider,
+                          model: newLlmProvider.model,
+                          base_url: newLlmProvider.base_url,
+                          api_key: newLlmProvider.api_key,
+                          api_version: String(newLlmProvider.api_version || "").trim() || null,
+                        }),
+                      });
+                      const status = String(resp.result?.status ?? "").toLowerCase();
+                      setLlmCreateTestResult({
+                        status: status === "ok" ? "ok" : "error",
+                        message: String(resp.result?.message ?? "Kein Testergebnis."),
+                      });
+                    } finally {
+                      setLlmCreateTestBusy(false);
+                    }
+                  })
+                }
+              >
+                {llmCreateTestBusy ? "Teste..." : "Verbindung testen"}
               </button>
             </div>
           </>
