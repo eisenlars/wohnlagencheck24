@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
-import { buildPartnerAuthUserMetadata, sendPartnerAccessLink } from "@/lib/auth/partner-access-link";
+import {
+  buildPartnerAuthUserMetadata,
+  formatPartnerAccessLinkError,
+  sendPartnerAccessLink,
+} from "@/lib/auth/partner-access-link";
 
 type CreatePartnerBody = {
   company_name?: string;
@@ -208,19 +211,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Partner could not be created" }, { status: 500 });
     }
 
-    const supabase = createClient();
     let delivery;
     try {
       delivery = await sendPartnerAccessLink({
         admin,
-        supabase,
         partnerId: authUserId,
         headers: req.headers,
+        authUserRetryAttempts: 6,
       });
     } catch (error) {
       await cleanupCreatedPartner(admin, authUserId);
-      const message = error instanceof Error ? error.message : "Invite delivery failed";
-      return NextResponse.json({ error: message }, { status: 500 });
+      const formatted = formatPartnerAccessLinkError(error);
+      return NextResponse.json({ error: formatted.message }, { status: formatted.status });
     }
 
     await writeSecurityAuditLog({

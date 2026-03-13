@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
-import { sendPartnerAccessLink } from "@/lib/auth/partner-access-link";
+import { formatPartnerAccessLinkError, sendPartnerAccessLink } from "@/lib/auth/partner-access-link";
 
 export async function POST(
   req: Request,
@@ -28,10 +27,8 @@ export async function POST(
     }
 
     const admin = createAdminClient();
-    const supabase = createClient();
     const delivery = await sendPartnerAccessLink({
       admin,
-      supabase,
       partnerId,
       headers: req.headers,
     });
@@ -68,6 +65,7 @@ export async function POST(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
     }
-    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+    const formatted = formatPartnerAccessLinkError(error);
+    return NextResponse.json({ error: formatted.message }, { status: formatted.status });
   }
 }
