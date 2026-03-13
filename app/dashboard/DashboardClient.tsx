@@ -67,6 +67,32 @@ type PersistedDashboardState = {
   showWelcome?: boolean;
 };
 
+type UtilityIconKey =
+  | 'factors'
+  | 'texts'
+  | 'local_site'
+  | 'international'
+  | 'marketing'
+  | 'blog'
+  | 'social'
+  | 'mail'
+  | 'immobilien'
+  | 'referenzen'
+  | 'gesuche'
+  | 'wizards'
+  | 'forecast'
+  | 'partner_ads'
+  | 'partner_immobilien'
+  | 'partner_gesuche';
+
+type UtilityToolButton = {
+  id: string;
+  label: string;
+  icon: UtilityIconKey;
+  tab?: MainTab;
+  disabled?: boolean;
+};
+
 const MANDATORY_TAB_IDS = ['berater', 'makler', 'marktueberblick'] as const;
 const DASHBOARD_UI_STATE_KEY = 'partner_dashboard_ui_state_v1';
 
@@ -144,6 +170,147 @@ function resolveFirstNameFromProfile(value: { contact_first_name?: unknown } | n
   return null;
 }
 
+function renderUtilityIcon(icon: UtilityIconKey) {
+  const baseProps = {
+    width: 17,
+    height: 17,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.9,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  };
+
+  switch (icon) {
+    case 'factors':
+      return (
+        <svg {...baseProps}>
+          <path d="M4 19V9" />
+          <path d="M10 19V5" />
+          <path d="M16 19v-7" />
+          <path d="M22 19v-11" />
+        </svg>
+      );
+    case 'texts':
+      return (
+        <svg {...baseProps}>
+          <path d="M4 20h4l10-10-4-4L4 16v4Z" />
+          <path d="m13 7 4 4" />
+        </svg>
+      );
+    case 'local_site':
+      return (
+        <svg {...baseProps}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="m12 8 3 3-3 5-3-5 3-3Z" />
+        </svg>
+      );
+    case 'international':
+      return (
+        <svg {...baseProps}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18" />
+          <path d="M12 3a14 14 0 0 1 0 18" />
+          <path d="M12 3a14 14 0 0 0 0 18" />
+        </svg>
+      );
+    case 'marketing':
+      return (
+        <svg {...baseProps}>
+          <path d="M4 17 10 11l4 4 6-8" />
+          <path d="M17 7h3v3" />
+        </svg>
+      );
+    case 'blog':
+      return (
+        <svg {...baseProps}>
+          <path d="M7 4h8l4 4v12H7z" />
+          <path d="M15 4v4h4" />
+          <path d="M10 13h6" />
+          <path d="M10 17h6" />
+        </svg>
+      );
+    case 'social':
+      return (
+        <svg {...baseProps}>
+          <path d="M4 14V8l10-4v16l-10-4Z" />
+          <path d="M14 10h2a4 4 0 0 1 0 8h-2" />
+        </svg>
+      );
+    case 'mail':
+      return (
+        <svg {...baseProps}>
+          <rect x="3" y="6" width="18" height="12" rx="2" />
+          <path d="m4 8 8 6 8-6" />
+        </svg>
+      );
+    case 'immobilien':
+      return (
+        <svg {...baseProps}>
+          <path d="M4 11.5 12 5l8 6.5" />
+          <path d="M6.5 10.5V20h11v-9.5" />
+          <path d="M10 20v-5h4v5" />
+        </svg>
+      );
+    case 'referenzen':
+      return (
+        <svg {...baseProps}>
+          <rect x="5" y="5" width="10" height="14" rx="2" />
+          <path d="M9 9h6" />
+          <path d="M9 13h6" />
+          <path d="M9 17h4" />
+        </svg>
+      );
+    case 'gesuche':
+      return (
+        <svg {...baseProps}>
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="m16 16 4 4" />
+        </svg>
+      );
+    case 'wizards':
+      return (
+        <svg {...baseProps}>
+          <path d="m5 19 10-10" />
+          <path d="m14 6 1-2 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z" />
+          <path d="m17 12 .7-1.4L19 10l-1.3-.6L17 8l-.7 1.4L15 10l1.3.6L17 12Z" />
+        </svg>
+      );
+    case 'forecast':
+      return (
+        <svg {...baseProps}>
+          <path d="M4 16c1.5 0 1.5-4 3-4s1.5 6 3 6 1.5-10 3-10 1.5 6 3 6 1.5-2 3-2" />
+        </svg>
+      );
+    case 'partner_ads':
+      return (
+        <svg {...baseProps}>
+          <path d="M4 14V8l10-4v16l-10-4Z" />
+          <path d="M16 10h2a3 3 0 0 1 0 6h-2" />
+        </svg>
+      );
+    case 'partner_immobilien':
+      return (
+        <svg {...baseProps}>
+          <path d="M5 20V9l7-5 7 5v11" />
+          <path d="M9 20v-5h6v5" />
+          <path d="M8 10h.01" />
+          <path d="M16 10h.01" />
+        </svg>
+      );
+    case 'partner_gesuche':
+      return (
+        <svg {...baseProps}>
+          <circle cx="10" cy="10" r="4.5" />
+          <path d="M2.5 20c1.5-3 4.3-4.5 7.5-4.5" />
+          <path d="m15.5 15.5 5 5" />
+        </svg>
+      );
+  }
+}
+
 export default function DashboardClient() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
@@ -158,6 +325,7 @@ export default function DashboardClient() {
   const [textFocusTarget, setTextFocusTarget] = useState<TextFocusTarget | null>(null);
   const [activationEditorMode, setActivationEditorMode] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [hoveredUtilityToolId, setHoveredUtilityToolId] = useState<string | null>(null);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>('konto');
   const [submitReviewBusy, setSubmitReviewBusy] = useState(false);
   const [submitReviewMessage, setSubmitReviewMessage] = useState<string | null>(null);
@@ -416,6 +584,63 @@ export default function DashboardClient() {
     return row.enabled === true;
   };
 
+  const utilityToolGroups: UtilityToolButton[][] = [
+    [
+      { id: 'factors', tab: 'factors', label: 'Wertanpassungen', icon: 'factors' },
+      { id: 'texts', tab: 'texts', label: 'Berichte & Texte', icon: 'texts' },
+      { id: 'local_site', tab: 'local_site', label: 'Lokale Website', icon: 'local_site' },
+      ...(hasInternationalFeature
+        ? [{
+          id: 'international',
+          tab: 'international' as MainTab,
+          label: isTabEnabled('international') ? 'Internationalisierung' : 'Internationalisierung (nicht freigeschaltet)',
+          icon: 'international' as UtilityIconKey,
+          disabled: !isTabEnabled('international'),
+        }]
+        : []),
+    ],
+    [
+      { id: 'marketing', tab: 'marketing', label: 'SEO & GEO', icon: 'marketing' },
+      { id: 'blog', tab: 'blog', label: 'Blog', icon: 'blog' },
+      { id: 'social', label: 'Social Media (Bald verfügbar)', icon: 'social', disabled: true },
+      { id: 'mail', label: 'E-Mail (Bald verfügbar)', icon: 'mail', disabled: true },
+    ],
+    [
+      {
+        id: 'immobilien',
+        tab: 'immobilien',
+        label: isTabEnabled('immobilien') ? 'Immobilien' : 'Immobilien (nicht freigeschaltet)',
+        icon: 'immobilien',
+        disabled: !isTabEnabled('immobilien'),
+      },
+      {
+        id: 'referenzen',
+        tab: 'referenzen',
+        label: isTabEnabled('referenzen') ? 'Referenzen' : 'Referenzen (nicht freigeschaltet)',
+        icon: 'referenzen',
+        disabled: !isTabEnabled('referenzen'),
+      },
+      {
+        id: 'gesuche',
+        tab: 'gesuche',
+        label: isTabEnabled('gesuche') ? 'Gesuche' : 'Gesuche (nicht freigeschaltet)',
+        icon: 'gesuche',
+        disabled: !isTabEnabled('gesuche'),
+      },
+      { id: 'wizards', label: 'Wizards (Bald verfügbar)', icon: 'wizards', disabled: true },
+      { id: 'forecast', label: 'Prognosemonitor (Bald verfügbar)', icon: 'forecast', disabled: true },
+    ],
+    [
+      { id: 'partner_ads', label: 'Partnerwerbung (Bald verfügbar)', icon: 'partner_ads', disabled: true },
+      { id: 'partner_immobilien', label: 'Partner-Immobilien (Bald verfügbar)', icon: 'partner_immobilien', disabled: true },
+      { id: 'partner_gesuche', label: 'Partner-Gesuche (Bald verfügbar)', icon: 'partner_gesuche', disabled: true },
+    ],
+  ];
+
+  const hoveredUtilityTool = utilityToolGroups
+    .flat()
+    .find((item) => item.id === hoveredUtilityToolId) ?? null;
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/partner/login');
@@ -426,6 +651,7 @@ export default function DashboardClient() {
     if (!isTabEnabled(tab)) return;
     setActiveMainTab(tab);
     setShowWelcome(false);
+    setHoveredUtilityToolId(null);
     if (tab === 'texts') {
       setActivationEditorMode(false);
       setTextFocusTarget(null);
@@ -442,6 +668,7 @@ export default function DashboardClient() {
     setActiveMainTab('settings');
     setShowWelcome(false);
     setShowSettingsMenu(false);
+    setHoveredUtilityToolId(null);
   };
 
   useEffect(() => {
@@ -885,130 +1112,39 @@ export default function DashboardClient() {
 
       {/* 1. SPALTE: WERKZEUGE (Ganz links, schmal) */}
       {showUtilityBar ? (
-      <aside style={utilityBarStyle}>
+      <aside
+        style={utilityBarStyle}
+        onMouseLeave={() => setHoveredUtilityToolId(null)}
+      >
         <div style={toolIconsGroupStyle}>
-          <button
-            onClick={() => handleToolSelect('factors')}
-            style={toolIconButtonStyle(activeMainTab === 'factors')}
-            title="Wertanpassungen"
-          >
-            📊
-          </button>
-          <button
-            onClick={() => handleToolSelect('texts')}
-            style={toolIconButtonStyle(activeMainTab === 'texts')}
-            title="Berichte & Texte"
-          >
-            ✍️
-          </button>
-          <button
-            onClick={() => handleToolSelect('local_site')}
-            style={toolIconButtonStyle(activeMainTab === 'local_site')}
-            title="Lokale Website"
-          >
-            🧭
-          </button>
-          {hasInternationalFeature ? (
-            <button
-              onClick={() => handleToolSelect('international')}
-              style={toolIconButtonStyle(activeMainTab === 'international', !isTabEnabled('international'))}
-              disabled={!isTabEnabled('international')}
-              title={isTabEnabled('international') ? 'Internationalisierung' : 'Internationalisierung (nicht freigeschaltet)'}
-            >
-              🌐
-            </button>
-          ) : null}
-          <div style={toolGroupDividerStyle} />
-          <button
-            onClick={() => handleToolSelect('marketing')}
-            style={toolIconButtonStyle(activeMainTab === 'marketing')}
-            title="SEO & GEO"
-          >
-            📈
-          </button>
-          <button
-            onClick={() => handleToolSelect('blog')}
-            style={toolIconButtonStyle(activeMainTab === 'blog')}
-            title="Blog"
-          >
-            📝
-          </button>
-          <button
-            style={toolIconButtonStyle(false, true)}
-            disabled
-            title="Social Media (Bald verfügbar)"
-          >
-            📢
-          </button>
-          <button
-            style={toolIconButtonStyle(false, true)}
-            disabled
-            title="E-Mail (Bald verfügbar)"
-          >
-            ✉️
-          </button>
-          <div style={toolGroupDividerStyle} />
-          <button
-            onClick={() => handleToolSelect('immobilien')}
-            style={toolIconButtonStyle(activeMainTab === 'immobilien', !isTabEnabled('immobilien'))}
-            disabled={!isTabEnabled('immobilien')}
-            title={isTabEnabled('immobilien') ? 'Immobilien' : 'Immobilien (nicht freigeschaltet)'}
-          >
-            🏠
-          </button>
-          <button
-            onClick={() => handleToolSelect('referenzen')}
-            style={toolIconButtonStyle(activeMainTab === 'referenzen', !isTabEnabled('referenzen'))}
-            disabled={!isTabEnabled('referenzen')}
-            title={isTabEnabled('referenzen') ? 'Referenzen' : 'Referenzen (nicht freigeschaltet)'}
-          >
-            🗂️
-          </button>
-          <button
-            onClick={() => handleToolSelect('gesuche')}
-            style={toolIconButtonStyle(activeMainTab === 'gesuche', !isTabEnabled('gesuche'))}
-            disabled={!isTabEnabled('gesuche')}
-            title={isTabEnabled('gesuche') ? 'Gesuche' : 'Gesuche (nicht freigeschaltet)'}
-          >
-            🔎
-          </button>
-          <button
-            style={toolIconButtonStyle(false, true)}
-            disabled
-            title="Wizards (Bald verfügbar)"
-          >
-            🪄
-          </button>
-          <button
-            style={toolIconButtonStyle(false, true)}
-            disabled
-            title="Prognosemonitor (Bald verfügbar)"
-          >
-            🔮
-          </button>
-          <div style={toolGroupDividerStyle} />
-          <button
-            style={toolIconButtonStyle(false, true)}
-            disabled
-            title="Partnerwerbung (Bald verfügbar)"
-          >
-            📣
-          </button>
-          <button
-            style={toolIconButtonStyle(false, true)}
-            disabled
-            title="Partner-Immobilien (Bald verfügbar)"
-          >
-            🏠
-          </button>
-          <button
-            style={toolIconButtonStyle(false, true)}
-            disabled
-            title="Partner-Gesuche (Bald verfügbar)"
-          >
-            🔎
-          </button>
+          {utilityToolGroups.map((group, groupIndex) => (
+            <div key={`utility-group-${groupIndex}`} style={toolGroupStyle}>
+              {group.map((item) => {
+                const active = item.tab ? activeMainTab === item.tab : false;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => item.tab ? handleToolSelect(item.tab) : undefined}
+                    onMouseEnter={() => setHoveredUtilityToolId(item.id)}
+                    onFocus={() => setHoveredUtilityToolId(item.id)}
+                    style={toolIconButtonStyle(active, Boolean(item.disabled))}
+                    disabled={Boolean(item.disabled)}
+                    aria-label={item.label}
+                  >
+                    {renderUtilityIcon(item.icon)}
+                  </button>
+                );
+              })}
+              {groupIndex < utilityToolGroups.length - 1 ? <div style={toolGroupDividerStyle} /> : null}
+            </div>
+          ))}
         </div>
+        {hoveredUtilityTool ? (
+          <div style={utilityTooltipLayerStyle}>
+            <div style={utilityTooltipCardStyle}>{hoveredUtilityTool.label}</div>
+          </div>
+        ) : null}
       </aside>
       ) : null}
 
@@ -1510,14 +1646,15 @@ export default function DashboardClient() {
 // --- STYLES ---
 
 const utilityBarStyle: React.CSSProperties = {
-  width: '80px',
-  minWidth: '80px',
+  width: '64px',
+  minWidth: '64px',
   backgroundColor: 'rgb(72, 107, 122)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '12px 0px',
-  overflow: 'hidden',
+  padding: '10px 0',
+  overflow: 'visible',
+  position: 'relative',
   zIndex: 10
 };
 
@@ -1525,37 +1662,69 @@ const toolIconsGroupStyle = {
   display: 'flex',
   flexDirection: 'column' as const,
   alignItems: 'center',
-  gap: '8px',
+  gap: '10px',
   height: '100%',
   width: '100%',
   overflowY: 'auto' as const,
-  padding: '4px 0 10px',
+  padding: '2px 0 10px',
+};
+
+const toolGroupStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '8px',
+  width: '100%',
 };
 
 const toolGroupDividerStyle: React.CSSProperties = {
-  width: '40px',
+  width: '28px',
   height: '2px',
-  background: '#cbd5e1',
-  opacity: 0.9,
+  background: 'rgba(255,255,255,0.35)',
   borderRadius: '2px',
-  margin: '4px auto',
+  margin: '2px auto 0',
 };
 
 const toolIconButtonStyle = (active: boolean, disabled = false) => ({
-  width: '44px',
-  height: '44px',
-  borderRadius: '10px',
-  border: 'none',
-  backgroundColor: active ? '#e2e8f0' : '#fff',
-  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-  fontSize: '18px',
+  width: '36px',
+  height: '36px',
+  borderRadius: '11px',
+  border: active ? '1px solid #111827' : '1px solid rgba(255,255,255,0.24)',
+  backgroundColor: active ? '#ffffff' : 'rgba(255,255,255,0.14)',
+  boxShadow: active ? '0 8px 18px rgba(15,23,42,0.18)' : 'none',
+  color: '#111111',
   cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.3 : 1,
-  transition: 'all 0.2s',
+  opacity: disabled ? 0.4 : 1,
+  transition: 'transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center'
 });
+
+const utilityTooltipLayerStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  left: 'calc(100% + 12px)',
+  bottom: 0,
+  display: 'flex',
+  alignItems: 'center',
+  pointerEvents: 'none',
+  zIndex: 35,
+};
+
+const utilityTooltipCardStyle: React.CSSProperties = {
+  minWidth: '168px',
+  maxWidth: '220px',
+  borderRadius: '12px',
+  border: '1px solid rgba(15,23,42,0.12)',
+  background: '#ffffff',
+  color: '#0f172a',
+  boxShadow: '0 18px 36px rgba(15,23,42,0.16)',
+  padding: '10px 14px',
+  fontSize: '13px',
+  fontWeight: 700,
+  lineHeight: 1.35,
+};
 
 const dashboardHeaderStyle: React.CSSProperties = {
   minHeight: '72px',

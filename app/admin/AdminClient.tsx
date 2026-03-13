@@ -3324,6 +3324,29 @@ export default function AdminClient() {
                   {llmCreateTestBusy ? "Teste..." : "Verbindung testen"}
                 </button>
               </div>
+              <div style={grid2Style}>
+                <input
+                  style={inputStyle}
+                  placeholder="Input-Kosten EUR / 1k Tokens"
+                  value={newLlmProvider.input_cost_eur_per_1k}
+                  onChange={(e) => {
+                    setLlmCreateTestResult(null);
+                    setNewLlmProvider((v) => ({ ...v, input_cost_eur_per_1k: e.target.value }));
+                  }}
+                />
+                <input
+                  style={inputStyle}
+                  placeholder="Output-Kosten EUR / 1k Tokens"
+                  value={newLlmProvider.output_cost_eur_per_1k}
+                  onChange={(e) => {
+                    setLlmCreateTestResult(null);
+                    setNewLlmProvider((v) => ({ ...v, output_cost_eur_per_1k: e.target.value }));
+                  }}
+                />
+              </div>
+              <div style={{ fontSize: 12, color: "#475569" }}>
+                Aktive globale Provider benötigen gültige Input-/Output-Kosten größer als 0. Diese Preise werden für den zentralen Verbrauch und die Abrechnung verwendet.
+              </div>
               {llmCreateTestResult ? (
                 <div
                   style={{
@@ -3345,6 +3368,11 @@ export default function AdminClient() {
                 disabled={busy}
                 onClick={() =>
                   run("Globalen LLM-Provider anlegen", async () => {
+                    const inputCost = parsePositiveNumber(newLlmProvider.input_cost_eur_per_1k);
+                    const outputCost = parsePositiveNumber(newLlmProvider.output_cost_eur_per_1k);
+                    if (inputCost === null || outputCost === null) {
+                      throw new Error("Input- und Output-Kosten sind Pflichtfelder und müssen größer als 0 sein.");
+                    }
                     const created = await api<{ provider?: { id: string } }>("/api/admin/llm/providers", {
                       method: "POST",
                       body: JSON.stringify({
@@ -3355,6 +3383,8 @@ export default function AdminClient() {
                         priority: Number(newLlmProvider.priority || 100),
                         temperature: newLlmProvider.temperature ? Number(newLlmProvider.temperature) : null,
                         max_tokens: newLlmProvider.max_tokens ? Number(newLlmProvider.max_tokens) : null,
+                        input_cost_eur_per_1k: inputCost,
+                        output_cost_eur_per_1k: outputCost,
                       }),
                     });
                     const providerId = String(created.provider?.id ?? "").trim();

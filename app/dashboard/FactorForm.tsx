@@ -467,6 +467,9 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
   const [persistedFactors, setPersistedFactors] = useState(
     makeFactorSnapshot(defaultSf, defaultTrend, defaultF, defaultF, defaultF, defaultF, defaultF, defaultRendite),
   );
+  const [lastRebuiltFactors, setLastRebuiltFactors] = useState(
+    makeFactorSnapshot(defaultSf, defaultTrend, defaultF, defaultF, defaultF, defaultF, defaultF, defaultRendite),
+  );
   const currentFactors = useMemo(
     () => makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite),
     [sf, trend, kh, kw, kg, mh, mw, rendite],
@@ -475,6 +478,11 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
     () => JSON.stringify(currentFactors) !== JSON.stringify(persistedFactors),
     [currentFactors, persistedFactors],
   );
+  const hasPendingRebuild = useMemo(
+    () => JSON.stringify(currentFactors) !== JSON.stringify(lastRebuiltFactors),
+    [currentFactors, lastRebuiltFactors],
+  );
+  const canRebuild = hasFactorChanges || hasPendingRebuild;
 
   useImperativeHandle(ref, () => ({
     autoSyncIfDirty: async () => {
@@ -547,6 +555,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
           setRendite(nextRendite);
           const snapshot = makeFactorSnapshot(nextSf, nextTrend, nextKh, nextKw, nextKg, nextMh, nextMw, nextRendite);
           setPersistedFactors(snapshot);
+          setLastRebuiltFactors(snapshot);
           lastPropagatedRef.current = snapshot;
         } else {
           setSettingsId(null);
@@ -560,6 +569,7 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
           setRendite(defaultRendite);
           const snapshot = makeFactorSnapshot(defaultSf, defaultTrend, defaultF, defaultF, defaultF, defaultF, defaultF, defaultRendite);
           setPersistedFactors(snapshot);
+          setLastRebuiltFactors(snapshot);
           lastPropagatedRef.current = snapshot;
         }
         loadedRef.current = true;
@@ -850,7 +860,9 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
       } else {
         setRebuildMessage('✅ Erfolgreich Live-geschalten. Bitte prüfen Sie Ihre Berichtseiten.');
         shouldOpenSuccess = true;
-        setPersistedFactors(makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite));
+        const rebuiltSnapshot = makeFactorSnapshot(sf, trend, kh, kw, kg, mh, mw, rendite);
+        setPersistedFactors(rebuiltSnapshot);
+        setLastRebuiltFactors(rebuiltSnapshot);
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : null;
@@ -1398,8 +1410,8 @@ const FactorForm = forwardRef<FactorFormHandle, { config: PartnerAreaConfig }>(f
         {message && <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#2f855a' }}>{message}</span>}
         <button
           onClick={handleRebuild}
-          disabled={rebuildLoading || !hasFactorChanges}
-          style={rebuildButtonStyle(!rebuildLoading && hasFactorChanges)}
+          disabled={rebuildLoading || !canRebuild}
+          style={rebuildButtonStyle(!rebuildLoading && canRebuild)}
         >
           {rebuildLoading ? 'Neuberechnung & Liveschaltung…' : '🔁 Neu berechnen & live schalten'}
         </button>
