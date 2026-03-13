@@ -29,7 +29,6 @@ export default function PartnerResetRequestedPage() {
             style={{
               textDecoration: "none",
               padding: "10px 12px",
-              padding: "10px 12px",
               border: "1px solid #0f766e",
               borderRadius: "6px",
               color: "#fff",
