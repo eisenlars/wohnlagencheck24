@@ -49,6 +49,12 @@ type SendAdminInviteResendRequestEmailArgs = {
   recipients?: string[] | null;
 };
 
+type SendPartnerPasswordResetEmailArgs = {
+  partnerEmail: string;
+  partnerName?: string | null;
+  resetLink: string;
+};
+
 function parseCsv(value: string): string[] {
   return String(value ?? "")
     .split(/[,\n;]+/)
@@ -226,6 +232,25 @@ function buildAdminInviteResendRequestText(args: SendAdminInviteResendRequestEma
   ].join("\n");
 }
 
+function buildPartnerPasswordResetSubject(): string {
+  return "Passwort neu setzen";
+}
+
+function buildPartnerPasswordResetText(args: SendPartnerPasswordResetEmailArgs): string {
+  const partner = pickGreetingName(String(args.partnerName ?? ""));
+  return [
+    `Hallo${partner ? ` ${partner}` : ""},`,
+    "",
+    "du hast angefordert, dein Passwort fuer den Partnerbereich neu zu setzen.",
+    "",
+    "Bitte oeffne den folgenden Link, um ein neues Passwort zu vergeben:",
+    args.resetLink,
+    "",
+    "Der Link ist zeitlich begrenzt und kann nur einmal verwendet werden.",
+    "Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail ignorieren.",
+  ].join("\n");
+}
+
 async function sendSmtpTextMail(params: {
   to: string[];
   subject: string;
@@ -355,6 +380,22 @@ export async function sendAdminPartnerOnboardedEmail(args: SendAdminPartnerOnboa
     subject: buildAdminPartnerOnboardedSubject(args),
     text: buildAdminPartnerOnboardedText(args),
     from: String(process.env.ADMIN_REVIEW_NOTIFY_FROM ?? "").trim() || null,
+  });
+}
+
+export async function sendPartnerPasswordResetEmail(args: SendPartnerPasswordResetEmailArgs): Promise<{
+  sent: boolean;
+  reason?: string;
+}> {
+  const recipient = String(args.partnerEmail ?? "").trim().toLowerCase();
+  const resetLink = String(args.resetLink ?? "").trim();
+  if (!recipient) return { sent: false, reason: "partner_email_missing" };
+  if (!resetLink) return { sent: false, reason: "reset_link_missing" };
+
+  return sendSmtpTextMail({
+    to: [recipient],
+    subject: buildPartnerPasswordResetSubject(),
+    text: buildPartnerPasswordResetText(args),
   });
 }
 
