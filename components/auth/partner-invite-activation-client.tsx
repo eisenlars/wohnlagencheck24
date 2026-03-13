@@ -19,16 +19,44 @@ export default function PartnerInviteActivationClient() {
   const supabase = useMemo(() => createClient(), []);
   const [status, setStatus] = useState("Einladungslink wird geprueft...");
   const [viewMode, setViewMode] = useState<"checking" | "form" | "error">("checking");
+  const [errorKind, setErrorKind] = useState<"invalid_invite" | "already_active">("invalid_invite");
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [accessEmail, setAccessEmail] = useState("");
   const [requestBusy, setRequestBusy] = useState(false);
+  const [showInviteRequest, setShowInviteRequest] = useState(false);
   const invalidMessage = "Der Einladungslink ist ungueltig oder abgelaufen. Bitte fordere einen neuen Einladungslink an.";
 
   useEffect(() => {
     let mounted = true;
+
+    async function showInvalidInviteState() {
+      try {
+        const res = await fetch("/api/auth/setup-target", { method: "GET", cache: "no-store" });
+        const payload = (await res.json().catch(() => ({}))) as { redirect_to?: string };
+        const redirectTo = String(payload.redirect_to ?? "").trim();
+        if (!mounted) return;
+        if (redirectTo === "/dashboard") {
+          setErrorKind("already_active");
+          setStatus("Ihr Partnerkonto ist bereits aktiviert. Sie koennen direkt in Ihr Dashboard wechseln.");
+          setReady(false);
+          setViewMode("error");
+          setShowInviteRequest(false);
+          return;
+        }
+      } catch {
+        // Fallback below.
+      }
+
+      if (!mounted) return;
+      setErrorKind("invalid_invite");
+      setStatus(invalidMessage);
+      setReady(false);
+      setViewMode("error");
+      setShowInviteRequest(false);
+    }
 
     (async () => {
       const hash = readHashParams();
@@ -47,10 +75,7 @@ export default function PartnerInviteActivationClient() {
 
       if (prefEmail) setAccessEmail(prefEmail);
       if (type && type !== "invite") {
-        if (!mounted) return;
-        setStatus(invalidMessage);
-        setReady(false);
-        setViewMode("error");
+        await showInvalidInviteState();
         return;
       }
 
@@ -58,6 +83,7 @@ export default function PartnerInviteActivationClient() {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (!mounted) return;
         if (!error) {
+          setErrorKind("invalid_invite");
           setReady(true);
           setViewMode("form");
           setStatus("Bitte vergeben Sie jetzt Ihr Passwort fuer die Aktivierung.");
@@ -75,6 +101,7 @@ export default function PartnerInviteActivationClient() {
         });
         if (!mounted) return;
         if (!error) {
+          setErrorKind("invalid_invite");
           setReady(true);
           setViewMode("form");
           setStatus("Bitte vergeben Sie jetzt Ihr Passwort fuer die Aktivierung.");
@@ -86,10 +113,7 @@ export default function PartnerInviteActivationClient() {
       }
 
       if (!hasAuthLinkPayload || !accessToken || !refreshToken) {
-        if (!mounted) return;
-        setStatus(invalidMessage);
-        setReady(false);
-        setViewMode("error");
+        await showInvalidInviteState();
         return;
       }
 
@@ -100,12 +124,11 @@ export default function PartnerInviteActivationClient() {
 
       if (!mounted) return;
       if (error) {
-        setStatus(invalidMessage);
-        setReady(false);
-        setViewMode("error");
+        await showInvalidInviteState();
         return;
       }
 
+      setErrorKind("invalid_invite");
       setReady(true);
       setViewMode("form");
       setStatus("Bitte vergeben Sie jetzt Ihr Passwort fuer die Aktivierung.");
@@ -189,7 +212,9 @@ export default function PartnerInviteActivationClient() {
     <div style={{ maxWidth: 420, margin: "90px auto", fontFamily: "sans-serif" }}>
       <div style={{ display: "grid", gap: 12, border: "1px solid #ddd", padding: 24, borderRadius: 8 }}>
         <h2 style={{ margin: 0, color: "#111827" }}>Partnerkonto aktivieren</h2>
-        <p style={{ fontSize: 14, color: viewMode === "error" ? "#b91c1c" : "#475569", margin: 0 }}>{status}</p>
+        <p style={{ fontSize: 14, color: viewMode === "error" && errorKind !== "already_active" ? "#b91c1c" : "#475569", margin: 0 }}>
+          {status}
+        </p>
         {viewMode === "form" ? (
           <>
             <label htmlFor="password" style={{ color: "#111827" }}>Passwort festlegen</label>
@@ -234,38 +259,111 @@ export default function PartnerInviteActivationClient() {
           </>
         ) : null}
         {viewMode === "error" ? (
-          <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
-            <label htmlFor="request_email" style={{ color: "#111827", fontWeight: 700 }}>
-              E-Mail-Adresse
-            </label>
-            <input
-              id="request_email"
-              name="request_email"
-              type="email"
-              placeholder="ihre@email.de"
-              style={{ padding: 8 }}
-              value={accessEmail}
-              onChange={(event) => setAccessEmail(event.target.value)}
-              disabled={requestBusy}
-            />
-            <button
-              type="button"
-              onClick={requestNewInviteLink}
-              style={{
-                padding: "10px 12px",
-                background: "#111827",
-                color: "#fff",
-                border: "none",
-                borderRadius: 6,
-                cursor: requestBusy ? "default" : "pointer",
-                fontWeight: 700,
-                opacity: requestBusy ? 0.75 : 1,
-              }}
-              disabled={requestBusy}
-            >
-              Neuen Link beantragen
-            </button>
-          </div>
+          errorKind === "already_active" ? (
+            <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => router.push("/dashboard")}
+                style={{
+                  padding: "10px 12px",
+                  background: "#0f766e",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                Zum Dashboard
+              </button>
+            </div>
+          ) : (
+            <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
+              <p style={{ margin: 0, fontSize: 14, color: "#475569", lineHeight: 1.45 }}>
+                Falls Ihr Partnerkonto bereits aktiviert ist, melden Sie sich bitte an oder nutzen Sie den Passwort-vergessen-Prozess.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push("/partner/login")}
+                style={{
+                  padding: "10px 12px",
+                  background: "#0f766e",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                Zur Anmeldung
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/partner/login")}
+                style={{
+                  padding: "10px 12px",
+                  background: "#ffffff",
+                  color: "#0f766e",
+                  border: "1px solid #0f766e",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                Passwort vergessen
+              </button>
+              {!showInviteRequest ? (
+                <button
+                  type="button"
+                  onClick={() => setShowInviteRequest(true)}
+                  style={{
+                    padding: "10px 12px",
+                    background: "#ffffff",
+                    color: "#111827",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontWeight: 700,
+                  }}
+                >
+                  Ich brauche eine neue Einladung
+                </button>
+              ) : (
+                <div style={{ display: "grid", gap: 10 }}>
+                  <label htmlFor="request_email" style={{ color: "#111827", fontWeight: 700 }}>
+                    E-Mail-Adresse
+                  </label>
+                  <input
+                    id="request_email"
+                    name="request_email"
+                    type="email"
+                    placeholder="ihre@email.de"
+                    style={{ padding: 8 }}
+                    value={accessEmail}
+                    onChange={(event) => setAccessEmail(event.target.value)}
+                    disabled={requestBusy}
+                  />
+                  <button
+                    type="button"
+                    onClick={requestNewInviteLink}
+                    style={{
+                      padding: "10px 12px",
+                      background: "#111827",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      cursor: requestBusy ? "default" : "pointer",
+                      fontWeight: 700,
+                      opacity: requestBusy ? 0.75 : 1,
+                    }}
+                    disabled={requestBusy}
+                  >
+                    Neuen Link beantragen
+                  </button>
+                </div>
+              )}
+            </div>
+          )
         ) : null}
       </div>
     </div>
