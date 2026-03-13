@@ -23,26 +23,12 @@ export default function PartnerResetRequestedPage() {
         <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
           Noch nicht aktivierte Partnerkonten nutzen bitte den Einladungsprozess. Der Link ist zeitlich begrenzt und kann nur einmal verwendet werden.
         </p>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "6px" }}>
+        <div style={{ display: "flex", justifyContent: "flex-start", gap: "10px", marginTop: "6px" }}>
           <Link
             href="/partner/login"
             style={{
               textDecoration: "none",
               padding: "10px 12px",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              color: "#0f172a",
-              fontWeight: 700,
-              fontSize: "13px",
-              background: "#fff",
-            }}
-          >
-            Zurück zum Login
-          </Link>
-          <Link
-            href="/partner/login"
-            style={{
-              textDecoration: "none",
               padding: "10px 12px",
               border: "1px solid #0f766e",
               borderRadius: "6px",
@@ -52,7 +38,7 @@ export default function PartnerResetRequestedPage() {
               background: "#0f766e",
             }}
           >
-            Neues Passwort anfordern
+            Zur Anmeldung
           </Link>
         </div>
       </div>
