@@ -297,21 +297,6 @@ export default function PartnerInviteActivationClient() {
               >
                 Zur Anmeldung
               </button>
-              <button
-                type="button"
-                onClick={() => router.push("/partner/login")}
-                style={{
-                  padding: "10px 12px",
-                  background: "#ffffff",
-                  color: "#0f766e",
-                  border: "1px solid #0f766e",
-                  borderRadius: 6,
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
-              >
-                Passwort vergessen
-              </button>
               {!showInviteRequest ? (
                 <button
                   type="button"

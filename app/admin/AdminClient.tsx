@@ -196,6 +196,14 @@ type LlmUsageStatusRow = {
   cost_eur: number;
 };
 
+type LlmModelOption = {
+  id: string;
+  label: string;
+  hint: string;
+  badges: string[];
+  recommended?: boolean;
+};
+
 type BillingGlobalDefaults = {
   portal_base_price_eur: number;
   portal_ortslage_price_eur: number;
@@ -278,14 +286,166 @@ function formatMandatoryKeyLabel(key: string): string {
   return key;
 }
 
-function getSuggestedLatestModel(provider: string): string {
+function getLlmModelOptions(provider: string): LlmModelOption[] {
   const p = String(provider ?? "").trim().toLowerCase();
-  if (p === "openai") return "gpt-5.2";
-  if (p === "anthropic") return "claude-opus-4-1-20250805";
-  if (p === "google_gemini") return "gemini-2.5-pro";
-  if (p === "mistral") return "mistral-small-latest";
-  if (p === "azure_openai") return "gpt-4o-prod";
-  return "";
+  if (p === "openai") {
+    return [
+      {
+        id: "gpt-5.2",
+        label: "GPT-5.2",
+        hint: "Empfohlen für hochwertige Texte, Überarbeitungen und starke Übersetzungen.",
+        badges: ["Texte", "Übersetzung", "Qualität"],
+        recommended: true,
+      },
+      {
+        id: "gpt-5.2-mini",
+        label: "GPT-5.2 Mini",
+        hint: "Guter Allrounder für schnellere Antworten bei solidem Qualitätsniveau.",
+        badges: ["Allround", "schneller", "effizient"],
+      },
+      {
+        id: "gpt-5.2-nano",
+        label: "GPT-5.2 Nano",
+        hint: "Sehr leichtgewichtig für einfache Aufgaben mit Fokus auf niedrige Kosten.",
+        badges: ["günstiger", "schnell", "einfach"],
+      },
+      {
+        id: "gpt-4.1",
+        label: "GPT-4.1",
+        hint: "Stabiler Allrounder für Textarbeit und strukturierte Aufgaben.",
+        badges: ["Allround", "stabil", "Struktur"],
+      },
+      {
+        id: "gpt-4o",
+        label: "GPT-4o",
+        hint: "Reaktionsschnell und vielseitig, sinnvoll für gemischte Workflows.",
+        badges: ["vielseitig", "schnell", "multimodal"],
+      },
+    ];
+  }
+  if (p === "anthropic") {
+    return [
+      {
+        id: "claude-opus-4-1-20250805",
+        label: "Claude Opus 4.1",
+        hint: "Stark für anspruchsvolle Schreibaufgaben und hochwertige Langform-Inhalte.",
+        badges: ["Texte", "Qualität", "Langform"],
+        recommended: true,
+      },
+      {
+        id: "claude-sonnet-4-20250514",
+        label: "Claude Sonnet 4",
+        hint: "Ausgewogen zwischen Qualität und Geschwindigkeit für tägliche Textarbeit.",
+        badges: ["Allround", "balanced", "Texte"],
+      },
+      {
+        id: "claude-3-7-sonnet-latest",
+        label: "Claude 3.7 Sonnet",
+        hint: "Geeignet für vielseitige Aufgaben mit guter Struktur und klaren Antworten.",
+        badges: ["Struktur", "Allround", "klar"],
+      },
+      {
+        id: "claude-3-5-haiku-latest",
+        label: "Claude 3.5 Haiku",
+        hint: "Schnell und effizient für einfache bis mittlere Aufgaben.",
+        badges: ["schnell", "günstiger", "leicht"],
+      },
+    ];
+  }
+  if (p === "google_gemini") {
+    return [
+      {
+        id: "gemini-2.5-pro",
+        label: "Gemini 2.5 Pro",
+        hint: "Stark für Qualität, tieferes Reasoning und anspruchsvollere Inhalte.",
+        badges: ["Qualität", "Reasoning", "Texte"],
+        recommended: true,
+      },
+      {
+        id: "gemini-2.5-flash",
+        label: "Gemini 2.5 Flash",
+        hint: "Schnelleres Modell für häufige Generierung und iterative Bearbeitung.",
+        badges: ["schnell", "Allround", "Iteration"],
+      },
+      {
+        id: "gemini-2.5-flash-lite",
+        label: "Gemini 2.5 Flash Lite",
+        hint: "Kosteneffizient für einfache Standardaufgaben mit hoher Frequenz.",
+        badges: ["günstiger", "schnell", "Standard"],
+      },
+      {
+        id: "gemini-flash-latest",
+        label: "Gemini Flash Latest",
+        hint: "Flexible Flash-Variante für schnelle operative Nutzung.",
+        badges: ["schnell", "operativ", "flexibel"],
+      },
+    ];
+  }
+  if (p === "mistral") {
+    return [
+      {
+        id: "mistral-large-latest",
+        label: "Mistral Large",
+        hint: "Geeignet für hochwertige Textarbeit und komplexere Aufgaben.",
+        badges: ["Qualität", "Texte", "komplex"],
+        recommended: true,
+      },
+      {
+        id: "mistral-medium-latest",
+        label: "Mistral Medium",
+        hint: "Ausgewogener Mittelweg für tägliche Aufgaben mit gutem Tempo.",
+        badges: ["Allround", "balanced", "Tempo"],
+      },
+      {
+        id: "mistral-small-latest",
+        label: "Mistral Small",
+        hint: "Leichtgewichtig und effizient für einfache bis mittlere Inhalte.",
+        badges: ["günstiger", "schnell", "leicht"],
+      },
+      {
+        id: "codestral-latest",
+        label: "Codestral",
+        hint: "Primär für Coding- und strukturierte technische Aufgaben sinnvoll.",
+        badges: ["Coding", "Struktur", "technisch"],
+      },
+    ];
+  }
+  if (p === "azure_openai") {
+    return [
+      {
+        id: "gpt-5-prod",
+        label: "GPT-5 Prod",
+        hint: "Empfohlen für produktive hochwertige Text- und Übersetzungs-Workflows auf Azure.",
+        badges: ["Texte", "Übersetzung", "Azure"],
+        recommended: true,
+      },
+      {
+        id: "gpt-4.1-prod",
+        label: "GPT-4.1 Prod",
+        hint: "Stabiler Azure-Allrounder für Routineprozesse.",
+        badges: ["Allround", "stabil", "Azure"],
+      },
+      {
+        id: "gpt-4o-prod",
+        label: "GPT-4o Prod",
+        hint: "Schnell und vielseitig für operative Azure-Workflows.",
+        badges: ["schnell", "vielseitig", "Azure"],
+      },
+    ];
+  }
+
+  return [{
+    id: "gpt-4o-mini",
+    label: "gpt-4o-mini",
+    hint: "Kuratierter Standardvorschlag ohne zusätzliche Einordnung.",
+    badges: ["Standard"],
+    recommended: true,
+  }];
+}
+
+function getSuggestedLatestModel(provider: string): string {
+  const options = getLlmModelOptions(provider);
+  return options.find((item) => item.recommended)?.id ?? options[0]?.id ?? "";
 }
 
 function getDefaultLlmBaseUrl(provider: string): string {
@@ -296,18 +456,6 @@ function getDefaultLlmBaseUrl(provider: string): string {
   if (p === "mistral") return "https://api.mistral.ai/v1";
   if (p === "azure_openai") return "https://api.openai.com/v1";
   return "https://api.openai.com/v1";
-}
-
-function getLlmModelSuggestions(provider: string): string[] {
-  const p = String(provider ?? "").trim().toLowerCase();
-  if (p === "openai") return ["gpt-5.2", "gpt-5.2-mini", "gpt-5.2-nano", "gpt-4.1", "gpt-4o"];
-  if (p === "anthropic") {
-    return ["claude-opus-4-1-20250805", "claude-sonnet-4-20250514", "claude-3-7-sonnet-latest", "claude-3-5-haiku-latest"];
-  }
-  if (p === "google_gemini") return ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"];
-  if (p === "mistral") return ["mistral-large-latest", "mistral-medium-latest", "mistral-small-latest", "codestral-latest"];
-  if (p === "azure_openai") return ["gpt-5-prod", "gpt-4.1-prod", "gpt-4o-prod"];
-  return [getSuggestedLatestModel(provider) || "gpt-4o-mini"];
 }
 
 function supportsAutomaticPricing(provider: string): boolean {
@@ -582,7 +730,11 @@ export default function AdminClient() {
   } | null>(null);
 
   const llmProviderSpecs = useMemo(() => getProvidersForKind("llm"), []);
-  const llmModelOptions = useMemo(() => getLlmModelSuggestions(newLlmProvider.provider), [newLlmProvider.provider]);
+  const llmModelOptions = useMemo(() => getLlmModelOptions(newLlmProvider.provider), [newLlmProvider.provider]);
+  const selectedLlmModelOption = useMemo(
+    () => llmModelOptions.find((item) => item.id === newLlmProvider.model) ?? llmModelOptions[0] ?? null,
+    [llmModelOptions, newLlmProvider.model],
+  );
 
   useEffect(() => {
     const anyModalOpen =
@@ -3226,12 +3378,12 @@ export default function AdminClient() {
                   value={newLlmProvider.provider}
                   onChange={(e) => {
                     const provider = e.target.value;
-                    const suggested = getLlmModelSuggestions(provider);
+                    const suggested = getLlmModelOptions(provider);
                     setLlmCreateTestResult(null);
                     setNewLlmProvider((v) => ({
                       ...v,
                       provider,
-                      model: suggested[0] ?? (getSuggestedLatestModel(provider) || v.model),
+                      model: suggested.find((item) => item.recommended)?.id ?? suggested[0]?.id ?? (getSuggestedLatestModel(provider) || v.model),
                       base_url: getDefaultLlmBaseUrl(provider),
                       api_version: provider === "azure_openai" ? (v.api_version || "2024-10-21") : "",
                     }));
@@ -3252,12 +3404,50 @@ export default function AdminClient() {
                   }}
                 >
                   {llmModelOptions.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
+                    <option key={model.id} value={model.id}>
+                      {model.label}
                     </option>
                   ))}
                 </select>
               </div>
+              {selectedLlmModelOption ? (
+                <div
+                  style={{
+                    border: "1px solid #dbeafe",
+                    background: "#f8fbff",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
+                    {selectedLlmModelOption.label}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.45 }}>
+                    {selectedLlmModelOption.hint}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {selectedLlmModelOption.badges.map((badge) => (
+                      <span
+                        key={`${selectedLlmModelOption.id}:${badge}`}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: "4px 8px",
+                          borderRadius: 999,
+                          background: "#e0f2fe",
+                          color: "#0c4a6e",
+                          fontSize: 11,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div>
                 <input
                   style={inputStyle}
