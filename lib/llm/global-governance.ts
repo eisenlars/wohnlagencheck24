@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import { isMissingTable, listFlattenedLlmProviderModels } from "@/lib/llm/provider-catalog";
 
 export type GlobalLlmConfig = {
   central_enabled: boolean;
@@ -8,17 +9,23 @@ export type GlobalLlmConfig = {
 
 export type GlobalLlmProvider = {
   id: string;
+  provider_account_id?: string | null;
+  provider_model_id?: string | null;
   provider: string;
   model: string;
   base_url: string;
   auth_type: string;
   auth_config: Record<string, unknown> | null;
+  api_version?: string | null;
   priority: number;
   is_active: boolean;
   max_tokens: number | null;
   temperature: number | null;
+  input_cost_usd_per_1k: number | null;
+  output_cost_usd_per_1k: number | null;
   input_cost_eur_per_1k: number | null;
   output_cost_eur_per_1k: number | null;
+  fx_rate_usd_to_eur?: number | null;
 };
 
 type LlmUsageInsert = {
@@ -30,9 +37,25 @@ type LlmUsageInsert = {
   prompt_tokens: number | null;
   completion_tokens: number | null;
   total_tokens: number | null;
+  provider_account_id?: string | null;
+  provider_model_id?: string | null;
+  billing_currency?: string | null;
+  fx_rate_usd_to_eur?: number | null;
+  input_cost_usd_per_1k_snapshot?: number | null;
+  output_cost_usd_per_1k_snapshot?: number | null;
+  cache_read_cost_usd_per_1k_snapshot?: number | null;
+  cache_write_cost_usd_per_1k_snapshot?: number | null;
+  reasoning_cost_usd_per_1k_snapshot?: number | null;
+  estimated_cost_usd?: number | null;
   estimated_cost_eur: number | null;
+  cached_tokens?: number | null;
+  cache_read_tokens?: number | null;
+  cache_write_tokens?: number | null;
+  reasoning_tokens?: number | null;
   status: "ok" | "error";
   error_code: string | null;
+  request_id?: string | null;
+  raw_usage_json?: Record<string, unknown> | null;
 };
 
 function asFiniteNumber(value: unknown): number | null {
@@ -42,11 +65,6 @@ function asFiniteNumber(value: unknown): number | null {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
-}
-
-function isMissingTable(error: unknown, table: string): boolean {
-  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes(`public.${table}`) && msg.includes("does not exist");
 }
 
 export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; source: "db" | "fallback" }> {
@@ -92,42 +110,81 @@ export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; 
 
 export async function loadActiveGlobalLlmProviders(): Promise<{ providers: GlobalLlmProvider[]; source: "db" | "fallback" }> {
   const admin = createAdminClient();
+  const next = await listFlattenedLlmProviderModels({ admin, activeOnly: true });
+  if (next.source === "db" && next.models.length > 0) {
+    return {
+      source: "db",
+      providers: next.models
+        .filter((row) =>
+          row.input_cost_usd_per_1k !== null
+          && row.output_cost_usd_per_1k !== null
+          && row.input_cost_usd_per_1k > 0
+          && row.output_cost_usd_per_1k > 0,
+        )
+        .map((row) => ({
+          id: row.id,
+          provider_account_id: row.provider_account_id,
+          provider_model_id: row.id,
+          provider: row.provider,
+          model: row.model,
+          base_url: row.base_url,
+          auth_type: row.auth_type,
+          auth_config: row.auth_config,
+          api_version: row.api_version,
+          priority: row.priority,
+          is_active: row.is_active,
+          max_tokens: row.max_tokens,
+          temperature: row.temperature,
+          input_cost_usd_per_1k: row.input_cost_usd_per_1k,
+          output_cost_usd_per_1k: row.output_cost_usd_per_1k,
+          input_cost_eur_per_1k: row.input_cost_eur_per_1k,
+          output_cost_eur_per_1k: row.output_cost_eur_per_1k,
+          fx_rate_usd_to_eur: row.fx_rate_usd_to_eur,
+        })),
+    };
+  }
+
   const { data, error } = await admin
     .from("llm_global_providers")
     .select("id, provider, model, base_url, auth_type, auth_config, priority, is_active, max_tokens, temperature, input_cost_eur_per_1k, output_cost_eur_per_1k")
     .eq("is_active", true)
     .order("priority", { ascending: true });
 
-  if (!error) {
-    const normalized = (data ?? []).map((row) => ({
+  if (error) {
+    if (isMissingTable(error, "llm_global_providers")) {
+      return { source: "fallback", providers: [] };
+    }
+    throw new Error(String(error.message ?? "Global LLM providers lookup failed"));
+  }
+
+  return {
+    source: "db",
+    providers: (data ?? []).map((row) => ({
       id: String(row.id ?? ""),
+      provider_account_id: null,
+      provider_model_id: String(row.id ?? ""),
       provider: String(row.provider ?? "").toLowerCase(),
       model: String(row.model ?? ""),
       base_url: String(row.base_url ?? "https://api.openai.com/v1"),
       auth_type: String(row.auth_type ?? "api_key"),
       auth_config: (row.auth_config as Record<string, unknown> | null) ?? null,
+      api_version: null,
       priority: Number(row.priority ?? 100),
       is_active: Boolean(row.is_active),
       max_tokens: asFiniteNumber(row.max_tokens),
       temperature: asFiniteNumber(row.temperature),
+      input_cost_usd_per_1k: null,
+      output_cost_usd_per_1k: null,
       input_cost_eur_per_1k: asFiniteNumber(row.input_cost_eur_per_1k),
       output_cost_eur_per_1k: asFiniteNumber(row.output_cost_eur_per_1k),
-    }));
-    return {
-      source: "db",
-      providers: normalized.filter((row) =>
-        row.input_cost_eur_per_1k !== null
-        && row.output_cost_eur_per_1k !== null
-        && row.input_cost_eur_per_1k > 0
-        && row.output_cost_eur_per_1k > 0,
-      ),
-    };
-  }
-
-  if (isMissingTable(error, "llm_global_providers")) {
-    return { source: "fallback", providers: [] };
-  }
-  throw new Error(String(error.message ?? "Global LLM providers lookup failed"));
+      fx_rate_usd_to_eur: null,
+    })).filter((row) =>
+      row.input_cost_eur_per_1k !== null
+      && row.output_cost_eur_per_1k !== null
+      && row.input_cost_eur_per_1k > 0
+      && row.output_cost_eur_per_1k > 0,
+    ),
+  };
 }
 
 function monthRangeUtc(d = new Date()) {
@@ -213,8 +270,26 @@ export function estimateCostEur(args: {
   const pt = args.promptTokens ?? 0;
   const ct = args.completionTokens ?? 0;
   if (!Number.isFinite(pt) || !Number.isFinite(ct)) return null;
-  const inCost = args.inputCostEurPer1k ?? 0;
-  const outCost = args.outputCostEurPer1k ?? 0;
+  if (args.inputCostEurPer1k === null || args.outputCostEurPer1k === null) return null;
+  const inCost = args.inputCostEurPer1k;
+  const outCost = args.outputCostEurPer1k;
+  if (!Number.isFinite(inCost) || !Number.isFinite(outCost)) return null;
+  const value = (pt / 1000) * inCost + (ct / 1000) * outCost;
+  return Number.isFinite(value) ? Number(value.toFixed(6)) : null;
+}
+
+export function estimateCostUsd(args: {
+  promptTokens: number | null;
+  completionTokens: number | null;
+  inputCostUsdPer1k: number | null;
+  outputCostUsdPer1k: number | null;
+}): number | null {
+  const pt = args.promptTokens ?? 0;
+  const ct = args.completionTokens ?? 0;
+  if (!Number.isFinite(pt) || !Number.isFinite(ct)) return null;
+  if (args.inputCostUsdPer1k === null || args.outputCostUsdPer1k === null) return null;
+  const inCost = args.inputCostUsdPer1k;
+  const outCost = args.outputCostUsdPer1k;
   if (!Number.isFinite(inCost) || !Number.isFinite(outCost)) return null;
   const value = (pt / 1000) * inCost + (ct / 1000) * outCost;
   return Number.isFinite(value) ? Number(value.toFixed(6)) : null;
@@ -233,9 +308,25 @@ export async function writeLlmUsageEvent(row: LlmUsageInsert): Promise<void> {
       prompt_tokens: row.prompt_tokens,
       completion_tokens: row.completion_tokens,
       total_tokens: row.total_tokens,
+      provider_account_id: row.provider_account_id ?? null,
+      provider_model_id: row.provider_model_id ?? null,
+      billing_currency: row.billing_currency ?? "USD",
+      fx_rate_usd_to_eur: row.fx_rate_usd_to_eur ?? null,
+      input_cost_usd_per_1k_snapshot: row.input_cost_usd_per_1k_snapshot ?? null,
+      output_cost_usd_per_1k_snapshot: row.output_cost_usd_per_1k_snapshot ?? null,
+      cache_read_cost_usd_per_1k_snapshot: row.cache_read_cost_usd_per_1k_snapshot ?? null,
+      cache_write_cost_usd_per_1k_snapshot: row.cache_write_cost_usd_per_1k_snapshot ?? null,
+      reasoning_cost_usd_per_1k_snapshot: row.reasoning_cost_usd_per_1k_snapshot ?? null,
+      estimated_cost_usd: row.estimated_cost_usd ?? null,
       estimated_cost_eur: row.estimated_cost_eur,
+      cached_tokens: row.cached_tokens ?? null,
+      cache_read_tokens: row.cache_read_tokens ?? null,
+      cache_write_tokens: row.cache_write_tokens ?? null,
+      reasoning_tokens: row.reasoning_tokens ?? null,
       status: row.status,
       error_code: row.error_code,
+      request_id: row.request_id ?? null,
+      raw_usage_json: row.raw_usage_json ?? null,
     });
   if (error && !isMissingTable(error, "llm_usage_events")) {
     throw new Error(String(error.message ?? "LLM usage insert failed"));

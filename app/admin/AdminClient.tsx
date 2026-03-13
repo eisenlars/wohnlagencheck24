@@ -159,7 +159,10 @@ type LlmGlobalConfig = {
 
 type LlmGlobalProvider = {
   id: string;
+  provider_account_id?: string | null;
+  provider_model_id?: string | null;
   provider: string;
+  provider_display_name?: string | null;
   model: string;
   display_label?: string | null;
   hint?: string | null;
@@ -167,16 +170,44 @@ type LlmGlobalProvider = {
   recommended?: boolean;
   base_url: string;
   auth_type: string;
+  api_version?: string | null;
   priority: number;
   is_active: boolean;
   temperature?: number | null;
   max_tokens?: number | null;
+  input_cost_usd_per_1k?: number | null;
+  output_cost_usd_per_1k?: number | null;
   input_cost_eur_per_1k?: number | null;
   output_cost_eur_per_1k?: number | null;
   price_source?: string | null;
   price_source_url?: string | null;
   price_source_url_override?: string | null;
   price_updated_at?: string | null;
+  fx_rate_usd_to_eur?: number | null;
+};
+
+type LlmProviderAccount = {
+  id: string;
+  provider: string;
+  display_name?: string | null;
+  base_url: string;
+  auth_type: string;
+  api_version?: string | null;
+  is_active: boolean;
+};
+
+type LlmCreateModelDraft = {
+  key: string;
+  model: string;
+  display_label: string;
+  hint: string;
+  badges: string;
+  recommended: boolean;
+  sort_order: string;
+  temperature: string;
+  max_tokens: string;
+  input_cost_usd_per_1k: string;
+  output_cost_usd_per_1k: string;
 };
 
 type LlmUsagePartnerRow = {
@@ -350,6 +381,22 @@ function parsePositiveNumber(value: string): number | null {
   const parsed = Number(v);
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
   return parsed;
+}
+
+function createEmptyLlmModelDraft(provider: string, recommended = false): LlmCreateModelDraft {
+  return {
+    key: `${provider}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+    model: getSuggestedLatestModel(provider) || "gpt-4o-mini",
+    display_label: "",
+    hint: "",
+    badges: "",
+    recommended,
+    sort_order: recommended ? "10" : "100",
+    temperature: "0.4",
+    max_tokens: "900",
+    input_cost_usd_per_1k: "",
+    output_cost_usd_per_1k: "",
+  };
 }
 
 async function readJsonSafe(res: Response) {
@@ -549,6 +596,7 @@ export default function AdminClient() {
     monthly_token_budget: null,
     monthly_cost_budget_eur: null,
   });
+  const [llmAccounts, setLlmAccounts] = useState<LlmProviderAccount[]>([]);
   const [llmProviders, setLlmProviders] = useState<LlmGlobalProvider[]>([]);
   const [llmUsageRows, setLlmUsageRows] = useState<LlmUsagePartnerRow[]>([]);
   const [llmUsageTotals, setLlmUsageTotals] = useState<{ tokens: number; cost_eur: number }>({ tokens: 0, cost_eur: 0 });
@@ -587,30 +635,23 @@ export default function AdminClient() {
     badges: string;
     recommended: boolean;
     base_url: string;
+    api_version: string;
     priority: string;
     temperature: string;
     max_tokens: string;
-    price_source_url_override: string;
-    input_cost_eur_per_1k: string;
-    output_cost_eur_per_1k: string;
+    input_cost_usd_per_1k: string;
+    output_cost_usd_per_1k: string;
   }>>>({});
-  const [newLlmProvider, setNewLlmProvider] = useState({
+  const [newLlmAccount, setNewLlmAccount] = useState({
+    existing_account_id: "",
     provider: "openai",
-    model: "gpt-5.2",
-    display_label: "",
-    hint: "",
-    badges: "",
-    recommended: true,
+    display_name: "",
     base_url: "https://api.openai.com/v1",
     api_version: "",
     auth_type: "api_key",
-    priority: "10",
-    temperature: "0.4",
-    max_tokens: "900",
-    input_cost_eur_per_1k: "",
-    output_cost_eur_per_1k: "",
     api_key: "",
   });
+  const [newLlmModels, setNewLlmModels] = useState<LlmCreateModelDraft[]>([createEmptyLlmModelDraft("openai", true)]);
   const [llmCreateTestBusy, setLlmCreateTestBusy] = useState(false);
   const [llmCreateTestResult, setLlmCreateTestResult] = useState<{
     status: "ok" | "error";
@@ -618,7 +659,11 @@ export default function AdminClient() {
   } | null>(null);
 
   const llmProviderSpecs = useMemo(() => getProvidersForKind("llm"), []);
-  const llmModelOptions = useMemo(() => getLlmModelSuggestions(newLlmProvider.provider), [newLlmProvider.provider]);
+  const llmModelOptions = useMemo(() => getLlmModelSuggestions(newLlmAccount.provider), [newLlmAccount.provider]);
+  const selectedExistingLlmAccount = useMemo(
+    () => llmAccounts.find((account) => account.id === newLlmAccount.existing_account_id) ?? null,
+    [llmAccounts, newLlmAccount.existing_account_id],
+  );
 
   useEffect(() => {
     const anyModalOpen =
@@ -983,6 +1028,11 @@ export default function AdminClient() {
     }
   }
 
+  async function loadLlmAccounts() {
+    const data = await api<{ accounts?: LlmProviderAccount[] }>("/api/admin/llm/accounts");
+    setLlmAccounts(data.accounts ?? []);
+  }
+
   async function loadLlmProviders() {
     const data = await api<{ providers?: LlmGlobalProvider[] }>("/api/admin/llm/providers");
     const providers = data.providers ?? [];
@@ -996,12 +1046,12 @@ export default function AdminClient() {
           badges: formatBadgesInput(p.badges),
           recommended: p.recommended === true,
           base_url: String(p.base_url ?? ""),
+          api_version: String(p.api_version ?? ""),
           priority: String(p.priority ?? 100),
           temperature: p.temperature === null || p.temperature === undefined ? "" : String(p.temperature),
           max_tokens: p.max_tokens === null || p.max_tokens === undefined ? "" : String(p.max_tokens),
-          price_source_url_override: String(p.price_source_url_override ?? ""),
-          input_cost_eur_per_1k: p.input_cost_eur_per_1k === null || p.input_cost_eur_per_1k === undefined ? "" : String(p.input_cost_eur_per_1k),
-          output_cost_eur_per_1k: p.output_cost_eur_per_1k === null || p.output_cost_eur_per_1k === undefined ? "" : String(p.output_cost_eur_per_1k),
+          input_cost_usd_per_1k: p.input_cost_usd_per_1k === null || p.input_cost_usd_per_1k === undefined ? "" : String(p.input_cost_usd_per_1k),
+          output_cost_usd_per_1k: p.output_cost_usd_per_1k === null || p.output_cost_usd_per_1k === undefined ? "" : String(p.output_cost_usd_per_1k),
         };
         return acc;
       }, {} as Record<string, Partial<{
@@ -1011,12 +1061,12 @@ export default function AdminClient() {
         badges: string;
         recommended: boolean;
         base_url: string;
+        api_version: string;
         priority: string;
         temperature: string;
         max_tokens: string;
-        price_source_url_override: string;
-        input_cost_eur_per_1k: string;
-        output_cost_eur_per_1k: string;
+        input_cost_usd_per_1k: string;
+        output_cost_usd_per_1k: string;
       }>>),
     );
   }
@@ -1100,6 +1150,7 @@ export default function AdminClient() {
   async function loadLlmGlobalDashboard() {
     await Promise.all([
       loadLlmGlobalConfig(),
+      loadLlmAccounts(),
       loadLlmProviders(),
       loadLlmUsage(),
     ]);
@@ -1223,22 +1274,28 @@ export default function AdminClient() {
     }
   }
 
-  async function run(label: string, fn: () => Promise<void>, options?: { clearReviewOnClose?: boolean }) {
+  async function run(
+    label: string,
+    fn: () => Promise<void>,
+    options?: { clearReviewOnClose?: boolean; showSuccessModal?: boolean },
+  ) {
     setBusy(true);
     setStatus(label);
     try {
       await fn();
       setClearReviewOnSuccessClose(Boolean(options?.clearReviewOnClose));
       setStatus(`${label} erfolgreich.`);
-      const successTitle = label === "Gebiet zuordnen" ? "Gebiet zugeordnet" : "Erfolgreich";
-      const successMessage = label === "Gebiet zuordnen"
-        ? "Der Partner wird per E-Mail informiert und kann anschließend die Pflichtangaben zur finalen Freigabe machen."
-        : `${label} wurde erfolgreich ausgefuehrt.`;
-      setSuccessModal({
-        open: true,
-        title: successTitle,
-        message: successMessage,
-      });
+      if (options?.showSuccessModal !== false) {
+        const successTitle = label === "Gebiet zuordnen" ? "Gebiet zugeordnet" : "Erfolgreich";
+        const successMessage = label === "Gebiet zuordnen"
+          ? "Der Partner wird per E-Mail informiert und kann anschließend die Pflichtangaben zur finalen Freigabe machen."
+          : `${label} wurde erfolgreich ausgefuehrt.`;
+        setSuccessModal({
+          open: true,
+          title: successTitle,
+          message: successMessage,
+        });
+      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : `${label} fehlgeschlagen.`);
     } finally {
@@ -1606,7 +1663,7 @@ export default function AdminClient() {
     <div style={wrapStyle}>
       <FullscreenLoader
         show={busy || reviewBusy || status === "Lade Admin-Daten..."}
-        label={busy && status === "Neuen Partner anlegen" ? "Neuen Partner anlegen" : "Daten werden geladen..."}
+        label={busy ? status : reviewBusy ? "Freigabeprüfung wird geladen..." : "Daten werden geladen..."}
       />
       {successModal.open ? (
         <div
@@ -3324,145 +3381,252 @@ export default function AdminClient() {
         {llmGlobalTab === "create" ? (
           <>
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-              <div style={grid2Style}>
-                <select
-                  style={inputStyle}
-                  value={newLlmProvider.provider}
-                  onChange={(e) => {
-                    const provider = e.target.value;
-                    const suggested = getLlmModelSuggestions(provider);
-                    setLlmCreateTestResult(null);
-                    setNewLlmProvider((v) => ({
-                      ...v,
-                      provider,
-                      model: suggested[0] ?? (getSuggestedLatestModel(provider) || v.model),
-                      base_url: getDefaultLlmBaseUrl(provider),
-                      api_version: provider === "azure_openai" ? (v.api_version || "2024-10-21") : "",
-                    }));
-                  }}
-                >
-                  {llmProviderSpecs.map((spec) => (
-                    <option key={spec.id} value={spec.id}>
-                      {spec.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  style={inputStyle}
-                  value={newLlmProvider.model}
-                  onChange={(e) => {
-                    setLlmCreateTestResult(null);
-                    setNewLlmProvider((v) => ({ ...v, model: e.target.value }));
-                  }}
-                >
-                  {llmModelOptions.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div style={grid2Style}>
-                <input
-                  style={inputStyle}
-                  placeholder="Anzeigename (optional)"
-                  value={newLlmProvider.display_label}
-                  onChange={(e) => {
-                    setLlmCreateTestResult(null);
-                    setNewLlmProvider((v) => ({ ...v, display_label: e.target.value }));
-                  }}
-                />
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
-                  <input
-                    type="checkbox"
-                    checked={newLlmProvider.recommended}
+              <div style={{ padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#f8fafc" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Provider-Account</div>
+                <div style={{ marginBottom: 10 }}>
+                  <select
+                    style={inputStyle}
+                    value={newLlmAccount.existing_account_id}
                     onChange={(e) => {
+                      const accountId = e.target.value;
+                      const existing = llmAccounts.find((account) => account.id === accountId) ?? null;
                       setLlmCreateTestResult(null);
-                      setNewLlmProvider((v) => ({ ...v, recommended: e.target.checked }));
+                      setNewLlmAccount((v) => ({
+                        ...v,
+                        existing_account_id: accountId,
+                        provider: existing?.provider ?? v.provider,
+                        display_name: existing?.display_name ?? v.display_name,
+                        base_url: existing?.base_url ?? v.base_url,
+                        api_version: existing?.api_version ?? v.api_version,
+                      }));
+                      if (existing) {
+                        setNewLlmModels((prev) => prev.map((item, idx) => idx === 0 ? { ...item, model: getSuggestedLatestModel(existing.provider) || item.model } : item));
+                      }
                     }}
-                  />
-                  Als Empfehlung markieren
-                </label>
-              </div>
-              <div>
-                <input
-                  style={inputStyle}
-                  placeholder="Hinweis / Stärke des Modells"
-                  value={newLlmProvider.hint}
-                  onChange={(e) => {
-                    setLlmCreateTestResult(null);
-                    setNewLlmProvider((v) => ({ ...v, hint: e.target.value }));
-                  }}
-                />
-              </div>
-              <div>
-                <input
-                  style={inputStyle}
-                  placeholder="Badges, kommagetrennt (z. B. Texte, Übersetzung, Qualität)"
-                  value={newLlmProvider.badges}
-                  onChange={(e) => {
-                    setLlmCreateTestResult(null);
-                    setNewLlmProvider((v) => ({ ...v, badges: e.target.value }));
-                  }}
-                />
-              </div>
-              <div>
-                <input
-                  style={inputStyle}
-                  placeholder="Base URL"
-                  value={newLlmProvider.base_url}
-                  onChange={(e) => {
-                    setLlmCreateTestResult(null);
-                    setNewLlmProvider((v) => ({ ...v, base_url: e.target.value }));
-                  }}
-                />
-              </div>
-              {String(newLlmProvider.provider).toLowerCase() === "azure_openai" ? (
-                <div>
+                  >
+                    <option value="">Neuen Provider-Account anlegen</option>
+                    {llmAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.display_name || `${account.provider} · ${account.base_url}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div style={grid2Style}>
+                  <select
+                    style={inputStyle}
+                    value={newLlmAccount.provider}
+                    disabled={Boolean(selectedExistingLlmAccount)}
+                    onChange={(e) => {
+                      const provider = e.target.value;
+                      setLlmCreateTestResult(null);
+                      setNewLlmAccount((v) => ({
+                        ...v,
+                        provider,
+                        base_url: getDefaultLlmBaseUrl(provider),
+                        api_version: provider === "azure_openai" ? (v.api_version || "2024-10-21") : "",
+                      }));
+                      setNewLlmModels((prev) =>
+                        prev.map((item, idx) =>
+                          idx === 0
+                            ? { ...item, model: getSuggestedLatestModel(provider) || item.model }
+                            : item,
+                        ),
+                      );
+                    }}
+                  >
+                    {llmProviderSpecs.map((spec) => (
+                      <option key={spec.id} value={spec.id}>
+                        {spec.label}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     style={inputStyle}
-                    placeholder="Azure API-Version (z. B. 2024-10-21)"
-                    value={newLlmProvider.api_version}
+                    placeholder="Anzeigename des Provider-Accounts (optional)"
+                    value={newLlmAccount.display_name}
+                    disabled={Boolean(selectedExistingLlmAccount)}
                     onChange={(e) => {
                       setLlmCreateTestResult(null);
-                      setNewLlmProvider((v) => ({ ...v, api_version: e.target.value }));
+                      setNewLlmAccount((v) => ({ ...v, display_name: e.target.value }));
                     }}
                   />
                 </div>
-              ) : null}
-              <div>
-                <input
-                  style={inputStyle}
-                  placeholder="API-Key"
-                  value={newLlmProvider.api_key}
-                  onChange={(e) => {
-                    setLlmCreateTestResult(null);
-                    setNewLlmProvider((v) => ({ ...v, api_key: e.target.value }));
-                  }}
-                />
+                <div style={{ marginTop: 10 }}>
+                  <input
+                    style={inputStyle}
+                    placeholder="Base URL"
+                    value={newLlmAccount.base_url}
+                    disabled={Boolean(selectedExistingLlmAccount)}
+                    onChange={(e) => {
+                      setLlmCreateTestResult(null);
+                      setNewLlmAccount((v) => ({ ...v, base_url: e.target.value }));
+                    }}
+                  />
+                </div>
+                {String(newLlmAccount.provider).toLowerCase() === "azure_openai" ? (
+                  <div style={{ marginTop: 10 }}>
+                    <input
+                      style={inputStyle}
+                      placeholder="Azure API-Version (z. B. 2024-10-21)"
+                      value={newLlmAccount.api_version}
+                      disabled={Boolean(selectedExistingLlmAccount)}
+                      onChange={(e) => {
+                        setLlmCreateTestResult(null);
+                        setNewLlmAccount((v) => ({ ...v, api_version: e.target.value }));
+                      }}
+                    />
+                  </div>
+                ) : null}
+                <div style={{ marginTop: 10 }}>
+                  <input
+                    style={inputStyle}
+                    placeholder="API-Key"
+                    value={newLlmAccount.api_key}
+                    onChange={(e) => {
+                      setLlmCreateTestResult(null);
+                      setNewLlmAccount((v) => ({ ...v, api_key: e.target.value }));
+                    }}
+                  />
+                </div>
+                <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>
+                  Bereits angelegte Provider-Accounts: {llmAccounts.length}
+                  {selectedExistingLlmAccount ? " · neue Modelle werden an den gewählten Zugang angehängt" : ""}
+                </div>
               </div>
-              <div style={grid2Style}>
-                <input
-                  style={inputStyle}
-                  placeholder="Input-Kosten EUR / 1k Tokens"
-                  value={newLlmProvider.input_cost_eur_per_1k}
-                  onChange={(e) => {
-                    setLlmCreateTestResult(null);
-                    setNewLlmProvider((v) => ({ ...v, input_cost_eur_per_1k: e.target.value }));
-                  }}
-                />
-                <input
-                  style={inputStyle}
-                  placeholder="Output-Kosten EUR / 1k Tokens"
-                  value={newLlmProvider.output_cost_eur_per_1k}
-                  onChange={(e) => {
-                    setLlmCreateTestResult(null);
-                    setNewLlmProvider((v) => ({ ...v, output_cost_eur_per_1k: e.target.value }));
-                  }}
-                />
+
+              <datalist id="llm-model-suggestions">
+                {llmModelOptions.map((model) => (
+                  <option key={model} value={model} />
+                ))}
+              </datalist>
+
+              <div style={{ display: "grid", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>Modelle unter diesem Provider</div>
+                  <button
+                    style={btnGhostStyle}
+                    type="button"
+                    onClick={() => {
+                      setLlmCreateTestResult(null);
+                      setNewLlmModels((prev) => [...prev, createEmptyLlmModelDraft(newLlmAccount.provider, false)]);
+                    }}
+                  >
+                    Modell hinzufügen
+                  </button>
+                </div>
+                {newLlmModels.map((modelDraft, idx) => (
+                  <div key={modelDraft.key} style={{ padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>Modell {idx + 1}</div>
+                      {newLlmModels.length > 1 ? (
+                        <button
+                          style={btnGhostStyle}
+                          type="button"
+                          onClick={() => {
+                            setLlmCreateTestResult(null);
+                            setNewLlmModels((prev) => prev.filter((item) => item.key !== modelDraft.key));
+                          }}
+                        >
+                          Entfernen
+                        </button>
+                      ) : null}
+                    </div>
+                    <div style={grid2Style}>
+                      <input
+                        list="llm-model-suggestions"
+                        style={inputStyle}
+                        placeholder="Modell-ID (frei eingeben)"
+                        value={modelDraft.model}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setLlmCreateTestResult(null);
+                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, model: value } : item));
+                        }}
+                      />
+                      <input
+                        style={inputStyle}
+                        placeholder="Anzeigename (optional)"
+                        value={modelDraft.display_label}
+                        onChange={(e) => {
+                          setLlmCreateTestResult(null);
+                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, display_label: e.target.value } : item));
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginTop: 10 }}>
+                      <input
+                        style={inputStyle}
+                        placeholder="Hinweis / Stärke des Modells"
+                        value={modelDraft.hint}
+                        onChange={(e) => {
+                          setLlmCreateTestResult(null);
+                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, hint: e.target.value } : item));
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginTop: 10 }}>
+                      <input
+                        style={inputStyle}
+                        placeholder="Badges, kommagetrennt (z. B. Texte, Übersetzung, Qualität)"
+                        value={modelDraft.badges}
+                        onChange={(e) => {
+                          setLlmCreateTestResult(null);
+                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, badges: e.target.value } : item));
+                        }}
+                      />
+                    </div>
+                    <div style={{ ...grid2Style, marginTop: 10 }}>
+                      <input
+                        style={inputStyle}
+                        placeholder="Input-Kosten USD / 1k Tokens"
+                        value={modelDraft.input_cost_usd_per_1k}
+                        onChange={(e) => {
+                          setLlmCreateTestResult(null);
+                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, input_cost_usd_per_1k: e.target.value } : item));
+                        }}
+                      />
+                      <input
+                        style={inputStyle}
+                        placeholder="Output-Kosten USD / 1k Tokens"
+                        value={modelDraft.output_cost_usd_per_1k}
+                        onChange={(e) => {
+                          setLlmCreateTestResult(null);
+                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, output_cost_usd_per_1k: e.target.value } : item));
+                        }}
+                      />
+                    </div>
+                    <div style={{ ...grid2Style, marginTop: 10 }}>
+                      <input
+                        style={inputStyle}
+                        placeholder="Sortierung"
+                        value={modelDraft.sort_order}
+                        onChange={(e) => {
+                          setLlmCreateTestResult(null);
+                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, sort_order: e.target.value } : item));
+                        }}
+                      />
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
+                        <input
+                          type="checkbox"
+                          checked={modelDraft.recommended}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setLlmCreateTestResult(null);
+                            setNewLlmModels((prev) => prev.map((item) => ({
+                              ...item,
+                              recommended: item.key === modelDraft.key ? checked : (checked ? false : item.recommended),
+                            })));
+                          }}
+                        />
+                        Als Empfehlung markieren
+                      </label>
+                    </div>
+                  </div>
+                ))}
               </div>
               <div style={{ fontSize: 12, color: "#475569" }}>
-                Aktive globale Provider benötigen gültige Input-/Output-Kosten größer als 0. Diese Preise werden für den zentralen Verbrauch und die Abrechnung verwendet.
+                Provider-Zugang wird einmalig angelegt. Modelle darunter werden separat gespeichert und bepreist. Die Kosten werden in USD je 1k Tokens gepflegt und für die spätere FX-/Billing-Hochrechnung verwendet.
               </div>
               {llmCreateTestResult ? (
                 <div
@@ -3485,38 +3649,67 @@ export default function AdminClient() {
                 disabled={busy}
                 onClick={() =>
                   run("Globalen LLM-Provider anlegen", async () => {
-                    const inputCost = parsePositiveNumber(newLlmProvider.input_cost_eur_per_1k);
-                    const outputCost = parsePositiveNumber(newLlmProvider.output_cost_eur_per_1k);
-                    if (inputCost === null || outputCost === null) {
-                      throw new Error("Input- und Output-Kosten sind Pflichtfelder und müssen größer als 0 sein.");
+                    if (newLlmModels.length === 0) {
+                      throw new Error("Mindestens ein Modell ist erforderlich.");
                     }
-                    const created = await api<{ provider?: { id: string } }>("/api/admin/llm/providers", {
-                      method: "POST",
-                      body: JSON.stringify({
-                        provider: newLlmProvider.provider,
-                        model: newLlmProvider.model,
-                        display_label: newLlmProvider.display_label.trim() || null,
-                        hint: newLlmProvider.hint.trim() || null,
-                        badges: parseBadgeInput(newLlmProvider.badges),
-                        recommended: newLlmProvider.recommended,
-                        base_url: newLlmProvider.base_url,
-                        auth_type: newLlmProvider.auth_type,
-                        priority: Number(newLlmProvider.priority || 100),
-                        temperature: newLlmProvider.temperature ? Number(newLlmProvider.temperature) : null,
-                        max_tokens: newLlmProvider.max_tokens ? Number(newLlmProvider.max_tokens) : null,
-                        input_cost_eur_per_1k: inputCost,
-                        output_cost_eur_per_1k: outputCost,
-                      }),
-                    });
-                    const providerId = String(created.provider?.id ?? "").trim();
-                    if (providerId && newLlmProvider.api_key.trim()) {
-                      await api(`/api/admin/llm/providers/${providerId}/secrets`, {
+                    const recommendedCount = newLlmModels.filter((item) => item.recommended).length;
+                    if (recommendedCount > 1) {
+                      throw new Error("Es kann nur ein empfohlenes Modell pro Provider-Account geben.");
+                    }
+
+                    let accountId = String(newLlmAccount.existing_account_id || "").trim();
+                    if (!accountId) {
+                      const createdAccount = await api<{ account?: { id: string } }>("/api/admin/llm/accounts", {
                         method: "POST",
-                        body: JSON.stringify({ api_key: newLlmProvider.api_key }),
+                        body: JSON.stringify({
+                          provider: newLlmAccount.provider,
+                          display_name: newLlmAccount.display_name.trim() || null,
+                          base_url: newLlmAccount.base_url,
+                          auth_type: newLlmAccount.auth_type,
+                          api_version: String(newLlmAccount.api_version || "").trim() || null,
+                        }),
+                      });
+                      accountId = String(createdAccount.account?.id ?? "").trim();
+                    }
+                    if (!accountId) {
+                      throw new Error("Provider-Account wurde ohne gültige ID angelegt.");
+                    }
+                    if (newLlmAccount.api_key.trim()) {
+                      await api(`/api/admin/llm/accounts/${accountId}/secrets`, {
+                        method: "POST",
+                        body: JSON.stringify({ api_key: newLlmAccount.api_key }),
+                      });
+                    }
+                    for (const modelDraft of newLlmModels) {
+                      const inputCost = parsePositiveNumber(modelDraft.input_cost_usd_per_1k);
+                      const outputCost = parsePositiveNumber(modelDraft.output_cost_usd_per_1k);
+                      if (!modelDraft.model.trim()) {
+                        throw new Error("Jedes Modell benötigt eine Modell-ID.");
+                      }
+                      if (inputCost === null || outputCost === null) {
+                        throw new Error(`Input- und Output-Kosten für ${modelDraft.model || "das Modell"} müssen größer als 0 sein.`);
+                      }
+                      await api("/api/admin/llm/providers", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          provider_account_id: accountId,
+                          model: modelDraft.model.trim(),
+                          display_label: modelDraft.display_label.trim() || null,
+                          hint: modelDraft.hint.trim() || null,
+                          badges: parseBadgeInput(modelDraft.badges),
+                          recommended: modelDraft.recommended,
+                          sort_order: Number(modelDraft.sort_order || "100"),
+                          temperature: modelDraft.temperature ? Number(modelDraft.temperature) : null,
+                          max_tokens: modelDraft.max_tokens ? Number(modelDraft.max_tokens) : null,
+                          input_cost_usd_per_1k: inputCost,
+                          output_cost_usd_per_1k: outputCost,
+                        }),
                       });
                     }
                     setLlmCreateTestResult(null);
-                    setNewLlmProvider((v) => ({ ...v, api_key: "" }));
+                    setNewLlmAccount((v) => ({ ...v, existing_account_id: "", display_name: "", api_key: "" }));
+                    setNewLlmModels([createEmptyLlmModelDraft(newLlmAccount.provider, true)]);
+                    await loadLlmAccounts();
                     await loadLlmProviders();
                   })
                 }
@@ -3540,22 +3733,26 @@ export default function AdminClient() {
                       const resp = await api<{ result?: { status?: string; message?: string } }>("/api/admin/llm/providers/test", {
                         method: "POST",
                         body: JSON.stringify({
-                          provider: newLlmProvider.provider,
-                          model: newLlmProvider.model,
-                          base_url: newLlmProvider.base_url,
-                          api_key: newLlmProvider.api_key,
-                          api_version: String(newLlmProvider.api_version || "").trim() || null,
+                          provider: newLlmAccount.provider,
+                          model: newLlmModels[0]?.model ?? "",
+                          base_url: newLlmAccount.base_url,
+                          api_key: newLlmAccount.api_key,
+                          api_version: String(newLlmAccount.api_version || "").trim() || null,
                         }),
                       });
-                      const status = String(resp.result?.status ?? "").toLowerCase();
+                      const resultStatus = String(resp.result?.status ?? "").toLowerCase();
+                      const resultMessage = String(resp.result?.message ?? "Kein Testergebnis.");
                       setLlmCreateTestResult({
-                        status: status === "ok" ? "ok" : "error",
-                        message: String(resp.result?.message ?? "Kein Testergebnis."),
+                        status: resultStatus === "ok" ? "ok" : "error",
+                        message: resultMessage,
                       });
+                      if (resultStatus !== "ok") {
+                        throw new Error(resultMessage);
+                      }
                     } finally {
                       setLlmCreateTestBusy(false);
                     }
-                  })
+                  }, { showSuccessModal: false })
                 }
               >
                 {llmCreateTestBusy ? "Teste..." : "Verbindung testen"}
@@ -3687,6 +3884,7 @@ export default function AdminClient() {
                                   badges: parseBadgeInput(String(draft.badges ?? "")),
                                   recommended: draft.recommended === true,
                                   base_url: draft.base_url,
+                                  api_version: String(draft.api_version ?? p.api_version ?? "").trim() || null,
                                   priority: Number(draft.priority || p.priority),
                                 }),
                               });
@@ -3813,9 +4011,8 @@ export default function AdminClient() {
                 <tr>
                   <th style={thStyle}>Provider</th>
                   <th style={thStyle}>Modell</th>
-                  <th style={thStyle}>Parser-URL (optional)</th>
-                  <th style={thStyle}>Preis EUR/1k (In/Out)</th>
-                  <th style={thStyle}>Quelle</th>
+                  <th style={thStyle}>Preis USD/1k (In/Out)</th>
+                  <th style={thStyle}>EUR-Hinweis</th>
                   <th style={thStyle}>Aktion</th>
                 </tr>
               </thead>
@@ -3825,39 +4022,26 @@ export default function AdminClient() {
                     <td style={tdStyle}>{p.provider}</td>
                     <td style={tdStyle}>{p.model}</td>
                     <td style={tdStyle}>
-                      <input
-                        style={inputStyle}
-                        placeholder="https://.../pricing"
-                        value={llmProviderDrafts[p.id]?.price_source_url_override ?? ""}
-                        onChange={(e) =>
-                          setLlmProviderDrafts((v) => ({
-                            ...v,
-                            [p.id]: { ...(v[p.id] ?? {}), price_source_url_override: e.target.value },
-                          }))
-                        }
-                      />
-                    </td>
-                    <td style={tdStyle}>
                       <div style={{ display: "flex", gap: 6 }}>
                         <input
                           style={inputStyle}
                           placeholder="in"
-                          value={llmProviderDrafts[p.id]?.input_cost_eur_per_1k ?? ""}
+                          value={llmProviderDrafts[p.id]?.input_cost_usd_per_1k ?? ""}
                           onChange={(e) =>
                             setLlmProviderDrafts((v) => ({
                               ...v,
-                              [p.id]: { ...(v[p.id] ?? {}), input_cost_eur_per_1k: e.target.value },
+                              [p.id]: { ...(v[p.id] ?? {}), input_cost_usd_per_1k: e.target.value },
                             }))
                           }
                         />
                         <input
                           style={inputStyle}
                           placeholder="out"
-                          value={llmProviderDrafts[p.id]?.output_cost_eur_per_1k ?? ""}
+                          value={llmProviderDrafts[p.id]?.output_cost_usd_per_1k ?? ""}
                           onChange={(e) =>
                             setLlmProviderDrafts((v) => ({
                               ...v,
-                              [p.id]: { ...(v[p.id] ?? {}), output_cost_eur_per_1k: e.target.value },
+                              [p.id]: { ...(v[p.id] ?? {}), output_cost_usd_per_1k: e.target.value },
                             }))
                           }
                         />
@@ -3869,19 +4053,15 @@ export default function AdminClient() {
                       ) : null}
                     </td>
                     <td style={tdStyle}>
-                      {String(p.price_source ?? "").trim() === "provider_web" ? "Provider-Webseite" : "Manuell"}
-                      {p.price_updated_at ? (
-                        <div style={{ marginTop: 2, fontSize: 11, color: "#64748b" }}>
-                          Stand: {new Date(p.price_updated_at).toLocaleString("de-DE")}
+                      {p.fx_rate_usd_to_eur && p.input_cost_eur_per_1k !== null && p.output_cost_eur_per_1k !== null ? (
+                        <div style={{ fontSize: 11, color: "#475569" }}>
+                          ca. {Number(p.input_cost_eur_per_1k ?? 0).toFixed(6)} / {Number(p.output_cost_eur_per_1k ?? 0).toFixed(6)} EUR
                         </div>
-                      ) : null}
-                      {p.price_source_url ? (
-                        <div style={{ marginTop: 2, fontSize: 11 }}>
-                          <a href={p.price_source_url} target="_blank" rel="noreferrer" style={{ color: "#0f766e" }}>
-                            Quelle öffnen
-                          </a>
+                      ) : (
+                        <div style={{ fontSize: 11, color: "#64748b" }}>
+                          EUR-Hochrechnung erst mit gepflegter FX-Rate
                         </div>
-                      ) : null}
+                      )}
                     </td>
                     <td style={tdStyle}>
                       <button
@@ -3890,17 +4070,16 @@ export default function AdminClient() {
                           run("Preis speichern", async () => {
                             const draft = llmProviderDrafts[p.id];
                             if (!draft) return;
-                            const inputCost = parsePositiveNumber(String(draft.input_cost_eur_per_1k ?? ""));
-                            const outputCost = parsePositiveNumber(String(draft.output_cost_eur_per_1k ?? ""));
+                            const inputCost = parsePositiveNumber(String(draft.input_cost_usd_per_1k ?? ""));
+                            const outputCost = parsePositiveNumber(String(draft.output_cost_usd_per_1k ?? ""));
                             if (inputCost === null || outputCost === null) {
                               throw new Error("Input- und Output-Kosten sind Pflichtfelder und müssen größer als 0 sein.");
                             }
                             await api(`/api/admin/llm/providers/${p.id}`, {
                               method: "PATCH",
                               body: JSON.stringify({
-                                price_source_url_override: String(draft.price_source_url_override ?? "").trim() || null,
-                                input_cost_eur_per_1k: inputCost,
-                                output_cost_eur_per_1k: outputCost,
+                                input_cost_usd_per_1k: inputCost,
+                                output_cost_usd_per_1k: outputCost,
                               }),
                             });
                             await loadLlmProviders();

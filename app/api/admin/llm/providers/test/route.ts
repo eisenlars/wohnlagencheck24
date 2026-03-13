@@ -25,6 +25,14 @@ function defaultBaseUrl(provider: string): string {
   return "https://api.openai.com/v1";
 }
 
+function usesCompletionTokens(provider: string, model: string | null): boolean {
+  const normalizedProvider = String(provider ?? "").trim().toLowerCase();
+  const normalizedModel = String(model ?? "").trim().toLowerCase();
+  if (!normalizedModel) return false;
+  if (normalizedProvider !== "openai" && normalizedProvider !== "azure_openai") return false;
+  return normalizedModel.startsWith("gpt-5");
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 10_000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -132,7 +140,9 @@ export async function POST(req: Request) {
         },
         body: JSON.stringify({
           messages: [{ role: "user", content: "ping" }],
-          max_tokens: 8,
+          ...(usesCompletionTokens(provider, model)
+            ? { max_completion_tokens: 8 }
+            : { max_tokens: 8 }),
           temperature: 0,
         }),
       });
@@ -151,7 +161,9 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           model,
           messages: [{ role: "user", content: "ping" }],
-          max_tokens: 8,
+          ...(usesCompletionTokens(provider, model)
+            ? { max_completion_tokens: 8 }
+            : { max_tokens: 8 }),
           temperature: 0,
         }),
       });

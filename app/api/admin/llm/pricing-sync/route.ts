@@ -6,6 +6,7 @@ import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/securi
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { fetchProviderPricingFromWeb } from "@/lib/llm/pricing-fallback";
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
+import { isMissingTable, loadUsdToEurRate } from "@/lib/llm/provider-catalog";
 
 type Body = {
   apply?: boolean;
@@ -16,29 +17,14 @@ type ProviderRow = {
   id: string;
   provider: string;
   model: string;
-  input_cost_eur_per_1k?: number | null;
-  output_cost_eur_per_1k?: number | null;
-  price_source_url_override?: string | null;
+  input_cost_usd_per_1k?: number | null;
+  output_cost_usd_per_1k?: number | null;
 };
-
-function isMissingTable(error: unknown, table: string): boolean {
-  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes(`public.${table}`) && msg.includes("does not exist");
-}
 
 function monthStartIsoUtc(): string {
   const now = new Date();
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0));
   return d.toISOString().slice(0, 10);
-}
-
-function asFiniteNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim().length > 0) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
 }
 
 export async function POST(req: Request) {
@@ -53,33 +39,33 @@ export async function POST(req: Request) {
     const filterProvider = String(body.provider ?? "").trim().toLowerCase();
 
     const admin = createAdminClient();
-    let query = admin
-      .from("llm_global_providers")
-      .select("id, provider, model, input_cost_eur_per_1k, output_cost_eur_per_1k, price_source_url_override")
+    const query = admin
+      .from("llm_provider_models")
+      .select(`
+        id,
+        model,
+        input_cost_usd_per_1k,
+        output_cost_usd_per_1k,
+        account:llm_provider_accounts!inner(provider)
+      `)
       .eq("is_active", true)
-      .order("provider", { ascending: true });
-    if (filterProvider) query = query.eq("provider", filterProvider);
+      .order("model", { ascending: true });
     const { data: providers, error: providersError } = await query;
     if (providersError) {
-      if (isMissingTable(providersError, "llm_global_providers")) {
-        return NextResponse.json({ error: "Tabelle `llm_global_providers` fehlt. Bitte Migration ausführen." }, { status: 409 });
+      if (isMissingTable(providersError, "llm_provider_models") || isMissingTable(providersError, "llm_provider_accounts")) {
+        return NextResponse.json({ error: "LLM-Katalogtabellen fehlen. Bitte Migration ausführen." }, { status: 409 });
       }
       return NextResponse.json({ error: providersError.message }, { status: 500 });
     }
 
-    const rows = (providers ?? []) as ProviderRow[];
+    const rows = ((providers ?? []) as Array<ProviderRow & { account?: { provider?: string | null } | null }>)
+      .map((row) => ({
+        ...row,
+        provider: String(row.account?.provider ?? "").trim().toLowerCase(),
+      }))
+      .filter((row) => !filterProvider || row.provider === filterProvider);
     const monthStart = monthStartIsoUtc();
-    const { data: fxRow, error: fxError } = await admin
-      .from("llm_fx_monthly_rates")
-      .select("rate")
-      .eq("from_currency", "USD")
-      .eq("to_currency", "EUR")
-      .eq("month_start", monthStart)
-      .maybeSingle();
-    if (fxError && !isMissingTable(fxError, "llm_fx_monthly_rates")) {
-      return NextResponse.json({ error: fxError.message }, { status: 500 });
-    }
-    const usdToEurRate = asFiniteNumber(fxRow?.rate);
+    const usdToEurRate = await loadUsdToEurRate(admin, monthStart).catch(() => null);
     if (!(usdToEurRate && usdToEurRate > 0)) {
       return NextResponse.json(
         { error: `FX-Rate fehlt: USD->EUR für Monat ${monthStart}. Bitte in llm_fx_monthly_rates pflegen.` },
@@ -88,7 +74,7 @@ export async function POST(req: Request) {
     }
 
     const processRow = async (row: ProviderRow): Promise<Record<string, unknown>> => {
-      const fetched = await fetchProviderPricingFromWeb(row.provider, row.model, row.price_source_url_override ?? null);
+      const fetched = await fetchProviderPricingFromWeb(row.provider, row.model, null);
       const baseResult: Record<string, unknown> = {
         provider_id: row.id,
         provider: row.provider,
@@ -120,20 +106,19 @@ export async function POST(req: Request) {
           applied: false,
         };
       } else {
-        const inputCostEur = Number((fetched.inputCostEurPer1k * usdToEurRate).toFixed(6));
-        const outputCostEur = Number((fetched.outputCostEurPer1k * usdToEurRate).toFixed(6));
+        const inputCostUsd = fetched.inputCostEurPer1k;
+        const outputCostUsd = fetched.outputCostEurPer1k;
+        const inputCostEur = Number((inputCostUsd * usdToEurRate).toFixed(6));
+        const outputCostEur = Number((outputCostUsd * usdToEurRate).toFixed(6));
         const confidenceThreshold = 0.65;
         const canApply = apply && fetched.parseConfidence >= confidenceThreshold;
         let didApply = false;
         if (canApply) {
           const { error: patchError } = await admin
-            .from("llm_global_providers")
+            .from("llm_provider_models")
             .update({
-              input_cost_eur_per_1k: inputCostEur,
-              output_cost_eur_per_1k: outputCostEur,
-              price_source: "provider_web",
-              price_source_url: fetched.sourceUrl,
-              price_updated_at: new Date().toISOString(),
+              input_cost_usd_per_1k: inputCostUsd,
+              output_cost_usd_per_1k: outputCostUsd,
             })
             .eq("id", row.id);
           if (!patchError) {

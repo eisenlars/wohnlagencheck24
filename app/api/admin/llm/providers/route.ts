@@ -5,29 +5,27 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
+import { isMissingTable, listFlattenedLlmProviderModels } from "@/lib/llm/provider-catalog";
 
 type Body = {
-  provider?: string;
+  provider_account_id?: string;
   model?: string;
   display_label?: string | null;
   hint?: string | null;
   badges?: unknown;
   recommended?: boolean;
-  base_url?: string;
-  auth_type?: string;
-  priority?: number;
+  sort_order?: number;
   is_active?: boolean;
   temperature?: number | null;
   max_tokens?: number | null;
-  price_source_url_override?: string | null;
-  input_cost_eur_per_1k?: number | null;
-  output_cost_eur_per_1k?: number | null;
+  input_cost_usd_per_1k?: number | null;
+  output_cost_usd_per_1k?: number | null;
 };
 
 function norm(value: unknown): string | null {
   if (value === null || value === undefined) return null;
-  const v = String(value).trim();
-  return v.length > 0 ? v : null;
+  const raw = String(value).trim();
+  return raw.length > 0 ? raw : null;
 }
 
 function asFiniteNumber(value: unknown): number | null {
@@ -60,11 +58,6 @@ function normalizeBadges(value: unknown): string[] {
   return badges;
 }
 
-function isMissingTable(error: unknown): boolean {
-  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes("public.llm_global_providers") && msg.includes("does not exist");
-}
-
 export async function GET(req: Request) {
   try {
     const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
@@ -72,27 +65,15 @@ export async function GET(req: Request) {
     if (!limit.allowed) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } });
     }
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("llm_global_providers")
-      .select("id, provider, model, display_label, hint, badges, recommended, base_url, auth_type, auth_config, priority, is_active, temperature, max_tokens, price_source_url_override, input_cost_eur_per_1k, output_cost_eur_per_1k, price_source, price_source_url, price_updated_at, created_at, updated_at")
-      .order("priority", { ascending: true })
-      .order("created_at", { ascending: true });
 
-    if (error) {
-      if (isMissingTable(error)) {
-        return NextResponse.json({ ok: true, providers: [], source: "fallback", warning: "Tabelle `llm_global_providers` fehlt." });
-      }
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    const masked = (data ?? []).map((row) =>
+    const result = await listFlattenedLlmProviderModels({ activeOnly: false });
+    const providers = result.models.map((row) =>
       maskIntegrationForResponse({
         ...row,
         auth_config: row.auth_config ?? null,
       } as Record<string, unknown>),
     );
-    return NextResponse.json({ ok: true, providers: masked, source: "db" });
+    return NextResponse.json({ ok: true, providers, source: result.source, fx_rate_usd_to_eur: result.fxRateUsdToEur });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -110,66 +91,91 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } });
     }
     const body = (await req.json()) as Body;
-    const provider = norm(body.provider)?.toLowerCase();
+    const providerAccountId = norm(body.provider_account_id);
     const model = norm(body.model);
-    const baseUrl = norm(body.base_url) ?? "https://api.openai.com/v1";
-    const authType = norm(body.auth_type)?.toLowerCase() ?? "api_key";
-    const priority = Math.max(1, Math.floor(asFiniteNumber(body.priority) ?? 100));
+    const sortOrder = Math.max(1, Math.floor(asFiniteNumber(body.sort_order) ?? 100));
     const isActive = body.is_active !== false;
-    const inputCost = asFiniteNumber(body.input_cost_eur_per_1k);
-    const outputCost = asFiniteNumber(body.output_cost_eur_per_1k);
-    if (!provider || !model) {
-      return NextResponse.json({ error: "provider und model sind erforderlich" }, { status: 400 });
+    const inputCost = asFiniteNumber(body.input_cost_usd_per_1k);
+    const outputCost = asFiniteNumber(body.output_cost_usd_per_1k);
+    if (!providerAccountId || !model) {
+      return NextResponse.json({ error: "provider_account_id und model sind erforderlich" }, { status: 400 });
     }
-    if (body.input_cost_eur_per_1k !== undefined && !isPositiveNumber(body.input_cost_eur_per_1k)) {
-      return NextResponse.json({ error: "input_cost_eur_per_1k muss > 0 sein." }, { status: 400 });
+    if (body.input_cost_usd_per_1k !== undefined && !isPositiveNumber(body.input_cost_usd_per_1k)) {
+      return NextResponse.json({ error: "input_cost_usd_per_1k muss > 0 sein." }, { status: 400 });
     }
-    if (body.output_cost_eur_per_1k !== undefined && !isPositiveNumber(body.output_cost_eur_per_1k)) {
-      return NextResponse.json({ error: "output_cost_eur_per_1k muss > 0 sein." }, { status: 400 });
+    if (body.output_cost_usd_per_1k !== undefined && !isPositiveNumber(body.output_cost_usd_per_1k)) {
+      return NextResponse.json({ error: "output_cost_usd_per_1k muss > 0 sein." }, { status: 400 });
     }
     if (isActive && (!(inputCost && inputCost > 0) || !(outputCost && outputCost > 0))) {
-      return NextResponse.json({ error: "Aktive Provider benötigen gültige Input-/Output-Kosten (> 0)." }, { status: 400 });
+      return NextResponse.json({ error: "Aktive Modelle benötigen gültige Input-/Output-Kosten (> 0)." }, { status: 400 });
     }
+
+    const admin = createAdminClient();
+    const { data: account, error: accountError } = await admin
+      .from("llm_provider_accounts")
+      .select("id")
+      .eq("id", providerAccountId)
+      .maybeSingle();
+    if (accountError) {
+      if (isMissingTable(accountError, "llm_provider_accounts")) {
+        return NextResponse.json({ error: "Tabelle `llm_provider_accounts` fehlt. Bitte Migration ausführen." }, { status: 409 });
+      }
+      return NextResponse.json({ error: accountError.message }, { status: 500 });
+    }
+    if (!account) return NextResponse.json({ error: "Provider-Account nicht gefunden" }, { status: 404 });
+
+    if (body.recommended === true) {
+      await admin
+        .from("llm_provider_models")
+        .update({ recommended: false })
+        .eq("provider_account_id", providerAccountId);
+    }
+
     const payload = {
-      provider,
+      provider_account_id: providerAccountId,
       model,
       display_label: norm(body.display_label),
       hint: norm(body.hint),
       badges: normalizeBadges(body.badges),
       recommended: body.recommended === true,
-      base_url: baseUrl,
-      auth_type: authType,
-      priority,
+      sort_order: sortOrder,
       is_active: isActive,
       temperature: asFiniteNumber(body.temperature),
       max_tokens: asFiniteNumber(body.max_tokens),
-      price_source_url_override: norm(body.price_source_url_override),
-      input_cost_eur_per_1k: inputCost,
-      output_cost_eur_per_1k: outputCost,
+      input_cost_usd_per_1k: inputCost,
+      output_cost_usd_per_1k: outputCost,
     };
-    const admin = createAdminClient();
+
     const { data, error } = await admin
-      .from("llm_global_providers")
+      .from("llm_provider_models")
       .insert(payload)
-      .select("id, provider, model, display_label, hint, badges, recommended, base_url, auth_type, auth_config, priority, is_active, temperature, max_tokens, price_source_url_override, input_cost_eur_per_1k, output_cost_eur_per_1k, price_source, price_source_url, price_updated_at, created_at, updated_at")
+      .select("id")
       .maybeSingle();
     if (error) {
-      if (isMissingTable(error)) {
-        return NextResponse.json({ error: "Tabelle `llm_global_providers` fehlt. Bitte Migration `docs/sql/llm_global_management.sql` ausführen." }, { status: 409 });
+      if (isMissingTable(error, "llm_provider_models")) {
+        return NextResponse.json({ error: "Tabelle `llm_provider_models` fehlt. Bitte Migration ausführen." }, { status: 409 });
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    const models = await listFlattenedLlmProviderModels({ admin, activeOnly: false });
+    const created = models.models.find((row) => row.id === String(data?.id ?? "").trim()) ?? null;
+
     await writeSecurityAuditLog({
       actorUserId: adminUser.userId,
       actorRole: adminUser.role,
       eventType: "create",
       entityType: "other",
-      entityId: String(data?.id ?? "llm_global_provider"),
+      entityId: String(data?.id ?? "llm_provider_model"),
       payload: payload as unknown as Record<string, unknown>,
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
     });
-    return NextResponse.json({ ok: true, provider: maskIntegrationForResponse(data as Record<string, unknown>) }, { status: 201 });
+
+    return NextResponse.json({
+      ok: true,
+      provider: created ? maskIntegrationForResponse(created as unknown as Record<string, unknown>) : { id: String(data?.id ?? "") },
+    }, { status: 201 });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

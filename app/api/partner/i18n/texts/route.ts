@@ -7,7 +7,7 @@ import { resolveMarketingContextForArea } from "@/lib/areas/marketing-context";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
 import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
-import { loadActiveGlobalLlmProviders, loadGlobalLlmConfig, estimateCostEur, writeLlmUsageEvent } from "@/lib/llm/global-governance";
+import { loadActiveGlobalLlmProviders, loadGlobalLlmConfig, estimateCostEur, estimateCostUsd, writeLlmUsageEvent } from "@/lib/llm/global-governance";
 
 type TextSourceRow = {
   section_key?: string | null;
@@ -98,6 +98,14 @@ function asFiniteNumber(value: unknown): number | null {
   return null;
 }
 
+function usesCompletionTokens(provider: string, model: string | null): boolean {
+  const normalizedProvider = String(provider ?? "").trim().toLowerCase();
+  const normalizedModel = String(model ?? "").trim().toLowerCase();
+  if (!normalizedModel) return false;
+  if (normalizedProvider !== "openai" && normalizedProvider !== "azure_openai") return false;
+  return normalizedModel.startsWith("gpt-5");
+}
+
 function hashText(value: string): string {
   let hash = 2166136261;
   for (let i = 0; i < value.length; i += 1) {
@@ -173,7 +181,9 @@ async function callOpenAiCompatible(args: {
   const body = {
     model: args.model,
     temperature: args.temperature ?? 0.2,
-    max_tokens: args.maxTokens ?? 1200,
+    ...(usesCompletionTokens(provider, args.model)
+      ? { max_completion_tokens: args.maxTokens ?? 1200 }
+      : { max_tokens: args.maxTokens ?? 1200 }),
     messages: [
       { role: "system", content: args.system },
       { role: "user", content: args.user },
@@ -481,6 +491,7 @@ export async function GET(req: Request) {
                     model: provider!.model,
                     baseUrl: provider!.base_url,
                     apiKey: apiKey!,
+                    apiVersion: provider!.api_version,
                     system: prompt.system,
                     user: prompt.user,
                     temperature: provider!.temperature,
@@ -520,6 +531,12 @@ export async function GET(req: Request) {
               inputCostEurPer1k: provider.input_cost_eur_per_1k,
               outputCostEurPer1k: provider.output_cost_eur_per_1k,
             });
+            const estimatedUsd = estimateCostUsd({
+              promptTokens: result.promptTokens,
+              completionTokens: result.completionTokens,
+              inputCostUsdPer1k: provider.input_cost_usd_per_1k,
+              outputCostUsdPer1k: provider.output_cost_usd_per_1k,
+            });
             await writeLlmUsageEvent({
               partner_id: partnerId,
               route_name: "partner-i18n-auto-sync",
@@ -529,6 +546,12 @@ export async function GET(req: Request) {
               prompt_tokens: result.promptTokens,
               completion_tokens: result.completionTokens,
               total_tokens: result.totalTokens,
+              provider_account_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_account_id ?? null),
+              provider_model_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_model_id ?? null),
+              fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (provider?.fx_rate_usd_to_eur ?? null),
+              input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.input_cost_usd_per_1k ?? null),
+              output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
+              estimated_cost_usd: estimatedUsd,
               estimated_cost_eur: estimated,
               status: "ok",
               error_code: null,
@@ -545,6 +568,12 @@ export async function GET(req: Request) {
               prompt_tokens: null,
               completion_tokens: null,
               total_tokens: null,
+              provider_account_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_account_id ?? null),
+              provider_model_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_model_id ?? null),
+              fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (provider?.fx_rate_usd_to_eur ?? null),
+              input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.input_cost_usd_per_1k ?? null),
+              output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
+              estimated_cost_usd: null,
               estimated_cost_eur: null,
               status: "error",
               error_code: "AUTO_SYNC_FAILED",

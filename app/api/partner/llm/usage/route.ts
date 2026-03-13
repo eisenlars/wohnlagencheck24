@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { loadPartnerLlmPolicy } from "@/lib/llm/partner-policy";
+import { listFlattenedLlmProviderModels, loadUsdToEurRate } from "@/lib/llm/provider-catalog";
 
 type UsageRow = {
   provider?: string | null;
@@ -12,17 +13,6 @@ type UsageRow = {
   completion_tokens?: number | null;
   total_tokens?: number | null;
   estimated_cost_eur?: number | null;
-};
-
-type ProviderPriceRow = {
-  provider?: string | null;
-  model?: string | null;
-  input_cost_eur_per_1k?: number | null;
-  output_cost_eur_per_1k?: number | null;
-};
-
-type FxRow = {
-  rate?: number | null;
 };
 
 type UsageBoundsRow = {
@@ -211,22 +201,11 @@ export async function GET(req: Request) {
     const byModel = Array.from(map.values())
       .sort((a, b) => b.total_tokens - a.total_tokens);
 
-    const [pricesRes, fxRes] = await Promise.all([
-      admin
-        .from("llm_global_providers")
-        .select("provider, model, input_cost_eur_per_1k, output_cost_eur_per_1k")
-        .eq("is_active", true),
-      admin
-        .from("llm_fx_monthly_rates")
-        .select("rate")
-        .eq("month_start", monthStart)
-        .eq("from_currency", "USD")
-        .eq("to_currency", "EUR")
-        .maybeSingle(),
+    const [providerCatalog, fxRateUsdToEur] = await Promise.all([
+      listFlattenedLlmProviderModels({ admin, activeOnly: true }),
+      loadUsdToEurRate(admin, monthStart).catch(() => null),
     ]);
-
-    const providerPrices = (pricesRes.data ?? []) as ProviderPriceRow[];
-    const fxRateUsdToEur = asFiniteNumber((fxRes.data as FxRow | null)?.rate);
+    const providerPrices = providerCatalog.models;
 
     const byModelEnriched = byModel.map((row) => {
       const match = providerPrices.find(
@@ -234,10 +213,8 @@ export async function GET(req: Request) {
           String(price.provider ?? "").trim().toLowerCase() === row.provider.toLowerCase()
           && String(price.model ?? "").trim() === row.model,
       );
-      const inputEur = asFiniteNumber(match?.input_cost_eur_per_1k);
-      const outputEur = asFiniteNumber(match?.output_cost_eur_per_1k);
-      const inputUsd = fxRateUsdToEur > 0 && inputEur > 0 ? Number((inputEur / fxRateUsdToEur).toFixed(6)) : null;
-      const outputUsd = fxRateUsdToEur > 0 && outputEur > 0 ? Number((outputEur / fxRateUsdToEur).toFixed(6)) : null;
+      const inputUsd = asFiniteNumber(match?.input_cost_usd_per_1k);
+      const outputUsd = asFiniteNumber(match?.output_cost_usd_per_1k);
       return {
         ...row,
         cost_eur: Number(row.cost_eur.toFixed(6)),
@@ -259,7 +236,7 @@ export async function GET(req: Request) {
         tokens: totalTokens,
         cost_eur: Number(totalCost.toFixed(6)),
       },
-      fx_rate_usd_to_eur: fxRateUsdToEur > 0 ? Number(fxRateUsdToEur.toFixed(6)) : null,
+      fx_rate_usd_to_eur: fxRateUsdToEur && fxRateUsdToEur > 0 ? Number(fxRateUsdToEur.toFixed(6)) : null,
       usage_bounds: {
         has_usage: hasUsage,
         earliest_month: earliestMonth,

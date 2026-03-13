@@ -12,6 +12,7 @@ import { readSecretFromAuthConfig } from '@/lib/security/secret-crypto';
 import {
   checkGlobalAndPartnerBudget,
   estimateCostEur,
+  estimateCostUsd,
   type GlobalLlmProvider,
   loadActiveGlobalLlmProviders,
   loadGlobalLlmConfig,
@@ -45,6 +46,14 @@ function asNumber(value: unknown): number | null {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+}
+
+function usesCompletionTokens(provider: string | undefined, model: string): boolean {
+  const normalizedProvider = String(provider ?? '').trim().toLowerCase();
+  const normalizedModel = String(model ?? '').trim().toLowerCase();
+  if (!normalizedModel) return false;
+  if (normalizedProvider !== 'openai' && normalizedProvider !== 'azure_openai') return false;
+  return normalizedModel.startsWith('gpt-5');
 }
 
 function buildMockTranslation(locale: string | null, text: string): string {
@@ -315,7 +324,13 @@ async function callOpenAICompatible({
     payload.model = model;
   }
   if (temperature !== null) payload.temperature = temperature;
-  if (maxTokens !== null) payload.max_tokens = maxTokens;
+  if (maxTokens !== null) {
+    if (usesCompletionTokens(provider, model)) {
+      payload.max_completion_tokens = maxTokens;
+    } else {
+      payload.max_tokens = maxTokens;
+    }
+  }
 
   const res = await fetch(url, {
     method: 'POST',
@@ -453,6 +468,8 @@ export async function POST(req: Request) {
     let usageModel = '';
     let usageMode: 'central_managed' | 'partner_managed' = 'central_managed';
     let usageErrorCode: string | null = null;
+    let usageGlobalProvider: GlobalLlmProvider | null = null;
+    let usageEstimatedCostUsd: number | null = null;
 
     const admin = createAdminClient();
     const partnerPolicy = await loadPartnerLlmPolicy(admin, user.id);
@@ -540,7 +557,7 @@ export async function POST(req: Request) {
             apiKey,
             baseUrl: selectedGlobalProvider.base_url || 'https://api.openai.com/v1',
             model: selectedGlobalProvider.model,
-            apiVersion: asString((selectedGlobalProvider as { settings?: Record<string, unknown> | null }).settings?.api_version),
+            apiVersion: asString(selectedGlobalProvider.api_version),
             temperature: selectedGlobalProvider.temperature,
             maxTokens: selectedGlobalProvider.max_tokens,
             system: prompt.system,
@@ -553,7 +570,14 @@ export async function POST(req: Request) {
           usageProvider = selectedGlobalProvider.provider;
           usageModel = selectedGlobalProvider.model;
           usageMode = 'central_managed';
+          usageGlobalProvider = selectedGlobalProvider;
           usageErrorCode = result.errorCode;
+          usageEstimatedCostUsd = estimateCostUsd({
+            promptTokens: result.promptTokens,
+            completionTokens: result.completionTokens,
+            inputCostUsdPer1k: selectedGlobalProvider.input_cost_usd_per_1k,
+            outputCostUsdPer1k: selectedGlobalProvider.output_cost_usd_per_1k,
+          });
           usageEstimatedCostEur = estimateCostEur({
             promptTokens: result.promptTokens,
             completionTokens: result.completionTokens,
@@ -582,7 +606,7 @@ export async function POST(req: Request) {
             apiKey,
             baseUrl: p.base_url || 'https://api.openai.com/v1',
             model: p.model,
-            apiVersion: asString((p as { settings?: Record<string, unknown> | null }).settings?.api_version),
+            apiVersion: asString(p.api_version),
             temperature: p.temperature,
             maxTokens: p.max_tokens,
             system: prompt.system,
@@ -596,7 +620,14 @@ export async function POST(req: Request) {
             usageProvider = p.provider;
             usageModel = p.model;
             usageMode = 'central_managed';
+            usageGlobalProvider = p;
             usageErrorCode = null;
+            usageEstimatedCostUsd = estimateCostUsd({
+              promptTokens: result.promptTokens,
+              completionTokens: result.completionTokens,
+              inputCostUsdPer1k: p.input_cost_usd_per_1k,
+              outputCostUsdPer1k: p.output_cost_usd_per_1k,
+            });
             usageEstimatedCostEur = estimateCostEur({
               promptTokens: result.promptTokens,
               completionTokens: result.completionTokens,
@@ -658,6 +689,12 @@ export async function POST(req: Request) {
         prompt_tokens: usagePromptTokens,
         completion_tokens: usageCompletionTokens,
         total_tokens: usageTotalTokens,
+        provider_account_id: usageGlobalProvider?.provider_account_id ?? null,
+        provider_model_id: usageGlobalProvider?.provider_model_id ?? null,
+        fx_rate_usd_to_eur: usageGlobalProvider?.fx_rate_usd_to_eur ?? null,
+        input_cost_usd_per_1k_snapshot: usageGlobalProvider?.input_cost_usd_per_1k ?? null,
+        output_cost_usd_per_1k_snapshot: usageGlobalProvider?.output_cost_usd_per_1k ?? null,
+        estimated_cost_usd: usageEstimatedCostUsd,
         estimated_cost_eur: usageEstimatedCostEur,
         status: usageErrorCode ? 'error' : 'ok',
         error_code: usageErrorCode ?? null,

@@ -25,9 +25,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     if (!limit.allowed) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } });
     }
-    const params = await ctx.params;
-    const id = String(params.id ?? "").trim();
-    if (!id) return NextResponse.json({ error: "Missing provider id" }, { status: 400 });
+
+    const { id } = await ctx.params;
+    const accountId = String(id ?? "").trim();
+    if (!accountId) return NextResponse.json({ error: "Missing account id" }, { status: 400 });
 
     const body = (await req.json()) as Body;
     const apiKey = nonEmpty(body.api_key);
@@ -38,34 +39,18 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     }
 
     const admin = createAdminClient();
-    const { data: model, error: loadModelError } = await admin
-      .from("llm_provider_models")
-      .select("id, provider_account_id")
-      .eq("id", id)
-      .maybeSingle();
-    if (loadModelError) {
-      if (isMissingTable(loadModelError, "llm_provider_models")) {
-        return NextResponse.json({ error: "Tabelle `llm_provider_models` fehlt. Bitte Migration ausführen." }, { status: 409 });
-      }
-      return NextResponse.json({ error: loadModelError.message }, { status: 500 });
-    }
-    if (!model) return NextResponse.json({ error: "Modell nicht gefunden" }, { status: 404 });
-
-    const accountId = String(model.provider_account_id ?? "").trim();
-    if (!accountId) return NextResponse.json({ error: "Provider-Account fehlt." }, { status: 409 });
-
-    const { data: existing, error: loadAccountError } = await admin
+    const { data: existing, error: loadError } = await admin
       .from("llm_provider_accounts")
       .select("id, auth_config")
       .eq("id", accountId)
       .maybeSingle();
-    if (loadAccountError) {
-      if (isMissingTable(loadAccountError, "llm_provider_accounts")) {
+    if (loadError) {
+      if (isMissingTable(loadError, "llm_provider_accounts")) {
         return NextResponse.json({ error: "Tabelle `llm_provider_accounts` fehlt. Bitte Migration ausführen." }, { status: 409 });
       }
-      return NextResponse.json({ error: loadAccountError.message }, { status: 500 });
+      return NextResponse.json({ error: loadError.message }, { status: 500 });
     }
-    if (!existing) return NextResponse.json({ error: "Provider-Account nicht gefunden" }, { status: 404 });
+    if (!existing) return NextResponse.json({ error: "Account not found" }, { status: 404 });
 
     const nextAuth: Record<string, unknown> = {
       ...((existing.auth_config as Record<string, unknown> | null) ?? {}),
@@ -96,14 +81,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       entityType: "other",
       entityId: accountId,
       payload: {
-        model_id: id,
         changed_keys: [apiKey ? "api_key" : null, token ? "token" : null, secret ? "secret" : null].filter(Boolean),
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
     });
 
-    return NextResponse.json({ ok: true, provider_id: id, account_id: accountId });
+    return NextResponse.json({ ok: true, account_id: accountId });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

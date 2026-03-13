@@ -5,6 +5,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { loadPartnerLlmPolicy } from "@/lib/llm/partner-policy";
 import { loadGlobalLlmConfig } from "@/lib/llm/global-governance";
+import { listFlattenedLlmProviderModels } from "@/lib/llm/provider-catalog";
 
 type PartnerIntegrationRow = {
   id?: string | null;
@@ -12,17 +13,6 @@ type PartnerIntegrationRow = {
   provider?: string | null;
   is_active?: boolean | null;
   settings?: Record<string, unknown> | null;
-};
-
-type GlobalProviderRow = {
-  id?: string | null;
-  provider?: string | null;
-  model?: string | null;
-  display_label?: string | null;
-  hint?: string | null;
-  badges?: unknown;
-  recommended?: boolean | null;
-  is_active?: boolean | null;
 };
 
 function normalizeBadges(value: unknown): string[] {
@@ -120,15 +110,8 @@ export async function GET(req: Request) {
     }
 
     if (globalConfig.config.central_enabled) {
-      const { data: globalRows, error: globalError } = await admin
-        .from("llm_global_providers")
-        .select("id, provider, model, display_label, hint, badges, recommended, is_active")
-        .eq("is_active", true)
-        .order("priority", { ascending: true });
-      if (globalError && !isMissingTable(globalError, "llm_global_providers")) {
-        return NextResponse.json({ error: globalError.message }, { status: 500 });
-      }
-      for (const row of (globalRows ?? []) as GlobalProviderRow[]) {
+      const { models: globalRows } = await listFlattenedLlmProviderModels({ admin, activeOnly: true });
+      for (const row of globalRows) {
         const providerId = asText(row.id);
         if (!providerId) continue;
         const provider = asText(row.provider) ?? "llm";
