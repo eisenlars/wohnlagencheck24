@@ -55,6 +55,13 @@ type SendPartnerPasswordResetEmailArgs = {
   resetLink: string;
 };
 
+type SendPartnerInviteEmailArgs = {
+  partnerEmail: string;
+  partnerName?: string | null;
+  companyName?: string | null;
+  inviteLink: string;
+};
+
 function parseCsv(value: string): string[] {
   return String(value ?? "")
     .split(/[,\n;]+/)
@@ -251,6 +258,29 @@ function buildPartnerPasswordResetText(args: SendPartnerPasswordResetEmailArgs):
   ].join("\n");
 }
 
+function buildPartnerInviteSubject(args: SendPartnerInviteEmailArgs): string {
+  const companyName = String(args.companyName ?? "").trim();
+  return companyName ? `Partnerkonto aktivieren: ${companyName}` : "Partnerkonto aktivieren";
+}
+
+function buildPartnerInviteText(args: SendPartnerInviteEmailArgs): string {
+  const partner = pickGreetingName(String(args.partnerName ?? ""));
+  const companyName = String(args.companyName ?? "").trim();
+  return [
+    `Hallo${partner ? ` ${partner}` : ""},`,
+    "",
+    companyName
+      ? `fuer ${companyName} wurde ein neues Partnerkonto angelegt.`
+      : "fuer dich wurde ein neues Partnerkonto angelegt.",
+    "",
+    "Bitte oeffne den folgenden Link, um dein Partnerkonto zu aktivieren und ein Passwort zu vergeben:",
+    args.inviteLink,
+    "",
+    "Der Link ist zeitlich begrenzt und kann nur einmal verwendet werden.",
+    "Falls du keine Einladung erwartest, kannst du diese E-Mail ignorieren.",
+  ].join("\n");
+}
+
 async function sendSmtpTextMail(params: {
   to: string[];
   subject: string;
@@ -396,6 +426,22 @@ export async function sendPartnerPasswordResetEmail(args: SendPartnerPasswordRes
     to: [recipient],
     subject: buildPartnerPasswordResetSubject(),
     text: buildPartnerPasswordResetText(args),
+  });
+}
+
+export async function sendPartnerInviteEmail(args: SendPartnerInviteEmailArgs): Promise<{
+  sent: boolean;
+  reason?: string;
+}> {
+  const recipient = String(args.partnerEmail ?? "").trim().toLowerCase();
+  const inviteLink = String(args.inviteLink ?? "").trim();
+  if (!recipient) return { sent: false, reason: "partner_email_missing" };
+  if (!inviteLink) return { sent: false, reason: "invite_link_missing" };
+
+  return sendSmtpTextMail({
+    to: [recipient],
+    subject: buildPartnerInviteSubject(args),
+    text: buildPartnerInviteText(args),
   });
 }
 

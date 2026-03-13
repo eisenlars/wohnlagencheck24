@@ -5,10 +5,9 @@ import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import {
-  buildPartnerAuthUserMetadata,
-  formatPartnerAccessLinkError,
-  sendPartnerAccessLink,
-} from "@/lib/auth/partner-access-link";
+  generatePartnerInviteForNewUser,
+  sendPartnerInviteBySmtp,
+} from "@/lib/auth/partner-invite-delivery";
 
 type CreatePartnerBody = {
   company_name?: string;
@@ -108,13 +107,16 @@ export async function POST(req: Request) {
     }
 
     const admin = createAdminClient();
-    const createUserRes = await admin.auth.admin.createUser({
-      email: contactEmail,
-      email_confirm: false,
-      user_metadata: buildPartnerAuthUserMetadata(companyName),
-    });
-    if (createUserRes.error) {
-      const msg = String(createUserRes.error.message ?? "");
+    let inviteDraft;
+    try {
+      inviteDraft = await generatePartnerInviteForNewUser({
+        admin,
+        headers: req.headers,
+        companyName,
+        contactEmail,
+      });
+    } catch (error) {
+      const msg = String(error instanceof Error ? error.message : "Invite-Link konnte nicht erzeugt werden.").trim();
       const lower = msg.toLowerCase();
       if (lower.includes("already") || lower.includes("exists") || lower.includes("registered")) {
         const { data: existingPartner } = await admin
@@ -130,12 +132,12 @@ export async function POST(req: Request) {
           { status: 409 },
         );
       }
-      return NextResponse.json({ error: msg || "Auth user create failed" }, { status: 500 });
+      return NextResponse.json({ error: msg || "Invite-Link konnte nicht erzeugt werden." }, { status: 500 });
     }
 
-    const authUserId = normalizeNullableString(createUserRes.data.user?.id);
+    const authUserId = normalizeNullableString(inviteDraft.authUserId);
     if (!authUserId) {
-      return NextResponse.json({ error: "Auth user created but user id missing" }, { status: 500 });
+      return NextResponse.json({ error: "Invite-Link erstellt, aber Auth-User-ID fehlt." }, { status: 500 });
     }
 
     const payload = {
@@ -211,18 +213,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Partner could not be created" }, { status: 500 });
     }
 
-    let delivery;
+    const delivery = {
+      sent: false,
+      contactEmail: inviteDraft.contactEmail,
+      linkType: inviteDraft.linkType,
+      redirectTo: inviteDraft.redirectTo,
+    };
     try {
-      delivery = await sendPartnerAccessLink({
-        admin,
-        partnerId: authUserId,
-        headers: req.headers,
-        authUserRetryAttempts: 6,
+      const mail = await sendPartnerInviteBySmtp({
+        partnerEmail: contactEmail,
+        partnerFirstName: contactFirstName,
+        companyName,
+        inviteLink: inviteDraft.actionLink,
       });
+      if (!mail.sent) {
+        throw new Error(String(mail.reason ?? "Einladungsmail konnte nicht ueber SMTP versendet werden."));
+      }
+      delivery.sent = true;
     } catch (error) {
       await cleanupCreatedPartner(admin, authUserId);
-      const formatted = formatPartnerAccessLinkError(error);
-      return NextResponse.json({ error: formatted.message }, { status: formatted.status });
+      const message = String(error instanceof Error ? error.message : "Einladungsmail konnte nicht versendet werden.").trim();
+      return NextResponse.json({ error: message || "Einladungsmail konnte nicht versendet werden." }, { status: 500 });
     }
 
     await writeSecurityAuditLog({
@@ -238,7 +249,7 @@ export async function POST(req: Request) {
         llm_partner_managed_allowed: (data as Record<string, unknown>).llm_partner_managed_allowed,
         llm_mode_default: (data as Record<string, unknown>).llm_mode_default,
         auth_user_id: authUserId,
-        invite_sent: true,
+        invite_sent: delivery.sent,
         access_link_type: delivery.linkType,
         redirect_to: delivery.redirectTo,
       },
@@ -266,7 +277,7 @@ export async function POST(req: Request) {
       ok: true,
       partner: data,
       delivery: {
-        sent: true,
+        sent: delivery.sent,
         contact_email: delivery.contactEmail,
         link_type: delivery.linkType,
         redirect_to: delivery.redirectTo,
