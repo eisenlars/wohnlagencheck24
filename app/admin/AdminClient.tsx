@@ -3326,6 +3326,9 @@ export default function AdminClient() {
               <div style={{ padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#f8fafc" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Provider-Account</div>
                 <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, color: "#475569", marginBottom: 6 }}>
+                    Hier wählst du, ob ein neuer technischer Zugang angelegt wird oder ob weitere Modelle unter einen bestehenden Zugang gehängt werden.
+                  </div>
                   <select
                     style={inputStyle}
                     value={newLlmAccount.existing_account_id}
@@ -3478,7 +3481,7 @@ export default function AdminClient() {
                       <input
                         list="llm-model-suggestions"
                         style={inputStyle}
-                        placeholder="Modell-ID (frei eingeben)"
+                        placeholder="Modell-ID (Pflichtfeld, frei eingeben)"
                         value={modelDraft.model}
                         onChange={(e) => {
                           const value = e.target.value;
@@ -3521,7 +3524,7 @@ export default function AdminClient() {
                     <div style={{ ...grid2Style, marginTop: 10 }}>
                       <input
                         style={inputStyle}
-                        placeholder="Input-Kosten USD / 1k Tokens"
+                        placeholder="Input-Kosten USD / 1k Tokens (Pflicht)"
                         value={modelDraft.input_cost_usd_per_1k}
                         onChange={(e) => {
                           setLlmCreateTestResult(null);
@@ -3530,7 +3533,7 @@ export default function AdminClient() {
                       />
                       <input
                         style={inputStyle}
-                        placeholder="Output-Kosten USD / 1k Tokens"
+                        placeholder="Output-Kosten USD / 1k Tokens (Pflicht)"
                         value={modelDraft.output_cost_usd_per_1k}
                         onChange={(e) => {
                           setLlmCreateTestResult(null);
@@ -3541,7 +3544,7 @@ export default function AdminClient() {
                     <div style={{ ...grid2Style, marginTop: 10 }}>
                       <input
                         style={inputStyle}
-                        placeholder="Sortierung"
+                        placeholder="Reihenfolge (kleiner = weiter oben)"
                         value={modelDraft.sort_order}
                         onChange={(e) => {
                           setLlmCreateTestResult(null);
@@ -3563,6 +3566,9 @@ export default function AdminClient() {
                         />
                         Als Empfehlung markieren
                       </label>
+                    </div>
+                    <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>
+                      Das Feld mit der Standardzahl <strong>10</strong> steuert die Reihenfolge/Priorität dieses Modells. Kleinere Werte stehen weiter oben und werden im zentralen Fallback früher berücksichtigt.
                     </div>
                   </div>
                 ))}
@@ -3598,6 +3604,17 @@ export default function AdminClient() {
                     if (recommendedCount > 1) {
                       throw new Error("Es kann nur ein empfohlenes Modell pro Provider-Account geben.");
                     }
+                    for (const modelDraft of newLlmModels) {
+                      const modelId = modelDraft.model.trim();
+                      const inputCost = parsePositiveNumber(modelDraft.input_cost_usd_per_1k);
+                      const outputCost = parsePositiveNumber(modelDraft.output_cost_usd_per_1k);
+                      if (!modelId) {
+                        throw new Error("Jedes Modell benötigt vor dem Speichern eine Modell-ID.");
+                      }
+                      if (inputCost === null || outputCost === null) {
+                        throw new Error(`Für ${modelId} sind Input- und Output-Kosten in USD Pflichtfelder und müssen größer als 0 sein.`);
+                      }
+                    }
 
                     let accountId = String(newLlmAccount.existing_account_id || "").trim();
                     if (!accountId) {
@@ -3625,12 +3642,6 @@ export default function AdminClient() {
                     for (const modelDraft of newLlmModels) {
                       const inputCost = parsePositiveNumber(modelDraft.input_cost_usd_per_1k);
                       const outputCost = parsePositiveNumber(modelDraft.output_cost_usd_per_1k);
-                      if (!modelDraft.model.trim()) {
-                        throw new Error("Jedes Modell benötigt eine Modell-ID.");
-                      }
-                      if (inputCost === null || outputCost === null) {
-                        throw new Error(`Input- und Output-Kosten für ${modelDraft.model || "das Modell"} müssen größer als 0 sein.`);
-                      }
                       await api("/api/admin/llm/providers", {
                         method: "POST",
                         body: JSON.stringify({
