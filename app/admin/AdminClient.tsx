@@ -2415,7 +2415,7 @@ export default function AdminClient() {
       {activeView === "partner_edit" && partnerTab === "areas" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Gebietszuordnung</h2>
-        {!selectedPartner.is_active ? (
+        {selectedPartner?.is_active !== true ? (
           <div
             style={{
               marginTop: 8,
