@@ -374,6 +374,8 @@ export default function AdminClient() {
     id: string;
     company_name: string;
     contact_email: string;
+    delivery_sent?: boolean;
+    delivery_message?: string | null;
   } | null>(null);
   const [createPartnerError, setCreatePartnerError] = useState<string | null>(null);
 
@@ -1196,7 +1198,7 @@ export default function AdminClient() {
 
   async function handleCreatePartnerSubmit() {
     setBusy(true);
-    setStatus("Partner anlegen");
+    setStatus("Neuen Partner anlegen");
     setCreatePartnerError(null);
     try {
       if (!createPartner.company_name.trim() || !createPartner.contact_email.trim()) {
@@ -1205,7 +1207,10 @@ export default function AdminClient() {
       if (!createPartner.contact_first_name.trim() || !createPartner.contact_last_name.trim()) {
         throw new Error("Bitte Vorname und Nachname ausfuellen.");
       }
-      const created = await api<{ partner: { id: string; company_name?: string | null; contact_email?: string | null } }>(
+      const created = await api<{
+        partner: { id: string; company_name?: string | null; contact_email?: string | null };
+        delivery?: { sent?: boolean; contact_email?: string | null; link_type?: "invite" | "recovery" };
+      }>(
         "/api/admin/partners",
         {
           method: "POST",
@@ -1231,9 +1236,13 @@ export default function AdminClient() {
         id: createdId,
         company_name: String(created.partner?.company_name ?? "").trim() || createPartner.company_name.trim(),
         contact_email: String(created.partner?.contact_email ?? "").trim() || createPartner.contact_email.trim(),
+        delivery_sent: created.delivery?.sent === true,
+        delivery_message: created.delivery?.sent === true
+          ? `Die Einladungsmail wurde erfolgreich an ${String(created.delivery?.contact_email ?? created.partner?.contact_email ?? createPartner.contact_email).trim() || "die Kontakt-E-Mail"} versendet.`
+          : "Der Partner wurde angelegt, aber der Mailversand konnte nicht bestaetigt werden.",
       });
       setActiveView("new_partner_success");
-      setStatus("Partner angelegt.");
+      setStatus(created.delivery?.sent === true ? "Neuer Partner angelegt." : "Partner angelegt, Mailversand unklar.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Partner konnte nicht angelegt werden.";
       const lower = message.toLowerCase();
@@ -1493,7 +1502,7 @@ export default function AdminClient() {
     <div style={wrapStyle}>
       <FullscreenLoader
         show={busy || reviewBusy || status === "Lade Admin-Daten..."}
-        label="Daten werden geladen..."
+        label={busy && status === "Neuen Partner anlegen" ? "Neuen Partner anlegen" : "Daten werden geladen..."}
       />
       {successModal.open ? (
         <div
@@ -2103,7 +2112,7 @@ export default function AdminClient() {
         <p style={mutedStyle}>
           {createdPartnerSuccess?.mode === "existing"
             ? "Für diese E-Mail existiert bereits ein Partnerkonto. Du kannst direkt in die Partnerdetails springen."
-            : "Die Einladung wurde ausgelöst und der Partnerdatensatz wurde erstellt."}
+            : createdPartnerSuccess?.delivery_message || "Der Partnerdatensatz wurde erstellt."}
         </p>
         <div style={{ marginTop: 12, border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, background: "#f8fafc" }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8 }}>Angelegt</div>
@@ -2129,25 +2138,6 @@ export default function AdminClient() {
             }}
           >
             Partnerdetails öffnen
-          </button>
-          <button
-            style={btnGhostStyle}
-            disabled={busy || !createdPartnerSuccess?.id}
-            onClick={() => {
-              if (!createdPartnerSuccess?.id) return;
-              void sendPartnerAccessLink(createdPartnerSuccess.id);
-            }}
-          >
-            {createdPartnerSuccess?.mode === "existing" ? "Zugangslink senden" : "Einladung erneut senden"}
-          </button>
-          <button
-            style={btnGhostStyle}
-            onClick={() => {
-              setCreatedPartnerSuccess(null);
-              setActiveView("new_partner");
-            }}
-          >
-            Weiteren Partner anlegen
           </button>
         </div>
       </section>
@@ -2287,16 +2277,18 @@ export default function AdminClient() {
             >
               Speichern
             </button>
-            <button
-              style={btnGhostStyle}
-              disabled={busy || !selectedPartnerId}
-              onClick={() => {
-                if (!selectedPartnerId) return;
-                void sendPartnerAccessLink(selectedPartnerId);
-              }}
-            >
-              {selectedPartner?.is_active ? "Passwort-Link senden" : "Einladung erneut senden"}
-            </button>
+            {!selectedPartner?.is_active ? (
+              <button
+                style={btnGhostStyle}
+                disabled={busy || !selectedPartnerId}
+                onClick={() => {
+                  if (!selectedPartnerId) return;
+                  void sendPartnerAccessLink(selectedPartnerId);
+                }}
+              >
+                Einladung erneut senden
+              </button>
+            ) : null}
           </div>
         </div>
         <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>

@@ -260,7 +260,16 @@ export async function POST(req: Request) {
       userAgent: req.headers.get("user-agent"),
     });
 
-    return NextResponse.json({ ok: true, partner: data }, { status: 201 });
+    return NextResponse.json({
+      ok: true,
+      partner: data,
+      delivery: {
+        sent: true,
+        contact_email: delivery.contactEmail,
+        link_type: delivery.linkType,
+        redirect_to: delivery.redirectTo,
+      },
+    }, { status: 201 });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") {
