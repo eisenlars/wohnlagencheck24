@@ -1,9 +1,15 @@
 import { resolvePartnerInviteRedirectUrl } from "@/lib/auth/resolve-app-base-url";
+import { sendPartnerInviteEmail } from "@/lib/notifications/admin-review-email";
 
 type PartnerAccessLinkResult = {
   contactEmail: string;
   linkType: "invite";
   redirectTo: string;
+};
+
+type PartnerInviteDraftResult = PartnerAccessLinkResult & {
+  authUserId: string;
+  actionLink: string;
 };
 
 type PartnerAccessLinkErrorCode =
@@ -16,6 +22,8 @@ type PartnerAccessLinkErrorCode =
   | "AUTH_USER_EMAIL_MISMATCH"
   | "INVITE_REDIRECT_INVALID"
   | "AUTH_USER_METADATA_SYNC_FAILED"
+  | "INVITE_LINK_GENERATE_FAILED"
+  | "INVITE_ACTION_LINK_MISSING"
   | "INVITE_SEND_FAILED";
 
 export class PartnerAccessLinkError extends Error {
@@ -56,6 +64,15 @@ function parseInviteRedirectOrThrow(headers: Headers): string {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function pickPartnerGreetingName(rawFirstName: string, rawCompanyName: string): string {
+  const firstName = String(rawFirstName ?? "").trim();
+  if (firstName) return firstName;
+
+  const companyName = String(rawCompanyName ?? "").trim();
+  if (!companyName) return "";
+  return companyName;
 }
 
 async function loadAuthUserWithRetry(args: {
@@ -119,6 +136,109 @@ export function formatPartnerAccessLinkError(error: unknown): { status: number; 
   };
 }
 
+export async function generatePartnerInviteForNewUser(args: {
+  admin: unknown;
+  headers: Headers;
+  companyName: string;
+  contactEmail: string;
+}): Promise<PartnerInviteDraftResult> {
+  const admin = args.admin as {
+    auth: {
+      admin: {
+        generateLink: (params: {
+          type: "invite";
+          email: string;
+          options?: { data?: Record<string, unknown>; redirectTo?: string };
+        }) => Promise<{
+          data: {
+            user: { id?: string | null; email?: string | null } | null;
+            properties?: { action_link?: string | null } | null;
+          };
+          error: { message?: string | null } | null;
+        }>;
+      };
+    };
+  };
+
+  const contactEmail = String(args.contactEmail ?? "").trim().toLowerCase();
+  const companyName = String(args.companyName ?? "").trim();
+  if (!contactEmail) {
+    throw new PartnerAccessLinkError(
+      "PARTNER_EMAIL_MISSING",
+      "Kontakt-E-Mail fehlt. Einladung kann nicht erstellt werden.",
+      400,
+    );
+  }
+  if (!companyName) {
+    throw new PartnerAccessLinkError(
+      "PARTNER_LOOKUP_FAILED",
+      "Firmenname fehlt. Einladung kann nicht erstellt werden.",
+      400,
+    );
+  }
+
+  const redirectTo = parseInviteRedirectOrThrow(args.headers);
+  const generated = await admin.auth.admin.generateLink({
+    type: "invite",
+    email: contactEmail,
+    options: {
+      data: buildPartnerAuthUserMetadata(companyName),
+      redirectTo,
+    },
+  });
+
+  if (generated.error) {
+    throw new PartnerAccessLinkError(
+      "INVITE_LINK_GENERATE_FAILED",
+      String(generated.error.message ?? "Invite-Link konnte nicht erzeugt werden."),
+      500,
+    );
+  }
+
+  const authUserId = String(generated.data.user?.id ?? "").trim();
+  if (!authUserId) {
+    throw new PartnerAccessLinkError(
+      "AUTH_USER_NOT_FOUND",
+      "Invite-Link wurde erzeugt, aber die Auth-User-ID fehlt.",
+      500,
+    );
+  }
+
+  const actionLink = String(generated.data.properties?.action_link ?? "").trim();
+  if (!actionLink) {
+    throw new PartnerAccessLinkError(
+      "INVITE_ACTION_LINK_MISSING",
+      "Invite-Link wurde erzeugt, aber der Aktivierungslink fehlt.",
+      500,
+    );
+  }
+
+  return {
+    authUserId,
+    actionLink,
+    contactEmail,
+    linkType: "invite",
+    redirectTo,
+  };
+}
+
+export async function sendPartnerInviteBySmtp(args: {
+  partnerEmail: string;
+  partnerFirstName?: string | null;
+  companyName?: string | null;
+  inviteLink: string;
+}): Promise<{ sent: boolean; reason?: string }> {
+  return sendPartnerInviteEmail({
+    partnerEmail: String(args.partnerEmail ?? "").trim().toLowerCase(),
+    partnerName: pickPartnerGreetingName(
+      String(args.partnerFirstName ?? ""),
+      String(args.companyName ?? ""),
+    ),
+    companyName: String(args.companyName ?? "").trim(),
+    inviteLink: String(args.inviteLink ?? "").trim(),
+  });
+}
+
 export async function sendPartnerAccessLink(args: {
   admin: unknown;
   partnerId: string;
@@ -144,17 +264,25 @@ export async function sendPartnerAccessLink(args: {
           userId: string,
           attributes: { user_metadata: Record<string, unknown> },
         ) => Promise<{ data: { user: { id?: string } | null }; error: { message?: string } | null }>;
-        inviteUserByEmail: (
-          email: string,
-          options: { redirectTo: string; data: Record<string, unknown> },
-        ) => Promise<{ error: { message?: string } | null }>;
+        generateLink: (
+          params: {
+            type: "recovery";
+            email: string;
+            options?: { redirectTo?: string };
+          },
+        ) => Promise<{
+          data: {
+            properties?: { action_link?: string | null } | null;
+          };
+          error: { message?: string } | null;
+        }>;
       };
     };
   };
 
   const { data: partner, error: partnerError } = await admin
     .from("partners")
-    .select("id, company_name, contact_email, is_active")
+    .select("id, company_name, contact_email, contact_first_name, is_active")
     .eq("id", partnerId)
     .maybeSingle();
 
@@ -233,14 +361,40 @@ export async function sendPartnerAccessLink(args: {
     }
   }
 
-  const invite = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo,
-    data: desiredUserMetadata,
+  const generated = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: {
+      redirectTo,
+    },
   });
-  if (invite.error) {
+  if (generated.error) {
+    throw new PartnerAccessLinkError(
+      "INVITE_LINK_GENERATE_FAILED",
+      String(generated.error.message ?? "Aktivierungslink konnte nicht erzeugt werden."),
+      500,
+    );
+  }
+
+  const actionLink = String(generated.data.properties?.action_link ?? "").trim();
+  if (!actionLink) {
+    throw new PartnerAccessLinkError(
+      "INVITE_ACTION_LINK_MISSING",
+      "Aktivierungslink wurde erzeugt, aber der Link fehlt in der Antwort.",
+      500,
+    );
+  }
+
+  const mail = await sendPartnerInviteBySmtp({
+    partnerEmail: email,
+    partnerFirstName: String((partner as { contact_first_name?: string | null }).contact_first_name ?? ""),
+    companyName,
+    inviteLink: actionLink,
+  });
+  if (!mail.sent) {
     throw new PartnerAccessLinkError(
       "INVITE_SEND_FAILED",
-      String(invite.error.message ?? "Einladungsmail konnte nicht versendet werden."),
+      String(mail.reason ?? "Einladungsmail konnte nicht ueber SMTP versendet werden."),
       500,
     );
   }

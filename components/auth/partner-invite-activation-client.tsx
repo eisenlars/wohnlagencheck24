@@ -72,9 +72,10 @@ export default function PartnerInviteActivationClient() {
       const otpToken = tokenHash || legacyToken;
       const prefEmail = String(search.get("email") ?? "").trim();
       const hasAuthLinkPayload = Boolean(code || (otpToken && type) || (accessToken && refreshToken));
+      const supportedType = !type || type === "invite" || type === "recovery";
 
       if (prefEmail) setAccessEmail(prefEmail);
-      if (type && type !== "invite") {
+      if (!supportedType) {
         await showInvalidInviteState();
         return;
       }
@@ -94,10 +95,10 @@ export default function PartnerInviteActivationClient() {
         }
       }
 
-      if (otpToken && type === "invite") {
+      if (otpToken && (type === "invite" || type === "recovery")) {
         const { error } = await supabase.auth.verifyOtp({
           token_hash: otpToken,
-          type: "invite",
+          type,
         });
         if (!mounted) return;
         if (!error) {
