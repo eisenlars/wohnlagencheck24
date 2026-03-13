@@ -117,8 +117,13 @@ export default async function HomePage() {
                 if (!window.location.hash) return;
                 var hash = window.location.hash;
                 if (hash.indexOf("access_token=") === -1) return;
-                if (hash.indexOf("type=invite") === -1 && hash.indexOf("type=recovery") === -1) return;
-                window.location.replace("/auth/setup" + hash);
+                if (hash.indexOf("type=invite") !== -1) {
+                  window.location.replace("/partner/setup" + hash);
+                  return;
+                }
+                if (hash.indexOf("type=recovery") !== -1) {
+                  window.location.replace("/partner/reset" + hash);
+                }
               } catch (_) {}
             })();
           `,

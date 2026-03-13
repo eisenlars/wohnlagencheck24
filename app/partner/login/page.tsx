@@ -51,7 +51,7 @@ export default async function PartnerLoginPage({
           <input
             name="reset_email"
             type="email"
-            placeholder="E-Mail für Zurücksetzen"
+            placeholder="E-Mail-Adresse"
             required
             style={{ padding: "8px" }}
           />
@@ -67,7 +67,7 @@ export default async function PartnerLoginPage({
               fontWeight: 700,
             }}
           >
-            Neuen Einladungs-/Zugangslink senden
+            Neues Passwort anfordern
           </button>
         </form>
 
@@ -79,8 +79,13 @@ export default async function PartnerLoginPage({
                   if (!window.location.hash) return;
                   var hash = window.location.hash;
                   if (hash.indexOf("access_token=") === -1) return;
-                  if (hash.indexOf("type=invite") === -1 && hash.indexOf("type=recovery") === -1) return;
-                  window.location.replace("/auth/setup?aud=partner" + hash);
+                  if (hash.indexOf("type=invite") !== -1) {
+                    window.location.replace("/partner/setup" + hash);
+                    return;
+                  }
+                  if (hash.indexOf("type=recovery") !== -1) {
+                    window.location.replace("/partner/reset" + hash);
+                  }
                 } catch (_) {}
               })();
             `,

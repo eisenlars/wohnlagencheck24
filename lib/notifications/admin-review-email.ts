@@ -43,6 +43,9 @@ type SendAdminInviteResendRequestEmailArgs = {
   email: string;
   audience?: "partner" | "admin";
   requestedAtIso?: string | null;
+  partnerId?: string | null;
+  partnerName?: string | null;
+  partnerIsActive?: boolean | null;
   recipients?: string[] | null;
 };
 
@@ -203,12 +206,20 @@ function buildAdminInviteResendRequestText(args: SendAdminInviteResendRequestEma
     ? new Date(args.requestedAtIso).toLocaleString("de-DE")
     : new Date().toLocaleString("de-DE");
   const aud = args.audience === "admin" ? "admin" : "partner";
+  const partnerId = String(args.partnerId ?? "").trim();
+  const partnerName = String(args.partnerName ?? "").trim();
+  const partnerIsActive = typeof args.partnerIsActive === "boolean"
+    ? (args.partnerIsActive ? "ja" : "nein")
+    : "unbekannt";
 
   return [
     "Es wurde ein neuer Zugangslink angefordert.",
     "",
     `Bereich: ${aud}`,
     `E-Mail: ${args.email}`,
+    `Partner: ${partnerName || "nicht gefunden"}`,
+    `Partner ID: ${partnerId || "nicht gefunden"}`,
+    `Partner bereits aktiviert: ${partnerIsActive}`,
     `Zeitpunkt: ${requestedAt}`,
     "",
     "Bitte im Adminbereich den Einladungslink erneut versenden.",

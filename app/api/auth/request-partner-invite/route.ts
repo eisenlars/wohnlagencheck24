@@ -7,16 +7,15 @@ import {
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => ({}))) as { email?: string; aud?: string };
+    const body = (await req.json().catch(() => ({}))) as { email?: string };
     const email = normalizePartnerInviteRequestEmail(body.email);
-    const aud = String(body.aud ?? "partner").trim().toLowerCase() === "admin" ? "admin" : "partner";
 
     if (!email) {
       return NextResponse.json({ ok: false, error: "EMAIL_REQUIRED" }, { status: 400 });
     }
 
     const ip = extractClientIpFromHeaders(req.headers);
-    const limit = await checkRateLimitPersistent(`auth_access_link:${aud}:${ip}:${email}`, {
+    const limit = await checkRateLimitPersistent(`partner_invite_request:${ip}:${email}`, {
       windowMs: 15 * 60 * 1000,
       max: 5,
     });
@@ -27,12 +26,10 @@ export async function POST(req: Request) {
       );
     }
 
-    if (aud === "partner") {
-      await notifyAdminAboutPartnerInviteRequest({
-        email,
-        headers: req.headers,
-      });
-    }
+    await notifyAdminAboutPartnerInviteRequest({
+      email,
+      headers: req.headers,
+    });
 
     return NextResponse.json({ ok: true });
   } catch {

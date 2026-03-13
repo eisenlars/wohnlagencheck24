@@ -15,9 +15,9 @@ export default function PartnerResetRequestedPage() {
           background: "#fff",
         }}
       >
-        <h2 style={{ margin: "0 0 6px 0" }}>E-Mail versendet</h2>
+        <h2 style={{ margin: "0 0 6px 0" }}>Passwort-Link angefordert</h2>
         <p style={{ margin: 0, fontSize: "14px", color: "#475569", lineHeight: 1.45 }}>
-          Wenn ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.
+          Wenn ein Partnerkonto mit dieser E-Mail existiert, wurde ein Link zum Zuruecksetzen des Passworts gesendet.
           Bitte prüfe dein Postfach und ggf. den Spam-Ordner.
         </p>
         <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
@@ -52,11 +52,10 @@ export default function PartnerResetRequestedPage() {
               background: "#0f766e",
             }}
           >
-            Erneut versuchen
+            Neues Passwort anfordern
           </Link>
         </div>
       </div>
     </div>
   );
 }
-

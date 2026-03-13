@@ -13,22 +13,22 @@ export function resolveAppBaseUrl(hdrs: Headers): string {
 
 export function resolvePartnerInviteRedirectUrl(hdrs: Headers): string {
   const configured = String(process.env.PARTNER_INVITE_REDIRECT_URL ?? '').trim();
-  const fallback = `${resolveAppBaseUrl(hdrs)}/auth/setup?aud=partner`;
+  const fallback = `${resolveAppBaseUrl(hdrs)}/partner/setup`;
   if (!configured) return fallback;
 
   try {
     const url = new URL(configured);
-    if (url.pathname === '/partner/setup') {
-      url.pathname = '/auth/setup';
-      url.searchParams.set('aud', 'partner');
-      return url.toString();
-    }
-    if (url.pathname === '/auth/setup' && !url.searchParams.get('aud')) {
-      url.searchParams.set('aud', 'partner');
+    if (url.pathname === '/auth/setup') {
+      url.pathname = '/partner/setup';
+      url.searchParams.delete('aud');
       return url.toString();
     }
     return url.toString();
   } catch {
     return fallback;
   }
+}
+
+export function resolvePartnerPasswordResetRedirectUrl(hdrs: Headers): string {
+  return `${resolveAppBaseUrl(hdrs)}/partner/reset`;
 }

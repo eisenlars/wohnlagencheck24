@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from '@/lib/security/rate-limit'
-import { resolveAppBaseUrl } from '@/lib/auth/resolve-app-base-url'
+import { resolvePartnerPasswordResetRedirectUrl } from '@/lib/auth/resolve-app-base-url'
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string
@@ -20,7 +20,7 @@ export async function login(formData: FormData) {
   }
   const supabase = createClient()
 
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
@@ -55,7 +55,7 @@ export async function requestPasswordReset(formData: FormData) {
 
   try {
     const supabase = createClient();
-    const redirectTo = `${resolveAppBaseUrl(hdrs)}/auth/setup?aud=partner`;
+    const redirectTo = resolvePartnerPasswordResetRedirectUrl(hdrs);
     await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   } catch {
     // Keine Detailfehler zurückgeben (User-Enumeration vermeiden).

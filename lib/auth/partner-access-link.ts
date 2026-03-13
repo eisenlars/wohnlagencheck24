@@ -1,4 +1,7 @@
-import { resolveAppBaseUrl, resolvePartnerInviteRedirectUrl } from "@/lib/auth/resolve-app-base-url";
+import {
+  resolvePartnerInviteRedirectUrl,
+  resolvePartnerPasswordResetRedirectUrl,
+} from "@/lib/auth/resolve-app-base-url";
 type PartnerAccessLinkResult = {
   contactEmail: string;
   linkType: "invite" | "recovery";
@@ -78,7 +81,7 @@ export async function sendPartnerAccessLink(args: {
     };
   }
 
-  const redirectTo = `${resolveAppBaseUrl(headers)}/auth/setup?aud=partner`;
+  const redirectTo = resolvePartnerPasswordResetRedirectUrl(headers);
   const reset = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   if (reset.error) throw new Error(String(reset.error.message ?? "Password reset failed"));
   return {

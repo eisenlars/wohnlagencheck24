@@ -1,5 +1,5 @@
-import PasswordSetupClient from "@/components/auth/password-setup-client";
+import PartnerInviteActivationClient from "@/components/auth/partner-invite-activation-client";
 
 export default function PartnerSetupPage() {
-  return <PasswordSetupClient title="Partnerkonto aktivieren" defaultAudience="partner" />;
+  return <PartnerInviteActivationClient />;
 }

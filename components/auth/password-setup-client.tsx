@@ -65,8 +65,6 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const aud = readAudience(defaultAudience);
-      const fallbackAppPath = appPathForAudience(aud);
       const hash = readHashParams();
       const search = readSearchParams();
       const accessToken = hash.get("access_token");
@@ -196,7 +194,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
     return () => {
       mounted = false;
     };
-  }, [defaultAudience, router, supabase]);
+  }, [defaultAudience, router, supabase, title]);
 
   async function submit() {
     setBusy(true);
@@ -247,7 +245,10 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
         setRequestStatus(retry > 0 ? `Zu viele Anfragen. Bitte in ${retry}s erneut versuchen.` : "Zu viele Anfragen. Bitte später erneut versuchen.");
         return;
       }
-      setRequestStatus("Wenn die E-Mail existiert, wurde ein neuer Zugangslink versendet.");
+      if (!res.ok) {
+        throw new Error("Anfrage konnte nicht gesendet werden.");
+      }
+      setRequestStatus("Der Admin ist informiert und schickt eine neue Einladung heraus.");
     } catch {
       setRequestStatus("Anfrage konnte nicht gesendet werden. Bitte erneut versuchen.");
     } finally {
@@ -270,7 +271,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
     <div style={{ maxWidth: 420, margin: "90px auto", fontFamily: "sans-serif" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, border: "1px solid #ddd", padding: 24, borderRadius: 8 }}>
         <h2 style={{ margin: "0 0 8px 0", color: "#111827" }}>{headline}</h2>
-        <p style={{ fontSize: 14, color: "#475569", margin: 0 }}>{status}</p>
+        <p style={{ fontSize: 14, color: viewMode === "error" ? "#b91c1c" : "#475569", margin: 0 }}>{status}</p>
         {viewMode === "form" ? (
           <>
             <label htmlFor="password" style={{ color: "#111827" }}>Neues Passwort</label>
@@ -314,43 +315,61 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
           </>
         ) : null}
         {viewMode === "error" ? (
-          <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
-            <label htmlFor="request_email" style={{ color: "#111827", fontWeight: 700 }}>
-              E-Mail für Link-Anfrage
-            </label>
-            <input
-              id="request_email"
-              name="request_email"
-              type="email"
-              placeholder="ihre@email.de"
-              style={{ padding: 8 }}
-              value={accessEmail}
-              onChange={(e) => setAccessEmail(e.target.value)}
-              disabled={requestBusy}
-            />
+          linkKind === "invite" ? (
+            <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
+              <label htmlFor="request_email" style={{ color: "#111827", fontWeight: 700 }}>
+                E-Mail für Link-Anfrage
+              </label>
+              <input
+                id="request_email"
+                name="request_email"
+                type="email"
+                placeholder="ihre@email.de"
+                style={{ padding: 8 }}
+                value={accessEmail}
+                onChange={(e) => setAccessEmail(e.target.value)}
+                disabled={requestBusy}
+              />
+              <button
+                type="button"
+                onClick={requestNewAccessLink}
+                style={{
+                  padding: "10px",
+                  background: "#111827",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: requestBusy ? "default" : "pointer",
+                  fontWeight: 700,
+                  opacity: requestBusy ? 0.75 : 1,
+                }}
+                disabled={requestBusy}
+              >
+                Neuen Link beantragen
+              </button>
+              {requestStatus ? (
+                <p style={{ margin: 0, fontSize: 14, color: requestStatus.toLowerCase().includes("admin ist informiert") ? "#166534" : "#b91c1c" }}>
+                  {requestStatus}
+                </p>
+              ) : null}
+            </div>
+          ) : (
             <button
               type="button"
-              onClick={requestNewAccessLink}
+              onClick={() => router.push(loginPathForAudience(readAudience(defaultAudience)))}
               style={{
-                padding: "10px",
+                padding: "10px 12px",
                 background: "#111827",
                 color: "#fff",
                 border: "none",
                 borderRadius: 6,
-                cursor: requestBusy ? "default" : "pointer",
+                cursor: "pointer",
                 fontWeight: 700,
-                opacity: requestBusy ? 0.75 : 1,
               }}
-              disabled={requestBusy}
             >
-              Neuen Link beantragen
+              {linkKind === "recovery" ? "Zur Anmeldeseite" : "Zum Login"}
             </button>
-            {requestStatus ? (
-              <p style={{ margin: 0, fontSize: 14, color: requestStatus.toLowerCase().includes("versendet") ? "#166534" : "#b91c1c" }}>
-                {requestStatus}
-              </p>
-            ) : null}
-          </div>
+          )
         ) : null}
       </div>
     </div>
