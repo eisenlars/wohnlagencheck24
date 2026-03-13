@@ -705,6 +705,7 @@ export default function AdminClient() {
   const partnerNeedsAssignment = useMemo(() => {
     const pending = new Set<string>();
     for (const p of partners) {
+      if (!p.is_active) continue;
       if (!partnerIdsWithAreaMapping.has(p.id)) pending.add(p.id);
     }
     return pending;
@@ -844,7 +845,7 @@ export default function AdminClient() {
     }));
   }, [areaMappings]);
 
-  const selectedPartnerNeedsAreaAssignment = Boolean(selectedPartner) && displayAreaRows.length === 0;
+  const selectedPartnerNeedsAreaAssignment = Boolean(selectedPartner?.is_active) && displayAreaRows.length === 0;
 
   const reviewAreaOptions = useMemo(
     () =>
@@ -2414,114 +2415,133 @@ export default function AdminClient() {
       {activeView === "partner_edit" && partnerTab === "areas" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Gebietszuordnung</h2>
-        <div style={rowStyle}>
-          <input
-            placeholder="Kreis suchen (Name oder ID, z. B. Leipzig oder 14)"
-            aria-label="Kreis zuordnen"
-            style={inputStyle}
-            value={assignAreaId}
-            onChange={(e) => {
-              setAssignAreaId(e.target.value);
-              setAreaQuery(e.target.value);
+        {!selectedPartner.is_active ? (
+          <div
+            style={{
+              marginTop: 8,
+              border: "1px solid #cbd5e1",
+              background: "#f8fafc",
+              borderRadius: 10,
+              padding: 14,
+              color: "#334155",
+              fontSize: 14,
+              lineHeight: 1.5,
             }}
-            disabled={!selectedPartner}
-          />
-          <button
-            style={btnStyle}
-            disabled={busy || !selectedPartner}
-            onClick={() =>
-              run("Gebiet zuordnen", async () => {
-                if (!selectedPartnerId || !assignAreaId.trim()) return;
-                await api(`/api/admin/partners/${selectedPartnerId}/areas`, {
-                  method: "POST",
-                  body: JSON.stringify({ area_id: assignAreaId.trim(), is_active: false }),
-                });
-                setAssignAreaId("");
-                setAreaQuery("");
-                await loadPartnerDetails(selectedPartnerId);
-                await loadAreaOverview();
-              })
-            }
           >
-            Zuordnen
-          </button>
-        </div>
-        {areaOptions.length > 0 ? (
-          <div style={suggestBoxStyle}>
-            {areaOptions.map((a) => (
-              <button
-                key={a.id}
-                style={suggestBtnStyle}
-                onClick={() => {
-                  setAssignAreaId(a.id);
-                  setAreaQuery("");
-                  setAreaOptions([]);
-                }}
-              >
-                {a.name ?? a.id} - {a.id}
-              </button>
-            ))}
+            Gebiete koennen erst zugewiesen werden, wenn der Partner sein Konto aktiviert hat.
           </div>
-        ) : null}
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Area</th>
-              <th style={thStyle}>Status</th>
-              <th style={thStyle}>Aktion</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayAreaRows.length === 0 ? (
-              <tr>
-                <td style={tdStyle} colSpan={3}>
-                  <div
-                    style={{
-                      border: "1px solid #ef4444",
-                      background: "rgba(239, 68, 68, 0.08)",
-                      borderRadius: 10,
-                      padding: 12,
-                      color: "#7f1d1d",
-                      fontSize: 13,
-                      fontWeight: 600,
+        ) : (
+          <>
+            <div style={rowStyle}>
+              <input
+                placeholder="Kreis suchen (Name oder ID, z. B. Leipzig oder 14)"
+                aria-label="Kreis zuordnen"
+                style={inputStyle}
+                value={assignAreaId}
+                onChange={(e) => {
+                  setAssignAreaId(e.target.value);
+                  setAreaQuery(e.target.value);
+                }}
+                disabled={!selectedPartner}
+              />
+              <button
+                style={btnStyle}
+                disabled={busy || !selectedPartner}
+                onClick={() =>
+                  run("Gebiet zuordnen", async () => {
+                    if (!selectedPartnerId || !assignAreaId.trim()) return;
+                    await api(`/api/admin/partners/${selectedPartnerId}/areas`, {
+                      method: "POST",
+                      body: JSON.stringify({ area_id: assignAreaId.trim(), is_active: false }),
+                    });
+                    setAssignAreaId("");
+                    setAreaQuery("");
+                    await loadPartnerDetails(selectedPartnerId);
+                    await loadAreaOverview();
+                  })
+                }
+              >
+                Zuordnen
+              </button>
+            </div>
+            {areaOptions.length > 0 ? (
+              <div style={suggestBoxStyle}>
+                {areaOptions.map((a) => (
+                  <button
+                    key={a.id}
+                    style={suggestBtnStyle}
+                    onClick={() => {
+                      setAssignAreaId(a.id);
+                      setAreaQuery("");
+                      setAreaOptions([]);
                     }}
                   >
-                    Für diesen Partner sind noch keine Gebiete zugeordnet. Bitte jetzt Gebiete zuweisen.
-                  </div>
-                </td>
-              </tr>
+                    {a.name ?? a.id} - {a.id}
+                  </button>
+                ))}
+              </div>
             ) : null}
-            {displayAreaRows.map((row) => (
-              <tr key={row.key}>
-                <td style={tdStyle}>
-                  <div>{row.mapping.areas?.name ?? row.displayKreisId}</div>
-                  <small style={mutedStyle}>{row.displayKreisId}</small>
-                </td>
-                <td style={tdStyle}>
-                  {formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status)}
-                </td>
-                <td style={tdStyle}>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      style={handoverLinkButtonStyle}
-                      disabled={busy || !selectedPartner || row.derivedFromOrtslagen}
-                      onClick={() => {
-                        setPartnerTab("handover");
-                        setHandoverDraft((prev) => ({
-                          ...prev,
-                          area_id: row.mapping.area_id,
-                        }));
-                        setStatus(`Übergabe vorbereitet: ${row.mapping.areas?.name ?? row.mapping.area_id}`);
-                      }}
-                    >
-                      Übergabe
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Area</th>
+                  <th style={thStyle}>Status</th>
+                  <th style={thStyle}>Aktion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayAreaRows.length === 0 ? (
+                  <tr>
+                    <td style={tdStyle} colSpan={3}>
+                      <div
+                        style={{
+                          border: "1px solid #ef4444",
+                          background: "rgba(239, 68, 68, 0.08)",
+                          borderRadius: 10,
+                          padding: 12,
+                          color: "#7f1d1d",
+                          fontSize: 13,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Für diesen Partner sind noch keine Gebiete zugeordnet. Bitte jetzt Gebiete zuweisen.
+                      </div>
+                    </td>
+                  </tr>
+                ) : null}
+                {displayAreaRows.map((row) => (
+                  <tr key={row.key}>
+                    <td style={tdStyle}>
+                      <div>{row.mapping.areas?.name ?? row.displayKreisId}</div>
+                      <small style={mutedStyle}>{row.displayKreisId}</small>
+                    </td>
+                    <td style={tdStyle}>
+                      {formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status)}
+                    </td>
+                    <td style={tdStyle}>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          style={handoverLinkButtonStyle}
+                          disabled={busy || !selectedPartner || row.derivedFromOrtslagen}
+                          onClick={() => {
+                            setPartnerTab("handover");
+                            setHandoverDraft((prev) => ({
+                              ...prev,
+                              area_id: row.mapping.area_id,
+                            }));
+                            setStatus(`Übergabe vorbereitet: ${row.mapping.areas?.name ?? row.mapping.area_id}`);
+                          }}
+                        >
+                          Übergabe
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
       </section>
       ) : null}
 
@@ -3478,17 +3498,20 @@ export default function AdminClient() {
                       ) : null}
                     </div>
                     <div style={grid2Style}>
-                      <input
-                        list="llm-model-suggestions"
-                        style={inputStyle}
-                        placeholder="Modell-ID (Pflichtfeld, frei eingeben)"
-                        value={modelDraft.model}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setLlmCreateTestResult(null);
-                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, model: value } : item));
-                        }}
-                      />
+                      <div>
+                        <div style={requiredFieldHintStyle}>Pflichtfeld</div>
+                        <input
+                          list="llm-model-suggestions"
+                          style={requiredInputStyle}
+                          placeholder="Modell-ID"
+                          value={modelDraft.model}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setLlmCreateTestResult(null);
+                            setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, model: value } : item));
+                          }}
+                        />
+                      </div>
                       <input
                         style={inputStyle}
                         placeholder="Anzeigename (optional)"
@@ -3522,24 +3545,30 @@ export default function AdminClient() {
                       />
                     </div>
                     <div style={{ ...grid2Style, marginTop: 10 }}>
-                      <input
-                        style={inputStyle}
-                        placeholder="Input-Kosten USD / 1k Tokens (Pflicht)"
-                        value={modelDraft.input_cost_usd_per_1k}
-                        onChange={(e) => {
-                          setLlmCreateTestResult(null);
-                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, input_cost_usd_per_1k: e.target.value } : item));
-                        }}
-                      />
-                      <input
-                        style={inputStyle}
-                        placeholder="Output-Kosten USD / 1k Tokens (Pflicht)"
-                        value={modelDraft.output_cost_usd_per_1k}
-                        onChange={(e) => {
-                          setLlmCreateTestResult(null);
-                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, output_cost_usd_per_1k: e.target.value } : item));
-                        }}
-                      />
+                      <div>
+                        <div style={requiredFieldHintStyle}>Pflichtfeld</div>
+                        <input
+                          style={requiredInputStyle}
+                          placeholder="Input-Kosten USD / 1k Tokens"
+                          value={modelDraft.input_cost_usd_per_1k}
+                          onChange={(e) => {
+                            setLlmCreateTestResult(null);
+                            setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, input_cost_usd_per_1k: e.target.value } : item));
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <div style={requiredFieldHintStyle}>Pflichtfeld</div>
+                        <input
+                          style={requiredInputStyle}
+                          placeholder="Output-Kosten USD / 1k Tokens"
+                          value={modelDraft.output_cost_usd_per_1k}
+                          onChange={(e) => {
+                            setLlmCreateTestResult(null);
+                            setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, output_cost_usd_per_1k: e.target.value } : item));
+                          }}
+                        />
+                      </div>
                     </div>
                     <div style={{ ...grid2Style, marginTop: 10 }}>
                       <input
@@ -4401,6 +4430,22 @@ const inputStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: "8px 10px",
   width: "100%",
+};
+
+const requiredInputStyle: React.CSSProperties = {
+  ...inputStyle,
+  border: "1px solid #f59e0b",
+  background: "#fffbeb",
+  boxShadow: "inset 0 0 0 1px rgba(245, 158, 11, 0.12)",
+};
+
+const requiredFieldHintStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  color: "#92400e",
+  marginBottom: 4,
+  textTransform: "uppercase",
+  letterSpacing: 0.2,
 };
 
 const btnStyle: React.CSSProperties = {
