@@ -58,10 +58,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: providersError.message }, { status: 500 });
     }
 
-    const rows = ((providers ?? []) as Array<ProviderRow & { account?: { provider?: string | null } | null }>)
-      .map((row) => ({
-        ...row,
-        provider: String(row.account?.provider ?? "").trim().toLowerCase(),
+    const rows = ((providers ?? []) as Array<{
+      id?: string | null;
+      model?: string | null;
+      input_cost_usd_per_1k?: number | null;
+      output_cost_usd_per_1k?: number | null;
+      account?: Array<{ provider?: string | null }> | null;
+    }>)
+      .map((row): ProviderRow => ({
+        id: String(row.id ?? "").trim(),
+        model: String(row.model ?? "").trim(),
+        input_cost_usd_per_1k: typeof row.input_cost_usd_per_1k === "number" ? row.input_cost_usd_per_1k : null,
+        output_cost_usd_per_1k: typeof row.output_cost_usd_per_1k === "number" ? row.output_cost_usd_per_1k : null,
+        provider: String(row.account?.[0]?.provider ?? "").trim().toLowerCase(),
       }))
       .filter((row) => !filterProvider || row.provider === filterProvider);
     const monthStart = monthStartIsoUtc();
