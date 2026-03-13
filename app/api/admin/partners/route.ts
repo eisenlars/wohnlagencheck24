@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
+import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
-import { resolvePartnerInviteRedirectUrl } from "@/lib/auth/resolve-app-base-url";
+import { buildPartnerAuthUserMetadata, sendPartnerAccessLink } from "@/lib/auth/partner-access-link";
 
 type CreatePartnerBody = {
   company_name?: string;
@@ -63,6 +64,22 @@ function normalizeNullableString(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+async function cleanupCreatedPartner(admin: ReturnType<typeof createAdminClient>, partnerId: string) {
+  if (!partnerId) return;
+
+  try {
+    await admin.from("partners").delete().eq("id", partnerId);
+  } catch (error) {
+    console.warn("partner cleanup failed:", error);
+  }
+
+  try {
+    await admin.auth.admin.deleteUser(partnerId);
+  } catch (error) {
+    console.warn("auth user cleanup failed:", error);
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
@@ -88,13 +105,13 @@ export async function POST(req: Request) {
     }
 
     const admin = createAdminClient();
-    const inviteRedirectTo = resolvePartnerInviteRedirectUrl(req.headers);
-    const invite = await admin.auth.admin.inviteUserByEmail(contactEmail, {
-      redirectTo: inviteRedirectTo,
-      data: { role: "partner", company_name: companyName, activation_pending: true },
+    const createUserRes = await admin.auth.admin.createUser({
+      email: contactEmail,
+      email_confirm: false,
+      user_metadata: buildPartnerAuthUserMetadata(companyName),
     });
-    if (invite.error) {
-      const msg = String(invite.error.message ?? "");
+    if (createUserRes.error) {
+      const msg = String(createUserRes.error.message ?? "");
       const lower = msg.toLowerCase();
       if (lower.includes("already") || lower.includes("exists") || lower.includes("registered")) {
         const { data: existingPartner } = await admin
@@ -110,12 +127,12 @@ export async function POST(req: Request) {
           { status: 409 },
         );
       }
-      return NextResponse.json({ error: msg || "Invite failed" }, { status: 500 });
+      return NextResponse.json({ error: msg || "Auth user create failed" }, { status: 500 });
     }
 
-    const authUserId = normalizeNullableString(invite.data.user?.id);
+    const authUserId = normalizeNullableString(createUserRes.data.user?.id);
     if (!authUserId) {
-      return NextResponse.json({ error: "Invite succeeded but user id missing" }, { status: 500 });
+      return NextResponse.json({ error: "Auth user created but user id missing" }, { status: 500 });
     }
 
     const payload = {
@@ -183,10 +200,27 @@ export async function POST(req: Request) {
     }
 
     if (error) {
+      await cleanupCreatedPartner(admin, authUserId);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     if (!data) {
+      await cleanupCreatedPartner(admin, authUserId);
       return NextResponse.json({ error: "Partner could not be created" }, { status: 500 });
+    }
+
+    const supabase = createClient();
+    let delivery;
+    try {
+      delivery = await sendPartnerAccessLink({
+        admin,
+        supabase,
+        partnerId: authUserId,
+        headers: req.headers,
+      });
+    } catch (error) {
+      await cleanupCreatedPartner(admin, authUserId);
+      const message = error instanceof Error ? error.message : "Invite delivery failed";
+      return NextResponse.json({ error: message }, { status: 500 });
     }
 
     await writeSecurityAuditLog({
@@ -203,7 +237,8 @@ export async function POST(req: Request) {
         llm_mode_default: (data as Record<string, unknown>).llm_mode_default,
         auth_user_id: authUserId,
         invite_sent: true,
-        access_link_type: "invite",
+        access_link_type: delivery.linkType,
+        redirect_to: delivery.redirectTo,
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -216,9 +251,9 @@ export async function POST(req: Request) {
       entityType: "auth_user",
       entityId: authUserId,
       payload: {
-        contact_email: contactEmail,
-        redirect_to: inviteRedirectTo,
-        link_type: "invite",
+        contact_email: delivery.contactEmail,
+        redirect_to: delivery.redirectTo,
+        link_type: delivery.linkType,
         resend: false,
       },
       ip: extractClientIpFromHeaders(req.headers),

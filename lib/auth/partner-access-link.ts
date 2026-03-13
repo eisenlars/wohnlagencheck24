@@ -2,11 +2,20 @@ import {
   resolvePartnerInviteRedirectUrl,
   resolvePartnerPasswordResetRedirectUrl,
 } from "@/lib/auth/resolve-app-base-url";
+
 type PartnerAccessLinkResult = {
   contactEmail: string;
   linkType: "invite" | "recovery";
   redirectTo: string;
 };
+
+export function buildPartnerAuthUserMetadata(companyName: string): Record<string, unknown> {
+  return {
+    role: "partner",
+    company_name: String(companyName ?? "").trim(),
+    activation_pending: true,
+  };
+}
 
 export async function sendPartnerAccessLink(args: {
   admin: unknown;
@@ -67,11 +76,9 @@ export async function sendPartnerAccessLink(args: {
     const redirectTo = resolvePartnerInviteRedirectUrl(headers);
     const invite = await admin.auth.admin.inviteUserByEmail(email, {
       redirectTo,
-      data: {
-        role: "partner",
-        company_name: String((partner as { company_name?: string | null }).company_name ?? "").trim(),
-        activation_pending: true,
-      },
+      data: buildPartnerAuthUserMetadata(
+        String((partner as { company_name?: string | null }).company_name ?? "").trim(),
+      ),
     });
     if (invite.error) throw new Error(String(invite.error.message ?? "Invite failed"));
     return {
