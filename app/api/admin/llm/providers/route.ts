@@ -9,6 +9,10 @@ import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
 type Body = {
   provider?: string;
   model?: string;
+  display_label?: string | null;
+  hint?: string | null;
+  badges?: unknown;
+  recommended?: boolean;
   base_url?: string;
   auth_type?: string;
   priority?: number;
@@ -41,6 +45,21 @@ function isPositiveNumber(value: unknown): boolean {
   return parsed !== null && parsed > 0;
 }
 
+function normalizeBadges(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const badges: string[] = [];
+  for (const item of value) {
+    const badge = String(item ?? "").trim();
+    if (!badge) continue;
+    const key = badge.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    badges.push(badge);
+  }
+  return badges;
+}
+
 function isMissingTable(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return msg.includes("public.llm_global_providers") && msg.includes("does not exist");
@@ -56,7 +75,7 @@ export async function GET(req: Request) {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("llm_global_providers")
-      .select("id, provider, model, base_url, auth_type, auth_config, priority, is_active, temperature, max_tokens, price_source_url_override, input_cost_eur_per_1k, output_cost_eur_per_1k, price_source, price_source_url, price_updated_at, created_at, updated_at")
+      .select("id, provider, model, display_label, hint, badges, recommended, base_url, auth_type, auth_config, priority, is_active, temperature, max_tokens, price_source_url_override, input_cost_eur_per_1k, output_cost_eur_per_1k, price_source, price_source_url, price_updated_at, created_at, updated_at")
       .order("priority", { ascending: true })
       .order("created_at", { ascending: true });
 
@@ -114,6 +133,10 @@ export async function POST(req: Request) {
     const payload = {
       provider,
       model,
+      display_label: norm(body.display_label),
+      hint: norm(body.hint),
+      badges: normalizeBadges(body.badges),
+      recommended: body.recommended === true,
       base_url: baseUrl,
       auth_type: authType,
       priority,
@@ -128,7 +151,7 @@ export async function POST(req: Request) {
     const { data, error } = await admin
       .from("llm_global_providers")
       .insert(payload)
-      .select("id, provider, model, base_url, auth_type, auth_config, priority, is_active, temperature, max_tokens, price_source_url_override, input_cost_eur_per_1k, output_cost_eur_per_1k, price_source, price_source_url, price_updated_at, created_at, updated_at")
+      .select("id, provider, model, display_label, hint, badges, recommended, base_url, auth_type, auth_config, priority, is_active, temperature, max_tokens, price_source_url_override, input_cost_eur_per_1k, output_cost_eur_per_1k, price_source, price_source_url, price_updated_at, created_at, updated_at")
       .maybeSingle();
     if (error) {
       if (isMissingTable(error)) {

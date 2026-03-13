@@ -9,6 +9,10 @@ import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
 type Body = {
   provider?: string;
   model?: string;
+  display_label?: string | null;
+  hint?: string | null;
+  badges?: unknown;
+  recommended?: boolean;
   base_url?: string;
   auth_type?: string;
   priority?: number;
@@ -39,6 +43,21 @@ function asFiniteNumber(value: unknown): number | null {
 function isPositiveNumber(value: unknown): boolean {
   const parsed = asFiniteNumber(value);
   return parsed !== null && parsed > 0;
+}
+
+function normalizeBadges(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const badges: string[] = [];
+  for (const item of value) {
+    const badge = String(item ?? "").trim();
+    if (!badge) continue;
+    const key = badge.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    badges.push(badge);
+  }
+  return badges;
 }
 
 function isMissingTable(error: unknown): boolean {
@@ -74,6 +93,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     const patch: Record<string, unknown> = {};
     if (body.provider !== undefined) patch.provider = norm(body.provider)?.toLowerCase();
     if (body.model !== undefined) patch.model = norm(body.model);
+    if (body.display_label !== undefined) patch.display_label = norm(body.display_label);
+    if (body.hint !== undefined) patch.hint = norm(body.hint);
+    if (body.badges !== undefined) patch.badges = normalizeBadges(body.badges);
+    if (body.recommended !== undefined) patch.recommended = body.recommended === true;
     if (body.base_url !== undefined) patch.base_url = norm(body.base_url);
     if (body.auth_type !== undefined) patch.auth_type = norm(body.auth_type)?.toLowerCase();
     if (body.priority !== undefined) patch.priority = Math.max(1, Math.floor(asFiniteNumber(body.priority) ?? 100));
@@ -101,7 +124,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       .from("llm_global_providers")
       .update(patch)
       .eq("id", id)
-      .select("id, provider, model, base_url, auth_type, auth_config, priority, is_active, temperature, max_tokens, price_source_url_override, input_cost_eur_per_1k, output_cost_eur_per_1k, price_source, price_source_url, price_updated_at, created_at, updated_at")
+      .select("id, provider, model, display_label, hint, badges, recommended, base_url, auth_type, auth_config, priority, is_active, temperature, max_tokens, price_source_url_override, input_cost_eur_per_1k, output_cost_eur_per_1k, price_source, price_source_url, price_updated_at, created_at, updated_at")
       .maybeSingle();
     if (error) {
       if (isMissingTable(error)) {

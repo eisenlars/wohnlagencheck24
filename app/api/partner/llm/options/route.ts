@@ -18,8 +18,27 @@ type GlobalProviderRow = {
   id?: string | null;
   provider?: string | null;
   model?: string | null;
+  display_label?: string | null;
+  hint?: string | null;
+  badges?: unknown;
+  recommended?: boolean | null;
   is_active?: boolean | null;
 };
+
+function normalizeBadges(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const badges: string[] = [];
+  for (const item of value) {
+    const badge = asText(item);
+    if (!badge) continue;
+    const key = badge.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    badges.push(badge);
+  }
+  return badges;
+}
 
 function asText(value: unknown): string | null {
   const v = String(value ?? "").trim();
@@ -61,6 +80,9 @@ export async function GET(req: Request) {
       provider: string;
       model: string;
       label: string;
+      hint: string | null;
+      badges: string[];
+      recommended: boolean;
       partner_integration_id: string | null;
       global_provider_id: string | null;
     }> = [];
@@ -88,6 +110,9 @@ export async function GET(req: Request) {
           provider,
           model,
           label: `${provider} · ${model} (Partner)`,
+          hint: null,
+          badges: [],
+          recommended: false,
           partner_integration_id: integrationId,
           global_provider_id: null,
         });
@@ -97,7 +122,7 @@ export async function GET(req: Request) {
     if (globalConfig.config.central_enabled) {
       const { data: globalRows, error: globalError } = await admin
         .from("llm_global_providers")
-        .select("id, provider, model, is_active")
+        .select("id, provider, model, display_label, hint, badges, recommended, is_active")
         .eq("is_active", true)
         .order("priority", { ascending: true });
       if (globalError && !isMissingTable(globalError, "llm_global_providers")) {
@@ -108,12 +133,16 @@ export async function GET(req: Request) {
         if (!providerId) continue;
         const provider = asText(row.provider) ?? "llm";
         const model = asText(row.model) ?? "Standardmodell";
+        const displayLabel = asText(row.display_label) ?? `${provider} · ${model}`;
         options.push({
           id: `global:${providerId}`,
           source: "global",
           provider,
           model,
-          label: `${provider} · ${model} (Global)`,
+          label: `${displayLabel} (Global)`,
+          hint: asText(row.hint),
+          badges: normalizeBadges(row.badges),
+          recommended: row.recommended === true,
           partner_integration_id: null,
           global_provider_id: providerId,
         });

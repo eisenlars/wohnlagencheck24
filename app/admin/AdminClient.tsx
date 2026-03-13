@@ -161,6 +161,10 @@ type LlmGlobalProvider = {
   id: string;
   provider: string;
   model: string;
+  display_label?: string | null;
+  hint?: string | null;
+  badges?: string[] | null;
+  recommended?: boolean;
   base_url: string;
   auth_type: string;
   priority: number;
@@ -194,14 +198,6 @@ type LlmUsageStatusRow = {
   entries: number;
   tokens: number;
   cost_eur: number;
-};
-
-type LlmModelOption = {
-  id: string;
-  label: string;
-  hint: string;
-  badges: string[];
-  recommended?: boolean;
 };
 
 type BillingGlobalDefaults = {
@@ -286,166 +282,14 @@ function formatMandatoryKeyLabel(key: string): string {
   return key;
 }
 
-function getLlmModelOptions(provider: string): LlmModelOption[] {
-  const p = String(provider ?? "").trim().toLowerCase();
-  if (p === "openai") {
-    return [
-      {
-        id: "gpt-5.2",
-        label: "GPT-5.2",
-        hint: "Empfohlen für hochwertige Texte, Überarbeitungen und starke Übersetzungen.",
-        badges: ["Texte", "Übersetzung", "Qualität"],
-        recommended: true,
-      },
-      {
-        id: "gpt-5.2-mini",
-        label: "GPT-5.2 Mini",
-        hint: "Guter Allrounder für schnellere Antworten bei solidem Qualitätsniveau.",
-        badges: ["Allround", "schneller", "effizient"],
-      },
-      {
-        id: "gpt-5.2-nano",
-        label: "GPT-5.2 Nano",
-        hint: "Sehr leichtgewichtig für einfache Aufgaben mit Fokus auf niedrige Kosten.",
-        badges: ["günstiger", "schnell", "einfach"],
-      },
-      {
-        id: "gpt-4.1",
-        label: "GPT-4.1",
-        hint: "Stabiler Allrounder für Textarbeit und strukturierte Aufgaben.",
-        badges: ["Allround", "stabil", "Struktur"],
-      },
-      {
-        id: "gpt-4o",
-        label: "GPT-4o",
-        hint: "Reaktionsschnell und vielseitig, sinnvoll für gemischte Workflows.",
-        badges: ["vielseitig", "schnell", "multimodal"],
-      },
-    ];
-  }
-  if (p === "anthropic") {
-    return [
-      {
-        id: "claude-opus-4-1-20250805",
-        label: "Claude Opus 4.1",
-        hint: "Stark für anspruchsvolle Schreibaufgaben und hochwertige Langform-Inhalte.",
-        badges: ["Texte", "Qualität", "Langform"],
-        recommended: true,
-      },
-      {
-        id: "claude-sonnet-4-20250514",
-        label: "Claude Sonnet 4",
-        hint: "Ausgewogen zwischen Qualität und Geschwindigkeit für tägliche Textarbeit.",
-        badges: ["Allround", "balanced", "Texte"],
-      },
-      {
-        id: "claude-3-7-sonnet-latest",
-        label: "Claude 3.7 Sonnet",
-        hint: "Geeignet für vielseitige Aufgaben mit guter Struktur und klaren Antworten.",
-        badges: ["Struktur", "Allround", "klar"],
-      },
-      {
-        id: "claude-3-5-haiku-latest",
-        label: "Claude 3.5 Haiku",
-        hint: "Schnell und effizient für einfache bis mittlere Aufgaben.",
-        badges: ["schnell", "günstiger", "leicht"],
-      },
-    ];
-  }
-  if (p === "google_gemini") {
-    return [
-      {
-        id: "gemini-2.5-pro",
-        label: "Gemini 2.5 Pro",
-        hint: "Stark für Qualität, tieferes Reasoning und anspruchsvollere Inhalte.",
-        badges: ["Qualität", "Reasoning", "Texte"],
-        recommended: true,
-      },
-      {
-        id: "gemini-2.5-flash",
-        label: "Gemini 2.5 Flash",
-        hint: "Schnelleres Modell für häufige Generierung und iterative Bearbeitung.",
-        badges: ["schnell", "Allround", "Iteration"],
-      },
-      {
-        id: "gemini-2.5-flash-lite",
-        label: "Gemini 2.5 Flash Lite",
-        hint: "Kosteneffizient für einfache Standardaufgaben mit hoher Frequenz.",
-        badges: ["günstiger", "schnell", "Standard"],
-      },
-      {
-        id: "gemini-flash-latest",
-        label: "Gemini Flash Latest",
-        hint: "Flexible Flash-Variante für schnelle operative Nutzung.",
-        badges: ["schnell", "operativ", "flexibel"],
-      },
-    ];
-  }
-  if (p === "mistral") {
-    return [
-      {
-        id: "mistral-large-latest",
-        label: "Mistral Large",
-        hint: "Geeignet für hochwertige Textarbeit und komplexere Aufgaben.",
-        badges: ["Qualität", "Texte", "komplex"],
-        recommended: true,
-      },
-      {
-        id: "mistral-medium-latest",
-        label: "Mistral Medium",
-        hint: "Ausgewogener Mittelweg für tägliche Aufgaben mit gutem Tempo.",
-        badges: ["Allround", "balanced", "Tempo"],
-      },
-      {
-        id: "mistral-small-latest",
-        label: "Mistral Small",
-        hint: "Leichtgewichtig und effizient für einfache bis mittlere Inhalte.",
-        badges: ["günstiger", "schnell", "leicht"],
-      },
-      {
-        id: "codestral-latest",
-        label: "Codestral",
-        hint: "Primär für Coding- und strukturierte technische Aufgaben sinnvoll.",
-        badges: ["Coding", "Struktur", "technisch"],
-      },
-    ];
-  }
-  if (p === "azure_openai") {
-    return [
-      {
-        id: "gpt-5-prod",
-        label: "GPT-5 Prod",
-        hint: "Empfohlen für produktive hochwertige Text- und Übersetzungs-Workflows auf Azure.",
-        badges: ["Texte", "Übersetzung", "Azure"],
-        recommended: true,
-      },
-      {
-        id: "gpt-4.1-prod",
-        label: "GPT-4.1 Prod",
-        hint: "Stabiler Azure-Allrounder für Routineprozesse.",
-        badges: ["Allround", "stabil", "Azure"],
-      },
-      {
-        id: "gpt-4o-prod",
-        label: "GPT-4o Prod",
-        hint: "Schnell und vielseitig für operative Azure-Workflows.",
-        badges: ["schnell", "vielseitig", "Azure"],
-      },
-    ];
-  }
-
-  return [{
-    id: "gpt-4o-mini",
-    label: "gpt-4o-mini",
-    hint: "Kuratierter Standardvorschlag ohne zusätzliche Einordnung.",
-    badges: ["Standard"],
-    recommended: true,
-  }];
-}
-
 function getSuggestedLatestModel(provider: string): string {
-  const options = getLlmModelOptions(provider);
-  return options.find((item) => item.recommended)?.id ?? options[0]?.id ?? "";
+  const p = String(provider ?? "").trim().toLowerCase();
+  if (p === "openai") return "gpt-5.2";
+  if (p === "anthropic") return "claude-opus-4-1-20250805";
+  if (p === "google_gemini") return "gemini-2.5-pro";
+  if (p === "mistral") return "mistral-small-latest";
+  if (p === "azure_openai") return "gpt-4o-prod";
+  return "";
 }
 
 function getDefaultLlmBaseUrl(provider: string): string {
@@ -456,6 +300,42 @@ function getDefaultLlmBaseUrl(provider: string): string {
   if (p === "mistral") return "https://api.mistral.ai/v1";
   if (p === "azure_openai") return "https://api.openai.com/v1";
   return "https://api.openai.com/v1";
+}
+
+function getLlmModelSuggestions(provider: string): string[] {
+  const p = String(provider ?? "").trim().toLowerCase();
+  if (p === "openai") return ["gpt-5.2", "gpt-5.2-mini", "gpt-5.2-nano", "gpt-4.1", "gpt-4o"];
+  if (p === "anthropic") {
+    return ["claude-opus-4-1-20250805", "claude-sonnet-4-20250514", "claude-3-7-sonnet-latest", "claude-3-5-haiku-latest"];
+  }
+  if (p === "google_gemini") return ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"];
+  if (p === "mistral") return ["mistral-large-latest", "mistral-medium-latest", "mistral-small-latest", "codestral-latest"];
+  if (p === "azure_openai") return ["gpt-5-prod", "gpt-4.1-prod", "gpt-4o-prod"];
+  return [getSuggestedLatestModel(provider) || "gpt-4o-mini"];
+}
+
+function parseBadgeInput(value: string): string[] {
+  const parts = String(value ?? "")
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const badges: string[] = [];
+  for (const part of parts) {
+    const key = part.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    badges.push(part);
+  }
+  return badges;
+}
+
+function formatBadgesInput(value: unknown): string {
+  if (!Array.isArray(value)) return "";
+  return value
+    .map((item) => String(item ?? "").trim())
+    .filter(Boolean)
+    .join(", ");
 }
 
 function supportsAutomaticPricing(provider: string): boolean {
@@ -702,6 +582,10 @@ export default function AdminClient() {
   const [partnerFeatureBillingRows, setPartnerFeatureBillingRows] = useState<PartnerBillingFeature[]>([]);
   const [llmProviderDrafts, setLlmProviderDrafts] = useState<Record<string, Partial<{
     model: string;
+    display_label: string;
+    hint: string;
+    badges: string;
+    recommended: boolean;
     base_url: string;
     priority: string;
     temperature: string;
@@ -713,6 +597,10 @@ export default function AdminClient() {
   const [newLlmProvider, setNewLlmProvider] = useState({
     provider: "openai",
     model: "gpt-5.2",
+    display_label: "",
+    hint: "",
+    badges: "",
+    recommended: true,
     base_url: "https://api.openai.com/v1",
     api_version: "",
     auth_type: "api_key",
@@ -730,11 +618,7 @@ export default function AdminClient() {
   } | null>(null);
 
   const llmProviderSpecs = useMemo(() => getProvidersForKind("llm"), []);
-  const llmModelOptions = useMemo(() => getLlmModelOptions(newLlmProvider.provider), [newLlmProvider.provider]);
-  const selectedLlmModelOption = useMemo(
-    () => llmModelOptions.find((item) => item.id === newLlmProvider.model) ?? llmModelOptions[0] ?? null,
-    [llmModelOptions, newLlmProvider.model],
-  );
+  const llmModelOptions = useMemo(() => getLlmModelSuggestions(newLlmProvider.provider), [newLlmProvider.provider]);
 
   useEffect(() => {
     const anyModalOpen =
@@ -947,7 +831,7 @@ export default function AdminClient() {
     [partners, handoverDraft.new_partner_id],
   );
 
-  async function loadPartners(selectId?: string) {
+  async function loadPartners(selectId?: string, options?: { refreshSelectedDetails?: boolean }) {
     const data = await api<{ partners: Partner[] }>("/api/admin/partners?include_inactive=1");
     setPartners(data.partners ?? []);
     await loadAreaOverview(data.partners ?? []);
@@ -958,7 +842,9 @@ export default function AdminClient() {
     const nextId = selectId ?? existingSelected;
     if (nextId) {
       setSelectedPartnerId(nextId);
-      await loadPartnerDetails(nextId);
+      if (options?.refreshSelectedDetails !== false) {
+        await loadPartnerDetails(nextId);
+      }
     } else {
       setSelectedPartner(null);
       setAreaMappings([]);
@@ -1105,6 +991,10 @@ export default function AdminClient() {
       providers.reduce((acc, p) => {
         acc[p.id] = {
           model: String(p.model ?? ""),
+          display_label: String(p.display_label ?? ""),
+          hint: String(p.hint ?? ""),
+          badges: formatBadgesInput(p.badges),
+          recommended: p.recommended === true,
           base_url: String(p.base_url ?? ""),
           priority: String(p.priority ?? 100),
           temperature: p.temperature === null || p.temperature === undefined ? "" : String(p.temperature),
@@ -1116,6 +1006,10 @@ export default function AdminClient() {
         return acc;
       }, {} as Record<string, Partial<{
         model: string;
+        display_label: string;
+        hint: string;
+        badges: string;
+        recommended: boolean;
         base_url: string;
         priority: string;
         temperature: string;
@@ -1232,6 +1126,64 @@ export default function AdminClient() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (busy || reviewBusy) return;
+
+    let cancelled = false;
+    let refreshRunning = false;
+
+    async function refreshAdminSnapshot(includeSelectedDetails: boolean) {
+      if (cancelled || refreshRunning) return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      refreshRunning = true;
+      try {
+        await Promise.all([
+          loadPartners(undefined, { refreshSelectedDetails: includeSelectedDetails }),
+          loadAuditLogs(),
+        ]);
+      } catch {
+        // Hintergrund-Refresh soll die UI nicht in einen Fehlerzustand kippen.
+      } finally {
+        refreshRunning = false;
+      }
+    }
+
+    function handleWindowFocus() {
+      void refreshAdminSnapshot(true);
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void refreshAdminSnapshot(true);
+      }
+    }
+
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    const intervalId = window.setInterval(() => {
+      void refreshAdminSnapshot(false);
+    }, 30000);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.clearInterval(intervalId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    busy,
+    reviewBusy,
+    selectedPartnerId,
+    auditFilters.entity_type,
+    auditFilters.event_type,
+    auditFilters.actor_user_id,
+    auditFilters.created_from,
+    auditFilters.created_to,
+    auditFilters.limit,
+  ]);
 
   useEffect(() => {
     if (!areaQuery.trim()) {
@@ -3378,12 +3330,12 @@ export default function AdminClient() {
                   value={newLlmProvider.provider}
                   onChange={(e) => {
                     const provider = e.target.value;
-                    const suggested = getLlmModelOptions(provider);
+                    const suggested = getLlmModelSuggestions(provider);
                     setLlmCreateTestResult(null);
                     setNewLlmProvider((v) => ({
                       ...v,
                       provider,
-                      model: suggested.find((item) => item.recommended)?.id ?? suggested[0]?.id ?? (getSuggestedLatestModel(provider) || v.model),
+                      model: suggested[0] ?? (getSuggestedLatestModel(provider) || v.model),
                       base_url: getDefaultLlmBaseUrl(provider),
                       api_version: provider === "azure_openai" ? (v.api_version || "2024-10-21") : "",
                     }));
@@ -3404,50 +3356,56 @@ export default function AdminClient() {
                   }}
                 >
                   {llmModelOptions.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.label}
+                    <option key={model} value={model}>
+                      {model}
                     </option>
                   ))}
                 </select>
               </div>
-              {selectedLlmModelOption ? (
-                <div
-                  style={{
-                    border: "1px solid #dbeafe",
-                    background: "#f8fbff",
-                    borderRadius: 10,
-                    padding: "10px 12px",
-                    display: "grid",
-                    gap: 8,
+              <div style={grid2Style}>
+                <input
+                  style={inputStyle}
+                  placeholder="Anzeigename (optional)"
+                  value={newLlmProvider.display_label}
+                  onChange={(e) => {
+                    setLlmCreateTestResult(null);
+                    setNewLlmProvider((v) => ({ ...v, display_label: e.target.value }));
                   }}
-                >
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>
-                    {selectedLlmModelOption.label}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.45 }}>
-                    {selectedLlmModelOption.hint}
-                  </div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {selectedLlmModelOption.badges.map((badge) => (
-                      <span
-                        key={`${selectedLlmModelOption.id}:${badge}`}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          padding: "4px 8px",
-                          borderRadius: 999,
-                          background: "#e0f2fe",
-                          color: "#0c4a6e",
-                          fontSize: 11,
-                          fontWeight: 700,
-                        }}
-                      >
-                        {badge}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
+                />
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
+                  <input
+                    type="checkbox"
+                    checked={newLlmProvider.recommended}
+                    onChange={(e) => {
+                      setLlmCreateTestResult(null);
+                      setNewLlmProvider((v) => ({ ...v, recommended: e.target.checked }));
+                    }}
+                  />
+                  Als Empfehlung markieren
+                </label>
+              </div>
+              <div>
+                <input
+                  style={inputStyle}
+                  placeholder="Hinweis / Stärke des Modells"
+                  value={newLlmProvider.hint}
+                  onChange={(e) => {
+                    setLlmCreateTestResult(null);
+                    setNewLlmProvider((v) => ({ ...v, hint: e.target.value }));
+                  }}
+                />
+              </div>
+              <div>
+                <input
+                  style={inputStyle}
+                  placeholder="Badges, kommagetrennt (z. B. Texte, Übersetzung, Qualität)"
+                  value={newLlmProvider.badges}
+                  onChange={(e) => {
+                    setLlmCreateTestResult(null);
+                    setNewLlmProvider((v) => ({ ...v, badges: e.target.value }));
+                  }}
+                />
+              </div>
               <div>
                 <input
                   style={inputStyle}
@@ -3537,6 +3495,10 @@ export default function AdminClient() {
                       body: JSON.stringify({
                         provider: newLlmProvider.provider,
                         model: newLlmProvider.model,
+                        display_label: newLlmProvider.display_label.trim() || null,
+                        hint: newLlmProvider.hint.trim() || null,
+                        badges: parseBadgeInput(newLlmProvider.badges),
+                        recommended: newLlmProvider.recommended,
                         base_url: newLlmProvider.base_url,
                         auth_type: newLlmProvider.auth_type,
                         priority: Number(newLlmProvider.priority || 100),
@@ -3610,7 +3572,11 @@ export default function AdminClient() {
                   <th style={thStyle}>Prio</th>
                   <th style={thStyle}>Provider</th>
                   <th style={thStyle}>Modell</th>
+                  <th style={thStyle}>Anzeige</th>
+                  <th style={thStyle}>Hinweis</th>
+                  <th style={thStyle}>Badges</th>
                   <th style={thStyle}>Base URL</th>
+                  <th style={thStyle}>Empfohlen</th>
                   <th style={thStyle}>Status</th>
                   <th style={thStyle}>Aktion</th>
                 </tr>
@@ -3646,11 +3612,59 @@ export default function AdminClient() {
                     <td style={tdStyle}>
                       <input
                         style={inputStyle}
+                        value={llmProviderDrafts[p.id]?.display_label ?? String(p.display_label ?? "")}
+                        onChange={(e) =>
+                          setLlmProviderDrafts((v) => ({
+                            ...v,
+                            [p.id]: { ...(v[p.id] ?? {}), display_label: e.target.value },
+                          }))
+                        }
+                      />
+                    </td>
+                    <td style={tdStyle}>
+                      <input
+                        style={inputStyle}
+                        value={llmProviderDrafts[p.id]?.hint ?? String(p.hint ?? "")}
+                        onChange={(e) =>
+                          setLlmProviderDrafts((v) => ({
+                            ...v,
+                            [p.id]: { ...(v[p.id] ?? {}), hint: e.target.value },
+                          }))
+                        }
+                      />
+                    </td>
+                    <td style={tdStyle}>
+                      <input
+                        style={inputStyle}
+                        value={llmProviderDrafts[p.id]?.badges ?? formatBadgesInput(p.badges)}
+                        onChange={(e) =>
+                          setLlmProviderDrafts((v) => ({
+                            ...v,
+                            [p.id]: { ...(v[p.id] ?? {}), badges: e.target.value },
+                          }))
+                        }
+                      />
+                    </td>
+                    <td style={tdStyle}>
+                      <input
+                        style={inputStyle}
                         value={llmProviderDrafts[p.id]?.base_url ?? p.base_url}
                         onChange={(e) =>
                           setLlmProviderDrafts((v) => ({
                             ...v,
                             [p.id]: { ...(v[p.id] ?? {}), base_url: e.target.value },
+                          }))
+                        }
+                      />
+                    </td>
+                    <td style={tdStyle}>
+                      <input
+                        type="checkbox"
+                        checked={llmProviderDrafts[p.id]?.recommended ?? Boolean(p.recommended)}
+                        onChange={(e) =>
+                          setLlmProviderDrafts((v) => ({
+                            ...v,
+                            [p.id]: { ...(v[p.id] ?? {}), recommended: e.target.checked },
                           }))
                         }
                       />
@@ -3668,6 +3682,10 @@ export default function AdminClient() {
                                 method: "PATCH",
                                 body: JSON.stringify({
                                   model: draft.model,
+                                  display_label: String(draft.display_label ?? "").trim() || null,
+                                  hint: String(draft.hint ?? "").trim() || null,
+                                  badges: parseBadgeInput(String(draft.badges ?? "")),
+                                  recommended: draft.recommended === true,
                                   base_url: draft.base_url,
                                   priority: Number(draft.priority || p.priority),
                                 }),
