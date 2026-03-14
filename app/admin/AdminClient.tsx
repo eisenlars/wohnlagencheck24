@@ -192,6 +192,7 @@ type LlmProviderAccount = {
   display_name?: string | null;
   base_url: string;
   auth_type: string;
+  auth_config?: Record<string, unknown> | null;
   api_version?: string | null;
   is_active: boolean;
 };
@@ -677,6 +678,10 @@ export default function AdminClient() {
     () => llmAccounts.find((account) => account.id === newLlmAccount.existing_account_id) ?? null,
     [llmAccounts, newLlmAccount.existing_account_id],
   );
+  const selectedExistingLlmAccountHasApiKey = useMemo(() => {
+    const auth = (selectedExistingLlmAccount?.auth_config ?? {}) as Record<string, unknown>;
+    return Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
+  }, [selectedExistingLlmAccount]);
 
   useEffect(() => {
     const anyModalOpen =
@@ -3508,8 +3513,9 @@ export default function AdminClient() {
                 ) : null}
                 <div style={{ marginTop: 10 }}>
                   <input
+                    type="password"
                     style={inputStyle}
-                    placeholder="API-Key"
+                    placeholder={selectedExistingLlmAccountHasApiKey && !newLlmAccount.api_key.trim() ? "************" : "API-Key"}
                     value={newLlmAccount.api_key}
                     onChange={(e) => {
                       setLlmCreateTestResult(null);
@@ -3517,6 +3523,11 @@ export default function AdminClient() {
                     }}
                   />
                 </div>
+                {selectedExistingLlmAccountHasApiKey ? (
+                  <div style={{ marginTop: 6, fontSize: 11, color: "#166534" }}>
+                    API-Key gespeichert. Wenn du hier einen neuen Wert eingibst, wird der vorhandene Key ersetzt.
+                  </div>
+                ) : null}
                 <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>
                   Bereits angelegte Provider-Accounts: {llmAccounts.length}
                   {selectedExistingLlmAccount ? " · neue Modelle werden an den gewählten Zugang angehängt" : ""}
