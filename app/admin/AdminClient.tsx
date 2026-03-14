@@ -665,6 +665,11 @@ export default function AdminClient() {
     status: "ok" | "error" | "info";
     message: string;
   } | null>(null);
+  const [llmOverviewTestBusyId, setLlmOverviewTestBusyId] = useState<string | null>(null);
+  const [llmOverviewTestResults, setLlmOverviewTestResults] = useState<Record<string, {
+    status: "ok" | "error";
+    message: string;
+  }>>({});
 
   const llmProviderSpecs = useMemo(() => getProvidersForKind("llm"), []);
   const llmModelOptions = useMemo(() => getLlmModelSuggestions(newLlmAccount.provider), [newLlmAccount.provider]);
@@ -1080,6 +1085,54 @@ export default function AdminClient() {
         output_cost_usd_per_1k: string;
       }>>),
     );
+  }
+
+  async function testSavedLlmProvider(provider: LlmGlobalProvider) {
+    const draft = llmProviderDrafts[provider.id] ?? {};
+    setLlmOverviewTestBusyId(provider.id);
+    setLlmOverviewTestResults((prev) => ({
+      ...prev,
+      [provider.id]: {
+        status: "ok",
+        message: "Verbindungstest läuft...",
+      },
+    }));
+    try {
+      const resp = await api<{ result?: { status?: string; message?: string } }>("/api/admin/llm/providers/test", {
+        method: "POST",
+        body: JSON.stringify({
+          provider_model_id: provider.id,
+          provider: String(provider.provider ?? "").trim().toLowerCase(),
+          model: String(draft.model ?? provider.model ?? "").trim(),
+          base_url: String(draft.base_url ?? provider.base_url ?? "").trim(),
+          api_version: String(draft.api_version ?? provider.api_version ?? "").trim() || null,
+        }),
+      });
+      const resultStatus = String(resp.result?.status ?? "").toLowerCase();
+      const resultMessage = String(resp.result?.message ?? "Kein Testergebnis.");
+      const normalizedStatus = resultStatus === "ok" ? "ok" : "error";
+      setLlmOverviewTestResults((prev) => ({
+        ...prev,
+        [provider.id]: {
+          status: normalizedStatus,
+          message: resultMessage,
+        },
+      }));
+      if (normalizedStatus !== "ok") throw new Error(resultMessage);
+      setStatus(`Verbindungstest erfolgreich: ${provider.display_label || provider.model}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Verbindungstest fehlgeschlagen.";
+      setLlmOverviewTestResults((prev) => ({
+        ...prev,
+        [provider.id]: {
+          status: "error",
+          message,
+        },
+      }));
+      throw error;
+    } finally {
+      setLlmOverviewTestBusyId(null);
+    }
   }
 
   async function loadLlmUsage(month = llmUsageMonth) {
@@ -3626,6 +3679,9 @@ export default function AdminClient() {
                     padding: "8px 10px",
                   }}
                 >
+                  <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2 }}>
+                    Verbindungstest
+                  </div>
                   {llmCreateTestResult.message}
                 </div>
               ) : null}
@@ -3640,6 +3696,9 @@ export default function AdminClient() {
                     padding: "8px 10px",
                   }}
                 >
+                  <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2 }}>
+                    Speichern
+                  </div>
                   {llmCreateSaveResult.message}
                 </div>
               ) : null}
@@ -3650,6 +3709,7 @@ export default function AdminClient() {
                 disabled={busy}
                 onClick={() =>
                   run("Globalen LLM-Provider anlegen", async () => {
+                    setLlmCreateTestResult(null);
                     setLlmCreateSaveResult(null);
                     if (newLlmModels.length === 0) {
                       throw new Error("Mindestens ein Modell ist erforderlich.");
@@ -3749,7 +3809,6 @@ export default function AdminClient() {
                         }),
                       });
                     }
-                    setLlmCreateTestResult(null);
                     setLlmCreateSaveResult({
                       status: "ok",
                       message: `Der LLM-Zugang und ${newLlmModels.length} Modell(e) wurden gespeichert.`,
@@ -3776,6 +3835,7 @@ export default function AdminClient() {
                 onClick={() =>
                   run("LLM-Verbindung testen", async () => {
                     setLlmCreateTestBusy(true);
+                    setLlmCreateSaveResult(null);
                     setLlmCreateTestResult(null);
                     try {
                       const resp = await api<{ result?: { status?: string; message?: string } }>("/api/admin/llm/providers/test", {
@@ -3794,6 +3854,7 @@ export default function AdminClient() {
                         status: resultStatus === "ok" ? "ok" : "error",
                         message: resultMessage,
                       });
+                      setStatus(resultStatus === "ok" ? "Verbindung erfolgreich getestet." : resultMessage);
                       if (resultStatus !== "ok") {
                         throw new Error(resultMessage);
                       }
@@ -3811,27 +3872,27 @@ export default function AdminClient() {
 
         {llmGlobalTab === "overview" ? (
           <>
-            <table style={tableStyle}>
+            <table style={llmCompactTableStyle}>
               <thead>
                 <tr>
-                  <th style={thStyle}>Prio</th>
-                  <th style={thStyle}>Provider</th>
-                  <th style={thStyle}>Modell</th>
-                  <th style={thStyle}>Anzeige</th>
-                  <th style={thStyle}>Hinweis</th>
-                  <th style={thStyle}>Badges</th>
-                  <th style={thStyle}>Base URL</th>
-                  <th style={thStyle}>Empfohlen</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Aktion</th>
+                  <th style={llmCompactThStyle}>Prio</th>
+                  <th style={llmCompactThStyle}>Provider</th>
+                  <th style={llmCompactThStyle}>Modell</th>
+                  <th style={llmCompactThStyle}>Anzeige</th>
+                  <th style={llmCompactThStyle}>Hinweis</th>
+                  <th style={llmCompactThStyle}>Badges</th>
+                  <th style={llmCompactThStyle}>Base URL</th>
+                  <th style={llmCompactThStyle}>Empfohlen</th>
+                  <th style={llmCompactThStyle}>Status</th>
+                  <th style={llmCompactThStyle}>Aktion</th>
                 </tr>
               </thead>
               <tbody>
                 {llmProviders.map((p) => (
                   <tr key={p.id}>
-                    <td style={tdStyle}>
+                    <td style={llmCompactTdStyle}>
                       <input
-                        style={inputStyle}
+                        style={llmCompactInputStyle}
                         value={llmProviderDrafts[p.id]?.priority ?? String(p.priority)}
                         onChange={(e) =>
                           setLlmProviderDrafts((v) => ({
@@ -3841,10 +3902,10 @@ export default function AdminClient() {
                         }
                       />
                     </td>
-                    <td style={tdStyle}>{p.provider}</td>
-                    <td style={tdStyle}>
+                    <td style={llmCompactTdStyle}>{p.provider}</td>
+                    <td style={llmCompactTdStyle}>
                       <input
-                        style={inputStyle}
+                        style={llmCompactInputStyle}
                         value={llmProviderDrafts[p.id]?.model ?? p.model}
                         onChange={(e) =>
                           setLlmProviderDrafts((v) => ({
@@ -3854,9 +3915,9 @@ export default function AdminClient() {
                         }
                       />
                     </td>
-                    <td style={tdStyle}>
+                    <td style={llmCompactTdStyle}>
                       <input
-                        style={inputStyle}
+                        style={llmCompactInputStyle}
                         value={llmProviderDrafts[p.id]?.display_label ?? String(p.display_label ?? "")}
                         onChange={(e) =>
                           setLlmProviderDrafts((v) => ({
@@ -3866,9 +3927,9 @@ export default function AdminClient() {
                         }
                       />
                     </td>
-                    <td style={tdStyle}>
+                    <td style={llmCompactTdStyle}>
                       <input
-                        style={inputStyle}
+                        style={llmCompactInputStyle}
                         value={llmProviderDrafts[p.id]?.hint ?? String(p.hint ?? "")}
                         onChange={(e) =>
                           setLlmProviderDrafts((v) => ({
@@ -3878,9 +3939,9 @@ export default function AdminClient() {
                         }
                       />
                     </td>
-                    <td style={tdStyle}>
+                    <td style={llmCompactTdStyle}>
                       <input
-                        style={inputStyle}
+                        style={llmCompactInputStyle}
                         value={llmProviderDrafts[p.id]?.badges ?? formatBadgesInput(p.badges)}
                         onChange={(e) =>
                           setLlmProviderDrafts((v) => ({
@@ -3890,9 +3951,9 @@ export default function AdminClient() {
                         }
                       />
                     </td>
-                    <td style={tdStyle}>
+                    <td style={llmCompactTdStyle}>
                       <input
-                        style={inputStyle}
+                        style={llmCompactInputStyle}
                         value={llmProviderDrafts[p.id]?.base_url ?? p.base_url}
                         onChange={(e) =>
                           setLlmProviderDrafts((v) => ({
@@ -3902,7 +3963,7 @@ export default function AdminClient() {
                         }
                       />
                     </td>
-                    <td style={tdStyle}>
+                    <td style={llmCompactTdStyle}>
                       <input
                         type="checkbox"
                         checked={llmProviderDrafts[p.id]?.recommended ?? Boolean(p.recommended)}
@@ -3914,11 +3975,22 @@ export default function AdminClient() {
                         }
                       />
                     </td>
-                    <td style={tdStyle}>{p.is_active ? "aktiv" : "inaktiv"}</td>
-                    <td style={tdStyle}>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <td style={llmCompactTdStyle}>
+                      <div style={{ display: "grid", gap: 4 }}>
+                        <span>{p.is_active ? "aktiv" : "inaktiv"}</span>
+                        {llmOverviewTestResults[p.id] ? (
+                          <span title={llmOverviewTestResults[p.id].message} style={llmStatusPillStyle(llmOverviewTestResults[p.id].status)}>
+                            {llmOverviewTestResults[p.id].status === "ok" ? "Test ok" : "Testfehler"}
+                          </span>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td style={llmCompactTdStyle}>
+                      <div style={llmCompactActionRowStyle}>
                         <button
-                          style={btnStyle}
+                          style={llmIconButtonStyle("primary")}
+                          title="Änderungen speichern"
+                          aria-label="Änderungen speichern"
                           onClick={() =>
                             run("Provider speichern", async () => {
                               const draft = llmProviderDrafts[p.id];
@@ -3940,10 +4012,25 @@ export default function AdminClient() {
                             })
                           }
                         >
-                          Speichern
+                          <AdminIcon name="save" />
                         </button>
                         <button
-                          style={btnGhostStyle}
+                          style={llmIconButtonStyle("success")}
+                          title={llmOverviewTestBusyId === p.id ? "Verbindung wird getestet" : "Gespeicherten LLM erneut testen"}
+                          aria-label="Gespeicherten LLM erneut testen"
+                          disabled={llmOverviewTestBusyId === p.id}
+                          onClick={() =>
+                            run("Gespeicherten LLM testen", async () => {
+                              await testSavedLlmProvider(p);
+                            }, { showSuccessModal: false })
+                          }
+                        >
+                          <AdminIcon name="test" />
+                        </button>
+                        <button
+                          style={llmIconButtonStyle("ghost")}
+                          title="Neuesten Modellvorschlag einsetzen"
+                          aria-label="Neuesten Modellvorschlag einsetzen"
                           onClick={() =>
                             setLlmProviderDrafts((v) => ({
                               ...v,
@@ -3954,10 +4041,12 @@ export default function AdminClient() {
                             }))
                           }
                         >
-                          Neuestes Modell
+                          <AdminIcon name="spark" />
                         </button>
                         <button
-                          style={btnGhostStyle}
+                          style={llmIconButtonStyle("ghost", p.is_active)}
+                          title={p.is_active ? "Modell deaktivieren" : "Modell aktivieren"}
+                          aria-label={p.is_active ? "Modell deaktivieren" : "Modell aktivieren"}
                           onClick={() =>
                             run("Provider-Status ändern", async () => {
                               await api(`/api/admin/llm/providers/${p.id}`, {
@@ -3968,10 +4057,12 @@ export default function AdminClient() {
                             })
                           }
                         >
-                          {p.is_active ? "Deaktivieren" : "Aktivieren"}
+                          <AdminIcon name="toggle" />
                         </button>
                         <button
-                          style={btnDangerStyle}
+                          style={llmIconButtonStyle("danger")}
+                          title="Modell löschen"
+                          aria-label="Modell löschen"
                           onClick={() =>
                             run("Provider löschen", async () => {
                               await api(`/api/admin/llm/providers/${p.id}`, { method: "DELETE" });
@@ -3979,7 +4070,7 @@ export default function AdminClient() {
                             })
                           }
                         >
-                          Löschen
+                          <AdminIcon name="trash" />
                         </button>
                       </div>
                     </td>
@@ -4054,25 +4145,25 @@ export default function AdminClient() {
                 Preise aktualisieren
               </button>
             </div>
-            <table style={tableStyle}>
+            <table style={llmCompactTableStyle}>
               <thead>
                 <tr>
-                  <th style={thStyle}>Provider</th>
-                  <th style={thStyle}>Modell</th>
-                  <th style={thStyle}>Preis USD/1k (In/Out)</th>
-                  <th style={thStyle}>EUR-Hinweis</th>
-                  <th style={thStyle}>Aktion</th>
+                  <th style={llmCompactThStyle}>Provider</th>
+                  <th style={llmCompactThStyle}>Modell</th>
+                  <th style={llmCompactThStyle}>Preis USD/1k (In/Out)</th>
+                  <th style={llmCompactThStyle}>EUR-Hinweis</th>
+                  <th style={llmCompactThStyle}>Aktion</th>
                 </tr>
               </thead>
               <tbody>
                 {llmProviders.map((p) => (
                   <tr key={`price:${p.id}`}>
-                    <td style={tdStyle}>{p.provider}</td>
-                    <td style={tdStyle}>{p.model}</td>
-                    <td style={tdStyle}>
+                    <td style={llmCompactTdStyle}>{p.provider}</td>
+                    <td style={llmCompactTdStyle}>{p.model}</td>
+                    <td style={llmCompactTdStyle}>
                       <div style={{ display: "flex", gap: 6 }}>
                         <input
-                          style={inputStyle}
+                          style={llmCompactInputStyle}
                           placeholder="in"
                           value={llmProviderDrafts[p.id]?.input_cost_usd_per_1k ?? ""}
                           onChange={(e) =>
@@ -4083,7 +4174,7 @@ export default function AdminClient() {
                           }
                         />
                         <input
-                          style={inputStyle}
+                          style={llmCompactInputStyle}
                           placeholder="out"
                           value={llmProviderDrafts[p.id]?.output_cost_usd_per_1k ?? ""}
                           onChange={(e) =>
@@ -4100,7 +4191,7 @@ export default function AdminClient() {
                         </div>
                       ) : null}
                     </td>
-                    <td style={tdStyle}>
+                    <td style={llmCompactTdStyle}>
                       {p.fx_rate_usd_to_eur && p.input_cost_eur_per_1k !== null && p.output_cost_eur_per_1k !== null ? (
                         <div style={{ fontSize: 11, color: "#475569" }}>
                           ca. {Number(p.input_cost_eur_per_1k ?? 0).toFixed(6)} / {Number(p.output_cost_eur_per_1k ?? 0).toFixed(6)} EUR
@@ -4111,9 +4202,11 @@ export default function AdminClient() {
                         </div>
                       )}
                     </td>
-                    <td style={tdStyle}>
+                    <td style={llmCompactTdStyle}>
                       <button
-                        style={btnStyle}
+                        style={llmIconButtonStyle("primary")}
+                        title="Preise speichern"
+                        aria-label="Preise speichern"
                         onClick={() =>
                           run("Preis speichern", async () => {
                             const draft = llmProviderDrafts[p.id];
@@ -4134,7 +4227,7 @@ export default function AdminClient() {
                           })
                         }
                       >
-                        Speichern
+                        <AdminIcon name="save" />
                       </button>
                     </td>
                   </tr>
@@ -4584,6 +4677,115 @@ const tdStyle: React.CSSProperties = {
   fontSize: 12,
   lineHeight: 1.35,
 };
+
+function AdminIcon({ name }: { name: "save" | "spark" | "test" | "toggle" | "trash" }) {
+  if (name === "save") {
+    return (
+      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+        <path d="M3 2h8l2 2v10H3V2zm2 1v3h5V3H5zm1 7h4v3H6v-3z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (name === "spark") {
+    return (
+      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+        <path d="M8 1l1.4 3.6L13 6 9.4 7.4 8 11 6.6 7.4 3 6l3.6-1.4L8 1zm4 9l.7 1.8L14.5 12l-1.8.7L12 14.5l-.7-1.8L9.5 12l1.8-.7L12 10z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (name === "test") {
+    return (
+      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+        <path d="M8 2a6 6 0 104.2 10.3l-.9-.9A4.7 4.7 0 118 3.3V2zm4.8 1.4l1.8 1.8-5.5 5.5-2.3.3.3-2.3 5.7-5.3zm-5 5.7L7.5 10l1-.1 4.6-4.6-.9-.9-4.4 4.8z" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (name === "toggle") {
+    return (
+      <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+        <path d="M2 5.5A3.5 3.5 0 015.5 2h5A3.5 3.5 0 0114 5.5v5a3.5 3.5 0 01-3.5 3.5h-5A3.5 3.5 0 012 10.5v-5zm3.5-2.2a2.2 2.2 0 100 4.4 2.2 2.2 0 000-4.4zm5 5.1a2.2 2.2 0 100 4.4 2.2 2.2 0 000-4.4z" fill="currentColor" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+      <path d="M5 2h6l.5 2H14v1H2V4h2.5L5 2zm-1 4h8l-.6 7.1c0 .5-.4.9-.9.9H5.5c-.5 0-.9-.4-.9-.9L4 6zm2 1v5h1V7H6zm3 0v5h1V7H9z" fill="currentColor" />
+    </svg>
+  );
+}
+
+const llmCompactTableStyle: React.CSSProperties = {
+  ...tableStyle,
+  fontSize: 11,
+  marginTop: 12,
+};
+
+const llmCompactThStyle: React.CSSProperties = {
+  ...thStyle,
+  padding: "5px 4px",
+  fontSize: 11,
+  lineHeight: 1.2,
+};
+
+const llmCompactTdStyle: React.CSSProperties = {
+  ...tdStyle,
+  padding: "5px 4px",
+  fontSize: 11,
+  lineHeight: 1.2,
+};
+
+const llmCompactInputStyle: React.CSSProperties = {
+  ...inputStyle,
+  padding: "5px 6px",
+  borderRadius: 6,
+  fontSize: 11,
+};
+
+const llmCompactActionRowStyle: React.CSSProperties = {
+  display: "flex",
+  gap: 4,
+  flexWrap: "nowrap",
+  alignItems: "center",
+};
+
+const llmIconButtonStyle = (kind: "primary" | "ghost" | "success" | "danger", active = false): React.CSSProperties => ({
+  border:
+    kind === "primary" ? "1px solid #0f766e"
+      : kind === "success" ? "1px solid #16a34a"
+      : kind === "danger" ? "1px solid #ef4444"
+      : "1px solid #cbd5e1",
+  background:
+    kind === "primary" ? "#0f766e"
+      : kind === "success" ? "#f0fdf4"
+      : kind === "danger" ? "#fff5f5"
+      : active ? "#ecfeff" : "#ffffff",
+  color:
+    kind === "primary" ? "#ffffff"
+      : kind === "success" ? "#166534"
+      : kind === "danger" ? "#b91c1c"
+      : active ? "#0f766e" : "#334155",
+  borderRadius: 6,
+  width: 24,
+  height: 24,
+  padding: 0,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  flex: "0 0 auto",
+});
+
+const llmStatusPillStyle = (status: "ok" | "error"): React.CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  borderRadius: 999,
+  padding: "2px 6px",
+  fontSize: 10,
+  fontWeight: 700,
+  background: status === "ok" ? "#f0fdf4" : "#fef2f2",
+  color: status === "ok" ? "#166534" : "#991b1b",
+  border: `1px solid ${status === "ok" ? "#bbf7d0" : "#fecaca"}`,
+});
 
 const mutedStyle: React.CSSProperties = {
   color: "#64748b",
