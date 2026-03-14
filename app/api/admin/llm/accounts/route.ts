@@ -22,6 +22,11 @@ function norm(value: unknown): string | null {
   return raw.length > 0 ? raw : null;
 }
 
+function isDuplicateProviderAccountError(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("llm_provider_accounts_provider_base_url_uq") || msg.includes("duplicate key value");
+}
+
 export async function GET(req: Request) {
   try {
     const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
@@ -79,6 +84,11 @@ export async function POST(req: Request) {
     if (error) {
       if (isMissingTable(error, "llm_provider_accounts")) {
         return NextResponse.json({ error: "Tabelle `llm_provider_accounts` fehlt. Bitte Migration ausführen." }, { status: 409 });
+      }
+      if (isDuplicateProviderAccountError(error)) {
+        return NextResponse.json({
+          error: "Für diesen Provider und diese Base URL existiert bereits ein Provider-Account. Bitte bestehenden Account auswählen.",
+        }, { status: 409 });
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

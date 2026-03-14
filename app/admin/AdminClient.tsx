@@ -383,6 +383,10 @@ function parsePositiveNumber(value: string): number | null {
   return parsed;
 }
 
+function normalizeLlmBaseUrl(value: string): string {
+  return String(value ?? "").trim().replace(/\/+$/, "").toLowerCase();
+}
+
 function createEmptyLlmModelDraft(provider: string, recommended = false): LlmCreateModelDraft {
   return {
     key: `${provider}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
@@ -655,6 +659,10 @@ export default function AdminClient() {
   const [llmCreateTestBusy, setLlmCreateTestBusy] = useState(false);
   const [llmCreateTestResult, setLlmCreateTestResult] = useState<{
     status: "ok" | "error";
+    message: string;
+  } | null>(null);
+  const [llmCreateSaveResult, setLlmCreateSaveResult] = useState<{
+    status: "ok" | "error" | "info";
     message: string;
   } | null>(null);
 
@@ -1031,7 +1039,9 @@ export default function AdminClient() {
 
   async function loadLlmAccounts() {
     const data = await api<{ accounts?: LlmProviderAccount[] }>("/api/admin/llm/accounts");
-    setLlmAccounts(data.accounts ?? []);
+    const accounts = data.accounts ?? [];
+    setLlmAccounts(accounts);
+    return accounts;
   }
 
   async function loadLlmProviders() {
@@ -3619,6 +3629,20 @@ export default function AdminClient() {
                   {llmCreateTestResult.message}
                 </div>
               ) : null}
+              {llmCreateSaveResult ? (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: llmCreateSaveResult.status === "ok" ? "#166534" : llmCreateSaveResult.status === "info" ? "#075985" : "#991b1b",
+                    background: llmCreateSaveResult.status === "ok" ? "#f0fdf4" : llmCreateSaveResult.status === "info" ? "#eff6ff" : "#fef2f2",
+                    border: `1px solid ${llmCreateSaveResult.status === "ok" ? "#bbf7d0" : llmCreateSaveResult.status === "info" ? "#bae6fd" : "#fecaca"}`,
+                    borderRadius: 8,
+                    padding: "8px 10px",
+                  }}
+                >
+                  {llmCreateSaveResult.message}
+                </div>
+              ) : null}
             </div>
             <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
               <button
@@ -3626,6 +3650,7 @@ export default function AdminClient() {
                 disabled={busy}
                 onClick={() =>
                   run("Globalen LLM-Provider anlegen", async () => {
+                    setLlmCreateSaveResult(null);
                     if (newLlmModels.length === 0) {
                       throw new Error("Mindestens ein Modell ist erforderlich.");
                     }
@@ -3647,17 +3672,53 @@ export default function AdminClient() {
 
                     let accountId = String(newLlmAccount.existing_account_id || "").trim();
                     if (!accountId) {
-                      const createdAccount = await api<{ account?: { id: string } }>("/api/admin/llm/accounts", {
-                        method: "POST",
-                        body: JSON.stringify({
-                          provider: newLlmAccount.provider,
-                          display_name: newLlmAccount.display_name.trim() || null,
-                          base_url: newLlmAccount.base_url,
-                          auth_type: newLlmAccount.auth_type,
-                          api_version: String(newLlmAccount.api_version || "").trim() || null,
-                        }),
-                      });
-                      accountId = String(createdAccount.account?.id ?? "").trim();
+                      const matchingAccount = llmAccounts.find((account) =>
+                        String(account.provider ?? "").trim().toLowerCase() === String(newLlmAccount.provider ?? "").trim().toLowerCase()
+                        && normalizeLlmBaseUrl(account.base_url) === normalizeLlmBaseUrl(newLlmAccount.base_url),
+                      );
+                      if (matchingAccount?.id) {
+                        accountId = matchingAccount.id;
+                        setNewLlmAccount((v) => ({ ...v, existing_account_id: matchingAccount.id }));
+                        setLlmCreateSaveResult({
+                          status: "info",
+                          message: "Vorhandener Provider-Account erkannt. Das Modell wird unter diesem Zugang gespeichert.",
+                        });
+                      } else {
+                        try {
+                          const createdAccount = await api<{ account?: { id: string } }>("/api/admin/llm/accounts", {
+                            method: "POST",
+                            body: JSON.stringify({
+                              provider: newLlmAccount.provider,
+                              display_name: newLlmAccount.display_name.trim() || null,
+                              base_url: newLlmAccount.base_url,
+                              auth_type: newLlmAccount.auth_type,
+                              api_version: String(newLlmAccount.api_version || "").trim() || null,
+                            }),
+                          });
+                          accountId = String(createdAccount.account?.id ?? "").trim();
+                        } catch (error) {
+                          const message = error instanceof Error ? error.message : "Provider-Account konnte nicht angelegt werden.";
+                          if (message.toLowerCase().includes("bereits ein provider-account")) {
+                            const refreshedAccounts = await loadLlmAccounts();
+                            const fallbackAccount = refreshedAccounts.find((account) =>
+                              String(account.provider ?? "").trim().toLowerCase() === String(newLlmAccount.provider ?? "").trim().toLowerCase()
+                              && normalizeLlmBaseUrl(account.base_url) === normalizeLlmBaseUrl(newLlmAccount.base_url),
+                            );
+                            if (fallbackAccount?.id) {
+                              accountId = fallbackAccount.id;
+                              setNewLlmAccount((v) => ({ ...v, existing_account_id: fallbackAccount.id }));
+                              setLlmCreateSaveResult({
+                                status: "info",
+                                message: "Der Provider-Account existiert bereits und wurde automatisch ausgewählt.",
+                              });
+                            } else {
+                              throw error;
+                            }
+                          } else {
+                            throw error;
+                          }
+                        }
+                      }
                     }
                     if (!accountId) {
                       throw new Error("Provider-Account wurde ohne gültige ID angelegt.");
@@ -3689,10 +3750,15 @@ export default function AdminClient() {
                       });
                     }
                     setLlmCreateTestResult(null);
+                    setLlmCreateSaveResult({
+                      status: "ok",
+                      message: `Der LLM-Zugang und ${newLlmModels.length} Modell(e) wurden gespeichert.`,
+                    });
                     setNewLlmAccount((v) => ({ ...v, existing_account_id: "", display_name: "", api_key: "" }));
                     setNewLlmModels([createEmptyLlmModelDraft(newLlmAccount.provider, true)]);
                     await loadLlmAccounts();
                     await loadLlmProviders();
+                    setLlmGlobalTab("overview");
                   })
                 }
               >
