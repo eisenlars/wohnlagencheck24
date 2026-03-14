@@ -3673,16 +3673,45 @@ export default function AdminClient() {
                   style={{
                     fontSize: 12,
                     color: llmCreateTestResult.status === "ok" ? "#166534" : "#991b1b",
-                    background: llmCreateTestResult.status === "ok" ? "#f0fdf4" : "#fef2f2",
-                    border: `1px solid ${llmCreateTestResult.status === "ok" ? "#bbf7d0" : "#fecaca"}`,
-                    borderRadius: 8,
-                    padding: "8px 10px",
+                    background: llmCreateTestResult.status === "ok" ? "#ecfdf5" : "#fef2f2",
+                    border: `2px solid ${llmCreateTestResult.status === "ok" ? "#22c55e" : "#ef4444"}`,
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    boxShadow: llmCreateTestResult.status === "ok"
+                      ? "inset 0 0 0 1px rgba(34, 197, 94, 0.08)"
+                      : "inset 0 0 0 1px rgba(239, 68, 68, 0.08)",
                   }}
                 >
-                  <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 2 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 4 }}>
                     Verbindungstest
                   </div>
-                  {llmCreateTestResult.message}
+                  <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 4 }}>
+                    {llmCreateTestResult.status === "ok" ? "Verbindung erfolgreich" : "Verbindung fehlgeschlagen"}
+                  </div>
+                  <div style={{ lineHeight: 1.45 }}>
+                    {llmCreateTestResult.status === "ok"
+                      ? "Provider, Modell und Zugangsdaten sind in dieser Konfiguration nutzbar."
+                      : "Der Test konnte mit der aktuellen Konfiguration nicht erfolgreich ausgeführt werden."}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      background: llmCreateTestResult.status === "ok" ? "#f8fafc" : "#fff7f7",
+                      border: `1px solid ${llmCreateTestResult.status === "ok" ? "#dbeafe" : "#fecaca"}`,
+                      color: llmCreateTestResult.status === "ok" ? "#1e293b" : "#7f1d1d",
+                      fontSize: 11,
+                      lineHeight: 1.45,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 3 }}>
+                      {llmCreateTestResult.status === "ok" ? "Rückmeldung" : "Fehlerdiagnose"}
+                    </div>
+                    {llmCreateTestResult.message}
+                  </div>
                 </div>
               ) : null}
               {llmCreateSaveResult ? (
