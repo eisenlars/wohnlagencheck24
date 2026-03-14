@@ -690,10 +690,17 @@ export default function AdminClient() {
     () => llmAccounts.find((account) => account.id === newLlmAccount.existing_account_id) ?? null,
     [llmAccounts, newLlmAccount.existing_account_id],
   );
-  const selectedExistingLlmAccountHasApiKey = useMemo(() => {
-    const auth = (selectedExistingLlmAccount?.auth_config ?? {}) as Record<string, unknown>;
+  const matchedExistingLlmAccount = useMemo(() => (
+    llmAccounts.find((account) =>
+      String(account.provider ?? "").trim().toLowerCase() === String(newLlmAccount.provider ?? "").trim().toLowerCase()
+      && normalizeLlmBaseUrl(account.base_url) === normalizeLlmBaseUrl(newLlmAccount.base_url),
+    ) ?? null
+  ), [llmAccounts, newLlmAccount.base_url, newLlmAccount.provider]);
+  const effectiveExistingLlmAccount = selectedExistingLlmAccount ?? matchedExistingLlmAccount;
+  const effectiveExistingLlmAccountHasApiKey = useMemo(() => {
+    const auth = (effectiveExistingLlmAccount?.auth_config ?? {}) as Record<string, unknown>;
     return Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
-  }, [selectedExistingLlmAccount]);
+  }, [effectiveExistingLlmAccount]);
 
   useEffect(() => {
     const anyModalOpen =
@@ -1202,6 +1209,23 @@ export default function AdminClient() {
     } finally {
       setLlmOverviewTestBusyId(null);
     }
+  }
+
+  async function saveLlmAccountApiKey(accountId: string, apiKey: string) {
+    const cleanAccountId = String(accountId ?? "").trim();
+    const cleanApiKey = String(apiKey ?? "").trim();
+    if (!cleanAccountId) throw new Error("Bitte zuerst einen bestehenden Provider-Account auswählen.");
+    if (!cleanApiKey) throw new Error("Bitte einen API-Key eingeben, bevor du ihn speicherst.");
+    await api(`/api/admin/llm/accounts/${cleanAccountId}/secrets`, {
+      method: "POST",
+      body: JSON.stringify({ api_key: cleanApiKey }),
+    });
+    await loadLlmAccounts();
+    setLlmCreateSaveResult({
+      status: "ok",
+      message: "API-Key wurde für den Provider-Account gespeichert.",
+    });
+    setNewLlmAccount((prev) => ({ ...prev, existing_account_id: cleanAccountId, api_key: "" }));
   }
 
   async function loadLlmUsage(month = llmUsageMonth) {
@@ -3609,7 +3633,7 @@ export default function AdminClient() {
                   <input
                     type="password"
                     style={inputStyle}
-                    placeholder={selectedExistingLlmAccountHasApiKey && !newLlmAccount.api_key.trim() ? "************" : "API-Key"}
+                    placeholder={effectiveExistingLlmAccountHasApiKey && !newLlmAccount.api_key.trim() ? "************" : "API-Key"}
                     value={newLlmAccount.api_key}
                     onChange={(e) => {
                       setLlmCreateTestResult(null);
@@ -3617,14 +3641,18 @@ export default function AdminClient() {
                     }}
                   />
                 </div>
-                {selectedExistingLlmAccountHasApiKey ? (
+                {effectiveExistingLlmAccountHasApiKey ? (
                   <div style={{ marginTop: 6, fontSize: 11, color: "#166534" }}>
                     API-Key gespeichert. Wenn du hier einen neuen Wert eingibst, wird der vorhandene Key ersetzt.
+                  </div>
+                ) : effectiveExistingLlmAccount ? (
+                  <div style={{ marginTop: 6, fontSize: 11, color: "#991b1b" }}>
+                    Für diesen bestehenden Provider-Account ist noch kein API-Key gespeichert.
                   </div>
                 ) : null}
                 <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>
                   Bereits angelegte Provider-Accounts: {llmAccounts.length}
-                  {selectedExistingLlmAccount ? " · neue Modelle werden an den gewählten Zugang angehängt" : ""}
+                  {effectiveExistingLlmAccount ? " · neue Modelle werden an den gewählten Zugang angehängt" : ""}
                 </div>
               </div>
 
@@ -3838,6 +3866,20 @@ export default function AdminClient() {
               ) : null}
             </div>
             <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
+              {effectiveExistingLlmAccount ? (
+                <button
+                  style={btnGhostStyle}
+                  disabled={busy || !newLlmAccount.api_key.trim()}
+                  onClick={() =>
+                    run("API-Key speichern", async () => {
+                      setLlmCreateTestResult(null);
+                      await saveLlmAccountApiKey(effectiveExistingLlmAccount.id, newLlmAccount.api_key);
+                    }, { showSuccessModal: false })
+                  }
+                >
+                  API-Key speichern
+                </button>
+              ) : null}
               <button
                 style={btnStyle}
                 disabled={busy}
@@ -3865,6 +3907,7 @@ export default function AdminClient() {
                     }
 
                     let accountId = String(newLlmAccount.existing_account_id || "").trim();
+                    let accountHasStoredApiKey = effectiveExistingLlmAccountHasApiKey;
                     if (!accountId) {
                       const matchingAccount = llmAccounts.find((account) =>
                         String(account.provider ?? "").trim().toLowerCase() === String(newLlmAccount.provider ?? "").trim().toLowerCase()
@@ -3872,6 +3915,7 @@ export default function AdminClient() {
                       );
                       if (matchingAccount?.id) {
                         accountId = matchingAccount.id;
+                        accountHasStoredApiKey = Boolean(String(((matchingAccount.auth_config ?? {}) as Record<string, unknown>).api_key ?? ((matchingAccount.auth_config ?? {}) as Record<string, unknown>).api_key_encrypted ?? "").trim());
                         setNewLlmAccount((v) => ({ ...v, existing_account_id: matchingAccount.id }));
                         setLlmCreateSaveResult({
                           status: "info",
@@ -3900,6 +3944,7 @@ export default function AdminClient() {
                             );
                             if (fallbackAccount?.id) {
                               accountId = fallbackAccount.id;
+                              accountHasStoredApiKey = Boolean(String(((fallbackAccount.auth_config ?? {}) as Record<string, unknown>).api_key ?? ((fallbackAccount.auth_config ?? {}) as Record<string, unknown>).api_key_encrypted ?? "").trim());
                               setNewLlmAccount((v) => ({ ...v, existing_account_id: fallbackAccount.id }));
                               setLlmCreateSaveResult({
                                 status: "info",
@@ -3917,11 +3962,15 @@ export default function AdminClient() {
                     if (!accountId) {
                       throw new Error("Provider-Account wurde ohne gültige ID angelegt.");
                     }
+                    if (!newLlmAccount.api_key.trim() && !accountHasStoredApiKey) {
+                      throw new Error("Für diesen Provider-Account ist kein API-Key gespeichert. Bitte zuerst einen API-Key eingeben und speichern.");
+                    }
                     if (newLlmAccount.api_key.trim()) {
                       await api(`/api/admin/llm/accounts/${accountId}/secrets`, {
                         method: "POST",
                         body: JSON.stringify({ api_key: newLlmAccount.api_key }),
                       });
+                      accountHasStoredApiKey = true;
                     }
                     for (const modelDraft of newLlmModels) {
                       const inputCost = parsePositiveNumber(modelDraft.input_cost_usd_per_1k);
