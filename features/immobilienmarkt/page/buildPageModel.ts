@@ -34,6 +34,7 @@ import {
   isKreisVisible,
   isOrtslageVisible,
 } from "@/lib/area-visibility";
+import { loadPublicVisibleAreaIds } from "@/lib/public-partner-mappings";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 
 export type PageModel = {
@@ -308,25 +309,7 @@ async function loadActiveKreisSlugsForBundeslandLive(bundeslandSlug: string): Pr
       };
     };
 
-    const { data: activeRows, error: activeError } = await (
-      admin
-        .from("partner_area_map")
-        .select("area_id, is_active") as Promise<{
-        data?: Array<{ area_id?: string | null; is_active?: boolean | null }> | null;
-        error?: { message?: string } | null;
-      }>
-    );
-
-    if (activeError || !activeRows?.length) return fallback;
-
-    const areaIds = Array.from(
-      new Set(
-        (activeRows ?? [])
-          .filter((row) => row?.is_active === true)
-          .map((row) => String(row?.area_id ?? "").trim())
-          .filter(Boolean),
-      ),
-    );
+    const areaIds = await loadPublicVisibleAreaIds(admin);
     if (areaIds.length === 0) return fallback;
 
     const areaIdSet = new Set(areaIds);

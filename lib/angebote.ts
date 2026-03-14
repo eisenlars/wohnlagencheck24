@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
+import { loadPublicVisiblePartnerIdsForAreaIds } from "@/lib/public-partner-mappings";
 
 export type OfferMode = "kauf" | "miete";
 export type OfferObjectType = "haus" | "wohnung";
@@ -94,43 +95,17 @@ async function getAreaIdsForKreis(
     .filter(Boolean);
 }
 
-async function getActivePartnerIds(
-  supabase: ReturnType<typeof createClient>,
-  areaId: string,
-): Promise<string[]> {
-  const { data, error } = await supabase
-    .from("partner_area_map")
-    .select("auth_user_id")
-    .eq("area_id", areaId)
-    .eq("is_active", true);
-
-  if (error) {
-    console.warn("partner_area_map lookup failed:", error.message);
-    return [];
-  }
-  return (data ?? [])
-    .map((row) => String((row as { auth_user_id?: string }).auth_user_id ?? ""))
-    .filter(Boolean);
-}
-
-async function getActivePartnerIdsForAreas(
+async function getPublicVisiblePartnerIdsForAreas(
   supabase: ReturnType<typeof createClient>,
   areaIds: string[],
 ): Promise<string[]> {
   if (areaIds.length === 0) return [];
-  const { data, error } = await supabase
-    .from("partner_area_map")
-    .select("auth_user_id")
-    .in("area_id", areaIds)
-    .eq("is_active", true);
-
-  if (error) {
-    console.warn("partner_area_map lookup (multi) failed:", error.message);
+  try {
+    return await loadPublicVisiblePartnerIdsForAreaIds(supabase, areaIds);
+  } catch (error) {
+    console.warn("partner_area_map public visibility lookup failed:", error);
     return [];
   }
-  return (data ?? [])
-    .map((row) => String((row as { auth_user_id?: string }).auth_user_id ?? ""))
-    .filter(Boolean);
 }
 
 export async function getOffers(args: GetOffersArgs): Promise<{
@@ -150,10 +125,10 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     return { offers: [], topOffers: [], areaId: null, total: 0, totalWithTop: 0, page: 1, pageSize: 12 };
   }
 
-  const partnerIds =
-    areaIds.length > 0
-      ? await getActivePartnerIdsForAreas(supabase, areaIds)
-      : await getActivePartnerIds(supabase, areaId);
+  const partnerIds = await getPublicVisiblePartnerIdsForAreas(
+    supabase,
+    areaIds.length > 0 ? areaIds : [areaId],
+  );
   const pageSize = Math.max(1, Math.min(args.pageSize ?? 12, 48));
   const page = Math.max(1, args.page ?? 1);
   const rangeFrom = (page - 1) * pageSize;

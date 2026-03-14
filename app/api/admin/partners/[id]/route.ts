@@ -32,7 +32,11 @@ function isMissingPartnerNameColumns(error: unknown): boolean {
 
 function isMissingAreaActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes("partner_area_map.activation_status") && msg.includes("does not exist");
+  return (
+    msg.includes("partner_area_map.activation_status") && msg.includes("does not exist")
+  ) || (
+    msg.includes("partner_area_map.is_public_live") && msg.includes("does not exist")
+  );
 }
 
 function isMissingPartnerLlmPolicyColumns(error: unknown): boolean {
@@ -267,7 +271,7 @@ export async function GET(
 
     let { data: mappings, error: mappingError } = await admin
       .from("partner_area_map")
-      .select("id, auth_user_id, area_id, is_active, activation_status, created_at, areas(name, slug, parent_slug, bundesland_slug)")
+      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at, areas(name, slug, parent_slug, bundesland_slug)")
       .eq("auth_user_id", partnerId)
       .order("area_id", { ascending: true });
 
@@ -277,7 +281,7 @@ export async function GET(
         .select("id, auth_user_id, area_id, is_active, created_at, areas(name, slug, parent_slug, bundesland_slug)")
         .eq("auth_user_id", partnerId)
         .order("area_id", { ascending: true });
-      mappings = (fallback.data ?? []).map((row) => ({ ...row, activation_status: null }));
+      mappings = (fallback.data ?? []).map((row) => ({ ...row, activation_status: null, is_public_live: null }));
       mappingError = fallback.error;
     }
 

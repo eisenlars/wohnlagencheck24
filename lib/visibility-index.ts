@@ -1,5 +1,6 @@
 import { revalidateTag } from "next/cache";
 import { REPORTS_VISIBILITY_TAG } from "@/lib/cache-tags";
+import { loadPublicVisibleAreaIds } from "@/lib/public-partner-mappings";
 
 const BUCKET = "immobilienmarkt";
 const VISIBILITY_INDEX_PATH = "reports/visibility_index.json";
@@ -31,10 +32,6 @@ type AreaRow = {
   bundesland_slug?: string | null;
 };
 
-type ActiveMappingRow = {
-  area_id?: string | null;
-};
-
 export type VisibilityIndex = {
   generated_at: string;
   bundeslaender: Record<string, { kreise: string[] }>;
@@ -46,17 +43,7 @@ function key2(a: string, b: string): string {
 }
 
 export async function buildVisibilityIndexFromDb(admin: AdminClient): Promise<VisibilityIndex> {
-  const { data: activeMappings, error: activeError } = await admin
-    .from("partner_area_map")
-    .select("area_id")
-    .eq("is_active", true);
-  if (activeError) throw new Error(activeError.message);
-
-  const activeAreaIds = new Set(
-    ((activeMappings ?? []) as ActiveMappingRow[])
-      .map((row) => String(row.area_id ?? "").trim())
-      .filter(Boolean),
-  );
+  const activeAreaIds = new Set(await loadPublicVisibleAreaIds(admin));
 
   const { data: areasRaw, error: areasError } = await admin
     .from("areas")

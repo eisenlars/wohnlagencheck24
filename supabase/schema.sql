@@ -50,6 +50,9 @@ CREATE TABLE public.partner_area_map (
   auth_user_id uuid NOT NULL,
   area_id text NOT NULL,
   is_active boolean DEFAULT true,
+  is_public_live boolean NOT NULL DEFAULT false,
+  activation_status text DEFAULT 'assigned'::text,
+  partner_submitted_at timestamp with time zone,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT partner_area_map_pkey PRIMARY KEY (id),
   CONSTRAINT partner_area_map_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES public.partners(id),
@@ -235,4 +238,3 @@ CREATE POLICY overrides_partner_update
   ON public.partner_property_overrides FOR UPDATE USING (auth.uid() = partner_id);
 CREATE POLICY overrides_partner_delete
   ON public.partner_property_overrides FOR DELETE USING (auth.uid() = partner_id);
-

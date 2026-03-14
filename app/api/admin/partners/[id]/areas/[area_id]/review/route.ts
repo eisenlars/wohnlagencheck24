@@ -7,8 +7,8 @@ import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/securi
 import { checkPartnerAreaMandatoryTexts } from "@/lib/partner-area-mandatory";
 import { INDIVIDUAL_MANDATORY_KEYS } from "@/lib/text-key-registry";
 import { MANDATORY_MEDIA_KEYS } from "@/lib/mandatory-media";
-import { publishVisibilityIndex } from "@/lib/visibility-index";
 import { sendPartnerAreaApprovedEmail } from "@/lib/notifications/admin-review-email";
+import { isMissingPublicLiveColumn } from "@/lib/public-partner-mappings";
 
 type ReviewAction = "in_review" | "changes_requested" | "approve";
 
@@ -28,6 +28,7 @@ type MappingRow = {
   auth_user_id: string;
   area_id: string;
   is_active: boolean;
+  is_public_live?: boolean | null;
   activation_status?: string | null;
 };
 
@@ -39,31 +40,41 @@ function isMissingActivationStatusColumn(error: unknown): boolean {
   );
 }
 
-function normalizeActivationStatus(value: unknown, isActive: boolean): string {
-  if (isActive) return "active";
+function normalizeActivationStatus(value: unknown, isActive: boolean, isPublicLive = false): string {
+  if (isPublicLive) return "live";
   const raw = String(value ?? "").trim().toLowerCase();
-  if (raw === "assigned" || raw === "in_progress" || raw === "ready_for_review" || raw === "in_review" || raw === "changes_requested" || raw === "active") {
+  if (
+    raw === "assigned"
+    || raw === "in_progress"
+    || raw === "ready_for_review"
+    || raw === "in_review"
+    || raw === "changes_requested"
+    || raw === "approved_preview"
+    || raw === "live"
+    || raw === "active"
+  ) {
     return raw;
   }
+  if (isActive) return "approved_preview";
   return "assigned";
 }
 
 async function loadMapping(admin: ReturnType<typeof createAdminClient>, partnerId: string, areaId: string) {
   let { data, error } = await admin
     .from("partner_area_map")
-    .select("id, auth_user_id, area_id, is_active, activation_status")
+    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status")
     .eq("auth_user_id", partnerId)
     .eq("area_id", areaId)
     .maybeSingle();
 
-  if (error && isMissingActivationStatusColumn(error)) {
+  if (error && (isMissingActivationStatusColumn(error) || isMissingPublicLiveColumn(error))) {
     const fallback = await admin
       .from("partner_area_map")
       .select("id, auth_user_id, area_id, is_active")
       .eq("auth_user_id", partnerId)
       .eq("area_id", areaId)
       .maybeSingle();
-    data = fallback.data ? { ...fallback.data, activation_status: null } : null;
+    data = fallback.data ? { ...fallback.data, activation_status: null, is_public_live: null } : null;
     error = fallback.error;
   }
 
@@ -139,7 +150,11 @@ export async function GET(
       ok: true,
       mapping: {
         ...mapping,
-        activation_status: normalizeActivationStatus(mapping.activation_status, Boolean(mapping.is_active)),
+        activation_status: normalizeActivationStatus(
+          mapping.activation_status,
+          Boolean(mapping.is_active),
+          Boolean(mapping.is_public_live),
+        ),
       },
       mandatory: mandatoryCheck,
       fields,
@@ -220,18 +235,18 @@ export async function PATCH(
     }
 
     const nextPatch = action === "approve"
-      ? { is_active: true, activation_status: "active" }
-      : { is_active: false, activation_status: action };
+      ? { is_active: true, is_public_live: false, activation_status: "approved_preview" }
+      : { is_active: false, is_public_live: false, activation_status: action };
 
     let { data: updated, error: updateError } = await admin
       .from("partner_area_map")
       .update(nextPatch)
       .eq("auth_user_id", partnerId)
       .eq("area_id", areaId)
-      .select("id, auth_user_id, area_id, is_active, activation_status, created_at")
+      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at")
       .maybeSingle();
 
-    if (updateError && isMissingActivationStatusColumn(updateError)) {
+    if (updateError && (isMissingActivationStatusColumn(updateError) || isMissingPublicLiveColumn(updateError))) {
       const fallbackPatch = action === "approve" ? { is_active: true } : { is_active: false };
       const fallback = await admin
         .from("partner_area_map")
@@ -241,7 +256,11 @@ export async function PATCH(
         .select("id, auth_user_id, area_id, is_active, created_at")
         .maybeSingle();
       updated = fallback.data
-        ? { ...fallback.data, activation_status: action === "approve" ? "active" : action }
+        ? {
+          ...fallback.data,
+          activation_status: action === "approve" ? "approved_preview" : action,
+          is_public_live: null,
+        }
         : null;
       updateError = fallback.error;
     }
@@ -260,7 +279,8 @@ export async function PATCH(
         partner_id: partnerId,
         area_id: areaId,
         is_active: updated.is_active,
-        activation_status: String((updated as { activation_status?: string | null }).activation_status ?? (action === "approve" ? "active" : action)),
+        is_public_live: Boolean((updated as { is_public_live?: boolean | null }).is_public_live),
+        activation_status: String((updated as { activation_status?: string | null }).activation_status ?? (action === "approve" ? "approved_preview" : action)),
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -269,12 +289,6 @@ export async function PATCH(
     let partnerApprovalMailSent = false;
     let partnerApprovalMailReason: string | undefined;
     if (action === "approve") {
-      try {
-        await publishVisibilityIndex(admin as never);
-      } catch (publishErr) {
-        console.warn("visibility index publish failed after admin review approve:", publishErr);
-      }
-
       try {
         const [partnerRes, areaRes] = await Promise.all([
           admin
@@ -329,7 +343,14 @@ export async function PATCH(
     const fields = await fetchReviewFields(admin, partnerId, areaId);
     return NextResponse.json({
       ok: true,
-      mapping: updated,
+      mapping: {
+        ...updated,
+        activation_status: normalizeActivationStatus(
+          (updated as { activation_status?: string | null }).activation_status,
+          Boolean((updated as { is_active?: boolean | null }).is_active),
+          Boolean((updated as { is_public_live?: boolean | null }).is_public_live),
+        ),
+      },
       mandatory: mandatoryCheck,
       fields,
       notification: action === "approve"

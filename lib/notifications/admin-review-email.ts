@@ -139,7 +139,7 @@ function buildPartnerText(args: SendPartnerReviewSubmittedEmailArgs): string {
 
 function buildPartnerApprovedSubject(args: SendPartnerAreaApprovedEmailArgs): string {
   const area = String(args.areaName ?? args.areaId).trim();
-  return `Gebiet freigegeben: ${area}`;
+  return `Gebiet freigegeben fuer Preview: ${area}`;
 }
 
 function buildPartnerApprovedText(args: SendPartnerAreaApprovedEmailArgs): string {
@@ -151,13 +151,13 @@ function buildPartnerApprovedText(args: SendPartnerAreaApprovedEmailArgs): strin
   return [
     `Hallo${partner ? ` ${partner}` : ""},`,
     "",
-    "dein Gebiet wurde erfolgreich freigegeben.",
+    "dein Gebiet wurde fachlich freigegeben und ist jetzt fuer die Preview im Partnerbereich bereit.",
     "",
     `Gebiet: ${area}`,
     `Area ID: ${args.areaId}`,
     `Freigegeben am: ${approvedAt}`,
     "",
-    "Du kannst jetzt den Partnerbereich nutzen.",
+    "Bitte pruefe nun Inhalte, Darstellung sowie SEO/GEO-Einstellungen vor dem finalen Onlineschalten.",
   ].join("\n");
 }
 

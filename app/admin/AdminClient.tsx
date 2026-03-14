@@ -25,6 +25,7 @@ type AreaMapping = {
   auth_user_id: string;
   area_id: string;
   is_active: boolean;
+  is_public_live?: boolean | null;
   activation_status?: string | null;
   areas?: {
     name?: string | null;
@@ -264,18 +265,29 @@ type PartnerBillingFeature = {
   sort_order?: number;
 };
 
-function normalizeActivationStatus(value: unknown, isActive: boolean): string {
-  if (isActive) return "active";
+function normalizeActivationStatus(value: unknown, isActive: boolean, isPublicLive = false): string {
+  if (isPublicLive) return "live";
   const raw = String(value ?? "").trim().toLowerCase();
-  if (raw === "assigned" || raw === "in_progress" || raw === "ready_for_review" || raw === "in_review" || raw === "changes_requested" || raw === "active") {
+  if (
+    raw === "assigned"
+    || raw === "in_progress"
+    || raw === "ready_for_review"
+    || raw === "in_review"
+    || raw === "changes_requested"
+    || raw === "approved_preview"
+    || raw === "live"
+    || raw === "active"
+  ) {
     return raw;
   }
+  if (isActive) return "approved_preview";
   return "assigned";
 }
 
-function formatAreaStateLabel(isActive: boolean, activationStatus: unknown): string {
-  const state = normalizeActivationStatus(activationStatus, isActive);
-  if (state === "active") return "aktiv";
+function formatAreaStateLabel(isActive: boolean, activationStatus: unknown, isPublicLive = false): string {
+  const state = normalizeActivationStatus(activationStatus, isActive, isPublicLive);
+  if (state === "live") return "online";
+  if (state === "approved_preview" || state === "active") return "preview freigegeben";
   if (state === "ready_for_review") return "freigabebereit";
   if (state === "in_review") return "in prüfung";
   if (state === "changes_requested") return "nachbesserung";
@@ -811,7 +823,11 @@ export default function AdminClient() {
           partnerId: detail.partner.id,
           partnerName: detail.partner.company_name,
           isActive: Boolean(mapping.is_active),
-          activationStatus: normalizeActivationStatus(mapping.activation_status, Boolean(mapping.is_active)),
+          activationStatus: normalizeActivationStatus(
+            mapping.activation_status,
+            Boolean(mapping.is_active),
+            Boolean(mapping.is_public_live),
+          ),
         });
       }
     }
@@ -868,18 +884,40 @@ export default function AdminClient() {
   const reviewAreaOptions = useMemo(
     () =>
       displayAreaRows.filter((row) => {
-        const state = normalizeActivationStatus(row.mapping.activation_status, row.mapping.is_active);
-        return state === "ready_for_review" || state === "in_review" || state === "changes_requested";
+        const state = normalizeActivationStatus(
+          row.mapping.activation_status,
+          row.mapping.is_active,
+          Boolean(row.mapping.is_public_live),
+        );
+        return (
+          state === "ready_for_review"
+          || state === "in_review"
+          || state === "changes_requested"
+          || state === "approved_preview"
+          || state === "live"
+        );
       }),
     [displayAreaRows],
   );
   const pendingReviewCount = useMemo(
     () =>
       reviewAreaOptions.filter((row) => {
-        const state = normalizeActivationStatus(row.mapping.activation_status, row.mapping.is_active);
+        const state = normalizeActivationStatus(
+          row.mapping.activation_status,
+          row.mapping.is_active,
+          Boolean(row.mapping.is_public_live),
+        );
         return state === "ready_for_review";
       }).length,
     [reviewAreaOptions],
+  );
+  const currentReviewState = useMemo(
+    () => normalizeActivationStatus(
+      reviewData?.mapping?.activation_status,
+      Boolean(reviewData?.mapping?.is_active),
+      Boolean(reviewData?.mapping?.is_public_live),
+    ),
+    [reviewData],
   );
 
   const handoverAreaOptions = useMemo(
@@ -926,7 +964,11 @@ export default function AdminClient() {
     setAreaMappings(partnerData.area_mappings ?? []);
     setIntegrations(integrationsData.integrations ?? []);
     const reviewCandidate = (partnerData.area_mappings ?? []).find((mapping) => {
-      const state = normalizeActivationStatus(mapping.activation_status, Boolean(mapping.is_active));
+      const state = normalizeActivationStatus(
+        mapping.activation_status,
+        Boolean(mapping.is_active),
+        Boolean(mapping.is_public_live),
+      );
       return state === "ready_for_review" || state === "in_review" || state === "changes_requested";
     });
     setReviewAreaId(String(reviewCandidate?.area_id ?? ""));
@@ -987,12 +1029,34 @@ export default function AdminClient() {
       await loadAreaReview(reviewAreaId);
       if (action === "approve" && response?.notification?.partner?.sent === false) {
         const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
-        setReviewActionError(`Gebiet wurde freigegeben, Partner-Mail aber nicht versendet (${reason}).`);
+        setReviewActionError(`Preview wurde freigegeben, Partner-Mail aber nicht versendet (${reason}).`);
         return;
       }
       setReviewActionError(null);
     } catch (error) {
       setReviewActionError(error instanceof Error ? error.message : "Aktion konnte nicht ausgeführt werden.");
+      throw error;
+    } finally {
+      setReviewBusy(false);
+    }
+  }
+
+  async function setAreaPublication(live: boolean) {
+    if (!selectedPartnerId || !reviewAreaId) return;
+    setReviewBusy(true);
+    try {
+      await api<AreaReviewPayload>(
+        `/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(reviewAreaId)}/publish`,
+        {
+          method: live ? "POST" : "DELETE",
+        },
+      );
+      await loadPartnerDetails(selectedPartnerId);
+      await loadAreaOverview();
+      await loadAreaReview(reviewAreaId);
+      setReviewActionError(null);
+    } catch (error) {
+      setReviewActionError(error instanceof Error ? error.message : "Veröffentlichung konnte nicht aktualisiert werden.");
       throw error;
     } finally {
       setReviewBusy(false);
@@ -2584,7 +2648,7 @@ export default function AdminClient() {
                       <small style={mutedStyle}>{row.displayKreisId}</small>
                     </td>
                     <td style={tdStyle}>
-                      {formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status)}
+                      {formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status, Boolean(row.mapping.is_public_live))}
                     </td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", gap: 8 }}>
@@ -2639,7 +2703,7 @@ export default function AdminClient() {
               <option value="">Gebiet wählen</option>
               {reviewAreaOptions.map((row) => (
                 <option key={row.mapping.area_id} value={row.mapping.area_id}>
-                  {row.mapping.areas?.name ?? row.mapping.area_id} ({formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status)})
+                  {row.mapping.areas?.name ?? row.mapping.area_id} ({formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status, Boolean(row.mapping.is_public_live))})
                 </option>
               ))}
             </select>
@@ -2661,7 +2725,7 @@ export default function AdminClient() {
             <div style={{ marginTop: 10, marginBottom: 10, fontSize: 13, color: "#334155" }}>
               Status:
               {" "}
-              <strong>{formatAreaStateLabel(Boolean(reviewData.mapping?.is_active), reviewData.mapping?.activation_status)}</strong>
+              <strong>{formatAreaStateLabel(Boolean(reviewData.mapping?.is_active), reviewData.mapping?.activation_status, Boolean(reviewData.mapping?.is_public_live))}</strong>
               {" · "}
               Mandatory:
               {" "}
@@ -2741,28 +2805,58 @@ export default function AdminClient() {
             </table>
 
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button
-                style={btnDangerStyle}
-                disabled={busy || reviewBusy || !reviewAreaId}
-                onClick={() =>
-                  run("Nachbesserung anfordern", async () => {
-                    await applyAreaReviewAction("changes_requested");
-                  })
-                }
-              >
-                Nachbesserung anfordern
-              </button>
-              <button
-                style={btnStyle}
-                disabled={busy || reviewBusy || !reviewAreaId}
-                onClick={() =>
-                  run("Gebiet freigeben", async () => {
-                    await applyAreaReviewAction("approve");
-                  }, { clearReviewOnClose: true })
-                }
-              >
-                Freigeben
-              </button>
+              {currentReviewState === "ready_for_review" || currentReviewState === "in_review" || currentReviewState === "changes_requested" ? (
+                <>
+                  <button
+                    style={btnDangerStyle}
+                    disabled={busy || reviewBusy || !reviewAreaId}
+                    onClick={() =>
+                      run("Nachbesserung anfordern", async () => {
+                        await applyAreaReviewAction("changes_requested");
+                      })
+                    }
+                  >
+                    Nachbesserung anfordern
+                  </button>
+                  <button
+                    style={btnStyle}
+                    disabled={busy || reviewBusy || !reviewAreaId}
+                    onClick={() =>
+                      run("Preview freigeben", async () => {
+                        await applyAreaReviewAction("approve");
+                      }, { clearReviewOnClose: true })
+                    }
+                  >
+                    Preview freigeben
+                  </button>
+                </>
+              ) : null}
+              {currentReviewState === "approved_preview" ? (
+                <button
+                  style={btnStyle}
+                  disabled={busy || reviewBusy || !reviewAreaId}
+                  onClick={() =>
+                    run("Onlineschalten", async () => {
+                      await setAreaPublication(true);
+                    }, { clearReviewOnClose: true })
+                  }
+                >
+                  Onlineschalten
+                </button>
+              ) : null}
+              {currentReviewState === "live" ? (
+                <button
+                  style={btnDangerStyle}
+                  disabled={busy || reviewBusy || !reviewAreaId}
+                  onClick={() =>
+                    run("Offline nehmen", async () => {
+                      await setAreaPublication(false);
+                    })
+                  }
+                >
+                  Offline nehmen
+                </button>
+              ) : null}
             </div>
             {reviewActionError ? (
               <div style={{ marginTop: 8, fontSize: 12, color: "#991b1b" }}>

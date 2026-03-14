@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
+import { publishVisibilityIndex } from "@/lib/visibility-index";
 
 export async function POST(
   req: Request,
@@ -26,6 +27,25 @@ export async function POST(
     }
 
     const admin = createAdminClient();
+    const { error: mappingError } = await admin
+      .from("partner_area_map")
+      .update({ is_active: false, is_public_live: false })
+      .eq("auth_user_id", partnerId);
+    if (mappingError) {
+      const message = String(mappingError.message ?? "").toLowerCase();
+      const missingPublicLive = message.includes("partner_area_map.is_public_live") && message.includes("does not exist");
+      if (!missingPublicLive) {
+        return NextResponse.json({ error: mappingError.message }, { status: 500 });
+      }
+      const fallback = await admin
+        .from("partner_area_map")
+        .update({ is_active: false })
+        .eq("auth_user_id", partnerId);
+      if (fallback.error) {
+        return NextResponse.json({ error: fallback.error.message }, { status: 500 });
+      }
+    }
+
     const { data, error } = await admin
       .from("partners")
       .update({ is_active: false })
@@ -50,6 +70,12 @@ export async function POST(
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
     });
+
+    try {
+      await publishVisibilityIndex(admin as never);
+    } catch (publishErr) {
+      console.warn("visibility index publish failed after partner deactivate:", publishErr);
+    }
 
     return NextResponse.json({ ok: true, partner: data });
   } catch (error) {

@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { loadPublicVisiblePartnerIdsForAreaIds } from "@/lib/public-partner-mappings";
 
 export type RequestMode = "kauf" | "miete";
 
@@ -107,19 +108,12 @@ async function resolveKreisAndPartnerScope(
     return { kreisAreaId: null, kreisName: null, partnerIds: [], areaIds: [] };
   }
 
-  const { data: partnerRows, error: partnerError } = await supabase
-    .from("partner_area_map")
-    .select("auth_user_id")
-    .in("area_id", areaIds)
-    .eq("is_active", true);
-
-  if (partnerError) {
+  let partnerIds: string[] = [];
+  try {
+    partnerIds = await loadPublicVisiblePartnerIdsForAreaIds(supabase, areaIds);
+  } catch {
     return { kreisAreaId: String(kreisRow?.id ?? "") || null, kreisName: String(kreisRow?.name ?? "") || null, partnerIds: [], areaIds };
   }
-
-  const partnerIds = (partnerRows ?? [])
-    .map((row) => String((row as { auth_user_id?: unknown }).auth_user_id ?? ""))
-    .filter(Boolean);
 
   return {
     kreisAreaId: String(kreisRow?.id ?? "") || null,

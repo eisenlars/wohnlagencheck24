@@ -20,7 +20,11 @@ type AssignAreaBody = {
 
 function isMissingActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes("partner_area_map.activation_status") && msg.includes("does not exist");
+  return (
+    msg.includes("partner_area_map.activation_status") && msg.includes("does not exist")
+  ) || (
+    msg.includes("partner_area_map.is_public_live") && msg.includes("does not exist")
+  );
 }
 
 function isKreisAreaId(areaId: string): boolean {
@@ -209,13 +213,14 @@ export async function POST(
       auth_user_id: partnerId,
       area_id: targetAreaId,
       is_active: false,
+      is_public_live: false,
       activation_status: "assigned",
     }));
 
     let { data, error } = await admin
       .from("partner_area_map")
       .upsert(assignmentPayload, { onConflict: "auth_user_id,area_id" })
-      .select("id, auth_user_id, area_id, is_active, activation_status, created_at");
+      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at");
 
     if (error && isMissingActivationStatusColumn(error)) {
       const fallback = await admin
@@ -225,12 +230,13 @@ export async function POST(
             auth_user_id: partnerId,
             area_id: targetAreaId,
             is_active: false,
+            is_public_live: false,
           })),
           { onConflict: "auth_user_id,area_id" },
         )
         .select("id, auth_user_id, area_id, is_active, created_at");
       data = Array.isArray(fallback.data)
-        ? fallback.data.map((row) => ({ ...row, activation_status: "assigned" }))
+        ? fallback.data.map((row) => ({ ...row, activation_status: "assigned", is_public_live: null }))
         : null;
       error = fallback.error;
     }

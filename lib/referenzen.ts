@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { loadPublicVisiblePartnerIdsForAreaIds } from "@/lib/public-partner-mappings";
 
 export type RegionalReference = {
   id: string;
@@ -46,16 +47,12 @@ export async function getRandomReferencesForKreis(args: {
     .filter(Boolean);
   if (areaIds.length === 0) return [];
 
-  const { data: partnerMapRows, error: partnerMapError } = await supabase
-    .from("partner_area_map")
-    .select("auth_user_id")
-    .in("area_id", areaIds)
-    .eq("is_active", true);
-  if (partnerMapError) return [];
-
-  const partnerIds = (partnerMapRows ?? [])
-    .map((row) => String((row as { auth_user_id?: unknown }).auth_user_id ?? ""))
-    .filter(Boolean);
+  let partnerIds: string[] = [];
+  try {
+    partnerIds = await loadPublicVisiblePartnerIdsForAreaIds(supabase, areaIds);
+  } catch {
+    return [];
+  }
   if (partnerIds.length === 0) return [];
 
   const { data: refRows, error: refError } = await supabase

@@ -10,6 +10,7 @@ import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { getRandomReferencesForKreis } from "@/lib/referenzen";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
+import { loadSinglePublicVisiblePartnerIdForArea } from "@/lib/public-partner-mappings";
 
 type PageParams = { bundesland?: string; kreis?: string };
 type PageProps = { params: Promise<PageParams> };
@@ -37,19 +38,7 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
         };
       };
     };
-    const partnerMapRes = (await admin
-      .from("partner_area_map")
-      .select("auth_user_id")
-      .eq("area_id", areaId)
-      .eq("is_active", true)) as { data?: Array<{ auth_user_id?: string | null }> | null };
-    const partnerIds = Array.from(
-      new Set(
-        (partnerMapRes?.data ?? [])
-          .map((row) => String(row?.auth_user_id ?? "").trim())
-          .filter(Boolean),
-      ),
-    );
-    const partnerId = partnerIds.length === 1 ? partnerIds[0] : null;
+    const partnerId = await loadSinglePublicVisiblePartnerIdForArea(admin, areaId);
     if (partnerId) {
       const overrides = await getApprovedReportTexts(admin, areaId, partnerId);
       if (overrides.length > 0) {

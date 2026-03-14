@@ -13,7 +13,11 @@ type AreaToggleBody = {
 
 function isMissingActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes("partner_area_map.activation_status") && msg.includes("does not exist");
+  return (
+    msg.includes("partner_area_map.activation_status") && msg.includes("does not exist")
+  ) || (
+    msg.includes("partner_area_map.is_public_live") && msg.includes("does not exist")
+  );
 }
 
 function isKreisAreaId(areaId: string): boolean {
@@ -139,11 +143,12 @@ export async function PATCH(
       .from("partner_area_map")
       .update({
         is_active: Boolean(body.is_active),
-        activation_status: body.is_active ? "active" : "in_progress",
+        is_public_live: false,
+        activation_status: body.is_active ? "approved_preview" : "in_progress",
       })
       .eq("auth_user_id", partnerId)
       .in("area_id", targetAreaIds)
-      .select("id, auth_user_id, area_id, is_active, activation_status, created_at");
+      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at");
 
     if (error && isMissingActivationStatusColumn(error)) {
       const fallback = await admin
@@ -153,7 +158,7 @@ export async function PATCH(
         .in("area_id", targetAreaIds)
         .select("id, auth_user_id, area_id, is_active, created_at");
       data = Array.isArray(fallback.data)
-        ? fallback.data.map((row) => ({ ...row, activation_status: body.is_active ? "active" : "in_progress" }))
+        ? fallback.data.map((row) => ({ ...row, activation_status: body.is_active ? "approved_preview" : "in_progress", is_public_live: null }))
         : null;
       error = fallback.error;
     }
@@ -176,6 +181,7 @@ export async function PATCH(
         auth_user_id: partnerId,
         area_id: areaId,
         is_active: Boolean((rootMapping as { is_active?: boolean | null }).is_active),
+        is_public_live: Boolean((rootMapping as { is_public_live?: boolean | null }).is_public_live),
         affected_count: data.length,
         affected_area_ids: targetAreaIds,
       },

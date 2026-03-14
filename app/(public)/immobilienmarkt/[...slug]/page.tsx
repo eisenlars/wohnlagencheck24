@@ -19,6 +19,7 @@ import {
   isKreisVisible,
   isOrtslageVisible,
 } from "@/lib/area-visibility";
+import { loadSinglePublicVisiblePartnerIdForArea } from "@/lib/public-partner-mappings";
 
 export const revalidate = 3600;
 
@@ -59,19 +60,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     route.section === "uebersicht" ? "immobilienmarkt_ueberblick" : route.section;
 
   const admin = createAdminClient();
-  const { data: activePartnerMappings } = await admin
-    .from("partner_area_map")
-    .select("auth_user_id")
-    .eq("area_id", areaId)
-    .eq("is_active", true);
-  const partnerIds = Array.from(
-    new Set(
-      (activePartnerMappings ?? [])
-        .map((row) => asString((row as { auth_user_id?: string | null }).auth_user_id) ?? "")
-        .filter((value) => value.length > 0),
-    ),
-  );
-  const activePartnerId = partnerIds.length === 1 ? partnerIds[0] : undefined;
+  const activePartnerId = areaId.length > 0
+    ? (await loadSinglePublicVisiblePartnerIdForArea(admin, areaId)) ?? undefined
+    : undefined;
 
   const overrides =
     areaId.length > 0
