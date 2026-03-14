@@ -3743,10 +3743,11 @@ export default function AdminClient() {
                           const resp = await api<{ result?: { status?: string; message?: string } }>("/api/admin/llm/providers/test", {
                             method: "POST",
                             body: JSON.stringify({
+                              provider_account_id: effectiveExistingLlmAccount?.id ?? null,
                               provider: newLlmAccount.provider,
                               model: newLlmModels[0]?.model ?? "",
                               base_url: newLlmAccount.base_url,
-                              api_key: newLlmAccount.api_key,
+                              api_key: newLlmAccount.api_key.trim() || null,
                               api_version: String(newLlmAccount.api_version || "").trim() || null,
                             }),
                           });

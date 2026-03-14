@@ -8,6 +8,7 @@ import { validateOutboundUrl } from "@/lib/security/outbound-url";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 type Body = {
+  provider_account_id?: string;
   provider_model_id?: string;
   provider?: string;
   model?: string;
@@ -76,6 +77,7 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json()) as Body;
+    const providerAccountIdFromBody = asText(body.provider_account_id);
     const providerModelId = asText(body.provider_model_id);
     let provider = String(body.provider ?? "").trim().toLowerCase();
     let model = asText(body.model);
@@ -83,25 +85,27 @@ export async function POST(req: Request) {
     let baseUrl = asText(body.base_url);
     let apiVersion = asText(body.api_version);
 
-    if (providerModelId) {
+    if (providerModelId || providerAccountIdFromBody) {
       const admin = createAdminClient();
-      const { data: modelRow, error: modelError } = await admin
-        .from("llm_provider_models")
-        .select("id, model, provider_account_id")
-        .eq("id", providerModelId)
-        .maybeSingle();
-      if (modelError) {
-        if (isMissingTable(modelError, "llm_provider_models")) {
-          return NextResponse.json({ error: "Tabelle `llm_provider_models` fehlt. Bitte Migration ausführen." }, { status: 409 });
-        }
-        return NextResponse.json({ error: modelError.message }, { status: 500 });
-      }
-      if (!modelRow) return NextResponse.json({ error: "Modell für Verbindungstest nicht gefunden." }, { status: 404 });
+      let providerAccountId = providerAccountIdFromBody;
 
-      const providerAccountId = asText(modelRow.provider_account_id);
-      if (!providerAccountId) {
-        return NextResponse.json({ error: "Dem Modell fehlt ein Provider-Account." }, { status: 409 });
+      if (providerModelId) {
+        const { data: modelRow, error: modelError } = await admin
+          .from("llm_provider_models")
+          .select("id, model, provider_account_id")
+          .eq("id", providerModelId)
+          .maybeSingle();
+        if (modelError) {
+          if (isMissingTable(modelError, "llm_provider_models")) {
+            return NextResponse.json({ error: "Tabelle `llm_provider_models` fehlt. Bitte Migration ausführen." }, { status: 409 });
+          }
+          return NextResponse.json({ error: modelError.message }, { status: 500 });
+        }
+        if (!modelRow) return NextResponse.json({ error: "Modell für Verbindungstest nicht gefunden." }, { status: 404 });
+        providerAccountId = providerAccountId ?? asText(modelRow.provider_account_id);
+        model = model ?? asText(modelRow.model);
       }
+      if (!providerAccountId) return NextResponse.json({ error: "Provider-Account für Verbindungstest fehlt." }, { status: 400 });
 
       const { data: accountRow, error: accountError } = await admin
         .from("llm_provider_accounts")
@@ -117,7 +121,6 @@ export async function POST(req: Request) {
       if (!accountRow) return NextResponse.json({ error: "Provider-Account für Verbindungstest nicht gefunden." }, { status: 404 });
 
       provider = provider || String(accountRow.provider ?? "").trim().toLowerCase();
-      model = model ?? asText(modelRow.model);
       baseUrl = baseUrl ?? asText(accountRow.base_url);
       apiVersion = apiVersion ?? asText(accountRow.api_version);
       apiKey = apiKey ?? readSecretFromAuthConfig((accountRow.auth_config as Record<string, unknown> | null) ?? null, "api_key");
