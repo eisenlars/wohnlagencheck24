@@ -5,8 +5,12 @@ const PURGE_DUMP_BUCKET = String(process.env.ADMIN_PURGE_DUMP_BUCKET ?? "").trim
 
 const PARTNER_PURGE_TABLES: Array<{ table: string; column: string }> = [
   { table: "partner_blog_posts", column: "partner_id" },
+  { table: "partner_billing_settings", column: "partner_id" },
+  { table: "partner_feature_overrides", column: "partner_id" },
+  { table: "partner_texts_i18n", column: "partner_id" },
   { table: "partner_local_site_texts", column: "partner_id" },
   { table: "partner_marketing_texts", column: "partner_id" },
+  { table: "partner_listings", column: "partner_id" },
   { table: "partner_property_overrides", column: "partner_id" },
   { table: "partner_property_offers", column: "partner_id" },
   { table: "partner_reference_overrides", column: "partner_id" },
@@ -14,6 +18,8 @@ const PARTNER_PURGE_TABLES: Array<{ table: string; column: string }> = [
   { table: "partner_request_overrides", column: "partner_id" },
   { table: "partner_requests", column: "partner_id" },
   { table: "report_texts", column: "partner_id" },
+  { table: "llm_partner_budget_overrides", column: "partner_id" },
+  { table: "llm_usage_events", column: "partner_id" },
   { table: "data_value_settings", column: "auth_user_id" },
   { table: "partner_area_map", column: "auth_user_id" },
   { table: "partner_integrations", column: "partner_id" },
