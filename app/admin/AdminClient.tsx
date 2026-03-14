@@ -701,6 +701,7 @@ export default function AdminClient() {
     const auth = (effectiveExistingLlmAccount?.auth_config ?? {}) as Record<string, unknown>;
     return Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
   }, [effectiveExistingLlmAccount]);
+  const llmAccountReadyForModels = Boolean(effectiveExistingLlmAccount?.id && effectiveExistingLlmAccountHasApiKey);
 
   useEffect(() => {
     const anyModalOpen =
@@ -1226,6 +1227,57 @@ export default function AdminClient() {
       message: "API-Key wurde für den Provider-Account gespeichert.",
     });
     setNewLlmAccount((prev) => ({ ...prev, existing_account_id: cleanAccountId, api_key: "" }));
+  }
+
+  async function ensureLlmAccountReady(): Promise<{ accountId: string; hasStoredApiKey: boolean }> {
+    if (!newLlmAccount.api_key.trim() && !effectiveExistingLlmAccountHasApiKey) {
+      throw new Error("Bitte zuerst einen API-Key für den Provider-Account eingeben und speichern.");
+    }
+
+    let accountId = String(newLlmAccount.existing_account_id || "").trim();
+    let accountHasStoredApiKey = effectiveExistingLlmAccountHasApiKey;
+
+    if (!accountId) {
+      const matchingAccount = llmAccounts.find((account) =>
+        String(account.provider ?? "").trim().toLowerCase() === String(newLlmAccount.provider ?? "").trim().toLowerCase()
+        && normalizeLlmBaseUrl(account.base_url) === normalizeLlmBaseUrl(newLlmAccount.base_url),
+      );
+      if (matchingAccount?.id) {
+        accountId = matchingAccount.id;
+        accountHasStoredApiKey = Boolean(String(((matchingAccount.auth_config ?? {}) as Record<string, unknown>).api_key ?? ((matchingAccount.auth_config ?? {}) as Record<string, unknown>).api_key_encrypted ?? "").trim());
+        setNewLlmAccount((prev) => ({ ...prev, existing_account_id: matchingAccount.id }));
+      } else {
+        const createdAccount = await api<{ account?: { id: string } }>("/api/admin/llm/accounts", {
+          method: "POST",
+          body: JSON.stringify({
+            provider: newLlmAccount.provider,
+            display_name: newLlmAccount.display_name.trim() || null,
+            base_url: newLlmAccount.base_url,
+            auth_type: newLlmAccount.auth_type,
+            api_version: String(newLlmAccount.api_version || "").trim() || null,
+          }),
+        });
+        accountId = String(createdAccount.account?.id ?? "").trim();
+      }
+    }
+
+    if (!accountId) {
+      throw new Error("Provider-Account wurde ohne gültige ID angelegt.");
+    }
+
+    if (newLlmAccount.api_key.trim()) {
+      await saveLlmAccountApiKey(accountId, newLlmAccount.api_key);
+      accountHasStoredApiKey = true;
+    } else {
+      await loadLlmAccounts();
+      setNewLlmAccount((prev) => ({ ...prev, existing_account_id: accountId }));
+    }
+
+    if (!accountHasStoredApiKey) {
+      throw new Error("Für diesen Provider-Account ist kein API-Key gespeichert.");
+    }
+
+    return { accountId, hasStoredApiKey: accountHasStoredApiKey };
   }
 
   async function loadLlmUsage(month = llmUsageMonth) {
@@ -3654,6 +3706,69 @@ export default function AdminClient() {
                   Bereits angelegte Provider-Accounts: {llmAccounts.length}
                   {effectiveExistingLlmAccount ? " · neue Modelle werden an den gewählten Zugang angehängt" : ""}
                 </div>
+                <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
+                  <button
+                    style={btnStyle}
+                    disabled={busy}
+                    onClick={() =>
+                      run("Provider-Account speichern", async () => {
+                        setLlmCreateTestResult(null);
+                        setLlmCreateSaveResult(null);
+                        const result = await ensureLlmAccountReady();
+                        setNewLlmAccount((prev) => ({ ...prev, existing_account_id: result.accountId }));
+                        setLlmCreateSaveResult({
+                          status: "ok",
+                          message: "Provider-Account ist gespeichert und bereit. Jetzt kannst du die Modelle darunter anlegen.",
+                        });
+                      }, { showSuccessModal: false })
+                    }
+                  >
+                    Provider-Account speichern
+                  </button>
+                  <button
+                    style={{
+                      ...btnGhostStyle,
+                      border: "4px solid #16a34a",
+                      color: "#166534",
+                      background: "#f0fdf4",
+                      fontWeight: 700,
+                    }}
+                    disabled={busy || llmCreateTestBusy}
+                    onClick={() =>
+                      run("LLM-Verbindung testen", async () => {
+                        setLlmCreateTestBusy(true);
+                        setLlmCreateSaveResult(null);
+                        setLlmCreateTestResult(null);
+                        try {
+                          const resp = await api<{ result?: { status?: string; message?: string } }>("/api/admin/llm/providers/test", {
+                            method: "POST",
+                            body: JSON.stringify({
+                              provider: newLlmAccount.provider,
+                              model: newLlmModels[0]?.model ?? "",
+                              base_url: newLlmAccount.base_url,
+                              api_key: newLlmAccount.api_key,
+                              api_version: String(newLlmAccount.api_version || "").trim() || null,
+                            }),
+                          });
+                          const resultStatus = String(resp.result?.status ?? "").toLowerCase();
+                          const resultMessage = String(resp.result?.message ?? "Kein Testergebnis.");
+                          setLlmCreateTestResult({
+                            status: resultStatus === "ok" ? "ok" : "error",
+                            message: resultMessage,
+                          });
+                          setStatus(resultStatus === "ok" ? "Verbindung erfolgreich getestet." : resultMessage);
+                          if (resultStatus !== "ok") {
+                            throw new Error(resultMessage);
+                          }
+                        } finally {
+                          setLlmCreateTestBusy(false);
+                        }
+                      }, { showSuccessModal: false })
+                    }
+                  >
+                    {llmCreateTestBusy ? "Teste..." : "Verbindung testen"}
+                  </button>
+                </div>
               </div>
 
               <datalist id="llm-model-suggestions">
@@ -3662,6 +3777,7 @@ export default function AdminClient() {
                 ))}
               </datalist>
 
+              {llmAccountReadyForModels ? (
               <div style={{ display: "grid", gap: 10 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>Modelle unter diesem Provider</div>
@@ -3798,6 +3914,11 @@ export default function AdminClient() {
                   </div>
                 ))}
               </div>
+              ) : (
+              <div style={{ padding: 12, border: "1px dashed #cbd5e1", borderRadius: 10, background: "#f8fafc", fontSize: 12, color: "#475569" }}>
+                Schritt 2 wird erst freigeschaltet, wenn der Provider-Account inklusive API-Key gespeichert ist.
+              </div>
+              )}
               <div style={{ fontSize: 12, color: "#475569" }}>
                 Provider-Zugang wird einmalig angelegt. Modelle darunter werden separat gespeichert und bepreist. Die Kosten werden in USD je 1k Tokens gepflegt und für die spätere FX-/Billing-Hochrechnung verwendet.
               </div>
@@ -3865,28 +3986,24 @@ export default function AdminClient() {
                 </div>
               ) : null}
             </div>
+            {llmAccountReadyForModels ? (
             <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
-              {effectiveExistingLlmAccount ? (
-                <button
-                  style={btnGhostStyle}
-                  disabled={busy || !newLlmAccount.api_key.trim()}
-                  onClick={() =>
-                    run("API-Key speichern", async () => {
-                      setLlmCreateTestResult(null);
-                      await saveLlmAccountApiKey(effectiveExistingLlmAccount.id, newLlmAccount.api_key);
-                    }, { showSuccessModal: false })
-                  }
-                >
-                  API-Key speichern
-                </button>
-              ) : null}
               <button
                 style={btnStyle}
                 disabled={busy}
                 onClick={() =>
-                  run("Globalen LLM-Provider anlegen", async () => {
+                  run("LLM-Modelle speichern", async () => {
                     setLlmCreateTestResult(null);
                     setLlmCreateSaveResult(null);
+                    if (!effectiveExistingLlmAccount?.id) {
+                      throw new Error("Bitte zuerst den Provider-Account speichern.");
+                    }
+                    if (!effectiveExistingLlmAccountHasApiKey) {
+                      throw new Error("Bitte zuerst den API-Key des Provider-Accounts speichern.");
+                    }
+                    if (newLlmAccount.api_key.trim()) {
+                      throw new Error("Es ist noch ein ungespeicherter API-Key eingetragen. Bitte zuerst Schritt 1 speichern.");
+                    }
                     if (newLlmModels.length === 0) {
                       throw new Error("Mindestens ein Modell ist erforderlich.");
                     }
@@ -3905,80 +4022,13 @@ export default function AdminClient() {
                         throw new Error(`Für ${modelId} sind Input- und Output-Kosten in USD Pflichtfelder und müssen größer als 0 sein.`);
                       }
                     }
-
-                    let accountId = String(newLlmAccount.existing_account_id || "").trim();
-                    let accountHasStoredApiKey = effectiveExistingLlmAccountHasApiKey;
-                    if (!accountId) {
-                      const matchingAccount = llmAccounts.find((account) =>
-                        String(account.provider ?? "").trim().toLowerCase() === String(newLlmAccount.provider ?? "").trim().toLowerCase()
-                        && normalizeLlmBaseUrl(account.base_url) === normalizeLlmBaseUrl(newLlmAccount.base_url),
-                      );
-                      if (matchingAccount?.id) {
-                        accountId = matchingAccount.id;
-                        accountHasStoredApiKey = Boolean(String(((matchingAccount.auth_config ?? {}) as Record<string, unknown>).api_key ?? ((matchingAccount.auth_config ?? {}) as Record<string, unknown>).api_key_encrypted ?? "").trim());
-                        setNewLlmAccount((v) => ({ ...v, existing_account_id: matchingAccount.id }));
-                        setLlmCreateSaveResult({
-                          status: "info",
-                          message: "Vorhandener Provider-Account erkannt. Das Modell wird unter diesem Zugang gespeichert.",
-                        });
-                      } else {
-                        try {
-                          const createdAccount = await api<{ account?: { id: string } }>("/api/admin/llm/accounts", {
-                            method: "POST",
-                            body: JSON.stringify({
-                              provider: newLlmAccount.provider,
-                              display_name: newLlmAccount.display_name.trim() || null,
-                              base_url: newLlmAccount.base_url,
-                              auth_type: newLlmAccount.auth_type,
-                              api_version: String(newLlmAccount.api_version || "").trim() || null,
-                            }),
-                          });
-                          accountId = String(createdAccount.account?.id ?? "").trim();
-                        } catch (error) {
-                          const message = error instanceof Error ? error.message : "Provider-Account konnte nicht angelegt werden.";
-                          if (message.toLowerCase().includes("bereits ein provider-account")) {
-                            const refreshedAccounts = await loadLlmAccounts();
-                            const fallbackAccount = refreshedAccounts.find((account) =>
-                              String(account.provider ?? "").trim().toLowerCase() === String(newLlmAccount.provider ?? "").trim().toLowerCase()
-                              && normalizeLlmBaseUrl(account.base_url) === normalizeLlmBaseUrl(newLlmAccount.base_url),
-                            );
-                            if (fallbackAccount?.id) {
-                              accountId = fallbackAccount.id;
-                              accountHasStoredApiKey = Boolean(String(((fallbackAccount.auth_config ?? {}) as Record<string, unknown>).api_key ?? ((fallbackAccount.auth_config ?? {}) as Record<string, unknown>).api_key_encrypted ?? "").trim());
-                              setNewLlmAccount((v) => ({ ...v, existing_account_id: fallbackAccount.id }));
-                              setLlmCreateSaveResult({
-                                status: "info",
-                                message: "Der Provider-Account existiert bereits und wurde automatisch ausgewählt.",
-                              });
-                            } else {
-                              throw error;
-                            }
-                          } else {
-                            throw error;
-                          }
-                        }
-                      }
-                    }
-                    if (!accountId) {
-                      throw new Error("Provider-Account wurde ohne gültige ID angelegt.");
-                    }
-                    if (!newLlmAccount.api_key.trim() && !accountHasStoredApiKey) {
-                      throw new Error("Für diesen Provider-Account ist kein API-Key gespeichert. Bitte zuerst einen API-Key eingeben und speichern.");
-                    }
-                    if (newLlmAccount.api_key.trim()) {
-                      await api(`/api/admin/llm/accounts/${accountId}/secrets`, {
-                        method: "POST",
-                        body: JSON.stringify({ api_key: newLlmAccount.api_key }),
-                      });
-                      accountHasStoredApiKey = true;
-                    }
                     for (const modelDraft of newLlmModels) {
                       const inputCost = parsePositiveNumber(modelDraft.input_cost_usd_per_1k);
                       const outputCost = parsePositiveNumber(modelDraft.output_cost_usd_per_1k);
                       await api("/api/admin/llm/providers", {
                         method: "POST",
                         body: JSON.stringify({
-                          provider_account_id: accountId,
+                          provider_account_id: effectiveExistingLlmAccount.id,
                           model: modelDraft.model.trim(),
                           display_label: modelDraft.display_label.trim() || null,
                           hint: modelDraft.hint.trim() || null,
@@ -3994,62 +4044,18 @@ export default function AdminClient() {
                     }
                     setLlmCreateSaveResult({
                       status: "ok",
-                      message: `Der LLM-Zugang und ${newLlmModels.length} Modell(e) wurden gespeichert.`,
+                      message: `${newLlmModels.length} Modell(e) wurden unter dem gespeicherten Provider-Account angelegt.`,
                     });
-                    setNewLlmAccount((v) => ({ ...v, existing_account_id: "", display_name: "", api_key: "" }));
                     setNewLlmModels([createEmptyLlmModelDraft(newLlmAccount.provider, true)]);
-                    await loadLlmAccounts();
                     await loadLlmProviders();
                     setLlmGlobalTab("overview");
                   })
                 }
               >
-                LLM speichern
-              </button>
-              <button
-                style={{
-                  ...btnGhostStyle,
-                  border: "4px solid #16a34a",
-                  color: "#166534",
-                  background: "#f0fdf4",
-                  fontWeight: 700,
-                }}
-                disabled={busy || llmCreateTestBusy}
-                onClick={() =>
-                  run("LLM-Verbindung testen", async () => {
-                    setLlmCreateTestBusy(true);
-                    setLlmCreateSaveResult(null);
-                    setLlmCreateTestResult(null);
-                    try {
-                      const resp = await api<{ result?: { status?: string; message?: string } }>("/api/admin/llm/providers/test", {
-                        method: "POST",
-                        body: JSON.stringify({
-                          provider: newLlmAccount.provider,
-                          model: newLlmModels[0]?.model ?? "",
-                          base_url: newLlmAccount.base_url,
-                          api_key: newLlmAccount.api_key,
-                          api_version: String(newLlmAccount.api_version || "").trim() || null,
-                        }),
-                      });
-                      const resultStatus = String(resp.result?.status ?? "").toLowerCase();
-                      const resultMessage = String(resp.result?.message ?? "Kein Testergebnis.");
-                      setLlmCreateTestResult({
-                        status: resultStatus === "ok" ? "ok" : "error",
-                        message: resultMessage,
-                      });
-                      setStatus(resultStatus === "ok" ? "Verbindung erfolgreich getestet." : resultMessage);
-                      if (resultStatus !== "ok") {
-                        throw new Error(resultMessage);
-                      }
-                    } finally {
-                      setLlmCreateTestBusy(false);
-                    }
-                  }, { showSuccessModal: false })
-                }
-              >
-                {llmCreateTestBusy ? "Teste..." : "Verbindung testen"}
+                Modelle speichern
               </button>
             </div>
+            ) : null}
           </>
         ) : null}
 
