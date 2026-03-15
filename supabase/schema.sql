@@ -65,6 +65,7 @@ CREATE TABLE public.partners (
   website_url text,
   created_at timestamp with time zone DEFAULT now(),
   contact_email text,
+  is_system_default boolean NOT NULL DEFAULT false,
   CONSTRAINT partners_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.report_texts (

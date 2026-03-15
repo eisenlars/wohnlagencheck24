@@ -12,6 +12,7 @@ type UpdatePartnerBody = {
   contact_last_name?: string | null;
   website_url?: string | null;
   is_active?: boolean;
+  is_system_default?: boolean;
   llm_partner_managed_allowed?: boolean;
   llm_mode_default?: string | null;
 };
@@ -48,6 +49,11 @@ function isMissingPartnerLlmPolicyColumns(error: unknown): boolean {
   );
 }
 
+function isMissingPartnerSystemDefaultColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partners.is_system_default") && msg.includes("does not exist");
+}
+
 function normalizeNullableString(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   const normalized = String(value).trim();
@@ -58,6 +64,7 @@ function withPartnerFallback<T extends Record<string, unknown>>(row: T, includeI
   contact_first_name: null;
   contact_last_name: null;
   is_active: boolean;
+  is_system_default: boolean;
   llm_partner_managed_allowed: boolean;
   llm_mode_default: string;
 } {
@@ -66,6 +73,7 @@ function withPartnerFallback<T extends Record<string, unknown>>(row: T, includeI
     contact_first_name: null,
     contact_last_name: null,
     is_active: includeIsActive ? Boolean((row as { is_active?: unknown }).is_active) : true,
+    is_system_default: Boolean((row as { is_system_default?: unknown }).is_system_default),
     llm_partner_managed_allowed: Boolean((row as { llm_partner_managed_allowed?: unknown }).llm_partner_managed_allowed),
     llm_mode_default: String((row as { llm_mode_default?: unknown }).llm_mode_default ?? "central_managed"),
   };
@@ -105,6 +113,7 @@ export async function PATCH(
     if (body.contact_last_name !== undefined) patch.contact_last_name = normalizeNullableString(body.contact_last_name);
     if (body.website_url !== undefined) patch.website_url = normalizeNullableString(body.website_url);
     if (body.is_active !== undefined) patch.is_active = Boolean(body.is_active);
+    if (body.is_system_default !== undefined) patch.is_system_default = Boolean(body.is_system_default);
     if (body.llm_partner_managed_allowed !== undefined) patch.llm_partner_managed_allowed = Boolean(body.llm_partner_managed_allowed);
     if (body.llm_mode_default !== undefined) patch.llm_mode_default = normalizeNullableString(body.llm_mode_default) ?? "central_managed";
 
@@ -117,18 +126,22 @@ export async function PATCH(
       .from("partners")
       .update(patch)
       .eq("id", partnerId)
-      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, llm_partner_managed_allowed, llm_mode_default, created_at")
+      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, is_system_default, llm_partner_managed_allowed, llm_mode_default, created_at")
       .maybeSingle();
 
-    if (error && (isMissingIsActiveColumn(error) || isMissingPartnerNameColumns(error) || isMissingPartnerLlmPolicyColumns(error))) {
+    if (error && (isMissingIsActiveColumn(error) || isMissingPartnerNameColumns(error) || isMissingPartnerLlmPolicyColumns(error) || isMissingPartnerSystemDefaultColumn(error))) {
       const patchNoIsActive = { ...patch };
       delete patchNoIsActive.is_active;
       const missingIsActive = isMissingIsActiveColumn(error);
       const missingNames = isMissingPartnerNameColumns(error);
       const missingLlm = isMissingPartnerLlmPolicyColumns(error);
+      const missingSystemDefault = isMissingPartnerSystemDefaultColumn(error);
       if (missingNames) {
         delete patchNoIsActive.contact_first_name;
         delete patchNoIsActive.contact_last_name;
+      }
+      if (missingSystemDefault) {
+        delete patchNoIsActive.is_system_default;
       }
       if (missingLlm) {
         delete patchNoIsActive.llm_partner_managed_allowed;
@@ -161,6 +174,7 @@ export async function PATCH(
         ...(!missingNames ? ["contact_first_name", "contact_last_name"] : []),
         "website_url",
         ...(!missingIsActive ? ["is_active"] : []),
+        ...(!missingSystemDefault ? ["is_system_default"] : []),
         ...(!missingLlm ? ["llm_partner_managed_allowed", "llm_mode_default"] : []),
         "created_at",
       ].join(", ");
@@ -234,14 +248,15 @@ export async function GET(
     const admin = createAdminClient();
     let { data: partner, error: partnerError } = await admin
       .from("partners")
-      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, llm_partner_managed_allowed, llm_mode_default, created_at")
+      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, is_system_default, llm_partner_managed_allowed, llm_mode_default, created_at")
       .eq("id", partnerId)
       .maybeSingle();
 
-    if (partnerError && (isMissingIsActiveColumn(partnerError) || isMissingPartnerNameColumns(partnerError) || isMissingPartnerLlmPolicyColumns(partnerError))) {
+    if (partnerError && (isMissingIsActiveColumn(partnerError) || isMissingPartnerNameColumns(partnerError) || isMissingPartnerLlmPolicyColumns(partnerError) || isMissingPartnerSystemDefaultColumn(partnerError))) {
       const missingIsActive = isMissingIsActiveColumn(partnerError);
       const missingNames = isMissingPartnerNameColumns(partnerError);
       const missingLlm = isMissingPartnerLlmPolicyColumns(partnerError);
+      const missingSystemDefault = isMissingPartnerSystemDefaultColumn(partnerError);
       const fallbackSelect = [
         "id",
         "company_name",
@@ -249,6 +264,7 @@ export async function GET(
         ...(!missingNames ? ["contact_first_name", "contact_last_name"] : []),
         "website_url",
         ...(!missingIsActive ? ["is_active"] : []),
+        ...(!missingSystemDefault ? ["is_system_default"] : []),
         ...(!missingLlm ? ["llm_partner_managed_allowed", "llm_mode_default"] : []),
         "created_at",
       ].join(", ");

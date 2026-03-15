@@ -150,26 +150,25 @@ export async function POST(
     ];
     const assignmentAreaIds = toUniqueAreaIds(bootstrapTargets);
 
-    const { data: activeAssignedRows, error: activeAssignedError } = await admin
+    const { data: existingAssignedRows, error: existingAssignedError } = await admin
       .from("partner_area_map")
       .select("auth_user_id, area_id")
       .in("area_id", assignmentAreaIds)
-      .eq("is_active", true)
       .neq("auth_user_id", partnerId);
-    if (activeAssignedError) {
-      return NextResponse.json({ error: activeAssignedError.message }, { status: 500 });
+    if (existingAssignedError) {
+      return NextResponse.json({ error: existingAssignedError.message }, { status: 500 });
     }
-    if (Array.isArray(activeAssignedRows) && activeAssignedRows.length > 0) {
+    if (Array.isArray(existingAssignedRows) && existingAssignedRows.length > 0) {
       const blockedAreaIds = Array.from(
         new Set(
-          activeAssignedRows
+          existingAssignedRows
             .map((row) => String((row as { area_id?: string | null }).area_id ?? "").trim())
             .filter((id) => id.length > 0),
         ),
       );
       return NextResponse.json(
         {
-          error: "Area already assigned to another partner",
+          error: "Area already has an operational owner. Please use handover instead of direct assignment.",
           blocked_area_ids: blockedAreaIds,
         },
         { status: 409 },

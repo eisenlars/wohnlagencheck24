@@ -127,20 +127,22 @@ export async function POST(req: Request) {
     if (!areaExists) return NextResponse.json({ error: "Area not found" }, { status: 404 });
     const transferAreaIds = await resolveTransferAreaIds(admin, areaId);
 
-    const { data: activeMappings, error: activeMappingsError } = await admin
+    const { data: existingMappings, error: existingMappingsError } = await admin
       .from("partner_area_map")
-      .select("id, auth_user_id, area_id, is_active")
-      .in("area_id", transferAreaIds)
-      .eq("is_active", true);
-    if (activeMappingsError) return NextResponse.json({ error: activeMappingsError.message }, { status: 500 });
+      .select("id, auth_user_id, area_id")
+      .in("area_id", transferAreaIds);
+    if (existingMappingsError) return NextResponse.json({ error: existingMappingsError.message }, { status: 500 });
 
-    const activeRows = (activeMappings ?? []).filter((row) => String(row.auth_user_id ?? "") !== oldPartnerId);
-    if (activeRows.length > 0) {
+    const conflictingRows = (existingMappings ?? []).filter((row) => {
+      const ownerId = String(row.auth_user_id ?? "").trim();
+      return ownerId !== oldPartnerId && ownerId !== newPartnerId;
+    });
+    if (conflictingRows.length > 0) {
       const blockedAreaIds = Array.from(
-        new Set(activeRows.map((row) => String(row.area_id ?? "").trim()).filter((id) => id.length > 0)),
+        new Set(conflictingRows.map((row) => String(row.area_id ?? "").trim()).filter((id) => id.length > 0)),
       );
       return NextResponse.json(
-        { error: "Area is currently active on another partner", blocked_area_ids: blockedAreaIds },
+        { error: "Area already has another operational owner", blocked_area_ids: blockedAreaIds },
         { status: 409 },
       );
     }
@@ -168,7 +170,6 @@ export async function POST(req: Request) {
       .update({ is_active: false, is_public_live: false })
       .in("area_id", transferAreaIds)
       .eq("auth_user_id", oldPartnerId)
-      .eq("is_active", true)
       .select("id, auth_user_id, area_id, is_active");
     if (deactivateMapError) {
       return NextResponse.json({ error: deactivateMapError.message }, { status: 500 });
@@ -227,16 +228,15 @@ export async function POST(req: Request) {
     let oldPartnerDeactivated = false;
     let oldPartnerDeactivateSkippedReason: string | null = null;
     if (deactivateOldPartner) {
-      const { count: remainingActiveAreas, error: remainingAreasError } = await admin
+      const { count: remainingAreaAssignments, error: remainingAreasError } = await admin
         .from("partner_area_map")
         .select("id", { count: "exact", head: true })
-        .eq("auth_user_id", oldPartnerId)
-        .eq("is_active", true);
+        .eq("auth_user_id", oldPartnerId);
       if (remainingAreasError) {
         return NextResponse.json({ error: remainingAreasError.message }, { status: 500 });
       }
 
-      if ((remainingActiveAreas ?? 0) === 0) {
+      if ((remainingAreaAssignments ?? 0) === 0) {
         const { error: deactivatePartnerError } = await admin
           .from("partners")
           .update({ is_active: false })
@@ -246,7 +246,7 @@ export async function POST(req: Request) {
         }
         oldPartnerDeactivated = true;
       } else {
-        oldPartnerDeactivateSkippedReason = "Old partner still has active area assignments";
+        oldPartnerDeactivateSkippedReason = "Old partner still has remaining area assignments";
       }
     }
 

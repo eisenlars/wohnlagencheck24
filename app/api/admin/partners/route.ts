@@ -17,6 +17,7 @@ type CreatePartnerBody = {
   contact_last_name?: string | null;
   website_url?: string | null;
   is_active?: boolean;
+  is_system_default?: boolean;
   llm_partner_managed_allowed?: boolean;
   llm_mode_default?: string | null;
 };
@@ -44,10 +45,16 @@ function isMissingPartnerLlmPolicyColumns(error: unknown): boolean {
   );
 }
 
+function isMissingPartnerSystemDefaultColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partners.is_system_default") && msg.includes("does not exist");
+}
+
 function withPartnerFallback<T extends Record<string, unknown>>(row: T, includeIsActive: boolean): T & {
   contact_first_name: null;
   contact_last_name: null;
   is_active: boolean;
+  is_system_default: boolean;
   llm_partner_managed_allowed: boolean;
   llm_mode_default: string;
 } {
@@ -56,6 +63,7 @@ function withPartnerFallback<T extends Record<string, unknown>>(row: T, includeI
     contact_first_name: null,
     contact_last_name: null,
     is_active: includeIsActive ? Boolean((row as { is_active?: unknown }).is_active) : true,
+    is_system_default: Boolean((row as { is_system_default?: unknown }).is_system_default),
     llm_partner_managed_allowed: Boolean((row as { llm_partner_managed_allowed?: unknown }).llm_partner_managed_allowed),
     llm_mode_default: String((row as { llm_mode_default?: unknown }).llm_mode_default ?? "central_managed"),
   };
@@ -99,6 +107,13 @@ export async function POST(req: Request) {
     const contactEmail = normalizeNullableString(body.contact_email)?.toLowerCase() ?? null;
     const contactFirstName = normalizeNullableString(body.contact_first_name);
     const contactLastName = normalizeNullableString(body.contact_last_name);
+
+    if (body.is_system_default === true) {
+      return NextResponse.json(
+        { error: "System default partners cannot be created through the regular invite flow." },
+        { status: 400 },
+      );
+    }
 
     if (!companyName || !contactEmail || !contactFirstName || !contactLastName) {
       return NextResponse.json(
@@ -151,6 +166,7 @@ export async function POST(req: Request) {
       website_url: normalizeNullableString(body.website_url),
       // Neu angelegte Partner bleiben inaktiv, bis sie ihren Account-Flow abgeschlossen haben.
       is_active: body.is_active === true ? true : false,
+      is_system_default: body.is_system_default === true,
       llm_partner_managed_allowed: body.llm_partner_managed_allowed === true,
       llm_mode_default: normalizeNullableString(body.llm_mode_default) ?? "central_managed",
     };
@@ -158,13 +174,14 @@ export async function POST(req: Request) {
     let { data, error } = await admin
       .from("partners")
       .upsert(payload, { onConflict: "id" })
-      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, llm_partner_managed_allowed, llm_mode_default, created_at")
+      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, is_system_default, llm_partner_managed_allowed, llm_mode_default, created_at")
       .single();
 
-    if (error && (isMissingIsActiveColumn(error) || isMissingPartnerNameColumns(error) || isMissingPartnerLlmPolicyColumns(error))) {
+    if (error && (isMissingIsActiveColumn(error) || isMissingPartnerNameColumns(error) || isMissingPartnerLlmPolicyColumns(error) || isMissingPartnerSystemDefaultColumn(error))) {
       const missingIsActive = isMissingIsActiveColumn(error);
       const missingNames = isMissingPartnerNameColumns(error);
       const missingLlm = isMissingPartnerLlmPolicyColumns(error);
+      const missingSystemDefault = isMissingPartnerSystemDefaultColumn(error);
       const fallbackPayload: Record<string, unknown> = {
         id: authUserId,
         company_name: companyName,
@@ -178,6 +195,9 @@ export async function POST(req: Request) {
       if (!missingIsActive) {
         fallbackPayload.is_active = body.is_active === true ? true : false;
       }
+      if (!missingSystemDefault) {
+        fallbackPayload.is_system_default = body.is_system_default === true;
+      }
       if (!missingLlm) {
         fallbackPayload.llm_partner_managed_allowed = body.llm_partner_managed_allowed === true;
         fallbackPayload.llm_mode_default = normalizeNullableString(body.llm_mode_default) ?? "central_managed";
@@ -189,6 +209,7 @@ export async function POST(req: Request) {
         ...(!missingNames ? ["contact_first_name", "contact_last_name"] : []),
         "website_url",
         ...(!missingIsActive ? ["is_active"] : []),
+        ...(!missingSystemDefault ? ["is_system_default"] : []),
         ...(!missingLlm ? ["llm_partner_managed_allowed", "llm_mode_default"] : []),
         "created_at",
       ].join(", ");
@@ -248,6 +269,7 @@ export async function POST(req: Request) {
         company_name: data.company_name,
         contact_email: data.contact_email,
         is_active: data.is_active,
+        is_system_default: (data as Record<string, unknown>).is_system_default,
         llm_partner_managed_allowed: (data as Record<string, unknown>).llm_partner_managed_allowed,
         llm_mode_default: (data as Record<string, unknown>).llm_mode_default,
         auth_user_id: authUserId,
@@ -314,7 +336,7 @@ export async function GET(req: Request) {
     const admin = createAdminClient();
     let query = admin
       .from("partners")
-      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, llm_partner_managed_allowed, llm_mode_default, created_at")
+      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, is_system_default, llm_partner_managed_allowed, llm_mode_default, created_at")
       .order("company_name", { ascending: true });
 
     if (!includeInactive) {
@@ -322,10 +344,11 @@ export async function GET(req: Request) {
     }
 
     let { data, error } = await query;
-    if (error && (isMissingIsActiveColumn(error) || isMissingPartnerNameColumns(error) || isMissingPartnerLlmPolicyColumns(error))) {
+    if (error && (isMissingIsActiveColumn(error) || isMissingPartnerNameColumns(error) || isMissingPartnerLlmPolicyColumns(error) || isMissingPartnerSystemDefaultColumn(error))) {
       const missingIsActive = isMissingIsActiveColumn(error);
       const missingNames = isMissingPartnerNameColumns(error);
       const missingLlm = isMissingPartnerLlmPolicyColumns(error);
+      const missingSystemDefault = isMissingPartnerSystemDefaultColumn(error);
       const fallbackSelect = [
         "id",
         "company_name",
@@ -333,6 +356,7 @@ export async function GET(req: Request) {
         ...(!missingNames ? ["contact_first_name", "contact_last_name"] : []),
         "website_url",
         ...(!missingIsActive ? ["is_active"] : []),
+        ...(!missingSystemDefault ? ["is_system_default"] : []),
         ...(!missingLlm ? ["llm_partner_managed_allowed", "llm_mode_default"] : []),
         "created_at",
       ].join(", ");

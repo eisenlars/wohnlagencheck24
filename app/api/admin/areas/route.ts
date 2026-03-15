@@ -23,8 +23,7 @@ export async function GET(req: Request) {
     const admin = createAdminClient();
     const { data: mappedRows, error: mappedError } = await admin
       .from("partner_area_map")
-      .select("area_id, is_active")
-      .eq("is_active", true);
+      .select("area_id");
     if (mappedError) return NextResponse.json({ error: mappedError.message }, { status: 500 });
 
     const blockedKreisIds = new Set(
