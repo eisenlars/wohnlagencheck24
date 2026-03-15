@@ -202,6 +202,7 @@ type LlmProviderAccount = {
 type LlmCreateModelDraft = {
   key: string;
   model: string;
+  manual_model_input: boolean;
   display_label: string;
   hint: string;
   badges: string;
@@ -402,9 +403,11 @@ function normalizeLlmBaseUrl(value: string): string {
 }
 
 function createEmptyLlmModelDraft(provider: string, recommended = false): LlmCreateModelDraft {
+  const normalizedProvider = String(provider ?? "").trim().toLowerCase();
   return {
     key: `${provider}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
     model: getSuggestedLatestModel(provider) || "gpt-4o-mini",
+    manual_model_input: normalizedProvider === "azure_openai",
     display_label: "",
     hint: "",
     badges: "",
@@ -3716,7 +3719,11 @@ export default function AdminClient() {
                         api_version: existing?.api_version ?? v.api_version,
                       }));
                       if (existing) {
-                        setNewLlmModels((prev) => prev.map((item, idx) => idx === 0 ? { ...item, model: getSuggestedLatestModel(existing.provider) || item.model } : item));
+                        setNewLlmModels((prev) => prev.map((item, idx) => idx === 0 ? {
+                          ...item,
+                          model: getSuggestedLatestModel(existing.provider) || item.model,
+                          manual_model_input: String(existing.provider).toLowerCase() === "azure_openai",
+                        } : item));
                       }
                     }}
                   >
@@ -3745,7 +3752,11 @@ export default function AdminClient() {
                       setNewLlmModels((prev) =>
                         prev.map((item, idx) =>
                           idx === 0
-                            ? { ...item, model: getSuggestedLatestModel(provider) || item.model }
+                            ? {
+                                ...item,
+                                model: getSuggestedLatestModel(provider) || item.model,
+                                manual_model_input: String(provider).toLowerCase() === "azure_openai",
+                              }
                             : item,
                         ),
                       );
@@ -3972,27 +3983,98 @@ export default function AdminClient() {
                         <div style={grid2Style}>
                           <div>
                             <div style={requiredFieldHintStyle}>Pflichtfeld</div>
+                            <div style={{ display: "grid", gap: 6 }}>
+                              <div style={{ fontSize: 11, color: "#475569" }}>
+                                {String(newLlmAccount.provider).toLowerCase() === "azure_openai"
+                                  ? "Azure Deployment-Name"
+                                  : "Technische API-Modell-ID"}
+                              </div>
+                              {String(newLlmAccount.provider).toLowerCase() !== "azure_openai" && !modelDraft.manual_model_input ? (
+                                <>
+                                  <select
+                                    style={requiredInputStyle}
+                                    value={modelDraft.model}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      setLlmCreateTestResult(null);
+                                      setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, model: value } : item));
+                                    }}
+                                  >
+                                    {llmModelOptions.map((model) => (
+                                      <option key={model} value={model}>
+                                        {model}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                    <span style={{ fontSize: 11, color: "#64748b" }}>
+                                      Bitte die exakte Provider-Modell-ID wählen.
+                                    </span>
+                                    <button
+                                      type="button"
+                                      style={{ ...btnGhostStyle, padding: "6px 8px" }}
+                                      onClick={() => {
+                                        setLlmCreateTestResult(null);
+                                        setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, manual_model_input: true } : item));
+                                      }}
+                                    >
+                                      Manuell eingeben
+                                    </button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <input
+                                    style={requiredInputStyle}
+                                    placeholder={String(newLlmAccount.provider).toLowerCase() === "azure_openai" ? "Deployment-Name" : "Technische Modell-ID"}
+                                    value={modelDraft.model}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      setLlmCreateTestResult(null);
+                                      setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, model: value } : item));
+                                    }}
+                                  />
+                                  {String(newLlmAccount.provider).toLowerCase() !== "azure_openai" ? (
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                      <span style={{ fontSize: 11, color: "#64748b" }}>
+                                        Ausnahmefall: nur nutzen, wenn die exakte Modell-ID nicht in der Vorschlagsliste steht.
+                                      </span>
+                                      <button
+                                        type="button"
+                                        style={{ ...btnGhostStyle, padding: "6px 8px" }}
+                                        onClick={() => {
+                                          setLlmCreateTestResult(null);
+                                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? {
+                                            ...item,
+                                            manual_model_input: false,
+                                            model: getSuggestedLatestModel(newLlmAccount.provider) || item.model,
+                                          } : item));
+                                        }}
+                                      >
+                                        Zur Auswahlliste
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div style={{ fontSize: 11, color: "#64748b" }}>
+                                      Für Azure muss hier der exakte Deployment-Name hinterlegt werden.
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: "grid", gap: 6 }}>
+                            <div style={{ fontSize: 11, color: "#475569" }}>Anzeigename für UI</div>
                             <input
-                              list="llm-model-suggestions"
-                              style={requiredInputStyle}
-                              placeholder="Modell-ID"
-                              value={modelDraft.model}
+                              style={inputStyle}
+                              placeholder="Anzeigename (optional)"
+                              value={modelDraft.display_label}
                               onChange={(e) => {
-                                const value = e.target.value;
                                 setLlmCreateTestResult(null);
-                                setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, model: value } : item));
+                                setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, display_label: e.target.value } : item));
                               }}
                             />
                           </div>
-                          <input
-                            style={inputStyle}
-                            placeholder="Anzeigename (optional)"
-                            value={modelDraft.display_label}
-                            onChange={(e) => {
-                              setLlmCreateTestResult(null);
-                              setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, display_label: e.target.value } : item));
-                            }}
-                          />
                         </div>
                         <div style={{ marginTop: 10 }}>
                           <input
