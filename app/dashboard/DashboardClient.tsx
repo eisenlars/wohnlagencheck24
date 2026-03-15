@@ -325,6 +325,7 @@ export default function DashboardClient() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const factorFormRef = useRef<FactorFormHandle | null>(null);
+  const previewDebugLoggedRef = useRef(false);
   const [configs, setConfigs] = useState<PartnerAreaConfig[]>([]);
   const [selectedConfig, setSelectedConfig] = useState<PartnerAreaConfig | null>(null);
   const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
@@ -516,6 +517,21 @@ export default function DashboardClient() {
               String(a.area_id ?? '').localeCompare(String(b.area_id ?? ''), 'de'),
             );
           }
+
+          console.debug('[preview-debug] loadData', {
+            activeDistrictSlugs,
+            childAreasCount: Array.isArray(childAreas) ? childAreas.length : 0,
+            childAreasSample: (childAreas ?? []).slice(0, 5).map((area) => ({
+              id: String(area.id ?? ''),
+              parent_slug: String(area.parent_slug ?? ''),
+              slug: String(area.slug ?? ''),
+            })),
+            derivedOrtslagenCount: derivedOrtslagen.length,
+            derivedOrtslagenSample: derivedOrtslagen.slice(0, 5).map((cfg) => ({
+              area_id: String(cfg.area_id ?? ''),
+              parent_slug: String(cfg.areas?.parent_slug ?? ''),
+            })),
+          });
         }
       }
 
@@ -880,6 +896,29 @@ export default function DashboardClient() {
     && selectedPreviewStatusKey === 'approved_preview'
     && !Boolean(effectiveSelectedConfig.is_public_live),
   );
+
+  useEffect(() => {
+    if (!showWelcome || previewDistricts.length === 0) {
+      previewDebugLoggedRef.current = false;
+      return;
+    }
+    if (previewDebugLoggedRef.current) return;
+    previewDebugLoggedRef.current = true;
+    console.debug('[preview-debug] welcome-state', {
+      showWelcome,
+      selectedConfig: selectedConfig?.area_id ?? null,
+      effectiveSelectedConfig: effectiveSelectedConfig?.area_id ?? null,
+      expandedDistrict,
+      previewDistricts: previewDistricts.map((district) => district.area_id),
+      configsCount: configs.length,
+      configsSample: configs.slice(0, 12).map((cfg) => ({
+        area_id: String(cfg.area_id ?? ''),
+        is_active: Boolean(cfg.is_active),
+        activation_status: String(cfg.activation_status ?? ''),
+        parent_slug: String(cfg.areas?.parent_slug ?? ''),
+      })),
+    });
+  }, [showWelcome, previewDistricts, selectedConfig?.area_id, effectiveSelectedConfig?.area_id, expandedDistrict, configs]);
 
   useEffect(() => {
     if (activeMainTab === 'settings') return;
@@ -1412,6 +1451,18 @@ export default function DashboardClient() {
                         const subAreas = configs.filter((cfg) => (
                           cfg.area_id.startsWith(district.area_id) && cfg.area_id.split('-').length > 3
                         ));
+                        console.debug('[preview-debug] district-render', {
+                          district: district.area_id,
+                          isSelected,
+                          isExpanded,
+                          selectedConfig: selectedConfig?.area_id ?? null,
+                          expandedDistrict,
+                          subAreasCount: subAreas.length,
+                          subAreasSample: subAreas.slice(0, 8).map((cfg) => ({
+                            area_id: String(cfg.area_id ?? ''),
+                            parent_slug: String(cfg.areas?.parent_slug ?? ''),
+                          })),
+                        });
                         return (
                           <div key={`preview:${district.area_id}`} style={{ marginBottom: '8px' }}>
                             <button
@@ -1442,6 +1493,11 @@ export default function DashboardClient() {
                                     {ort.areas?.name}
                                   </button>
                                 ))}
+                              </div>
+                            ) : null}
+                            {isExpanded ? (
+                              <div style={{ marginTop: 6, fontSize: 11, color: '#64748b' }}>
+                                DEBUG: {district.area_id} · subAreas={subAreas.length} · selected={selectedConfig?.area_id ?? 'none'} · expanded={expandedDistrict ?? 'none'}
                               </div>
                             ) : null}
                           </div>
