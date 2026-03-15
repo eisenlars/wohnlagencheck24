@@ -157,7 +157,14 @@ function buildPartnerApprovedText(args: SendPartnerAreaApprovedEmailArgs): strin
     `Area ID: ${args.areaId}`,
     `Freigegeben am: ${approvedAt}`,
     "",
-    "Bitte pruefe nun Inhalte, Darstellung sowie SEO/GEO-Einstellungen vor dem finalen Onlineschalten.",
+    "Dein Gebiet ist in diesem Zustand noch nicht regulär online.",
+    "Bitte pruefe jetzt im Partnerbereich:",
+    "- Texte und redaktionelle Inhalte",
+    "- Werte und Faktoren",
+    "- SEO- und GEO-Einstellungen",
+    "- falls gebucht: lokale Website und Internationalisierung",
+    "",
+    "Erst nach dieser finalen Vorbereitung sollte das Gebiet online geschaltet werden.",
   ].join("\n");
 }
 

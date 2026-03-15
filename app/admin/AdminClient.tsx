@@ -2982,17 +2982,37 @@ export default function AdminClient() {
                 </>
               ) : null}
               {currentReviewState === "approved_preview" ? (
-                <button
-                  style={btnStyle}
-                  disabled={busy || reviewBusy || !reviewAreaId}
-                  onClick={() =>
-                    run("Onlineschalten", async () => {
-                      await setAreaPublication(true);
-                    }, { clearReviewOnClose: true })
-                  }
-                >
-                  Onlineschalten
-                </button>
+                <>
+                  <div
+                    style={{
+                      width: "100%",
+                      border: "1px solid #d8b4fe",
+                      background: "#faf5ff",
+                      borderRadius: 10,
+                      padding: 12,
+                      color: "#4c1d95",
+                      fontSize: 13,
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    <strong>Previewphase aktiv.</strong>
+                    {" "}
+                    Das Gebiet ist fachlich freigegeben und kann jetzt vom Partner intern vorbereitet werden.
+                    Bitte Inhalte, Werte sowie SEO-/GEO-Einstellungen vor dem finalen Onlineschalten vollständig prüfen.
+                    Eine direkte Frontend-Preview wird im nächsten Schritt ergänzt; aktuell arbeitet der Partner dazu im Dashboard.
+                  </div>
+                  <button
+                    style={btnStyle}
+                    disabled={busy || reviewBusy || !reviewAreaId}
+                    onClick={() =>
+                      run("Onlineschalten", async () => {
+                        await setAreaPublication(true);
+                      }, { clearReviewOnClose: true })
+                    }
+                  >
+                    Onlineschalten
+                  </button>
+                </>
               ) : null}
               {currentReviewState === "live" ? (
                 <button
