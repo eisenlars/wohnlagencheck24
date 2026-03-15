@@ -119,7 +119,7 @@ async function deleteStorageFiles(
 }
 
 export type PartnerPurgeCheckResult = {
-  partner: { id: string; company_name: string | null };
+  partner: { id: string; company_name: string | null; is_system_default: boolean };
   canPurge: boolean;
   blockers: string[];
   summary: {
@@ -136,7 +136,7 @@ export type PartnerPurgeCheckResult = {
 export async function getPartnerPurgeCheck(admin: ReturnType<typeof createAdminClient>, partnerId: string): Promise<PartnerPurgeCheckResult> {
   const { data: partner, error: partnerError } = await admin
     .from("partners")
-    .select("id, company_name")
+    .select("id, company_name, is_system_default")
     .eq("id", partnerId)
     .maybeSingle();
   if (partnerError) throw new Error(partnerError.message);
@@ -167,17 +167,19 @@ export async function getPartnerPurgeCheck(admin: ReturnType<typeof createAdminC
   affectedCounts.storage_files = storageFiles.length;
 
   const blockers: string[] = [];
+  const isSystemDefault = Boolean((partner as { is_system_default?: boolean | null }).is_system_default);
+  if (isSystemDefault) {
+    blockers.push("Der Portalpartner ist ein Systempartner und kann nicht endgültig gelöscht werden.");
+  }
   if (mapTotal.count > 0) {
     blockers.push(`Es bestehen noch ${mapTotal.count} Gebietszuordnung(en) zum Partner.`);
-  }
-  if (integrationsActive.count > 0) {
-    blockers.push(`Es bestehen noch ${integrationsActive.count} aktive Integration(en).`);
   }
 
   return {
     partner: {
       id: String((partner as { id?: string }).id ?? partnerId),
       company_name: String((partner as { company_name?: string | null }).company_name ?? "").trim() || null,
+      is_system_default: isSystemDefault,
     },
     canPurge: blockers.length === 0,
     blockers,

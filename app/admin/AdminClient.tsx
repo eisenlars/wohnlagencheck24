@@ -16,6 +16,7 @@ type Partner = {
   contact_last_name?: string | null;
   website_url?: string | null;
   is_active?: boolean;
+  is_system_default?: boolean;
   llm_partner_managed_allowed?: boolean;
   llm_mode_default?: string | null;
 };
@@ -575,7 +576,6 @@ export default function AdminClient() {
       storageFiles: number;
     };
     confirmText: string;
-    reason: string;
   }>({
     open: false,
     partnerId: "",
@@ -590,7 +590,6 @@ export default function AdminClient() {
       storageFiles: 0,
     },
     confirmText: "",
-    reason: "",
   });
   const [auditFilters, setAuditFilters] = useState({
     entity_type: "",
@@ -730,8 +729,11 @@ export default function AdminClient() {
     }
   }, [successModal.open, handoverConfirmModal.open, handoverStatusModal.open, areaDeleteConfirmModal.open, integrationDeleteConfirmModal.open, partnerPurgeModal.open]);
 
+  const formatPartnerName = (partner: Pick<Partner, "company_name" | "is_system_default">) =>
+    partner.is_system_default ? `${partner.company_name} (Portalpartner)` : partner.company_name;
+
   const selectedPartnerLabel = selectedPartner
-    ? `${selectedPartner.company_name} (${selectedPartner.id})`
+    ? `${formatPartnerName(selectedPartner)} (${selectedPartner.id})`
     : "Kein Partner ausgewählt";
 
   const partnerIdsWithAreaMapping = useMemo(() => {
@@ -933,7 +935,15 @@ export default function AdminClient() {
     [displayAreaRows],
   );
   const handoverNewPartnerOptions = useMemo(
-    () => partners.filter((p) => p.id !== selectedPartnerId),
+    () => partners
+      .filter((p) => p.id !== selectedPartnerId)
+      .slice()
+      .sort((a, b) => {
+        const aDefault = a.is_system_default ? 1 : 0;
+        const bDefault = b.is_system_default ? 1 : 0;
+        if (aDefault !== bDefault) return bDefault - aDefault;
+        return String(a.company_name ?? "").localeCompare(String(b.company_name ?? ""), "de");
+      }),
     [partners, selectedPartnerId],
   );
   const handoverTargetPartner = useMemo(
@@ -1660,7 +1670,6 @@ export default function AdminClient() {
         storageFiles: 0,
       },
       confirmText: "",
-      reason: "",
     });
     try {
       const data = await api<PartnerPurgeCheckPayload>(`/api/admin/partners/${selectedPartnerId}/purge-check`);
@@ -1673,8 +1682,7 @@ export default function AdminClient() {
       const canPurge =
         Boolean(data.can_purge)
         && blockers.length === 0
-        && summary.areaMappingsTotal === 0
-        && summary.integrationsActive === 0;
+        && summary.areaMappingsTotal === 0;
       setPartnerPurgeModal((prev) => ({
         ...prev,
         loading: false,
@@ -1702,7 +1710,6 @@ export default function AdminClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           confirm_text: partnerPurgeModal.confirmText,
-          reason: partnerPurgeModal.reason,
         }),
       });
       const data = await readJsonSafe(res);
@@ -2039,7 +2046,11 @@ export default function AdminClient() {
             ) : (
               <>
                 <p style={{ ...modalMessageStyle, marginTop: -4 }}>
-                  {partnerPurgeModal.summary.areaMappingsTotal > 0 ? (
+                  Gebietszuordnungen: {partnerPurgeModal.summary.areaMappingsTotal} | Aktive Integrationen: {partnerPurgeModal.summary.integrationsActive} | Storage-Dateien: {partnerPurgeModal.summary.storageFiles}
+                </p>
+                {partnerPurgeModal.summary.areaMappingsTotal > 0 ? (
+                  <div style={{ marginTop: 6, marginBottom: 10, fontSize: 12, color: "#991b1b", lineHeight: 1.5 }}>
+                    Vor dem endgültigen Löschen müssen zuerst alle Gebietszuordnungen entfernt oder übergeben werden.{" "}
                     <button
                       type="button"
                       style={inlineLinkButtonStyle}
@@ -2047,33 +2058,18 @@ export default function AdminClient() {
                       onClick={() => {
                         setPartnerPurgeModal((v) => ({ ...v, open: false }));
                         setPartnerTab("areas");
-                        setStatus("Bitte zuerst die Gebietszuordnungen entfernen/übergeben.");
+                        setStatus("Bitte zuerst die Gebietszuordnungen entfernen oder an einen anderen Partner übergeben.");
                       }}
                     >
-                      Gebietszuordnungen
+                      Zu den Gebieten
                     </button>
-                  ) : (
-                    "Gebietszuordnungen"
-                  )}
-                  : {partnerPurgeModal.summary.areaMappingsTotal} |{" "}
-                  {partnerPurgeModal.summary.integrationsActive > 0 ? (
-                    <button
-                      type="button"
-                      style={inlineLinkButtonStyle}
-                      disabled={partnerPurgeModal.deleting}
-                      onClick={() => {
-                        setPartnerPurgeModal((v) => ({ ...v, open: false }));
-                        setPartnerTab("integrations");
-                        setStatus("Bitte zuerst alle aktiven Integrationen deaktivieren.");
-                      }}
-                    >
-                      Aktive Integrationen
-                    </button>
-                  ) : (
-                    "Aktive Integrationen"
-                  )}
-                  : {partnerPurgeModal.summary.integrationsActive} | Storage-Dateien: {partnerPurgeModal.summary.storageFiles}
-                </p>
+                  </div>
+                ) : null}
+                {partnerPurgeModal.summary.integrationsActive > 0 ? (
+                  <p style={{ ...modalMessageStyle, marginTop: -2 }}>
+                    Hinweis: Aktive Integrationen werden beim endgültigen Löschen automatisch mit entfernt.
+                  </p>
+                ) : null}
                 {partnerPurgeModal.summary.storageFiles > 0 ? (
                   <p style={{ ...modalMessageStyle, marginTop: -2 }}>
                     Hinweis: Storage-Dateien werden beim endgültigen Löschen automatisch mit entfernt.
@@ -2084,20 +2080,20 @@ export default function AdminClient() {
                     {partnerPurgeModal.blockers.join(" | ")}
                   </div>
                 ) : null}
-                <input
-                  style={inputStyle}
-                  placeholder='Bestätigungstext: LOESCHEN'
-                  value={partnerPurgeModal.confirmText}
-                  onChange={(e) => setPartnerPurgeModal((v) => ({ ...v, confirmText: e.target.value }))}
-                  disabled={partnerPurgeModal.deleting || !partnerPurgeModal.canPurge}
-                />
-                <input
-                  style={{ ...inputStyle, marginTop: 8 }}
-                  placeholder="Grund (optional)"
-                  value={partnerPurgeModal.reason}
-                  onChange={(e) => setPartnerPurgeModal((v) => ({ ...v, reason: e.target.value }))}
-                  disabled={partnerPurgeModal.deleting || !partnerPurgeModal.canPurge}
-                />
+                {partnerPurgeModal.canPurge ? (
+                  <>
+                    <p style={{ ...modalMessageStyle, marginTop: 2 }}>
+                      Zum endgültigen Löschen bitte <strong>LOESCHEN</strong> eingeben.
+                    </p>
+                    <input
+                      style={inputStyle}
+                      placeholder='Bestätigungstext: LOESCHEN'
+                      value={partnerPurgeModal.confirmText}
+                      onChange={(e) => setPartnerPurgeModal((v) => ({ ...v, confirmText: e.target.value }))}
+                      disabled={partnerPurgeModal.deleting}
+                    />
+                  </>
+                ) : null}
               </>
             )}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
@@ -2115,7 +2111,6 @@ export default function AdminClient() {
                   || !partnerPurgeModal.canPurge
                   || partnerPurgeModal.blockers.length > 0
                   || partnerPurgeModal.summary.areaMappingsTotal > 0
-                  || partnerPurgeModal.summary.integrationsActive > 0
                   || String(partnerPurgeModal.confirmText).trim().toUpperCase() !== "LOESCHEN";
                 return (
                   <button
@@ -2315,7 +2310,7 @@ export default function AdminClient() {
                       onClick={() => selectPartnerView(p.id, "partner_edit")}
                     >
                       <div style={{ fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
-                        <span>{p.company_name}</span>
+                        <span>{formatPartnerName(p)}</span>
                         {partnerNeedsAssignment.has(p.id) ? (
                           <span
                             aria-label="Gebietszuordnung fehlt"
@@ -2329,7 +2324,10 @@ export default function AdminClient() {
                           />
                         ) : null}
                       </div>
-                      <div style={{ fontSize: 12, color: "#64748b" }}>{p.is_active ? "aktiv" : "inaktiv"}</div>
+                      <div style={{ fontSize: 12, color: "#64748b" }}>
+                        {p.is_active ? "aktiv" : "inaktiv"}
+                        {p.is_system_default ? " · Systempartner" : ""}
+                      </div>
                     </button>
                   ))
                 : filteredAreaOverview.map((row) => (
@@ -2459,7 +2457,7 @@ export default function AdminClient() {
       <section style={cardStyle}>
         <h2 style={h2Style}>Partnerdetails</h2>
         <p style={{ margin: 0, color: "#475569" }}>
-          {selectedPartner ? `${selectedPartner.company_name} (${selectedPartner.id})` : "Bitte links einen Partner auswählen."}
+          {selectedPartner ? `${formatPartnerName(selectedPartner)} (${selectedPartner.id})` : "Bitte links einen Partner auswählen."}
         </p>
         {selectedPartner ? (
           <div style={partnerTabBarStyle}>
@@ -2592,7 +2590,7 @@ export default function AdminClient() {
             {!selectedPartner?.is_active ? (
               <button
                 style={btnGhostStyle}
-                disabled={busy || !selectedPartnerId}
+                disabled={busy || !selectedPartnerId || selectedPartner?.is_system_default === true}
                 onClick={() => {
                   if (!selectedPartnerId) return;
                   void sendPartnerAccessLink(selectedPartnerId);
@@ -2607,15 +2605,21 @@ export default function AdminClient() {
           <div style={{ fontSize: 13, color: "#7f1d1d", fontWeight: 600, marginBottom: 8 }}>
             Gefahrenbereich
           </div>
-          <button
-            style={btnDangerStyle}
-            disabled={busy || !selectedPartner}
-            onClick={() => {
-              void openPartnerPurgeModal();
-            }}
-          >
-            Partner endgültig entfernen
-          </button>
+          {selectedPartner?.is_system_default ? (
+            <div style={{ fontSize: 13, color: "#7f1d1d", lineHeight: 1.5 }}>
+              Der Portalpartner ist ein Systempartner. Er kann nicht endgültig gelöscht werden.
+            </div>
+          ) : (
+            <button
+              style={btnDangerStyle}
+              disabled={busy || !selectedPartner}
+              onClick={() => {
+                void openPartnerPurgeModal();
+              }}
+            >
+              Partner endgültig entfernen
+            </button>
+          )}
         </div>
       </section>
       ) : null}
@@ -2979,7 +2983,7 @@ export default function AdminClient() {
             <option value="">Neuen Partner wählen</option>
             {handoverNewPartnerOptions.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.company_name}
+                {formatPartnerName(p)}
               </option>
             ))}
           </select>
@@ -3006,7 +3010,7 @@ export default function AdminClient() {
           <div style={{ fontSize: 12, color: "#334155" }}>
             <strong>Vorschau:</strong>{" "}
             {selectedPartner && handoverDraft.area_id && handoverTargetPartner
-              ? `${handoverDraft.area_id} von ${selectedPartner.company_name} zu ${handoverTargetPartner.company_name}`
+              ? `${handoverDraft.area_id} von ${formatPartnerName(selectedPartner)} zu ${formatPartnerName(handoverTargetPartner)}`
               : "Bitte Kreis und Zielpartner auswählen."}
           </div>
         </div>

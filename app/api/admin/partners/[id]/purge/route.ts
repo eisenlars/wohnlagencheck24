@@ -8,7 +8,6 @@ import { getPartnerPurgeCheck, purgePartnerData } from "@/lib/admin/partner-purg
 
 type PurgeBody = {
   confirm_text?: string;
-  reason?: string;
 };
 
 export async function DELETE(
@@ -33,7 +32,6 @@ export async function DELETE(
 
     const body = (await req.json().catch(() => ({}))) as PurgeBody;
     const confirmText = String(body.confirm_text ?? "").trim().toUpperCase();
-    const reason = String(body.reason ?? "").trim();
     if (confirmText !== "LOESCHEN") {
       return NextResponse.json({ error: "Confirm text mismatch" }, { status: 400 });
     }
@@ -57,7 +55,6 @@ export async function DELETE(
       entityId: partnerId,
       payload: {
         action: "partner_purged",
-        reason: reason || null,
         summary: check.summary,
         dump_bucket: purgeRes.dumpBucket,
         dump_path: purgeRes.dumpPath,
