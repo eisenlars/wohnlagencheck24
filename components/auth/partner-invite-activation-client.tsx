@@ -66,7 +66,7 @@ export default function PartnerInviteActivationClient() {
       if (!mounted) return false;
       if (!sessionCheck.ok) {
         setErrorKind("invalid_invite");
-        setStatus(sessionCheck.message);
+        setStatus(sessionCheck.message ?? invalidMessage);
         setReady(false);
         setViewMode("error");
         setShowInviteRequest(false);
