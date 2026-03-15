@@ -326,6 +326,7 @@ export default function DashboardClient() {
   const router = useRouter();
   const factorFormRef = useRef<FactorFormHandle | null>(null);
   const previewDebugLoggedRef = useRef(false);
+  const regionSidebarDebugLoggedRef = useRef(false);
   const [configs, setConfigs] = useState<PartnerAreaConfig[]>([]);
   const [selectedConfig, setSelectedConfig] = useState<PartnerAreaConfig | null>(null);
   const [expandedDistrict, setExpandedDistrict] = useState<string | null>(null);
@@ -921,6 +922,43 @@ export default function DashboardClient() {
   }, [showWelcome, previewDistricts, selectedConfig?.area_id, effectiveSelectedConfig?.area_id, expandedDistrict, configs]);
 
   useEffect(() => {
+    const shouldLog = !showWelcome && activeMainTab !== 'immobilien' && activeMainTab !== 'referenzen' && activeMainTab !== 'gesuche' && activeMainTab !== 'settings';
+    if (!shouldLog) {
+      regionSidebarDebugLoggedRef.current = false;
+      return;
+    }
+    if (regionSidebarDebugLoggedRef.current) return;
+    regionSidebarDebugLoggedRef.current = true;
+    console.debug('[region-sidebar-debug] state', {
+      activeMainTab,
+      showWelcome,
+      allowInactiveTextActivationSelection,
+      selectedConfig: selectedConfig?.area_id ?? null,
+      effectiveSelectedConfig: effectiveSelectedConfig?.area_id ?? null,
+      expandedDistrict,
+      activeConfigsCount: activeConfigs.length,
+      regionSidebarMainDistricts: regionSidebarMainDistricts.map((cfg) => cfg.area_id),
+      regionSidebarScopeConfigsCount: regionSidebarScopeConfigs.length,
+      regionSidebarScopeSample: regionSidebarScopeConfigs.slice(0, 20).map((cfg) => ({
+        area_id: String(cfg.area_id ?? ''),
+        is_active: Boolean(cfg.is_active),
+        activation_status: String(cfg.activation_status ?? ''),
+        parent_slug: String(cfg.areas?.parent_slug ?? ''),
+      })),
+    });
+  }, [
+    activeMainTab,
+    showWelcome,
+    allowInactiveTextActivationSelection,
+    selectedConfig?.area_id,
+    effectiveSelectedConfig?.area_id,
+    expandedDistrict,
+    activeConfigs,
+    regionSidebarMainDistricts,
+    regionSidebarScopeConfigs,
+  ]);
+
+  useEffect(() => {
     if (activeMainTab === 'settings') return;
     if (isTabEnabled(activeMainTab)) return;
     setActiveMainTab('factors');
@@ -1260,6 +1298,21 @@ export default function DashboardClient() {
                 ? regionSidebarScopeConfigs.filter(c => c.area_id.startsWith(district.area_id) && c.area_id.split('-').length > 3)
                 : [];
               const districtIsActive = Boolean(district.is_active);
+              console.debug('[region-sidebar-debug] district-render', {
+                district: district.area_id,
+                activeMainTab,
+                isSelected,
+                isExpanded,
+                allowSubAreas,
+                selectedConfig: selectedConfig?.area_id ?? null,
+                effectiveSelectedConfig: effectiveSelectedConfig?.area_id ?? null,
+                expandedDistrict,
+                subAreasCount: subAreas.length,
+                subAreasSample: subAreas.slice(0, 8).map((cfg) => ({
+                  area_id: String(cfg.area_id ?? ''),
+                  parent_slug: String(cfg.areas?.parent_slug ?? ''),
+                })),
+              });
 
               return (
                 <div key={district.area_id} style={{ marginBottom: '8px' }}>
@@ -1287,6 +1340,11 @@ export default function DashboardClient() {
                       ))}
                     </div>
                   )}
+                  {isExpanded ? (
+                    <div style={{ marginTop: 6, fontSize: 11, color: '#64748b' }}>
+                      SIDEBAR DEBUG: {district.area_id} · subAreas={subAreas.length} · selected={selectedConfig?.area_id ?? 'none'} · effective={effectiveSelectedConfig?.area_id ?? 'none'} · expanded={expandedDistrict ?? 'none'} · tab={activeMainTab}
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
