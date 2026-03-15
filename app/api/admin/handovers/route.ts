@@ -165,16 +165,6 @@ export async function POST(req: Request) {
       userAgent: req.headers.get("user-agent"),
     });
 
-    const { data: oldMappingUpdated, error: deactivateMapError } = await admin
-      .from("partner_area_map")
-      .update({ is_active: false, is_public_live: false })
-      .in("area_id", transferAreaIds)
-      .eq("auth_user_id", oldPartnerId)
-      .select("id, auth_user_id, area_id, is_active");
-    if (deactivateMapError) {
-      return NextResponse.json({ error: deactivateMapError.message }, { status: 500 });
-    }
-
     if (deactivateOldIntegrations) {
       const { error: deactivateIntegrationsError } = await admin
         .from("partner_integrations")
@@ -225,6 +215,16 @@ export async function POST(req: Request) {
     }
     const newRootMapping = newMappings.find((row) => String((row as { area_id?: string | null }).area_id ?? "") === areaId) ?? newMappings[0];
 
+    const { data: removedOldMappings, error: deleteOldMappingsError } = await admin
+      .from("partner_area_map")
+      .delete()
+      .in("area_id", transferAreaIds)
+      .eq("auth_user_id", oldPartnerId)
+      .select("id, auth_user_id, area_id");
+    if (deleteOldMappingsError) {
+      return NextResponse.json({ error: deleteOldMappingsError.message }, { status: 500 });
+    }
+
     let oldPartnerDeactivated = false;
     let oldPartnerDeactivateSkippedReason: string | null = null;
     if (deactivateOldPartner) {
@@ -253,15 +253,15 @@ export async function POST(req: Request) {
     await writeSecurityAuditLog({
       actorUserId: adminUser.userId,
       actorRole: adminUser.role,
-      eventType: "deactivate",
+      eventType: "delete",
       entityType: "partner_area_map",
       entityId: `${oldPartnerId}:${areaId}`,
       payload: {
-        action: "deactivate_old_mapping",
+        action: "remove_old_mapping",
         area_id: areaId,
         transferred_area_ids: transferAreaIds,
         old_partner_id: oldPartnerId,
-        affected_rows: Array.isArray(oldMappingUpdated) ? oldMappingUpdated.length : 0,
+        removed_rows: Array.isArray(removedOldMappings) ? removedOldMappings.length : 0,
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
