@@ -150,6 +150,22 @@ function formatRegionScopeSuffix(config: PartnerAreaConfig | null): string {
   return (config.area_id.split('-').length > 3) ? "Ortslage" : "Kreis / Ortslagen";
 }
 
+function buildPreviewHref(config: PartnerAreaConfig | null): string | null {
+  if (!config?.areas) return null;
+  const bundeslandSlug = String(config.areas.bundesland_slug ?? '').trim();
+  const slug = String(config.areas.slug ?? '').trim();
+  const parentSlug = String(config.areas.parent_slug ?? '').trim();
+  if (!bundeslandSlug || !slug) return null;
+
+  const isOrtslage = config.area_id.split('-').length > 3;
+  if (!isOrtslage) {
+    return `/preview/immobilienmarkt/${bundeslandSlug}/${slug}`;
+  }
+
+  if (!parentSlug) return null;
+  return `/preview/immobilienmarkt/${bundeslandSlug}/${parentSlug}/${slug}`;
+}
+
 function resolvePartnerFirstName(user: unknown): string | null {
   const rec = (typeof user === 'object' && user !== null) ? (user as Record<string, unknown>) : null;
   if (!rec) return null;
@@ -879,6 +895,7 @@ export default function DashboardClient() {
     ? previewDistricts.find((cfg) => cfg.area_id === selectedConfig.area_id) ?? null
     : null;
   const effectiveWelcomePreviewConfig = selectedWelcomePreviewConfig ?? previewDistricts[0] ?? null;
+  const effectiveWelcomePreviewHref = buildPreviewHref(effectiveWelcomePreviewConfig);
 
   const showActivationPanelForEditorSelected = Boolean(effectiveSelectedConfig && !effectiveSelectedConfig.is_active);
   const showActivationPanelForWelcomeSelected = Boolean(effectiveWelcomeActivationConfig && !effectiveWelcomeActivationConfig.is_active);
@@ -895,6 +912,7 @@ export default function DashboardClient() {
     && selectedPreviewStatusKey === 'approved_preview'
     && !Boolean(effectiveSelectedConfig.is_public_live),
   );
+  const selectedPreviewHref = buildPreviewHref(effectiveSelectedConfig);
 
   useEffect(() => {
     if (activeMainTab === 'settings') return;
@@ -1429,13 +1447,12 @@ export default function DashboardClient() {
                           Fuer <strong>{effectiveWelcomePreviewConfig.areas?.name ?? effectiveWelcomePreviewConfig.area_id}</strong> ist die fachliche Freigabe bereits erteilt.
                           Jetzt solltest du Texte, Werte, SEO/GEO und falls gebucht auch die Internationalisierung final vorbereiten.
                         </p>
+                        {effectiveWelcomePreviewHref ? (
+                          <p style={previewReadyTextStyle}>
+                            Die Frontend-Preview zeigt denselben Seitenstand wie die spätere Live-Seite. Sie ist nur intern für berechtigte Nutzer erreichbar und nach dem Onlinegang nicht mehr verfügbar.
+                          </p>
+                        ) : null}
                         <div style={previewReadyActionRowStyle}>
-                          <button type="button" onClick={() => {
-                            setSelectedConfig(effectiveWelcomePreviewConfig);
-                            handleToolSelect('texts');
-                          }} style={previewReadyActionButtonStyle}>
-                            Texte pruefen
-                          </button>
                           <button type="button" onClick={() => {
                             setSelectedConfig(effectiveWelcomePreviewConfig);
                             handleToolSelect('factors');
@@ -1444,10 +1461,26 @@ export default function DashboardClient() {
                           </button>
                           <button type="button" onClick={() => {
                             setSelectedConfig(effectiveWelcomePreviewConfig);
+                            handleToolSelect('texts');
+                          }} style={previewReadyActionButtonStyle}>
+                            Texte pruefen
+                          </button>
+                          <button type="button" onClick={() => {
+                            setSelectedConfig(effectiveWelcomePreviewConfig);
                             handleToolSelect('marketing');
                           }} style={previewReadyActionButtonStyle}>
                             SEO & GEO pruefen
                           </button>
+                          {effectiveWelcomePreviewHref ? (
+                            <a
+                              href={effectiveWelcomePreviewHref}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ ...previewReadyGhostButtonStyle, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
+                            >
+                              Frontend-Preview öffnen
+                            </a>
+                          ) : null}
                           {hasInternationalEnabled ? (
                             <button type="button" onClick={() => {
                               setSelectedConfig(effectiveWelcomePreviewConfig);
@@ -1528,16 +1561,31 @@ export default function DashboardClient() {
                         Nutze jetzt die Previewphase, um Inhalte, Werte, SEO/GEO und optionale Zusatzmodule final vorzubereiten.
                         Erst danach sollte das Gebiet durch den Admin online geschaltet werden.
                       </p>
+                      {selectedPreviewHref ? (
+                        <p style={previewReadyTextStyle}>
+                          Die Frontend-Preview bildet die spätere Live-Seite 1:1 ab. Sie ist nur intern erreichbar und nach dem Onlinegang nicht mehr verfügbar.
+                        </p>
+                      ) : null}
                       <div style={previewReadyActionRowStyle}>
-                        <button type="button" onClick={() => handleToolSelect('texts')} style={previewReadyActionButtonStyle}>
-                          Texte pruefen
-                        </button>
                         <button type="button" onClick={() => handleToolSelect('factors')} style={previewReadyActionButtonStyle}>
                           Werte pruefen
+                        </button>
+                        <button type="button" onClick={() => handleToolSelect('texts')} style={previewReadyActionButtonStyle}>
+                          Texte pruefen
                         </button>
                         <button type="button" onClick={() => handleToolSelect('marketing')} style={previewReadyActionButtonStyle}>
                           SEO & GEO pruefen
                         </button>
+                        {selectedPreviewHref ? (
+                          <a
+                            href={selectedPreviewHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ ...previewReadyGhostButtonStyle, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
+                          >
+                            Frontend-Preview öffnen
+                          </a>
+                        ) : null}
                         {hasInternationalEnabled ? (
                           <button type="button" onClick={() => handleToolSelect('international')} style={previewReadyGhostButtonStyle}>
                             Internationalisierung

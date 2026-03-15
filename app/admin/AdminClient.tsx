@@ -297,6 +297,21 @@ function formatAreaStateLabel(isActive: boolean, activationStatus: unknown, isPu
   return "zugewiesen";
 }
 
+function buildPreviewHrefFromArea(area: AreaMapping["areas"], areaId: string): string | null {
+  const bundeslandSlug = String(area?.bundesland_slug ?? "").trim();
+  const slug = String(area?.slug ?? "").trim();
+  const parentSlug = String(area?.parent_slug ?? "").trim();
+  if (!bundeslandSlug || !slug) return null;
+
+  const isOrtslage = String(areaId ?? "").split("-").length > 3;
+  if (!isOrtslage) {
+    return `/preview/immobilienmarkt/${bundeslandSlug}/${slug}`;
+  }
+
+  if (!parentSlug) return null;
+  return `/preview/immobilienmarkt/${bundeslandSlug}/${parentSlug}/${slug}`;
+}
+
 function getMaskedAuthSummary(integration: Pick<Integration, "auth_config">): string {
   const auth = (integration.auth_config ?? {}) as Record<string, unknown>;
   const hasApiKey = Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
@@ -955,6 +970,10 @@ export default function AdminClient() {
       Boolean(reviewData?.mapping?.is_active),
       Boolean(reviewData?.mapping?.is_public_live),
     ),
+    [reviewData],
+  );
+  const currentReviewPreviewHref = useMemo(
+    () => buildPreviewHrefFromArea(reviewData?.mapping?.areas ?? null, reviewData?.mapping?.area_id ?? ""),
     [reviewData],
   );
 
@@ -3021,8 +3040,29 @@ export default function AdminClient() {
                     {" "}
                     Das Gebiet ist fachlich freigegeben und kann jetzt vom Partner intern vorbereitet werden.
                     Bitte Inhalte, Werte sowie SEO-/GEO-Einstellungen vor dem finalen Onlineschalten vollständig prüfen.
-                    Eine direkte Frontend-Preview wird im nächsten Schritt ergänzt; aktuell arbeitet der Partner dazu im Dashboard.
+                    {currentReviewPreviewHref ? (
+                      <>
+                        {" "}
+                        Die Frontend-Preview zeigt denselben Seitenstand wie die spätere Live-Seite, ist nur intern für berechtigte Nutzer erreichbar und nach dem Onlinegang nicht mehr verfügbar.
+                      </>
+                    ) : null}
                   </div>
+                  {currentReviewPreviewHref ? (
+                    <a
+                      href={currentReviewPreviewHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        ...btnGhostStyle,
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      Frontend-Preview öffnen
+                    </a>
+                  ) : null}
                   <button
                     style={btnStyle}
                     disabled={busy || reviewBusy || !reviewAreaId}
