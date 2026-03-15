@@ -2324,7 +2324,7 @@ const previewReadyActionRowStyle: React.CSSProperties = {
 const previewReadyActionButtonStyle: React.CSSProperties = {
   border: 'none',
   borderRadius: '10px',
-  background: '#6d28d9',
+  background: '#0f172a',
   color: '#ffffff',
   padding: '10px 14px',
   fontSize: '13px',
