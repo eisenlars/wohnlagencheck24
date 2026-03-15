@@ -1,13 +1,7 @@
-// app/immobilienmarkt/layout.tsx
-
 import type { ReactNode } from "react";
-import "../../globals.css";
+
 import { ImmobilienmarktContentShell } from "@/components/layout/ImmobilienmarktContentShell";
 
-export default function ImmobilienmarktLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function PreviewImmobilienmarktLayout({ children }: { children: ReactNode }) {
   return <ImmobilienmarktContentShell>{children}</ImmobilienmarktContentShell>;
 }
