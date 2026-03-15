@@ -22,7 +22,7 @@ type WelcomeTool = {
   key: MainTab;
   title: string;
   description: string;
-  icon: string;
+  icon: UtilityIconKey;
   comingSoon?: boolean;
 };
 
@@ -1356,7 +1356,7 @@ export default function DashboardClient() {
                         disabled={Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key)}
                         style={welcomeCardStyle(Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key))}
                       >
-                        <div style={welcomeCardIconStyle}>{tool.icon}</div>
+                        <div style={welcomeCardIconStyle}>{renderUtilityIcon(tool.icon)}</div>
                         <div style={welcomeCardTitleStyle}>{tool.title}</div>
                         <div style={welcomeCardTextStyle}>
                           {tool.description}
@@ -2144,19 +2144,19 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
       key: 'factors',
       title: 'Wertanpassungen',
       description: 'Werte, Faktoren und Kennzahlen der Region prüfen und bei Bedarf anpassen.',
-      icon: '📊',
+      icon: 'factors',
     },
     {
       key: 'texts',
       title: 'Berichte & Texte',
       description: 'Texte und Berichte für die ausgewählte Region verwalten und optimieren.',
-      icon: '✍️',
+      icon: 'texts',
     },
     {
       key: 'local_site',
       title: 'Lokale Website',
       description: 'Regionale Inhalte für die lokale Website bearbeiten.',
-      icon: '🧭',
+      icon: 'local_site',
     },
   ];
   if (hasInternationalFeature) {
@@ -2164,7 +2164,7 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
       key: 'international',
       title: 'Internationalisierung',
       description: 'Sprachvarianten für Portal und lokale Website steuern.',
-      icon: '🌐',
+      icon: 'international',
     });
   }
 
@@ -2180,26 +2180,26 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
           key: 'marketing',
           title: 'SEO & GEO',
           description: 'SEO- und GEO-Inhalte der Region pflegen und ausrichten.',
-          icon: '📈',
+          icon: 'marketing',
         },
         {
           key: 'blog',
           title: 'Blog',
           description: 'Blogbeiträge aus Marktüberblick-Texten generieren.',
-          icon: '📝',
+          icon: 'blog',
         },
         {
           key: 'blog',
           title: 'Social Media',
           description: 'Bereich wird als Zusatzfeature vorbereitet.',
-          icon: '📢',
+          icon: 'social',
           comingSoon: true,
         },
         {
           key: 'blog',
           title: 'E-Mail',
           description: 'Bereich wird als Zusatzfeature vorbereitet.',
-          icon: '✉️',
+          icon: 'mail',
           comingSoon: true,
         },
       ],
@@ -2211,32 +2211,32 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
           key: 'immobilien',
           title: 'Immobilien',
           description: 'SEO-Texte und Exposé-Inhalte pro Objekt individuell optimieren.',
-          icon: '🏠',
+          icon: 'immobilien',
         },
         {
           key: 'referenzen',
           title: 'Referenzen',
           description: 'Referenzobjekte aus dem CRM prüfen und individuell anpassen.',
-          icon: '🗂️',
+          icon: 'referenzen',
         },
         {
           key: 'gesuche',
           title: 'Gesuche',
           description: 'Gesuche aus dem CRM prüfen und individuell anpassen.',
-          icon: '🔎',
+          icon: 'gesuche',
         },
         {
           key: 'blog',
           title: 'Wizards',
           description: 'Bereich wird als Zusatzfeature vorbereitet.',
-          icon: '🪄',
+          icon: 'wizards',
           comingSoon: true,
         },
         {
           key: 'blog',
           title: 'Prognosemonitor',
           description: 'Bereich wird als Zusatzfeature vorbereitet.',
-          icon: '🔮',
+          icon: 'forecast',
           comingSoon: true,
         },
       ],
@@ -2248,21 +2248,21 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
           key: 'blog',
           title: 'Partnerwerbung',
           description: 'Bereich wird als Zusatzfeature vorbereitet.',
-          icon: '📣',
+          icon: 'partner_ads',
           comingSoon: true,
         },
         {
           key: 'blog',
           title: 'Partner-Immobilien',
           description: 'Bereich wird als Zusatzfeature vorbereitet.',
-          icon: '🏠',
+          icon: 'partner_immobilien',
           comingSoon: true,
         },
         {
           key: 'blog',
           title: 'Partner-Gesuche',
           description: 'Bereich wird als Zusatzfeature vorbereitet.',
-          icon: '🔎',
+          icon: 'partner_gesuche',
           comingSoon: true,
         },
       ],
