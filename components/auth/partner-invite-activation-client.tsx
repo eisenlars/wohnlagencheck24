@@ -18,6 +18,7 @@ export default function PartnerInviteActivationClient() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [status, setStatus] = useState("Einladungslink wird geprueft...");
+  const [debugLines, setDebugLines] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"checking" | "form" | "error">("checking");
   const [errorKind, setErrorKind] = useState<"invalid_invite" | "already_active">("invalid_invite");
   const [ready, setReady] = useState(false);
@@ -27,16 +28,68 @@ export default function PartnerInviteActivationClient() {
   const [accessEmail, setAccessEmail] = useState("");
   const [requestBusy, setRequestBusy] = useState(false);
   const [showInviteRequest, setShowInviteRequest] = useState(false);
+  const [readyContext, setReadyContext] = useState<string>("");
   const invalidMessage = "Der Einladungslink ist ungueltig oder abgelaufen. Bitte fordere einen neuen Einladungslink an.";
 
   useEffect(() => {
     let mounted = true;
 
+    function addDebug(line: string) {
+      console.debug("[partner-setup]", line);
+      if (!mounted) return;
+      setDebugLines((prev) => [...prev, line]);
+    }
+
+    async function ensureSession(context: string) {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        addDebug(`${context}: getSession error -> ${String(error.message ?? "unknown")}`);
+        return {
+          ok: false,
+          message: `Session-Pruefung fehlgeschlagen (${context}): ${String(error.message ?? "unknown")}`,
+        };
+      }
+      const session = data.session;
+      if (!session?.access_token || !session.user?.id) {
+        addDebug(`${context}: no session after auth step`);
+        return {
+          ok: false,
+          message: `Einladungslink verarbeitet, aber es wurde keine Auth-Session aufgebaut (${context}).`,
+        };
+      }
+      addDebug(`${context}: session ok for user ${session.user.id}`);
+      return { ok: true };
+    }
+
+    async function openPasswordForm(context: string) {
+      const sessionCheck = await ensureSession(context);
+      if (!mounted) return false;
+      if (!sessionCheck.ok) {
+        setErrorKind("invalid_invite");
+        setStatus(sessionCheck.message);
+        setReady(false);
+        setViewMode("error");
+        setShowInviteRequest(false);
+        return false;
+      }
+      setErrorKind("invalid_invite");
+      setReadyContext(context);
+      setReady(true);
+      setViewMode("form");
+      setStatus("Bitte vergeben Sie jetzt Ihr Passwort fuer die Aktivierung.");
+      if (window.location.search || window.location.hash) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      return true;
+    }
+
     async function showInvalidInviteState() {
+      addDebug("showInvalidInviteState: fallback entered");
       try {
         const res = await fetch("/api/auth/setup-target", { method: "GET", cache: "no-store" });
         const payload = (await res.json().catch(() => ({}))) as { redirect_to?: string };
         const redirectTo = String(payload.redirect_to ?? "").trim();
+        addDebug(`setup-target redirect_to=${redirectTo || "(empty)"}`);
         if (!mounted) return;
         if (redirectTo === "/dashboard") {
           setErrorKind("already_active");
@@ -73,9 +126,13 @@ export default function PartnerInviteActivationClient() {
       const prefEmail = String(search.get("email") ?? "").trim();
       const hasAuthLinkPayload = Boolean(code || (otpToken && type) || (accessToken && refreshToken));
       const supportedType = !type || type === "invite" || type === "recovery";
+      addDebug(
+        `link payload: type=${type || "(empty)"} code=${code ? "yes" : "no"} token_hash=${tokenHash ? "yes" : "no"} token=${legacyToken ? "yes" : "no"} access_token=${accessToken ? "yes" : "no"} refresh_token=${refreshToken ? "yes" : "no"}`,
+      );
 
       if (prefEmail) setAccessEmail(prefEmail);
       if (!supportedType) {
+        addDebug(`unsupported type received: ${type}`);
         await showInvalidInviteState();
         return;
       }
@@ -84,36 +141,30 @@ export default function PartnerInviteActivationClient() {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (!mounted) return;
         if (!error) {
-          setErrorKind("invalid_invite");
-          setReady(true);
-          setViewMode("form");
-          setStatus("Bitte vergeben Sie jetzt Ihr Passwort fuer die Aktivierung.");
-          if (window.location.search || window.location.hash) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
+          addDebug("exchangeCodeForSession: success");
+          await openPasswordForm("exchangeCodeForSession");
           return;
         }
+        addDebug(`exchangeCodeForSession: error -> ${String(error.message ?? "unknown")}`);
       }
 
       if (otpToken && (type === "invite" || type === "recovery")) {
+        addDebug(`verifyOtp: starting with ${tokenHash ? "token_hash" : "legacy token"} and type=${type}`);
         const { error } = await supabase.auth.verifyOtp({
           token_hash: otpToken,
           type,
         });
         if (!mounted) return;
         if (!error) {
-          setErrorKind("invalid_invite");
-          setReady(true);
-          setViewMode("form");
-          setStatus("Bitte vergeben Sie jetzt Ihr Passwort fuer die Aktivierung.");
-          if (window.location.search || window.location.hash) {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
+          addDebug("verifyOtp: success");
+          await openPasswordForm(tokenHash ? "verifyOtp(token_hash)" : "verifyOtp(legacy_token)");
           return;
         }
+        addDebug(`verifyOtp: error -> ${String(error.message ?? "unknown")}`);
       }
 
       if (!hasAuthLinkPayload || !accessToken || !refreshToken) {
+        addDebug("no usable auth payload after code/otp branches");
         await showInvalidInviteState();
         return;
       }
@@ -125,14 +176,13 @@ export default function PartnerInviteActivationClient() {
 
       if (!mounted) return;
       if (error) {
+        addDebug(`setSession: error -> ${String(error.message ?? "unknown")}`);
         await showInvalidInviteState();
         return;
       }
-
-      setErrorKind("invalid_invite");
-      setReady(true);
-      setViewMode("form");
-      setStatus("Bitte vergeben Sie jetzt Ihr Passwort fuer die Aktivierung.");
+      addDebug("setSession: success");
+      const opened = await openPasswordForm("setSession");
+      if (!opened) return;
       if (window.location.hash) {
         window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
       }
@@ -151,6 +201,13 @@ export default function PartnerInviteActivationClient() {
       }
       if (password !== confirm) {
         throw new Error("Passwoerter stimmen nicht ueberein.");
+      }
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        throw new Error(`Session-Pruefung vor dem Speichern fehlgeschlagen: ${String(sessionError.message ?? "unknown")}`);
+      }
+      if (!sessionData.session?.access_token || !sessionData.session.user?.id) {
+        throw new Error(`Auth session missing! Debug-Kontext: ${readyContext || "unbekannt"}`);
       }
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw new Error(error.message);
@@ -216,6 +273,23 @@ export default function PartnerInviteActivationClient() {
         <p style={{ fontSize: 14, color: viewMode === "error" && errorKind !== "already_active" ? "#b91c1c" : "#475569", margin: 0 }}>
           {status}
         </p>
+        {debugLines.length > 0 ? (
+          <div
+            style={{
+              padding: 10,
+              borderRadius: 8,
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              fontSize: 12,
+              color: "#334155",
+              lineHeight: 1.45,
+              whiteSpace: "pre-wrap",
+              fontFamily: "monospace",
+            }}
+          >
+            {debugLines.join("\n")}
+          </div>
+        ) : null}
         {viewMode === "form" ? (
           <>
             <label htmlFor="password" style={{ color: "#111827" }}>Passwort festlegen</label>
