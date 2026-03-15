@@ -425,6 +425,10 @@ async function readJsonSafe(res: Response) {
   }
 }
 
+function extractErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const res = await fetch(input, {
     ...init,
@@ -1726,19 +1730,28 @@ export default function AdminClient() {
       setPartnerPurgeModal((prev) => ({ ...prev, open: false, deleting: false }));
       setSelectedPartner(null);
       setSelectedPartnerId("");
-      setActiveView("home");
+      setActiveView("partner_purge");
       setPartnerTab("profile");
       await loadPartners();
       await loadAreaOverview();
+      const warning = String(data?.warning ?? "").trim();
       setSuccessModal({
         open: true,
-        title: "Erfolgreich",
-        message: `Partner wurde endgültig entfernt.${data?.dump_path ? ` Sicherheitsdump: ${String(data.dump_path)}` : ""}`,
+        title: warning ? "Teilweise abgeschlossen" : "Erfolgreich",
+        message: warning
+          ? `${warning}${data?.dump_path ? ` Sicherheitsdump: ${String(data.dump_path)}` : ""}`
+          : `Partner wurde endgültig entfernt.${data?.dump_path ? ` Sicherheitsdump: ${String(data.dump_path)}` : ""}`,
       });
-      setStatus("Partner wurde endgültig entfernt.");
+      setStatus(warning ? "Partnerdaten wurden weitgehend entfernt, Auth-User blieb bestehen." : "Partner wurde endgültig entfernt.");
     } catch (error) {
       setPartnerPurgeModal((prev) => ({ ...prev, deleting: false }));
-      setStatus(error instanceof Error ? error.message : "Partner konnte nicht entfernt werden.");
+      const message = extractErrorMessage(error, "Partner konnte nicht entfernt werden.");
+      setStatus(message);
+      setSuccessModal({
+        open: true,
+        title: "Löschung fehlgeschlagen",
+        message,
+      });
     }
   }
 

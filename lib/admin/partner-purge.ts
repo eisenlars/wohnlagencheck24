@@ -198,7 +198,13 @@ export async function getPartnerPurgeCheck(admin: ReturnType<typeof createAdminC
 export async function purgePartnerData(
   admin: ReturnType<typeof createAdminClient>,
   partnerId: string,
-): Promise<{ deletedCounts: Record<string, number>; dumpPath: string; dumpBucket: string }> {
+): Promise<{
+  deletedCounts: Record<string, number>;
+  dumpPath: string;
+  dumpBucket: string;
+  authUserDeleted: boolean;
+  authDeleteError: string | null;
+}> {
   if (!PURGE_DUMP_BUCKET) {
     throw new Error("ADMIN_PURGE_DUMP_BUCKET is not configured");
   }
@@ -263,10 +269,16 @@ export async function purgePartnerData(
   deletedCounts.partners = 1;
 
   const { error: authDeleteError } = await admin.auth.admin.deleteUser(partnerId);
-  if (authDeleteError && !isUserNotFoundError(authDeleteError)) {
-    throw new Error(`auth delete failed: ${authDeleteError.message}`);
-  }
-  deletedCounts.auth_user = authDeleteError ? 0 : 1;
+  const authDeleteFailed = Boolean(authDeleteError) && !isUserNotFoundError(authDeleteError);
+  deletedCounts.auth_user = authDeleteFailed ? 0 : 1;
 
-  return { deletedCounts, dumpPath, dumpBucket: PURGE_DUMP_BUCKET };
+  return {
+    deletedCounts,
+    dumpPath,
+    dumpBucket: PURGE_DUMP_BUCKET,
+    authUserDeleted: !authDeleteFailed,
+    authDeleteError: authDeleteFailed
+      ? String((authDeleteError as { message?: string } | null)?.message ?? "auth delete failed")
+      : null,
+  };
 }

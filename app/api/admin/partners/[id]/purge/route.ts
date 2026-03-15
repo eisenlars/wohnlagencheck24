@@ -59,6 +59,8 @@ export async function DELETE(
         dump_bucket: purgeRes.dumpBucket,
         dump_path: purgeRes.dumpPath,
         deleted_counts: purgeRes.deletedCounts,
+        auth_user_deleted: purgeRes.authUserDeleted,
+        auth_delete_error: purgeRes.authDeleteError,
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -69,6 +71,10 @@ export async function DELETE(
       dump_bucket: purgeRes.dumpBucket,
       dump_path: purgeRes.dumpPath,
       deleted_counts: purgeRes.deletedCounts,
+      auth_user_deleted: purgeRes.authUserDeleted,
+      warning: purgeRes.authDeleteError
+        ? `Partnerdaten wurden entfernt, der Auth-User konnte aber nicht gelöscht werden: ${purgeRes.authDeleteError}`
+        : null,
     });
   } catch (error) {
     if (error instanceof Error) {
