@@ -920,6 +920,21 @@ export default function DashboardClient() {
     }
   }, [showWelcome, activationDistricts, selectedConfig?.area_id]);
 
+  useEffect(() => {
+    if (!showWelcome) return;
+    if (previewDistricts.length === 0) return;
+    const selectedId = selectedConfig?.area_id ?? '';
+    const previewDistrict = previewDistricts.find((cfg) => selectedId.startsWith(cfg.area_id)) ?? null;
+    if (!previewDistrict) {
+      setSelectedConfig(previewDistricts[0]);
+      setExpandedDistrict(previewDistricts[0].area_id);
+      return;
+    }
+    if (expandedDistrict !== previewDistrict.area_id) {
+      setExpandedDistrict(previewDistrict.area_id);
+    }
+  }, [showWelcome, previewDistricts, selectedConfig?.area_id, expandedDistrict]);
+
   if (loading) return <FullscreenLoader show label="Dashboard wird geladen..." />;
 
   const handleSelectConfig = async (nextConfig: PartnerAreaConfig) => {
