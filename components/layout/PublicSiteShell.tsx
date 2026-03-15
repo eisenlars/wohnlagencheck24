@@ -7,7 +7,13 @@ import { KontaktProvider } from "@/components/kontakt/contact-context";
 import { getBundeslaender } from "@/lib/data";
 import { isBundeslandVisible } from "@/lib/area-visibility";
 
-export async function PublicSiteShell({ children }: { children: React.ReactNode }) {
+export async function PublicSiteShell({
+  children,
+  mode = "public",
+}: {
+  children: React.ReactNode;
+  mode?: "public" | "preview";
+}) {
   const bundeslaenderRaw = await getBundeslaender();
   const bundeslaender = (
     await Promise.all(
@@ -22,6 +28,16 @@ export async function PublicSiteShell({ children }: { children: React.ReactNode 
         <a href="#main-content" className="skip-link">
           Zum Inhalt springen
         </a>
+        {mode === "preview" ? (
+          <>
+            <div className="preview-side-ribbon" aria-label="Preview-Modus">
+              PREVIEW
+            </div>
+            <div className="preview-top-badge" aria-label="Preview-Modus">
+              PREVIEW
+            </div>
+          </>
+        ) : null}
         <HeaderSwitch bundeslaender={bundeslaender} />
 
         <main id="main-content" className="flex-grow-1 py-2 py-md-4" tabIndex={-1}>
