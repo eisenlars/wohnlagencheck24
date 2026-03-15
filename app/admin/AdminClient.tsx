@@ -390,7 +390,7 @@ function supportsAutomaticPricing(provider: string): boolean {
 }
 
 function parsePositiveNumber(value: string): number | null {
-  const v = String(value ?? "").trim();
+  const v = String(value ?? "").trim().replace(",", ".");
   if (!v) return null;
   const parsed = Number(v);
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
@@ -4028,6 +4028,9 @@ export default function AdminClient() {
                                 setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, input_cost_usd_per_1k: e.target.value } : item));
                               }}
                             />
+                            <div style={{ marginTop: 4, fontSize: 11, color: "#64748b" }}>
+                              Format: z. B. <strong>0,0025</strong> oder <strong>0.0025</strong>
+                            </div>
                           </div>
                           <div>
                             <div style={requiredFieldHintStyle}>Pflichtfeld</div>
@@ -4040,6 +4043,9 @@ export default function AdminClient() {
                                 setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, output_cost_usd_per_1k: e.target.value } : item));
                               }}
                             />
+                            <div style={{ marginTop: 4, fontSize: 11, color: "#64748b" }}>
+                              Format: z. B. <strong>0,015</strong> oder <strong>0.015</strong>
+                            </div>
                           </div>
                         </div>
                         <div style={{ ...grid2Style, marginTop: 10 }}>
