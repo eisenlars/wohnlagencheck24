@@ -873,7 +873,7 @@ export default function InternationalizationManager({ config, availableLocales }
           <div style={pricingMetaStyle}>
             Globales Uebersetzungsmodell:{' '}
             <strong>{pricingPreview?.provider && pricingPreview?.model ? `${pricingPreview.provider} / ${pricingPreview.model}` : 'nicht verfuegbar'}</strong>
-            {pricingPreview?.input_cost_usd_per_1k !== null && pricingPreview?.output_cost_usd_per_1k !== null ? (
+            {pricingPreview && pricingPreview.input_cost_usd_per_1k !== null && pricingPreview.output_cost_usd_per_1k !== null ? (
               <span>
                 {' '}· Input {formatCost(pricingPreview.input_cost_usd_per_1k, 'USD')}/1k · Output {formatCost(pricingPreview.output_cost_usd_per_1k, 'USD')}/1k
               </span>
