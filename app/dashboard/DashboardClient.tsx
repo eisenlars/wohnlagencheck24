@@ -47,6 +47,7 @@ type PartnerAreaConfig = {
   area_id: string;
   areas?: PartnerArea;
   is_active?: boolean;
+  is_public_live?: boolean | null;
   activation_status?: string | null;
   [key: string]: unknown;
 };
@@ -121,8 +122,11 @@ function formatMandatoryLabel(key: string): string {
 
 function formatActivationStatusLabel(config: PartnerAreaConfig | null): string {
   if (!config) return "";
-  if (config.is_active) return "Aktiv";
+  if (config.is_public_live) return "Online";
   const raw = String(config.activation_status ?? "").trim().toLowerCase();
+  if (raw === "live") return "Online";
+  if (raw === "approved_preview") return "Preview freigegeben";
+  if (config.is_active) return "Aktiv";
   if (raw === "ready_for_review") return "Freigabebereit";
   if (raw === "in_review") return "In Prüfung";
   if (raw === "changes_requested") return "Nachbesserung angefordert";
@@ -132,11 +136,12 @@ function formatActivationStatusLabel(config: PartnerAreaConfig | null): string {
 
 function resolveActivationStatusKey(config: PartnerAreaConfig | null): string {
   if (!config) return "";
-  if (config.is_active) return "active";
+  if (config.is_public_live) return "live";
   const raw = String(config.activation_status ?? "").trim().toLowerCase();
-  if (raw === "ready_for_review" || raw === "in_review" || raw === "changes_requested" || raw === "in_progress") {
+  if (raw === "approved_preview" || raw === "live" || raw === "ready_for_review" || raw === "in_review" || raw === "changes_requested" || raw === "in_progress") {
     return raw;
   }
+  if (config.is_active) return "approved_preview";
   return "assigned";
 }
 
@@ -326,6 +331,7 @@ export default function DashboardClient() {
   const [activationEditorMode, setActivationEditorMode] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [hoveredUtilityToolId, setHoveredUtilityToolId] = useState<string | null>(null);
+  const [hoveredUtilityToolTop, setHoveredUtilityToolTop] = useState<number | null>(null);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>('konto');
   const [submitReviewBusy, setSubmitReviewBusy] = useState(false);
   const [submitReviewMessage, setSubmitReviewMessage] = useState<string | null>(null);
@@ -342,6 +348,7 @@ export default function DashboardClient() {
   const [progressRefreshTick, setProgressRefreshTick] = useState(0);
   const progressRequestRef = useRef(0);
   const hasAnimatedMandatoryPercentRef = useRef(false);
+  const utilityBarRef = useRef<HTMLElement | null>(null);
 
   // Werkzeug-Modus umschalten
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('factors');
@@ -641,6 +648,14 @@ export default function DashboardClient() {
     .flat()
     .find((item) => item.id === hoveredUtilityToolId) ?? null;
 
+  const updateHoveredUtilityTool = (toolId: string, element: HTMLElement) => {
+    const asideRect = utilityBarRef.current?.getBoundingClientRect();
+    const buttonRect = element.getBoundingClientRect();
+    const nextTop = asideRect ? (buttonRect.top - asideRect.top) + (buttonRect.height / 2) : null;
+    setHoveredUtilityToolId(toolId);
+    setHoveredUtilityToolTop(nextTop);
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/partner/login');
@@ -762,6 +777,11 @@ export default function DashboardClient() {
   const regionScopeConfigs = hasActiveAreas ? activeConfigs : configs;
   const mainDistricts = configs.filter(c => c.area_id.split('-').length <= 3);
   const pendingDistricts = inactiveConfigs.filter((c) => c.area_id.split('-').length <= 3);
+  const previewDistricts = activeConfigs.filter((c) => (
+    c.area_id.split('-').length <= 3
+    && resolveActivationStatusKey(c) === 'approved_preview'
+    && !Boolean(c.is_public_live)
+  ));
   const activationDistricts = onboardingMode ? mainDistricts : pendingDistricts;
   const isAwaitingAreaAssignment = onboardingMode && activationDistricts.length === 0;
   const scopedMainDistricts = regionScopeConfigs.filter(c => c.area_id.split('-').length <= 3);
@@ -835,6 +855,10 @@ export default function DashboardClient() {
     ? activationDistricts.find((cfg) => cfg.area_id === selectedConfig.area_id) ?? null
     : null;
   const effectiveWelcomeActivationConfig = selectedWelcomeActivationConfig ?? activationDistricts[0] ?? null;
+  const selectedWelcomePreviewConfig = selectedConfig
+    ? previewDistricts.find((cfg) => cfg.area_id === selectedConfig.area_id) ?? null
+    : null;
+  const effectiveWelcomePreviewConfig = selectedWelcomePreviewConfig ?? previewDistricts[0] ?? null;
 
   const showActivationPanelForEditorSelected = Boolean(effectiveSelectedConfig && !effectiveSelectedConfig.is_active);
   const showActivationPanelForWelcomeSelected = Boolean(effectiveWelcomeActivationConfig && !effectiveWelcomeActivationConfig.is_active);
@@ -845,6 +869,12 @@ export default function DashboardClient() {
   const welcomeActivationStatusKey = resolveActivationStatusKey(effectiveWelcomeActivationConfig);
   const isWelcomeAwaitingAdminApproval = showActivationPanelForWelcomeSelected
     && (welcomeActivationStatusKey === 'ready_for_review' || welcomeActivationStatusKey === 'in_review');
+  const selectedPreviewStatusKey = resolveActivationStatusKey(effectiveSelectedConfig);
+  const showPreviewGuidanceForSelected = Boolean(
+    effectiveSelectedConfig
+    && selectedPreviewStatusKey === 'approved_preview'
+    && !Boolean(effectiveSelectedConfig.is_public_live),
+  );
 
   useEffect(() => {
     if (activeMainTab === 'settings') return;
@@ -1113,8 +1143,12 @@ export default function DashboardClient() {
       {/* 1. SPALTE: WERKZEUGE (Ganz links, schmal) */}
       {showUtilityBar ? (
       <aside
+        ref={utilityBarRef}
         style={utilityBarStyle}
-        onMouseLeave={() => setHoveredUtilityToolId(null)}
+        onMouseLeave={() => {
+          setHoveredUtilityToolId(null);
+          setHoveredUtilityToolTop(null);
+        }}
       >
         <div style={toolIconsGroupStyle}>
           {utilityToolGroups.map((group, groupIndex) => (
@@ -1126,8 +1160,8 @@ export default function DashboardClient() {
                     key={item.id}
                     type="button"
                     onClick={() => item.tab ? handleToolSelect(item.tab) : undefined}
-                    onMouseEnter={() => setHoveredUtilityToolId(item.id)}
-                    onFocus={() => setHoveredUtilityToolId(item.id)}
+                    onMouseEnter={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
+                    onFocus={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
                     style={toolIconButtonStyle(active, Boolean(item.disabled))}
                     disabled={Boolean(item.disabled)}
                     aria-label={item.label}
@@ -1140,8 +1174,8 @@ export default function DashboardClient() {
             </div>
           ))}
         </div>
-        {hoveredUtilityTool ? (
-          <div style={utilityTooltipLayerStyle}>
+        {hoveredUtilityTool && hoveredUtilityToolTop !== null ? (
+          <div style={utilityTooltipLayerStyle(hoveredUtilityToolTop)}>
             <div style={utilityTooltipCardStyle}>{hoveredUtilityTool.label}</div>
           </div>
         ) : null}
@@ -1343,8 +1377,92 @@ export default function DashboardClient() {
                   <div style={alreadyActiveInfoStyle}>Dieses Gebiet ist bereits aktiv.</div>
                 ) : null}
               </div>
-            ) : null}
-            <div style={welcomeGroupsStyle}>
+                ) : null}
+                {previewDistricts.length > 0 ? (
+                  <div style={previewReadyWelcomeBoxStyle}>
+                    <h2 style={{ margin: 0, fontSize: '22px', color: '#0f172a' }}>Previewphase</h2>
+                    <p style={{ margin: '8px 0 0', fontSize: '14px', color: '#334155', lineHeight: 1.6 }}>
+                      Mindestens ein Gebiet ist intern freigegeben und kann vor dem Onlineschalten im Partnerbereich vorbereitet werden.
+                      Pruefe jetzt Inhalte, Werte und SEO/GEO sorgfaeltig. Das Gebiet ist in diesem Zustand noch nicht regulär online.
+                    </p>
+                    <div style={activationTabsRowStyle}>
+                      {previewDistricts.map((district) => {
+                        const active = effectiveWelcomePreviewConfig?.area_id === district.area_id;
+                        const label = district.areas?.name || district.areas?.slug || district.area_id;
+                        return (
+                          <button
+                            key={`preview:${district.area_id}`}
+                            type="button"
+                            onMouseEnter={() => setHoveredActivationTabId(`preview:${district.area_id}`)}
+                            onMouseLeave={() => setHoveredActivationTabId((prev) => (prev === `preview:${district.area_id}` ? null : prev))}
+                            onClick={() => {
+                              setSelectedConfig(district);
+                              setShowWelcome(true);
+                            }}
+                            style={activationTabButtonStyle(active, hoveredActivationTabId === `preview:${district.area_id}`)}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {effectiveWelcomePreviewConfig ? (
+                      <div style={previewReadyInnerPanelStyle}>
+                        <div style={previewReadyBadgeRowStyle}>
+                          <span style={previewReadyBadgeStyle}>Preview freigegeben</span>
+                        </div>
+                        <div style={previewReadyTextStyle}>
+                          Fuer <strong>{effectiveWelcomePreviewConfig.areas?.name ?? effectiveWelcomePreviewConfig.area_id}</strong> ist die fachliche Freigabe bereits erteilt.
+                          Jetzt solltest du Texte, Werte, SEO/GEO und falls gebucht auch die Internationalisierung final vorbereiten.
+                        </div>
+                        <ul style={previewReadyListStyle}>
+                          <li>Texte und redaktionelle Inhalte auf Vollstaendigkeit und Qualitaet pruefen.</li>
+                          <li>Werte und Faktoren plausibilisieren.</li>
+                          <li>SEO- und GEO-Einstellungen vor dem Livegang final abstimmen.</li>
+                          <li>Lokale Website und optionale Zusatzmodule vor dem Onlineschalten vorbereiten.</li>
+                        </ul>
+                        <div style={previewReadyActionRowStyle}>
+                          <button type="button" onClick={() => {
+                            setSelectedConfig(effectiveWelcomePreviewConfig);
+                            handleToolSelect('texts');
+                          }} style={previewReadyActionButtonStyle}>
+                            Texte pruefen
+                          </button>
+                          <button type="button" onClick={() => {
+                            setSelectedConfig(effectiveWelcomePreviewConfig);
+                            handleToolSelect('factors');
+                          }} style={previewReadyActionButtonStyle}>
+                            Werte pruefen
+                          </button>
+                          <button type="button" onClick={() => {
+                            setSelectedConfig(effectiveWelcomePreviewConfig);
+                            handleToolSelect('marketing');
+                          }} style={previewReadyActionButtonStyle}>
+                            SEO & GEO pruefen
+                          </button>
+                          <button type="button" onClick={() => {
+                            setSelectedConfig(effectiveWelcomePreviewConfig);
+                            handleToolSelect('local_site');
+                          }} style={previewReadyGhostButtonStyle}>
+                            Lokale Website
+                          </button>
+                          {hasInternationalEnabled ? (
+                            <button type="button" onClick={() => {
+                              setSelectedConfig(effectiveWelcomePreviewConfig);
+                              handleToolSelect('international');
+                            }} style={previewReadyGhostButtonStyle}>
+                              Internationalisierung
+                            </button>
+                          ) : null}
+                        </div>
+                        <div style={previewReadyHintStyle}>
+                          Eine direkte Frontend-Preview wird im naechsten Schritt ergaenzt. Bis dahin pruefst du die Inhalte direkt im Partnerbereich.
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                <div style={welcomeGroupsStyle}>
               {welcomeToolGroups(hasInternationalFeature).map((group) => (
                 <section key={group.title} style={welcomeGroupCardStyle}>
                   <h3 style={welcomeGroupTitleStyle}>{group.title}</h3>
@@ -1405,6 +1523,46 @@ export default function DashboardClient() {
                   {!hideTextsHeaderInActivationFlow ? (
                     <div style={regionStatusStyle(effectiveSelectedConfig?.is_active === true)}>
                       Status: {selectedAreaStatusLabel}
+                    </div>
+                  ) : null}
+                  {showPreviewGuidanceForSelected ? (
+                    <div style={previewReadyCardShellStyle}>
+                      <div style={previewReadyBadgeRowStyle}>
+                        <span style={previewReadyBadgeStyle}>Preview freigegeben</span>
+                      </div>
+                      <h3 style={previewReadyTitleStyle}>Dieses Gebiet ist intern freigegeben, aber noch nicht online.</h3>
+                      <p style={previewReadyTextStyle}>
+                        Nutze jetzt die Previewphase, um Inhalte, Werte, SEO/GEO und optionale Zusatzmodule final vorzubereiten.
+                        Erst danach sollte das Gebiet durch den Admin online geschaltet werden.
+                      </p>
+                      <ul style={previewReadyListStyle}>
+                        <li>Texte und Pflichtinhalte auf Vollstaendigkeit und Qualitaet pruefen.</li>
+                        <li>Wertanpassungen und Marktfaktoren final abstimmen.</li>
+                        <li>SEO- und GEO-Inhalte fuer den Livegang kontrollieren.</li>
+                        <li>Falls gebucht: lokale Website und Internationalisierung fertigstellen.</li>
+                      </ul>
+                      <div style={previewReadyActionRowStyle}>
+                        <button type="button" onClick={() => handleToolSelect('texts')} style={previewReadyActionButtonStyle}>
+                          Texte pruefen
+                        </button>
+                        <button type="button" onClick={() => handleToolSelect('factors')} style={previewReadyActionButtonStyle}>
+                          Werte pruefen
+                        </button>
+                        <button type="button" onClick={() => handleToolSelect('marketing')} style={previewReadyActionButtonStyle}>
+                          SEO & GEO pruefen
+                        </button>
+                        <button type="button" onClick={() => handleToolSelect('local_site')} style={previewReadyGhostButtonStyle}>
+                          Lokale Website
+                        </button>
+                        {hasInternationalEnabled ? (
+                          <button type="button" onClick={() => handleToolSelect('international')} style={previewReadyGhostButtonStyle}>
+                            Internationalisierung
+                          </button>
+                        ) : null}
+                      </div>
+                      <div style={previewReadyHintStyle}>
+                        Das Gebiet ist in dieser Phase noch nicht regulär online oder indexierbar. Eine direkte Frontend-Preview wird im naechsten Schritt ergaenzt.
+                      </div>
                     </div>
                   ) : null}
                   {showActivationPanelForEditorSelected ? (
@@ -1646,13 +1804,13 @@ export default function DashboardClient() {
 // --- STYLES ---
 
 const utilityBarStyle: React.CSSProperties = {
-  width: '64px',
-  minWidth: '64px',
+  width: '50px',
+  minWidth: '50px',
   backgroundColor: 'rgb(72, 107, 122)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '10px 0',
+  padding: '8px 0',
   overflow: 'visible',
   position: 'relative',
   zIndex: 10
@@ -1662,18 +1820,18 @@ const toolIconsGroupStyle = {
   display: 'flex',
   flexDirection: 'column' as const,
   alignItems: 'center',
-  gap: '10px',
+  gap: '4px',
   height: '100%',
   width: '100%',
   overflowY: 'auto' as const,
-  padding: '2px 0 10px',
+  padding: '2px 0 8px',
 };
 
 const toolGroupStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: '8px',
+  gap: '4px',
   width: '100%',
 };
 
@@ -1686,11 +1844,11 @@ const toolGroupDividerStyle: React.CSSProperties = {
 };
 
 const toolIconButtonStyle = (active: boolean, disabled = false) => ({
-  width: '36px',
-  height: '36px',
-  borderRadius: '11px',
-  border: active ? '1px solid #111827' : '1px solid rgba(255,255,255,0.24)',
-  backgroundColor: active ? '#ffffff' : 'rgba(255,255,255,0.14)',
+  width: '30px',
+  height: '30px',
+  borderRadius: '9px',
+  border: active ? '1px solid rgba(255,255,255,0.96)' : '1px solid rgba(255,255,255,0.26)',
+  backgroundColor: active ? '#ffffff' : 'rgba(255,255,255,0.22)',
   boxShadow: active ? '0 8px 18px rgba(15,23,42,0.18)' : 'none',
   color: '#111111',
   cursor: disabled ? 'not-allowed' : 'pointer',
@@ -1701,16 +1859,14 @@ const toolIconButtonStyle = (active: boolean, disabled = false) => ({
   justifyContent: 'center'
 });
 
-const utilityTooltipLayerStyle: React.CSSProperties = {
+const utilityTooltipLayerStyle = (top: number): React.CSSProperties => ({
   position: 'absolute',
-  top: 0,
-  left: 'calc(100% + 12px)',
-  bottom: 0,
-  display: 'flex',
-  alignItems: 'center',
+  top: `${top}px`,
+  left: 'calc(100% + 10px)',
+  transform: 'translateY(-50%)',
   pointerEvents: 'none',
   zIndex: 35,
-};
+});
 
 const utilityTooltipCardStyle: React.CSSProperties = {
   minWidth: '168px',
@@ -2091,6 +2247,110 @@ const awaitingApprovalDashboardButtonStyle: React.CSSProperties = {
   padding: '8px 12px',
   fontWeight: 700,
   cursor: 'pointer',
+};
+
+const previewReadyCardShellStyle: React.CSSProperties = {
+  marginTop: '12px',
+  border: '1px solid #c084fc',
+  background: 'linear-gradient(180deg, rgba(250, 245, 255, 0.95), #ffffff)',
+  borderRadius: '14px',
+  padding: '16px',
+  width: '100%',
+  boxShadow: '0 10px 24px rgba(88, 28, 135, 0.08)',
+};
+
+const previewReadyWelcomeBoxStyle: React.CSSProperties = {
+  marginTop: '18px',
+  background: 'linear-gradient(180deg, rgba(250, 245, 255, 0.95), #ffffff)',
+  border: '1px solid #c084fc',
+  borderRadius: '16px',
+  padding: '20px 22px',
+  boxShadow: '0 8px 16px rgba(88, 28, 135, 0.06)',
+};
+
+const previewReadyInnerPanelStyle: React.CSSProperties = {
+  marginTop: '18px',
+  border: '1px solid #e9d5ff',
+  background: '#ffffff',
+  borderRadius: '14px',
+  padding: '16px',
+};
+
+const previewReadyBadgeRowStyle: React.CSSProperties = {
+  marginBottom: '14px',
+};
+
+const previewReadyBadgeStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  borderRadius: '999px',
+  border: '1px solid #c084fc',
+  background: '#f3e8ff',
+  color: '#581c87',
+  fontSize: '11px',
+  fontWeight: 800,
+  letterSpacing: '0.03em',
+  textTransform: 'uppercase',
+  padding: '4px 9px',
+};
+
+const previewReadyTitleStyle: React.CSSProperties = {
+  margin: '0 0 10px',
+  fontSize: '21px',
+  lineHeight: 1.35,
+  fontWeight: 800,
+  color: '#111827',
+};
+
+const previewReadyTextStyle: React.CSSProperties = {
+  margin: '0 0 10px',
+  fontSize: '15px',
+  color: '#374151',
+  lineHeight: 1.6,
+};
+
+const previewReadyListStyle: React.CSSProperties = {
+  margin: '10px 0 0',
+  paddingLeft: '18px',
+  color: '#334155',
+  fontSize: '14px',
+  lineHeight: 1.55,
+};
+
+const previewReadyActionRowStyle: React.CSSProperties = {
+  marginTop: '16px',
+  display: 'flex',
+  gap: '10px',
+  flexWrap: 'wrap',
+};
+
+const previewReadyActionButtonStyle: React.CSSProperties = {
+  border: 'none',
+  borderRadius: '10px',
+  background: '#6d28d9',
+  color: '#ffffff',
+  padding: '10px 14px',
+  fontSize: '13px',
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+const previewReadyGhostButtonStyle: React.CSSProperties = {
+  border: '1px solid #d8b4fe',
+  borderRadius: '10px',
+  background: '#ffffff',
+  color: '#6b21a8',
+  padding: '10px 14px',
+  fontSize: '13px',
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+const previewReadyHintStyle: React.CSSProperties = {
+  marginTop: '14px',
+  fontSize: '12px',
+  color: '#6b7280',
+  lineHeight: 1.55,
 };
 
 const successOverlayStyle: React.CSSProperties = {
