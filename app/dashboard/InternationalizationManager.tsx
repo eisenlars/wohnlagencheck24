@@ -687,7 +687,7 @@ export default function InternationalizationManager({ config, availableLocales }
     setStatusTone(null);
     try {
       const changedRows = rows
-        .filter((row) => String(row.translated_content ?? '').trim() !== String(baselineByKey[`${row.area_id}::${row.section_key}`] ?? '').trim()));
+        .filter((row) => String(row.translated_content ?? '').trim() !== String(baselineByKey[`${row.area_id}::${row.section_key}`] ?? '').trim());
       if (changedRows.length === 0) {
         setStatus('Keine Änderungen zum Speichern.');
         setStatusTone('success');
