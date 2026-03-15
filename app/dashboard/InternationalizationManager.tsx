@@ -3,20 +3,41 @@
 import { useEffect, useMemo, useState } from 'react';
 import NextImage from 'next/image';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import { createClient } from '@/utils/supabase/client';
 import {
   resolveDisplayTextClass,
   displayTextClassLabel,
   displayTextBadgeStyle,
+  type DisplayTextClass,
 } from '@/lib/text-display-class';
+import {
+  I18N_CHANNEL_OPTIONS,
+  I18N_SCOPE_OPTIONS,
+  i18nWorkflowClassCycle,
+  i18nWorkflowClassDescription,
+  i18nWorkflowClassTitle,
+  isDistrictArea,
+  type I18nChannel,
+  type I18nScope,
+} from '@/lib/i18n-workflow';
+import {
+  estimateTranslationTotals,
+  type I18nEstimatePricing,
+} from '@/lib/i18n-cost-estimate';
 
 type AreaConfig = {
   area_id: string;
   areas?: {
     name?: string;
+    slug?: string;
+    parent_slug?: string;
+    bundesland_slug?: string;
   };
 };
 
 type TranslationRow = {
+  area_id: string;
+  area_name: string;
   section_key: string;
   source_content_de: string;
   source_status: string | null;
@@ -44,13 +65,14 @@ type LlmOption = {
   global_provider_id: string | null;
 };
 
+type PricingPreview = I18nEstimatePricing;
+type ScopeArea = {
+  area_id: string;
+  area_name: string;
+};
+
 type SectionKind = 'general' | 'data_driven' | 'individual' | 'marketing';
 
-const CHANNEL_OPTIONS: Array<{ value: 'portal' | 'local_site' | 'marketing'; label: string }> = [
-  { value: 'portal', label: 'Berichte & Texte' },
-  { value: 'local_site', label: 'Lokale Webseite' },
-  { value: 'marketing', label: 'SEO & Geo' },
-];
 const I18N_MOCK_TRANSLATION = process.env.NEXT_PUBLIC_I18N_MOCK_TRANSLATION === '1';
 
 const I18N_TAB_ORDER = [
@@ -325,7 +347,11 @@ function resolveSectionMeta(sectionKey: string): { label: string; type: SectionK
   };
 }
 
+const DEFAULT_WORKFLOW_CLASSES: DisplayTextClass[] = ['general', 'profile', 'market_expert', 'data_driven'];
+const MARKETING_WORKFLOW_CLASSES: DisplayTextClass[] = ['marketing'];
+
 export default function InternationalizationManager({ config, availableLocales }: Props) {
+  const supabase = useMemo(() => createClient(), []);
   const locales = useMemo(() => {
     const unique = Array.from(
       new Set(
@@ -339,68 +365,124 @@ export default function InternationalizationManager({ config, availableLocales }
   }, [availableLocales]);
 
   const [locale, setLocale] = useState<string>(locales[0] ?? 'en');
-  const [channel, setChannel] = useState<'portal' | 'local_site' | 'marketing'>('portal');
+  const [channel, setChannel] = useState<I18nChannel>('portal');
+  const [scope, setScope] = useState<I18nScope>('current_area');
   const [rows, setRows] = useState<TranslationRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<'success' | 'error' | null>(null);
   const [activeTab, setActiveTab] = useState<string>('marktueberblick');
+  const [activeClass, setActiveClass] = useState<DisplayTextClass>('general');
   const [llmOptions, setLlmOptions] = useState<LlmOption[]>([]);
   const [selectedLlmOptionId, setSelectedLlmOptionId] = useState<string>('');
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const [baselineByKey, setBaselineByKey] = useState<Record<string, string>>({});
+  const [pricingPreview, setPricingPreview] = useState<PricingPreview | null>(null);
+  const isDistrict = isDistrictArea(config?.area_id ?? '');
+  const channelMeta = I18N_CHANNEL_OPTIONS.find((item) => item.value === channel) ?? I18N_CHANNEL_OPTIONS[0];
+  const areaScopeLabel = isDistrict ? 'Kreis' : 'Ortslage';
 
   useEffect(() => {
     if (locales.includes(locale)) return;
     setLocale(locales[0] ?? 'en');
   }, [locales, locale]);
 
-  async function loadRows() {
+  async function resolveScopeAreas(nextScope: I18nScope): Promise<ScopeArea[]> {
+    const current: ScopeArea = {
+      area_id: String(config?.area_id ?? ''),
+      area_name: String(config?.areas?.name ?? config?.area_id ?? ''),
+    };
+    if (!current.area_id) return [];
+    if (nextScope !== 'kreis_ortslagen' || !isDistrict) return [current];
+
+    const bundeslandSlug = String(config?.areas?.bundesland_slug ?? '').trim();
+    const kreisSlug = String(config?.areas?.slug ?? '').trim();
+    if (!bundeslandSlug || !kreisSlug) return [current];
+
+    const { data, error } = await supabase
+      .from('areas')
+      .select('id, name, slug, parent_slug, bundesland_slug')
+      .eq('bundesland_slug', bundeslandSlug)
+      .eq('parent_slug', kreisSlug)
+      .order('name', { ascending: true });
+    if (error) throw new Error(error.message || 'Ortslagen konnten nicht geladen werden.');
+
+    const children = (data ?? [])
+      .map((row) => ({
+        area_id: String(row.id ?? '').trim(),
+        area_name: String(row.name ?? row.slug ?? row.id ?? '').trim(),
+      }))
+      .filter((row) => row.area_id.length > 0);
+
+    return [current, ...children];
+  }
+
+  async function loadRows(options?: { autoSync?: boolean; sectionKeys?: string[] }) {
     if (!config?.area_id) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        area_id: String(config.area_id),
-        locale,
-        channel,
-      });
-      const res = await fetch(`/api/partner/i18n/texts?${params.toString()}`, { method: 'GET', cache: 'no-store' });
-      const payload = await res.json().catch(() => null) as {
-        rows?: TranslationRow[];
-        error?: string;
-        summary?: { auto_synced?: number; auto_sync_failed?: number; mock_mode?: boolean };
-      } | null;
-      if (!res.ok) {
-        throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
-      }
-      const nextRows = (Array.isArray(payload?.rows) ? payload.rows : []).map((row) => {
+      const scopeAreas = await resolveScopeAreas(scope);
+      const keys = Array.from(new Set((options?.sectionKeys ?? []).map((item) => String(item ?? '').trim()).filter(Boolean)));
+      const results = await Promise.all(scopeAreas.map(async (scopeArea) => {
+        const params = new URLSearchParams({
+          area_id: scopeArea.area_id,
+          locale,
+          channel,
+          auto_sync: options?.autoSync ? '1' : '0',
+        });
+        if (keys.length > 0) params.set('section_keys', keys.join(','));
+        const res = await fetch(`/api/partner/i18n/texts?${params.toString()}`, { method: 'GET', cache: 'no-store' });
+        const payload = await res.json().catch(() => null) as {
+          rows?: Omit<TranslationRow, 'area_id' | 'area_name'>[];
+          error?: string;
+          summary?: {
+            auto_synced?: number;
+            auto_sync_failed?: number;
+            mock_mode?: boolean;
+            pricing_preview?: PricingPreview | null;
+          };
+        } | null;
+        if (!res.ok) {
+          throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
+        }
+        return { scopeArea, payload };
+      }));
+
+      const nextRows = results.flatMap(({ scopeArea, payload }) => (
+        Array.isArray(payload?.rows) ? payload.rows : []
+      ).map((row) => {
         const fallback = String(row.effective_content ?? row.source_content_de ?? '').trim();
         return {
           ...row,
+          area_id: scopeArea.area_id,
+          area_name: scopeArea.area_name,
           translated_content: String(row.translated_content ?? '').trim() || fallback,
         };
-      });
+      }));
       setRows(nextRows);
       const nextBaseline: Record<string, string> = {};
       for (const row of nextRows) {
-        nextBaseline[row.section_key] = String(row.translated_content ?? '').trim();
+        nextBaseline[`${row.area_id}::${row.section_key}`] = String(row.translated_content ?? '').trim();
       }
       setBaselineByKey(nextBaseline);
-      const autoSynced = Number(payload?.summary?.auto_synced ?? 0);
-      const autoFailed = Number(payload?.summary?.auto_sync_failed ?? 0);
-      const isMock = payload?.summary?.mock_mode === true || I18N_MOCK_TRANSLATION;
-      if (isMock) {
-        setStatus(`Mock-Modus aktiv · automatisch aktualisiert: ${autoSynced} · Fehler: ${autoFailed}`);
-      } else if (autoSynced > 0 || autoFailed > 0) {
-        setStatus(`Automatisch aktualisiert: ${autoSynced} · Fehler: ${autoFailed}`);
+      const pricing = results.find((item) => item.payload?.summary?.pricing_preview)?.payload?.summary?.pricing_preview ?? null;
+      setPricingPreview(pricing);
+      const autoSynced = results.reduce((sum, item) => sum + Number(item.payload?.summary?.auto_synced ?? 0), 0);
+      const autoFailed = results.reduce((sum, item) => sum + Number(item.payload?.summary?.auto_sync_failed ?? 0), 0);
+      const isMock = results.some((item) => item.payload?.summary?.mock_mode === true) || I18N_MOCK_TRANSLATION;
+      if (options?.autoSync && isMock) {
+        setStatus(`Mock-Modus aktiv · automatisch aktualisiert: ${autoSynced} · Fehler: ${autoFailed} · Gebiete: ${scopeAreas.length}`);
+      } else if (options?.autoSync) {
+        setStatus(`Automatisch aktualisiert: ${autoSynced} · Fehler: ${autoFailed} · Gebiete: ${scopeAreas.length}`);
       } else {
-        setStatus('Übersetzungen geladen.');
+        setStatus(`Übersetzungsstand geladen fuer ${scopeAreas.length} Gebiet(e). Es wurde noch kein automatischer Uebersetzungslauf gestartet.`);
       }
       setStatusTone('success');
     } catch (error) {
       setRows([]);
       setBaselineByKey({});
+      setPricingPreview(null);
       setStatus(error instanceof Error ? error.message : 'Übersetzungen konnten nicht geladen werden.');
       setStatusTone('error');
     } finally {
@@ -409,9 +491,9 @@ export default function InternationalizationManager({ config, availableLocales }
   }
 
   useEffect(() => {
-    void loadRows();
+    void loadRows({ autoSync: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config?.area_id, locale, channel]);
+  }, [config?.area_id, locale, channel, scope]);
 
   useEffect(() => {
     (async () => {
@@ -467,14 +549,93 @@ export default function InternationalizationManager({ config, availableLocales }
     return map;
   }, [rows]);
 
+  const workflowClasses = useMemo<DisplayTextClass[]>(
+    () => (channel === 'marketing' ? MARKETING_WORKFLOW_CLASSES : DEFAULT_WORKFLOW_CLASSES),
+    [channel],
+  );
+
   useEffect(() => {
     if (I18N_TAB_ORDER.some((tab) => tab.id === activeTab)) return;
     setActiveTab('marktueberblick');
   }, [activeTab]);
 
+  useEffect(() => {
+    if (workflowClasses.includes(activeClass)) return;
+    setActiveClass(workflowClasses[0] ?? 'general');
+  }, [workflowClasses, activeClass]);
+
+  useEffect(() => {
+    if (isDistrict) return;
+    if (scope !== 'kreis_ortslagen') return;
+    setScope('current_area');
+  }, [isDistrict, scope]);
+
+  const classSummary = useMemo(() => {
+    const summaryMap: Record<DisplayTextClass, {
+      total: number;
+      translated: number;
+      fallback: number;
+      stale: number;
+    }> = {
+      general: { total: 0, translated: 0, fallback: 0, stale: 0 },
+      data_driven: { total: 0, translated: 0, fallback: 0, stale: 0 },
+      market_expert: { total: 0, translated: 0, fallback: 0, stale: 0 },
+      profile: { total: 0, translated: 0, fallback: 0, stale: 0 },
+      marketing: { total: 0, translated: 0, fallback: 0, stale: 0 },
+    };
+
+    for (const row of rows) {
+      if (!isTranslatableSectionKey(row.section_key)) continue;
+      const meta = resolveSectionMeta(row.section_key);
+      const displayClass = resolveDisplayTextClass(row.section_key, meta.type);
+      const entry = summaryMap[displayClass];
+      entry.total += 1;
+      if (row.effective_source === 'translation') entry.translated += 1;
+      else entry.fallback += 1;
+      if (row.translation_is_stale) entry.stale += 1;
+    }
+    return summaryMap;
+  }, [rows]);
+
+  const classEstimateMap = useMemo(() => {
+    const next: Record<DisplayTextClass, ReturnType<typeof estimateTranslationTotals>> = {
+      general: estimateTranslationTotals([], pricingPreview),
+      data_driven: estimateTranslationTotals([], pricingPreview),
+      market_expert: estimateTranslationTotals([], pricingPreview),
+      profile: estimateTranslationTotals([], pricingPreview),
+      marketing: estimateTranslationTotals([], pricingPreview),
+    };
+
+    const groupedTexts: Record<DisplayTextClass, string[]> = {
+      general: [],
+      data_driven: [],
+      market_expert: [],
+      profile: [],
+      marketing: [],
+    };
+
+    for (const row of rows) {
+      if (!isTranslatableSectionKey(row.section_key)) continue;
+      const meta = resolveSectionMeta(row.section_key);
+      const displayClass = resolveDisplayTextClass(row.section_key, meta.type);
+      if (row.translation_is_stale || row.effective_source === 'de_fallback') {
+        groupedTexts[displayClass].push(String(row.source_content_de ?? ''));
+      }
+    }
+
+    for (const displayClass of Object.keys(groupedTexts) as DisplayTextClass[]) {
+      next[displayClass] = estimateTranslationTotals(groupedTexts[displayClass], pricingPreview);
+    }
+    return next;
+  }, [rows, pricingPreview]);
+
   const filteredRows = useMemo(() => {
     const withIndex = (rowsByTab.get(activeTab) ?? [])
       .filter((row) => isTranslatableSectionKey(row.section_key))
+      .filter((row) => {
+        const meta = resolveSectionMeta(row.section_key);
+        return resolveDisplayTextClass(row.section_key, meta.type) === activeClass;
+      })
       .map((row, idx) => ({ row, idx }));
     withIndex.sort((a, b) => {
       const metaA = resolveSectionMeta(a.row.section_key);
@@ -486,19 +647,38 @@ export default function InternationalizationManager({ config, availableLocales }
       return a.idx - b.idx;
     });
     return withIndex.map((item) => item.row);
-  }, [rowsByTab, activeTab]);
+  }, [rowsByTab, activeTab, activeClass]);
 
   const summary = useMemo(() => {
-    const total = rows.length;
-    const translated = rows.filter((row) => row.effective_source === 'translation').length;
+    const relevantRows = rows.filter((row) => isTranslatableSectionKey(row.section_key));
+    const total = relevantRows.length;
+    const translated = relevantRows.filter((row) => row.effective_source === 'translation').length;
     const fallback = total - translated;
     return { total, translated, fallback };
   }, [rows]);
 
   const hasEdits = useMemo(
-    () => rows.some((row) => String(row.translated_content ?? '').trim() !== String(baselineByKey[row.section_key] ?? '').trim()),
+    () => rows.some((row) => String(row.translated_content ?? '').trim() !== String(baselineByKey[`${row.area_id}::${row.section_key}`] ?? '').trim()),
     [rows, baselineByKey],
   );
+
+  const selectedWorkflowKeys = useMemo(
+    () => Array.from(new Set(rows
+      .filter((row) => isTranslatableSectionKey(row.section_key))
+      .filter((row) => {
+        const meta = resolveSectionMeta(row.section_key);
+        return resolveDisplayTextClass(row.section_key, meta.type) === activeClass;
+      })
+      .map((row) => row.section_key))),
+    [rows, activeClass],
+  );
+
+  const activeEstimate = classEstimateMap[activeClass];
+
+  function formatCost(value: number | null, currency: 'USD' | 'EUR'): string {
+    if (value === null || !Number.isFinite(value)) return 'n/a';
+    return `${value.toFixed(value < 1 ? 4 : 2)} ${currency}`;
+  }
 
   async function saveRows() {
     if (!config?.area_id || rows.length === 0 || !hasEdits) return;
@@ -507,34 +687,43 @@ export default function InternationalizationManager({ config, availableLocales }
     setStatusTone(null);
     try {
       const changedRows = rows
-        .filter((row) => String(row.translated_content ?? '').trim() !== String(baselineByKey[row.section_key] ?? '').trim())
-        .map((row) => ({
-          section_key: row.section_key,
-          translated_content: row.translated_content,
-          status: 'approved' as const,
-        }));
+        .filter((row) => String(row.translated_content ?? '').trim() !== String(baselineByKey[`${row.area_id}::${row.section_key}`] ?? '').trim()));
       if (changedRows.length === 0) {
         setStatus('Keine Änderungen zum Speichern.');
         setStatusTone('success');
         return;
       }
-      const res = await fetch('/api/partner/i18n/texts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          area_id: config.area_id,
-          locale,
-          channel,
-          rows: changedRows,
-        }),
-      });
-      const payload = await res.json().catch(() => null) as { updated?: number; error?: string } | null;
-      if (!res.ok) {
-        throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
+      const grouped = new Map<string, typeof changedRows>();
+      for (const row of changedRows) {
+        const list = grouped.get(row.area_id) ?? [];
+        list.push(row);
+        grouped.set(row.area_id, list);
       }
-      setStatus(`${payload?.updated ?? 0} Übersetzungen gespeichert.`);
+      let updatedSum = 0;
+      for (const [areaId, areaRows] of grouped.entries()) {
+        const res = await fetch('/api/partner/i18n/texts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            area_id: areaId,
+            locale,
+            channel,
+            rows: areaRows.map((row) => ({
+              section_key: row.section_key,
+              translated_content: row.translated_content,
+              status: 'approved' as const,
+            })),
+          }),
+        });
+        const payload = await res.json().catch(() => null) as { updated?: number; error?: string } | null;
+        if (!res.ok) {
+          throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
+        }
+        updatedSum += Number(payload?.updated ?? 0);
+      }
+      setStatus(`${updatedSum} Übersetzungen gespeichert.`);
       setStatusTone('success');
-      await loadRows();
+      await loadRows({ autoSync: false });
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Speichern fehlgeschlagen.');
       setStatusTone('error');
@@ -554,7 +743,7 @@ export default function InternationalizationManager({ config, availableLocales }
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         text: row.source_content_de,
-        areaName: String(config.areas?.name ?? config.area_id),
+        areaName: String(row.area_name ?? config.areas?.name ?? config.area_id),
         type: 'general',
         sectionLabel: row.section_key,
         customPrompt,
@@ -571,17 +760,35 @@ export default function InternationalizationManager({ config, availableLocales }
     return String(payload?.optimizedText ?? '').trim();
   }
 
+  async function triggerWorkflowUpdate() {
+    if (selectedWorkflowKeys.length === 0) {
+      setStatus('Fuer diesen Texttyp sind aktuell keine uebersetzbaren Inhalte vorhanden.');
+      setStatusTone('error');
+      return;
+    }
+    setStatus(`Starte Uebersetzungsaktualisierung fuer ${i18nWorkflowClassTitle(activeClass)} im ${channelMeta.label}-Bereich …`);
+    setStatusTone('success');
+    await loadRows({ autoSync: true, sectionKeys: selectedWorkflowKeys });
+  }
+
   return (
     <>
       <FullscreenLoader
         show={loading || saving || Boolean(rewritingKey)}
-        label={loading ? 'Sektionen werden geladen...' : saving ? 'Sektionen werden gespeichert...' : 'Sektionen werden geladen...'}
+        label={
+          loading
+            ? 'Uebersetzungsstand wird geladen...'
+            : saving
+              ? 'Uebersetzungen werden gespeichert...'
+              : 'Uebersetzung wird aktualisiert...'
+        }
       />
       <section style={wrapStyle}>
         <div style={topCardStyle}>
           <div style={headStyle}>
+            <h3 style={headTitleStyle}>Internationalisierung</h3>
             <p style={subStyle}>
-              Übersetzungen werden automatisiert entlang der Texttypen aktualisiert. Hier kannst du einzelne Abschnitte manuell oder per KI nachbearbeiten.
+              Arbeite die Uebersetzungen bewusst nach Bereich, Scope und Texttyp ab. Die deutschen Inhalte sollten vor jedem Lauf auf Vollstaendigkeit, Inhalt und Qualitaet geprueft sein.
             </p>
           </div>
 
@@ -600,9 +807,9 @@ export default function InternationalizationManager({ config, availableLocales }
               <select
                 style={inputStyle}
                 value={channel}
-                onChange={(e) => setChannel(e.target.value as 'portal' | 'local_site' | 'marketing')}
+                onChange={(e) => setChannel(e.target.value as I18nChannel)}
               >
-                {CHANNEL_OPTIONS.map((item) => (
+                {I18N_CHANNEL_OPTIONS.map((item) => (
                   <option key={item.value} value={item.value}>{item.label}</option>
                 ))}
               </select>
@@ -624,15 +831,153 @@ export default function InternationalizationManager({ config, availableLocales }
             </label>
           </div>
 
+          <div style={scopeBlockStyle}>
+            <div style={scopeHeadStyle}>
+              <strong>Scope</strong>
+              <span style={scopeMetaStyle}>{areaScopeLabel}: {String(config.areas?.name ?? config.area_id)}</span>
+            </div>
+            <div style={scopeOptionsStyle}>
+              {I18N_SCOPE_OPTIONS.map((item) => {
+                const isDisabled = item.value === 'kreis_ortslagen' && !isDistrict;
+                const isActive = scope === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    style={scopeButtonStyle(isActive, isDisabled)}
+                    disabled={isDisabled}
+                    onClick={() => setScope(item.value)}
+                    title={item.description}
+                  >
+                    <span style={scopeButtonTitleStyle}>{item.value === 'current_area' ? item.label.replace('Dieses Gebiet', areaScopeLabel) : item.label}</span>
+                    <span style={scopeButtonTextStyle}>{item.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={workflowNoticeStyle}>
+            <div style={workflowNoticeHeadStyle}>
+              <strong>{channelMeta.label}</strong>
+              <span style={workflowNoticeMetaStyle}>{channelMeta.description}</span>
+            </div>
+            <p style={workflowNoticeTextStyle}>
+              Freigaben der deutschen Inhalte und Uebersetzungslaeufe sind jetzt getrennt. Starte die Uebersetzung erst, wenn der deutsche Stand fachlich final ist.
+            </p>
+          </div>
+
           <div style={summaryStyle}>
             Gesamt: <strong>{summary.total}</strong> · Übersetzt: <strong>{summary.translated}</strong> · Deutsch-Fallback: <strong>{summary.fallback}</strong>
+          </div>
+          <div style={pricingMetaStyle}>
+            Globales Uebersetzungsmodell:{' '}
+            <strong>{pricingPreview?.provider && pricingPreview?.model ? `${pricingPreview.provider} / ${pricingPreview.model}` : 'nicht verfuegbar'}</strong>
+            {pricingPreview?.input_cost_usd_per_1k !== null && pricingPreview?.output_cost_usd_per_1k !== null ? (
+              <span>
+                {' '}· Input {formatCost(pricingPreview.input_cost_usd_per_1k, 'USD')}/1k · Output {formatCost(pricingPreview.output_cost_usd_per_1k, 'USD')}/1k
+              </span>
+            ) : null}
           </div>
         </div>
 
       <div style={editorCardStyle}>
+        <div style={workflowCardStyle}>
+          <div style={workflowCardHeaderStyle}>
+            <div>
+              <h3 style={sectionTabsIntroTitleStyle}>Texttyp waehlen</h3>
+              <p style={sectionTabsIntroTextStyle}>Priorisiere erst den Texttyp, dann den Themenbereich. So bleibt der Uebersetzungslauf steuerbar.</p>
+            </div>
+            <div style={workflowActionRowStyle}>
+              <button
+                type="button"
+                style={secondaryActionButtonStyle}
+                onClick={() => void loadRows({ autoSync: false })}
+                disabled={loading || saving}
+              >
+                Uebersetzungsstand laden
+              </button>
+              <button
+                type="button"
+                style={primaryWorkflowButtonStyle(Boolean(selectedWorkflowKeys.length) && !loading && !saving)}
+                onClick={() => void triggerWorkflowUpdate()}
+                disabled={loading || saving || selectedWorkflowKeys.length === 0}
+              >
+                {activeClass === 'data_driven' ? 'Data-Driven aktualisieren' : 'Uebersetzung fuer Texttyp starten'}
+              </button>
+            </div>
+          </div>
+
+          <div style={classGridStyle}>
+            {workflowClasses.map((displayClass) => {
+              const stats = classSummary[displayClass];
+              const active = activeClass === displayClass;
+              return (
+                <button
+                  key={displayClass}
+                  type="button"
+                  style={classCardStyle(active)}
+                  onClick={() => setActiveClass(displayClass)}
+                >
+                  <div style={classCardTopStyle}>
+                    <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
+                    <span style={classCardCountStyle}>{stats.total}</span>
+                  </div>
+                  <strong style={classCardTitleStyle}>{i18nWorkflowClassTitle(displayClass)}</strong>
+                  <p style={classCardTextStyle}>{i18nWorkflowClassDescription(displayClass)}</p>
+                  <div style={classCardStatsStyle}>
+                    <span>Uebersetzt: {stats.translated}</span>
+                    <span>DE-Fallback: {stats.fallback}</span>
+                    <span>Veraltet: {stats.stale}</span>
+                    <span>Tokens ca.: {classEstimateMap[displayClass].total_tokens.toLocaleString('de-DE')}</span>
+                  </div>
+                  <div style={classCardCostStyle}>
+                    <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
+                    <span>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={selectedWorkflowCardStyle}>
+            <div style={selectedWorkflowHeadStyle}>
+              <strong>{i18nWorkflowClassTitle(activeClass)}</strong>
+              <span style={selectedWorkflowMetaStyle}>{i18nWorkflowClassCycle(activeClass)}</span>
+            </div>
+            <p style={selectedWorkflowTextStyle}>{i18nWorkflowClassDescription(activeClass)}</p>
+            <div style={estimatePanelStyle}>
+              <div style={estimateItemStyle}>
+                <span style={estimateLabelStyle}>Betroffene Texte</span>
+                <strong>{classSummary[activeClass].fallback + classSummary[activeClass].stale}</strong>
+              </div>
+              <div style={estimateItemStyle}>
+                <span style={estimateLabelStyle}>Tokenlast ca.</span>
+                <strong>{activeEstimate.total_tokens.toLocaleString('de-DE')}</strong>
+              </div>
+              <div style={estimateItemStyle}>
+                <span style={estimateLabelStyle}>Kosten ca. USD</span>
+                <strong>{formatCost(activeEstimate.estimated_cost_usd, 'USD')}</strong>
+              </div>
+              <div style={estimateItemStyle}>
+                <span style={estimateLabelStyle}>Kosten ca. EUR</span>
+                <strong>{formatCost(activeEstimate.estimated_cost_eur, 'EUR')}</strong>
+              </div>
+            </div>
+            <div style={qualityCheckBoxStyle(activeClass !== 'data_driven')}>
+              <strong>{activeClass === 'data_driven' ? 'Automatisch aktuell halten' : 'Vor dem Uebersetzungslauf pruefen'}</strong>
+              <span>
+                {activeClass === 'data_driven'
+                  ? 'Data-Driven-Texte sollten nach Daten-, KPI- oder Kontextaenderungen zeitnah nachgezogen werden, damit Tabellen und Charts sprachlich konsistent bleiben.'
+                  : 'Bitte pruefe den deutschen Stand vor dem Lauf auf Vollstaendigkeit, inhaltliche Qualitaet und finale Aussage.'}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <div style={sectionTabsIntroStyle}>
-          <h3 style={sectionTabsIntroTitleStyle}>Sektionen/Themen bearbeiten</h3>
-          <p style={sectionTabsIntroTextStyle}>Wähle einen Bereich aus und bearbeite die zugehörigen Inhalte.</p>
+          <h3 style={sectionTabsIntroTitleStyle}>Themenbereich bearbeiten</h3>
+          <p style={sectionTabsIntroTextStyle}>Innerhalb des gewaelten Texttyps kannst du die Uebersetzungen je Themenbereich pruefen und manuell nacharbeiten.</p>
         </div>
         <div style={tabContainerStyle}>
           {I18N_TAB_ORDER.map((tab) => (
@@ -652,7 +997,7 @@ export default function InternationalizationManager({ config, availableLocales }
           ))}
         </div>
 
-        {status ? <div style={statusTone === 'error' ? statusErrorTextStyle : statusSuccessTextStyle}>{status}</div> : null}
+        {status ? <div style={statusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{status}</div> : null}
 
         <div style={tableWrapStyle}>
           <table style={tableStyle}>
@@ -671,10 +1016,10 @@ export default function InternationalizationManager({ config, availableLocales }
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr>
-                  <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind aktuell keine Textabschnitte vorhanden.</td>
+                  <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind fuer den gewaehlten Texttyp aktuell keine uebersetzbaren Inhalte vorhanden.</td>
                 </tr>
               ) : filteredRows.map((row, idx) => (
-                <tr key={`${row.section_key}:${idx}`}>
+                <tr key={`${row.area_id}:${row.section_key}:${idx}`}>
                   <td style={tdStyle}>
                     {(() => {
                       const meta = resolveSectionMeta(row.section_key);
@@ -687,6 +1032,9 @@ export default function InternationalizationManager({ config, availableLocales }
                             <span style={{ fontWeight: 700 }}>{sectionLabel}</span>
                             <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
                           </div>
+                          {scope === 'kreis_ortslagen' ? (
+                            <div style={areaMetaStyle}>{row.area_name}</div>
+                          ) : null}
                           <div style={sectionKeyMetaStyle}>{row.section_key}</div>
                         </div>
                       );
@@ -784,6 +1132,13 @@ const headStyle: React.CSSProperties = {
   gap: 6,
 };
 
+const headTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 18,
+  fontWeight: 800,
+  color: '#0f172a',
+};
+
 const subStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 13,
@@ -826,6 +1181,88 @@ const inputStyle: React.CSSProperties = {
   backgroundSize: '12px',
 };
 
+const scopeBlockStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 10,
+  padding: 12,
+  borderRadius: 12,
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+};
+
+const scopeHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 12,
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  fontSize: 12,
+  color: '#334155',
+};
+
+const scopeMetaStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#64748b',
+};
+
+const scopeOptionsStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: 10,
+};
+
+const scopeButtonStyle = (active: boolean, disabled: boolean): React.CSSProperties => ({
+  display: 'grid',
+  gap: 6,
+  textAlign: 'left',
+  padding: 12,
+  borderRadius: 12,
+  border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
+  background: active ? '#f0fdfa' : '#fff',
+  color: disabled ? '#94a3b8' : '#0f172a',
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.75 : 1,
+});
+
+const scopeButtonTitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 700,
+};
+
+const scopeButtonTextStyle: React.CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.45,
+  color: '#64748b',
+};
+
+const workflowNoticeStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 8,
+  padding: 12,
+  borderRadius: 12,
+  border: '1px solid #dbeafe',
+  background: '#eff6ff',
+};
+
+const workflowNoticeHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: 10,
+  flexWrap: 'wrap',
+};
+
+const workflowNoticeMetaStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#475569',
+};
+
+const workflowNoticeTextStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 13,
+  lineHeight: 1.5,
+  color: '#1e3a8a',
+};
+
 const buttonPrimaryStyle = (active: boolean): React.CSSProperties => ({
   border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
   borderRadius: 10,
@@ -839,6 +1276,26 @@ const buttonPrimaryStyle = (active: boolean): React.CSSProperties => ({
   opacity: active ? 1 : 0.75,
 });
 
+const primaryWorkflowButtonStyle = (active: boolean): React.CSSProperties => ({
+  ...buttonPrimaryStyle(active),
+  width: 'auto',
+  minWidth: 240,
+  height: 44,
+  padding: '0 16px',
+});
+
+const secondaryActionButtonStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  borderRadius: 10,
+  background: '#fff',
+  color: '#334155',
+  height: 44,
+  padding: '0 16px',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
 const smallGhostButtonStyle: React.CSSProperties = {
   border: '1px solid #cbd5e1',
   borderRadius: 8,
@@ -850,14 +1307,22 @@ const smallGhostButtonStyle: React.CSSProperties = {
   cursor: 'pointer',
 };
 
-const statusSuccessTextStyle: React.CSSProperties = {
+const statusSuccessBoxStyle: React.CSSProperties = {
+  padding: '10px 12px',
+  borderRadius: 10,
+  border: '1px solid #bbf7d0',
+  background: '#f0fdf4',
   fontSize: 12,
-  color: '#15803d',
+  color: '#166534',
 };
 
-const statusErrorTextStyle: React.CSSProperties = {
+const statusErrorBoxStyle: React.CSSProperties = {
+  padding: '10px 12px',
+  borderRadius: 10,
+  border: '1px solid #fecaca',
+  background: '#fef2f2',
   fontSize: 12,
-  color: '#b91c1c',
+  color: '#991b1b',
 };
 
 const staleBadgeStyle: React.CSSProperties = {
@@ -877,6 +1342,12 @@ const summaryStyle: React.CSSProperties = {
   color: '#334155',
 };
 
+const pricingMetaStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#475569',
+  lineHeight: 1.5,
+};
+
 const editorCardStyle: React.CSSProperties = {
   border: '1px solid #e2e8f0',
   borderRadius: 12,
@@ -886,6 +1357,149 @@ const editorCardStyle: React.CSSProperties = {
   display: 'grid',
   gap: 8,
 };
+
+const workflowCardStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 14,
+  padding: 12,
+  borderRadius: 12,
+  border: '1px solid #e2e8f0',
+  background: '#fff',
+};
+
+const workflowCardHeaderStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 16,
+  alignItems: 'flex-start',
+  flexWrap: 'wrap',
+};
+
+const workflowActionRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: 10,
+  flexWrap: 'wrap',
+};
+
+const classGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: 12,
+};
+
+const classCardStyle = (active: boolean): React.CSSProperties => ({
+  display: 'grid',
+  gap: 10,
+  textAlign: 'left',
+  padding: 14,
+  borderRadius: 12,
+  border: active ? '1px solid #0f766e' : '1px solid #e2e8f0',
+  background: active ? '#f0fdfa' : '#fff',
+  cursor: 'pointer',
+});
+
+const classCardTopStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 10,
+};
+
+const classCardCountStyle: React.CSSProperties = {
+  fontSize: 18,
+  fontWeight: 800,
+  color: '#0f172a',
+};
+
+const classCardTitleStyle: React.CSSProperties = {
+  fontSize: 15,
+  color: '#0f172a',
+};
+
+const classCardTextStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: '#475569',
+};
+
+const classCardStatsStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 10,
+  fontSize: 11,
+  color: '#334155',
+};
+
+const classCardCostStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 10,
+  fontSize: 11,
+  color: '#0f766e',
+  fontWeight: 700,
+};
+
+const selectedWorkflowCardStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 10,
+  padding: 12,
+  borderRadius: 12,
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+};
+
+const selectedWorkflowHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'baseline',
+  justifyContent: 'space-between',
+  gap: 12,
+  flexWrap: 'wrap',
+};
+
+const selectedWorkflowMetaStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#64748b',
+};
+
+const selectedWorkflowTextStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 13,
+  lineHeight: 1.5,
+  color: '#334155',
+};
+
+const estimatePanelStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+  gap: 10,
+};
+
+const estimateItemStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 4,
+  padding: 10,
+  borderRadius: 10,
+  border: '1px solid #dbeafe',
+  background: '#fff',
+};
+
+const estimateLabelStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: '#64748b',
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+};
+
+const qualityCheckBoxStyle = (manualCheck: boolean): React.CSSProperties => ({
+  display: 'grid',
+  gap: 6,
+  padding: 12,
+  borderRadius: 12,
+  border: manualCheck ? '1px solid #fcd34d' : '1px solid #86efac',
+  background: manualCheck ? '#fffbeb' : '#f0fdf4',
+  color: manualCheck ? '#92400e' : '#166534',
+});
 
 const sectionTabsIntroStyle: React.CSSProperties = {
   marginTop: 2,
@@ -995,6 +1609,12 @@ const sectionKeyMetaStyle: React.CSSProperties = {
   color: '#64748b',
   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
   wordBreak: 'break-word',
+};
+
+const areaMetaStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: '#0f766e',
+  fontWeight: 700,
 };
 
 const textareaStyle: React.CSSProperties = {

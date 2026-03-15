@@ -38,6 +38,24 @@ type UpsertBody = {
   rows?: UpsertInputRow[];
 };
 
+type TranslationPricingPreview = {
+  provider: string | null;
+  model: string | null;
+  input_cost_usd_per_1k: number | null;
+  output_cost_usd_per_1k: number | null;
+  fx_rate_usd_to_eur: number | null;
+};
+
+type BillingFeatureCatalogRow = {
+  code?: string | null;
+  default_enabled?: boolean | null;
+};
+
+type PartnerFeatureOverrideRow = {
+  feature_code?: string | null;
+  is_enabled?: boolean | null;
+};
+
 const RATE_LIMIT = { windowMs: 60 * 1000, max: 120 };
 const SUPABASE_BUCKET = "immobilienmarkt";
 const AUTO_SYNC_MAX_ROWS = 12;
@@ -219,6 +237,43 @@ async function requirePartnerUser(req: Request): Promise<string> {
   );
   if (!limit.allowed) throw new Error(`RATE_LIMIT:${limit.retryAfterSec}`);
   return user.id;
+}
+
+async function requireInternationalFeatureEnabled(
+  admin: ReturnType<typeof createAdminClient>,
+  partnerId: string,
+): Promise<void> {
+  const [catalogRes, overridesRes] = await Promise.all([
+    admin
+      .from("billing_feature_catalog")
+      .select("code, default_enabled")
+      .eq("is_active", true)
+      .ilike("code", "international%"),
+    admin
+      .from("partner_feature_overrides")
+      .select("feature_code, is_enabled")
+      .eq("partner_id", partnerId)
+      .ilike("feature_code", "international%"),
+  ]);
+
+  if (catalogRes.error) throw catalogRes.error;
+  if (overridesRes.error) throw overridesRes.error;
+
+  const catalogRows = (catalogRes.data ?? []) as BillingFeatureCatalogRow[];
+  const overrideByCode = new Map(
+    ((overridesRes.data ?? []) as PartnerFeatureOverrideRow[])
+      .map((row) => [asText(row.feature_code).toLowerCase(), row] as const)
+      .filter(([code]) => code.length > 0),
+  );
+
+  const hasInternationalEnabled = catalogRows.some((row) => {
+    const code = asText(row.code).toLowerCase();
+    if (!code.startsWith("international")) return false;
+    const override = overrideByCode.get(code);
+    return override?.is_enabled ?? row.default_enabled ?? false;
+  });
+
+  if (!hasInternationalEnabled) throw new Error("INTERNATIONAL_FEATURE_DISABLED");
 }
 
 function selectLatestSource(rows: TextSourceRow[]): Map<string, { content: string; status: string; updated_at: string | null }> {
@@ -405,6 +460,7 @@ export async function GET(req: Request) {
     const areaId = asText(url.searchParams.get("area_id"));
     const locale = normalizeLocale(asText(url.searchParams.get("locale")) || "en");
     const channel = (asText(url.searchParams.get("channel")) || "portal").toLowerCase();
+    const autoSyncEnabled = asText(url.searchParams.get("auto_sync")) !== "0";
     const sectionKeysFilter = new Set(parseSectionKeys(url.searchParams.get("section_keys")));
 
     if (!areaId) return NextResponse.json({ error: "Missing area_id" }, { status: 400 });
@@ -414,6 +470,7 @@ export async function GET(req: Request) {
     }
 
     const admin = createAdminClient();
+    await requireInternationalFeatureEnabled(admin, partnerId);
 
     const sourceByKey = new Map<string, { content: string; status: string; updated_at: string | null }>();
     if (channel === "portal") {
@@ -451,135 +508,163 @@ export async function GET(req: Request) {
 
     let autoSynced = 0;
     let autoSyncFailed = 0;
-    const globalCfg = await loadGlobalLlmConfig();
-    if (I18N_MOCK_TRANSLATION || globalCfg.config.central_enabled) {
-      const globalProviders = await loadActiveGlobalLlmProviders();
-      const provider = globalProviders.providers[0] ?? null;
-      const apiKey = provider ? readSecretFromAuthConfig(provider.auth_config ?? null, "api_key") : null;
-      const providerSupported = provider ? ["openai", "mistral", "azure_openai", "generic_llm"].includes(String(provider.provider ?? "").toLowerCase()) : false;
-      if (I18N_MOCK_TRANSLATION || (provider && apiKey && providerSupported)) {
-        const keys = Array.from(sourceByKey.keys()).filter((sectionKey) => (
-          sectionKeysFilter.size === 0 || sectionKeysFilter.has(sectionKey)
-        ));
-        const candidates = keys.filter((sectionKey) => {
-          if (!isAutoManagedSectionKey(sectionKey)) return false;
-          const source = sourceByKey.get(sectionKey);
-          if (!source || !asText(source.content)) return false;
-          const existing = transByKey.get(sectionKey);
-          const translated = asText(existing?.translated_content);
-          const currentHash = hashText(source.content);
-          const storedHash = asText(existing?.source_snapshot_hash);
-          if (!translated) return true; // first run
-          return !storedHash || storedHash !== currentHash; // source changed
-        }).slice(0, AUTO_SYNC_MAX_ROWS);
+    let pricingPreview: TranslationPricingPreview | null = null;
+    if (autoSyncEnabled) {
+      const globalCfg = await loadGlobalLlmConfig();
+      if (I18N_MOCK_TRANSLATION || globalCfg.config.central_enabled) {
+        const globalProviders = await loadActiveGlobalLlmProviders();
+        const provider = globalProviders.providers[0] ?? null;
+        pricingPreview = provider
+          ? {
+              provider: provider.provider,
+              model: provider.model,
+              input_cost_usd_per_1k: provider.input_cost_usd_per_1k,
+              output_cost_usd_per_1k: provider.output_cost_usd_per_1k,
+              fx_rate_usd_to_eur: provider.fx_rate_usd_to_eur ?? null,
+            }
+          : null;
+        const apiKey = provider ? readSecretFromAuthConfig(provider.auth_config ?? null, "api_key") : null;
+        const providerSupported = provider ? ["openai", "mistral", "azure_openai", "generic_llm"].includes(String(provider.provider ?? "").toLowerCase()) : false;
+        if (I18N_MOCK_TRANSLATION || (provider && apiKey && providerSupported)) {
+          const keys = Array.from(sourceByKey.keys()).filter((sectionKey) => (
+            sectionKeysFilter.size === 0 || sectionKeysFilter.has(sectionKey)
+          ));
+          const candidates = keys.filter((sectionKey) => {
+            if (!isAutoManagedSectionKey(sectionKey)) return false;
+            const source = sourceByKey.get(sectionKey);
+            if (!source || !asText(source.content)) return false;
+            const existing = transByKey.get(sectionKey);
+            const translated = asText(existing?.translated_content);
+            const currentHash = hashText(source.content);
+            const storedHash = asText(existing?.source_snapshot_hash);
+            if (!translated) return true; // first run
+            return !storedHash || storedHash !== currentHash; // source changed
+          }).slice(0, AUTO_SYNC_MAX_ROWS);
 
-        for (const sectionKey of candidates) {
-          const source = sourceByKey.get(sectionKey);
-          if (!source) continue;
-          try {
-            const result = I18N_MOCK_TRANSLATION
-              ? {
-                  content: buildMockTranslation(locale, source.content),
-                  promptTokens: null,
-                  completionTokens: null,
-                  totalTokens: null,
-                }
-              : await (async () => {
-                  const prompt = buildAutoTranslationPrompt(locale, source.content);
-                  return callOpenAiCompatible({
-                    provider: provider!.provider,
-                    model: provider!.model,
-                    baseUrl: provider!.base_url,
-                    apiKey: apiKey!,
-                    apiVersion: provider!.api_version,
-                    system: prompt.system,
-                    user: prompt.user,
-                    temperature: provider!.temperature,
-                    maxTokens: provider!.max_tokens,
-                  });
-                })();
-            const sourceHash = hashText(source.content);
-            const upsertRow = {
-              partner_id: partnerId,
-              area_id: areaId,
-              section_key: sectionKey,
-              channel,
-              target_locale: locale,
-              translated_content: result.content,
-              status: "approved",
-              source_snapshot_hash: sourceHash,
-              source_last_updated: normalizeIso(source.updated_at ?? null),
-              updated_at: new Date().toISOString(),
-            };
-            const { error: upsertError } = await admin
-              .from("partner_texts_i18n")
-              .upsert(upsertRow, { onConflict: "partner_id,area_id,section_key,channel,target_locale" });
-            if (upsertError) throw upsertError;
+          for (const sectionKey of candidates) {
+            const source = sourceByKey.get(sectionKey);
+            if (!source) continue;
+            try {
+              const result = I18N_MOCK_TRANSLATION
+                ? {
+                    content: buildMockTranslation(locale, source.content),
+                    promptTokens: null,
+                    completionTokens: null,
+                    totalTokens: null,
+                  }
+                : await (async () => {
+                    const prompt = buildAutoTranslationPrompt(locale, source.content);
+                    return callOpenAiCompatible({
+                      provider: provider!.provider,
+                      model: provider!.model,
+                      baseUrl: provider!.base_url,
+                      apiKey: apiKey!,
+                      apiVersion: provider!.api_version,
+                      system: prompt.system,
+                      user: prompt.user,
+                      temperature: provider!.temperature,
+                      maxTokens: provider!.max_tokens,
+                    });
+                  })();
+              const sourceHash = hashText(source.content);
+              const upsertRow = {
+                partner_id: partnerId,
+                area_id: areaId,
+                section_key: sectionKey,
+                channel,
+                target_locale: locale,
+                translated_content: result.content,
+                status: "approved",
+                source_snapshot_hash: sourceHash,
+                source_last_updated: normalizeIso(source.updated_at ?? null),
+                updated_at: new Date().toISOString(),
+              };
+              const { error: upsertError } = await admin
+                .from("partner_texts_i18n")
+                .upsert(upsertRow, { onConflict: "partner_id,area_id,section_key,channel,target_locale" });
+              if (upsertError) throw upsertError;
 
-            transByKey.set(sectionKey, {
-              section_key: sectionKey,
-              translated_content: result.content,
-              status: "approved",
-              updated_at: upsertRow.updated_at,
-              source_snapshot_hash: sourceHash,
-              source_last_updated: upsertRow.source_last_updated,
-            });
+              transByKey.set(sectionKey, {
+                section_key: sectionKey,
+                translated_content: result.content,
+                status: "approved",
+                updated_at: upsertRow.updated_at,
+                source_snapshot_hash: sourceHash,
+                source_last_updated: upsertRow.source_last_updated,
+              });
 
-            const estimated = estimateCostEur({
-              promptTokens: result.promptTokens,
-              completionTokens: result.completionTokens,
-              inputCostEurPer1k: provider.input_cost_eur_per_1k,
-              outputCostEurPer1k: provider.output_cost_eur_per_1k,
-            });
-            const estimatedUsd = estimateCostUsd({
-              promptTokens: result.promptTokens,
-              completionTokens: result.completionTokens,
-              inputCostUsdPer1k: provider.input_cost_usd_per_1k,
-              outputCostUsdPer1k: provider.output_cost_usd_per_1k,
-            });
-            await writeLlmUsageEvent({
-              partner_id: partnerId,
-              route_name: "partner-i18n-auto-sync",
-              mode: "central_managed",
-              provider: I18N_MOCK_TRANSLATION ? "mock" : provider!.provider,
-              model: I18N_MOCK_TRANSLATION ? "mock-i18n" : provider!.model,
-              prompt_tokens: result.promptTokens,
-              completion_tokens: result.completionTokens,
-              total_tokens: result.totalTokens,
-              provider_account_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_account_id ?? null),
-              provider_model_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_model_id ?? null),
-              fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (provider?.fx_rate_usd_to_eur ?? null),
-              input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.input_cost_usd_per_1k ?? null),
-              output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
-              estimated_cost_usd: estimatedUsd,
-              estimated_cost_eur: estimated,
-              status: "ok",
-              error_code: null,
-            });
-            autoSynced += 1;
-          } catch {
-            autoSyncFailed += 1;
-            await writeLlmUsageEvent({
-              partner_id: partnerId,
-              route_name: "partner-i18n-auto-sync",
-              mode: "central_managed",
-              provider: I18N_MOCK_TRANSLATION ? "mock" : (provider?.provider ?? "unknown"),
-              model: I18N_MOCK_TRANSLATION ? "mock-i18n" : (provider?.model ?? "unknown"),
-              prompt_tokens: null,
-              completion_tokens: null,
-              total_tokens: null,
-              provider_account_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_account_id ?? null),
-              provider_model_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_model_id ?? null),
-              fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (provider?.fx_rate_usd_to_eur ?? null),
-              input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.input_cost_usd_per_1k ?? null),
-              output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
-              estimated_cost_usd: null,
-              estimated_cost_eur: null,
-              status: "error",
-              error_code: "AUTO_SYNC_FAILED",
-            });
+              const estimated = estimateCostEur({
+                promptTokens: result.promptTokens,
+                completionTokens: result.completionTokens,
+                inputCostEurPer1k: provider.input_cost_eur_per_1k,
+                outputCostEurPer1k: provider.output_cost_eur_per_1k,
+              });
+              const estimatedUsd = estimateCostUsd({
+                promptTokens: result.promptTokens,
+                completionTokens: result.completionTokens,
+                inputCostUsdPer1k: provider.input_cost_usd_per_1k,
+                outputCostUsdPer1k: provider.output_cost_usd_per_1k,
+              });
+              await writeLlmUsageEvent({
+                partner_id: partnerId,
+                route_name: "partner-i18n-auto-sync",
+                mode: "central_managed",
+                provider: I18N_MOCK_TRANSLATION ? "mock" : provider!.provider,
+                model: I18N_MOCK_TRANSLATION ? "mock-i18n" : provider!.model,
+                prompt_tokens: result.promptTokens,
+                completion_tokens: result.completionTokens,
+                total_tokens: result.totalTokens,
+                provider_account_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_account_id ?? null),
+                provider_model_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_model_id ?? null),
+                fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (provider?.fx_rate_usd_to_eur ?? null),
+                input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.input_cost_usd_per_1k ?? null),
+                output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
+                estimated_cost_usd: estimatedUsd,
+                estimated_cost_eur: estimated,
+                status: "ok",
+                error_code: null,
+              });
+              autoSynced += 1;
+            } catch {
+              autoSyncFailed += 1;
+              await writeLlmUsageEvent({
+                partner_id: partnerId,
+                route_name: "partner-i18n-auto-sync",
+                mode: "central_managed",
+                provider: I18N_MOCK_TRANSLATION ? "mock" : (provider?.provider ?? "unknown"),
+                model: I18N_MOCK_TRANSLATION ? "mock-i18n" : (provider?.model ?? "unknown"),
+                prompt_tokens: null,
+                completion_tokens: null,
+                total_tokens: null,
+                provider_account_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_account_id ?? null),
+                provider_model_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_model_id ?? null),
+                fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (provider?.fx_rate_usd_to_eur ?? null),
+                input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.input_cost_usd_per_1k ?? null),
+                output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
+                estimated_cost_usd: null,
+                estimated_cost_eur: null,
+                status: "error",
+                error_code: "AUTO_SYNC_FAILED",
+              });
+            }
           }
         }
+      }
+    } else {
+      try {
+        const globalProviders = await loadActiveGlobalLlmProviders();
+        const provider = globalProviders.providers[0] ?? null;
+        pricingPreview = provider
+          ? {
+              provider: provider.provider,
+              model: provider.model,
+              input_cost_usd_per_1k: provider.input_cost_usd_per_1k,
+              output_cost_usd_per_1k: provider.output_cost_usd_per_1k,
+              fx_rate_usd_to_eur: provider.fx_rate_usd_to_eur ?? null,
+            }
+          : null;
+      } catch {
+        pricingPreview = null;
       }
     }
 
@@ -627,12 +712,18 @@ export async function GET(req: Request) {
         auto_synced: autoSynced,
         auto_sync_failed: autoSyncFailed,
         mock_mode: I18N_MOCK_TRANSLATION,
+        pricing_preview: pricingPreview,
       },
       info: "Automatische Aktualisierungen wurden anhand der Texttyp-Regeln berücksichtigt.",
     });
   } catch (error) {
     if (isMissingTable(error, "partner_texts_i18n")) {
       return NextResponse.json({ error: "Tabelle `partner_texts_i18n` fehlt. Bitte Migration ausführen." }, { status: 409 });
+    }
+    if (isMissingTable(error, "billing_feature_catalog") || isMissingTable(error, "partner_feature_overrides")) {
+      return NextResponse.json({
+        error: "Billing-Feature-Tabellen fehlen. Bitte die Billing-Migrationen ausfuehren.",
+      }, { status: 409 });
     }
     if (isI18nChannelConstraintError(error)) {
       return NextResponse.json({
@@ -641,6 +732,9 @@ export async function GET(req: Request) {
     }
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (error.message === "INTERNATIONAL_FEATURE_DISABLED") {
+        return NextResponse.json({ error: "Internationalisierung ist fuer diesen Partner nicht freigeschaltet." }, { status: 403 });
+      }
       if (error.message.startsWith("RATE_LIMIT:")) {
         const sec = Number(error.message.split(":")[1] ?? "60");
         return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(sec) } });
@@ -668,6 +762,7 @@ export async function POST(req: Request) {
 
     const nowIso = new Date().toISOString();
     const admin = createAdminClient();
+    await requireInternationalFeatureEnabled(admin, partnerId);
     const sourceByKey = new Map<string, { content: string; status: string; updated_at: string | null }>();
     if (channel === "portal") {
       const rawByKey = await loadRawSourceByArea(admin, areaId);
@@ -724,6 +819,11 @@ export async function POST(req: Request) {
     if (isMissingTable(error, "partner_texts_i18n")) {
       return NextResponse.json({ error: "Tabelle `partner_texts_i18n` fehlt. Bitte Migration ausführen." }, { status: 409 });
     }
+    if (isMissingTable(error, "billing_feature_catalog") || isMissingTable(error, "partner_feature_overrides")) {
+      return NextResponse.json({
+        error: "Billing-Feature-Tabellen fehlen. Bitte die Billing-Migrationen ausfuehren.",
+      }, { status: 409 });
+    }
     if (isI18nChannelConstraintError(error)) {
       return NextResponse.json({
         error: "Channel-Konfiguration in `partner_texts_i18n` ist veraltet. Bitte Migration für `marketing`-Channel ausführen.",
@@ -731,6 +831,9 @@ export async function POST(req: Request) {
     }
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (error.message === "INTERNATIONAL_FEATURE_DISABLED") {
+        return NextResponse.json({ error: "Internationalisierung ist fuer diesen Partner nicht freigeschaltet." }, { status: 403 });
+      }
       if (error.message.startsWith("RATE_LIMIT:")) {
         const sec = Number(error.message.split(":")[1] ?? "60");
         return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(sec) } });

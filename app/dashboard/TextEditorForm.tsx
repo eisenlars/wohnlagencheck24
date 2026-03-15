@@ -480,7 +480,6 @@ export default function TextEditorForm({
   });
   const [llmIntegrations, setLlmIntegrations] = useState<LlmIntegrationOption[]>([]);
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState<string>('');
-  const [i18nLocales, setI18nLocales] = useState<string[]>(['en']);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [publishStatus, setPublishStatus] = useState<string>('Bereit.');
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -658,31 +657,6 @@ export default function TextEditorForm({
     return () => window.clearTimeout(t);
   }, [focusSectionKey, onFocusHandled]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('/api/partner/billing/features', { method: 'GET', cache: 'no-store' });
-        if (!res.ok) return;
-        const payload = await res.json().catch(() => null) as {
-          rows?: Array<{ key?: string | null; enabled?: boolean | null }>;
-        } | null;
-        const locales = (Array.isArray(payload?.rows) ? payload.rows : [])
-          .map((row) => {
-            const code = String(row?.key ?? '').trim().toLowerCase();
-            if (!code.startsWith('international')) return null;
-            if (row?.enabled !== true) return null;
-            const suffix = code.replace(/^international[_-]?/, '').trim();
-            return suffix || 'en';
-          })
-          .filter((v): v is string => typeof v === 'string' && /^[a-z]{2}(-[a-z]{2})?$/.test(v));
-        const unique = Array.from(new Set(locales));
-        if (unique.length > 0) setI18nLocales(unique);
-      } catch {
-        // Fallback bleibt bei ['en']
-      }
-    })();
-  }, []);
-
   const saveText = async (key: string, content: string, type: string, sourceGroup?: string | null) => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -771,71 +745,29 @@ export default function TextEditorForm({
     return { approvedCount: entriesToApprove.length, changedKeys };
   };
 
-  const runI18nSyncForLocale = async (locale: string, channel: 'portal' | 'local_site', changedKeys: string[]) => {
-    const maxRuns = 30;
-    let loops = 0;
-    let syncedSum = 0;
-    let failedSum = 0;
-    while (loops < maxRuns) {
-      loops += 1;
-      const params = new URLSearchParams({
-        area_id: String(config.area_id),
-        locale,
-        channel,
-      });
-      if (changedKeys.length > 0) params.set('section_keys', changedKeys.join(','));
-      const res = await fetch(`/api/partner/i18n/texts?${params.toString()}`, { method: 'GET', cache: 'no-store' });
-      const payload = await res.json().catch(() => null) as {
-        summary?: { auto_synced?: number; auto_sync_failed?: number };
-        error?: string;
-      } | null;
-      if (!res.ok) throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
-      const autoSynced = Number(payload?.summary?.auto_synced ?? 0);
-      const autoFailed = Number(payload?.summary?.auto_sync_failed ?? 0);
-      syncedSum += autoSynced;
-      failedSum += autoFailed;
-      if (autoSynced === 0) break;
-    }
-    return { syncedSum, failedSum, loops };
-  };
-
   const handleSaveAndApprove = async () => {
     if (publishing) return;
     if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
       await new Promise((resolve) => window.setTimeout(resolve, 40));
     }
-    const syncChannel: 'portal' | 'local_site' = isLocalSite ? 'local_site' : 'portal';
-    const locales = i18nLocales.length > 0 ? i18nLocales : ['en'];
     setPublishModalOpen(true);
     setPublishError(null);
     setPublishDone(0);
-    setPublishTotal(locales.length + 1);
-    setPublishStatus('Änderungen werden gespeichert und freigegeben …');
+    setPublishTotal(1);
+    setPublishStatus('Deutsche Inhalte werden gespeichert und freigegeben …');
     setPublishing(true);
     setSaving(true);
     try {
       const { approvedCount, changedKeys } = await approveAllTextsStrict();
       setPublishDone(1);
       if (changedKeys.length === 0) {
-        setPublishStatus('Keine geänderten Textfelder gefunden. Es wurden keine Übersetzungen angestoßen.');
+        setPublishStatus('Keine geänderten Textfelder gefunden. Es wurden keine deutschen Freigaben aktualisiert.');
         onPersistSuccess?.();
         return;
       }
-      setPublishStatus(`${approvedCount} Textfelder freigegeben. Starte Übersetzungen für geänderte Inhalte …`);
-      let syncedTotal = 0;
-      let failedTotal = 0;
-      for (let i = 0; i < locales.length; i += 1) {
-        const locale = locales[i];
-        setPublishStatus(`Übersetzungen für ${locale.toUpperCase()} werden erzeugt (${i + 1}/${locales.length}) …`);
-        const result = await runI18nSyncForLocale(locale, syncChannel, changedKeys);
-        syncedTotal += result.syncedSum;
-        failedTotal += result.failedSum;
-        setPublishDone(i + 2);
-      }
       setPublishStatus(
-        `Fertig. Auto-Übersetzungen aktualisiert: ${syncedTotal}, Fehler: ${failedTotal}. ` +
-        'Du kannst jetzt im Bereich „Internationalisierung“ nachbearbeiten.',
+        `${approvedCount} Textfelder wurden freigegeben.`,
       );
       onPersistSuccess?.();
     } catch (error) {
@@ -1393,7 +1325,7 @@ export default function TextEditorForm({
               {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
             </button>
             <span style={approvalHintStyle}>
-              Speichert den aktuellen Stand, setzt ihn auf „freigegeben“ und startet die Übersetzungen für aktive Sprachen.
+              Speichert den aktuellen Stand und setzt die deutschen Inhalte auf „freigegeben“.
             </span>
           </div>
         ) : null}
@@ -1403,7 +1335,7 @@ export default function TextEditorForm({
       {publishModalOpen ? (
         <div style={publishOverlayStyle}>
           <div style={publishModalStyle}>
-            <h3 style={publishTitleStyle}>Speichern & Freigeben läuft</h3>
+            <h3 style={publishTitleStyle}>Deutsche Freigabe laeuft</h3>
             <p style={publishTextStyle}>{publishStatus}</p>
             <p style={publishProgressStyle}>
               Fortschritt: {publishDone}/{publishTotal}
