@@ -627,7 +627,7 @@ export default function DashboardClient() {
         icon: 'gesuche',
         disabled: !isTabEnabled('gesuche'),
       },
-      { id: 'wizards', label: 'Wizards (Bald verfügbar)', icon: 'wizards', disabled: true },
+      { id: 'wizards', label: 'Leadgeneratoren (Bald verfügbar)', icon: 'wizards', disabled: true },
       { id: 'forecast', label: 'Prognosemonitor (Bald verfügbar)', icon: 'forecast', disabled: true },
     ],
     [
@@ -2227,7 +2227,7 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
         },
         {
           key: 'blog',
-          title: 'Wizards',
+          title: 'Leadgeneratoren',
           description: 'Bereich wird als Zusatzfeature vorbereitet.',
           icon: 'wizards',
           comingSoon: true,
