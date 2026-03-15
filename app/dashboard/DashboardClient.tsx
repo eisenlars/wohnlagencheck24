@@ -170,10 +170,10 @@ function resolveFirstNameFromProfile(value: { contact_first_name?: unknown } | n
   return null;
 }
 
-function renderUtilityIcon(icon: UtilityIconKey) {
+function renderUtilityIcon(icon: UtilityIconKey, size = 17) {
   const baseProps = {
-    width: 17,
-    height: 17,
+    width: size,
+    height: size,
     viewBox: '0 0 24 24',
     fill: 'none',
     stroke: 'currentColor',
@@ -1356,7 +1356,7 @@ export default function DashboardClient() {
                         disabled={Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key)}
                         style={welcomeCardStyle(Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key))}
                       >
-                        <div style={welcomeCardIconStyle}>{renderUtilityIcon(tool.icon)}</div>
+                        <div style={welcomeCardIconStyle}>{renderUtilityIcon(tool.icon, 30)}</div>
                         <div style={welcomeCardTitleStyle}>{tool.title}</div>
                         <div style={welcomeCardTextStyle}>
                           {tool.description}
@@ -2341,8 +2341,11 @@ const welcomeCardStyle = (disabled: boolean): React.CSSProperties => ({
 });
 
 const welcomeCardIconStyle = {
-  fontSize: '26px',
+  minHeight: '36px',
   marginBottom: '12px',
+  display: 'flex',
+  alignItems: 'center',
+  color: '#0f172a',
 };
 
 const welcomeCardTitleStyle = {
