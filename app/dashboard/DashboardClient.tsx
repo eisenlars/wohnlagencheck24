@@ -1200,7 +1200,7 @@ export default function DashboardClient() {
           <div style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
             {regionSidebarMainDistricts.map(district => {
               const isSelected = Boolean(effectiveSelectedConfig?.area_id?.startsWith(district.area_id));
-              const isExpanded = expandedDistrict === district.area_id;
+              const isExpanded = expandedDistrict === district.area_id || isSelected;
               const allowSubAreas = activeMainTab !== 'blog';
               const subAreas = allowSubAreas
                 ? regionSidebarScopeConfigs.filter(c => c.area_id.startsWith(district.area_id) && c.area_id.split('-').length > 3)
@@ -1402,6 +1402,7 @@ export default function DashboardClient() {
                             onMouseLeave={() => setHoveredActivationTabId((prev) => (prev === `preview:${district.area_id}` ? null : prev))}
                             onClick={() => {
                               setSelectedConfig(district);
+                              setExpandedDistrict(district.area_id.split('-').slice(0, 3).join('-'));
                               setShowWelcome(true);
                             }}
                             style={activationTabButtonStyle(active, hoveredActivationTabId === `preview:${district.area_id}`)}
@@ -1498,7 +1499,7 @@ export default function DashboardClient() {
                 </div>
               ) : null}
               {headerConfig.isRegionBased && effectiveSelectedConfig ? (
-                <div style={{ marginTop: hideTextsHeaderInActivationFlow ? '0' : '48px' }}>
+                <div style={{ marginTop: hideTextsHeaderInActivationFlow ? '0' : '18px' }}>
                   <h2 style={regionTitleStyle}>
                     {hideTextsHeaderInActivationFlow
                       ? `Aktivierung - ${effectiveSelectedConfig.areas?.name ?? ''}`
@@ -2009,19 +2010,19 @@ const regionStatusStyle = (statusKey: string): React.CSSProperties => ({
   letterSpacing: '0.04em',
   backgroundColor:
     statusKey === 'live' ? '#dcfce7'
-      : statusKey === 'approved_preview' ? '#f3e8ff'
+      : statusKey === 'approved_preview' ? '#fef3c7'
         : statusKey === 'ready_for_review' || statusKey === 'in_review' ? '#fef3c7'
           : statusKey === 'changes_requested' ? '#fee2e2'
             : '#e2e8f0',
   color:
     statusKey === 'live' ? '#166534'
-      : statusKey === 'approved_preview' ? '#6b21a8'
+      : statusKey === 'approved_preview' ? '#92400e'
         : statusKey === 'ready_for_review' || statusKey === 'in_review' ? '#92400e'
           : statusKey === 'changes_requested' ? '#991b1b'
             : '#334155',
   border:
     statusKey === 'live' ? '1px solid #bbf7d0'
-      : statusKey === 'approved_preview' ? '1px solid #d8b4fe'
+      : statusKey === 'approved_preview' ? '1px solid #fde68a'
         : statusKey === 'ready_for_review' || statusKey === 'in_review' ? '1px solid #fde68a'
           : statusKey === 'changes_requested' ? '1px solid #fecaca'
             : '1px solid #cbd5e1',
@@ -2230,26 +2231,26 @@ const awaitingApprovalDashboardButtonStyle: React.CSSProperties = {
 
 const previewReadyCardShellStyle: React.CSSProperties = {
   marginTop: '12px',
-  border: '1px solid #c084fc',
-  background: 'linear-gradient(180deg, rgba(250, 245, 255, 0.95), #ffffff)',
+  border: '1px solid #f59e0b',
+  background: 'linear-gradient(180deg, rgba(255, 247, 237, 0.95), #ffffff)',
   borderRadius: '14px',
   padding: '16px',
   width: '100%',
-  boxShadow: '0 10px 24px rgba(88, 28, 135, 0.08)',
+  boxShadow: '0 10px 24px rgba(180, 83, 9, 0.08)',
 };
 
 const previewReadyWelcomeBoxStyle: React.CSSProperties = {
   marginTop: '18px',
-  background: 'linear-gradient(180deg, rgba(250, 245, 255, 0.95), #ffffff)',
-  border: '1px solid #c084fc',
+  background: 'linear-gradient(180deg, rgba(255, 247, 237, 0.95), #ffffff)',
+  border: '1px solid #f59e0b',
   borderRadius: '16px',
   padding: '20px 22px',
-  boxShadow: '0 8px 16px rgba(88, 28, 135, 0.06)',
+  boxShadow: '0 8px 16px rgba(180, 83, 9, 0.06)',
 };
 
 const previewReadyInnerPanelStyle: React.CSSProperties = {
   marginTop: '18px',
-  border: '1px solid #e9d5ff',
+  border: '1px solid #fde68a',
   background: '#ffffff',
   borderRadius: '14px',
   padding: '16px',
@@ -2281,10 +2282,10 @@ const previewReadyActionButtonStyle: React.CSSProperties = {
 };
 
 const previewReadyGhostButtonStyle: React.CSSProperties = {
-  border: '1px solid #d8b4fe',
+  border: '1px solid #fcd34d',
   borderRadius: '10px',
   background: '#ffffff',
-  color: '#6b21a8',
+  color: '#92400e',
   padding: '10px 14px',
   fontSize: '13px',
   fontWeight: 700,
