@@ -1,5 +1,5 @@
-import { KontaktProvider } from "@/components/kontakt/contact-context";
+import { PublicSiteShell } from "@/components/layout/PublicSiteShell";
 
-export default function PreviewLayout({ children }: { children: React.ReactNode }) {
-  return <KontaktProvider>{children}</KontaktProvider>;
+export default async function PreviewLayout({ children }: { children: React.ReactNode }) {
+  return <PublicSiteShell>{children}</PublicSiteShell>;
 }
