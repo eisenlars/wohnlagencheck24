@@ -1420,49 +1420,6 @@ export default function DashboardClient() {
                       Mindestens ein Gebiet ist intern freigegeben und kann vor dem Onlineschalten im Partnerbereich vorbereitet werden.
                       Pruefe jetzt Inhalte, Werte und SEO/GEO sorgfaeltig. Das Gebiet ist in diesem Zustand noch nicht regulär online.
                     </p>
-                    <div style={{ marginTop: '18px' }}>
-                      {previewDistricts.map((district) => {
-                        const isSelected = Boolean(selectedConfig?.area_id?.startsWith(district.area_id));
-                        const isExpanded = expandedDistrict === district.area_id || isSelected;
-                        const subAreas = configs.filter((cfg) => (
-                          cfg.area_id.startsWith(district.area_id) && cfg.area_id.split('-').length > 3
-                        ));
-                        return (
-                          <div key={`preview:${district.area_id}`} style={{ marginBottom: '8px' }}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedConfig(district);
-                                setExpandedDistrict(isExpanded ? null : district.area_id);
-                                setShowWelcome(true);
-                              }}
-                              style={districtButtonStyle(isSelected, Boolean(district.is_active))}
-                            >
-                              <span style={{ fontSize: '10px' }}>{isExpanded ? '▼' : '▶'}</span>
-                              <span style={{ flex: 1, textAlign: 'left' }}>{district.areas?.name}</span>
-                            </button>
-                            {isExpanded && subAreas.length > 0 ? (
-                              <div style={subAreaListStyle}>
-                                {subAreas.map((ort) => (
-                                  <button
-                                    key={`preview-ort:${ort.area_id}`}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedConfig(ort);
-                                      setExpandedDistrict(district.area_id);
-                                      setShowWelcome(true);
-                                    }}
-                                    style={subAreaButtonStyle(effectiveSelectedConfig?.area_id === ort.area_id)}
-                                  >
-                                    {ort.areas?.name}
-                                  </button>
-                                ))}
-                              </div>
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                    </div>
                     {effectiveWelcomePreviewConfig ? (
                       <div style={previewReadyInnerPanelStyle}>
                         <p style={previewReadyTextStyle}>
