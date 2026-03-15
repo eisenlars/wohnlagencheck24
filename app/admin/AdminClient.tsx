@@ -135,7 +135,7 @@ type PartnerPurgeCheckPayload = {
   affected_counts?: Record<string, number>;
 };
 
-type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "audit" | "llm_global" | "billing_defaults";
+type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults";
 type AdminNavMode = "partners" | "areas";
 type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations" | "billing";
 
@@ -1654,6 +1654,11 @@ export default function AdminClient() {
     }
   }
 
+  async function selectSidebarPartner(partnerId: string) {
+    const nextView: AdminView = activeView === "partner_purge" ? "partner_purge" : "partner_edit";
+    await selectPartnerView(partnerId, nextView);
+  }
+
   async function openPartnerPurgeModal() {
     if (!selectedPartnerId || !selectedPartner) return;
     setPartnerPurgeModal({
@@ -2206,7 +2211,7 @@ export default function AdminClient() {
             style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && navMode === "partners")}
             onClick={() => {
               setNavMode("partners");
-              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults") setActiveView("home");
+              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults" || activeView === "partner_purge") setActiveView("home");
             }}
             title="Partner"
           >
@@ -2230,7 +2235,7 @@ export default function AdminClient() {
             style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && navMode === "areas")}
             onClick={() => {
               setNavMode("areas");
-              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults") setActiveView("home");
+              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults" || activeView === "partner_purge") setActiveView("home");
             }}
             title="Gebiete"
           >
@@ -2261,6 +2266,16 @@ export default function AdminClient() {
             €
           </button>
           <div style={{ flex: 1 }} />
+          <button
+            style={modeButtonStyle(activeView === "partner_purge")}
+            onClick={() => {
+              setNavMode("partners");
+              setActiveView("partner_purge");
+            }}
+            title="Datenbereinigung"
+          >
+            🗑
+          </button>
           <button
             style={modeButtonStyle(activeView === "audit")}
             onClick={() => setActiveView("audit")}
@@ -2307,7 +2322,9 @@ export default function AdminClient() {
                     <button
                       key={p.id}
                       style={listLinkRowStyle(selectedPartnerId === p.id)}
-                      onClick={() => selectPartnerView(p.id, "partner_edit")}
+                      onClick={() => {
+                        void selectSidebarPartner(p.id);
+                      }}
                     >
                       <div style={{ fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
                         <span>{formatPartnerName(p)}</span>
@@ -2601,26 +2618,6 @@ export default function AdminClient() {
             ) : null}
           </div>
         </div>
-        <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid #e2e8f0" }}>
-          <div style={{ fontSize: 13, color: "#7f1d1d", fontWeight: 600, marginBottom: 8 }}>
-            Gefahrenbereich
-          </div>
-          {selectedPartner?.is_system_default ? (
-            <div style={{ fontSize: 13, color: "#7f1d1d", lineHeight: 1.5 }}>
-              Der Portalpartner ist ein Systempartner. Er kann nicht endgültig gelöscht werden.
-            </div>
-          ) : (
-            <button
-              style={btnDangerStyle}
-              disabled={busy || !selectedPartner}
-              onClick={() => {
-                void openPartnerPurgeModal();
-              }}
-            >
-              Partner endgültig entfernen
-            </button>
-          )}
-        </div>
       </section>
       ) : null}
 
@@ -2753,6 +2750,61 @@ export default function AdminClient() {
               </tbody>
             </table>
           </>
+        )}
+      </section>
+      ) : null}
+
+      {activeView === "partner_purge" ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Datenbereinigung</h2>
+        <p style={mutedStyle}>
+          Hard-Purge ist bewusst aus dem normalen Partner-Flow ausgelagert. Wähle links einen Partner aus und starte die endgültige Löschung nur für Test-, Dubletten- oder Fehlanlagen.
+        </p>
+        {selectedPartner ? (
+          <div style={{ display: "grid", gap: 14 }}>
+            <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, background: "#f8fafc" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#475569", marginBottom: 8 }}>Ausgewählter Partner</div>
+              <div style={rowStyle}>
+                <span style={{ fontWeight: 600, color: "#334155" }}>Partner</span>
+                <span>{formatPartnerName(selectedPartner)}</span>
+              </div>
+              <div style={rowStyle}>
+                <span style={{ fontWeight: 600, color: "#334155" }}>Partner-ID</span>
+                <span>{selectedPartner.id}</span>
+              </div>
+              <div style={rowStyle}>
+                <span style={{ fontWeight: 600, color: "#334155" }}>Status</span>
+                <span>{selectedPartner.is_active ? "aktiv" : "inaktiv"}</span>
+              </div>
+            </div>
+            {selectedPartner.is_system_default ? (
+              <div style={{ border: "1px solid #fecaca", background: "#fef2f2", borderRadius: 10, padding: 12, color: "#991b1b", fontSize: 13, lineHeight: 1.5 }}>
+                Der Portalpartner ist ein Systempartner. Er kann nicht endgültig gelöscht werden.
+              </div>
+            ) : (
+              <div style={{ border: "1px solid #fecaca", background: "#fff7ed", borderRadius: 10, padding: 12 }}>
+                <div style={{ fontSize: 13, color: "#7f1d1d", fontWeight: 700, marginBottom: 8 }}>
+                  Kritischer Vorgang
+                </div>
+                <div style={{ fontSize: 13, color: "#7c2d12", lineHeight: 1.5, marginBottom: 12 }}>
+                  Der Partner wird vollständig entfernt, inklusive Auth-User, Integrationen, Storage-Dateien und aller erfassten Partnerdaten. Gebietszuordnungen müssen vorher entfernt oder übergeben werden.
+                </div>
+                <button
+                  style={btnDangerStyle}
+                  disabled={busy}
+                  onClick={() => {
+                    void openPartnerPurgeModal();
+                  }}
+                >
+                  Partner endgültig entfernen
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ border: "1px solid #cbd5e1", background: "#f8fafc", borderRadius: 10, padding: 14, color: "#334155", fontSize: 14, lineHeight: 1.5 }}>
+            Bitte wähle links in der Partnerübersicht einen Partner aus. Die endgültige Löschung ist absichtlich nur in diesem separaten Bereich verfügbar.
+          </div>
         )}
       </section>
       ) : null}
