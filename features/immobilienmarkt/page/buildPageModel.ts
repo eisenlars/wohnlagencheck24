@@ -99,8 +99,13 @@ export type PageModel = {
   };
 };
 
-function basePathFromRegionSlugs(regionSlugs: string[]): string {
-  return "/immobilienmarkt" + (regionSlugs.length ? "/" + regionSlugs.join("/") : "");
+export type BuildPageModelOptions = {
+  audience?: "public" | "preview";
+  pathPrefix?: string;
+};
+
+function basePathFromRegionSlugs(regionSlugs: string[], pathPrefix = "/immobilienmarkt"): string {
+  return pathPrefix + (regionSlugs.length ? "/" + regionSlugs.join("/") : "");
 }
 
 function normalizeActiveTab(args: {
@@ -349,13 +354,14 @@ async function loadActiveKreisSlugsForBundeslandLive(bundeslandSlug: string): Pr
   }
 }
 
-export async function buildPageModel(route: RouteModel): Promise<PageModel | null> {
+export async function buildPageModel(route: RouteModel, options?: BuildPageModelOptions): Promise<PageModel | null> {
   console.log("\n=== buildPageModel ===");
   console.log("ROUTE", {
     level: route.level,
     section: route.section,
     regionSlugs: route.regionSlugs,
     fullSlugs: route.fullSlugs,
+    audience: options?.audience ?? "public",
   });
 
   let report = await getReportBySlugs(route.regionSlugs);
@@ -364,14 +370,16 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
     return null;
   }
 
+  const audience = options?.audience ?? "public";
+  const pathPrefix = options?.pathPrefix ?? "/immobilienmarkt";
   const [routeBundeslandSlug, routeKreisSlug, routeOrtSlug] = route.regionSlugs;
-  if (route.level === "bundesland" && routeBundeslandSlug) {
+  if (audience === "public" && route.level === "bundesland" && routeBundeslandSlug) {
     if (!(await isBundeslandVisible(routeBundeslandSlug))) return null;
   }
-  if (route.level === "kreis" && routeBundeslandSlug && routeKreisSlug) {
+  if (audience === "public" && route.level === "kreis" && routeBundeslandSlug && routeKreisSlug) {
     if (!(await isKreisVisible(routeBundeslandSlug, routeKreisSlug))) return null;
   }
-  if (route.level === "ort" && routeBundeslandSlug && routeKreisSlug && routeOrtSlug) {
+  if (audience === "public" && route.level === "ort" && routeBundeslandSlug && routeKreisSlug && routeOrtSlug) {
     if (!(await isOrtslageVisible(routeBundeslandSlug, routeKreisSlug, routeOrtSlug))) return null;
   }
 
@@ -500,12 +508,12 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
   const data = asRecord(report.data) ?? {};
   console.log("REPORT DATA KEYS", Object.keys(data).slice(0, 40));
 
-  const basePath = basePathFromRegionSlugs(route.regionSlugs);
+  const basePath = basePathFromRegionSlugs(route.regionSlugs, pathPrefix);
 
   // Parent-Pfad nur für Ort-Ebene (Bundesland/Kreis)
   const parentBasePath =
     route.level === "ort" && route.regionSlugs.length >= 2
-      ? basePathFromRegionSlugs(route.regionSlugs.slice(0, 2))
+      ? basePathFromRegionSlugs(route.regionSlugs.slice(0, 2), pathPrefix)
       : undefined;
 
   const tabsByLevel = IMMOBILIENMARKT_THEME.tabsByLevel[route.level] ?? [];
@@ -616,7 +624,7 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
             "media_makler_logo",
             findTextBySectionKey(row.textTree, "media_makler_logo"),
           ),
-          kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${row.kreis.slug}/immobilienmakler`,
+          kontaktHref: `${pathPrefix}/${bundeslandSlug}/${row.kreis.slug}/immobilienmakler`,
         };
       })
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
@@ -636,7 +644,7 @@ export async function buildPageModel(route: RouteModel): Promise<PageModel | nul
             "media_berater_avatar",
             findTextBySectionKey(row.textTree, "media_berater_avatar"),
           ),
-          kontaktHref: `/immobilienmarkt/${bundeslandSlug}/${row.kreis.slug}/immobilienberatung`,
+          kontaktHref: `${pathPrefix}/${bundeslandSlug}/${row.kreis.slug}/immobilienberatung`,
         };
       })
       .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
