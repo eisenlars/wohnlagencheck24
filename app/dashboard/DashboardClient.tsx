@@ -145,6 +145,11 @@ function resolveActivationStatusKey(config: PartnerAreaConfig | null): string {
   return "assigned";
 }
 
+function formatRegionScopeSuffix(config: PartnerAreaConfig | null): string {
+  if (!config) return "";
+  return (config.area_id.split('-').length > 3) ? "Ortslage" : "Kreis / Ortslagen";
+}
+
 function resolvePartnerFirstName(user: unknown): string | null {
   const rec = (typeof user === 'object' && user !== null) ? (user as Record<string, unknown>) : null;
   if (!rec) return null;
@@ -1408,19 +1413,13 @@ export default function DashboardClient() {
                     </div>
                     {effectiveWelcomePreviewConfig ? (
                       <div style={previewReadyInnerPanelStyle}>
-                        <div style={previewReadyBadgeRowStyle}>
-                          <span style={previewReadyBadgeStyle}>Preview freigegeben</span>
-                        </div>
-                        <div style={previewReadyTextStyle}>
+                        <p style={previewReadyTextStyle}>
+                          <strong>Dieses Gebiet ist intern freigegeben, aber noch nicht online.</strong>
+                        </p>
+                        <p style={previewReadyTextStyle}>
                           Fuer <strong>{effectiveWelcomePreviewConfig.areas?.name ?? effectiveWelcomePreviewConfig.area_id}</strong> ist die fachliche Freigabe bereits erteilt.
                           Jetzt solltest du Texte, Werte, SEO/GEO und falls gebucht auch die Internationalisierung final vorbereiten.
-                        </div>
-                        <ul style={previewReadyListStyle}>
-                          <li>Texte und redaktionelle Inhalte auf Vollstaendigkeit und Qualitaet pruefen.</li>
-                          <li>Werte und Faktoren plausibilisieren.</li>
-                          <li>SEO- und GEO-Einstellungen vor dem Livegang final abstimmen.</li>
-                          <li>Lokale Website und optionale Zusatzmodule vor dem Onlineschalten vorbereiten.</li>
-                        </ul>
+                        </p>
                         <div style={previewReadyActionRowStyle}>
                           <button type="button" onClick={() => {
                             setSelectedConfig(effectiveWelcomePreviewConfig);
@@ -1440,12 +1439,6 @@ export default function DashboardClient() {
                           }} style={previewReadyActionButtonStyle}>
                             SEO & GEO pruefen
                           </button>
-                          <button type="button" onClick={() => {
-                            setSelectedConfig(effectiveWelcomePreviewConfig);
-                            handleToolSelect('local_site');
-                          }} style={previewReadyGhostButtonStyle}>
-                            Lokale Website
-                          </button>
                           {hasInternationalEnabled ? (
                             <button type="button" onClick={() => {
                               setSelectedConfig(effectiveWelcomePreviewConfig);
@@ -1454,9 +1447,6 @@ export default function DashboardClient() {
                               Internationalisierung
                             </button>
                           ) : null}
-                        </div>
-                        <div style={previewReadyHintStyle}>
-                          Eine direkte Frontend-Preview wird im naechsten Schritt ergaenzt. Bis dahin pruefst du die Inhalte direkt im Partnerbereich.
                         </div>
                       </div>
                     ) : null}
@@ -1509,38 +1499,26 @@ export default function DashboardClient() {
               ) : null}
               {headerConfig.isRegionBased && effectiveSelectedConfig ? (
                 <div style={{ marginTop: hideTextsHeaderInActivationFlow ? '0' : '48px' }}>
-                  {!hideTextsHeaderInActivationFlow ? (
-                    <div style={breadcrumbStyle}>
-                      Regionen / {effectiveSelectedConfig.area_id.split('-').length > 3 ? 'Ortslage' : 'Kreis'}
-                    </div>
-                  ) : null}
                   <h2 style={regionTitleStyle}>
                     {hideTextsHeaderInActivationFlow
                       ? `Aktivierung - ${effectiveSelectedConfig.areas?.name ?? ''}`
-                      : effectiveSelectedConfig.areas?.name}
+                      : `${effectiveSelectedConfig.areas?.name ?? ''} (${formatRegionScopeSuffix(effectiveSelectedConfig)})`}
                   </h2>
                   {hideTextsHeaderInActivationFlow ? <div style={{ height: '40px' }} /> : null}
                   {!hideTextsHeaderInActivationFlow ? (
-                    <div style={regionStatusStyle(effectiveSelectedConfig?.is_active === true)}>
-                      Status: {selectedAreaStatusLabel}
+                    <div style={regionStatusStyle(resolveActivationStatusKey(effectiveSelectedConfig))}>
+                      {selectedAreaStatusLabel}
                     </div>
                   ) : null}
                   {showPreviewGuidanceForSelected ? (
                     <div style={previewReadyCardShellStyle}>
-                      <div style={previewReadyBadgeRowStyle}>
-                        <span style={previewReadyBadgeStyle}>Preview freigegeben</span>
-                      </div>
-                      <h3 style={previewReadyTitleStyle}>Dieses Gebiet ist intern freigegeben, aber noch nicht online.</h3>
+                      <p style={previewReadyTextStyle}>
+                        <strong>Dieses Gebiet ist intern freigegeben, aber noch nicht online.</strong>
+                      </p>
                       <p style={previewReadyTextStyle}>
                         Nutze jetzt die Previewphase, um Inhalte, Werte, SEO/GEO und optionale Zusatzmodule final vorzubereiten.
                         Erst danach sollte das Gebiet durch den Admin online geschaltet werden.
                       </p>
-                      <ul style={previewReadyListStyle}>
-                        <li>Texte und Pflichtinhalte auf Vollstaendigkeit und Qualitaet pruefen.</li>
-                        <li>Wertanpassungen und Marktfaktoren final abstimmen.</li>
-                        <li>SEO- und GEO-Inhalte fuer den Livegang kontrollieren.</li>
-                        <li>Falls gebucht: lokale Website und Internationalisierung fertigstellen.</li>
-                      </ul>
                       <div style={previewReadyActionRowStyle}>
                         <button type="button" onClick={() => handleToolSelect('texts')} style={previewReadyActionButtonStyle}>
                           Texte pruefen
@@ -1551,17 +1529,11 @@ export default function DashboardClient() {
                         <button type="button" onClick={() => handleToolSelect('marketing')} style={previewReadyActionButtonStyle}>
                           SEO & GEO pruefen
                         </button>
-                        <button type="button" onClick={() => handleToolSelect('local_site')} style={previewReadyGhostButtonStyle}>
-                          Lokale Website
-                        </button>
                         {hasInternationalEnabled ? (
                           <button type="button" onClick={() => handleToolSelect('international')} style={previewReadyGhostButtonStyle}>
                             Internationalisierung
                           </button>
                         ) : null}
-                      </div>
-                      <div style={previewReadyHintStyle}>
-                        Das Gebiet ist in dieser Phase noch nicht regulär online oder indexierbar. Eine direkte Frontend-Preview wird im naechsten Schritt ergaenzt.
                       </div>
                     </div>
                   ) : null}
@@ -2017,14 +1989,6 @@ const headerDescriptionStyle = {
   color: '#64748b'
 };
 
-const breadcrumbStyle = {
-  fontSize: '12px',
-  color: '#94a3b8',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
-  marginBottom: '8px'
-};
-
 const regionTitleStyle = {
   fontSize: '24px',
   fontWeight: '700',
@@ -2032,20 +1996,35 @@ const regionTitleStyle = {
   margin: 0,
   letterSpacing: '-0.01em'
 };
-const regionStatusStyle = (isActive: boolean) => ({
-  marginTop: '14px',
+const regionStatusStyle = (statusKey: string): React.CSSProperties => ({
+  marginTop: '10px',
   marginBottom: '14px',
   display: 'inline-flex',
   alignItems: 'center',
-  padding: '4px 9px',
+  padding: '5px 10px',
   borderRadius: '999px',
   fontSize: '11px',
-  fontWeight: 700,
+  fontWeight: 800,
   textTransform: 'uppercase' as const,
   letterSpacing: '0.04em',
-  backgroundColor: isActive ? '#dcfce7' : '#fef3c7',
-  color: isActive ? '#166534' : '#92400e',
-  border: isActive ? '1px solid #bbf7d0' : '1px solid #fde68a',
+  backgroundColor:
+    statusKey === 'live' ? '#dcfce7'
+      : statusKey === 'approved_preview' ? '#f3e8ff'
+        : statusKey === 'ready_for_review' || statusKey === 'in_review' ? '#fef3c7'
+          : statusKey === 'changes_requested' ? '#fee2e2'
+            : '#e2e8f0',
+  color:
+    statusKey === 'live' ? '#166534'
+      : statusKey === 'approved_preview' ? '#6b21a8'
+        : statusKey === 'ready_for_review' || statusKey === 'in_review' ? '#92400e'
+          : statusKey === 'changes_requested' ? '#991b1b'
+            : '#334155',
+  border:
+    statusKey === 'live' ? '1px solid #bbf7d0'
+      : statusKey === 'approved_preview' ? '1px solid #d8b4fe'
+        : statusKey === 'ready_for_review' || statusKey === 'in_review' ? '1px solid #fde68a'
+          : statusKey === 'changes_requested' ? '1px solid #fecaca'
+            : '1px solid #cbd5e1',
 });
 
 const emptyStateStyle = {
@@ -2276,49 +2255,15 @@ const previewReadyInnerPanelStyle: React.CSSProperties = {
   padding: '16px',
 };
 
-const previewReadyBadgeRowStyle: React.CSSProperties = {
-  marginBottom: '14px',
-};
-
-const previewReadyBadgeStyle: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  borderRadius: '999px',
-  border: '1px solid #c084fc',
-  background: '#f3e8ff',
-  color: '#581c87',
-  fontSize: '11px',
-  fontWeight: 800,
-  letterSpacing: '0.03em',
-  textTransform: 'uppercase',
-  padding: '4px 9px',
-};
-
-const previewReadyTitleStyle: React.CSSProperties = {
-  margin: '0 0 10px',
-  fontSize: '21px',
-  lineHeight: 1.35,
-  fontWeight: 800,
-  color: '#111827',
-};
-
 const previewReadyTextStyle: React.CSSProperties = {
-  margin: '0 0 10px',
+  margin: '0 0 8px',
   fontSize: '15px',
   color: '#374151',
   lineHeight: 1.6,
 };
 
-const previewReadyListStyle: React.CSSProperties = {
-  margin: '10px 0 0',
-  paddingLeft: '18px',
-  color: '#334155',
-  fontSize: '14px',
-  lineHeight: 1.55,
-};
-
 const previewReadyActionRowStyle: React.CSSProperties = {
-  marginTop: '16px',
+  marginTop: '12px',
   display: 'flex',
   gap: '10px',
   flexWrap: 'wrap',
@@ -2344,13 +2289,6 @@ const previewReadyGhostButtonStyle: React.CSSProperties = {
   fontSize: '13px',
   fontWeight: 700,
   cursor: 'pointer',
-};
-
-const previewReadyHintStyle: React.CSSProperties = {
-  marginTop: '14px',
-  fontSize: '12px',
-  color: '#6b7280',
-  lineHeight: 1.55,
 };
 
 const successOverlayStyle: React.CSSProperties = {
