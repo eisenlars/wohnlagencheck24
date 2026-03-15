@@ -417,6 +417,14 @@ function createEmptyLlmModelDraft(provider: string, recommended = false): LlmCre
   };
 }
 
+function resolveLlmModelDraftTitle(modelDraft: LlmCreateModelDraft, index: number): string {
+  const displayLabel = String(modelDraft.display_label ?? "").trim();
+  if (displayLabel) return displayLabel;
+  const model = String(modelDraft.model ?? "").trim();
+  if (model) return model;
+  return `Neues Modell ${index + 1}`;
+}
+
 async function readJsonSafe(res: Response) {
   try {
     return await res.json();
@@ -674,6 +682,7 @@ export default function AdminClient() {
     api_key: "",
   });
   const [newLlmModels, setNewLlmModels] = useState<LlmCreateModelDraft[]>([createEmptyLlmModelDraft("openai", true)]);
+  const [expandedLlmModelKey, setExpandedLlmModelKey] = useState<string | null>(null);
   const [llmCreateTestBusy, setLlmCreateTestBusy] = useState(false);
   const [llmCreateTestResult, setLlmCreateTestResult] = useState<{
     status: "ok" | "error";
@@ -707,6 +716,16 @@ export default function AdminClient() {
     return Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
   }, [effectiveExistingLlmAccount]);
   const llmAccountReadyForModels = Boolean(effectiveExistingLlmAccount?.id && effectiveExistingLlmAccountHasApiKey);
+
+  useEffect(() => {
+    if (newLlmModels.length === 0) {
+      setExpandedLlmModelKey(null);
+      return;
+    }
+    if (!newLlmModels.some((item) => item.key === expandedLlmModelKey)) {
+      setExpandedLlmModelKey(newLlmModels[0]?.key ?? null);
+    }
+  }, [expandedLlmModelKey, newLlmModels]);
 
   useEffect(() => {
     const anyModalOpen =
@@ -3881,131 +3900,179 @@ export default function AdminClient() {
                     type="button"
                     onClick={() => {
                       setLlmCreateTestResult(null);
-                      setNewLlmModels((prev) => [...prev, createEmptyLlmModelDraft(newLlmAccount.provider, false)]);
+                      const nextDraft = createEmptyLlmModelDraft(newLlmAccount.provider, false);
+                      setNewLlmModels((prev) => [...prev, nextDraft]);
+                      setExpandedLlmModelKey(nextDraft.key);
                     }}
                   >
                     Modell hinzufügen
                   </button>
                 </div>
                 {newLlmModels.map((modelDraft, idx) => (
-                  <div key={modelDraft.key} style={{ padding: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>Modell {idx + 1}</div>
-                      {newLlmModels.length > 1 ? (
-                        <button
-                          style={btnGhostStyle}
-                          type="button"
-                          onClick={() => {
-                            setLlmCreateTestResult(null);
-                            setNewLlmModels((prev) => prev.filter((item) => item.key !== modelDraft.key));
-                          }}
-                        >
-                          Entfernen
-                        </button>
-                      ) : null}
-                    </div>
-                    <div style={grid2Style}>
-                      <div>
-                        <div style={requiredFieldHintStyle}>Pflichtfeld</div>
-                        <input
-                          list="llm-model-suggestions"
-                          style={requiredInputStyle}
-                          placeholder="Modell-ID"
-                          value={modelDraft.model}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setLlmCreateTestResult(null);
-                            setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, model: value } : item));
-                          }}
-                        />
-                      </div>
-                      <input
-                        style={inputStyle}
-                        placeholder="Anzeigename (optional)"
-                        value={modelDraft.display_label}
-                        onChange={(e) => {
-                          setLlmCreateTestResult(null);
-                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, display_label: e.target.value } : item));
+                  <div key={modelDraft.key} style={{ border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        width: "100%",
+                        background: expandedLlmModelKey === modelDraft.key ? "#f8fafc" : "#ffffff",
+                        padding: "12px 14px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        textAlign: "left",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setExpandedLlmModelKey((prev) => (prev === modelDraft.key ? null : modelDraft.key))}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          border: "none",
+                          background: "transparent",
+                          padding: 0,
+                          cursor: "pointer",
+                          textAlign: "left",
+                          display: "block",
                         }}
-                      />
-                    </div>
-                    <div style={{ marginTop: 10 }}>
-                      <input
-                        style={inputStyle}
-                        placeholder="Hinweis / Stärke des Modells"
-                        value={modelDraft.hint}
-                        onChange={(e) => {
-                          setLlmCreateTestResult(null);
-                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, hint: e.target.value } : item));
-                        }}
-                      />
-                    </div>
-                    <div style={{ marginTop: 10 }}>
-                      <input
-                        style={inputStyle}
-                        placeholder="Badges, kommagetrennt (z. B. Texte, Übersetzung, Qualität)"
-                        value={modelDraft.badges}
-                        onChange={(e) => {
-                          setLlmCreateTestResult(null);
-                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, badges: e.target.value } : item));
-                        }}
-                      />
-                    </div>
-                    <div style={{ ...grid2Style, marginTop: 10 }}>
-                      <div>
-                        <div style={requiredFieldHintStyle}>Pflichtfeld</div>
-                        <input
-                          style={requiredInputStyle}
-                          placeholder="Input-Kosten USD / 1k Tokens"
-                          value={modelDraft.input_cost_usd_per_1k}
-                          onChange={(e) => {
-                            setLlmCreateTestResult(null);
-                            setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, input_cost_usd_per_1k: e.target.value } : item));
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <div style={requiredFieldHintStyle}>Pflichtfeld</div>
-                        <input
-                          style={requiredInputStyle}
-                          placeholder="Output-Kosten USD / 1k Tokens"
-                          value={modelDraft.output_cost_usd_per_1k}
-                          onChange={(e) => {
-                            setLlmCreateTestResult(null);
-                            setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, output_cost_usd_per_1k: e.target.value } : item));
-                          }}
-                        />
+                      >
+                        <div style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>
+                          {resolveLlmModelDraftTitle(modelDraft, idx)}
+                        </div>
+                        <div style={{ marginTop: 3, fontSize: 11, color: "#64748b" }}>
+                          {modelDraft.model.trim() ? `Modell-ID: ${modelDraft.model.trim()}` : "Bitte Modell-ID als Pflichtfeld setzen"}
+                          {modelDraft.recommended ? " · empfohlen" : ""}
+                        </div>
+                      </button>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                        {newLlmModels.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLlmCreateTestResult(null);
+                              setNewLlmModels((prev) => prev.filter((item) => item.key !== modelDraft.key));
+                              setExpandedLlmModelKey((prev) => (prev === modelDraft.key ? null : prev));
+                            }}
+                            style={{
+                              ...btnGhostStyle,
+                              border: "1px solid #cbd5e1",
+                              padding: "6px 8px",
+                            }}
+                          >
+                            Entfernen
+                          </button>
+                        ) : null}
+                        <span style={{ fontSize: 16, color: "#64748b" }}>
+                          {expandedLlmModelKey === modelDraft.key ? "−" : "+"}
+                        </span>
                       </div>
                     </div>
-                    <div style={{ ...grid2Style, marginTop: 10 }}>
-                      <input
-                        style={inputStyle}
-                        placeholder="Reihenfolge (kleiner = weiter oben)"
-                        value={modelDraft.sort_order}
-                        onChange={(e) => {
-                          setLlmCreateTestResult(null);
-                          setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, sort_order: e.target.value } : item));
-                        }}
-                      />
-                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
-                        <input
-                          type="checkbox"
-                          checked={modelDraft.recommended}
-                          onChange={(e) => {
-                            const checked = e.target.checked;
-                            setLlmCreateTestResult(null);
-                            setNewLlmModels((prev) => prev.map((item) => ({
-                              ...item,
-                              recommended: item.key === modelDraft.key ? checked : (checked ? false : item.recommended),
-                            })));
-                          }}
-                        />
-                        Als Empfehlung markieren
-                      </label>
-                    </div>
-                    <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>
-                      Das Feld mit der Standardzahl <strong>10</strong> steuert die Reihenfolge/Priorität dieses Modells. Kleinere Werte stehen weiter oben und werden im zentralen Fallback früher berücksichtigt.
-                    </div>
+                    {expandedLlmModelKey === modelDraft.key ? (
+                      <div style={{ padding: 14, borderTop: "1px solid #e2e8f0" }}>
+                        <div style={grid2Style}>
+                          <div>
+                            <div style={requiredFieldHintStyle}>Pflichtfeld</div>
+                            <input
+                              list="llm-model-suggestions"
+                              style={requiredInputStyle}
+                              placeholder="Modell-ID"
+                              value={modelDraft.model}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setLlmCreateTestResult(null);
+                                setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, model: value } : item));
+                              }}
+                            />
+                          </div>
+                          <input
+                            style={inputStyle}
+                            placeholder="Anzeigename (optional)"
+                            value={modelDraft.display_label}
+                            onChange={(e) => {
+                              setLlmCreateTestResult(null);
+                              setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, display_label: e.target.value } : item));
+                            }}
+                          />
+                        </div>
+                        <div style={{ marginTop: 10 }}>
+                          <input
+                            style={inputStyle}
+                            placeholder="Hinweis / Stärke des Modells"
+                            value={modelDraft.hint}
+                            onChange={(e) => {
+                              setLlmCreateTestResult(null);
+                              setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, hint: e.target.value } : item));
+                            }}
+                          />
+                        </div>
+                        <div style={{ marginTop: 10 }}>
+                          <input
+                            style={inputStyle}
+                            placeholder="Badges, kommagetrennt (z. B. Texte, Übersetzung, Qualität)"
+                            value={modelDraft.badges}
+                            onChange={(e) => {
+                              setLlmCreateTestResult(null);
+                              setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, badges: e.target.value } : item));
+                            }}
+                          />
+                        </div>
+                        <div style={{ ...grid2Style, marginTop: 10 }}>
+                          <div>
+                            <div style={requiredFieldHintStyle}>Pflichtfeld</div>
+                            <input
+                              style={requiredInputStyle}
+                              placeholder="Input-Kosten USD / 1k Tokens"
+                              value={modelDraft.input_cost_usd_per_1k}
+                              onChange={(e) => {
+                                setLlmCreateTestResult(null);
+                                setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, input_cost_usd_per_1k: e.target.value } : item));
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <div style={requiredFieldHintStyle}>Pflichtfeld</div>
+                            <input
+                              style={requiredInputStyle}
+                              placeholder="Output-Kosten USD / 1k Tokens"
+                              value={modelDraft.output_cost_usd_per_1k}
+                              onChange={(e) => {
+                                setLlmCreateTestResult(null);
+                                setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, output_cost_usd_per_1k: e.target.value } : item));
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div style={{ ...grid2Style, marginTop: 10 }}>
+                          <input
+                            style={inputStyle}
+                            placeholder="Reihenfolge (kleiner = weiter oben)"
+                            value={modelDraft.sort_order}
+                            onChange={(e) => {
+                              setLlmCreateTestResult(null);
+                              setNewLlmModels((prev) => prev.map((item) => item.key === modelDraft.key ? { ...item, sort_order: e.target.value } : item));
+                            }}
+                          />
+                          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
+                            <input
+                              type="checkbox"
+                              checked={modelDraft.recommended}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                setLlmCreateTestResult(null);
+                                setNewLlmModels((prev) => prev.map((item) => ({
+                                  ...item,
+                                  recommended: item.key === modelDraft.key ? checked : (checked ? false : item.recommended),
+                                })));
+                              }}
+                            />
+                            Als Empfehlung markieren
+                          </label>
+                        </div>
+                        <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>
+                          Das Feld mit der Standardzahl <strong>10</strong> steuert die Reihenfolge/Priorität dieses Modells. Kleinere Werte stehen weiter oben und werden im zentralen Fallback früher berücksichtigt.
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -4141,7 +4208,9 @@ export default function AdminClient() {
                       status: "ok",
                       message: `${newLlmModels.length} Modell(e) wurden unter dem gespeicherten Provider-Account angelegt.`,
                     });
-                    setNewLlmModels([createEmptyLlmModelDraft(newLlmAccount.provider, true)]);
+                    const nextDraft = createEmptyLlmModelDraft(newLlmAccount.provider, true);
+                    setNewLlmModels([nextDraft]);
+                    setExpandedLlmModelKey(nextDraft.key);
                     await loadLlmProviders();
                     setLlmGlobalTab("overview");
                   })
@@ -4156,6 +4225,9 @@ export default function AdminClient() {
 
         {llmGlobalTab === "overview" ? (
           <>
+            <div style={{ marginTop: 12, marginBottom: 10, fontSize: 12, color: "#475569" }}>
+              Die Übersicht arbeitet modellbezogen. Änderungen an <strong>Base URL</strong> wirken auf den gesamten Provider-Account und damit auf alle Modelle unter diesem Zugang.
+            </div>
             <table style={llmCompactTableStyle}>
               <thead>
                 <tr>
@@ -4277,19 +4349,18 @@ export default function AdminClient() {
                           aria-label="Änderungen speichern"
                           onClick={() =>
                             run("Provider speichern", async () => {
-                              const draft = llmProviderDrafts[p.id];
-                              if (!draft) return;
+                              const draft = llmProviderDrafts[p.id] ?? {};
                               await api(`/api/admin/llm/providers/${p.id}`, {
                                 method: "PATCH",
                                 body: JSON.stringify({
-                                  model: draft.model,
-                                  display_label: String(draft.display_label ?? "").trim() || null,
-                                  hint: String(draft.hint ?? "").trim() || null,
-                                  badges: parseBadgeInput(String(draft.badges ?? "")),
-                                  recommended: draft.recommended === true,
-                                  base_url: draft.base_url,
+                                  model: String(draft.model ?? p.model).trim(),
+                                  display_label: String(draft.display_label ?? p.display_label ?? "").trim() || null,
+                                  hint: String(draft.hint ?? p.hint ?? "").trim() || null,
+                                  badges: parseBadgeInput(String(draft.badges ?? formatBadgesInput(p.badges))),
+                                  recommended: draft.recommended ?? Boolean(p.recommended),
+                                  base_url: String(draft.base_url ?? p.base_url).trim(),
                                   api_version: String(draft.api_version ?? p.api_version ?? "").trim() || null,
-                                  priority: Number(draft.priority || p.priority),
+                                  priority: Number(draft.priority ?? p.priority),
                                 }),
                               });
                               await loadLlmProviders();
@@ -4371,28 +4442,40 @@ export default function AdminClient() {
                 />
                 Zentrale LLM-Nutzung aktiv
               </label>
-              <input
-                style={inputStyle}
-                placeholder="Monatliches Token-Budget (global)"
-                value={llmGlobalConfig.monthly_token_budget ?? ""}
-                onChange={(e) =>
-                  setLlmGlobalConfig((v) => ({
-                    ...v,
-                    monthly_token_budget: e.target.value.trim() ? Number(e.target.value) : null,
-                  }))
-                }
-              />
-              <input
-                style={inputStyle}
-                placeholder="Monatliches Kosten-Budget EUR (global)"
-                value={llmGlobalConfig.monthly_cost_budget_eur ?? ""}
-                onChange={(e) =>
-                  setLlmGlobalConfig((v) => ({
-                    ...v,
-                    monthly_cost_budget_eur: e.target.value.trim() ? Number(e.target.value) : null,
-                  }))
-                }
-              />
+              <label style={{ display: "grid", gap: 5 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>Globales Monatslimit Tokens</span>
+                <input
+                  style={inputStyle}
+                  placeholder="leer = kein globales Token-Limit"
+                  value={llmGlobalConfig.monthly_token_budget ?? ""}
+                  onChange={(e) =>
+                    setLlmGlobalConfig((v) => ({
+                      ...v,
+                      monthly_token_budget: e.target.value.trim() ? Number(e.target.value) : null,
+                    }))
+                  }
+                />
+                <span style={{ fontSize: 11, color: "#64748b" }}>
+                  Ab diesem Monatswert werden weitere zentral gemanagte LLM-Läufe blockiert.
+                </span>
+              </label>
+              <label style={{ display: "grid", gap: 5 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>Globales Monatslimit Kosten (EUR)</span>
+                <input
+                  style={inputStyle}
+                  placeholder="leer = kein globales Kosten-Limit"
+                  value={llmGlobalConfig.monthly_cost_budget_eur ?? ""}
+                  onChange={(e) =>
+                    setLlmGlobalConfig((v) => ({
+                      ...v,
+                      monthly_cost_budget_eur: e.target.value.trim() ? Number(e.target.value) : null,
+                    }))
+                  }
+                />
+                <span style={{ fontSize: 11, color: "#64748b" }}>
+                  Ab diesem Monatswert werden weitere zentral gemanagte LLM-Läufe blockiert.
+                </span>
+              </label>
               <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
                 <button
                   style={btnStyle}
@@ -4493,10 +4576,9 @@ export default function AdminClient() {
                         aria-label="Preise speichern"
                         onClick={() =>
                           run("Preis speichern", async () => {
-                            const draft = llmProviderDrafts[p.id];
-                            if (!draft) return;
-                            const inputCost = parsePositiveNumber(String(draft.input_cost_usd_per_1k ?? ""));
-                            const outputCost = parsePositiveNumber(String(draft.output_cost_usd_per_1k ?? ""));
+                            const draft = llmProviderDrafts[p.id] ?? {};
+                            const inputCost = parsePositiveNumber(String(draft.input_cost_usd_per_1k ?? p.input_cost_usd_per_1k ?? ""));
+                            const outputCost = parsePositiveNumber(String(draft.output_cost_usd_per_1k ?? p.output_cost_usd_per_1k ?? ""));
                             if (inputCost === null || outputCost === null) {
                               throw new Error("Input- und Output-Kosten sind Pflichtfelder und müssen größer als 0 sein.");
                             }
