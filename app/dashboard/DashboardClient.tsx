@@ -1226,7 +1226,7 @@ export default function DashboardClient() {
                         <button
                           key={ort.area_id}
                           onClick={() => handleSelectConfig(ort)}
-                          style={subAreaButtonStyle(effectiveSelectedConfig?.id === ort.id)}
+                          style={subAreaButtonStyle(effectiveSelectedConfig?.area_id === ort.area_id)}
                         >
                           {ort.areas?.name}
                         </button>
@@ -1390,25 +1390,46 @@ export default function DashboardClient() {
                       Mindestens ein Gebiet ist intern freigegeben und kann vor dem Onlineschalten im Partnerbereich vorbereitet werden.
                       Pruefe jetzt Inhalte, Werte und SEO/GEO sorgfaeltig. Das Gebiet ist in diesem Zustand noch nicht regulär online.
                     </p>
-                    <div style={activationTabsRowStyle}>
+                    <div style={{ marginTop: '18px' }}>
                       {previewDistricts.map((district) => {
-                        const active = effectiveWelcomePreviewConfig?.area_id === district.area_id;
-                        const label = district.areas?.name || district.areas?.slug || district.area_id;
+                        const isSelected = Boolean(selectedConfig?.area_id?.startsWith(district.area_id));
+                        const isExpanded = expandedDistrict === district.area_id || isSelected;
+                        const subAreas = configs.filter((cfg) => (
+                          cfg.area_id.startsWith(district.area_id) && cfg.area_id.split('-').length > 3
+                        ));
                         return (
-                          <button
-                            key={`preview:${district.area_id}`}
-                            type="button"
-                            onMouseEnter={() => setHoveredActivationTabId(`preview:${district.area_id}`)}
-                            onMouseLeave={() => setHoveredActivationTabId((prev) => (prev === `preview:${district.area_id}` ? null : prev))}
-                            onClick={() => {
-                              setSelectedConfig(district);
-                              setExpandedDistrict(district.area_id.split('-').slice(0, 3).join('-'));
-                              setShowWelcome(true);
-                            }}
-                            style={activationTabButtonStyle(active, hoveredActivationTabId === `preview:${district.area_id}`)}
-                          >
-                            {label}
-                          </button>
+                          <div key={`preview:${district.area_id}`} style={{ marginBottom: '8px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedConfig(district);
+                                setExpandedDistrict(isExpanded ? null : district.area_id);
+                                setShowWelcome(true);
+                              }}
+                              style={districtButtonStyle(isSelected, Boolean(district.is_active))}
+                            >
+                              <span style={{ fontSize: '10px' }}>{isExpanded ? '▼' : '▶'}</span>
+                              <span style={{ flex: 1, textAlign: 'left' }}>{district.areas?.name}</span>
+                            </button>
+                            {isExpanded && subAreas.length > 0 ? (
+                              <div style={subAreaListStyle}>
+                                {subAreas.map((ort) => (
+                                  <button
+                                    key={`preview-ort:${ort.area_id}`}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedConfig(ort);
+                                      setExpandedDistrict(district.area_id);
+                                      setShowWelcome(true);
+                                    }}
+                                    style={subAreaButtonStyle(effectiveSelectedConfig?.area_id === ort.area_id)}
+                                  >
+                                    {ort.areas?.name}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
                         );
                       })}
                     </div>
