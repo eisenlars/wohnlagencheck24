@@ -166,7 +166,7 @@ export async function POST(req: Request) {
       website_url: normalizeNullableString(body.website_url),
       // Neu angelegte Partner bleiben inaktiv, bis sie ihren Account-Flow abgeschlossen haben.
       is_active: body.is_active === true ? true : false,
-      is_system_default: body.is_system_default === true,
+      is_system_default: false,
       llm_partner_managed_allowed: body.llm_partner_managed_allowed === true,
       llm_mode_default: normalizeNullableString(body.llm_mode_default) ?? "central_managed",
     };
@@ -196,7 +196,7 @@ export async function POST(req: Request) {
         fallbackPayload.is_active = body.is_active === true ? true : false;
       }
       if (!missingSystemDefault) {
-        fallbackPayload.is_system_default = body.is_system_default === true;
+        fallbackPayload.is_system_default = false;
       }
       if (!missingLlm) {
         fallbackPayload.llm_partner_managed_allowed = body.llm_partner_managed_allowed === true;
