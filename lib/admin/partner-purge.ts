@@ -1,7 +1,6 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 
 const STORAGE_BUCKET = "immobilienmarkt";
-const PURGE_DUMP_BUCKET = String(process.env.ADMIN_PURGE_DUMP_BUCKET ?? "").trim();
 
 const PARTNER_PURGE_TABLES: Array<{ table: string; column: string }> = [
   { table: "partner_blog_posts", column: "partner_id" },
@@ -200,49 +199,13 @@ export async function purgePartnerData(
   partnerId: string,
 ): Promise<{
   deletedCounts: Record<string, number>;
-  dumpPath: string;
-  dumpBucket: string;
+  dumpPath: string | null;
+  dumpBucket: string | null;
   authUserDeleted: boolean;
   authDeleteError: string | null;
 }> {
-  if (!PURGE_DUMP_BUCKET) {
-    throw new Error("ADMIN_PURGE_DUMP_BUCKET is not configured");
-  }
-  if (PURGE_DUMP_BUCKET.toLowerCase() === STORAGE_BUCKET.toLowerCase()) {
-    throw new Error("ADMIN_PURGE_DUMP_BUCKET must be different from storage bucket");
-  }
-
   const storagePrefix = `media/partner/${partnerId}`;
   const storageFiles = await listStorageFilesRecursive(admin, STORAGE_BUCKET, storagePrefix);
-
-  const dumpTables: Record<string, unknown[]> = {};
-  for (const def of PARTNER_PURGE_TABLES) {
-    const { data, error } = await admin
-      .from(def.table)
-      .select("*")
-      .eq(def.column, partnerId);
-    if (error && !isMissingRelationError(error, def.table)) {
-      throw new Error(`${def.table} dump failed: ${error.message}`);
-    }
-    dumpTables[def.table] = Array.isArray(data) ? data : [];
-  }
-
-  const dumpPath = `admin/purge_dumps/${partnerId}/${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
-  const dumpPayload = {
-    generated_at: new Date().toISOString(),
-    partner_id: partnerId,
-    storage_files: storageFiles,
-    tables: dumpTables,
-  };
-  const encoder = new TextEncoder();
-  const dumpBytes = encoder.encode(JSON.stringify(dumpPayload, null, 2));
-  const { error: dumpError } = await admin.storage.from(PURGE_DUMP_BUCKET).upload(dumpPath, dumpBytes, {
-    contentType: "application/json",
-    upsert: false,
-  });
-  if (dumpError) {
-    throw new Error(`dump upload failed: ${dumpError.message}`);
-  }
 
   await deleteStorageFiles(admin, STORAGE_BUCKET, storageFiles);
 
@@ -274,8 +237,8 @@ export async function purgePartnerData(
 
   return {
     deletedCounts,
-    dumpPath,
-    dumpBucket: PURGE_DUMP_BUCKET,
+    dumpPath: null,
+    dumpBucket: null,
     authUserDeleted: !authDeleteFailed,
     authDeleteError: authDeleteFailed
       ? String((authDeleteError as { message?: string } | null)?.message ?? "auth delete failed")
