@@ -572,6 +572,7 @@ export default function AdminClient() {
     partnerName: string;
     loading: boolean;
     deleting: boolean;
+    errorMessage: string | null;
     canPurge: boolean;
     blockers: string[];
     summary: {
@@ -586,6 +587,7 @@ export default function AdminClient() {
     partnerName: "",
     loading: false,
     deleting: false,
+    errorMessage: null,
     canPurge: false,
     blockers: [],
     summary: {
@@ -1671,6 +1673,7 @@ export default function AdminClient() {
       partnerName: selectedPartner.company_name ?? selectedPartnerId,
       loading: true,
       deleting: false,
+      errorMessage: null,
       canPurge: false,
       blockers: [],
       summary: {
@@ -1695,6 +1698,7 @@ export default function AdminClient() {
       setPartnerPurgeModal((prev) => ({
         ...prev,
         loading: false,
+        errorMessage: null,
         canPurge,
         blockers,
         summary,
@@ -1703,6 +1707,7 @@ export default function AdminClient() {
       setPartnerPurgeModal((prev) => ({
         ...prev,
         loading: false,
+        errorMessage: null,
         canPurge: false,
         blockers: [error instanceof Error ? error.message : "Purge-Check fehlgeschlagen."],
       }));
@@ -1711,7 +1716,7 @@ export default function AdminClient() {
 
   async function executePartnerPurge() {
     if (!partnerPurgeModal.partnerId || partnerPurgeModal.deleting) return;
-    setPartnerPurgeModal((prev) => ({ ...prev, deleting: true }));
+    setPartnerPurgeModal((prev) => ({ ...prev, deleting: true, errorMessage: null }));
     setStatus("Partner wird endgültig entfernt...");
     try {
       const res = await fetch(`/api/admin/partners/${encodeURIComponent(partnerPurgeModal.partnerId)}/purge`, {
@@ -1744,14 +1749,9 @@ export default function AdminClient() {
       });
       setStatus(warning ? "Partnerdaten wurden weitgehend entfernt, Auth-User blieb bestehen." : "Partner wurde endgültig entfernt.");
     } catch (error) {
-      setPartnerPurgeModal((prev) => ({ ...prev, deleting: false }));
       const message = extractErrorMessage(error, "Partner konnte nicht entfernt werden.");
+      setPartnerPurgeModal((prev) => ({ ...prev, deleting: false, errorMessage: message }));
       setStatus(message);
-      setSuccessModal({
-        open: true,
-        title: "Löschung fehlgeschlagen",
-        message,
-      });
     }
   }
 
@@ -2096,6 +2096,11 @@ export default function AdminClient() {
                 {partnerPurgeModal.blockers.length > 0 ? (
                   <div style={{ marginTop: 6, marginBottom: 10, fontSize: 12, color: "#991b1b" }}>
                     {partnerPurgeModal.blockers.join(" | ")}
+                  </div>
+                ) : null}
+                {partnerPurgeModal.errorMessage ? (
+                  <div style={{ marginTop: 6, marginBottom: 10, fontSize: 12, color: "#991b1b", lineHeight: 1.5 }}>
+                    {partnerPurgeModal.errorMessage}
                   </div>
                 ) : null}
                 {partnerPurgeModal.canPurge ? (
