@@ -1,4 +1,69 @@
-export default function DatenschutzPage() {
+import { loadPortalCmsEntriesByPage, resolvePortalCmsField } from "@/lib/portal-cms-reader";
+
+function renderPrivacyParagraphs(text: string, className = "mb-3") {
+  return text
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block, index) => (
+      <p key={`${className}-${index}`} className={className}>
+        {block.split("\n").map((line, lineIndex, lines) => (
+          <span key={`${className}-${index}-${lineIndex}`}>
+            {line}
+            {lineIndex < lines.length - 1 ? <br /> : null}
+          </span>
+        ))}
+      </p>
+    ));
+}
+
+export default async function DatenschutzPage() {
+  const entries = await loadPortalCmsEntriesByPage("datenschutz", "de");
+  const intro = resolvePortalCmsField(entries, "privacy_intro", "intro", "");
+  const responsibleParty = resolvePortalCmsField(entries, "privacy_intro", "responsible_party", "");
+  const collection = resolvePortalCmsField(entries, "privacy_collection", "body", "");
+  const tools = resolvePortalCmsField(entries, "privacy_tools", "body", "");
+  const rights = resolvePortalCmsField(entries, "privacy_rights", "body", "");
+  const hasCmsContent = Boolean(intro || responsibleParty || collection || tools || rights);
+
+  if (hasCmsContent) {
+    return (
+      <div className="container py-4 text-dark">
+        <h1 className="h2 mb-4">{resolvePortalCmsField(entries, "privacy_intro", "headline", "Datenschutz")}</h1>
+
+        {intro ? <section className="mb-4">{renderPrivacyParagraphs(intro)}</section> : null}
+
+        {responsibleParty ? (
+          <section className="mb-4">
+            <h2 className="h5">Verantwortliche Stelle</h2>
+            {renderPrivacyParagraphs(responsibleParty)}
+          </section>
+        ) : null}
+
+        {collection ? (
+          <section className="mb-4">
+            <h2 className="h5">Erhebung und Verarbeitung</h2>
+            {renderPrivacyParagraphs(collection)}
+          </section>
+        ) : null}
+
+        {tools ? (
+          <section className="mb-4">
+            <h2 className="h5">Tools und Dienste</h2>
+            {renderPrivacyParagraphs(tools)}
+          </section>
+        ) : null}
+
+        {rights ? (
+          <section className="mb-4">
+            <h2 className="h5">Rechte und Kontakt</h2>
+            {renderPrivacyParagraphs(rights)}
+          </section>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="container py-4 text-dark">
       <h1 className="h2 mb-4">Datenschutz</h1>

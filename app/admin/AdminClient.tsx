@@ -6,6 +6,15 @@ import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { getProvidersForKind } from "@/lib/integrations/providers";
 import { getMandatoryMediaLabel, isMandatoryMediaKey } from "@/lib/mandatory-media";
+import {
+  buildPortalCmsEmptyFields,
+  getPortalCmsPages,
+  type PortalContentEntryRecord,
+  type PortalContentEntryStatus,
+  type PortalContentPageDefinition,
+  type PortalLocaleConfigRecord,
+  type PortalLocaleStatus,
+} from "@/lib/portal-cms";
 import FullscreenLoader from "@/components/ui/FullscreenLoader";
 
 type Partner = {
@@ -135,7 +144,7 @@ type PartnerPurgeCheckPayload = {
   affected_counts?: Record<string, number>;
 };
 
-type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults";
+type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "portal_cms";
 type AdminNavMode = "partners" | "areas";
 type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations" | "billing";
 
@@ -455,6 +464,18 @@ function extractErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
+function formatPortalLocaleStatus(status: PortalLocaleStatus): string {
+  if (status === "internal") return "intern";
+  if (status === "live") return "live";
+  return "geplant";
+}
+
+function formatPortalEntryStatus(status: PortalContentEntryStatus): string {
+  if (status === "internal") return "intern";
+  if (status === "live") return "live";
+  return "entwurf";
+}
+
 async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const res = await fetch(input, {
     ...init,
@@ -676,6 +697,15 @@ export default function AdminClient() {
     portal_export_ortslage_price_eur: "",
   });
   const [partnerFeatureBillingRows, setPartnerFeatureBillingRows] = useState<PartnerBillingFeature[]>([]);
+  const portalCmsPages = useMemo<PortalContentPageDefinition[]>(() => getPortalCmsPages(), []);
+  const [portalLocaleConfigs, setPortalLocaleConfigs] = useState<PortalLocaleConfigRecord[]>([]);
+  const [portalContentEntries, setPortalContentEntries] = useState<PortalContentEntryRecord[]>([]);
+  const [portalCmsPageKey, setPortalCmsPageKey] = useState<string>("home");
+  const [portalCmsLocale, setPortalCmsLocale] = useState<string>("de");
+  const [portalCmsDrafts, setPortalCmsDrafts] = useState<Record<string, {
+    status: PortalContentEntryStatus;
+    fields_json: Record<string, string>;
+  }>>({});
   const [llmProviderDrafts, setLlmProviderDrafts] = useState<Record<string, Partial<{
     model: string;
     display_label: string;
@@ -734,6 +764,14 @@ export default function AdminClient() {
     return Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
   }, [effectiveExistingLlmAccount]);
   const llmAccountReadyForModels = Boolean(effectiveExistingLlmAccount?.id && effectiveExistingLlmAccountHasApiKey);
+  const selectedPortalCmsPage = useMemo(
+    () => portalCmsPages.find((page) => page.page_key === portalCmsPageKey) ?? portalCmsPages[0] ?? null,
+    [portalCmsPageKey, portalCmsPages],
+  );
+  const activePortalLocales = useMemo(
+    () => portalLocaleConfigs.filter((row) => row.is_active).sort((a, b) => a.locale.localeCompare(b.locale, "de")),
+    [portalLocaleConfigs],
+  );
 
   useEffect(() => {
     if (newLlmModels.length === 0) {
@@ -771,6 +809,50 @@ export default function AdminClient() {
       lastFocusedElementRef.current = null;
     }
   }, [successModal.open, handoverConfirmModal.open, handoverStatusModal.open, areaDeleteConfirmModal.open, integrationDeleteConfirmModal.open, partnerPurgeModal.open]);
+
+  useEffect(() => {
+    if (!portalCmsPages.some((page) => page.page_key === portalCmsPageKey) && portalCmsPages[0]) {
+      setPortalCmsPageKey(portalCmsPages[0].page_key);
+    }
+  }, [portalCmsPageKey, portalCmsPages]);
+
+  useEffect(() => {
+    if (!portalLocaleConfigs.some((row) => row.locale === portalCmsLocale) && portalLocaleConfigs[0]?.locale) {
+      setPortalCmsLocale(portalLocaleConfigs[0].locale);
+    }
+  }, [portalCmsLocale, portalLocaleConfigs]);
+
+  useEffect(() => {
+    if (!selectedPortalCmsPage || !portalCmsLocale) return;
+    setPortalCmsDrafts((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const section of selectedPortalCmsPage.sections) {
+        const key = `${portalCmsLocale}::${section.section_key}`;
+        const existingEntry = portalContentEntries.find((entry) =>
+          entry.locale === portalCmsLocale
+          && entry.page_key === selectedPortalCmsPage.page_key
+          && entry.section_key === section.section_key,
+        );
+        const emptyFields = buildPortalCmsEmptyFields(section);
+        const mergedFields = {
+          ...emptyFields,
+          ...(existingEntry?.fields_json ?? {}),
+          ...(next[key]?.fields_json ?? {}),
+        };
+        const nextDraft = {
+          status: next[key]?.status ?? existingEntry?.status ?? "draft",
+          fields_json: mergedFields,
+        };
+        const currentDraft = next[key];
+        if (!currentDraft || JSON.stringify(currentDraft) !== JSON.stringify(nextDraft)) {
+          next[key] = nextDraft;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [portalCmsLocale, portalContentEntries, selectedPortalCmsPage]);
 
   const formatPartnerName = (partner: Pick<Partner, "company_name" | "is_system_default">) =>
     partner.is_system_default ? `${partner.company_name} (Portalpartner)` : partner.company_name;
@@ -1384,6 +1466,18 @@ export default function AdminClient() {
       default_enabled: feature.default_enabled === true,
       is_active: feature.is_active !== false,
     })));
+  }
+
+  async function loadPortalCms() {
+    const data = await api<{
+      locales?: PortalLocaleConfigRecord[];
+      pages?: PortalContentPageDefinition[];
+      entries?: PortalContentEntryRecord[];
+    }>("/api/admin/portal-content");
+    setPortalLocaleConfigs(data.locales ?? []);
+    setPortalContentEntries(data.entries ?? []);
+    const nextLocale = (data.locales ?? []).find((row) => row.is_active)?.locale ?? data.locales?.[0]?.locale ?? "de";
+    setPortalCmsLocale(nextLocale);
   }
 
   async function loadPartnerBillingConfig(partnerId: string) {
@@ -2260,17 +2354,17 @@ export default function AdminClient() {
       <div
         style={{
           ...adminLayoutStyle,
-          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults")
+          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults" || activeView === "portal_cms")
             ? "56px minmax(0, 1fr)"
             : adminLayoutStyle.gridTemplateColumns,
         }}
       >
         <aside style={modeBarStyle}>
           <button
-            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && navMode === "partners")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" && navMode === "partners")}
             onClick={() => {
               setNavMode("partners");
-              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults" || activeView === "partner_purge") setActiveView("home");
+              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults" || activeView === "portal_cms" || activeView === "partner_purge") setActiveView("home");
             }}
             title="Partner"
           >
@@ -2291,10 +2385,10 @@ export default function AdminClient() {
             ) : null}
           </button>
           <button
-            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && navMode === "areas")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" && navMode === "areas")}
             onClick={() => {
               setNavMode("areas");
-              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults" || activeView === "partner_purge") setActiveView("home");
+              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults" || activeView === "portal_cms" || activeView === "partner_purge") setActiveView("home");
             }}
             title="Gebiete"
           >
@@ -2323,6 +2417,18 @@ export default function AdminClient() {
             title="Billing-Standards"
           >
             €
+          </button>
+          <button
+            style={modeButtonStyle(activeView === "portal_cms")}
+            onClick={() => {
+              setActiveView("portal_cms");
+              void run("Portal-CMS laden", async () => {
+                await loadPortalCms();
+              }, { showSuccessModal: false });
+            }}
+            title="Portal-CMS"
+          >
+            🌐
           </button>
           <div style={{ flex: 1 }} />
           <button
@@ -2354,7 +2460,7 @@ export default function AdminClient() {
           </button>
         </aside>
 
-        {activeView !== "llm_global" && activeView !== "billing_defaults" ? (
+        {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" ? (
           <aside style={listPaneStyle}>
             <div style={sidebarSectionHeaderStyle}>{navMode === "partners" ? "Partnerübersicht" : "Gebietsübersicht"}</div>
             <div style={{ display: "grid", gap: 8, marginBottom: 10 }}>
@@ -3498,6 +3604,274 @@ export default function AdminClient() {
             ))}
           </tbody>
         </table>
+      </section>
+      ) : null}
+
+      {activeView === "portal_cms" ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Portal-CMS</h2>
+        <p style={mutedStyle}>
+          Globale Sprachen, statische Portalinhalte und die zentrale Freigabe portalweiter Locales. Partner koennen spaeter nur Sprachen nutzen, die hier global gepflegt und freigegeben sind.
+        </p>
+
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Globale Sprachfreigabe</div>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Locale</th>
+                <th style={thStyle}>Status</th>
+                <th style={thStyle}>Aktiv</th>
+                <th style={thStyle}>Partner buchbar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {portalLocaleConfigs.map((row, idx) => (
+                <tr key={row.locale}>
+                  <td style={tdStyle}>
+                    <div style={{ fontWeight: 700, color: "#0f172a" }}>{row.locale}</div>
+                    <div style={mutedStyle}>{formatPortalLocaleStatus(row.status)}</div>
+                  </td>
+                  <td style={tdStyle}>
+                    <select
+                      style={inputStyle}
+                      value={row.status}
+                      onChange={(e) => {
+                        const nextStatus = String(e.target.value) as PortalLocaleStatus;
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, status: nextStatus } : item));
+                      }}
+                    >
+                      <option value="planned">geplant</option>
+                      <option value="internal">intern</option>
+                      <option value="live">live</option>
+                    </select>
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      type="checkbox"
+                      checked={row.is_active}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, is_active: checked } : item));
+                      }}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      type="checkbox"
+                      checked={row.partner_bookable}
+                      disabled={row.status !== "live"}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, partner_bookable: checked } : item));
+                      }}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ ...rowStyle, marginTop: 10 }}>
+            <div style={{ ...mutedStyle, fontSize: 12 }}>
+              Nur `live`-Locales sollten partnerbuchbar werden. `internal` ist fuer QA und inhaltliche Pruefung gedacht.
+            </div>
+            <button
+              style={btnStyle}
+              disabled={busy}
+              onClick={() =>
+                run("Portal-Locales speichern", async () => {
+                  await api("/api/admin/portal-content", {
+                    method: "POST",
+                    body: JSON.stringify({ locale_configs: portalLocaleConfigs }),
+                  });
+                  await loadPortalCms();
+                })
+              }
+            >
+              Sprachen speichern
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Statische Portalbereiche</div>
+          <div style={partnerTabBarStyle}>
+            {portalCmsPages.map((page) => (
+              <button
+                key={page.page_key}
+                style={partnerTabButtonStyle(portalCmsPageKey === page.page_key)}
+                onClick={() => setPortalCmsPageKey(page.page_key)}
+              >
+                {page.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ ...grid2Style, marginTop: 14 }}>
+            <label>
+              Bearbeitungs-Locale
+              <select
+                style={inputStyle}
+                value={portalCmsLocale}
+                onChange={(e) => setPortalCmsLocale(e.target.value)}
+              >
+                {(activePortalLocales.length > 0 ? activePortalLocales : portalLocaleConfigs).map((row) => (
+                  <option key={row.locale} value={row.locale}>
+                    {row.locale} · {formatPortalLocaleStatus(row.status)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", background: "#f8fafc" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
+                {selectedPortalCmsPage?.label ?? "Bereich"}
+              </div>
+              <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.5 }}>
+                {selectedPortalCmsPage?.note ?? "Kein Portalbereich gewaehlt."}
+              </div>
+            </div>
+          </div>
+
+          {selectedPortalCmsPage ? (
+            <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
+              {selectedPortalCmsPage.sections.map((section) => {
+                const draftKey = `${portalCmsLocale}::${section.section_key}`;
+                const draft = portalCmsDrafts[draftKey] ?? {
+                  status: "draft" as PortalContentEntryStatus,
+                  fields_json: buildPortalCmsEmptyFields(section),
+                };
+                return (
+                  <div
+                    key={section.section_key}
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 10,
+                      padding: 12,
+                      background: "#f8fafc",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", marginBottom: 10 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: "#0f172a" }}>{section.label}</div>
+                        <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.5 }}>{section.description}</div>
+                      </div>
+                      <div style={{ minWidth: 140 }}>
+                        <select
+                          style={inputStyle}
+                          value={draft.status}
+                          onChange={(e) => {
+                            const nextStatus = String(e.target.value) as PortalContentEntryStatus;
+                            setPortalCmsDrafts((prev) => ({
+                              ...prev,
+                              [draftKey]: {
+                                ...draft,
+                                status: nextStatus,
+                              },
+                            }));
+                          }}
+                        >
+                          <option value="draft">Entwurf</option>
+                          <option value="internal">Intern</option>
+                          <option value="live">Live</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {section.fields.map((field) => (
+                        <label key={field.key}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>{field.label}</div>
+                          {field.type === "textarea" ? (
+                            <textarea
+                              style={{ ...inputStyle, minHeight: 110, resize: "vertical" }}
+                              value={String(draft.fields_json[field.key] ?? "")}
+                              placeholder={field.placeholder ?? ""}
+                              onChange={(e) => {
+                                const nextValue = e.target.value;
+                                setPortalCmsDrafts((prev) => ({
+                                  ...prev,
+                                  [draftKey]: {
+                                    ...draft,
+                                    fields_json: {
+                                      ...draft.fields_json,
+                                      [field.key]: nextValue,
+                                    },
+                                  },
+                                }));
+                              }}
+                            />
+                          ) : (
+                            <input
+                              style={inputStyle}
+                              value={String(draft.fields_json[field.key] ?? "")}
+                              placeholder={field.placeholder ?? ""}
+                              onChange={(e) => {
+                                const nextValue = e.target.value;
+                                setPortalCmsDrafts((prev) => ({
+                                  ...prev,
+                                  [draftKey]: {
+                                    ...draft,
+                                    fields_json: {
+                                      ...draft.fields_json,
+                                      [field.key]: nextValue,
+                                    },
+                                  },
+                                }));
+                              }}
+                            />
+                          )}
+                          {field.help ? (
+                            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>{field.help}</div>
+                          ) : null}
+                        </label>
+                      ))}
+                    </div>
+
+                    <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>
+                      Status in dieser Locale: <strong>{formatPortalEntryStatus(draft.status)}</strong>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
+          <div style={{ ...rowStyle, marginTop: 14 }}>
+            <div style={{ ...mutedStyle, fontSize: 12 }}>
+              Zunaechst werden hier nur die strukturierten Portal-Grundbereiche gepflegt. Die oeffentlichen Seiten koennen anschliessend schrittweise auf DB-first mit JSX-Fallback umgestellt werden.
+            </div>
+            <button
+              style={btnStyle}
+              disabled={busy || !selectedPortalCmsPage || !portalCmsLocale}
+              onClick={() =>
+                run("Portal-Inhalte speichern", async () => {
+                  if (!selectedPortalCmsPage || !portalCmsLocale) return;
+                  const entries = selectedPortalCmsPage.sections.map((section) => {
+                    const draftKey = `${portalCmsLocale}::${section.section_key}`;
+                    const draft = portalCmsDrafts[draftKey] ?? {
+                      status: "draft" as PortalContentEntryStatus,
+                      fields_json: buildPortalCmsEmptyFields(section),
+                    };
+                    return {
+                      page_key: selectedPortalCmsPage.page_key,
+                      section_key: section.section_key,
+                      locale: portalCmsLocale,
+                      status: draft.status,
+                      fields_json: draft.fields_json,
+                    };
+                  });
+                  await api("/api/admin/portal-content", {
+                    method: "POST",
+                    body: JSON.stringify({ entries }),
+                  });
+                  await loadPortalCms();
+                })
+              }
+            >
+              Bereich speichern
+            </button>
+          </div>
+        </div>
       </section>
       ) : null}
 

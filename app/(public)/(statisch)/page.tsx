@@ -4,6 +4,7 @@ import "./static.css"; // falls noch nicht eingebunden
 import Link from "next/link";
 import Image from "next/image";
 import { getBundeslaender } from "@/lib/data";
+import { loadPortalCmsEntriesByPage, resolvePortalCmsField } from "@/lib/portal-cms-reader";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { buildWebAssetUrl } from "@/utils/assets";
 import BlogAuthorImage from "@/components/blog-author-image";
@@ -90,6 +91,7 @@ function renderMarkdown(md: string) {
 
 export default async function HomePage() {
   const bundeslaender = await getBundeslaender();
+  const homeEntries = await loadPortalCmsEntriesByPage("home", "de");
   let latestBlog: BlogBlock | null = null;
 
   try {
@@ -159,16 +161,20 @@ export default async function HomePage() {
             />
 
             <h1 className="home-cutout-title">
-              Wohnlagencheck<span style={{ color: "#ffe000" }}>24</span>
+              {resolvePortalCmsField(homeEntries, "home_hero", "headline", "Wohnlagencheck24 - Immobilienmarkt & Standortprofile")}
             </h1>
 
             <p className="home-cutout-claim">
-              DATA-DRIVEN. EXPERT-LED.
+              {resolvePortalCmsField(homeEntries, "home_hero", "claim", "DATA-DRIVEN. EXPERT-LED.")}
             </p>
 
             <p className="home-cutout-text">
-              Immobilienmarkt &amp; Standortprofile: Regionale Wohnlagenanalysen mit strukturierten Kennzahlen zu Preisen, Mieten und
-              Standortfaktoren.
+              {resolvePortalCmsField(
+                homeEntries,
+                "home_hero",
+                "intro",
+                "Immobilienmarkt & Standortprofile: Regionale Wohnlagenanalysen mit strukturierten Kennzahlen zu Preisen, Mieten und Standortfaktoren.",
+              )}
             </p>
 
             <div className="home-cutout-actions">
@@ -190,14 +196,22 @@ export default async function HomePage() {
       <section className="home-breaker">
         <div className="home-breaker-inner">
           <div className="home-breaker-left">
-            <div className="home-breaker-claim">DATA-DRIVEN. EXPERT-LED.</div>
-            <div className="home-breaker-subclaim">Harte Daten. Lokales Gespür.</div>
+            <div className="home-breaker-claim">
+              {resolvePortalCmsField(homeEntries, "home_breaker", "eyebrow", "DATA-DRIVEN. EXPERT-LED.")}
+            </div>
+            <div className="home-breaker-subclaim">
+              {resolvePortalCmsField(homeEntries, "home_breaker", "subheadline", "Harte Daten. Lokales Gespuer.")}
+            </div>
           </div>
           <div className="home-breaker-right">
             <p className="home-breaker-text">
               <span className="home-breaker-line">
-                Wir verbinden harte Marktdaten mit lokaler Expertise, um Wohnlagen verlässlich
-                einzuordnen.
+                {resolvePortalCmsField(
+                  homeEntries,
+                  "home_breaker",
+                  "body",
+                  "Wir verbinden harte Marktdaten mit lokaler Expertise, um Wohnlagen verlaesslich einzuordnen.",
+                )}
               </span>
               
               

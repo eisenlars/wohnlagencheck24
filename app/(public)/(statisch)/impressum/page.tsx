@@ -1,4 +1,23 @@
-export default function ImpressumPage() {
+import { loadPortalCmsEntriesByPage, resolvePortalCmsField } from "@/lib/portal-cms-reader";
+
+function renderParagraphs(text: string, className = "mb-0") {
+  return text
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block, index) => (
+      <p key={`${className}-${index}`} className={className}>
+        {block.split("\n").map((line, lineIndex) => (
+          <span key={`${className}-${index}-${lineIndex}`}>
+            {line}
+            {lineIndex < block.split("\n").length - 1 ? <br /> : null}
+          </span>
+        ))}
+      </p>
+    ));
+}
+
+function FallbackImpressumPage() {
   return (
     <div className="container py-4 text-dark">
       <h1 className="h2 mb-4">Impressum</h1>
@@ -84,6 +103,45 @@ export default function ImpressumPage() {
           Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.
         </p>
       </section>
+    </div>
+  );
+}
+
+export default async function ImpressumPage() {
+  const entries = await loadPortalCmsEntriesByPage("impressum", "de");
+  const companyBlock = resolvePortalCmsField(entries, "impressum_main", "company_block", "");
+  const contactBlock = resolvePortalCmsField(entries, "impressum_main", "contact_block", "");
+  const legalBlock = resolvePortalCmsField(entries, "impressum_main", "legal_block", "");
+  const hasCmsContent = Boolean(companyBlock || contactBlock || legalBlock);
+
+  if (!hasCmsContent) {
+    return <FallbackImpressumPage />;
+  }
+
+  return (
+    <div className="container py-4 text-dark">
+      <h1 className="h2 mb-4">{resolvePortalCmsField(entries, "impressum_main", "headline", "Impressum")}</h1>
+
+      {companyBlock ? (
+        <section className="mb-4">
+          <h2 className="h5">ANGABEN GEMASS §5 TMG</h2>
+          {renderParagraphs(companyBlock)}
+        </section>
+      ) : null}
+
+      {contactBlock ? (
+        <section className="mb-4">
+          <h2 className="h5">KONTAKT</h2>
+          {renderParagraphs(contactBlock)}
+        </section>
+      ) : null}
+
+      {legalBlock ? (
+        <section className="mb-4">
+          <h2 className="h5">RECHTLICHE HINWEISE</h2>
+          {renderParagraphs(legalBlock, "mb-3")}
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -6,9 +6,12 @@ import {
   getKreiseForBundesland,
   getOrteForKreis,
 } from "@/lib/data";
+import { loadPortalCmsEntriesByPage, resolvePortalCmsField } from "@/lib/portal-cms-reader";
 
 export default async function HomePage() {
   const bundeslaender = await getBundeslaender();
+  const conceptEntries = await loadPortalCmsEntriesByPage("concept", "de");
+  const homeEntries = await loadPortalCmsEntriesByPage("home", "de");
 
   // Struktur: Bundesland -> Kreise -> Ortslagen
   const struktur = await Promise.all(
@@ -38,22 +41,27 @@ export default async function HomePage() {
               display: "inline-block",
             }}
           />
-          Technisches Demo · GEO &amp; LLM-ready
+          {resolvePortalCmsField(conceptEntries, "concept_intro", "badge", "Technisches Demo · GEO & LLM-ready")}
         </div>
 
         <h1 className="mt-3 mb-2 h3">
-          Wohnlagencheck24 – Immobilienmarkt &amp; Standortprofile
+          {resolvePortalCmsField(conceptEntries, "concept_intro", "headline", "Wohnlagencheck24 - Immobilienmarkt & Standortprofile")}
         </h1>
         <p className="small text-muted mb-2">
-          Wohnlagencheck24 stellt strukturierte Informationen zu Wohnlagen,
-          Standorten und regionalen Immobilienmärkten bereit. Die Inhalte sind
-          so aufgebaut, dass sie für Nutzer, klassische Suchmaschinen und
-          KI-Suchsysteme gleichermaßen gut auswertbar sind.
+          {resolvePortalCmsField(
+            conceptEntries,
+            "concept_intro",
+            "body_primary",
+            "Wohnlagencheck24 stellt strukturierte Informationen zu Wohnlagen, Standorten und regionalen Immobilienmaerkten bereit. Die Inhalte sind so aufgebaut, dass sie fuer Nutzer, klassische Suchmaschinen und KI-Suchsysteme gleichermassen gut auswertbar sind.",
+          )}
         </p>
         <p className="small text-muted mb-0">
-          Dieses Demo bildet den technischen Unterbau für ein späteres Portal
-          mit vielen tausend Wohnlagen – inklusive klarer URL-Struktur und
-          Einstieg über Bundesländer, Landkreise und Wohnlagen.
+          {resolvePortalCmsField(
+            conceptEntries,
+            "concept_intro",
+            "body_secondary",
+            "Dieses Demo bildet den technischen Unterbau fuer ein spaeteres Portal mit vielen tausend Wohnlagen - inklusive klarer URL-Struktur und Einstieg ueber Bundeslaender, Landkreise und Wohnlagen.",
+          )}
         </p>
       </section>
 
@@ -161,17 +169,24 @@ export default async function HomePage() {
 
       {/* Weitere Inhalte */}
       <section id="inhalte" className="pt-3 border-top">
-        <h2 className="h4 mb-2">Weitere Inhalte</h2>
+        <h2 className="h4 mb-2">
+          {resolvePortalCmsField(homeEntries, "home_more_content", "headline", "Weitere Inhalte")}
+        </h2>
         <p className="small text-muted mb-1">
-          Hier können später zusätzliche Inhalte entstehen – zum Beispiel
-          methodische Erläuterungen zum Wohnlagenmodell, regionale
-          Vergleichsanalysen oder ein Glossar wichtiger Begriffe rund um
-          Immobilienmärkte und Standorte.
+          {resolvePortalCmsField(
+            homeEntries,
+            "home_more_content",
+            "body_primary",
+            "Hier koennen spaeter zusaetzliche Inhalte entstehen - zum Beispiel methodische Erlaeuterungen zum Wohnlagenmodell, regionale Vergleichsanalysen oder ein Glossar wichtiger Begriffe rund um Immobilienmaerkte und Standorte.",
+          )}
         </p>
         <p className="small text-muted mb-0">
-          Die Musterseite zeigt verschiedene Inhaltstypen, die später auf
-          Wohnlagen- und Marktprofilseiten eingesetzt werden können: Tabellen,
-          Grids, Formulare und Chart-Platzhalter.
+          {resolvePortalCmsField(
+            homeEntries,
+            "home_more_content",
+            "body_secondary",
+            "Die Musterseite zeigt verschiedene Inhaltstypen, die spaeter auf Wohnlagen- und Marktprofilseiten eingesetzt werden koennen: Tabellen, Grids, Formulare und Chart-Platzhalter.",
+          )}
         </p>
       </section>
     </div>
