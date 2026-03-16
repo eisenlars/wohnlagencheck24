@@ -17,6 +17,7 @@ const PARTNER_PURGE_TABLES: Array<{ table: string; column: string }> = [
   { table: "partner_reference_i18n", column: "partner_id" },
   { table: "partner_reference_overrides", column: "partner_id" },
   { table: "partner_references", column: "partner_id" },
+  { table: "partner_request_i18n", column: "partner_id" },
   { table: "partner_request_overrides", column: "partner_id" },
   { table: "partner_requests", column: "partner_id" },
   { table: "report_texts", column: "partner_id" },

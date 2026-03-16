@@ -85,6 +85,7 @@ type PersistedI18nViewState = {
   selectedBlogPostId?: string;
   selectedPropertyOfferId?: string;
   selectedReferenceId?: string;
+  selectedRequestId?: string;
 };
 type I18nProductDomainId = 'immobilienmarkt' | 'blog' | 'immobilien' | 'referenzen' | 'gesuche';
 export type I18nProductDomain = {
@@ -269,6 +270,86 @@ type ReferenceTranslationItem = {
   source: string;
   external_id: string;
   title: string;
+  region_label: string;
+  source_updated_at: string | null;
+  source_snapshot_hash: string;
+  source_seo_title: string;
+  source_seo_description: string;
+  source_seo_h1: string;
+  source_short_description: string;
+  source_long_description: string;
+  source_location_text: string;
+  source_features_text: string;
+  source_highlights: string[];
+  source_image_alt_texts: string[];
+  translated_seo_title: string;
+  translated_seo_description: string;
+  translated_seo_h1: string;
+  translated_short_description: string;
+  translated_long_description: string;
+  translated_location_text: string;
+  translated_features_text: string;
+  translated_highlights: string[];
+  translated_image_alt_texts: string[];
+  translation_status: BlogTranslationStatus;
+  translation_id: string | null;
+  translation_updated_at: string | null;
+  translation_is_stale: boolean;
+};
+
+type RequestSourceRow = {
+  id: string;
+  partner_id: string;
+  provider?: string | null;
+  external_id?: string | null;
+  title?: string | null;
+  normalized_payload?: Record<string, unknown> | null;
+  source_updated_at?: string | null;
+  updated_at?: string | null;
+};
+
+type RequestOverrideRow = {
+  partner_id: string;
+  source: string;
+  external_id: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  seo_h1?: string | null;
+  short_description?: string | null;
+  long_description?: string | null;
+  location_text?: string | null;
+  features_text?: string | null;
+  highlights?: string[] | null;
+  image_alt_texts?: string[] | null;
+};
+
+type RequestTranslationRow = {
+  id?: string;
+  request_id: string;
+  source: string;
+  external_id: string;
+  translated_seo_title: string | null;
+  translated_seo_description: string | null;
+  translated_seo_h1: string | null;
+  translated_short_description: string | null;
+  translated_long_description: string | null;
+  translated_location_text: string | null;
+  translated_features_text: string | null;
+  translated_highlights: string[] | null;
+  translated_image_alt_texts: string[] | null;
+  status: BlogTranslationStatus;
+  source_snapshot_hash: string | null;
+  source_last_updated: string | null;
+  updated_at: string | null;
+};
+
+type RequestTranslationItem = {
+  request_id: string;
+  source: string;
+  external_id: string;
+  title: string;
+  request_type: string;
+  object_type: string;
   region_label: string;
   source_updated_at: string | null;
   source_snapshot_hash: string;
@@ -710,6 +791,10 @@ export default function InternationalizationManager({ config, availableLocales, 
   const setSelectedReferenceId = (referenceId: string) => {
     setI18nViewState((prev) => ({ ...prev, selectedReferenceId: referenceId }));
   };
+  const selectedRequestId = String(i18nViewState.selectedRequestId ?? '');
+  const setSelectedRequestId = (requestId: string) => {
+    setI18nViewState((prev) => ({ ...prev, selectedRequestId: requestId }));
+  };
   const [llmOptions, setLlmOptions] = useState<LlmOption[]>([]);
   const [selectedLlmOptionId, setSelectedLlmOptionId] = useState<string>('');
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
@@ -760,6 +845,23 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [referenceSaving, setReferenceSaving] = useState(false);
   const [referenceStatus, setReferenceStatus] = useState<string | null>(null);
   const [referenceStatusTone, setReferenceStatusTone] = useState<'success' | 'error' | null>(null);
+  const [requestItems, setRequestItems] = useState<RequestTranslationItem[]>([]);
+  const [requestBaselineById, setRequestBaselineById] = useState<Record<string, {
+    translated_seo_title: string;
+    translated_seo_description: string;
+    translated_seo_h1: string;
+    translated_short_description: string;
+    translated_long_description: string;
+    translated_location_text: string;
+    translated_features_text: string;
+    translated_highlights: string[];
+    translated_image_alt_texts: string[];
+    translation_status: BlogTranslationStatus;
+  }>>({});
+  const [requestLoading, setRequestLoading] = useState(false);
+  const [requestSaving, setRequestSaving] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<string | null>(null);
+  const [requestStatusTone, setRequestStatusTone] = useState<'success' | 'error' | null>(null);
   const isDistrict = isDistrictArea(config?.area_id ?? '');
   const channelMeta = I18N_CHANNEL_OPTIONS.find((item) => item.value === channel) ?? I18N_CHANNEL_OPTIONS[0];
   const areaScopeLabel = isDistrict ? 'Kreis' : 'Ortslage';
@@ -775,6 +877,10 @@ export default function InternationalizationManager({ config, availableLocales, 
   const selectedReferenceItem = useMemo(
     () => referenceItems.find((item) => item.reference_id === selectedReferenceId) ?? referenceItems[0] ?? null,
     [referenceItems, selectedReferenceId],
+  );
+  const selectedRequestItem = useMemo(
+    () => requestItems.find((item) => item.request_id === selectedRequestId) ?? requestItems[0] ?? null,
+    [requestItems, selectedRequestId],
   );
 
   useEffect(() => {
@@ -814,6 +920,15 @@ export default function InternationalizationManager({ config, availableLocales, 
     setSelectedReferenceId(referenceItems[0]?.reference_id ?? '');
   }, [referenceItems, selectedReferenceId]);
 
+  useEffect(() => {
+    if (requestItems.length === 0) {
+      if (selectedRequestId) setSelectedRequestId('');
+      return;
+    }
+    if (requestItems.some((item) => item.request_id === selectedRequestId)) return;
+    setSelectedRequestId(requestItems[0]?.request_id ?? '');
+  }, [requestItems, selectedRequestId]);
+
   function isMissingBlogI18nTable(error: unknown): boolean {
     const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
     return msg.includes('partner_blog_post_i18n') && msg.includes('does not exist');
@@ -827,6 +942,11 @@ export default function InternationalizationManager({ config, availableLocales, 
   function isMissingReferenceI18nTable(error: unknown): boolean {
     const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
     return msg.includes('partner_reference_i18n') && msg.includes('does not exist');
+  }
+
+  function isMissingRequestI18nTable(error: unknown): boolean {
+    const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
+    return msg.includes('partner_request_i18n') && msg.includes('does not exist');
   }
 
   async function loadBlogItems() {
@@ -1465,6 +1585,244 @@ export default function InternationalizationManager({ config, availableLocales, 
     }
   }
 
+  async function loadRequestItems() {
+    setRequestLoading(true);
+    setRequestStatus(null);
+    setRequestStatusTone(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Nicht angemeldet.');
+
+      const { data: requestsData, error: requestsError } = await supabase
+        .from('partner_requests')
+        .select('id, partner_id, provider, external_id, title, normalized_payload, source_updated_at, updated_at')
+        .eq('partner_id', user.id)
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false });
+
+      if (requestsError) throw requestsError;
+
+      const requests = (requestsData ?? []) as RequestSourceRow[];
+      const sources = Array.from(new Set(requests.map((item) => String(item.provider ?? '').trim()).filter(Boolean)));
+      const externalIds = Array.from(new Set(requests.map((item) => String(item.external_id ?? '').trim()).filter(Boolean)));
+      const requestIds = requests.map((item) => String(item.id ?? '').trim()).filter(Boolean);
+
+      let overrideRows: RequestOverrideRow[] = [];
+      if (sources.length > 0 && externalIds.length > 0) {
+        const { data: overridesData, error: overridesError } = await supabase
+          .from('partner_request_overrides')
+          .select('partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts')
+          .eq('partner_id', user.id)
+          .in('source', sources)
+          .in('external_id', externalIds);
+
+        if (overridesError) throw overridesError;
+        overrideRows = (overridesData ?? []) as RequestOverrideRow[];
+      }
+
+      let translationRows: RequestTranslationRow[] = [];
+      if (requestIds.length > 0) {
+        const { data: translationsData, error: translationsError } = await supabase
+          .from('partner_request_i18n')
+          .select('id, request_id, source, external_id, translated_seo_title, translated_seo_description, translated_seo_h1, translated_short_description, translated_long_description, translated_location_text, translated_features_text, translated_highlights, translated_image_alt_texts, status, source_snapshot_hash, source_last_updated, updated_at')
+          .eq('partner_id', user.id)
+          .eq('target_locale', locale)
+          .in('request_id', requestIds);
+
+        if (translationsError) {
+          if (isMissingRequestI18nTable(translationsError)) {
+            throw new Error('Tabelle `partner_request_i18n` fehlt. Bitte SQL-Migration ausführen.');
+          }
+          throw translationsError;
+        }
+        translationRows = (translationsData ?? []) as RequestTranslationRow[];
+      }
+
+      const overrideByKey = new Map(
+        overrideRows.map((row) => [`${String(row.source ?? '').trim()}::${String(row.external_id ?? '').trim()}`, row] as const),
+      );
+      const translationByRequestId = new Map(
+        translationRows
+          .map((row) => [String(row.request_id ?? '').trim(), row] as const)
+          .filter(([requestId]) => requestId.length > 0),
+      );
+
+      const nextItems = requests.map((request) => {
+        const requestId = String(request.id ?? '').trim();
+        const source = String(request.provider ?? '').trim();
+        const externalId = String(request.external_id ?? '').trim();
+        const payload = (request.normalized_payload ?? {}) as Record<string, unknown>;
+        const override = overrideByKey.get(`${source}::${externalId}`);
+        const translation = translationByRequestId.get(requestId);
+        const description = getPayloadText(payload, ['long_description', 'description', 'title']);
+        const regionLabel = getRegionTargetLabels(payload).join(', ') || getPayloadText(payload, ['region', 'location_text', 'location']);
+        const features = getPayloadText(payload, ['features_text', 'features_note']);
+        const highlights = toStringArray(payload.highlights);
+        const imageAltTexts = toStringArray(payload.image_alt_texts);
+        const sourceSeoTitle = String(override?.seo_title ?? request.title ?? '');
+        const sourceSeoDescription = String(override?.seo_description ?? description ?? '');
+        const sourceSeoH1 = String(override?.seo_h1 ?? request.title ?? '');
+        const sourceShortDescription = String(override?.short_description ?? description ?? '');
+        const sourceLongDescription = String(override?.long_description ?? description ?? '');
+        const sourceLocationText = String(override?.location_text ?? regionLabel ?? '');
+        const sourceFeaturesText = String(override?.features_text ?? features ?? '');
+        const sourceHighlights = override?.highlights ?? highlights;
+        const sourceImageAltTexts = override?.image_alt_texts ?? imageAltTexts;
+        const sourceSnapshotHash = hashText(JSON.stringify({
+          sourceSeoTitle,
+          sourceSeoDescription,
+          sourceSeoH1,
+          sourceShortDescription,
+          sourceLongDescription,
+          sourceLocationText,
+          sourceFeaturesText,
+          sourceHighlights,
+          sourceImageAltTexts,
+        }));
+        const storedHash = String(translation?.source_snapshot_hash ?? '').trim();
+
+        return {
+          request_id: requestId,
+          source,
+          external_id: externalId,
+          title: String(request.title ?? ''),
+          request_type: getPayloadText(payload, ['request_type']),
+          object_type: getPayloadText(payload, ['object_type']),
+          region_label: regionLabel,
+          source_updated_at: request.source_updated_at ?? request.updated_at ?? null,
+          source_snapshot_hash: sourceSnapshotHash,
+          source_seo_title: sourceSeoTitle,
+          source_seo_description: sourceSeoDescription,
+          source_seo_h1: sourceSeoH1,
+          source_short_description: sourceShortDescription,
+          source_long_description: sourceLongDescription,
+          source_location_text: sourceLocationText,
+          source_features_text: sourceFeaturesText,
+          source_highlights: sourceHighlights,
+          source_image_alt_texts: sourceImageAltTexts,
+          translated_seo_title: String(translation?.translated_seo_title ?? ''),
+          translated_seo_description: String(translation?.translated_seo_description ?? ''),
+          translated_seo_h1: String(translation?.translated_seo_h1 ?? ''),
+          translated_short_description: String(translation?.translated_short_description ?? ''),
+          translated_long_description: String(translation?.translated_long_description ?? ''),
+          translated_location_text: String(translation?.translated_location_text ?? ''),
+          translated_features_text: String(translation?.translated_features_text ?? ''),
+          translated_highlights: translation?.translated_highlights ?? [],
+          translated_image_alt_texts: translation?.translated_image_alt_texts ?? [],
+          translation_status: (translation?.status ?? 'draft') as BlogTranslationStatus,
+          translation_id: translation?.id ? String(translation.id) : null,
+          translation_updated_at: translation?.updated_at ?? null,
+          translation_is_stale: Boolean(storedHash) && storedHash !== sourceSnapshotHash,
+        } satisfies RequestTranslationItem;
+      });
+
+      const nextBaseline = Object.fromEntries(
+        nextItems.map((item) => [item.request_id, {
+          translated_seo_title: item.translated_seo_title,
+          translated_seo_description: item.translated_seo_description,
+          translated_seo_h1: item.translated_seo_h1,
+          translated_short_description: item.translated_short_description,
+          translated_long_description: item.translated_long_description,
+          translated_location_text: item.translated_location_text,
+          translated_features_text: item.translated_features_text,
+          translated_highlights: [...item.translated_highlights],
+          translated_image_alt_texts: [...item.translated_image_alt_texts],
+          translation_status: item.translation_status,
+        }]),
+      );
+
+      setRequestItems(nextItems);
+      setRequestBaselineById(nextBaseline);
+      setRequestStatus(nextItems.length === 0
+        ? 'Keine Gesuche für den aktuellen Partner vorhanden.'
+        : `Gesuche-Übersetzungsstand für ${nextItems.length} Datensatz/Datensätze geladen.`);
+      setRequestStatusTone('success');
+    } catch (error) {
+      setRequestItems([]);
+      setRequestBaselineById({});
+      setRequestStatus(error instanceof Error ? error.message : 'Gesuche-Übersetzungen konnten nicht geladen werden.');
+      setRequestStatusTone('error');
+    } finally {
+      setRequestLoading(false);
+    }
+  }
+
+  async function saveSelectedRequestItem() {
+    if (!selectedRequestItem) return;
+    setRequestSaving(true);
+    setRequestStatus(null);
+    setRequestStatusTone(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Nicht angemeldet.');
+
+      const payload = {
+        partner_id: user.id,
+        request_id: selectedRequestItem.request_id,
+        area_id: config.area_id,
+        source: selectedRequestItem.source,
+        external_id: selectedRequestItem.external_id,
+        target_locale: locale,
+        translated_seo_title: selectedRequestItem.translated_seo_title.trim() || null,
+        translated_seo_description: selectedRequestItem.translated_seo_description.trim() || null,
+        translated_seo_h1: selectedRequestItem.translated_seo_h1.trim() || null,
+        translated_short_description: selectedRequestItem.translated_short_description.trim() || null,
+        translated_long_description: selectedRequestItem.translated_long_description.trim() || null,
+        translated_location_text: selectedRequestItem.translated_location_text.trim() || null,
+        translated_features_text: selectedRequestItem.translated_features_text.trim() || null,
+        translated_highlights: selectedRequestItem.translated_highlights,
+        translated_image_alt_texts: selectedRequestItem.translated_image_alt_texts,
+        status: selectedRequestItem.translation_status,
+        source_snapshot_hash: selectedRequestItem.source_snapshot_hash,
+        source_last_updated: selectedRequestItem.source_updated_at,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('partner_request_i18n')
+        .upsert(payload, { onConflict: 'partner_id,request_id,target_locale' });
+
+      if (error) {
+        if (isMissingRequestI18nTable(error)) {
+          throw new Error('Tabelle `partner_request_i18n` fehlt. Bitte SQL-Migration ausführen.');
+        }
+        throw error;
+      }
+
+      setRequestBaselineById((prev) => ({
+        ...prev,
+        [selectedRequestItem.request_id]: {
+          translated_seo_title: selectedRequestItem.translated_seo_title,
+          translated_seo_description: selectedRequestItem.translated_seo_description,
+          translated_seo_h1: selectedRequestItem.translated_seo_h1,
+          translated_short_description: selectedRequestItem.translated_short_description,
+          translated_long_description: selectedRequestItem.translated_long_description,
+          translated_location_text: selectedRequestItem.translated_location_text,
+          translated_features_text: selectedRequestItem.translated_features_text,
+          translated_highlights: [...selectedRequestItem.translated_highlights],
+          translated_image_alt_texts: [...selectedRequestItem.translated_image_alt_texts],
+          translation_status: selectedRequestItem.translation_status,
+        },
+      }));
+      setRequestItems((prev) => prev.map((item) => (
+        item.request_id === selectedRequestItem.request_id
+          ? {
+              ...item,
+              translation_is_stale: false,
+              translation_updated_at: payload.updated_at,
+            }
+          : item
+      )));
+      setRequestStatus('Gesuche-Übersetzung gespeichert.');
+      setRequestStatusTone('success');
+    } catch (error) {
+      setRequestStatus(error instanceof Error ? error.message : 'Gesuche-Übersetzung konnte nicht gespeichert werden.');
+      setRequestStatusTone('error');
+    } finally {
+      setRequestSaving(false);
+    }
+  }
+
   async function resolveScopeAreas(nextScope: I18nScope): Promise<ScopeArea[]> {
     const current: ScopeArea = {
       area_id: String(config?.area_id ?? ''),
@@ -1588,6 +1946,12 @@ export default function InternationalizationManager({ config, availableLocales, 
   useEffect(() => {
     if (activeDomain !== 'referenzen' || !activeDomainMeta.enabled) return;
     void loadReferenceItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDomain, activeDomainMeta.enabled, config?.area_id, locale]);
+
+  useEffect(() => {
+    if (activeDomain !== 'gesuche' || !activeDomainMeta.enabled) return;
+    void loadRequestItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDomain, activeDomainMeta.enabled, config?.area_id, locale]);
 
@@ -1887,6 +2251,55 @@ export default function InternationalizationManager({ config, availableLocales, 
     );
   }, [referenceBaselineById, selectedReferenceItem]);
 
+  const requestSummary = useMemo(() => {
+    const total = requestItems.length;
+    const translated = requestItems.filter((item) => (
+      item.translated_seo_title.trim().length > 0
+      || item.translated_seo_description.trim().length > 0
+      || item.translated_seo_h1.trim().length > 0
+      || item.translated_short_description.trim().length > 0
+      || item.translated_long_description.trim().length > 0
+      || item.translated_location_text.trim().length > 0
+      || item.translated_features_text.trim().length > 0
+      || item.translated_highlights.length > 0
+      || item.translated_image_alt_texts.length > 0
+    )).length;
+    const stale = requestItems.filter((item) => item.translation_is_stale).length;
+    const missing = total - translated;
+    return { total, translated, missing, stale };
+  }, [requestItems]);
+
+  const requestHasEdits = useMemo(() => {
+    if (!selectedRequestItem) return false;
+    const baseline = requestBaselineById[selectedRequestItem.request_id];
+    if (!baseline) {
+      return (
+        selectedRequestItem.translated_seo_title.trim().length > 0
+        || selectedRequestItem.translated_seo_description.trim().length > 0
+        || selectedRequestItem.translated_seo_h1.trim().length > 0
+        || selectedRequestItem.translated_short_description.trim().length > 0
+        || selectedRequestItem.translated_long_description.trim().length > 0
+        || selectedRequestItem.translated_location_text.trim().length > 0
+        || selectedRequestItem.translated_features_text.trim().length > 0
+        || selectedRequestItem.translated_highlights.length > 0
+        || selectedRequestItem.translated_image_alt_texts.length > 0
+        || selectedRequestItem.translation_status !== 'draft'
+      );
+    }
+    return (
+      selectedRequestItem.translated_seo_title !== baseline.translated_seo_title
+      || selectedRequestItem.translated_seo_description !== baseline.translated_seo_description
+      || selectedRequestItem.translated_seo_h1 !== baseline.translated_seo_h1
+      || selectedRequestItem.translated_short_description !== baseline.translated_short_description
+      || selectedRequestItem.translated_long_description !== baseline.translated_long_description
+      || selectedRequestItem.translated_location_text !== baseline.translated_location_text
+      || selectedRequestItem.translated_features_text !== baseline.translated_features_text
+      || JSON.stringify(selectedRequestItem.translated_highlights) !== JSON.stringify(baseline.translated_highlights)
+      || JSON.stringify(selectedRequestItem.translated_image_alt_texts) !== JSON.stringify(baseline.translated_image_alt_texts)
+      || selectedRequestItem.translation_status !== baseline.translation_status
+    );
+  }, [requestBaselineById, selectedRequestItem]);
+
   const selectedWorkflowKeys = useMemo(
     () => Array.from(new Set(rows
       .filter((row) => isTranslatableSectionKey(row.section_key))
@@ -1999,9 +2412,13 @@ export default function InternationalizationManager({ config, availableLocales, 
   return (
     <>
       <FullscreenLoader
-        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving || propertyLoading || propertySaving || referenceLoading || referenceSaving}
+        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving || propertyLoading || propertySaving || referenceLoading || referenceSaving || requestLoading || requestSaving}
         label={
-          referenceLoading
+          requestLoading
+            ? 'Gesuche-Übersetzungen werden geladen...'
+            : requestSaving
+              ? 'Gesuche-Übersetzung wird gespeichert...'
+          : referenceLoading
             ? 'Referenz-Übersetzungen werden geladen...'
             : referenceSaving
               ? 'Referenz-Übersetzung wird gespeichert...'
@@ -2166,6 +2583,21 @@ export default function InternationalizationManager({ config, availableLocales, 
               </div>
               <div style={summaryStyle}>
                 Referenzen: <strong>{referenceSummary.total}</strong> · Übersetzt: <strong>{referenceSummary.translated}</strong> · Fehlend: <strong>{referenceSummary.missing}</strong> · Veraltet: <strong>{referenceSummary.stale}</strong>
+              </div>
+            </>
+          ) : activeDomain === 'gesuche' && activeDomainMeta.enabled ? (
+            <>
+              <div style={workflowNoticeStyle}>
+                <div style={workflowNoticeHeadStyle}>
+                  <strong>Gesuche</strong>
+                  <span style={workflowNoticeMetaStyle}>Datensatzbasierte Sprachpflege je Suchprofil und Sprache</span>
+                </div>
+                <p style={workflowNoticeTextStyle}>
+                  Deutsche Gesuchstexte werden weiterhin im Bereich „Gesuche“ gepflegt. Hier bearbeitest du deren Übersetzungen pro Datensatz, Sprache und Status getrennt vom deutschen Workflow.
+                </p>
+              </div>
+              <div style={summaryStyle}>
+                Gesuche: <strong>{requestSummary.total}</strong> · Übersetzt: <strong>{requestSummary.translated}</strong> · Fehlend: <strong>{requestSummary.missing}</strong> · Veraltet: <strong>{requestSummary.stale}</strong>
               </div>
             </>
           ) : null}
@@ -3261,6 +3693,330 @@ export default function InternationalizationManager({ config, availableLocales, 
               </>
             ) : (
               <div style={blogEmptyDetailStyle}>Wähle links ein Referenzobjekt, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
+            )}
+          </div>
+        </div>
+      </div>
+      ) : activeDomain === 'gesuche' && activeDomainMeta.enabled ? (
+      <div style={editorCardStyle}>
+        {requestStatus ? <div style={requestStatusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{requestStatus}</div> : null}
+        <div style={blogGridStyle}>
+          <aside style={blogListCardStyle}>
+            <div style={blogListHeadStyle}>
+              <h3 style={sectionTabsIntroTitleStyle}>Gesuche</h3>
+              <button
+                type="button"
+                style={secondaryActionButtonStyle}
+                onClick={() => void loadRequestItems()}
+                disabled={requestLoading || requestSaving}
+              >
+                Stand laden
+              </button>
+            </div>
+            <div style={blogListMetaStyle}>
+              Für Gesuche werden SEO-, Kurz- und Langtexte je Sprache separat gepflegt.
+            </div>
+            {requestItems.length === 0 ? (
+              <div style={blogEmptyStateStyle}>Für diesen Partner sind aktuell keine Gesuche vorhanden.</div>
+            ) : (
+              <div style={blogListWrapStyle}>
+                {requestItems.map((item) => {
+                  const translated = Boolean(
+                    item.translated_seo_title.trim()
+                    || item.translated_seo_description.trim()
+                    || item.translated_seo_h1.trim()
+                    || item.translated_short_description.trim()
+                    || item.translated_long_description.trim()
+                    || item.translated_location_text.trim()
+                    || item.translated_features_text.trim()
+                    || item.translated_highlights.length > 0
+                    || item.translated_image_alt_texts.length > 0,
+                  );
+                  return (
+                    <button
+                      key={item.request_id}
+                      type="button"
+                      style={blogListRowStyle(selectedRequestItem?.request_id === item.request_id)}
+                      onClick={() => setSelectedRequestId(item.request_id)}
+                    >
+                      <div style={blogListRowTopStyle}>
+                        <strong style={blogListHeadlineStyle}>{item.title || 'Ohne Titel'}</strong>
+                        <span style={blogTranslationBadgeStyle(item.translation_is_stale, translated)}>
+                          {item.translation_is_stale ? 'Veraltet' : translated ? 'Übersetzt' : 'Fehlt'}
+                        </span>
+                      </div>
+                      <div style={blogListSublineStyle}>{item.region_label || 'Ohne Zielregion'}</div>
+                      <div style={blogListMetaLineStyle}>
+                        {(item.request_type || 'Gesuch')} · {(item.object_type || 'Objekt')}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </aside>
+
+          <div style={blogEditorWrapStyle}>
+            {selectedRequestItem ? (
+              <>
+                <div style={blogEditorHeadStyle}>
+                  <div>
+                    <h3 style={sectionTabsIntroTitleStyle}>{selectedRequestItem.title || 'Ohne Titel'}</h3>
+                    <p style={blogEditorIntroStyle}>
+                      Übersetze hier die Gesuchstexte, die aktuell über die deutschen Override-Felder ausgespielt werden. Die deutsche Bearbeitung bleibt im Bereich „Gesuche“.
+                    </p>
+                  </div>
+                  <span style={blogTranslationBadgeStyle(selectedRequestItem.translation_is_stale, Boolean(
+                    selectedRequestItem.translated_seo_title.trim()
+                    || selectedRequestItem.translated_seo_description.trim()
+                    || selectedRequestItem.translated_seo_h1.trim()
+                    || selectedRequestItem.translated_short_description.trim()
+                    || selectedRequestItem.translated_long_description.trim()
+                    || selectedRequestItem.translated_location_text.trim()
+                    || selectedRequestItem.translated_features_text.trim()
+                    || selectedRequestItem.translated_highlights.length > 0
+                    || selectedRequestItem.translated_image_alt_texts.length > 0,
+                  ))}>
+                    {selectedRequestItem.translation_is_stale ? 'Quelle geändert' : selectedRequestItem.translation_status}
+                  </span>
+                </div>
+
+                <div style={blogSummaryGridStyle}>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Gesuchstyp</span>
+                    <strong>{selectedRequestItem.request_type || 'Nicht gesetzt'}</strong>
+                  </div>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Objekttyp</span>
+                    <strong>{selectedRequestItem.object_type || 'Nicht gesetzt'}</strong>
+                  </div>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Zielregion</span>
+                    <strong>{selectedRequestItem.region_label || 'Nicht gesetzt'}</strong>
+                  </div>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Übersetzungsstatus</span>
+                    <strong>{selectedRequestItem.translation_status}</strong>
+                  </div>
+                </div>
+
+                <div style={blogColumnGridStyle}>
+                  <div style={blogSourceCardStyle}>
+                    <div style={blogColumnHeadStyle}>Deutsch (Quelle)</div>
+                    <label style={fieldStyle}>
+                      SEO-Titel
+                      <input style={inputStyle} value={selectedRequestItem.source_seo_title} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Meta-Description
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_seo_description} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      H1
+                      <input style={inputStyle} value={selectedRequestItem.source_seo_h1} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Kurzbeschreibung
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_short_description} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Langbeschreibung
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_long_description} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Lage
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_location_text} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Ausstattung
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_features_text} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Highlights
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_highlights.join('\n')} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Bild-Alt-Texte
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_image_alt_texts.join('\n')} readOnly />
+                    </label>
+                  </div>
+
+                  <div style={blogTargetCardStyle}>
+                    <div style={blogColumnHeadStyle}>Übersetzung</div>
+                    <label style={fieldStyle}>
+                      SEO-Titel
+                      <input
+                        style={inputStyle}
+                        value={selectedRequestItem.translated_seo_title}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_seo_title: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Meta-Description
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedRequestItem.translated_seo_description}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_seo_description: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      H1
+                      <input
+                        style={inputStyle}
+                        value={selectedRequestItem.translated_seo_h1}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_seo_h1: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Kurzbeschreibung
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedRequestItem.translated_short_description}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_short_description: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Langbeschreibung
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedRequestItem.translated_long_description}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_long_description: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Lage
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedRequestItem.translated_location_text}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_location_text: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Ausstattung
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedRequestItem.translated_features_text}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_features_text: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Highlights
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedRequestItem.translated_highlights.join('\n')}
+                        onChange={(e) => {
+                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_highlights: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Bild-Alt-Texte
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedRequestItem.translated_image_alt_texts.join('\n')}
+                        onChange={(e) => {
+                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_image_alt_texts: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Status
+                      <select
+                        style={inputStyle}
+                        value={selectedRequestItem.translation_status}
+                        onChange={(e) => {
+                          const next = e.target.value as BlogTranslationStatus;
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id ? { ...item, translation_status: next } : item
+                          )));
+                        }}
+                      >
+                        <option value="draft">Entwurf</option>
+                        <option value="approved">Freigegeben</option>
+                        <option value="needs_review">Prüfen</option>
+                      </select>
+                    </label>
+                    <div style={blogActionRowStyle}>
+                      <button
+                        type="button"
+                        style={secondaryActionButtonStyle}
+                        onClick={() => {
+                          setRequestItems((prev) => prev.map((item) => (
+                            item.request_id === selectedRequestItem.request_id
+                              ? {
+                                  ...item,
+                                  translated_seo_title: item.source_seo_title,
+                                  translated_seo_description: item.source_seo_description,
+                                  translated_seo_h1: item.source_seo_h1,
+                                  translated_short_description: item.source_short_description,
+                                  translated_long_description: item.source_long_description,
+                                  translated_location_text: item.source_location_text,
+                                  translated_features_text: item.source_features_text,
+                                  translated_highlights: [...item.source_highlights],
+                                  translated_image_alt_texts: [...item.source_image_alt_texts],
+                                }
+                              : item
+                          )));
+                        }}
+                        disabled={requestSaving}
+                      >
+                        Deutsch übernehmen
+                      </button>
+                      <button
+                        type="button"
+                        style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
+                        onClick={() => void saveSelectedRequestItem()}
+                        disabled={!requestHasEdits || requestSaving}
+                      >
+                        {requestSaving ? 'Speichern …' : 'Gesuche-Übersetzung speichern'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={blogEmptyDetailStyle}>Wähle links ein Gesuch, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
             )}
           </div>
         </div>
