@@ -52,11 +52,27 @@ export async function requestPasswordReset(formData: FormData) {
 
   const hdrs = await headers();
   const ip = extractClientIpFromHeaders(hdrs);
+  const rateLimitKey = `admin_pwreset:${ip}:${email}`;
   const limit = await checkRateLimitPersistent(
-    `admin_pwreset:${ip}:${email}`,
+    rateLimitKey,
     { windowMs: 15 * 60 * 1000, max: 5 },
   );
+  console.info('[admin-reset-debug] rate-limit-check', {
+    email,
+    ip,
+    rateLimitKey,
+    allowed: limit.allowed,
+    retryAfterSec: limit.retryAfterSec,
+    remaining: limit.remaining,
+    rateLimitBackend: String(process.env.RATE_LIMIT_BACKEND ?? ''),
+  });
   if (!limit.allowed) {
+    console.warn('[admin-reset-debug] rate-limit-blocked', {
+      email,
+      ip,
+      rateLimitKey,
+      retryAfterSec: limit.retryAfterSec,
+    });
     return redirectLoginWithMessage(`Zu viele Reset-Anfragen. Bitte in ${limit.retryAfterSec}s erneut versuchen.`);
   }
 
