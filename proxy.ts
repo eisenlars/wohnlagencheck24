@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { normalizePublicLocale, stripLeadingLocale } from "@/lib/public-locale-routing";
 
 const ADMIN_SUPER_USER_IDS = process.env.ADMIN_SUPER_USER_IDS ?? "";
 
@@ -35,6 +36,9 @@ function getBasicCredentials() {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const { locale } = stripLeadingLocale(pathname);
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-wc24-locale", normalizePublicLocale(locale));
   const isAdminLoginPath = pathname === "/admin/login";
   const needsDashboardAuth = pathname.startsWith("/dashboard");
   const needsAdminAuth = pathname.startsWith("/admin") && !isAdminLoginPath;
@@ -43,7 +47,9 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/api/local-site-texts") ||
     pathname.startsWith("/api/local-site-package")
   ) {
-    return NextResponse.next();
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
   }
 
   const { user: basicUser, pass: basicPass } = getBasicCredentials();
@@ -79,7 +85,7 @@ export async function proxy(request: NextRequest) {
     }
 
     let response = NextResponse.next({
-      request: { headers: request.headers },
+      request: { headers: requestHeaders },
     });
 
     const supabase = createServerClient(
@@ -92,12 +98,12 @@ export async function proxy(request: NextRequest) {
           },
           set(name: string, value: string, options: CookieOptions) {
             request.cookies.set({ name, value, ...options });
-            response = NextResponse.next({ request: { headers: request.headers } });
+            response = NextResponse.next({ request: { headers: requestHeaders } });
             response.cookies.set({ name, value, ...options });
           },
           remove(name: string, options: CookieOptions) {
             request.cookies.set({ name, value: "", ...options });
-            response = NextResponse.next({ request: { headers: request.headers } });
+            response = NextResponse.next({ request: { headers: requestHeaders } });
             response.cookies.set({ name, value: "", ...options });
           },
         },
@@ -125,7 +131,9 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  return NextResponse.next();
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 }
 
 export const config = {
