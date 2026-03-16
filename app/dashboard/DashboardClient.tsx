@@ -1286,7 +1286,7 @@ export default function DashboardClient() {
               title="Einstellungen-Menü"
               aria-label="Einstellungen öffnen"
             >
-              <span className="navbar-toggler-icon" />
+              <span className="navbar-toggler-icon" style={dashboardBurgerIconStyle} />
             </button>
             {showSettingsMenu ? (
               <div style={menuDropdownStyle}>
@@ -2114,12 +2114,19 @@ const dashboardBurgerButtonStyle: React.CSSProperties = {
   borderRadius: '8px',
   background: '#ffffff',
   color: '#0f172a',
-  padding: '6px 10px',
+  padding: '0 10px',
   cursor: 'pointer',
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  minHeight: '34px',
+  height: '34px',
+  lineHeight: 1,
+};
+
+const dashboardBurgerIconStyle: React.CSSProperties = {
+  width: '16px',
+  height: '16px',
+  display: 'block',
 };
 
 const menuWrapStyle: React.CSSProperties = {
