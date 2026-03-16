@@ -1748,7 +1748,7 @@ export default function InternationalizationManager({ config, availableLocales, 
             </div>
             <div style={domainPlaceholderItemStyle}>
               <span style={estimateLabelStyle}>Nächster Ausbau</span>
-              <strong>{activeDomain === 'blog' ? 'Beitragsbasierte Sprachpflege je Artikel und Sprache.' : 'Datensatzbasierte Sprachpflege inkl. Status, Kosten und Aktualität.'}</strong>
+              <strong>Datensatzbasierte Sprachpflege inkl. Status, Kosten und Aktualität.</strong>
             </div>
           </div>
           <div style={qualityCheckBoxStyle(false)}>
