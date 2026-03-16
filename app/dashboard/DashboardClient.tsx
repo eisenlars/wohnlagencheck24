@@ -1586,7 +1586,7 @@ export default function DashboardClient() {
                               type="button"
                               onClick={() => void handleRequestLive(effectiveWelcomePreviewConfig)}
                               disabled={previewRequestBusy}
-                              style={previewReadyActionButtonStyle}
+                              style={{ ...previewReadySuccessButtonStyle, marginLeft: 'auto' }}
                             >
                               {previewRequestBusy ? 'Anfrage läuft...' : 'Livegang anfragen'}
                             </button>
@@ -1713,7 +1713,7 @@ export default function DashboardClient() {
                             type="button"
                             onClick={() => void handleRequestLive(effectiveSelectedConfig)}
                             disabled={previewRequestBusy}
-                            style={previewReadyActionButtonStyle}
+                            style={{ ...previewReadySuccessButtonStyle, marginLeft: 'auto' }}
                           >
                             {previewRequestBusy ? 'Anfrage läuft...' : 'Livegang anfragen'}
                           </button>
@@ -2479,6 +2479,17 @@ const previewReadyGhostButtonStyle: React.CSSProperties = {
   borderRadius: '10px',
   background: '#ffffff',
   color: '#92400e',
+  padding: '10px 14px',
+  fontSize: '13px',
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+const previewReadySuccessButtonStyle: React.CSSProperties = {
+  border: 'none',
+  borderRadius: '10px',
+  background: '#16a34a',
+  color: '#ffffff',
   padding: '10px 14px',
   fontSize: '13px',
   fontWeight: 700,
