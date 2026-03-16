@@ -2110,11 +2110,16 @@ const headerActionButtonStyle: React.CSSProperties = {
 };
 
 const dashboardBurgerButtonStyle: React.CSSProperties = {
-  border: '3px solid #486b7a',
+  border: '1px solid #cbd5e1',
   borderRadius: '8px',
-  background: 'transparent',
-  padding: '0.2rem 0.45rem',
-  cursor: 'pointer'
+  background: '#ffffff',
+  color: '#0f172a',
+  padding: '6px 10px',
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: '34px',
 };
 
 const menuWrapStyle: React.CSSProperties = {
