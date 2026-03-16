@@ -4,6 +4,7 @@ const STORAGE_BUCKET = "immobilienmarkt";
 
 const PARTNER_PURGE_TABLES: Array<{ table: string; column: string }> = [
   { table: "partner_blog_posts", column: "partner_id" },
+  { table: "partner_blog_post_i18n", column: "partner_id" },
   { table: "partner_billing_settings", column: "partner_id" },
   { table: "partner_feature_overrides", column: "partner_id" },
   { table: "partner_texts_i18n", column: "partner_id" },

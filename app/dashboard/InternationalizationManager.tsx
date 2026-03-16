@@ -24,6 +24,7 @@ import {
   estimateTranslationTotals,
   type I18nEstimatePricing,
 } from '@/lib/i18n-cost-estimate';
+import { hashText } from '@/lib/text-hash';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 
 type AreaConfig = {
@@ -81,6 +82,7 @@ type PersistedI18nViewState = {
   activeTab?: string;
   activeClass?: DisplayTextClass;
   activeDomain?: I18nProductDomainId;
+  selectedBlogPostId?: string;
 };
 type I18nProductDomainId = 'immobilienmarkt' | 'blog' | 'immobilien' | 'referenzen' | 'gesuche';
 export type I18nProductDomain = {
@@ -88,6 +90,48 @@ export type I18nProductDomain = {
   label: string;
   description: string;
   enabled: boolean;
+};
+
+type BlogTranslationStatus = 'draft' | 'approved' | 'needs_review';
+
+type BlogPostSourceRow = {
+  id: string;
+  headline: string | null;
+  subline: string | null;
+  body_md: string | null;
+  status: 'draft' | 'active' | 'inactive';
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+type BlogPostTranslationRow = {
+  id?: string;
+  post_id: string;
+  translated_headline: string | null;
+  translated_subline: string | null;
+  translated_body_md: string | null;
+  status: BlogTranslationStatus;
+  source_snapshot_hash: string | null;
+  source_last_updated: string | null;
+  updated_at: string | null;
+};
+
+type BlogTranslationItem = {
+  post_id: string;
+  headline: string;
+  subline: string;
+  body_md: string;
+  source_status: BlogPostSourceRow['status'];
+  source_created_at: string | null;
+  source_updated_at: string | null;
+  source_snapshot_hash: string;
+  translated_headline: string;
+  translated_subline: string;
+  translated_body_md: string;
+  translation_status: BlogTranslationStatus;
+  translation_id: string | null;
+  translation_updated_at: string | null;
+  translation_is_stale: boolean;
 };
 
 const I18N_MOCK_TRANSLATION = process.env.NEXT_PUBLIC_I18N_MOCK_TRANSLATION === '1';
@@ -464,15 +508,34 @@ export default function InternationalizationManager({ config, availableLocales, 
   const setActiveDomain = (nextDomain: I18nProductDomainId) => {
     setI18nViewState((prev) => ({ ...prev, activeDomain: nextDomain }));
   };
+  const selectedBlogPostId = String(i18nViewState.selectedBlogPostId ?? '');
+  const setSelectedBlogPostId = (postId: string) => {
+    setI18nViewState((prev) => ({ ...prev, selectedBlogPostId: postId }));
+  };
   const [llmOptions, setLlmOptions] = useState<LlmOption[]>([]);
   const [selectedLlmOptionId, setSelectedLlmOptionId] = useState<string>('');
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const [baselineByKey, setBaselineByKey] = useState<Record<string, string>>({});
   const [pricingPreview, setPricingPreview] = useState<PricingPreview | null>(null);
+  const [blogItems, setBlogItems] = useState<BlogTranslationItem[]>([]);
+  const [blogBaselineByPostId, setBlogBaselineByPostId] = useState<Record<string, {
+    translated_headline: string;
+    translated_subline: string;
+    translated_body_md: string;
+    translation_status: BlogTranslationStatus;
+  }>>({});
+  const [blogLoading, setBlogLoading] = useState(false);
+  const [blogSaving, setBlogSaving] = useState(false);
+  const [blogStatus, setBlogStatus] = useState<string | null>(null);
+  const [blogStatusTone, setBlogStatusTone] = useState<'success' | 'error' | null>(null);
   const isDistrict = isDistrictArea(config?.area_id ?? '');
   const channelMeta = I18N_CHANNEL_OPTIONS.find((item) => item.value === channel) ?? I18N_CHANNEL_OPTIONS[0];
   const areaScopeLabel = isDistrict ? 'Kreis' : 'Ortslage';
   const activeDomainMeta = productDomains.find((domain) => domain.id === activeDomain) ?? productDomains[0] ?? DEFAULT_I18N_DOMAINS[0];
+  const selectedBlogItem = useMemo(
+    () => blogItems.find((item) => item.post_id === selectedBlogPostId) ?? blogItems[0] ?? null,
+    [blogItems, selectedBlogPostId],
+  );
 
   useEffect(() => {
     if (locales.includes(locale)) return;
@@ -483,6 +546,180 @@ export default function InternationalizationManager({ config, availableLocales, 
     if (productDomains.some((domain) => domain.id === activeDomain)) return;
     setActiveDomain(productDomains[0]?.id ?? 'immobilienmarkt');
   }, [activeDomain, productDomains]);
+
+  useEffect(() => {
+    if (blogItems.length === 0) {
+      if (selectedBlogPostId) setSelectedBlogPostId('');
+      return;
+    }
+    if (blogItems.some((item) => item.post_id === selectedBlogPostId)) return;
+    setSelectedBlogPostId(blogItems[0]?.post_id ?? '');
+  }, [blogItems, selectedBlogPostId]);
+
+  function isMissingBlogI18nTable(error: unknown): boolean {
+    const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
+    return msg.includes('partner_blog_post_i18n') && msg.includes('does not exist');
+  }
+
+  async function loadBlogItems() {
+    if (!config?.area_id) return;
+    setBlogLoading(true);
+    setBlogStatus(null);
+    setBlogStatusTone(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Nicht angemeldet.');
+
+      const { data: postsData, error: postsError } = await supabase
+        .from('partner_blog_posts')
+        .select('id, headline, subline, body_md, status, created_at, updated_at')
+        .eq('partner_id', user.id)
+        .eq('area_id', config.area_id)
+        .order('created_at', { ascending: false });
+
+      if (postsError) throw postsError;
+
+      const posts = (postsData ?? []) as BlogPostSourceRow[];
+      const postIds = posts.map((item) => String(item.id ?? '').trim()).filter(Boolean);
+
+      let translationRows: BlogPostTranslationRow[] = [];
+      if (postIds.length > 0) {
+        const { data: translationsData, error: translationsError } = await supabase
+          .from('partner_blog_post_i18n')
+          .select('id, post_id, translated_headline, translated_subline, translated_body_md, status, source_snapshot_hash, source_last_updated, updated_at')
+          .eq('partner_id', user.id)
+          .eq('target_locale', locale)
+          .in('post_id', postIds);
+
+        if (translationsError) {
+          if (isMissingBlogI18nTable(translationsError)) {
+            throw new Error('Tabelle `partner_blog_post_i18n` fehlt. Bitte SQL-Migration ausführen.');
+          }
+          throw translationsError;
+        }
+        translationRows = (translationsData ?? []) as BlogPostTranslationRow[];
+      }
+
+      const translationByPostId = new Map(
+        translationRows
+          .map((row) => [String(row.post_id ?? '').trim(), row] as const)
+          .filter(([postId]) => postId.length > 0),
+      );
+
+      const nextItems = posts.map((post) => {
+        const postId = String(post.id ?? '').trim();
+        const translation = translationByPostId.get(postId);
+        const sourceSnapshotHash = hashText([
+          String(post.headline ?? ''),
+          String(post.subline ?? ''),
+          String(post.body_md ?? ''),
+        ].join('\n\n'));
+        const storedHash = String(translation?.source_snapshot_hash ?? '').trim();
+        return {
+          post_id: postId,
+          headline: String(post.headline ?? ''),
+          subline: String(post.subline ?? ''),
+          body_md: String(post.body_md ?? ''),
+          source_status: post.status,
+          source_created_at: post.created_at ?? null,
+          source_updated_at: post.updated_at ?? null,
+          source_snapshot_hash: sourceSnapshotHash,
+          translated_headline: String(translation?.translated_headline ?? ''),
+          translated_subline: String(translation?.translated_subline ?? ''),
+          translated_body_md: String(translation?.translated_body_md ?? ''),
+          translation_status: (translation?.status ?? 'draft') as BlogTranslationStatus,
+          translation_id: translation?.id ? String(translation.id) : null,
+          translation_updated_at: translation?.updated_at ?? null,
+          translation_is_stale: Boolean(storedHash) && storedHash !== sourceSnapshotHash,
+        } satisfies BlogTranslationItem;
+      });
+
+      const nextBaseline = Object.fromEntries(
+        nextItems.map((item) => [item.post_id, {
+          translated_headline: item.translated_headline,
+          translated_subline: item.translated_subline,
+          translated_body_md: item.translated_body_md,
+          translation_status: item.translation_status,
+        }]),
+      );
+
+      setBlogItems(nextItems);
+      setBlogBaselineByPostId(nextBaseline);
+      setBlogStatus(nextItems.length === 0
+        ? 'Keine Blogartikel im aktuellen Gebiet vorhanden.'
+        : `Blog-Übersetzungsstand für ${nextItems.length} Beitrag/Beiträge geladen.`);
+      setBlogStatusTone('success');
+    } catch (error) {
+      setBlogItems([]);
+      setBlogBaselineByPostId({});
+      setBlogStatus(error instanceof Error ? error.message : 'Blog-Übersetzungen konnten nicht geladen werden.');
+      setBlogStatusTone('error');
+    } finally {
+      setBlogLoading(false);
+    }
+  }
+
+  async function saveSelectedBlogItem() {
+    if (!selectedBlogItem) return;
+    setBlogSaving(true);
+    setBlogStatus(null);
+    setBlogStatusTone(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Nicht angemeldet.');
+
+      const payload = {
+        partner_id: user.id,
+        post_id: selectedBlogItem.post_id,
+        area_id: config.area_id,
+        target_locale: locale,
+        translated_headline: selectedBlogItem.translated_headline.trim() || null,
+        translated_subline: selectedBlogItem.translated_subline.trim() || null,
+        translated_body_md: selectedBlogItem.translated_body_md.trim() || null,
+        status: selectedBlogItem.translation_status,
+        source_snapshot_hash: selectedBlogItem.source_snapshot_hash,
+        source_last_updated: selectedBlogItem.source_updated_at,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('partner_blog_post_i18n')
+        .upsert(payload, { onConflict: 'partner_id,post_id,target_locale' });
+
+      if (error) {
+        if (isMissingBlogI18nTable(error)) {
+          throw new Error('Tabelle `partner_blog_post_i18n` fehlt. Bitte SQL-Migration ausführen.');
+        }
+        throw error;
+      }
+
+      setBlogBaselineByPostId((prev) => ({
+        ...prev,
+        [selectedBlogItem.post_id]: {
+          translated_headline: selectedBlogItem.translated_headline,
+          translated_subline: selectedBlogItem.translated_subline,
+          translated_body_md: selectedBlogItem.translated_body_md,
+          translation_status: selectedBlogItem.translation_status,
+        },
+      }));
+      setBlogItems((prev) => prev.map((item) => (
+        item.post_id === selectedBlogItem.post_id
+          ? {
+              ...item,
+              translation_is_stale: false,
+              translation_updated_at: payload.updated_at,
+            }
+          : item
+      )));
+      setBlogStatus('Blog-Übersetzung gespeichert.');
+      setBlogStatusTone('success');
+    } catch (error) {
+      setBlogStatus(error instanceof Error ? error.message : 'Blog-Übersetzung konnte nicht gespeichert werden.');
+      setBlogStatusTone('error');
+    } finally {
+      setBlogSaving(false);
+    }
+  }
 
   async function resolveScopeAreas(nextScope: I18nScope): Promise<ScopeArea[]> {
     const current: ScopeArea = {
@@ -587,9 +824,16 @@ export default function InternationalizationManager({ config, availableLocales, 
   }
 
   useEffect(() => {
+    if (activeDomain !== 'immobilienmarkt') return;
     void loadRows({ autoSync: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config?.area_id, locale, channel, scope]);
+  }, [activeDomain, config?.area_id, locale, channel, scope]);
+
+  useEffect(() => {
+    if (activeDomain !== 'blog') return;
+    void loadBlogItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDomain, config?.area_id, locale]);
 
   useEffect(() => {
     (async () => {
@@ -753,10 +997,41 @@ export default function InternationalizationManager({ config, availableLocales, 
     return { total, translated, fallback };
   }, [rows]);
 
+  const blogSummary = useMemo(() => {
+    const total = blogItems.length;
+    const translated = blogItems.filter((item) => (
+      item.translated_headline.trim().length > 0
+      || item.translated_subline.trim().length > 0
+      || item.translated_body_md.trim().length > 0
+    )).length;
+    const stale = blogItems.filter((item) => item.translation_is_stale).length;
+    const missing = total - translated;
+    return { total, translated, missing, stale };
+  }, [blogItems]);
+
   const hasEdits = useMemo(
     () => rows.some((row) => String(row.translated_content ?? '').trim() !== String(baselineByKey[`${row.area_id}::${row.section_key}`] ?? '').trim()),
     [rows, baselineByKey],
   );
+
+  const blogHasEdits = useMemo(() => {
+    if (!selectedBlogItem) return false;
+    const baseline = blogBaselineByPostId[selectedBlogItem.post_id];
+    if (!baseline) {
+      return (
+        selectedBlogItem.translated_headline.trim().length > 0
+        || selectedBlogItem.translated_subline.trim().length > 0
+        || selectedBlogItem.translated_body_md.trim().length > 0
+        || selectedBlogItem.translation_status !== 'draft'
+      );
+    }
+    return (
+      selectedBlogItem.translated_headline !== baseline.translated_headline
+      || selectedBlogItem.translated_subline !== baseline.translated_subline
+      || selectedBlogItem.translated_body_md !== baseline.translated_body_md
+      || selectedBlogItem.translation_status !== baseline.translation_status
+    );
+  }, [blogBaselineByPostId, selectedBlogItem]);
 
   const selectedWorkflowKeys = useMemo(
     () => Array.from(new Set(rows
@@ -870,9 +1145,13 @@ export default function InternationalizationManager({ config, availableLocales, 
   return (
     <>
       <FullscreenLoader
-        show={loading || saving || Boolean(rewritingKey)}
+        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving}
         label={
-          loading
+          blogLoading
+            ? 'Blog-Übersetzungen werden geladen...'
+            : blogSaving
+              ? 'Blog-Übersetzung wird gespeichert...'
+            : loading
             ? 'Uebersetzungsstand wird geladen...'
             : saving
               ? 'Uebersetzungen werden gespeichert...'
@@ -898,83 +1177,106 @@ export default function InternationalizationManager({ config, availableLocales, 
               </select>
             </label>
 
-            <label style={fieldStyle}>
-              Bereich
-              <select
-                style={inputStyle}
-                value={channel}
-                onChange={(e) => setChannel(e.target.value as I18nChannel)}
-              >
-                {I18N_CHANNEL_OPTIONS.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
-            </label>
-
-            <label style={{ ...fieldStyle, minWidth: 320 }}>
-              KI-Modell
-              <select
-                style={inputStyle}
-                value={selectedLlmOptionId}
-                onChange={(e) => setSelectedLlmOptionId(e.target.value)}
-                disabled={llmOptions.length === 0 || loading || saving}
-              >
-                {llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
-                {llmOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>{opt.label}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div style={scopeBlockStyle}>
-            <div style={scopeHeadStyle}>
-              <strong>Scope</strong>
-              <span style={scopeMetaStyle}>{areaScopeLabel}: {String(config.areas?.name ?? config.area_id)}</span>
-            </div>
-            <div style={scopeOptionsStyle}>
-              {I18N_SCOPE_OPTIONS.map((item) => {
-                const isDisabled = item.value === 'kreis_ortslagen' && !isDistrict;
-                const isActive = scope === item.value;
-                return (
-                  <button
-                    key={item.value}
-                    type="button"
-                    style={scopeButtonStyle(isActive, isDisabled)}
-                    disabled={isDisabled}
-                    onClick={() => setScope(item.value)}
-                    title={item.description}
+            {activeDomain === 'immobilienmarkt' ? (
+              <>
+                <label style={fieldStyle}>
+                  Bereich
+                  <select
+                    style={inputStyle}
+                    value={channel}
+                    onChange={(e) => setChannel(e.target.value as I18nChannel)}
                   >
-                    <span style={scopeButtonTitleStyle}>{item.value === 'current_area' ? item.label.replace('Dieses Gebiet', areaScopeLabel) : item.label}</span>
-                    <span style={scopeButtonTextStyle}>{item.description}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                    {I18N_CHANNEL_OPTIONS.map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                  </select>
+                </label>
 
-          <div style={workflowNoticeStyle}>
-            <div style={workflowNoticeHeadStyle}>
-              <strong>{channelMeta.label}</strong>
-              <span style={workflowNoticeMetaStyle}>{channelMeta.description}</span>
-            </div>
-            <p style={workflowNoticeTextStyle}>
-              Freigaben der deutschen Inhalte und Uebersetzungslaeufe sind jetzt getrennt. Starte die Uebersetzung erst, wenn der deutsche Stand fachlich final ist.
-            </p>
-          </div>
-
-          <div style={summaryStyle}>
-            Gesamt: <strong>{summary.total}</strong> · Übersetzt: <strong>{summary.translated}</strong> · Deutsch-Fallback: <strong>{summary.fallback}</strong>
-          </div>
-          <div style={pricingMetaStyle}>
-            Globales Uebersetzungsmodell:{' '}
-            <strong>{pricingPreview?.provider && pricingPreview?.model ? `${pricingPreview.provider} / ${pricingPreview.model}` : 'nicht verfuegbar'}</strong>
-            {pricingPreview && pricingPreview.input_cost_usd_per_1k !== null && pricingPreview.output_cost_usd_per_1k !== null ? (
-              <span>
-                {' '}· Input {formatCost(pricingPreview.input_cost_usd_per_1k, 'USD')}/1k · Output {formatCost(pricingPreview.output_cost_usd_per_1k, 'USD')}/1k
-              </span>
+                <label style={{ ...fieldStyle, minWidth: 320 }}>
+                  KI-Modell
+                  <select
+                    style={inputStyle}
+                    value={selectedLlmOptionId}
+                    onChange={(e) => setSelectedLlmOptionId(e.target.value)}
+                    disabled={llmOptions.length === 0 || loading || saving}
+                  >
+                    {llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+                    {llmOptions.map((opt) => (
+                      <option key={opt.id} value={opt.id}>{opt.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </>
             ) : null}
           </div>
+
+          {activeDomain === 'immobilienmarkt' ? (
+            <>
+              <div style={scopeBlockStyle}>
+                <div style={scopeHeadStyle}>
+                  <strong>Scope</strong>
+                  <span style={scopeMetaStyle}>{areaScopeLabel}: {String(config.areas?.name ?? config.area_id)}</span>
+                </div>
+                <div style={scopeOptionsStyle}>
+                  {I18N_SCOPE_OPTIONS.map((item) => {
+                    const isDisabled = item.value === 'kreis_ortslagen' && !isDistrict;
+                    const isActive = scope === item.value;
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        style={scopeButtonStyle(isActive, isDisabled)}
+                        disabled={isDisabled}
+                        onClick={() => setScope(item.value)}
+                        title={item.description}
+                      >
+                        <span style={scopeButtonTitleStyle}>{item.value === 'current_area' ? item.label.replace('Dieses Gebiet', areaScopeLabel) : item.label}</span>
+                        <span style={scopeButtonTextStyle}>{item.description}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={workflowNoticeStyle}>
+                <div style={workflowNoticeHeadStyle}>
+                  <strong>{channelMeta.label}</strong>
+                  <span style={workflowNoticeMetaStyle}>{channelMeta.description}</span>
+                </div>
+                <p style={workflowNoticeTextStyle}>
+                  Freigaben der deutschen Inhalte und Uebersetzungslaeufe sind jetzt getrennt. Starte die Uebersetzung erst, wenn der deutsche Stand fachlich final ist.
+                </p>
+              </div>
+
+              <div style={summaryStyle}>
+                Gesamt: <strong>{summary.total}</strong> · Übersetzt: <strong>{summary.translated}</strong> · Deutsch-Fallback: <strong>{summary.fallback}</strong>
+              </div>
+              <div style={pricingMetaStyle}>
+                Globales Uebersetzungsmodell:{' '}
+                <strong>{pricingPreview?.provider && pricingPreview?.model ? `${pricingPreview.provider} / ${pricingPreview.model}` : 'nicht verfuegbar'}</strong>
+                {pricingPreview && pricingPreview.input_cost_usd_per_1k !== null && pricingPreview.output_cost_usd_per_1k !== null ? (
+                  <span>
+                    {' '}· Input {formatCost(pricingPreview.input_cost_usd_per_1k, 'USD')}/1k · Output {formatCost(pricingPreview.output_cost_usd_per_1k, 'USD')}/1k
+                  </span>
+                ) : null}
+              </div>
+            </>
+          ) : activeDomain === 'blog' ? (
+            <>
+              <div style={workflowNoticeStyle}>
+                <div style={workflowNoticeHeadStyle}>
+                  <strong>Blog</strong>
+                  <span style={workflowNoticeMetaStyle}>Beitragsbasierte Sprachpflege je Gebiet und Sprache</span>
+                </div>
+                <p style={workflowNoticeTextStyle}>
+                  Deutsche Blogbeiträge werden weiterhin im Blog-Bereich erstellt. Hier pflegst du deren Übersetzungen pro Sprache und Beitrag getrennt vom deutschen Redaktionsprozess.
+                </p>
+              </div>
+              <div style={summaryStyle}>
+                Beiträge: <strong>{blogSummary.total}</strong> · Übersetzt: <strong>{blogSummary.translated}</strong> · Fehlend: <strong>{blogSummary.missing}</strong> · Veraltet: <strong>{blogSummary.stale}</strong>
+              </div>
+            </>
+          ) : null}
         </div>
 
         <div style={domainIntroStyle}>
@@ -1225,6 +1527,206 @@ export default function InternationalizationManager({ config, availableLocales, 
           >
             {saving ? 'Speichern …' : 'Übersetzungen speichern'}
           </button>
+        </div>
+      </div>
+      ) : activeDomain === 'blog' ? (
+      <div style={editorCardStyle}>
+        {blogStatus ? <div style={blogStatusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{blogStatus}</div> : null}
+        <div style={blogGridStyle}>
+          <aside style={blogListCardStyle}>
+            <div style={blogListHeadStyle}>
+              <h3 style={sectionTabsIntroTitleStyle}>Beiträge</h3>
+              <button
+                type="button"
+                style={secondaryActionButtonStyle}
+                onClick={() => void loadBlogItems()}
+                disabled={blogLoading || blogSaving}
+              >
+                Stand laden
+              </button>
+            </div>
+            <div style={blogListMetaStyle}>
+              Je Beitrag werden Headline, Subline und Markdown-Text in der Zielsprache gepflegt.
+            </div>
+            {blogItems.length === 0 ? (
+              <div style={blogEmptyStateStyle}>Im aktuellen Gebiet gibt es noch keine Blogbeiträge.</div>
+            ) : (
+              <div style={blogListWrapStyle}>
+                {blogItems.map((item) => {
+                  const translated = Boolean(
+                    item.translated_headline.trim()
+                    || item.translated_subline.trim()
+                    || item.translated_body_md.trim(),
+                  );
+                  return (
+                    <button
+                      key={item.post_id}
+                      type="button"
+                      style={blogListRowStyle(selectedBlogItem?.post_id === item.post_id)}
+                      onClick={() => setSelectedBlogPostId(item.post_id)}
+                    >
+                      <div style={blogListRowTopStyle}>
+                        <strong style={blogListHeadlineStyle}>{item.headline || 'Ohne Titel'}</strong>
+                        <span style={blogTranslationBadgeStyle(item.translation_is_stale, translated)}>
+                          {item.translation_is_stale ? 'Veraltet' : translated ? 'Übersetzt' : 'Fehlt'}
+                        </span>
+                      </div>
+                      <div style={blogListSublineStyle}>{item.subline || 'Keine Subline'}</div>
+                      <div style={blogListMetaLineStyle}>
+                        DE-Status: {item.source_status} · {item.source_created_at ? new Date(item.source_created_at).toLocaleDateString('de-DE') : 'ohne Datum'}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </aside>
+
+          <div style={blogEditorWrapStyle}>
+            {selectedBlogItem ? (
+              <>
+                <div style={blogEditorHeadStyle}>
+                  <div>
+                    <h3 style={sectionTabsIntroTitleStyle}>{selectedBlogItem.headline || 'Ohne Titel'}</h3>
+                    <p style={blogEditorIntroStyle}>
+                      Übersetze Headline, Subline und den Markdown-Text dieses Beitrags separat. Der deutsche Blog-Workflow bleibt im Bereich „Blog“.
+                    </p>
+                  </div>
+                  <span style={blogTranslationBadgeStyle(selectedBlogItem.translation_is_stale, Boolean(
+                    selectedBlogItem.translated_headline.trim()
+                    || selectedBlogItem.translated_subline.trim()
+                    || selectedBlogItem.translated_body_md.trim(),
+                  ))}>
+                    {selectedBlogItem.translation_is_stale ? 'Quelle geändert' : selectedBlogItem.translation_status}
+                  </span>
+                </div>
+
+                <div style={blogSummaryGridStyle}>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Deutscher Beitrag</span>
+                    <strong>{selectedBlogItem.source_status}</strong>
+                  </div>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Übersetzungsstatus</span>
+                    <strong>{selectedBlogItem.translation_status}</strong>
+                  </div>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Zuletzt aktualisiert</span>
+                    <strong>{selectedBlogItem.translation_updated_at ? new Date(selectedBlogItem.translation_updated_at).toLocaleString('de-DE') : 'Noch nicht gespeichert'}</strong>
+                  </div>
+                </div>
+
+                <div style={blogColumnGridStyle}>
+                  <div style={blogSourceCardStyle}>
+                    <div style={blogColumnHeadStyle}>Deutsch (Quelle)</div>
+                    <label style={fieldStyle}>
+                      Headline
+                      <input style={inputStyle} value={selectedBlogItem.headline} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Subline
+                      <input style={inputStyle} value={selectedBlogItem.subline} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Markdown-Text
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedBlogItem.body_md} readOnly />
+                    </label>
+                  </div>
+
+                  <div style={blogTargetCardStyle}>
+                    <div style={blogColumnHeadStyle}>Übersetzung</div>
+                    <label style={fieldStyle}>
+                      Headline
+                      <input
+                        style={inputStyle}
+                        value={selectedBlogItem.translated_headline}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setBlogItems((prev) => prev.map((item) => (
+                            item.post_id === selectedBlogItem.post_id ? { ...item, translated_headline: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Subline
+                      <input
+                        style={inputStyle}
+                        value={selectedBlogItem.translated_subline}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setBlogItems((prev) => prev.map((item) => (
+                            item.post_id === selectedBlogItem.post_id ? { ...item, translated_subline: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Markdown-Text
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedBlogItem.translated_body_md}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setBlogItems((prev) => prev.map((item) => (
+                            item.post_id === selectedBlogItem.post_id ? { ...item, translated_body_md: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Status
+                      <select
+                        style={inputStyle}
+                        value={selectedBlogItem.translation_status}
+                        onChange={(e) => {
+                          const next = e.target.value as BlogTranslationStatus;
+                          setBlogItems((prev) => prev.map((item) => (
+                            item.post_id === selectedBlogItem.post_id ? { ...item, translation_status: next } : item
+                          )));
+                        }}
+                      >
+                        <option value="draft">Entwurf</option>
+                        <option value="approved">Freigegeben</option>
+                        <option value="needs_review">Prüfen</option>
+                      </select>
+                    </label>
+                    <div style={blogActionRowStyle}>
+                      <button
+                        type="button"
+                        style={secondaryActionButtonStyle}
+                        onClick={() => {
+                          setBlogItems((prev) => prev.map((item) => (
+                            item.post_id === selectedBlogItem.post_id
+                              ? {
+                                  ...item,
+                                  translated_headline: item.headline,
+                                  translated_subline: item.subline,
+                                  translated_body_md: item.body_md,
+                                }
+                              : item
+                          )));
+                        }}
+                        disabled={blogSaving}
+                      >
+                        Deutsch übernehmen
+                      </button>
+                      <button
+                        type="button"
+                        style={buttonPrimaryStyle(blogHasEdits && !blogSaving)}
+                        onClick={() => void saveSelectedBlogItem()}
+                        disabled={!blogHasEdits || blogSaving}
+                      >
+                        {blogSaving ? 'Speichern …' : 'Blog-Übersetzung speichern'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={blogEmptyDetailStyle}>Wähle links einen Blogbeitrag, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
+            )}
+          </div>
         </div>
       </div>
       ) : (
@@ -1654,6 +2156,205 @@ const qualityCheckBoxStyle = (manualCheck: boolean): React.CSSProperties => ({
   background: manualCheck ? '#fffbeb' : '#f0fdf4',
   color: manualCheck ? '#92400e' : '#166534',
 });
+
+const blogGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(260px, 320px) minmax(0, 1fr)',
+  gap: 16,
+  alignItems: 'start',
+};
+
+const blogListCardStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 12,
+  padding: 16,
+  borderRadius: 16,
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+};
+
+const blogListHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 12,
+  alignItems: 'center',
+  flexWrap: 'wrap',
+};
+
+const blogListMetaStyle: React.CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: '#64748b',
+};
+
+const blogListWrapStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 10,
+};
+
+const blogListRowStyle = (active: boolean): React.CSSProperties => ({
+  display: 'grid',
+  gap: 8,
+  padding: 12,
+  borderRadius: 12,
+  border: active ? '1px solid #93c5fd' : '1px solid #e2e8f0',
+  background: active ? '#eff6ff' : '#ffffff',
+  textAlign: 'left',
+  boxShadow: active ? '0 10px 20px rgba(37, 99, 235, 0.08)' : 'none',
+  cursor: 'pointer',
+});
+
+const blogListRowTopStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 12,
+  alignItems: 'flex-start',
+};
+
+const blogListHeadlineStyle: React.CSSProperties = {
+  fontSize: 14,
+  color: '#0f172a',
+};
+
+const blogListSublineStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#475569',
+  lineHeight: 1.45,
+};
+
+const blogListMetaLineStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: '#64748b',
+};
+
+const blogTranslationBadgeStyle = (stale: boolean, translated: boolean): React.CSSProperties => ({
+  borderRadius: 999,
+  padding: '5px 10px',
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '0.03em',
+  textTransform: 'uppercase',
+  whiteSpace: 'nowrap',
+  background: stale ? '#fef3c7' : translated ? '#dcfce7' : '#e2e8f0',
+  color: stale ? '#92400e' : translated ? '#166534' : '#475569',
+});
+
+const blogEditorWrapStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 16,
+};
+
+const blogEditorHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 16,
+  alignItems: 'flex-start',
+  flexWrap: 'wrap',
+};
+
+const blogEditorIntroStyle: React.CSSProperties = {
+  margin: '4px 0 0',
+  fontSize: 13,
+  lineHeight: 1.55,
+  color: '#64748b',
+  maxWidth: 760,
+};
+
+const blogSummaryGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+  gap: 10,
+};
+
+const blogSummaryItemStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 6,
+  padding: 12,
+  borderRadius: 12,
+  border: '1px solid #dbeafe',
+  background: '#ffffff',
+};
+
+const blogColumnGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: 16,
+};
+
+const blogSourceCardStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 12,
+  padding: 16,
+  borderRadius: 16,
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+};
+
+const blogTargetCardStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 12,
+  padding: 16,
+  borderRadius: 16,
+  border: '1px solid #dbeafe',
+  background: '#ffffff',
+};
+
+const blogColumnHeadStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 800,
+  color: '#0f172a',
+};
+
+const blogReadonlyTextareaStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 260,
+  padding: 10,
+  borderRadius: 10,
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: '#475569',
+  resize: 'vertical',
+};
+
+const blogTextareaStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 260,
+  padding: 10,
+  borderRadius: 10,
+  border: '1px solid #cbd5e1',
+  background: '#fff',
+  fontSize: 13,
+  lineHeight: 1.55,
+  color: '#0f172a',
+  resize: 'vertical',
+};
+
+const blogActionRowStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 10,
+};
+
+const blogEmptyStateStyle: React.CSSProperties = {
+  padding: 14,
+  borderRadius: 12,
+  border: '1px dashed #cbd5e1',
+  background: '#fff',
+  fontSize: 12,
+  color: '#64748b',
+};
+
+const blogEmptyDetailStyle: React.CSSProperties = {
+  padding: 24,
+  borderRadius: 16,
+  border: '1px dashed #cbd5e1',
+  background: '#ffffff',
+  fontSize: 14,
+  color: '#64748b',
+  lineHeight: 1.6,
+};
 
 const domainIntroStyle: React.CSSProperties = {
   marginTop: 2,
