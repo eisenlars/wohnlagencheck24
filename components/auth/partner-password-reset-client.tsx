@@ -23,7 +23,12 @@ function setResetFlowCookie(value: string | null) {
   document.cookie = `wc24_reset_flow=${value}; Path=/; SameSite=Lax`;
 }
 
-function hardNavigateToLogin(path: string) {
+async function hardNavigateToLogin(supabase: ReturnType<typeof createClient>, path: string) {
+  try {
+    await supabase.auth.signOut();
+  } catch {
+    // Best effort only; navigation should still proceed.
+  }
   setResetFlowCookie(null);
   if (typeof window === "undefined") return;
   window.location.assign(path);
@@ -216,7 +221,7 @@ export default function PartnerPasswordResetClient() {
         {viewMode === "error" ? (
           <button
             type="button"
-            onClick={() => hardNavigateToLogin("/partner/login")}
+            onClick={() => void hardNavigateToLogin(supabase, "/partner/login")}
             style={{
               textDecoration: "none",
               padding: "10px 12px",
