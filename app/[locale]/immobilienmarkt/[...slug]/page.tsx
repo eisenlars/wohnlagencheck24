@@ -2,14 +2,13 @@ import type { Metadata } from "next";
 
 import BaseImmobilienmarktPage, {
   generateMetadata as generateBaseMetadata,
-  revalidate,
 } from "@/app/(public)/immobilienmarkt/[...slug]/page";
 
 type LocalizedPageProps = {
   params: Promise<{ locale: string; slug?: string[] }>;
 };
 
-export { revalidate };
+export const revalidate = 3600;
 
 export async function generateMetadata({ params }: LocalizedPageProps): Promise<Metadata> {
   const resolvedParams = await params;
