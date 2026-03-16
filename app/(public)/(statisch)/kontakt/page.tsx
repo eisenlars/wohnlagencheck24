@@ -7,11 +7,12 @@ import {
   getOrteForKreis,
 } from "@/lib/data";
 import { loadPortalCmsEntriesByPage, resolvePortalCmsField } from "@/lib/portal-cms-reader";
+import { buildLocalizedHref } from "@/lib/public-locale-routing";
 
-export default async function HomePage() {
+export async function ConceptPageContent({ locale = "de" }: { locale?: string }) {
   const bundeslaender = await getBundeslaender();
-  const conceptEntries = await loadPortalCmsEntriesByPage("concept", "de");
-  const homeEntries = await loadPortalCmsEntriesByPage("home", "de");
+  const conceptEntries = await loadPortalCmsEntriesByPage("concept", locale);
+  const homeEntries = await loadPortalCmsEntriesByPage("home", locale);
 
   // Struktur: Bundesland -> Kreise -> Ortslagen
   const struktur = await Promise.all(
@@ -85,7 +86,7 @@ export default async function HomePage() {
 
         <p className="small mb-3">
           Alternativ kannst du direkt über den Menüpunkt{" "}
-          <Link href="/immobilienmarkt" className="link-primary">
+          <Link href={buildLocalizedHref(locale, "/immobilienmarkt")} className="link-primary">
             Immobilienmarkt &amp; Standortprofile
           </Link>{" "}
           in die hierarchische Übersicht einsteigen.
@@ -105,7 +106,7 @@ export default async function HomePage() {
           >
             <h3 className="h5 mb-3">
               <Link
-                href={`/immobilienmarkt/${bl.slug}`}
+                href={buildLocalizedHref(locale, `/immobilienmarkt/${bl.slug}`)}
                 className="link-dark text-decoration-none"
               >
                 {bl.name}
@@ -119,7 +120,7 @@ export default async function HomePage() {
                     <div className="card-body">
                       <h4 className="h6 mb-2">
                         <Link
-                          href={`/immobilienmarkt/${bl.slug}/${kreis.slug}`}
+                          href={buildLocalizedHref(locale, `/immobilienmarkt/${bl.slug}/${kreis.slug}`)}
                           className="link-dark text-decoration-none"
                         >
                           Landkreis {kreis.name}
@@ -129,7 +130,7 @@ export default async function HomePage() {
                         {kreis.orte.map((ort) => (
                           <li key={ort.slug} className="mb-1">
                             <Link
-                              href={`/immobilienmarkt/${bl.slug}/${kreis.slug}/${ort.slug}`}
+                              href={buildLocalizedHref(locale, `/immobilienmarkt/${bl.slug}/${kreis.slug}/${ort.slug}`)}
                               className="link-primary"
                             >
                               {ort.name}
@@ -191,4 +192,8 @@ export default async function HomePage() {
       </section>
     </div>
   );
+}
+
+export default async function HomePage() {
+  return <ConceptPageContent locale="de" />;
 }

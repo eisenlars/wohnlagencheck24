@@ -107,8 +107,8 @@ function FallbackImpressumPage() {
   );
 }
 
-export default async function ImpressumPage() {
-  const entries = await loadPortalCmsEntriesByPage("impressum", "de");
+export async function ImpressumPageContent({ locale = "de" }: { locale?: string }) {
+  const entries = await loadPortalCmsEntriesByPage("impressum", locale);
   const companyBlock = resolvePortalCmsField(entries, "impressum_main", "company_block", "");
   const contactBlock = resolvePortalCmsField(entries, "impressum_main", "contact_block", "");
   const legalBlock = resolvePortalCmsField(entries, "impressum_main", "legal_block", "");
@@ -144,4 +144,8 @@ export default async function ImpressumPage() {
       ) : null}
     </div>
   );
+}
+
+export default async function ImpressumPage() {
+  return <ImpressumPageContent locale="de" />;
 }

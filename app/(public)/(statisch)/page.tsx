@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getBundeslaender } from "@/lib/data";
 import { loadPortalCmsEntriesByPage, resolvePortalCmsField } from "@/lib/portal-cms-reader";
+import { buildLocalizedHref } from "@/lib/public-locale-routing";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { buildWebAssetUrl } from "@/utils/assets";
 import BlogAuthorImage from "@/components/blog-author-image";
@@ -89,9 +90,9 @@ function renderMarkdown(md: string) {
 
 // app/(statisch)/page.tsx (Ausschnitt)
 
-export default async function HomePage() {
+export async function HomeLandingPage({ locale = "de" }: { locale?: string }) {
   const bundeslaender = await getBundeslaender();
-  const homeEntries = await loadPortalCmsEntriesByPage("home", "de");
+  const homeEntries = await loadPortalCmsEntriesByPage("home", locale);
   let latestBlog: BlogBlock | null = null;
 
   try {
@@ -181,7 +182,7 @@ export default async function HomePage() {
               {bundeslaender.map((bl) => (
                 <Link
                   key={bl.slug}
-                  href={`/immobilienmarkt/${bl.slug}`}
+                  href={buildLocalizedHref(locale, `/immobilienmarkt/${bl.slug}`)}
                   className="btn btn-outline-dark fw-semibold px-4 py-2"
                 >
                   {bl.name}
@@ -266,4 +267,8 @@ export default async function HomePage() {
   
     </div>
   );
+}
+
+export default async function HomePage() {
+  return <HomeLandingPage locale="de" />;
 }

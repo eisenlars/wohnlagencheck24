@@ -4,6 +4,8 @@
 
 import Link from "next/link";
 import { useCallback } from "react";
+import { buildLocalizedHref } from "@/lib/public-locale-routing";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 
 type BundeslandNavItem = {
   slug: string;
@@ -12,9 +14,11 @@ type BundeslandNavItem = {
 
 type MainNavProps = {
   bundeslaender: BundeslandNavItem[];
+  locale?: string | null;
 };
 
-export function MainNav({ bundeslaender }: MainNavProps) {
+export function MainNav({ bundeslaender, locale = null }: MainNavProps) {
+  const text = getPortalSystemTexts(locale);
   const handleNavClick = useCallback(() => {
     if (typeof document === "undefined") return;
 
@@ -38,11 +42,11 @@ export function MainNav({ bundeslaender }: MainNavProps) {
       {/* Einstieg zu den Standortprofilen */}
       <li className="nav-item mb-2">
         <Link
-          href="/"
+          href={buildLocalizedHref(locale, "/")}
           className="nav-link px-0"
           onClick={handleNavClick}
         >
-          Immobilienmarkt &amp; Standortprofile
+          {text.market_profiles}
         </Link>
       </li>
 
@@ -50,7 +54,7 @@ export function MainNav({ bundeslaender }: MainNavProps) {
       {bundeslaender.map((bl) => (
         <li className="nav-item mb-1 ms-3" key={bl.slug}>
           <Link
-            href={`/immobilienmarkt/${bl.slug}`}
+            href={buildLocalizedHref(locale, `/immobilienmarkt/${bl.slug}`)}
             className="nav-link px-0 small"
             onClick={handleNavClick}
           >
@@ -61,20 +65,20 @@ export function MainNav({ bundeslaender }: MainNavProps) {
 
       <li className="nav-item mt-3">
         <Link
-          href="/#konzept"
+          href={buildLocalizedHref(locale, "/kontakt#konzept")}
           className="nav-link px-0"
           onClick={handleNavClick}
         >
-          Konzept
+          {text.concept}
         </Link>
       </li>
       <li className="nav-item">
         <Link
-          href="/#inhalte"
+          href={buildLocalizedHref(locale, "/kontakt#inhalte")}
           className="nav-link px-0"
           onClick={handleNavClick}
         >
-          Weitere Inhalte
+          {text.more_content}
         </Link>
       </li>
     </ul>

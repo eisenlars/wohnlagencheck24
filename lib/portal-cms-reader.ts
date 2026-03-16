@@ -16,7 +16,8 @@ export async function loadPortalCmsEntriesByPage(pageKey: string, locale = "de")
       .from("portal_content_entries")
       .select("page_key, section_key, locale, status, fields_json, updated_at")
       .eq("page_key", pageKey)
-      .eq("locale", locale);
+      .eq("locale", locale)
+      .eq("status", "live");
 
     if (error) throw error;
 

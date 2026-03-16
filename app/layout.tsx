@@ -1,6 +1,7 @@
 // app/layout.tsx
 
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./globals.css";
 
@@ -25,9 +26,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const requestHeaders = await headers();
+  const locale = requestHeaders.get("x-wc24-locale") || "de";
+
   return (
-    <html lang="de">
+    <html lang={locale}>
       <body className="text-light">{children}</body>
     </html>
   );

@@ -11,8 +11,9 @@ import {
   getActiveOrtSlugsForKreis,
   isBundeslandVisible,
 } from "@/lib/area-visibility";
+import { buildLocalizedHref } from "@/lib/public-locale-routing";
 
-export default async function ImmobilienmarktOverviewPage() {
+export async function ImmobilienmarktOverviewContent({ locale = null }: { locale?: string | null }) {
   const bundeslaenderRaw = await getBundeslaender();
   const bundeslaender = (
     await Promise.all(
@@ -56,7 +57,7 @@ export default async function ImmobilienmarktOverviewPage() {
           <section key={bl.slug} className="mb-4">
             <h2 className="h5 mb-2">
               <Link
-                href={`/immobilienmarkt/${bl.slug}`}
+                href={buildLocalizedHref(locale, `/immobilienmarkt/${bl.slug}`)}
                 className="link-dark text-decoration-none"
               >
                 {bl.name}
@@ -70,7 +71,7 @@ export default async function ImmobilienmarktOverviewPage() {
                     <div className="card-body">
                       <h3 className="h6 mb-2">
                         <Link
-                          href={`/immobilienmarkt/${bl.slug}/${kreis.slug}`}
+                          href={buildLocalizedHref(locale, `/immobilienmarkt/${bl.slug}/${kreis.slug}`)}
                           className="link-dark"
                         >
                           Landkreis {kreis.name}
@@ -80,7 +81,7 @@ export default async function ImmobilienmarktOverviewPage() {
                         {kreis.orte.map((ort) => (
                           <li key={ort.slug} className="mb-1">
                             <Link
-                              href={`/immobilienmarkt/${bl.slug}/${kreis.slug}/${ort.slug}`}
+                              href={buildLocalizedHref(locale, `/immobilienmarkt/${bl.slug}/${kreis.slug}/${ort.slug}`)}
                               className="link-primary"
                             >
                               {ort.name}
@@ -103,4 +104,8 @@ export default async function ImmobilienmarktOverviewPage() {
       })}
     </div>
   );
+}
+
+export default async function ImmobilienmarktOverviewPage() {
+  return <ImmobilienmarktOverviewContent locale={null} />;
 }

@@ -17,8 +17,8 @@ function renderPrivacyParagraphs(text: string, className = "mb-3") {
     ));
 }
 
-export default async function DatenschutzPage() {
-  const entries = await loadPortalCmsEntriesByPage("datenschutz", "de");
+export async function DatenschutzPageContent({ locale = "de" }: { locale?: string }) {
+  const entries = await loadPortalCmsEntriesByPage("datenschutz", locale);
   const intro = resolvePortalCmsField(entries, "privacy_intro", "intro", "");
   const responsibleParty = resolvePortalCmsField(entries, "privacy_intro", "responsible_party", "");
   const collection = resolvePortalCmsField(entries, "privacy_collection", "body", "");
@@ -366,4 +366,8 @@ export default async function DatenschutzPage() {
       </section>
     </div>
   );
+}
+
+export default async function DatenschutzPage() {
+  return <DatenschutzPageContent locale="de" />;
 }

@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { MainNav } from "@/components/main-nav";
+import { buildLocalizedHref } from "@/lib/public-locale-routing";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 
 type BundeslandNavItem = {
   slug: string;
@@ -13,9 +15,11 @@ type BundeslandNavItem = {
 type SiteHeaderProps = {
   bundeslaender: BundeslandNavItem[];
   showDesktopButtons?: boolean;
+  locale?: string | null;
 };
 
-export function SiteHeader({ bundeslaender, showDesktopButtons = true }: SiteHeaderProps) {
+export function SiteHeader({ bundeslaender, showDesktopButtons = true, locale = null }: SiteHeaderProps) {
+  const text = getPortalSystemTexts(locale);
   return (
     <header className="site-header site-header--default border-bottom bg-white text-dark sticky-top">
       <nav className="navbar navbar-light bg-white">
@@ -27,19 +31,19 @@ export function SiteHeader({ bundeslaender, showDesktopButtons = true }: SiteHea
                   href="/immobilienbewertung"
                   className="btn berater-button btn-sm rounded-pill px-3 fw-bold shadow-sm d-none d-md-block"
                 >
-                  Preischeck
+                  {text.price_check}
                 </Link>
                 <Link
                   href="/immobilienbewertung"
                   className="btn berater-button btn-sm rounded-pill px-3 fw-bold shadow-sm d-md-none"
                 >
-                  Preischeck
+                  {text.price_check}
                 </Link>
               </>
             ) : null}
           </div>
 
-          <Link href="/" className="navbar-brand brand-header d-flex align-items-center mx-auto">
+          <Link href={buildLocalizedHref(locale, "/")} className="navbar-brand brand-header d-flex align-items-center mx-auto">
             <Image
               src="/logo/wohnlagencheck24.svg"
               alt="Immobilienmarkt & Standortprofile"
@@ -63,7 +67,7 @@ export function SiteHeader({ bundeslaender, showDesktopButtons = true }: SiteHea
               data-bs-toggle="offcanvas"
               data-bs-target="#mainNavOffcanvas"
               aria-controls="mainNavOffcanvas"
-              aria-label="Navigation öffnen"
+              aria-label={text.open_navigation}
             >
               <span className="navbar-toggler-icon" />
             </button>
@@ -76,11 +80,11 @@ export function SiteHeader({ bundeslaender, showDesktopButtons = true }: SiteHea
             aria-labelledby="mainNavOffcanvasLabel"
           >
             <div className="offcanvas-header border-bottom">
-              <h5 className="offcanvas-title" id="mainNavOffcanvasLabel">Navigation</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label="Schließen" />
+              <h5 className="offcanvas-title" id="mainNavOffcanvasLabel">{text.navigation}</h5>
+              <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label={text.close} />
             </div>
             <div className="offcanvas-body">
-              <MainNav bundeslaender={bundeslaender} />
+              <MainNav bundeslaender={bundeslaender} locale={locale} />
             </div>
           </div>
         </div>
