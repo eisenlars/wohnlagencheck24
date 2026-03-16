@@ -74,7 +74,11 @@ export default async function AdminLoginPage({
                   if (!window.location.hash) return;
                   var hash = window.location.hash;
                   if (hash.indexOf("access_token=") === -1) return;
-                  if (hash.indexOf("type=invite") === -1 && hash.indexOf("type=recovery") === -1) return;
+                  if (hash.indexOf("type=recovery") !== -1) {
+                    window.location.replace("/admin/reset" + hash);
+                    return;
+                  }
+                  if (hash.indexOf("type=invite") === -1) return;
                   window.location.replace("/auth/setup?aud=admin" + hash);
                 } catch (_) {}
               })();

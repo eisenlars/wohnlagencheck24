@@ -62,7 +62,7 @@ export async function requestPasswordReset(formData: FormData) {
 
   try {
     const supabase = createClient();
-    const redirectTo = `${resolveAppBaseUrl(hdrs)}/auth/setup?aud=admin`;
+    const redirectTo = `${resolveAppBaseUrl(hdrs)}/admin/reset`;
     await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   } catch {
     // Keine Detailfehler zurückgeben (User-Enumeration vermeiden).
