@@ -72,6 +72,12 @@ type SendPartnerPasswordResetEmailArgs = {
   resetLink: string;
 };
 
+type SendAdminPasswordResetEmailArgs = {
+  adminEmail: string;
+  adminName?: string | null;
+  resetLink: string;
+};
+
 type SendPartnerInviteEmailArgs = {
   partnerEmail: string;
   partnerName?: string | null;
@@ -331,6 +337,25 @@ function buildPartnerPasswordResetText(args: SendPartnerPasswordResetEmailArgs):
   ].join("\n");
 }
 
+function buildAdminPasswordResetSubject(): string {
+  return "Admin-Passwort neu setzen";
+}
+
+function buildAdminPasswordResetText(args: SendAdminPasswordResetEmailArgs): string {
+  const admin = pickGreetingName(String(args.adminName ?? ""));
+  return [
+    `Hallo${admin ? ` ${admin}` : ""},`,
+    "",
+    "du hast angefordert, dein Passwort fuer den Adminbereich neu zu setzen.",
+    "",
+    "Bitte oeffne den folgenden Link, um ein neues Passwort zu vergeben:",
+    args.resetLink,
+    "",
+    "Der Link ist zeitlich begrenzt und kann nur einmal verwendet werden.",
+    "Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail ignorieren.",
+  ].join("\n");
+}
+
 function buildPartnerInviteSubject(args: SendPartnerInviteEmailArgs): string {
   const companyName = String(args.companyName ?? "").trim();
   return companyName ? `Partnerkonto aktivieren: ${companyName}` : "Partnerkonto aktivieren";
@@ -532,6 +557,22 @@ export async function sendPartnerPasswordResetEmail(args: SendPartnerPasswordRes
     to: [recipient],
     subject: buildPartnerPasswordResetSubject(),
     text: buildPartnerPasswordResetText(args),
+  });
+}
+
+export async function sendAdminPasswordResetEmail(args: SendAdminPasswordResetEmailArgs): Promise<{
+  sent: boolean;
+  reason?: string;
+}> {
+  const recipient = String(args.adminEmail ?? "").trim().toLowerCase();
+  const resetLink = String(args.resetLink ?? "").trim();
+  if (!recipient) return { sent: false, reason: "admin_email_missing" };
+  if (!resetLink) return { sent: false, reason: "reset_link_missing" };
+
+  return sendSmtpTextMail({
+    to: [recipient],
+    subject: buildAdminPasswordResetSubject(),
+    text: buildAdminPasswordResetText(args),
   });
 }
 

@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from '@/lib/security/rate-limit'
 import { getAdminRoleForUser } from '@/lib/security/admin-auth'
-import { resolveAppBaseUrl } from '@/lib/auth/resolve-app-base-url'
+import { requestAdminPasswordReset } from '@/lib/auth/admin-password-reset'
 
 export async function login(formData: FormData) {
   const email = formData.get('email') as string
@@ -61,9 +61,7 @@ export async function requestPasswordReset(formData: FormData) {
   }
 
   try {
-    const supabase = createClient();
-    const redirectTo = `${resolveAppBaseUrl(hdrs)}/admin/reset`;
-    await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    await requestAdminPasswordReset(email, hdrs);
   } catch {
     // Keine Detailfehler zurückgeben (User-Enumeration vermeiden).
   }
