@@ -83,6 +83,7 @@ type PersistedI18nViewState = {
   activeClass?: DisplayTextClass;
   activeDomain?: I18nProductDomainId;
   selectedBlogPostId?: string;
+  selectedPropertyOfferId?: string;
 };
 type I18nProductDomainId = 'immobilienmarkt' | 'blog' | 'immobilien' | 'referenzen' | 'gesuche';
 export type I18nProductDomain = {
@@ -128,6 +129,88 @@ type BlogTranslationItem = {
   translated_headline: string;
   translated_subline: string;
   translated_body_md: string;
+  translation_status: BlogTranslationStatus;
+  translation_id: string | null;
+  translation_updated_at: string | null;
+  translation_is_stale: boolean;
+};
+
+type PropertyOfferSourceRow = {
+  id: string;
+  partner_id: string;
+  source?: string | null;
+  external_id?: string | null;
+  offer_type?: string | null;
+  object_type?: string | null;
+  title?: string | null;
+  address?: string | null;
+  raw?: Record<string, unknown> | null;
+  updated_at?: string | null;
+};
+
+type PropertyOverrideRow = {
+  partner_id: string;
+  source: string;
+  external_id: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  seo_h1?: string | null;
+  short_description?: string | null;
+  long_description?: string | null;
+  location_text?: string | null;
+  features_text?: string | null;
+  highlights?: string[] | null;
+  image_alt_texts?: string[] | null;
+};
+
+type PropertyOfferTranslationRow = {
+  id?: string;
+  offer_id: string;
+  source: string;
+  external_id: string;
+  translated_seo_title: string | null;
+  translated_seo_description: string | null;
+  translated_seo_h1: string | null;
+  translated_short_description: string | null;
+  translated_long_description: string | null;
+  translated_location_text: string | null;
+  translated_features_text: string | null;
+  translated_highlights: string[] | null;
+  translated_image_alt_texts: string[] | null;
+  status: BlogTranslationStatus;
+  source_snapshot_hash: string | null;
+  source_last_updated: string | null;
+  updated_at: string | null;
+};
+
+type PropertyOfferTranslationItem = {
+  offer_id: string;
+  source: string;
+  external_id: string;
+  offer_type: string;
+  object_type: string;
+  title: string;
+  address: string;
+  source_updated_at: string | null;
+  source_snapshot_hash: string;
+  source_seo_title: string;
+  source_seo_description: string;
+  source_seo_h1: string;
+  source_short_description: string;
+  source_long_description: string;
+  source_location_text: string;
+  source_features_text: string;
+  source_highlights: string[];
+  source_image_alt_texts: string[];
+  translated_seo_title: string;
+  translated_seo_description: string;
+  translated_seo_h1: string;
+  translated_short_description: string;
+  translated_long_description: string;
+  translated_location_text: string;
+  translated_features_text: string;
+  translated_highlights: string[];
+  translated_image_alt_texts: string[];
   translation_status: BlogTranslationStatus;
   translation_id: string | null;
   translation_updated_at: string | null;
@@ -366,6 +449,10 @@ function normalizeLocaleLabel(locale: string): string {
   return `${lang.toUpperCase()}-${region.toUpperCase()}`;
 }
 
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
 function isTranslatableSectionKey(sectionKey: string): boolean {
   const key = String(sectionKey ?? '').toLowerCase().trim();
   if (!key) return false;
@@ -512,6 +599,10 @@ export default function InternationalizationManager({ config, availableLocales, 
   const setSelectedBlogPostId = (postId: string) => {
     setI18nViewState((prev) => ({ ...prev, selectedBlogPostId: postId }));
   };
+  const selectedPropertyOfferId = String(i18nViewState.selectedPropertyOfferId ?? '');
+  const setSelectedPropertyOfferId = (offerId: string) => {
+    setI18nViewState((prev) => ({ ...prev, selectedPropertyOfferId: offerId }));
+  };
   const [llmOptions, setLlmOptions] = useState<LlmOption[]>([]);
   const [selectedLlmOptionId, setSelectedLlmOptionId] = useState<string>('');
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
@@ -528,6 +619,23 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [blogSaving, setBlogSaving] = useState(false);
   const [blogStatus, setBlogStatus] = useState<string | null>(null);
   const [blogStatusTone, setBlogStatusTone] = useState<'success' | 'error' | null>(null);
+  const [propertyItems, setPropertyItems] = useState<PropertyOfferTranslationItem[]>([]);
+  const [propertyBaselineByOfferId, setPropertyBaselineByOfferId] = useState<Record<string, {
+    translated_seo_title: string;
+    translated_seo_description: string;
+    translated_seo_h1: string;
+    translated_short_description: string;
+    translated_long_description: string;
+    translated_location_text: string;
+    translated_features_text: string;
+    translated_highlights: string[];
+    translated_image_alt_texts: string[];
+    translation_status: BlogTranslationStatus;
+  }>>({});
+  const [propertyLoading, setPropertyLoading] = useState(false);
+  const [propertySaving, setPropertySaving] = useState(false);
+  const [propertyStatus, setPropertyStatus] = useState<string | null>(null);
+  const [propertyStatusTone, setPropertyStatusTone] = useState<'success' | 'error' | null>(null);
   const isDistrict = isDistrictArea(config?.area_id ?? '');
   const channelMeta = I18N_CHANNEL_OPTIONS.find((item) => item.value === channel) ?? I18N_CHANNEL_OPTIONS[0];
   const areaScopeLabel = isDistrict ? 'Kreis' : 'Ortslage';
@@ -535,6 +643,10 @@ export default function InternationalizationManager({ config, availableLocales, 
   const selectedBlogItem = useMemo(
     () => blogItems.find((item) => item.post_id === selectedBlogPostId) ?? blogItems[0] ?? null,
     [blogItems, selectedBlogPostId],
+  );
+  const selectedPropertyItem = useMemo(
+    () => propertyItems.find((item) => item.offer_id === selectedPropertyOfferId) ?? propertyItems[0] ?? null,
+    [propertyItems, selectedPropertyOfferId],
   );
 
   useEffect(() => {
@@ -556,9 +668,23 @@ export default function InternationalizationManager({ config, availableLocales, 
     setSelectedBlogPostId(blogItems[0]?.post_id ?? '');
   }, [blogItems, selectedBlogPostId]);
 
+  useEffect(() => {
+    if (propertyItems.length === 0) {
+      if (selectedPropertyOfferId) setSelectedPropertyOfferId('');
+      return;
+    }
+    if (propertyItems.some((item) => item.offer_id === selectedPropertyOfferId)) return;
+    setSelectedPropertyOfferId(propertyItems[0]?.offer_id ?? '');
+  }, [propertyItems, selectedPropertyOfferId]);
+
   function isMissingBlogI18nTable(error: unknown): boolean {
     const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
     return msg.includes('partner_blog_post_i18n') && msg.includes('does not exist');
+  }
+
+  function isMissingPropertyI18nTable(error: unknown): boolean {
+    const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
+    return msg.includes('partner_property_offer_i18n') && msg.includes('does not exist');
   }
 
   async function loadBlogItems() {
@@ -721,6 +847,245 @@ export default function InternationalizationManager({ config, availableLocales, 
     }
   }
 
+  async function loadPropertyItems() {
+    if (!config?.area_id) return;
+    setPropertyLoading(true);
+    setPropertyStatus(null);
+    setPropertyStatusTone(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Nicht angemeldet.');
+
+      const { data: offersData, error: offersError } = await supabase
+        .from('partner_property_offers')
+        .select('id, partner_id, source, external_id, offer_type, object_type, title, address, raw, updated_at')
+        .eq('partner_id', user.id)
+        .eq('area_id', config.area_id)
+        .order('updated_at', { ascending: false });
+
+      if (offersError) throw offersError;
+
+      const offers = (offersData ?? []) as PropertyOfferSourceRow[];
+      const sources = Array.from(new Set(offers.map((item) => String(item.source ?? '').trim()).filter(Boolean)));
+      const externalIds = Array.from(new Set(offers.map((item) => String(item.external_id ?? '').trim()).filter(Boolean)));
+      const offerIds = offers.map((item) => String(item.id ?? '').trim()).filter(Boolean);
+
+      let overrideRows: PropertyOverrideRow[] = [];
+      if (sources.length > 0 && externalIds.length > 0) {
+        const { data: overridesData, error: overridesError } = await supabase
+          .from('partner_property_overrides')
+          .select('partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts')
+          .eq('partner_id', user.id)
+          .in('source', sources)
+          .in('external_id', externalIds);
+
+        if (overridesError) throw overridesError;
+        overrideRows = (overridesData ?? []) as PropertyOverrideRow[];
+      }
+
+      let translationRows: PropertyOfferTranslationRow[] = [];
+      if (offerIds.length > 0) {
+        const { data: translationsData, error: translationsError } = await supabase
+          .from('partner_property_offer_i18n')
+          .select('id, offer_id, source, external_id, translated_seo_title, translated_seo_description, translated_seo_h1, translated_short_description, translated_long_description, translated_location_text, translated_features_text, translated_highlights, translated_image_alt_texts, status, source_snapshot_hash, source_last_updated, updated_at')
+          .eq('partner_id', user.id)
+          .eq('target_locale', locale)
+          .in('offer_id', offerIds);
+
+        if (translationsError) {
+          if (isMissingPropertyI18nTable(translationsError)) {
+            throw new Error('Tabelle `partner_property_offer_i18n` fehlt. Bitte SQL-Migration ausführen.');
+          }
+          throw translationsError;
+        }
+        translationRows = (translationsData ?? []) as PropertyOfferTranslationRow[];
+      }
+
+      const overrideByKey = new Map(
+        overrideRows.map((row) => [`${String(row.source ?? '').trim()}::${String(row.external_id ?? '').trim()}`, row] as const),
+      );
+      const translationByOfferId = new Map(
+        translationRows
+          .map((row) => [String(row.offer_id ?? '').trim(), row] as const)
+          .filter(([offerId]) => offerId.length > 0),
+      );
+
+      const nextItems = offers.map((offer) => {
+        const offerId = String(offer.id ?? '').trim();
+        const source = String(offer.source ?? '').trim() || 'manual';
+        const externalId = String(offer.external_id ?? '').trim() || offerId;
+        const raw = (offer.raw ?? {}) as Record<string, unknown>;
+        const override = overrideByKey.get(`${source}::${externalId}`);
+        const translation = translationByOfferId.get(offerId);
+        const rawDescription = typeof raw.description === 'string' ? raw.description : '';
+        const rawLocation = typeof raw.location === 'string' && raw.location ? raw.location : rawDescription;
+        const rawFeatures = typeof raw.features_note === 'string' ? raw.features_note : '';
+        const rawHighlights = toStringArray(raw.highlights);
+        const rawImageAltTexts = toStringArray(raw.image_alt_texts);
+        const sourceSeoTitle = String(override?.seo_title ?? offer.title ?? '');
+        const sourceSeoDescription = String(override?.seo_description ?? rawDescription ?? '');
+        const sourceSeoH1 = String(override?.seo_h1 ?? offer.title ?? '');
+        const sourceShortDescription = String(override?.short_description ?? rawDescription ?? '');
+        const sourceLongDescription = String(override?.long_description ?? rawDescription ?? '');
+        const sourceLocationText = String(override?.location_text ?? rawLocation ?? '');
+        const sourceFeaturesText = String(override?.features_text ?? rawFeatures ?? '');
+        const sourceHighlights = override?.highlights ?? rawHighlights;
+        const sourceImageAltTexts = override?.image_alt_texts ?? rawImageAltTexts;
+        const sourceSnapshotHash = hashText(JSON.stringify({
+          sourceSeoTitle,
+          sourceSeoDescription,
+          sourceSeoH1,
+          sourceShortDescription,
+          sourceLongDescription,
+          sourceLocationText,
+          sourceFeaturesText,
+          sourceHighlights,
+          sourceImageAltTexts,
+        }));
+        const storedHash = String(translation?.source_snapshot_hash ?? '').trim();
+
+        return {
+          offer_id: offerId,
+          source,
+          external_id: externalId,
+          offer_type: String(offer.offer_type ?? ''),
+          object_type: String(offer.object_type ?? ''),
+          title: String(offer.title ?? ''),
+          address: String(offer.address ?? ''),
+          source_updated_at: offer.updated_at ?? null,
+          source_snapshot_hash: sourceSnapshotHash,
+          source_seo_title: sourceSeoTitle,
+          source_seo_description: sourceSeoDescription,
+          source_seo_h1: sourceSeoH1,
+          source_short_description: sourceShortDescription,
+          source_long_description: sourceLongDescription,
+          source_location_text: sourceLocationText,
+          source_features_text: sourceFeaturesText,
+          source_highlights: sourceHighlights,
+          source_image_alt_texts: sourceImageAltTexts,
+          translated_seo_title: String(translation?.translated_seo_title ?? ''),
+          translated_seo_description: String(translation?.translated_seo_description ?? ''),
+          translated_seo_h1: String(translation?.translated_seo_h1 ?? ''),
+          translated_short_description: String(translation?.translated_short_description ?? ''),
+          translated_long_description: String(translation?.translated_long_description ?? ''),
+          translated_location_text: String(translation?.translated_location_text ?? ''),
+          translated_features_text: String(translation?.translated_features_text ?? ''),
+          translated_highlights: translation?.translated_highlights ?? [],
+          translated_image_alt_texts: translation?.translated_image_alt_texts ?? [],
+          translation_status: (translation?.status ?? 'draft') as BlogTranslationStatus,
+          translation_id: translation?.id ? String(translation.id) : null,
+          translation_updated_at: translation?.updated_at ?? null,
+          translation_is_stale: Boolean(storedHash) && storedHash !== sourceSnapshotHash,
+        } satisfies PropertyOfferTranslationItem;
+      });
+
+      const nextBaseline = Object.fromEntries(
+        nextItems.map((item) => [item.offer_id, {
+          translated_seo_title: item.translated_seo_title,
+          translated_seo_description: item.translated_seo_description,
+          translated_seo_h1: item.translated_seo_h1,
+          translated_short_description: item.translated_short_description,
+          translated_long_description: item.translated_long_description,
+          translated_location_text: item.translated_location_text,
+          translated_features_text: item.translated_features_text,
+          translated_highlights: [...item.translated_highlights],
+          translated_image_alt_texts: [...item.translated_image_alt_texts],
+          translation_status: item.translation_status,
+        }]),
+      );
+
+      setPropertyItems(nextItems);
+      setPropertyBaselineByOfferId(nextBaseline);
+      setPropertyStatus(nextItems.length === 0
+        ? 'Keine Immobilienangebote im aktuellen Gebiet vorhanden.'
+        : `Immobilien-Übersetzungsstand für ${nextItems.length} Angebot/Angebote geladen.`);
+      setPropertyStatusTone('success');
+    } catch (error) {
+      setPropertyItems([]);
+      setPropertyBaselineByOfferId({});
+      setPropertyStatus(error instanceof Error ? error.message : 'Immobilien-Übersetzungen konnten nicht geladen werden.');
+      setPropertyStatusTone('error');
+    } finally {
+      setPropertyLoading(false);
+    }
+  }
+
+  async function saveSelectedPropertyItem() {
+    if (!selectedPropertyItem) return;
+    setPropertySaving(true);
+    setPropertyStatus(null);
+    setPropertyStatusTone(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Nicht angemeldet.');
+
+      const payload = {
+        partner_id: user.id,
+        offer_id: selectedPropertyItem.offer_id,
+        area_id: config.area_id,
+        source: selectedPropertyItem.source,
+        external_id: selectedPropertyItem.external_id,
+        target_locale: locale,
+        translated_seo_title: selectedPropertyItem.translated_seo_title.trim() || null,
+        translated_seo_description: selectedPropertyItem.translated_seo_description.trim() || null,
+        translated_seo_h1: selectedPropertyItem.translated_seo_h1.trim() || null,
+        translated_short_description: selectedPropertyItem.translated_short_description.trim() || null,
+        translated_long_description: selectedPropertyItem.translated_long_description.trim() || null,
+        translated_location_text: selectedPropertyItem.translated_location_text.trim() || null,
+        translated_features_text: selectedPropertyItem.translated_features_text.trim() || null,
+        translated_highlights: selectedPropertyItem.translated_highlights,
+        translated_image_alt_texts: selectedPropertyItem.translated_image_alt_texts,
+        status: selectedPropertyItem.translation_status,
+        source_snapshot_hash: selectedPropertyItem.source_snapshot_hash,
+        source_last_updated: selectedPropertyItem.source_updated_at,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('partner_property_offer_i18n')
+        .upsert(payload, { onConflict: 'partner_id,offer_id,target_locale' });
+
+      if (error) {
+        if (isMissingPropertyI18nTable(error)) {
+          throw new Error('Tabelle `partner_property_offer_i18n` fehlt. Bitte SQL-Migration ausführen.');
+        }
+        throw error;
+      }
+
+      setPropertyBaselineByOfferId((prev) => ({
+        ...prev,
+        [selectedPropertyItem.offer_id]: {
+          translated_seo_title: selectedPropertyItem.translated_seo_title,
+          translated_seo_description: selectedPropertyItem.translated_seo_description,
+          translated_seo_h1: selectedPropertyItem.translated_seo_h1,
+          translated_short_description: selectedPropertyItem.translated_short_description,
+          translated_long_description: selectedPropertyItem.translated_long_description,
+          translated_location_text: selectedPropertyItem.translated_location_text,
+          translated_features_text: selectedPropertyItem.translated_features_text,
+          translated_highlights: [...selectedPropertyItem.translated_highlights],
+          translated_image_alt_texts: [...selectedPropertyItem.translated_image_alt_texts],
+          translation_status: selectedPropertyItem.translation_status,
+        },
+      }));
+      setPropertyItems((prev) => prev.map((item) => (
+        item.offer_id === selectedPropertyItem.offer_id
+          ? {
+              ...item,
+              translation_is_stale: false,
+              translation_updated_at: payload.updated_at,
+            }
+          : item
+      )));
+      setPropertyStatus('Immobilien-Übersetzung gespeichert.');
+      setPropertyStatusTone('success');
+    } catch (error) {
+      setPropertyStatus(error instanceof Error ? error.message : 'Immobilien-Übersetzung konnte nicht gespeichert werden.');
+      setPropertyStatusTone('error');
+    } finally {
+      setPropertySaving(false);
+    }
+  }
+
   async function resolveScopeAreas(nextScope: I18nScope): Promise<ScopeArea[]> {
     const current: ScopeArea = {
       area_id: String(config?.area_id ?? ''),
@@ -834,6 +1199,12 @@ export default function InternationalizationManager({ config, availableLocales, 
     void loadBlogItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDomain, config?.area_id, locale]);
+
+  useEffect(() => {
+    if (activeDomain !== 'immobilien' || !activeDomainMeta.enabled) return;
+    void loadPropertyItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDomain, activeDomainMeta.enabled, config?.area_id, locale]);
 
   useEffect(() => {
     (async () => {
@@ -1033,6 +1404,55 @@ export default function InternationalizationManager({ config, availableLocales, 
     );
   }, [blogBaselineByPostId, selectedBlogItem]);
 
+  const propertySummary = useMemo(() => {
+    const total = propertyItems.length;
+    const translated = propertyItems.filter((item) => (
+      item.translated_seo_title.trim().length > 0
+      || item.translated_seo_description.trim().length > 0
+      || item.translated_seo_h1.trim().length > 0
+      || item.translated_short_description.trim().length > 0
+      || item.translated_long_description.trim().length > 0
+      || item.translated_location_text.trim().length > 0
+      || item.translated_features_text.trim().length > 0
+      || item.translated_highlights.length > 0
+      || item.translated_image_alt_texts.length > 0
+    )).length;
+    const stale = propertyItems.filter((item) => item.translation_is_stale).length;
+    const missing = total - translated;
+    return { total, translated, missing, stale };
+  }, [propertyItems]);
+
+  const propertyHasEdits = useMemo(() => {
+    if (!selectedPropertyItem) return false;
+    const baseline = propertyBaselineByOfferId[selectedPropertyItem.offer_id];
+    if (!baseline) {
+      return (
+        selectedPropertyItem.translated_seo_title.trim().length > 0
+        || selectedPropertyItem.translated_seo_description.trim().length > 0
+        || selectedPropertyItem.translated_seo_h1.trim().length > 0
+        || selectedPropertyItem.translated_short_description.trim().length > 0
+        || selectedPropertyItem.translated_long_description.trim().length > 0
+        || selectedPropertyItem.translated_location_text.trim().length > 0
+        || selectedPropertyItem.translated_features_text.trim().length > 0
+        || selectedPropertyItem.translated_highlights.length > 0
+        || selectedPropertyItem.translated_image_alt_texts.length > 0
+        || selectedPropertyItem.translation_status !== 'draft'
+      );
+    }
+    return (
+      selectedPropertyItem.translated_seo_title !== baseline.translated_seo_title
+      || selectedPropertyItem.translated_seo_description !== baseline.translated_seo_description
+      || selectedPropertyItem.translated_seo_h1 !== baseline.translated_seo_h1
+      || selectedPropertyItem.translated_short_description !== baseline.translated_short_description
+      || selectedPropertyItem.translated_long_description !== baseline.translated_long_description
+      || selectedPropertyItem.translated_location_text !== baseline.translated_location_text
+      || selectedPropertyItem.translated_features_text !== baseline.translated_features_text
+      || JSON.stringify(selectedPropertyItem.translated_highlights) !== JSON.stringify(baseline.translated_highlights)
+      || JSON.stringify(selectedPropertyItem.translated_image_alt_texts) !== JSON.stringify(baseline.translated_image_alt_texts)
+      || selectedPropertyItem.translation_status !== baseline.translation_status
+    );
+  }, [propertyBaselineByOfferId, selectedPropertyItem]);
+
   const selectedWorkflowKeys = useMemo(
     () => Array.from(new Set(rows
       .filter((row) => isTranslatableSectionKey(row.section_key))
@@ -1145,9 +1565,13 @@ export default function InternationalizationManager({ config, availableLocales, 
   return (
     <>
       <FullscreenLoader
-        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving}
+        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving || propertyLoading || propertySaving}
         label={
-          blogLoading
+          propertyLoading
+            ? 'Immobilien-Übersetzungen werden geladen...'
+            : propertySaving
+              ? 'Immobilien-Übersetzung wird gespeichert...'
+          : blogLoading
             ? 'Blog-Übersetzungen werden geladen...'
             : blogSaving
               ? 'Blog-Übersetzung wird gespeichert...'
@@ -1274,6 +1698,21 @@ export default function InternationalizationManager({ config, availableLocales, 
               </div>
               <div style={summaryStyle}>
                 Beiträge: <strong>{blogSummary.total}</strong> · Übersetzt: <strong>{blogSummary.translated}</strong> · Fehlend: <strong>{blogSummary.missing}</strong> · Veraltet: <strong>{blogSummary.stale}</strong>
+              </div>
+            </>
+          ) : activeDomain === 'immobilien' && activeDomainMeta.enabled ? (
+            <>
+              <div style={workflowNoticeStyle}>
+                <div style={workflowNoticeHeadStyle}>
+                  <strong>Immobilien</strong>
+                  <span style={workflowNoticeMetaStyle}>Objektbasierte Sprachpflege je Angebot und Sprache</span>
+                </div>
+                <p style={workflowNoticeTextStyle}>
+                  Deutsche Exposé- und SEO-Texte werden weiterhin im Bereich „Immobilien“ gepflegt. Hier bearbeitest du deren Übersetzungen pro Objekt, Sprache und Status getrennt vom deutschen Angebotsworkflow.
+                </p>
+              </div>
+              <div style={summaryStyle}>
+                Angebote: <strong>{propertySummary.total}</strong> · Übersetzt: <strong>{propertySummary.translated}</strong> · Fehlend: <strong>{propertySummary.missing}</strong> · Veraltet: <strong>{propertySummary.stale}</strong>
               </div>
             </>
           ) : null}
@@ -1725,6 +2164,330 @@ export default function InternationalizationManager({ config, availableLocales, 
               </>
             ) : (
               <div style={blogEmptyDetailStyle}>Wähle links einen Blogbeitrag, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
+            )}
+          </div>
+        </div>
+      </div>
+      ) : activeDomain === 'immobilien' && activeDomainMeta.enabled ? (
+      <div style={editorCardStyle}>
+        {propertyStatus ? <div style={propertyStatusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{propertyStatus}</div> : null}
+        <div style={blogGridStyle}>
+          <aside style={blogListCardStyle}>
+            <div style={blogListHeadStyle}>
+              <h3 style={sectionTabsIntroTitleStyle}>Angebote</h3>
+              <button
+                type="button"
+                style={secondaryActionButtonStyle}
+                onClick={() => void loadPropertyItems()}
+                disabled={propertyLoading || propertySaving}
+              >
+                Stand laden
+              </button>
+            </div>
+            <div style={blogListMetaStyle}>
+              Je Angebot werden SEO-, Beschreibungs- und Bildtexte in der Zielsprache getrennt vom deutschen Exposé gepflegt.
+            </div>
+            {propertyItems.length === 0 ? (
+              <div style={blogEmptyStateStyle}>Im aktuellen Gebiet gibt es noch keine Partner-Immobilien.</div>
+            ) : (
+              <div style={blogListWrapStyle}>
+                {propertyItems.map((item) => {
+                  const translated = Boolean(
+                    item.translated_seo_title.trim()
+                    || item.translated_seo_description.trim()
+                    || item.translated_seo_h1.trim()
+                    || item.translated_short_description.trim()
+                    || item.translated_long_description.trim()
+                    || item.translated_location_text.trim()
+                    || item.translated_features_text.trim()
+                    || item.translated_highlights.length > 0
+                    || item.translated_image_alt_texts.length > 0,
+                  );
+                  return (
+                    <button
+                      key={item.offer_id}
+                      type="button"
+                      style={blogListRowStyle(selectedPropertyItem?.offer_id === item.offer_id)}
+                      onClick={() => setSelectedPropertyOfferId(item.offer_id)}
+                    >
+                      <div style={blogListRowTopStyle}>
+                        <strong style={blogListHeadlineStyle}>{item.title || 'Ohne Titel'}</strong>
+                        <span style={blogTranslationBadgeStyle(item.translation_is_stale, translated)}>
+                          {item.translation_is_stale ? 'Veraltet' : translated ? 'Übersetzt' : 'Fehlt'}
+                        </span>
+                      </div>
+                      <div style={blogListSublineStyle}>{item.address || `${item.offer_type || 'angebot'} · ${item.object_type || 'Objekt'}`}</div>
+                      <div style={blogListMetaLineStyle}>
+                        {item.offer_type || 'angebot'} · {item.object_type || 'Objekt'} · {item.source_updated_at ? new Date(item.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </aside>
+
+          <div style={blogEditorWrapStyle}>
+            {selectedPropertyItem ? (
+              <>
+                <div style={blogEditorHeadStyle}>
+                  <div>
+                    <h3 style={sectionTabsIntroTitleStyle}>{selectedPropertyItem.title || 'Ohne Titel'}</h3>
+                    <p style={blogEditorIntroStyle}>
+                      Übersetze hier die objektbezogenen Texte, die derzeit über die deutschen Override-Felder ausgespielt werden. Die deutsche Angebotsbearbeitung bleibt im Bereich „Immobilien“.
+                    </p>
+                  </div>
+                  <span style={blogTranslationBadgeStyle(selectedPropertyItem.translation_is_stale, Boolean(
+                    selectedPropertyItem.translated_seo_title.trim()
+                    || selectedPropertyItem.translated_seo_description.trim()
+                    || selectedPropertyItem.translated_seo_h1.trim()
+                    || selectedPropertyItem.translated_short_description.trim()
+                    || selectedPropertyItem.translated_long_description.trim()
+                    || selectedPropertyItem.translated_location_text.trim()
+                    || selectedPropertyItem.translated_features_text.trim()
+                    || selectedPropertyItem.translated_highlights.length > 0
+                    || selectedPropertyItem.translated_image_alt_texts.length > 0,
+                  ))}>
+                    {selectedPropertyItem.translation_is_stale ? 'Quelle geändert' : selectedPropertyItem.translation_status}
+                  </span>
+                </div>
+
+                <div style={blogSummaryGridStyle}>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Objekttyp</span>
+                    <strong>{selectedPropertyItem.object_type || 'Objekt'}</strong>
+                  </div>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Angebotsart</span>
+                    <strong>{selectedPropertyItem.offer_type || 'Angebot'}</strong>
+                  </div>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Übersetzungsstatus</span>
+                    <strong>{selectedPropertyItem.translation_status}</strong>
+                  </div>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Zuletzt aktualisiert</span>
+                    <strong>{selectedPropertyItem.translation_updated_at ? new Date(selectedPropertyItem.translation_updated_at).toLocaleString('de-DE') : 'Noch nicht gespeichert'}</strong>
+                  </div>
+                </div>
+
+                <div style={blogColumnGridStyle}>
+                  <div style={blogSourceCardStyle}>
+                    <div style={blogColumnHeadStyle}>Deutsch (Quelle)</div>
+                    <label style={fieldStyle}>
+                      SEO-Titel
+                      <input style={inputStyle} value={selectedPropertyItem.source_seo_title} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Meta-Description
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_seo_description} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      H1
+                      <input style={inputStyle} value={selectedPropertyItem.source_seo_h1} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Kurzbeschreibung
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_short_description} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Langbeschreibung
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_long_description} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Lage
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_location_text} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Ausstattung
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_features_text} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Highlights
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_highlights.join('\n')} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Bild-Alt-Texte
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_image_alt_texts.join('\n')} readOnly />
+                    </label>
+                  </div>
+
+                  <div style={blogTargetCardStyle}>
+                    <div style={blogColumnHeadStyle}>Übersetzung</div>
+                    <label style={fieldStyle}>
+                      SEO-Titel
+                      <input
+                        style={inputStyle}
+                        value={selectedPropertyItem.translated_seo_title}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_seo_title: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Meta-Description
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedPropertyItem.translated_seo_description}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_seo_description: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      H1
+                      <input
+                        style={inputStyle}
+                        value={selectedPropertyItem.translated_seo_h1}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_seo_h1: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Kurzbeschreibung
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedPropertyItem.translated_short_description}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_short_description: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Langbeschreibung
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedPropertyItem.translated_long_description}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_long_description: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Lage
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedPropertyItem.translated_location_text}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_location_text: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Ausstattung
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedPropertyItem.translated_features_text}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_features_text: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Highlights
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedPropertyItem.translated_highlights.join('\n')}
+                        onChange={(e) => {
+                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_highlights: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Bild-Alt-Texte
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedPropertyItem.translated_image_alt_texts.join('\n')}
+                        onChange={(e) => {
+                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_image_alt_texts: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Status
+                      <select
+                        style={inputStyle}
+                        value={selectedPropertyItem.translation_status}
+                        onChange={(e) => {
+                          const next = e.target.value as BlogTranslationStatus;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translation_status: next } : item
+                          )));
+                        }}
+                      >
+                        <option value="draft">Entwurf</option>
+                        <option value="approved">Freigegeben</option>
+                        <option value="needs_review">Prüfen</option>
+                      </select>
+                    </label>
+                    <div style={blogActionRowStyle}>
+                      <button
+                        type="button"
+                        style={secondaryActionButtonStyle}
+                        onClick={() => {
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id
+                              ? {
+                                  ...item,
+                                  translated_seo_title: item.source_seo_title,
+                                  translated_seo_description: item.source_seo_description,
+                                  translated_seo_h1: item.source_seo_h1,
+                                  translated_short_description: item.source_short_description,
+                                  translated_long_description: item.source_long_description,
+                                  translated_location_text: item.source_location_text,
+                                  translated_features_text: item.source_features_text,
+                                  translated_highlights: [...item.source_highlights],
+                                  translated_image_alt_texts: [...item.source_image_alt_texts],
+                                }
+                              : item
+                          )));
+                        }}
+                        disabled={propertySaving}
+                      >
+                        Deutsch übernehmen
+                      </button>
+                      <button
+                        type="button"
+                        style={buttonPrimaryStyle(propertyHasEdits && !propertySaving)}
+                        onClick={() => void saveSelectedPropertyItem()}
+                        disabled={!propertyHasEdits || propertySaving}
+                      >
+                        {propertySaving ? 'Speichern …' : 'Immobilien-Übersetzung speichern'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={blogEmptyDetailStyle}>Wähle links ein Immobilienangebot, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
             )}
           </div>
         </div>
