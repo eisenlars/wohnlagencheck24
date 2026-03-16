@@ -24,6 +24,7 @@ import {
   estimateTranslationTotals,
   type I18nEstimatePricing,
 } from '@/lib/i18n-cost-estimate';
+import { useSessionViewState } from '@/lib/ui/session-view-state';
 
 type AreaConfig = {
   area_id: string;
@@ -72,8 +73,16 @@ type ScopeArea = {
 };
 
 type SectionKind = 'general' | 'data_driven' | 'individual' | 'marketing';
+type PersistedI18nViewState = {
+  locale?: string;
+  channel?: I18nChannel;
+  scope?: I18nScope;
+  activeTab?: string;
+  activeClass?: DisplayTextClass;
+};
 
 const I18N_MOCK_TRANSLATION = process.env.NEXT_PUBLIC_I18N_MOCK_TRANSLATION === '1';
+const I18N_VIEW_STATE_KEY_PREFIX = 'partner_i18n_view_state_v1';
 
 const I18N_TAB_ORDER = [
   { id: 'berater', label: 'Berater', icon: '👤' },
@@ -363,17 +372,46 @@ export default function InternationalizationManager({ config, availableLocales }
     if (unique.length === 0) return ['en'];
     return unique;
   }, [availableLocales]);
-
-  const [locale, setLocale] = useState<string>(locales[0] ?? 'en');
-  const [channel, setChannel] = useState<I18nChannel>('portal');
-  const [scope, setScope] = useState<I18nScope>('current_area');
+  const i18nViewStateKey = useMemo(
+    () => `${I18N_VIEW_STATE_KEY_PREFIX}:${String(config?.area_id ?? 'global')}`,
+    [config?.area_id],
+  );
+  const i18nInitialViewState = useMemo<PersistedI18nViewState>(() => ({
+    locale: locales[0] ?? 'en',
+    channel: 'portal',
+    scope: 'current_area',
+    activeTab: 'marktueberblick',
+    activeClass: 'general',
+  }), [locales]);
+  const [i18nViewState, setI18nViewState] = useSessionViewState<PersistedI18nViewState>(
+    i18nViewStateKey,
+    i18nInitialViewState,
+  );
+  const locale = String(i18nViewState.locale ?? (locales[0] ?? 'en'));
+  const setLocale = (nextLocale: string) => {
+    setI18nViewState((prev) => ({ ...prev, locale: nextLocale }));
+  };
+  const channel = (i18nViewState.channel ?? 'portal') as I18nChannel;
+  const setChannel = (nextChannel: I18nChannel) => {
+    setI18nViewState((prev) => ({ ...prev, channel: nextChannel }));
+  };
+  const scope = (i18nViewState.scope ?? 'current_area') as I18nScope;
+  const setScope = (nextScope: I18nScope) => {
+    setI18nViewState((prev) => ({ ...prev, scope: nextScope }));
+  };
   const [rows, setRows] = useState<TranslationRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<'success' | 'error' | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('marktueberblick');
-  const [activeClass, setActiveClass] = useState<DisplayTextClass>('general');
+  const activeTab = String(i18nViewState.activeTab ?? 'marktueberblick');
+  const setActiveTab = (nextTab: string) => {
+    setI18nViewState((prev) => ({ ...prev, activeTab: nextTab }));
+  };
+  const activeClass = (i18nViewState.activeClass ?? 'general') as DisplayTextClass;
+  const setActiveClass = (nextClass: DisplayTextClass) => {
+    setI18nViewState((prev) => ({ ...prev, activeClass: nextClass }));
+  };
   const [llmOptions, setLlmOptions] = useState<LlmOption[]>([]);
   const [selectedLlmOptionId, setSelectedLlmOptionId] = useState<string>('');
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);

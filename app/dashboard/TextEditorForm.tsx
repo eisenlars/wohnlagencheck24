@@ -16,6 +16,7 @@ import {
   MANDATORY_MEDIA_SPECS,
   type MandatoryMediaKey,
 } from '@/lib/mandatory-media';
+import { useSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
 const SINGLE_LINE_TEXT_KEYS = new Set([
@@ -398,6 +399,12 @@ type TextEditorFormProps = {
     onPersistSuccess?: () => void;
 };
 
+type PersistedTextEditorViewState = {
+  activeTab?: string;
+};
+
+const TEXT_EDITOR_VIEW_STATE_KEY_PREFIX = 'partner_text_editor_view_state_v1';
+
 const GLOBAL_CLASS_ORDER: GlobalClassKey[] = ['general', 'data_driven', 'market_expert', 'profile'];
 
 const GLOBAL_CLASS_META: Record<GlobalClassKey, {
@@ -446,7 +453,23 @@ export default function TextEditorForm({
 }: TextEditorFormProps) {
   const supabase = useMemo(() => createClient(), []);
   const appliedInitialTabRef = useRef<string | null>(null);
-  const [activeTab, setActiveTab] = useState('marktueberblick');
+  const textEditorViewStateKey = useMemo(() => {
+    const areaId = String(config?.area_id ?? 'global');
+    const table = String(tableName ?? 'report_texts');
+    const tabScope = Array.isArray(allowedTabIds) && allowedTabIds.length > 0 ? allowedTabIds.join(',') : 'all';
+    return `${TEXT_EDITOR_VIEW_STATE_KEY_PREFIX}:${table}:${areaId}:${tabScope}:${lockedToMandatory ? 'mandatory' : 'default'}`;
+  }, [allowedTabIds, config?.area_id, lockedToMandatory, tableName]);
+  const textEditorInitialViewState = useMemo<PersistedTextEditorViewState>(() => ({
+    activeTab: 'marktueberblick',
+  }), []);
+  const [textEditorViewState, setTextEditorViewState] = useSessionViewState<PersistedTextEditorViewState>(
+    textEditorViewStateKey,
+    textEditorInitialViewState,
+  );
+  const activeTab = String(textEditorViewState.activeTab ?? 'marktueberblick');
+  const setActiveTab = (nextTab: string) => {
+    setTextEditorViewState((prev) => ({ ...prev, activeTab: nextTab }));
+  };
   const [loading, setLoading] = useState(true);
   const [baseTexts, setBaseTexts] = useState<{ text: Record<string, Record<string, string>> } | null>(null);
   const [standardTexts, setStandardTexts] = useState<{ text: Record<string, Record<string, string>> } | null>(null);

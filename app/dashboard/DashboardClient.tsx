@@ -15,6 +15,7 @@ import InternationalizationManager from './InternationalizationManager';
 import PartnerSettingsPanel, { type SettingsSection } from './PartnerSettingsPanel';
 import { INDIVIDUAL_MANDATORY_KEYS } from '@/lib/text-key-registry';
 import { MANDATORY_MEDIA_KEYS, getMandatoryMediaLabel, isMandatoryMediaKey } from '@/lib/mandatory-media';
+import { readSessionViewState, writeSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
 type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'referenzen' | 'gesuche' | 'blog' | 'international' | 'settings';
@@ -574,13 +575,7 @@ export default function DashboardClient() {
 
       queueMicrotask(() => {
         if (mergedConfigs.length > 0) {
-          let persisted: PersistedDashboardState | null = null;
-          try {
-            const raw = sessionStorage.getItem(DASHBOARD_UI_STATE_KEY);
-            persisted = raw ? (JSON.parse(raw) as PersistedDashboardState) : null;
-          } catch {
-            persisted = null;
-          }
+          const persisted = readSessionViewState<PersistedDashboardState>(DASHBOARD_UI_STATE_KEY);
 
           const restoredAreaId = String(persisted?.selectedAreaId ?? '');
           const restoredArea = restoredAreaId ? mergedConfigs.find((cfg) => cfg.area_id === restoredAreaId) : undefined;
@@ -821,11 +816,7 @@ export default function DashboardClient() {
       selectedAreaId: selectedConfig?.area_id,
       showWelcome,
     };
-    try {
-      sessionStorage.setItem(DASHBOARD_UI_STATE_KEY, JSON.stringify(payload));
-    } catch {
-      // Ignore storage failures in private mode / restricted contexts.
-    }
+    writeSessionViewState(DASHBOARD_UI_STATE_KEY, payload);
   }, [activeMainTab, selectedConfig?.area_id, showWelcome, loading]);
 
   const activeConfigs = configs.filter((c) => Boolean(c.is_active));

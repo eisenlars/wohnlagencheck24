@@ -15,6 +15,11 @@ import {
   type PortalLocaleConfigRecord,
   type PortalLocaleStatus,
 } from "@/lib/portal-cms";
+import {
+  restoreSessionScroll,
+  storeSessionScroll,
+  useSessionViewState,
+} from "@/lib/ui/session-view-state";
 import FullscreenLoader from "@/components/ui/FullscreenLoader";
 
 type Partner = {
@@ -485,6 +490,14 @@ function formatPortalEntryStatus(status: PortalContentEntryStatus): string {
   return "entwurf";
 }
 
+type PersistedPortalCmsViewState = {
+  pageKey?: string;
+  locale?: string;
+};
+
+const PORTAL_CMS_VIEW_STATE_KEY = "admin_portal_cms_view_state_v1";
+const PORTAL_CMS_SCROLL_STATE_KEY = "admin_portal_cms_scroll_v1";
+
 async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const res = await fetch(input, {
     ...init,
@@ -709,12 +722,21 @@ export default function AdminClient() {
   const portalCmsPages = useMemo<PortalContentPageDefinition[]>(() => getPortalCmsPages(), []);
   const [portalLocaleConfigs, setPortalLocaleConfigs] = useState<PortalLocaleConfigRecord[]>([]);
   const [portalContentEntries, setPortalContentEntries] = useState<PortalContentEntryRecord[]>([]);
-  const [portalCmsPageKey, setPortalCmsPageKey] = useState<string>("home");
-  const [portalCmsLocale, setPortalCmsLocale] = useState<string>("de");
+  const portalCmsInitialViewState = useMemo<PersistedPortalCmsViewState>(() => ({
+    pageKey: "home",
+    locale: "de",
+  }), []);
+  const [portalCmsViewState, setPortalCmsViewState] = useSessionViewState<PersistedPortalCmsViewState>(
+    PORTAL_CMS_VIEW_STATE_KEY,
+    portalCmsInitialViewState,
+  );
+  const portalCmsPageKey = String(portalCmsViewState.pageKey ?? "home");
+  const portalCmsLocale = String(portalCmsViewState.locale ?? "de");
   const [portalCmsDrafts, setPortalCmsDrafts] = useState<Record<string, {
     status: PortalContentEntryStatus;
     fields_json: Record<string, string>;
   }>>({});
+  const pendingPortalCmsScrollRestoreRef = useRef(false);
   const [llmProviderDrafts, setLlmProviderDrafts] = useState<Record<string, Partial<{
     model: string;
     display_label: string;
@@ -777,6 +799,12 @@ export default function AdminClient() {
     () => portalCmsPages.find((page) => page.page_key === portalCmsPageKey) ?? portalCmsPages[0] ?? null,
     [portalCmsPageKey, portalCmsPages],
   );
+  const setPortalCmsPageKey = (pageKey: string) => {
+    setPortalCmsViewState((prev) => ({ ...prev, pageKey }));
+  };
+  const setPortalCmsLocale = (locale: string) => {
+    setPortalCmsViewState((prev) => ({ ...prev, locale }));
+  };
   const activePortalLocales = useMemo(
     () => portalLocaleConfigs.filter((row) => row.is_active).sort((a, b) => a.locale.localeCompare(b.locale, "de")),
     [portalLocaleConfigs],
@@ -865,6 +893,12 @@ export default function AdminClient() {
       return changed ? next : prev;
     });
   }, [portalCmsLocale, portalContentEntries, selectedPortalCmsPage]);
+
+  useEffect(() => {
+    if (!pendingPortalCmsScrollRestoreRef.current) return;
+    pendingPortalCmsScrollRestoreRef.current = false;
+    restoreSessionScroll(PORTAL_CMS_SCROLL_STATE_KEY);
+  }, [portalContentEntries, portalCmsLocale, portalCmsPageKey]);
 
   const formatPartnerName = (partner: Pick<Partner, "company_name" | "is_system_default">) =>
     partner.is_system_default ? `${partner.company_name} (Portalpartner)` : partner.company_name;
@@ -1492,8 +1526,20 @@ export default function AdminClient() {
     }>("/api/admin/portal-content");
     setPortalLocaleConfigs(data.locales ?? []);
     setPortalContentEntries(data.entries ?? []);
-    const nextLocale = (data.locales ?? []).find((row) => row.is_active)?.locale ?? data.locales?.[0]?.locale ?? "de";
-    setPortalCmsLocale(nextLocale);
+    const fallbackLocale = (data.locales ?? []).find((row) => row.is_active)?.locale ?? data.locales?.[0]?.locale ?? "de";
+    setPortalCmsViewState((prev) => {
+      const nextLocale = (data.locales ?? []).some((row) => row.locale === prev.locale)
+        ? String(prev.locale ?? fallbackLocale)
+        : fallbackLocale;
+      const nextPageKey = portalCmsPages.some((page) => page.page_key === prev.pageKey)
+        ? String(prev.pageKey ?? "home")
+        : (portalCmsPages[0]?.page_key ?? "home");
+      return {
+        ...prev,
+        locale: nextLocale,
+        pageKey: nextPageKey,
+      };
+    });
   }
 
   async function loadPartnerBillingConfig(partnerId: string) {
@@ -3868,6 +3914,8 @@ export default function AdminClient() {
               onClick={() =>
                 run("Portal-Inhalte speichern", async () => {
                   if (!selectedPortalCmsPage || !portalCmsLocale) return;
+                  storeSessionScroll(PORTAL_CMS_SCROLL_STATE_KEY);
+                  pendingPortalCmsScrollRestoreRef.current = true;
                   const entries = selectedPortalCmsPage.sections.map((section) => {
                     const draftKey = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
                     const draft = portalCmsDrafts[draftKey] ?? {
