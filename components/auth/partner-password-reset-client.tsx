@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -22,6 +21,12 @@ function setResetFlowCookie(value: string | null) {
     return;
   }
   document.cookie = `wc24_reset_flow=${value}; Path=/; SameSite=Lax`;
+}
+
+function hardNavigateToLogin(path: string) {
+  setResetFlowCookie(null);
+  if (typeof window === "undefined") return;
+  window.location.assign(path);
 }
 
 export default function PartnerPasswordResetClient() {
@@ -209,8 +214,9 @@ export default function PartnerPasswordResetClient() {
           </>
         ) : null}
         {viewMode === "error" ? (
-          <Link
-            href="/partner/login"
+          <button
+            type="button"
+            onClick={() => hardNavigateToLogin("/partner/login")}
             style={{
               textDecoration: "none",
               padding: "10px 12px",
@@ -219,10 +225,12 @@ export default function PartnerPasswordResetClient() {
               color: "#0f766e",
               fontWeight: 700,
               textAlign: "center",
+              background: "#ffffff",
+              cursor: "pointer",
             }}
           >
             Zur Anmeldeseite
-          </Link>
+          </button>
         ) : null}
       </div>
     </div>
