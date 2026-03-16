@@ -84,6 +84,7 @@ type PersistedI18nViewState = {
   activeDomain?: I18nProductDomainId;
   selectedBlogPostId?: string;
   selectedPropertyOfferId?: string;
+  selectedReferenceId?: string;
 };
 type I18nProductDomainId = 'immobilienmarkt' | 'blog' | 'immobilien' | 'referenzen' | 'gesuche';
 export type I18nProductDomain = {
@@ -191,6 +192,84 @@ type PropertyOfferTranslationItem = {
   object_type: string;
   title: string;
   address: string;
+  source_updated_at: string | null;
+  source_snapshot_hash: string;
+  source_seo_title: string;
+  source_seo_description: string;
+  source_seo_h1: string;
+  source_short_description: string;
+  source_long_description: string;
+  source_location_text: string;
+  source_features_text: string;
+  source_highlights: string[];
+  source_image_alt_texts: string[];
+  translated_seo_title: string;
+  translated_seo_description: string;
+  translated_seo_h1: string;
+  translated_short_description: string;
+  translated_long_description: string;
+  translated_location_text: string;
+  translated_features_text: string;
+  translated_highlights: string[];
+  translated_image_alt_texts: string[];
+  translation_status: BlogTranslationStatus;
+  translation_id: string | null;
+  translation_updated_at: string | null;
+  translation_is_stale: boolean;
+};
+
+type ReferenceSourceRow = {
+  id: string;
+  partner_id: string;
+  provider?: string | null;
+  external_id?: string | null;
+  title?: string | null;
+  normalized_payload?: Record<string, unknown> | null;
+  source_updated_at?: string | null;
+  updated_at?: string | null;
+};
+
+type ReferenceOverrideRow = {
+  partner_id: string;
+  source: string;
+  external_id: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  seo_h1?: string | null;
+  short_description?: string | null;
+  long_description?: string | null;
+  location_text?: string | null;
+  features_text?: string | null;
+  highlights?: string[] | null;
+  image_alt_texts?: string[] | null;
+};
+
+type ReferenceTranslationRow = {
+  id?: string;
+  reference_id: string;
+  source: string;
+  external_id: string;
+  translated_seo_title: string | null;
+  translated_seo_description: string | null;
+  translated_seo_h1: string | null;
+  translated_short_description: string | null;
+  translated_long_description: string | null;
+  translated_location_text: string | null;
+  translated_features_text: string | null;
+  translated_highlights: string[] | null;
+  translated_image_alt_texts: string[] | null;
+  status: BlogTranslationStatus;
+  source_snapshot_hash: string | null;
+  source_last_updated: string | null;
+  updated_at: string | null;
+};
+
+type ReferenceTranslationItem = {
+  reference_id: string;
+  source: string;
+  external_id: string;
+  title: string;
+  region_label: string;
   source_updated_at: string | null;
   source_snapshot_hash: string;
   source_seo_title: string;
@@ -453,6 +532,30 @@ function toStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
 
+function getRegionTargetLabels(payload: Record<string, unknown>): string[] {
+  const raw = payload.region_targets;
+  if (!Array.isArray(raw)) return [];
+  const labels: string[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const target = entry as { city?: unknown; district?: unknown; label?: unknown };
+    const city = String(target.city ?? '').trim();
+    const district = String(target.district ?? '').trim();
+    const label = String(target.label ?? '').trim();
+    const value = label || [city, district].filter(Boolean).join(' ');
+    if (value) labels.push(value);
+  }
+  return labels;
+}
+
+function getPayloadText(payload: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const value = payload[key];
+    if (typeof value === 'string' && value.trim().length > 0) return value;
+  }
+  return '';
+}
+
 function isTranslatableSectionKey(sectionKey: string): boolean {
   const key = String(sectionKey ?? '').toLowerCase().trim();
   if (!key) return false;
@@ -603,6 +706,10 @@ export default function InternationalizationManager({ config, availableLocales, 
   const setSelectedPropertyOfferId = (offerId: string) => {
     setI18nViewState((prev) => ({ ...prev, selectedPropertyOfferId: offerId }));
   };
+  const selectedReferenceId = String(i18nViewState.selectedReferenceId ?? '');
+  const setSelectedReferenceId = (referenceId: string) => {
+    setI18nViewState((prev) => ({ ...prev, selectedReferenceId: referenceId }));
+  };
   const [llmOptions, setLlmOptions] = useState<LlmOption[]>([]);
   const [selectedLlmOptionId, setSelectedLlmOptionId] = useState<string>('');
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
@@ -636,6 +743,23 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [propertySaving, setPropertySaving] = useState(false);
   const [propertyStatus, setPropertyStatus] = useState<string | null>(null);
   const [propertyStatusTone, setPropertyStatusTone] = useState<'success' | 'error' | null>(null);
+  const [referenceItems, setReferenceItems] = useState<ReferenceTranslationItem[]>([]);
+  const [referenceBaselineById, setReferenceBaselineById] = useState<Record<string, {
+    translated_seo_title: string;
+    translated_seo_description: string;
+    translated_seo_h1: string;
+    translated_short_description: string;
+    translated_long_description: string;
+    translated_location_text: string;
+    translated_features_text: string;
+    translated_highlights: string[];
+    translated_image_alt_texts: string[];
+    translation_status: BlogTranslationStatus;
+  }>>({});
+  const [referenceLoading, setReferenceLoading] = useState(false);
+  const [referenceSaving, setReferenceSaving] = useState(false);
+  const [referenceStatus, setReferenceStatus] = useState<string | null>(null);
+  const [referenceStatusTone, setReferenceStatusTone] = useState<'success' | 'error' | null>(null);
   const isDistrict = isDistrictArea(config?.area_id ?? '');
   const channelMeta = I18N_CHANNEL_OPTIONS.find((item) => item.value === channel) ?? I18N_CHANNEL_OPTIONS[0];
   const areaScopeLabel = isDistrict ? 'Kreis' : 'Ortslage';
@@ -647,6 +771,10 @@ export default function InternationalizationManager({ config, availableLocales, 
   const selectedPropertyItem = useMemo(
     () => propertyItems.find((item) => item.offer_id === selectedPropertyOfferId) ?? propertyItems[0] ?? null,
     [propertyItems, selectedPropertyOfferId],
+  );
+  const selectedReferenceItem = useMemo(
+    () => referenceItems.find((item) => item.reference_id === selectedReferenceId) ?? referenceItems[0] ?? null,
+    [referenceItems, selectedReferenceId],
   );
 
   useEffect(() => {
@@ -677,6 +805,15 @@ export default function InternationalizationManager({ config, availableLocales, 
     setSelectedPropertyOfferId(propertyItems[0]?.offer_id ?? '');
   }, [propertyItems, selectedPropertyOfferId]);
 
+  useEffect(() => {
+    if (referenceItems.length === 0) {
+      if (selectedReferenceId) setSelectedReferenceId('');
+      return;
+    }
+    if (referenceItems.some((item) => item.reference_id === selectedReferenceId)) return;
+    setSelectedReferenceId(referenceItems[0]?.reference_id ?? '');
+  }, [referenceItems, selectedReferenceId]);
+
   function isMissingBlogI18nTable(error: unknown): boolean {
     const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
     return msg.includes('partner_blog_post_i18n') && msg.includes('does not exist');
@@ -685,6 +822,11 @@ export default function InternationalizationManager({ config, availableLocales, 
   function isMissingPropertyI18nTable(error: unknown): boolean {
     const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
     return msg.includes('partner_property_offer_i18n') && msg.includes('does not exist');
+  }
+
+  function isMissingReferenceI18nTable(error: unknown): boolean {
+    const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
+    return msg.includes('partner_reference_i18n') && msg.includes('does not exist');
   }
 
   async function loadBlogItems() {
@@ -1086,6 +1228,243 @@ export default function InternationalizationManager({ config, availableLocales, 
     }
   }
 
+  async function loadReferenceItems() {
+    setReferenceLoading(true);
+    setReferenceStatus(null);
+    setReferenceStatusTone(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Nicht angemeldet.');
+
+      const { data: refsData, error: refsError } = await supabase
+        .from('partner_references')
+        .select('id, partner_id, provider, external_id, title, normalized_payload, source_updated_at, updated_at')
+        .eq('partner_id', user.id)
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false });
+
+      if (refsError) throw refsError;
+
+      const refs = (refsData ?? []) as ReferenceSourceRow[];
+      const sources = Array.from(new Set(refs.map((item) => String(item.provider ?? '').trim()).filter(Boolean)));
+      const externalIds = Array.from(new Set(refs.map((item) => String(item.external_id ?? '').trim()).filter(Boolean)));
+      const referenceIds = refs.map((item) => String(item.id ?? '').trim()).filter(Boolean);
+
+      let overrideRows: ReferenceOverrideRow[] = [];
+      if (sources.length > 0 && externalIds.length > 0) {
+        const { data: overridesData, error: overridesError } = await supabase
+          .from('partner_reference_overrides')
+          .select('partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts')
+          .eq('partner_id', user.id)
+          .in('source', sources)
+          .in('external_id', externalIds);
+
+        if (overridesError) throw overridesError;
+        overrideRows = (overridesData ?? []) as ReferenceOverrideRow[];
+      }
+
+      let translationRows: ReferenceTranslationRow[] = [];
+      if (referenceIds.length > 0) {
+        const { data: translationsData, error: translationsError } = await supabase
+          .from('partner_reference_i18n')
+          .select('id, reference_id, source, external_id, translated_seo_title, translated_seo_description, translated_seo_h1, translated_short_description, translated_long_description, translated_location_text, translated_features_text, translated_highlights, translated_image_alt_texts, status, source_snapshot_hash, source_last_updated, updated_at')
+          .eq('partner_id', user.id)
+          .eq('target_locale', locale)
+          .in('reference_id', referenceIds);
+
+        if (translationsError) {
+          if (isMissingReferenceI18nTable(translationsError)) {
+            throw new Error('Tabelle `partner_reference_i18n` fehlt. Bitte SQL-Migration ausführen.');
+          }
+          throw translationsError;
+        }
+        translationRows = (translationsData ?? []) as ReferenceTranslationRow[];
+      }
+
+      const overrideByKey = new Map(
+        overrideRows.map((row) => [`${String(row.source ?? '').trim()}::${String(row.external_id ?? '').trim()}`, row] as const),
+      );
+      const translationByReferenceId = new Map(
+        translationRows
+          .map((row) => [String(row.reference_id ?? '').trim(), row] as const)
+          .filter(([referenceId]) => referenceId.length > 0),
+      );
+
+      const nextItems = refs.map((ref) => {
+        const referenceId = String(ref.id ?? '').trim();
+        const source = String(ref.provider ?? '').trim();
+        const externalId = String(ref.external_id ?? '').trim();
+        const payload = (ref.normalized_payload ?? {}) as Record<string, unknown>;
+        const override = overrideByKey.get(`${source}::${externalId}`);
+        const translation = translationByReferenceId.get(referenceId);
+        const description = getPayloadText(payload, ['long_description', 'description', 'reference_text_seed', 'title']);
+        const regionLabels = getRegionTargetLabels(payload);
+        const regionLabel = regionLabels.join(', ') || getPayloadText(payload, ['city', 'district', 'location_text', 'location']);
+        const features = getPayloadText(payload, ['features_text', 'features_note']);
+        const highlights = toStringArray(payload.highlights);
+        const imageAltTexts = toStringArray(payload.image_alt_texts);
+        const sourceSeoTitle = String(override?.seo_title ?? ref.title ?? '');
+        const sourceSeoDescription = String(override?.seo_description ?? description ?? '');
+        const sourceSeoH1 = String(override?.seo_h1 ?? ref.title ?? '');
+        const sourceShortDescription = String(override?.short_description ?? description ?? '');
+        const sourceLongDescription = String(override?.long_description ?? description ?? '');
+        const sourceLocationText = String(override?.location_text ?? regionLabel ?? '');
+        const sourceFeaturesText = String(override?.features_text ?? features ?? '');
+        const sourceHighlights = override?.highlights ?? highlights;
+        const sourceImageAltTexts = override?.image_alt_texts ?? imageAltTexts;
+        const sourceSnapshotHash = hashText(JSON.stringify({
+          sourceSeoTitle,
+          sourceSeoDescription,
+          sourceSeoH1,
+          sourceShortDescription,
+          sourceLongDescription,
+          sourceLocationText,
+          sourceFeaturesText,
+          sourceHighlights,
+          sourceImageAltTexts,
+        }));
+        const storedHash = String(translation?.source_snapshot_hash ?? '').trim();
+
+        return {
+          reference_id: referenceId,
+          source,
+          external_id: externalId,
+          title: String(ref.title ?? ''),
+          region_label: regionLabel,
+          source_updated_at: ref.source_updated_at ?? ref.updated_at ?? null,
+          source_snapshot_hash: sourceSnapshotHash,
+          source_seo_title: sourceSeoTitle,
+          source_seo_description: sourceSeoDescription,
+          source_seo_h1: sourceSeoH1,
+          source_short_description: sourceShortDescription,
+          source_long_description: sourceLongDescription,
+          source_location_text: sourceLocationText,
+          source_features_text: sourceFeaturesText,
+          source_highlights: sourceHighlights,
+          source_image_alt_texts: sourceImageAltTexts,
+          translated_seo_title: String(translation?.translated_seo_title ?? ''),
+          translated_seo_description: String(translation?.translated_seo_description ?? ''),
+          translated_seo_h1: String(translation?.translated_seo_h1 ?? ''),
+          translated_short_description: String(translation?.translated_short_description ?? ''),
+          translated_long_description: String(translation?.translated_long_description ?? ''),
+          translated_location_text: String(translation?.translated_location_text ?? ''),
+          translated_features_text: String(translation?.translated_features_text ?? ''),
+          translated_highlights: translation?.translated_highlights ?? [],
+          translated_image_alt_texts: translation?.translated_image_alt_texts ?? [],
+          translation_status: (translation?.status ?? 'draft') as BlogTranslationStatus,
+          translation_id: translation?.id ? String(translation.id) : null,
+          translation_updated_at: translation?.updated_at ?? null,
+          translation_is_stale: Boolean(storedHash) && storedHash !== sourceSnapshotHash,
+        } satisfies ReferenceTranslationItem;
+      });
+
+      const nextBaseline = Object.fromEntries(
+        nextItems.map((item) => [item.reference_id, {
+          translated_seo_title: item.translated_seo_title,
+          translated_seo_description: item.translated_seo_description,
+          translated_seo_h1: item.translated_seo_h1,
+          translated_short_description: item.translated_short_description,
+          translated_long_description: item.translated_long_description,
+          translated_location_text: item.translated_location_text,
+          translated_features_text: item.translated_features_text,
+          translated_highlights: [...item.translated_highlights],
+          translated_image_alt_texts: [...item.translated_image_alt_texts],
+          translation_status: item.translation_status,
+        }]),
+      );
+
+      setReferenceItems(nextItems);
+      setReferenceBaselineById(nextBaseline);
+      setReferenceStatus(nextItems.length === 0
+        ? 'Keine Referenzen für den aktuellen Partner vorhanden.'
+        : `Referenz-Übersetzungsstand für ${nextItems.length} Objekt(e) geladen.`);
+      setReferenceStatusTone('success');
+    } catch (error) {
+      setReferenceItems([]);
+      setReferenceBaselineById({});
+      setReferenceStatus(error instanceof Error ? error.message : 'Referenz-Übersetzungen konnten nicht geladen werden.');
+      setReferenceStatusTone('error');
+    } finally {
+      setReferenceLoading(false);
+    }
+  }
+
+  async function saveSelectedReferenceItem() {
+    if (!selectedReferenceItem) return;
+    setReferenceSaving(true);
+    setReferenceStatus(null);
+    setReferenceStatusTone(null);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Nicht angemeldet.');
+
+      const payload = {
+        partner_id: user.id,
+        reference_id: selectedReferenceItem.reference_id,
+        area_id: config.area_id,
+        source: selectedReferenceItem.source,
+        external_id: selectedReferenceItem.external_id,
+        target_locale: locale,
+        translated_seo_title: selectedReferenceItem.translated_seo_title.trim() || null,
+        translated_seo_description: selectedReferenceItem.translated_seo_description.trim() || null,
+        translated_seo_h1: selectedReferenceItem.translated_seo_h1.trim() || null,
+        translated_short_description: selectedReferenceItem.translated_short_description.trim() || null,
+        translated_long_description: selectedReferenceItem.translated_long_description.trim() || null,
+        translated_location_text: selectedReferenceItem.translated_location_text.trim() || null,
+        translated_features_text: selectedReferenceItem.translated_features_text.trim() || null,
+        translated_highlights: selectedReferenceItem.translated_highlights,
+        translated_image_alt_texts: selectedReferenceItem.translated_image_alt_texts,
+        status: selectedReferenceItem.translation_status,
+        source_snapshot_hash: selectedReferenceItem.source_snapshot_hash,
+        source_last_updated: selectedReferenceItem.source_updated_at,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('partner_reference_i18n')
+        .upsert(payload, { onConflict: 'partner_id,reference_id,target_locale' });
+
+      if (error) {
+        if (isMissingReferenceI18nTable(error)) {
+          throw new Error('Tabelle `partner_reference_i18n` fehlt. Bitte SQL-Migration ausführen.');
+        }
+        throw error;
+      }
+
+      setReferenceBaselineById((prev) => ({
+        ...prev,
+        [selectedReferenceItem.reference_id]: {
+          translated_seo_title: selectedReferenceItem.translated_seo_title,
+          translated_seo_description: selectedReferenceItem.translated_seo_description,
+          translated_seo_h1: selectedReferenceItem.translated_seo_h1,
+          translated_short_description: selectedReferenceItem.translated_short_description,
+          translated_long_description: selectedReferenceItem.translated_long_description,
+          translated_location_text: selectedReferenceItem.translated_location_text,
+          translated_features_text: selectedReferenceItem.translated_features_text,
+          translated_highlights: [...selectedReferenceItem.translated_highlights],
+          translated_image_alt_texts: [...selectedReferenceItem.translated_image_alt_texts],
+          translation_status: selectedReferenceItem.translation_status,
+        },
+      }));
+      setReferenceItems((prev) => prev.map((item) => (
+        item.reference_id === selectedReferenceItem.reference_id
+          ? {
+              ...item,
+              translation_is_stale: false,
+              translation_updated_at: payload.updated_at,
+            }
+          : item
+      )));
+      setReferenceStatus('Referenz-Übersetzung gespeichert.');
+      setReferenceStatusTone('success');
+    } catch (error) {
+      setReferenceStatus(error instanceof Error ? error.message : 'Referenz-Übersetzung konnte nicht gespeichert werden.');
+      setReferenceStatusTone('error');
+    } finally {
+      setReferenceSaving(false);
+    }
+  }
+
   async function resolveScopeAreas(nextScope: I18nScope): Promise<ScopeArea[]> {
     const current: ScopeArea = {
       area_id: String(config?.area_id ?? ''),
@@ -1203,6 +1582,12 @@ export default function InternationalizationManager({ config, availableLocales, 
   useEffect(() => {
     if (activeDomain !== 'immobilien' || !activeDomainMeta.enabled) return;
     void loadPropertyItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDomain, activeDomainMeta.enabled, config?.area_id, locale]);
+
+  useEffect(() => {
+    if (activeDomain !== 'referenzen' || !activeDomainMeta.enabled) return;
+    void loadReferenceItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDomain, activeDomainMeta.enabled, config?.area_id, locale]);
 
@@ -1453,6 +1838,55 @@ export default function InternationalizationManager({ config, availableLocales, 
     );
   }, [propertyBaselineByOfferId, selectedPropertyItem]);
 
+  const referenceSummary = useMemo(() => {
+    const total = referenceItems.length;
+    const translated = referenceItems.filter((item) => (
+      item.translated_seo_title.trim().length > 0
+      || item.translated_seo_description.trim().length > 0
+      || item.translated_seo_h1.trim().length > 0
+      || item.translated_short_description.trim().length > 0
+      || item.translated_long_description.trim().length > 0
+      || item.translated_location_text.trim().length > 0
+      || item.translated_features_text.trim().length > 0
+      || item.translated_highlights.length > 0
+      || item.translated_image_alt_texts.length > 0
+    )).length;
+    const stale = referenceItems.filter((item) => item.translation_is_stale).length;
+    const missing = total - translated;
+    return { total, translated, missing, stale };
+  }, [referenceItems]);
+
+  const referenceHasEdits = useMemo(() => {
+    if (!selectedReferenceItem) return false;
+    const baseline = referenceBaselineById[selectedReferenceItem.reference_id];
+    if (!baseline) {
+      return (
+        selectedReferenceItem.translated_seo_title.trim().length > 0
+        || selectedReferenceItem.translated_seo_description.trim().length > 0
+        || selectedReferenceItem.translated_seo_h1.trim().length > 0
+        || selectedReferenceItem.translated_short_description.trim().length > 0
+        || selectedReferenceItem.translated_long_description.trim().length > 0
+        || selectedReferenceItem.translated_location_text.trim().length > 0
+        || selectedReferenceItem.translated_features_text.trim().length > 0
+        || selectedReferenceItem.translated_highlights.length > 0
+        || selectedReferenceItem.translated_image_alt_texts.length > 0
+        || selectedReferenceItem.translation_status !== 'draft'
+      );
+    }
+    return (
+      selectedReferenceItem.translated_seo_title !== baseline.translated_seo_title
+      || selectedReferenceItem.translated_seo_description !== baseline.translated_seo_description
+      || selectedReferenceItem.translated_seo_h1 !== baseline.translated_seo_h1
+      || selectedReferenceItem.translated_short_description !== baseline.translated_short_description
+      || selectedReferenceItem.translated_long_description !== baseline.translated_long_description
+      || selectedReferenceItem.translated_location_text !== baseline.translated_location_text
+      || selectedReferenceItem.translated_features_text !== baseline.translated_features_text
+      || JSON.stringify(selectedReferenceItem.translated_highlights) !== JSON.stringify(baseline.translated_highlights)
+      || JSON.stringify(selectedReferenceItem.translated_image_alt_texts) !== JSON.stringify(baseline.translated_image_alt_texts)
+      || selectedReferenceItem.translation_status !== baseline.translation_status
+    );
+  }, [referenceBaselineById, selectedReferenceItem]);
+
   const selectedWorkflowKeys = useMemo(
     () => Array.from(new Set(rows
       .filter((row) => isTranslatableSectionKey(row.section_key))
@@ -1565,9 +1999,13 @@ export default function InternationalizationManager({ config, availableLocales, 
   return (
     <>
       <FullscreenLoader
-        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving || propertyLoading || propertySaving}
+        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving || propertyLoading || propertySaving || referenceLoading || referenceSaving}
         label={
-          propertyLoading
+          referenceLoading
+            ? 'Referenz-Übersetzungen werden geladen...'
+            : referenceSaving
+              ? 'Referenz-Übersetzung wird gespeichert...'
+          : propertyLoading
             ? 'Immobilien-Übersetzungen werden geladen...'
             : propertySaving
               ? 'Immobilien-Übersetzung wird gespeichert...'
@@ -1713,6 +2151,21 @@ export default function InternationalizationManager({ config, availableLocales, 
               </div>
               <div style={summaryStyle}>
                 Angebote: <strong>{propertySummary.total}</strong> · Übersetzt: <strong>{propertySummary.translated}</strong> · Fehlend: <strong>{propertySummary.missing}</strong> · Veraltet: <strong>{propertySummary.stale}</strong>
+              </div>
+            </>
+          ) : activeDomain === 'referenzen' && activeDomainMeta.enabled ? (
+            <>
+              <div style={workflowNoticeStyle}>
+                <div style={workflowNoticeHeadStyle}>
+                  <strong>Referenzen</strong>
+                  <span style={workflowNoticeMetaStyle}>Objektbasierte Sprachpflege je Referenz und Sprache</span>
+                </div>
+                <p style={workflowNoticeTextStyle}>
+                  Deutsche Referenztexte werden weiterhin im Bereich „Referenzen“ gepflegt. Hier bearbeitest du deren Übersetzungen pro Objekt, Sprache und Status getrennt vom deutschen Workflow.
+                </p>
+              </div>
+              <div style={summaryStyle}>
+                Referenzen: <strong>{referenceSummary.total}</strong> · Übersetzt: <strong>{referenceSummary.translated}</strong> · Fehlend: <strong>{referenceSummary.missing}</strong> · Veraltet: <strong>{referenceSummary.stale}</strong>
               </div>
             </>
           ) : null}
@@ -2488,6 +2941,326 @@ export default function InternationalizationManager({ config, availableLocales, 
               </>
             ) : (
               <div style={blogEmptyDetailStyle}>Wähle links ein Immobilienangebot, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
+            )}
+          </div>
+        </div>
+      </div>
+      ) : activeDomain === 'referenzen' && activeDomainMeta.enabled ? (
+      <div style={editorCardStyle}>
+        {referenceStatus ? <div style={referenceStatusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{referenceStatus}</div> : null}
+        <div style={blogGridStyle}>
+          <aside style={blogListCardStyle}>
+            <div style={blogListHeadStyle}>
+              <h3 style={sectionTabsIntroTitleStyle}>Referenzobjekte</h3>
+              <button
+                type="button"
+                style={secondaryActionButtonStyle}
+                onClick={() => void loadReferenceItems()}
+                disabled={referenceLoading || referenceSaving}
+              >
+                Stand laden
+              </button>
+            </div>
+            <div style={blogListMetaStyle}>
+              Für Referenzen werden SEO-, Kurz- und Langtexte je Sprache separat gepflegt.
+            </div>
+            {referenceItems.length === 0 ? (
+              <div style={blogEmptyStateStyle}>Für diesen Partner sind aktuell keine Referenzobjekte vorhanden.</div>
+            ) : (
+              <div style={blogListWrapStyle}>
+                {referenceItems.map((item) => {
+                  const translated = Boolean(
+                    item.translated_seo_title.trim()
+                    || item.translated_seo_description.trim()
+                    || item.translated_seo_h1.trim()
+                    || item.translated_short_description.trim()
+                    || item.translated_long_description.trim()
+                    || item.translated_location_text.trim()
+                    || item.translated_features_text.trim()
+                    || item.translated_highlights.length > 0
+                    || item.translated_image_alt_texts.length > 0,
+                  );
+                  return (
+                    <button
+                      key={item.reference_id}
+                      type="button"
+                      style={blogListRowStyle(selectedReferenceItem?.reference_id === item.reference_id)}
+                      onClick={() => setSelectedReferenceId(item.reference_id)}
+                    >
+                      <div style={blogListRowTopStyle}>
+                        <strong style={blogListHeadlineStyle}>{item.title || 'Ohne Titel'}</strong>
+                        <span style={blogTranslationBadgeStyle(item.translation_is_stale, translated)}>
+                          {item.translation_is_stale ? 'Veraltet' : translated ? 'Übersetzt' : 'Fehlt'}
+                        </span>
+                      </div>
+                      <div style={blogListSublineStyle}>{item.region_label || 'Ohne Regionsangabe'}</div>
+                      <div style={blogListMetaLineStyle}>
+                        {item.source_updated_at ? new Date(item.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </aside>
+
+          <div style={blogEditorWrapStyle}>
+            {selectedReferenceItem ? (
+              <>
+                <div style={blogEditorHeadStyle}>
+                  <div>
+                    <h3 style={sectionTabsIntroTitleStyle}>{selectedReferenceItem.title || 'Ohne Titel'}</h3>
+                    <p style={blogEditorIntroStyle}>
+                      Übersetze hier die Referenztexte, die aktuell über die deutschen Override-Felder ausgespielt werden. Die deutsche Bearbeitung bleibt im Bereich „Referenzen“.
+                    </p>
+                  </div>
+                  <span style={blogTranslationBadgeStyle(selectedReferenceItem.translation_is_stale, Boolean(
+                    selectedReferenceItem.translated_seo_title.trim()
+                    || selectedReferenceItem.translated_seo_description.trim()
+                    || selectedReferenceItem.translated_seo_h1.trim()
+                    || selectedReferenceItem.translated_short_description.trim()
+                    || selectedReferenceItem.translated_long_description.trim()
+                    || selectedReferenceItem.translated_location_text.trim()
+                    || selectedReferenceItem.translated_features_text.trim()
+                    || selectedReferenceItem.translated_highlights.length > 0
+                    || selectedReferenceItem.translated_image_alt_texts.length > 0,
+                  ))}>
+                    {selectedReferenceItem.translation_is_stale ? 'Quelle geändert' : selectedReferenceItem.translation_status}
+                  </span>
+                </div>
+
+                <div style={blogSummaryGridStyle}>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Region</span>
+                    <strong>{selectedReferenceItem.region_label || 'Nicht gesetzt'}</strong>
+                  </div>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Übersetzungsstatus</span>
+                    <strong>{selectedReferenceItem.translation_status}</strong>
+                  </div>
+                  <div style={blogSummaryItemStyle}>
+                    <span style={estimateLabelStyle}>Zuletzt aktualisiert</span>
+                    <strong>{selectedReferenceItem.translation_updated_at ? new Date(selectedReferenceItem.translation_updated_at).toLocaleString('de-DE') : 'Noch nicht gespeichert'}</strong>
+                  </div>
+                </div>
+
+                <div style={blogColumnGridStyle}>
+                  <div style={blogSourceCardStyle}>
+                    <div style={blogColumnHeadStyle}>Deutsch (Quelle)</div>
+                    <label style={fieldStyle}>
+                      SEO-Titel
+                      <input style={inputStyle} value={selectedReferenceItem.source_seo_title} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Meta-Description
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_seo_description} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      H1
+                      <input style={inputStyle} value={selectedReferenceItem.source_seo_h1} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Kurzbeschreibung
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_short_description} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Langbeschreibung
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_long_description} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Lage
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_location_text} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Ausstattung
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_features_text} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Highlights
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_highlights.join('\n')} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Bild-Alt-Texte
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedReferenceItem.source_image_alt_texts.join('\n')} readOnly />
+                    </label>
+                  </div>
+
+                  <div style={blogTargetCardStyle}>
+                    <div style={blogColumnHeadStyle}>Übersetzung</div>
+                    <label style={fieldStyle}>
+                      SEO-Titel
+                      <input
+                        style={inputStyle}
+                        value={selectedReferenceItem.translated_seo_title}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_title: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Meta-Description
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedReferenceItem.translated_seo_description}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_description: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      H1
+                      <input
+                        style={inputStyle}
+                        value={selectedReferenceItem.translated_seo_h1}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_seo_h1: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Kurzbeschreibung
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedReferenceItem.translated_short_description}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_short_description: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Langbeschreibung
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedReferenceItem.translated_long_description}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_long_description: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Lage
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedReferenceItem.translated_location_text}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_location_text: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Ausstattung
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedReferenceItem.translated_features_text}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_features_text: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Highlights
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedReferenceItem.translated_highlights.join('\n')}
+                        onChange={(e) => {
+                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_highlights: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Bild-Alt-Texte
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedReferenceItem.translated_image_alt_texts.join('\n')}
+                        onChange={(e) => {
+                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translated_image_alt_texts: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Status
+                      <select
+                        style={inputStyle}
+                        value={selectedReferenceItem.translation_status}
+                        onChange={(e) => {
+                          const next = e.target.value as BlogTranslationStatus;
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id ? { ...item, translation_status: next } : item
+                          )));
+                        }}
+                      >
+                        <option value="draft">Entwurf</option>
+                        <option value="approved">Freigegeben</option>
+                        <option value="needs_review">Prüfen</option>
+                      </select>
+                    </label>
+                    <div style={blogActionRowStyle}>
+                      <button
+                        type="button"
+                        style={secondaryActionButtonStyle}
+                        onClick={() => {
+                          setReferenceItems((prev) => prev.map((item) => (
+                            item.reference_id === selectedReferenceItem.reference_id
+                              ? {
+                                  ...item,
+                                  translated_seo_title: item.source_seo_title,
+                                  translated_seo_description: item.source_seo_description,
+                                  translated_seo_h1: item.source_seo_h1,
+                                  translated_short_description: item.source_short_description,
+                                  translated_long_description: item.source_long_description,
+                                  translated_location_text: item.source_location_text,
+                                  translated_features_text: item.source_features_text,
+                                  translated_highlights: [...item.source_highlights],
+                                  translated_image_alt_texts: [...item.source_image_alt_texts],
+                                }
+                              : item
+                          )));
+                        }}
+                        disabled={referenceSaving}
+                      >
+                        Deutsch übernehmen
+                      </button>
+                      <button
+                        type="button"
+                        style={buttonPrimaryStyle(referenceHasEdits && !referenceSaving)}
+                        onClick={() => void saveSelectedReferenceItem()}
+                        disabled={!referenceHasEdits || referenceSaving}
+                      >
+                        {referenceSaving ? 'Speichern …' : 'Referenz-Übersetzung speichern'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={blogEmptyDetailStyle}>Wähle links ein Referenzobjekt, um die Übersetzung für {normalizeLocaleLabel(locale)} zu bearbeiten.</div>
             )}
           </div>
         </div>
