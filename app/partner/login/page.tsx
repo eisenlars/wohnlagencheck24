@@ -27,6 +27,11 @@ export default async function PartnerLoginPage({
 
   const params = await searchParams;
   const message = String(params?.message ?? "");
+  const messageLower = message.toLowerCase();
+  const isSuccessMessage = messageLower.includes("gesendet")
+    || messageLower.includes("versendet")
+    || messageLower.includes("erfolgreich")
+    || messageLower.includes("wurde ein reset-link");
 
   return (
     <div style={{ maxWidth: "400px", margin: "100px auto", fontFamily: "sans-serif" }}>
@@ -95,7 +100,7 @@ export default async function PartnerLoginPage({
         {message ? (
           <p
             style={{
-              color: message.toLowerCase().includes("gesendet") ? "#166534" : "#b91c1c",
+              color: isSuccessMessage ? "#166534" : "#b91c1c",
               fontSize: "14px",
               textAlign: "center",
             }}
