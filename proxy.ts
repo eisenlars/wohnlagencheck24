@@ -39,9 +39,9 @@ export async function proxy(request: NextRequest) {
   const { locale } = stripLeadingLocale(pathname);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-wc24-locale", normalizePublicLocale(locale));
-  const isAdminLoginPath = pathname === "/admin/login";
+  const isAdminPublicPath = pathname === "/admin/login" || pathname === "/admin/reset";
   const needsDashboardAuth = pathname.startsWith("/dashboard");
-  const needsAdminAuth = pathname.startsWith("/admin") && !isAdminLoginPath;
+  const needsAdminAuth = pathname.startsWith("/admin") && !isAdminPublicPath;
   if (
     pathname.startsWith("/api/local-site-report") ||
     pathname.startsWith("/api/local-site-texts") ||
