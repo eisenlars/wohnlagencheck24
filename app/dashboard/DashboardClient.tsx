@@ -1331,6 +1331,7 @@ export default function DashboardClient() {
             <div key={`utility-group-${groupIndex}`} style={toolGroupStyle}>
               {group.map((item) => {
                 const active = item.tab ? activeMainTab === item.tab : false;
+                const hovered = hoveredUtilityToolId === item.id;
                 return (
                   <button
                     key={item.id}
@@ -1338,7 +1339,7 @@ export default function DashboardClient() {
                     onClick={() => item.tab ? handleToolSelect(item.tab) : undefined}
                     onMouseEnter={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
                     onFocus={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
-                    style={toolIconButtonStyle(active, Boolean(item.disabled))}
+                    style={toolIconButtonStyle(active, hovered, Boolean(item.disabled))}
                     disabled={Boolean(item.disabled)}
                     aria-label={item.label}
                   >
@@ -2040,21 +2041,23 @@ const toolGroupDividerStyle: React.CSSProperties = {
   margin: '2px auto 0',
 };
 
-const toolIconButtonStyle = (active: boolean, disabled = false) => ({
-  width: '30px',
-  height: '30px',
-  borderRadius: '9px',
-  border: active ? '1px solid rgba(255,255,255,0.96)' : '1px solid rgba(255,255,255,0.18)',
-  backgroundColor: active ? '#ffffff' : 'rgba(255,255,255,0.12)',
-  boxShadow: active ? '0 8px 18px rgba(15,23,42,0.18)' : 'none',
-  color: '#111111',
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.4 : 1,
-  transition: 'transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
-});
+const toolIconButtonStyle = (active: boolean, hovered: boolean, disabled = false) => {
+  const highlighted = active || hovered;
+  return {
+    width: '30px',
+    height: '30px',
+    borderRadius: '9px',
+    border: highlighted ? '1px solid #ffe000' : '1px solid rgba(255,255,255,0.92)',
+    backgroundColor: highlighted ? '#ffe000' : '#ffffff',
+    boxShadow: highlighted ? '0 8px 18px rgba(15,23,42,0.18)' : 'none',
+    color: '#111111',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: 'transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+};
 
 const utilityTooltipLayerStyle = (top: number): React.CSSProperties => ({
   position: 'absolute',
