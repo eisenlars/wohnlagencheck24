@@ -15,6 +15,15 @@ function readSearchParams(): URLSearchParams {
   return new URLSearchParams(raw);
 }
 
+function setResetFlowCookie(value: string | null) {
+  if (typeof document === "undefined") return;
+  if (!value) {
+    document.cookie = "wc24_reset_flow=; Path=/; Max-Age=0; SameSite=Lax";
+    return;
+  }
+  document.cookie = `wc24_reset_flow=${value}; Path=/; SameSite=Lax`;
+}
+
 export default function AdminPasswordResetClient() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -55,6 +64,7 @@ export default function AdminPasswordResetClient() {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (!mounted) return;
         if (!error) {
+          setResetFlowCookie("admin");
           setReady(true);
           setViewMode("form");
           setStatus("Bitte vergebe jetzt dein neues Admin-Passwort.");
@@ -72,6 +82,7 @@ export default function AdminPasswordResetClient() {
         });
         if (!mounted) return;
         if (!error) {
+          setResetFlowCookie("admin");
           setReady(true);
           setViewMode("form");
           setStatus("Bitte vergebe jetzt dein neues Admin-Passwort.");
@@ -103,6 +114,7 @@ export default function AdminPasswordResetClient() {
         return;
       }
 
+      setResetFlowCookie("admin");
       setReady(true);
       setViewMode("form");
       setStatus("Bitte vergebe jetzt dein neues Admin-Passwort.");
@@ -128,6 +140,7 @@ export default function AdminPasswordResetClient() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw new Error(error.message);
       await supabase.auth.signOut();
+      setResetFlowCookie(null);
       router.replace("/admin/login?message=Passwort%20erfolgreich%20gesetzt.%20Bitte%20neu%20anmelden.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Passwort konnte nicht gespeichert werden.");

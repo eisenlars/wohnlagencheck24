@@ -2,6 +2,7 @@ import { login, requestPasswordReset } from "./actions";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { ResetSubmitButton } from "@/components/auth/reset-submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -60,8 +61,8 @@ export default async function PartnerLoginPage({
             required
             style={{ padding: "8px" }}
           />
-          <button
-            type="submit"
+          <ResetSubmitButton
+            idleLabel="Neues Passwort anfordern"
             style={{
               padding: "10px",
               background: "#ffffff",
@@ -71,9 +72,7 @@ export default async function PartnerLoginPage({
               cursor: "pointer",
               fontWeight: 700,
             }}
-          >
-            Neues Passwort anfordern
-          </button>
+          />
         </form>
 
         <script

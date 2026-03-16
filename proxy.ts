@@ -42,6 +42,16 @@ export async function proxy(request: NextRequest) {
   const isAdminPublicPath = pathname === "/admin/login" || pathname === "/admin/reset";
   const needsDashboardAuth = pathname.startsWith("/dashboard");
   const needsAdminAuth = pathname.startsWith("/admin") && !isAdminPublicPath;
+  const resetFlow = String(request.cookies.get("wc24_reset_flow")?.value ?? "").trim().toLowerCase();
+
+  if (resetFlow === "partner" && needsDashboardAuth) {
+    return NextResponse.redirect(new URL("/partner/reset", request.url));
+  }
+
+  if (resetFlow === "admin" && pathname.startsWith("/admin") && !isAdminPublicPath) {
+    return NextResponse.redirect(new URL("/admin/reset", request.url));
+  }
+
   if (
     pathname.startsWith("/api/local-site-report") ||
     pathname.startsWith("/api/local-site-texts") ||

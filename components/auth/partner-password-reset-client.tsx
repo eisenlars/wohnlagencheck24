@@ -15,6 +15,15 @@ function readSearchParams(): URLSearchParams {
   return new URLSearchParams(raw);
 }
 
+function setResetFlowCookie(value: string | null) {
+  if (typeof document === "undefined") return;
+  if (!value) {
+    document.cookie = "wc24_reset_flow=; Path=/; Max-Age=0; SameSite=Lax";
+    return;
+  }
+  document.cookie = `wc24_reset_flow=${value}; Path=/; SameSite=Lax`;
+}
+
 export default function PartnerPasswordResetClient() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -55,6 +64,7 @@ export default function PartnerPasswordResetClient() {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (!mounted) return;
         if (!error) {
+          setResetFlowCookie("partner");
           setReady(true);
           setViewMode("form");
           setStatus("Bitte vergeben Sie jetzt Ihr neues Passwort.");
@@ -72,6 +82,7 @@ export default function PartnerPasswordResetClient() {
         });
         if (!mounted) return;
         if (!error) {
+          setResetFlowCookie("partner");
           setReady(true);
           setViewMode("form");
           setStatus("Bitte vergeben Sie jetzt Ihr neues Passwort.");
@@ -103,6 +114,7 @@ export default function PartnerPasswordResetClient() {
         return;
       }
 
+      setResetFlowCookie("partner");
       setReady(true);
       setViewMode("form");
       setStatus("Bitte vergeben Sie jetzt Ihr neues Passwort.");
@@ -128,6 +140,7 @@ export default function PartnerPasswordResetClient() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw new Error(error.message);
       await supabase.auth.signOut();
+      setResetFlowCookie(null);
       router.replace("/partner/reset/success");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Passwort konnte nicht gespeichert werden.");

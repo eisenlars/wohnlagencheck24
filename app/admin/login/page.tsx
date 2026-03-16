@@ -2,6 +2,7 @@ import { login, requestPasswordReset } from './actions'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { getAdminRoleForUser } from '@/lib/security/admin-auth'
+import { ResetSubmitButton } from '@/components/auth/reset-submit-button'
 
 export const dynamic = "force-dynamic";
 
@@ -56,8 +57,8 @@ export default async function AdminLoginPage({
             required
             style={{ padding: "8px" }}
           />
-          <button
-            type="submit"
+          <ResetSubmitButton
+            idleLabel="Link zum Zurücksetzen senden"
             style={{
               padding: "10px",
               background: "#ffffff",
@@ -67,9 +68,7 @@ export default async function AdminLoginPage({
               cursor: "pointer",
               fontWeight: 700,
             }}
-          >
-            Link zum Zurücksetzen senden
-          </button>
+          />
         </form>
 
         <script
