@@ -1734,8 +1734,8 @@ export default function InternationalizationManager({ config, availableLocales, 
       setRequestItems(nextItems);
       setRequestBaselineById(nextBaseline);
       setRequestStatus(nextItems.length === 0
-        ? 'Keine Gesuche für den aktuellen Partner vorhanden.'
-        : `Gesuche-Übersetzungsstand für ${nextItems.length} Datensatz/Datensätze geladen.`);
+        ? `Keine Gesuche für den aktuellen Partner vorhanden. Debug: requests=${requests.length}, overrides=${overrideRows.length}, translations=${translationRows.length}, next=${nextItems.length}`
+        : `Gesuche-Übersetzungsstand für ${nextItems.length} Datensatz/Datensätze geladen. Debug: requests=${requests.length}, overrides=${overrideRows.length}, translations=${translationRows.length}`);
       setRequestStatusTone('success');
     } catch (error) {
       setRequestItems([]);
