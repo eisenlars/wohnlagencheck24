@@ -2052,6 +2052,7 @@ const toolIconButtonStyle = (active: boolean, hovered: boolean, disabled = false
     boxShadow: highlighted ? '0 8px 18px rgba(15,23,42,0.18)' : 'none',
     color: '#111111',
     cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.8 : 1,
     transition: 'transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease',
     display: 'flex',
     alignItems: 'center',
