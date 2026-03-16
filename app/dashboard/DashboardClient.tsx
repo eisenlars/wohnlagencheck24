@@ -1332,15 +1332,19 @@ export default function DashboardClient() {
               {group.map((item) => {
                 const active = item.tab ? activeMainTab === item.tab : false;
                 const hovered = hoveredUtilityToolId === item.id;
+                const disabled = Boolean(item.disabled);
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => item.tab ? handleToolSelect(item.tab) : undefined}
+                    onClick={() => {
+                      if (disabled || !item.tab) return;
+                      handleToolSelect(item.tab);
+                    }}
                     onMouseEnter={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
                     onFocus={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
-                    style={toolIconButtonStyle(active, hovered, Boolean(item.disabled))}
-                    disabled={Boolean(item.disabled)}
+                    style={toolIconButtonStyle(active, hovered, disabled)}
+                    aria-disabled={disabled}
                     aria-label={item.label}
                   >
                     {renderUtilityIcon(item.icon)}
@@ -2018,7 +2022,7 @@ const toolIconsGroupStyle = {
   display: 'flex',
   flexDirection: 'column' as const,
   alignItems: 'center',
-  gap: '4px',
+  gap: '6px',
   height: '100%',
   width: '100%',
   overflowY: 'auto' as const,
@@ -2029,7 +2033,7 @@ const toolGroupStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: '4px',
+  gap: '6px',
   width: '100%',
 };
 
