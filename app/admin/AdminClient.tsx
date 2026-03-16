@@ -37,6 +37,7 @@ type AreaMapping = {
   is_active: boolean;
   is_public_live?: boolean | null;
   activation_status?: string | null;
+  partner_preview_signoff_at?: string | null;
   areas?: {
     name?: string | null;
     slug?: string | null;
@@ -319,6 +320,14 @@ function buildPreviewHrefFromArea(area: AreaMapping["areas"], areaId: string): s
 
   if (!parentSlug) return null;
   return `/preview/immobilienmarkt/${bundeslandSlug}/${parentSlug}/${slug}`;
+}
+
+function formatAdminDateTime(value: string | null | undefined): string {
+  const iso = String(value ?? "").trim();
+  if (!iso) return "";
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return iso;
+  return parsed.toLocaleString("de-DE");
 }
 
 function getMaskedAuthSummary(integration: Pick<Integration, "auth_config">): string {
@@ -828,21 +837,24 @@ export default function AdminClient() {
       let changed = false;
       const next = { ...prev };
       for (const section of selectedPortalCmsPage.sections) {
-        const key = `${portalCmsLocale}::${section.section_key}`;
+        const key = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
         const existingEntry = portalContentEntries.find((entry) =>
           entry.locale === portalCmsLocale
           && entry.page_key === selectedPortalCmsPage.page_key
           && entry.section_key === section.section_key,
         );
         const emptyFields = buildPortalCmsEmptyFields(section);
-        const mergedFields = {
-          ...emptyFields,
-          ...(existingEntry?.fields_json ?? {}),
-          ...(next[key]?.fields_json ?? {}),
-        };
         const nextDraft = {
-          status: next[key]?.status ?? existingEntry?.status ?? "draft",
-          fields_json: mergedFields,
+          status: existingEntry?.status ?? next[key]?.status ?? "draft",
+          fields_json: existingEntry
+            ? {
+                ...emptyFields,
+                ...existingEntry.fields_json,
+              }
+            : {
+                ...emptyFields,
+                ...(next[key]?.fields_json ?? {}),
+              },
         };
         const currentDraft = next[key];
         if (!currentDraft || JSON.stringify(currentDraft) !== JSON.stringify(nextDraft)) {
@@ -1056,6 +1068,10 @@ export default function AdminClient() {
   );
   const currentReviewPreviewHref = useMemo(
     () => buildPreviewHrefFromArea(reviewData?.mapping?.areas ?? null, reviewData?.mapping?.area_id ?? ""),
+    [reviewData],
+  );
+  const currentReviewPreviewSignoffAt = useMemo(
+    () => String(reviewData?.mapping?.partner_preview_signoff_at ?? "").trim(),
     [reviewData],
   );
 
@@ -3133,19 +3149,20 @@ export default function AdminClient() {
                   <div
                     style={{
                       width: "100%",
-                      border: "1px solid #d8b4fe",
-                      background: "#faf5ff",
+                      border: currentReviewPreviewSignoffAt ? "1px solid #cbd5e1" : "1px solid #fdba74",
+                      background: currentReviewPreviewSignoffAt ? "#f8fafc" : "#fff7ed",
                       borderRadius: 10,
                       padding: 12,
-                      color: "#4c1d95",
+                      color: currentReviewPreviewSignoffAt ? "#334155" : "#9a3412",
                       fontSize: 13,
                       lineHeight: 1.55,
                     }}
                   >
-                    <strong>Previewphase aktiv.</strong>
+                    <strong>{currentReviewPreviewSignoffAt ? "Livegang angefragt." : "Previewphase aktiv."}</strong>
                     {" "}
-                    Das Gebiet ist fachlich freigegeben und kann jetzt vom Partner intern vorbereitet werden.
-                    Bitte Inhalte, Werte sowie SEO-/GEO-Einstellungen vor dem finalen Onlineschalten vollständig prüfen.
+                    {currentReviewPreviewSignoffAt
+                      ? `Der Partner hat den Previewprozess abgeschlossen und den Livegang am ${formatAdminDateTime(currentReviewPreviewSignoffAt)} angefragt. Bitte die Frontend-Preview jetzt final prüfen und das Gebiet danach bei Bedarf online schalten.`
+                      : "Das Gebiet ist fachlich freigegeben und kann jetzt vom Partner intern vorbereitet werden. Bitte Inhalte, Werte sowie SEO-/GEO-Einstellungen vor dem finalen Onlineschalten vollständig prüfen."}
                     {currentReviewPreviewHref ? (
                       <>
                         {" "}
@@ -3171,7 +3188,7 @@ export default function AdminClient() {
                   ) : null}
                   <button
                     style={btnStyle}
-                    disabled={busy || reviewBusy || !reviewAreaId}
+                    disabled={busy || reviewBusy || !reviewAreaId || !currentReviewPreviewSignoffAt}
                     onClick={() =>
                       run("Onlineschalten", async () => {
                         await setAreaPublication(true);
@@ -3180,6 +3197,11 @@ export default function AdminClient() {
                   >
                     Onlineschalten
                   </button>
+                  {!currentReviewPreviewSignoffAt ? (
+                    <div style={{ width: "100%", fontSize: 12, color: "#9a3412" }}>
+                      Der Partner muss den Livegang zuerst im Preview-Bereich anfragen, bevor das Gebiet online geschaltet werden kann.
+                    </div>
+                  ) : null}
                 </>
               ) : null}
               {currentReviewState === "live" ? (
@@ -3735,7 +3757,7 @@ export default function AdminClient() {
           {selectedPortalCmsPage ? (
             <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
               {selectedPortalCmsPage.sections.map((section) => {
-                const draftKey = `${portalCmsLocale}::${section.section_key}`;
+                const draftKey = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
                 const draft = portalCmsDrafts[draftKey] ?? {
                   status: "draft" as PortalContentEntryStatus,
                   fields_json: buildPortalCmsEmptyFields(section),
@@ -3847,7 +3869,7 @@ export default function AdminClient() {
                 run("Portal-Inhalte speichern", async () => {
                   if (!selectedPortalCmsPage || !portalCmsLocale) return;
                   const entries = selectedPortalCmsPage.sections.map((section) => {
-                    const draftKey = `${portalCmsLocale}::${section.section_key}`;
+                    const draftKey = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
                     const draft = portalCmsDrafts[draftKey] ?? {
                       status: "draft" as PortalContentEntryStatus,
                       fields_json: buildPortalCmsEmptyFields(section),
