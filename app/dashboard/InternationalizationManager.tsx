@@ -1600,7 +1600,7 @@ export default function InternationalizationManager({ config, availableLocales, 
         .eq('is_active', true)
         .order('updated_at', { ascending: false });
 
-      if (requestsError) throw requestsError;
+      if (requestsError) throw new Error(`requests query failed: ${String(requestsError.message ?? requestsError.code ?? 'unknown error')}`);
 
       const requests = (requestsData ?? []) as RequestSourceRow[];
       const sources = Array.from(new Set(requests.map((item) => String(item.provider ?? '').trim()).filter(Boolean)));
@@ -1616,7 +1616,7 @@ export default function InternationalizationManager({ config, availableLocales, 
           .in('source', sources)
           .in('external_id', externalIds);
 
-        if (overridesError) throw overridesError;
+        if (overridesError) throw new Error(`request overrides query failed: ${String(overridesError.message ?? overridesError.code ?? 'unknown error')}`);
         overrideRows = (overridesData ?? []) as RequestOverrideRow[];
       }
 
@@ -1633,7 +1633,7 @@ export default function InternationalizationManager({ config, availableLocales, 
           if (isMissingRequestI18nTable(translationsError)) {
             throw new Error('Tabelle `partner_request_i18n` fehlt. Bitte SQL-Migration ausführen.');
           }
-          throw translationsError;
+          throw new Error(`request translations query failed: ${String(translationsError.message ?? translationsError.code ?? 'unknown error')}`);
         }
         translationRows = (translationsData ?? []) as RequestTranslationRow[];
       }
@@ -1740,7 +1740,7 @@ export default function InternationalizationManager({ config, availableLocales, 
     } catch (error) {
       setRequestItems([]);
       setRequestBaselineById({});
-      setRequestStatus(error instanceof Error ? error.message : 'Gesuche-Übersetzungen konnten nicht geladen werden.');
+      setRequestStatus(error instanceof Error ? error.message : `Gesuche-Übersetzungen konnten nicht geladen werden: ${JSON.stringify(error)}`);
       setRequestStatusTone('error');
     } finally {
       setRequestLoading(false);
