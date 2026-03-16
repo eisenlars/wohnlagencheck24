@@ -2,28 +2,42 @@ import { AngebotePage } from "@/components/angebote/AngebotePage";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { getOffers } from "@/lib/angebote";
 import { getReportBySlugs } from "@/lib/data";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { slugifyOfferTitle } from "@/utils/slug";
 
 type PageParams = { bundesland: string; kreis: string; ort: string };
 type PageProps = { params: Promise<PageParams>; searchParams?: Promise<{ page?: string }> };
+type ContentProps = {
+  bundesland: string;
+  kreis: string;
+  ort: string;
+  page?: number;
+  locale?: string;
+};
 
 const PAGE_SIZE = 10;
 
-export default async function ImmobilienangeboteOrtPage({
-  params,
-  searchParams,
-}: PageProps) {
-  const { bundesland, kreis, ort } = await params;
-  const rawPage = await (await searchParams)?.page;
-  const page = rawPage ? Number(rawPage) : 1;
+export async function ImmobilienangeboteOrtPageContent({
+  bundesland,
+  kreis,
+  ort,
+  page = 1,
+  locale = "de",
+}: ContentProps) {
+  const normalizedLocale = normalizePublicLocale(locale);
+  const texts = getPortalSystemTexts(normalizedLocale);
+  const localizeHref = (path: string) =>
+    normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
   const { offers, topOffers, total, totalWithTop } = await getOffers({
     bundeslandSlug: bundesland,
     kreisSlug: kreis,
     mode: "kauf",
     page,
     pageSize: PAGE_SIZE,
+    locale: normalizedLocale,
   });
 
   const kreisReport = await getReportBySlugs([bundesland, kreis]);
@@ -34,32 +48,36 @@ export default async function ImmobilienangeboteOrtPage({
   const ortReport = await getReportBySlugs([bundesland, kreis, ort]);
   const ortMeta = asRecord(asArray(ortReport?.meta)[0] ?? ortReport?.meta) ?? {};
   const ortName = getRegionDisplayName({ meta: ortMeta, level: "ort", fallbackSlug: ort });
-  const basePath = `/immobilienmarkt/${bundesland}/${kreis}/${ort}`;
+  const rawBasePath = `/immobilienmarkt/${bundesland}/${kreis}/${ort}`;
+  const rawParentBasePath = `/immobilienmarkt/${bundesland}/${kreis}`;
+  const basePath = localizeHref(rawBasePath);
   const listPath = `${basePath}/immobilienangebote`;
   const tabs = [
     ...IMMOBILIENMARKT_THEME.tabsByLevel.ort,
-    { id: "immobilienangebote", label: "Immobilienangebote" },
+    { id: "immobilienangebote", label: texts.buy_offers },
   ];
-  const itemListJsonLd = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    itemListOrder: "https://schema.org/ItemListOrderDescending",
-    name: `Kaufangebote ${kreisName}`,
-    itemListElement: offers.map((offer, index) => ({
-      "@type": "ListItem",
-      position: index + 1 + (Math.max(page, 1) - 1) * PAGE_SIZE,
-      url: `${listPath}/${offer.id}_${slugifyOfferTitle(offer.title)}`,
-      name: offer.title || "Immobilienangebot",
-    })),
-  });
+  const itemListJsonLd = normalizedLocale === "de"
+    ? JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        itemListOrder: "https://schema.org/ItemListOrderDescending",
+        name: `${texts.buy_offers} ${kreisName}`,
+        itemListElement: offers.map((offer, index) => ({
+          "@type": "ListItem",
+          position: index + 1 + (Math.max(page, 1) - 1) * PAGE_SIZE,
+          url: `${listPath}/${offer.id}_${slugifyOfferTitle(offer.title)}`,
+          name: offer.title || texts.object_generic,
+        })),
+      })
+    : undefined;
 
   return (
     <AngebotePage
-      offersHeading={`Kaufangebote ${kreisName}`}
+      offersHeading={`${texts.buy_offers} ${kreisName}`}
       offers={offers}
       topOffers={topOffers}
       mode="kauf"
-      detailBasePath={listPath}
+      detailBasePath={normalizedLocale === "de" ? listPath : null}
       pagination={{
         page: Math.max(page, 1),
         pageSize: PAGE_SIZE,
@@ -71,9 +89,20 @@ export default async function ImmobilienangeboteOrtPage({
       tabs={tabs}
       activeTabId="immobilienangebote"
       basePath={basePath}
-      parentBasePath={`/immobilienmarkt/${bundesland}/${kreis}`}
+      parentBasePath={localizeHref(rawParentBasePath)}
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis, ortSlug: ort }}
       names={{ bundeslandName, kreisName, regionName: ortName }}
+      locale={normalizedLocale}
     />
   );
+}
+
+export default async function ImmobilienangeboteOrtPage({
+  params,
+  searchParams,
+}: PageProps) {
+  const { bundesland, kreis, ort } = await params;
+  const rawPage = await (await searchParams)?.page;
+  const page = rawPage ? Number(rawPage) : 1;
+  return ImmobilienangeboteOrtPageContent({ bundesland, kreis, ort, page, locale: "de" });
 }

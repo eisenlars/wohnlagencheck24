@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { TabItem } from "@/features/immobilienmarkt/sections/types";
 import type { RegionalRequest, RequestMode } from "@/lib/gesuche";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import { normalizePublicLocale } from "@/lib/public-locale-routing";
 
 type GesuchePageProps = {
   heading: string;
@@ -22,15 +24,18 @@ type GesuchePageProps = {
     bundeslandName?: string;
     kreisName?: string;
   };
+  locale?: string;
 };
 
-function formatMoney(value: number | null): string {
+function formatMoney(value: number | null, locale: string): string {
   if (value === null || !Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat("de-DE").format(value) + " €";
+  return new Intl.NumberFormat(locale === "en" ? "en-US" : "de-DE").format(value) + " €";
 }
 
 export function GesuchePage(props: GesuchePageProps) {
-  const { heading, requests, mode, tabs, activeTabId, basePath, parentBasePath, ctx, names } = props;
+  const { heading, requests, mode, tabs, activeTabId, basePath, parentBasePath, ctx, names, locale } = props;
+  const normalizedLocale = normalizePublicLocale(locale);
+  const texts = getPortalSystemTexts(normalizedLocale);
   const kaufPath = `${basePath}/immobiliengesuche`;
   const mietePath = `${basePath}/mietgesuche`;
 
@@ -46,15 +51,16 @@ export function GesuchePage(props: GesuchePageProps) {
           names={names}
           compact
           rootIconSrc="/logo/wohnlagencheck24.svg"
+          locale={normalizedLocale}
         />
       </div>
 
       <div className="angebote-mode-toggle mb-5">
         <Link className={`angebote-mode-btn ${mode === "kauf" ? "is-active" : ""}`} href={kaufPath}>
-          Kaufgesuche
+          {texts.buy_requests}
         </Link>
         <Link className={`angebote-mode-btn ${mode === "miete" ? "is-active" : ""}`} href={mietePath}>
-          Mietgesuche
+          {texts.rent_requests}
         </Link>
       </div>
 
@@ -66,7 +72,7 @@ export function GesuchePage(props: GesuchePageProps) {
 
       {requests.length === 0 ? (
         <div className="alert alert-light border text-muted">
-          Aktuell sind keine passenden Gesuche für diese Ortslage verfügbar.
+          {texts.no_matching_requests_available}
         </div>
       ) : (
         <div className="angebote-grid">
@@ -74,16 +80,22 @@ export function GesuchePage(props: GesuchePageProps) {
             <article className="angebote-card" key={request.id}>
               <div className="angebote-card-body">
                 <div className="angebote-card-meta">
-                  <span className="angebote-pill">{request.objectType ?? "objekt"}</span>
-                  <span className="angebote-price">{formatMoney(request.maxPrice)}</span>
+                  <span className="angebote-pill">
+                    {request.objectType === "haus"
+                      ? texts.house
+                      : request.objectType === "wohnung"
+                        ? texts.apartment
+                        : request.objectType ?? texts.object_generic}
+                  </span>
+                  <span className="angebote-price">{formatMoney(request.maxPrice, normalizedLocale)}</span>
                 </div>
                 <h2 className="h6 mb-2">{request.title}</h2>
                 <p className="angebote-address mb-2">
-                  {request.regionTargets.map((target) => target.label).join(", ") || "Region nicht hinterlegt"}
+                  {request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified}
                 </p>
                 <div className="angebote-card-facts">
-                  <span>{request.requestType === "miete" ? "Mietgesuch" : "Kaufgesuch"}</span>
-                  <span>{request.minRooms ?? "—"} Zimmer min.</span>
+                  <span>{request.requestType === "miete" ? texts.rent_request : texts.purchase_request}</span>
+                  <span>{request.minRooms ?? "—"} {texts.rooms_min}</span>
                 </div>
               </div>
             </article>

@@ -2,20 +2,32 @@ import { GesuchePage } from "@/components/gesuche/GesuchePage";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { getReportBySlugs } from "@/lib/data";
 import { getRegionalRequestsForOrtslage } from "@/lib/gesuche";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
 
 type PageParams = { bundesland: string; kreis: string; ort: string };
 type PageProps = { params: Promise<PageParams> };
+type ContentProps = { bundesland: string; kreis: string; ort: string; locale?: string };
 
-export default async function MietgesucheOrtPage({ params }: PageProps) {
-  const { bundesland, kreis, ort } = await params;
+export async function MietgesucheOrtPageContent({
+  bundesland,
+  kreis,
+  ort,
+  locale = "de",
+}: ContentProps) {
+  const normalizedLocale = normalizePublicLocale(locale);
+  const texts = getPortalSystemTexts(normalizedLocale);
+  const localizeHref = (path: string) =>
+    normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
 
   const requests = await getRegionalRequestsForOrtslage({
     bundeslandSlug: bundesland,
     kreisSlug: kreis,
     ortSlug: ort,
     mode: "miete",
+    locale: normalizedLocale,
   });
 
   const kreisReport = await getReportBySlugs([bundesland, kreis]);
@@ -27,20 +39,28 @@ export default async function MietgesucheOrtPage({ params }: PageProps) {
   const ortMeta = asRecord(asArray(ortReport?.meta)[0] ?? ortReport?.meta) ?? {};
   const ortName = getRegionDisplayName({ meta: ortMeta, level: "ort", fallbackSlug: ort });
 
-  const basePath = `/immobilienmarkt/${bundesland}/${kreis}/${ort}`;
-  const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.ort, { id: "mietgesuche", label: "Mietgesuche" }];
+  const rawBasePath = `/immobilienmarkt/${bundesland}/${kreis}/${ort}`;
+  const rawParentBasePath = `/immobilienmarkt/${bundesland}/${kreis}`;
+  const basePath = localizeHref(rawBasePath);
+  const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.ort, { id: "mietgesuche", label: texts.rent_requests }];
 
   return (
     <GesuchePage
-      heading={`Mietgesuche ${ortName}`}
+      heading={`${texts.rent_requests} ${ortName}`}
       requests={requests}
       mode="miete"
       tabs={tabs}
       activeTabId="mietgesuche"
       basePath={basePath}
-      parentBasePath={`/immobilienmarkt/${bundesland}/${kreis}`}
+      parentBasePath={localizeHref(rawParentBasePath)}
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis, ortSlug: ort }}
       names={{ bundeslandName, kreisName, regionName: ortName }}
+      locale={normalizedLocale}
     />
   );
+}
+
+export default async function MietgesucheOrtPage({ params }: PageProps) {
+  const { bundesland, kreis, ort } = await params;
+  return MietgesucheOrtPageContent({ bundesland, kreis, ort, locale: "de" });
 }

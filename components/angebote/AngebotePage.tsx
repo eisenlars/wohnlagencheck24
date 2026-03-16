@@ -5,6 +5,8 @@ import Image from "next/image";
 
 import type { Offer, OfferMode, OfferObjectType } from "@/lib/angebote";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import { normalizePublicLocale } from "@/lib/public-locale-routing";
 import { slugifyOfferTitle } from "@/utils/slug";
 
 type AngebotePageProps = {
@@ -12,7 +14,7 @@ type AngebotePageProps = {
   offers: Offer[];
   topOffers: Offer[];
   mode: OfferMode;
-  detailBasePath: string;
+  detailBasePath?: string | null;
   totalWithTop?: number;
   pagination?: {
     page: number;
@@ -35,9 +37,8 @@ type AngebotePageProps = {
     bundeslandName?: string;
     kreisName?: string;
   };
+  locale?: string;
 };
-
-const priceFormatter = new Intl.NumberFormat("de-DE");
 const passthroughLoader = ({ src }: { src: string }) => src;
 
 function sanitizeImageUrl(value: string | null | undefined): string | null {
@@ -51,21 +52,6 @@ function sanitizeImageUrl(value: string | null | undefined): string | null {
   } catch {
     return null;
   }
-}
-
-function formatCurrency(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "—";
-  return `${priceFormatter.format(value)} €`;
-}
-
-function formatArea(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "—";
-  return `${priceFormatter.format(value)} m²`;
-}
-
-function formatRooms(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "—";
-  return `${priceFormatter.format(value)}`;
 }
 
 export function AngebotePage(props: AngebotePageProps) {
@@ -84,9 +70,16 @@ export function AngebotePage(props: AngebotePageProps) {
     parentBasePath,
     ctx,
     names,
+    locale,
   } = props;
   const [filter, setFilter] = useState<"all" | OfferObjectType>("all");
   const [activeIndex, setActiveIndex] = useState(0);
+  const normalizedLocale = normalizePublicLocale(locale);
+  const texts = getPortalSystemTexts(normalizedLocale);
+  const priceFormatter = useMemo(
+    () => new Intl.NumberFormat(normalizedLocale === "en" ? "en-US" : "de-DE"),
+    [normalizedLocale],
+  );
 
   useEffect(() => {
     if (topOffers.length <= 1) return;
@@ -101,12 +94,34 @@ export function AngebotePage(props: AngebotePageProps) {
     return offers.filter((offer) => offer.objectType === filter);
   }, [filter, offers]);
 
+  function formatCurrency(value: number | null): string {
+    if (value === null || !Number.isFinite(value)) return "—";
+    return `${priceFormatter.format(value)} €`;
+  }
+
+  function formatArea(value: number | null): string {
+    if (value === null || !Number.isFinite(value)) return "—";
+    return `${priceFormatter.format(value)} m²`;
+  }
+
+  function formatRooms(value: number | null): string {
+    if (value === null || !Number.isFinite(value)) return "—";
+    return `${priceFormatter.format(value)}`;
+  }
+
+  function formatObjectType(value: OfferObjectType | string): string {
+    if (value === "haus") return texts.house;
+    if (value === "wohnung") return texts.apartment;
+    return value || texts.object_generic;
+  }
+
   const activeTopOffer = topOffers[activeIndex] ?? null;
-  const activeTopImageUrl = sanitizeImageUrl(activeTopOffer?.imageUrl ?? null);
-  const priceLabel = mode === "miete" ? "Warmmiete" : "Kaufpreis";
-  const priceSuffix = mode === "miete" ? "/Monat" : "";
   const buildDetailHref = (offer: Offer) =>
-    `${detailBasePath}/${offer.id}_${slugifyOfferTitle(offer.title)}`;
+    detailBasePath ? `${detailBasePath}/${offer.id}_${slugifyOfferTitle(offer.title)}` : null;
+  const activeTopImageUrl = sanitizeImageUrl(activeTopOffer?.imageUrl ?? null);
+  const activeTopDetailHref = activeTopOffer ? buildDetailHref(activeTopOffer) : null;
+  const priceLabel = mode === "miete" ? texts.warm_rent : texts.purchase_price;
+  const priceSuffix = mode === "miete" ? texts.per_month : "";
   const totalPages = pagination
     ? Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
     : 1;
@@ -132,6 +147,7 @@ export function AngebotePage(props: AngebotePageProps) {
           names={names}
           compact
           rootIconSrc="/logo/wohnlagencheck24.svg"
+          locale={normalizedLocale}
         />
       </div>
 
@@ -140,13 +156,13 @@ export function AngebotePage(props: AngebotePageProps) {
           className={`angebote-mode-btn ${mode === "kauf" ? "is-active" : ""}`}
           href={kaufListPath}
         >
-          Kaufangebote
+          {texts.buy_offers}
         </a>
         <a
           className={`angebote-mode-btn ${mode === "miete" ? "is-active" : ""}`}
           href={mieteListPath}
         >
-          Mietangebote
+          {texts.rent_offers}
         </a>
       </div>
 
@@ -160,30 +176,45 @@ export function AngebotePage(props: AngebotePageProps) {
         <section className="angebote-top mb-4">
           <div className="angebote-top-card">
             <div className="angebote-top-media">
-              <a href={buildDetailHref(activeTopOffer)} className="angebote-media-link">
-                {activeTopImageUrl ? (
-                  <Image
-                    src={activeTopImageUrl}
-                    alt={activeTopOffer.title}
-                    fill
-                    sizes="(max-width: 1200px) 100vw, 60vw"
-                    loader={passthroughLoader}
-                    unoptimized
-                    style={{ objectFit: "cover" }}
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="angebote-top-placeholder">Kein Bild verfügbar</div>
-                )}
-              </a>
-              <span className="angebote-image-label">Topobjekt</span>
+              {activeTopDetailHref ? (
+                <a href={activeTopDetailHref} className="angebote-media-link">
+                  {activeTopImageUrl ? (
+                    <Image
+                      src={activeTopImageUrl}
+                      alt={activeTopOffer.title}
+                      fill
+                      sizes="(max-width: 1200px) 100vw, 60vw"
+                      loader={passthroughLoader}
+                      unoptimized
+                      style={{ objectFit: "cover" }}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="angebote-top-placeholder">{texts.no_image_available}</div>
+                  )}
+                </a>
+              ) : activeTopImageUrl ? (
+                <Image
+                  src={activeTopImageUrl}
+                  alt={activeTopOffer.title}
+                  fill
+                  sizes="(max-width: 1200px) 100vw, 60vw"
+                  loader={passthroughLoader}
+                  unoptimized
+                  style={{ objectFit: "cover" }}
+                  loading="lazy"
+                />
+              ) : (
+                <div className="angebote-top-placeholder">{texts.no_image_available}</div>
+              )}
+              <span className="angebote-image-label">{texts.top_property}</span>
               <div className="angebote-media-overlay" aria-hidden="true" />
             </div>
             <div className="angebote-top-body">
               <div className="angebote-pill-row">
-                <span className="angebote-pill">{activeTopOffer.objectType}</span>
+                <span className="angebote-pill">{formatObjectType(activeTopOffer.objectType)}</span>
               </div>
-              <h3 className="h5 mb-2">{activeTopOffer.title || "Objekt"}</h3>
+              <h3 className="h5 mb-2">{activeTopOffer.title || texts.object_generic}</h3>
               {activeTopOffer.address ? (
                 <p className="angebote-address mb-3">{activeTopOffer.address}</p>
               ) : null}
@@ -198,20 +229,20 @@ export function AngebotePage(props: AngebotePageProps) {
               </div>
               <div className="angebote-facts">
                 <div>
-                  <span className="angebote-fact-label">Wohnfläche</span>
+                  <span className="angebote-fact-label">{texts.living_area}</span>
                   <strong className="angebote-fact-value">{formatArea(activeTopOffer.areaSqm)}</strong>
                 </div>
                 <div>
-                  <span className="angebote-fact-label">Zimmer</span>
+                  <span className="angebote-fact-label">{texts.rooms}</span>
                   <strong className="angebote-fact-value">{formatRooms(activeTopOffer.rooms)}</strong>
                 </div>
               </div>
-              {activeTopOffer.detailUrl ? (
+              {activeTopOffer.detailUrl && activeTopDetailHref ? (
                 <a
                   className="btn btn-dark btn-sm mt-3 angebote-top-cta"
-                  href={buildDetailHref(activeTopOffer)}
+                  href={activeTopDetailHref}
                 >
-                  Zum Exposé
+                  {texts.to_expose}
                 </a>
               ) : null}
             </div>
@@ -225,7 +256,7 @@ export function AngebotePage(props: AngebotePageProps) {
                   (activeIndex - 1 + topOffers.length) % topOffers.length,
                 )
               }
-              aria-label="Vorheriges Topobjekt"
+              aria-label={texts.previous_top_offer}
             >
               ‹
             </button>
@@ -233,7 +264,7 @@ export function AngebotePage(props: AngebotePageProps) {
               type="button"
               className="angebote-slider-btn angebote-slider-btn--brand"
               onClick={() => setActiveIndex((activeIndex + 1) % topOffers.length)}
-              aria-label="Nächstes Topobjekt"
+              aria-label={texts.next_top_offer}
             >
               ›
             </button>
@@ -242,27 +273,27 @@ export function AngebotePage(props: AngebotePageProps) {
       ) : null}
 
       <section className="angebote-filter mb-4">
-        <div className="angebote-filter-body" role="group" aria-label="Objektart filtern">
+        <div className="angebote-filter-body" role="group" aria-label={texts.filter_object_type}>
           <button
             type="button"
             className={`angebote-filter-btn ${filter === "all" ? "is-active" : ""}`}
             onClick={() => setFilter("all")}
           >
-            Alle
+            {texts.all}
           </button>
           <button
             type="button"
             className={`angebote-filter-btn ${filter === "haus" ? "is-active" : ""}`}
             onClick={() => setFilter("haus")}
           >
-            Haus
+            {texts.house}
           </button>
           <button
             type="button"
             className={`angebote-filter-btn ${filter === "wohnung" ? "is-active" : ""}`}
             onClick={() => setFilter("wohnung")}
           >
-            Wohnung
+            {texts.apartment}
           </button>
         </div>
       </section>
@@ -270,31 +301,47 @@ export function AngebotePage(props: AngebotePageProps) {
       <section className="angebote-list mb-5">
         {filteredOffers.length === 0 ? (
           <div className="alert alert-light border text-muted">
-            Aktuell sind keine passenden Angebote verfügbar.
+            {texts.no_matching_offers_available}
           </div>
         ) : (
           <div className="angebote-grid">
             {filteredOffers.map((offer) => {
               const imageUrl = sanitizeImageUrl(offer.imageUrl);
+              const detailHref = buildDetailHref(offer);
               return (
                 <article className="angebote-card" key={offer.id}>
                   <div className="angebote-card-media">
-                    <a href={buildDetailHref(offer)} className="angebote-media-link">
-                      {imageUrl ? (
-                        <Image
-                          src={imageUrl}
-                          alt={offer.title}
-                          fill
-                          sizes="(max-width: 1200px) 100vw, 33vw"
-                          loader={passthroughLoader}
-                          unoptimized
-                          style={{ objectFit: "cover" }}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="angebote-card-placeholder">Kein Bild</div>
-                      )}
-                    </a>
+                    {detailHref ? (
+                      <a href={detailHref} className="angebote-media-link">
+                        {imageUrl ? (
+                          <Image
+                            src={imageUrl}
+                            alt={offer.title}
+                            fill
+                            sizes="(max-width: 1200px) 100vw, 33vw"
+                            loader={passthroughLoader}
+                            unoptimized
+                            style={{ objectFit: "cover" }}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="angebote-card-placeholder">{texts.no_image}</div>
+                        )}
+                      </a>
+                    ) : imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        alt={offer.title}
+                        fill
+                        sizes="(max-width: 1200px) 100vw, 33vw"
+                        loader={passthroughLoader}
+                        unoptimized
+                        style={{ objectFit: "cover" }}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="angebote-card-placeholder">{texts.no_image}</div>
+                    )}
                     {offer.isTop ? (
                       <span className="angebote-pill angebote-pill--dark angebote-pill--floating">
                         Top
@@ -303,26 +350,26 @@ export function AngebotePage(props: AngebotePageProps) {
                   </div>
                   <div className="angebote-card-body">
                     <div className="angebote-card-meta">
-                      <span className="angebote-pill">{offer.objectType}</span>
+                      <span className="angebote-pill">{formatObjectType(offer.objectType)}</span>
                       <span className="angebote-price">
                         {formatCurrency(mode === "miete" ? offer.rent : offer.price)}
                         {priceSuffix ? <span className="angebote-price-suffix">{priceSuffix}</span> : null}
                       </span>
                     </div>
-                    <h3 className="h6 mb-2">{offer.title || "Objekt"}</h3>
+                    <h3 className="h6 mb-2">{offer.title || texts.object_generic}</h3>
                     {offer.address ? (
                       <p className="angebote-address mb-3">{offer.address}</p>
                     ) : null}
                     <div className="angebote-card-facts">
                       <span>{formatArea(offer.areaSqm)}</span>
-                      <span>{formatRooms(offer.rooms)} Zimmer</span>
+                      <span>{formatRooms(offer.rooms)} {texts.rooms}</span>
                     </div>
-                    {offer.detailUrl ? (
+                    {offer.detailUrl && detailHref ? (
                       <a
                         className="btn btn-outline-dark btn-sm angebote-card-cta"
-                        href={buildDetailHref(offer)}
+                        href={detailHref}
                       >
-                        Zum Exposé
+                        {texts.to_expose}
                       </a>
                     ) : null}
                   </div>
@@ -334,12 +381,12 @@ export function AngebotePage(props: AngebotePageProps) {
       </section>
 
       {pagination && totalPages > 1 ? (
-        <nav className="angebote-pagination" aria-label="Seiten-Navigation">
+        <nav className="angebote-pagination" aria-label={texts.page_navigation}>
           {pagination.page > 1 ? (
             <a
               className="angebote-page-btn"
               href={`${pagination.basePath}?page=${pagination.page - 1}#angebote-top`}
-              aria-label="Vorherige Seite"
+              aria-label={texts.previous_page}
               rel="prev"
             >
               ‹
@@ -378,7 +425,7 @@ export function AngebotePage(props: AngebotePageProps) {
             <a
               className="angebote-page-btn"
               href={`${pagination.basePath}?page=${pagination.page + 1}#angebote-top`}
-              aria-label="Nächste Seite"
+              aria-label={texts.next_page}
               rel="next"
             >
               ›

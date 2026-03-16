@@ -1,8 +1,10 @@
 // lib/angebote.ts
 
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { loadPublicVisiblePartnerIdsForAreaIds } from "@/lib/public-partner-mappings";
+import { normalizePublicLocale } from "@/lib/public-locale-routing";
 
 export type OfferMode = "kauf" | "miete";
 export type OfferObjectType = "haus" | "wohnung";
@@ -52,7 +54,56 @@ type GetOffersArgs = {
   mode: OfferMode;
   page?: number;
   pageSize?: number;
+  locale?: string;
 };
+
+type OfferTranslationRow = {
+  offer_id?: string | null;
+  translated_seo_title?: string | null;
+  translated_seo_h1?: string | null;
+  status?: string | null;
+};
+
+function resolveLocalizedOfferTitle(
+  originalTitle: string,
+  override: OfferOverrides | undefined,
+  translation: OfferTranslationRow | undefined,
+): string {
+  const translatedTitle =
+    String(translation?.translated_seo_h1 ?? "").trim()
+    || String(translation?.translated_seo_title ?? "").trim();
+  if (translatedTitle) return translatedTitle;
+  return (override?.seo_h1 ?? originalTitle) || originalTitle;
+}
+
+async function loadOfferTranslations(
+  offerIds: string[],
+  locale: string,
+): Promise<Map<string, OfferTranslationRow>> {
+  const normalizedLocale = normalizePublicLocale(locale);
+  if (normalizedLocale === "de" || offerIds.length === 0) return new Map();
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("partner_property_offer_i18n")
+    .select("offer_id, translated_seo_title, translated_seo_h1, status")
+    .in("offer_id", offerIds)
+    .eq("target_locale", normalizedLocale)
+    .eq("status", "approved");
+
+  if (error) {
+    console.warn("partner_property_offer_i18n fetch failed:", error.message);
+    return new Map();
+  }
+
+  const out = new Map<string, OfferTranslationRow>();
+  for (const row of (data ?? []) as OfferTranslationRow[]) {
+    const offerId = String(row.offer_id ?? "").trim();
+    if (!offerId) continue;
+    out.set(offerId, row);
+  }
+  return out;
+}
 
 async function getKreisAreaId(
   supabase: ReturnType<typeof createClient>,
@@ -118,6 +169,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
   pageSize: number;
 }> {
   const supabase = createClient();
+  const normalizedLocale = normalizePublicLocale(args.locale);
   const areaId = await getKreisAreaId(supabase, args.bundeslandSlug, args.kreisSlug);
   const areaIds = await getAreaIdsForKreis(supabase, args.bundeslandSlug, args.kreisSlug);
 
@@ -157,15 +209,20 @@ export async function getOffers(args: GetOffersArgs): Promise<{
 
   let query = supabase
     .from("partner_property_offers")
-    .select(selectFields, { count: "exact" })
+    .select(selectFields, { count: normalizedLocale === "de" ? "exact" : "exact" })
     .in("area_id", areaIds.length > 0 ? areaIds : [areaId])
     .eq("offer_type", args.mode)
     .neq("is_top", true)
-    .order("updated_at", { ascending: false })
-    .range(rangeFrom, rangeTo);
+    .order("updated_at", { ascending: false });
 
   if (partnerIds.length > 0) {
     query = query.in("partner_id", partnerIds);
+  }
+
+  if (normalizedLocale === "de") {
+    query = query.range(rangeFrom, rangeTo);
+  } else {
+    query = query.limit(200);
   }
 
   const { data, error, count } = await query;
@@ -240,16 +297,25 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     }
   }
 
+  const translationsMap = await loadOfferTranslations(
+    offers.map((offer) => offer.id),
+    normalizedLocale,
+  );
+
   const offersWithOverrides = offers.map((offer) => {
     const effectiveSource = (offer.source ?? "").trim() || "manual";
     const effectiveExternalId = (offer.externalId ?? "").trim() || offer.id;
     const key = `${offer.partnerId}::${effectiveSource}::${effectiveExternalId}`;
     const override = overridesMap.get(key);
-    const title = (override?.seo_h1 ?? offer.title) || offer.title;
+    const translation = translationsMap.get(offer.id);
+    const title = resolveLocalizedOfferTitle(offer.title, override, translation);
     return { ...offer, title };
   });
+  const localizedOffers = normalizedLocale === "de"
+    ? offersWithOverrides
+    : offersWithOverrides.filter((offer) => translationsMap.has(offer.id));
 
-  let topOffers: Offer[] = offersWithOverrides.filter((offer) => offer.isTop);
+  let topOffers: Offer[] = localizedOffers.filter((offer) => offer.isTop);
   const topIds = new Set<string>(topOffers.map((offer) => offer.id));
   let topCount = topOffers.length;
   {
@@ -260,7 +326,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
       .eq("offer_type", args.mode)
       .eq("is_top", true)
       .order("updated_at", { ascending: false })
-      .limit(6);
+      .limit(normalizedLocale === "de" ? 6 : 60);
 
     if (partnerIds.length > 0) {
       topQuery = topQuery.in("partner_id", partnerIds);
@@ -294,20 +360,30 @@ export async function getOffers(args: GetOffersArgs): Promise<{
         } satisfies Offer;
       });
 
+      const missingTopIds = topMapped
+        .map((offer) => offer.id)
+        .filter((offerId) => offerId && !translationsMap.has(offerId));
+      if (missingTopIds.length > 0) {
+        const topTranslations = await loadOfferTranslations(missingTopIds, normalizedLocale);
+        topTranslations.forEach((value, key) => translationsMap.set(key, value));
+      }
+
       topOffers = topMapped.map((offer) => {
         const effectiveSource = (offer.source ?? "").trim() || "manual";
         const effectiveExternalId = (offer.externalId ?? "").trim() || offer.id;
         const key = `${offer.partnerId}::${effectiveSource}::${effectiveExternalId}`;
         const override = overridesMap.get(key);
-        const title = (override?.seo_h1 ?? offer.title) || offer.title;
+        const translation = translationsMap.get(offer.id);
+        const title = resolveLocalizedOfferTitle(offer.title, override, translation);
         return { ...offer, title };
-      });
+      }).filter((offer) => normalizedLocale === "de" || translationsMap.has(offer.id))
+        .slice(0, 6);
       topCount = topOffers.length;
       topOffers.forEach((offer) => topIds.add(offer.id));
     }
   }
 
-  if (topIds.size > 0) {
+  if (topIds.size > 0 && normalizedLocale === "de") {
     let countQuery = supabase
       .from("partner_property_offers")
       .select("id", { count: "exact", head: true })
@@ -327,12 +403,16 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     }
   }
 
+  const pagedOffers = normalizedLocale === "de"
+    ? localizedOffers
+    : localizedOffers.slice(rangeFrom, rangeTo + 1);
+
   return {
-    offers: offersWithOverrides,
+    offers: pagedOffers,
     topOffers,
     areaId,
-    total: count ?? offersWithOverrides.length,
-    totalWithTop: (count ?? offersWithOverrides.length) + topCount,
+    total: normalizedLocale === "de" ? (count ?? localizedOffers.length) : localizedOffers.length,
+    totalWithTop: (normalizedLocale === "de" ? (count ?? localizedOffers.length) : localizedOffers.length) + topCount,
     page,
     pageSize,
   };

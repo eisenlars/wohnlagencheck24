@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { loadPublicVisiblePartnerIdsForAreaIds } from "@/lib/public-partner-mappings";
+import { normalizePublicLocale } from "@/lib/public-locale-routing";
 
 export type RequestMode = "kauf" | "miete";
 
@@ -23,6 +25,7 @@ type GetRegionalRequestsArgs = {
   ortSlug: string;
   mode: RequestMode;
   limit?: number;
+  locale?: string;
 };
 
 type GetKreisRequestsArgs = {
@@ -30,6 +33,13 @@ type GetKreisRequestsArgs = {
   kreisSlug: string;
   mode: RequestMode;
   limit?: number;
+  locale?: string;
+};
+
+type RequestTranslationRow = {
+  request_id?: string | null;
+  translated_seo_title?: string | null;
+  translated_seo_h1?: string | null;
 };
 
 function normalizeText(value: string): string {
@@ -143,6 +153,8 @@ async function fetchRequestsByPartners(
 function mapRowsToRegionalRequests(
   rows: Array<Record<string, unknown>>,
   mode: RequestMode,
+  translations: Map<string, RequestTranslationRow>,
+  requireTranslation: boolean,
 ): RegionalRequest[] {
   const out: RegionalRequest[] = [];
   for (const record of rows) {
@@ -150,12 +162,17 @@ function mapRowsToRegionalRequests(
     const requestType = String(payload.request_type ?? "").toLowerCase() === "miete" ? "miete" : "kauf";
     if (requestType !== mode) continue;
     const targets = parseRegionTargets(payload);
+    const translation = translations.get(String(record.id ?? ""));
+    const translatedTitle =
+      String(translation?.translated_seo_h1 ?? "").trim()
+      || String(translation?.translated_seo_title ?? "").trim();
+    if (requireTranslation && !translatedTitle) continue;
     out.push({
       id: String(record.id ?? ""),
       partnerId: String(record.partner_id ?? ""),
       provider: String(record.provider ?? ""),
       externalId: String(record.external_id ?? ""),
-      title: String(record.title ?? payload.title ?? ""),
+      title: translatedTitle || String(record.title ?? payload.title ?? ""),
       requestType,
       objectType: payload.object_type ? String(payload.object_type) : null,
       minRooms: toFiniteNumber(payload.min_rooms),
@@ -167,13 +184,47 @@ function mapRowsToRegionalRequests(
   return out;
 }
 
+async function loadRequestTranslations(
+  requestIds: string[],
+  locale: string,
+): Promise<Map<string, RequestTranslationRow>> {
+  const normalizedLocale = normalizePublicLocale(locale);
+  if (normalizedLocale === "de" || requestIds.length === 0) return new Map();
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("partner_request_i18n")
+    .select("request_id, translated_seo_title, translated_seo_h1")
+    .in("request_id", requestIds)
+    .eq("target_locale", normalizedLocale)
+    .eq("status", "approved");
+
+  if (error) {
+    console.warn("partner_request_i18n fetch failed:", error.message);
+    return new Map();
+  }
+
+  const out = new Map<string, RequestTranslationRow>();
+  for (const row of (data ?? []) as RequestTranslationRow[]) {
+    const requestId = String(row.request_id ?? "").trim();
+    if (!requestId) continue;
+    out.set(requestId, row);
+  }
+  return out;
+}
+
 export async function getRegionalRequestsForKreis(
   args: GetKreisRequestsArgs,
 ): Promise<RegionalRequest[]> {
   const scope = await resolveKreisAndPartnerScope(args.bundeslandSlug, args.kreisSlug);
   if (scope.partnerIds.length === 0) return [];
   const rows = await fetchRequestsByPartners(scope.partnerIds, Math.max(1, Math.min(args.limit ?? 40, 200)));
-  return mapRowsToRegionalRequests(rows, args.mode);
+  const normalizedLocale = normalizePublicLocale(args.locale);
+  const translations = await loadRequestTranslations(
+    rows.map((row) => String(row.id ?? "")).filter(Boolean),
+    normalizedLocale,
+  );
+  return mapRowsToRegionalRequests(rows, args.mode, translations, normalizedLocale !== "de");
 }
 
 export async function getRegionalRequestsForOrtslage(
@@ -195,6 +246,11 @@ export async function getRegionalRequestsForOrtslage(
   const scope = await resolveKreisAndPartnerScope(args.bundeslandSlug, args.kreisSlug);
   if (scope.partnerIds.length === 0) return [];
   const rows = await fetchRequestsByPartners(scope.partnerIds, Math.max(1, Math.min(args.limit ?? 24, 120)));
+  const normalizedLocale = normalizePublicLocale(args.locale);
+  const translations = await loadRequestTranslations(
+    rows.map((row) => String(row.id ?? "")).filter(Boolean),
+    normalizedLocale,
+  );
 
   const cityName = String((scope.kreisName ?? "")).trim() || "Leipzig";
   const districtName = String((ortArea.name ?? "")).trim();
@@ -218,12 +274,18 @@ export async function getRegionalRequestsForOrtslage(
 
     if (!matchesByKey && !matchesByTarget) continue;
 
+    const translation = translations.get(String(record.id ?? ""));
+    const translatedTitle =
+      String(translation?.translated_seo_h1 ?? "").trim()
+      || String(translation?.translated_seo_title ?? "").trim();
+    if (normalizedLocale !== "de" && !translatedTitle) continue;
+
     out.push({
       id: String(record.id ?? ""),
       partnerId: String(record.partner_id ?? ""),
       provider: String(record.provider ?? ""),
       externalId: String(record.external_id ?? ""),
-      title: String(record.title ?? payload.title ?? ""),
+      title: translatedTitle || String(record.title ?? payload.title ?? ""),
       requestType,
       objectType: payload.object_type ? String(payload.object_type) : null,
       minRooms: toFiniteNumber(payload.min_rooms),

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { formatRegionFallback } from "@/utils/regionName";
 
 import type { SectionCtx, TabItem } from "@/features/immobilienmarkt/sections/types";
@@ -24,9 +26,14 @@ export function ImmobilienmarktBreadcrumb(props: {
   names?: BreadcrumbNames;
   compact?: boolean;
   rootIconSrc?: string;
+  locale?: string;
 }) {
-  const { tabs, activeTabId, basePath, parentBasePath, ctx, names, compact, rootIconSrc } = props;
+  const { tabs, activeTabId, basePath, parentBasePath, ctx, names, compact, rootIconSrc, locale } = props;
   const siteUrl = "https://www.wohnlagencheck24.de";
+  const normalizedLocale = normalizePublicLocale(locale);
+  const texts = getPortalSystemTexts(normalizedLocale);
+  const localizeHref = (path: string) =>
+    normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
 
   const activeTabLabel = tabs.find((tab) => tab.id === activeTabId)?.label ?? activeTabId;
   const activeTabHref =
@@ -35,13 +42,13 @@ export function ImmobilienmarktBreadcrumb(props: {
       : `${basePath}/${activeTabId}`;
 
   const breadcrumbItems: BreadcrumbItem[] = [
-    { label: "Immobilienmarkt & Standortprofile", href: "/immobilienmarkt" },
+    { label: texts.market_profiles, href: localizeHref("/immobilienmarkt") },
   ];
 
   if (ctx?.bundeslandSlug) {
     breadcrumbItems.push({
       label: names?.bundeslandName ?? formatRegionFallback(ctx.bundeslandSlug),
-      href: `/immobilienmarkt/${ctx.bundeslandSlug}`,
+      href: localizeHref(`/immobilienmarkt/${ctx.bundeslandSlug}`),
     });
   }
 
@@ -52,7 +59,7 @@ export function ImmobilienmarktBreadcrumb(props: {
 
     breadcrumbItems.push({
       label: names?.kreisName ?? formatRegionFallback(ctx.kreisSlug),
-      href: kreisHref,
+      href: localizeHref(kreisHref),
     });
   }
 
@@ -63,7 +70,7 @@ export function ImmobilienmarktBreadcrumb(props: {
 
     breadcrumbItems.push({
       label: names?.regionName ?? formatRegionFallback(ctx.ortSlug),
-      href: ortHref,
+      href: localizeHref(ortHref),
     });
   }
 
