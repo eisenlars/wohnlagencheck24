@@ -644,38 +644,44 @@ export default function DashboardClient() {
     return row.enabled === true;
   };
 
-  const internationalDomains = useMemo<I18nProductDomain[]>(() => ([
-    {
-      id: 'immobilienmarkt',
-      label: 'Immobilienmarkt',
-      description: 'Berichte, Markttexte, lokale Website und marktnahe Partnerinhalte.',
-      enabled: true,
-    },
-    {
-      id: 'blog',
-      label: 'Blog',
-      description: 'Beitraege und redaktionelle Inhalte als eigener Sprachbereich.',
-      enabled: true,
-    },
-    {
-      id: 'immobilien',
-      label: 'Immobilien',
-      description: 'Objektinhalte aus Angebotsdaten und Integrationen.',
-      enabled: isTabEnabled('immobilien'),
-    },
-    {
-      id: 'referenzen',
-      label: 'Referenzen',
-      description: 'Referenzobjekte und Nachweis-Inhalte fuer spaetere Sprachpflege.',
-      enabled: isTabEnabled('referenzen'),
-    },
-    {
-      id: 'gesuche',
-      label: 'Gesuche',
-      description: 'Suchprofile und Gesuche fuer spaetere mehrsprachige Ausspielung.',
-      enabled: isTabEnabled('gesuche'),
-    },
-  ]), [hasInternationalEnabled, partnerFeatures]);
+  const internationalDomains = useMemo<I18nProductDomain[]>(() => {
+    const immobilienEnabled = featuresByCode.get('immobilien')?.enabled !== false;
+    const referenzenEnabled = featuresByCode.get('referenzen')?.enabled !== false;
+    const gesucheEnabled = featuresByCode.get('gesuche')?.enabled !== false;
+
+    return [
+      {
+        id: 'immobilienmarkt',
+        label: 'Immobilienmarkt',
+        description: 'Berichte, Markttexte, lokale Website und marktnahe Partnerinhalte.',
+        enabled: true,
+      },
+      {
+        id: 'blog',
+        label: 'Blog',
+        description: 'Beitraege und redaktionelle Inhalte als eigener Sprachbereich.',
+        enabled: true,
+      },
+      {
+        id: 'immobilien',
+        label: 'Immobilien',
+        description: 'Objektinhalte aus Angebotsdaten und Integrationen.',
+        enabled: immobilienEnabled,
+      },
+      {
+        id: 'referenzen',
+        label: 'Referenzen',
+        description: 'Referenzobjekte und Nachweis-Inhalte fuer spaetere Sprachpflege.',
+        enabled: referenzenEnabled,
+      },
+      {
+        id: 'gesuche',
+        label: 'Gesuche',
+        description: 'Suchprofile und Gesuche fuer spaetere mehrsprachige Ausspielung.',
+        enabled: gesucheEnabled,
+      },
+    ];
+  }, [featuresByCode]);
 
   const utilityToolGroups: UtilityToolButton[][] = [
     [
