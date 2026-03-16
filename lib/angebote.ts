@@ -165,6 +165,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
   areaId: string | null;
   total: number;
   totalWithTop: number;
+  sourceTotal: number;
   page: number;
   pageSize: number;
 }> {
@@ -174,7 +175,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
   const areaIds = await getAreaIdsForKreis(supabase, args.bundeslandSlug, args.kreisSlug);
 
   if (!areaId) {
-    return { offers: [], topOffers: [], areaId: null, total: 0, totalWithTop: 0, page: 1, pageSize: 12 };
+    return { offers: [], topOffers: [], areaId: null, total: 0, totalWithTop: 0, sourceTotal: 0, page: 1, pageSize: 12 };
   }
 
   const partnerIds = await getPublicVisiblePartnerIdsForAreas(
@@ -229,7 +230,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
 
   if (error) {
     console.warn("partner_property_offers fetch failed:", error.message);
-    return { offers: [], topOffers: [], areaId, total: 0, totalWithTop: 0, page, pageSize };
+    return { offers: [], topOffers: [], areaId, total: 0, totalWithTop: 0, sourceTotal: 0, page, pageSize };
   }
 
   const offers = (data ?? []).map((row) => {
@@ -403,6 +404,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     }
   }
 
+  const sourceTotal = count ?? offers.length;
   const pagedOffers = normalizedLocale === "de"
     ? localizedOffers
     : localizedOffers.slice(rangeFrom, rangeTo + 1);
@@ -413,6 +415,7 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     areaId,
     total: normalizedLocale === "de" ? (count ?? localizedOffers.length) : localizedOffers.length,
     totalWithTop: (normalizedLocale === "de" ? (count ?? localizedOffers.length) : localizedOffers.length) + topCount,
+    sourceTotal,
     page,
     pageSize,
   };

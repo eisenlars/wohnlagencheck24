@@ -20,7 +20,7 @@ export async function MietgesucheKreisPageContent({
   const texts = getPortalSystemTexts(normalizedLocale);
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
-  const requests = await getRegionalRequestsForKreis({
+  const { requests, sourceCount } = await getRegionalRequestsForKreis({
     bundeslandSlug: bundesland,
     kreisSlug: kreis,
     mode: "miete",
@@ -31,8 +31,18 @@ export async function MietgesucheKreisPageContent({
   const meta = asRecord(asArray(report?.meta)[0] ?? report?.meta) ?? {};
   const kreisName = getRegionDisplayName({ meta, level: "kreis", fallbackSlug: kreis });
   const bundeslandName = asString(meta["bundesland_name"]) ?? formatRegionFallback(bundesland);
-  const basePath = localizeHref(`/immobilienmarkt/${bundesland}/${kreis}`);
+  const rawBasePath = `/immobilienmarkt/${bundesland}/${kreis}`;
+  const germanListPath = `${rawBasePath}/mietgesuche`;
+  const basePath = localizeHref(rawBasePath);
   const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.kreis, { id: "mietgesuche", label: texts.rent_requests }];
+  const availabilityNotice = normalizedLocale !== "de" && requests.length === 0 && sourceCount > 0
+    ? {
+        title: texts.requests_unavailable_title,
+        body: texts.requests_unavailable_body,
+        ctaHref: germanListPath,
+        ctaLabel: texts.view_german_requests,
+      }
+    : null;
 
   return (
     <GesuchePage
@@ -45,6 +55,7 @@ export async function MietgesucheKreisPageContent({
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis }}
       names={{ bundeslandName, kreisName, regionName: kreisName }}
       locale={normalizedLocale}
+      availabilityNotice={availabilityNotice}
     />
   );
 }

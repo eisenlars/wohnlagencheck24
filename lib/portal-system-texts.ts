@@ -50,6 +50,12 @@ type PortalSystemTextMap = {
   purchase_request: string;
   rooms_min: string;
   object_generic: string;
+  offers_unavailable_title: string;
+  offers_unavailable_body: string;
+  requests_unavailable_title: string;
+  requests_unavailable_body: string;
+  view_german_offers: string;
+  view_german_requests: string;
 };
 
 const PORTAL_SYSTEM_TEXTS: Record<string, PortalSystemTextMap> = {
@@ -103,6 +109,12 @@ const PORTAL_SYSTEM_TEXTS: Record<string, PortalSystemTextMap> = {
     purchase_request: "Kaufgesuch",
     rooms_min: "Zimmer min.",
     object_generic: "Objekt",
+    offers_unavailable_title: "Angebote noch nicht in dieser Sprache verfügbar",
+    offers_unavailable_body: "Für diese Angebote liegen aktuell noch keine freigegebenen Übersetzungen in der gewählten Sprache vor.",
+    requests_unavailable_title: "Gesuche noch nicht in dieser Sprache verfügbar",
+    requests_unavailable_body: "Für diese Gesuche liegen aktuell noch keine freigegebenen Übersetzungen in der gewählten Sprache vor.",
+    view_german_offers: "Deutsche Angebotsliste ansehen",
+    view_german_requests: "Deutsche Gesuche ansehen",
   },
   en: {
     skip_to_content: "Skip to content",
@@ -154,6 +166,12 @@ const PORTAL_SYSTEM_TEXTS: Record<string, PortalSystemTextMap> = {
     purchase_request: "Buy request",
     rooms_min: "Rooms min.",
     object_generic: "Property",
+    offers_unavailable_title: "Offers not yet available in this language",
+    offers_unavailable_body: "There are currently no approved translations for these offers in the selected language.",
+    requests_unavailable_title: "Requests not yet available in this language",
+    requests_unavailable_body: "There are currently no approved translations for these requests in the selected language.",
+    view_german_offers: "View German offers",
+    view_german_requests: "View German requests",
   },
 };
 

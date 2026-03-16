@@ -38,6 +38,12 @@ type AngebotePageProps = {
     kreisName?: string;
   };
   locale?: string;
+  availabilityNotice?: {
+    title: string;
+    body: string;
+    ctaHref: string;
+    ctaLabel: string;
+  } | null;
 };
 const passthroughLoader = ({ src }: { src: string }) => src;
 
@@ -71,6 +77,7 @@ export function AngebotePage(props: AngebotePageProps) {
     ctx,
     names,
     locale,
+    availabilityNotice,
   } = props;
   const [filter, setFilter] = useState<"all" | OfferObjectType>("all");
   const [activeIndex, setActiveIndex] = useState(0);
@@ -130,7 +137,9 @@ export function AngebotePage(props: AngebotePageProps) {
 
   const headingCount = totalWithTop ?? pagination?.total;
   const headingWithCount =
-    offersHeading && headingCount !== undefined
+    availabilityNotice
+      ? offersHeading
+      : offersHeading && headingCount !== undefined
       ? `${headingCount} ${offersHeading}`
       : offersHeading;
 
@@ -301,7 +310,17 @@ export function AngebotePage(props: AngebotePageProps) {
       <section className="angebote-list mb-5">
         {filteredOffers.length === 0 ? (
           <div className="alert alert-light border text-muted">
-            {texts.no_matching_offers_available}
+            {availabilityNotice ? (
+              <div style={{ display: "grid", gap: 10 }}>
+                <strong style={{ color: "#0f172a" }}>{availabilityNotice.title}</strong>
+                <span>{availabilityNotice.body}</span>
+                <a href={availabilityNotice.ctaHref} className="btn btn-outline-dark btn-sm" style={{ justifySelf: "start" }}>
+                  {availabilityNotice.ctaLabel}
+                </a>
+              </div>
+            ) : (
+              texts.no_matching_offers_available
+            )}
           </div>
         ) : (
           <div className="angebote-grid">

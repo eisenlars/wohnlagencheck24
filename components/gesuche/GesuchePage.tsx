@@ -25,6 +25,12 @@ type GesuchePageProps = {
     kreisName?: string;
   };
   locale?: string;
+  availabilityNotice?: {
+    title: string;
+    body: string;
+    ctaHref: string;
+    ctaLabel: string;
+  } | null;
 };
 
 function formatMoney(value: number | null, locale: string): string {
@@ -33,7 +39,7 @@ function formatMoney(value: number | null, locale: string): string {
 }
 
 export function GesuchePage(props: GesuchePageProps) {
-  const { heading, requests, mode, tabs, activeTabId, basePath, parentBasePath, ctx, names, locale } = props;
+  const { heading, requests, mode, tabs, activeTabId, basePath, parentBasePath, ctx, names, locale, availabilityNotice } = props;
   const normalizedLocale = normalizePublicLocale(locale);
   const texts = getPortalSystemTexts(normalizedLocale);
   const kaufPath = `${basePath}/immobiliengesuche`;
@@ -66,13 +72,23 @@ export function GesuchePage(props: GesuchePageProps) {
 
       <div className="angebote-page-title">
         <h1 className="angebote-page-title-text">
-          {requests.length} {heading}
+          {availabilityNotice ? heading : `${requests.length} ${heading}`}
         </h1>
       </div>
 
       {requests.length === 0 ? (
         <div className="alert alert-light border text-muted">
-          {texts.no_matching_requests_available}
+          {availabilityNotice ? (
+            <div style={{ display: "grid", gap: 10 }}>
+              <strong style={{ color: "#0f172a" }}>{availabilityNotice.title}</strong>
+              <span>{availabilityNotice.body}</span>
+              <a href={availabilityNotice.ctaHref} className="btn btn-outline-dark btn-sm" style={{ justifySelf: "start" }}>
+                {availabilityNotice.ctaLabel}
+              </a>
+            </div>
+          ) : (
+            texts.no_matching_requests_available
+          )}
         </div>
       ) : (
         <div className="angebote-grid">

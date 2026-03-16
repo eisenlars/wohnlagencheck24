@@ -31,7 +31,7 @@ export async function MietangeboteOrtPageContent({
   const texts = getPortalSystemTexts(normalizedLocale);
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
-  const { offers, topOffers, total, totalWithTop } = await getOffers({
+  const { offers, topOffers, total, totalWithTop, sourceTotal } = await getOffers({
     bundeslandSlug: bundesland,
     kreisSlug: kreis,
     mode: "miete",
@@ -50,8 +50,17 @@ export async function MietangeboteOrtPageContent({
   const ortName = getRegionDisplayName({ meta: ortMeta, level: "ort", fallbackSlug: ort });
   const rawBasePath = `/immobilienmarkt/${bundesland}/${kreis}/${ort}`;
   const rawParentBasePath = `/immobilienmarkt/${bundesland}/${kreis}`;
+  const germanListPath = `${rawBasePath}/mietangebote`;
   const basePath = localizeHref(rawBasePath);
   const listPath = `${basePath}/mietangebote`;
+  const availabilityNotice = normalizedLocale !== "de" && total === 0 && sourceTotal > 0
+    ? {
+        title: texts.offers_unavailable_title,
+        body: texts.offers_unavailable_body,
+        ctaHref: germanListPath,
+        ctaLabel: texts.view_german_offers,
+      }
+    : null;
   const tabs = [
     ...IMMOBILIENMARKT_THEME.tabsByLevel.ort,
     { id: "mietangebote", label: texts.rent_offers },
@@ -93,6 +102,7 @@ export async function MietangeboteOrtPageContent({
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis, ortSlug: ort }}
       names={{ bundeslandName, kreisName, regionName: ortName }}
       locale={normalizedLocale}
+      availabilityNotice={availabilityNotice}
     />
   );
 }

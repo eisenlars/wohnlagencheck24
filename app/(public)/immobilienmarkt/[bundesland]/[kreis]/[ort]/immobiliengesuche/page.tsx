@@ -22,7 +22,7 @@ export async function ImmobiliengesucheOrtPageContent({
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
 
-  const requests = await getRegionalRequestsForOrtslage({
+  const { requests, sourceCount } = await getRegionalRequestsForOrtslage({
     bundeslandSlug: bundesland,
     kreisSlug: kreis,
     ortSlug: ort,
@@ -41,8 +41,17 @@ export async function ImmobiliengesucheOrtPageContent({
 
   const rawBasePath = `/immobilienmarkt/${bundesland}/${kreis}/${ort}`;
   const rawParentBasePath = `/immobilienmarkt/${bundesland}/${kreis}`;
+  const germanListPath = `${rawBasePath}/immobiliengesuche`;
   const basePath = localizeHref(rawBasePath);
   const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.ort, { id: "immobiliengesuche", label: texts.buy_requests }];
+  const availabilityNotice = normalizedLocale !== "de" && requests.length === 0 && sourceCount > 0
+    ? {
+        title: texts.requests_unavailable_title,
+        body: texts.requests_unavailable_body,
+        ctaHref: germanListPath,
+        ctaLabel: texts.view_german_requests,
+      }
+    : null;
 
   return (
     <GesuchePage
@@ -56,6 +65,7 @@ export async function ImmobiliengesucheOrtPageContent({
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis, ortSlug: ort }}
       names={{ bundeslandName, kreisName, regionName: ortName }}
       locale={normalizedLocale}
+      availabilityNotice={availabilityNotice}
     />
   );
 }

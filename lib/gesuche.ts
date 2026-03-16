@@ -19,6 +19,11 @@ export type RegionalRequest = {
   updatedAt: string | null;
 };
 
+export type RegionalRequestResult = {
+  requests: RegionalRequest[];
+  sourceCount: number;
+};
+
 type GetRegionalRequestsArgs = {
   bundeslandSlug: string;
   kreisSlug: string;
@@ -215,21 +220,27 @@ async function loadRequestTranslations(
 
 export async function getRegionalRequestsForKreis(
   args: GetKreisRequestsArgs,
-): Promise<RegionalRequest[]> {
+): Promise<RegionalRequestResult> {
   const scope = await resolveKreisAndPartnerScope(args.bundeslandSlug, args.kreisSlug);
-  if (scope.partnerIds.length === 0) return [];
+  if (scope.partnerIds.length === 0) return { requests: [], sourceCount: 0 };
   const rows = await fetchRequestsByPartners(scope.partnerIds, Math.max(1, Math.min(args.limit ?? 40, 200)));
   const normalizedLocale = normalizePublicLocale(args.locale);
+  const baseRequests = mapRowsToRegionalRequests(rows, args.mode, new Map(), false);
   const translations = await loadRequestTranslations(
     rows.map((row) => String(row.id ?? "")).filter(Boolean),
     normalizedLocale,
   );
-  return mapRowsToRegionalRequests(rows, args.mode, translations, normalizedLocale !== "de");
+  return {
+    requests: normalizedLocale === "de"
+      ? baseRequests
+      : mapRowsToRegionalRequests(rows, args.mode, translations, true),
+    sourceCount: baseRequests.length,
+  };
 }
 
 export async function getRegionalRequestsForOrtslage(
   args: GetRegionalRequestsArgs,
-): Promise<RegionalRequest[]> {
+): Promise<RegionalRequestResult> {
   const supabase = createClient();
 
   const { data: ortArea, error: ortError } = await supabase
@@ -241,10 +252,10 @@ export async function getRegionalRequestsForOrtslage(
     .limit(1)
     .maybeSingle();
 
-  if (ortError || !ortArea) return [];
+  if (ortError || !ortArea) return { requests: [], sourceCount: 0 };
 
   const scope = await resolveKreisAndPartnerScope(args.bundeslandSlug, args.kreisSlug);
-  if (scope.partnerIds.length === 0) return [];
+  if (scope.partnerIds.length === 0) return { requests: [], sourceCount: 0 };
   const rows = await fetchRequestsByPartners(scope.partnerIds, Math.max(1, Math.min(args.limit ?? 24, 120)));
   const normalizedLocale = normalizePublicLocale(args.locale);
   const translations = await loadRequestTranslations(
@@ -257,6 +268,7 @@ export async function getRegionalRequestsForOrtslage(
   const directTargetKey = `${normalizeKeyPart(cityName)}::${normalizeKeyPart(districtName)}`;
 
   const out: RegionalRequest[] = [];
+  let sourceCount = 0;
   for (const record of rows) {
     const payload = (record.normalized_payload ?? {}) as Record<string, unknown>;
     const requestType = String(payload.request_type ?? "").toLowerCase() === "miete" ? "miete" : "kauf";
@@ -273,6 +285,7 @@ export async function getRegionalRequestsForOrtslage(
     });
 
     if (!matchesByKey && !matchesByTarget) continue;
+    sourceCount += 1;
 
     const translation = translations.get(String(record.id ?? ""));
     const translatedTitle =
@@ -295,5 +308,5 @@ export async function getRegionalRequestsForOrtslage(
     });
   }
 
-  return out;
+  return { requests: out, sourceCount };
 }
