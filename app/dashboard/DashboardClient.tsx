@@ -49,6 +49,7 @@ type PartnerAreaConfig = {
   is_active?: boolean;
   is_public_live?: boolean | null;
   activation_status?: string | null;
+  partner_preview_signoff_at?: string | null;
   [key: string]: unknown;
 };
 
@@ -164,6 +165,24 @@ function buildPreviewHref(config: PartnerAreaConfig | null): string | null {
 
   if (!parentSlug) return null;
   return `/preview/immobilienmarkt/${bundeslandSlug}/${parentSlug}/${slug}`;
+}
+
+function formatTimestampLabel(value: string | null | undefined): string {
+  const iso = String(value ?? '').trim();
+  if (!iso) return '';
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return iso;
+  return parsed.toLocaleString('de-DE');
+}
+
+function mergeAreaMappingUpdate(config: PartnerAreaConfig, mapping: Partial<PartnerAreaConfig>): PartnerAreaConfig {
+  return {
+    ...config,
+    is_active: ("is_active" in mapping) ? mapping.is_active : config.is_active,
+    is_public_live: ("is_public_live" in mapping) ? mapping.is_public_live : config.is_public_live,
+    activation_status: ("activation_status" in mapping) ? mapping.activation_status : config.activation_status,
+    partner_preview_signoff_at: ("partner_preview_signoff_at" in mapping) ? mapping.partner_preview_signoff_at : (config.partner_preview_signoff_at ?? null),
+  };
 }
 
 function resolvePartnerFirstName(user: unknown): string | null {
@@ -358,6 +377,9 @@ export default function DashboardClient() {
   const [submitReviewMessage, setSubmitReviewMessage] = useState<string | null>(null);
   const [submitReviewTone, setSubmitReviewTone] = useState<'info' | 'success' | 'error'>('info');
   const [submitReviewSuccessOpen, setSubmitReviewSuccessOpen] = useState(false);
+  const [previewRequestBusy, setPreviewRequestBusy] = useState(false);
+  const [previewRequestMessage, setPreviewRequestMessage] = useState<string | null>(null);
+  const [previewRequestTone, setPreviewRequestTone] = useState<'info' | 'success' | 'error'>('info');
   const [partnerFeatures, setPartnerFeatures] = useState<PartnerFeatureRow[]>([]);
   const [mandatoryProgress, setMandatoryProgress] = useState<{ completed: number; total: number }>({
     completed: 0,
@@ -896,6 +918,7 @@ export default function DashboardClient() {
     : null;
   const effectiveWelcomePreviewConfig = selectedWelcomePreviewConfig ?? previewDistricts[0] ?? null;
   const effectiveWelcomePreviewHref = buildPreviewHref(effectiveWelcomePreviewConfig);
+  const effectiveWelcomePreviewSignoffAt = String(effectiveWelcomePreviewConfig?.partner_preview_signoff_at ?? '').trim();
 
   const showActivationPanelForEditorSelected = Boolean(effectiveSelectedConfig && !effectiveSelectedConfig.is_active);
   const showActivationPanelForWelcomeSelected = Boolean(effectiveWelcomeActivationConfig && !effectiveWelcomeActivationConfig.is_active);
@@ -913,6 +936,7 @@ export default function DashboardClient() {
     && !Boolean(effectiveSelectedConfig.is_public_live),
   );
   const selectedPreviewHref = buildPreviewHref(effectiveSelectedConfig);
+  const selectedPreviewSignoffAt = String(effectiveSelectedConfig?.partner_preview_signoff_at ?? '').trim();
 
   useEffect(() => {
     if (activeMainTab === 'settings') return;
@@ -981,6 +1005,8 @@ export default function DashboardClient() {
     setShowWelcome(false);
     setSubmitReviewMessage(null);
     setSubmitReviewTone('info');
+    setPreviewRequestMessage(null);
+    setPreviewRequestTone('info');
   };
 
   const handleSubmitForReview = async () => {
@@ -1042,12 +1068,20 @@ export default function DashboardClient() {
       if (mapping?.area_id) {
         setConfigs((prev) => prev.map((cfg) => (
           cfg.area_id === mapping.area_id
-            ? { ...cfg, is_active: Boolean(mapping.is_active), activation_status: mapping.activation_status ?? 'ready_for_review' }
+            ? mergeAreaMappingUpdate(cfg, {
+              is_active: Boolean(mapping.is_active),
+              activation_status: mapping.activation_status ?? 'ready_for_review',
+              partner_preview_signoff_at: null,
+            })
             : cfg
         )));
         setSelectedConfig((prev) => (
           prev && prev.area_id === mapping.area_id
-            ? { ...prev, is_active: Boolean(mapping.is_active), activation_status: mapping.activation_status ?? 'ready_for_review' }
+            ? mergeAreaMappingUpdate(prev, {
+              is_active: Boolean(mapping.is_active),
+              activation_status: mapping.activation_status ?? 'ready_for_review',
+              partner_preview_signoff_at: null,
+            })
             : prev
         ));
       }
@@ -1071,6 +1105,65 @@ export default function DashboardClient() {
       setSubmitReviewTone('error');
     } finally {
       setSubmitReviewBusy(false);
+    }
+  };
+
+  const handleRequestLive = async (config: PartnerAreaConfig | null) => {
+    if (!config || previewRequestBusy) return;
+    setPreviewRequestBusy(true);
+    setPreviewRequestMessage(null);
+    setPreviewRequestTone('info');
+    try {
+      const res = await fetch(`/api/partner/areas/${encodeURIComponent(config.area_id)}/request-live`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPreviewRequestMessage(String(payload?.error ?? `Livegang-Anfrage fehlgeschlagen (${res.status}).`));
+        setPreviewRequestTone('error');
+        return;
+      }
+
+      const mapping = payload?.mapping as PartnerAreaConfig | undefined;
+      if (mapping?.area_id) {
+        setConfigs((prev) => prev.map((cfg) => (
+          cfg.area_id === mapping.area_id ? mergeAreaMappingUpdate(cfg, mapping) : cfg
+        )));
+        setSelectedConfig((prev) => (
+          prev && prev.area_id === mapping.area_id ? mergeAreaMappingUpdate(prev, mapping) : prev
+        ));
+      }
+
+      const signedOffAt = String(mapping?.partner_preview_signoff_at ?? '').trim();
+      const notification = payload?.notification as {
+        admin?: { sent?: boolean; reason?: string | null };
+        partner?: { sent?: boolean; reason?: string | null };
+      } | undefined;
+      const mailIssues: string[] = [];
+      if (notification?.admin?.sent === false) {
+        mailIssues.push(`Admin-Mail nicht versendet (${String(notification.admin.reason ?? 'unbekannt')})`);
+      }
+      if (notification?.partner?.sent === false) {
+        mailIssues.push(`Bestätigungs-Mail nicht versendet (${String(notification.partner.reason ?? 'unbekannt')})`);
+      }
+
+      if (mailIssues.length > 0) {
+        setPreviewRequestMessage(
+          `Livegang angefragt am ${formatTimestampLabel(signedOffAt)}. ${mailIssues.join(' | ')}`,
+        );
+        setPreviewRequestTone('error');
+      } else {
+        setPreviewRequestMessage(
+          `Livegang angefragt am ${formatTimestampLabel(signedOffAt)}. Das Admin-Team wurde informiert.`,
+        );
+        setPreviewRequestTone('success');
+      }
+    } catch {
+      setPreviewRequestMessage('Livegang-Anfrage konnte nicht gesendet werden. Bitte Verbindung prüfen und erneut versuchen.');
+      setPreviewRequestTone('error');
+    } finally {
+      setPreviewRequestBusy(false);
     }
   };
 
@@ -1452,6 +1545,9 @@ export default function DashboardClient() {
                             Die Frontend-Preview zeigt denselben Seitenstand wie die spätere Live-Seite. Sie ist nur intern für berechtigte Nutzer erreichbar und nach dem Onlinegang nicht mehr verfügbar.
                           </p>
                         ) : null}
+                        <p style={previewReadyTextStyle}>
+                          Wenn du alles final geprüft hast, fordere hier den Livegang an. Das Admin-Team wird danach informiert und kann die finale Freigabe erteilen.
+                        </p>
                         <div style={previewReadyActionRowStyle}>
                           <button type="button" onClick={() => {
                             setSelectedConfig(effectiveWelcomePreviewConfig);
@@ -1481,6 +1577,20 @@ export default function DashboardClient() {
                               Frontend-Preview öffnen
                             </a>
                           ) : null}
+                          {effectiveWelcomePreviewSignoffAt ? (
+                            <span style={reviewMessageStyle('success')}>
+                              Livegang angefragt am {formatTimestampLabel(effectiveWelcomePreviewSignoffAt)}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => void handleRequestLive(effectiveWelcomePreviewConfig)}
+                              disabled={previewRequestBusy}
+                              style={previewReadyActionButtonStyle}
+                            >
+                              {previewRequestBusy ? 'Anfrage läuft...' : 'Livegang anfragen'}
+                            </button>
+                          )}
                           {hasInternationalEnabled ? (
                             <button type="button" onClick={() => {
                               setSelectedConfig(effectiveWelcomePreviewConfig);
@@ -1490,6 +1600,11 @@ export default function DashboardClient() {
                             </button>
                           ) : null}
                         </div>
+                        {previewRequestMessage ? (
+                          <div style={{ marginTop: '12px' }}>
+                            <span style={reviewMessageStyle(previewRequestTone)}>{previewRequestMessage}</span>
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -1566,6 +1681,9 @@ export default function DashboardClient() {
                           Die Frontend-Preview bildet die spätere Live-Seite 1:1 ab. Sie ist nur intern erreichbar und nach dem Onlinegang nicht mehr verfügbar.
                         </p>
                       ) : null}
+                      <p style={previewReadyTextStyle}>
+                        Wenn du Inhalte, Werte und Frontend-Preview final geprüft hast, fordere hier den Livegang an. Das Admin-Team erhält danach die Bitte zur finalen Freigabe.
+                      </p>
                       <div style={previewReadyActionRowStyle}>
                         <button type="button" onClick={() => handleToolSelect('factors')} style={previewReadyActionButtonStyle}>
                           Werte pruefen
@@ -1586,12 +1704,31 @@ export default function DashboardClient() {
                             Frontend-Preview öffnen
                           </a>
                         ) : null}
+                        {selectedPreviewSignoffAt ? (
+                          <span style={reviewMessageStyle('success')}>
+                            Livegang angefragt am {formatTimestampLabel(selectedPreviewSignoffAt)}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleRequestLive(effectiveSelectedConfig)}
+                            disabled={previewRequestBusy}
+                            style={previewReadyActionButtonStyle}
+                          >
+                            {previewRequestBusy ? 'Anfrage läuft...' : 'Livegang anfragen'}
+                          </button>
+                        )}
                         {hasInternationalEnabled ? (
                           <button type="button" onClick={() => handleToolSelect('international')} style={previewReadyGhostButtonStyle}>
                             Internationalisierung
                           </button>
                         ) : null}
                       </div>
+                      {previewRequestMessage ? (
+                        <div style={{ marginTop: '12px' }}>
+                          <span style={reviewMessageStyle(previewRequestTone)}>{previewRequestMessage}</span>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                   {showActivationPanelForEditorSelected ? (

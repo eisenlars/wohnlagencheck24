@@ -30,6 +30,7 @@ type MappingRow = {
   is_active: boolean;
   is_public_live?: boolean | null;
   activation_status?: string | null;
+  partner_preview_signoff_at?: string | null;
 };
 
 function isMissingActivationStatusColumn(error: unknown): boolean {
@@ -38,6 +39,11 @@ function isMissingActivationStatusColumn(error: unknown): boolean {
     (msg.includes("partner_area_map.activation_status") && msg.includes("does not exist")) ||
     (msg.includes("partner_area_map.partner_submitted_at") && msg.includes("does not exist"))
   );
+}
+
+function isMissingPreviewSignoffColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partner_area_map.partner_preview_signoff_at") && msg.includes("does not exist");
 }
 
 function normalizeActivationStatus(value: unknown, isActive: boolean, isPublicLive = false): string {
@@ -62,19 +68,19 @@ function normalizeActivationStatus(value: unknown, isActive: boolean, isPublicLi
 async function loadMapping(admin: ReturnType<typeof createAdminClient>, partnerId: string, areaId: string) {
   let { data, error } = await admin
     .from("partner_area_map")
-    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status")
+    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at")
     .eq("auth_user_id", partnerId)
     .eq("area_id", areaId)
     .maybeSingle();
 
-  if (error && (isMissingActivationStatusColumn(error) || isMissingPublicLiveColumn(error))) {
+  if (error && (isMissingActivationStatusColumn(error) || isMissingPublicLiveColumn(error) || isMissingPreviewSignoffColumn(error))) {
     const fallback = await admin
       .from("partner_area_map")
       .select("id, auth_user_id, area_id, is_active")
       .eq("auth_user_id", partnerId)
       .eq("area_id", areaId)
       .maybeSingle();
-    data = fallback.data ? { ...fallback.data, activation_status: null, is_public_live: null } : null;
+    data = fallback.data ? { ...fallback.data, activation_status: null, is_public_live: null, partner_preview_signoff_at: null } : null;
     error = fallback.error;
   }
 
@@ -235,18 +241,18 @@ export async function PATCH(
     }
 
     const nextPatch = action === "approve"
-      ? { is_active: true, is_public_live: false, activation_status: "approved_preview" }
-      : { is_active: false, is_public_live: false, activation_status: action };
+      ? { is_active: true, is_public_live: false, activation_status: "approved_preview", partner_preview_signoff_at: null }
+      : { is_active: false, is_public_live: false, activation_status: action, partner_preview_signoff_at: null };
 
     let { data: updated, error: updateError } = await admin
       .from("partner_area_map")
       .update(nextPatch)
       .eq("auth_user_id", partnerId)
       .eq("area_id", areaId)
-      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at")
+      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, created_at")
       .maybeSingle();
 
-    if (updateError && (isMissingActivationStatusColumn(updateError) || isMissingPublicLiveColumn(updateError))) {
+    if (updateError && (isMissingActivationStatusColumn(updateError) || isMissingPublicLiveColumn(updateError) || isMissingPreviewSignoffColumn(updateError))) {
       const fallbackPatch = action === "approve" ? { is_active: true } : { is_active: false };
       const fallback = await admin
         .from("partner_area_map")
@@ -260,6 +266,7 @@ export async function PATCH(
           ...fallback.data,
           activation_status: action === "approve" ? "approved_preview" : action,
           is_public_live: null,
+          partner_preview_signoff_at: null,
         }
         : null;
       updateError = fallback.error;

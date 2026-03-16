@@ -23,6 +23,23 @@ type SendPartnerAreaApprovedEmailArgs = {
   approvedAtIso?: string | null;
 };
 
+type SendAdminPreviewSignoffEmailArgs = {
+  areaId: string;
+  areaName?: string | null;
+  partnerId: string;
+  partnerName?: string | null;
+  signedOffAtIso?: string | null;
+  recipients?: string[] | null;
+};
+
+type SendPartnerPreviewSignoffEmailArgs = {
+  partnerEmail: string;
+  partnerName?: string | null;
+  areaId: string;
+  areaName?: string | null;
+  signedOffAtIso?: string | null;
+};
+
 type SendAdminPartnerOnboardedEmailArgs = {
   partnerId: string;
   partnerName?: string | null;
@@ -165,6 +182,55 @@ function buildPartnerApprovedText(args: SendPartnerAreaApprovedEmailArgs): strin
     "- falls gebucht: lokale Website und Internationalisierung",
     "",
     "Erst nach dieser finalen Vorbereitung sollte das Gebiet online geschaltet werden.",
+  ].join("\n");
+}
+
+function buildAdminPreviewSignoffSubject(args: SendAdminPreviewSignoffEmailArgs): string {
+  const area = String(args.areaName ?? args.areaId).trim();
+  return `Livegang angefragt: ${area}`;
+}
+
+function buildAdminPreviewSignoffText(args: SendAdminPreviewSignoffEmailArgs): string {
+  const area = String(args.areaName ?? args.areaId).trim();
+  const partner = String(args.partnerName ?? args.partnerId).trim();
+  const signedOffAt = args.signedOffAtIso
+    ? new Date(args.signedOffAtIso).toLocaleString("de-DE")
+    : new Date().toLocaleString("de-DE");
+
+  return [
+    "Ein Partner hat den Previewprozess abgeschlossen und den Livegang angefragt.",
+    "",
+    `Gebiet: ${area}`,
+    `Area ID: ${args.areaId}`,
+    `Partner: ${partner}`,
+    `Partner ID: ${args.partnerId}`,
+    `Angefragt am: ${signedOffAt}`,
+    "",
+    "Bitte pruefe die Frontend-Preview und schalte das Gebiet danach bei Bedarf online.",
+  ].join("\n");
+}
+
+function buildPartnerPreviewSignoffSubject(args: SendPartnerPreviewSignoffEmailArgs): string {
+  const area = String(args.areaName ?? args.areaId).trim();
+  return `Livegang angefragt: ${area}`;
+}
+
+function buildPartnerPreviewSignoffText(args: SendPartnerPreviewSignoffEmailArgs): string {
+  const area = String(args.areaName ?? args.areaId).trim();
+  const partner = pickGreetingName(String(args.partnerName ?? ""));
+  const signedOffAt = args.signedOffAtIso
+    ? new Date(args.signedOffAtIso).toLocaleString("de-DE")
+    : new Date().toLocaleString("de-DE");
+  return [
+    `Hallo${partner ? ` ${partner}` : ""},`,
+    "",
+    "deine Anfrage fuer den Livegang wurde erfolgreich an das Admin-Team uebermittelt.",
+    "",
+    `Gebiet: ${area}`,
+    `Area ID: ${args.areaId}`,
+    `Angefragt am: ${signedOffAt}`,
+    "",
+    "Sobald das Admin-Team die finale Pruefung abgeschlossen hat, kann das Gebiet online geschaltet werden.",
   ].join("\n");
 }
 
@@ -396,6 +462,39 @@ export async function sendPartnerAreaApprovedEmail(args: SendPartnerAreaApproved
     to: [recipient],
     subject: buildPartnerApprovedSubject(args),
     text: buildPartnerApprovedText(args),
+  });
+}
+
+export async function sendAdminPreviewSignoffEmail(args: SendAdminPreviewSignoffEmailArgs): Promise<{
+  sent: boolean;
+  reason?: string;
+}> {
+  const recipients = (args.recipients ?? []).length > 0
+    ? (args.recipients ?? []).map((v) => String(v).trim()).filter((v) => v.length > 0)
+    : Array.from(new Set([
+      ...parseCsv(String(process.env.ADMIN_REVIEW_NOTIFY_TO ?? "")),
+      ...parseCsv(String(process.env.SMTP_TO ?? "")),
+      ...parseCsv(String(process.env.SMTP_USER ?? "")),
+    ]));
+  if (recipients.length === 0) return { sent: false, reason: "ADMIN_REVIEW_NOTIFY_TO missing" };
+  return sendSmtpTextMail({
+    to: recipients,
+    subject: buildAdminPreviewSignoffSubject(args),
+    text: buildAdminPreviewSignoffText(args),
+    from: String(process.env.ADMIN_REVIEW_NOTIFY_FROM ?? "").trim() || null,
+  });
+}
+
+export async function sendPartnerPreviewSignoffEmail(args: SendPartnerPreviewSignoffEmailArgs): Promise<{
+  sent: boolean;
+  reason?: string;
+}> {
+  const recipient = String(args.partnerEmail ?? "").trim().toLowerCase();
+  if (!recipient) return { sent: false, reason: "partner_email_missing" };
+  return sendSmtpTextMail({
+    to: [recipient],
+    subject: buildPartnerPreviewSignoffSubject(args),
+    text: buildPartnerPreviewSignoffText(args),
   });
 }
 

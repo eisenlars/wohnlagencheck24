@@ -12,6 +12,11 @@ function isMissingActivationStatusColumn(error: unknown): boolean {
   return msg.includes("partner_area_map.activation_status") && msg.includes("does not exist");
 }
 
+function isMissingPreviewSignoffColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partner_area_map.partner_preview_signoff_at") && msg.includes("does not exist");
+}
+
 async function updatePublication(args: {
   partnerId: string;
   areaId: string;
@@ -20,17 +25,17 @@ async function updatePublication(args: {
 }) {
   const patch = args.publish
     ? { is_active: true, is_public_live: true, activation_status: "live" }
-    : { is_public_live: false, activation_status: "approved_preview" };
+    : { is_public_live: false, activation_status: "approved_preview", partner_preview_signoff_at: null };
 
   let { data, error } = await args.admin
     .from("partner_area_map")
     .update(patch)
     .eq("auth_user_id", args.partnerId)
     .eq("area_id", args.areaId)
-    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at")
+    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, created_at")
     .maybeSingle();
 
-  if (error && (isMissingActivationStatusColumn(error) || isMissingPublicLiveColumn(error))) {
+  if (error && (isMissingActivationStatusColumn(error) || isMissingPublicLiveColumn(error) || isMissingPreviewSignoffColumn(error))) {
     const fallbackPatch = args.publish
       ? { is_active: true }
       : { is_active: true };
@@ -46,6 +51,7 @@ async function updatePublication(args: {
         ...fallback.data,
         is_public_live: null,
         activation_status: args.publish ? "live" : "approved_preview",
+        partner_preview_signoff_at: null,
       }
       : null;
     error = fallback.error;
@@ -78,18 +84,18 @@ export async function POST(
     const admin = createAdminClient();
     let { data: mapping, error: mappingError } = await admin
       .from("partner_area_map")
-      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status")
+      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at")
       .eq("auth_user_id", partnerId)
       .eq("area_id", areaId)
       .maybeSingle();
-    if (mappingError && (isMissingActivationStatusColumn(mappingError) || isMissingPublicLiveColumn(mappingError))) {
+    if (mappingError && (isMissingActivationStatusColumn(mappingError) || isMissingPublicLiveColumn(mappingError) || isMissingPreviewSignoffColumn(mappingError))) {
       const fallback = await admin
         .from("partner_area_map")
         .select("id, auth_user_id, area_id, is_active")
         .eq("auth_user_id", partnerId)
         .eq("area_id", areaId)
         .maybeSingle();
-      mapping = fallback.data ? { ...fallback.data, is_public_live: null, activation_status: null } : null;
+      mapping = fallback.data ? { ...fallback.data, is_public_live: null, activation_status: null, partner_preview_signoff_at: null } : null;
       mappingError = fallback.error;
     }
     if (mappingError) return NextResponse.json({ error: mappingError.message }, { status: 500 });
@@ -98,6 +104,10 @@ export async function POST(
     const activationStatus = String((mapping as { activation_status?: string | null }).activation_status ?? "").trim().toLowerCase();
     if (!(Boolean((mapping as { is_active?: boolean | null }).is_active) || activationStatus === "approved_preview" || activationStatus === "live" || activationStatus === "active")) {
       return NextResponse.json({ error: "Gebiet ist noch nicht fuer Preview freigegeben." }, { status: 409 });
+    }
+    const previewSignoffAt = String((mapping as { partner_preview_signoff_at?: string | null }).partner_preview_signoff_at ?? "").trim();
+    if (!previewSignoffAt) {
+      return NextResponse.json({ error: "Partner hat den Livegang noch nicht angefragt." }, { status: 409 });
     }
 
     const { data: updated, error: updateError } = await updatePublication({
