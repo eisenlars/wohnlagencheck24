@@ -11,7 +11,7 @@ import OffersManager from './OffersManager';
 import ReferencesManager from './ReferencesManager';
 import RequestsManager from './RequestsManager';
 import BlogManager from './BlogManager';
-import InternationalizationManager from './InternationalizationManager';
+import InternationalizationManager, { type I18nProductDomain } from './InternationalizationManager';
 import PartnerSettingsPanel, { type SettingsSection } from './PartnerSettingsPanel';
 import { INDIVIDUAL_MANDATORY_KEYS } from '@/lib/text-key-registry';
 import { MANDATORY_MEDIA_KEYS, getMandatoryMediaLabel, isMandatoryMediaKey } from '@/lib/mandatory-media';
@@ -643,6 +643,39 @@ export default function DashboardClient() {
     if (!row) return true;
     return row.enabled === true;
   };
+
+  const internationalDomains = useMemo<I18nProductDomain[]>(() => ([
+    {
+      id: 'immobilienmarkt',
+      label: 'Immobilienmarkt',
+      description: 'Berichte, Markttexte, lokale Website und marktnahe Partnerinhalte.',
+      enabled: true,
+    },
+    {
+      id: 'blog',
+      label: 'Blog',
+      description: 'Beitraege und redaktionelle Inhalte als eigener Sprachbereich.',
+      enabled: true,
+    },
+    {
+      id: 'immobilien',
+      label: 'Immobilien',
+      description: 'Objektinhalte aus Angebotsdaten und Integrationen.',
+      enabled: isTabEnabled('immobilien'),
+    },
+    {
+      id: 'referenzen',
+      label: 'Referenzen',
+      description: 'Referenzobjekte und Nachweis-Inhalte fuer spaetere Sprachpflege.',
+      enabled: isTabEnabled('referenzen'),
+    },
+    {
+      id: 'gesuche',
+      label: 'Gesuche',
+      description: 'Suchprofile und Gesuche fuer spaetere mehrsprachige Ausspielung.',
+      enabled: isTabEnabled('gesuche'),
+    },
+  ]), [hasInternationalEnabled, partnerFeatures]);
 
   const utilityToolGroups: UtilityToolButton[][] = [
     [
@@ -1911,6 +1944,7 @@ export default function DashboardClient() {
               <InternationalizationManager
                 config={effectiveSelectedConfig}
                 availableLocales={internationalLocales}
+                availableDomains={internationalDomains}
               />
             ) : activeMainTab === 'immobilien' ? (
               <OffersManager />

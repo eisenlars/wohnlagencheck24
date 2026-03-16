@@ -57,6 +57,7 @@ type TranslationRow = {
 type Props = {
   config: AreaConfig;
   availableLocales: string[];
+  availableDomains?: I18nProductDomain[];
 };
 
 type LlmOption = {
@@ -79,10 +80,50 @@ type PersistedI18nViewState = {
   scope?: I18nScope;
   activeTab?: string;
   activeClass?: DisplayTextClass;
+  activeDomain?: I18nProductDomainId;
+};
+type I18nProductDomainId = 'immobilienmarkt' | 'blog' | 'immobilien' | 'referenzen' | 'gesuche';
+export type I18nProductDomain = {
+  id: I18nProductDomainId;
+  label: string;
+  description: string;
+  enabled: boolean;
 };
 
 const I18N_MOCK_TRANSLATION = process.env.NEXT_PUBLIC_I18N_MOCK_TRANSLATION === '1';
 const I18N_VIEW_STATE_KEY_PREFIX = 'partner_i18n_view_state_v1';
+const DEFAULT_I18N_DOMAINS: I18nProductDomain[] = [
+  {
+    id: 'immobilienmarkt',
+    label: 'Immobilienmarkt',
+    description: 'Berichte, Markttexte, lokale Website und marktnahe Partnerinhalte.',
+    enabled: true,
+  },
+  {
+    id: 'blog',
+    label: 'Blog',
+    description: 'Beitragsbasierte Inhalte, die spaeter separat je Artikel und Sprache gepflegt werden.',
+    enabled: true,
+  },
+  {
+    id: 'immobilien',
+    label: 'Immobilien',
+    description: 'Objektinhalte aus Angebotsdaten und CRM-/Importstrecken.',
+    enabled: false,
+  },
+  {
+    id: 'referenzen',
+    label: 'Referenzen',
+    description: 'Referenzobjekte und Nachweis-Inhalte fuer mehrsprachige Ausspielung.',
+    enabled: false,
+  },
+  {
+    id: 'gesuche',
+    label: 'Gesuche',
+    description: 'Gesuche und Suchprofile fuer spaetere mehrsprachige Pflege.',
+    enabled: false,
+  },
+];
 
 const I18N_TAB_ORDER = [
   { id: 'berater', label: 'Berater', icon: '👤' },
@@ -359,7 +400,7 @@ function resolveSectionMeta(sectionKey: string): { label: string; type: SectionK
 const DEFAULT_WORKFLOW_CLASSES: DisplayTextClass[] = ['general', 'profile', 'market_expert', 'data_driven'];
 const MARKETING_WORKFLOW_CLASSES: DisplayTextClass[] = ['marketing'];
 
-export default function InternationalizationManager({ config, availableLocales }: Props) {
+export default function InternationalizationManager({ config, availableLocales, availableDomains }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const locales = useMemo(() => {
     const unique = Array.from(
@@ -372,6 +413,12 @@ export default function InternationalizationManager({ config, availableLocales }
     if (unique.length === 0) return ['en'];
     return unique;
   }, [availableLocales]);
+  const productDomains = useMemo<I18nProductDomain[]>(() => {
+    if (!Array.isArray(availableDomains) || availableDomains.length === 0) return DEFAULT_I18N_DOMAINS;
+    const knownIds = new Set(DEFAULT_I18N_DOMAINS.map((item) => item.id));
+    const mapped = availableDomains.filter((item) => knownIds.has(item.id));
+    return mapped.length > 0 ? mapped : DEFAULT_I18N_DOMAINS;
+  }, [availableDomains]);
   const i18nViewStateKey = useMemo(
     () => `${I18N_VIEW_STATE_KEY_PREFIX}:${String(config?.area_id ?? 'global')}`,
     [config?.area_id],
@@ -382,6 +429,7 @@ export default function InternationalizationManager({ config, availableLocales }
     scope: 'current_area',
     activeTab: 'marktueberblick',
     activeClass: 'general',
+    activeDomain: 'immobilienmarkt',
   }), [locales]);
   const [i18nViewState, setI18nViewState] = useSessionViewState<PersistedI18nViewState>(
     i18nViewStateKey,
@@ -412,6 +460,10 @@ export default function InternationalizationManager({ config, availableLocales }
   const setActiveClass = (nextClass: DisplayTextClass) => {
     setI18nViewState((prev) => ({ ...prev, activeClass: nextClass }));
   };
+  const activeDomain = (i18nViewState.activeDomain ?? 'immobilienmarkt') as I18nProductDomainId;
+  const setActiveDomain = (nextDomain: I18nProductDomainId) => {
+    setI18nViewState((prev) => ({ ...prev, activeDomain: nextDomain }));
+  };
   const [llmOptions, setLlmOptions] = useState<LlmOption[]>([]);
   const [selectedLlmOptionId, setSelectedLlmOptionId] = useState<string>('');
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
@@ -420,11 +472,17 @@ export default function InternationalizationManager({ config, availableLocales }
   const isDistrict = isDistrictArea(config?.area_id ?? '');
   const channelMeta = I18N_CHANNEL_OPTIONS.find((item) => item.value === channel) ?? I18N_CHANNEL_OPTIONS[0];
   const areaScopeLabel = isDistrict ? 'Kreis' : 'Ortslage';
+  const activeDomainMeta = productDomains.find((domain) => domain.id === activeDomain) ?? productDomains[0] ?? DEFAULT_I18N_DOMAINS[0];
 
   useEffect(() => {
     if (locales.includes(locale)) return;
     setLocale(locales[0] ?? 'en');
   }, [locales, locale]);
+
+  useEffect(() => {
+    if (productDomains.some((domain) => domain.id === activeDomain)) return;
+    setActiveDomain(productDomains[0]?.id ?? 'immobilienmarkt');
+  }, [activeDomain, productDomains]);
 
   async function resolveScopeAreas(nextScope: I18nScope): Promise<ScopeArea[]> {
     const current: ScopeArea = {
@@ -919,6 +977,31 @@ export default function InternationalizationManager({ config, availableLocales }
           </div>
         </div>
 
+        <div style={domainIntroStyle}>
+          <h3 style={sectionTabsIntroTitleStyle}>Produktbereich wählen</h3>
+          <p style={sectionTabsIntroTextStyle}>
+            Die Internationalisierung wird schrittweise für alle mehrsprachigen Partnerbereiche aufgebaut. Der Immobilienmarkt ist bereits aktiv, weitere Produktbereiche werden hier vorbereitet.
+          </p>
+        </div>
+
+        <div style={domainTabGridStyle}>
+          {productDomains.map((domain) => (
+            <button
+              key={domain.id}
+              type="button"
+              style={domainTabStyle(activeDomain === domain.id)}
+              onClick={() => setActiveDomain(domain.id)}
+            >
+              <div style={domainTabTopStyle}>
+                <strong style={domainTabTitleStyle}>{domain.label}</strong>
+                <span style={domainTabBadgeStyle(domain.enabled)}>{domain.enabled ? 'verfügbar' : 'noch nicht freigeschaltet'}</span>
+              </div>
+              <span style={domainTabTextStyle}>{domain.description}</span>
+            </button>
+          ))}
+        </div>
+
+      {activeDomain === 'immobilienmarkt' ? (
       <div style={editorCardStyle}>
         <div style={workflowCardStyle}>
           <div style={workflowCardHeaderStyle}>
@@ -1144,6 +1227,39 @@ export default function InternationalizationManager({ config, availableLocales }
           </button>
         </div>
       </div>
+      ) : (
+      <div style={editorCardStyle}>
+        <div style={domainPlaceholderCardStyle}>
+          <div style={domainPlaceholderHeadStyle}>
+            <div>
+              <h3 style={sectionTabsIntroTitleStyle}>{activeDomainMeta.label}</h3>
+              <p style={domainPlaceholderTextStyle}>{activeDomainMeta.description}</p>
+            </div>
+            <span style={domainPlaceholderBadgeStyle(activeDomainMeta.enabled)}>
+              {activeDomainMeta.enabled ? 'Anbindung folgt' : 'Nicht freigeschaltet'}
+            </span>
+          </div>
+          <div style={domainPlaceholderGridStyle}>
+            <div style={domainPlaceholderItemStyle}>
+              <span style={estimateLabelStyle}>Status</span>
+              <strong>{activeDomainMeta.enabled ? 'Produktbereich wird als eigener I18N-Workflow vorbereitet.' : 'Produkt ist für diesen Partner aktuell nicht freigeschaltet.'}</strong>
+            </div>
+            <div style={domainPlaceholderItemStyle}>
+              <span style={estimateLabelStyle}>Nächster Ausbau</span>
+              <strong>{activeDomain === 'blog' ? 'Beitragsbasierte Sprachpflege je Artikel und Sprache.' : 'Datensatzbasierte Sprachpflege inkl. Status, Kosten und Aktualität.'}</strong>
+            </div>
+          </div>
+          <div style={qualityCheckBoxStyle(false)}>
+            <strong>Produktbereich in Vorbereitung</strong>
+            <span>
+              {activeDomainMeta.enabled
+                ? 'Die Tab-Struktur ist bereits vorbereitet. Die eigentliche Übersetzungslogik für diesen Bereich wird im nächsten Schritt separat an Datenmodell und UI angebunden.'
+                : 'Sobald das Produkt freigeschaltet ist, kann hier die passende Sprachpflege mit eigenem Workflow eingebunden werden.'}
+            </span>
+          </div>
+        </div>
+      </div>
+      )}
       </section>
     </>
   );
@@ -1538,6 +1654,105 @@ const qualityCheckBoxStyle = (manualCheck: boolean): React.CSSProperties => ({
   background: manualCheck ? '#fffbeb' : '#f0fdf4',
   color: manualCheck ? '#92400e' : '#166534',
 });
+
+const domainIntroStyle: React.CSSProperties = {
+  marginTop: 2,
+  marginBottom: 8,
+};
+
+const domainTabGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: 12,
+};
+
+const domainTabStyle = (active: boolean): React.CSSProperties => ({
+  borderRadius: 16,
+  border: active ? '1px solid #bfdbfe' : '1px solid #e2e8f0',
+  background: active ? 'linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%)' : '#fff',
+  padding: '16px 16px 15px',
+  display: 'grid',
+  gap: 10,
+  textAlign: 'left',
+  boxShadow: active ? '0 16px 34px rgba(37, 99, 235, 0.12)' : '0 10px 24px rgba(15, 23, 42, 0.06)',
+  cursor: 'pointer',
+});
+
+const domainTabTopStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 10,
+  flexWrap: 'wrap',
+};
+
+const domainTabTitleStyle: React.CSSProperties = {
+  fontSize: 15,
+  color: '#0f172a',
+};
+
+const domainTabBadgeStyle = (enabled: boolean): React.CSSProperties => ({
+  borderRadius: 999,
+  padding: '5px 10px',
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '0.03em',
+  textTransform: 'uppercase',
+  background: enabled ? '#dcfce7' : '#e2e8f0',
+  color: enabled ? '#166534' : '#475569',
+});
+
+const domainTabTextStyle: React.CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.55,
+  color: '#475569',
+};
+
+const domainPlaceholderCardStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 16,
+  padding: 20,
+  borderRadius: 16,
+  border: '1px dashed #cbd5e1',
+  background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+};
+
+const domainPlaceholderHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: 16,
+  flexWrap: 'wrap',
+};
+
+const domainPlaceholderBadgeStyle = (enabled: boolean): React.CSSProperties => ({
+  ...domainTabBadgeStyle(enabled),
+  alignSelf: 'flex-start',
+});
+
+const domainPlaceholderTextStyle: React.CSSProperties = {
+  margin: '4px 0 0',
+  fontSize: 14,
+  lineHeight: 1.65,
+  color: '#475569',
+  maxWidth: 760,
+};
+
+const domainPlaceholderGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: 12,
+};
+
+const domainPlaceholderItemStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 6,
+  padding: 14,
+  borderRadius: 12,
+  border: '1px solid #e2e8f0',
+  background: '#fff',
+  color: '#0f172a',
+};
 
 const sectionTabsIntroStyle: React.CSSProperties = {
   marginTop: 2,
