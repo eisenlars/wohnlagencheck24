@@ -414,8 +414,8 @@ const DEFAULT_I18N_DOMAINS: I18nProductDomain[] = [
 ];
 
 const I18N_TAB_ORDER = [
-  { id: 'berater', label: 'Berater', icon: '👤' },
-  { id: 'makler', label: 'Makler', icon: '🏢' },
+  { id: 'berater', label: 'Berater', icon: '/icons/ws24_profile_black.svg' },
+  { id: 'makler', label: 'Makler', icon: '/icons/ws24_profile_black.svg' },
   { id: 'marktueberblick', label: 'Marktüberblick', icon: '/icons/ws24_marktbericht_ueberblick.svg' },
   { id: 'immobilienpreise', label: 'Immobilienpreise', icon: '/icons/ws24_marktbericht_immobilienpreise.svg' },
   { id: 'mietpreise', label: 'Mietpreise', icon: '/icons/ws24_marktbericht_mietpreise.svg' },
@@ -4173,7 +4173,7 @@ const inlineWorkflowButtonStyle = (displayClass: DisplayTextClass, selected: boo
   border: `1px solid ${String(displayTextBadgeStyle(displayClass).borderColor ?? '#cbd5e1')}`,
   background: String(displayTextBadgeStyle(displayClass).background ?? '#f8fafc'),
   color: String(displayTextBadgeStyle(displayClass).color ?? '#475569'),
-  boxShadow: selected ? '0 8px 20px rgba(15, 23, 42, 0.08)' : 'none',
+  boxShadow: 'none',
   cursor: disabled ? 'not-allowed' : 'pointer',
   opacity: disabled ? 0.55 : 1,
 });
@@ -4402,13 +4402,13 @@ const domainTabGridStyle: React.CSSProperties = {
 
 const domainTabStyle = (active: boolean): React.CSSProperties => ({
   borderRadius: 16,
-  border: active ? '1px solid rgb(255, 224, 0)' : '1px solid #e2e8f0',
+  border: active ? '1px solid rgba(15, 23, 42, 0.18)' : '1px solid #e2e8f0',
   background: active ? 'rgb(255, 224, 0)' : '#fff',
   padding: '14px 16px',
   display: 'grid',
   gap: 6,
   textAlign: 'left',
-  boxShadow: active ? '0 16px 34px rgba(255, 224, 0, 0.2)' : '0 10px 24px rgba(15, 23, 42, 0.06)',
+  boxShadow: active ? 'none' : '0 10px 24px rgba(15, 23, 42, 0.06)',
   cursor: 'pointer',
 });
 
@@ -4598,20 +4598,20 @@ const tabButtonStyle = (active: boolean): React.CSSProperties => ({
 });
 
 const tabIconImageStyle: React.CSSProperties = {
-  width: 30,
-  height: 30,
+  width: 22,
+  height: 22,
   objectFit: 'contain',
   display: 'block',
 };
 
 const tabIconEmojiStyle: React.CSSProperties = {
-  fontSize: 24,
+  fontSize: 18,
   lineHeight: 1,
   display: 'block',
 };
 
 const tabLabelStyle: React.CSSProperties = {
-  fontSize: 14,
+  fontSize: 10,
   lineHeight: 1.2,
   textAlign: 'center',
 };
