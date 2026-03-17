@@ -7,13 +7,14 @@ import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/securi
 import { checkPartnerAreaMandatoryTexts } from "@/lib/partner-area-mandatory";
 import { INDIVIDUAL_MANDATORY_KEYS } from "@/lib/text-key-registry";
 import { MANDATORY_MEDIA_KEYS } from "@/lib/mandatory-media";
-import { sendPartnerAreaApprovedEmail } from "@/lib/notifications/admin-review-email";
+import { sendPartnerAreaApprovedEmail, sendPartnerReviewChangesRequestedEmail } from "@/lib/notifications/admin-review-email";
 import { isMissingPublicLiveColumn } from "@/lib/public-partner-mappings";
 
 type ReviewAction = "in_review" | "changes_requested" | "approve";
 
 type ReviewPatchBody = {
   action?: ReviewAction;
+  note?: string | null;
 };
 
 type ReviewField = {
@@ -31,6 +32,7 @@ type MappingRow = {
   is_public_live?: boolean | null;
   activation_status?: string | null;
   partner_preview_signoff_at?: string | null;
+  admin_review_note?: string | null;
 };
 
 function isMissingActivationStatusColumn(error: unknown): boolean {
@@ -44,6 +46,11 @@ function isMissingActivationStatusColumn(error: unknown): boolean {
 function isMissingPreviewSignoffColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return msg.includes("partner_area_map.partner_preview_signoff_at") && msg.includes("does not exist");
+}
+
+function isMissingAdminReviewNoteColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partner_area_map.admin_review_note") && msg.includes("does not exist");
 }
 
 function normalizeActivationStatus(value: unknown, isActive: boolean, isPublicLive = false): string {
@@ -68,24 +75,31 @@ function normalizeActivationStatus(value: unknown, isActive: boolean, isPublicLi
 async function loadMapping(admin: ReturnType<typeof createAdminClient>, partnerId: string, areaId: string) {
   let { data, error } = await admin
     .from("partner_area_map")
-    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at")
+    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, admin_review_note")
     .eq("auth_user_id", partnerId)
     .eq("area_id", areaId)
     .maybeSingle();
 
-  if (error && (isMissingActivationStatusColumn(error) || isMissingPublicLiveColumn(error) || isMissingPreviewSignoffColumn(error))) {
+  if (error && (isMissingActivationStatusColumn(error) || isMissingPublicLiveColumn(error) || isMissingPreviewSignoffColumn(error) || isMissingAdminReviewNoteColumn(error))) {
     const missingActivationStatus = isMissingActivationStatusColumn(error);
     const missingPublicLive = isMissingPublicLiveColumn(error);
     const missingPreviewSignoff = isMissingPreviewSignoffColumn(error);
+    const missingAdminReviewNote = isMissingAdminReviewNoteColumn(error);
 
-    if (missingPreviewSignoff && !missingActivationStatus && !missingPublicLive) {
+    if ((missingPreviewSignoff || missingAdminReviewNote) && !missingActivationStatus && !missingPublicLive) {
       const fallback = await admin
         .from("partner_area_map")
         .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status")
         .eq("auth_user_id", partnerId)
         .eq("area_id", areaId)
         .maybeSingle();
-      data = fallback.data ? { ...fallback.data, partner_preview_signoff_at: null } : null;
+      data = fallback.data
+        ? {
+          ...fallback.data,
+          partner_preview_signoff_at: null,
+          admin_review_note: null,
+        }
+        : null;
       error = fallback.error;
     } else {
       const fallback = await admin
@@ -94,7 +108,7 @@ async function loadMapping(admin: ReturnType<typeof createAdminClient>, partnerI
         .eq("auth_user_id", partnerId)
         .eq("area_id", areaId)
         .maybeSingle();
-      data = fallback.data ? { ...fallback.data, activation_status: null, is_public_live: null, partner_preview_signoff_at: null } : null;
+      data = fallback.data ? { ...fallback.data, activation_status: null, is_public_live: null, partner_preview_signoff_at: null, admin_review_note: null } : null;
       error = fallback.error;
     }
   }
@@ -241,7 +255,7 @@ export async function PATCH(
       admin,
       partnerId,
       areaId,
-      requireApprovedMedia: true,
+      requireApprovedMedia: false,
     });
     if (action === "approve" && !mandatoryCheck.ok) {
       return NextResponse.json(
@@ -255,27 +269,33 @@ export async function PATCH(
       );
     }
 
+    const reviewNote = String(body.note ?? "").trim();
+    if (action === "changes_requested" && !reviewNote) {
+      return NextResponse.json({ error: "Hinweis fuer die Nachbesserung fehlt." }, { status: 400 });
+    }
+
     const nextPatch = action === "approve"
-      ? { is_active: true, is_public_live: false, activation_status: "approved_preview", partner_preview_signoff_at: null }
-      : { is_active: false, is_public_live: false, activation_status: action, partner_preview_signoff_at: null };
+      ? { is_active: true, is_public_live: false, activation_status: "approved_preview", partner_preview_signoff_at: null, admin_review_note: null }
+      : { is_active: false, is_public_live: false, activation_status: action, partner_preview_signoff_at: null, admin_review_note: reviewNote || null };
 
     let { data: updated, error: updateError } = await admin
       .from("partner_area_map")
       .update(nextPatch)
       .eq("auth_user_id", partnerId)
       .eq("area_id", areaId)
-      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, created_at")
+      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, admin_review_note, created_at")
       .maybeSingle();
 
-    if (updateError && (isMissingActivationStatusColumn(updateError) || isMissingPublicLiveColumn(updateError) || isMissingPreviewSignoffColumn(updateError))) {
+    if (updateError && (isMissingActivationStatusColumn(updateError) || isMissingPublicLiveColumn(updateError) || isMissingPreviewSignoffColumn(updateError) || isMissingAdminReviewNoteColumn(updateError))) {
       const fallbackPatch = action === "approve"
         ? { is_active: true, is_public_live: false, activation_status: "approved_preview" }
-        : { is_active: false, is_public_live: false, activation_status: action };
+        : { is_active: false, is_public_live: false, activation_status: action, ...(reviewNote ? { admin_review_note: reviewNote } : {}) };
       const missingActivationStatus = isMissingActivationStatusColumn(updateError);
       const missingPublicLive = isMissingPublicLiveColumn(updateError);
       const missingPreviewSignoff = isMissingPreviewSignoffColumn(updateError);
+      const missingAdminReviewNote = isMissingAdminReviewNoteColumn(updateError);
 
-      if (missingPreviewSignoff && !missingActivationStatus && !missingPublicLive) {
+      if ((missingPreviewSignoff || missingAdminReviewNote) && !missingActivationStatus && !missingPublicLive) {
         const fallback = await admin
           .from("partner_area_map")
           .update(fallbackPatch)
@@ -287,6 +307,7 @@ export async function PATCH(
           ? {
             ...fallback.data,
             partner_preview_signoff_at: null,
+            admin_review_note: missingAdminReviewNote ? null : (reviewNote || null),
           }
           : null;
         updateError = fallback.error;
@@ -304,6 +325,7 @@ export async function PATCH(
             activation_status: action === "approve" ? "approved_preview" : action,
             is_public_live: null,
             partner_preview_signoff_at: null,
+            admin_review_note: missingAdminReviewNote ? null : (action === "changes_requested" ? reviewNote : null),
           }
           : null;
         updateError = fallback.error;
@@ -326,6 +348,7 @@ export async function PATCH(
         is_active: updated.is_active,
         is_public_live: Boolean((updated as { is_public_live?: boolean | null }).is_public_live),
         activation_status: String((updated as { activation_status?: string | null }).activation_status ?? (action === "approve" ? "approved_preview" : action)),
+        admin_review_note: action === "changes_requested" ? reviewNote : null,
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -333,7 +356,7 @@ export async function PATCH(
 
     let partnerApprovalMailSent = false;
     let partnerApprovalMailReason: string | undefined;
-    if (action === "approve") {
+    if (action === "approve" || action === "changes_requested") {
       try {
         const [partnerRes, areaRes] = await Promise.all([
           admin
@@ -347,24 +370,35 @@ export async function PATCH(
             .eq("id", areaId)
             .maybeSingle(),
         ]);
-        const partnerMail = await sendPartnerAreaApprovedEmail({
-          partnerEmail: String(partnerRes.data?.contact_email ?? "").trim(),
-          partnerName: String(partnerRes.data?.contact_first_name ?? "").trim()
-            || String(partnerRes.data?.company_name ?? "").trim()
-            || partnerId,
-          areaId,
-          areaName: String(areaRes.data?.name ?? "").trim() || areaId,
-          approvedAtIso: new Date().toISOString(),
-        });
+        const partnerMail = action === "approve"
+          ? await sendPartnerAreaApprovedEmail({
+            partnerEmail: String(partnerRes.data?.contact_email ?? "").trim(),
+            partnerName: String(partnerRes.data?.contact_first_name ?? "").trim()
+              || String(partnerRes.data?.company_name ?? "").trim()
+              || partnerId,
+            areaId,
+            areaName: String(areaRes.data?.name ?? "").trim() || areaId,
+            approvedAtIso: new Date().toISOString(),
+          })
+          : await sendPartnerReviewChangesRequestedEmail({
+            partnerEmail: String(partnerRes.data?.contact_email ?? "").trim(),
+            partnerName: String(partnerRes.data?.contact_first_name ?? "").trim()
+              || String(partnerRes.data?.company_name ?? "").trim()
+              || partnerId,
+            areaId,
+            areaName: String(areaRes.data?.name ?? "").trim() || areaId,
+            requestedAtIso: new Date().toISOString(),
+            note: reviewNote,
+          });
         partnerApprovalMailSent = partnerMail.sent;
         partnerApprovalMailReason = partnerMail.reason;
         if (!partnerMail.sent) {
-          console.warn("partner approval mail not sent:", partnerMail.reason);
+          console.warn("partner review mail not sent:", partnerMail.reason);
         }
       } catch (mailErr) {
         partnerApprovalMailSent = false;
         partnerApprovalMailReason = mailErr instanceof Error ? mailErr.message : "mail_error";
-        console.warn("partner approval mail failed:", mailErr);
+        console.warn("partner review mail failed:", mailErr);
       }
 
       await writeSecurityAuditLog({
@@ -372,9 +406,9 @@ export async function PATCH(
         actorRole: adminUser.role,
         eventType: "other",
         entityType: "other",
-        entityId: `${areaId}:approve:partner_mail`,
+        entityId: `${areaId}:${action}:partner_mail`,
         payload: {
-          action: "mail_admin_approve_partner_notify",
+          action: action === "approve" ? "mail_admin_approve_partner_notify" : "mail_admin_changes_requested_partner_notify",
           area_id: areaId,
           partner_id: partnerId,
           sent: partnerApprovalMailSent,
@@ -399,6 +433,7 @@ export async function PATCH(
       mandatory: mandatoryCheck,
       fields,
       notification: action === "approve"
+        || action === "changes_requested"
         ? {
           partner: {
             sent: partnerApprovalMailSent,

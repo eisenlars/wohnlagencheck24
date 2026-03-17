@@ -51,6 +51,7 @@ type PartnerAreaConfig = {
   is_public_live?: boolean | null;
   activation_status?: string | null;
   partner_preview_signoff_at?: string | null;
+  admin_review_note?: string | null;
   [key: string]: unknown;
 };
 
@@ -183,6 +184,7 @@ function mergeAreaMappingUpdate(config: PartnerAreaConfig, mapping: Partial<Part
     is_public_live: ("is_public_live" in mapping) ? mapping.is_public_live : config.is_public_live,
     activation_status: ("activation_status" in mapping) ? mapping.activation_status : config.activation_status,
     partner_preview_signoff_at: ("partner_preview_signoff_at" in mapping) ? mapping.partner_preview_signoff_at : (config.partner_preview_signoff_at ?? null),
+    admin_review_note: ("admin_review_note" in mapping) ? mapping.admin_review_note : (config.admin_review_note ?? null),
   };
 }
 
@@ -967,6 +969,18 @@ export default function DashboardClient() {
   );
   const selectedPreviewHref = buildPreviewHref(effectiveSelectedConfig);
   const selectedPreviewSignoffAt = String(effectiveSelectedConfig?.partner_preview_signoff_at ?? '').trim();
+  const effectiveSelectedReviewNote = useMemo(() => {
+    if (!effectiveSelectedConfig) return '';
+    const direct = String(effectiveSelectedConfig.admin_review_note ?? '').trim();
+    if (direct) return direct;
+    const districtId = String(effectiveSelectedConfig.area_id ?? '').split('-').slice(0, 3).join('-');
+    const districtConfig = configs.find((cfg) => cfg.area_id === districtId) ?? null;
+    return String(districtConfig?.admin_review_note ?? '').trim();
+  }, [configs, effectiveSelectedConfig]);
+  const welcomeActivationReviewNote = useMemo(() => {
+    if (!effectiveWelcomeActivationConfig) return '';
+    return String(effectiveWelcomeActivationConfig.admin_review_note ?? '').trim();
+  }, [effectiveWelcomeActivationConfig]);
 
   useEffect(() => {
     if (activeMainTab === 'settings') return;
@@ -1102,6 +1116,7 @@ export default function DashboardClient() {
               is_active: Boolean(mapping.is_active),
               activation_status: mapping.activation_status ?? 'ready_for_review',
               partner_preview_signoff_at: null,
+              admin_review_note: null,
             })
             : cfg
         )));
@@ -1111,6 +1126,7 @@ export default function DashboardClient() {
               is_active: Boolean(mapping.is_active),
               activation_status: mapping.activation_status ?? 'ready_for_review',
               partner_preview_signoff_at: null,
+              admin_review_note: null,
             })
             : prev
         ));
@@ -1497,6 +1513,12 @@ export default function DashboardClient() {
                         ? 'Deine Pflichtangaben wurden erfolgreich übermittelt und liegen beim Admin zur Prüfung vor. Solange die Prüfung läuft, ist die Aktivierungsmaske gesperrt. Du kannst nach der Freigabe wie gewohnt weiterarbeiten.'
                         : 'Pflichtangaben fehlen! Vervollständige deine Eingaben als Voraussetzung für die Freigabe deines Gebietes.'}
                     </div>
+                    {welcomeActivationStatusKey === 'changes_requested' && welcomeActivationReviewNote ? (
+                      <div style={{ marginBottom: '14px', border: '1px solid #fecaca', background: '#fef2f2', borderRadius: '10px', padding: '12px 14px', color: '#991b1b' }}>
+                        <div style={{ fontWeight: 700, marginBottom: '6px' }}>Nachbesserung erforderlich</div>
+                        <div style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{welcomeActivationReviewNote}</div>
+                      </div>
+                    ) : null}
                     {!isWelcomeAwaitingAdminApproval ? (
                       <div
                         style={{
@@ -1846,6 +1868,12 @@ export default function DashboardClient() {
                               Für eine erfolgreiche Aktivierung vervollständige bitte die Pflichtangaben inklusive Bild-Uploads in den untenstehenden Eingabeblöcken und klicke danach auf <strong>Freigabe anfordern</strong>.
                             </div>
                           )}
+                          {activationStatusKey === 'changes_requested' && effectiveSelectedReviewNote ? (
+                            <div style={{ marginTop: '14px', border: '1px solid #fecaca', background: '#fef2f2', borderRadius: '10px', padding: '12px 14px', color: '#991b1b' }}>
+                              <div style={{ fontWeight: 700, marginBottom: '6px' }}>Nachbesserung erforderlich</div>
+                              <div style={{ fontSize: '14px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{effectiveSelectedReviewNote}</div>
+                            </div>
+                          ) : null}
                           <div style={{ marginTop: '14px', display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                             <div
                               style={{

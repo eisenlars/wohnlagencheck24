@@ -54,6 +54,7 @@ CREATE TABLE public.partner_area_map (
   activation_status text DEFAULT 'assigned'::text,
   partner_submitted_at timestamp with time zone,
   partner_preview_signoff_at timestamp with time zone,
+  admin_review_note text,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT partner_area_map_pkey PRIMARY KEY (id),
   CONSTRAINT partner_area_map_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES public.partners(id),

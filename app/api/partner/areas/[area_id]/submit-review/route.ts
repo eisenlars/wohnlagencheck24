@@ -22,6 +22,11 @@ function isMissingActivationStatusColumn(error: unknown): boolean {
   );
 }
 
+function isMissingAdminReviewNoteColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partner_area_map.admin_review_note") && msg.includes("does not exist");
+}
+
 async function requirePartnerUser(req: Request): Promise<string> {
   const supabase = createClient();
   const {
@@ -135,24 +140,43 @@ export async function POST(
         is_active: false,
         activation_status: "ready_for_review",
         partner_submitted_at: new Date().toISOString(),
+        admin_review_note: null,
       })
       .eq("auth_user_id", userId)
       .eq("area_id", areaId)
-      .select("id, auth_user_id, area_id, is_active, activation_status, partner_submitted_at, created_at")
+      .select("id, auth_user_id, area_id, is_active, activation_status, partner_submitted_at, admin_review_note, created_at")
       .maybeSingle();
 
-    if (updateError && isMissingActivationStatusColumn(updateError)) {
-      const fallback = await admin
-        .from("partner_area_map")
-        .update({ is_active: false })
-        .eq("auth_user_id", userId)
-        .eq("area_id", areaId)
-        .select("id, auth_user_id, area_id, is_active, created_at")
-        .maybeSingle();
-      updated = fallback.data
-        ? { ...fallback.data, activation_status: "ready_for_review", partner_submitted_at: new Date().toISOString() }
-        : null;
-      updateError = fallback.error;
+    if (updateError && (isMissingActivationStatusColumn(updateError) || isMissingAdminReviewNoteColumn(updateError))) {
+      if (isMissingAdminReviewNoteColumn(updateError) && !isMissingActivationStatusColumn(updateError)) {
+        const fallback = await admin
+          .from("partner_area_map")
+          .update({
+            is_active: false,
+            activation_status: "ready_for_review",
+            partner_submitted_at: new Date().toISOString(),
+          })
+          .eq("auth_user_id", userId)
+          .eq("area_id", areaId)
+          .select("id, auth_user_id, area_id, is_active, activation_status, partner_submitted_at, created_at")
+          .maybeSingle();
+        updated = fallback.data
+          ? { ...fallback.data, admin_review_note: null }
+          : null;
+        updateError = fallback.error;
+      } else {
+        const fallback = await admin
+          .from("partner_area_map")
+          .update({ is_active: false })
+          .eq("auth_user_id", userId)
+          .eq("area_id", areaId)
+          .select("id, auth_user_id, area_id, is_active, created_at")
+          .maybeSingle();
+        updated = fallback.data
+          ? { ...fallback.data, activation_status: "ready_for_review", partner_submitted_at: new Date().toISOString(), admin_review_note: null }
+          : null;
+        updateError = fallback.error;
+      }
     }
 
     if (updateError) {

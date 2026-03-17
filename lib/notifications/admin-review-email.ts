@@ -23,6 +23,15 @@ type SendPartnerAreaApprovedEmailArgs = {
   approvedAtIso?: string | null;
 };
 
+type SendPartnerReviewChangesRequestedEmailArgs = {
+  partnerEmail: string;
+  partnerName?: string | null;
+  areaId: string;
+  areaName?: string | null;
+  requestedAtIso?: string | null;
+  note?: string | null;
+};
+
 type SendAdminPreviewSignoffEmailArgs = {
   areaId: string;
   areaName?: string | null;
@@ -189,6 +198,40 @@ function buildPartnerApprovedText(args: SendPartnerAreaApprovedEmailArgs): strin
     "",
     "Erst nach dieser finalen Vorbereitung sollte das Gebiet online geschaltet werden.",
   ].join("\n");
+}
+
+function buildPartnerChangesRequestedSubject(args: SendPartnerReviewChangesRequestedEmailArgs): string {
+  const area = String(args.areaName ?? args.areaId).trim();
+  return `Nachbesserung erforderlich: ${area}`;
+}
+
+function buildPartnerChangesRequestedText(args: SendPartnerReviewChangesRequestedEmailArgs): string {
+  const area = String(args.areaName ?? args.areaId).trim();
+  const partner = pickGreetingName(String(args.partnerName ?? ""));
+  const requestedAt = args.requestedAtIso
+    ? new Date(args.requestedAtIso).toLocaleString("de-DE")
+    : new Date().toLocaleString("de-DE");
+  const note = String(args.note ?? "").trim();
+  return [
+    `Hallo${partner ? ` ${partner}` : ""},`,
+    "",
+    "fuer dein Gebiet wurden Nachbesserungen angefordert.",
+    "",
+    `Gebiet: ${area}`,
+    `Area ID: ${args.areaId}`,
+    `Zeitpunkt: ${requestedAt}`,
+    "",
+    note ? "Hinweis aus der Freigabepruefung:" : "",
+    note || "",
+    note ? "" : "",
+    "Bitte ueberarbeite die angesprochenen Inhalte und fordere danach erneut die Freigabe an.",
+  ]
+    .filter((line, index, arr) => {
+      if (line !== "") return true;
+      const prev = arr[index - 1];
+      return prev !== "";
+    })
+    .join("\n");
 }
 
 function buildAdminPreviewSignoffSubject(args: SendAdminPreviewSignoffEmailArgs): string {
@@ -487,6 +530,19 @@ export async function sendPartnerAreaApprovedEmail(args: SendPartnerAreaApproved
     to: [recipient],
     subject: buildPartnerApprovedSubject(args),
     text: buildPartnerApprovedText(args),
+  });
+}
+
+export async function sendPartnerReviewChangesRequestedEmail(args: SendPartnerReviewChangesRequestedEmailArgs): Promise<{
+  sent: boolean;
+  reason?: string;
+}> {
+  const recipient = String(args.partnerEmail ?? "").trim().toLowerCase();
+  if (!recipient) return { sent: false, reason: "partner_email_missing" };
+  return sendSmtpTextMail({
+    to: [recipient],
+    subject: buildPartnerChangesRequestedSubject(args),
+    text: buildPartnerChangesRequestedText(args),
   });
 }
 

@@ -43,6 +43,7 @@ type AreaMapping = {
   is_public_live?: boolean | null;
   activation_status?: string | null;
   partner_preview_signoff_at?: string | null;
+  admin_review_note?: string | null;
   areas?: {
     name?: string | null;
     slug?: string | null;
@@ -569,7 +570,7 @@ export default function AdminClient() {
   const [reviewData, setReviewData] = useState<AreaReviewPayload | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewActionError, setReviewActionError] = useState<string | null>(null);
-  const [reviewMediaBusyKey, setReviewMediaBusyKey] = useState<string | null>(null);
+  const [reviewNoteDraft, setReviewNoteDraft] = useState("");
   const [clearReviewOnSuccessClose, setClearReviewOnSuccessClose] = useState(false);
   const [reviewContentDismissed, setReviewContentDismissed] = useState(false);
   const [activeView, setActiveView] = useState<AdminView>("home");
@@ -1170,6 +1171,7 @@ export default function AdminClient() {
     });
     setReviewAreaId(String(reviewCandidate?.area_id ?? ""));
     setReviewData(null);
+    setReviewNoteDraft("");
     setEditPartner({
       company_name: partnerData.partner.company_name ?? "",
       contact_email: partnerData.partner.contact_email ?? "",
@@ -1198,12 +1200,14 @@ export default function AdminClient() {
     if (!selectedPartnerId || !areaId) {
       setReviewData(null);
       setReviewActionError(null);
+      setReviewNoteDraft("");
       return;
     }
     setReviewBusy(true);
     try {
       const data = await api<AreaReviewPayload>(`/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(areaId)}/review`);
       setReviewData(data);
+      setReviewNoteDraft(String(data.mapping?.admin_review_note ?? ""));
       setReviewActionError(null);
     } catch (error) {
       setReviewData(null);
@@ -1217,16 +1221,25 @@ export default function AdminClient() {
     if (!selectedPartnerId || !reviewAreaId) return;
     setReviewBusy(true);
     try {
+      const note = action === "changes_requested" ? reviewNoteDraft.trim() : "";
+      if (action === "changes_requested" && !note) {
+        setReviewActionError("Bitte einen Hinweis für die Nachbesserung eintragen.");
+        return;
+      }
       const response = await api<AreaReviewPayload>(`/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(reviewAreaId)}/review`, {
         method: "PATCH",
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, note: note || null }),
       });
       await loadPartnerDetails(selectedPartnerId);
       await loadAreaOverview();
       await loadAreaReview(reviewAreaId);
-      if (action === "approve" && response?.notification?.partner?.sent === false) {
+      if ((action === "approve" || action === "changes_requested") && response?.notification?.partner?.sent === false) {
         const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
-        setReviewActionError(`Preview wurde freigegeben, Partner-Mail aber nicht versendet (${reason}).`);
+        setReviewActionError(
+          action === "approve"
+            ? `Preview wurde freigegeben, Partner-Mail aber nicht versendet (${reason}).`
+            : `Nachbesserung wurde gesetzt, Partner-Mail aber nicht versendet (${reason}).`,
+        );
         return;
       }
       setReviewActionError(null);
@@ -1257,30 +1270,6 @@ export default function AdminClient() {
       throw error;
     } finally {
       setReviewBusy(false);
-    }
-  }
-
-  async function updateReviewMediaStatus(sectionKey: string, nextStatus: "approved" | "draft") {
-    if (!selectedPartnerId || !reviewAreaId) return;
-    const busyKey = `${sectionKey}:${nextStatus}`;
-    setReviewMediaBusyKey(busyKey);
-    try {
-      await api<{ ok?: boolean }>(
-        `/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(reviewAreaId)}/review-media`,
-        {
-          method: "PATCH",
-          body: JSON.stringify({
-            section_key: sectionKey,
-            status: nextStatus,
-          }),
-        },
-      );
-      await loadAreaReview(reviewAreaId);
-      setReviewActionError(null);
-    } catch (error) {
-      setReviewActionError(error instanceof Error ? error.message : "Bildstatus konnte nicht aktualisiert werden.");
-    } finally {
-      setReviewMediaBusyKey(null);
     }
   }
 
@@ -3056,6 +3045,7 @@ export default function AdminClient() {
                 setReviewAreaId(e.target.value);
                 setReviewActionError(null);
                 setReviewContentDismissed(false);
+                setReviewNoteDraft("");
               }}
               disabled={!selectedPartner}
             >
@@ -3104,7 +3094,6 @@ export default function AdminClient() {
               <thead>
                 <tr>
                   <th style={thStyle}>Pflichtfeld</th>
-                  <th style={thStyle}>Status</th>
                   <th style={thStyle}>Inhalt</th>
                 </tr>
               </thead>
@@ -3112,9 +3101,6 @@ export default function AdminClient() {
                 {(reviewData.fields ?? []).map((field) => (
                   <tr key={field.key}>
                     <td style={tdStyle}>{formatMandatoryKeyLabel(field.key)}</td>
-                    <td style={tdStyle}>
-                      {field.status === "approved" && field.present ? "ok" : "offen"}
-                    </td>
                     <td style={tdStyle}>
                       {isMandatoryMediaKey(field.key) ? (
                         <div style={{ display: "grid", gap: 8 }}>
@@ -3130,26 +3116,6 @@ export default function AdminClient() {
                           ) : (
                             <div style={{ fontSize: 12, color: "#64748b" }}>—</div>
                           )}
-                          {field.content ? (
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <button
-                                type="button"
-                                style={btnStyle}
-                                disabled={reviewMediaBusyKey === `${field.key}:approved`}
-                                onClick={() => void updateReviewMediaStatus(field.key, "approved")}
-                              >
-                                Bild prüfen
-                              </button>
-                              <button
-                                type="button"
-                                style={btnGhostStyle}
-                                disabled={reviewMediaBusyKey === `${field.key}:draft`}
-                                onClick={() => void updateReviewMediaStatus(field.key, "draft")}
-                              >
-                                Zurückstellen
-                              </button>
-                            </div>
-                          ) : null}
                           <div style={{ fontSize: 11, color: "#64748b", wordBreak: "break-all" }}>{field.content || "—"}</div>
                         </div>
                       ) : (
@@ -3163,12 +3129,24 @@ export default function AdminClient() {
               </tbody>
             </table>
 
+            {currentReviewState === "ready_for_review" || currentReviewState === "in_review" || currentReviewState === "changes_requested" ? (
+              <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>Hinweis für Nachbesserung</div>
+                <textarea
+                  style={{ ...inputStyle, minHeight: 110, resize: "vertical" }}
+                  value={reviewNoteDraft}
+                  onChange={(e) => setReviewNoteDraft(e.target.value)}
+                  placeholder="Hier eintragen, was bei Texten, Bildern oder anderen Pflichtangaben verbessert werden muss."
+                />
+              </div>
+            ) : null}
+
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               {currentReviewState === "ready_for_review" || currentReviewState === "in_review" || currentReviewState === "changes_requested" ? (
                 <>
                   <button
                     style={btnDangerStyle}
-                    disabled={busy || reviewBusy || !reviewAreaId}
+                    disabled={busy || reviewBusy || !reviewAreaId || reviewNoteDraft.trim().length === 0}
                     onClick={() =>
                       run("Nachbesserung anfordern", async () => {
                         await applyAreaReviewAction("changes_requested");
