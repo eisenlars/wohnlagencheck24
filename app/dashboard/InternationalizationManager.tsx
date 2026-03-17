@@ -15,6 +15,7 @@ import {
   I18N_SCOPE_OPTIONS,
   i18nWorkflowClassCycle,
   i18nWorkflowClassDescription,
+  i18nWorkflowClassTitle,
   isDistrictArea,
   type I18nChannel,
   type I18nScope,
