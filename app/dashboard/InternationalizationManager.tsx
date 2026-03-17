@@ -2453,17 +2453,10 @@ export default function InternationalizationManager({ config, availableLocales, 
                     ))}
                   </select>
                 </label>
+                <div style={workflowScopeHintStyle}>
+                  Bitte prüfe den deutschen Stand vor dem Übersetzungslauf auf Vollständigkeit und Qualität.
+                </div>
               </div>
-            </div>
-            <div style={workflowActionRowStyle}>
-              <button
-                type="button"
-                style={primaryWorkflowButtonStyle(Boolean(selectedWorkflowKeys.length) && !loading && !saving)}
-                onClick={() => void triggerWorkflowUpdate()}
-                disabled={loading || saving || selectedWorkflowKeys.length === 0}
-              >
-                {activeClass === 'data_driven' ? 'Data-Driven aktualisieren' : 'Uebersetzung fuer Texttyp starten'}
-              </button>
             </div>
           </div>
 
@@ -2479,7 +2472,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                   onClick={() => setActiveClass(displayClass)}
                 >
                   <div style={classCardTopStyle}>
-                    <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
+                    <span style={workflowClassBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
                     <span style={classCardCountStyle}>{stats.total}</span>
                   </div>
                   <strong style={classCardTitleStyle}>{i18nWorkflowClassTitle(displayClass)}</strong>
@@ -2494,13 +2487,21 @@ export default function InternationalizationManager({ config, availableLocales, 
                     <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
                     <span>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
                   </div>
+                  {active ? (
+                    <div style={classCardActionRowStyle}>
+                      <button
+                        type="button"
+                        style={inlineWorkflowButtonStyle(displayClass, Boolean(selectedWorkflowKeys.length) && !loading && !saving)}
+                        onClick={() => void triggerWorkflowUpdate()}
+                        disabled={loading || saving || selectedWorkflowKeys.length === 0}
+                      >
+                        {activeClass === 'data_driven' ? 'Data-Driven aktualisieren' : 'Übersetzung starten'}
+                      </button>
+                    </div>
+                  ) : null}
                 </button>
               );
             })}
-          </div>
-
-          <div style={qualityCheckBoxStyle(true)}>
-            <span>Achtung: Bitte prüfe den deutschen Stand vor dem gesamt-Übersetzungslauf auf Vollständigkeit und Qualität.</span>
           </div>
         </div>
 
@@ -3906,14 +3907,6 @@ const buttonPrimaryStyle = (active: boolean): React.CSSProperties => ({
   opacity: active ? 1 : 0.75,
 });
 
-const primaryWorkflowButtonStyle = (active: boolean): React.CSSProperties => ({
-  ...buttonPrimaryStyle(active),
-  width: 'auto',
-  minWidth: 240,
-  height: 44,
-  padding: '0 16px',
-});
-
 const secondaryActionButtonStyle: React.CSSProperties = {
   border: '1px solid #cbd5e1',
   borderRadius: 10,
@@ -3994,12 +3987,6 @@ const workflowCardHeaderStyle: React.CSSProperties = {
   flexWrap: 'wrap',
 };
 
-const workflowActionRowStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 10,
-  flexWrap: 'wrap',
-};
-
 const workflowHeaderInlineStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -4011,6 +3998,7 @@ const workflowInlineControlsStyle: React.CSSProperties = {
   display: 'flex',
   flexWrap: 'wrap',
   gap: 10,
+  alignItems: 'center',
 };
 
 const workflowInlineFieldStyle: React.CSSProperties = {
@@ -4024,6 +4012,13 @@ const workflowInlineSelectStyle: React.CSSProperties = {
   minHeight: 36,
   height: 36,
   fontSize: 12,
+};
+
+const workflowScopeHintStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#92400e',
+  lineHeight: 1.45,
+  maxWidth: 360,
 };
 
 const classGridStyle: React.CSSProperties = {
@@ -4049,6 +4044,12 @@ const classCardTopStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: 10,
 };
+
+const workflowClassBadgeStyle = (displayClass: DisplayTextClass): React.CSSProperties => ({
+  ...displayTextBadgeStyle(displayClass),
+  padding: '5px 10px',
+  fontSize: 11,
+});
 
 const classCardCountStyle: React.CSSProperties = {
   fontSize: 18,
@@ -4084,6 +4085,25 @@ const classCardCostStyle: React.CSSProperties = {
   color: '#0f766e',
   fontWeight: 700,
 };
+
+const classCardActionRowStyle: React.CSSProperties = {
+  marginTop: 4,
+  display: 'flex',
+  justifyContent: 'flex-start',
+};
+
+const inlineWorkflowButtonStyle = (displayClass: DisplayTextClass, active: boolean): React.CSSProperties => ({
+  ...buttonPrimaryStyle(active),
+  width: 'auto',
+  minWidth: 0,
+  height: 40,
+  padding: '0 14px',
+  borderRadius: 999,
+  border: active ? `1px solid ${String(displayTextBadgeStyle(displayClass).background ?? '#fcd34d')}` : '1px solid #cbd5e1',
+  background: active ? String(displayTextBadgeStyle(displayClass).background ?? '#fcd34d') : '#e2e8f0',
+  color: active ? '#0f172a' : '#64748b',
+  boxShadow: active ? '0 8px 20px rgba(15, 23, 42, 0.08)' : 'none',
+});
 
 const estimateLabelStyle: React.CSSProperties = {
   fontSize: 11,
