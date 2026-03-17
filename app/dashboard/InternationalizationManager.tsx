@@ -3895,9 +3895,9 @@ const wrapStyle: React.CSSProperties = {
 };
 
 const topCardStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
+  border: '1px solid rgb(72, 107, 122)',
   borderRadius: 12,
-  background: '#fff',
+  background: 'rgb(72, 107, 122)',
   padding: 14,
   display: 'grid',
   gap: 10,
@@ -3996,9 +3996,11 @@ const statusErrorBoxStyle: React.CSSProperties = {
 const workflowStatusSuccessStyle: React.CSSProperties = {
   ...statusSuccessBoxStyle,
   maxWidth: 420,
-  padding: '8px 10px',
+  padding: 0,
   fontSize: 11,
   lineHeight: 1.4,
+  border: 'none',
+  background: 'transparent',
 };
 
 const workflowStatusErrorStyle: React.CSSProperties = {
@@ -4168,9 +4170,9 @@ const inlineWorkflowButtonStyle = (displayClass: DisplayTextClass, selected: boo
   height: 40,
   padding: '0 14px',
   borderRadius: 10,
-  border: `1px solid ${String(displayTextBadgeStyle(displayClass).borderColor ?? '#cbd5e1')}`,
-  background: String(displayTextBadgeStyle(displayClass).background ?? '#f8fafc'),
-  color: String(displayTextBadgeStyle(displayClass).color ?? '#475569'),
+  border: selected ? '1px solid rgb(255, 224, 0)' : `1px solid ${String(displayTextBadgeStyle(displayClass).borderColor ?? '#cbd5e1')}`,
+  background: selected ? 'rgb(255, 224, 0)' : String(displayTextBadgeStyle(displayClass).background ?? '#f8fafc'),
+  color: selected ? '#000000' : String(displayTextBadgeStyle(displayClass).color ?? '#475569'),
   boxShadow: selected ? '0 8px 20px rgba(15, 23, 42, 0.08)' : 'none',
   cursor: disabled ? 'not-allowed' : 'pointer',
   opacity: disabled ? 0.55 : 1,

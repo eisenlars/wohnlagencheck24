@@ -55,19 +55,19 @@ export function i18nWorkflowClassTitle(displayClass: DisplayTextClass): string {
 }
 
 export function i18nWorkflowClassDescription(displayClass: DisplayTextClass): string {
-  if (displayClass === "general") return "texttyp: Allgemein, Erklaerung";
-  if (displayClass === "data_driven") return "texttyp: Datenbasierender Text";
-  if (displayClass === "profile") return "texttyp: Vortstellung Berater, Makler";
-  if (displayClass === "marketing") return "texttyp: SEO, GEO";
-  return "texttyp: Expertentext zu Markt/Region";
+  if (displayClass === "general") return "Texttyp: Einleitungs-, Erklaerungstext";
+  if (displayClass === "data_driven") return "Texttyp: Datenbasierender Text";
+  if (displayClass === "profile") return "Texttyp: Vorstellungstext Berater, Makler";
+  if (displayClass === "marketing") return "Texttyp: SEO, GEO";
+  return "Texttyp: Expertentext zu Markt/Region";
 }
 
 export function i18nWorkflowClassCycle(displayClass: DisplayTextClass): string {
-  if (displayClass === "general") return "zyklus: einmal, punktuell";
-  if (displayClass === "data_driven") return "zyklus: quartal";
-  if (displayClass === "profile") return "zyklus: einmal, punktuell";
-  if (displayClass === "marketing") return "zyklus: quartal";
-  return "zyklus: quartal";
+  if (displayClass === "general") return "Zyklus: einmal, punktuell";
+  if (displayClass === "data_driven") return "Zyklus: quartal";
+  if (displayClass === "profile") return "Zyklus: einmal, punktuell";
+  if (displayClass === "marketing") return "Zyklus: quartal";
+  return "Zyklus: quartal";
 }
 
 export function i18nWorkflowNeedsQualityCheck(displayClass: DisplayTextClass): boolean {
