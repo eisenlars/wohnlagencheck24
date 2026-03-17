@@ -2493,7 +2493,11 @@ export default function InternationalizationManager({ config, availableLocales, 
                     ))}
                   </select>
                 </label>
-                <div style={workflowScopeHintStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
+                {status ? (
+                  <div style={statusTone === 'error' ? workflowStatusErrorStyle : workflowStatusSuccessStyle}>{status}</div>
+                ) : (
+                  <div style={workflowScopeHintStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
+                )}
               </div>
             </div>
           </div>
@@ -2566,8 +2570,6 @@ export default function InternationalizationManager({ config, availableLocales, 
             </button>
           ))}
         </div>
-
-        {status ? <div style={statusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{status}</div> : null}
 
         <div style={tableWrapStyle}>
           <table style={tableStyle}>
@@ -3986,6 +3988,22 @@ const statusErrorBoxStyle: React.CSSProperties = {
   background: '#fef2f2',
   fontSize: 12,
   color: '#991b1b',
+};
+
+const workflowStatusSuccessStyle: React.CSSProperties = {
+  ...statusSuccessBoxStyle,
+  maxWidth: 420,
+  padding: '8px 10px',
+  fontSize: 11,
+  lineHeight: 1.4,
+};
+
+const workflowStatusErrorStyle: React.CSSProperties = {
+  ...statusErrorBoxStyle,
+  maxWidth: 420,
+  padding: '8px 10px',
+  fontSize: 11,
+  lineHeight: 1.4,
 };
 
 const staleBadgeStyle: React.CSSProperties = {
