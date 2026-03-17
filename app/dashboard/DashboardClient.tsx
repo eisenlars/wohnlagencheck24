@@ -2209,9 +2209,9 @@ const sidebarHeaderStyle = {
 const districtButtonStyle = (active: boolean, isAreaActive: boolean) => ({
   width: '100%',
   padding: '10px 12px',
-  border: `1px solid ${active ? (isAreaActive ? '#86efac' : '#fcd34d') : (isAreaActive ? '#bbf7d0' : '#fde68a')}`,
+  border: `1px solid ${active ? '#cbd5e1' : (isAreaActive ? '#bbf7d0' : '#fde68a')}`,
   borderRadius: '8px',
-  backgroundColor: active ? (isAreaActive ? '#dcfce7' : '#fef3c7') : (isAreaActive ? '#f0fdf4' : '#fffbeb'),
+  backgroundColor: active ? '#f8fafc' : (isAreaActive ? '#f0fdf4' : '#fffbeb'),
   color: active ? '#1e293b' : '#475569',
   fontWeight: active ? '700' : '500',
   fontSize: '14px',
