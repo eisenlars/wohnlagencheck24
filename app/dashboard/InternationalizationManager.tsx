@@ -2406,9 +2406,12 @@ export default function InternationalizationManager({ config, availableLocales, 
             >
               <div style={domainTabTopStyle}>
                 <strong style={domainTabTitleStyle}>{domain.label}</strong>
-                <span style={domainTabBadgeStyle(domain.enabled)}>{domain.enabled ? 'verfügbar' : 'noch nicht freigeschaltet'}</span>
+                <span
+                  style={domainTabStatusDotStyle(domain.enabled)}
+                  aria-label={domain.enabled ? `${domain.label} verfügbar` : `${domain.label} nicht verfügbar`}
+                  title={domain.enabled ? 'Verfügbar' : 'Nicht verfügbar'}
+                />
               </div>
-              <span style={domainTabTextStyle}>{domain.description}</span>
             </button>
           ))}
         </div>
@@ -4385,9 +4388,9 @@ const domainTabStyle = (active: boolean): React.CSSProperties => ({
   borderRadius: 16,
   border: active ? '1px solid #bfdbfe' : '1px solid #e2e8f0',
   background: active ? 'linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%)' : '#fff',
-  padding: '16px 16px 15px',
+  padding: '14px 16px',
   display: 'grid',
-  gap: 10,
+  gap: 6,
   textAlign: 'left',
   boxShadow: active ? '0 16px 34px rgba(37, 99, 235, 0.12)' : '0 10px 24px rgba(15, 23, 42, 0.06)',
   cursor: 'pointer',
@@ -4406,22 +4409,14 @@ const domainTabTitleStyle: React.CSSProperties = {
   color: '#0f172a',
 };
 
-const domainTabBadgeStyle = (enabled: boolean): React.CSSProperties => ({
+const domainTabStatusDotStyle = (enabled: boolean): React.CSSProperties => ({
   borderRadius: 999,
-  padding: '5px 10px',
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '0.03em',
-  textTransform: 'uppercase',
-  background: enabled ? '#dcfce7' : '#e2e8f0',
-  color: enabled ? '#166534' : '#475569',
+  width: 10,
+  height: 10,
+  flex: '0 0 auto',
+  background: enabled ? '#16a34a' : '#dc2626',
+  boxShadow: enabled ? '0 0 0 4px rgba(22, 163, 74, 0.12)' : '0 0 0 4px rgba(220, 38, 38, 0.1)',
 });
-
-const domainTabTextStyle: React.CSSProperties = {
-  fontSize: 13,
-  lineHeight: 1.55,
-  color: '#475569',
-};
 
 const domainPlaceholderCardStyle: React.CSSProperties = {
   display: 'grid',
@@ -4441,7 +4436,14 @@ const domainPlaceholderHeadStyle: React.CSSProperties = {
 };
 
 const domainPlaceholderBadgeStyle = (enabled: boolean): React.CSSProperties => ({
-  ...domainTabBadgeStyle(enabled),
+  borderRadius: 999,
+  padding: '5px 10px',
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '0.03em',
+  textTransform: 'uppercase',
+  background: enabled ? '#dcfce7' : '#e2e8f0',
+  color: enabled ? '#166534' : '#475569',
   alignSelf: 'flex-start',
 });
 
