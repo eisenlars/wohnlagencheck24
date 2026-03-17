@@ -163,10 +163,8 @@ type HandoverApiResponse = {
     area_name?: string;
     old_partner?: { id?: string; company_name?: string };
     new_partner?: { id?: string; company_name?: string };
-    deactivate_old_partner_requested?: boolean;
-    deactivate_old_partner_applied?: boolean;
-    deactivate_old_partner_skipped_reason?: string | null;
-    deactivate_old_integrations?: boolean;
+    deactivate_old_integrations_applied?: boolean;
+    old_partner_remains_active?: boolean;
   };
 };
 
@@ -561,8 +559,6 @@ export default function AdminClient() {
   const [handoverDraft, setHandoverDraft] = useState({
     area_id: "",
     new_partner_id: "",
-    deactivate_old_partner: false,
-    deactivate_old_integrations: true,
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
@@ -594,15 +590,11 @@ export default function AdminClient() {
     areaId: string;
     oldPartnerId: string;
     newPartnerId: string;
-    deactivateOldPartner: boolean;
-    deactivateOldIntegrations: boolean;
   }>({
     open: false,
     areaId: "",
     oldPartnerId: "",
     newPartnerId: "",
-    deactivateOldPartner: false,
-    deactivateOldIntegrations: true,
   });
   const [handoverStatusModal, setHandoverStatusModal] = useState<{
     open: boolean;
@@ -1982,8 +1974,6 @@ export default function AdminClient() {
     areaId: string;
     oldPartnerId: string;
     newPartnerId: string;
-    deactivateOldPartner: boolean;
-    deactivateOldIntegrations: boolean;
   }) {
     setBusy(true);
     setHandoverStatusModal({
@@ -2003,8 +1993,6 @@ export default function AdminClient() {
           area_id: input.areaId,
           old_partner_id: input.oldPartnerId,
           new_partner_id: input.newPartnerId,
-          deactivate_old_partner: input.deactivateOldPartner,
-          deactivate_old_integrations: input.deactivateOldIntegrations,
         }),
       });
       setHandoverStatusModal((m) => ({
@@ -2012,10 +2000,8 @@ export default function AdminClient() {
         lines: [
           ...m.lines,
           "2/4 Server-Übergabe abgeschlossen.",
-          `Partner alt deaktiviert: ${result.handover?.deactivate_old_partner_applied ? "Ja" : "Nein"}`,
-          result.handover?.deactivate_old_partner_skipped_reason
-            ? `Hinweis: ${result.handover.deactivate_old_partner_skipped_reason}`
-            : "Hinweis: Kein Skip-Grund.",
+          `Alte Integrationen deaktiviert: ${result.handover?.deactivate_old_integrations_applied ? "Ja" : "Nein"}`,
+          "Hinweis: Alter Partner bleibt aktiv. Eine vollständige Entfernung erfolgt nur separat über Datenbereinigung.",
           "3/4 Partner- und Gebietsübersicht aktualisieren...",
         ],
       }));
@@ -2029,8 +2015,6 @@ export default function AdminClient() {
       setHandoverDraft({
         area_id: "",
         new_partner_id: "",
-        deactivate_old_partner: false,
-        deactivate_old_integrations: true,
       });
 
       setHandoverStatusModal((m) => ({
@@ -2123,7 +2107,7 @@ export default function AdminClient() {
               {" "}übergeben.
             </p>
             <p style={{ ...modalMessageStyle, marginTop: -4 }}>
-              Integrationen alt deaktivieren: {handoverConfirmModal.deactivateOldIntegrations ? "Ja" : "Nein"} | Partner alt deaktivieren: {handoverConfirmModal.deactivateOldPartner ? "Ja" : "Nein"}
+              Alte Integrationen werden dabei automatisch deaktiviert. Der alte Partner bleibt aktiv und kann bei Bedarf später separat über Datenbereinigung entfernt werden.
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button
@@ -2141,8 +2125,6 @@ export default function AdminClient() {
                     areaId: payload.areaId,
                     oldPartnerId: payload.oldPartnerId,
                     newPartnerId: payload.newPartnerId,
-                    deactivateOldPartner: payload.deactivateOldPartner,
-                    deactivateOldIntegrations: payload.deactivateOldIntegrations,
                   });
                 }}
               >
@@ -3231,17 +3213,19 @@ export default function AdminClient() {
                   >
                     Nachbesserung anfordern
                   </button>
-                  <button
-                    style={btnStyle}
-                    disabled={busy || reviewBusy || !reviewAreaId}
-                    onClick={() =>
-                      run("Preview freigeben", async () => {
-                        await applyAreaReviewAction("approve");
-                      }, { clearReviewOnClose: true })
-                    }
-                  >
-                    Preview freigeben
-                  </button>
+                  {currentReviewState === "ready_for_review" || currentReviewState === "in_review" ? (
+                    <button
+                      style={btnStyle}
+                      disabled={busy || reviewBusy || !reviewAreaId}
+                      onClick={() =>
+                        run("Preview freigeben", async () => {
+                          await applyAreaReviewAction("approve");
+                        }, { clearReviewOnClose: true })
+                      }
+                    >
+                      Preview freigeben
+                    </button>
+                  ) : null}
                 </>
               ) : null}
               {currentReviewState === "approved_preview" ? (
@@ -3373,23 +3357,13 @@ export default function AdminClient() {
             ))}
           </select>
         </div>
-        <div style={{ display: "flex", gap: 14, marginTop: 10 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}>
-            <input
-              type="checkbox"
-              checked={handoverDraft.deactivate_old_integrations}
-              onChange={(e) => setHandoverDraft((v) => ({ ...v, deactivate_old_integrations: e.target.checked }))}
-            />
-            alte Integrationen deaktivieren
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}>
-            <input
-              type="checkbox"
-              checked={handoverDraft.deactivate_old_partner}
-              onChange={(e) => setHandoverDraft((v) => ({ ...v, deactivate_old_partner: e.target.checked }))}
-            />
-            alten Partner deaktivieren
-          </label>
+        <div style={{ marginTop: 10, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", background: "#f8fafc" }}>
+          <div style={{ fontSize: 12, color: "#334155" }}>
+            Alte Integrationen des bisherigen Partners werden bei der Übergabe automatisch deaktiviert.
+          </div>
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
+            Der bisherige Partner bleibt aktiv. Eine vollständige Entfernung aus dem System erfolgt nur separat über Datenbereinigung.
+          </div>
         </div>
         <div style={{ marginTop: 10, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", background: "#f8fafc" }}>
           <div style={{ fontSize: 12, color: "#334155" }}>
@@ -3410,8 +3384,6 @@ export default function AdminClient() {
                 areaId: handoverDraft.area_id,
                 oldPartnerId: selectedPartnerId,
                 newPartnerId: handoverDraft.new_partner_id,
-                deactivateOldPartner: handoverDraft.deactivate_old_partner,
-                deactivateOldIntegrations: handoverDraft.deactivate_old_integrations,
               });
             }}
           >
