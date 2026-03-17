@@ -72,6 +72,15 @@ body {
   }
 }
 
+@keyframes wc24-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 
 .navbar-toggler {
   background-color: transparent !important;

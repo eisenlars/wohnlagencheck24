@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { getAdminRoleForUser } from '@/lib/security/admin-auth'
 import { ResetSubmitButton } from '@/components/auth/reset-submit-button'
+import { FormSubmitButton } from '@/components/auth/form-submit-button'
 
 export const dynamic = "force-dynamic";
 
@@ -43,9 +44,12 @@ export default async function AdminLoginPage({
           <label htmlFor="password" style={{ color: "#111827" }}>Passwort</label>
           <input name="password" type="password" placeholder="••••••••" required style={{ padding: '8px' }} />
 
-          <button type="submit" style={{ padding: "10px", background: "#111827", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: 700 }}>
-            Anmelden
-          </button>
+          <FormSubmitButton
+            idleLabel="Anmelden"
+            pendingLabel="Du wirst eingeloggt..."
+            style={{ padding: "10px", background: "#111827", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: 700 }}
+            spinnerColor="#ffffff"
+          />
         </form>
 
         <form action={requestPasswordReset} style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px", marginTop: "4px", display: "grid", gap: "10px" }}>
