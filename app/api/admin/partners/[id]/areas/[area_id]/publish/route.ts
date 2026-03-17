@@ -37,25 +37,46 @@ async function updatePublication(args: {
     .maybeSingle();
 
   if (error && (isMissingActivationStatusColumn(error) || isMissingPublicLiveColumn(error) || isMissingPreviewSignoffColumn(error))) {
-    const fallbackPatch = args.publish
-      ? { is_active: true }
-      : { is_active: true };
-    const fallback = await args.admin
-      .from("partner_area_map")
-      .update(fallbackPatch)
-      .eq("auth_user_id", args.partnerId)
-      .eq("area_id", args.areaId)
-      .select("id, auth_user_id, area_id, is_active, created_at")
-      .maybeSingle();
-    data = fallback.data
-      ? {
-        ...fallback.data,
-        is_public_live: null,
-        activation_status: args.publish ? "live" : "approved_preview",
-        partner_preview_signoff_at: null,
-      }
-      : null;
-    error = fallback.error;
+    const missingActivationStatus = isMissingActivationStatusColumn(error);
+    const missingPublicLive = isMissingPublicLiveColumn(error);
+    const missingPreviewSignoff = isMissingPreviewSignoffColumn(error);
+
+    if (missingPreviewSignoff && !missingActivationStatus && !missingPublicLive) {
+      const fallback = await args.admin
+        .from("partner_area_map")
+        .update(patch)
+        .eq("auth_user_id", args.partnerId)
+        .eq("area_id", args.areaId)
+        .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at")
+        .maybeSingle();
+      data = fallback.data
+        ? {
+          ...fallback.data,
+          partner_preview_signoff_at: null,
+        }
+        : null;
+      error = fallback.error;
+    } else {
+      const fallbackPatch = args.publish
+        ? { is_active: true }
+        : { is_active: true };
+      const fallback = await args.admin
+        .from("partner_area_map")
+        .update(fallbackPatch)
+        .eq("auth_user_id", args.partnerId)
+        .eq("area_id", args.areaId)
+        .select("id, auth_user_id, area_id, is_active, created_at")
+        .maybeSingle();
+      data = fallback.data
+        ? {
+          ...fallback.data,
+          is_public_live: null,
+          activation_status: args.publish ? "live" : "approved_preview",
+          partner_preview_signoff_at: null,
+        }
+        : null;
+      error = fallback.error;
+    }
   }
 
   return { data, error };
@@ -90,14 +111,29 @@ export async function POST(
       .eq("area_id", areaId)
       .maybeSingle();
     if (mappingError && (isMissingActivationStatusColumn(mappingError) || isMissingPublicLiveColumn(mappingError) || isMissingPreviewSignoffColumn(mappingError))) {
-      const fallback = await admin
-        .from("partner_area_map")
-        .select("id, auth_user_id, area_id, is_active")
-        .eq("auth_user_id", partnerId)
-        .eq("area_id", areaId)
-        .maybeSingle();
-      mapping = fallback.data ? { ...fallback.data, is_public_live: null, activation_status: null, partner_preview_signoff_at: null } : null;
-      mappingError = fallback.error;
+      const missingActivationStatus = isMissingActivationStatusColumn(mappingError);
+      const missingPublicLive = isMissingPublicLiveColumn(mappingError);
+      const missingPreviewSignoff = isMissingPreviewSignoffColumn(mappingError);
+
+      if (missingPreviewSignoff && !missingActivationStatus && !missingPublicLive) {
+        const fallback = await admin
+          .from("partner_area_map")
+          .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status")
+          .eq("auth_user_id", partnerId)
+          .eq("area_id", areaId)
+          .maybeSingle();
+        mapping = fallback.data ? { ...fallback.data, partner_preview_signoff_at: null } : null;
+        mappingError = fallback.error;
+      } else {
+        const fallback = await admin
+          .from("partner_area_map")
+          .select("id, auth_user_id, area_id, is_active")
+          .eq("auth_user_id", partnerId)
+          .eq("area_id", areaId)
+          .maybeSingle();
+        mapping = fallback.data ? { ...fallback.data, is_public_live: null, activation_status: null, partner_preview_signoff_at: null } : null;
+        mappingError = fallback.error;
+      }
     }
     if (mappingError) return NextResponse.json({ error: mappingError.message }, { status: 500 });
     if (!mapping) return NextResponse.json({ error: "Mapping not found" }, { status: 404 });

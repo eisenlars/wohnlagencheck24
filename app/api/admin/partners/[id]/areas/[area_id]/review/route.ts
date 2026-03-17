@@ -74,14 +74,29 @@ async function loadMapping(admin: ReturnType<typeof createAdminClient>, partnerI
     .maybeSingle();
 
   if (error && (isMissingActivationStatusColumn(error) || isMissingPublicLiveColumn(error) || isMissingPreviewSignoffColumn(error))) {
-    const fallback = await admin
-      .from("partner_area_map")
-      .select("id, auth_user_id, area_id, is_active")
-      .eq("auth_user_id", partnerId)
-      .eq("area_id", areaId)
-      .maybeSingle();
-    data = fallback.data ? { ...fallback.data, activation_status: null, is_public_live: null, partner_preview_signoff_at: null } : null;
-    error = fallback.error;
+    const missingActivationStatus = isMissingActivationStatusColumn(error);
+    const missingPublicLive = isMissingPublicLiveColumn(error);
+    const missingPreviewSignoff = isMissingPreviewSignoffColumn(error);
+
+    if (missingPreviewSignoff && !missingActivationStatus && !missingPublicLive) {
+      const fallback = await admin
+        .from("partner_area_map")
+        .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status")
+        .eq("auth_user_id", partnerId)
+        .eq("area_id", areaId)
+        .maybeSingle();
+      data = fallback.data ? { ...fallback.data, partner_preview_signoff_at: null } : null;
+      error = fallback.error;
+    } else {
+      const fallback = await admin
+        .from("partner_area_map")
+        .select("id, auth_user_id, area_id, is_active")
+        .eq("auth_user_id", partnerId)
+        .eq("area_id", areaId)
+        .maybeSingle();
+      data = fallback.data ? { ...fallback.data, activation_status: null, is_public_live: null, partner_preview_signoff_at: null } : null;
+      error = fallback.error;
+    }
   }
 
   return { data: data as MappingRow | null, error };
@@ -253,23 +268,46 @@ export async function PATCH(
       .maybeSingle();
 
     if (updateError && (isMissingActivationStatusColumn(updateError) || isMissingPublicLiveColumn(updateError) || isMissingPreviewSignoffColumn(updateError))) {
-      const fallbackPatch = action === "approve" ? { is_active: true } : { is_active: false };
-      const fallback = await admin
-        .from("partner_area_map")
-        .update(fallbackPatch)
-        .eq("auth_user_id", partnerId)
-        .eq("area_id", areaId)
-        .select("id, auth_user_id, area_id, is_active, created_at")
-        .maybeSingle();
-      updated = fallback.data
-        ? {
-          ...fallback.data,
-          activation_status: action === "approve" ? "approved_preview" : action,
-          is_public_live: null,
-          partner_preview_signoff_at: null,
-        }
-        : null;
-      updateError = fallback.error;
+      const fallbackPatch = action === "approve"
+        ? { is_active: true, is_public_live: false, activation_status: "approved_preview" }
+        : { is_active: false, is_public_live: false, activation_status: action };
+      const missingActivationStatus = isMissingActivationStatusColumn(updateError);
+      const missingPublicLive = isMissingPublicLiveColumn(updateError);
+      const missingPreviewSignoff = isMissingPreviewSignoffColumn(updateError);
+
+      if (missingPreviewSignoff && !missingActivationStatus && !missingPublicLive) {
+        const fallback = await admin
+          .from("partner_area_map")
+          .update(fallbackPatch)
+          .eq("auth_user_id", partnerId)
+          .eq("area_id", areaId)
+          .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at")
+          .maybeSingle();
+        updated = fallback.data
+          ? {
+            ...fallback.data,
+            partner_preview_signoff_at: null,
+          }
+          : null;
+        updateError = fallback.error;
+      } else {
+        const fallback = await admin
+          .from("partner_area_map")
+          .update(action === "approve" ? { is_active: true } : { is_active: false })
+          .eq("auth_user_id", partnerId)
+          .eq("area_id", areaId)
+          .select("id, auth_user_id, area_id, is_active, created_at")
+          .maybeSingle();
+        updated = fallback.data
+          ? {
+            ...fallback.data,
+            activation_status: action === "approve" ? "approved_preview" : action,
+            is_public_live: null,
+            partner_preview_signoff_at: null,
+          }
+          : null;
+        updateError = fallback.error;
+      }
     }
 
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
