@@ -1195,9 +1195,7 @@ export default function DashboardClient() {
         );
         setPreviewRequestTone('error');
       } else {
-        setPreviewRequestMessage(
-          `Livegang angefragt am ${formatTimestampLabel(signedOffAt)}. Das Admin-Team wurde informiert.`,
-        );
+        setPreviewRequestMessage('');
         setPreviewRequestTone('success');
       }
     } catch {
