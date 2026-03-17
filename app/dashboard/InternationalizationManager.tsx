@@ -13,8 +13,8 @@ import {
 import {
   I18N_CHANNEL_OPTIONS,
   I18N_SCOPE_OPTIONS,
+  i18nWorkflowClassCycle,
   i18nWorkflowClassDescription,
-  i18nWorkflowClassTitle,
   isDistrictArea,
   type I18nChannel,
   type I18nScope,
@@ -2506,6 +2506,7 @@ export default function InternationalizationManager({ config, availableLocales, 
             {workflowClasses.map((displayClass) => {
               const stats = classSummary[displayClass];
               const active = activeClass === displayClass;
+              const buttonDisabled = loading || saving || (active && selectedWorkflowKeys.length === 0);
               return (
                 <button
                   key={displayClass}
@@ -2518,6 +2519,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                     <span style={classCardCountStyle}>{stats.total}</span>
                   </div>
                   <p style={classCardTextStyle}>{i18nWorkflowClassDescription(displayClass)}</p>
+                  <p style={classCardCycleStyle}>{i18nWorkflowClassCycle(displayClass)}</p>
                   <div style={classCardStatsStyle}>
                     <span>Uebersetzt: {stats.translated}</span>
                     <span>DE-Fallback: {stats.fallback}</span>
@@ -2531,7 +2533,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                   <div style={classCardActionRowStyle}>
                     <button
                       type="button"
-                      style={inlineWorkflowButtonStyle(displayClass, active && Boolean(selectedWorkflowKeys.length) && !loading && !saving)}
+                      style={inlineWorkflowButtonStyle(displayClass, active, buttonDisabled)}
                       onClick={() => {
                         if (!active) {
                           setActiveClass(displayClass);
@@ -2539,7 +2541,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                         }
                         setWorkflowConfirmOpen(true);
                       }}
-                      disabled={loading || saving || (active && selectedWorkflowKeys.length === 0)}
+                      disabled={buttonDisabled}
                     >
                       {activeClass === 'data_driven' && active ? 'Data-Driven aktualisieren' : 'Übersetzung starten'}
                     </button>
@@ -4127,6 +4129,14 @@ const classCardTextStyle: React.CSSProperties = {
   color: '#475569',
 };
 
+const classCardCycleStyle: React.CSSProperties = {
+  margin: '-2px 0 0',
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: '#334155',
+  fontWeight: 700,
+};
+
 const classCardStatsStyle: React.CSSProperties = {
   display: 'flex',
   flexWrap: 'wrap',
@@ -4147,20 +4157,22 @@ const classCardCostStyle: React.CSSProperties = {
 const classCardActionRowStyle: React.CSSProperties = {
   marginTop: 4,
   display: 'flex',
-  justifyContent: 'flex-start',
+  justifyContent: 'flex-end',
 };
 
-const inlineWorkflowButtonStyle = (displayClass: DisplayTextClass, active: boolean): React.CSSProperties => ({
-  ...buttonPrimaryStyle(active),
+const inlineWorkflowButtonStyle = (displayClass: DisplayTextClass, selected: boolean, disabled: boolean): React.CSSProperties => ({
+  ...buttonPrimaryStyle(true),
   width: 'auto',
   minWidth: 0,
   height: 40,
   padding: '0 14px',
-  borderRadius: 999,
-  border: active ? `1px solid ${String(displayTextBadgeStyle(displayClass).background ?? '#fcd34d')}` : '1px solid #cbd5e1',
-  background: active ? String(displayTextBadgeStyle(displayClass).background ?? '#fcd34d') : '#ffffff',
-  color: active ? '#0f172a' : '#64748b',
-  boxShadow: active ? '0 8px 20px rgba(15, 23, 42, 0.08)' : 'none',
+  borderRadius: 10,
+  border: `1px solid ${String(displayTextBadgeStyle(displayClass).borderColor ?? '#cbd5e1')}`,
+  background: String(displayTextBadgeStyle(displayClass).background ?? '#f8fafc'),
+  color: String(displayTextBadgeStyle(displayClass).color ?? '#475569'),
+  boxShadow: selected ? '0 8px 20px rgba(15, 23, 42, 0.08)' : 'none',
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.55 : 1,
 });
 
 const estimateLabelStyle: React.CSSProperties = {

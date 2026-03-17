@@ -55,27 +55,19 @@ export function i18nWorkflowClassTitle(displayClass: DisplayTextClass): string {
 }
 
 export function i18nWorkflowClassDescription(displayClass: DisplayTextClass): string {
-  if (displayClass === "general") {
-    return "Groessere Grundtexte, die erst nach inhaltlicher und qualitativer DE-Pruefung uebersetzt werden sollten.";
-  }
-  if (displayClass === "data_driven") {
-    return "Datennahe Texte mit KPI-, Tabellen- und Chartbezug. Diese Inhalte muessen moeglichst aktuell gehalten werden.";
-  }
-  if (displayClass === "profile") {
-    return "Kompakte Profiltexte fuer Berater und Makler, die meist nur punktuell nachgefuehrt werden.";
-  }
-  if (displayClass === "marketing") {
-    return "SEO- und GEO-Inhalte mit Fokus auf Sichtbarkeit und konsistente Suchintention je Gebiet.";
-  }
-  return "Regionale Experteneinschaetzungen, die regelmaessig inhaltlich geprueft und nachgezogen werden sollten.";
+  if (displayClass === "general") return "texttyp: Allgemein, Erklaerung";
+  if (displayClass === "data_driven") return "texttyp: Datenbasierender Text";
+  if (displayClass === "profile") return "texttyp: Vortstellung Berater, Makler";
+  if (displayClass === "marketing") return "texttyp: SEO, GEO";
+  return "texttyp: Expertentext zu Markt/Region";
 }
 
 export function i18nWorkflowClassCycle(displayClass: DisplayTextClass): string {
-  if (displayClass === "general") return "Typischer Zyklus: einmalig + spaetere punktuelle Anpassungen.";
-  if (displayClass === "data_driven") return "Typischer Zyklus: automatisiert bei Daten- oder Kontextaenderungen nachziehen.";
-  if (displayClass === "profile") return "Typischer Zyklus: einmalig + punktuelle Profilpflege.";
-  if (displayClass === "marketing") return "Typischer Zyklus: bei SEO-/GEO-Anpassungen und CTA-Aenderungen nachziehen.";
-  return "Typischer Zyklus: mindestens quartalsweise und nach relevanten Marktaenderungen pruefen.";
+  if (displayClass === "general") return "zyklus: einmal, punktuell";
+  if (displayClass === "data_driven") return "zyklus: quartal";
+  if (displayClass === "profile") return "zyklus: einmal, punktuell";
+  if (displayClass === "marketing") return "zyklus: quartal";
+  return "zyklus: quartal";
 }
 
 export function i18nWorkflowNeedsQualityCheck(displayClass: DisplayTextClass): boolean {
