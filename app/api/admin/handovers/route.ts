@@ -10,8 +10,6 @@ type HandoverBody = {
   area_id?: string;
   old_partner_id?: string;
   new_partner_id?: string;
-  deactivate_old_partner?: boolean;
-  deactivate_old_integrations?: boolean;
 };
 
 function normalize(value: unknown): string {
@@ -86,8 +84,7 @@ export async function POST(req: Request) {
     const areaId = normalize(body.area_id);
     const oldPartnerId = normalize(body.old_partner_id);
     const newPartnerId = normalize(body.new_partner_id);
-    const deactivateOldPartner = body.deactivate_old_partner === true;
-    const deactivateOldIntegrations = body.deactivate_old_integrations !== false;
+    const deactivateOldIntegrations = true;
 
     if (!areaId || !oldPartnerId || !newPartnerId) {
       return NextResponse.json(
@@ -225,31 +222,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: deleteOldMappingsError.message }, { status: 500 });
     }
 
-    let oldPartnerDeactivated = false;
-    let oldPartnerDeactivateSkippedReason: string | null = null;
-    if (deactivateOldPartner) {
-      const { count: remainingAreaAssignments, error: remainingAreasError } = await admin
-        .from("partner_area_map")
-        .select("id", { count: "exact", head: true })
-        .eq("auth_user_id", oldPartnerId);
-      if (remainingAreasError) {
-        return NextResponse.json({ error: remainingAreasError.message }, { status: 500 });
-      }
-
-      if ((remainingAreaAssignments ?? 0) === 0) {
-        const { error: deactivatePartnerError } = await admin
-          .from("partners")
-          .update({ is_active: false })
-          .eq("id", oldPartnerId);
-        if (deactivatePartnerError) {
-          return NextResponse.json({ error: deactivatePartnerError.message }, { status: 500 });
-        }
-        oldPartnerDeactivated = true;
-      } else {
-        oldPartnerDeactivateSkippedReason = "Old partner still has remaining area assignments";
-      }
-    }
-
     await writeSecurityAuditLog({
       actorUserId: adminUser.userId,
       actorRole: adminUser.role,
@@ -299,10 +271,9 @@ export async function POST(req: Request) {
         transferred_area_count: transferAreaIds.length,
         old_partner_id: oldPartnerId,
         new_partner_id: newPartnerId,
-        deactivate_old_partner: deactivateOldPartner,
         deactivate_old_integrations: deactivateOldIntegrations,
-        old_partner_deactivated: oldPartnerDeactivated,
-        old_partner_deactivate_skipped_reason: oldPartnerDeactivateSkippedReason,
+        old_partner_retained: true,
+        old_partner_retention_reason: "Old partner remains active after handover by policy",
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -327,10 +298,8 @@ export async function POST(req: Request) {
           id: newPartnerId,
           company_name: newPartner.company_name ?? newPartnerId,
         },
-        deactivate_old_partner_requested: deactivateOldPartner,
-        deactivate_old_partner_applied: oldPartnerDeactivated,
-        deactivate_old_partner_skipped_reason: oldPartnerDeactivateSkippedReason,
-        deactivate_old_integrations: deactivateOldIntegrations,
+        deactivate_old_integrations_applied: deactivateOldIntegrations,
+        old_partner_remains_active: true,
         transferred_area_count: transferAreaIds.length,
         new_mapping_status: String((newRootMapping as { activation_status?: string | null }).activation_status ?? "assigned"),
         new_mapping_is_active: false,
