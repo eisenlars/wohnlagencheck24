@@ -2364,7 +2364,6 @@ export default function InternationalizationManager({ config, availableLocales, 
         <div style={topCardStyle}>
           <div style={controlsStyle}>
             <label style={fieldStyle}>
-              Sprache
               <select style={inputStyle} value={locale} onChange={(e) => setLocale(e.target.value)}>
                 {locales.map((item) => (
                   <option key={item} value={item}>{normalizeLocaleLabel(item)}</option>
@@ -2375,7 +2374,6 @@ export default function InternationalizationManager({ config, availableLocales, 
             {activeDomain === 'immobilienmarkt' ? (
               <>
                 <label style={{ ...fieldStyle, minWidth: 320 }}>
-                  KI-Modell
                   <select
                     style={inputStyle}
                     value={selectedLlmOptionId}
@@ -2417,12 +2415,10 @@ export default function InternationalizationManager({ config, availableLocales, 
       <div style={editorCardStyle}>
         <div style={workflowCardStyle}>
           <div style={workflowCardHeaderStyle}>
-            <div>
-              <h3 style={sectionTabsIntroTitleStyle}>Texttyp waehlen</h3>
-              <p style={sectionTabsIntroTextStyle}>Priorisiere erst den Texttyp, dann den Themenbereich. So bleibt der Uebersetzungslauf steuerbar.</p>
+            <div style={workflowHeaderInlineStyle}>
+              <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
               <div style={workflowInlineControlsStyle}>
                 <label style={workflowInlineFieldStyle}>
-                  Bereich
                   <select
                     style={workflowInlineSelectStyle}
                     value={channel}
@@ -2434,7 +2430,6 @@ export default function InternationalizationManager({ config, availableLocales, 
                   </select>
                 </label>
                 <label style={workflowInlineFieldStyle}>
-                  Scope
                   <select
                     style={workflowInlineSelectStyle}
                     value={scope}
@@ -2450,14 +2445,6 @@ export default function InternationalizationManager({ config, availableLocales, 
               </div>
             </div>
             <div style={workflowActionRowStyle}>
-              <button
-                type="button"
-                style={secondaryActionButtonStyle}
-                onClick={() => void loadRows({ autoSync: false })}
-                disabled={loading || saving}
-              >
-                Uebersetzungsstand laden
-              </button>
               <button
                 type="button"
                 style={primaryWorkflowButtonStyle(Boolean(selectedWorkflowKeys.length) && !loading && !saving)}
@@ -3992,7 +3979,7 @@ const workflowCardHeaderStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   gap: 16,
-  alignItems: 'flex-start',
+  alignItems: 'center',
   flexWrap: 'wrap',
 };
 
@@ -4002,20 +3989,22 @@ const workflowActionRowStyle: React.CSSProperties = {
   flexWrap: 'wrap',
 };
 
+const workflowHeaderInlineStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  flexWrap: 'wrap',
+};
+
 const workflowInlineControlsStyle: React.CSSProperties = {
   display: 'flex',
   flexWrap: 'wrap',
   gap: 10,
-  marginTop: 10,
 };
 
 const workflowInlineFieldStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 6,
+  display: 'flex',
   minWidth: 180,
-  fontSize: 12,
-  fontWeight: 700,
-  color: '#334155',
 };
 
 const workflowInlineSelectStyle: React.CSSProperties = {
