@@ -3087,14 +3087,10 @@ export default function AdminClient() {
 
         {!reviewContentDismissed && reviewAreaOptions.length > 0 && reviewAreaId && reviewData ? (
           <>
-            <div style={{ marginTop: 10, marginBottom: 10, fontSize: 13, color: "#334155" }}>
-              Status:
-              {" "}
-              <strong>{formatAreaStateLabel(Boolean(reviewData.mapping?.is_active), reviewData.mapping?.activation_status, Boolean(reviewData.mapping?.is_public_live))}</strong>
-              {" · "}
-              Mandatory:
-              {" "}
-              <strong>{reviewData.mandatory?.ok ? "ok" : "offen"}</strong>
+            <div style={{ marginTop: 10, marginBottom: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={reviewStatusBadgeStyle(currentReviewState)}>
+                {formatAreaStateLabel(Boolean(reviewData.mapping?.is_active), reviewData.mapping?.activation_status, Boolean(reviewData.mapping?.is_public_live))}
+              </span>
             </div>
 
             {!reviewData.mandatory?.ok && Array.isArray(reviewData.mandatory?.missing) && reviewData.mandatory?.missing.length > 0 ? (
@@ -3116,7 +3112,11 @@ export default function AdminClient() {
               <tbody>
                 {(reviewData.fields ?? []).map((field) => (
                   <tr key={field.key}>
-                    <td style={tdStyle}>{formatMandatoryKeyLabel(field.key)}</td>
+                    <td style={tdStyle}>
+                      {formatMandatoryKeyLabel(field.key)}
+                      {" "}
+                      <span style={{ color: "#64748b", fontSize: 11 }}>({field.key})</span>
+                    </td>
                     <td style={tdStyle}>
                       {isMandatoryMediaKey(field.key) ? (
                         <div style={{ display: "grid", gap: 8 }}>
@@ -5723,6 +5723,38 @@ const llmStatusPillStyle = (status: "ok" | "error"): React.CSSProperties => ({
   color: status === "ok" ? "#166534" : "#991b1b",
   border: `1px solid ${status === "ok" ? "#bbf7d0" : "#fecaca"}`,
 });
+
+const reviewStatusBadgeStyle = (state: string): React.CSSProperties => {
+  const base: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 999,
+    padding: "5px 10px",
+    fontSize: 12,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  };
+
+  if (state === "ready_for_review") {
+    return { ...base, background: "#fff7ed", color: "#9a3412", border: "1px solid #fdba74" };
+  }
+  if (state === "in_review") {
+    return { ...base, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #93c5fd" };
+  }
+  if (state === "changes_requested") {
+    return { ...base, background: "#fef2f2", color: "#b91c1c", border: "1px solid #fca5a5" };
+  }
+  if (state === "approved_preview") {
+    return { ...base, background: "#ecfdf5", color: "#166534", border: "1px solid #86efac" };
+  }
+  if (state === "live") {
+    return { ...base, background: "#0f172a", color: "#f8fafc", border: "1px solid #0f172a" };
+  }
+
+  return { ...base, background: "#f8fafc", color: "#334155", border: "1px solid #cbd5e1" };
+};
 
 const mutedStyle: React.CSSProperties = {
   color: "#64748b",
