@@ -2034,7 +2034,7 @@ export default function AdminClient() {
         title: "Gebietsübergabe abgeschlossen",
         lines: [
           ...m.lines,
-          `Ergebnis: ${result.handover?.area_id ?? input.areaId} wurde erfolgreich übertragen.`,
+          `Gebiet ${result.handover?.area_id ?? input.areaId} erfolgreich von ${input.oldPartnerId} an ${input.newPartnerId} übergeben!`,
         ],
         done: true,
       }));
@@ -2120,8 +2120,8 @@ export default function AdminClient() {
             </p>
             <p style={{ ...modalMessageStyle, marginTop: -4 }}>
               {handoverConfirmModal.oldPartnerIsSystemDefault
-                ? "Das Gebiet wird vom Portalpartner auf einen operativen Partner übertragen. Der Portalpartner bleibt dauerhaft aktiv."
-                : "Alte Integrationen werden dabei automatisch deaktiviert. Der alte Partner bleibt aktiv und kann bei Bedarf später separat über Datenbereinigung entfernt werden."}
+                ? "Hinweis: Der Portalpartner bleibt dauerhaft aktiv."
+                : "Hinweis: Dieser Partner bleibt noch aktiv, seine Integrationen werden deaktiviert bis zur vollständigen Löschung des Accounts."}
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button
@@ -3375,18 +3375,10 @@ export default function AdminClient() {
           </select>
         </div>
         <div style={{ marginTop: 10, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", background: "#f8fafc" }}>
-          <div style={{ fontSize: 12, color: "#334155" }}>
-            Alte Integrationen des bisherigen Partners werden bei der Übergabe automatisch deaktiviert.
-          </div>
-          <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
-            Der bisherige Partner bleibt aktiv. Eine vollständige Entfernung aus dem System erfolgt nur separat über Datenbereinigung.
-          </div>
-        </div>
-        <div style={{ marginTop: 10, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", background: "#f8fafc" }}>
           <div style={{ fontSize: 12, color: "#334155", marginBottom: 6 }}>
             {selectedPartner?.is_system_default
-              ? "Der Portalpartner dient als Standardausspielung. Bei einer Übergabe werden keine Alt-Integrationen deaktiviert und der Portalpartner bleibt dauerhaft im System."
-              : "Alte Integrationen des bisherigen Partners werden bei der Übergabe automatisch deaktiviert. Der bisherige Partner bleibt aktiv und kann bei Bedarf später separat über Datenbereinigung entfernt werden."}
+              ? "Hinweis: Der Portalpartner bleibt dauerhaft aktiv."
+              : "Hinweis: Dieser Partner bleibt noch aktiv, seine Integrationen werden deaktiviert bis zur vollständigen Löschung des Accounts."}
           </div>
           <div style={{ fontSize: 12, color: "#334155" }}>
             <strong>Vorschau:</strong>{" "}
