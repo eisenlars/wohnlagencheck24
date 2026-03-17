@@ -45,13 +45,15 @@ function isMissingActivationStatusColumn(error: unknown): boolean {
 
 function isMissingPreviewSignoffColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes("partner_area_map.partner_preview_signoff_at")
+  return msg.includes("partner_preview_signoff_at")
+    && msg.includes("partner_area_map")
     && (msg.includes("does not exist") || msg.includes("schema cache"));
 }
 
 function isMissingAdminReviewNoteColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes("partner_area_map.admin_review_note")
+  return msg.includes("admin_review_note")
+    && msg.includes("partner_area_map")
     && (msg.includes("does not exist") || msg.includes("schema cache"));
 }
 

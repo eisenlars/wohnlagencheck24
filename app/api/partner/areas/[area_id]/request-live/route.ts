@@ -18,7 +18,9 @@ function parseCsv(value: string): string[] {
 
 function isMissingPreviewSignoffColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes("partner_area_map.partner_preview_signoff_at") && msg.includes("does not exist");
+  return msg.includes("partner_preview_signoff_at")
+    && msg.includes("partner_area_map")
+    && (msg.includes("does not exist") || msg.includes("schema cache"));
 }
 
 async function requirePartnerUser(req: Request): Promise<string> {
