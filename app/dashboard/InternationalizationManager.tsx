@@ -13,7 +13,6 @@ import {
 import {
   I18N_CHANNEL_OPTIONS,
   I18N_SCOPE_OPTIONS,
-  i18nWorkflowClassCycle,
   i18nWorkflowClassDescription,
   i18nWorkflowClassTitle,
   isDistrictArea,
@@ -2237,8 +2236,6 @@ export default function InternationalizationManager({ config, availableLocales, 
     [rows, activeClass],
   );
 
-  const activeEstimate = classEstimateMap[activeClass];
-
   function formatCost(value: number | null, currency: 'USD' | 'EUR'): string {
     if (value === null || !Number.isFinite(value)) return 'n/a';
     return `${value.toFixed(value < 1 ? 4 : 2)} ${currency}`;
@@ -2504,38 +2501,8 @@ export default function InternationalizationManager({ config, availableLocales, 
             })}
           </div>
 
-          <div style={selectedWorkflowCardStyle}>
-            <div style={selectedWorkflowHeadStyle}>
-              <strong>{i18nWorkflowClassTitle(activeClass)}</strong>
-              <span style={selectedWorkflowMetaStyle}>{i18nWorkflowClassCycle(activeClass)}</span>
-            </div>
-            <p style={selectedWorkflowTextStyle}>{i18nWorkflowClassDescription(activeClass)}</p>
-            <div style={estimatePanelStyle}>
-              <div style={estimateItemStyle}>
-                <span style={estimateLabelStyle}>Betroffene Texte</span>
-                <strong>{classSummary[activeClass].fallback + classSummary[activeClass].stale}</strong>
-              </div>
-              <div style={estimateItemStyle}>
-                <span style={estimateLabelStyle}>Tokenlast ca.</span>
-                <strong>{activeEstimate.total_tokens.toLocaleString('de-DE')}</strong>
-              </div>
-              <div style={estimateItemStyle}>
-                <span style={estimateLabelStyle}>Kosten ca. USD</span>
-                <strong>{formatCost(activeEstimate.estimated_cost_usd, 'USD')}</strong>
-              </div>
-              <div style={estimateItemStyle}>
-                <span style={estimateLabelStyle}>Kosten ca. EUR</span>
-                <strong>{formatCost(activeEstimate.estimated_cost_eur, 'EUR')}</strong>
-              </div>
-            </div>
-            <div style={qualityCheckBoxStyle(activeClass !== 'data_driven')}>
-              <strong>{activeClass === 'data_driven' ? 'Automatisch aktuell halten' : 'Vor dem Uebersetzungslauf pruefen'}</strong>
-              <span>
-                {activeClass === 'data_driven'
-                  ? 'Data-Driven-Texte sollten nach Daten-, KPI- oder Kontextaenderungen zeitnah nachgezogen werden, damit Tabellen und Charts sprachlich konsistent bleiben.'
-                  : 'Bitte pruefe den deutschen Stand vor dem Lauf auf Vollstaendigkeit, inhaltliche Qualitaet und finale Aussage.'}
-              </span>
-            </div>
+          <div style={qualityCheckBoxStyle(true)}>
+            <span>Achtung: Bitte prüfe den deutschen Stand vor dem gesamt-Übersetzungslauf auf Vollständigkeit und Qualität.</span>
           </div>
         </div>
 
@@ -4116,50 +4083,6 @@ const classCardCostStyle: React.CSSProperties = {
   fontSize: 11,
   color: '#0f766e',
   fontWeight: 700,
-};
-
-const selectedWorkflowCardStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 10,
-  padding: 12,
-  borderRadius: 12,
-  border: '1px solid #e2e8f0',
-  background: '#f8fafc',
-};
-
-const selectedWorkflowHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'baseline',
-  justifyContent: 'space-between',
-  gap: 12,
-  flexWrap: 'wrap',
-};
-
-const selectedWorkflowMetaStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: '#64748b',
-};
-
-const selectedWorkflowTextStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  lineHeight: 1.5,
-  color: '#334155',
-};
-
-const estimatePanelStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-  gap: 10,
-};
-
-const estimateItemStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 4,
-  padding: 10,
-  borderRadius: 10,
-  border: '1px solid #dbeafe',
-  background: '#fff',
 };
 
 const estimateLabelStyle: React.CSSProperties = {
