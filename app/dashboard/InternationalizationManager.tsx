@@ -777,6 +777,7 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<'success' | 'error' | null>(null);
+  const [workflowConfirmOpen, setWorkflowConfirmOpen] = useState(false);
   const activeTab = String(i18nViewState.activeTab ?? 'marktueberblick');
   const setActiveTab = (nextTab: string) => {
     setI18nViewState((prev) => ({ ...prev, activeTab: nextTab }));
@@ -2371,6 +2372,45 @@ export default function InternationalizationManager({ config, availableLocales, 
               : 'Uebersetzung wird aktualisiert...'
         }
       />
+      {workflowConfirmOpen ? (
+        <div
+          style={workflowConfirmOverlayStyle}
+          onClick={() => setWorkflowConfirmOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setWorkflowConfirmOpen(false);
+          }}
+        >
+          <div
+            style={workflowConfirmCardStyle}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="i18n-workflow-confirm-title"
+            aria-describedby="i18n-workflow-confirm-text"
+            tabIndex={-1}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="i18n-workflow-confirm-title" style={workflowConfirmTitleStyle}>Vor dem Übersetzungslauf prüfen</h3>
+            <p id="i18n-workflow-confirm-text" style={workflowConfirmTextStyle}>
+              Bitte prüfe den deutschen Stand vor dem Übersetzungslauf auf Vollständigkeit und Qualität, um Korrekturläufe und Kosten zu sparen!
+            </p>
+            <div style={workflowConfirmActionRowStyle}>
+              <button type="button" style={workflowConfirmCancelButtonStyle} onClick={() => setWorkflowConfirmOpen(false)}>
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                style={workflowConfirmProceedButtonStyle}
+                onClick={() => {
+                  setWorkflowConfirmOpen(false);
+                  void triggerWorkflowUpdate();
+                }}
+              >
+                Übersetzung starten
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <section style={wrapStyle}>
         <div style={topCardStyle}>
           <div style={controlsStyle}>
@@ -2453,9 +2493,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                     ))}
                   </select>
                 </label>
-                <div style={workflowScopeHintStyle}>
-                  Bitte prüfe den deutschen Stand vor dem Übersetzungslauf auf Vollständigkeit und Qualität.
-                </div>
+                <div style={workflowScopeHintStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
               </div>
             </div>
           </div>
@@ -2495,7 +2533,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                           setActiveClass(displayClass);
                           return;
                         }
-                        void triggerWorkflowUpdate();
+                        setWorkflowConfirmOpen(true);
                       }}
                       disabled={loading || saving || (active && selectedWorkflowKeys.length === 0)}
                     >
@@ -2509,8 +2547,7 @@ export default function InternationalizationManager({ config, availableLocales, 
         </div>
 
         <div style={sectionTabsIntroStyle}>
-          <h3 style={sectionTabsIntroTitleStyle}>Themenbereich bearbeiten</h3>
-          <p style={sectionTabsIntroTextStyle}>Innerhalb des gewaelten Texttyps kannst du die Uebersetzungen je Themenbereich pruefen und manuell nacharbeiten.</p>
+          <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
         <div style={tabContainerStyle}>
           {I18N_TAB_ORDER.map((tab) => (
@@ -4018,9 +4055,10 @@ const workflowInlineSelectStyle: React.CSSProperties = {
 };
 
 const workflowScopeHintStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: '#92400e',
-  lineHeight: 1.45,
+  fontSize: 14,
+  fontWeight: 700,
+  color: '#0f172a',
+  lineHeight: 1.35,
   maxWidth: 360,
 };
 
@@ -4417,7 +4455,7 @@ const domainPlaceholderItemStyle: React.CSSProperties = {
 };
 
 const sectionTabsIntroStyle: React.CSSProperties = {
-  marginTop: 2,
+  marginTop: 10,
   marginBottom: 8,
 };
 
@@ -4428,12 +4466,6 @@ const sectionTabsIntroTitleStyle: React.CSSProperties = {
   color: '#0f172a',
 };
 
-const sectionTabsIntroTextStyle: React.CSSProperties = {
-  margin: '4px 0 0',
-  fontSize: 12,
-  color: '#64748b',
-};
-
 const tabContainerStyle: React.CSSProperties = {
   display: 'flex',
   gap: 6,
@@ -4442,6 +4474,74 @@ const tabContainerStyle: React.CSSProperties = {
   padding: '8px 8px 0 8px',
   borderRadius: '12px 12px 0 0',
   borderBottom: '1px solid #e2e8f0',
+};
+
+const workflowConfirmOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 40,
+  background: 'rgba(15, 23, 42, 0.52)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '24px',
+};
+
+const workflowConfirmCardStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: 520,
+  borderRadius: 18,
+  background: '#ffffff',
+  border: '1px solid #fde68a',
+  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.22)',
+  padding: '22px 22px 18px',
+  display: 'grid',
+  gap: 14,
+};
+
+const workflowConfirmTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 20,
+  fontWeight: 800,
+  color: '#0f172a',
+};
+
+const workflowConfirmTextStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 14,
+  lineHeight: 1.55,
+  color: '#334155',
+};
+
+const workflowConfirmActionRowStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: 10,
+  flexWrap: 'wrap',
+};
+
+const workflowConfirmCancelButtonStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  borderRadius: 999,
+  background: '#ffffff',
+  color: '#334155',
+  height: 40,
+  padding: '0 16px',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+const workflowConfirmProceedButtonStyle: React.CSSProperties = {
+  border: '1px solid #facc15',
+  borderRadius: 999,
+  background: '#facc15',
+  color: '#0f172a',
+  height: 40,
+  padding: '0 16px',
+  fontSize: 13,
+  fontWeight: 800,
+  cursor: 'pointer',
 };
 
 const tabButtonStyle = (active: boolean): React.CSSProperties => ({
