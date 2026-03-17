@@ -6,6 +6,7 @@ import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { getProvidersForKind } from "@/lib/integrations/providers";
 import { getMandatoryMediaLabel, isMandatoryMediaKey } from "@/lib/mandatory-media";
+import { getTextKeyLabel } from "@/lib/text-key-labels";
 import {
   buildPortalCmsEmptyFields,
   getPortalCmsPages,
@@ -364,7 +365,7 @@ function getIntegrationHealthSummary(integration: Pick<Integration, "settings" |
 function formatMandatoryKeyLabel(key: string): string {
   if (!key) return key;
   if (isMandatoryMediaKey(key)) return getMandatoryMediaLabel(key);
-  return key;
+  return getTextKeyLabel(key);
 }
 
 function getSuggestedLatestModel(provider: string): string {

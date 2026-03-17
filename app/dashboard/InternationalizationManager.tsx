@@ -24,6 +24,7 @@ import {
   type I18nEstimatePricing,
 } from '@/lib/i18n-cost-estimate';
 import { hashText } from '@/lib/text-hash';
+import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 
 type AreaConfig = {
@@ -424,7 +425,7 @@ const I18N_TAB_ORDER = [
   { id: 'grundstueckspreise', label: 'Grundstücke', icon: '/icons/ws24_marktbericht_grundstueckspreise.svg' },
 ] as const;
 
-const TAB_SECTION_CONFIG: Record<string, Array<{ key: string; label: string; type: SectionKind }>> = {
+const TAB_SECTION_CONFIG_RAW: Record<string, Array<{ key: string; label: string; type: SectionKind }>> = {
   berater: [
     { key: 'berater_name', label: 'Name', type: 'individual' },
     { key: 'berater_email', label: 'E-Mail', type: 'individual' },
@@ -561,6 +562,16 @@ const TAB_SECTION_CONFIG: Record<string, Array<{ key: string; label: string; typ
     { key: 'grundstueckspreise_preisentwicklung', label: 'Entwicklung Grundstücke', type: 'data_driven' },
   ],
 };
+
+const TAB_SECTION_CONFIG: Record<string, Array<{ key: string; label: string; type: SectionKind }>> = Object.fromEntries(
+  Object.entries(TAB_SECTION_CONFIG_RAW).map(([tabId, sections]) => [
+    tabId,
+    sections.map((section) => ({
+      ...section,
+      label: getTextKeyLabel(section.key, section.label),
+    })),
+  ]),
+);
 
 const SECTION_META_BY_KEY: Record<string, { label: string; type: SectionKind; tabId: string; order: number }> = Object.fromEntries(
   Object.entries(TAB_SECTION_CONFIG).flatMap(([tabId, sections]) =>

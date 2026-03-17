@@ -15,6 +15,7 @@ import InternationalizationManager, { type I18nProductDomain } from './Internati
 import PartnerSettingsPanel, { type SettingsSection } from './PartnerSettingsPanel';
 import { INDIVIDUAL_MANDATORY_KEYS } from '@/lib/text-key-registry';
 import { MANDATORY_MEDIA_KEYS, getMandatoryMediaLabel, isMandatoryMediaKey } from '@/lib/mandatory-media';
+import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { readSessionViewState, writeSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
@@ -114,13 +115,7 @@ function isMainTab(value: unknown): value is MainTab {
 function formatMandatoryLabel(key: string): string {
   if (!key) return "";
   if (isMandatoryMediaKey(key)) return getMandatoryMediaLabel(key);
-  if (key === "immobilienmarkt_individuell_01") return "Experteneinschätzung Text 01";
-  if (key === "immobilienmarkt_individuell_02") return "Experteneinschätzung Text 02";
-  if (key === "immobilienmarkt_zitat") return "Zitat";
-  if (key === "immobilienmarkt_maklerempfehlung") return "Maklerempfehlung";
-  if (key.startsWith("berater_")) return `Berater (${key.replace("berater_", "")})`;
-  if (key.startsWith("makler_")) return `Makler (${key.replace("makler_", "")})`;
-  return key;
+  return getTextKeyLabel(key);
 }
 
 function formatActivationStatusLabel(config: PartnerAreaConfig | null): string {
@@ -899,10 +894,10 @@ export default function DashboardClient() {
   }, [mandatoryProgressLoading, mandatoryPercent]);
 
   const mandatoryDirectLinks = [
-    { key: 'immobilienmarkt_individuell_01', label: 'Experteneinschätzung Text 01' },
-    { key: 'immobilienmarkt_individuell_02', label: 'Experteneinschätzung Text 02' },
-    { key: 'immobilienmarkt_zitat', label: 'Zitat' },
-    { key: 'immobilienmarkt_maklerempfehlung', label: 'Maklerempfehlung' },
+    { key: 'immobilienmarkt_individuell_01', label: getTextKeyLabel('immobilienmarkt_individuell_01') },
+    { key: 'immobilienmarkt_individuell_02', label: getTextKeyLabel('immobilienmarkt_individuell_02') },
+    { key: 'immobilienmarkt_zitat', label: getTextKeyLabel('immobilienmarkt_zitat') },
+    { key: 'immobilienmarkt_maklerempfehlung', label: getTextKeyLabel('immobilienmarkt_maklerempfehlung') },
   ] as const;
 
   const mandatoryAllowedKeys = new Set<string>(INDIVIDUAL_MANDATORY_KEYS);

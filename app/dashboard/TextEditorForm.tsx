@@ -16,6 +16,7 @@ import {
   MANDATORY_MEDIA_SPECS,
   type MandatoryMediaKey,
 } from '@/lib/mandatory-media';
+import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
@@ -63,7 +64,7 @@ function formatProviderLabel(provider: string): string {
 }
 
 // 1. Die vollständige Konfiguration basierend auf deinen Vorgaben
-const TAB_CONFIG = [
+const RAW_TAB_CONFIG = [
   { id: 'berater', label: 'Berater', icon: '👤', sections: [
     { key: 'berater_name', label: 'Name', type: 'individual' },
     { key: 'berater_email', label: 'E-Mail', type: 'individual' },
@@ -200,6 +201,14 @@ const TAB_CONFIG = [
     { key: 'grundstueckspreise_preisentwicklung', label: 'Entwicklung Grundstücke', type: 'data_driven' },
   ]}
 ];
+
+const TAB_CONFIG = RAW_TAB_CONFIG.map((tab) => ({
+  ...tab,
+  sections: tab.sections.map((section) => ({
+    ...section,
+    label: getTextKeyLabel(section.key, section.label),
+  })),
+}));
 
 const MARKETING_TAB_CONFIG = [
   {
