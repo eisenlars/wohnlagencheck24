@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
-import { loadPublicVisiblePartnerIdsForAreaIds } from "@/lib/public-partner-mappings";
+import { normalizePublicLocale } from "@/lib/public-locale-routing";
 
 export type RegionalReference = {
   id: string;
@@ -31,9 +31,11 @@ export async function getRandomReferencesForKreis(args: {
   bundeslandSlug: string;
   kreisSlug: string;
   limit?: number;
+  locale?: string;
 }): Promise<RegionalReference[]> {
   const limit = Math.max(1, Math.min(args.limit ?? 6, 12));
   const supabase = createClient();
+  const normalizedLocale = normalizePublicLocale(args.locale);
 
   const { data: areaRows, error: areaError } = await supabase
     .from("areas")
@@ -47,72 +49,35 @@ export async function getRandomReferencesForKreis(args: {
     .filter(Boolean);
   if (areaIds.length === 0) return [];
 
-  let partnerIds: string[] = [];
-  try {
-    partnerIds = await loadPublicVisiblePartnerIdsForAreaIds(supabase, areaIds);
-  } catch {
-    return [];
-  }
-  if (partnerIds.length === 0) return [];
-
   const { data: refRows, error: refError } = await supabase
-    .from("partner_references")
-    .select("id, partner_id, provider, external_id, title, normalized_payload, updated_at")
-    .in("partner_id", partnerIds)
-    .eq("is_active", true)
-    .order("updated_at", { ascending: false })
+    .from("public_reference_entries")
+    .select("reference_id, partner_id, provider, external_id, title, description, image_url, city, district, source_updated_at")
+    .in("visible_area_id", areaIds)
+    .eq("locale", normalizedLocale)
+    .order("source_updated_at", { ascending: false })
     .limit(60);
   if (refError) return [];
 
   const baseRows = (refRows ?? []) as Array<Record<string, unknown>>;
-
-  const keyRows = baseRows.map((row) => ({
-    partnerId: String(row.partner_id ?? ""),
-    provider: String(row.provider ?? ""),
-    externalId: String(row.external_id ?? ""),
-  }));
-
-  const { data: overrideRows } = await supabase
-    .from("partner_reference_overrides")
-    .select("partner_id, source, external_id, seo_h1, short_description, long_description, seo_description")
-    .in("partner_id", keyRows.map((k) => k.partnerId));
-
-  const overrideMap = new Map<string, Record<string, unknown>>();
-  for (const row of (overrideRows ?? []) as Array<Record<string, unknown>>) {
-    const key = `${String(row.partner_id ?? "")}::${String(row.source ?? "")}::${String(row.external_id ?? "")}`;
-    overrideMap.set(key, row);
-  }
-
-  const mapped: RegionalReference[] = baseRows.map((row) => {
-    const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
-    const key = `${String(row.partner_id ?? "")}::${String(row.provider ?? "")}::${String(row.external_id ?? "")}`;
-    const ov = overrideMap.get(key);
-
-    const title =
-      asText(ov?.seo_h1) ||
-      asText(row.title) ||
-      asText(payload.title) ||
-      "Erfolgreich vermittelt";
-    const description =
-      asText(ov?.short_description) ||
-      asText(ov?.long_description) ||
-      asText(ov?.seo_description) ||
-      asText(payload.description) ||
-      asText(payload.reference_text_seed);
-
-    return {
-      id: String(row.id ?? ""),
+  const seen = new Set<string>();
+  const mapped: RegionalReference[] = [];
+  for (const row of baseRows) {
+    const referenceId = String(row.reference_id ?? row.id ?? "");
+    if (!referenceId || seen.has(referenceId)) continue;
+    seen.add(referenceId);
+    mapped.push({
+      id: referenceId,
       partnerId: String(row.partner_id ?? ""),
       provider: String(row.provider ?? ""),
       externalId: String(row.external_id ?? ""),
-      title,
-      description,
-      imageUrl: asText(payload.image_url) || null,
-      city: asText(payload.city) || null,
-      district: asText(payload.district) || null,
-      updatedAt: asText(row.updated_at) || null,
-    };
-  });
+      title: asText(row.title) || "Erfolgreich vermittelt",
+      description: asText(row.description),
+      imageUrl: asText(row.image_url) || null,
+      city: asText(row.city) || null,
+      district: asText(row.district) || null,
+      updatedAt: asText(row.source_updated_at) || null,
+    });
+  }
 
   return shuffle(mapped).slice(0, limit);
 }

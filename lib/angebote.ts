@@ -1,9 +1,6 @@
 // lib/angebote.ts
-
 import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
-import { loadPublicVisiblePartnerIdsForAreaIds } from "@/lib/public-partner-mappings";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
 
 export type OfferMode = "kauf" | "miete";
@@ -57,106 +54,73 @@ type GetOffersArgs = {
   locale?: string;
 };
 
-type OfferTranslationRow = {
-  offer_id?: string | null;
-  translated_seo_title?: string | null;
-  translated_seo_h1?: string | null;
-  status?: string | null;
-};
-
-function resolveLocalizedOfferTitle(
-  originalTitle: string,
-  override: OfferOverrides | undefined,
-  translation: OfferTranslationRow | undefined,
-): string {
-  const translatedTitle =
-    String(translation?.translated_seo_h1 ?? "").trim()
-    || String(translation?.translated_seo_title ?? "").trim();
-  if (translatedTitle) return translatedTitle;
-  return (override?.seo_h1 ?? originalTitle) || originalTitle;
-}
-
-async function loadOfferTranslations(
-  offerIds: string[],
-  locale: string,
-): Promise<Map<string, OfferTranslationRow>> {
-  const normalizedLocale = normalizePublicLocale(locale);
-  if (normalizedLocale === "de" || offerIds.length === 0) return new Map();
-
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("partner_property_offer_i18n")
-    .select("offer_id, translated_seo_title, translated_seo_h1, status")
-    .in("offer_id", offerIds)
-    .eq("target_locale", normalizedLocale)
-    .eq("status", "approved");
-
-  if (error) {
-    console.warn("partner_property_offer_i18n fetch failed:", error.message);
-    return new Map();
-  }
-
-  const out = new Map<string, OfferTranslationRow>();
-  for (const row of (data ?? []) as OfferTranslationRow[]) {
-    const offerId = String(row.offer_id ?? "").trim();
-    if (!offerId) continue;
-    out.set(offerId, row);
-  }
-  return out;
-}
-
-async function getKreisAreaId(
-  supabase: ReturnType<typeof createClient>,
-  bundeslandSlug: string,
-  kreisSlug: string,
-): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("areas")
-    .select("id")
-    .eq("slug", kreisSlug)
-    .eq("bundesland_slug", bundeslandSlug)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.warn("areas lookup failed:", error.message);
-    return null;
-  }
-  return data?.id ?? null;
-}
-
 async function getAreaIdsForKreis(
   supabase: ReturnType<typeof createClient>,
   bundeslandSlug: string,
   kreisSlug: string,
-): Promise<string[]> {
+): Promise<{ areaId: string | null; areaIds: string[] }> {
   const { data, error } = await supabase
     .from("areas")
-    .select("id, parent_slug")
+    .select("id, slug, parent_slug")
     .eq("bundesland_slug", bundeslandSlug)
     .or(`slug.eq.${kreisSlug},parent_slug.eq.${kreisSlug}`);
 
   if (error) {
     console.warn("areas lookup (kreis + ort) failed:", error.message);
-    return [];
+    return { areaId: null, areaIds: [] };
   }
 
-  return (data ?? [])
+  const rows = (data ?? []) as Array<Record<string, unknown>>;
+  const areaIds = rows
     .map((row) => String((row as { id?: string }).id ?? ""))
     .filter(Boolean);
+  const kreisAreaId =
+    rows.find((row) => String(row.slug ?? "") === kreisSlug)?.id ?? null;
+  return { areaId: typeof kreisAreaId === "string" ? kreisAreaId : null, areaIds };
 }
 
-async function getPublicVisiblePartnerIdsForAreas(
-  supabase: ReturnType<typeof createClient>,
-  areaIds: string[],
-): Promise<string[]> {
-  if (areaIds.length === 0) return [];
-  try {
-    return await loadPublicVisiblePartnerIdsForAreaIds(supabase, areaIds);
-  } catch (error) {
-    console.warn("partner_area_map public visibility lookup failed:", error);
-    return [];
-  }
+type PublicOfferProjectionRow = {
+  id?: string | null;
+  partner_id?: string | null;
+  visible_area_id?: string | null;
+  offer_type?: string | null;
+  object_type?: string | null;
+  title?: string | null;
+  price?: number | string | null;
+  rent?: number | string | null;
+  area_sqm?: number | string | null;
+  rooms?: number | string | null;
+  address?: string | null;
+  image_url?: string | null;
+  detail_url?: string | null;
+  is_top?: boolean | null;
+  source_updated_at?: string | null;
+  external_id?: string | null;
+  source?: string | null;
+  offer_id?: string | null;
+};
+
+function mapProjectionRowToOffer(row: PublicOfferProjectionRow, fallbackMode: OfferMode): Offer {
+  return {
+    id: String(row.offer_id ?? row.id ?? ""),
+    partnerId: String(row.partner_id ?? ""),
+    areaId: String(row.visible_area_id ?? ""),
+    offerType: (row.offer_type as OfferMode) ?? fallbackMode,
+    objectType: (row.object_type as OfferObjectType) ?? "wohnung",
+    title: String(row.title ?? ""),
+    price: toNumberOrNull(row.price),
+    rent: toNumberOrNull(row.rent),
+    areaSqm: toNumberOrNull(row.area_sqm),
+    rooms: toNumberOrNull(row.rooms),
+    address: row.address ?? null,
+    imageUrl: row.image_url ?? null,
+    detailUrl: row.detail_url ?? null,
+    isTop: Boolean(row.is_top),
+    updatedAt: row.source_updated_at ?? null,
+    externalId: row.external_id ?? null,
+    source: row.source ?? null,
+    raw: null,
+  };
 }
 
 export async function getOffers(args: GetOffersArgs): Promise<{
@@ -171,26 +135,28 @@ export async function getOffers(args: GetOffersArgs): Promise<{
 }> {
   const supabase = createClient();
   const normalizedLocale = normalizePublicLocale(args.locale);
-  const areaId = await getKreisAreaId(supabase, args.bundeslandSlug, args.kreisSlug);
-  const areaIds = await getAreaIdsForKreis(supabase, args.bundeslandSlug, args.kreisSlug);
+  const { areaId, areaIds } = await getAreaIdsForKreis(
+    supabase,
+    args.bundeslandSlug,
+    args.kreisSlug,
+  );
 
   if (!areaId) {
     return { offers: [], topOffers: [], areaId: null, total: 0, totalWithTop: 0, sourceTotal: 0, page: 1, pageSize: 12 };
   }
 
-  const partnerIds = await getPublicVisiblePartnerIdsForAreas(
-    supabase,
-    areaIds.length > 0 ? areaIds : [areaId],
-  );
   const pageSize = Math.max(1, Math.min(args.pageSize ?? 12, 48));
   const page = Math.max(1, args.page ?? 1);
   const rangeFrom = (page - 1) * pageSize;
   const rangeTo = rangeFrom + pageSize - 1;
 
-  const selectFields = [
+  const projectionFields = [
     "id",
     "partner_id",
-    "area_id",
+    "visible_area_id",
+    "offer_id",
+    "source",
+    "external_id",
     "offer_type",
     "object_type",
     "title",
@@ -202,219 +168,82 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     "image_url",
     "detail_url",
     "is_top",
-    "updated_at",
-    "external_id",
-    "source",
-    "raw",
+    "source_updated_at",
   ].join(",");
 
-  let query = supabase
-    .from("partner_property_offers")
-    .select(selectFields, { count: normalizedLocale === "de" ? "exact" : "exact" })
-    .in("area_id", areaIds.length > 0 ? areaIds : [areaId])
+  const nonTopQuery = await supabase
+    .from("public_offer_entries")
+    .select(projectionFields, { count: "exact" })
+    .in("visible_area_id", areaIds.length > 0 ? areaIds : [areaId])
+    .eq("locale", normalizedLocale)
     .eq("offer_type", args.mode)
     .neq("is_top", true)
-    .order("updated_at", { ascending: false });
+    .order("source_updated_at", { ascending: false })
+    .range(rangeFrom, rangeTo);
 
-  if (partnerIds.length > 0) {
-    query = query.in("partner_id", partnerIds);
-  }
-
-  if (normalizedLocale === "de") {
-    query = query.range(rangeFrom, rangeTo);
-  } else {
-    query = query.limit(200);
-  }
-
-  const { data, error, count } = await query;
-
+  const { data, error, count } = nonTopQuery;
   if (error) {
-    console.warn("partner_property_offers fetch failed:", error.message);
+    console.warn("public_offer_entries fetch failed:", error.message);
     return { offers: [], topOffers: [], areaId, total: 0, totalWithTop: 0, sourceTotal: 0, page, pageSize };
   }
 
-  const offers = (data ?? []).map((row) => {
-    const record = row as unknown as Record<string, unknown>;
-    return {
-      id: String(record["id"] ?? ""),
-      partnerId: String(record["partner_id"] ?? ""),
-      areaId: String(record["area_id"] ?? ""),
-      offerType: (record["offer_type"] as OfferMode) ?? args.mode,
-      objectType: (record["object_type"] as OfferObjectType) ?? "wohnung",
-      title: String(record["title"] ?? ""),
-      price: toNumberOrNull(record["price"]),
-      rent: toNumberOrNull(record["rent"]),
-      areaSqm: toNumberOrNull(record["area_sqm"]),
-      rooms: toNumberOrNull(record["rooms"]),
-      address: (record["address"] as string | null) ?? null,
-      imageUrl: (record["image_url"] as string | null) ?? null,
-      detailUrl: (record["detail_url"] as string | null) ?? null,
-      isTop: Boolean(record["is_top"]),
-      updatedAt: (record["updated_at"] as string | null) ?? null,
-      externalId: (record["external_id"] as string | null) ?? null,
-      source: (record["source"] as string | null) ?? null,
-      raw: (record["raw"] as Record<string, unknown> | null) ?? null,
-    } satisfies Offer;
-  });
-
-  const overrideKeys = offers
-    .map((offer) => {
-      const effectiveSource = (offer.source ?? "").trim() || "manual";
-      const effectiveExternalId = (offer.externalId ?? "").trim() || offer.id;
-      return `${offer.partnerId}::${effectiveSource}::${effectiveExternalId}`;
-    })
-    .filter(Boolean);
-
-  const overridesMap = new Map<string, OfferOverrides>();
-  if (overrideKeys.length > 0) {
-    const { data: overridesData, error: overridesError } = await supabase
-      .from("partner_property_overrides")
-      .select(
-        [
-          "partner_id",
-          "source",
-          "external_id",
-          "seo_title",
-          "seo_h1",
-        ].join(","),
-      )
-      .in(
-        "partner_id",
-        offers.map((offer) => offer.partnerId),
-      );
-
-    if (overridesError) {
-      console.warn("partner_property_overrides fetch failed:", overridesError.message);
-    } else {
-      (overridesData ?? []).forEach((row) => {
-        const record = row as unknown as Record<string, unknown>;
-        const key = `${String(record["partner_id"] ?? "")}::${String(record["source"] ?? "")}::${String(
-          record["external_id"] ?? "",
-        )}`;
-        if (key.includes("::")) {
-          overridesMap.set(key, row as unknown as OfferOverrides);
-        }
-      });
-    }
-  }
-
-  const translationsMap = await loadOfferTranslations(
-    offers.map((offer) => offer.id),
-    normalizedLocale,
+  const offers = ((data ?? []) as PublicOfferProjectionRow[]).map((row) =>
+    mapProjectionRowToOffer(row, args.mode),
   );
 
-  const offersWithOverrides = offers.map((offer) => {
-    const effectiveSource = (offer.source ?? "").trim() || "manual";
-    const effectiveExternalId = (offer.externalId ?? "").trim() || offer.id;
-    const key = `${offer.partnerId}::${effectiveSource}::${effectiveExternalId}`;
-    const override = overridesMap.get(key);
-    const translation = translationsMap.get(offer.id);
-    const title = resolveLocalizedOfferTitle(offer.title, override, translation);
-    return { ...offer, title };
-  });
-  const localizedOffers = normalizedLocale === "de"
-    ? offersWithOverrides
-    : offersWithOverrides.filter((offer) => translationsMap.has(offer.id));
+  const { data: topData, error: topError } = await supabase
+    .from("public_offer_entries")
+    .select(projectionFields)
+    .in("visible_area_id", areaIds.length > 0 ? areaIds : [areaId])
+    .eq("locale", normalizedLocale)
+    .eq("offer_type", args.mode)
+    .eq("is_top", true)
+    .order("source_updated_at", { ascending: false })
+    .limit(6);
 
-  let topOffers: Offer[] = localizedOffers.filter((offer) => offer.isTop);
-  const topIds = new Set<string>(topOffers.map((offer) => offer.id));
-  let topCount = topOffers.length;
-  {
-    let topQuery = supabase
-      .from("partner_property_offers")
-      .select(selectFields)
-      .in("area_id", areaIds.length > 0 ? areaIds : [areaId])
-      .eq("offer_type", args.mode)
-      .eq("is_top", true)
-      .order("updated_at", { ascending: false })
-      .limit(normalizedLocale === "de" ? 6 : 60);
-
-    if (partnerIds.length > 0) {
-      topQuery = topQuery.in("partner_id", partnerIds);
-    }
-
-    const { data: topData, error: topError } = await topQuery;
-    if (topError) {
-      console.warn("partner_property_offers top fetch failed:", topError.message);
-    } else {
-      const topMapped = (topData ?? []).map((row) => {
-        const record = row as unknown as Record<string, unknown>;
-        return {
-          id: String(record["id"] ?? ""),
-          partnerId: String(record["partner_id"] ?? ""),
-          areaId: String(record["area_id"] ?? ""),
-          offerType: (record["offer_type"] as OfferMode) ?? args.mode,
-          objectType: (record["object_type"] as OfferObjectType) ?? "wohnung",
-          title: String(record["title"] ?? ""),
-          price: toNumberOrNull(record["price"]),
-          rent: toNumberOrNull(record["rent"]),
-          areaSqm: toNumberOrNull(record["area_sqm"]),
-          rooms: toNumberOrNull(record["rooms"]),
-          address: (record["address"] as string | null) ?? null,
-          imageUrl: (record["image_url"] as string | null) ?? null,
-          detailUrl: (record["detail_url"] as string | null) ?? null,
-          isTop: Boolean(record["is_top"]),
-          updatedAt: (record["updated_at"] as string | null) ?? null,
-          externalId: (record["external_id"] as string | null) ?? null,
-          source: (record["source"] as string | null) ?? null,
-          raw: (record["raw"] as Record<string, unknown> | null) ?? null,
-        } satisfies Offer;
-      });
-
-      const missingTopIds = topMapped
-        .map((offer) => offer.id)
-        .filter((offerId) => offerId && !translationsMap.has(offerId));
-      if (missingTopIds.length > 0) {
-        const topTranslations = await loadOfferTranslations(missingTopIds, normalizedLocale);
-        topTranslations.forEach((value, key) => translationsMap.set(key, value));
-      }
-
-      topOffers = topMapped.map((offer) => {
-        const effectiveSource = (offer.source ?? "").trim() || "manual";
-        const effectiveExternalId = (offer.externalId ?? "").trim() || offer.id;
-        const key = `${offer.partnerId}::${effectiveSource}::${effectiveExternalId}`;
-        const override = overridesMap.get(key);
-        const translation = translationsMap.get(offer.id);
-        const title = resolveLocalizedOfferTitle(offer.title, override, translation);
-        return { ...offer, title };
-      }).filter((offer) => normalizedLocale === "de" || translationsMap.has(offer.id))
-        .slice(0, 6);
-      topCount = topOffers.length;
-      topOffers.forEach((offer) => topIds.add(offer.id));
-    }
+  if (topError) {
+    console.warn("public_offer_entries top fetch failed:", topError.message);
   }
 
-  if (topIds.size > 0 && normalizedLocale === "de") {
-    let countQuery = supabase
-      .from("partner_property_offers")
+  const topOffers = ((topData ?? []) as PublicOfferProjectionRow[]).map((row) =>
+    mapProjectionRowToOffer(row, args.mode),
+  );
+
+  const { count: topCount, error: topCountError } = await supabase
+    .from("public_offer_entries")
+    .select("id", { count: "exact", head: true })
+    .in("visible_area_id", areaIds.length > 0 ? areaIds : [areaId])
+    .eq("locale", normalizedLocale)
+    .eq("offer_type", args.mode)
+    .eq("is_top", true);
+
+  if (topCountError) {
+    console.warn("public_offer_entries top count failed:", topCountError.message);
+  }
+
+  let sourceTotal = count ?? offers.length;
+  if (normalizedLocale !== "de") {
+    const { count: germanSourceCount, error: sourceError } = await supabase
+      .from("public_offer_entries")
       .select("id", { count: "exact", head: true })
-      .in("area_id", areaIds.length > 0 ? areaIds : [areaId])
+      .in("visible_area_id", areaIds.length > 0 ? areaIds : [areaId])
+      .eq("locale", "de")
       .eq("offer_type", args.mode)
-      .eq("is_top", true);
-
-    if (partnerIds.length > 0) {
-      countQuery = countQuery.in("partner_id", partnerIds);
-    }
-
-    const { count: explicitTopCount, error: countError } = await countQuery;
-    if (countError) {
-      console.warn("partner_property_offers top count failed:", countError.message);
-    } else if (explicitTopCount !== null) {
-      topCount = explicitTopCount;
+      .neq("is_top", true);
+    if (sourceError) {
+      console.warn("public_offer_entries source count failed:", sourceError.message);
+      sourceTotal = 0;
+    } else if (germanSourceCount !== null) {
+      sourceTotal = germanSourceCount;
     }
   }
-
-  const sourceTotal = count ?? offers.length;
-  const pagedOffers = normalizedLocale === "de"
-    ? localizedOffers
-    : localizedOffers.slice(rangeFrom, rangeTo + 1);
 
   return {
-    offers: pagedOffers,
+    offers,
     topOffers,
     areaId,
-    total: normalizedLocale === "de" ? (count ?? localizedOffers.length) : localizedOffers.length,
-    totalWithTop: (normalizedLocale === "de" ? (count ?? localizedOffers.length) : localizedOffers.length) + topCount,
+    total: count ?? offers.length,
+    totalWithTop: (count ?? offers.length) + (topCount ?? topOffers.length),
     sourceTotal,
     page,
     pageSize,

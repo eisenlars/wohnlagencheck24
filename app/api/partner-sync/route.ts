@@ -4,6 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { syncIntegrationResources } from "@/lib/providers";
 import type { PartnerIntegration } from "@/lib/providers/types";
+import { rebuildAllPublicAssetEntriesForPartner } from "@/lib/public-asset-projections";
 
 const SYNC_KIND = "crm";
 
@@ -249,6 +250,14 @@ export async function GET(req: Request) {
       if (syncRequests && !requestsFetched) {
         mergedNotes.push("requests capability enabled, provider mapping pending");
       }
+
+      const projectionCounts = await rebuildAllPublicAssetEntriesForPartner(
+        integration.partner_id,
+        supabase,
+      );
+      mergedNotes.push(
+        `public projections rebuilt: offers=${projectionCounts.offers}, requests=${projectionCounts.requests}, references=${projectionCounts.references}`,
+      );
 
       results.push({
         partner_id: integration.partner_id,

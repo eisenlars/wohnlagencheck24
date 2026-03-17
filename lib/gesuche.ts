@@ -1,6 +1,4 @@
 import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
-import { loadPublicVisiblePartnerIdsForAreaIds } from "@/lib/public-partner-mappings";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
 
 export type RequestMode = "kauf" | "miete";
@@ -39,12 +37,6 @@ type GetKreisRequestsArgs = {
   mode: RequestMode;
   limit?: number;
   locale?: string;
-};
-
-type RequestTranslationRow = {
-  request_id?: string | null;
-  translated_seo_title?: string | null;
-  translated_seo_h1?: string | null;
 };
 
 function normalizeText(value: string): string {
@@ -95,13 +87,12 @@ function parseRegionTargetKeys(payload: Record<string, unknown>): string[] {
     .filter(Boolean);
 }
 
-async function resolveKreisAndPartnerScope(
+async function resolveKreisAreaScope(
   bundeslandSlug: string,
   kreisSlug: string,
 ): Promise<{
   kreisAreaId: string | null;
   kreisName: string | null;
-  partnerIds: string[];
   areaIds: string[];
 }> {
   const supabase = createClient();
@@ -112,7 +103,7 @@ async function resolveKreisAndPartnerScope(
     .or(`slug.eq.${kreisSlug},parent_slug.eq.${kreisSlug}`);
 
   if (areasError) {
-    return { kreisAreaId: null, kreisName: null, partnerIds: [], areaIds: [] };
+    return { kreisAreaId: null, kreisName: null, areaIds: [] };
   }
 
   const rows = (areaRows ?? []) as Array<Record<string, unknown>>;
@@ -120,36 +111,29 @@ async function resolveKreisAndPartnerScope(
   const areaIds = rows.map((row) => String(row.id ?? "")).filter(Boolean);
 
   if (areaIds.length === 0) {
-    return { kreisAreaId: null, kreisName: null, partnerIds: [], areaIds: [] };
-  }
-
-  let partnerIds: string[] = [];
-  try {
-    partnerIds = await loadPublicVisiblePartnerIdsForAreaIds(supabase, areaIds);
-  } catch {
-    return { kreisAreaId: String(kreisRow?.id ?? "") || null, kreisName: String(kreisRow?.name ?? "") || null, partnerIds: [], areaIds };
+    return { kreisAreaId: null, kreisName: null, areaIds: [] };
   }
 
   return {
     kreisAreaId: String(kreisRow?.id ?? "") || null,
     kreisName: String(kreisRow?.name ?? "") || null,
-    partnerIds,
     areaIds,
   };
 }
 
-async function fetchRequestsByPartners(
-  partnerIds: string[],
+async function fetchProjectedRequests(
+  areaIds: string[],
+  locale: string,
   limit: number,
 ): Promise<Array<Record<string, unknown>>> {
-  if (partnerIds.length === 0) return [];
+  if (areaIds.length === 0) return [];
   const supabase = createClient();
   const { data, error } = await supabase
-    .from("partner_requests")
-    .select("id, partner_id, provider, external_id, title, normalized_payload, updated_at")
-    .in("partner_id", partnerIds)
-    .eq("is_active", true)
-    .order("updated_at", { ascending: false })
+    .from("public_request_entries")
+    .select("request_id, partner_id, provider, external_id, title, request_type, object_type, min_rooms, max_price, region_targets, region_target_keys, source_updated_at")
+    .in("visible_area_id", areaIds)
+    .eq("locale", locale)
+    .order("source_updated_at", { ascending: false })
     .limit(limit);
   if (error) return [];
   return (data ?? []) as Array<Record<string, unknown>>;
@@ -158,62 +142,30 @@ async function fetchRequestsByPartners(
 function mapRowsToRegionalRequests(
   rows: Array<Record<string, unknown>>,
   mode: RequestMode,
-  translations: Map<string, RequestTranslationRow>,
-  requireTranslation: boolean,
 ): RegionalRequest[] {
   const out: RegionalRequest[] = [];
+  const seen = new Set<string>();
   for (const record of rows) {
-    const payload = (record.normalized_payload ?? {}) as Record<string, unknown>;
-    const requestType = String(payload.request_type ?? "").toLowerCase() === "miete" ? "miete" : "kauf";
+    const requestId = String(record.request_id ?? record.id ?? "");
+    if (!requestId || seen.has(requestId)) continue;
+    const requestType = String(record.request_type ?? "").toLowerCase() === "miete" ? "miete" : "kauf";
     if (requestType !== mode) continue;
+    const payload = record as Record<string, unknown>;
     const targets = parseRegionTargets(payload);
-    const translation = translations.get(String(record.id ?? ""));
-    const translatedTitle =
-      String(translation?.translated_seo_h1 ?? "").trim()
-      || String(translation?.translated_seo_title ?? "").trim();
-    if (requireTranslation && !translatedTitle) continue;
+    seen.add(requestId);
     out.push({
-      id: String(record.id ?? ""),
+      id: requestId,
       partnerId: String(record.partner_id ?? ""),
       provider: String(record.provider ?? ""),
       externalId: String(record.external_id ?? ""),
-      title: translatedTitle || String(record.title ?? payload.title ?? ""),
+      title: String(record.title ?? ""),
       requestType,
       objectType: payload.object_type ? String(payload.object_type) : null,
       minRooms: toFiniteNumber(payload.min_rooms),
       maxPrice: toFiniteNumber(payload.max_price),
       regionTargets: targets,
-      updatedAt: record.updated_at ? String(record.updated_at) : null,
+      updatedAt: record.source_updated_at ? String(record.source_updated_at) : null,
     });
-  }
-  return out;
-}
-
-async function loadRequestTranslations(
-  requestIds: string[],
-  locale: string,
-): Promise<Map<string, RequestTranslationRow>> {
-  const normalizedLocale = normalizePublicLocale(locale);
-  if (normalizedLocale === "de" || requestIds.length === 0) return new Map();
-
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("partner_request_i18n")
-    .select("request_id, translated_seo_title, translated_seo_h1")
-    .in("request_id", requestIds)
-    .eq("target_locale", normalizedLocale)
-    .eq("status", "approved");
-
-  if (error) {
-    console.warn("partner_request_i18n fetch failed:", error.message);
-    return new Map();
-  }
-
-  const out = new Map<string, RequestTranslationRow>();
-  for (const row of (data ?? []) as RequestTranslationRow[]) {
-    const requestId = String(row.request_id ?? "").trim();
-    if (!requestId) continue;
-    out.set(requestId, row);
   }
   return out;
 }
@@ -221,20 +173,21 @@ async function loadRequestTranslations(
 export async function getRegionalRequestsForKreis(
   args: GetKreisRequestsArgs,
 ): Promise<RegionalRequestResult> {
-  const scope = await resolveKreisAndPartnerScope(args.bundeslandSlug, args.kreisSlug);
-  if (scope.partnerIds.length === 0) return { requests: [], sourceCount: 0 };
-  const rows = await fetchRequestsByPartners(scope.partnerIds, Math.max(1, Math.min(args.limit ?? 40, 200)));
   const normalizedLocale = normalizePublicLocale(args.locale);
-  const baseRequests = mapRowsToRegionalRequests(rows, args.mode, new Map(), false);
-  const translations = await loadRequestTranslations(
-    rows.map((row) => String(row.id ?? "")).filter(Boolean),
+  const scope = await resolveKreisAreaScope(args.bundeslandSlug, args.kreisSlug);
+  if (scope.areaIds.length === 0) return { requests: [], sourceCount: 0 };
+  const rows = await fetchProjectedRequests(
+    scope.areaIds,
     normalizedLocale,
+    Math.max(1, Math.min(args.limit ?? 80, 240)),
   );
+  const sourceRows = normalizedLocale === "de"
+    ? rows
+    : await fetchProjectedRequests(scope.areaIds, "de", Math.max(1, Math.min(args.limit ?? 80, 240)));
+  const sourceRequests = mapRowsToRegionalRequests(sourceRows, args.mode);
   return {
-    requests: normalizedLocale === "de"
-      ? baseRequests
-      : mapRowsToRegionalRequests(rows, args.mode, translations, true),
-    sourceCount: baseRequests.length,
+    requests: mapRowsToRegionalRequests(rows, args.mode),
+    sourceCount: sourceRequests.length,
   };
 }
 
@@ -254,23 +207,30 @@ export async function getRegionalRequestsForOrtslage(
 
   if (ortError || !ortArea) return { requests: [], sourceCount: 0 };
 
-  const scope = await resolveKreisAndPartnerScope(args.bundeslandSlug, args.kreisSlug);
-  if (scope.partnerIds.length === 0) return { requests: [], sourceCount: 0 };
-  const rows = await fetchRequestsByPartners(scope.partnerIds, Math.max(1, Math.min(args.limit ?? 24, 120)));
   const normalizedLocale = normalizePublicLocale(args.locale);
-  const translations = await loadRequestTranslations(
-    rows.map((row) => String(row.id ?? "")).filter(Boolean),
+  const scope = await resolveKreisAreaScope(args.bundeslandSlug, args.kreisSlug);
+  if (scope.areaIds.length === 0) return { requests: [], sourceCount: 0 };
+  const rows = await fetchProjectedRequests(
+    scope.areaIds,
     normalizedLocale,
+    Math.max(1, Math.min(args.limit ?? 60, 240)),
   );
+  const sourceRows = normalizedLocale === "de"
+    ? rows
+    : await fetchProjectedRequests(scope.areaIds, "de", Math.max(1, Math.min(args.limit ?? 60, 240)));
 
   const cityName = String((scope.kreisName ?? "")).trim() || "Leipzig";
   const districtName = String((ortArea.name ?? "")).trim();
   const directTargetKey = `${normalizeKeyPart(cityName)}::${normalizeKeyPart(districtName)}`;
 
   const out: RegionalRequest[] = [];
+  const seen = new Set<string>();
   let sourceCount = 0;
-  for (const record of rows) {
-    const payload = (record.normalized_payload ?? {}) as Record<string, unknown>;
+  const countSeen = new Set<string>();
+  for (const record of sourceRows) {
+    const payload = record as Record<string, unknown>;
+    const requestId = String(record.request_id ?? record.id ?? "");
+    if (!requestId || countSeen.has(requestId)) continue;
     const requestType = String(payload.request_type ?? "").toLowerCase() === "miete" ? "miete" : "kauf";
     if (requestType !== args.mode) continue;
 
@@ -285,26 +245,42 @@ export async function getRegionalRequestsForOrtslage(
     });
 
     if (!matchesByKey && !matchesByTarget) continue;
+    countSeen.add(requestId);
     sourceCount += 1;
+  }
 
-    const translation = translations.get(String(record.id ?? ""));
-    const translatedTitle =
-      String(translation?.translated_seo_h1 ?? "").trim()
-      || String(translation?.translated_seo_title ?? "").trim();
-    if (normalizedLocale !== "de" && !translatedTitle) continue;
+  for (const record of rows) {
+    const payload = record as Record<string, unknown>;
+    const requestId = String(record.request_id ?? record.id ?? "");
+    if (!requestId || seen.has(requestId)) continue;
+    const requestType = String(payload.request_type ?? "").toLowerCase() === "miete" ? "miete" : "kauf";
+    if (requestType !== args.mode) continue;
+
+    const keys = parseRegionTargetKeys(payload);
+    const targets = parseRegionTargets(payload);
+
+    const matchesByKey = keys.includes(directTargetKey);
+    const matchesByTarget = targets.some((target) => {
+      const c = normalizeKeyPart(target.city || cityName);
+      const d = normalizeKeyPart(target.district || "");
+      return `${c}::${d}` === directTargetKey;
+    });
+
+    if (!matchesByKey && !matchesByTarget) continue;
+    seen.add(requestId);
 
     out.push({
-      id: String(record.id ?? ""),
+      id: requestId,
       partnerId: String(record.partner_id ?? ""),
       provider: String(record.provider ?? ""),
       externalId: String(record.external_id ?? ""),
-      title: translatedTitle || String(record.title ?? payload.title ?? ""),
+      title: String(record.title ?? ""),
       requestType,
       objectType: payload.object_type ? String(payload.object_type) : null,
       minRooms: toFiniteNumber(payload.min_rooms),
       maxPrice: toFiniteNumber(payload.max_price),
       regionTargets: targets,
-      updatedAt: record.updated_at ? String(record.updated_at) : null,
+      updatedAt: record.source_updated_at ? String(record.source_updated_at) : null,
     });
   }
 

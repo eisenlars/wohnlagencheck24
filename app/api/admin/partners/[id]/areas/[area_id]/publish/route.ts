@@ -6,6 +6,7 @@ import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { publishVisibilityIndex } from "@/lib/visibility-index";
 import { isMissingPublicLiveColumn } from "@/lib/public-partner-mappings";
+import { rebuildAllPublicAssetEntriesForPartner } from "@/lib/public-asset-projections";
 
 function isMissingActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
@@ -138,10 +139,12 @@ export async function POST(
     });
 
     await publishVisibilityIndex(admin as never);
+    const projectionCounts = await rebuildAllPublicAssetEntriesForPartner(partnerId, admin);
 
     return NextResponse.json({
       ok: true,
       mapping: updated,
+      projections: projectionCounts,
     });
   } catch (error) {
     if (error instanceof Error) {
@@ -201,10 +204,12 @@ export async function DELETE(
     });
 
     await publishVisibilityIndex(admin as never);
+    const projectionCounts = await rebuildAllPublicAssetEntriesForPartner(partnerId, admin);
 
     return NextResponse.json({
       ok: true,
       mapping: updated,
+      projections: projectionCounts,
     });
   } catch (error) {
     if (error instanceof Error) {
