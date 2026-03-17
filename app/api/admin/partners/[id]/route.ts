@@ -297,6 +297,12 @@ export async function GET(
       .order("area_id", { ascending: true });
 
     if (mappingError && (isMissingAreaActivationStatusColumn(mappingError) || isMissingAreaPreviewSignoffColumn(mappingError))) {
+      console.warn("[admin-partner-debug] mapping select fallback", {
+        partnerId,
+        message: String((mappingError as { message?: string } | null)?.message ?? ""),
+        missingActivationStatus: isMissingAreaActivationStatusColumn(mappingError),
+        missingPreviewSignoff: isMissingAreaPreviewSignoffColumn(mappingError),
+      });
       const fallback = await admin
         .from("partner_area_map")
         .select("id, auth_user_id, area_id, is_active, created_at, areas(name, slug, parent_slug, bundesland_slug)")
