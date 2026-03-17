@@ -2109,26 +2109,6 @@ export default function InternationalizationManager({ config, availableLocales, 
     return withIndex.map((item) => item.row);
   }, [rowsByTab, activeTab, activeClass]);
 
-  const summary = useMemo(() => {
-    const relevantRows = rows.filter((row) => isTranslatableSectionKey(row.section_key));
-    const total = relevantRows.length;
-    const translated = relevantRows.filter((row) => row.effective_source === 'translation').length;
-    const fallback = total - translated;
-    return { total, translated, fallback };
-  }, [rows]);
-
-  const blogSummary = useMemo(() => {
-    const total = blogItems.length;
-    const translated = blogItems.filter((item) => (
-      item.translated_headline.trim().length > 0
-      || item.translated_subline.trim().length > 0
-      || item.translated_body_md.trim().length > 0
-    )).length;
-    const stale = blogItems.filter((item) => item.translation_is_stale).length;
-    const missing = total - translated;
-    return { total, translated, missing, stale };
-  }, [blogItems]);
-
   const hasEdits = useMemo(
     () => rows.some((row) => String(row.translated_content ?? '').trim() !== String(baselineByKey[`${row.area_id}::${row.section_key}`] ?? '').trim()),
     [rows, baselineByKey],
@@ -2152,24 +2132,6 @@ export default function InternationalizationManager({ config, availableLocales, 
       || selectedBlogItem.translation_status !== baseline.translation_status
     );
   }, [blogBaselineByPostId, selectedBlogItem]);
-
-  const propertySummary = useMemo(() => {
-    const total = propertyItems.length;
-    const translated = propertyItems.filter((item) => (
-      item.translated_seo_title.trim().length > 0
-      || item.translated_seo_description.trim().length > 0
-      || item.translated_seo_h1.trim().length > 0
-      || item.translated_short_description.trim().length > 0
-      || item.translated_long_description.trim().length > 0
-      || item.translated_location_text.trim().length > 0
-      || item.translated_features_text.trim().length > 0
-      || item.translated_highlights.length > 0
-      || item.translated_image_alt_texts.length > 0
-    )).length;
-    const stale = propertyItems.filter((item) => item.translation_is_stale).length;
-    const missing = total - translated;
-    return { total, translated, missing, stale };
-  }, [propertyItems]);
 
   const propertyHasEdits = useMemo(() => {
     if (!selectedPropertyItem) return false;
@@ -2202,24 +2164,6 @@ export default function InternationalizationManager({ config, availableLocales, 
     );
   }, [propertyBaselineByOfferId, selectedPropertyItem]);
 
-  const referenceSummary = useMemo(() => {
-    const total = referenceItems.length;
-    const translated = referenceItems.filter((item) => (
-      item.translated_seo_title.trim().length > 0
-      || item.translated_seo_description.trim().length > 0
-      || item.translated_seo_h1.trim().length > 0
-      || item.translated_short_description.trim().length > 0
-      || item.translated_long_description.trim().length > 0
-      || item.translated_location_text.trim().length > 0
-      || item.translated_features_text.trim().length > 0
-      || item.translated_highlights.length > 0
-      || item.translated_image_alt_texts.length > 0
-    )).length;
-    const stale = referenceItems.filter((item) => item.translation_is_stale).length;
-    const missing = total - translated;
-    return { total, translated, missing, stale };
-  }, [referenceItems]);
-
   const referenceHasEdits = useMemo(() => {
     if (!selectedReferenceItem) return false;
     const baseline = referenceBaselineById[selectedReferenceItem.reference_id];
@@ -2250,24 +2194,6 @@ export default function InternationalizationManager({ config, availableLocales, 
       || selectedReferenceItem.translation_status !== baseline.translation_status
     );
   }, [referenceBaselineById, selectedReferenceItem]);
-
-  const requestSummary = useMemo(() => {
-    const total = requestItems.length;
-    const translated = requestItems.filter((item) => (
-      item.translated_seo_title.trim().length > 0
-      || item.translated_seo_description.trim().length > 0
-      || item.translated_seo_h1.trim().length > 0
-      || item.translated_short_description.trim().length > 0
-      || item.translated_long_description.trim().length > 0
-      || item.translated_location_text.trim().length > 0
-      || item.translated_features_text.trim().length > 0
-      || item.translated_highlights.length > 0
-      || item.translated_image_alt_texts.length > 0
-    )).length;
-    const stale = requestItems.filter((item) => item.translation_is_stale).length;
-    const missing = total - translated;
-    return { total, translated, missing, stale };
-  }, [requestItems]);
 
   const requestHasEdits = useMemo(() => {
     if (!selectedRequestItem) return false;
@@ -2439,13 +2365,6 @@ export default function InternationalizationManager({ config, availableLocales, 
       />
       <section style={wrapStyle}>
         <div style={topCardStyle}>
-          <div style={headStyle}>
-            <h3 style={headTitleStyle}>Internationalisierung</h3>
-            <p style={subStyle}>
-              Arbeite die Uebersetzungen bewusst nach Bereich, Scope und Texttyp ab. Die deutschen Inhalte sollten vor jedem Lauf auf Vollstaendigkeit, Inhalt und Qualitaet geprueft sein.
-            </p>
-          </div>
-
           <div style={controlsStyle}>
             <label style={fieldStyle}>
               Sprache
@@ -2458,19 +2377,6 @@ export default function InternationalizationManager({ config, availableLocales, 
 
             {activeDomain === 'immobilienmarkt' ? (
               <>
-                <label style={fieldStyle}>
-                  Bereich
-                  <select
-                    style={inputStyle}
-                    value={channel}
-                    onChange={(e) => setChannel(e.target.value as I18nChannel)}
-                  >
-                    {I18N_CHANNEL_OPTIONS.map((item) => (
-                      <option key={item.value} value={item.value}>{item.label}</option>
-                    ))}
-                  </select>
-                </label>
-
                 <label style={{ ...fieldStyle, minWidth: 320 }}>
                   KI-Modell
                   <select
@@ -2488,126 +2394,6 @@ export default function InternationalizationManager({ config, availableLocales, 
               </>
             ) : null}
           </div>
-
-          {activeDomain === 'immobilienmarkt' ? (
-            <>
-              <div style={scopeBlockStyle}>
-                <div style={scopeHeadStyle}>
-                  <strong>Scope</strong>
-                  <span style={scopeMetaStyle}>{areaScopeLabel}: {String(config.areas?.name ?? config.area_id)}</span>
-                </div>
-                <div style={scopeOptionsStyle}>
-                  {I18N_SCOPE_OPTIONS.map((item) => {
-                    const isDisabled = item.value === 'kreis_ortslagen' && !isDistrict;
-                    const isActive = scope === item.value;
-                    return (
-                      <button
-                        key={item.value}
-                        type="button"
-                        style={scopeButtonStyle(isActive, isDisabled)}
-                        disabled={isDisabled}
-                        onClick={() => setScope(item.value)}
-                        title={item.description}
-                      >
-                        <span style={scopeButtonTitleStyle}>{item.value === 'current_area' ? item.label.replace('Dieses Gebiet', areaScopeLabel) : item.label}</span>
-                        <span style={scopeButtonTextStyle}>{item.description}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div style={workflowNoticeStyle}>
-                <div style={workflowNoticeHeadStyle}>
-                  <strong>{channelMeta.label}</strong>
-                  <span style={workflowNoticeMetaStyle}>{channelMeta.description}</span>
-                </div>
-                <p style={workflowNoticeTextStyle}>
-                  Freigaben der deutschen Inhalte und Uebersetzungslaeufe sind jetzt getrennt. Starte die Uebersetzung erst, wenn der deutsche Stand fachlich final ist.
-                </p>
-              </div>
-
-              <div style={summaryStyle}>
-                Gesamt: <strong>{summary.total}</strong> · Übersetzt: <strong>{summary.translated}</strong> · Deutsch-Fallback: <strong>{summary.fallback}</strong>
-              </div>
-              <div style={pricingMetaStyle}>
-                Globales Uebersetzungsmodell:{' '}
-                <strong>{pricingPreview?.provider && pricingPreview?.model ? `${pricingPreview.provider} / ${pricingPreview.model}` : 'nicht verfuegbar'}</strong>
-                {pricingPreview && pricingPreview.input_cost_usd_per_1k !== null && pricingPreview.output_cost_usd_per_1k !== null ? (
-                  <span>
-                    {' '}· Input {formatCost(pricingPreview.input_cost_usd_per_1k, 'USD')}/1k · Output {formatCost(pricingPreview.output_cost_usd_per_1k, 'USD')}/1k
-                  </span>
-                ) : null}
-              </div>
-            </>
-          ) : activeDomain === 'blog' ? (
-            <>
-              <div style={workflowNoticeStyle}>
-                <div style={workflowNoticeHeadStyle}>
-                  <strong>Blog</strong>
-                  <span style={workflowNoticeMetaStyle}>Beitragsbasierte Sprachpflege je Gebiet und Sprache</span>
-                </div>
-                <p style={workflowNoticeTextStyle}>
-                  Deutsche Blogbeiträge werden weiterhin im Blog-Bereich erstellt. Hier pflegst du deren Übersetzungen pro Sprache und Beitrag getrennt vom deutschen Redaktionsprozess.
-                </p>
-              </div>
-              <div style={summaryStyle}>
-                Beiträge: <strong>{blogSummary.total}</strong> · Übersetzt: <strong>{blogSummary.translated}</strong> · Fehlend: <strong>{blogSummary.missing}</strong> · Veraltet: <strong>{blogSummary.stale}</strong>
-              </div>
-            </>
-          ) : activeDomain === 'immobilien' && activeDomainMeta.enabled ? (
-            <>
-              <div style={workflowNoticeStyle}>
-                <div style={workflowNoticeHeadStyle}>
-                  <strong>Immobilien</strong>
-                  <span style={workflowNoticeMetaStyle}>Objektbasierte Sprachpflege je Angebot und Sprache</span>
-                </div>
-                <p style={workflowNoticeTextStyle}>
-                  Deutsche Exposé- und SEO-Texte werden weiterhin im Bereich „Immobilien“ gepflegt. Hier bearbeitest du deren Übersetzungen pro Objekt, Sprache und Status getrennt vom deutschen Angebotsworkflow.
-                </p>
-              </div>
-              <div style={summaryStyle}>
-                Angebote: <strong>{propertySummary.total}</strong> · Übersetzt: <strong>{propertySummary.translated}</strong> · Fehlend: <strong>{propertySummary.missing}</strong> · Veraltet: <strong>{propertySummary.stale}</strong>
-              </div>
-            </>
-          ) : activeDomain === 'referenzen' && activeDomainMeta.enabled ? (
-            <>
-              <div style={workflowNoticeStyle}>
-                <div style={workflowNoticeHeadStyle}>
-                  <strong>Referenzen</strong>
-                  <span style={workflowNoticeMetaStyle}>Objektbasierte Sprachpflege je Referenz und Sprache</span>
-                </div>
-                <p style={workflowNoticeTextStyle}>
-                  Deutsche Referenztexte werden weiterhin im Bereich „Referenzen“ gepflegt. Hier bearbeitest du deren Übersetzungen pro Objekt, Sprache und Status getrennt vom deutschen Workflow.
-                </p>
-              </div>
-              <div style={summaryStyle}>
-                Referenzen: <strong>{referenceSummary.total}</strong> · Übersetzt: <strong>{referenceSummary.translated}</strong> · Fehlend: <strong>{referenceSummary.missing}</strong> · Veraltet: <strong>{referenceSummary.stale}</strong>
-              </div>
-            </>
-          ) : activeDomain === 'gesuche' && activeDomainMeta.enabled ? (
-            <>
-              <div style={workflowNoticeStyle}>
-                <div style={workflowNoticeHeadStyle}>
-                  <strong>Gesuche</strong>
-                  <span style={workflowNoticeMetaStyle}>Datensatzbasierte Sprachpflege je Suchprofil und Sprache</span>
-                </div>
-                <p style={workflowNoticeTextStyle}>
-                  Deutsche Gesuchstexte werden weiterhin im Bereich „Gesuche“ gepflegt. Hier bearbeitest du deren Übersetzungen pro Datensatz, Sprache und Status getrennt vom deutschen Workflow.
-                </p>
-              </div>
-              <div style={summaryStyle}>
-                Gesuche: <strong>{requestSummary.total}</strong> · Übersetzt: <strong>{requestSummary.translated}</strong> · Fehlend: <strong>{requestSummary.missing}</strong> · Veraltet: <strong>{requestSummary.stale}</strong>
-              </div>
-            </>
-          ) : null}
-        </div>
-
-        <div style={domainIntroStyle}>
-          <h3 style={sectionTabsIntroTitleStyle}>Produktbereich wählen</h3>
-          <p style={sectionTabsIntroTextStyle}>
-            Die Internationalisierung wird schrittweise für alle mehrsprachigen Partnerbereiche aufgebaut. Der Immobilienmarkt ist bereits aktiv, weitere Produktbereiche werden hier vorbereitet.
-          </p>
         </div>
 
         <div style={domainTabGridStyle}>
@@ -2634,6 +2420,34 @@ export default function InternationalizationManager({ config, availableLocales, 
             <div>
               <h3 style={sectionTabsIntroTitleStyle}>Texttyp waehlen</h3>
               <p style={sectionTabsIntroTextStyle}>Priorisiere erst den Texttyp, dann den Themenbereich. So bleibt der Uebersetzungslauf steuerbar.</p>
+              <div style={workflowInlineControlsStyle}>
+                <label style={workflowInlineFieldStyle}>
+                  Bereich
+                  <select
+                    style={workflowInlineSelectStyle}
+                    value={channel}
+                    onChange={(e) => setChannel(e.target.value as I18nChannel)}
+                  >
+                    {I18N_CHANNEL_OPTIONS.map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={workflowInlineFieldStyle}>
+                  Scope
+                  <select
+                    style={workflowInlineSelectStyle}
+                    value={scope}
+                    onChange={(e) => setScope(e.target.value as I18nScope)}
+                  >
+                    {I18N_SCOPE_OPTIONS.map((item) => (
+                      <option key={item.value} value={item.value} disabled={item.value === 'kreis_ortslagen' && !isDistrict}>
+                        {item.value === 'current_area' ? item.label.replace('Dieses Gebiet', areaScopeLabel) : item.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
             </div>
             <div style={workflowActionRowStyle}>
               <button
@@ -4075,27 +3889,9 @@ const topCardStyle: React.CSSProperties = {
   gap: 10,
 };
 
-const headStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 6,
-};
-
-const headTitleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 18,
-  fontWeight: 800,
-  color: '#0f172a',
-};
-
-const subStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  color: '#475569',
-};
-
 const controlsStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'minmax(140px, 240px) minmax(160px, 280px) 1fr',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 280px))',
   gap: 10,
   alignItems: 'end',
 };
@@ -4127,88 +3923,6 @@ const inputStyle: React.CSSProperties = {
   backgroundRepeat: 'no-repeat',
   backgroundPosition: 'right 10px center',
   backgroundSize: '12px',
-};
-
-const scopeBlockStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 10,
-  padding: 12,
-  borderRadius: 12,
-  border: '1px solid #e2e8f0',
-  background: '#f8fafc',
-};
-
-const scopeHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  gap: 12,
-  alignItems: 'center',
-  flexWrap: 'wrap',
-  fontSize: 12,
-  color: '#334155',
-};
-
-const scopeMetaStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: '#64748b',
-};
-
-const scopeOptionsStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 10,
-};
-
-const scopeButtonStyle = (active: boolean, disabled: boolean): React.CSSProperties => ({
-  display: 'grid',
-  gap: 6,
-  textAlign: 'left',
-  padding: 12,
-  borderRadius: 12,
-  border: active ? '1px solid #0f766e' : '1px solid #cbd5e1',
-  background: active ? '#f0fdfa' : '#fff',
-  color: disabled ? '#94a3b8' : '#0f172a',
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.75 : 1,
-});
-
-const scopeButtonTitleStyle: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 700,
-};
-
-const scopeButtonTextStyle: React.CSSProperties = {
-  fontSize: 12,
-  lineHeight: 1.45,
-  color: '#64748b',
-};
-
-const workflowNoticeStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 8,
-  padding: 12,
-  borderRadius: 12,
-  border: '1px solid #dbeafe',
-  background: '#eff6ff',
-};
-
-const workflowNoticeHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'baseline',
-  gap: 10,
-  flexWrap: 'wrap',
-};
-
-const workflowNoticeMetaStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: '#475569',
-};
-
-const workflowNoticeTextStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 13,
-  lineHeight: 1.5,
-  color: '#1e3a8a',
 };
 
 const buttonPrimaryStyle = (active: boolean): React.CSSProperties => ({
@@ -4285,17 +3999,6 @@ const staleBadgeStyle: React.CSSProperties = {
   letterSpacing: '0.04em',
 };
 
-const summaryStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: '#334155',
-};
-
-const pricingMetaStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: '#475569',
-  lineHeight: 1.5,
-};
-
 const editorCardStyle: React.CSSProperties = {
   border: '1px solid #e2e8f0',
   borderRadius: 12,
@@ -4327,6 +4030,30 @@ const workflowActionRowStyle: React.CSSProperties = {
   display: 'flex',
   gap: 10,
   flexWrap: 'wrap',
+};
+
+const workflowInlineControlsStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 10,
+  marginTop: 10,
+};
+
+const workflowInlineFieldStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 6,
+  minWidth: 180,
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#334155',
+};
+
+const workflowInlineSelectStyle: React.CSSProperties = {
+  ...inputStyle,
+  minWidth: 180,
+  minHeight: 36,
+  height: 36,
+  fontSize: 12,
 };
 
 const classGridStyle: React.CSSProperties = {
@@ -4646,11 +4373,6 @@ const blogEmptyDetailStyle: React.CSSProperties = {
   fontSize: 14,
   color: '#64748b',
   lineHeight: 1.6,
-};
-
-const domainIntroStyle: React.CSSProperties = {
-  marginTop: 2,
-  marginBottom: 8,
 };
 
 const domainTabGridStyle: React.CSSProperties = {
