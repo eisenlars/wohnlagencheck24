@@ -4170,9 +4170,9 @@ const inlineWorkflowButtonStyle = (displayClass: DisplayTextClass, selected: boo
   height: 40,
   padding: '0 14px',
   borderRadius: 10,
-  border: selected ? '1px solid rgb(255, 224, 0)' : `1px solid ${String(displayTextBadgeStyle(displayClass).borderColor ?? '#cbd5e1')}`,
-  background: selected ? 'rgb(255, 224, 0)' : String(displayTextBadgeStyle(displayClass).background ?? '#f8fafc'),
-  color: selected ? '#000000' : String(displayTextBadgeStyle(displayClass).color ?? '#475569'),
+  border: `1px solid ${String(displayTextBadgeStyle(displayClass).borderColor ?? '#cbd5e1')}`,
+  background: String(displayTextBadgeStyle(displayClass).background ?? '#f8fafc'),
+  color: String(displayTextBadgeStyle(displayClass).color ?? '#475569'),
   boxShadow: selected ? '0 8px 20px rgba(15, 23, 42, 0.08)' : 'none',
   cursor: disabled ? 'not-allowed' : 'pointer',
   opacity: disabled ? 0.55 : 1,
@@ -4402,13 +4402,13 @@ const domainTabGridStyle: React.CSSProperties = {
 
 const domainTabStyle = (active: boolean): React.CSSProperties => ({
   borderRadius: 16,
-  border: active ? '1px solid #bfdbfe' : '1px solid #e2e8f0',
-  background: active ? 'linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%)' : '#fff',
+  border: active ? '1px solid rgb(255, 224, 0)' : '1px solid #e2e8f0',
+  background: active ? 'rgb(255, 224, 0)' : '#fff',
   padding: '14px 16px',
   display: 'grid',
   gap: 6,
   textAlign: 'left',
-  boxShadow: active ? '0 16px 34px rgba(37, 99, 235, 0.12)' : '0 10px 24px rgba(15, 23, 42, 0.06)',
+  boxShadow: active ? '0 16px 34px rgba(255, 224, 0, 0.2)' : '0 10px 24px rgba(15, 23, 42, 0.06)',
   cursor: 'pointer',
 });
 
