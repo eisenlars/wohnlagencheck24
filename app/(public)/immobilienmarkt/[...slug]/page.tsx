@@ -9,7 +9,6 @@ import { KontaktContextSetter } from "@/components/kontakt/KontaktContextSetter"
 import type { SectionComponent } from "@/features/immobilienmarkt/sections/types";
 import { ValuationWizard } from "@/features/valuation/components/ValuationWizard";
 import { asArray, asRecord, asString } from "@/utils/records";
-import { formatValueCtx } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getApprovedMarketingTexts, getReportBySlugs, type SupabaseClientLike } from "@/lib/data";
 import { createAdminClient } from "@/utils/supabase/admin";
@@ -20,11 +19,15 @@ import {
   isOrtslageVisible,
 } from "@/lib/area-visibility";
 import { loadSinglePublicVisiblePartnerIdForArea } from "@/lib/public-partner-mappings";
+import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
+import { resolveLeadGeneratorConfig } from "@/features/lead-generators/core/resolver";
+import { VALUATION_RANGE_FLOW } from "@/features/lead-generators/valuation/flow";
+import type { ValuationPriceContext } from "@/features/lead-generators/valuation/pricing";
 
 export const revalidate = 3600;
 
 type PageParams = { slug?: string[] };
-type PageProps = { params: Promise<PageParams> };
+type PageProps = { params: Promise<PageParams>; locale?: string | null };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const resolvedParams = await params;
@@ -138,7 +141,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function ImmobilienmarktHierarchiePage({ params }: PageProps) {
+function toPriceRange(
+  row: Record<string, unknown> | null,
+  keys: { min: string; avg: string; max: string },
+) {
+  if (!row) return null;
+  const min = toNumberOrNull(row[keys.min]);
+  const avg = toNumberOrNull(row[keys.avg]);
+  const max = toNumberOrNull(row[keys.max]);
+  if (min === null || avg === null || max === null) return null;
+  return { min, avg, max };
+}
+
+export default async function ImmobilienmarktHierarchiePage({ params, locale = null }: PageProps) {
   const resolvedParams = await params;
   const slugs = resolvedParams.slug ?? [];
   const route = resolveRoute(slugs);
@@ -151,10 +166,20 @@ export default async function ImmobilienmarktHierarchiePage({ params }: PageProp
 
   const { report, tabs, tocItems, activeTabId, basePath, ctx, assets, parentBasePath } = pageModel;
   const reportData = asRecord(report?.data) ?? {};
+  const meta = asRecord(asArray(report.meta)[0] ?? report.meta) ?? {};
   const immobilienKaufpreisRow = asRecord(asArray(reportData["immobilien_kaufpreis"])[0]) ?? null;
   const averagePrice = toNumberOrNull(immobilienKaufpreisRow?.["kaufpreis_immobilien"]);
-  const averagePriceLabel =
-    averagePrice === null ? "---" : formatValueCtx(averagePrice, "kaufpreis_qm", "kpi");
+  const areaId = (
+    asString(meta["ortslage_schluessel"])
+    ?? asString(meta["kreis_schluessel"])
+    ?? ""
+  ).trim();
+  const normalizedLocale = normalizePublicLocale(locale);
+  const slugPath = route.regionSlugs.join("/");
+  const pagePath = buildLocalizedHref(
+    locale,
+    slugPath ? `/immobilienmarkt/${slugPath}` : "/immobilienmarkt",
+  );
 
   const vm = entry.buildVM({
     report,
@@ -173,9 +198,39 @@ export default async function ImmobilienmarktHierarchiePage({ params }: PageProp
     ortSlug: ctx.ortSlug,
   };
 
-  // Bestimmung des Kontext-Labels für den Wizard
   const locationName = ctx.ortSlug || ctx.kreisSlug || "Ihrer Region";
   const level = ctx.ortSlug ? 'ort' : 'kreis';
+  const admin = createAdminClient();
+  const activePartnerId = areaId.length > 0 && (route.level === "kreis" || route.level === "ort")
+    ? await loadSinglePublicVisiblePartnerIdForArea(admin, areaId)
+    : null;
+  const valuationConfig = resolveLeadGeneratorConfig({
+    generatorType: VALUATION_RANGE_FLOW.generatorType,
+    flowKey: VALUATION_RANGE_FLOW.key,
+    variantKey: VALUATION_RANGE_FLOW.defaultVariantKey,
+    locale: normalizedLocale,
+    audience: "public",
+    placementKey: VALUATION_RANGE_FLOW.placementKey,
+    routeLevel: route.level,
+    sourceAreaId: areaId || null,
+    partnerId: activePartnerId,
+    regionLabel: locationName,
+    leadRecipientLabel: pageModel.kontakt?.name ?? "Wohnlagencheck24",
+    canSubmit: Boolean(activePartnerId),
+  });
+  const valuationPriceContext: ValuationPriceContext | null = valuationConfig
+    ? {
+        averagePricePerSqm: averagePrice,
+        housePriceRange: toPriceRange(
+          asRecord(asArray(reportData["haus_kaufpreisspanne"])[0]) ?? null,
+          { min: "preis_haus_min", avg: "preis_haus_avg", max: "preis_haus_max" },
+        ),
+        apartmentPriceRange: toPriceRange(
+          asRecord(asArray(reportData["wohnung_kaufpreisspanne"])[0]) ?? null,
+          { min: "preis_wohnung_min", avg: "preis_wohnung_avg", max: "preis_wohnung_max" },
+        ),
+      }
+    : null;
 
   return (
     <>
@@ -192,30 +247,25 @@ export default async function ImmobilienmarktHierarchiePage({ params }: PageProp
         assets={assets}
       />
 
-      {/* LOKALER CTA: Kontext-Bewertung */}
-      <section className="py-5 bg-dark text-white mt-5 overflow-hidden">
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-lg-8 text-center mb-5">
-              <h2 className="display-5 fw-bold mb-3">
-                Wieviel ist Ihr Objekt in {locationName} wert?
-              </h2>
-              <p className="lead text-secondary">
-                Nutzen Sie den aktuellen Durchschnittspreis von 
-                <strong> {averagePriceLabel} €/m²</strong> als Basis für Ihre KI-Bewertung.
-              </p>
-            </div>
-            
-            <div className="col-lg-10">
-              <ValuationWizard 
-                ctx={valuationCtx}
-                basePrice={averagePrice ?? undefined}
-                level={level}
-              />
+      {valuationConfig && valuationPriceContext ? (
+        <section className="py-5 bg-dark text-white mt-5 overflow-hidden">
+          <div className="container">
+            <div className="row justify-content-center">
+              <div className="col-lg-10">
+                <ValuationWizard
+                  ctx={valuationCtx}
+                  basePrice={averagePrice ?? undefined}
+                  level={level}
+                  locale={normalizedLocale}
+                  pagePath={pagePath}
+                  generatorConfig={valuationConfig}
+                  priceContext={valuationPriceContext}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
     </>
   );
 }

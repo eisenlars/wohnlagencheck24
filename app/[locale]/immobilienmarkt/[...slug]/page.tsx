@@ -99,7 +99,7 @@ export default async function LocalizedImmobilienmarktHierarchiePage({ params }:
   const availability = await getPublicAreaLocaleAvailability(slug, locale);
 
   if (!availability || availability.available) {
-    return <BaseImmobilienmarktPage params={Promise.resolve({ slug })} />;
+    return <BaseImmobilienmarktPage params={Promise.resolve({ slug })} locale={locale} />;
   }
 
   const texts = getPortalSystemTexts(locale);

@@ -427,6 +427,7 @@ async function sendSmtpTextMail(params: {
   subject: string;
   text: string;
   from?: string | null;
+  replyTo?: string | null;
 }): Promise<{ sent: boolean; reason?: string }> {
   const simulate = String(process.env.ADMIN_REVIEW_NOTIFY_SIMULATE ?? "").trim() === "1";
   if (simulate) {
@@ -477,7 +478,7 @@ async function sendSmtpTextMail(params: {
       to: params.to.join(", "),
       subject: params.subject,
       text: params.text,
-      replyTo: smtpUser || undefined,
+      replyTo: String(params.replyTo ?? "").trim() || smtpUser || undefined,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "smtp_send_failed";
@@ -486,6 +487,8 @@ async function sendSmtpTextMail(params: {
 
   return { sent: true };
 }
+
+export { sendSmtpTextMail };
 
 export async function sendAdminReviewReadyEmail(args: SendAdminReviewReadyEmailArgs): Promise<{
   sent: boolean;
