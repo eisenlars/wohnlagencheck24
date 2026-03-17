@@ -590,11 +590,13 @@ export default function AdminClient() {
     areaId: string;
     oldPartnerId: string;
     newPartnerId: string;
+    oldPartnerIsSystemDefault: boolean;
   }>({
     open: false,
     areaId: "",
     oldPartnerId: "",
     newPartnerId: "",
+    oldPartnerIsSystemDefault: false,
   });
   const [handoverStatusModal, setHandoverStatusModal] = useState<{
     open: boolean;
@@ -1104,6 +1106,7 @@ export default function AdminClient() {
     () => String(reviewData?.mapping?.partner_preview_signoff_at ?? "").trim(),
     [reviewData],
   );
+  const currentReviewAllowsDirectGoLive = Boolean(selectedPartner?.is_system_default);
 
   const handoverAreaOptions = useMemo(
     () => displayAreaRows.map((row) => ({ id: row.displayKreisId, label: row.mapping.areas?.name ?? row.displayKreisId })),
@@ -1162,7 +1165,11 @@ export default function AdminClient() {
         Boolean(mapping.is_active),
         Boolean(mapping.is_public_live),
       );
-      return state === "ready_for_review" || state === "in_review" || state === "changes_requested";
+      return state === "ready_for_review"
+        || state === "in_review"
+        || state === "changes_requested"
+        || state === "approved_preview"
+        || state === "live";
     });
     setReviewAreaId(String(reviewCandidate?.area_id ?? ""));
     setReviewData(null);
@@ -1974,6 +1981,7 @@ export default function AdminClient() {
     areaId: string;
     oldPartnerId: string;
     newPartnerId: string;
+    oldPartnerIsSystemDefault: boolean;
   }) {
     setBusy(true);
     setHandoverStatusModal({
@@ -2000,8 +2008,12 @@ export default function AdminClient() {
         lines: [
           ...m.lines,
           "2/4 Server-Übergabe abgeschlossen.",
-          `Alte Integrationen deaktiviert: ${result.handover?.deactivate_old_integrations_applied ? "Ja" : "Nein"}`,
-          "Hinweis: Alter Partner bleibt aktiv. Eine vollständige Entfernung erfolgt nur separat über Datenbereinigung.",
+          input.oldPartnerIsSystemDefault
+            ? "Hinweis: Das Gebiet wurde vom Portalpartner auf einen operativen Partner überführt. Der Portalpartner bleibt dauerhaft aktiv."
+            : `Alte Integrationen deaktiviert: ${result.handover?.deactivate_old_integrations_applied ? "Ja" : "Nein"}`,
+          input.oldPartnerIsSystemDefault
+            ? "Hinweis: Der Portalpartner wird nicht über Datenbereinigung entfernt."
+            : "Hinweis: Alter Partner bleibt aktiv. Eine vollständige Entfernung erfolgt nur separat über Datenbereinigung.",
           "3/4 Partner- und Gebietsübersicht aktualisieren...",
         ],
       }));
@@ -2107,7 +2119,9 @@ export default function AdminClient() {
               {" "}übergeben.
             </p>
             <p style={{ ...modalMessageStyle, marginTop: -4 }}>
-              Alte Integrationen werden dabei automatisch deaktiviert. Der alte Partner bleibt aktiv und kann bei Bedarf später separat über Datenbereinigung entfernt werden.
+              {handoverConfirmModal.oldPartnerIsSystemDefault
+                ? "Das Gebiet wird vom Portalpartner auf einen operativen Partner übertragen. Der Portalpartner bleibt dauerhaft aktiv."
+                : "Alte Integrationen werden dabei automatisch deaktiviert. Der alte Partner bleibt aktiv und kann bei Bedarf später separat über Datenbereinigung entfernt werden."}
             </p>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button
@@ -2125,6 +2139,7 @@ export default function AdminClient() {
                     areaId: payload.areaId,
                     oldPartnerId: payload.oldPartnerId,
                     newPartnerId: payload.newPartnerId,
+                    oldPartnerIsSystemDefault: payload.oldPartnerIsSystemDefault,
                   });
                 }}
               >
@@ -3244,7 +3259,9 @@ export default function AdminClient() {
                   >
                     <strong>{currentReviewPreviewSignoffAt ? "Livegang angefragt." : "Previewphase aktiv."}</strong>
                     {" "}
-                    {currentReviewPreviewSignoffAt
+                    {currentReviewAllowsDirectGoLive
+                      ? "Dieses Gebiet liegt beim Portalpartner. Es kann nach fachlicher Prüfung direkt mit Standardinhalten online geschaltet werden, auch ohne separate Livegang-Anfrage aus dem Partnerbereich."
+                      : currentReviewPreviewSignoffAt
                       ? `Der Partner hat den Previewprozess abgeschlossen und den Livegang am ${formatAdminDateTime(currentReviewPreviewSignoffAt)} angefragt. Bitte die Frontend-Preview jetzt final prüfen und das Gebiet danach bei Bedarf online schalten.`
                       : "Das Gebiet ist fachlich freigegeben und kann jetzt vom Partner intern vorbereitet werden. Bitte Inhalte, Werte sowie SEO-/GEO-Einstellungen vor dem finalen Onlineschalten vollständig prüfen."}
                     {currentReviewPreviewHref ? (
@@ -3272,7 +3289,7 @@ export default function AdminClient() {
                   ) : null}
                   <button
                     style={btnStyle}
-                    disabled={busy || reviewBusy || !reviewAreaId || !currentReviewPreviewSignoffAt}
+                    disabled={busy || reviewBusy || !reviewAreaId || (!currentReviewPreviewSignoffAt && !currentReviewAllowsDirectGoLive)}
                     onClick={() =>
                       run("Onlineschalten", async () => {
                         await setAreaPublication(true);
@@ -3281,7 +3298,7 @@ export default function AdminClient() {
                   >
                     Onlineschalten
                   </button>
-                  {!currentReviewPreviewSignoffAt ? (
+                  {!currentReviewPreviewSignoffAt && !currentReviewAllowsDirectGoLive ? (
                     <div style={{ width: "100%", fontSize: 12, color: "#9a3412" }}>
                       Der Partner muss den Livegang zuerst im Preview-Bereich anfragen, bevor das Gebiet online geschaltet werden kann.
                     </div>
@@ -3366,6 +3383,11 @@ export default function AdminClient() {
           </div>
         </div>
         <div style={{ marginTop: 10, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", background: "#f8fafc" }}>
+          <div style={{ fontSize: 12, color: "#334155", marginBottom: 6 }}>
+            {selectedPartner?.is_system_default
+              ? "Der Portalpartner dient als Standardausspielung. Bei einer Übergabe werden keine Alt-Integrationen deaktiviert und der Portalpartner bleibt dauerhaft im System."
+              : "Alte Integrationen des bisherigen Partners werden bei der Übergabe automatisch deaktiviert. Der bisherige Partner bleibt aktiv und kann bei Bedarf später separat über Datenbereinigung entfernt werden."}
+          </div>
           <div style={{ fontSize: 12, color: "#334155" }}>
             <strong>Vorschau:</strong>{" "}
             {selectedPartner && handoverDraft.area_id && handoverTargetPartner
@@ -3384,6 +3406,7 @@ export default function AdminClient() {
                 areaId: handoverDraft.area_id,
                 oldPartnerId: selectedPartnerId,
                 newPartnerId: handoverDraft.new_partner_id,
+                oldPartnerIsSystemDefault: Boolean(selectedPartner?.is_system_default),
               });
             }}
           >

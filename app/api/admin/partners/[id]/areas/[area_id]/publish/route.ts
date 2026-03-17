@@ -20,6 +20,11 @@ function isMissingPreviewSignoffColumn(error: unknown): boolean {
     && (msg.includes("does not exist") || msg.includes("schema cache"));
 }
 
+function isMissingPartnerSystemDefaultColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partners.is_system_default") && msg.includes("does not exist");
+}
+
 async function updatePublication(args: {
   partnerId: string;
   areaId: string;
@@ -106,6 +111,24 @@ export async function POST(
     }
 
     const admin = createAdminClient();
+    let { data: partner, error: partnerError } = await admin
+      .from("partners")
+      .select("id, is_system_default")
+      .eq("id", partnerId)
+      .maybeSingle();
+    if (partnerError && isMissingPartnerSystemDefaultColumn(partnerError)) {
+      const fallback = await admin
+        .from("partners")
+        .select("id")
+        .eq("id", partnerId)
+        .maybeSingle();
+      partner = fallback.data ? { ...fallback.data, is_system_default: false } : null;
+      partnerError = fallback.error;
+    }
+    if (partnerError) return NextResponse.json({ error: partnerError.message }, { status: 500 });
+    if (!partner) return NextResponse.json({ error: "Partner not found" }, { status: 404 });
+    const isSystemDefaultPartner = Boolean((partner as { is_system_default?: boolean | null }).is_system_default);
+
     let { data: mapping, error: mappingError } = await admin
       .from("partner_area_map")
       .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at")
@@ -145,7 +168,7 @@ export async function POST(
       return NextResponse.json({ error: "Gebiet ist noch nicht fuer Preview freigegeben." }, { status: 409 });
     }
     const previewSignoffAt = String((mapping as { partner_preview_signoff_at?: string | null }).partner_preview_signoff_at ?? "").trim();
-    if (!previewSignoffAt) {
+    if (!previewSignoffAt && !isSystemDefaultPartner) {
       return NextResponse.json({ error: "Partner hat den Livegang noch nicht angefragt." }, { status: 409 });
     }
 
@@ -171,6 +194,7 @@ export async function POST(
         is_active: Boolean((updated as { is_active?: boolean | null }).is_active),
         is_public_live: true,
         activation_status: "live",
+        publish_mode: isSystemDefaultPartner ? "system_default_direct" : "partner_signoff",
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
