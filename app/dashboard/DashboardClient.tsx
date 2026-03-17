@@ -2842,7 +2842,6 @@ const settingsHeaderWrapStyle: React.CSSProperties = {
   maxWidth: 'none',
   background: '#f8fafc',
   padding: '20px 0 14px',
-  marginBottom: '30px',
 };
 
 const welcomeActivationBoxStyle: React.CSSProperties = {
@@ -2936,7 +2935,6 @@ const regionHeaderStickyStyle: React.CSSProperties = {
   zIndex: 10,
   background: '#f8fafc',
   padding: '20px 0 14px',
-  marginBottom: '30px',
 };
 
 const reviewPanelStrongStyle: React.CSSProperties = {
