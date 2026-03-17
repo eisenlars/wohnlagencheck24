@@ -570,6 +570,7 @@ export default function AdminClient() {
   const [reviewAreaId, setReviewAreaId] = useState<string>("");
   const [reviewData, setReviewData] = useState<AreaReviewPayload | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
+  const [visibilityIndexBusy, setVisibilityIndexBusy] = useState(false);
   const [reviewActionError, setReviewActionError] = useState<string | null>(null);
   const [reviewActionMessage, setReviewActionMessage] = useState<string | null>(null);
   const [reviewNoteDraft, setReviewNoteDraft] = useState("");
@@ -1286,6 +1287,26 @@ export default function AdminClient() {
       throw error;
     } finally {
       setReviewBusy(false);
+    }
+  }
+
+  async function rebuildVisibilityIndex() {
+    setVisibilityIndexBusy(true);
+    try {
+      const response = await api<{ ok?: boolean; index?: { generated_at?: string | null } }>(
+        "/api/admin/visibility-index/rebuild",
+        { method: "POST" },
+      );
+      setReviewActionError(null);
+      setReviewActionMessage(
+        `Visibility-Index erfolgreich neu publiziert${String(response?.index?.generated_at ?? "").trim() ? ` (${formatAdminDateTime(String(response?.index?.generated_at ?? "").trim())})` : "."}`,
+      );
+    } catch (error) {
+      setReviewActionError(error instanceof Error ? error.message : "Visibility-Index konnte nicht neu publiziert werden.");
+      setReviewActionMessage(null);
+      throw error;
+    } finally {
+      setVisibilityIndexBusy(false);
     }
   }
 
@@ -3085,6 +3106,44 @@ export default function AdminClient() {
             </button>
           </div>
         )}
+
+        <div
+          style={{
+            marginTop: 12,
+            border: "1px solid #cbd5e1",
+            background: "#f8fafc",
+            borderRadius: 10,
+            padding: 12,
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: 13, color: "#334155", lineHeight: 1.55 }}>
+            <strong>Visibility-Index neu publizieren</strong>
+            {" "}
+            Der öffentliche Immobilienmarkt liest die Sichtbarkeit nicht direkt aus dem Adminstatus, sondern aus dem publizierten
+            {" "}
+            <code>visibility_index.json</code>.
+            {" "}
+            Nach direkten SQL-Änderungen oder Altlasten im Live-/Preview-Workflow kann der Public-Stand deshalb veraltet sein, obwohl ein Gebiet im Admin bereits als online erscheint.
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              style={btnGhostStyle}
+              disabled={busy || reviewBusy || visibilityIndexBusy}
+              onClick={() =>
+                run("Visibility-Index neu publizieren", async () => {
+                  await rebuildVisibilityIndex();
+                })
+              }
+            >
+              {visibilityIndexBusy ? "Publikation läuft..." : "Visibility-Index neu publizieren"}
+            </button>
+            <span style={{ fontSize: 12, color: "#64748b" }}>
+              Sinnvoll nach SQL-Korrekturen an <code>partner_area_map</code> oder wenn Public-URLs trotz korrektem Adminstatus noch 404 liefern.
+            </span>
+          </div>
+        </div>
 
         {!reviewContentDismissed && reviewAreaOptions.length > 0 && reviewAreaId && reviewData ? (
           <>
