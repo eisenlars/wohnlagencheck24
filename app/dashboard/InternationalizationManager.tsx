@@ -2475,7 +2475,6 @@ export default function InternationalizationManager({ config, availableLocales, 
                     <span style={workflowClassBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
                     <span style={classCardCountStyle}>{stats.total}</span>
                   </div>
-                  <strong style={classCardTitleStyle}>{i18nWorkflowClassTitle(displayClass)}</strong>
                   <p style={classCardTextStyle}>{i18nWorkflowClassDescription(displayClass)}</p>
                   <div style={classCardStatsStyle}>
                     <span>Uebersetzt: {stats.translated}</span>
@@ -2487,18 +2486,22 @@ export default function InternationalizationManager({ config, availableLocales, 
                     <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
                     <span>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
                   </div>
-                  {active ? (
-                    <div style={classCardActionRowStyle}>
-                      <button
-                        type="button"
-                        style={inlineWorkflowButtonStyle(displayClass, Boolean(selectedWorkflowKeys.length) && !loading && !saving)}
-                        onClick={() => void triggerWorkflowUpdate()}
-                        disabled={loading || saving || selectedWorkflowKeys.length === 0}
-                      >
-                        {activeClass === 'data_driven' ? 'Data-Driven aktualisieren' : 'Übersetzung starten'}
-                      </button>
-                    </div>
-                  ) : null}
+                  <div style={classCardActionRowStyle}>
+                    <button
+                      type="button"
+                      style={inlineWorkflowButtonStyle(displayClass, active && Boolean(selectedWorkflowKeys.length) && !loading && !saving)}
+                      onClick={() => {
+                        if (!active) {
+                          setActiveClass(displayClass);
+                          return;
+                        }
+                        void triggerWorkflowUpdate();
+                      }}
+                      disabled={loading || saving || (active && selectedWorkflowKeys.length === 0)}
+                    >
+                      {activeClass === 'data_driven' && active ? 'Data-Driven aktualisieren' : 'Übersetzung starten'}
+                    </button>
+                  </div>
                 </button>
               );
             })}
@@ -4034,7 +4037,7 @@ const classCardStyle = (active: boolean): React.CSSProperties => ({
   padding: 14,
   borderRadius: 12,
   border: active ? '1px solid #0f766e' : '1px solid #e2e8f0',
-  background: active ? '#f0fdfa' : '#fff',
+  background: '#fff',
   cursor: 'pointer',
 });
 
@@ -4047,18 +4050,17 @@ const classCardTopStyle: React.CSSProperties = {
 
 const workflowClassBadgeStyle = (displayClass: DisplayTextClass): React.CSSProperties => ({
   ...displayTextBadgeStyle(displayClass),
-  padding: '5px 10px',
-  fontSize: 11,
+  fontSize: 16,
+  lineHeight: 1,
+  padding: '10px 20px',
+  borderRadius: 999,
+  fontWeight: 700,
+  letterSpacing: '0.01em',
 });
 
 const classCardCountStyle: React.CSSProperties = {
   fontSize: 18,
   fontWeight: 800,
-  color: '#0f172a',
-};
-
-const classCardTitleStyle: React.CSSProperties = {
-  fontSize: 15,
   color: '#0f172a',
 };
 
@@ -4100,7 +4102,7 @@ const inlineWorkflowButtonStyle = (displayClass: DisplayTextClass, active: boole
   padding: '0 14px',
   borderRadius: 999,
   border: active ? `1px solid ${String(displayTextBadgeStyle(displayClass).background ?? '#fcd34d')}` : '1px solid #cbd5e1',
-  background: active ? String(displayTextBadgeStyle(displayClass).background ?? '#fcd34d') : '#e2e8f0',
+  background: active ? String(displayTextBadgeStyle(displayClass).background ?? '#fcd34d') : '#ffffff',
   color: active ? '#0f172a' : '#64748b',
   boxShadow: active ? '0 8px 20px rgba(15, 23, 42, 0.08)' : 'none',
 });
