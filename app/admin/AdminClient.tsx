@@ -570,6 +570,7 @@ export default function AdminClient() {
   const [reviewData, setReviewData] = useState<AreaReviewPayload | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewActionError, setReviewActionError] = useState<string | null>(null);
+  const [reviewActionMessage, setReviewActionMessage] = useState<string | null>(null);
   const [reviewNoteDraft, setReviewNoteDraft] = useState("");
   const [clearReviewOnSuccessClose, setClearReviewOnSuccessClose] = useState(false);
   const [reviewContentDismissed, setReviewContentDismissed] = useState(false);
@@ -1200,6 +1201,7 @@ export default function AdminClient() {
     if (!selectedPartnerId || !areaId) {
       setReviewData(null);
       setReviewActionError(null);
+      setReviewActionMessage(null);
       setReviewNoteDraft("");
       return;
     }
@@ -1209,6 +1211,7 @@ export default function AdminClient() {
       setReviewData(data);
       setReviewNoteDraft(String(data.mapping?.admin_review_note ?? ""));
       setReviewActionError(null);
+      setReviewActionMessage(null);
     } catch (error) {
       setReviewData(null);
       setStatus(error instanceof Error ? error.message : "Freigabeprüfung konnte nicht geladen werden.");
@@ -1224,6 +1227,7 @@ export default function AdminClient() {
       const note = action === "changes_requested" ? reviewNoteDraft.trim() : "";
       if (action === "changes_requested" && !note) {
         setReviewActionError("Bitte einen Hinweis für die Nachbesserung eintragen.");
+        setReviewActionMessage(null);
         return;
       }
       const response = await api<AreaReviewPayload>(`/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(reviewAreaId)}/review`, {
@@ -1240,11 +1244,20 @@ export default function AdminClient() {
             ? `Preview wurde freigegeben, Partner-Mail aber nicht versendet (${reason}).`
             : `Nachbesserung wurde gesetzt, Partner-Mail aber nicht versendet (${reason}).`,
         );
+        setReviewActionMessage(null);
         return;
       }
       setReviewActionError(null);
+      setReviewActionMessage(
+        action === "approve"
+          ? "Previewfreigabe erfolgreich gesetzt und Partner-Mail versendet."
+          : action === "changes_requested"
+            ? "Aufforderung zur Nachbesserung erfolgreich an den Partner versendet."
+            : "Prüfstatus erfolgreich aktualisiert.",
+      );
     } catch (error) {
       setReviewActionError(error instanceof Error ? error.message : "Aktion konnte nicht ausgeführt werden.");
+      setReviewActionMessage(null);
       throw error;
     } finally {
       setReviewBusy(false);
@@ -1265,8 +1278,10 @@ export default function AdminClient() {
       await loadAreaOverview();
       await loadAreaReview(reviewAreaId);
       setReviewActionError(null);
+      setReviewActionMessage(live ? "Gebiet erfolgreich online geschaltet." : "Gebiet erfolgreich offline genommen.");
     } catch (error) {
       setReviewActionError(error instanceof Error ? error.message : "Veröffentlichung konnte nicht aktualisiert werden.");
+      setReviewActionMessage(null);
       throw error;
     } finally {
       setReviewBusy(false);
@@ -3044,6 +3059,7 @@ export default function AdminClient() {
               onChange={(e) => {
                 setReviewAreaId(e.target.value);
                 setReviewActionError(null);
+                setReviewActionMessage(null);
                 setReviewContentDismissed(false);
                 setReviewNoteDraft("");
               }}
@@ -3245,6 +3261,11 @@ export default function AdminClient() {
             {reviewActionError ? (
               <div style={{ marginTop: 8, fontSize: 12, color: "#991b1b" }}>
                 {reviewActionError}
+              </div>
+            ) : null}
+            {reviewActionMessage ? (
+              <div style={{ marginTop: 8, fontSize: 12, color: "#166534" }}>
+                {reviewActionMessage}
               </div>
             ) : null}
           </>
