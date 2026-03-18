@@ -84,6 +84,7 @@ type PersistedI18nViewState = {
   activeTab?: string;
   activeClass?: DisplayTextClass;
   activeDomain?: I18nProductDomainId;
+  selectedScopeAreaId?: string;
   selectedBlogPostId?: string;
   selectedPropertyOfferId?: string;
   selectedReferenceId?: string;
@@ -783,6 +784,7 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [workflowPromptDrafts, setWorkflowPromptDrafts] = useState<Record<string, string>>({});
   const [rowPromptOpenMap, setRowPromptOpenMap] = useState<Record<string, boolean>>({});
   const [rowCustomPromptMap, setRowCustomPromptMap] = useState<Record<string, string>>({});
+  const [scopeAreaItems, setScopeAreaItems] = useState<ScopeArea[]>([]);
   const activeTab = String(i18nViewState.activeTab ?? 'marktueberblick');
   const setActiveTab = (nextTab: string) => {
     setI18nViewState((prev) => ({ ...prev, activeTab: nextTab }));
@@ -794,6 +796,10 @@ export default function InternationalizationManager({ config, availableLocales, 
   const activeDomain = (i18nViewState.activeDomain ?? 'immobilienmarkt') as I18nProductDomainId;
   const setActiveDomain = (nextDomain: I18nProductDomainId) => {
     setI18nViewState((prev) => ({ ...prev, activeDomain: nextDomain }));
+  };
+  const selectedScopeAreaId = String(i18nViewState.selectedScopeAreaId ?? '');
+  const setSelectedScopeAreaId = (nextAreaId: string) => {
+    setI18nViewState((prev) => ({ ...prev, selectedScopeAreaId: nextAreaId }));
   };
   const selectedBlogPostId = String(i18nViewState.selectedBlogPostId ?? '');
   const setSelectedBlogPostId = (postId: string) => {
@@ -1892,6 +1898,7 @@ export default function InternationalizationManager({ config, availableLocales, 
     setLoading(true);
     try {
       const scopeAreas = await resolveScopeAreas(scope);
+      setScopeAreaItems(scopeAreas);
       const keys = Array.from(new Set((options?.sectionKeys ?? []).map((item) => String(item ?? '').trim()).filter(Boolean)));
       const results = await Promise.all(scopeAreas.map(async (scopeArea) => {
         const params = new URLSearchParams({
@@ -2066,6 +2073,12 @@ export default function InternationalizationManager({ config, availableLocales, 
     setScope('current_area');
   }, [isDistrict, scope]);
 
+  useEffect(() => {
+    if (scopeAreaItems.length === 0) return;
+    if (scopeAreaItems.some((item) => item.area_id === selectedScopeAreaId)) return;
+    setSelectedScopeAreaId(scopeAreaItems[0]?.area_id ?? '');
+  }, [scopeAreaItems, selectedScopeAreaId]);
+
   const classSummary = useMemo(() => {
     const summaryMap: Record<DisplayTextClass, {
       total: number;
@@ -2128,6 +2141,7 @@ export default function InternationalizationManager({ config, availableLocales, 
   const filteredRows = useMemo(() => {
     const withIndex = (rowsByTab.get(activeTab) ?? [])
       .filter((row) => isTranslatableSectionKey(row.section_key))
+      .filter((row) => (scope === 'kreis_ortslagen' ? row.area_id === selectedScopeAreaId : true))
       .filter((row) => {
         const meta = resolveSectionMeta(row.section_key);
         return resolveDisplayTextClass(row.section_key, meta.type) === activeClass;
@@ -2143,7 +2157,7 @@ export default function InternationalizationManager({ config, availableLocales, 
       return a.idx - b.idx;
     });
     return withIndex.map((item) => item.row);
-  }, [rowsByTab, activeTab, activeClass]);
+  }, [rowsByTab, activeTab, activeClass, scope, selectedScopeAreaId]);
 
   const hasEdits = useMemo(
     () => rows.some((row) => String(row.translated_content ?? '').trim() !== String(baselineByKey[`${row.area_id}::${row.section_key}`] ?? '').trim()),
@@ -2271,6 +2285,12 @@ export default function InternationalizationManager({ config, availableLocales, 
       })
       .map((row) => row.section_key))),
     [rows, activeClass],
+  );
+
+  const showScopeAreaSidebar = scope === 'kreis_ortslagen' && scopeAreaItems.length > 1;
+  const selectedScopeArea = useMemo(
+    () => scopeAreaItems.find((item) => item.area_id === selectedScopeAreaId) ?? scopeAreaItems[0] ?? null,
+    [scopeAreaItems, selectedScopeAreaId],
   );
 
   function formatCost(value: number | null, currency: 'USD' | 'EUR'): string {
@@ -2617,147 +2637,331 @@ export default function InternationalizationManager({ config, availableLocales, 
           ))}
         </div>
 
-        <div style={tableWrapStyle}>
-          <table style={tableStyle}>
-            <colgroup>
-              <col style={{ width: '24%' }} />
-              <col style={{ width: '38%' }} />
-              <col style={{ width: '38%' }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th style={thStyle}>Bereich</th>
-                <th style={thStyle}>Deutsch (Quelle)</th>
-                <th style={thStyle}>Übersetzung</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.length === 0 ? (
-                <tr>
-                  <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind fuer den gewaehlten Texttyp aktuell keine uebersetzbaren Inhalte vorhanden.</td>
-                </tr>
-              ) : filteredRows.map((row, idx) => (
-                <tr key={`${row.area_id}:${row.section_key}:${idx}`}>
-                  <td style={tdStyle}>
-                    {(() => {
-                      const meta = resolveSectionMeta(row.section_key);
-                      const sectionLabel = meta?.label ?? row.section_key;
-                      const sectionType: SectionKind = meta?.type ?? 'general';
-                      const displayClass = resolveDisplayTextClass(row.section_key, sectionType);
-                      return (
-                        <div style={{ display: 'grid', gap: 6 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 700 }}>{sectionLabel}</span>
-                            <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
-                          </div>
-                          {scope === 'kreis_ortslagen' ? (
-                            <div style={areaMetaStyle}>{row.area_name}</div>
-                          ) : null}
-                          <div style={sectionKeyMetaStyle}>{row.section_key}</div>
-                        </div>
-                      );
-                    })()}
-                  </td>
-                  <td style={tdStyle}>
-                    <textarea style={textareaReadonlyStyle} value={row.source_content_de ?? ''} readOnly />
-                  </td>
-                  <td style={tdStyle}>
-                    <textarea
-                      style={textareaStyle}
-                      value={row.translated_content ?? ''}
-                      onChange={(e) => {
-                        const next = e.target.value;
-                        setRows((prev) => prev.map((item) => (
-                          item.section_key === row.section_key
-                            ? { ...item, translated_content: next }
-                            : item
-                        )));
-                      }}
-                    />
-                    <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        style={smallGhostButtonStyle}
-                        disabled={loading || saving || llmOptions.length === 0}
-                        onClick={async () => {
-                          try {
-                            setRewritingKey(row.section_key);
-                            setStatusTone(null);
-                            setStatus(`KI übersetzt ${row.section_key} …`);
-                            const translated = await rewriteViaAi(row);
-                            setRows((prev) => prev.map((item) => (
-                              item.section_key === row.section_key
-                                ? { ...item, translated_content: translated }
-                                : item
-                            )));
-                            setStatus(`KI-Übersetzung für ${row.section_key} abgeschlossen.`);
-                            setStatusTone('success');
-                          } catch (error) {
-                            setStatus(error instanceof Error ? error.message : 'KI-Übersetzung fehlgeschlagen.');
-                            setStatusTone('error');
-                          } finally {
-                            setRewritingKey(null);
-                          }
-                        }}
-                      >
-                        {rewritingKey === row.section_key ? 'Übersetzt …' : 'Mit KI übersetzen'}
-                      </button>
-                      <button
-                        type="button"
-                        style={promptToggleStyle}
-                        onClick={() => {
-                          const promptKey = rowPromptStorageKey(row);
-                          setRowPromptOpenMap((prev) => ({
-                            ...prev,
-                            [promptKey]: !prev[promptKey],
-                          }));
-                        }}
-                      >
-                        {rowPromptOpenMap[rowPromptStorageKey(row)] ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-                      </button>
-                      {row.translation_is_stale ? (
-                        <span style={staleBadgeStyle}>Quelle geändert</span>
-                      ) : null}
-                    </div>
-                    {rowPromptOpenMap[rowPromptStorageKey(row)] ? (
-                      <div style={promptPanelStyle}>
-                        <div style={promptLabelStyle}>Standard-Prompt</div>
-                        <div style={promptContentStyle}>{getWorkflowPrompt(getRowDisplayClass(row))}</div>
-                        <label style={promptInputLabelStyle}>
-                          Eigener Prompt (optional)
+        {showScopeAreaSidebar ? (
+          <div style={blogGridStyle}>
+            <aside style={blogListCardStyle}>
+              <div style={blogListHeadStyle}>
+                <h3 style={sectionTabsIntroTitleStyle}>Gebiete</h3>
+              </div>
+              <div style={blogListMetaStyle}>
+                Wähle links Kreis oder Ortslage. Rechts werden dann nur die Texte des gewählten Gebiets angezeigt.
+              </div>
+              <div style={blogListWrapStyle}>
+                {scopeAreaItems.map((item) => {
+                  const isDistrictItem = item.area_id.split('-').length <= 3;
+                  const active = selectedScopeArea?.area_id === item.area_id;
+                  return (
+                    <button
+                      key={item.area_id}
+                      type="button"
+                      style={blogListRowStyle(active)}
+                      onClick={() => setSelectedScopeAreaId(item.area_id)}
+                    >
+                      <div style={blogListRowTopStyle}>
+                        <strong style={blogListHeadlineStyle}>{item.area_name}</strong>
+                        <span style={scopeAreaTypeBadgeStyle(isDistrictItem)}>{isDistrictItem ? 'Kreis' : 'Ortslage'}</span>
+                      </div>
+                      <div style={blogListMetaLineStyle}>{item.area_id}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+
+            <div style={blogEditorWrapStyle}>
+              <div style={blogEditorHeadStyle}>
+                <div>
+                  <h3 style={sectionTabsIntroTitleStyle}>{selectedScopeArea?.area_name ?? 'Gebiet wählen'}</h3>
+                  <p style={blogEditorIntroStyle}>
+                    Die Texttyp- und Tokenschätzungen oben gelten weiter für den gesamten Scope. Hier rechts bearbeitest du gezielt das ausgewählte Gebiet.
+                  </p>
+                </div>
+              </div>
+              <div style={tableWrapStyle}>
+                <table style={tableStyle}>
+                  <colgroup>
+                    <col style={{ width: '24%' }} />
+                    <col style={{ width: '38%' }} />
+                    <col style={{ width: '38%' }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Bereich</th>
+                      <th style={thStyle}>Deutsch (Quelle)</th>
+                      <th style={thStyle}>Übersetzung</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRows.length === 0 ? (
+                      <tr>
+                        <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind für das gewählte Gebiet und den gewählten Texttyp aktuell keine übersetzbaren Inhalte vorhanden.</td>
+                      </tr>
+                    ) : filteredRows.map((row, idx) => (
+                      <tr key={`${row.area_id}:${row.section_key}:${idx}`}>
+                        <td style={tdStyle}>
+                          {(() => {
+                            const meta = resolveSectionMeta(row.section_key);
+                            const sectionLabel = meta?.label ?? row.section_key;
+                            const sectionType: SectionKind = meta?.type ?? 'general';
+                            const displayClass = resolveDisplayTextClass(row.section_key, sectionType);
+                            return (
+                              <div style={{ display: 'grid', gap: 6 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                  <span style={{ fontWeight: 700 }}>{sectionLabel}</span>
+                                  <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
+                                </div>
+                                <div style={sectionKeyMetaStyle}>{row.section_key}</div>
+                              </div>
+                            );
+                          })()}
+                        </td>
+                        <td style={tdStyle}>
+                          <textarea style={textareaReadonlyStyle} value={row.source_content_de ?? ''} readOnly />
+                        </td>
+                        <td style={tdStyle}>
                           <textarea
-                            value={rowCustomPromptMap[rowPromptStorageKey(row)] ?? ''}
+                            style={textareaStyle}
+                            value={row.translated_content ?? ''}
                             onChange={(e) => {
                               const next = e.target.value;
+                              setRows((prev) => prev.map((item) => (
+                                item.area_id === row.area_id && item.section_key === row.section_key
+                                  ? { ...item, translated_content: next }
+                                  : item
+                              )));
+                            }}
+                          />
+                          <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              style={smallGhostButtonStyle}
+                              disabled={loading || saving || llmOptions.length === 0}
+                              onClick={async () => {
+                                try {
+                                  setRewritingKey(`${row.area_id}:${row.section_key}`);
+                                  setStatusTone(null);
+                                  setStatus(`KI übersetzt ${row.section_key} …`);
+                                  const translated = await rewriteViaAi(row);
+                                  setRows((prev) => prev.map((item) => (
+                                    item.area_id === row.area_id && item.section_key === row.section_key
+                                      ? { ...item, translated_content: translated }
+                                      : item
+                                  )));
+                                  setStatus(`KI-Übersetzung für ${row.section_key} abgeschlossen.`);
+                                  setStatusTone('success');
+                                } catch (error) {
+                                  setStatus(error instanceof Error ? error.message : 'KI-Übersetzung fehlgeschlagen.');
+                                  setStatusTone('error');
+                                } finally {
+                                  setRewritingKey(null);
+                                }
+                              }}
+                            >
+                              {rewritingKey === `${row.area_id}:${row.section_key}` ? 'Übersetzt …' : 'Mit KI übersetzen'}
+                            </button>
+                            <button
+                              type="button"
+                              style={promptToggleStyle}
+                              onClick={() => {
+                                const promptKey = rowPromptStorageKey(row);
+                                setRowPromptOpenMap((prev) => ({
+                                  ...prev,
+                                  [promptKey]: !prev[promptKey],
+                                }));
+                              }}
+                            >
+                              {rowPromptOpenMap[rowPromptStorageKey(row)] ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+                            </button>
+                            {row.translation_is_stale ? (
+                              <span style={staleBadgeStyle}>Quelle geändert</span>
+                            ) : null}
+                          </div>
+                          {rowPromptOpenMap[rowPromptStorageKey(row)] ? (
+                            <div style={promptPanelStyle}>
+                              <div style={promptLabelStyle}>Standard-Prompt</div>
+                              <div style={promptContentStyle}>{getWorkflowPrompt(getRowDisplayClass(row))}</div>
+                              <label style={promptInputLabelStyle}>
+                                Eigener Prompt (optional)
+                                <textarea
+                                  value={rowCustomPromptMap[rowPromptStorageKey(row)] ?? ''}
+                                  onChange={(e) => {
+                                    const next = e.target.value;
+                                    const promptKey = rowPromptStorageKey(row);
+                                    setRowCustomPromptMap((prev) => ({
+                                      ...prev,
+                                      [promptKey]: next,
+                                    }));
+                                  }}
+                                  style={promptInputStyle}
+                                  placeholder="Eigene Zusatzvorgaben (werden zum Standard-Prompt ergänzt)"
+                                />
+                              </label>
+                            </div>
+                          ) : null}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={actionsBottomStyle}>
+                <button
+                  type="button"
+                  style={buttonPrimaryStyle(!(loading || saving || rows.length === 0 || !hasEdits))}
+                  onClick={() => void saveRows()}
+                  disabled={loading || saving || rows.length === 0 || !hasEdits}
+                >
+                  {saving ? 'Speichern …' : 'Übersetzungen speichern'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={tableWrapStyle}>
+              <table style={tableStyle}>
+                <colgroup>
+                  <col style={{ width: '24%' }} />
+                  <col style={{ width: '38%' }} />
+                  <col style={{ width: '38%' }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Bereich</th>
+                    <th style={thStyle}>Deutsch (Quelle)</th>
+                    <th style={thStyle}>Übersetzung</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRows.length === 0 ? (
+                    <tr>
+                      <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind fuer den gewaehlten Texttyp aktuell keine uebersetzbaren Inhalte vorhanden.</td>
+                    </tr>
+                  ) : filteredRows.map((row, idx) => (
+                    <tr key={`${row.area_id}:${row.section_key}:${idx}`}>
+                      <td style={tdStyle}>
+                        {(() => {
+                          const meta = resolveSectionMeta(row.section_key);
+                          const sectionLabel = meta?.label ?? row.section_key;
+                          const sectionType: SectionKind = meta?.type ?? 'general';
+                          const displayClass = resolveDisplayTextClass(row.section_key, sectionType);
+                          return (
+                            <div style={{ display: 'grid', gap: 6 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 700 }}>{sectionLabel}</span>
+                                <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
+                              </div>
+                              {scope === 'kreis_ortslagen' ? (
+                                <div style={areaMetaStyle}>{row.area_name}</div>
+                              ) : null}
+                              <div style={sectionKeyMetaStyle}>{row.section_key}</div>
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td style={tdStyle}>
+                        <textarea style={textareaReadonlyStyle} value={row.source_content_de ?? ''} readOnly />
+                      </td>
+                      <td style={tdStyle}>
+                        <textarea
+                          style={textareaStyle}
+                          value={row.translated_content ?? ''}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setRows((prev) => prev.map((item) => (
+                              item.area_id === row.area_id && item.section_key === row.section_key
+                                ? { ...item, translated_content: next }
+                                : item
+                            )));
+                          }}
+                        />
+                        <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            style={smallGhostButtonStyle}
+                            disabled={loading || saving || llmOptions.length === 0}
+                            onClick={async () => {
+                              try {
+                                setRewritingKey(`${row.area_id}:${row.section_key}`);
+                                setStatusTone(null);
+                                setStatus(`KI übersetzt ${row.section_key} …`);
+                                const translated = await rewriteViaAi(row);
+                                setRows((prev) => prev.map((item) => (
+                                  item.area_id === row.area_id && item.section_key === row.section_key
+                                    ? { ...item, translated_content: translated }
+                                    : item
+                                )));
+                                setStatus(`KI-Übersetzung für ${row.section_key} abgeschlossen.`);
+                                setStatusTone('success');
+                              } catch (error) {
+                                setStatus(error instanceof Error ? error.message : 'KI-Übersetzung fehlgeschlagen.');
+                                setStatusTone('error');
+                              } finally {
+                                setRewritingKey(null);
+                              }
+                            }}
+                          >
+                            {rewritingKey === `${row.area_id}:${row.section_key}` ? 'Übersetzt …' : 'Mit KI übersetzen'}
+                          </button>
+                          <button
+                            type="button"
+                            style={promptToggleStyle}
+                            onClick={() => {
                               const promptKey = rowPromptStorageKey(row);
-                              setRowCustomPromptMap((prev) => ({
+                              setRowPromptOpenMap((prev) => ({
                                 ...prev,
-                                [promptKey]: next,
+                                [promptKey]: !prev[promptKey],
                               }));
                             }}
-                            style={promptInputStyle}
-                            placeholder="Eigene Zusatzvorgaben (werden zum Standard-Prompt ergänzt)"
-                          />
-                        </label>
-                      </div>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                          >
+                            {rowPromptOpenMap[rowPromptStorageKey(row)] ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+                          </button>
+                          {row.translation_is_stale ? (
+                            <span style={staleBadgeStyle}>Quelle geändert</span>
+                          ) : null}
+                        </div>
+                        {rowPromptOpenMap[rowPromptStorageKey(row)] ? (
+                          <div style={promptPanelStyle}>
+                            <div style={promptLabelStyle}>Standard-Prompt</div>
+                            <div style={promptContentStyle}>{getWorkflowPrompt(getRowDisplayClass(row))}</div>
+                            <label style={promptInputLabelStyle}>
+                              Eigener Prompt (optional)
+                              <textarea
+                                value={rowCustomPromptMap[rowPromptStorageKey(row)] ?? ''}
+                                onChange={(e) => {
+                                  const next = e.target.value;
+                                  const promptKey = rowPromptStorageKey(row);
+                                  setRowCustomPromptMap((prev) => ({
+                                    ...prev,
+                                    [promptKey]: next,
+                                  }));
+                                }}
+                                style={promptInputStyle}
+                                placeholder="Eigene Zusatzvorgaben (werden zum Standard-Prompt ergänzt)"
+                              />
+                            </label>
+                          </div>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        <div style={actionsBottomStyle}>
-          <button
-            type="button"
-            style={buttonPrimaryStyle(!(loading || saving || rows.length === 0 || !hasEdits))}
-            onClick={() => void saveRows()}
-            disabled={loading || saving || rows.length === 0 || !hasEdits}
-          >
-            {saving ? 'Speichern …' : 'Übersetzungen speichern'}
-          </button>
-        </div>
+            <div style={actionsBottomStyle}>
+              <button
+                type="button"
+                style={buttonPrimaryStyle(!(loading || saving || rows.length === 0 || !hasEdits))}
+                onClick={() => void saveRows()}
+                disabled={loading || saving || rows.length === 0 || !hasEdits}
+              >
+                {saving ? 'Speichern …' : 'Übersetzungen speichern'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
       ) : activeDomain === 'blog' ? (
       <div style={editorCardStyle}>
@@ -4415,6 +4619,18 @@ const blogListSublineStyle: React.CSSProperties = {
   color: '#475569',
   lineHeight: 1.45,
 };
+
+const scopeAreaTypeBadgeStyle = (isDistrictItem: boolean): React.CSSProperties => ({
+  borderRadius: 999,
+  padding: '5px 10px',
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '0.03em',
+  textTransform: 'uppercase',
+  whiteSpace: 'nowrap',
+  background: isDistrictItem ? '#e2e8f0' : '#f1f5f9',
+  color: '#475569',
+});
 
 const blogListMetaLineStyle: React.CSSProperties = {
   fontSize: 11,
