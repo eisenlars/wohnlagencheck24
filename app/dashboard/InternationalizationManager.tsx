@@ -41,6 +41,7 @@ import {
   workflowHeaderStyle as workflowCardHeaderStyle,
   workflowInlineFieldStyle,
   workflowInlineSelectStyle,
+  workflowCardStackStyle,
   workflowPanelCardStyle,
   workflowPromptLabelStyle,
   workflowPromptTextareaStyle,
@@ -2536,8 +2537,8 @@ export default function InternationalizationManager({ config, availableLocales, 
         </div>
 
 	      {activeDomain === 'immobilienmarkt' ? (
-	      <>
-	      <div style={workflowPanelCardStyle}>
+	      <div style={workflowCardStackStyle}>
+	      <div style={{ ...workflowPanelCardStyle, marginBottom: 0 }}>
 	        <div style={workflowCardHeaderStyle}>
 	          <div style={workflowHeaderInlineStyle}>
 	            <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
@@ -2640,7 +2641,7 @@ export default function InternationalizationManager({ config, availableLocales, 
 	        </div>
 	      </div>
 
-	      <div style={workflowPanelCardStyle}>
+	      <div style={{ ...workflowPanelCardStyle, marginBottom: 0 }}>
 	        <div style={sectionTabsIntroStyle}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
@@ -2988,7 +2989,7 @@ export default function InternationalizationManager({ config, availableLocales, 
           </>
         )}
 	      </div>
-	      </>
+	      </div>
 	      ) : activeDomain === 'blog' ? (
       <div style={editorCardStyle}>
         {blogStatus ? <div style={blogStatusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{blogStatus}</div> : null}

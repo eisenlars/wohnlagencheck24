@@ -10,6 +10,11 @@ export const workflowPanelCardStyle: CSSProperties = {
   marginBottom: 12,
 };
 
+export const workflowCardStackStyle: CSSProperties = {
+  display: 'grid',
+  gap: 12,
+};
+
 export const workflowHeaderStyle: CSSProperties = {
   display: 'grid',
   gap: 10,

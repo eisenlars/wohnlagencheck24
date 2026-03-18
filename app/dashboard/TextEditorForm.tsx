@@ -33,6 +33,7 @@ import {
   workflowHeaderStyle as textWorkflowHeaderStyle,
   workflowInlineFieldStyle as textWorkflowInlineFieldStyle,
   workflowInlineSelectStyle as textWorkflowInlineSelectStyle,
+  workflowCardStackStyle,
   workflowPanelCardStyle as textWorkflowCardStyle,
   workflowPromptLabelStyle as textWorkflowPromptLabelStyle,
   workflowPromptTextareaStyle as textWorkflowPromptTextareaStyle,
@@ -1422,6 +1423,7 @@ export default function TextEditorForm({
 
   return (
     <div style={{ width: '100%' }}>
+      <div style={showGlobalClassActions ? workflowCardStackStyle : undefined}>
       {showGlobalClassActions ? (
         <>
           <div style={textWorkflowTopCardStyle}>
@@ -1445,7 +1447,7 @@ export default function TextEditorForm({
             </div>
           </div>
 
-          <div style={textWorkflowCardStyle}>
+          <div style={{ ...textWorkflowCardStyle, marginBottom: 0 }}>
             <div style={textWorkflowHeaderStyle}>
               <div style={textWorkflowHeaderInlineStyle}>
                 <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
@@ -1690,6 +1692,7 @@ export default function TextEditorForm({
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {saving && <div style={saveIndicatorStyle}>Speichere Änderungen...</div>}
