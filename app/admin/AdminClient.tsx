@@ -5576,8 +5576,11 @@ export default function AdminClient() {
 const wrapStyle: React.CSSProperties = {
   width: "100%",
   margin: 0,
-  padding: "16px 16px 32px 0",
+  padding: 0,
   color: "#0f172a",
+  minHeight: "100vh",
+  display: "flex",
+  flexDirection: "column",
 };
 
 const headerStyle: React.CSSProperties = {
@@ -5599,7 +5602,6 @@ const dashboardHeaderStyle: React.CSSProperties = {
   position: "sticky",
   top: 0,
   zIndex: 40,
-  marginBottom: 10,
 };
 
 const dashboardStatusStyle: React.CSSProperties = {
@@ -5676,11 +5678,13 @@ const menuItemStyle: React.CSSProperties = {
 const statusStyle: React.CSSProperties = {
   background: "#f8fafc",
   border: "1px solid #e2e8f0",
-  borderRadius: 8,
-  padding: "6px 10px",
+  borderRadius: 0,
+  padding: "6px 20px",
   margin: 0,
   fontSize: 12,
   color: "#64748b",
+  width: "100%",
+  boxSizing: "border-box",
 };
 
 const dashboardFooterStyle: React.CSSProperties = {
@@ -5692,6 +5696,7 @@ const dashboardFooterStyle: React.CSSProperties = {
   justifyContent: "space-between",
   padding: "0 20px",
   fontSize: "12px",
+  width: "100%",
 };
 
 const dashboardFooterCopyStyle: React.CSSProperties = {
@@ -5715,7 +5720,11 @@ const adminLayoutStyle: React.CSSProperties = {
   gridTemplateColumns: "50px 260px minmax(0, 1fr)",
   gap: 0,
   alignItems: "stretch",
-  minHeight: "calc(100vh - 120px)",
+  width: "100%",
+  flex: 1,
+  minHeight: 0,
+  paddingRight: "16px",
+  boxSizing: "border-box",
 };
 
 const modeBarStyle: React.CSSProperties = {
@@ -5729,7 +5738,7 @@ const modeBarStyle: React.CSSProperties = {
   gap: 6,
   position: "sticky",
   top: 0,
-  minHeight: "calc(100vh - 120px)",
+  alignSelf: "stretch",
 };
 
 const modeButtonStyle = (active: boolean): React.CSSProperties => ({
