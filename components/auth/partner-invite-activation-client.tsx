@@ -18,7 +18,6 @@ export default function PartnerInviteActivationClient() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [status, setStatus] = useState("Einladungslink wird geprueft...");
-  const [debugLines, setDebugLines] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"checking" | "form" | "error">("checking");
   const [errorKind, setErrorKind] = useState<"invalid_invite" | "already_active">("invalid_invite");
   const [ready, setReady] = useState(false);
@@ -36,8 +35,6 @@ export default function PartnerInviteActivationClient() {
 
     function addDebug(line: string) {
       console.debug("[partner-setup]", line);
-      if (!mounted) return;
-      setDebugLines((prev) => [...prev, line]);
     }
 
     async function ensureSession(context: string) {
@@ -195,6 +192,7 @@ export default function PartnerInviteActivationClient() {
 
   async function submit() {
     setBusy(true);
+    setStatus("Partnerkonto wird aktiviert...");
     try {
       if (!password || password.length < 10) {
         throw new Error("Passwort muss mindestens 10 Zeichen haben.");
@@ -273,23 +271,6 @@ export default function PartnerInviteActivationClient() {
         <p style={{ fontSize: 14, color: viewMode === "error" && errorKind !== "already_active" ? "#b91c1c" : "#475569", margin: 0 }}>
           {status}
         </p>
-        {debugLines.length > 0 ? (
-          <div
-            style={{
-              padding: 10,
-              borderRadius: 8,
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
-              fontSize: 12,
-              color: "#334155",
-              lineHeight: 1.45,
-              whiteSpace: "pre-wrap",
-              fontFamily: "monospace",
-            }}
-          >
-            {debugLines.join("\n")}
-          </div>
-        ) : null}
         {viewMode === "form" ? (
           <>
             <label htmlFor="password" style={{ color: "#111827" }}>Passwort festlegen</label>
@@ -329,7 +310,7 @@ export default function PartnerInviteActivationClient() {
                 fontWeight: 700,
               }}
             >
-              Partnerkonto aktivieren
+              {busy ? "Partnerkonto wird aktiviert..." : "Partnerkonto aktivieren"}
             </button>
           </>
         ) : null}
