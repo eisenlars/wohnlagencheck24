@@ -24,6 +24,7 @@ import {
   estimateTranslationTotals,
   type I18nEstimatePricing,
 } from '@/lib/i18n-cost-estimate';
+import { buildI18nPromptWithExtras, getI18nStandardPrompt } from '@/lib/i18n-prompts';
 import { hashText } from '@/lib/text-hash';
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
@@ -779,6 +780,9 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [status, setStatus] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<'success' | 'error' | null>(null);
   const [workflowConfirmOpen, setWorkflowConfirmOpen] = useState(false);
+  const [workflowPromptDrafts, setWorkflowPromptDrafts] = useState<Record<string, string>>({});
+  const [rowPromptOpenMap, setRowPromptOpenMap] = useState<Record<string, boolean>>({});
+  const [rowCustomPromptMap, setRowCustomPromptMap] = useState<Record<string, string>>({});
   const activeTab = String(i18nViewState.activeTab ?? 'marktueberblick');
   const setActiveTab = (nextTab: string) => {
     setI18nViewState((prev) => ({ ...prev, activeTab: nextTab }));
@@ -1865,7 +1869,25 @@ export default function InternationalizationManager({ config, availableLocales, 
     return [current, ...children];
   }
 
-  async function loadRows(options?: { autoSync?: boolean; sectionKeys?: string[] }) {
+  function workflowPromptStorageKey(displayClass: DisplayTextClass): string {
+    return `${locale}:${displayClass}`;
+  }
+
+  function rowPromptStorageKey(row: TranslationRow): string {
+    return `${locale}:${row.area_id}:${row.section_key}`;
+  }
+
+  function getWorkflowPrompt(displayClass: DisplayTextClass): string {
+    return workflowPromptDrafts[workflowPromptStorageKey(displayClass)] ?? getI18nStandardPrompt(displayClass, locale);
+  }
+
+  function getRowDisplayClass(row: TranslationRow): DisplayTextClass {
+    const meta = resolveSectionMeta(row.section_key);
+    const sectionType: SectionKind = meta?.type ?? 'general';
+    return resolveDisplayTextClass(row.section_key, sectionType);
+  }
+
+  async function loadRows(options?: { autoSync?: boolean; sectionKeys?: string[]; workflowClass?: DisplayTextClass; promptTemplate?: string }) {
     if (!config?.area_id) return;
     setLoading(true);
     try {
@@ -1879,6 +1901,8 @@ export default function InternationalizationManager({ config, availableLocales, 
           auto_sync: options?.autoSync ? '1' : '0',
         });
         if (keys.length > 0) params.set('section_keys', keys.join(','));
+        if (options?.autoSync && options?.workflowClass) params.set('workflow_class', options.workflowClass);
+        if (options?.autoSync && options?.promptTemplate) params.set('prompt_template', options.promptTemplate);
         const res = await fetch(`/api/partner/i18n/texts?${params.toString()}`, { method: 'GET', cache: 'no-store' });
         const payload = await res.json().catch(() => null) as {
           rows?: Omit<TranslationRow, 'area_id' | 'area_name'>[];
@@ -2308,10 +2332,9 @@ export default function InternationalizationManager({ config, availableLocales, 
 
   async function rewriteViaAi(row: TranslationRow): Promise<string> {
     const selected = llmOptions.find((item) => item.id === selectedLlmOptionId) ?? null;
-    const customPrompt =
-      `Uebersetze den Text aus dem Deutschen nach ${normalizeLocaleLabel(locale)}.` +
-      ' Behalte Fakten, Zahlen und Eigennamen exakt bei. Keine neuen Fakten erfinden.' +
-      ' Nutze natuerliches, professionelles Wording fuer Immobilien- und Standorttexte.';
+    const displayClass = getRowDisplayClass(row);
+    const standardPrompt = getWorkflowPrompt(displayClass);
+    const customPrompt = buildI18nPromptWithExtras(standardPrompt, rowCustomPromptMap[rowPromptStorageKey(row)]);
     const res = await fetch('/api/ai-rewrite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2342,7 +2365,12 @@ export default function InternationalizationManager({ config, availableLocales, 
     }
     setStatus(`Starte Uebersetzungsaktualisierung fuer ${i18nWorkflowClassTitle(activeClass)} im ${channelMeta.label}-Bereich …`);
     setStatusTone('success');
-    await loadRows({ autoSync: true, sectionKeys: selectedWorkflowKeys });
+    await loadRows({
+      autoSync: true,
+      sectionKeys: selectedWorkflowKeys,
+      workflowClass: activeClass,
+      promptTemplate: getWorkflowPrompt(activeClass),
+    });
   }
 
   return (
@@ -2531,6 +2559,23 @@ export default function InternationalizationManager({ config, availableLocales, 
                     <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
                     <span>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
                   </div>
+                  {active ? (
+                    <label style={workflowPromptLabelStyle}>
+                      Standardprompt (anpassbar)
+                      <textarea
+                        value={getWorkflowPrompt(displayClass)}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setWorkflowPromptDrafts((prev) => ({
+                            ...prev,
+                            [workflowPromptStorageKey(displayClass)]: next,
+                          }));
+                        }}
+                        style={workflowPromptTextareaStyle}
+                        placeholder={getI18nStandardPrompt(displayClass, locale)}
+                      />
+                    </label>
+                  ) : null}
                   <div style={classCardActionRowStyle}>
                     <button
                       type="button"
@@ -2631,7 +2676,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                         )));
                       }}
                     />
-                    <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                       <button
                         type="button"
                         style={smallGhostButtonStyle}
@@ -2659,10 +2704,45 @@ export default function InternationalizationManager({ config, availableLocales, 
                       >
                         {rewritingKey === row.section_key ? 'Übersetzt …' : 'Mit KI übersetzen'}
                       </button>
+                      <button
+                        type="button"
+                        style={promptToggleStyle}
+                        onClick={() => {
+                          const promptKey = rowPromptStorageKey(row);
+                          setRowPromptOpenMap((prev) => ({
+                            ...prev,
+                            [promptKey]: !prev[promptKey],
+                          }));
+                        }}
+                      >
+                        {rowPromptOpenMap[rowPromptStorageKey(row)] ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+                      </button>
                       {row.translation_is_stale ? (
                         <span style={staleBadgeStyle}>Quelle geändert</span>
                       ) : null}
                     </div>
+                    {rowPromptOpenMap[rowPromptStorageKey(row)] ? (
+                      <div style={promptPanelStyle}>
+                        <div style={promptLabelStyle}>Standard-Prompt</div>
+                        <div style={promptContentStyle}>{getWorkflowPrompt(getRowDisplayClass(row))}</div>
+                        <label style={promptInputLabelStyle}>
+                          Eigener Prompt (optional)
+                          <textarea
+                            value={rowCustomPromptMap[rowPromptStorageKey(row)] ?? ''}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              const promptKey = rowPromptStorageKey(row);
+                              setRowCustomPromptMap((prev) => ({
+                                ...prev,
+                                [promptKey]: next,
+                              }));
+                            }}
+                            style={promptInputStyle}
+                            placeholder="Eigene Zusatzvorgaben (werden zum Standard-Prompt ergänzt)"
+                          />
+                        </label>
+                      </div>
+                    ) : null}
                   </td>
                 </tr>
               ))}
@@ -4163,6 +4243,28 @@ const classCardActionRowStyle: React.CSSProperties = {
   justifyContent: 'flex-end',
 };
 
+const workflowPromptLabelStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 6,
+  fontSize: 11,
+  fontWeight: 700,
+  color: '#1e293b',
+};
+
+const workflowPromptTextareaStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 92,
+  padding: 10,
+  borderRadius: 10,
+  border: '1px solid #cbd5e1',
+  background: '#ffffff',
+  fontSize: 12,
+  lineHeight: 1.45,
+  fontFamily: 'inherit',
+  color: '#0f172a',
+  resize: 'vertical',
+};
+
 const inlineWorkflowButtonStyle = (displayClass: DisplayTextClass, selected: boolean, disabled: boolean): React.CSSProperties => ({
   ...buttonPrimaryStyle(true),
   width: 'auto',
@@ -4183,6 +4285,62 @@ const estimateLabelStyle: React.CSSProperties = {
   color: '#64748b',
   textTransform: 'uppercase',
   letterSpacing: '0.04em',
+};
+
+const promptToggleStyle: React.CSSProperties = {
+  alignSelf: 'flex-start',
+  background: 'transparent',
+  border: 'none',
+  color: 'rgb(72, 107, 122)',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
+  padding: 0,
+};
+
+const promptPanelStyle: React.CSSProperties = {
+  marginTop: 10,
+  border: '1px solid #e2e8f0',
+  borderRadius: 10,
+  padding: 12,
+  backgroundColor: '#f8fafc',
+  display: 'grid',
+  gap: 10,
+};
+
+const promptLabelStyle: React.CSSProperties = {
+  fontSize: 10,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: '#94a3b8',
+  fontWeight: 700,
+};
+
+const promptContentStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: '#475569',
+  lineHeight: 1.5,
+};
+
+const promptInputLabelStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 6,
+  fontSize: 11,
+  fontWeight: 600,
+  color: '#1e293b',
+};
+
+const promptInputStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 80,
+  padding: 10,
+  borderRadius: 8,
+  border: '1px solid #e2e8f0',
+  fontSize: 12,
+  lineHeight: 1.4,
+  fontFamily: 'inherit',
+  resize: 'vertical',
+  background: '#ffffff',
 };
 
 const qualityCheckBoxStyle = (manualCheck: boolean): React.CSSProperties => ({

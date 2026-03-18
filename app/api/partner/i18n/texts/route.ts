@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { getI18nStandardPrompt } from "@/lib/i18n-prompts";
 import { buildMarketingDefaults } from "@/lib/marketing-defaults";
 import { resolveMarketingContextForArea } from "@/lib/areas/marketing-context";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
 import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
 import { loadActiveGlobalLlmProviders, loadGlobalLlmConfig, estimateCostEur, estimateCostUsd, writeLlmUsageEvent } from "@/lib/llm/global-governance";
+import type { DisplayTextClass } from "@/lib/text-display-class";
 
 type TextSourceRow = {
   section_key?: string | null;
@@ -151,12 +153,26 @@ function isAutoManagedSectionKey(sectionKey: string): boolean {
   return true;
 }
 
-function buildAutoTranslationPrompt(locale: string, sourceText: string) {
+function normalizeDisplayTextClass(value: string): DisplayTextClass {
+  if (value === "data_driven") return "data_driven";
+  if (value === "profile") return "profile";
+  if (value === "marketing") return "marketing";
+  if (value === "market_expert") return "market_expert";
+  return "general";
+}
+
+function buildAutoTranslationPrompt(
+  locale: string,
+  sourceText: string,
+  displayClass: DisplayTextClass,
+  promptTemplate?: string | null,
+) {
   const target = locale.toUpperCase();
+  const baseInstructions = asText(promptTemplate) || getI18nStandardPrompt(displayClass, locale);
   return {
     system: "You are a professional translator for real-estate and location market reports.",
     user:
-      `Translate from German to ${target}. Preserve all facts, numbers, structure and meaning exactly. ` +
+      `${baseInstructions}\n\nTranslate from German to ${target}. Preserve all facts, numbers, structure and meaning exactly. ` +
       `Do not invent details. Keep style clear and neutral.\n\nSource:\n${sourceText}`,
   };
 }
@@ -462,6 +478,8 @@ export async function GET(req: Request) {
     const channel = (asText(url.searchParams.get("channel")) || "portal").toLowerCase();
     const autoSyncEnabled = asText(url.searchParams.get("auto_sync")) !== "0";
     const sectionKeysFilter = new Set(parseSectionKeys(url.searchParams.get("section_keys")));
+    const workflowClass = normalizeDisplayTextClass(asText(url.searchParams.get("workflow_class")));
+    const promptTemplate = asText(url.searchParams.get("prompt_template"));
 
     if (!areaId) return NextResponse.json({ error: "Missing area_id" }, { status: 400 });
     if (!locale) return NextResponse.json({ error: "Invalid locale" }, { status: 400 });
@@ -553,7 +571,7 @@ export async function GET(req: Request) {
                     totalTokens: null,
                   }
                 : await (async () => {
-                    const prompt = buildAutoTranslationPrompt(locale, source.content);
+                    const prompt = buildAutoTranslationPrompt(locale, source.content, workflowClass, promptTemplate);
                     return callOpenAiCompatible({
                       provider: provider!.provider,
                       model: provider!.model,
