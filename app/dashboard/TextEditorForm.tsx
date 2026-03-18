@@ -410,6 +410,13 @@ type TextEditorFormProps = {
 
 type PersistedTextEditorViewState = {
   activeTab?: string;
+  selectedScopeAreaId?: string;
+};
+
+type TextAreaData = {
+  baseTexts: { text: Record<string, Record<string, string>> };
+  standardTexts: { text: Record<string, Record<string, string>> };
+  dbTexts: TextEntry[];
 };
 
 const TEXT_EDITOR_VIEW_STATE_KEY_PREFIX = 'partner_text_editor_view_state_v1';
@@ -479,10 +486,13 @@ export default function TextEditorForm({
   const setActiveTab = (nextTab: string) => {
     setTextEditorViewState((prev) => ({ ...prev, activeTab: nextTab }));
   };
+  const selectedScopeAreaId = String(textEditorViewState.selectedScopeAreaId ?? '');
+  const setSelectedScopeAreaId = (nextAreaId: string) => {
+    setTextEditorViewState((prev) => ({ ...prev, selectedScopeAreaId: nextAreaId }));
+  };
   const [loading, setLoading] = useState(true);
-  const [baseTexts, setBaseTexts] = useState<{ text: Record<string, Record<string, string>> } | null>(null);
-  const [standardTexts, setStandardTexts] = useState<{ text: Record<string, Record<string, string>> } | null>(null);
-  const [dbTexts, setDbTexts] = useState<TextEntry[]>([]);
+  const [scopeAreaItems, setScopeAreaItems] = useState<PartnerAreaConfig[]>([]);
+  const [areaDataById, setAreaDataById] = useState<Record<string, TextAreaData>>({});
   const [saving, setSaving] = useState(false);
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const [classBulkState, setClassBulkState] = useState<{
@@ -522,6 +532,15 @@ export default function TextEditorForm({
   const isOrtslage = parts.length > 3;
   const isMarketing = tableName === 'partner_marketing_texts';
   const isLocalSite = tableName === 'partner_local_site_texts';
+  const selectedAreaConfig = useMemo<PartnerAreaConfig>(() => (
+    scopeAreaItems.find((item) => item.area_id === selectedScopeAreaId) ?? config
+  ), [config, scopeAreaItems, selectedScopeAreaId]);
+  const selectedAreaIsOrtslage = useMemo(
+    () => String(selectedAreaConfig?.area_id ?? '').split('-').length > 3,
+    [selectedAreaConfig],
+  );
+  const selectedAreaData = areaDataById[String(selectedAreaConfig?.area_id ?? '')] ?? null;
+  const dbTexts = selectedAreaData?.dbTexts ?? [];
   const hasPublishableChanges = useMemo(
     () => dbTexts.some((entry) => (
       Boolean(String(entry?.optimized_content ?? '').trim())
@@ -530,63 +549,158 @@ export default function TextEditorForm({
     [dbTexts],
   );
 
-  useEffect(() => {
-  async function loadTexts() {
-    if (!config?.area_id) return;
-    setLoading(true);
-    
-    const bundeslandSlug = String(config?.areas?.bundesland_slug || '');
-    const kreisSlug = isOrtslage ? String(config?.areas?.parent_slug || '') : String(config?.areas?.slug || '');
-    const ortSlug = isOrtslage ? String(config?.areas?.slug || '') : '';
+  const loadAreaTextData = async (areaConfig: PartnerAreaConfig): Promise<TextAreaData> => {
+    const areaId = String(areaConfig?.area_id ?? '').trim();
+    const areaIsOrtslage = areaId.split('-').length > 3;
+    const bundeslandSlug = String(areaConfig?.areas?.bundesland_slug || '');
+    const kreisSlug = areaIsOrtslage ? String(areaConfig?.areas?.parent_slug || '') : String(areaConfig?.areas?.slug || '');
+    const ortSlug = areaIsOrtslage ? String(areaConfig?.areas?.slug || '') : '';
+    let nextBaseTexts: { text: Record<string, Record<string, string>> } = { text: {} };
+    let nextStandardTexts: { text: Record<string, Record<string, string>> } = { text: {} };
 
-    try {
-      if (isMarketing) {
-        const marketingRes = await fetch(`/api/marketing-defaults?area_id=${encodeURIComponent(config.area_id)}`);
-        if (marketingRes.ok) {
-          const marketingJson = await marketingRes.json();
-          setBaseTexts({ text: { marketing: marketingJson?.marketing ?? {} } as Record<string, Record<string, string>> });
-        } else {
-          setBaseTexts({ text: { marketing: {} } as Record<string, Record<string, string>> });
-        }
-        setStandardTexts({ text: {} });
+    if (isMarketing) {
+      const marketingRes = await fetch(`/api/marketing-defaults?area_id=${encodeURIComponent(areaId)}`);
+      if (marketingRes.ok) {
+        const marketingJson = await marketingRes.json();
+        nextBaseTexts = { text: { marketing: marketingJson?.marketing ?? {} } as Record<string, Record<string, string>> };
       } else {
-        const standardScope = isOrtslage ? 'ortslage' : 'kreis';
-        const standardRes = await fetch(`/api/fetch-text-standards?scope=${standardScope}`);
-        if (standardRes.ok) {
-          const standardJson = await standardRes.json();
-          setStandardTexts({ text: standardJson?.text ?? {} });
-        } else {
-          setStandardTexts({ text: {} });
-        }
+        nextBaseTexts = { text: { marketing: {} } as Record<string, Record<string, string>> };
+      }
+    } else {
+      const standardScope = areaIsOrtslage ? 'ortslage' : 'kreis';
+      const standardRes = await fetch(`/api/fetch-text-standards?scope=${standardScope}`);
+      if (standardRes.ok) {
+        const standardJson = await standardRes.json();
+        nextStandardTexts = { text: standardJson?.text ?? {} };
+      }
 
-        if (bundeslandSlug && kreisSlug) {
-          const res = await fetch('/api/fetch-json', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                bundesland: bundeslandSlug,
-                kreis: kreisSlug,
-                ortslage: ortSlug || null
-            }),
-          });
+      if (bundeslandSlug && kreisSlug) {
+        const res = await fetch('/api/fetch-json', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bundesland: bundeslandSlug,
+            kreis: kreisSlug,
+            ortslage: ortSlug || null,
+          }),
+        });
+        const jsonTexts = await res.json();
+        nextBaseTexts = { text: jsonTexts };
+      }
+    }
 
-          const jsonTexts = await res.json();
-          // Wir setzen das ganze Objekt, da dein API-Endpunkt direkt `jsonData.text` zurückgibt
-          setBaseTexts({ text: jsonTexts });
-        } else {
-          setBaseTexts({ text: {} });
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data } = await supabase
+      .from(tableName)
+      .select('*')
+      .eq('area_id', areaId)
+      .eq('partner_id', user?.id);
+
+    return {
+      baseTexts: nextBaseTexts,
+      standardTexts: nextStandardTexts,
+      dbTexts: Array.isArray(data) ? (data as TextEntry[]) : [],
+    };
+  };
+
+  const ensureAreaTextData = async (areaConfig: PartnerAreaConfig, options?: { force?: boolean }) => {
+    const areaId = String(areaConfig?.area_id ?? '').trim();
+    if (!areaId) return null;
+    if (!options?.force && areaDataById[areaId]) return areaDataById[areaId];
+    const nextData = await loadAreaTextData(areaConfig);
+    setAreaDataById((prev) => ({ ...prev, [areaId]: nextData }));
+    return nextData;
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadScopeAreaItems() {
+      if (!config?.area_id) return;
+      if (isOrtslage) {
+        if (!cancelled) setScopeAreaItems([config]);
+        return;
+      }
+      const bundeslandSlug = String(config?.areas?.bundesland_slug || '');
+      const kreisSlug = String(config?.areas?.slug || '');
+      if (!bundeslandSlug || !kreisSlug) {
+        if (!cancelled) setScopeAreaItems([config]);
+        return;
+      }
+      const { data } = await supabase
+        .from('areas')
+        .select('id, name, slug, parent_slug, bundesland_slug')
+        .eq('bundesland_slug', bundeslandSlug)
+        .eq('parent_slug', kreisSlug);
+      if (cancelled) return;
+      const nextItems: PartnerAreaConfig[] = [
+        config,
+        ...((data ?? []).map((row) => ({
+          area_id: String(row.id ?? '').trim(),
+          areas: {
+            name: String(row.name ?? '').trim(),
+            slug: String(row.slug ?? '').trim(),
+            parent_slug: String(row.parent_slug ?? '').trim(),
+            bundesland_slug: String(row.bundesland_slug ?? '').trim(),
+          },
+        })) as PartnerAreaConfig[]).filter((row) => row.area_id),
+      ];
+      setScopeAreaItems(nextItems);
+    }
+
+    void loadScopeAreaItems();
+    return () => {
+      cancelled = true;
+    };
+  }, [config, isOrtslage, supabase]);
+
+  useEffect(() => {
+    if (!config?.area_id) return;
+    if (scopeAreaItems.length === 0) return;
+    if (scopeAreaItems.some((item) => item.area_id === selectedScopeAreaId)) return;
+    setSelectedScopeAreaId(config.area_id);
+  }, [config?.area_id, scopeAreaItems, selectedScopeAreaId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEditorData() {
+      if (!selectedAreaConfig?.area_id) return;
+      const areaId = String(selectedAreaConfig.area_id);
+      if (areaDataById[areaId]) {
+        setLoading(false);
+      } else {
+        setLoading(true);
+        try {
+          await ensureAreaTextData(selectedAreaConfig);
+        } catch (error) {
+          console.error('Fehler beim Laden der Bereichstexte:', error);
+        } finally {
+          if (!cancelled) setLoading(false);
         }
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data } = await supabase
-        .from(tableName)
-        .select('*')
-        .eq('area_id', config.area_id)
-        .eq('partner_id', user?.id);
-      setDbTexts(data || []);
+      if (String(config?.area_id ?? '') !== areaId) {
+        try {
+          await ensureAreaTextData(config);
+        } catch (error) {
+          console.error('Fehler beim Laden der globalen Bereichstexte:', error);
+        }
+      }
+    }
 
+    void loadEditorData();
+    return () => {
+      cancelled = true;
+    };
+  }, [config, selectedAreaConfig, areaDataById]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLlmOptions() {
       const integrationsRes = await fetch('/api/partner/llm/options');
+      if (cancelled) return;
       if (integrationsRes.ok) {
         const integrationsPayload = await integrationsRes.json().catch(() => ({}));
         const items: LlmOptionApiRow[] = Array.isArray(integrationsPayload?.options)
@@ -625,31 +739,38 @@ export default function TextEditorForm({
         setLlmIntegrations([]);
         setSelectedLlmIntegrationId('');
       }
-    } catch (err) { 
-      console.error("Fehler beim Laden der JSON:", err); 
-    } finally { 
-      setLoading(false); 
     }
-  }
-  loadTexts();
-}, [config, supabase, tableName, isOrtslage, isMarketing]);
+
+    void loadLlmOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const tabConfig = isMarketing ? MARKETING_TAB_CONFIG : TAB_CONFIG;
-  const hiddenTabIds = new Set(['berater', 'makler', 'marktueberblick']);
-  if (isLocalSite && !isOrtslage) {
-    hiddenTabIds.delete('marktueberblick');
-  }
-  const shouldHideTabs = !isMarketing && (isOrtslage || isLocalSite);
-  let visibleTabs = shouldHideTabs
-    ? tabConfig.filter((tab) => !hiddenTabIds.has(tab.id))
-    : tabConfig;
-  if (Array.isArray(allowedTabIds) && allowedTabIds.length > 0) {
-    const allowed = new Set(allowedTabIds);
-    visibleTabs = visibleTabs.filter((tab) => allowed.has(tab.id));
-  }
-  if (isMarketing && isOrtslage) {
-    visibleTabs = visibleTabs.filter((tab) => tab.id !== 'immobilienmarkt_ueberblick');
-  }
+  const resolveVisibleTabs = (areaIsOrtslage: boolean) => {
+    const hiddenTabIds = new Set(['berater', 'makler', 'marktueberblick']);
+    if (isLocalSite && !areaIsOrtslage) {
+      hiddenTabIds.delete('marktueberblick');
+    }
+    const shouldHideTabs = !isMarketing && (areaIsOrtslage || isLocalSite);
+    let nextVisibleTabs = shouldHideTabs
+      ? tabConfig.filter((tab) => !hiddenTabIds.has(tab.id))
+      : tabConfig;
+    if (Array.isArray(allowedTabIds) && allowedTabIds.length > 0) {
+      const allowed = new Set(allowedTabIds);
+      nextVisibleTabs = nextVisibleTabs.filter((tab) => allowed.has(tab.id));
+    }
+    if (isMarketing && areaIsOrtslage) {
+      nextVisibleTabs = nextVisibleTabs.filter((tab) => tab.id !== 'immobilienmarkt_ueberblick');
+    }
+    return nextVisibleTabs;
+  };
+  const rootVisibleTabs = useMemo(() => resolveVisibleTabs(isOrtslage), [allowedTabIds, isLocalSite, isMarketing, isOrtslage, tabConfig]);
+  const visibleTabs = useMemo(
+    () => resolveVisibleTabs(selectedAreaIsOrtslage),
+    [allowedTabIds, isLocalSite, isMarketing, selectedAreaIsOrtslage, tabConfig],
+  );
   const allowedSectionSet = useMemo(
     () => (Array.isArray(allowedSectionKeys) && allowedSectionKeys.length > 0 ? new Set(allowedSectionKeys) : null),
     [allowedSectionKeys],
@@ -689,23 +810,81 @@ export default function TextEditorForm({
     return () => window.clearTimeout(t);
   }, [focusSectionKey, onFocusHandled]);
 
+  const updateAreaDbTexts = (
+    areaId: string,
+    updater: (prev: TextEntry[]) => TextEntry[],
+  ) => {
+    setAreaDataById((prev) => {
+      const current = prev[areaId];
+      if (!current) return prev;
+      return {
+        ...prev,
+        [areaId]: {
+          ...current,
+          dbTexts: updater(current.dbTexts),
+        },
+      };
+    });
+  };
+
+  const getRawTextFromDataset = (
+    dataset: TextAreaData | null,
+    areaIsOrtslage: boolean,
+    key: string,
+    preferredGroup?: string | null,
+  ) => {
+    if (areaIsOrtslage && !isMarketing && isOrtslageMarketExpertHeadingKey(key)) {
+      return '';
+    }
+    const currentBaseTexts = dataset?.baseTexts?.text ?? {};
+    const fallbackText = dataset?.standardTexts?.text ?? {};
+    const allowStandardFallback = !isAdvisorOrBrokerKey(key);
+    if (key.includes('.')) {
+      const value = getValueByPath(currentBaseTexts, key.split('.'));
+      if (typeof value === 'string') return value;
+      if (!allowStandardFallback) return '';
+      const fallback = getValueByPath(fallbackText, key.split('.'));
+      return typeof fallback === 'string' ? fallback : '';
+    }
+    if (preferredGroup && currentBaseTexts[preferredGroup] && typeof currentBaseTexts[preferredGroup] === 'object') {
+      const preferred = currentBaseTexts[preferredGroup][key];
+      if (typeof preferred === 'string') return preferred;
+      if (!allowStandardFallback) return '';
+      const fallbackPreferred = fallbackText[preferredGroup]?.[key];
+      if (typeof fallbackPreferred === 'string') return fallbackPreferred;
+    }
+    const groups = Object.keys(currentBaseTexts);
+    for (const group of groups) {
+      const value = currentBaseTexts[group]?.[key];
+      if (typeof value === 'string' && value.length > 0) return value;
+    }
+    if (!allowStandardFallback) return '';
+    const fallbackGroups = Object.keys(fallbackText);
+    for (const group of fallbackGroups) {
+      const value = fallbackText[group]?.[key];
+      if (typeof value === 'string' && value.length > 0) return value;
+    }
+    return '';
+  };
+
   const saveText = async (key: string, content: string, type: string, sourceGroup?: string | null) => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const status = enableApproval ? 'draft' : 'approved';
+      const areaId = String(selectedAreaConfig?.area_id ?? config.area_id);
       const { error } = await supabase.from(tableName).upsert({
         partner_id: user.id,
-        area_id: config.area_id,
+        area_id: areaId,
         section_key: key,
         text_type: type,
-        raw_content: getRawTextFromJSON(key, sourceGroup),
+        raw_content: getRawTextFromDataset(selectedAreaData, selectedAreaIsOrtslage, key, sourceGroup),
         optimized_content: content,
         status,
         last_updated: new Date().toISOString()
       }, { onConflict: 'partner_id,area_id,section_key' });
       if (!error) {
-        setDbTexts(prev => {
+        updateAreaDbTexts(areaId, (prev) => {
           const filtered = prev.filter(t => t.section_key !== key);
           return [...filtered, { section_key: key, optimized_content: content, status, text_type: type }];
         });
@@ -720,14 +899,15 @@ export default function TextEditorForm({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const areaId = String(selectedAreaConfig?.area_id ?? config.area_id);
       const { error } = await supabase
         .from(tableName)
         .delete()
         .eq('partner_id', user.id)
-        .eq('area_id', config.area_id)
+        .eq('area_id', areaId)
         .eq('section_key', key);
       if (!error) {
-        setDbTexts((prev) => prev.filter((entry) => entry.section_key !== key));
+        updateAreaDbTexts(areaId, (prev) => prev.filter((entry) => entry.section_key !== key));
         onPersistSuccess?.();
       }
     } finally {
@@ -738,10 +918,11 @@ export default function TextEditorForm({
   const approveAllTextsStrict = async (): Promise<{ approvedCount: number; changedKeys: string[] }> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { approvedCount: 0, changedKeys: [] };
+    const areaId = String(selectedAreaConfig?.area_id ?? config.area_id);
     const { data: currentRows } = await supabase
       .from(tableName)
       .select('section_key, optimized_content, status, text_type')
-      .eq('area_id', config.area_id)
+      .eq('area_id', areaId)
       .eq('partner_id', user.id);
     const rows = Array.isArray(currentRows) ? (currentRows as TextEntry[]) : [];
     const nowIso = new Date().toISOString();
@@ -754,10 +935,10 @@ export default function TextEditorForm({
       .filter((entry) => Boolean(String(entry.optimized_content ?? '').trim()))
       .map((entry) => ({
         partner_id: user.id,
-        area_id: config.area_id,
+        area_id: areaId,
         section_key: entry.section_key,
         text_type: entry.text_type ?? null,
-        raw_content: getRawTextFromJSON(entry.section_key),
+        raw_content: getRawTextFromDataset(selectedAreaData, selectedAreaIsOrtslage, entry.section_key),
         optimized_content: String(entry.optimized_content ?? ''),
         status: 'approved',
         last_updated: nowIso,
@@ -767,7 +948,7 @@ export default function TextEditorForm({
       .from(tableName)
       .upsert(entriesToApprove, { onConflict: 'partner_id,area_id,section_key' });
     if (error) throw error;
-    setDbTexts((prev) =>
+    updateAreaDbTexts(areaId, (prev) =>
       prev.map((entry) =>
         String(entry.optimized_content ?? '').trim()
           ? { ...entry, status: 'approved', last_updated: nowIso }
@@ -875,8 +1056,9 @@ export default function TextEditorForm({
       const form = new FormData();
       form.append('asset_key', assetKey);
       form.append('file', file);
+      const areaId = String(selectedAreaConfig?.area_id ?? config.area_id);
 
-      const res = await fetch(`/api/partner/areas/${encodeURIComponent(config.area_id)}/media/upload`, {
+      const res = await fetch(`/api/partner/areas/${encodeURIComponent(areaId)}/media/upload`, {
         method: 'POST',
         body: form,
       });
@@ -888,7 +1070,7 @@ export default function TextEditorForm({
       const url = String(payload?.url ?? '');
       if (!url) throw new Error('Upload erfolgreich, aber ohne URL.');
 
-      setDbTexts((prev) => {
+      updateAreaDbTexts(areaId, (prev) => {
         const filtered = prev.filter((entry) => entry.section_key !== assetKey);
         return [
           ...filtered,
@@ -915,16 +1097,18 @@ export default function TextEditorForm({
     type: string,
     label: string,
     customPrompt?: string,
+    areaConfigOverride?: PartnerAreaConfig,
   ) => {
     const selectedOption = llmIntegrations.find((item) => item.id === (selectedLlmIntegrationId || llmIntegrations[0]?.id));
+    const targetAreaConfig = areaConfigOverride ?? selectedAreaConfig ?? config;
     try {
       const res = await fetch('/api/ai-rewrite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           text: currentText, 
-          areaName: config?.areas?.name || config.area_id,
-          area_id: config?.area_id,
+          areaName: targetAreaConfig?.areas?.name || targetAreaConfig.area_id,
+          area_id: targetAreaConfig?.area_id,
           type: type,
           sectionLabel: label,
           customPrompt: customPrompt || undefined,
@@ -951,7 +1135,7 @@ export default function TextEditorForm({
     customPrompt?: string,
   ) => {
     setRewritingKey(key);
-    const optimizedText = await requestAiRewrite(key, currentText, type, label, customPrompt);
+    const optimizedText = await requestAiRewrite(key, currentText, type, label, customPrompt, selectedAreaConfig);
     if (optimizedText) {
       await saveText(key, optimizedText, type);
     }
@@ -980,9 +1164,14 @@ export default function TextEditorForm({
     }, { onConflict: 'partner_id,area_id,section_key' });
   };
 
-  const getCurrentTextForSection = (sectionKey: string, sectionGroup: string | null) => {
-    const dbEntry = dbTexts.find((t) => t.section_key === sectionKey);
-    return dbEntry?.optimized_content ?? getRawTextFromJSON(sectionKey, sectionGroup);
+  const getCurrentTextForDataset = (
+    dataset: TextAreaData | null,
+    areaIsOrtslage: boolean,
+    sectionKey: string,
+    sectionGroup: string | null,
+  ) => {
+    const dbEntry = dataset?.dbTexts.find((t) => t.section_key === sectionKey);
+    return dbEntry?.optimized_content ?? getRawTextFromDataset(dataset, areaIsOrtslage, sectionKey, sectionGroup);
   };
 
   const isProfileAiEligible = (sectionKey: string): boolean => {
@@ -1002,7 +1191,7 @@ export default function TextEditorForm({
   const collectBulkTasks = (classKey: GlobalClassKey) => {
     const tasks: Array<{ key: string; label: string; type: string; sectionGroup: string | null }> = [];
     const dedupe = new Set<string>();
-    for (const tab of visibleTabs) {
+    for (const tab of rootVisibleTabs) {
       const sectionGroup = resolveGroupForTab(tab.id);
       for (const section of tab.sections) {
         if (allowedSectionSet && !allowedSectionSet.has(section.key)) continue;
@@ -1019,6 +1208,7 @@ export default function TextEditorForm({
 
   const runBulkByTextClass = async (classKey: GlobalClassKey) => {
     if (classBulkState) return;
+    const rootData = areaDataById[String(config.area_id)] ?? await ensureAreaTextData(config);
     const tasks = collectBulkTasks(classKey);
     if (tasks.length === 0) return;
     const scope = globalScopeByClass[classKey];
@@ -1042,17 +1232,22 @@ export default function TextEditorForm({
       setGlobalBulkReport({ processed: [], skipped: [], failed: [] });
       for (const task of tasks) {
         setRewritingKey(task.key);
-        const sourceText = getCurrentTextForSection(task.key, task.sectionGroup);
+        const sourceText = getCurrentTextForDataset(rootData, isOrtslage, task.key, task.sectionGroup);
         if (!String(sourceText || '').trim()) {
           done += withOrtslagen ? (1 + ortAreas.length) : 1;
           setClassBulkState((prev) => prev ? { ...prev, done } : null);
           setGlobalBulkReport((prev) => prev ? { ...prev, skipped: [...prev.skipped, `${task.key} (kein Quelltext)`] } : prev);
           continue;
         }
-        const kreisText = await requestAiRewrite(task.key, sourceText, task.type, task.label, customPrompt);
+        const kreisText = await requestAiRewrite(task.key, sourceText, task.type, task.label, customPrompt, config);
         if (kreisText) {
           try {
-            await saveText(task.key, kreisText, task.type, task.sectionGroup);
+            const rawContent = getRawTextFromDataset(rootData, isOrtslage, task.key, task.sectionGroup);
+            await upsertTextForArea(config.area_id, task.key, kreisText, task.type, rawContent);
+            updateAreaDbTexts(config.area_id, (prev) => {
+              const filtered = prev.filter((entry) => entry.section_key !== task.key);
+              return [...filtered, { section_key: task.key, optimized_content: kreisText, status: enableApproval ? 'draft' : 'approved', text_type: task.type }];
+            });
             setGlobalBulkReport((prev) => prev ? { ...prev, processed: [...prev.processed, `${task.key} (Kreis)`] } : prev);
           } catch (error) {
             const message = error instanceof Error ? error.message : 'save failed';
@@ -1085,48 +1280,19 @@ export default function TextEditorForm({
           setGlobalBulkReport((prev) => prev ? { ...prev, processed: [...prev.processed, `${task.key} (Ortslagen)`] } : prev);
         }
       }
+      const selectedAreaId = String(selectedAreaConfig?.area_id ?? config.area_id);
+      if (selectedAreaId && selectedAreaId !== config.area_id) {
+        await ensureAreaTextData(selectedAreaConfig, { force: true });
+      }
+      await ensureAreaTextData(config, { force: true });
     } finally {
       setRewritingKey(null);
       setClassBulkState(null);
     }
   };
 
-  const getRawTextFromJSON = (key: string, preferredGroup?: string | null) => {
-    if (isOrtslage && !isMarketing && isOrtslageMarketExpertHeadingKey(key)) {
-      // Ortslagen sollen diese Überschriften nur bei expliziter Partner-Eingabe führen.
-      // Ohne Override bleibt das Feld leer und das Frontend nutzt den Fallback.
-      return '';
-    }
-    if (!baseTexts?.text) return '';
-    const fallbackText = standardTexts?.text ?? {};
-    const allowStandardFallback = !isAdvisorOrBrokerKey(key);
-    if (key.includes('.')) {
-      const value = getValueByPath(baseTexts.text, key.split('.'));
-      if (typeof value === 'string') return value;
-      if (!allowStandardFallback) return '';
-      const fallback = getValueByPath(fallbackText, key.split('.'));
-      return typeof fallback === 'string' ? fallback : '';
-    }
-    if (preferredGroup && baseTexts.text[preferredGroup] && typeof baseTexts.text[preferredGroup] === 'object') {
-      const preferred = baseTexts.text[preferredGroup][key];
-      if (typeof preferred === 'string') return preferred;
-      if (!allowStandardFallback) return '';
-      const fallbackPreferred = fallbackText[preferredGroup]?.[key];
-      if (typeof fallbackPreferred === 'string') return fallbackPreferred;
-    }
-    const groups = Object.keys(baseTexts.text);
-    for (const group of groups) {
-      const value = baseTexts.text[group]?.[key];
-      if (typeof value === 'string' && value.length > 0) return value;
-    }
-    if (!allowStandardFallback) return '';
-    const fallbackGroups = Object.keys(fallbackText);
-    for (const group of fallbackGroups) {
-      const value = fallbackText[group]?.[key];
-      if (typeof value === 'string' && value.length > 0) return value;
-    }
-    return '';
-  };
+  const getRawTextFromJSON = (key: string, preferredGroup?: string | null) =>
+    getRawTextFromDataset(selectedAreaData, selectedAreaIsOrtslage, key, preferredGroup);
 
   if (loading) {
     return <FullscreenLoader show label="Sektionen werden geladen..." />;
@@ -1139,6 +1305,7 @@ export default function TextEditorForm({
     : sections;
   const isBulkRewriting = Boolean(classBulkState);
   const showGlobalClassActions = !isMarketing && !lockedToMandatory;
+  const showScopeAreaSidebar = !isOrtslage && scopeAreaItems.length > 1;
 
   return (
     <div style={{ width: '100%' }}>
@@ -1280,70 +1447,115 @@ export default function TextEditorForm({
         </div>
 
         {/* CONTENT AREA */}
-        <div style={contentWrapperStyle}>
-        {activeSections.map((section) => {
-          const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
-          const mediaKey = MEDIA_BY_SECTION_KEY[section.key];
-          const mediaSpec = mediaKey ? MANDATORY_MEDIA_SPECS[mediaKey] : null;
-          const mediaEntry = mediaKey ? getMediaEntry(mediaKey) : undefined;
-          return (
-          <TextEditorField 
-            key={`${section.key}:${dbTexts.find(t => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
-            label={section.label}
-            sectionKey={section.key}
-            sectionGroup={sectionGroup}
-            type={section.type}
-            rawText={getRawTextFromJSON(section.key, sectionGroup)}
-            dbEntry={dbTexts.find(t => t.section_key === section.key)}
-            areaName={config?.areas?.name || config.area_id}
-            onSave={saveText}
-            onResetToSystem={resetTextToSystem}
-            onAiRewrite={handleAiRewrite}
-            tableName={tableName as HintTable}
-            enableApproval={enableApproval}
-            isRewriting={rewritingKey === section.key}
-            isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
-            mediaUpload={mediaSpec && tableName === 'report_texts' ? {
-              key: mediaSpec.key,
-              label: mediaSpec.label,
-              maxWidth: mediaSpec.maxWidth,
-              maxHeight: mediaSpec.maxHeight,
-              maxUploadBytes: mediaSpec.maxUploadBytes,
-              currentUrl: String(mediaEntry?.optimized_content ?? ''),
-              hasOverride: Boolean(mediaEntry?.optimized_content),
-              uploading: mediaState[mediaSpec.key]?.uploading ?? false,
-              error: mediaState[mediaSpec.key]?.error ?? null,
-              onUpload: uploadMandatoryMedia,
-            } : null}
-          />
-          );
-        })}
-        {tableName === 'report_texts' && activeTab === 'makler' ? (
-          <div style={mediaBottomWrapStyle}>
-            <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>Makler-Bilder (Pflicht)</h4>
-            <div style={mediaBottomGridStyle}>
-              {MAKLER_MEDIA_KEYS.map((key) => {
-                const spec = MANDATORY_MEDIA_SPECS[key];
-                const mediaEntry = getMediaEntry(key);
+        <div style={showScopeAreaSidebar ? textEditorGridStyle : undefined}>
+          {showScopeAreaSidebar ? (
+            <aside style={textAreaListCardStyle}>
+              <div style={textAreaListHeadStyle}>
+                <h3 style={sectionTabsIntroTitleStyle}>Bearbeite jetzt</h3>
+              </div>
+              <div style={textAreaListMetaStyle}>
+                Oben laufen globale Änderungen weiter für den gewählten Scope. Unten bearbeitest du gezielt Kreis oder Ortslage.
+              </div>
+              <div style={textAreaListWrapStyle}>
+                {scopeAreaItems.map((item) => {
+                  const itemIsOrtslage = String(item.area_id ?? '').split('-').length > 3;
+                  const active = item.area_id === selectedAreaConfig?.area_id;
+                  return (
+                    <button
+                      key={item.area_id}
+                      type="button"
+                      style={textAreaListRowStyle(active)}
+                      onClick={() => setSelectedScopeAreaId(item.area_id)}
+                    >
+                      <div style={textAreaListRowTopStyle}>
+                        <strong style={textAreaListHeadlineStyle}>{item.areas?.name || item.area_id}</strong>
+                        <span style={textAreaTypeBadgeStyle(itemIsOrtslage)}>{itemIsOrtslage ? 'Ortslage' : 'Kreis'}</span>
+                      </div>
+                      <div style={textAreaListMetaLineStyle}>{item.area_id}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+          ) : null}
+
+          <div style={showScopeAreaSidebar ? textAreaEditorWrapStyle : undefined}>
+            {showScopeAreaSidebar ? (
+              <div style={textAreaEditorHeadStyle}>
+                <div>
+                  <h3 style={sectionTabsIntroTitleStyle}>{selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id}</h3>
+                  <p style={sectionTabsIntroTextStyle}>
+                    Themen-Tabs und Textfelder unten beziehen sich jetzt nur auf dieses Gebiet.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+            <div style={contentWrapperStyle}>
+              {activeSections.map((section) => {
+                const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
+                const mediaKey = MEDIA_BY_SECTION_KEY[section.key];
+                const mediaSpec = mediaKey ? MANDATORY_MEDIA_SPECS[mediaKey] : null;
+                const mediaEntry = mediaKey ? getMediaEntry(mediaKey) : undefined;
                 return (
-                  <MandatoryMediaUploadCard
-                    key={key}
-                    label={spec.label}
-                    assetKey={spec.key}
-                    maxWidth={spec.maxWidth}
-                    maxHeight={spec.maxHeight}
-                    maxUploadBytes={spec.maxUploadBytes}
-                    currentUrl={String(mediaEntry?.optimized_content ?? '')}
-                    hasOverride={Boolean(mediaEntry?.optimized_content)}
-                    uploading={mediaState[key]?.uploading ?? false}
-                    error={mediaState[key]?.error ?? null}
-                    onUpload={uploadMandatoryMedia}
+                  <TextEditorField
+                    key={`${selectedAreaConfig?.area_id}:${section.key}:${dbTexts.find((t) => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
+                    label={section.label}
+                    sectionKey={section.key}
+                    sectionGroup={sectionGroup}
+                    type={section.type}
+                    rawText={getRawTextFromJSON(section.key, sectionGroup)}
+                    dbEntry={dbTexts.find((t) => t.section_key === section.key)}
+                    areaName={selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id || config?.areas?.name || config.area_id}
+                    onSave={saveText}
+                    onResetToSystem={resetTextToSystem}
+                    onAiRewrite={handleAiRewrite}
+                    tableName={tableName as HintTable}
+                    enableApproval={enableApproval}
+                    isRewriting={rewritingKey === section.key}
+                    isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
+                    mediaUpload={mediaSpec && tableName === 'report_texts' ? {
+                      key: mediaSpec.key,
+                      label: mediaSpec.label,
+                      maxWidth: mediaSpec.maxWidth,
+                      maxHeight: mediaSpec.maxHeight,
+                      maxUploadBytes: mediaSpec.maxUploadBytes,
+                      currentUrl: String(mediaEntry?.optimized_content ?? ''),
+                      hasOverride: Boolean(mediaEntry?.optimized_content),
+                      uploading: mediaState[mediaSpec.key]?.uploading ?? false,
+                      error: mediaState[mediaSpec.key]?.error ?? null,
+                      onUpload: uploadMandatoryMedia,
+                    } : null}
                   />
                 );
               })}
+              {tableName === 'report_texts' && activeTab === 'makler' ? (
+                <div style={mediaBottomWrapStyle}>
+                  <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>Makler-Bilder (Pflicht)</h4>
+                  <div style={mediaBottomGridStyle}>
+                    {MAKLER_MEDIA_KEYS.map((key) => {
+                      const spec = MANDATORY_MEDIA_SPECS[key];
+                      const mediaEntry = getMediaEntry(key);
+                      return (
+                        <MandatoryMediaUploadCard
+                          key={`${selectedAreaConfig?.area_id}:${key}`}
+                          label={spec.label}
+                          assetKey={spec.key}
+                          maxWidth={spec.maxWidth}
+                          maxHeight={spec.maxHeight}
+                          maxUploadBytes={spec.maxUploadBytes}
+                          currentUrl={String(mediaEntry?.optimized_content ?? '')}
+                          hasOverride={Boolean(mediaEntry?.optimized_content)}
+                          uploading={mediaState[key]?.uploading ?? false}
+                          error={mediaState[key]?.error ?? null}
+                          onUpload={uploadMandatoryMedia}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
-        ) : null}
         </div>
 
         {enableApproval ? (
@@ -1825,6 +2037,76 @@ const tabButtonStyle = (active: boolean) => ({
 const tabIconImageStyle: React.CSSProperties = { width: '30px', height: '30px', objectFit: 'contain', display: 'block' };
 const tabIconEmojiStyle: React.CSSProperties = { fontSize: '24px', lineHeight: 1, display: 'block' };
 const tabLabelStyle: React.CSSProperties = { fontSize: '14px', lineHeight: 1.2, textAlign: 'center' };
+const textEditorGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '290px minmax(0, 1fr)',
+  gap: 16,
+};
+const textAreaListCardStyle: React.CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: 12,
+  backgroundColor: '#f8fafc',
+  padding: '14px',
+  display: 'grid',
+  gap: 10,
+  alignSelf: 'start',
+};
+const textAreaListHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 10,
+};
+const textAreaListMetaStyle: React.CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.45,
+  color: '#64748b',
+};
+const textAreaListWrapStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 8,
+};
+const textAreaListRowStyle = (active: boolean): React.CSSProperties => ({
+  border: active ? '1px solid #486b7a' : '1px solid #dbe4ea',
+  borderRadius: 12,
+  backgroundColor: active ? '#eef4f6' : '#fff',
+  padding: '12px',
+  display: 'grid',
+  gap: 6,
+  cursor: 'pointer',
+  textAlign: 'left',
+});
+const textAreaListRowTopStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 10,
+};
+const textAreaListHeadlineStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: '#0f172a',
+};
+const textAreaTypeBadgeStyle = (isItemOrtslage: boolean): React.CSSProperties => ({
+  borderRadius: 999,
+  padding: '4px 10px',
+  fontSize: 10,
+  fontWeight: 800,
+  letterSpacing: '0.03em',
+  textTransform: 'uppercase',
+  background: isItemOrtslage ? '#f1f5f9' : '#e2e8f0',
+  color: '#475569',
+  whiteSpace: 'nowrap',
+});
+const textAreaListMetaLineStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: '#64748b',
+};
+const textAreaEditorWrapStyle: React.CSSProperties = {
+  minWidth: 0,
+};
+const textAreaEditorHeadStyle: React.CSSProperties = {
+  marginBottom: 10,
+};
 const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px', borderRadius: '0 0 12px 12px', border: '1px solid #e2e8f0', borderTop: 'none' };
 const globalHeaderPanelStyle: React.CSSProperties = {
   border: '1px solid #e2e8f0',
