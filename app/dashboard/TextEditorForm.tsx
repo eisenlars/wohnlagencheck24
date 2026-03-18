@@ -1387,12 +1387,13 @@ export default function TextEditorForm({
   const sections = activeTabConfig?.sections ?? [];
   const activeSections = sections.filter((section) => {
     if (allowedSectionSet && !allowedSectionSet.has(section.key)) return false;
+    if (lockedToMandatory) return true;
     if (isMarketing) return true;
     return resolveDisplayTextClass(section.key, section.type) === activeBulkClass;
   });
   const isBulkRewriting = Boolean(classBulkState);
   const showGlobalClassActions = !isMarketing && !lockedToMandatory;
-  const showScopeAreaSidebar = !isOrtslage && scopeAreaItems.length > 1;
+  const showScopeAreaSidebar = !lockedToMandatory && !isOrtslage && scopeAreaItems.length > 1;
 
   return (
     <div style={{ width: '100%' }}>
