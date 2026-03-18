@@ -4332,6 +4332,7 @@ const workflowCardHeaderStyle: React.CSSProperties = {
   gap: 16,
   alignItems: 'center',
   flexWrap: 'wrap',
+  marginBottom: 24,
 };
 
 const workflowHeaderInlineStyle: React.CSSProperties = {
