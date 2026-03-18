@@ -1269,7 +1269,7 @@ export default function AdminClient() {
     if (!selectedPartnerId || !reviewAreaId) return;
     setReviewBusy(true);
     try {
-      await api<AreaReviewPayload>(
+      const response = await api<AreaReviewPayload>(
         `/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(reviewAreaId)}/publish`,
         {
           method: live ? "POST" : "DELETE",
@@ -1278,6 +1278,12 @@ export default function AdminClient() {
       await loadPartnerDetails(selectedPartnerId);
       await loadAreaOverview();
       await loadAreaReview(reviewAreaId);
+      if (live && response?.notification?.partner?.sent === false) {
+        const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
+        setReviewActionError(`Gebiet wurde online geschaltet, Partner-Mail aber nicht versendet (${reason}).`);
+        setReviewActionMessage(null);
+        return;
+      }
       setReviewActionError(null);
       setReviewActionMessage(live ? "Gebiet erfolgreich online geschaltet." : "Gebiet erfolgreich offline genommen.");
     } catch (error) {
@@ -2909,7 +2915,7 @@ export default function AdminClient() {
                 onClick={() =>
                   run("Gebiet zuordnen", async () => {
                     if (!selectedPartnerId || !assignAreaId.trim()) return;
-                    await api(`/api/admin/partners/${selectedPartnerId}/areas`, {
+                    const response = await api<{ notification?: { partner?: { sent?: boolean; reason?: string | null } } }>(`/api/admin/partners/${selectedPartnerId}/areas`, {
                       method: "POST",
                       body: JSON.stringify({ area_id: assignAreaId.trim(), is_active: false }),
                     });
@@ -2917,6 +2923,12 @@ export default function AdminClient() {
                     setAreaQuery("");
                     await loadPartnerDetails(selectedPartnerId);
                     await loadAreaOverview();
+                    if (response?.notification?.partner?.sent === false) {
+                      const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
+                      setStatus(`Gebiet zugeordnet, Partner-Mail aber nicht versendet (${reason}).`);
+                      return;
+                    }
+                    setStatus("Gebiet erfolgreich zugeordnet.");
                   })
                 }
               >

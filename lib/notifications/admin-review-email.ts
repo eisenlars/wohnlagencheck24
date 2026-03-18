@@ -65,6 +65,14 @@ type SendPartnerAreaAssignedEmailArgs = {
   assignedAtIso?: string | null;
 };
 
+type SendPartnerAreaLiveEmailArgs = {
+  partnerEmail: string;
+  partnerName?: string | null;
+  areaId: string;
+  areaName?: string | null;
+  liveAtIso?: string | null;
+};
+
 type SendAdminInviteResendRequestEmailArgs = {
   email: string;
   audience?: "partner" | "admin";
@@ -328,6 +336,30 @@ function buildPartnerAssignedText(args: SendPartnerAreaAssignedEmailArgs): strin
     `Zugewiesen am: ${assignedAt}`,
     "",
     "Bitte ergänze jetzt deine Pflichtangaben und fordere danach die Freigabe an.",
+  ].join("\n");
+}
+
+function buildPartnerAreaLiveSubject(args: SendPartnerAreaLiveEmailArgs): string {
+  const area = String(args.areaName ?? args.areaId).trim();
+  return `Gebiet jetzt online: ${area}`;
+}
+
+function buildPartnerAreaLiveText(args: SendPartnerAreaLiveEmailArgs): string {
+  const area = String(args.areaName ?? args.areaId).trim();
+  const partner = pickGreetingName(String(args.partnerName ?? ""));
+  const liveAt = args.liveAtIso
+    ? new Date(args.liveAtIso).toLocaleString("de-DE")
+    : new Date().toLocaleString("de-DE");
+  return [
+    `Hallo${partner ? ` ${partner}` : ""},`,
+    "",
+    "dein Gebiet ist jetzt erfolgreich online geschaltet.",
+    "",
+    `Gebiet: ${area}`,
+    `Area ID: ${args.areaId}`,
+    `Online seit: ${liveAt}`,
+    "",
+    "Dein Gebiet ist jetzt öffentlich erreichbar.",
   ].join("\n");
 }
 
@@ -661,6 +693,19 @@ export async function sendPartnerAreaAssignedEmail(args: SendPartnerAreaAssigned
     to: [recipient],
     subject: buildPartnerAssignedSubject(args),
     text: buildPartnerAssignedText(args),
+  });
+}
+
+export async function sendPartnerAreaLiveEmail(args: SendPartnerAreaLiveEmailArgs): Promise<{
+  sent: boolean;
+  reason?: string;
+}> {
+  const recipient = String(args.partnerEmail ?? "").trim().toLowerCase();
+  if (!recipient) return { sent: false, reason: "partner_email_missing" };
+  return sendSmtpTextMail({
+    to: [recipient],
+    subject: buildPartnerAreaLiveSubject(args),
+    text: buildPartnerAreaLiveText(args),
   });
 }
 

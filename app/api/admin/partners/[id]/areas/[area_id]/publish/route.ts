@@ -7,6 +7,7 @@ import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/securi
 import { publishVisibilityIndex } from "@/lib/visibility-index";
 import { isMissingPublicLiveColumn } from "@/lib/public-partner-mappings";
 import { rebuildAllPublicAssetEntriesForPartner } from "@/lib/public-asset-projections";
+import { sendPartnerAreaLiveEmail } from "@/lib/notifications/admin-review-email";
 
 function isMissingActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
@@ -203,10 +204,72 @@ export async function POST(
     await publishVisibilityIndex(admin as never);
     const projectionCounts = await rebuildAllPublicAssetEntriesForPartner(partnerId, admin);
 
+    let partnerLiveMailSent = false;
+    let partnerLiveMailReason: string | undefined;
+    if (!isSystemDefaultPartner) {
+      try {
+        const [partnerMailRes, areaRes] = await Promise.all([
+          admin
+            .from("partners")
+            .select("id, company_name, contact_email, contact_first_name")
+            .eq("id", partnerId)
+            .maybeSingle(),
+          admin
+            .from("areas")
+            .select("id, name")
+            .eq("id", areaId)
+            .maybeSingle(),
+        ]);
+        const partnerMail = await sendPartnerAreaLiveEmail({
+          partnerEmail: String(partnerMailRes.data?.contact_email ?? "").trim(),
+          partnerName: String(partnerMailRes.data?.contact_first_name ?? "").trim()
+            || String(partnerMailRes.data?.company_name ?? "").trim()
+            || partnerId,
+          areaId,
+          areaName: String(areaRes.data?.name ?? "").trim() || areaId,
+          liveAtIso: new Date().toISOString(),
+        });
+        partnerLiveMailSent = partnerMail.sent;
+        partnerLiveMailReason = partnerMail.reason;
+        if (!partnerMail.sent) {
+          console.warn("partner live mail not sent:", partnerMail.reason);
+        }
+      } catch (mailErr) {
+        partnerLiveMailSent = false;
+        partnerLiveMailReason = mailErr instanceof Error ? mailErr.message : "mail_error";
+        console.warn("partner live mail failed:", mailErr);
+      }
+
+      await writeSecurityAuditLog({
+        actorUserId: adminUser.userId,
+        actorRole: adminUser.role,
+        eventType: "other",
+        entityType: "other",
+        entityId: `${areaId}:publish_live:partner_mail`,
+        payload: {
+          action: "mail_admin_publish_live_partner_notify",
+          area_id: areaId,
+          partner_id: partnerId,
+          sent: partnerLiveMailSent,
+          reason: partnerLiveMailReason ?? null,
+        },
+        ip: extractClientIpFromHeaders(req.headers),
+        userAgent: req.headers.get("user-agent"),
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       mapping: updated,
       projections: projectionCounts,
+      notification: isSystemDefaultPartner
+        ? null
+        : {
+          partner: {
+            sent: partnerLiveMailSent,
+            reason: partnerLiveMailReason ?? null,
+          },
+        },
     });
   } catch (error) {
     if (error instanceof Error) {
