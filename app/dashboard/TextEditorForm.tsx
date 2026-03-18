@@ -1247,10 +1247,12 @@ export default function TextEditorForm({
         },
         { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
       );
-      const estimatedCostEur = selectedLlmOption?.inputCostEurPer1k !== null && selectedLlmOption?.outputCostEurPer1k !== null
+      const inputCostEurPer1k = selectedLlmOption?.inputCostEurPer1k ?? null;
+      const outputCostEurPer1k = selectedLlmOption?.outputCostEurPer1k ?? null;
+      const estimatedCostEur = inputCostEurPer1k !== null && outputCostEurPer1k !== null
         ? Number((
-          (totals.promptTokens / 1000) * selectedLlmOption.inputCostEurPer1k
-          + (totals.completionTokens / 1000) * selectedLlmOption.outputCostEurPer1k
+          (totals.promptTokens / 1000) * inputCostEurPer1k
+          + (totals.completionTokens / 1000) * outputCostEurPer1k
         ).toFixed(4))
         : null;
       acc[classKey] = {
