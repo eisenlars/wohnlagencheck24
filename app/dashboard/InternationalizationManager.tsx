@@ -2559,23 +2559,21 @@ export default function InternationalizationManager({ config, availableLocales, 
                     <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
                     <span>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
                   </div>
-                  {active ? (
-                    <label style={workflowPromptLabelStyle}>
-                      Standardprompt (anpassbar)
-                      <textarea
-                        value={getWorkflowPrompt(displayClass)}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setWorkflowPromptDrafts((prev) => ({
-                            ...prev,
-                            [workflowPromptStorageKey(displayClass)]: next,
-                          }));
-                        }}
-                        style={workflowPromptTextareaStyle}
-                        placeholder={getI18nStandardPrompt(displayClass, locale)}
-                      />
-                    </label>
-                  ) : null}
+                  <label style={workflowPromptLabelStyle}>
+                    Standardprompt (anpassbar)
+                    <textarea
+                      value={getWorkflowPrompt(displayClass)}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        setWorkflowPromptDrafts((prev) => ({
+                          ...prev,
+                          [workflowPromptStorageKey(displayClass)]: next,
+                        }));
+                      }}
+                      style={workflowPromptTextareaStyle}
+                      placeholder={getI18nStandardPrompt(displayClass, locale)}
+                    />
+                  </label>
                   <div style={classCardActionRowStyle}>
                     <button
                       type="button"
