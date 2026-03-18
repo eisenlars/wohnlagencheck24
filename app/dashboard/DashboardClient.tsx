@@ -1373,7 +1373,16 @@ export default function DashboardClient() {
       ) : null}
 
       {/* 2. SPALTE: REGIONEN-NAVIGATION (Mitte) */}
-      {activeMainTab !== 'immobilien' && activeMainTab !== 'referenzen' && activeMainTab !== 'gesuche' && activeMainTab !== 'settings' && !showWelcome ? (
+      {activeMainTab !== 'immobilien'
+        && activeMainTab !== 'referenzen'
+        && activeMainTab !== 'gesuche'
+        && activeMainTab !== 'settings'
+        && activeMainTab !== 'texts'
+        && activeMainTab !== 'international'
+        && activeMainTab !== 'local_site'
+        && activeMainTab !== 'marketing'
+        && activeMainTab !== 'blog'
+        && !showWelcome ? (
         <aside style={regionSidebarStyle}>
           <div style={sidebarHeaderStyle}>
             <h2 style={{ fontSize: '14px', fontWeight: '800', margin: 0 }}>Regionen</h2>
