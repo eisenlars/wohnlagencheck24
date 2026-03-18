@@ -2243,16 +2243,19 @@ const textWorkflowHeaderStyle: React.CSSProperties = {
   gap: 10,
 };
 const textWorkflowHeaderInlineStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 10,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  flexWrap: 'wrap',
 };
 const textWorkflowInlineFieldStyle: React.CSSProperties = {
   display: 'flex',
-  minWidth: 180,
+  width: 220,
+  flex: '0 0 auto',
 };
 const textWorkflowInlineSelectStyle: React.CSSProperties = {
   ...textWorkflowSelectBaseStyle,
-  width: '100%',
+  width: 220,
   minHeight: 36,
   height: 36,
   fontSize: 12,
