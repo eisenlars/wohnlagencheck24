@@ -2855,7 +2855,7 @@ export default function AdminClient() {
 
         <div style={contentPaneStyle}>
       {activeView === "partner_edit" ? (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 14, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginTop: 10, marginBottom: 14, flexWrap: "wrap" }}>
         <h1 style={{ margin: 0, fontSize: 24, lineHeight: 1.2, color: "#0f172a", fontWeight: 800 }}>Partnerverwaltung</h1>
         <button
           type="button"
