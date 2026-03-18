@@ -2512,40 +2512,41 @@ export default function InternationalizationManager({ config, availableLocales, 
         </div>
 
 	      {activeDomain === 'immobilienmarkt' ? (
+	      <>
 	      <div style={editorCardStyle}>
 	        <div style={workflowCardStyle}>
 	          <div style={workflowCardHeaderStyle}>
 	            <div style={workflowHeaderInlineStyle}>
-              <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
-              <div style={workflowInlineControlsStyle}>
-                <label style={workflowInlineFieldStyle}>
-                  <select
-                    style={workflowInlineSelectStyle}
-                    value={channel}
-                    onChange={(e) => setChannel(e.target.value as I18nChannel)}
-                  >
-                    {I18N_CHANNEL_OPTIONS.map((item) => (
-                      <option key={item.value} value={item.value}>{item.label}</option>
-                    ))}
-                  </select>
-                </label>
-                <label style={workflowInlineFieldStyle}>
-                  <select
-                    style={workflowInlineSelectStyle}
-                    value={scope}
-                    onChange={(e) => setScope(e.target.value as I18nScope)}
-                  >
-                    {I18N_SCOPE_OPTIONS.map((item) => (
-                      <option key={item.value} value={item.value} disabled={item.value === 'kreis_ortslagen' && !isDistrict}>
-                        {item.value === 'current_area' ? item.label.replace('Dieses Gebiet', areaScopeLabel) : item.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {status ? (
-                  <div style={statusTone === 'error' ? workflowStatusErrorStyle : workflowStatusSuccessStyle}>{status}</div>
-                ) : (
-                  <div style={workflowScopeHintStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
+	              <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
+	              <div style={workflowInlineControlsStyle}>
+	                <label style={workflowInlineFieldStyle}>
+	                  <select
+	                    style={workflowInlineSelectStyle}
+	                    value={channel}
+	                    onChange={(e) => setChannel(e.target.value as I18nChannel)}
+	                  >
+	                    {I18N_CHANNEL_OPTIONS.map((item) => (
+	                      <option key={item.value} value={item.value}>{item.label}</option>
+	                    ))}
+	                  </select>
+	                </label>
+	                <label style={workflowInlineFieldStyle}>
+	                  <select
+	                    style={workflowInlineSelectStyle}
+	                    value={scope}
+	                    onChange={(e) => setScope(e.target.value as I18nScope)}
+	                  >
+	                    {I18N_SCOPE_OPTIONS.map((item) => (
+	                      <option key={item.value} value={item.value} disabled={item.value === 'kreis_ortslagen' && !isDistrict}>
+	                        {item.value === 'current_area' ? item.label.replace('Dieses Gebiet', areaScopeLabel) : item.label}
+	                      </option>
+	                    ))}
+	                  </select>
+	                </label>
+	                {status ? (
+	                  <div style={statusTone === 'error' ? workflowStatusErrorStyle : workflowStatusSuccessStyle}>{status}</div>
+	                ) : (
+	                  <div style={workflowScopeHintStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
 	                )}
 	              </div>
 	            </div>
@@ -2615,7 +2616,9 @@ export default function InternationalizationManager({ config, availableLocales, 
 	            );
 	          })}
 	        </div>
+	      </div>
 
+	      <div style={editorCardStyle}>
 	        <div style={sectionTabsIntroStyle}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
@@ -2962,8 +2965,9 @@ export default function InternationalizationManager({ config, availableLocales, 
             </div>
           </>
         )}
-      </div>
-      ) : activeDomain === 'blog' ? (
+	      </div>
+	      </>
+	      ) : activeDomain === 'blog' ? (
       <div style={editorCardStyle}>
         {blogStatus ? <div style={blogStatusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{blogStatus}</div> : null}
         <div style={blogGridStyle}>
