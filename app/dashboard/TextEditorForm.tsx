@@ -1531,22 +1531,6 @@ export default function TextEditorForm({
         <div style={sectionTabsIntroStyle}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
-        <div style={tabContainerStyle}>
-          {visibleTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={tabButtonStyle(activeTab === tab.id)}
-            >
-              {isIconPath(tab.icon) ? (
-                <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
-              ) : (
-                <span style={tabIconEmojiStyle}>{tab.icon}</span>
-              )}
-              <span style={tabLabelStyle}>{tab.label}</span>
-            </button>
-          ))}
-        </div>
 
         {/* CONTENT AREA */}
         <div style={showScopeAreaSidebar ? textEditorGridStyle : undefined}>
@@ -1579,6 +1563,22 @@ export default function TextEditorForm({
           ) : null}
 
           <div style={showScopeAreaSidebar ? textAreaEditorWrapStyle : undefined}>
+            <div style={tabContainerStyle}>
+              {visibleTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={tabButtonStyle(activeTab === tab.id)}
+                >
+                  {isIconPath(tab.icon) ? (
+                    <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
+                  ) : (
+                    <span style={tabIconEmojiStyle}>{tab.icon}</span>
+                  )}
+                  <span style={tabLabelStyle}>{tab.label}</span>
+                </button>
+              ))}
+            </div>
             <div style={contentWrapperStyle}>
               {activeSections.length === 0 ? (
                 <div style={textWorkflowEmptyStateStyle}>
