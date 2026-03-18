@@ -2042,7 +2042,7 @@ const utilityBarStyle: React.CSSProperties = {
   padding: '8px 0',
   overflow: 'visible',
   position: 'relative',
-  zIndex: 10
+  zIndex: 50
 };
 
 const toolIconsGroupStyle = {
