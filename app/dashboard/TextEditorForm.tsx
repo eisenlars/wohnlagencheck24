@@ -21,6 +21,7 @@ import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import {
+  workflowAreaContentStackStyle,
   workflowAreaContentWrapStyle as textAreaEditorWrapStyle,
   workflowAreaGridStyle as textEditorGridStyle,
   workflowAreaHeadlineStyle as textAreaListHeadlineStyle,
@@ -1598,106 +1599,108 @@ export default function TextEditorForm({
           ) : null}
 
           <div style={showScopeAreaSidebar ? textAreaEditorWrapStyle : undefined}>
-            <div style={tabContainerStyle}>
-              {visibleTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={tabButtonStyle(activeTab === tab.id)}
-                >
-                  {isIconPath(tab.icon) ? (
-                    <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
-                  ) : (
-                    <span style={tabIconEmojiStyle}>{tab.icon}</span>
-                  )}
-                  <span style={tabLabelStyle}>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-            <div style={contentWrapperStyle}>
-              {activeSections.length === 0 ? (
-                <div style={textWorkflowEmptyStateStyle}>
-                  Fuer diesen Themenbereich gibt es im gewaehlten Texttyp aktuell keine Texte.
-                </div>
-              ) : activeSections.map((section) => {
-                const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
-                const mediaKey = MEDIA_BY_SECTION_KEY[section.key];
-                const mediaSpec = mediaKey ? MANDATORY_MEDIA_SPECS[mediaKey] : null;
-                const mediaEntry = mediaKey ? getMediaEntry(mediaKey) : undefined;
-                return (
-                  <TextEditorField
-                    key={`${selectedAreaConfig?.area_id}:${section.key}:${dbTexts.find((t) => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
-                    label={section.label}
-                    sectionKey={section.key}
-                    sectionGroup={sectionGroup}
-                    type={section.type}
-                    rawText={getRawTextFromJSON(section.key, sectionGroup)}
-                    dbEntry={dbTexts.find((t) => t.section_key === section.key)}
-                    areaName={selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id || config?.areas?.name || config.area_id}
-                    onSave={saveText}
-                    onResetToSystem={resetTextToSystem}
-                    onAiRewrite={handleAiRewrite}
-                    tableName={tableName as HintTable}
-                    enableApproval={enableApproval}
-                    isRewriting={rewritingKey === section.key}
-                    isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
-                    mediaUpload={mediaSpec && tableName === 'report_texts' ? {
-                      key: mediaSpec.key,
-                      label: mediaSpec.label,
-                      maxWidth: mediaSpec.maxWidth,
-                      maxHeight: mediaSpec.maxHeight,
-                      maxUploadBytes: mediaSpec.maxUploadBytes,
-                      currentUrl: String(mediaEntry?.optimized_content ?? ''),
-                      hasOverride: Boolean(mediaEntry?.optimized_content),
-                      uploading: mediaState[mediaSpec.key]?.uploading ?? false,
-                      error: mediaState[mediaSpec.key]?.error ?? null,
-                      onUpload: uploadMandatoryMedia,
-                    } : null}
-                  />
-                );
-              })}
-              {tableName === 'report_texts' && activeTab === 'makler' ? (
-                <div style={mediaBottomWrapStyle}>
-                  <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>Makler-Bilder (Pflicht)</h4>
-                  <div style={mediaBottomGridStyle}>
-                    {MAKLER_MEDIA_KEYS.map((key) => {
-                      const spec = MANDATORY_MEDIA_SPECS[key];
-                      const mediaEntry = getMediaEntry(key);
-                      return (
-                        <MandatoryMediaUploadCard
-                          key={`${selectedAreaConfig?.area_id}:${key}`}
-                          label={spec.label}
-                          assetKey={spec.key}
-                          maxWidth={spec.maxWidth}
-                          maxHeight={spec.maxHeight}
-                          maxUploadBytes={spec.maxUploadBytes}
-                          currentUrl={String(mediaEntry?.optimized_content ?? '')}
-                          hasOverride={Boolean(mediaEntry?.optimized_content)}
-                          uploading={mediaState[key]?.uploading ?? false}
-                          error={mediaState[key]?.error ?? null}
-                          onUpload={uploadMandatoryMedia}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : null}
-
-              {enableApproval ? (
-                <div style={approvalFooterStyle}>
+            <div style={workflowAreaContentStackStyle}>
+              <div style={tabContainerStyle}>
+                {visibleTabs.map((tab) => (
                   <button
-                    type="button"
-                    onClick={handleSaveAndApprove}
-                    style={approveAllButtonStyle(!publishing && hasPublishableChanges)}
-                    disabled={publishing || !hasPublishableChanges}
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    style={tabButtonStyle(activeTab === tab.id)}
                   >
-                    {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
+                    {isIconPath(tab.icon) ? (
+                      <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
+                    ) : (
+                      <span style={tabIconEmojiStyle}>{tab.icon}</span>
+                    )}
+                    <span style={tabLabelStyle}>{tab.label}</span>
                   </button>
-                  <span style={approvalHintStyle}>
-                    Speichert den aktuellen Stand und setzt die deutschen Inhalte auf „freigegeben“.
-                  </span>
-                </div>
-              ) : null}
+                ))}
+              </div>
+              <div style={contentWrapperStyle}>
+                {activeSections.length === 0 ? (
+                  <div style={textWorkflowEmptyStateStyle}>
+                    Fuer diesen Themenbereich gibt es im gewaehlten Texttyp aktuell keine Texte.
+                  </div>
+                ) : activeSections.map((section) => {
+                  const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
+                  const mediaKey = MEDIA_BY_SECTION_KEY[section.key];
+                  const mediaSpec = mediaKey ? MANDATORY_MEDIA_SPECS[mediaKey] : null;
+                  const mediaEntry = mediaKey ? getMediaEntry(mediaKey) : undefined;
+                  return (
+                    <TextEditorField
+                      key={`${selectedAreaConfig?.area_id}:${section.key}:${dbTexts.find((t) => t.section_key === section.key)?.optimized_content ?? getRawTextFromJSON(section.key, sectionGroup) ?? ''}`}
+                      label={section.label}
+                      sectionKey={section.key}
+                      sectionGroup={sectionGroup}
+                      type={section.type}
+                      rawText={getRawTextFromJSON(section.key, sectionGroup)}
+                      dbEntry={dbTexts.find((t) => t.section_key === section.key)}
+                      areaName={selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id || config?.areas?.name || config.area_id}
+                      onSave={saveText}
+                      onResetToSystem={resetTextToSystem}
+                      onAiRewrite={handleAiRewrite}
+                      tableName={tableName as HintTable}
+                      enableApproval={enableApproval}
+                      isRewriting={rewritingKey === section.key}
+                      isMandatory={INDIVIDUAL_MANDATORY_KEY_SET.has(section.key)}
+                      mediaUpload={mediaSpec && tableName === 'report_texts' ? {
+                        key: mediaSpec.key,
+                        label: mediaSpec.label,
+                        maxWidth: mediaSpec.maxWidth,
+                        maxHeight: mediaSpec.maxHeight,
+                        maxUploadBytes: mediaSpec.maxUploadBytes,
+                        currentUrl: String(mediaEntry?.optimized_content ?? ''),
+                        hasOverride: Boolean(mediaEntry?.optimized_content),
+                        uploading: mediaState[mediaSpec.key]?.uploading ?? false,
+                        error: mediaState[mediaSpec.key]?.error ?? null,
+                        onUpload: uploadMandatoryMedia,
+                      } : null}
+                    />
+                  );
+                })}
+                {tableName === 'report_texts' && activeTab === 'makler' ? (
+                  <div style={mediaBottomWrapStyle}>
+                    <h4 style={{ margin: 0, fontSize: '15px', color: '#1e293b' }}>Makler-Bilder (Pflicht)</h4>
+                    <div style={mediaBottomGridStyle}>
+                      {MAKLER_MEDIA_KEYS.map((key) => {
+                        const spec = MANDATORY_MEDIA_SPECS[key];
+                        const mediaEntry = getMediaEntry(key);
+                        return (
+                          <MandatoryMediaUploadCard
+                            key={`${selectedAreaConfig?.area_id}:${key}`}
+                            label={spec.label}
+                            assetKey={spec.key}
+                            maxWidth={spec.maxWidth}
+                            maxHeight={spec.maxHeight}
+                            maxUploadBytes={spec.maxUploadBytes}
+                            currentUrl={String(mediaEntry?.optimized_content ?? '')}
+                            hasOverride={Boolean(mediaEntry?.optimized_content)}
+                            uploading={mediaState[key]?.uploading ?? false}
+                            error={mediaState[key]?.error ?? null}
+                            onUpload={uploadMandatoryMedia}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+
+                {enableApproval ? (
+                  <div style={approvalFooterStyle}>
+                    <button
+                      type="button"
+                      onClick={handleSaveAndApprove}
+                      style={approveAllButtonStyle(!publishing && hasPublishableChanges)}
+                      disabled={publishing || !hasPublishableChanges}
+                    >
+                      {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
+                    </button>
+                    <span style={approvalHintStyle}>
+                      Speichert den aktuellen Stand und setzt die deutschen Inhalte auf „freigegeben“.
+                    </span>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>

@@ -266,3 +266,9 @@ export const workflowAreaMetaLineStyle: CSSProperties = {
 export const workflowAreaContentWrapStyle: CSSProperties = {
   minWidth: 0,
 };
+
+export const workflowAreaContentStackStyle: CSSProperties = {
+  display: 'grid',
+  gap: 0,
+  minWidth: 0,
+};

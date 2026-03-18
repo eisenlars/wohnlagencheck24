@@ -29,6 +29,7 @@ import { hashText } from '@/lib/text-hash';
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import {
+  workflowAreaContentStackStyle,
   workflowAreaContentWrapStyle,
   workflowAreaGridStyle,
   workflowAreaHeadlineStyle,
@@ -2654,24 +2655,6 @@ export default function InternationalizationManager({ config, availableLocales, 
 	        <div style={sectionTabsIntroStyle}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
-        <div style={tabContainerStyle}>
-          {I18N_TAB_ORDER.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              style={tabButtonStyle(activeTab === tab.id)}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {isIconPath(tab.icon) ? (
-                <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
-              ) : (
-                <span style={tabIconEmojiStyle}>{tab.icon}</span>
-              )}
-              <span style={tabLabelStyle}>{tab.label}</span>
-            </button>
-          ))}
-        </div>
-
         {showScopeAreaSidebar ? (
           <div style={workflowAreaGridStyle}>
             <aside style={workflowAreaListCardStyle}>
@@ -2698,6 +2681,185 @@ export default function InternationalizationManager({ config, availableLocales, 
             </aside>
 
             <div style={workflowAreaContentWrapStyle}>
+              <div style={workflowAreaContentStackStyle}>
+                <div style={tabContainerStyle}>
+                  {I18N_TAB_ORDER.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      style={tabButtonStyle(activeTab === tab.id)}
+                      onClick={() => setActiveTab(tab.id)}
+                    >
+                      {isIconPath(tab.icon) ? (
+                        <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
+                      ) : (
+                        <span style={tabIconEmojiStyle}>{tab.icon}</span>
+                      )}
+                      <span style={tabLabelStyle}>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div style={tableWrapStyle}>
+                  <table style={tableStyle}>
+                    <colgroup>
+                      <col style={{ width: '24%' }} />
+                      <col style={{ width: '38%' }} />
+                      <col style={{ width: '38%' }} />
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th style={thStyle}>Bereich</th>
+                        <th style={thStyle}>Deutsch (Quelle)</th>
+                        <th style={thStyle}>Übersetzung</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRows.length === 0 ? (
+                        <tr>
+                          <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind für das gewählte Gebiet und den gewählten Texttyp aktuell keine übersetzbaren Inhalte vorhanden.</td>
+                        </tr>
+                      ) : filteredRows.map((row, idx) => (
+                        <tr key={`${row.area_id}:${row.section_key}:${idx}`}>
+                          <td style={tdStyle}>
+                            {(() => {
+                              const meta = resolveSectionMeta(row.section_key);
+                              const sectionLabel = meta?.label ?? row.section_key;
+                              const sectionType: SectionKind = meta?.type ?? 'general';
+                              const displayClass = resolveDisplayTextClass(row.section_key, sectionType);
+                              return (
+                                <div style={{ display: 'grid', gap: 6 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                    <span style={{ fontWeight: 700 }}>{sectionLabel}</span>
+                                    <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
+                                  </div>
+                                  <div style={sectionKeyMetaStyle}>{row.section_key}</div>
+                                </div>
+                              );
+                            })()}
+                          </td>
+                          <td style={tdStyle}>
+                            <textarea style={textareaReadonlyStyle} value={row.source_content_de ?? ''} readOnly />
+                          </td>
+                          <td style={tdStyle}>
+                            <textarea
+                              style={textareaStyle}
+                              value={row.translated_content ?? ''}
+                              onChange={(e) => {
+                                const next = e.target.value;
+                                setRows((prev) => prev.map((item) => (
+                                  item.area_id === row.area_id && item.section_key === row.section_key
+                                    ? { ...item, translated_content: next }
+                                    : item
+                                )));
+                              }}
+                            />
+                            <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                style={smallGhostButtonStyle}
+                                disabled={loading || saving || llmOptions.length === 0}
+                                onClick={async () => {
+                                  try {
+                                    setRewritingKey(`${row.area_id}:${row.section_key}`);
+                                    setStatusTone(null);
+                                    setStatus(`KI übersetzt ${row.section_key} …`);
+                                    const translated = await rewriteViaAi(row);
+                                    setRows((prev) => prev.map((item) => (
+                                      item.area_id === row.area_id && item.section_key === row.section_key
+                                        ? { ...item, translated_content: translated }
+                                        : item
+                                    )));
+                                    setStatus(`KI-Übersetzung für ${row.section_key} abgeschlossen.`);
+                                    setStatusTone('success');
+                                  } catch (error) {
+                                    setStatus(error instanceof Error ? error.message : 'KI-Übersetzung fehlgeschlagen.');
+                                    setStatusTone('error');
+                                  } finally {
+                                    setRewritingKey(null);
+                                  }
+                                }}
+                              >
+                                {rewritingKey === `${row.area_id}:${row.section_key}` ? 'Übersetzt …' : 'Mit KI übersetzen'}
+                              </button>
+                              <button
+                                type="button"
+                                style={promptToggleStyle}
+                                onClick={() => {
+                                  const promptKey = rowPromptStorageKey(row);
+                                  setRowPromptOpenMap((prev) => ({
+                                    ...prev,
+                                    [promptKey]: !prev[promptKey],
+                                  }));
+                                }}
+                              >
+                                {rowPromptOpenMap[rowPromptStorageKey(row)] ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+                              </button>
+                              {row.translation_is_stale ? (
+                                <span style={staleBadgeStyle}>Quelle geändert</span>
+                              ) : null}
+                            </div>
+                            {rowPromptOpenMap[rowPromptStorageKey(row)] ? (
+                              <div style={promptPanelStyle}>
+                                <div style={promptLabelStyle}>Standard-Prompt</div>
+                                <div style={promptContentStyle}>{getWorkflowPrompt(getRowDisplayClass(row))}</div>
+                                <label style={promptInputLabelStyle}>
+                                  Eigener Prompt (optional)
+                                  <textarea
+                                    value={rowCustomPromptMap[rowPromptStorageKey(row)] ?? ''}
+                                    onChange={(e) => {
+                                      const next = e.target.value;
+                                      const promptKey = rowPromptStorageKey(row);
+                                      setRowCustomPromptMap((prev) => ({
+                                        ...prev,
+                                        [promptKey]: next,
+                                      }));
+                                    }}
+                                    style={promptInputStyle}
+                                    placeholder="Eigene Zusatzvorgaben (werden zum Standard-Prompt ergänzt)"
+                                  />
+                                </label>
+                              </div>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={actionsBottomStyle}>
+                  <button
+                    type="button"
+                    style={buttonPrimaryStyle(!(loading || saving || rows.length === 0 || !hasEdits))}
+                    onClick={() => void saveRows()}
+                    disabled={loading || saving || rows.length === 0 || !hasEdits}
+                  >
+                    {saving ? 'Speichern …' : 'Übersetzungen speichern'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={workflowAreaContentStackStyle}>
+              <div style={tabContainerStyle}>
+                {I18N_TAB_ORDER.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    style={tabButtonStyle(activeTab === tab.id)}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    {isIconPath(tab.icon) ? (
+                      <NextImage src={tab.icon} alt="" aria-hidden="true" width={16} height={16} unoptimized style={tabIconImageStyle} />
+                    ) : (
+                      <span style={tabIconEmojiStyle}>{tab.icon}</span>
+                    )}
+                    <span style={tabLabelStyle}>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
               <div style={tableWrapStyle}>
                 <table style={tableStyle}>
                   <colgroup>
@@ -2715,7 +2877,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                   <tbody>
                     {filteredRows.length === 0 ? (
                       <tr>
-                        <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind für das gewählte Gebiet und den gewählten Texttyp aktuell keine übersetzbaren Inhalte vorhanden.</td>
+                        <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind fuer den gewaehlten Texttyp aktuell keine uebersetzbaren Inhalte vorhanden.</td>
                       </tr>
                     ) : filteredRows.map((row, idx) => (
                       <tr key={`${row.area_id}:${row.section_key}:${idx}`}>
@@ -2731,6 +2893,9 @@ export default function InternationalizationManager({ config, availableLocales, 
                                   <span style={{ fontWeight: 700 }}>{sectionLabel}</span>
                                   <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
                                 </div>
+                                {scope === 'kreis_ortslagen' ? (
+                                  <div style={areaMetaStyle}>{row.area_name}</div>
+                                ) : null}
                                 <div style={sectionKeyMetaStyle}>{row.section_key}</div>
                               </div>
                             );
@@ -2836,150 +3001,6 @@ export default function InternationalizationManager({ config, availableLocales, 
                   {saving ? 'Speichern …' : 'Übersetzungen speichern'}
                 </button>
               </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div style={tableWrapStyle}>
-              <table style={tableStyle}>
-                <colgroup>
-                  <col style={{ width: '24%' }} />
-                  <col style={{ width: '38%' }} />
-                  <col style={{ width: '38%' }} />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th style={thStyle}>Bereich</th>
-                    <th style={thStyle}>Deutsch (Quelle)</th>
-                    <th style={thStyle}>Übersetzung</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredRows.length === 0 ? (
-                    <tr>
-                      <td style={tdStyle} colSpan={3}>In diesem Themenbereich sind fuer den gewaehlten Texttyp aktuell keine uebersetzbaren Inhalte vorhanden.</td>
-                    </tr>
-                  ) : filteredRows.map((row, idx) => (
-                    <tr key={`${row.area_id}:${row.section_key}:${idx}`}>
-                      <td style={tdStyle}>
-                        {(() => {
-                          const meta = resolveSectionMeta(row.section_key);
-                          const sectionLabel = meta?.label ?? row.section_key;
-                          const sectionType: SectionKind = meta?.type ?? 'general';
-                          const displayClass = resolveDisplayTextClass(row.section_key, sectionType);
-                          return (
-                            <div style={{ display: 'grid', gap: 6 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                <span style={{ fontWeight: 700 }}>{sectionLabel}</span>
-                                <span style={displayTextBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
-                              </div>
-                              {scope === 'kreis_ortslagen' ? (
-                                <div style={areaMetaStyle}>{row.area_name}</div>
-                              ) : null}
-                              <div style={sectionKeyMetaStyle}>{row.section_key}</div>
-                            </div>
-                          );
-                        })()}
-                      </td>
-                      <td style={tdStyle}>
-                        <textarea style={textareaReadonlyStyle} value={row.source_content_de ?? ''} readOnly />
-                      </td>
-                      <td style={tdStyle}>
-                        <textarea
-                          style={textareaStyle}
-                          value={row.translated_content ?? ''}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setRows((prev) => prev.map((item) => (
-                              item.area_id === row.area_id && item.section_key === row.section_key
-                                ? { ...item, translated_content: next }
-                                : item
-                            )));
-                          }}
-                        />
-                        <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                          <button
-                            type="button"
-                            style={smallGhostButtonStyle}
-                            disabled={loading || saving || llmOptions.length === 0}
-                            onClick={async () => {
-                              try {
-                                setRewritingKey(`${row.area_id}:${row.section_key}`);
-                                setStatusTone(null);
-                                setStatus(`KI übersetzt ${row.section_key} …`);
-                                const translated = await rewriteViaAi(row);
-                                setRows((prev) => prev.map((item) => (
-                                  item.area_id === row.area_id && item.section_key === row.section_key
-                                    ? { ...item, translated_content: translated }
-                                    : item
-                                )));
-                                setStatus(`KI-Übersetzung für ${row.section_key} abgeschlossen.`);
-                                setStatusTone('success');
-                              } catch (error) {
-                                setStatus(error instanceof Error ? error.message : 'KI-Übersetzung fehlgeschlagen.');
-                                setStatusTone('error');
-                              } finally {
-                                setRewritingKey(null);
-                              }
-                            }}
-                          >
-                            {rewritingKey === `${row.area_id}:${row.section_key}` ? 'Übersetzt …' : 'Mit KI übersetzen'}
-                          </button>
-                          <button
-                            type="button"
-                            style={promptToggleStyle}
-                            onClick={() => {
-                              const promptKey = rowPromptStorageKey(row);
-                              setRowPromptOpenMap((prev) => ({
-                                ...prev,
-                                [promptKey]: !prev[promptKey],
-                              }));
-                            }}
-                          >
-                            {rowPromptOpenMap[rowPromptStorageKey(row)] ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-                          </button>
-                          {row.translation_is_stale ? (
-                            <span style={staleBadgeStyle}>Quelle geändert</span>
-                          ) : null}
-                        </div>
-                        {rowPromptOpenMap[rowPromptStorageKey(row)] ? (
-                          <div style={promptPanelStyle}>
-                            <div style={promptLabelStyle}>Standard-Prompt</div>
-                            <div style={promptContentStyle}>{getWorkflowPrompt(getRowDisplayClass(row))}</div>
-                            <label style={promptInputLabelStyle}>
-                              Eigener Prompt (optional)
-                              <textarea
-                                value={rowCustomPromptMap[rowPromptStorageKey(row)] ?? ''}
-                                onChange={(e) => {
-                                  const next = e.target.value;
-                                  const promptKey = rowPromptStorageKey(row);
-                                  setRowCustomPromptMap((prev) => ({
-                                    ...prev,
-                                    [promptKey]: next,
-                                  }));
-                                }}
-                                style={promptInputStyle}
-                                placeholder="Eigene Zusatzvorgaben (werden zum Standard-Prompt ergänzt)"
-                              />
-                            </label>
-                          </div>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div style={actionsBottomStyle}>
-              <button
-                type="button"
-                style={buttonPrimaryStyle(!(loading || saving || rows.length === 0 || !hasEdits))}
-                onClick={() => void saveRows()}
-                disabled={loading || saving || rows.length === 0 || !hasEdits}
-              >
-                {saving ? 'Speichern …' : 'Übersetzungen speichern'}
-              </button>
             </div>
           </>
         )}
