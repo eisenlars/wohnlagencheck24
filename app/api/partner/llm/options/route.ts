@@ -73,6 +73,8 @@ export async function GET(req: Request) {
       hint: string | null;
       badges: string[];
       recommended: boolean;
+      input_cost_eur_per_1k: number | null;
+      output_cost_eur_per_1k: number | null;
       partner_integration_id: string | null;
       global_provider_id: string | null;
     }> = [];
@@ -103,6 +105,8 @@ export async function GET(req: Request) {
           hint: null,
           badges: [],
           recommended: false,
+          input_cost_eur_per_1k: null,
+          output_cost_eur_per_1k: null,
           partner_integration_id: integrationId,
           global_provider_id: null,
         });
@@ -126,6 +130,8 @@ export async function GET(req: Request) {
           hint: asText(row.hint),
           badges: normalizeBadges(row.badges),
           recommended: row.recommended === true,
+          input_cost_eur_per_1k: row.input_cost_eur_per_1k,
+          output_cost_eur_per_1k: row.output_cost_eur_per_1k,
           partner_integration_id: null,
           global_provider_id: providerId,
         });

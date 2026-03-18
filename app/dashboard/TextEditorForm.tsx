@@ -12,6 +12,7 @@ import {
   displayTextClassLabel,
   displayTextBadgeStyle,
 } from '@/lib/text-display-class';
+import { estimateTokensFromText } from '@/lib/i18n-cost-estimate';
 import {
   MANDATORY_MEDIA_SPECS,
   type MandatoryMediaKey,
@@ -382,6 +383,8 @@ type LlmIntegrationOption = {
   source: 'partner' | 'global';
   provider: string;
   model: string;
+  inputCostEurPer1k: number | null;
+  outputCostEurPer1k: number | null;
   partnerIntegrationId: string | null;
   globalProviderId: string | null;
 };
@@ -391,6 +394,8 @@ type LlmOptionApiRow = {
   source?: 'partner' | 'global';
   provider?: string;
   model?: string;
+  input_cost_eur_per_1k?: number | null;
+  output_cost_eur_per_1k?: number | null;
   partner_integration_id?: string | null;
   global_provider_id?: string | null;
 };
@@ -411,6 +416,8 @@ type TextEditorFormProps = {
 type PersistedTextEditorViewState = {
   activeTab?: string;
   selectedScopeAreaId?: string;
+  activeBulkClass?: GlobalClassKey;
+  bulkScope?: BulkScope;
 };
 
 type TextAreaData = {
@@ -490,6 +497,14 @@ export default function TextEditorForm({
   const setSelectedScopeAreaId = (nextAreaId: string) => {
     setTextEditorViewState((prev) => ({ ...prev, selectedScopeAreaId: nextAreaId }));
   };
+  const activeBulkClass = (textEditorViewState.activeBulkClass ?? 'general') as GlobalClassKey;
+  const setActiveBulkClass = (nextClass: GlobalClassKey) => {
+    setTextEditorViewState((prev) => ({ ...prev, activeBulkClass: nextClass }));
+  };
+  const bulkScope = (textEditorViewState.bulkScope ?? 'kreis') as BulkScope;
+  const setBulkScope = (nextScope: BulkScope) => {
+    setTextEditorViewState((prev) => ({ ...prev, bulkScope: nextScope }));
+  };
   const [loading, setLoading] = useState(true);
   const [scopeAreaItems, setScopeAreaItems] = useState<PartnerAreaConfig[]>([]);
   const [areaDataById, setAreaDataById] = useState<Record<string, TextAreaData>>({});
@@ -506,12 +521,6 @@ export default function TextEditorForm({
     data_driven: GLOBAL_CLASS_META.data_driven.defaultPrompt,
     market_expert: GLOBAL_CLASS_META.market_expert.defaultPrompt,
     profile: GLOBAL_CLASS_META.profile.defaultPrompt,
-  });
-  const [globalScopeByClass, setGlobalScopeByClass] = useState<Record<GlobalClassKey, BulkScope>>({
-    general: 'kreis',
-    data_driven: 'kreis',
-    market_expert: 'kreis',
-    profile: 'kreis',
   });
   const [globalBulkReport, setGlobalBulkReport] = useState<GlobalBulkReport | null>(null);
   const [mediaState, setMediaState] = useState<Record<MandatoryMediaKey, MediaFieldState>>({
@@ -719,6 +728,8 @@ export default function TextEditorForm({
               source,
               provider,
               model,
+              inputCostEurPer1k: typeof entry?.input_cost_eur_per_1k === 'number' ? entry.input_cost_eur_per_1k : null,
+              outputCostEurPer1k: typeof entry?.output_cost_eur_per_1k === 'number' ? entry.output_cost_eur_per_1k : null,
               partnerIntegrationId: String(entry?.partner_integration_id ?? '').trim() || null,
               globalProviderId: String(entry?.global_provider_id ?? '').trim() || null,
             } satisfies LlmIntegrationOption;
@@ -1206,12 +1217,63 @@ export default function TextEditorForm({
     return tasks;
   };
 
+  const selectedLlmOption = useMemo(
+    () => llmIntegrations.find((item) => item.id === (selectedLlmIntegrationId || llmIntegrations[0]?.id)) ?? null,
+    [llmIntegrations, selectedLlmIntegrationId],
+  );
+
+  const classEstimateMap = useMemo(() => {
+    const areaMultiplier = bulkScope === 'kreis_ortslagen' && !isOrtslage ? Math.max(1, scopeAreaItems.length) : 1;
+    return GLOBAL_CLASS_ORDER.reduce((acc, classKey) => {
+      const tasks = collectBulkTasks(classKey);
+      const texts = tasks.flatMap((task) => {
+        const source = getCurrentTextForDataset(
+          areaDataById[String(config?.area_id ?? '')] ?? null,
+          isOrtslage,
+          task.key,
+          task.sectionGroup,
+        );
+        if (!String(source ?? '').trim()) return [];
+        return Array.from({ length: areaMultiplier }, () => source);
+      });
+      const totals = texts.reduce(
+        (sum, text) => {
+          const estimate = estimateTokensFromText(text);
+          return {
+            promptTokens: sum.promptTokens + estimate.prompt_tokens,
+            completionTokens: sum.completionTokens + estimate.completion_tokens,
+            totalTokens: sum.totalTokens + estimate.total_tokens,
+          };
+        },
+        { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      );
+      const estimatedCostEur = selectedLlmOption?.inputCostEurPer1k !== null && selectedLlmOption?.outputCostEurPer1k !== null
+        ? Number((
+          (totals.promptTokens / 1000) * selectedLlmOption.inputCostEurPer1k
+          + (totals.completionTokens / 1000) * selectedLlmOption.outputCostEurPer1k
+        ).toFixed(4))
+        : null;
+      acc[classKey] = {
+        totalTexts: tasks.length,
+        areaMultiplier,
+        totalTokens: totals.totalTokens,
+        estimatedCostEur,
+      };
+      return acc;
+    }, {} as Record<GlobalClassKey, {
+      totalTexts: number;
+      areaMultiplier: number;
+      totalTokens: number;
+      estimatedCostEur: number | null;
+    }>);
+  }, [areaDataById, bulkScope, config?.area_id, isOrtslage, scopeAreaItems.length, selectedLlmOption]);
+
   const runBulkByTextClass = async (classKey: GlobalClassKey) => {
     if (classBulkState) return;
     const rootData = areaDataById[String(config.area_id)] ?? await ensureAreaTextData(config);
     const tasks = collectBulkTasks(classKey);
     if (tasks.length === 0) return;
-    const scope = globalScopeByClass[classKey];
+    const scope = bulkScope;
     const withOrtslagen = scope === 'kreis_ortslagen' && !isOrtslage;
     try {
       let done = 0;
@@ -1310,124 +1372,143 @@ export default function TextEditorForm({
   return (
     <div style={{ width: '100%' }}>
       {showGlobalClassActions ? (
-        <div style={globalHeaderPanelStyle}>
-          <div style={globalHeaderTopStyle}>
-            <label style={topControlFieldStyle}>
-              KI-Modell
-              <select
-                value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
-                onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                style={selectControlStyle}
-                aria-label="KI-Modell auswählen"
-                disabled={llmIntegrations.length === 0}
-              >
-                {llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
-                {llmIntegrations.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {`${formatProviderLabel(item.provider)} · ${item.model}${item.source === 'global' ? ' (Global)' : ''}`}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <>
+          <div style={textWorkflowTopCardStyle}>
+            <div style={textWorkflowTopControlsStyle}>
+              <label style={textWorkflowTopFieldStyle}>
+                <select
+                  value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
+                  onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                  style={textWorkflowTopSelectStyle}
+                  aria-label="KI-Modell auswählen"
+                  disabled={llmIntegrations.length === 0}
+                >
+                  {llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+                  {llmIntegrations.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {`${formatProviderLabel(item.provider)} · ${item.model}${item.source === 'global' ? ' (Global)' : ''}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
 
-          <div style={globalIntroStyle}>
-            <h3 style={globalIntroTitleStyle}>Globale Textoptimierung nach Texttyp</h3>
-            <p style={globalIntroTextStyle}>
-              Diese Boxen helfen dir, viele Texte auf einmal zu verbessern. Wähle den Texttyp, passe bei Bedarf den
-              Standardprompt an und starte dann die KI-Optimierung für diesen Typ.
-            </p>
-          </div>
-
-          <div style={classCardGridStyle}>
-            {GLOBAL_CLASS_ORDER.map((classKey) => {
-              const meta = GLOBAL_CLASS_META[classKey];
-              const scope = globalScopeByClass[classKey];
-              const classBadgeStyle = displayTextBadgeStyle(classKey);
-              const outlineColor = String(classBadgeStyle.border ?? '1px solid #cbd5e1');
-              const bgColor = String(classBadgeStyle.background ?? '#fff');
-              const textColor = String(classBadgeStyle.color ?? '#0f172a');
-              const buttonStyle = globalActionButtonStyle(outlineColor, bgColor, textColor, isBulkRewriting);
-              const isRunningThisCard = classBulkState?.classKey === classKey;
-              return (
-                <div key={classKey} style={globalClassCardStyle(outlineColor, bgColor)}>
-                  <div style={globalClassHeadStyle}>
-                    <span style={displayTextBadgeStyle(classKey)}>{meta.title}</span>
+          <div style={textWorkflowCardStyle}>
+            <div style={textWorkflowHeaderStyle}>
+              <div style={textWorkflowHeaderInlineStyle}>
+                <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
+                <div style={textWorkflowInlineControlsStyle}>
+                  <label style={textWorkflowInlineFieldStyle}>
                     <select
-                      value={scope}
-                      onChange={(e) =>
-                        setGlobalScopeByClass((prev) => ({
-                          ...prev,
-                          [classKey]: e.target.value as BulkScope,
-                        }))
-                      }
-                      style={selectControlStyle}
+                      value={bulkScope}
+                      onChange={(e) => setBulkScope(e.target.value as BulkScope)}
+                      style={textWorkflowInlineSelectStyle}
                       disabled={isBulkRewriting || isOrtslage}
                     >
                       <option value="kreis">Nur Kreis</option>
                       <option value="kreis_ortslagen" disabled={isOrtslage}>Kreis + Ortslagen</option>
                     </select>
-                  </div>
-                  <p style={globalClassTextStyle}>{meta.description}</p>
-                  <p style={globalClassCycleStyle}>{meta.cycle}</p>
-                  <label style={globalPromptLabelStyle}>
-                    Standardprompt (anpassbar)
-                    <textarea
-                      value={globalPrompts[classKey]}
-                      onChange={(e) =>
-                        setGlobalPrompts((prev) => ({
-                          ...prev,
-                          [classKey]: e.target.value,
-                        }))
-                      }
-                      style={globalPromptTextareaStyle}
-                      placeholder={meta.defaultPrompt}
-                    />
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => runBulkByTextClass(classKey)}
-                    disabled={isBulkRewriting}
-                    style={buttonStyle}
-                  >
-                    {isRunningThisCard
-                      ? `${meta.title} wird optimiert (${classBulkState?.done ?? 0}/${classBulkState?.total ?? 0})`
-                      : `Alle ${meta.title} Texte KI-optimieren`}
-                  </button>
+                  <div style={textWorkflowScopeHintStyle}>Sektionen/Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
                 </div>
-              );
-            })}
-          </div>
-
-          {globalBulkReport ? (
-            <div style={globalReportStyle}>
-              <div style={globalReportTitleStyle}>Laufbericht</div>
-              <div style={globalReportRowStyle}>
-                <strong>Verarbeitet:</strong> {globalBulkReport.processed.length}
               </div>
-              <div style={globalReportRowStyle}>
-                <strong>Übersprungen:</strong> {globalBulkReport.skipped.length}
-              </div>
-              <div style={globalReportRowStyle}>
-                <strong>Fehler:</strong> {globalBulkReport.failed.length}
-              </div>
-              {globalBulkReport.failed.length > 0 ? (
-                <div style={globalReportErrorListStyle}>
-                  {globalBulkReport.failed.slice(0, 8).map((item) => (
-                    <div key={`${item.key}:${item.error}`}>- {item.key}: {item.error}</div>
-                  ))}
-                </div>
-              ) : null}
             </div>
-          ) : null}
-        </div>
+
+            <div style={textWorkflowClassGridStyle}>
+              {GLOBAL_CLASS_ORDER.map((classKey) => {
+                const meta = GLOBAL_CLASS_META[classKey];
+                const active = activeBulkClass === classKey;
+                const estimate = classEstimateMap[classKey];
+                const isRunningThisCard = classBulkState?.classKey === classKey;
+                const buttonDisabled = isBulkRewriting && !isRunningThisCard;
+                return (
+                  <div
+                    key={classKey}
+                    style={textWorkflowClassCardStyle(active)}
+                    onClick={() => setActiveBulkClass(classKey)}
+                  >
+                    <div style={textWorkflowClassTopStyle}>
+                      <span style={textWorkflowClassBadgeStyle(classKey)}>{meta.title}</span>
+                      <span style={textWorkflowClassCountStyle}>{estimate.totalTexts}</span>
+                    </div>
+                    <p style={textWorkflowClassTextStyle}>{meta.description}</p>
+                    <p style={textWorkflowClassCycleStyle}>{meta.cycle}</p>
+                    <div style={textWorkflowClassStatsStyle}>
+                      <span>Texte: {estimate.totalTexts}</span>
+                      <span>Gebiete: {estimate.areaMultiplier}</span>
+                      <span>Tokens ca.: {estimate.totalTokens.toLocaleString('de-DE')}</span>
+                    </div>
+                    <div style={textWorkflowClassCostStyle}>
+                      <span>EUR ca.: {estimate.estimatedCostEur === null ? 'n/a' : estimate.estimatedCostEur.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                    </div>
+                    <label style={textWorkflowPromptLabelStyle}>
+                      Standardprompt (anpassbar)
+                      <textarea
+                        value={globalPrompts[classKey]}
+                        onChange={(e) =>
+                          setGlobalPrompts((prev) => ({
+                            ...prev,
+                            [classKey]: e.target.value,
+                          }))
+                        }
+                        style={textWorkflowPromptTextareaStyle}
+                        placeholder={meta.defaultPrompt}
+                      />
+                    </label>
+                    <div style={textWorkflowClassActionRowStyle}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!active) {
+                            setActiveBulkClass(classKey);
+                            return;
+                          }
+                          void runBulkByTextClass(classKey);
+                        }}
+                        disabled={buttonDisabled}
+                        style={textInlineWorkflowButtonStyle(classKey, active, buttonDisabled)}
+                      >
+                        {isRunningThisCard
+                          ? `${meta.title} wird optimiert (${classBulkState?.done ?? 0}/${classBulkState?.total ?? 0})`
+                          : 'Optimierung starten'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {globalBulkReport ? (
+              <div style={globalReportStyle}>
+                <div style={globalReportTitleStyle}>Laufbericht</div>
+                <div style={globalReportRowStyle}>
+                  <strong>Verarbeitet:</strong> {globalBulkReport.processed.length}
+                </div>
+                <div style={globalReportRowStyle}>
+                  <strong>Übersprungen:</strong> {globalBulkReport.skipped.length}
+                </div>
+                <div style={globalReportRowStyle}>
+                  <strong>Fehler:</strong> {globalBulkReport.failed.length}
+                </div>
+                {globalBulkReport.failed.length > 0 ? (
+                  <div style={globalReportErrorListStyle}>
+                    {globalBulkReport.failed.slice(0, 8).map((item) => (
+                      <div key={`${item.key}:${item.error}`}>- {item.key}: {item.error}</div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </>
       ) : null}
 
       <div style={!isMarketing ? sectionEditorCardStyle : undefined}>
         {/* TABS */}
         <div style={sectionTabsIntroStyle}>
-          <h3 style={sectionTabsIntroTitleStyle}>Sektionen/Themen bearbeiten</h3>
-          <p style={sectionTabsIntroTextStyle}>Wähle einen Bereich aus und bearbeite die zugehörigen Inhalte.</p>
+          <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
         <div style={tabContainerStyle}>
           {visibleTabs.map((tab) => (
@@ -2108,106 +2189,143 @@ const textAreaEditorHeadStyle: React.CSSProperties = {
   marginBottom: 10,
 };
 const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px', borderRadius: '0 0 12px 12px', border: '1px solid #e2e8f0', borderTop: 'none' };
-const globalHeaderPanelStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
+const textWorkflowTopCardStyle: React.CSSProperties = {
+  borderRadius: 18,
+  background: 'rgb(72, 107, 122)',
+  padding: '18px 20px',
+  marginBottom: 16,
+};
+const textWorkflowTopControlsStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(260px, 420px)',
+  gap: 12,
+};
+const textWorkflowTopFieldStyle: React.CSSProperties = {
+  display: 'grid',
+};
+const textWorkflowTopSelectStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 46,
   borderRadius: 12,
-  backgroundColor: '#fff',
-  padding: '18px',
-  display: 'grid',
-  gap: '16px',
-  marginBottom: '28px',
+  border: '1px solid rgba(255,255,255,0.18)',
+  background: '#ffffff',
+  color: '#0f172a',
+  fontSize: 14,
+  fontWeight: 600,
+  padding: '0 14px',
 };
-const globalHeaderTopStyle: React.CSSProperties = {
+const textWorkflowCardStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'minmax(260px, 460px)',
+  gap: 18,
+  borderRadius: 16,
+  border: '1px solid #e2e8f0',
+  background: '#ffffff',
+  padding: 18,
+  marginBottom: 12,
+};
+const textWorkflowHeaderStyle: React.CSSProperties = {
+  display: 'grid',
   gap: 10,
-  alignItems: 'end',
 };
-const topControlFieldStyle: React.CSSProperties = {
+const textWorkflowHeaderInlineStyle: React.CSSProperties = {
   display: 'grid',
-  gap: 6,
-  fontSize: 12,
-  color: '#334155',
+  gap: 10,
+};
+const textWorkflowInlineControlsStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  flexWrap: 'wrap',
+};
+const textWorkflowInlineFieldStyle: React.CSSProperties = {
+  display: 'grid',
+  minWidth: 240,
+};
+const textWorkflowInlineSelectStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 44,
+  padding: '0 14px',
+  borderRadius: 12,
+  border: '1px solid #cbd5e1',
+  background: '#ffffff',
+  color: '#0f172a',
+  fontSize: 14,
   fontWeight: 600,
 };
-const globalIntroStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: 10,
-  backgroundColor: '#f8fafc',
-  padding: '12px 14px',
+const textWorkflowScopeHintStyle: React.CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.45,
+  color: '#64748b',
+  fontWeight: 600,
 };
-const globalIntroTitleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 14,
+const textWorkflowClassGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(280px, 1fr))',
+  gap: 12,
+};
+const textWorkflowClassCardStyle = (active: boolean): React.CSSProperties => ({
+  display: 'grid',
+  gap: 10,
+  borderRadius: 16,
+  border: active ? '1px solid #486b7a' : '1px solid #e2e8f0',
+  background: '#ffffff',
+  padding: 14,
+  cursor: 'pointer',
+});
+const textWorkflowClassTopStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+};
+const textWorkflowClassBadgeStyle = (classKey: GlobalClassKey): React.CSSProperties => ({
+  ...displayTextBadgeStyle(classKey),
+  fontSize: 16,
+  lineHeight: 1,
+  padding: '10px 20px',
+  borderRadius: 999,
+  fontWeight: 700,
+  letterSpacing: '0.01em',
+});
+const textWorkflowClassCountStyle: React.CSSProperties = {
+  fontSize: 12,
   fontWeight: 800,
-  color: '#0f172a',
+  color: '#64748b',
 };
-const globalIntroTextStyle: React.CSSProperties = {
-  margin: '6px 0 0',
+const textWorkflowClassTextStyle: React.CSSProperties = {
+  margin: 0,
   fontSize: 12,
   lineHeight: 1.5,
   color: '#475569',
 };
-const selectControlStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: 10,
-  padding: '9px 12px',
-  paddingRight: 30,
-  height: 42,
-  fontSize: 13,
-  lineHeight: 1.3,
+const textWorkflowClassCycleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 12,
+  lineHeight: 1.5,
   color: '#0f172a',
-  backgroundColor: '#fff',
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  MozAppearance: 'none',
-  boxShadow: 'none',
-  backgroundImage:
-    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")",
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 10px center',
-  backgroundSize: '12px',
-};
-const classCardGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(2, minmax(280px, 1fr))',
-  gap: '12px',
-};
-const globalClassCardStyle = (borderColor: string, bgColor: string): React.CSSProperties => ({
-  border: borderColor,
-  borderRadius: 12,
-  background: bgColor,
-  padding: '12px',
-  display: 'grid',
-  gap: 10,
-});
-const globalClassHeadStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: '1fr minmax(160px, 210px)',
-  alignItems: 'center',
-  gap: 10,
-};
-const globalClassTextStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 12,
-  color: '#334155',
-  lineHeight: 1.45,
-};
-const globalClassCycleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 12,
-  color: '#475569',
-  lineHeight: 1.45,
   fontWeight: 600,
 };
-const globalPromptLabelStyle: React.CSSProperties = {
+const textWorkflowClassStatsStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 4,
+  fontSize: 12,
+  color: '#475569',
+};
+const textWorkflowClassCostStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 4,
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#0f172a',
+};
+const textWorkflowPromptLabelStyle: React.CSSProperties = {
   display: 'grid',
   gap: 6,
   fontSize: 11,
   color: '#334155',
   fontWeight: 600,
 };
-const globalPromptTextareaStyle: React.CSSProperties = {
+const textWorkflowPromptTextareaStyle: React.CSSProperties = {
   width: '100%',
   minHeight: 74,
   padding: '10px 12px',
@@ -2219,20 +2337,25 @@ const globalPromptTextareaStyle: React.CSSProperties = {
   color: '#0f172a',
   backgroundColor: '#fff',
 };
-const globalActionButtonStyle = (
-  borderColor: string,
-  bgColor: string,
-  textColor: string,
-  disabled: boolean,
-): React.CSSProperties => ({
-  borderRadius: 10,
-  border: borderColor,
-  backgroundColor: disabled ? '#f1f5f9' : bgColor,
-  color: disabled ? '#64748b' : textColor,
-  padding: '10px 12px',
-  fontSize: 12,
+const textWorkflowClassActionRowStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: 8,
+};
+const textInlineWorkflowButtonStyle = (classKey: GlobalClassKey, selected: boolean, disabled: boolean): React.CSSProperties => ({
+  borderRadius: 8,
+  border: selected
+    ? `1px solid ${String((displayTextBadgeStyle(classKey) as Record<string, unknown>).borderColor ?? '#cbd5e1')}`
+    : '1px solid #cbd5e1',
+  background: String(displayTextBadgeStyle(classKey).background ?? '#f8fafc'),
+  color: String(displayTextBadgeStyle(classKey).color ?? '#475569'),
+  padding: '10px 14px',
+  fontSize: 13,
   fontWeight: 700,
   cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.5 : 1,
+  alignSelf: 'flex-end',
+  boxShadow: 'none',
 });
 const fieldCardStyle = { marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #f1f5f9' };
 const fieldHeaderGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', marginBottom: '16px' };
