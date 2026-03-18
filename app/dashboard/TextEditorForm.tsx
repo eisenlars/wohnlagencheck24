@@ -1644,25 +1644,25 @@ export default function TextEditorForm({
                   </div>
                 </div>
               ) : null}
+
+              {enableApproval ? (
+                <div style={approvalFooterStyle}>
+                  <button
+                    type="button"
+                    onClick={handleSaveAndApprove}
+                    style={approveAllButtonStyle(!publishing && hasPublishableChanges)}
+                    disabled={publishing || !hasPublishableChanges}
+                  >
+                    {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
+                  </button>
+                  <span style={approvalHintStyle}>
+                    Speichert den aktuellen Stand und setzt die deutschen Inhalte auf „freigegeben“.
+                  </span>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
-
-        {enableApproval ? (
-          <div style={approvalFooterStyle}>
-            <button
-              type="button"
-              onClick={handleSaveAndApprove}
-              style={approveAllButtonStyle(!publishing && hasPublishableChanges)}
-              disabled={publishing || !hasPublishableChanges}
-            >
-              {publishing ? 'Speichern & Freigeben …' : 'Speichern & Freigeben'}
-            </button>
-            <span style={approvalHintStyle}>
-              Speichert den aktuellen Stand und setzt die deutschen Inhalte auf „freigegeben“.
-            </span>
-          </div>
-        ) : null}
       </div>
 
       {saving && <div style={saveIndicatorStyle}>Speichere Änderungen...</div>}
