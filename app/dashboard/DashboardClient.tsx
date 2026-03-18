@@ -2097,7 +2097,7 @@ const utilityTooltipLayerStyle = (top: number): React.CSSProperties => ({
   left: 'calc(100% + 10px)',
   transform: 'translateY(-50%)',
   pointerEvents: 'none',
-  zIndex: 35,
+  zIndex: 60,
 });
 
 const utilityTooltipCardStyle: React.CSSProperties = {
