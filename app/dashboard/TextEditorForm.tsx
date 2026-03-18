@@ -1532,7 +1532,7 @@ export default function TextEditorForm({
                       >
                         {isRunningThisCard
                           ? `${meta.title} wird optimiert (${classBulkState?.done ?? 0}/${classBulkState?.total ?? 0})`
-                          : 'Optimierung starten'}
+                          : 'Alles optimieren'}
                       </button>
                     </div>
                   </div>

@@ -2642,7 +2642,7 @@ export default function InternationalizationManager({ config, availableLocales, 
 	                    }}
 	                    disabled={buttonDisabled}
 	                  >
-	                    {activeClass === 'data_driven' && active ? 'Data-Driven aktualisieren' : 'Übersetzung starten'}
+	                    {activeClass === 'data_driven' && active ? 'Data-Driven aktualisieren' : 'Alles übersetzen'}
 	                  </button>
 	                </div>
 	              </button>
