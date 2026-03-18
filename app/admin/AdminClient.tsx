@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
@@ -5561,6 +5562,13 @@ export default function AdminClient() {
       ) : null}
         </div>
       </div>
+      <footer style={dashboardFooterStyle}>
+        <span style={dashboardFooterCopyStyle}>© {new Date().getFullYear()} Wohnlagencheck24</span>
+        <div style={dashboardFooterLinksStyle}>
+          <Link href="/impressum" style={dashboardFooterLinkStyle}>Impressum</Link>
+          <Link href="/datenschutz" style={dashboardFooterLinkStyle}>Datenschutz</Link>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -5666,11 +5674,41 @@ const menuItemStyle: React.CSSProperties = {
 };
 
 const statusStyle: React.CSSProperties = {
-  background: "#f1f5f9",
+  background: "#f8fafc",
   border: "1px solid #e2e8f0",
   borderRadius: 8,
-  padding: "10px 12px",
-  marginBottom: 16,
+  padding: "6px 10px",
+  margin: "0 0 10px",
+  fontSize: 12,
+  color: "#64748b",
+};
+
+const dashboardFooterStyle: React.CSSProperties = {
+  minHeight: "44px",
+  borderTop: "1px solid #e2e8f0",
+  backgroundColor: "#ffffff",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: "0 20px",
+  fontSize: "12px",
+  marginTop: 16,
+};
+
+const dashboardFooterCopyStyle: React.CSSProperties = {
+  color: "#64748b",
+};
+
+const dashboardFooterLinksStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+};
+
+const dashboardFooterLinkStyle: React.CSSProperties = {
+  color: "#0f766e",
+  textDecoration: "none",
+  fontWeight: 600,
 };
 
 const adminLayoutStyle: React.CSSProperties = {
