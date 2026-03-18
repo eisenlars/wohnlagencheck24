@@ -5678,7 +5678,7 @@ const statusStyle: React.CSSProperties = {
   border: "1px solid #e2e8f0",
   borderRadius: 8,
   padding: "6px 10px",
-  margin: "0 0 10px",
+  margin: 0,
   fontSize: 12,
   color: "#64748b",
 };
@@ -5692,7 +5692,6 @@ const dashboardFooterStyle: React.CSSProperties = {
   justifyContent: "space-between",
   padding: "0 20px",
   fontSize: "12px",
-  marginTop: 16,
 };
 
 const dashboardFooterCopyStyle: React.CSSProperties = {
@@ -5722,7 +5721,7 @@ const adminLayoutStyle: React.CSSProperties = {
 const modeBarStyle: React.CSSProperties = {
   width: "50px",
   minWidth: "50px",
-  background: "rgb(72, 107, 122)",
+  background: "#111111",
   padding: "8px 0",
   display: "flex",
   flexDirection: "column",
