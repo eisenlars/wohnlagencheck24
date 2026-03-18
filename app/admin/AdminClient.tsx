@@ -170,6 +170,15 @@ type HandoverApiResponse = {
   };
 };
 
+type AdminWelcomeAction = {
+  key: string;
+  icon: AdminNavIconKey;
+  title: string;
+  text: string;
+  badge?: string | null;
+  onClick: () => void;
+};
+
 function renderAdminNavIcon(icon: AdminNavIconKey, size = 17) {
   const baseProps = {
     width: size,
@@ -1215,6 +1224,85 @@ export default function AdminClient() {
   const handoverTargetPartner = useMemo(
     () => partners.find((p) => p.id === handoverDraft.new_partner_id) ?? null,
     [partners, handoverDraft.new_partner_id],
+  );
+  const adminWelcomeGroups = useMemo<Array<{ title: string; actions: AdminWelcomeAction[] }>>(
+    () => [
+      {
+        title: "Partnerverwaltung",
+        actions: [
+          {
+            key: "partners",
+            icon: "partners",
+            title: "Partnerübersicht",
+            text: "Bestehende Partner öffnen, Profil- und Gebietsdaten prüfen und Detailbereiche aufrufen.",
+            badge: partners.length > 0 ? `${partners.length} Partner` : null,
+            onClick: () => {
+              setNavMode("partners");
+              setActiveView("partner_edit");
+            },
+          },
+          {
+            key: "areas",
+            icon: "areas",
+            title: "Gebietsübersicht",
+            text: "Kreiszuordnungen, Übergaben und Aktivierungsstände gebietsbezogen prüfen.",
+            badge: areaOverview.length > 0 ? `${areaOverview.length} Zuordnungen` : null,
+            onClick: () => {
+              setNavMode("areas");
+              setActiveView("partner_edit");
+            },
+          },
+          {
+            key: "new_partner",
+            icon: "partners",
+            title: "Neuen Partner anlegen",
+            text: "Einladung versenden und einen neuen Partnerdatensatz mit Zugriff vorbereiten.",
+            onClick: () => {
+              setActiveView("new_partner");
+            },
+          },
+        ],
+      },
+      {
+        title: "Steuerung",
+        actions: [
+          {
+            key: "review",
+            icon: "areas",
+            title: "Freigabeprüfung",
+            text: "Gebiete in Prüfung, Preview-Freigaben und Onlineschaltungen weiterbearbeiten.",
+            badge: pendingReviewCount > 0 ? `${pendingReviewCount} offen` : null,
+            onClick: () => {
+              setNavMode("partners");
+              setPartnerTab("review");
+              setActiveView("partner_edit");
+            },
+          },
+          {
+            key: "audit",
+            icon: "audit",
+            title: "Log",
+            text: "Sicherheits- und Systemereignisse nach Actor, Event und Zeitraum durchsuchen.",
+            onClick: () => {
+              setActiveView("audit");
+              void run("Audit-Log laden", async () => {
+                await loadAuditLogs();
+              });
+            },
+          },
+          {
+            key: "purge",
+            icon: "purge",
+            title: "Partner löschen",
+            text: "Kritische Datenbereinigung mit Vorprüfung und vollständiger Entfernung aus dem System.",
+            onClick: () => {
+              setActiveView("partner_purge");
+            },
+          },
+        ],
+      },
+    ],
+    [partners.length, areaOverview.length, pendingReviewCount],
   );
 
   async function loadPartners(selectId?: string, options?: { refreshSelectedDetails?: boolean }) {
@@ -2606,6 +2694,40 @@ export default function AdminClient() {
 
       <p style={statusStyle}>{status}</p>
 
+      {activeView === "home" ? (
+        <main style={adminWelcomeWrapStyle}>
+          <div style={adminWelcomeHeaderStyle}>
+            <h1 style={adminWelcomeTitleStyle}>Willkommen {adminDisplayName}</h1>
+            <p style={adminWelcomeTextStyle}>
+              Von hier aus steuerst du Partner, Gebiete, Freigaben und Systembereiche. Wähle den nächsten Arbeitsbereich direkt über die Startkacheln.
+            </p>
+          </div>
+          <div style={adminWelcomeGroupsStyle}>
+            {adminWelcomeGroups.map((group) => (
+              <section key={group.title} style={adminWelcomeGroupCardStyle}>
+                <h2 style={adminWelcomeGroupTitleStyle}>{group.title}</h2>
+                <div style={adminWelcomeGridStyle}>
+                  {group.actions.map((action) => (
+                    <button
+                      key={action.key}
+                      type="button"
+                      style={adminWelcomeCardStyle}
+                      onClick={action.onClick}
+                    >
+                      <div style={adminWelcomeCardIconStyle}>{renderAdminNavIcon(action.icon, 30)}</div>
+                      <div style={adminWelcomeCardTitleRowStyle}>
+                        <div style={adminWelcomeCardTitleStyle}>{action.title}</div>
+                        {action.badge ? <span style={adminWelcomeBadgeStyle}>{action.badge}</span> : null}
+                      </div>
+                      <div style={adminWelcomeCardTextStyle}>{action.text}</div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </main>
+      ) : (
       <div
         style={{
           ...adminLayoutStyle,
@@ -2756,15 +2878,6 @@ export default function AdminClient() {
         ) : null}
 
         <div style={contentPaneStyle}>
-      {activeView === "home" ? (
-      <section style={cardStyle}>
-        <h2 style={h2Style}>Willkommen {adminDisplayName} in der Admin-Konsole</h2>
-        <p style={mutedStyle}>
-          Wähle links einen Partner oder ein Gebiet, um konkrete Verwaltungsaufgaben zu öffnen.
-        </p>
-      </section>
-      ) : null}
-
       {activeView === "new_partner" ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Partner anlegen (Invite-Link)</h2>
@@ -5562,6 +5675,7 @@ export default function AdminClient() {
       ) : null}
         </div>
       </div>
+      )}
       <footer style={dashboardFooterStyle}>
         <span style={dashboardFooterCopyStyle}>© {new Date().getFullYear()} Wohnlagencheck24</span>
         <div style={dashboardFooterLinksStyle}>
@@ -5713,6 +5827,120 @@ const dashboardFooterLinkStyle: React.CSSProperties = {
   color: "#0f766e",
   textDecoration: "none",
   fontWeight: 600,
+};
+
+const adminWelcomeWrapStyle: React.CSSProperties = {
+  flex: 1,
+  width: "100%",
+  padding: "40px 36px 32px",
+  boxSizing: "border-box",
+  background: "#f8fafc",
+  overflowY: "auto",
+};
+
+const adminWelcomeHeaderStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 10,
+  marginBottom: 28,
+  maxWidth: "820px",
+};
+
+const adminWelcomeTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: "34px",
+  lineHeight: 1.1,
+  color: "#0f172a",
+  fontWeight: 800,
+};
+
+const adminWelcomeTextStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: "15px",
+  lineHeight: 1.7,
+  color: "#475569",
+};
+
+const adminWelcomeGroupsStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 24,
+};
+
+const adminWelcomeGroupCardStyle: React.CSSProperties = {
+  border: "1px solid #e2e8f0",
+  borderRadius: 18,
+  background: "#ffffff",
+  padding: "24px 24px 26px",
+  boxShadow: "0 16px 32px rgba(15, 23, 42, 0.05)",
+};
+
+const adminWelcomeGroupTitleStyle: React.CSSProperties = {
+  margin: "0 0 18px",
+  fontSize: "18px",
+  lineHeight: 1.2,
+  color: "#0f172a",
+  fontWeight: 800,
+};
+
+const adminWelcomeGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gap: 16,
+};
+
+const adminWelcomeCardStyle: React.CSSProperties = {
+  border: "1px solid #e2e8f0",
+  borderRadius: 18,
+  background: "#ffffff",
+  padding: "22px 20px",
+  textAlign: "left",
+  cursor: "pointer",
+  display: "grid",
+  gap: 14,
+  boxShadow: "0 12px 24px rgba(15, 23, 42, 0.04)",
+};
+
+const adminWelcomeCardIconStyle: React.CSSProperties = {
+  width: 54,
+  height: 54,
+  borderRadius: 16,
+  background: "#f8fafc",
+  color: "#0f172a",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const adminWelcomeCardTitleRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  flexWrap: "wrap",
+};
+
+const adminWelcomeCardTitleStyle: React.CSSProperties = {
+  fontSize: "17px",
+  lineHeight: 1.25,
+  fontWeight: 800,
+  color: "#0f172a",
+};
+
+const adminWelcomeBadgeStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  minHeight: 24,
+  padding: "0 10px",
+  borderRadius: 999,
+  background: "#111111",
+  color: "#ffffff",
+  fontSize: 11,
+  fontWeight: 700,
+};
+
+const adminWelcomeCardTextStyle: React.CSSProperties = {
+  fontSize: "14px",
+  lineHeight: 1.7,
+  color: "#475569",
 };
 
 const adminLayoutStyle: React.CSSProperties = {
