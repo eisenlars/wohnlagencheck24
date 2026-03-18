@@ -5844,6 +5844,8 @@ const adminWelcomeHeaderStyle: React.CSSProperties = {
   gap: 10,
   marginBottom: 22,
   maxWidth: "820px",
+  marginLeft: "auto",
+  marginRight: "auto",
 };
 
 const adminWelcomeTitleStyle: React.CSSProperties = {
@@ -5852,6 +5854,7 @@ const adminWelcomeTitleStyle: React.CSSProperties = {
   lineHeight: 1.1,
   color: "#0f172a",
   fontWeight: 800,
+  textAlign: "center",
 };
 
 const adminWelcomeTextStyle: React.CSSProperties = {
@@ -5859,6 +5862,7 @@ const adminWelcomeTextStyle: React.CSSProperties = {
   fontSize: "15px",
   lineHeight: 1.7,
   color: "#475569",
+  textAlign: "center",
 };
 
 const adminWelcomeGridOuterStyle: React.CSSProperties = {
