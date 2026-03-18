@@ -1387,6 +1387,7 @@ export default function TextEditorForm({
   const sections = activeTabConfig?.sections ?? [];
   const activeSections = sections.filter((section) => {
     if (allowedSectionSet && !allowedSectionSet.has(section.key)) return false;
+    if (isMarketing) return true;
     return resolveDisplayTextClass(section.key, section.type) === activeBulkClass;
   });
   const isBulkRewriting = Boolean(classBulkState);
