@@ -29,6 +29,15 @@ import { hashText } from '@/lib/text-hash';
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import {
+  workflowAreaContentWrapStyle,
+  workflowAreaGridStyle,
+  workflowAreaHeadlineStyle,
+  workflowAreaListCardStyle,
+  workflowAreaListRowStyle,
+  workflowAreaListRowTopStyle,
+  workflowAreaListWrapStyle,
+  workflowAreaMetaLineStyle,
+  workflowAreaTypeBadgeStyle,
   workflowClassActionRowStyle as classCardActionRowStyle,
   workflowClassCardStyle as classCardStyle,
   workflowClassCostStyle as classCardCostStyle,
@@ -2664,15 +2673,9 @@ export default function InternationalizationManager({ config, availableLocales, 
         </div>
 
         {showScopeAreaSidebar ? (
-          <div style={blogGridStyle}>
-            <aside style={blogListCardStyle}>
-              <div style={blogListHeadStyle}>
-                <h3 style={sectionTabsIntroTitleStyle}>Gebiete</h3>
-              </div>
-              <div style={blogListMetaStyle}>
-                Wähle links Kreis oder Ortslage. Rechts werden dann nur die Texte des gewählten Gebiets angezeigt.
-              </div>
-              <div style={blogListWrapStyle}>
+          <div style={workflowAreaGridStyle}>
+            <aside style={workflowAreaListCardStyle}>
+              <div style={workflowAreaListWrapStyle}>
                 {scopeAreaItems.map((item) => {
                   const isDistrictItem = item.area_id.split('-').length <= 3;
                   const active = selectedScopeArea?.area_id === item.area_id;
@@ -2680,21 +2683,21 @@ export default function InternationalizationManager({ config, availableLocales, 
                     <button
                       key={item.area_id}
                       type="button"
-                      style={blogListRowStyle(active)}
+                      style={workflowAreaListRowStyle(active)}
                       onClick={() => setSelectedScopeAreaId(item.area_id)}
                     >
-                      <div style={blogListRowTopStyle}>
-                        <strong style={blogListHeadlineStyle}>{item.area_name}</strong>
-                        <span style={scopeAreaTypeBadgeStyle(isDistrictItem)}>{isDistrictItem ? 'Kreis' : 'Ortslage'}</span>
+                      <div style={workflowAreaListRowTopStyle}>
+                        <strong style={workflowAreaHeadlineStyle}>{item.area_name}</strong>
+                        <span style={workflowAreaTypeBadgeStyle(!isDistrictItem)}>{isDistrictItem ? 'Kreis' : 'Ortslage'}</span>
                       </div>
-                      <div style={blogListMetaLineStyle}>{item.area_id}</div>
+                      <div style={workflowAreaMetaLineStyle}>{item.area_id}</div>
                     </button>
                   );
                 })}
               </div>
             </aside>
 
-            <div style={blogEditorWrapStyle}>
+            <div style={workflowAreaContentWrapStyle}>
               <div style={blogEditorHeadStyle}>
                 <div>
                   <h3 style={sectionTabsIntroTitleStyle}>{selectedScopeArea?.area_name ?? 'Gebiet wählen'}</h3>

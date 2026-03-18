@@ -21,6 +21,15 @@ import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import {
+  workflowAreaContentWrapStyle as textAreaEditorWrapStyle,
+  workflowAreaGridStyle as textEditorGridStyle,
+  workflowAreaHeadlineStyle as textAreaListHeadlineStyle,
+  workflowAreaListCardStyle as textAreaListCardStyle,
+  workflowAreaListRowStyle as textAreaListRowStyle,
+  workflowAreaListRowTopStyle as textAreaListRowTopStyle,
+  workflowAreaListWrapStyle as textAreaListWrapStyle,
+  workflowAreaMetaLineStyle as textAreaListMetaLineStyle,
+  workflowAreaTypeBadgeStyle as textAreaTypeBadgeStyle,
   workflowClassActionRowStyle as textWorkflowClassActionRowStyle,
   workflowClassCardStyle as textWorkflowClassCardStyle,
   workflowClassCostStyle as textWorkflowClassCostStyle,
@@ -2115,59 +2124,6 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
 const sectionEditorCardStyle: React.CSSProperties = {
   ...textWorkflowCardStyle,
   marginBottom: 0,
-};
-const textEditorGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: '290px minmax(0, 1fr)',
-  gap: 16,
-};
-const textAreaListCardStyle: React.CSSProperties = {
-  padding: '0 14px',
-  display: 'grid',
-  gap: 10,
-  alignSelf: 'start',
-};
-const textAreaListWrapStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 8,
-};
-const textAreaListRowStyle = (active: boolean): React.CSSProperties => ({
-  border: active ? '1px solid #486b7a' : '1px solid #dbe4ea',
-  borderRadius: 12,
-  backgroundColor: active ? '#eef4f6' : '#fff',
-  padding: '12px',
-  display: 'grid',
-  gap: 6,
-  cursor: 'pointer',
-  textAlign: 'left',
-});
-const textAreaListRowTopStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 10,
-};
-const textAreaListHeadlineStyle: React.CSSProperties = {
-  fontSize: 13,
-  color: '#0f172a',
-};
-const textAreaTypeBadgeStyle = (isItemOrtslage: boolean): React.CSSProperties => ({
-  borderRadius: 999,
-  padding: '4px 10px',
-  fontSize: 10,
-  fontWeight: 800,
-  letterSpacing: '0.03em',
-  textTransform: 'uppercase',
-  background: isItemOrtslage ? '#f1f5f9' : '#e2e8f0',
-  color: '#475569',
-  whiteSpace: 'nowrap',
-});
-const textAreaListMetaLineStyle: React.CSSProperties = {
-  fontSize: 11,
-  color: '#64748b',
-};
-const textAreaEditorWrapStyle: React.CSSProperties = {
-  minWidth: 0,
 };
 const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px 20px 0', border: 'none' };
 const textWorkflowTopCardStyle: React.CSSProperties = {

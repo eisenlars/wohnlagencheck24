@@ -204,3 +204,65 @@ export const workflowTabLabelStyle: CSSProperties = {
   lineHeight: 1.2,
   textAlign: 'center',
 };
+
+export const workflowAreaGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '290px minmax(0, 1fr)',
+  gap: 16,
+};
+
+export const workflowAreaListCardStyle: CSSProperties = {
+  padding: '0 14px',
+  display: 'grid',
+  gap: 10,
+  alignSelf: 'start',
+};
+
+export const workflowAreaListWrapStyle: CSSProperties = {
+  display: 'grid',
+  gap: 8,
+};
+
+export const workflowAreaListRowStyle = (active: boolean): CSSProperties => ({
+  border: active ? '1px solid #486b7a' : '1px solid #dbe4ea',
+  borderRadius: 12,
+  backgroundColor: active ? '#eef4f6' : '#fff',
+  padding: '12px',
+  display: 'grid',
+  gap: 6,
+  cursor: 'pointer',
+  textAlign: 'left',
+});
+
+export const workflowAreaListRowTopStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 10,
+};
+
+export const workflowAreaHeadlineStyle: CSSProperties = {
+  fontSize: 13,
+  color: '#0f172a',
+};
+
+export const workflowAreaTypeBadgeStyle = (isAreaChild: boolean): CSSProperties => ({
+  borderRadius: 999,
+  padding: '4px 10px',
+  fontSize: 10,
+  fontWeight: 800,
+  letterSpacing: '0.03em',
+  textTransform: 'uppercase',
+  background: isAreaChild ? '#f1f5f9' : '#e2e8f0',
+  color: '#475569',
+  whiteSpace: 'nowrap',
+});
+
+export const workflowAreaMetaLineStyle: CSSProperties = {
+  fontSize: 11,
+  color: '#64748b',
+};
+
+export const workflowAreaContentWrapStyle: CSSProperties = {
+  minWidth: 0,
+};
