@@ -384,6 +384,7 @@ export default function DashboardClient() {
     total: INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length,
   });
   const [mandatoryProgressLoading, setMandatoryProgressLoading] = useState(true);
+  const lastMandatoryAreaIdRef = useRef<string | null>(null);
   const [animatedMandatoryPercent, setAnimatedMandatoryPercent] = useState(0);
   const [hoveredActivationTabId, setHoveredActivationTabId] = useState<string | null>(null);
   const [progressRefreshTick, setProgressRefreshTick] = useState(0);
@@ -780,6 +781,11 @@ export default function DashboardClient() {
     const requestId = progressRequestRef.current + 1;
     progressRequestRef.current = requestId;
     async function loadMandatoryProgress() {
+      const currentAreaId = String(selectedConfig?.area_id ?? '').trim() || null;
+      const areaChanged = lastMandatoryAreaIdRef.current !== currentAreaId;
+      if (currentAreaId) {
+        lastMandatoryAreaIdRef.current = currentAreaId;
+      }
       if (!selectedConfig?.area_id) {
         if (mounted && progressRequestRef.current === requestId) {
           setMandatoryProgress({ completed: 0, total: INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length });
@@ -787,7 +793,7 @@ export default function DashboardClient() {
         }
         return;
       }
-      if (mounted && progressRequestRef.current === requestId) {
+      if (mounted && progressRequestRef.current === requestId && (areaChanged || mandatoryProgressLoading)) {
         setMandatoryProgressLoading(true);
       }
       const loadFallbackProgress = async () => {
@@ -844,7 +850,7 @@ export default function DashboardClient() {
     return () => {
       mounted = false;
     };
-  }, [selectedConfig?.area_id, submitReviewMessage, progressRefreshTick, supabase]);
+  }, [mandatoryProgressLoading, progressRefreshTick, selectedConfig?.area_id, submitReviewMessage, supabase]);
 
   useEffect(() => {
     if (loading) return;
