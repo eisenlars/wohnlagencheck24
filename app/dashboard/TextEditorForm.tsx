@@ -1568,9 +1568,6 @@ export default function TextEditorForm({
               <div style={textAreaEditorHeadStyle}>
                 <div>
                   <h3 style={sectionTabsIntroTitleStyle}>{selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id}</h3>
-                  <p style={sectionTabsIntroTextStyle}>
-                    Themen-Tabs und Textfelder unten beziehen sich jetzt nur auf dieses Gebiet.
-                  </p>
                 </div>
               </div>
             ) : null}
@@ -2090,11 +2087,6 @@ const sectionTabsIntroTitleStyle: React.CSSProperties = {
   fontWeight: 800,
   color: '#0f172a',
 };
-const sectionTabsIntroTextStyle: React.CSSProperties = {
-  margin: '4px 0 0',
-  fontSize: '12px',
-  color: '#64748b',
-};
 const sectionEditorCardStyle: React.CSSProperties = {
   border: '1px solid #e2e8f0',
   borderRadius: 12,
@@ -2112,9 +2104,9 @@ const tabButtonStyle = (active: boolean) => ({
   minWidth: '118px',
   padding: '12px 14px',
   border: 'none',
-  borderBottom: active ? '3px solid #3b82f6' : '3px solid transparent',
-  backgroundColor: active ? '#f8fafc' : 'transparent',
-  color: active ? '#2563eb' : '#64748b',
+  borderBottom: active ? '3px solid rgb(72, 107, 122)' : '3px solid transparent',
+  backgroundColor: active ? '#f1f5f9' : 'transparent',
+  color: active ? 'rgb(72, 107, 122)' : '#64748b',
   fontWeight: active ? '700' : '500',
   fontSize: '13px',
   cursor: 'pointer',
@@ -2122,9 +2114,9 @@ const tabButtonStyle = (active: boolean) => ({
   transition: 'all 0.2s',
   borderRadius: '8px 8px 0 0',
 });
-const tabIconImageStyle: React.CSSProperties = { width: '30px', height: '30px', objectFit: 'contain', display: 'block' };
-const tabIconEmojiStyle: React.CSSProperties = { fontSize: '24px', lineHeight: 1, display: 'block' };
-const tabLabelStyle: React.CSSProperties = { fontSize: '14px', lineHeight: 1.2, textAlign: 'center' };
+const tabIconImageStyle: React.CSSProperties = { width: '22px', height: '22px', objectFit: 'contain', display: 'block' };
+const tabIconEmojiStyle: React.CSSProperties = { fontSize: '18px', lineHeight: 1, display: 'block' };
+const tabLabelStyle: React.CSSProperties = { fontSize: '10px', lineHeight: 1.2, textAlign: 'center' };
 const textEditorGridStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '290px minmax(0, 1fr)',
@@ -2212,12 +2204,13 @@ const textWorkflowTopFieldStyle: React.CSSProperties = {
 };
 const textWorkflowTopSelectStyle: React.CSSProperties = {
   width: '100%',
-  minHeight: 46,
+  minHeight: 36,
+  height: 36,
   borderRadius: 12,
-  border: '1px solid rgba(255,255,255,0.18)',
+  border: '1px solid #cbd5e1',
   background: '#ffffff',
   color: '#0f172a',
-  fontSize: 14,
+  fontSize: 12,
   fontWeight: 600,
   padding: '0 14px',
 };
@@ -2245,25 +2238,27 @@ const textWorkflowInlineControlsStyle: React.CSSProperties = {
   flexWrap: 'wrap',
 };
 const textWorkflowInlineFieldStyle: React.CSSProperties = {
-  display: 'grid',
-  minWidth: 240,
+  display: 'flex',
+  minWidth: 180,
 };
 const textWorkflowInlineSelectStyle: React.CSSProperties = {
   width: '100%',
-  minHeight: 44,
+  minHeight: 36,
+  height: 36,
   padding: '0 14px',
   borderRadius: 12,
   border: '1px solid #cbd5e1',
   background: '#ffffff',
   color: '#0f172a',
-  fontSize: 14,
+  fontSize: 12,
   fontWeight: 600,
 };
 const textWorkflowScopeHintStyle: React.CSSProperties = {
-  fontSize: 12,
-  lineHeight: 1.45,
-  color: '#64748b',
-  fontWeight: 600,
+  fontSize: 14,
+  lineHeight: 1.35,
+  color: '#0f172a',
+  fontWeight: 700,
+  maxWidth: 360,
 };
 const textWorkflowClassGridStyle: React.CSSProperties = {
   display: 'grid',
