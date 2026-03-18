@@ -51,6 +51,14 @@ function normalizeText(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
 
+function statusPriority(status: string): number {
+  const normalized = String(status ?? "").trim().toLowerCase();
+  if (normalized === "approved") return 3;
+  if (normalized === "draft") return 2;
+  if (normalized) return 1;
+  return 0;
+}
+
 function findTextByKey(textTree: ReportTextTree | null | undefined, key: string): string {
   if (!textTree || typeof textTree !== "object") return "";
   for (const group of Object.values(textTree)) {
@@ -120,24 +128,6 @@ export async function checkPartnerAreaMandatoryTexts(args: {
   const mediaKeys = new Set<string>(MANDATORY_MEDIA_KEYS);
   const textRequiredKeys = requiredKeys.filter((key) => !mediaKeys.has(key));
 
-  const { data: overridesData } = await adminClient
-    .from("report_texts")
-    .select("section_key, optimized_content, status")
-    .eq("partner_id", partnerId)
-    .eq("area_id", areaId)
-    .eq("status", "approved");
-  const overrides = (overridesData ?? []) as Array<{
-    section_key?: string | null;
-    optimized_content?: string | null;
-  }>;
-
-  const overrideMap = new Map<string, string>();
-  for (const row of overrides ?? []) {
-    const key = String(row.section_key ?? "");
-    const text = String(row.optimized_content ?? "");
-    if (key) overrideMap.set(key, text);
-  }
-
   const { data: mediaRowsData } = await adminClient
     .from("report_texts")
     .select("section_key, optimized_content, status")
@@ -148,6 +138,19 @@ export async function checkPartnerAreaMandatoryTexts(args: {
     optimized_content?: string | null;
     status?: string | null;
   }>;
+  const overrideMap = new Map<string, { text: string; status: string }>();
+  for (const row of mediaRows ?? []) {
+    const key = String(row.section_key ?? "").trim();
+    if (!key || mediaKeys.has(key)) continue;
+    const nextStatus = String(row.status ?? "");
+    const current = overrideMap.get(key);
+    if (!current || statusPriority(nextStatus) >= statusPriority(current.status)) {
+      overrideMap.set(key, {
+        text: String(row.optimized_content ?? ""),
+        status: nextStatus,
+      });
+    }
+  }
   const mediaMap = new Map<MandatoryMediaKey, { url: string; status: string }>();
   for (const row of mediaRows ?? []) {
     const key = String(row.section_key ?? "").trim();
@@ -191,7 +194,7 @@ export async function checkPartnerAreaMandatoryTexts(args: {
     }
 
     for (const key of textRequiredKeys) {
-      const effective = normalizeText(overrideMap.get(key) ?? "");
+      const effective = normalizeText(overrideMap.get(key)?.text ?? "");
       if (!effective) {
         missingFromOverrides.push({ key, reason: "missing" });
       }
@@ -218,7 +221,7 @@ export async function checkPartnerAreaMandatoryTexts(args: {
     if (!normalizeText(reportText) && !standard) {
       continue;
     }
-    const effective = normalizeText(overrideMap.get(key) ?? reportText);
+    const effective = normalizeText(overrideMap.get(key)?.text ?? reportText);
     if (!effective) {
       missing.push({ key, reason: "missing" });
       continue;

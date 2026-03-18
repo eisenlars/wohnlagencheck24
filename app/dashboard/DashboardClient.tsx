@@ -797,13 +797,14 @@ export default function DashboardClient() {
           .from('report_texts')
           .select('section_key, optimized_content, status')
           .eq('partner_id', user.id)
-          .eq('area_id', selectedConfig.area_id)
-          .eq('status', 'approved');
+          .eq('area_id', selectedConfig.area_id);
         if (!mounted || progressRequestRef.current !== requestId) return;
         const uniqueFilled = new Set<string>();
         for (const row of data ?? []) {
           const key = String(row.section_key ?? '');
-          if (!INDIVIDUAL_MANDATORY_KEYS.includes(key as (typeof INDIVIDUAL_MANDATORY_KEYS)[number])) continue;
+          const isMandatoryText = INDIVIDUAL_MANDATORY_KEYS.includes(key as (typeof INDIVIDUAL_MANDATORY_KEYS)[number]);
+          const isMandatoryMedia = MANDATORY_MEDIA_KEYS.includes(key as (typeof MANDATORY_MEDIA_KEYS)[number]);
+          if (!isMandatoryText && !isMandatoryMedia) continue;
           const val = String(row.optimized_content ?? '').trim();
           if (val.length > 0) uniqueFilled.add(key);
         }
