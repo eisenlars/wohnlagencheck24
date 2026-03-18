@@ -1395,10 +1395,7 @@ export default function DashboardClient() {
             {regionSidebarMainDistricts.map(district => {
               const isSelected = Boolean(effectiveSelectedConfig?.area_id?.startsWith(district.area_id));
               const isExpanded = expandedDistrict === district.area_id || isSelected;
-              const allowSubAreas = activeMainTab !== 'blog';
-              const subAreas = allowSubAreas
-                ? regionSidebarScopeConfigs.filter(c => c.area_id.startsWith(district.area_id) && c.area_id.split('-').length > 3)
-                : [];
+              const subAreas = regionSidebarScopeConfigs.filter(c => c.area_id.startsWith(district.area_id) && c.area_id.split('-').length > 3);
               const districtIsActive = Boolean(district.is_active);
 
               return (
