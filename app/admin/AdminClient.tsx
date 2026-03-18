@@ -155,6 +155,7 @@ type PartnerPurgeCheckPayload = {
 type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "portal_cms";
 type AdminNavMode = "partners" | "areas";
 type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations" | "billing";
+type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "cms" | "purge" | "audit" | "logout";
 
 type HandoverApiResponse = {
   ok?: boolean;
@@ -167,6 +168,90 @@ type HandoverApiResponse = {
     old_partner_remains_active?: boolean;
   };
 };
+
+function renderAdminNavIcon(icon: AdminNavIconKey, size = 17) {
+  const baseProps = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.9,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  switch (icon) {
+    case "partners":
+      return (
+        <svg {...baseProps}>
+          <path d="M16 19a4 4 0 0 0-8 0" />
+          <circle cx="12" cy="10" r="3" />
+          <path d="M5 19a3 3 0 0 1 3-3" />
+          <path d="M19 19a3 3 0 0 0-3-3" />
+        </svg>
+      );
+    case "areas":
+      return (
+        <svg {...baseProps}>
+          <path d="m3 7 6-3 6 3 6-3" />
+          <path d="m3 7 6 3 6-3 6 3" />
+          <path d="M3 7v10l6 3 6-3 6 3V10" />
+        </svg>
+      );
+    case "llm":
+      return (
+        <svg {...baseProps}>
+          <path d="M12 3 4 7v10l8 4 8-4V7l-8-4Z" />
+          <path d="M9 12h6" />
+          <path d="M12 9v6" />
+        </svg>
+      );
+    case "billing":
+      return (
+        <svg {...baseProps}>
+          <path d="M12 3v18" />
+          <path d="M16 7.5c0-1.9-1.8-3.5-4-3.5s-4 1.6-4 3.5 1.8 3.5 4 3.5 4 1.6 4 3.5-1.8 3.5-4 3.5-4-1.6-4-3.5" />
+        </svg>
+      );
+    case "cms":
+      return (
+        <svg {...baseProps}>
+          <rect x="4" y="5" width="16" height="14" rx="2" />
+          <path d="M8 9h8" />
+          <path d="M8 13h5" />
+        </svg>
+      );
+    case "purge":
+      return (
+        <svg {...baseProps}>
+          <path d="M4 7h16" />
+          <path d="m9 7 1-2h4l1 2" />
+          <path d="M8 7v11" />
+          <path d="M16 7v11" />
+          <path d="M10 11v4" />
+          <path d="M14 11v4" />
+        </svg>
+      );
+    case "audit":
+      return (
+        <svg {...baseProps}>
+          <path d="M7 4h10v16l-5-3-5 3V4Z" />
+          <path d="M9 9h6" />
+          <path d="M9 12h6" />
+        </svg>
+      );
+    case "logout":
+      return (
+        <svg {...baseProps}>
+          <path d="M14 7V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2" />
+          <path d="M10 12h10" />
+          <path d="m17 8 3 4-3 4" />
+        </svg>
+      );
+  }
+}
 
 type LlmGlobalConfig = {
   central_enabled: boolean;
@@ -2446,7 +2531,7 @@ export default function AdminClient() {
         style={{
           ...adminLayoutStyle,
           gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults" || activeView === "portal_cms")
-            ? "56px minmax(0, 1fr)"
+            ? "50px minmax(0, 1fr)"
             : adminLayoutStyle.gridTemplateColumns,
         }}
       >
@@ -2459,7 +2544,7 @@ export default function AdminClient() {
             }}
             title="Partner"
           >
-            👥
+            {renderAdminNavIcon("partners")}
             {pendingAreaAssignmentCount > 0 ? (
               <span
                 aria-label={`${pendingAreaAssignmentCount} Partner ohne Gebietszuordnung`}
@@ -2483,7 +2568,7 @@ export default function AdminClient() {
             }}
             title="Gebiete"
           >
-            🗺
+            {renderAdminNavIcon("areas")}
           </button>
           <button
             style={modeButtonStyle(activeView === "llm_global")}
@@ -2495,7 +2580,7 @@ export default function AdminClient() {
             }}
             title="Globale LLM-Verwaltung"
           >
-            AI
+            {renderAdminNavIcon("llm")}
           </button>
           <button
             style={modeButtonStyle(activeView === "billing_defaults")}
@@ -2507,7 +2592,7 @@ export default function AdminClient() {
             }}
             title="Billing-Standards"
           >
-            €
+            {renderAdminNavIcon("billing")}
           </button>
           <button
             style={modeButtonStyle(activeView === "portal_cms")}
@@ -2519,7 +2604,7 @@ export default function AdminClient() {
             }}
             title="Portal-CMS"
           >
-            🌐
+            {renderAdminNavIcon("cms")}
           </button>
           <div style={{ flex: 1 }} />
           <button
@@ -2530,14 +2615,14 @@ export default function AdminClient() {
             }}
             title="Datenbereinigung"
           >
-            🗑
+            {renderAdminNavIcon("purge")}
           </button>
           <button
             style={modeButtonStyle(activeView === "audit")}
             onClick={() => setActiveView("audit")}
             title="Audit-Log"
           >
-            🧾
+            {renderAdminNavIcon("audit")}
           </button>
           <button
             style={modeButtonStyle(false)}
@@ -2547,14 +2632,14 @@ export default function AdminClient() {
             }}
             title="Abmelden"
           >
-            ⎋
+            {renderAdminNavIcon("logout")}
           </button>
         </aside>
 
         {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" ? (
           <aside style={listPaneStyle}>
             <div style={sidebarSectionHeaderStyle}>{navMode === "partners" ? "Partnerübersicht" : "Gebietsübersicht"}</div>
-            <div style={{ display: "grid", gap: 8, marginBottom: 10 }}>
+            <div style={sidebarControlWrapStyle}>
               <input
                 style={inputStyle}
                 placeholder={navMode === "partners" ? "Suche: Name, E-Mail oder ID" : "Suche: Kreisname, ID oder Partner"}
@@ -5453,17 +5538,20 @@ const statusStyle: React.CSSProperties = {
 
 const adminLayoutStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "56px 320px minmax(0, 1fr)",
+  gridTemplateColumns: "50px 260px minmax(0, 1fr)",
   gap: 0,
   alignItems: "stretch",
   minHeight: "calc(100vh - 120px)",
 };
 
 const modeBarStyle: React.CSSProperties = {
+  width: "50px",
+  minWidth: "50px",
   background: "rgb(72, 107, 122)",
-  padding: 6,
+  padding: "8px 0",
   display: "flex",
   flexDirection: "column",
+  alignItems: "center",
   gap: 6,
   position: "sticky",
   top: 0,
@@ -5472,43 +5560,53 @@ const modeBarStyle: React.CSSProperties = {
 
 const modeButtonStyle = (active: boolean): React.CSSProperties => ({
   position: "relative",
-  width: "100%",
-  height: 44,
-  border: `1px solid ${active ? "#facc15" : "rgba(255,255,255,0.25)"}`,
-  borderRadius: 8,
-  background: active ? "rgba(15, 23, 42, 0.35)" : "rgba(255,255,255,0.08)",
-  color: "#ffffff",
+  width: "30px",
+  height: "30px",
+  border: active ? "1px solid #ffe000" : "1px solid rgba(255,255,255,0.92)",
+  borderRadius: 9,
+  background: active ? "#ffe000" : "#ffffff",
+  color: "#111111",
   cursor: "pointer",
-  fontSize: 16,
-  fontWeight: 700,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 });
 
 const listPaneStyle: React.CSSProperties = {
   position: "sticky",
   top: 0,
   alignSelf: "start",
+  width: "260px",
   borderRight: "1px solid #e2e8f0",
-  borderTop: "1px solid #e2e8f0",
-  borderBottom: "1px solid #e2e8f0",
   background: "#ffffff",
-  padding: 12,
-  maxHeight: "calc(100vh - 80px)",
-  overflowY: "auto",
+  display: "flex",
+  flexDirection: "column",
+  maxHeight: "calc(100vh - 120px)",
+  overflow: "hidden",
 };
 
 const sidebarSectionHeaderStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 700,
-  letterSpacing: 0.2,
-  textTransform: "uppercase",
-  color: "#475569",
-  marginBottom: 8,
+  padding: "24px 24px 16px",
+  borderBottom: "1px solid #f1f5f9",
+  fontSize: 14,
+  fontWeight: 800,
+  color: "#0f172a",
+  margin: 0,
 };
 
 const sidebarListStyle: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 8,
+  flex: 1,
+  overflowY: "auto",
+  padding: "0 15px 15px",
+};
+
+const sidebarControlWrapStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 8,
+  padding: "15px",
 };
 
 const contentPaneStyle: React.CSSProperties = {
@@ -5519,9 +5617,9 @@ const contentPaneStyle: React.CSSProperties = {
 const listLinkRowStyle = (active: boolean): React.CSSProperties => ({
   width: "100%",
   textAlign: "left",
-  border: `1px solid ${active ? "#0f766e" : "#e2e8f0"}`,
+  border: `1px solid ${active ? "#cbd5e1" : "#e2e8f0"}`,
   borderRadius: 8,
-  background: active ? "#f0fdfa" : "#ffffff",
+  background: active ? "#f8fafc" : "#ffffff",
   padding: "10px 12px",
   cursor: "pointer",
   display: "flex",
