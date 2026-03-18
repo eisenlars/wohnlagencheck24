@@ -1535,10 +1535,7 @@ export default function TextEditorForm({
           {showScopeAreaSidebar ? (
             <aside style={textAreaListCardStyle}>
               <div style={textAreaListHeadStyle}>
-                <h3 style={sectionTabsIntroTitleStyle}>Bearbeite jetzt</h3>
-              </div>
-              <div style={textAreaListMetaStyle}>
-                Oben laufen globale Änderungen weiter für den gewählten Scope. Unten bearbeitest du gezielt Kreis oder Ortslage.
+                <h3 style={sectionTabsIntroTitleStyle}>Regionen</h3>
               </div>
               <div style={textAreaListWrapStyle}>
                 {scopeAreaItems.map((item) => {
@@ -2087,7 +2084,7 @@ const sectionEditorCardStyle: React.CSSProperties = {
   padding: '12px',
   marginTop: '8px',
 };
-const tabContainerStyle = { display: 'flex', backgroundColor: '#fff', padding: '8px 8px 0 8px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #e2e8f0', gap: '6px', overflowX: 'auto' as const, marginBottom: '10px' };
+const tabContainerStyle = { display: 'flex', backgroundColor: '#fff', padding: '8px 8px 0 8px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #e2e8f0', gap: '6px', overflowX: 'auto' as const, marginBottom: '20px' };
 const tabButtonStyle = (active: boolean) => ({
   display: 'flex',
   flexDirection: 'column' as const,
@@ -2129,11 +2126,6 @@ const textAreaListHeadStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   gap: 10,
-};
-const textAreaListMetaStyle: React.CSSProperties = {
-  fontSize: 12,
-  lineHeight: 1.45,
-  color: '#64748b',
 };
 const textAreaListWrapStyle: React.CSSProperties = {
   display: 'grid',
@@ -2177,7 +2169,7 @@ const textAreaListMetaLineStyle: React.CSSProperties = {
 const textAreaEditorWrapStyle: React.CSSProperties = {
   minWidth: 0,
 };
-const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px', borderRadius: '0 0 12px 12px', border: '1px solid #e2e8f0', borderTop: 'none' };
+const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px 0 0', border: 'none' };
 const textWorkflowTopCardStyle: React.CSSProperties = {
   borderRadius: 18,
   background: 'rgb(72, 107, 122)',
