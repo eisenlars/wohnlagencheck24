@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/security/admin-auth";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { publishVisibilityIndex } from "@/lib/visibility-index";
+import { sendPartnerAreaAssignedEmail } from "@/lib/notifications/admin-review-email";
 
 type HandoverBody = {
   area_id?: string;
@@ -279,6 +280,55 @@ export async function POST(req: Request) {
       userAgent: req.headers.get("user-agent"),
     });
 
+    let partnerAssignMailSent = false;
+    let partnerAssignMailReason: string | undefined;
+    try {
+      const { data: newPartnerMailTarget, error: newPartnerMailTargetError } = await admin
+        .from("partners")
+        .select("id, company_name, contact_email, contact_first_name")
+        .eq("id", newPartnerId)
+        .maybeSingle();
+      if (newPartnerMailTargetError) {
+        return NextResponse.json({ error: newPartnerMailTargetError.message }, { status: 500 });
+      }
+
+      const partnerMail = await sendPartnerAreaAssignedEmail({
+        partnerEmail: String((newPartnerMailTarget as { contact_email?: string | null } | null)?.contact_email ?? "").trim(),
+        partnerName: String((newPartnerMailTarget as { contact_first_name?: string | null } | null)?.contact_first_name ?? "").trim()
+          || String((newPartnerMailTarget as { company_name?: string | null } | null)?.company_name ?? "").trim()
+          || newPartnerId,
+        areaId,
+        areaName: String((areaExists as { name?: string | null } | null)?.name ?? "").trim() || areaId,
+        assignedAtIso: new Date().toISOString(),
+      });
+      partnerAssignMailSent = partnerMail.sent;
+      partnerAssignMailReason = partnerMail.reason;
+      if (!partnerMail.sent) {
+        console.warn("partner handover assign mail not sent:", partnerMail.reason);
+      }
+    } catch (mailErr) {
+      partnerAssignMailSent = false;
+      partnerAssignMailReason = mailErr instanceof Error ? mailErr.message : "mail_error";
+      console.warn("partner handover assign mail failed:", mailErr);
+    }
+
+    await writeSecurityAuditLog({
+      actorUserId: adminUser.userId,
+      actorRole: adminUser.role,
+      eventType: "other",
+      entityType: "other",
+      entityId: `${areaId}:handover:partner_mail`,
+      payload: {
+        action: "mail_admin_handover_partner_notify",
+        area_id: areaId,
+        partner_id: newPartnerId,
+        sent: partnerAssignMailSent,
+        reason: partnerAssignMailReason ?? null,
+      },
+      ip: extractClientIpFromHeaders(req.headers),
+      userAgent: req.headers.get("user-agent"),
+    });
+
     try {
       await publishVisibilityIndex(admin as never);
     } catch (publishErr) {
@@ -303,6 +353,12 @@ export async function POST(req: Request) {
         transferred_area_count: transferAreaIds.length,
         new_mapping_status: String((newRootMapping as { activation_status?: string | null }).activation_status ?? "assigned"),
         new_mapping_is_active: false,
+      },
+      notification: {
+        partner: {
+          sent: partnerAssignMailSent,
+          reason: partnerAssignMailReason ?? null,
+        },
       },
     });
   } catch (error) {
