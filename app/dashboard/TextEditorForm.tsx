@@ -1564,13 +1564,6 @@ export default function TextEditorForm({
           ) : null}
 
           <div style={showScopeAreaSidebar ? textAreaEditorWrapStyle : undefined}>
-            {showScopeAreaSidebar ? (
-              <div style={textAreaEditorHeadStyle}>
-                <div>
-                  <h3 style={sectionTabsIntroTitleStyle}>{selectedAreaConfig?.areas?.name || selectedAreaConfig?.area_id}</h3>
-                </div>
-              </div>
-            ) : null}
             <div style={contentWrapperStyle}>
               {activeSections.length === 0 ? (
                 <div style={textWorkflowEmptyStateStyle}>
@@ -2094,7 +2087,7 @@ const sectionEditorCardStyle: React.CSSProperties = {
   padding: '12px',
   marginTop: '8px',
 };
-const tabContainerStyle = { display: 'flex', backgroundColor: '#fff', padding: '8px 8px 0 8px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #e2e8f0', gap: '6px', overflowX: 'auto' as const };
+const tabContainerStyle = { display: 'flex', backgroundColor: '#fff', padding: '8px 8px 0 8px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #e2e8f0', gap: '6px', overflowX: 'auto' as const, marginBottom: '10px' };
 const tabButtonStyle = (active: boolean) => ({
   display: 'flex',
   flexDirection: 'column' as const,
@@ -2184,9 +2177,6 @@ const textAreaListMetaLineStyle: React.CSSProperties = {
 const textAreaEditorWrapStyle: React.CSSProperties = {
   minWidth: 0,
 };
-const textAreaEditorHeadStyle: React.CSSProperties = {
-  marginBottom: 10,
-};
 const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px', borderRadius: '0 0 12px 12px', border: '1px solid #e2e8f0', borderTop: 'none' };
 const textWorkflowTopCardStyle: React.CSSProperties = {
   borderRadius: 18,
@@ -2206,6 +2196,9 @@ const textWorkflowTopSelectStyle: React.CSSProperties = {
   width: '100%',
   minHeight: 36,
   height: 36,
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  MozAppearance: 'none',
   borderRadius: 12,
   border: '1px solid #cbd5e1',
   background: '#ffffff',
@@ -2245,6 +2238,9 @@ const textWorkflowInlineSelectStyle: React.CSSProperties = {
   width: '100%',
   minHeight: 36,
   height: 36,
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  MozAppearance: 'none',
   padding: '0 14px',
   borderRadius: 12,
   border: '1px solid #cbd5e1',
