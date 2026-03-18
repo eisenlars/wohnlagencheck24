@@ -383,6 +383,8 @@ type LlmIntegrationOption = {
   source: 'partner' | 'global';
   provider: string;
   model: string;
+  inputCostUsdPer1k: number | null;
+  outputCostUsdPer1k: number | null;
   inputCostEurPer1k: number | null;
   outputCostEurPer1k: number | null;
   partnerIntegrationId: string | null;
@@ -394,6 +396,8 @@ type LlmOptionApiRow = {
   source?: 'partner' | 'global';
   provider?: string;
   model?: string;
+  input_cost_usd_per_1k?: number | null;
+  output_cost_usd_per_1k?: number | null;
   input_cost_eur_per_1k?: number | null;
   output_cost_eur_per_1k?: number | null;
   partner_integration_id?: string | null;
@@ -438,26 +442,26 @@ const GLOBAL_CLASS_META: Record<GlobalClassKey, {
 }> = {
   general: {
     title: 'General',
-    description: 'Teaser, einleitende Erklärungstexte und allgemein verständliche Orientierung für Besucher.',
-    cycle: 'Empfehlung: bei inhaltlichen Anpassungen und spätestens quartalsweise prüfen.',
+    description: 'Einleitungs-, Erklaerungstext',
+    cycle: 'einmal, punktuell',
     defaultPrompt: 'Optimiere den General-Text klar, professionell und verständlich. Keine neuen Fakten erfinden.',
   },
   data_driven: {
     title: 'Data-Driven',
-    description: 'Kennzahlennahe Analysen zu Preisen, Nachfrage, Rendite, Wirtschaft und anderen Datenpunkten.',
-    cycle: 'Empfehlung: nach jedem Datenupdate bzw. Preisfaktorisierungs-Update neu prüfen.',
+    description: 'Datenbasierender Text',
+    cycle: 'quartal',
     defaultPrompt: 'Optimiere den data-driven Text sprachlich. Zahlen, Fakten und Aussagen müssen exakt erhalten bleiben.',
   },
   market_expert: {
     title: 'Market Expert',
-    description: 'Experteneinschätzungen und marktspezifische Einordnungen mit regionalem Bezug.',
-    cycle: 'Empfehlung: mindestens quartalsweise und nach Marktänderungen aktualisieren.',
+    description: 'Expertentext zu Markt/Region',
+    cycle: 'quartal',
     defaultPrompt: 'Formuliere die Experteneinschätzung präzise und hochwertig. Keine neuen Fakten ergänzen.',
   },
   profile: {
     title: 'Profile',
-    description: 'Profiltexte rund um Berater und Makler, die persönliche Kompetenz und Leistungen erklären.',
-    cycle: 'Empfehlung: bei Personal-/Leistungsänderungen aktualisieren, sonst selten nötig.',
+    description: 'Vorstellungstext Berater, Makler',
+    cycle: 'einmal, punktuell',
     defaultPrompt: 'Optimiere den Profiltext professionell, vertrauenswürdig und prägnant. Faktentreu bleiben.',
   },
 };
@@ -728,6 +732,8 @@ export default function TextEditorForm({
               source,
               provider,
               model,
+              inputCostUsdPer1k: typeof entry?.input_cost_usd_per_1k === 'number' ? entry.input_cost_usd_per_1k : null,
+              outputCostUsdPer1k: typeof entry?.output_cost_usd_per_1k === 'number' ? entry.output_cost_usd_per_1k : null,
               inputCostEurPer1k: typeof entry?.input_cost_eur_per_1k === 'number' ? entry.input_cost_eur_per_1k : null,
               outputCostEurPer1k: typeof entry?.output_cost_eur_per_1k === 'number' ? entry.output_cost_eur_per_1k : null,
               partnerIntegrationId: String(entry?.partner_integration_id ?? '').trim() || null,
@@ -1247,8 +1253,16 @@ export default function TextEditorForm({
         },
         { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
       );
+      const inputCostUsdPer1k = selectedLlmOption?.inputCostUsdPer1k ?? null;
+      const outputCostUsdPer1k = selectedLlmOption?.outputCostUsdPer1k ?? null;
       const inputCostEurPer1k = selectedLlmOption?.inputCostEurPer1k ?? null;
       const outputCostEurPer1k = selectedLlmOption?.outputCostEurPer1k ?? null;
+      const estimatedCostUsd = inputCostUsdPer1k !== null && outputCostUsdPer1k !== null
+        ? Number((
+          (totals.promptTokens / 1000) * inputCostUsdPer1k
+          + (totals.completionTokens / 1000) * outputCostUsdPer1k
+        ).toFixed(4))
+        : null;
       const estimatedCostEur = inputCostEurPer1k !== null && outputCostEurPer1k !== null
         ? Number((
           (totals.promptTokens / 1000) * inputCostEurPer1k
@@ -1259,15 +1273,17 @@ export default function TextEditorForm({
         totalTexts: tasks.length,
         areaMultiplier,
         totalTokens: totals.totalTokens,
+        estimatedCostUsd,
         estimatedCostEur,
       };
       return acc;
     }, {} as Record<GlobalClassKey, {
-      totalTexts: number;
-      areaMultiplier: number;
-      totalTokens: number;
-      estimatedCostEur: number | null;
-    }>);
+        totalTexts: number;
+        areaMultiplier: number;
+        totalTokens: number;
+        estimatedCostUsd: number | null;
+        estimatedCostEur: number | null;
+      }>);
   }, [areaDataById, bulkScope, config?.area_id, isOrtslage, scopeAreaItems.length, selectedLlmOption]);
 
   const runBulkByTextClass = async (classKey: GlobalClassKey) => {
@@ -1358,6 +1374,11 @@ export default function TextEditorForm({
   const getRawTextFromJSON = (key: string, preferredGroup?: string | null) =>
     getRawTextFromDataset(selectedAreaData, selectedAreaIsOrtslage, key, preferredGroup);
 
+  function formatEstimatedCost(value: number | null, currency: 'USD' | 'EUR'): string {
+    if (value === null || !Number.isFinite(value)) return `n/a ${currency}`;
+    return `${value.toFixed(value < 1 ? 4 : 2)} ${currency}`;
+  }
+
   if (loading) {
     return <FullscreenLoader show label="Sektionen werden geladen..." />;
   }
@@ -1433,17 +1454,17 @@ export default function TextEditorForm({
                   >
                     <div style={textWorkflowClassTopStyle}>
                       <span style={textWorkflowClassBadgeStyle(classKey)}>{meta.title}</span>
-                      <span style={textWorkflowClassCountStyle}>{estimate.totalTexts}</span>
                     </div>
-                    <p style={textWorkflowClassTextStyle}>{meta.description}</p>
-                    <p style={textWorkflowClassCycleStyle}>{meta.cycle}</p>
+                    <p style={textWorkflowClassTextStyle}>Texttyp: {meta.description}</p>
+                    <p style={textWorkflowClassCycleStyle}>Zyklus: {meta.cycle}</p>
                     <div style={textWorkflowClassStatsStyle}>
-                      <span>Texte: {estimate.totalTexts}</span>
-                      <span>Gebiete: {estimate.areaMultiplier}</span>
-                      <span>Tokens ca.: {estimate.totalTokens.toLocaleString('de-DE')}</span>
+                      <span>
+                        Gebiete: {estimate.areaMultiplier} Texte: {estimate.totalTexts} Tokens ca.: {estimate.totalTokens.toLocaleString('de-DE')}
+                      </span>
                     </div>
                     <div style={textWorkflowClassCostStyle}>
-                      <span>EUR ca.: {estimate.estimatedCostEur === null ? 'n/a' : estimate.estimatedCostEur.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                      <span>USD ca.: {formatEstimatedCost(estimate.estimatedCostUsd, 'USD')}</span>
+                      <span>EUR ca.: {formatEstimatedCost(estimate.estimatedCostEur, 'EUR')}</span>
                     </div>
                     <label style={textWorkflowPromptLabelStyle}>
                       Standardprompt (anpassbar)
@@ -2184,20 +2205,32 @@ const textWorkflowTopControlsStyle: React.CSSProperties = {
 const textWorkflowTopFieldStyle: React.CSSProperties = {
   display: 'grid',
 };
-const textWorkflowTopSelectStyle: React.CSSProperties = {
-  width: '100%',
-  minHeight: 36,
-  height: 36,
+const textWorkflowSelectBaseStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  borderRadius: 10,
+  padding: '9px 12px',
+  paddingRight: 30,
+  height: 42,
+  lineHeight: 1.3,
+  color: '#0f172a',
+  backgroundColor: '#fff',
   appearance: 'none',
   WebkitAppearance: 'none',
   MozAppearance: 'none',
-  borderRadius: 12,
-  border: '1px solid #cbd5e1',
-  background: '#ffffff',
-  color: '#0f172a',
-  fontSize: 12,
+  boxShadow: 'none',
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")",
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 10px center',
+  backgroundSize: '12px',
   fontWeight: 600,
-  padding: '0 14px',
+};
+const textWorkflowTopSelectStyle: React.CSSProperties = {
+  ...textWorkflowSelectBaseStyle,
+  width: '100%',
+  minHeight: 42,
+  height: 42,
+  fontSize: 13,
 };
 const textWorkflowCardStyle: React.CSSProperties = {
   display: 'grid',
@@ -2227,19 +2260,11 @@ const textWorkflowInlineFieldStyle: React.CSSProperties = {
   minWidth: 180,
 };
 const textWorkflowInlineSelectStyle: React.CSSProperties = {
+  ...textWorkflowSelectBaseStyle,
   width: '100%',
   minHeight: 36,
   height: 36,
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  MozAppearance: 'none',
-  padding: '0 14px',
-  borderRadius: 12,
-  border: '1px solid #cbd5e1',
-  background: '#ffffff',
-  color: '#0f172a',
   fontSize: 12,
-  fontWeight: 600,
 };
 const textWorkflowScopeHintStyle: React.CSSProperties = {
   fontSize: 14,
@@ -2265,7 +2290,7 @@ const textWorkflowClassCardStyle = (active: boolean): React.CSSProperties => ({
 const textWorkflowClassTopStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'space-between',
+  justifyContent: 'flex-start',
   gap: 12,
 };
 const textWorkflowClassBadgeStyle = (classKey: GlobalClassKey): React.CSSProperties => ({
@@ -2277,11 +2302,6 @@ const textWorkflowClassBadgeStyle = (classKey: GlobalClassKey): React.CSSPropert
   fontWeight: 700,
   letterSpacing: '0.01em',
 });
-const textWorkflowClassCountStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 800,
-  color: '#64748b',
-};
 const textWorkflowClassTextStyle: React.CSSProperties = {
   margin: 0,
   fontSize: 12,
