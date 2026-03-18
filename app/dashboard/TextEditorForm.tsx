@@ -1536,9 +1536,6 @@ export default function TextEditorForm({
         <div style={showScopeAreaSidebar ? textEditorGridStyle : undefined}>
           {showScopeAreaSidebar ? (
             <aside style={textAreaListCardStyle}>
-              <div style={textAreaListHeadStyle}>
-                <h3 style={sectionTabsIntroTitleStyle}>Regionen</h3>
-              </div>
               <div style={textAreaListWrapStyle}>
                 {scopeAreaItems.map((item) => {
                   const itemIsOrtslage = String(item.area_id ?? '').split('-').length > 3;
@@ -2087,7 +2084,7 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
 
 const sectionTabsIntroStyle: React.CSSProperties = {
   marginTop: '2px',
-  marginBottom: '8px',
+  marginBottom: '30px',
 };
 const sectionTabsIntroTitleStyle: React.CSSProperties = {
   margin: 0,
@@ -2131,19 +2128,10 @@ const textEditorGridStyle: React.CSSProperties = {
   gap: 16,
 };
 const textAreaListCardStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: 12,
-  backgroundColor: '#f8fafc',
-  padding: '14px',
+  padding: '0 14px',
   display: 'grid',
   gap: 10,
   alignSelf: 'start',
-};
-const textAreaListHeadStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 10,
 };
 const textAreaListWrapStyle: React.CSSProperties = {
   display: 'grid',
