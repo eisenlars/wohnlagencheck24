@@ -2698,14 +2698,6 @@ export default function InternationalizationManager({ config, availableLocales, 
             </aside>
 
             <div style={workflowAreaContentWrapStyle}>
-              <div style={blogEditorHeadStyle}>
-                <div>
-                  <h3 style={sectionTabsIntroTitleStyle}>{selectedScopeArea?.area_name ?? 'Gebiet wählen'}</h3>
-                  <p style={blogEditorIntroStyle}>
-                    Die Texttyp- und Tokenschätzungen oben gelten weiter für den gesamten Scope. Hier rechts bearbeitest du gezielt das ausgewählte Gebiet.
-                  </p>
-                </div>
-              </div>
               <div style={tableWrapStyle}>
                 <table style={tableStyle}>
                   <colgroup>
