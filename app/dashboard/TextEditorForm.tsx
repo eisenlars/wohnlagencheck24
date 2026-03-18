@@ -20,6 +20,31 @@ import {
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import {
+  workflowClassActionRowStyle as textWorkflowClassActionRowStyle,
+  workflowClassCardStyle as textWorkflowClassCardStyle,
+  workflowClassCostStyle as textWorkflowClassCostStyle,
+  workflowClassCycleStyle as textWorkflowClassCycleStyle,
+  workflowClassGridStyle as textWorkflowClassGridStyle,
+  workflowClassStatsStyle as textWorkflowClassStatsStyle,
+  workflowClassTextStyle as textWorkflowClassTextStyle,
+  workflowClassTopStyle as textWorkflowClassTopStyle,
+  workflowHeaderInlineStyle as textWorkflowHeaderInlineStyle,
+  workflowHeaderStyle as textWorkflowHeaderStyle,
+  workflowInlineFieldStyle as textWorkflowInlineFieldStyle,
+  workflowInlineSelectStyle as textWorkflowInlineSelectStyle,
+  workflowPanelCardStyle as textWorkflowCardStyle,
+  workflowPromptLabelStyle as textWorkflowPromptLabelStyle,
+  workflowPromptTextareaStyle as textWorkflowPromptTextareaStyle,
+  workflowSectionIntroStyle as sectionTabsIntroStyle,
+  workflowSectionIntroTitleStyle as sectionTabsIntroTitleStyle,
+  workflowSelectBaseStyle as textWorkflowSelectBaseStyle,
+  workflowTabButtonStyle as tabButtonStyle,
+  workflowTabContainerStyle as tabContainerStyle,
+  workflowTabIconEmojiStyle as tabIconEmojiStyle,
+  workflowTabIconImageStyle as tabIconImageStyle,
+  workflowTabLabelStyle as tabLabelStyle,
+} from '@/app/dashboard/workflow-ui';
 
 const SINGLE_LINE_TEXT_KEYS = new Set([
   'berater_name',
@@ -2084,46 +2109,11 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
 
 // --- STYLES (FULL WIDTH) ---
 
-const sectionTabsIntroStyle: React.CSSProperties = {
-  marginTop: '2px',
-  marginBottom: '30px',
-};
-const sectionTabsIntroTitleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: '14px',
-  fontWeight: 800,
-  color: '#0f172a',
-};
 const sectionEditorCardStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
-  borderRadius: 12,
-  backgroundColor: '#fff',
-  padding: '12px',
+  ...textWorkflowCardStyle,
   marginTop: '8px',
+  marginBottom: 0,
 };
-const tabContainerStyle = { display: 'flex', backgroundColor: '#fff', padding: '8px 8px 0 8px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #e2e8f0', gap: '6px', overflowX: 'auto' as const, marginBottom: '20px' };
-const tabButtonStyle = (active: boolean) => ({
-  display: 'flex',
-  flexDirection: 'column' as const,
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '7px',
-  minWidth: '118px',
-  padding: '12px 14px',
-  border: 'none',
-  borderBottom: active ? '3px solid rgb(72, 107, 122)' : '3px solid transparent',
-  backgroundColor: active ? '#f1f5f9' : 'transparent',
-  color: active ? 'rgb(72, 107, 122)' : '#64748b',
-  fontWeight: active ? '700' : '500',
-  fontSize: '13px',
-  cursor: 'pointer',
-  whiteSpace: 'nowrap' as const,
-  transition: 'all 0.2s',
-  borderRadius: '8px 8px 0 0',
-});
-const tabIconImageStyle: React.CSSProperties = { width: '22px', height: '22px', objectFit: 'contain', display: 'block' };
-const tabIconEmojiStyle: React.CSSProperties = { fontSize: '18px', lineHeight: 1, display: 'block' };
-const tabLabelStyle: React.CSSProperties = { fontSize: '10px', lineHeight: 1.2, textAlign: 'center' };
 const textEditorGridStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '290px minmax(0, 1fr)',
@@ -2192,83 +2182,12 @@ const textWorkflowTopControlsStyle: React.CSSProperties = {
 const textWorkflowTopFieldStyle: React.CSSProperties = {
   display: 'grid',
 };
-const textWorkflowSelectBaseStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: 10,
-  padding: '9px 12px',
-  paddingRight: 30,
-  height: 42,
-  lineHeight: 1.3,
-  color: '#0f172a',
-  backgroundColor: '#fff',
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  MozAppearance: 'none',
-  boxShadow: 'none',
-  backgroundImage:
-    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")",
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 10px center',
-  backgroundSize: '12px',
-  fontWeight: 600,
-};
 const textWorkflowTopSelectStyle: React.CSSProperties = {
   ...textWorkflowSelectBaseStyle,
   width: '100%',
   minHeight: 42,
   height: 42,
   fontSize: 13,
-};
-const textWorkflowCardStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 18,
-  borderRadius: 16,
-  border: '1px solid #e2e8f0',
-  background: '#ffffff',
-  padding: 18,
-  marginBottom: 12,
-};
-const textWorkflowHeaderStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 10,
-};
-const textWorkflowHeaderInlineStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  flexWrap: 'wrap',
-};
-const textWorkflowInlineFieldStyle: React.CSSProperties = {
-  display: 'flex',
-  width: 220,
-  flex: '0 0 auto',
-};
-const textWorkflowInlineSelectStyle: React.CSSProperties = {
-  ...textWorkflowSelectBaseStyle,
-  width: 220,
-  minHeight: 36,
-  height: 36,
-  fontSize: 12,
-};
-const textWorkflowClassGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-  gap: 12,
-};
-const textWorkflowClassCardStyle = (active: boolean): React.CSSProperties => ({
-  display: 'grid',
-  gap: 10,
-  borderRadius: 16,
-  border: active ? '1px solid #486b7a' : '1px solid #e2e8f0',
-  background: '#ffffff',
-  padding: 14,
-  cursor: 'pointer',
-});
-const textWorkflowClassTopStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'flex-start',
-  gap: 12,
 };
 const textWorkflowClassBadgeStyle = (classKey: GlobalClassKey): React.CSSProperties => ({
   ...displayTextBadgeStyle(classKey),
@@ -2279,32 +2198,6 @@ const textWorkflowClassBadgeStyle = (classKey: GlobalClassKey): React.CSSPropert
   fontWeight: 700,
   letterSpacing: '0.01em',
 });
-const textWorkflowClassTextStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 12,
-  lineHeight: 1.5,
-  color: '#475569',
-};
-const textWorkflowClassCycleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 12,
-  lineHeight: 1.5,
-  color: '#0f172a',
-  fontWeight: 600,
-};
-const textWorkflowClassStatsStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 4,
-  fontSize: 12,
-  color: '#475569',
-};
-const textWorkflowClassCostStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 4,
-  fontSize: 12,
-  fontWeight: 700,
-  color: '#0f172a',
-};
 const textWorkflowEmptyStateStyle: React.CSSProperties = {
   border: '1px dashed #cbd5e1',
   borderRadius: 12,
@@ -2312,30 +2205,6 @@ const textWorkflowEmptyStateStyle: React.CSSProperties = {
   fontSize: 13,
   color: '#64748b',
   background: '#f8fafc',
-};
-const textWorkflowPromptLabelStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 6,
-  fontSize: 11,
-  color: '#334155',
-  fontWeight: 600,
-};
-const textWorkflowPromptTextareaStyle: React.CSSProperties = {
-  width: '100%',
-  minHeight: 74,
-  padding: '10px 12px',
-  borderRadius: 10,
-  border: '1px solid #cbd5e1',
-  fontSize: 12,
-  lineHeight: 1.45,
-  fontFamily: 'inherit',
-  color: '#0f172a',
-  backgroundColor: '#fff',
-};
-const textWorkflowClassActionRowStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: 8,
 };
 const textInlineWorkflowButtonStyle = (classKey: GlobalClassKey, selected: boolean, disabled: boolean): React.CSSProperties => ({
   borderRadius: 8,

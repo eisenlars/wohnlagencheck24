@@ -28,6 +28,30 @@ import { buildI18nPromptWithExtras, getI18nStandardPrompt } from '@/lib/i18n-pro
 import { hashText } from '@/lib/text-hash';
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
+import {
+  workflowClassActionRowStyle as classCardActionRowStyle,
+  workflowClassCardStyle as classCardStyle,
+  workflowClassCostStyle as classCardCostStyle,
+  workflowClassCycleStyle as classCardCycleStyle,
+  workflowClassGridStyle as classGridStyle,
+  workflowClassStatsStyle as classCardStatsStyle,
+  workflowClassTextStyle as classCardTextStyle,
+  workflowClassTopStyle as classCardTopStyle,
+  workflowHeaderInlineStyle,
+  workflowHeaderStyle as workflowCardHeaderStyle,
+  workflowInlineFieldStyle,
+  workflowInlineSelectStyle,
+  workflowPanelCardStyle,
+  workflowPromptLabelStyle,
+  workflowPromptTextareaStyle,
+  workflowSectionIntroStyle as sectionTabsIntroStyle,
+  workflowSectionIntroTitleStyle as sectionTabsIntroTitleStyle,
+  workflowTabButtonStyle as tabButtonStyle,
+  workflowTabContainerStyle as tabContainerStyle,
+  workflowTabIconEmojiStyle as tabIconEmojiStyle,
+  workflowTabIconImageStyle as tabIconImageStyle,
+  workflowTabLabelStyle as tabLabelStyle,
+} from '@/app/dashboard/workflow-ui';
 
 type AreaConfig = {
   area_id: string;
@@ -2513,7 +2537,7 @@ export default function InternationalizationManager({ config, availableLocales, 
 
 	      {activeDomain === 'immobilienmarkt' ? (
 	      <>
-	      <div style={editorCardStyle}>
+	      <div style={workflowPanelCardStyle}>
 	        <div style={workflowCardHeaderStyle}>
 	          <div style={workflowHeaderInlineStyle}>
 	            <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
@@ -2616,7 +2640,7 @@ export default function InternationalizationManager({ config, availableLocales, 
 	        </div>
 	      </div>
 
-	      <div style={editorCardStyle}>
+	      <div style={workflowPanelCardStyle}>
 	        <div style={sectionTabsIntroStyle}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
@@ -4317,49 +4341,11 @@ const editorCardStyle: React.CSSProperties = {
   gap: 8,
 };
 
-const workflowCardStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 14,
-  padding: 12,
-  borderRadius: 12,
-  border: '1px solid #e2e8f0',
-  background: '#fff',
-};
-
-const workflowCardHeaderStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  gap: 16,
-  alignItems: 'center',
-  flexWrap: 'wrap',
-  marginBottom: 24,
-};
-
-const workflowHeaderInlineStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  flexWrap: 'wrap',
-};
-
 const workflowInlineControlsStyle: React.CSSProperties = {
   display: 'flex',
   flexWrap: 'wrap',
   gap: 10,
   alignItems: 'center',
-};
-
-const workflowInlineFieldStyle: React.CSSProperties = {
-  display: 'flex',
-  minWidth: 180,
-};
-
-const workflowInlineSelectStyle: React.CSSProperties = {
-  ...inputStyle,
-  minWidth: 180,
-  minHeight: 36,
-  height: 36,
-  fontSize: 12,
 };
 
 const workflowScopeHintStyle: React.CSSProperties = {
@@ -4368,30 +4354,6 @@ const workflowScopeHintStyle: React.CSSProperties = {
   color: '#0f172a',
   lineHeight: 1.35,
   maxWidth: 360,
-};
-
-const classGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 12,
-};
-
-const classCardStyle = (active: boolean): React.CSSProperties => ({
-  display: 'grid',
-  gap: 10,
-  textAlign: 'left',
-  padding: 14,
-  borderRadius: 12,
-  border: active ? '1px solid #0f766e' : '1px solid #e2e8f0',
-  background: '#fff',
-  cursor: 'pointer',
-});
-
-const classCardTopStyle: React.CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  gap: 10,
 };
 
 const workflowClassBadgeStyle = (displayClass: DisplayTextClass): React.CSSProperties => ({
@@ -4408,66 +4370,6 @@ const classCardCountStyle: React.CSSProperties = {
   fontSize: 18,
   fontWeight: 800,
   color: '#0f172a',
-};
-
-const classCardTextStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 12,
-  lineHeight: 1.5,
-  color: '#475569',
-};
-
-const classCardCycleStyle: React.CSSProperties = {
-  margin: '-2px 0 0',
-  fontSize: 12,
-  lineHeight: 1.5,
-  color: '#334155',
-  fontWeight: 700,
-};
-
-const classCardStatsStyle: React.CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 10,
-  fontSize: 11,
-  color: '#334155',
-};
-
-const classCardCostStyle: React.CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 10,
-  fontSize: 11,
-  color: '#0f766e',
-  fontWeight: 700,
-};
-
-const classCardActionRowStyle: React.CSSProperties = {
-  marginTop: 4,
-  display: 'flex',
-  justifyContent: 'flex-end',
-};
-
-const workflowPromptLabelStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 6,
-  fontSize: 11,
-  fontWeight: 700,
-  color: '#1e293b',
-};
-
-const workflowPromptTextareaStyle: React.CSSProperties = {
-  width: '100%',
-  minHeight: 92,
-  padding: 10,
-  borderRadius: 10,
-  border: '1px solid #cbd5e1',
-  background: '#ffffff',
-  fontSize: 12,
-  lineHeight: 1.45,
-  fontFamily: 'inherit',
-  color: '#0f172a',
-  resize: 'vertical',
 };
 
 const inlineWorkflowButtonStyle = (displayClass: DisplayTextClass, selected: boolean, disabled: boolean): React.CSSProperties => ({
@@ -4862,28 +4764,6 @@ const domainPlaceholderItemStyle: React.CSSProperties = {
   color: '#0f172a',
 };
 
-const sectionTabsIntroStyle: React.CSSProperties = {
-  marginTop: 10,
-  marginBottom: 8,
-};
-
-const sectionTabsIntroTitleStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 14,
-  fontWeight: 800,
-  color: '#0f172a',
-};
-
-const tabContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: 6,
-  overflowX: 'auto',
-  backgroundColor: '#fff',
-  padding: '8px 8px 0 8px',
-  borderRadius: '12px 12px 0 0',
-  borderBottom: '1px solid #e2e8f0',
-};
-
 const workflowConfirmOverlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
@@ -4950,45 +4830,6 @@ const workflowConfirmProceedButtonStyle: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 800,
   cursor: 'pointer',
-};
-
-const tabButtonStyle = (active: boolean): React.CSSProperties => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 7,
-  minWidth: '118px',
-  padding: '12px 14px',
-  border: 'none',
-  borderBottom: active ? '3px solid rgb(72, 107, 122)' : '3px solid transparent',
-  backgroundColor: active ? '#f1f5f9' : 'transparent',
-  color: active ? 'rgb(72, 107, 122)' : '#64748b',
-  fontWeight: active ? 700 : 500,
-  fontSize: 13,
-  whiteSpace: 'nowrap',
-  cursor: 'pointer',
-  transition: 'all 0.2s',
-  borderRadius: '8px 8px 0 0',
-});
-
-const tabIconImageStyle: React.CSSProperties = {
-  width: 22,
-  height: 22,
-  objectFit: 'contain',
-  display: 'block',
-};
-
-const tabIconEmojiStyle: React.CSSProperties = {
-  fontSize: 18,
-  lineHeight: 1,
-  display: 'block',
-};
-
-const tabLabelStyle: React.CSSProperties = {
-  fontSize: 10,
-  lineHeight: 1.2,
-  textAlign: 'center',
 };
 
 const tableWrapStyle: React.CSSProperties = {
