@@ -1553,7 +1553,7 @@ export default function TextEditorForm({
         </>
       ) : null}
 
-      <div style={!isMarketing ? sectionEditorCardStyle : undefined}>
+      <div style={sectionEditorCardStyle}>
         {/* TABS */}
         <div style={sectionTabsIntroStyle}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
@@ -2111,7 +2111,6 @@ function MandatoryMediaUploadCard(props: MandatoryMediaUploadCardProps) {
 
 const sectionEditorCardStyle: React.CSSProperties = {
   ...textWorkflowCardStyle,
-  marginTop: '8px',
   marginBottom: 0,
 };
 const textEditorGridStyle: React.CSSProperties = {
