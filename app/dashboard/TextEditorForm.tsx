@@ -2169,7 +2169,7 @@ const textAreaListMetaLineStyle: React.CSSProperties = {
 const textAreaEditorWrapStyle: React.CSSProperties = {
   minWidth: 0,
 };
-const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px 0 0', border: 'none' };
+const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px 20px 0', border: 'none' };
 const textWorkflowTopCardStyle: React.CSSProperties = {
   borderRadius: 18,
   background: 'rgb(72, 107, 122)',
