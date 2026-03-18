@@ -2736,20 +2736,6 @@ export default function AdminClient() {
             title="Partner"
           >
             {renderAdminNavIcon("partners")}
-            {pendingAreaAssignmentCount > 0 ? (
-              <span
-                aria-label={`${pendingAreaAssignmentCount} Partner ohne Gebietszuordnung`}
-                style={{
-                  position: "absolute",
-                  top: 8,
-                  right: 8,
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "#dc2626",
-                }}
-              />
-            ) : null}
           </button>
           <button
             style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" && navMode === "areas")}
@@ -2802,7 +2788,7 @@ export default function AdminClient() {
 
         {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" ? (
           <aside style={listPaneStyle}>
-            <div style={sidebarSectionHeaderStyle}>{navMode === "partners" ? "Partnerübersicht" : "Gebietsübersicht"}</div>
+            {navMode === "areas" ? <div style={sidebarSectionHeaderStyle}>Gebietsübersicht</div> : null}
             <div style={sidebarControlWrapStyle}>
               <input
                 style={inputStyle}
@@ -2868,6 +2854,20 @@ export default function AdminClient() {
         ) : null}
 
         <div style={contentPaneStyle}>
+      {activeView === "partner_edit" ? (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 14, flexWrap: "wrap" }}>
+        <h1 style={{ margin: 0, fontSize: 24, lineHeight: 1.2, color: "#0f172a", fontWeight: 800 }}>Partnerverwaltung</h1>
+        <button
+          type="button"
+          style={btnStyle}
+          onClick={() => {
+            setActiveView("new_partner");
+          }}
+        >
+          Neuen Partner anlegen
+        </button>
+      </div>
+      ) : null}
       {activeView === "new_partner" ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Partner anlegen (Invite-Link)</h2>
@@ -2968,17 +2968,6 @@ export default function AdminClient() {
 
       {activeView === "partner_edit" ? (
       <section style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 12 }}>
-          <button
-            type="button"
-            style={btnStyle}
-            onClick={() => {
-              setActiveView("new_partner");
-            }}
-          >
-            Neuen Partner anlegen
-          </button>
-        </div>
         <h2 style={h2Style}>Partnerdetails</h2>
         <p style={{ margin: 0, color: "#475569" }}>
           {selectedPartner ? `${formatPartnerName(selectedPartner)} (${selectedPartner.id})` : "Bitte links einen Partner auswählen."}
