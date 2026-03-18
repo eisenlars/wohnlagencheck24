@@ -2511,11 +2511,11 @@ export default function InternationalizationManager({ config, availableLocales, 
           ))}
         </div>
 
-      {activeDomain === 'immobilienmarkt' ? (
-      <div style={editorCardStyle}>
-        <div style={workflowCardStyle}>
-          <div style={workflowCardHeaderStyle}>
-            <div style={workflowHeaderInlineStyle}>
+	      {activeDomain === 'immobilienmarkt' ? (
+	      <div style={editorCardStyle}>
+	        <div style={workflowCardStyle}>
+	          <div style={workflowCardHeaderStyle}>
+	            <div style={workflowHeaderInlineStyle}>
               <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
               <div style={workflowInlineControlsStyle}>
                 <label style={workflowInlineFieldStyle}>
@@ -2546,77 +2546,77 @@ export default function InternationalizationManager({ config, availableLocales, 
                   <div style={statusTone === 'error' ? workflowStatusErrorStyle : workflowStatusSuccessStyle}>{status}</div>
                 ) : (
                   <div style={workflowScopeHintStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
-                )}
-              </div>
-            </div>
-          </div>
+	                )}
+	              </div>
+	            </div>
+	          </div>
+	        </div>
 
-          <div style={classGridStyle}>
-            {workflowClasses.map((displayClass) => {
-              const stats = classSummary[displayClass];
-              const active = activeClass === displayClass;
-              const buttonDisabled = loading || saving || (active && selectedWorkflowKeys.length === 0);
-              return (
-                <button
-                  key={displayClass}
-                  type="button"
-                  style={classCardStyle(active)}
-                  onClick={() => setActiveClass(displayClass)}
-                >
-                  <div style={classCardTopStyle}>
-                    <span style={workflowClassBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
-                    <span style={classCardCountStyle}>{stats.total}</span>
-                  </div>
-                  <p style={classCardTextStyle}>{i18nWorkflowClassDescription(displayClass)}</p>
-                  <p style={classCardCycleStyle}>{i18nWorkflowClassCycle(displayClass)}</p>
-                  <div style={classCardStatsStyle}>
-                    <span>Uebersetzt: {stats.translated}</span>
-                    <span>DE-Fallback: {stats.fallback}</span>
-                    <span>Veraltet: {stats.stale}</span>
-                    <span>Tokens ca.: {classEstimateMap[displayClass].total_tokens.toLocaleString('de-DE')}</span>
-                  </div>
-                  <div style={classCardCostStyle}>
-                    <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
-                    <span>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
-                  </div>
-                  <label style={workflowPromptLabelStyle}>
-                    Standardprompt (anpassbar)
-                    <textarea
-                      value={getWorkflowPrompt(displayClass)}
-                      onChange={(e) => {
-                        const next = e.target.value;
-                        setWorkflowPromptDrafts((prev) => ({
-                          ...prev,
-                          [workflowPromptStorageKey(displayClass)]: next,
-                        }));
-                      }}
-                      style={workflowPromptTextareaStyle}
-                      placeholder={getI18nStandardPrompt(displayClass, locale)}
-                    />
-                  </label>
-                  <div style={classCardActionRowStyle}>
-                    <button
-                      type="button"
-                      style={inlineWorkflowButtonStyle(displayClass, active, buttonDisabled)}
-                      onClick={() => {
-                        if (!active) {
-                          setActiveClass(displayClass);
-                          return;
-                        }
-                        setWorkflowConfirmOpen(true);
-                      }}
-                      disabled={buttonDisabled}
-                    >
-                      {activeClass === 'data_driven' && active ? 'Data-Driven aktualisieren' : 'Übersetzung starten'}
-                    </button>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+	        <div style={classGridStyle}>
+	          {workflowClasses.map((displayClass) => {
+	            const stats = classSummary[displayClass];
+	            const active = activeClass === displayClass;
+	            const buttonDisabled = loading || saving || (active && selectedWorkflowKeys.length === 0);
+	            return (
+	              <button
+	                key={displayClass}
+	                type="button"
+	                style={classCardStyle(active)}
+	                onClick={() => setActiveClass(displayClass)}
+	              >
+	                <div style={classCardTopStyle}>
+	                  <span style={workflowClassBadgeStyle(displayClass)}>{displayTextClassLabel(displayClass)}</span>
+	                  <span style={classCardCountStyle}>{stats.total}</span>
+	                </div>
+	                <p style={classCardTextStyle}>{i18nWorkflowClassDescription(displayClass)}</p>
+	                <p style={classCardCycleStyle}>{i18nWorkflowClassCycle(displayClass)}</p>
+	                <div style={classCardStatsStyle}>
+	                  <span>Uebersetzt: {stats.translated}</span>
+	                  <span>DE-Fallback: {stats.fallback}</span>
+	                  <span>Veraltet: {stats.stale}</span>
+	                  <span>Tokens ca.: {classEstimateMap[displayClass].total_tokens.toLocaleString('de-DE')}</span>
+	                </div>
+	                <div style={classCardCostStyle}>
+	                  <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
+	                  <span>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
+	                </div>
+	                <label style={workflowPromptLabelStyle}>
+	                  Standardprompt (anpassbar)
+	                  <textarea
+	                    value={getWorkflowPrompt(displayClass)}
+	                    onChange={(e) => {
+	                      const next = e.target.value;
+	                      setWorkflowPromptDrafts((prev) => ({
+	                        ...prev,
+	                        [workflowPromptStorageKey(displayClass)]: next,
+	                      }));
+	                    }}
+	                    style={workflowPromptTextareaStyle}
+	                    placeholder={getI18nStandardPrompt(displayClass, locale)}
+	                  />
+	                </label>
+	                <div style={classCardActionRowStyle}>
+	                  <button
+	                    type="button"
+	                    style={inlineWorkflowButtonStyle(displayClass, active, buttonDisabled)}
+	                    onClick={() => {
+	                      if (!active) {
+	                        setActiveClass(displayClass);
+	                        return;
+	                      }
+	                      setWorkflowConfirmOpen(true);
+	                    }}
+	                    disabled={buttonDisabled}
+	                  >
+	                    {activeClass === 'data_driven' && active ? 'Data-Driven aktualisieren' : 'Übersetzung starten'}
+	                  </button>
+	                </div>
+	              </button>
+	            );
+	          })}
+	        </div>
 
-        <div style={sectionTabsIntroStyle}>
+	        <div style={sectionTabsIntroStyle}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
         <div style={tabContainerStyle}>
