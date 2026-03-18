@@ -609,6 +609,8 @@ export default function AdminClient() {
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [status, setStatus] = useState<string>("Lade Admin-Daten...");
   const [adminDisplayName, setAdminDisplayName] = useState<string>("Admin");
+  const [lastLogin, setLastLogin] = useState<string>("");
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [busy, setBusy] = useState<boolean>(false);
   const [areaQuery, setAreaQuery] = useState<string>("");
   const [areaOptions, setAreaOptions] = useState<AreaOption[]>([]);
@@ -1706,6 +1708,7 @@ export default function AdminClient() {
           .trim();
         const label = fromMeta || String(user?.email ?? "Admin").trim() || "Admin";
         setAdminDisplayName(label);
+        setLastLogin(String(user?.last_sign_in_at ?? "").trim());
         await loadPartners();
         await loadAuditLogs();
         setStatus("Admin-Bereich bereit.");
@@ -2513,15 +2516,90 @@ export default function AdminClient() {
           </div>
         </div>
       ) : null}
-      <header style={headerStyle}>
-        <h1 style={{ margin: 0, fontSize: 24 }}>Admin Konsole</h1>
-        <div style={{ display: "flex", gap: 8 }}>
+      <header style={dashboardHeaderStyle}>
+        <div
+          className="brand-header"
+          style={{ margin: 0, cursor: "pointer" }}
+          onClick={() => {
+            setActiveView("home");
+            setShowHeaderMenu(false);
+          }}
+          title="Zur Startseite"
+        >
+          <Image
+            alt="Immobilienmarkt & Standortprofile"
+            width={48}
+            height={48}
+            src="/logo/wohnlagencheck24.svg"
+            className="brand-icon"
+            style={{ display: "block" }}
+            priority
+          />
+          <span className="brand-text">
+            <span className="brand-title">
+              Wohnlagencheck<span style={{ color: "#ffe000" }}>24</span>
+            </span>
+            <small>DATA-DRIVEN. EXPERT-LED.</small>
+          </span>
+        </div>
+        <div style={dashboardStatusStyle}>
+          <div>{lastLogin ? `Letzter Login: ${new Date(lastLogin).toLocaleString("de-DE")}` : "Letzter Login: –"}</div>
           <button
-            style={btnStyle}
-            onClick={() => setActiveView("new_partner")}
+            type="button"
+            style={headerActionButtonStyle}
+            onClick={() => {
+              setActiveView("home");
+              setShowHeaderMenu(false);
+            }}
+            title="Startseite"
           >
-            Neuen Partner
+            <span aria-hidden>⌂</span>
+            <span>Home</span>
           </button>
+          <div className="navbar navbar-light p-0 m-0" style={menuWrapStyle}>
+            <button
+              className="navbar-toggler"
+              style={dashboardBurgerButtonStyle}
+              onClick={() => setShowHeaderMenu((v) => !v)}
+              title="Admin-Menü"
+              aria-label="Admin-Menü öffnen"
+            >
+              <span className="navbar-toggler-icon" style={dashboardBurgerIconStyle} />
+            </button>
+            {showHeaderMenu ? (
+              <div style={menuDropdownStyle}>
+                <button
+                  style={menuItemStyle}
+                  onClick={() => {
+                    setActiveView("audit");
+                    setShowHeaderMenu(false);
+                  }}
+                >
+                  Log
+                </button>
+                <button
+                  style={menuItemStyle}
+                  onClick={() => {
+                    setNavMode("partners");
+                    setActiveView("partner_purge");
+                    setShowHeaderMenu(false);
+                  }}
+                >
+                  Partner löschen
+                </button>
+                <button
+                  style={menuItemStyle}
+                  onClick={async () => {
+                    setShowHeaderMenu(false);
+                    await supabase.auth.signOut();
+                    router.push("/admin/login");
+                  }}
+                >
+                  Ausloggen
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -2607,33 +2685,6 @@ export default function AdminClient() {
             {renderAdminNavIcon("cms")}
           </button>
           <div style={{ flex: 1 }} />
-          <button
-            style={modeButtonStyle(activeView === "partner_purge")}
-            onClick={() => {
-              setNavMode("partners");
-              setActiveView("partner_purge");
-            }}
-            title="Datenbereinigung"
-          >
-            {renderAdminNavIcon("purge")}
-          </button>
-          <button
-            style={modeButtonStyle(activeView === "audit")}
-            onClick={() => setActiveView("audit")}
-            title="Audit-Log"
-          >
-            {renderAdminNavIcon("audit")}
-          </button>
-          <button
-            style={modeButtonStyle(false)}
-            onClick={async () => {
-              await supabase.auth.signOut();
-              router.push("/admin/login");
-            }}
-            title="Abmelden"
-          >
-            {renderAdminNavIcon("logout")}
-          </button>
         </aside>
 
         {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" ? (
@@ -5526,6 +5577,92 @@ const headerStyle: React.CSSProperties = {
   justifyContent: "space-between",
   alignItems: "center",
   marginBottom: 10,
+};
+
+const dashboardHeaderStyle: React.CSSProperties = {
+  minHeight: "72px",
+  backgroundColor: "#fff",
+  color: "#0f172a",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: "10px 20px",
+  borderBottom: "1px solid #e2e8f0",
+  position: "sticky",
+  top: 0,
+  zIndex: 40,
+  marginBottom: 10,
+};
+
+const dashboardStatusStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  fontSize: "12px",
+  color: "#94a3b8",
+};
+
+const headerActionButtonStyle: React.CSSProperties = {
+  border: "1px solid #cbd5e1",
+  borderRadius: "8px",
+  background: "#ffffff",
+  color: "#0f172a",
+  padding: "6px 10px",
+  fontSize: "12px",
+  fontWeight: 700,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "6px",
+};
+
+const dashboardBurgerButtonStyle: React.CSSProperties = {
+  border: "1px solid #cbd5e1",
+  borderRadius: "8px",
+  background: "#ffffff",
+  color: "#0f172a",
+  padding: "0 10px",
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  height: "34px",
+  lineHeight: 1,
+};
+
+const dashboardBurgerIconStyle: React.CSSProperties = {
+  width: "16px",
+  height: "16px",
+  display: "block",
+};
+
+const menuWrapStyle: React.CSSProperties = {
+  position: "relative",
+};
+
+const menuDropdownStyle: React.CSSProperties = {
+  position: "absolute",
+  right: 0,
+  top: "42px",
+  minWidth: "180px",
+  border: "1px solid #e2e8f0",
+  borderRadius: "10px",
+  background: "#fff",
+  boxShadow: "0 12px 24px rgba(15, 23, 42, 0.15)",
+  padding: "6px",
+  zIndex: 200,
+};
+
+const menuItemStyle: React.CSSProperties = {
+  width: "100%",
+  textAlign: "left",
+  border: "none",
+  background: "#fff",
+  borderRadius: "8px",
+  padding: "10px 10px",
+  fontSize: "14px",
+  color: "#0f172a",
+  cursor: "pointer",
 };
 
 const statusStyle: React.CSSProperties = {
