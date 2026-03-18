@@ -1735,18 +1735,6 @@ export default function DashboardClient() {
                       <p style={previewReadyTextStyle}>
                         <strong>Dieses Gebiet ist intern freigegeben, aber noch nicht online.</strong>
                       </p>
-                      <p style={previewReadyTextStyle}>
-                        Nutze jetzt die Previewphase, um Inhalte, Werte, SEO/GEO und optionale Zusatzmodule final vorzubereiten.
-                        Erst danach sollte das Gebiet durch den Admin online geschaltet werden.
-                      </p>
-                      {selectedPreviewHref ? (
-                        <p style={previewReadyTextStyle}>
-                          Die Frontend-Preview bildet die spätere Live-Seite 1:1 ab. Sie ist nur intern erreichbar und nach dem Onlinegang nicht mehr verfügbar.
-                        </p>
-                      ) : null}
-                      <p style={previewReadyTextStyle}>
-                        Wenn du Inhalte, Werte und Frontend-Preview final geprüft hast, fordere hier den Livegang an. Das Admin-Team erhält danach die Bitte zur finalen Freigabe.
-                      </p>
                       <div style={previewReadyActionRowStyle}>
                         <button type="button" onClick={() => handleToolSelect('factors')} style={previewReadyActionButtonStyle}>
                           Werte pruefen
