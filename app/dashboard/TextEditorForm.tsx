@@ -1422,20 +1422,17 @@ export default function TextEditorForm({
             <div style={textWorkflowHeaderStyle}>
               <div style={textWorkflowHeaderInlineStyle}>
                 <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
-                <div style={textWorkflowInlineControlsStyle}>
-                  <label style={textWorkflowInlineFieldStyle}>
-                    <select
-                      value={bulkScope}
-                      onChange={(e) => setBulkScope(e.target.value as BulkScope)}
-                      style={textWorkflowInlineSelectStyle}
-                      disabled={isBulkRewriting || isOrtslage}
-                    >
-                      <option value="kreis">Nur Kreis</option>
-                      <option value="kreis_ortslagen" disabled={isOrtslage}>Kreis + Ortslagen</option>
-                    </select>
-                  </label>
-                  <div style={textWorkflowScopeHintStyle}>Sektionen/Themenbereiche prüfen oder bei Bedarf nacharbeiten</div>
-                </div>
+                <label style={textWorkflowInlineFieldStyle}>
+                  <select
+                    value={bulkScope}
+                    onChange={(e) => setBulkScope(e.target.value as BulkScope)}
+                    style={textWorkflowInlineSelectStyle}
+                    disabled={isBulkRewriting || isOrtslage}
+                  >
+                    <option value="kreis">Nur Kreis</option>
+                    <option value="kreis_ortslagen" disabled={isOrtslage}>Kreis + Ortslagen</option>
+                  </select>
+                </label>
               </div>
             </div>
 
@@ -2249,12 +2246,6 @@ const textWorkflowHeaderInlineStyle: React.CSSProperties = {
   display: 'grid',
   gap: 10,
 };
-const textWorkflowInlineControlsStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  flexWrap: 'wrap',
-};
 const textWorkflowInlineFieldStyle: React.CSSProperties = {
   display: 'flex',
   minWidth: 180,
@@ -2265,13 +2256,6 @@ const textWorkflowInlineSelectStyle: React.CSSProperties = {
   minHeight: 36,
   height: 36,
   fontSize: 12,
-};
-const textWorkflowScopeHintStyle: React.CSSProperties = {
-  fontSize: 14,
-  lineHeight: 1.35,
-  color: '#0f172a',
-  fontWeight: 700,
-  maxWidth: 360,
 };
 const textWorkflowClassGridStyle: React.CSSProperties = {
   display: 'grid',
