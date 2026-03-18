@@ -1364,9 +1364,10 @@ export default function TextEditorForm({
 
   const activeTabConfig = visibleTabs.find(t => t.id === activeTab);
   const sections = activeTabConfig?.sections ?? [];
-  const activeSections = allowedSectionSet
-    ? sections.filter((section) => allowedSectionSet.has(section.key))
-    : sections;
+  const activeSections = sections.filter((section) => {
+    if (allowedSectionSet && !allowedSectionSet.has(section.key)) return false;
+    return resolveDisplayTextClass(section.key, section.type) === activeBulkClass;
+  });
   const isBulkRewriting = Boolean(classBulkState);
   const showGlobalClassActions = !isMarketing && !lockedToMandatory;
   const showScopeAreaSidebar = !isOrtslage && scopeAreaItems.length > 1;
@@ -1574,7 +1575,11 @@ export default function TextEditorForm({
               </div>
             ) : null}
             <div style={contentWrapperStyle}>
-              {activeSections.map((section) => {
+              {activeSections.length === 0 ? (
+                <div style={textWorkflowEmptyStateStyle}>
+                  Fuer diesen Themenbereich gibt es im gewaehlten Texttyp aktuell keine Texte.
+                </div>
+              ) : activeSections.map((section) => {
                 const sectionGroup = resolveGroupForTab(activeTabConfig?.id);
                 const mediaKey = MEDIA_BY_SECTION_KEY[section.key];
                 const mediaSpec = mediaKey ? MANDATORY_MEDIA_SPECS[mediaKey] : null;
@@ -2262,7 +2267,7 @@ const textWorkflowScopeHintStyle: React.CSSProperties = {
 };
 const textWorkflowClassGridStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(2, minmax(280px, 1fr))',
+  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
   gap: 12,
 };
 const textWorkflowClassCardStyle = (active: boolean): React.CSSProperties => ({
@@ -2319,6 +2324,14 @@ const textWorkflowClassCostStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 700,
   color: '#0f172a',
+};
+const textWorkflowEmptyStateStyle: React.CSSProperties = {
+  border: '1px dashed #cbd5e1',
+  borderRadius: 12,
+  padding: '16px 18px',
+  fontSize: 13,
+  color: '#64748b',
+  background: '#f8fafc',
 };
 const textWorkflowPromptLabelStyle: React.CSSProperties = {
   display: 'grid',
