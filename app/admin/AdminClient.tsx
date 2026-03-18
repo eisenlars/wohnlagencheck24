@@ -1033,6 +1033,9 @@ export default function AdminClient() {
         return hay.includes(q);
       })
       .sort((a, b) => {
+        const aDefault = a.is_system_default ? 1 : 0;
+        const bDefault = b.is_system_default ? 1 : 0;
+        if (aDefault !== bDefault) return bDefault - aDefault;
         const aPending = partnerNeedsAssignment.has(a.id) ? 1 : 0;
         const bPending = partnerNeedsAssignment.has(b.id) ? 1 : 0;
         if (aPending !== bPending) return bPending - aPending;
@@ -1225,84 +1228,76 @@ export default function AdminClient() {
     () => partners.find((p) => p.id === handoverDraft.new_partner_id) ?? null,
     [partners, handoverDraft.new_partner_id],
   );
-  const adminWelcomeGroups = useMemo<Array<{ title: string; actions: AdminWelcomeAction[] }>>(
+  const portalPartner = useMemo(
+    () => partners.find((partner) => partner.is_system_default === true) ?? null,
+    [partners],
+  );
+  const portalPartnerAreaRows = useMemo(
+    () => areaOverview.filter((row) => row.partnerId === portalPartner?.id),
+    [areaOverview, portalPartner?.id],
+  );
+  const adminWelcomeActions = useMemo<AdminWelcomeAction[]>(
     () => [
       {
+        key: "partners",
+        icon: "partners",
         title: "Partnerverwaltung",
-        actions: [
-          {
-            key: "partners",
-            icon: "partners",
-            title: "Partnerübersicht",
-            text: "Bestehende Partner öffnen, Profil- und Gebietsdaten prüfen und Detailbereiche aufrufen.",
-            badge: partners.length > 0 ? `${partners.length} Partner` : null,
-            onClick: () => {
-              setNavMode("partners");
-              setActiveView("partner_edit");
-            },
-          },
-          {
-            key: "areas",
-            icon: "areas",
-            title: "Gebietsübersicht",
-            text: "Kreiszuordnungen, Übergaben und Aktivierungsstände gebietsbezogen prüfen.",
-            badge: areaOverview.length > 0 ? `${areaOverview.length} Zuordnungen` : null,
-            onClick: () => {
-              setNavMode("areas");
-              setActiveView("partner_edit");
-            },
-          },
-          {
-            key: "new_partner",
-            icon: "partners",
-            title: "Neuen Partner anlegen",
-            text: "Einladung versenden und einen neuen Partnerdatensatz mit Zugriff vorbereiten.",
-            onClick: () => {
-              setActiveView("new_partner");
-            },
-          },
-        ],
+        text: "Bestehende Partner öffnen, Profil- und Gebietsdaten prüfen und Detailbereiche aufrufen.",
+        badge: partners.length > 0 ? `${partners.length} Partner` : null,
+        onClick: () => {
+          setNavMode("partners");
+          setActiveView("partner_edit");
+        },
       },
       {
-        title: "Steuerung",
-        actions: [
-          {
-            key: "review",
-            icon: "areas",
-            title: "Freigabeprüfung",
-            text: "Gebiete in Prüfung, Preview-Freigaben und Onlineschaltungen weiterbearbeiten.",
-            badge: pendingReviewCount > 0 ? `${pendingReviewCount} offen` : null,
-            onClick: () => {
-              setNavMode("partners");
-              setPartnerTab("review");
-              setActiveView("partner_edit");
-            },
-          },
-          {
-            key: "audit",
-            icon: "audit",
-            title: "Log",
-            text: "Sicherheits- und Systemereignisse nach Actor, Event und Zeitraum durchsuchen.",
-            onClick: () => {
-              setActiveView("audit");
-              void run("Audit-Log laden", async () => {
-                await loadAuditLogs();
-              });
-            },
-          },
-          {
-            key: "purge",
-            icon: "purge",
-            title: "Partner löschen",
-            text: "Kritische Datenbereinigung mit Vorprüfung und vollständiger Entfernung aus dem System.",
-            onClick: () => {
-              setActiveView("partner_purge");
-            },
-          },
-        ],
+        key: "areas",
+        icon: "areas",
+        title: "Gebiete",
+        text: "Kreiszuordnungen, Übergaben und Aktivierungsstände gebietsbezogen prüfen.",
+        badge: areaOverview.length > 0 ? `${areaOverview.length} Zuordnungen` : null,
+        onClick: () => {
+          setNavMode("areas");
+          setActiveView("partner_edit");
+        },
+      },
+      {
+        key: "llm",
+        icon: "llm",
+        title: "LLM-Verwaltung",
+        text: "Globale Provider, Modelle, Preise und Nutzungsgrenzen zentral steuern.",
+        onClick: () => {
+          setActiveView("llm_global");
+          void run("Globale LLM-Verwaltung laden", async () => {
+            await loadLlmGlobalDashboard();
+          });
+        },
+      },
+      {
+        key: "billing",
+        icon: "billing",
+        title: "Leistungsabrechnung",
+        text: "Billing-Standards und Berechnungsgrundlagen für Portal und Partner pflegen.",
+        onClick: () => {
+          setActiveView("billing_defaults");
+          void run("Billing-Standards laden", async () => {
+            await loadBillingDefaults();
+          });
+        },
+      },
+      {
+        key: "cms",
+        icon: "cms",
+        title: "Portal-CMS",
+        text: "Globale Portalinhalte, Locale-Stati und CMS-Einträge bearbeiten.",
+        onClick: () => {
+          setActiveView("portal_cms");
+          void run("Portal-CMS laden", async () => {
+            await loadPortalCms();
+          }, { showSuccessModal: false });
+        },
       },
     ],
-    [partners.length, areaOverview.length, pendingReviewCount],
+    [partners.length, areaOverview.length],
   );
 
   async function loadPartners(selectId?: string, options?: { refreshSelectedDetails?: boolean }) {
@@ -2702,29 +2697,83 @@ export default function AdminClient() {
               Von hier aus steuerst du Partner, Gebiete, Freigaben und Systembereiche. Wähle den nächsten Arbeitsbereich direkt über die Startkacheln.
             </p>
           </div>
-          <div style={adminWelcomeGroupsStyle}>
-            {adminWelcomeGroups.map((group) => (
-              <section key={group.title} style={adminWelcomeGroupCardStyle}>
-                <h2 style={adminWelcomeGroupTitleStyle}>{group.title}</h2>
-                <div style={adminWelcomeGridStyle}>
-                  {group.actions.map((action) => (
-                    <button
-                      key={action.key}
-                      type="button"
-                      style={adminWelcomeCardStyle}
-                      onClick={action.onClick}
-                    >
-                      <div style={adminWelcomeCardIconStyle}>{renderAdminNavIcon(action.icon, 30)}</div>
-                      <div style={adminWelcomeCardTitleRowStyle}>
-                        <div style={adminWelcomeCardTitleStyle}>{action.title}</div>
-                        {action.badge ? <span style={adminWelcomeBadgeStyle}>{action.badge}</span> : null}
-                      </div>
-                      <div style={adminWelcomeCardTextStyle}>{action.text}</div>
-                    </button>
-                  ))}
+          <div style={adminWelcomeActionsRowStyle}>
+            <button
+              type="button"
+              style={btnStyle}
+              onClick={() => {
+                setActiveView("new_partner");
+              }}
+            >
+              Neuen Partner anlegen
+            </button>
+          </div>
+          <div style={adminWelcomeGridOuterStyle}>
+            <div style={adminWelcomeGridStyle}>
+              {adminWelcomeActions.map((action) => (
+                <button
+                  key={action.key}
+                  type="button"
+                  style={adminWelcomeCardStyle}
+                  onClick={action.onClick}
+                >
+                  <div style={adminWelcomeCardIconStyle}>{renderAdminNavIcon(action.icon, 30)}</div>
+                  <div style={adminWelcomeCardTitleRowStyle}>
+                    <div style={adminWelcomeCardTitleStyle}>{action.title}</div>
+                    {action.badge ? <span style={adminWelcomeBadgeStyle}>{action.badge}</span> : null}
+                  </div>
+                  <div style={adminWelcomeCardTextStyle}>{action.text}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+          <section style={adminWelcomeDetailCardStyle}>
+            <div style={adminWelcomeDetailHeadStyle}>
+              <div>
+                <h2 style={adminWelcomeDetailTitleStyle}>
+                  {portalPartner ? formatPartnerName(portalPartner) : "Portalpartner"}
+                </h2>
+                <p style={adminWelcomeDetailTextStyle}>
+                  {portalPartner
+                    ? `${portalPartner.company_name} ist als Standardpartner für die Portal-Ausspielung hinterlegt.`
+                    : "Der Standardpartner für die Portal-Ausspielung ist aktuell nicht geladen."}
+                </p>
+              </div>
+              {portalPartner ? (
+                <button
+                  type="button"
+                  style={btnGhostStyle}
+                  onClick={() => {
+                    void selectPartnerView(portalPartner.id, "partner_edit");
+                  }}
+                >
+                  Partnerdetails öffnen
+                </button>
+              ) : null}
+            </div>
+            {portalPartner ? (
+              <div style={adminWelcomeDetailGridStyle}>
+                <div style={adminWelcomeStatCardStyle}>
+                  <div style={adminWelcomeStatLabelStyle}>Partner-ID</div>
+                  <div style={adminWelcomeStatValueStyle}>{portalPartner.id}</div>
                 </div>
-              </section>
-            ))}
+                <div style={adminWelcomeStatCardStyle}>
+                  <div style={adminWelcomeStatLabelStyle}>Status</div>
+                  <div style={adminWelcomeStatValueStyle}>{portalPartner.is_active ? "aktiv" : "inaktiv"}</div>
+                </div>
+                <div style={adminWelcomeStatCardStyle}>
+                  <div style={adminWelcomeStatLabelStyle}>Kontakt-E-Mail</div>
+                  <div style={adminWelcomeStatValueStyle}>{portalPartner.contact_email || "—"}</div>
+                </div>
+                <div style={adminWelcomeStatCardStyle}>
+                  <div style={adminWelcomeStatLabelStyle}>Gebiete</div>
+                  <div style={adminWelcomeStatValueStyle}>{portalPartnerAreaRows.length}</div>
+                </div>
+              </div>
+            ) : null}
+          </section>
+          <div style={adminWelcomeSubtleNoteStyle}>
+            Weitere Verwaltungsfunktionen wie `Log` und `Partner löschen` bleiben im Menü oben rechts.
           </div>
         </main>
       ) : (
@@ -5841,7 +5890,7 @@ const adminWelcomeWrapStyle: React.CSSProperties = {
 const adminWelcomeHeaderStyle: React.CSSProperties = {
   display: "grid",
   gap: 10,
-  marginBottom: 28,
+  marginBottom: 22,
   maxWidth: "820px",
 };
 
@@ -5860,30 +5909,20 @@ const adminWelcomeTextStyle: React.CSSProperties = {
   color: "#475569",
 };
 
-const adminWelcomeGroupsStyle: React.CSSProperties = {
-  display: "grid",
-  gap: 24,
+const adminWelcomeActionsRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  marginBottom: 18,
 };
 
-const adminWelcomeGroupCardStyle: React.CSSProperties = {
-  border: "1px solid #e2e8f0",
-  borderRadius: 18,
-  background: "#ffffff",
-  padding: "24px 24px 26px",
-  boxShadow: "0 16px 32px rgba(15, 23, 42, 0.05)",
-};
-
-const adminWelcomeGroupTitleStyle: React.CSSProperties = {
-  margin: "0 0 18px",
-  fontSize: "18px",
-  lineHeight: 1.2,
-  color: "#0f172a",
-  fontWeight: 800,
+const adminWelcomeGridOuterStyle: React.CSSProperties = {
+  maxWidth: "980px",
 };
 
 const adminWelcomeGridStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   gap: 16,
 };
 
@@ -5941,6 +5980,81 @@ const adminWelcomeCardTextStyle: React.CSSProperties = {
   fontSize: "14px",
   lineHeight: 1.7,
   color: "#475569",
+};
+
+const adminWelcomeDetailCardStyle: React.CSSProperties = {
+  marginTop: 28,
+  maxWidth: "980px",
+  border: "1px solid #e2e8f0",
+  borderRadius: 18,
+  background: "#ffffff",
+  padding: "24px",
+  boxShadow: "0 16px 32px rgba(15, 23, 42, 0.05)",
+  display: "grid",
+  gap: 18,
+};
+
+const adminWelcomeDetailHeadStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 16,
+  flexWrap: "wrap",
+};
+
+const adminWelcomeDetailTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: "22px",
+  lineHeight: 1.2,
+  fontWeight: 800,
+  color: "#0f172a",
+};
+
+const adminWelcomeDetailTextStyle: React.CSSProperties = {
+  margin: "8px 0 0",
+  fontSize: "14px",
+  lineHeight: 1.7,
+  color: "#475569",
+  maxWidth: "720px",
+};
+
+const adminWelcomeDetailGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+  gap: 14,
+};
+
+const adminWelcomeStatCardStyle: React.CSSProperties = {
+  border: "1px solid #e2e8f0",
+  borderRadius: 14,
+  background: "#f8fafc",
+  padding: "14px 15px",
+  display: "grid",
+  gap: 6,
+};
+
+const adminWelcomeStatLabelStyle: React.CSSProperties = {
+  fontSize: "11px",
+  fontWeight: 700,
+  letterSpacing: "0.03em",
+  textTransform: "uppercase",
+  color: "#64748b",
+};
+
+const adminWelcomeStatValueStyle: React.CSSProperties = {
+  fontSize: "14px",
+  lineHeight: 1.6,
+  color: "#0f172a",
+  fontWeight: 700,
+  overflowWrap: "anywhere",
+};
+
+const adminWelcomeSubtleNoteStyle: React.CSSProperties = {
+  marginTop: 16,
+  fontSize: "12px",
+  lineHeight: 1.6,
+  color: "#64748b",
+  maxWidth: "980px",
 };
 
 const adminLayoutStyle: React.CSSProperties = {
