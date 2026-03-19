@@ -12,6 +12,7 @@ import { loadActiveGlobalLlmProviders, loadGlobalLlmConfig, estimateCostEur, est
 import type { DisplayTextClass } from "@/lib/text-display-class";
 
 type TextSourceRow = {
+  area_id?: string | null;
   section_key?: string | null;
   optimized_content?: string | null;
   status?: string | null;
@@ -19,6 +20,7 @@ type TextSourceRow = {
 };
 
 type TranslationRow = {
+  area_id?: string | null;
   section_key?: string | null;
   translated_content?: string | null;
   status?: string | null;
@@ -58,6 +60,62 @@ type PartnerFeatureOverrideRow = {
   is_enabled?: boolean | null;
 };
 
+type SourceEntry = {
+  content: string;
+  status: string;
+  updated_at: string | null;
+};
+
+type AreaResponseRow = {
+  section_key: string;
+  source_content_de: string;
+  source_status: string;
+  source_updated_at: string | null;
+  source_snapshot_hash: string;
+  translated_content: string | null;
+  translated_status: string | null;
+  translated_updated_at: string | null;
+  translated_source_snapshot_hash: string | null;
+  translated_source_last_updated: string | null;
+  translation_is_stale: boolean;
+  effective_content: string;
+  effective_source: "translation" | "de_fallback";
+};
+
+type AreaSummary = {
+  total: number;
+  translated_approved: number;
+  fallback_de: number;
+  auto_synced: number;
+  auto_sync_failed: number;
+  mock_mode: boolean;
+  pricing_preview: TranslationPricingPreview | null;
+};
+
+type AutoSyncContext = {
+  pricingPreview: TranslationPricingPreview | null;
+  provider:
+    | {
+        provider: string;
+        model: string;
+        base_url: string;
+        api_version?: string | null;
+        temperature?: number | null;
+        max_tokens?: number | null;
+        input_cost_eur_per_1k: number | null;
+        output_cost_eur_per_1k: number | null;
+        input_cost_usd_per_1k: number | null;
+        output_cost_usd_per_1k: number | null;
+        provider_account_id?: string | null;
+        provider_model_id?: string | null;
+        fx_rate_usd_to_eur?: number | null;
+        auth_config?: Record<string, unknown> | null;
+      }
+    | null;
+  apiKey: string | null;
+  providerSupported: boolean;
+};
+
 const RATE_LIMIT = { windowMs: 60 * 1000, max: 120 };
 const SUPABASE_BUCKET = "immobilienmarkt";
 const AUTO_SYNC_MAX_ROWS = 12;
@@ -89,6 +147,19 @@ function normalizeLocale(input: string): string | null {
 }
 
 function parseSectionKeys(input: string | null): string[] {
+  const raw = asText(input);
+  if (!raw) return [];
+  return Array.from(
+    new Set(
+      raw
+        .split(",")
+        .map((part) => asText(part))
+        .filter(Boolean),
+    ),
+  );
+}
+
+function parseAreaIds(input: string | null): string[] {
   const raw = asText(input);
   if (!raw) return [];
   return Array.from(
@@ -342,24 +413,29 @@ function flattenRawTextObject(rawText: unknown): Map<string, string> {
   return out;
 }
 
-async function loadAreaMeta(
+async function loadAreaMetaMany(
   admin: ReturnType<typeof createAdminClient>,
-  areaId: string,
-): Promise<AreaMetaRow | null> {
+  areaIds: string[],
+): Promise<Map<string, AreaMetaRow>> {
+  const ids = Array.from(new Set(areaIds.map((id) => asText(id)).filter(Boolean)));
+  if (ids.length === 0) return new Map();
   const { data, error } = await admin
     .from("areas")
     .select("id, slug, parent_slug, bundesland_slug")
-    .eq("id", areaId)
-    .maybeSingle();
+    .in("id", ids);
   if (error) throw error;
-  return (data ?? null) as AreaMetaRow | null;
+  return new Map(
+    ((data ?? []) as AreaMetaRow[])
+      .map((row) => [asText(row.id), row] as const)
+      .filter(([id]) => Boolean(id)) as Array<[string, AreaMetaRow]>,
+  );
 }
 
-async function loadRawSourceByArea(
+async function loadRawSourceByMeta(
   admin: ReturnType<typeof createAdminClient>,
   areaId: string,
-): Promise<Map<string, { content: string; status: string; updated_at: string | null }>> {
-  const meta = await loadAreaMeta(admin, areaId);
+  meta: AreaMetaRow | null | undefined,
+): Promise<Map<string, SourceEntry>> {
   if (!meta) return new Map();
 
   const slug = asText(meta.slug);
@@ -391,13 +467,14 @@ async function loadRawSourceByArea(
 async function loadPortalSourceRows(
   admin: ReturnType<typeof createAdminClient>,
   partnerId: string,
-  areaId: string,
+  areaIds: string[],
 ) {
+  if (areaIds.length === 0) return [] as TextSourceRow[];
   const { data, error } = await admin
     .from("report_texts")
-    .select("section_key, optimized_content, status, last_updated")
+    .select("area_id, section_key, optimized_content, status, last_updated")
     .eq("partner_id", partnerId)
-    .eq("area_id", areaId);
+    .in("area_id", areaIds);
   if (error) throw error;
   return (data ?? []) as TextSourceRow[];
 }
@@ -405,19 +482,22 @@ async function loadPortalSourceRows(
 async function loadLocalSiteSourceRows(
   admin: ReturnType<typeof createAdminClient>,
   partnerId: string,
-  areaId: string,
+  areaIds: string[],
 ) {
+  if (areaIds.length === 0) {
+    return { local: [] as TextSourceRow[], report: [] as TextSourceRow[] };
+  }
   const [localRes, reportRes] = await Promise.all([
     admin
       .from("partner_local_site_texts")
-      .select("section_key, optimized_content, status, last_updated")
+      .select("area_id, section_key, optimized_content, status, last_updated")
       .eq("partner_id", partnerId)
-      .eq("area_id", areaId),
+      .in("area_id", areaIds),
     admin
       .from("report_texts")
-      .select("section_key, optimized_content, status, last_updated")
+      .select("area_id, section_key, optimized_content, status, last_updated")
       .eq("partner_id", partnerId)
-      .eq("area_id", areaId),
+      .in("area_id", areaIds),
   ]);
 
   if (localRes.error && !isMissingTable(localRes.error, "partner_local_site_texts")) throw localRes.error;
@@ -448,8 +528,8 @@ function flattenMarketingDefaults(marketing: Record<string, Record<string, unkno
 
 async function loadMarketingSourceByArea(
   admin: ReturnType<typeof createAdminClient>,
-  partnerId: string,
   areaId: string,
+  baseRows: TextSourceRow[],
 ): Promise<Map<string, { content: string; status: string; updated_at: string | null }>> {
   const out = new Map<string, { content: string; status: string; updated_at: string | null }>();
   const context = await resolveMarketingContextForArea({ admin, areaId });
@@ -458,22 +538,341 @@ async function loadMarketingSourceByArea(
     const defaultsMap = flattenMarketingDefaults(defaults as unknown as Record<string, Record<string, unknown>>);
     for (const [key, value] of defaultsMap.entries()) out.set(key, value);
   }
-  const { data, error } = await admin
-    .from("partner_marketing_texts")
-    .select("section_key, optimized_content, status, last_updated")
-    .eq("partner_id", partnerId)
-    .eq("area_id", areaId);
-  if (error && !isMissingTable(error, "partner_marketing_texts")) throw error;
-  const byKey = selectLatestSource((data ?? []) as TextSourceRow[]);
+  const byKey = selectLatestSource(baseRows);
   for (const [key, value] of byKey.entries()) out.set(key, value);
   return out;
+}
+
+async function loadMarketingSourceRowsMany(
+  admin: ReturnType<typeof createAdminClient>,
+  partnerId: string,
+  areaIds: string[],
+) {
+  if (areaIds.length === 0) return [] as TextSourceRow[];
+  const { data, error } = await admin
+    .from("partner_marketing_texts")
+    .select("area_id, section_key, optimized_content, status, last_updated")
+    .eq("partner_id", partnerId)
+    .in("area_id", areaIds);
+  if (error && !isMissingTable(error, "partner_marketing_texts")) throw error;
+  return (data ?? []) as TextSourceRow[];
+}
+
+async function buildMarketingSourceMapsByArea(
+  admin: ReturnType<typeof createAdminClient>,
+  partnerId: string,
+  areaIds: string[],
+): Promise<Map<string, Map<string, SourceEntry>>> {
+  const marketingRows = await loadMarketingSourceRowsMany(admin, partnerId, areaIds);
+  const marketingRowsByArea = groupRowsByArea(marketingRows);
+  const entries = await Promise.all(areaIds.map(async (areaId) => (
+    [areaId, await loadMarketingSourceByArea(admin, areaId, marketingRowsByArea.get(areaId) ?? [])] as const
+  )));
+  return new Map(entries);
+}
+
+function groupRowsByArea<T extends { area_id?: string | null }>(rows: T[]): Map<string, T[]> {
+  const grouped = new Map<string, T[]>();
+  for (const row of rows) {
+    const areaId = asText(row.area_id);
+    if (!areaId) continue;
+    const list = grouped.get(areaId) ?? [];
+    list.push(row);
+    grouped.set(areaId, list);
+  }
+  return grouped;
+}
+
+async function buildAutoSyncContext(autoSyncEnabled: boolean): Promise<AutoSyncContext> {
+  let provider:
+    | {
+        provider: string;
+        model: string;
+        base_url: string;
+        api_version?: string | null;
+        temperature?: number | null;
+        max_tokens?: number | null;
+        input_cost_eur_per_1k: number | null;
+        output_cost_eur_per_1k: number | null;
+        input_cost_usd_per_1k: number | null;
+        output_cost_usd_per_1k: number | null;
+        provider_account_id?: string | null;
+        provider_model_id?: string | null;
+        fx_rate_usd_to_eur?: number | null;
+        auth_config?: Record<string, unknown> | null;
+      }
+    | null = null;
+  let pricingPreview: TranslationPricingPreview | null = null;
+  let apiKey: string | null = null;
+  let providerSupported = false;
+
+  try {
+    const globalProviders = await loadActiveGlobalLlmProviders();
+    provider = globalProviders.providers[0] ?? null;
+    pricingPreview = provider
+      ? {
+          provider: provider.provider,
+          model: provider.model,
+          input_cost_usd_per_1k: provider.input_cost_usd_per_1k,
+          output_cost_usd_per_1k: provider.output_cost_usd_per_1k,
+          fx_rate_usd_to_eur: provider.fx_rate_usd_to_eur ?? null,
+        }
+      : null;
+    apiKey = provider ? readSecretFromAuthConfig(provider.auth_config ?? null, "api_key") : null;
+    providerSupported = provider
+      ? ["openai", "mistral", "azure_openai", "generic_llm"].includes(String(provider.provider ?? "").toLowerCase())
+      : false;
+  } catch {
+    pricingPreview = null;
+    provider = null;
+    apiKey = null;
+    providerSupported = false;
+  }
+
+  if (autoSyncEnabled && !I18N_MOCK_TRANSLATION) {
+    const globalCfg = await loadGlobalLlmConfig();
+    if (!globalCfg.config.central_enabled) {
+      return {
+        pricingPreview,
+        provider: null,
+        apiKey: null,
+        providerSupported: false,
+      };
+    }
+  }
+
+  return {
+    pricingPreview,
+    provider,
+    apiKey,
+    providerSupported,
+  };
+}
+
+async function buildAreaPayload(args: {
+  admin: ReturnType<typeof createAdminClient>;
+  partnerId: string;
+  areaId: string;
+  channel: "portal" | "local_site" | "marketing";
+  locale: string;
+  sectionKeysFilter: Set<string>;
+  workflowClass: DisplayTextClass;
+  promptTemplate: string;
+  autoSyncEnabled: boolean;
+  autoSyncContext: AutoSyncContext;
+  sourceByKey: Map<string, SourceEntry>;
+  translations: TranslationRow[];
+}): Promise<{ area_id: string; rows: AreaResponseRow[]; summary: AreaSummary }> {
+  const {
+    admin,
+    partnerId,
+    areaId,
+    channel,
+    locale,
+    sectionKeysFilter,
+    workflowClass,
+    promptTemplate,
+    autoSyncEnabled,
+    autoSyncContext,
+    sourceByKey,
+    translations,
+  } = args;
+  const transByKey = new Map<string, TranslationRow>();
+  for (const row of translations) {
+    const key = asText(row.section_key);
+    if (key) transByKey.set(key, row);
+  }
+
+  let autoSynced = 0;
+  let autoSyncFailed = 0;
+
+  if (autoSyncEnabled) {
+    const provider = autoSyncContext.provider;
+    if (
+      I18N_MOCK_TRANSLATION
+      || (provider && autoSyncContext.apiKey && autoSyncContext.providerSupported)
+    ) {
+      const keys = Array.from(sourceByKey.keys()).filter((sectionKey) => (
+        sectionKeysFilter.size === 0 || sectionKeysFilter.has(sectionKey)
+      ));
+      const candidates = keys.filter((sectionKey) => {
+        if (!isAutoManagedSectionKey(sectionKey)) return false;
+        const source = sourceByKey.get(sectionKey);
+        if (!source || !asText(source.content)) return false;
+        const existing = transByKey.get(sectionKey);
+        const translated = asText(existing?.translated_content);
+        const currentHash = hashText(source.content);
+        const storedHash = asText(existing?.source_snapshot_hash);
+        if (!translated) return true;
+        return !storedHash || storedHash !== currentHash;
+      }).slice(0, AUTO_SYNC_MAX_ROWS);
+
+      for (const sectionKey of candidates) {
+        const source = sourceByKey.get(sectionKey);
+        if (!source) continue;
+        try {
+          const result = I18N_MOCK_TRANSLATION
+            ? {
+                content: buildMockTranslation(locale, source.content),
+                promptTokens: null,
+                completionTokens: null,
+                totalTokens: null,
+              }
+            : await (async () => {
+                const prompt = buildAutoTranslationPrompt(locale, source.content, workflowClass, promptTemplate);
+                return callOpenAiCompatible({
+                  provider: provider!.provider,
+                  model: provider!.model,
+                  baseUrl: provider!.base_url,
+                  apiKey: autoSyncContext.apiKey!,
+                  apiVersion: provider!.api_version,
+                  system: prompt.system,
+                  user: prompt.user,
+                  temperature: provider!.temperature,
+                  maxTokens: provider!.max_tokens,
+                });
+              })();
+          const sourceHash = hashText(source.content);
+          const upsertRow = {
+            partner_id: partnerId,
+            area_id: areaId,
+            section_key: sectionKey,
+            channel,
+            target_locale: locale,
+            translated_content: result.content,
+            status: "approved",
+            source_snapshot_hash: sourceHash,
+            source_last_updated: normalizeIso(source.updated_at ?? null),
+            updated_at: new Date().toISOString(),
+          };
+          const { error: upsertError } = await admin
+            .from("partner_texts_i18n")
+            .upsert(upsertRow, { onConflict: "partner_id,area_id,section_key,channel,target_locale" });
+          if (upsertError) throw upsertError;
+
+          transByKey.set(sectionKey, {
+            area_id: areaId,
+            section_key: sectionKey,
+            translated_content: result.content,
+            status: "approved",
+            updated_at: upsertRow.updated_at,
+            source_snapshot_hash: sourceHash,
+            source_last_updated: upsertRow.source_last_updated,
+          });
+
+          const estimated = estimateCostEur({
+            promptTokens: result.promptTokens,
+            completionTokens: result.completionTokens,
+            inputCostEurPer1k: provider?.input_cost_eur_per_1k ?? null,
+            outputCostEurPer1k: provider?.output_cost_eur_per_1k ?? null,
+          });
+          const estimatedUsd = estimateCostUsd({
+            promptTokens: result.promptTokens,
+            completionTokens: result.completionTokens,
+            inputCostUsdPer1k: provider?.input_cost_usd_per_1k ?? null,
+            outputCostUsdPer1k: provider?.output_cost_usd_per_1k ?? null,
+          });
+          await writeLlmUsageEvent({
+            partner_id: partnerId,
+            route_name: "partner-i18n-auto-sync",
+            mode: "central_managed",
+            provider: I18N_MOCK_TRANSLATION ? "mock" : provider!.provider,
+            model: I18N_MOCK_TRANSLATION ? "mock-i18n" : provider!.model,
+            prompt_tokens: result.promptTokens,
+            completion_tokens: result.completionTokens,
+            total_tokens: result.totalTokens,
+            provider_account_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_account_id ?? null),
+            provider_model_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_model_id ?? null),
+            fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (provider?.fx_rate_usd_to_eur ?? null),
+            input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.input_cost_usd_per_1k ?? null),
+            output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
+            estimated_cost_usd: estimatedUsd,
+            estimated_cost_eur: estimated,
+            status: "ok",
+            error_code: null,
+          });
+          autoSynced += 1;
+        } catch {
+          autoSyncFailed += 1;
+          await writeLlmUsageEvent({
+            partner_id: partnerId,
+            route_name: "partner-i18n-auto-sync",
+            mode: "central_managed",
+            provider: I18N_MOCK_TRANSLATION ? "mock" : (autoSyncContext.provider?.provider ?? "unknown"),
+            model: I18N_MOCK_TRANSLATION ? "mock-i18n" : (autoSyncContext.provider?.model ?? "unknown"),
+            prompt_tokens: null,
+            completion_tokens: null,
+            total_tokens: null,
+            provider_account_id: I18N_MOCK_TRANSLATION ? null : (autoSyncContext.provider?.provider_account_id ?? null),
+            provider_model_id: I18N_MOCK_TRANSLATION ? null : (autoSyncContext.provider?.provider_model_id ?? null),
+            fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (autoSyncContext.provider?.fx_rate_usd_to_eur ?? null),
+            input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (autoSyncContext.provider?.input_cost_usd_per_1k ?? null),
+            output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (autoSyncContext.provider?.output_cost_usd_per_1k ?? null),
+            estimated_cost_usd: null,
+            estimated_cost_eur: null,
+            status: "error",
+            error_code: "AUTO_SYNC_FAILED",
+          });
+        }
+      }
+    }
+  }
+
+  const keys = channel === "marketing"
+    ? new Set(Array.from(sourceByKey.keys()).filter((sectionKey) => sectionKey.startsWith("marketing.")))
+    : new Set([...sourceByKey.keys(), ...transByKey.keys()]);
+  const rows = Array.from(keys)
+    .sort((a, b) => a.localeCompare(b, "de"))
+    .map((sectionKey) => {
+      const source = sourceByKey.get(sectionKey);
+      const trans = transByKey.get(sectionKey);
+      const translatedContent = asText(trans?.translated_content);
+      const translatedStatus = asText(trans?.status).toLowerCase();
+      const useTranslation = translatedStatus === "approved" && translatedContent.length > 0;
+      const currentHash = hashText(source?.content ?? "");
+      const storedHash = asText(trans?.source_snapshot_hash);
+      const isStale = Boolean(storedHash) && storedHash !== currentHash;
+      return {
+        section_key: sectionKey,
+        source_content_de: source?.content ?? "",
+        source_status: source?.status ?? "raw",
+        source_updated_at: source?.updated_at ?? null,
+        source_snapshot_hash: currentHash,
+        translated_content: translatedContent || null,
+        translated_status: translatedStatus || null,
+        translated_updated_at: asText(trans?.updated_at) || null,
+        translated_source_snapshot_hash: storedHash || null,
+        translated_source_last_updated: normalizeIso(asText(trans?.source_last_updated) || null),
+        translation_is_stale: isStale,
+        effective_content: useTranslation ? translatedContent : (source?.content ?? ""),
+        effective_source: useTranslation ? "translation" : "de_fallback",
+      } satisfies AreaResponseRow;
+    });
+
+  return {
+    area_id: areaId,
+    rows,
+    summary: {
+      total: rows.length,
+      translated_approved: rows.filter((row) => row.effective_source === "translation").length,
+      fallback_de: rows.filter((row) => row.effective_source === "de_fallback").length,
+      auto_synced: autoSynced,
+      auto_sync_failed: autoSyncFailed,
+      mock_mode: I18N_MOCK_TRANSLATION,
+      pricing_preview: autoSyncContext.pricingPreview,
+    },
+  };
 }
 
 export async function GET(req: Request) {
   try {
     const partnerId = await requirePartnerUser(req);
     const url = new URL(req.url);
-    const areaId = asText(url.searchParams.get("area_id"));
+    const singleAreaId = asText(url.searchParams.get("area_id"));
+    const requestedAreaIds = parseAreaIds(url.searchParams.get("area_ids"));
+    const areaIds = requestedAreaIds.length > 0
+      ? requestedAreaIds
+      : (singleAreaId ? [singleAreaId] : []);
     const locale = normalizeLocale(asText(url.searchParams.get("locale")) || "en");
     const channel = (asText(url.searchParams.get("channel")) || "portal").toLowerCase();
     const autoSyncEnabled = asText(url.searchParams.get("auto_sync")) !== "0";
@@ -481,7 +880,7 @@ export async function GET(req: Request) {
     const workflowClass = normalizeDisplayTextClass(asText(url.searchParams.get("workflow_class")));
     const promptTemplate = asText(url.searchParams.get("prompt_template"));
 
-    if (!areaId) return NextResponse.json({ error: "Missing area_id" }, { status: 400 });
+    if (areaIds.length === 0) return NextResponse.json({ error: "Missing area_id" }, { status: 400 });
     if (!locale) return NextResponse.json({ error: "Invalid locale" }, { status: 400 });
     if (channel !== "portal" && channel !== "local_site" && channel !== "marketing") {
       return NextResponse.json({ error: "Invalid channel" }, { status: 400 });
@@ -490,248 +889,94 @@ export async function GET(req: Request) {
     const admin = createAdminClient();
     await requireInternationalFeatureEnabled(admin, partnerId);
 
-    const sourceByKey = new Map<string, { content: string; status: string; updated_at: string | null }>();
-    if (channel === "portal") {
-      const rawByKey = await loadRawSourceByArea(admin, areaId);
-      for (const [key, value] of rawByKey.entries()) sourceByKey.set(key, value);
-      const reportByKey = selectLatestSource(await loadPortalSourceRows(admin, partnerId, areaId));
-      for (const [key, value] of reportByKey.entries()) sourceByKey.set(key, value);
-    } else if (channel === "local_site") {
-      const rawByKey = await loadRawSourceByArea(admin, areaId);
-      for (const [key, value] of rawByKey.entries()) sourceByKey.set(key, value);
-      const rows = await loadLocalSiteSourceRows(admin, partnerId, areaId);
-      const reportByKey = selectLatestSource(rows.report);
-      const localByKey = selectLatestSource(rows.local);
-      for (const [key, value] of reportByKey.entries()) sourceByKey.set(key, value);
-      for (const [key, value] of localByKey.entries()) sourceByKey.set(key, value);
-    } else {
-      const marketingByKey = await loadMarketingSourceByArea(admin, partnerId, areaId);
-      for (const [key, value] of marketingByKey.entries()) sourceByKey.set(key, value);
+    const areaMetaById = channel === "marketing"
+      ? new Map<string, AreaMetaRow>()
+      : await loadAreaMetaMany(admin, areaIds);
+    const rawSourceByArea = new Map<string, Map<string, SourceEntry>>();
+    if (channel === "portal" || channel === "local_site") {
+      const rawSources = await Promise.all(areaIds.map(async (areaId) => (
+        [areaId, await loadRawSourceByMeta(admin, areaId, areaMetaById.get(areaId) ?? null)] as const
+      )));
+      for (const [areaId, sourceMap] of rawSources) rawSourceByArea.set(areaId, sourceMap);
     }
+
+    const portalRows = channel === "portal" ? await loadPortalSourceRows(admin, partnerId, areaIds) : [];
+    const localRows = channel === "local_site" ? await loadLocalSiteSourceRows(admin, partnerId, areaIds) : { local: [], report: [] };
+    const portalRowsByArea = groupRowsByArea(portalRows);
+    const localOnlyRowsByArea = groupRowsByArea(localRows.local);
+    const localReportRowsByArea = groupRowsByArea(localRows.report);
+    const marketingSourceByArea = channel === "marketing"
+      ? await buildMarketingSourceMapsByArea(admin, partnerId, areaIds)
+      : new Map<string, Map<string, SourceEntry>>();
 
     const { data: translations, error: translationsError } = await admin
       .from("partner_texts_i18n")
-      .select("section_key, translated_content, status, updated_at, source_snapshot_hash, source_last_updated")
+      .select("area_id, section_key, translated_content, status, updated_at, source_snapshot_hash, source_last_updated")
       .eq("partner_id", partnerId)
-      .eq("area_id", areaId)
+      .in("area_id", areaIds)
       .eq("channel", channel)
       .eq("target_locale", locale);
     if (translationsError) throw translationsError;
+    const translationsByArea = groupRowsByArea((translations ?? []) as TranslationRow[]);
+    const autoSyncContext = await buildAutoSyncContext(autoSyncEnabled);
 
-    const transByKey = new Map<string, TranslationRow>();
-    for (const row of (translations ?? []) as TranslationRow[]) {
-      const key = asText(row.section_key);
-      if (key) transByKey.set(key, row);
-    }
-
-    let autoSynced = 0;
-    let autoSyncFailed = 0;
-    let pricingPreview: TranslationPricingPreview | null = null;
-    if (autoSyncEnabled) {
-      const globalCfg = await loadGlobalLlmConfig();
-      if (I18N_MOCK_TRANSLATION || globalCfg.config.central_enabled) {
-        const globalProviders = await loadActiveGlobalLlmProviders();
-        const provider = globalProviders.providers[0] ?? null;
-        pricingPreview = provider
-          ? {
-              provider: provider.provider,
-              model: provider.model,
-              input_cost_usd_per_1k: provider.input_cost_usd_per_1k,
-              output_cost_usd_per_1k: provider.output_cost_usd_per_1k,
-              fx_rate_usd_to_eur: provider.fx_rate_usd_to_eur ?? null,
-            }
-          : null;
-        const apiKey = provider ? readSecretFromAuthConfig(provider.auth_config ?? null, "api_key") : null;
-        const providerSupported = provider ? ["openai", "mistral", "azure_openai", "generic_llm"].includes(String(provider.provider ?? "").toLowerCase()) : false;
-        if (I18N_MOCK_TRANSLATION || (provider && apiKey && providerSupported)) {
-          const keys = Array.from(sourceByKey.keys()).filter((sectionKey) => (
-            sectionKeysFilter.size === 0 || sectionKeysFilter.has(sectionKey)
-          ));
-          const candidates = keys.filter((sectionKey) => {
-            if (!isAutoManagedSectionKey(sectionKey)) return false;
-            const source = sourceByKey.get(sectionKey);
-            if (!source || !asText(source.content)) return false;
-            const existing = transByKey.get(sectionKey);
-            const translated = asText(existing?.translated_content);
-            const currentHash = hashText(source.content);
-            const storedHash = asText(existing?.source_snapshot_hash);
-            if (!translated) return true; // first run
-            return !storedHash || storedHash !== currentHash; // source changed
-          }).slice(0, AUTO_SYNC_MAX_ROWS);
-
-          for (const sectionKey of candidates) {
-            const source = sourceByKey.get(sectionKey);
-            if (!source) continue;
-            try {
-              const result = I18N_MOCK_TRANSLATION
-                ? {
-                    content: buildMockTranslation(locale, source.content),
-                    promptTokens: null,
-                    completionTokens: null,
-                    totalTokens: null,
-                  }
-                : await (async () => {
-                    const prompt = buildAutoTranslationPrompt(locale, source.content, workflowClass, promptTemplate);
-                    return callOpenAiCompatible({
-                      provider: provider!.provider,
-                      model: provider!.model,
-                      baseUrl: provider!.base_url,
-                      apiKey: apiKey!,
-                      apiVersion: provider!.api_version,
-                      system: prompt.system,
-                      user: prompt.user,
-                      temperature: provider!.temperature,
-                      maxTokens: provider!.max_tokens,
-                    });
-                  })();
-              const sourceHash = hashText(source.content);
-              const upsertRow = {
-                partner_id: partnerId,
-                area_id: areaId,
-                section_key: sectionKey,
-                channel,
-                target_locale: locale,
-                translated_content: result.content,
-                status: "approved",
-                source_snapshot_hash: sourceHash,
-                source_last_updated: normalizeIso(source.updated_at ?? null),
-                updated_at: new Date().toISOString(),
-              };
-              const { error: upsertError } = await admin
-                .from("partner_texts_i18n")
-                .upsert(upsertRow, { onConflict: "partner_id,area_id,section_key,channel,target_locale" });
-              if (upsertError) throw upsertError;
-
-              transByKey.set(sectionKey, {
-                section_key: sectionKey,
-                translated_content: result.content,
-                status: "approved",
-                updated_at: upsertRow.updated_at,
-                source_snapshot_hash: sourceHash,
-                source_last_updated: upsertRow.source_last_updated,
-              });
-
-              const estimated = estimateCostEur({
-                promptTokens: result.promptTokens,
-                completionTokens: result.completionTokens,
-                inputCostEurPer1k: provider.input_cost_eur_per_1k,
-                outputCostEurPer1k: provider.output_cost_eur_per_1k,
-              });
-              const estimatedUsd = estimateCostUsd({
-                promptTokens: result.promptTokens,
-                completionTokens: result.completionTokens,
-                inputCostUsdPer1k: provider.input_cost_usd_per_1k,
-                outputCostUsdPer1k: provider.output_cost_usd_per_1k,
-              });
-              await writeLlmUsageEvent({
-                partner_id: partnerId,
-                route_name: "partner-i18n-auto-sync",
-                mode: "central_managed",
-                provider: I18N_MOCK_TRANSLATION ? "mock" : provider!.provider,
-                model: I18N_MOCK_TRANSLATION ? "mock-i18n" : provider!.model,
-                prompt_tokens: result.promptTokens,
-                completion_tokens: result.completionTokens,
-                total_tokens: result.totalTokens,
-                provider_account_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_account_id ?? null),
-                provider_model_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_model_id ?? null),
-                fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (provider?.fx_rate_usd_to_eur ?? null),
-                input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.input_cost_usd_per_1k ?? null),
-                output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
-                estimated_cost_usd: estimatedUsd,
-                estimated_cost_eur: estimated,
-                status: "ok",
-                error_code: null,
-              });
-              autoSynced += 1;
-            } catch {
-              autoSyncFailed += 1;
-              await writeLlmUsageEvent({
-                partner_id: partnerId,
-                route_name: "partner-i18n-auto-sync",
-                mode: "central_managed",
-                provider: I18N_MOCK_TRANSLATION ? "mock" : (provider?.provider ?? "unknown"),
-                model: I18N_MOCK_TRANSLATION ? "mock-i18n" : (provider?.model ?? "unknown"),
-                prompt_tokens: null,
-                completion_tokens: null,
-                total_tokens: null,
-                provider_account_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_account_id ?? null),
-                provider_model_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_model_id ?? null),
-                fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (provider?.fx_rate_usd_to_eur ?? null),
-                input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.input_cost_usd_per_1k ?? null),
-                output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
-                estimated_cost_usd: null,
-                estimated_cost_eur: null,
-                status: "error",
-                error_code: "AUTO_SYNC_FAILED",
-              });
-            }
-          }
-        }
+    const areas = await Promise.all(areaIds.map(async (areaId) => {
+      const sourceByKey = new Map<string, SourceEntry>();
+      if (channel === "portal") {
+        const rawByKey = rawSourceByArea.get(areaId) ?? new Map<string, SourceEntry>();
+        for (const [key, value] of rawByKey.entries()) sourceByKey.set(key, value);
+        const reportByKey = selectLatestSource(portalRowsByArea.get(areaId) ?? []);
+        for (const [key, value] of reportByKey.entries()) sourceByKey.set(key, value);
+      } else if (channel === "local_site") {
+        const rawByKey = rawSourceByArea.get(areaId) ?? new Map<string, SourceEntry>();
+        for (const [key, value] of rawByKey.entries()) sourceByKey.set(key, value);
+        const reportByKey = selectLatestSource(localReportRowsByArea.get(areaId) ?? []);
+        const localByKey = selectLatestSource(localOnlyRowsByArea.get(areaId) ?? []);
+        for (const [key, value] of reportByKey.entries()) sourceByKey.set(key, value);
+        for (const [key, value] of localByKey.entries()) sourceByKey.set(key, value);
+      } else {
+        const marketingByKey = marketingSourceByArea.get(areaId) ?? new Map<string, SourceEntry>();
+        for (const [key, value] of marketingByKey.entries()) sourceByKey.set(key, value);
       }
-    } else {
-      try {
-        const globalProviders = await loadActiveGlobalLlmProviders();
-        const provider = globalProviders.providers[0] ?? null;
-        pricingPreview = provider
-          ? {
-              provider: provider.provider,
-              model: provider.model,
-              input_cost_usd_per_1k: provider.input_cost_usd_per_1k,
-              output_cost_usd_per_1k: provider.output_cost_usd_per_1k,
-              fx_rate_usd_to_eur: provider.fx_rate_usd_to_eur ?? null,
-            }
-          : null;
-      } catch {
-        pricingPreview = null;
-      }
-    }
 
-    const keys = channel === "marketing"
-      ? new Set(Array.from(sourceByKey.keys()).filter((sectionKey) => sectionKey.startsWith("marketing.")))
-      : new Set([...sourceByKey.keys(), ...transByKey.keys()]);
-    const rows = Array.from(keys)
-      .sort((a, b) => a.localeCompare(b, "de"))
-      .map((sectionKey) => {
-        const source = sourceByKey.get(sectionKey);
-        const trans = transByKey.get(sectionKey);
-        const translatedContent = asText(trans?.translated_content);
-        const translatedStatus = asText(trans?.status).toLowerCase();
-        const useTranslation = translatedStatus === "approved" && translatedContent.length > 0;
-        const currentHash = hashText(source?.content ?? "");
-        const storedHash = asText(trans?.source_snapshot_hash);
-        const isStale = Boolean(storedHash) && storedHash !== currentHash;
-        return {
-          section_key: sectionKey,
-          source_content_de: source?.content ?? "",
-          source_status: source?.status ?? "raw",
-          source_updated_at: source?.updated_at ?? null,
-          source_snapshot_hash: currentHash,
-          translated_content: translatedContent || null,
-          translated_status: translatedStatus || null,
-          translated_updated_at: asText(trans?.updated_at) || null,
-          translated_source_snapshot_hash: storedHash || null,
-          translated_source_last_updated: normalizeIso(asText(trans?.source_last_updated) || null),
-          translation_is_stale: isStale,
-          effective_content: useTranslation ? translatedContent : (source?.content ?? ""),
-          effective_source: useTranslation ? "translation" : "de_fallback",
-        };
+      return buildAreaPayload({
+        admin,
+        partnerId,
+        areaId,
+        channel,
+        locale,
+        sectionKeysFilter,
+        workflowClass,
+        promptTemplate,
+        autoSyncEnabled,
+        autoSyncContext,
+        sourceByKey,
+        translations: translationsByArea.get(areaId) ?? [],
       });
+    }));
+
+    const summary = {
+      total_areas: areas.length,
+      total_rows: areas.reduce((sum, area) => sum + area.summary.total, 0),
+      total: areas.reduce((sum, area) => sum + area.summary.total, 0),
+      translated_approved: areas.reduce((sum, area) => sum + area.summary.translated_approved, 0),
+      fallback_de: areas.reduce((sum, area) => sum + area.summary.fallback_de, 0),
+      auto_synced: areas.reduce((sum, area) => sum + area.summary.auto_synced, 0),
+      auto_sync_failed: areas.reduce((sum, area) => sum + area.summary.auto_sync_failed, 0),
+      mock_mode: areas.some((area) => area.summary.mock_mode),
+      pricing_preview: areas.find((area) => area.summary.pricing_preview)?.summary.pricing_preview ?? autoSyncContext.pricingPreview,
+    };
+    const firstArea = areas[0] ?? null;
 
     return NextResponse.json({
       ok: true,
-      area_id: areaId,
+      area_id: firstArea?.area_id ?? areaIds[0],
+      area_ids: areaIds,
       locale,
       channel,
-      rows,
-      summary: {
-        total: rows.length,
-        translated_approved: rows.filter((r) => r.effective_source === "translation").length,
-        fallback_de: rows.filter((r) => r.effective_source === "de_fallback").length,
-        auto_synced: autoSynced,
-        auto_sync_failed: autoSyncFailed,
-        mock_mode: I18N_MOCK_TRANSLATION,
-        pricing_preview: pricingPreview,
-      },
+      rows: firstArea?.rows ?? [],
+      areas,
+      summary,
       info: "Automatische Aktualisierungen wurden anhand der Texttyp-Regeln berücksichtigt.",
     });
   } catch (error) {
@@ -782,21 +1027,25 @@ export async function POST(req: Request) {
     const admin = createAdminClient();
     await requireInternationalFeatureEnabled(admin, partnerId);
     const sourceByKey = new Map<string, { content: string; status: string; updated_at: string | null }>();
+    const areaMetaById = channel === "marketing"
+      ? new Map<string, AreaMetaRow>()
+      : await loadAreaMetaMany(admin, [areaId]);
     if (channel === "portal") {
-      const rawByKey = await loadRawSourceByArea(admin, areaId);
+      const rawByKey = await loadRawSourceByMeta(admin, areaId, areaMetaById.get(areaId) ?? null);
       for (const [key, value] of rawByKey.entries()) sourceByKey.set(key, value);
-      const reportByKey = selectLatestSource(await loadPortalSourceRows(admin, partnerId, areaId));
+      const reportByKey = selectLatestSource(await loadPortalSourceRows(admin, partnerId, [areaId]));
       for (const [key, value] of reportByKey.entries()) sourceByKey.set(key, value);
     } else if (channel === "local_site") {
-      const rawByKey = await loadRawSourceByArea(admin, areaId);
+      const rawByKey = await loadRawSourceByMeta(admin, areaId, areaMetaById.get(areaId) ?? null);
       for (const [key, value] of rawByKey.entries()) sourceByKey.set(key, value);
-      const rowsFromDb = await loadLocalSiteSourceRows(admin, partnerId, areaId);
+      const rowsFromDb = await loadLocalSiteSourceRows(admin, partnerId, [areaId]);
       const reportByKey = selectLatestSource(rowsFromDb.report);
       const localByKey = selectLatestSource(rowsFromDb.local);
       for (const [key, value] of reportByKey.entries()) sourceByKey.set(key, value);
       for (const [key, value] of localByKey.entries()) sourceByKey.set(key, value);
     } else {
-      const marketingByKey = await loadMarketingSourceByArea(admin, partnerId, areaId);
+      const marketingRows = await loadMarketingSourceRowsMany(admin, partnerId, [areaId]);
+      const marketingByKey = await loadMarketingSourceByArea(admin, areaId, marketingRows);
       for (const [key, value] of marketingByKey.entries()) sourceByKey.set(key, value);
     }
 

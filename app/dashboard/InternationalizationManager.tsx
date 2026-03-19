@@ -1945,55 +1945,65 @@ export default function InternationalizationManager({ config, availableLocales, 
       const scopeAreas = await resolveScopeAreas(scope);
       setScopeAreaItems(scopeAreas);
       const keys = Array.from(new Set((options?.sectionKeys ?? []).map((item) => String(item ?? '').trim()).filter(Boolean)));
-      const results = await Promise.all(scopeAreas.map(async (scopeArea) => {
-        const params = new URLSearchParams({
-          area_id: scopeArea.area_id,
-          locale,
-          channel,
-          auto_sync: options?.autoSync ? '1' : '0',
-        });
-        if (keys.length > 0) params.set('section_keys', keys.join(','));
-        if (options?.autoSync && options?.workflowClass) params.set('workflow_class', options.workflowClass);
-        if (options?.autoSync && options?.promptTemplate) params.set('prompt_template', options.promptTemplate);
-        const res = await fetch(`/api/partner/i18n/texts?${params.toString()}`, { method: 'GET', cache: 'no-store' });
-        const payload = await res.json().catch(() => null) as {
+      const params = new URLSearchParams({
+        area_ids: scopeAreas.map((scopeArea) => scopeArea.area_id).join(','),
+        locale,
+        channel,
+        auto_sync: options?.autoSync ? '1' : '0',
+      });
+      if (keys.length > 0) params.set('section_keys', keys.join(','));
+      if (options?.autoSync && options?.workflowClass) params.set('workflow_class', options.workflowClass);
+      if (options?.autoSync && options?.promptTemplate) params.set('prompt_template', options.promptTemplate);
+      const res = await fetch(`/api/partner/i18n/texts?${params.toString()}`, { method: 'GET', cache: 'no-store' });
+      const payload = await res.json().catch(() => null) as {
+        areas?: Array<{
+          area_id?: string;
           rows?: Omit<TranslationRow, 'area_id' | 'area_name'>[];
-          error?: string;
           summary?: {
             auto_synced?: number;
             auto_sync_failed?: number;
             mock_mode?: boolean;
             pricing_preview?: PricingPreview | null;
           };
-        } | null;
-        if (!res.ok) {
-          throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
-        }
-        return { scopeArea, payload };
-      }));
-
-      const nextRows = results.flatMap(({ scopeArea, payload }) => (
-        Array.isArray(payload?.rows) ? payload.rows : []
-      ).map((row) => {
-        const fallback = String(row.effective_content ?? row.source_content_de ?? '').trim();
-        return {
-          ...row,
-          area_id: scopeArea.area_id,
-          area_name: scopeArea.area_name,
-          translated_content: String(row.translated_content ?? '').trim() || fallback,
+        }>;
+        error?: string;
+        summary?: {
+          auto_synced?: number;
+          auto_sync_failed?: number;
+          mock_mode?: boolean;
+          pricing_preview?: PricingPreview | null;
         };
-      }));
+      } | null;
+      if (!res.ok) {
+        throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
+      }
+
+      const scopeAreaById = new Map(scopeAreas.map((scopeArea) => [scopeArea.area_id, scopeArea] as const));
+      const areaPayloads = Array.isArray(payload?.areas) ? payload.areas : [];
+      const nextRows = areaPayloads.flatMap((areaPayload) => {
+        const areaId = String(areaPayload?.area_id ?? '').trim();
+        const scopeArea = scopeAreaById.get(areaId);
+        return (Array.isArray(areaPayload?.rows) ? areaPayload.rows : []).map((row) => {
+          const fallback = String(row.effective_content ?? row.source_content_de ?? '').trim();
+          return {
+            ...row,
+            area_id: areaId,
+            area_name: scopeArea?.area_name ?? areaId,
+            translated_content: String(row.translated_content ?? '').trim() || fallback,
+          };
+        });
+      });
       setRows(nextRows);
       const nextBaseline: Record<string, string> = {};
       for (const row of nextRows) {
         nextBaseline[`${row.area_id}::${row.section_key}`] = String(row.translated_content ?? '').trim();
       }
       setBaselineByKey(nextBaseline);
-      const pricing = results.find((item) => item.payload?.summary?.pricing_preview)?.payload?.summary?.pricing_preview ?? null;
+      const pricing = payload?.summary?.pricing_preview ?? null;
       setPricingPreview(pricing);
-      const autoSynced = results.reduce((sum, item) => sum + Number(item.payload?.summary?.auto_synced ?? 0), 0);
-      const autoFailed = results.reduce((sum, item) => sum + Number(item.payload?.summary?.auto_sync_failed ?? 0), 0);
-      const isMock = results.some((item) => item.payload?.summary?.mock_mode === true) || I18N_MOCK_TRANSLATION;
+      const autoSynced = Number(payload?.summary?.auto_synced ?? 0);
+      const autoFailed = Number(payload?.summary?.auto_sync_failed ?? 0);
+      const isMock = payload?.summary?.mock_mode === true || I18N_MOCK_TRANSLATION;
       if (options?.autoSync && isMock) {
         setStatus(`Mock-Modus aktiv · automatisch aktualisiert: ${autoSynced} · Fehler: ${autoFailed} · Gebiete: ${scopeAreas.length}`);
       } else if (options?.autoSync) {
