@@ -764,6 +764,7 @@ const DEFAULT_WORKFLOW_CLASSES: DisplayTextClass[] = ['general', 'profile', 'mar
 const MARKETING_WORKFLOW_CLASSES: DisplayTextClass[] = ['marketing'];
 
 export default function InternationalizationManager({ config, availableLocales, availableDomains }: Props) {
+  const topicSectionAnchorId = 'i18n-topic-section';
   const supabase = useMemo(() => createClient(), []);
   const locales = useMemo(() => {
     const unique = Array.from(
@@ -2327,6 +2328,12 @@ export default function InternationalizationManager({ config, availableLocales, 
     () => scopeAreaItems.find((item) => item.area_id === selectedScopeAreaId) ?? scopeAreaItems[0] ?? null,
     [scopeAreaItems, selectedScopeAreaId],
   );
+  const scrollToTopicSection = () => {
+    if (typeof document === 'undefined') return;
+    const el = document.getElementById(topicSectionAnchorId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   function formatCost(value: number | null, currency: 'USD' | 'EUR'): string {
     if (value === null || !Number.isFinite(value)) return 'n/a';
@@ -2632,6 +2639,16 @@ export default function InternationalizationManager({ config, availableLocales, 
 	                <div style={classCardActionRowStyle}>
 	                  <button
 	                    type="button"
+	                    style={workflowAnchorLinkStyle(displayClass)}
+	                    onClick={(e) => {
+	                      e.stopPropagation();
+	                      scrollToTopicSection();
+	                    }}
+	                  >
+	                    Einzeltexte
+	                  </button>
+	                  <button
+	                    type="button"
 	                    style={inlineWorkflowButtonStyle(displayClass, active, buttonDisabled)}
 	                    onClick={() => {
 	                      if (!active) {
@@ -2651,7 +2668,7 @@ export default function InternationalizationManager({ config, availableLocales, 
 	        </div>
 	      </div>
 
-	      <div style={{ ...workflowPanelCardStyle, marginBottom: 0 }}>
+	      <div id={topicSectionAnchorId} style={{ ...workflowPanelCardStyle, marginBottom: 0 }}>
 	        <div style={sectionTabsIntroStyle}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
