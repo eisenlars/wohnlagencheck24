@@ -39,6 +39,7 @@ import {
   workflowAreaListWrapStyle,
   workflowAreaMetaLineStyle,
   workflowAreaTypeBadgeStyle,
+  workflowAnchorLinkStyle,
   workflowClassActionRowStyle as classCardActionRowStyle,
   workflowClassCardStyle as classCardStyle,
   workflowClassCostStyle as classCardCostStyle,

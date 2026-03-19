@@ -31,6 +31,7 @@ import {
   workflowAreaListWrapStyle as textAreaListWrapStyle,
   workflowAreaMetaLineStyle as textAreaListMetaLineStyle,
   workflowAreaTypeBadgeStyle as textAreaTypeBadgeStyle,
+  workflowAnchorLinkStyle,
   workflowClassActionRowStyle as textWorkflowClassActionRowStyle,
   workflowClassCardStyle as textWorkflowClassCardStyle,
   workflowClassCostStyle as textWorkflowClassCostStyle,
@@ -1531,7 +1532,7 @@ export default function TextEditorForm({
                           e.stopPropagation();
                           scrollToTopicSection();
                         }}
-                        style={textWorkflowAnchorLinkStyle(classKey)}
+                        style={workflowAnchorLinkStyle(String(displayTextBadgeStyle(classKey).color ?? '#486b7a'))}
                       >
                         Einzeltexte
                       </button>
@@ -2199,18 +2200,6 @@ const textInlineWorkflowButtonStyle = (classKey: GlobalClassKey, selected: boole
   opacity: disabled ? 0.5 : 1,
   alignSelf: 'flex-end',
   boxShadow: 'none',
-});
-const textWorkflowAnchorLinkStyle = (classKey: GlobalClassKey): React.CSSProperties => ({
-  border: 'none',
-  background: 'transparent',
-  padding: 0,
-  fontSize: 13,
-  fontWeight: 700,
-  color: String(displayTextBadgeStyle(classKey).color ?? '#486b7a'),
-  textDecoration: 'underline',
-  textUnderlineOffset: 3,
-  cursor: 'pointer',
-  alignSelf: 'center',
 });
 const fieldCardStyle = { marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #f1f5f9' };
 const fieldHeaderGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', marginBottom: '16px' };

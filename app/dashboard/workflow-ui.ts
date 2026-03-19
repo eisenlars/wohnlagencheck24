@@ -144,6 +144,19 @@ export const workflowClassActionRowStyle: CSSProperties = {
   gap: 8,
 };
 
+export const workflowAnchorLinkStyle = (color: string): CSSProperties => ({
+  border: 'none',
+  background: 'transparent',
+  padding: 0,
+  fontSize: 13,
+  fontWeight: 700,
+  color,
+  textDecoration: 'underline',
+  textUnderlineOffset: 3,
+  cursor: 'pointer',
+  alignSelf: 'center',
+});
+
 export const workflowSectionIntroStyle: CSSProperties = {
   marginTop: '2px',
   marginBottom: '30px',
