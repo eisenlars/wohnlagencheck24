@@ -11,10 +11,15 @@ import { getTextKeyLabel } from "@/lib/text-key-labels";
 import {
   buildPortalCmsEmptyFields,
   getPortalCmsPages,
+  migratePortalContentWraps,
   normalizePortalCmsFields,
   parsePortalContentBlocks,
+  parsePortalContentWraps,
   serializePortalContentBlocks,
+  serializePortalContentWraps,
   type PortalContentBlock,
+  type PortalContentWrap,
+  type PortalContentWrapTextBlock,
   type PortalContentEntryRecord,
   type PortalContentEntryStatus,
   type PortalContentPageDefinition,
@@ -254,6 +259,7 @@ type AdminWelcomeAction = {
 };
 
 type PortalBlockType = PortalContentBlock["type"];
+type PortalWrapBlockType = PortalContentWrapTextBlock["type"];
 
 function createEmptyPortalBlock(type: PortalBlockType): PortalContentBlock {
   if (type === "heading") return { type: "heading", level: 2, text: "" };
@@ -262,6 +268,28 @@ function createEmptyPortalBlock(type: PortalBlockType): PortalContentBlock {
   if (type === "link_list") return { type: "link_list", items: [{ label: "", href: "" }] };
   if (type === "contact") return { type: "contact", lines: [""] };
   return { type: "note", variant: "info", text: "" };
+}
+
+function createPortalWrapId(): string {
+  return `wrap_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createEmptyPortalWrapBlock(type: PortalWrapBlockType): PortalContentWrapTextBlock {
+  if (type === "heading") return { type: "heading", level: 2, text: "" };
+  return { type: "paragraph", text: "" };
+}
+
+function createEmptyPortalWrap(): PortalContentWrap {
+  return {
+    id: createPortalWrapId(),
+    title: "",
+    blocks: [],
+  };
+}
+
+function formatPortalWrapBlockTypeLabel(type: PortalWrapBlockType): string {
+  if (type === "heading") return "Überschrift";
+  return "Absatz";
 }
 
 function formatPortalBlockTypeLabel(type: PortalBlockType): string {
@@ -1107,16 +1135,26 @@ export default function AdminClient() {
     setPortalCmsDrafts((prev) => {
       let changed = false;
       const next = { ...prev };
+      const pageLocaleEntries = portalContentEntries.filter((entry) =>
+        entry.locale === portalCmsLocale
+        && entry.page_key === selectedPortalCmsPage.page_key,
+      );
       for (const section of selectedPortalCmsPage.sections) {
         const key = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
-        const existingEntry = portalContentEntries.find((entry) =>
-          entry.locale === portalCmsLocale
-          && entry.page_key === selectedPortalCmsPage.page_key
-          && entry.section_key === section.section_key,
+        const existingEntry = pageLocaleEntries.find((entry) =>
+          entry.section_key === section.section_key,
         );
+        const hasContentWrapField = section.fields.some((field) => field.type === "content_wraps");
+        const migratedWraps = !existingEntry && hasContentWrapField
+          ? migratePortalContentWraps(selectedPortalCmsPage.page_key, pageLocaleEntries)
+          : [];
+        const existingFields = existingEntry?.fields_json as Record<string, string> | undefined;
+        const migratedFields = migratedWraps.length > 0
+          ? { wraps: serializePortalContentWraps(migratedWraps) }
+          : undefined;
         const normalizedExistingFields = normalizePortalCmsFields(
           section,
-          existingEntry?.fields_json as Record<string, string> | undefined,
+          existingFields ?? migratedFields,
         );
         const normalizedDraftFields = normalizePortalCmsFields(
           section,
@@ -4538,6 +4576,321 @@ export default function AdminClient() {
 
                     <div style={{ display: "grid", gap: 10 }}>
                       {section.fields.map((field) => {
+                        if (field.type === "content_wraps") {
+                          const draftKey = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
+                          const draft = portalCmsDrafts[draftKey] ?? {
+                            status: "draft" as PortalContentEntryStatus,
+                            fields_json: buildPortalCmsEmptyFields(section),
+                          };
+                          const wraps = parsePortalContentWraps(String(draft.fields_json[field.key] ?? "[]"));
+                          const updateWraps = (nextWraps: PortalContentWrap[]) => {
+                            setPortalCmsDrafts((prev) => ({
+                              ...prev,
+                              [draftKey]: {
+                                ...(prev[draftKey] ?? draft),
+                                fields_json: {
+                                  ...((prev[draftKey]?.fields_json ?? draft.fields_json)),
+                                  [field.key]: serializePortalContentWraps(nextWraps),
+                                },
+                              },
+                            }));
+                          };
+                          return (
+                            <div key={field.key}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>{field.label}</div>
+                              {field.help ? (
+                                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>{field.help}</div>
+                              ) : null}
+                              <div style={{ display: "grid", gap: 12 }}>
+                                {wraps.length === 0 ? (
+                                  <div
+                                    style={{
+                                      border: "1px dashed #cbd5e1",
+                                      borderRadius: 8,
+                                      padding: 12,
+                                      background: "#fff",
+                                      display: "grid",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <div style={{ fontSize: 13, color: "#475569" }}>
+                                      Noch keine Content-Wraps angelegt.
+                                    </div>
+                                    <div>
+                                      <button
+                                        type="button"
+                                        style={btnGhostStyle}
+                                        onClick={() => updateWraps([createEmptyPortalWrap()])}
+                                      >
+                                        Inhaltsbereich anlegen
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : null}
+
+                                {wraps.map((wrap, wrapIdx) => (
+                                  <div
+                                    key={`${field.key}:${wrap.id}:${wrapIdx}`}
+                                    style={{ border: "1px solid #cbd5e1", borderRadius: 8, padding: 12, background: "#fff", display: "grid", gap: 10 }}
+                                  >
+                                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                                      <div style={{ flex: "1 1 280px" }}>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>Bereichstitel</div>
+                                        <input
+                                          style={inputStyle}
+                                          value={wrap.title}
+                                          placeholder="z. B. Einleitung"
+                                          onChange={(e) => {
+                                            const nextValue = e.target.value;
+                                            updateWraps(wraps.map((item, itemIdx) => (
+                                              itemIdx === wrapIdx ? { ...item, title: nextValue } : item
+                                            )));
+                                          }}
+                                        />
+                                      </div>
+                                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                        <button
+                                          type="button"
+                                          style={btnGhostStyle}
+                                          disabled={wrapIdx === 0}
+                                          onClick={() => {
+                                            const nextWraps = [...wraps];
+                                            [nextWraps[wrapIdx - 1], nextWraps[wrapIdx]] = [nextWraps[wrapIdx], nextWraps[wrapIdx - 1]];
+                                            updateWraps(nextWraps);
+                                          }}
+                                        >
+                                          Nach oben
+                                        </button>
+                                        <button
+                                          type="button"
+                                          style={btnGhostStyle}
+                                          disabled={wrapIdx === wraps.length - 1}
+                                          onClick={() => {
+                                            const nextWraps = [...wraps];
+                                            [nextWraps[wrapIdx + 1], nextWraps[wrapIdx]] = [nextWraps[wrapIdx], nextWraps[wrapIdx + 1]];
+                                            updateWraps(nextWraps);
+                                          }}
+                                        >
+                                          Nach unten
+                                        </button>
+                                        <button
+                                          type="button"
+                                          style={btnDangerStyle}
+                                          onClick={() => updateWraps(wraps.filter((_, itemIdx) => itemIdx !== wrapIdx))}
+                                        >
+                                          Bereich löschen
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    <div style={{ display: "grid", gap: 10 }}>
+                                      {wrap.blocks.length === 0 ? (
+                                        <div style={{ border: "1px dashed #cbd5e1", borderRadius: 8, padding: 10, background: "#f8fafc", display: "grid", gap: 8 }}>
+                                          <div style={{ fontSize: 12, color: "#475569" }}>Noch keine Textblöcke angelegt.</div>
+                                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                            {(["heading", "paragraph"] as PortalWrapBlockType[]).map((type) => (
+                                              <button
+                                                key={`${field.key}:${wrap.id}:empty:${type}`}
+                                                type="button"
+                                                style={btnGhostStyle}
+                                                onClick={() => updateWraps(wraps.map((item, itemIdx) => (
+                                                  itemIdx === wrapIdx
+                                                    ? { ...item, blocks: [createEmptyPortalWrapBlock(type)] }
+                                                    : item
+                                                )))}
+                                              >
+                                                {formatPortalWrapBlockTypeLabel(type)} hinzufügen
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      ) : null}
+
+                                      {wrap.blocks.map((block, blockIdx) => (
+                                        <div
+                                          key={`${field.key}:${wrap.id}:block:${blockIdx}`}
+                                          style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 10, background: "#f8fafc", display: "grid", gap: 8 }}
+                                        >
+                                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                              <select
+                                                style={{ ...inputStyle, minWidth: 170 }}
+                                                value={block.type}
+                                                onChange={(e) => {
+                                                  const nextType = String(e.target.value) as PortalWrapBlockType;
+                                                  updateWraps(wraps.map((item, itemIdx) => (
+                                                    itemIdx === wrapIdx
+                                                      ? {
+                                                          ...item,
+                                                          blocks: item.blocks.map((entry, entryIdx) => (
+                                                            entryIdx === blockIdx ? createEmptyPortalWrapBlock(nextType) : entry
+                                                          )),
+                                                        }
+                                                      : item
+                                                  )));
+                                                }}
+                                              >
+                                                <option value="heading">Überschrift</option>
+                                                <option value="paragraph">Absatz</option>
+                                              </select>
+                                              <span style={{ fontSize: 12, color: "#64748b" }}>{formatPortalWrapBlockTypeLabel(block.type)}</span>
+                                            </div>
+                                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                              <button
+                                                type="button"
+                                                style={btnGhostStyle}
+                                                disabled={blockIdx === 0}
+                                                onClick={() => {
+                                                  updateWraps(wraps.map((item, itemIdx) => {
+                                                    if (itemIdx !== wrapIdx) return item;
+                                                    const nextBlocks = [...item.blocks];
+                                                    [nextBlocks[blockIdx - 1], nextBlocks[blockIdx]] = [nextBlocks[blockIdx], nextBlocks[blockIdx - 1]];
+                                                    return { ...item, blocks: nextBlocks };
+                                                  }));
+                                                }}
+                                              >
+                                                Nach oben
+                                              </button>
+                                              <button
+                                                type="button"
+                                                style={btnGhostStyle}
+                                                disabled={blockIdx === wrap.blocks.length - 1}
+                                                onClick={() => {
+                                                  updateWraps(wraps.map((item, itemIdx) => {
+                                                    if (itemIdx !== wrapIdx) return item;
+                                                    const nextBlocks = [...item.blocks];
+                                                    [nextBlocks[blockIdx + 1], nextBlocks[blockIdx]] = [nextBlocks[blockIdx], nextBlocks[blockIdx + 1]];
+                                                    return { ...item, blocks: nextBlocks };
+                                                  }));
+                                                }}
+                                              >
+                                                Nach unten
+                                              </button>
+                                              <button
+                                                type="button"
+                                                style={btnDangerStyle}
+                                                onClick={() => {
+                                                  updateWraps(wraps.map((item, itemIdx) => (
+                                                    itemIdx === wrapIdx
+                                                      ? { ...item, blocks: item.blocks.filter((_, entryIdx) => entryIdx !== blockIdx) }
+                                                      : item
+                                                  )));
+                                                }}
+                                              >
+                                                Block löschen
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          {block.type === "heading" ? (
+                                            <div style={{ display: "grid", gap: 8 }}>
+                                              <select
+                                                style={{ ...inputStyle, maxWidth: 180 }}
+                                                value={String(block.level)}
+                                                onChange={(e) => {
+                                                  const nextLevel = Number(e.target.value);
+                                                  updateWraps(wraps.map((item, itemIdx) => (
+                                                    itemIdx === wrapIdx
+                                                      ? {
+                                                          ...item,
+                                                          blocks: item.blocks.map((entry, entryIdx) => (
+                                                            entryIdx === blockIdx && entry.type === "heading"
+                                                              ? { ...entry, level: nextLevel === 1 || nextLevel === 3 ? nextLevel : 2 }
+                                                              : entry
+                                                          )),
+                                                        }
+                                                      : item
+                                                  )));
+                                                }}
+                                              >
+                                                <option value="1">H1</option>
+                                                <option value="2">H2</option>
+                                                <option value="3">H3</option>
+                                              </select>
+                                              <input
+                                                style={inputStyle}
+                                                value={block.text}
+                                                placeholder="Überschrift"
+                                                onChange={(e) => {
+                                                  const nextValue = e.target.value;
+                                                  updateWraps(wraps.map((item, itemIdx) => (
+                                                    itemIdx === wrapIdx
+                                                      ? {
+                                                          ...item,
+                                                          blocks: item.blocks.map((entry, entryIdx) => (
+                                                            entryIdx === blockIdx && entry.type === "heading"
+                                                              ? { ...entry, text: nextValue }
+                                                              : entry
+                                                          )),
+                                                        }
+                                                      : item
+                                                  )));
+                                                }}
+                                              />
+                                            </div>
+                                          ) : (
+                                            <textarea
+                                              style={{ ...inputStyle, minHeight: 120, resize: "vertical" }}
+                                              value={block.text}
+                                              placeholder="Absatztext"
+                                              onChange={(e) => {
+                                                const nextValue = e.target.value;
+                                                updateWraps(wraps.map((item, itemIdx) => (
+                                                  itemIdx === wrapIdx
+                                                    ? {
+                                                        ...item,
+                                                        blocks: item.blocks.map((entry, entryIdx) => (
+                                                          entryIdx === blockIdx && entry.type === "paragraph"
+                                                            ? { ...entry, text: nextValue }
+                                                            : entry
+                                                        )),
+                                                      }
+                                                    : item
+                                                )));
+                                              }}
+                                            />
+                                          )}
+                                        </div>
+                                      ))}
+
+                                      {wrap.blocks.length > 0 ? (
+                                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                          {(["heading", "paragraph"] as PortalWrapBlockType[]).map((type) => (
+                                            <button
+                                              key={`${field.key}:${wrap.id}:add:${type}`}
+                                              type="button"
+                                              style={btnGhostStyle}
+                                              onClick={() => updateWraps(wraps.map((item, itemIdx) => (
+                                                itemIdx === wrapIdx
+                                                  ? { ...item, blocks: [...item.blocks, createEmptyPortalWrapBlock(type)] }
+                                                  : item
+                                              )))}
+                                            >
+                                              {formatPortalWrapBlockTypeLabel(type)} hinzufügen
+                                            </button>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                ))}
+
+                                {wraps.length > 0 ? (
+                                  <div>
+                                    <button
+                                      type="button"
+                                      style={btnGhostStyle}
+                                      onClick={() => updateWraps([...wraps, createEmptyPortalWrap()])}
+                                    >
+                                      Weiteren Inhaltsbereich anlegen
+                                    </button>
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          );
+                        }
+
                         if (field.type === "block_content") {
                           const draftKey = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
                           const draft = portalCmsDrafts[draftKey] ?? {

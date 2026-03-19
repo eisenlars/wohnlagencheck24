@@ -13,7 +13,7 @@ export type PortalLocaleConfigRecord = {
 export type PortalContentFieldDefinition = {
   key: string;
   label: string;
-  type: "text" | "textarea" | "block_content";
+  type: "text" | "textarea" | "block_content" | "content_wraps";
   placeholder?: string;
   help?: string;
 };
@@ -25,6 +25,14 @@ export type PortalContentBlock =
   | { type: "link_list"; items: Array<{ label: string; href: string }> }
   | { type: "contact"; lines: string[] }
   | { type: "note"; variant: "info" | "warning"; text: string };
+
+export type PortalContentWrapTextBlock = Extract<PortalContentBlock, { type: "heading" | "paragraph" }>;
+
+export type PortalContentWrap = {
+  id: string;
+  title: string;
+  blocks: PortalContentWrapTextBlock[];
+};
 
 export type PortalContentSectionDefinition = {
   page_key: string;
@@ -136,15 +144,15 @@ const PORTAL_CMS_PAGES: PortalContentPageDefinition[] = [
     sections: [
       {
         page_key: "impressum",
-        section_key: "impressum_main",
-        label: "Pflichtangaben",
-        description: "Zentral gepflegte Impressumsinhalte fuer das Portal.",
+        section_key: "impressum_content",
+        label: "Content-Wraps",
+        description: "Frei anlegbare Inhaltsbereiche fuer das portalweite Impressum.",
         fields: [
           {
-            key: "blocks",
-            label: "Inhaltsblöcke",
-            type: "block_content",
-            help: "Strukturierte Blöcke für Überschriften, Absätze, Listen, Links und Kontaktangaben.",
+            key: "wraps",
+            label: "Content-Wraps",
+            type: "content_wraps",
+            help: "Frei anlegbare Inhaltsbereiche mit Titel sowie Textblöcken für Überschriften und Absätze.",
           },
         ],
       },
@@ -158,57 +166,15 @@ const PORTAL_CMS_PAGES: PortalContentPageDefinition[] = [
     sections: [
       {
         page_key: "datenschutz",
-        section_key: "privacy_intro",
-        label: "Einleitung",
-        description: "Einleitende Datenschutzhinweise und Verantwortliche.",
+        section_key: "privacy_content",
+        label: "Content-Wraps",
+        description: "Frei anlegbare Inhaltsbereiche fuer die portalweiten Datenschutztexte.",
         fields: [
           {
-            key: "blocks",
-            label: "Inhaltsblöcke",
-            type: "block_content",
-            help: "Strukturierte Blöcke für Überschrift, Einleitung und Verantwortliche Stelle.",
-          },
-        ],
-      },
-      {
-        page_key: "datenschutz",
-        section_key: "privacy_collection",
-        label: "Datenerhebung",
-        description: "Erhebung, Speicherung und Nutzung personenbezogener Daten.",
-        fields: [
-          {
-            key: "blocks",
-            label: "Inhaltsblöcke",
-            type: "block_content",
-            help: "Strukturierte Blöcke für Datenerhebung, Speicherung und Nutzung.",
-          },
-        ],
-      },
-      {
-        page_key: "datenschutz",
-        section_key: "privacy_tools",
-        label: "Tools und Dienste",
-        description: "Hinweise zu Analyse-, Marketing- oder Trackingtools.",
-        fields: [
-          {
-            key: "blocks",
-            label: "Inhaltsblöcke",
-            type: "block_content",
-            help: "Strukturierte Blöcke für Analyse-, Marketing- oder Trackingtools.",
-          },
-        ],
-      },
-      {
-        page_key: "datenschutz",
-        section_key: "privacy_rights",
-        label: "Rechte und Kontakt",
-        description: "Betroffenenrechte, Kontakt und abschliessende Hinweise.",
-        fields: [
-          {
-            key: "blocks",
-            label: "Inhaltsblöcke",
-            type: "block_content",
-            help: "Strukturierte Blöcke für Betroffenenrechte, Kontakt und Schlussabschnitt.",
+            key: "wraps",
+            label: "Content-Wraps",
+            type: "content_wraps",
+            help: "Frei anlegbare Inhaltsbereiche mit Titel sowie Textblöcken für Überschriften und Absätze.",
           },
         ],
       },
@@ -230,7 +196,7 @@ export function getPortalCmsSection(pageKey: string, sectionKey: string): Portal
 }
 
 function buildPortalCmsEmptyFieldValue(field: PortalContentFieldDefinition): string {
-  if (field.type === "block_content") return "[]";
+  if (field.type === "block_content" || field.type === "content_wraps") return "[]";
   return "";
 }
 
@@ -246,6 +212,48 @@ function normalizeTextLines(raw: unknown): string[] {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
+}
+
+function normalizePortalWrapTitle(raw: unknown): string {
+  return String(raw ?? "").trim();
+}
+
+function buildPortalWrapId(index: number): string {
+  return `wrap_${index + 1}`;
+}
+
+function convertPortalBlocksToWrapTextBlocks(blocks: PortalContentBlock[]): PortalContentWrapTextBlock[] {
+  const normalized: PortalContentWrapTextBlock[] = [];
+  for (const block of blocks) {
+    if (block.type === "heading") {
+      normalized.push({ type: "heading", level: block.level, text: block.text });
+      continue;
+    }
+    if (block.type === "paragraph") {
+      normalized.push({ type: "paragraph", text: block.text });
+      continue;
+    }
+    if (block.type === "list") {
+      const lines = block.items.map((item, index) => (
+        block.style === "ordered" ? `${index + 1}. ${item}` : `• ${item}`
+      ));
+      if (lines.length > 0) normalized.push({ type: "paragraph", text: lines.join("\n") });
+      continue;
+    }
+    if (block.type === "link_list") {
+      const lines = block.items.map((item) => `${item.label}: ${item.href}`);
+      if (lines.length > 0) normalized.push({ type: "paragraph", text: lines.join("\n") });
+      continue;
+    }
+    if (block.type === "contact") {
+      if (block.lines.length > 0) normalized.push({ type: "paragraph", text: block.lines.join("\n") });
+      continue;
+    }
+    if (block.type === "note" && block.text.trim()) {
+      normalized.push({ type: "paragraph", text: block.text });
+    }
+  }
+  return normalized;
 }
 
 function migrateLegacyBlocks(pageKey: string, sectionKey: string, fields: Record<string, string>): PortalContentBlock[] | null {
@@ -346,12 +354,132 @@ export function serializePortalContentBlocks(blocks: PortalContentBlock[]): stri
   return JSON.stringify(blocks);
 }
 
+function parsePortalContentWrapBlocks(value: unknown): PortalContentWrapTextBlock[] {
+  if (!Array.isArray(value)) return [];
+  const blocks: PortalContentWrapTextBlock[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") continue;
+    const block = entry as Record<string, unknown>;
+    const type = String(block.type ?? "").trim();
+    if (type === "heading") {
+      const level = Number(block.level);
+      const text = String(block.text ?? "");
+      if (![1, 2, 3].includes(level) || !text.trim()) continue;
+      blocks.push({ type: "heading", level: level as 1 | 2 | 3, text });
+      continue;
+    }
+    if (type === "paragraph") {
+      const text = String(block.text ?? "");
+      if (text.trim()) blocks.push({ type: "paragraph", text });
+    }
+  }
+  return blocks;
+}
+
+export function parsePortalContentWraps(value: string): PortalContentWrap[] {
+  const raw = String(value ?? "").trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    const wraps: PortalContentWrap[] = [];
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== "object") continue;
+      const wrap = entry as Record<string, unknown>;
+      const blocks = parsePortalContentWrapBlocks(wrap.blocks);
+      const title = normalizePortalWrapTitle(wrap.title);
+      if (!title && blocks.length === 0) continue;
+      wraps.push({
+        id: String(wrap.id ?? buildPortalWrapId(wraps.length)),
+        title,
+        blocks,
+      });
+    }
+    return wraps;
+  } catch {
+    return [];
+  }
+}
+
+export function serializePortalContentWraps(wraps: PortalContentWrap[]): string {
+  return JSON.stringify(
+    wraps.map((wrap, index) => ({
+      id: String(wrap.id ?? buildPortalWrapId(index)),
+      title: normalizePortalWrapTitle(wrap.title),
+      blocks: wrap.blocks.map((block) => (
+        block.type === "heading"
+          ? { type: "heading", level: block.level, text: String(block.text ?? "") }
+          : { type: "paragraph", text: String(block.text ?? "") }
+      )),
+    })),
+  );
+}
+
+const LEGACY_PORTAL_WRAP_LABELS: Record<string, string> = {
+  impressum_main: "Impressum",
+  privacy_intro: "Einleitung",
+  privacy_collection: "Datenerhebung",
+  privacy_tools: "Tools und Dienste",
+  privacy_rights: "Rechte und Kontakt",
+};
+
+function buildLegacyWrapFromEntry(
+  sectionKey: string,
+  fields: Record<string, string>,
+  index: number,
+): PortalContentWrap | null {
+  const parsedBlocks = parsePortalContentBlocks(String(fields.blocks ?? ""));
+  const migratedBlocks = parsedBlocks.length > 0
+    ? convertPortalBlocksToWrapTextBlocks(parsedBlocks)
+    : convertPortalBlocksToWrapTextBlocks(migrateLegacyBlocks("datenschutz", sectionKey, fields) ?? migrateLegacyBlocks("impressum", sectionKey, fields) ?? []);
+  if (migratedBlocks.length === 0) return null;
+  return {
+    id: buildPortalWrapId(index),
+    title: LEGACY_PORTAL_WRAP_LABELS[sectionKey] ?? `Bereich ${index + 1}`,
+    blocks: migratedBlocks,
+  };
+}
+
+export function migratePortalContentWraps(
+  pageKey: string,
+  entries: Array<Pick<PortalContentEntryRecord, "section_key" | "fields_json">>,
+): PortalContentWrap[] {
+  if (pageKey === "impressum") {
+    const legacyEntry = entries.find((entry) => entry.section_key === "impressum_main");
+    if (!legacyEntry) return [];
+    const wrap = buildLegacyWrapFromEntry("impressum_main", legacyEntry.fields_json, 0);
+    return wrap ? [wrap] : [];
+  }
+
+  if (pageKey === "datenschutz") {
+    const order = ["privacy_intro", "privacy_collection", "privacy_tools", "privacy_rights"];
+    return order.flatMap((sectionKey, index) => {
+      const legacyEntry = entries.find((entry) => entry.section_key === sectionKey);
+      if (!legacyEntry) return [];
+      const wrap = buildLegacyWrapFromEntry(sectionKey, legacyEntry.fields_json, index);
+      return wrap ? [wrap] : [];
+    });
+  }
+
+  return [];
+}
+
 export function normalizePortalCmsFields(
   section: PortalContentSectionDefinition,
   rawFields: Record<string, string> | null | undefined,
 ): Record<string, string> {
   const fields = rawFields ?? {};
   return section.fields.reduce<Record<string, string>>((acc, field) => {
+    if (field.type === "content_wraps") {
+      const existing = String(fields[field.key] ?? "").trim();
+      if (existing) {
+        const parsed = parsePortalContentWraps(existing);
+        acc[field.key] = serializePortalContentWraps(parsed);
+        return acc;
+      }
+      acc[field.key] = serializePortalContentWraps([]);
+      return acc;
+    }
     if (field.type === "block_content") {
       const existing = String(fields[field.key] ?? "").trim();
       if (existing) {
