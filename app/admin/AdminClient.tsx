@@ -2729,9 +2729,17 @@ export default function AdminClient() {
         <aside style={modeBarStyle}>
           <button
             style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" && navMode === "partners")}
-            onClick={() => {
+            onClick={async () => {
               setNavMode("partners");
-              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults" || activeView === "portal_cms" || activeView === "partner_purge") setActiveView("home");
+              if (selectedPartnerId) {
+                await selectPartnerView(selectedPartnerId, "partner_edit");
+                return;
+              }
+              if (portalPartner?.id) {
+                await selectPartnerView(portalPartner.id, "partner_edit");
+                return;
+              }
+              setActiveView("partner_edit");
             }}
             title="Partner"
           >
@@ -2741,7 +2749,7 @@ export default function AdminClient() {
             style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" && navMode === "areas")}
             onClick={() => {
               setNavMode("areas");
-              if (activeView === "audit" || activeView === "llm_global" || activeView === "billing_defaults" || activeView === "portal_cms" || activeView === "partner_purge") setActiveView("home");
+              setActiveView("partner_edit");
             }}
             title="Gebiete"
           >
