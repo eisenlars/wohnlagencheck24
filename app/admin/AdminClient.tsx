@@ -2216,7 +2216,7 @@ export default function AdminClient() {
   async function selectPartnerView(partnerId: string, view: AdminView) {
     if (!partnerId) return;
     setBusy(true);
-    setStatus("Partner wird geladen...");
+    setStatus("Daten werden geladen...");
     try {
       setReviewAreaId("");
       setReviewData(null);
@@ -2227,7 +2227,6 @@ export default function AdminClient() {
       setActiveView(view);
       setPartnerTab("profile");
       setIntegrationsAdminTab("overview");
-      setStatus("Partner geladen.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Partner konnte nicht geladen werden.");
     } finally {
@@ -2410,7 +2409,7 @@ export default function AdminClient() {
     <div style={wrapStyle}>
       <FullscreenLoader
         show={busy || reviewBusy || status === "Lade Admin-Daten..."}
-        label={busy ? status : reviewBusy ? "Freigabeprüfung wird geladen..." : "Daten werden geladen..."}
+        label="Daten werden geladen..."
       />
       {successModal.open ? (
         <div
