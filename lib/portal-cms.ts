@@ -364,13 +364,13 @@ function parsePortalContentWrapBlocks(value: unknown): PortalContentWrapTextBloc
     if (type === "heading") {
       const level = Number(block.level);
       const text = String(block.text ?? "");
-      if (![1, 2, 3].includes(level) || !text.trim()) continue;
+      if (![1, 2, 3].includes(level)) continue;
       blocks.push({ type: "heading", level: level as 1 | 2 | 3, text });
       continue;
     }
     if (type === "paragraph") {
       const text = String(block.text ?? "");
-      if (text.trim()) blocks.push({ type: "paragraph", text });
+      blocks.push({ type: "paragraph", text });
     }
   }
   return blocks;
@@ -388,7 +388,6 @@ export function parsePortalContentWraps(value: string): PortalContentWrap[] {
       const wrap = entry as Record<string, unknown>;
       const blocks = parsePortalContentWrapBlocks(wrap.blocks);
       const title = normalizePortalWrapTitle(wrap.title);
-      if (!title && blocks.length === 0) continue;
       wraps.push({
         id: String(wrap.id ?? buildPortalWrapId(wraps.length)),
         title,
