@@ -108,9 +108,18 @@ export const workflowClassStatsStyle: CSSProperties = {
   color: '#475569',
 };
 
+export const workflowClassStatLineStyle: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 12,
+  alignItems: 'center',
+};
+
 export const workflowClassCostStyle: CSSProperties = {
-  display: 'grid',
-  gap: 4,
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 12,
+  alignItems: 'center',
   fontSize: 12,
   fontWeight: 700,
   color: '#0f172a',

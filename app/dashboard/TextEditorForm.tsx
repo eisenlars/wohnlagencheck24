@@ -38,6 +38,7 @@ import {
   workflowClassCostStyle as textWorkflowClassCostStyle,
   workflowClassCycleStyle as textWorkflowClassCycleStyle,
   workflowClassGridStyle as textWorkflowClassGridStyle,
+  workflowClassStatLineStyle as textWorkflowClassStatLineStyle,
   workflowClassStatsStyle as textWorkflowClassStatsStyle,
   workflowClassTextStyle as textWorkflowClassTextStyle,
   workflowClassTopStyle as textWorkflowClassTopStyle,
@@ -471,7 +472,7 @@ type TextAreaData = {
 
 const TEXT_EDITOR_VIEW_STATE_KEY_PREFIX = 'partner_text_editor_view_state_v1';
 
-const GLOBAL_CLASS_ORDER: GlobalClassKey[] = ['general', 'data_driven', 'market_expert', 'profile'];
+const GLOBAL_CLASS_ORDER: GlobalClassKey[] = ['market_expert', 'data_driven', 'general', 'profile'];
 
 const GLOBAL_CLASS_META: Record<GlobalClassKey, {
   title: string;
@@ -1505,7 +1506,7 @@ export default function TextEditorForm({
                     <p style={textWorkflowClassTextStyle}>Texttyp: {meta.description}</p>
                     <p style={textWorkflowClassCycleStyle}>Zyklus: {meta.cycle}</p>
                     <div style={textWorkflowClassStatsStyle}>
-                      <span>
+                      <span style={textWorkflowClassStatLineStyle}>
                         Gebiete: {estimate.areaMultiplier} Texte: {estimate.totalTexts} Tokens ca.: {estimate.totalTokens.toLocaleString('de-DE')}
                       </span>
                     </div>

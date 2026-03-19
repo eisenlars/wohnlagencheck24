@@ -46,6 +46,7 @@ import {
   workflowClassCostStyle as classCardCostStyle,
   workflowClassCycleStyle as classCardCycleStyle,
   workflowClassGridStyle as classGridStyle,
+  workflowClassStatLineStyle as classCardStatLineStyle,
   workflowClassStatsStyle as classCardStatsStyle,
   workflowClassTextStyle as classCardTextStyle,
   workflowClassTopStyle as classCardTopStyle,
@@ -763,7 +764,7 @@ function resolveSectionMeta(sectionKey: string): { label: string; type: SectionK
   };
 }
 
-const DEFAULT_WORKFLOW_CLASSES: DisplayTextClass[] = ['general', 'profile', 'market_expert', 'data_driven'];
+const DEFAULT_WORKFLOW_CLASSES: DisplayTextClass[] = ['market_expert', 'data_driven', 'general', 'profile'];
 const MARKETING_WORKFLOW_CLASSES: DisplayTextClass[] = ['marketing'];
 
 export default function InternationalizationManager({ config, availableLocales, availableDomains }: Props) {
@@ -2615,10 +2616,16 @@ export default function InternationalizationManager({ config, availableLocales, 
 	                <p style={classCardTextStyle}>{i18nWorkflowClassDescription(displayClass)}</p>
 	                <p style={classCardCycleStyle}>{i18nWorkflowClassCycle(displayClass)}</p>
 	                <div style={classCardStatsStyle}>
-	                  <span>Uebersetzt: {stats.translated}</span>
-	                  <span>DE-Fallback: {stats.fallback}</span>
-	                  <span>Veraltet: {stats.stale}</span>
-	                  <span>Tokens ca.: {classEstimateMap[displayClass].total_tokens.toLocaleString('de-DE')}</span>
+	                  <div style={classCardStatLineStyle}>
+	                    <span>Uebersetzt: {stats.translated}</span>
+	                    <span>DE-Fallback: {stats.fallback}</span>
+	                    <span>Tokens ca.: {classEstimateMap[displayClass].total_tokens.toLocaleString('de-DE')}</span>
+	                  </div>
+	                  {stats.stale > 0 ? (
+	                    <div style={classCardStatLineStyle}>
+	                      <span>Veraltet: {stats.stale}</span>
+	                    </div>
+	                  ) : null}
 	                </div>
 	                <div style={classCardCostStyle}>
 	                  <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
