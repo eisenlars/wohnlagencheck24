@@ -35,6 +35,7 @@ type Partner = {
   is_system_default?: boolean;
   llm_partner_managed_allowed?: boolean;
   llm_mode_default?: string | null;
+  area_mappings?: AreaMapping[];
 };
 
 type AreaMapping = {
@@ -106,6 +107,37 @@ type AreaOverviewRow = {
   isActive: boolean;
   activationStatus: string;
 };
+
+function buildAreaOverviewRows(partnerList: Partner[]): AreaOverviewRow[] {
+  const rows = new Map<string, AreaOverviewRow>();
+  for (const partner of partnerList) {
+    for (const mapping of partner.area_mappings ?? []) {
+      const kreisId = String(mapping.area_id ?? "").split("-").slice(0, 3).join("-");
+      if (kreisId.split("-").length !== 3) continue;
+      const key = `${partner.id}:${kreisId}`;
+      if (rows.has(key)) continue;
+      rows.set(key, {
+        key,
+        kreisId,
+        kreisName: String(mapping.areas?.name ?? kreisId),
+        partnerId: partner.id,
+        partnerName: partner.company_name,
+        isActive: Boolean(mapping.is_active),
+        activationStatus: normalizeActivationStatus(
+          mapping.activation_status,
+          Boolean(mapping.is_active),
+          Boolean(mapping.is_public_live),
+        ),
+      });
+    }
+  }
+
+  return Array.from(rows.values()).sort((a, b) => {
+    const byKreis = a.kreisId.localeCompare(b.kreisId, "de");
+    if (byKreis !== 0) return byKreis;
+    return a.partnerName.localeCompare(b.partnerName, "de");
+  });
+}
 
 type MandatoryMissingEntry = {
   key?: string;
@@ -875,6 +907,10 @@ export default function AdminClient() {
   }>>({});
   const pendingPortalCmsScrollRestoreRef = useRef(false);
   const adminViewStateAppliedRef = useRef(false);
+  const adminBootstrapRef = useRef(false);
+  const auditLoadingRef = useRef(false);
+  const [auditLoadedOnce, setAuditLoadedOnce] = useState(false);
+  const [auditLoading, setAuditLoading] = useState(false);
   const [llmProviderDrafts, setLlmProviderDrafts] = useState<Record<string, Partial<{
     model: string;
     display_label: string;
@@ -1129,7 +1165,6 @@ export default function AdminClient() {
     }
     return result;
   }, [areaOverview, partners, partnerNeedsAssignment]);
-
   const filteredPartners = useMemo(() => {
     const q = partnerFilter.trim().toLowerCase();
     return partners
@@ -1194,60 +1229,8 @@ export default function AdminClient() {
     const persistedPartnerId = String(adminViewState.selectedPartnerId ?? "").trim();
     if (!persistedPartnerId) return;
     if (!partners.some((partner) => partner.id === persistedPartnerId)) return;
-    if (selectedPartner?.id === persistedPartnerId) return;
-    setSelectedPartnerId(persistedPartnerId);
-    void loadPartnerDetails(persistedPartnerId);
-  }, [adminViewState.selectedPartnerId, adminViewStateHydrated, partners, selectedPartner?.id]);
-
-  async function loadAreaOverview(partnerList?: Partner[]) {
-    const source = partnerList ?? partners;
-    if (!source.length) {
-      setAreaOverview([]);
-      return;
-    }
-
-    const details = await Promise.all(
-      source.map(async (partner) => {
-        try {
-          const data = await api<{ area_mappings: AreaMapping[] }>(`/api/admin/partners/${partner.id}`);
-          return { partner, mappings: data.area_mappings ?? [] };
-        } catch {
-          return { partner, mappings: [] as AreaMapping[] };
-        }
-      }),
-    );
-
-    const rows = new Map<string, AreaOverviewRow>();
-    for (const detail of details) {
-      for (const mapping of detail.mappings) {
-        const kreisId = String(mapping.area_id ?? "").split("-").slice(0, 3).join("-");
-        if (kreisId.split("-").length !== 3) continue;
-        const key = `${detail.partner.id}:${kreisId}`;
-        if (rows.has(key)) continue;
-        rows.set(key, {
-          key,
-          kreisId,
-          kreisName: String(mapping.areas?.name ?? kreisId),
-          partnerId: detail.partner.id,
-          partnerName: detail.partner.company_name,
-          isActive: Boolean(mapping.is_active),
-          activationStatus: normalizeActivationStatus(
-            mapping.activation_status,
-            Boolean(mapping.is_active),
-            Boolean(mapping.is_public_live),
-          ),
-        });
-      }
-    }
-
-    setAreaOverview(
-      Array.from(rows.values()).sort((a, b) => {
-        const byKreis = a.kreisId.localeCompare(b.kreisId, "de");
-        if (byKreis !== 0) return byKreis;
-        return a.partnerName.localeCompare(b.partnerName, "de");
-      }),
-    );
-  }
+    setSelectedPartnerId((current) => current || persistedPartnerId);
+  }, [adminViewState.selectedPartnerId, adminViewStateHydrated, partners]);
 
   const displayAreaRows = useMemo<DisplayAreaRow[]>(() => {
     const getKreisId = (areaId: string) =>
@@ -1286,6 +1269,21 @@ export default function AdminClient() {
       sourceCount: value.count,
     }));
   }, [areaMappings]);
+  const selectedPartnerSummary = useMemo(() => {
+    const states = displayAreaRows.map((row) =>
+      normalizeActivationStatus(
+        row.mapping.activation_status,
+        row.mapping.is_active,
+        Boolean(row.mapping.is_public_live),
+      ),
+    );
+    return {
+      totalAreas: displayAreaRows.length,
+      liveAreas: states.filter((state) => state === "live").length,
+      activationOpen: states.filter((state) => state !== "live").length,
+      activeIntegrationCount: integrations.filter((integration) => integration.is_active).length,
+    };
+  }, [displayAreaRows, integrations]);
 
   const selectedPartnerNeedsAreaAssignment = Boolean(selectedPartner?.is_active) && displayAreaRows.length === 0;
 
@@ -1463,13 +1461,17 @@ export default function AdminClient() {
 
   async function loadPartners(selectId?: string, options?: { refreshSelectedDetails?: boolean }) {
     const data = await api<{ partners: Partner[] }>("/api/admin/partners?include_inactive=1");
-    setPartners(data.partners ?? []);
-    await loadAreaOverview(data.partners ?? []);
+    const nextPartners = data.partners ?? [];
+    setPartners(nextPartners);
+    setAreaOverview(buildAreaOverviewRows(nextPartners));
 
     const existingSelected = selectedPartnerId
-      ? (data.partners ?? []).find((p) => p.id === selectedPartnerId)?.id ?? ""
+      ? nextPartners.find((p) => p.id === selectedPartnerId)?.id ?? ""
       : "";
-    const nextId = selectId ?? existingSelected;
+    const requestedSelected = selectId
+      ? nextPartners.find((p) => p.id === selectId)?.id ?? ""
+      : "";
+    const nextId = requestedSelected || existingSelected;
     if (nextId) {
       setSelectedPartnerId(nextId);
       if (options?.refreshSelectedDetails !== false) {
@@ -1567,8 +1569,8 @@ export default function AdminClient() {
         method: "PATCH",
         body: JSON.stringify({ action, note: note || null }),
       });
+      await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
       await loadPartnerDetails(selectedPartnerId);
-      await loadAreaOverview();
       await loadAreaReview(reviewAreaId);
       if ((action === "approve" || action === "changes_requested") && response?.notification?.partner?.sent === false) {
         const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
@@ -1607,8 +1609,8 @@ export default function AdminClient() {
           method: live ? "POST" : "DELETE",
         },
       );
+      await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
       await loadPartnerDetails(selectedPartnerId);
-      await loadAreaOverview();
       await loadAreaReview(reviewAreaId);
       if (live && response?.notification?.partner?.sent === false) {
         const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
@@ -1648,6 +1650,9 @@ export default function AdminClient() {
   }
 
   async function loadAuditLogs() {
+    if (auditLoadingRef.current) return;
+    auditLoadingRef.current = true;
+    setAuditLoading(true);
     const params = new URLSearchParams();
     if (auditFilters.entity_type.trim()) params.set("entity_type", auditFilters.entity_type.trim());
     if (auditFilters.event_type.trim()) params.set("event_type", auditFilters.event_type.trim());
@@ -1656,8 +1661,14 @@ export default function AdminClient() {
     if (auditFilters.created_to.trim()) params.set("created_to", auditFilters.created_to.trim());
     params.set("limit", String(auditFilters.limit));
 
-    const data = await api<{ logs: AuditLogRow[] }>(`/api/admin/audit-log?${params.toString()}`);
-    setAuditLogs(data.logs ?? []);
+    try {
+      const data = await api<{ logs: AuditLogRow[] }>(`/api/admin/audit-log?${params.toString()}`);
+      setAuditLogs(data.logs ?? []);
+      setAuditLoadedOnce(true);
+    } finally {
+      auditLoadingRef.current = false;
+      setAuditLoading(false);
+    }
   }
 
   async function loadLlmGlobalConfig() {
@@ -1942,6 +1953,8 @@ export default function AdminClient() {
   }
 
   useEffect(() => {
+    if (!adminViewStateHydrated || adminBootstrapRef.current) return;
+    adminBootstrapRef.current = true;
     (async () => {
       try {
         const {
@@ -1954,15 +1967,32 @@ export default function AdminClient() {
         const label = fromMeta || String(user?.email ?? "Admin").trim() || "Admin";
         setAdminDisplayName(label);
         setLastLogin(String(user?.last_sign_in_at ?? "").trim());
-        await loadPartners();
-        await loadAuditLogs();
+        const restoredActiveView = adminViewState.activeView ?? "home";
+        const restoredPartnerId = String(adminViewState.selectedPartnerId ?? "").trim();
+        const shouldLoadSelectedPartner =
+          Boolean(restoredPartnerId)
+          && (restoredActiveView === "partner_edit" || restoredActiveView === "partner_purge");
+        await loadPartners(
+          shouldLoadSelectedPartner ? restoredPartnerId : undefined,
+          { refreshSelectedDetails: shouldLoadSelectedPartner },
+        );
+        if (restoredActiveView === "audit") {
+          await loadAuditLogs();
+        }
         setStatus("Admin-Bereich bereit.");
       } catch (error) {
         setStatus(error instanceof Error ? error.message : "Fehler beim Laden");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [adminViewState.activeView, adminViewState.selectedPartnerId, adminViewStateHydrated]);
+
+  useEffect(() => {
+    if (activeView !== "audit" || auditLoadedOnce || auditLoading) return;
+    void run("Audit-Log laden", async () => {
+      await loadAuditLogs();
+    }, { showSuccessModal: false });
+  }, [activeView, auditLoadedOnce, auditLoading]);
 
   useEffect(() => {
     if (!areaQuery.trim()) {
@@ -2013,7 +2043,7 @@ export default function AdminClient() {
       await fn();
       setClearReviewOnSuccessClose(Boolean(options?.clearReviewOnClose));
       setStatus(`${label} erfolgreich.`);
-      if (options?.showSuccessModal !== false) {
+      if (options?.showSuccessModal === true) {
         const successTitle = label === "Gebiet zuordnen" ? "Gebiet zugeordnet" : "Erfolgreich";
         const successMessage = label === "Gebiet zuordnen"
           ? "Der Partner wird per E-Mail informiert und kann anschließend die Pflichtangaben zur finalen Freigabe machen."
@@ -2062,22 +2092,10 @@ export default function AdminClient() {
       }
       if (applied < total) {
         setStatus(`Preise teilweise aktualisiert (${applied}/${total}).`);
-        setSuccessModal({
-          open: true,
-          title: "Teilweise aktualisiert",
-          message: failedItems.length > 0
-            ? `Aktualisiert: ${applied}/${total}. Manuell prüfen: ${failedItems.join(", ")}`
-            : `Aktualisiert: ${applied}/${total}. ${failed} Einträge konnten nicht automatisch übernommen werden.`,
-        });
         return;
       }
 
       setStatus("Preise erfolgreich aktualisiert.");
-      setSuccessModal({
-        open: true,
-        title: "Erfolgreich",
-        message: `Preise wurden für alle ${total} Einträge aktualisiert.`,
-      });
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Preis-Sync fehlgeschlagen.");
     } finally {
@@ -2183,15 +2201,11 @@ export default function AdminClient() {
       await loadPartners(partnerId);
       const linkType = String(response.link_type ?? "").trim().toLowerCase();
       const email = String(response.contact_email ?? "").trim();
-      setSuccessModal({
-        open: true,
-        title: "Zugangslink versendet",
-        message:
-          linkType === "invite"
-            ? `Ein neuer Einladungslink wurde an ${email || "die Kontakt-E-Mail"} gesendet.`
-            : `Ein neuer Passwort-Link wurde an ${email || "die Kontakt-E-Mail"} gesendet.`,
-      });
-      setStatus("Zugangslink versendet.");
+      setStatus(
+        linkType === "invite"
+          ? `Einladungslink an ${email || "die Kontakt-E-Mail"} versendet.`
+          : `Passwort-Link an ${email || "die Kontakt-E-Mail"} versendet.`,
+      );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Zugangslink konnte nicht versendet werden.");
     } finally {
@@ -2299,7 +2313,6 @@ export default function AdminClient() {
       setActiveView("partner_purge");
       setPartnerTab("profile");
       await loadPartners();
-      await loadAreaOverview();
       const warning = String(data?.warning ?? "").trim();
       setSuccessModal({
         open: true,
@@ -2534,8 +2547,8 @@ export default function AdminClient() {
                     await api(`/api/admin/partners/${selectedPartnerId}/areas/${payload.areaId}`, {
                       method: "DELETE",
                     });
+                    await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
                     await loadPartnerDetails(selectedPartnerId);
-                    await loadAreaOverview();
                   });
                 }}
               >
@@ -2997,6 +3010,22 @@ export default function AdminClient() {
                 nur aktiv
               </label>
             </div>
+            {navMode === "partners" ? (
+              <div style={adminWorkflowLegendStyle}>
+                <span style={adminWorkflowLegendItemStyle}>
+                  <span style={adminWorkflowLegendDotStyle("#dc2626")} />
+                  Zuweisung offen
+                </span>
+                <span style={adminWorkflowLegendItemStyle}>
+                  <span style={adminWorkflowLegendDotStyle("#f59e0b")} />
+                  in Aktivierung
+                </span>
+                <span style={adminWorkflowLegendItemStyle}>
+                  <span style={adminWorkflowLegendDotStyle("#16a34a")} />
+                  alle Gebiete live
+                </span>
+              </div>
+            ) : null}
             <div style={sidebarListStyle}>
               {navMode === "partners"
                 ? filteredPartners.map((p) => (
@@ -3164,6 +3193,40 @@ export default function AdminClient() {
         <p style={{ margin: 0, color: "#475569" }}>
           {selectedPartner ? `${formatPartnerName(selectedPartner)} (${selectedPartner.id})` : "Bitte links einen Partner auswählen."}
         </p>
+        {selectedPartner ? (
+          <div style={adminPartnerSummaryGridStyle}>
+            <div style={adminPartnerSummaryCardStyle}>
+              <div style={adminPartnerSummaryLabelStyle}>Workflow</div>
+              <div style={adminPartnerSummaryValueStyle}>
+                {selectedPartner.is_system_default
+                  ? "Portalpartner"
+                  : selectedPartnerWorkflowSignal === "red"
+                    ? "Zuweisung offen"
+                    : selectedPartnerWorkflowSignal === "orange"
+                      ? "In Aktivierung"
+                      : selectedPartnerWorkflowSignal === "green"
+                        ? "Alle Gebiete live"
+                        : "Ohne Signal"}
+              </div>
+            </div>
+            <div style={adminPartnerSummaryCardStyle}>
+              <div style={adminPartnerSummaryLabelStyle}>Gebiete</div>
+              <div style={adminPartnerSummaryValueStyle}>{selectedPartnerSummary.totalAreas}</div>
+            </div>
+            <div style={adminPartnerSummaryCardStyle}>
+              <div style={adminPartnerSummaryLabelStyle}>Live</div>
+              <div style={adminPartnerSummaryValueStyle}>{selectedPartnerSummary.liveAreas}</div>
+            </div>
+            <div style={adminPartnerSummaryCardStyle}>
+              <div style={adminPartnerSummaryLabelStyle}>Offen</div>
+              <div style={adminPartnerSummaryValueStyle}>{selectedPartnerSummary.activationOpen}</div>
+            </div>
+            <div style={adminPartnerSummaryCardStyle}>
+              <div style={adminPartnerSummaryLabelStyle}>Anbindungen aktiv</div>
+              <div style={adminPartnerSummaryValueStyle}>{selectedPartnerSummary.activeIntegrationCount}</div>
+            </div>
+          </div>
+        ) : null}
         {selectedPartner ? (
           <div style={partnerTabBarStyle}>
             <button style={partnerTabButtonStyle(partnerTab === "profile")} onClick={() => setPartnerTab("profile")}>Profil</button>
@@ -3353,8 +3416,8 @@ export default function AdminClient() {
                     });
                     setAssignAreaId("");
                     setAreaQuery("");
+                    await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
                     await loadPartnerDetails(selectedPartnerId);
-                    await loadAreaOverview();
                     if (response?.notification?.partner?.sent === false) {
                       const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
                       setStatus(`Gebiet zugeordnet, Partner-Mail aber nicht versendet (${reason}).`);
@@ -3548,150 +3611,25 @@ export default function AdminClient() {
           </div>
         )}
 
-        <div
-          style={{
-            marginTop: 12,
-            border: "1px solid #cbd5e1",
-            background: "#f8fafc",
-            borderRadius: 10,
-            padding: 12,
-            display: "grid",
-            gap: 10,
-          }}
-        >
-          <div style={{ fontSize: 13, color: "#334155", lineHeight: 1.55 }}>
-            <strong>Visibility-Index neu publizieren</strong>
-            {" "}
-            Der öffentliche Immobilienmarkt liest die Sichtbarkeit nicht direkt aus dem Adminstatus, sondern aus dem publizierten
-            {" "}
-            <code>visibility_index.json</code>.
-            {" "}
-            Nach direkten SQL-Änderungen oder Altlasten im Live-/Preview-Workflow kann der Public-Stand deshalb veraltet sein, obwohl ein Gebiet im Admin bereits als online erscheint.
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <button
-              style={btnGhostStyle}
-              disabled={busy || reviewBusy || visibilityIndexBusy}
-              onClick={() =>
-                run("Visibility-Index neu publizieren", async () => {
-                  await rebuildVisibilityIndex();
-                })
-              }
-            >
-              {visibilityIndexBusy ? "Publikation läuft..." : "Visibility-Index neu publizieren"}
-            </button>
-            <span style={{ fontSize: 12, color: "#64748b" }}>
-              Sinnvoll nach SQL-Korrekturen an <code>partner_area_map</code> oder wenn Public-URLs trotz korrektem Adminstatus noch 404 liefern.
-            </span>
-          </div>
-        </div>
-
         {!reviewContentDismissed && reviewAreaOptions.length > 0 && reviewAreaId && reviewData ? (
           <>
-            <div style={{ marginTop: 10, marginBottom: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={reviewStatusBadgeStyle(currentReviewState)}>
-                {formatAreaStateLabel(Boolean(reviewData.mapping?.is_active), reviewData.mapping?.activation_status, Boolean(reviewData.mapping?.is_public_live))}
-              </span>
-            </div>
-
-            {!reviewData.mandatory?.ok && Array.isArray(reviewData.mandatory?.missing) && reviewData.mandatory?.missing.length > 0 ? (
-              <div style={{ marginBottom: 10, fontSize: 12, color: "#991b1b" }}>
-                {reviewData.mandatory.missing
-                  .slice(0, 10)
-                  .map((entry) => `${formatMandatoryKeyLabel(String(entry.key ?? ""))} (${entry.reason})`)
-                  .join(", ")}
+            {reviewActionError || reviewActionMessage ? (
+              <div style={reviewInlineFeedbackStyle(Boolean(reviewActionError))}>
+                {reviewActionError ?? reviewActionMessage}
               </div>
             ) : null}
 
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Pflichtfeld</th>
-                  <th style={thStyle}>Inhalt</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(reviewData.fields ?? []).map((field) => (
-                  <tr key={field.key}>
-                    <td style={tdStyle}>
-                      {formatMandatoryKeyLabel(field.key)}
-                      {" "}
-                      <span style={{ color: "#64748b", fontSize: 11 }}>({field.key})</span>
-                    </td>
-                    <td style={tdStyle}>
-                      {isMandatoryMediaKey(field.key) ? (
-                        <div style={{ display: "grid", gap: 8 }}>
-                          {field.content ? (
-                            <Image
-                              src={field.content}
-                              alt={formatMandatoryKeyLabel(field.key)}
-                              width={280}
-                              height={180}
-                              unoptimized
-                              style={{ maxWidth: 280, maxHeight: 180, objectFit: "cover", borderRadius: 8, border: "1px solid #e2e8f0" }}
-                            />
-                          ) : (
-                            <div style={{ fontSize: 12, color: "#64748b" }}>—</div>
-                          )}
-                          <div style={{ fontSize: 11, color: "#64748b", wordBreak: "break-all" }}>{field.content || "—"}</div>
-                        </div>
-                      ) : (
-                        <div style={{ maxWidth: 560, whiteSpace: "pre-wrap", fontSize: 12, color: "#334155" }}>
-                          {field.content || "—"}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {currentReviewState === "ready_for_review" || currentReviewState === "in_review" || currentReviewState === "changes_requested" ? (
-              <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>Hinweis für Nachbesserung</div>
-                <textarea
-                  style={{ ...inputStyle, minHeight: 110, resize: "vertical" }}
-                  value={reviewNoteDraft}
-                  onChange={(e) => setReviewNoteDraft(e.target.value)}
-                  placeholder="Hier eintragen, was bei Texten, Bildern oder anderen Pflichtangaben verbessert werden muss."
-                />
-              </div>
-            ) : null}
-
-            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {currentReviewState === "ready_for_review" || currentReviewState === "in_review" || currentReviewState === "changes_requested" ? (
-                <>
-                  <button
-                    style={btnDangerStyle}
-                    disabled={busy || reviewBusy || !reviewAreaId || reviewNoteDraft.trim().length === 0}
-                    onClick={() =>
-                      run("Nachbesserung anfordern", async () => {
-                        await applyAreaReviewAction("changes_requested");
-                      })
-                    }
-                  >
-                    Nachbesserung anfordern
-                  </button>
-                  {currentReviewState === "ready_for_review" || currentReviewState === "in_review" ? (
-                    <button
-                      style={btnStyle}
-                      disabled={busy || reviewBusy || !reviewAreaId}
-                      onClick={() =>
-                        run("Preview freigeben", async () => {
-                          await applyAreaReviewAction("approve");
-                        }, { clearReviewOnClose: true })
-                      }
-                    >
-                      Preview freigeben
-                    </button>
-                  ) : null}
-                </>
-              ) : null}
-              {currentReviewState === "approved_preview" ? (
-                <>
+            <div style={reviewSectionCardStyle}>
+              <div style={reviewSectionHeaderStyle}>Status</div>
+              <div style={{ display: "grid", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={reviewStatusBadgeStyle(currentReviewState)}>
+                    {formatAreaStateLabel(Boolean(reviewData.mapping?.is_active), reviewData.mapping?.activation_status, Boolean(reviewData.mapping?.is_public_live))}
+                  </span>
+                </div>
+                {currentReviewState === "approved_preview" ? (
                   <div
                     style={{
-                      width: "100%",
                       border: currentReviewPreviewSignoffAt ? "1px solid #cbd5e1" : "1px solid #fdba74",
                       background: currentReviewPreviewSignoffAt ? "#f8fafc" : "#fff7ed",
                       borderRadius: 10,
@@ -3706,8 +3644,8 @@ export default function AdminClient() {
                     {currentReviewAllowsDirectGoLive
                       ? "Dieses Gebiet liegt beim Portalpartner. Es kann nach fachlicher Prüfung direkt mit Standardinhalten online geschaltet werden, auch ohne separate Livegang-Anfrage aus dem Partnerbereich."
                       : currentReviewPreviewSignoffAt
-                      ? `Der Partner hat den Previewprozess abgeschlossen und den Livegang am ${formatAdminDateTime(currentReviewPreviewSignoffAt)} angefragt. Bitte die Frontend-Preview jetzt final prüfen und das Gebiet danach bei Bedarf online schalten.`
-                      : "Das Gebiet ist fachlich freigegeben und kann jetzt vom Partner intern vorbereitet werden. Bitte Inhalte, Werte sowie SEO-/GEO-Einstellungen vor dem finalen Onlineschalten vollständig prüfen."}
+                        ? `Der Partner hat den Previewprozess abgeschlossen und den Livegang am ${formatAdminDateTime(currentReviewPreviewSignoffAt)} angefragt. Bitte die Frontend-Preview jetzt final prüfen und das Gebiet danach bei Bedarf online schalten.`
+                        : "Das Gebiet ist fachlich freigegeben und kann jetzt vom Partner intern vorbereitet werden. Bitte Inhalte, Werte sowie SEO-/GEO-Einstellungen vor dem finalen Onlineschalten vollständig prüfen."}
                     {currentReviewPreviewHref ? (
                       <>
                         {" "}
@@ -3715,64 +3653,191 @@ export default function AdminClient() {
                       </>
                     ) : null}
                   </div>
-                  {currentReviewPreviewHref ? (
-                    <a
-                      href={currentReviewPreviewHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        ...btnGhostStyle,
-                        textDecoration: "none",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
+                ) : null}
+              </div>
+            </div>
+
+            <div style={reviewSectionCardStyle}>
+              <div style={reviewSectionHeaderStyle}>Pflichtprüfung</div>
+              {!reviewData.mandatory?.ok && Array.isArray(reviewData.mandatory?.missing) && reviewData.mandatory?.missing.length > 0 ? (
+                <div style={{ marginBottom: 10, fontSize: 12, color: "#991b1b" }}>
+                  {reviewData.mandatory.missing
+                    .slice(0, 10)
+                    .map((entry) => `${formatMandatoryKeyLabel(String(entry.key ?? ""))} (${entry.reason})`)
+                    .join(", ")}
+                </div>
+              ) : (
+                <div style={{ marginBottom: 10, fontSize: 12, color: "#166534", fontWeight: 600 }}>
+                  Alle Pflichtangaben für dieses Gebiet sind aktuell vollständig.
+                </div>
+              )}
+              <table style={tableStyle}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Pflichtfeld</th>
+                    <th style={thStyle}>Inhalt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(reviewData.fields ?? []).map((field) => (
+                    <tr key={field.key}>
+                      <td style={tdStyle}>
+                        {formatMandatoryKeyLabel(field.key)}
+                        {" "}
+                        <span style={{ color: "#64748b", fontSize: 11 }}>({field.key})</span>
+                      </td>
+                      <td style={tdStyle}>
+                        {isMandatoryMediaKey(field.key) ? (
+                          <div style={{ display: "grid", gap: 8 }}>
+                            {field.content ? (
+                              <Image
+                                src={field.content}
+                                alt={formatMandatoryKeyLabel(field.key)}
+                                width={280}
+                                height={180}
+                                unoptimized
+                                style={{ maxWidth: 280, maxHeight: 180, objectFit: "cover", borderRadius: 8, border: "1px solid #e2e8f0" }}
+                              />
+                            ) : (
+                              <div style={{ fontSize: 12, color: "#64748b" }}>—</div>
+                            )}
+                            <div style={{ fontSize: 11, color: "#64748b", wordBreak: "break-all" }}>{field.content || "—"}</div>
+                          </div>
+                        ) : (
+                          <div style={{ maxWidth: 560, whiteSpace: "pre-wrap", fontSize: 12, color: "#334155" }}>
+                            {field.content || "—"}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={reviewSectionCardStyle}>
+              <div style={reviewSectionHeaderStyle}>Aktionen</div>
+              {currentReviewState === "ready_for_review" || currentReviewState === "in_review" || currentReviewState === "changes_requested" ? (
+                <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>Hinweis für Nachbesserung</div>
+                  <textarea
+                    style={{ ...inputStyle, minHeight: 110, resize: "vertical" }}
+                    value={reviewNoteDraft}
+                    onChange={(e) => setReviewNoteDraft(e.target.value)}
+                    placeholder="Hier eintragen, was bei Texten, Bildern oder anderen Pflichtangaben verbessert werden muss."
+                  />
+                </div>
+              ) : null}
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {currentReviewState === "ready_for_review" || currentReviewState === "in_review" || currentReviewState === "changes_requested" ? (
+                  <>
+                    <button
+                      style={btnDangerStyle}
+                      disabled={busy || reviewBusy || !reviewAreaId || reviewNoteDraft.trim().length === 0}
+                      onClick={() =>
+                        run("Nachbesserung anfordern", async () => {
+                          await applyAreaReviewAction("changes_requested");
+                        }, { showSuccessModal: false })
+                      }
                     >
-                      Frontend-Preview öffnen
-                    </a>
-                  ) : null}
+                      Nachbesserung anfordern
+                    </button>
+                    {currentReviewState === "ready_for_review" || currentReviewState === "in_review" ? (
+                      <button
+                        style={btnStyle}
+                        disabled={busy || reviewBusy || !reviewAreaId}
+                        onClick={() =>
+                          run("Preview freigeben", async () => {
+                            await applyAreaReviewAction("approve");
+                          }, { clearReviewOnClose: true, showSuccessModal: false })
+                        }
+                      >
+                        Preview freigeben
+                      </button>
+                    ) : null}
+                  </>
+                ) : null}
+                {currentReviewState === "approved_preview" ? (
+                  <>
+                    {currentReviewPreviewHref ? (
+                      <a
+                        href={currentReviewPreviewHref}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          ...btnGhostStyle,
+                          textDecoration: "none",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        Frontend-Preview öffnen
+                      </a>
+                    ) : null}
+                    <button
+                      style={btnStyle}
+                      disabled={busy || reviewBusy || !reviewAreaId || (!currentReviewPreviewSignoffAt && !currentReviewAllowsDirectGoLive)}
+                      onClick={() =>
+                        run("Onlineschalten", async () => {
+                          await setAreaPublication(true);
+                        }, { clearReviewOnClose: true, showSuccessModal: false })
+                      }
+                    >
+                      Onlineschalten
+                    </button>
+                    {!currentReviewPreviewSignoffAt && !currentReviewAllowsDirectGoLive ? (
+                      <div style={{ width: "100%", fontSize: 12, color: "#9a3412" }}>
+                        Der Partner muss den Livegang zuerst im Preview-Bereich anfragen, bevor das Gebiet online geschaltet werden kann.
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+                {currentReviewState === "live" ? (
                   <button
-                    style={btnStyle}
-                    disabled={busy || reviewBusy || !reviewAreaId || (!currentReviewPreviewSignoffAt && !currentReviewAllowsDirectGoLive)}
+                    style={btnDangerStyle}
+                    disabled={busy || reviewBusy || !reviewAreaId}
                     onClick={() =>
-                      run("Onlineschalten", async () => {
-                        await setAreaPublication(true);
-                      }, { clearReviewOnClose: true })
+                      run("Offline nehmen", async () => {
+                        await setAreaPublication(false);
+                      }, { showSuccessModal: false })
                     }
                   >
-                    Onlineschalten
+                    Offline nehmen
                   </button>
-                  {!currentReviewPreviewSignoffAt && !currentReviewAllowsDirectGoLive ? (
-                    <div style={{ width: "100%", fontSize: 12, color: "#9a3412" }}>
-                      Der Partner muss den Livegang zuerst im Preview-Bereich anfragen, bevor das Gebiet online geschaltet werden kann.
-                    </div>
-                  ) : null}
-                </>
-              ) : null}
-              {currentReviewState === "live" ? (
+                ) : null}
+              </div>
+            </div>
+
+            <div style={reviewSectionCardStyle}>
+              <div style={reviewSectionHeaderStyle}>Wartung</div>
+              <div style={{ fontSize: 13, color: "#334155", lineHeight: 1.55 }}>
+                <strong>Visibility-Index neu publizieren</strong>
+                {" "}
+                Der öffentliche Immobilienmarkt liest die Sichtbarkeit nicht direkt aus dem Adminstatus, sondern aus dem publizierten
+                {" "}
+                <code>visibility_index.json</code>.
+                {" "}
+                Nach direkten SQL-Änderungen oder Altlasten im Live-/Preview-Workflow kann der Public-Stand deshalb veraltet sein, obwohl ein Gebiet im Admin bereits als online erscheint.
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
                 <button
-                  style={btnDangerStyle}
-                  disabled={busy || reviewBusy || !reviewAreaId}
+                  style={btnGhostStyle}
+                  disabled={busy || reviewBusy || visibilityIndexBusy}
                   onClick={() =>
-                    run("Offline nehmen", async () => {
-                      await setAreaPublication(false);
-                    })
+                    run("Visibility-Index neu publizieren", async () => {
+                      await rebuildVisibilityIndex();
+                    }, { showSuccessModal: false })
                   }
                 >
-                  Offline nehmen
+                  {visibilityIndexBusy ? "Publikation läuft..." : "Visibility-Index neu publizieren"}
                 </button>
-              ) : null}
+                <span style={{ fontSize: 12, color: "#64748b" }}>
+                  Sinnvoll nach SQL-Korrekturen an <code>partner_area_map</code> oder wenn Public-URLs trotz korrektem Adminstatus noch 404 liefern.
+                </span>
+              </div>
             </div>
-            {reviewActionError ? (
-              <div style={{ marginTop: 8, fontSize: 12, color: "#991b1b" }}>
-                {reviewActionError}
-              </div>
-            ) : null}
-            {reviewActionMessage ? (
-              <div style={{ marginTop: 8, fontSize: 12, color: "#166534" }}>
-                {reviewActionMessage}
-              </div>
-            ) : null}
           </>
         ) : (!reviewContentDismissed && reviewAreaOptions.length > 0) ? (
           <p style={{ marginTop: 10, ...mutedStyle }}>
@@ -6214,6 +6279,30 @@ const sidebarControlWrapStyle: React.CSSProperties = {
   padding: "15px",
 };
 
+const adminWorkflowLegendStyle: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  padding: "0 15px 12px",
+  fontSize: 11,
+  color: "#475569",
+};
+
+const adminWorkflowLegendItemStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  fontWeight: 600,
+};
+
+const adminWorkflowLegendDotStyle = (color: string): React.CSSProperties => ({
+  width: 8,
+  height: 8,
+  borderRadius: "50%",
+  background: color,
+  flex: "0 0 auto",
+});
+
 const contentPaneStyle: React.CSSProperties = {
   minWidth: 0,
   padding: "0 0 0 14px",
@@ -6240,6 +6329,64 @@ const cardStyle: React.CSSProperties = {
   padding: 16,
   marginBottom: 16,
 };
+
+const adminPartnerSummaryGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+  gap: 10,
+  marginTop: 14,
+};
+
+const adminPartnerSummaryCardStyle: React.CSSProperties = {
+  border: "1px solid #e2e8f0",
+  borderRadius: 10,
+  background: "#f8fafc",
+  padding: "10px 12px",
+};
+
+const adminPartnerSummaryLabelStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  color: "#64748b",
+  textTransform: "uppercase",
+  letterSpacing: 0.3,
+};
+
+const adminPartnerSummaryValueStyle: React.CSSProperties = {
+  marginTop: 6,
+  fontSize: 17,
+  fontWeight: 800,
+  color: "#0f172a",
+  lineHeight: 1.15,
+};
+
+const reviewSectionCardStyle: React.CSSProperties = {
+  marginTop: 12,
+  border: "1px solid #e2e8f0",
+  borderRadius: 10,
+  background: "#f8fafc",
+  padding: 14,
+};
+
+const reviewSectionHeaderStyle: React.CSSProperties = {
+  marginBottom: 12,
+  fontSize: 13,
+  fontWeight: 800,
+  color: "#0f172a",
+  textTransform: "uppercase",
+  letterSpacing: 0.3,
+};
+
+const reviewInlineFeedbackStyle = (isError: boolean): React.CSSProperties => ({
+  marginTop: 12,
+  border: `1px solid ${isError ? "#fecaca" : "#bbf7d0"}`,
+  background: isError ? "#fef2f2" : "#f0fdf4",
+  borderRadius: 10,
+  padding: "10px 12px",
+  fontSize: 12,
+  fontWeight: 600,
+  color: isError ? "#991b1b" : "#166534",
+});
 
 const partnerTabBarStyle: React.CSSProperties = {
   marginTop: 14,

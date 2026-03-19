@@ -22,6 +22,22 @@ type CreatePartnerBody = {
   llm_mode_default?: string | null;
 };
 
+type PartnerAreaMappingRow = {
+  id: string;
+  auth_user_id: string;
+  area_id: string;
+  is_active: boolean;
+  is_public_live?: boolean | null;
+  activation_status?: string | null;
+  partner_preview_signoff_at?: string | null;
+  areas?: {
+    name?: string | null;
+    slug?: string | null;
+    parent_slug?: string | null;
+    bundesland_slug?: string | null;
+  } | null;
+};
+
 function isMissingIsActiveColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return msg.includes("partners.is_active") && msg.includes("does not exist");
@@ -73,6 +89,79 @@ function normalizeNullableString(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   const normalized = String(value).trim();
   return normalized.length > 0 ? normalized : null;
+}
+
+function isMissingAreaActivationStatusColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return (
+    msg.includes("partner_area_map.activation_status") && msg.includes("does not exist")
+  ) || (
+    msg.includes("partner_area_map.is_public_live") && msg.includes("does not exist")
+  );
+}
+
+function isMissingAreaPreviewSignoffColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partner_preview_signoff_at")
+    && msg.includes("partner_area_map")
+    && (msg.includes("does not exist") || msg.includes("schema cache"));
+}
+
+async function loadPartnerAreaMappings(
+  admin: ReturnType<typeof createAdminClient>,
+  partnerIds: string[],
+): Promise<Map<string, PartnerAreaMappingRow[]>> {
+  const byPartner = new Map<string, PartnerAreaMappingRow[]>();
+  if (partnerIds.length === 0) return byPartner;
+
+  let { data: mappings, error: mappingError } = await admin
+    .from("partner_area_map")
+    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, created_at, areas(name, slug, parent_slug, bundesland_slug)")
+    .in("auth_user_id", partnerIds)
+    .order("area_id", { ascending: true });
+
+  if (mappingError && (isMissingAreaActivationStatusColumn(mappingError) || isMissingAreaPreviewSignoffColumn(mappingError))) {
+    const missingActivationStatus = isMissingAreaActivationStatusColumn(mappingError);
+    const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(mappingError);
+
+    if (missingPreviewSignoff && !missingActivationStatus) {
+      const fallback = await admin
+        .from("partner_area_map")
+        .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at, areas(name, slug, parent_slug, bundesland_slug)")
+        .in("auth_user_id", partnerIds)
+        .order("area_id", { ascending: true });
+      mappings = (fallback.data ?? []).map((row) => ({
+        ...row,
+        partner_preview_signoff_at: null,
+      }));
+      mappingError = fallback.error;
+    } else {
+      const fallback = await admin
+        .from("partner_area_map")
+        .select("id, auth_user_id, area_id, is_active, created_at, areas(name, slug, parent_slug, bundesland_slug)")
+        .in("auth_user_id", partnerIds)
+        .order("area_id", { ascending: true });
+      mappings = (fallback.data ?? []).map((row) => ({
+        ...row,
+        activation_status: null,
+        is_public_live: null,
+        partner_preview_signoff_at: null,
+      }));
+      mappingError = fallback.error;
+    }
+  }
+
+  if (mappingError) {
+    throw new Error(mappingError.message);
+  }
+
+  for (const row of (mappings ?? []) as PartnerAreaMappingRow[]) {
+    const list = byPartner.get(row.auth_user_id) ?? [];
+    list.push(row);
+    byPartner.set(row.auth_user_id, list);
+  }
+
+  return byPartner;
 }
 
 async function cleanupCreatedPartner(admin: ReturnType<typeof createAdminClient>, partnerId: string) {
@@ -372,7 +461,19 @@ export async function GET(req: Request) {
     }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    return NextResponse.json({ ok: true, partners: data ?? [] });
+    const partners = data ?? [];
+    const areaMappingsByPartner = await loadPartnerAreaMappings(
+      admin,
+      partners.map((partner) => String(partner.id ?? "")).filter(Boolean),
+    );
+
+    return NextResponse.json({
+      ok: true,
+      partners: partners.map((partner) => ({
+        ...partner,
+        area_mappings: areaMappingsByPartner.get(String(partner.id ?? "")) ?? [],
+      })),
+    });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") {
