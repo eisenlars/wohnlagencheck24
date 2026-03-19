@@ -4549,9 +4549,9 @@ export default function AdminClient() {
                             setPortalCmsDrafts((prev) => ({
                               ...prev,
                               [draftKey]: {
-                                ...draft,
+                                ...(prev[draftKey] ?? draft),
                                 fields_json: {
-                                  ...draft.fields_json,
+                                  ...((prev[draftKey]?.fields_json ?? draft.fields_json)),
                                   [field.key]: serializePortalContentBlocks(nextBlocks),
                                 },
                               },
@@ -4922,18 +4922,20 @@ export default function AdminClient() {
                                   </div>
                                 ))}
 
-                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                  {(["heading", "paragraph", "list", "link_list", "contact", "note"] as PortalBlockType[]).map((type) => (
-                                    <button
-                                      key={`${field.key}:add:${type}`}
-                                      type="button"
-                                      style={btnGhostStyle}
-                                      onClick={() => updateBlocks([...blocks, createEmptyPortalBlock(type)])}
-                                    >
-                                      {formatPortalBlockTypeLabel(type)} hinzufügen
-                                    </button>
-                                  ))}
-                                </div>
+                                {blocks.length > 0 ? (
+                                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                    {(["heading", "paragraph", "list", "link_list", "contact", "note"] as PortalBlockType[]).map((type) => (
+                                      <button
+                                        key={`${field.key}:add:${type}`}
+                                        type="button"
+                                        style={btnGhostStyle}
+                                        onClick={() => updateBlocks([...blocks, createEmptyPortalBlock(type)])}
+                                      >
+                                        {formatPortalBlockTypeLabel(type)} hinzufügen
+                                      </button>
+                                    ))}
+                                  </div>
+                                ) : null}
                               </div>
                             </div>
                           );
