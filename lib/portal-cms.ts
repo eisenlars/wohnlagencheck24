@@ -288,24 +288,28 @@ export function parsePortalContentBlocks(value: string): PortalContentBlock[] {
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.flatMap((entry) => {
-      if (!entry || typeof entry !== "object") return [];
+    const blocks: PortalContentBlock[] = [];
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== "object") continue;
       const block = entry as Record<string, unknown>;
       const type = String(block.type ?? "").trim();
       if (type === "heading") {
         const level = Number(block.level);
         const text = String(block.text ?? "");
-        if (![1, 2, 3].includes(level) || !text.trim()) return [];
-        return [{ type: "heading", level: level as 1 | 2 | 3, text }];
+        if (![1, 2, 3].includes(level) || !text.trim()) continue;
+        blocks.push({ type: "heading", level: level as 1 | 2 | 3, text });
+        continue;
       }
       if (type === "paragraph") {
         const text = String(block.text ?? "");
-        return text.trim() ? [{ type: "paragraph", text }] : [];
+        if (text.trim()) blocks.push({ type: "paragraph", text });
+        continue;
       }
       if (type === "list") {
         const style = String(block.style ?? "unordered") === "ordered" ? "ordered" : "unordered";
         const items = Array.isArray(block.items) ? block.items.map((item) => String(item ?? "")).filter((item) => item.trim()) : [];
-        return items.length > 0 ? [{ type: "list", style, items }] : [];
+        if (items.length > 0) blocks.push({ type: "list", style, items });
+        continue;
       }
       if (type === "link_list") {
         const items = Array.isArray(block.items)
@@ -317,19 +321,22 @@ export function parsePortalContentBlocks(value: string): PortalContentBlock[] {
             return label && href ? [{ label, href }] : [];
           })
           : [];
-        return items.length > 0 ? [{ type: "link_list", items }] : [];
+        if (items.length > 0) blocks.push({ type: "link_list", items });
+        continue;
       }
       if (type === "contact") {
         const lines = Array.isArray(block.lines) ? block.lines.map((line) => String(line ?? "")).filter((line) => line.trim()) : [];
-        return lines.length > 0 ? [{ type: "contact", lines }] : [];
+        if (lines.length > 0) blocks.push({ type: "contact", lines });
+        continue;
       }
       if (type === "note") {
         const variant = String(block.variant ?? "info") === "warning" ? "warning" : "info";
         const text = String(block.text ?? "");
-        return text.trim() ? [{ type: "note", variant, text }] : [];
+        if (text.trim()) blocks.push({ type: "note", variant, text });
+        continue;
       }
-      return [];
-    });
+    }
+    return blocks;
   } catch {
     return [];
   }
