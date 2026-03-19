@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { getProviderSpec, getProvidersForKind } from "@/lib/integrations/providers";
 import FullscreenLoader from "@/components/ui/FullscreenLoader";
@@ -590,6 +590,8 @@ export default function PartnerSettingsPanel({
   const [costMonitorTab, setCostMonitorTab] = useState<"tokenverbrauch" | "portalabo" | "features">("tokenverbrauch");
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
   const [isCreateMode, setIsCreateMode] = useState(false);
+  const selectedIntegrationIdRef = useRef<string | null>(null);
+  const isCreateModeRef = useRef(false);
   const [secretDraft, setSecretDraft] = useState<Record<string, SecretDraft>>({});
   const [testResult, setTestResult] = useState<Record<string, { status: "ok" | "warning" | "error"; message: string }>>({});
   const [integrationPolicy, setIntegrationPolicy] = useState<IntegrationPolicy>({ llm_partner_managed_allowed: true });
@@ -688,6 +690,14 @@ export default function PartnerSettingsPanel({
     return inputStyle;
   }
 
+  useEffect(() => {
+    selectedIntegrationIdRef.current = selectedIntegrationId;
+  }, [selectedIntegrationId]);
+
+  useEffect(() => {
+    isCreateModeRef.current = isCreateMode;
+  }, [isCreateMode]);
+
   const loadAll = useCallback(async (preferredIntegrationId?: string | null) => {
     const [profileRes, integrationsRes] = await Promise.all([
       api<{ profile: PartnerProfile }>("/api/partner/profile"),
@@ -704,23 +714,27 @@ export default function PartnerSettingsPanel({
     const nextIntegrations = integrationsRes.integrations ?? [];
     setIntegrationPolicy(integrationsRes.policy ?? { llm_partner_managed_allowed: true });
     setIntegrations(nextIntegrations);
-    if (isCreateMode && !preferredIntegrationId) return;
+    if (isCreateModeRef.current && !preferredIntegrationId) return;
 
-    const desiredId = preferredIntegrationId ?? selectedIntegrationId;
+    const desiredId = preferredIntegrationId ?? selectedIntegrationIdRef.current;
     const resolved =
       (desiredId ? nextIntegrations.find((entry) => entry.id === desiredId) : null) ??
       nextIntegrations[0] ??
       null;
     if (resolved) {
+      selectedIntegrationIdRef.current = resolved.id;
+      isCreateModeRef.current = false;
       setSelectedIntegrationId(resolved.id);
       setIntegrationDraft(buildDraftFromIntegration(resolved));
       setIsCreateMode(false);
     } else {
+      selectedIntegrationIdRef.current = null;
+      isCreateModeRef.current = true;
       setSelectedIntegrationId(null);
       setIntegrationDraft(buildDefaultDraft("crm"));
       setIsCreateMode(true);
     }
-  }, [isCreateMode, selectedIntegrationId]);
+  }, []);
 
   const loadPartnerLlmUsage = useCallback(async () => {
     try {
@@ -790,6 +804,8 @@ export default function PartnerSettingsPanel({
   }, []);
 
   function beginCreateIntegration() {
+    isCreateModeRef.current = true;
+    selectedIntegrationIdRef.current = null;
     setIsCreateMode(true);
     setSelectedIntegrationId(null);
     setAdvancedAuthOpen(false);
@@ -799,6 +815,8 @@ export default function PartnerSettingsPanel({
   }
 
   function selectIntegration(integration: PartnerIntegration) {
+    isCreateModeRef.current = false;
+    selectedIntegrationIdRef.current = integration.id;
     setIsCreateMode(false);
     setSelectedIntegrationId(integration.id);
     setAdvancedAuthOpen(false);
