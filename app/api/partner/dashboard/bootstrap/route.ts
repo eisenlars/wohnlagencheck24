@@ -273,6 +273,9 @@ async function loadPartnerFeatures(admin: ReturnType<typeof createAdminClient>, 
 
   if (catalogRes.error || overridesRes.error) {
     const error = catalogRes.error ?? overridesRes.error;
+    if (!error) {
+      return [];
+    }
     if (
       isMissingBillingTable(error, "billing_feature_catalog")
       || isMissingBillingTable(error, "partner_feature_overrides")
