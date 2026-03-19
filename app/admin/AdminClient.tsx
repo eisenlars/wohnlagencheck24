@@ -4537,25 +4537,61 @@ export default function AdminClient() {
                     </div>
 
                     <div style={{ display: "grid", gap: 10 }}>
-                      {section.fields.map((field) => (
-                        <label key={field.key}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>{field.label}</div>
-                          {field.type === "block_content" ? (() => {
-                            const blocks = parsePortalContentBlocks(String(draft.fields_json[field.key] ?? "[]"));
-                            const updateBlocks = (nextBlocks: PortalContentBlock[]) => {
-                              setPortalCmsDrafts((prev) => ({
-                                ...prev,
-                                [draftKey]: {
-                                  ...draft,
-                                  fields_json: {
-                                    ...draft.fields_json,
-                                    [field.key]: serializePortalContentBlocks(nextBlocks),
-                                  },
+                      {section.fields.map((field) => {
+                        if (field.type === "block_content") {
+                          const draftKey = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
+                          const draft = portalCmsDrafts[draftKey] ?? {
+                            status: "draft" as PortalContentEntryStatus,
+                            fields_json: buildPortalCmsEmptyFields(section),
+                          };
+                          const blocks = parsePortalContentBlocks(String(draft.fields_json[field.key] ?? "[]"));
+                          const updateBlocks = (nextBlocks: PortalContentBlock[]) => {
+                            setPortalCmsDrafts((prev) => ({
+                              ...prev,
+                              [draftKey]: {
+                                ...draft,
+                                fields_json: {
+                                  ...draft.fields_json,
+                                  [field.key]: serializePortalContentBlocks(nextBlocks),
                                 },
-                              }));
-                            };
-                            return (
+                              },
+                            }));
+                          };
+                          return (
+                            <div key={field.key}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>{field.label}</div>
+                              {field.help ? (
+                                <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>{field.help}</div>
+                              ) : null}
                               <div style={{ display: "grid", gap: 10 }}>
+                                {blocks.length === 0 ? (
+                                  <div
+                                    style={{
+                                      border: "1px dashed #cbd5e1",
+                                      borderRadius: 8,
+                                      padding: 12,
+                                      background: "#fff",
+                                      display: "grid",
+                                      gap: 10,
+                                    }}
+                                  >
+                                    <div style={{ fontSize: 13, color: "#475569" }}>
+                                      Noch keine Inhaltsblöcke angelegt.
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                      {(["heading", "paragraph", "list", "link_list", "contact", "note"] as PortalBlockType[]).map((type) => (
+                                        <button
+                                          key={`${field.key}:empty:add:${type}`}
+                                          type="button"
+                                          style={btnGhostStyle}
+                                          onClick={() => updateBlocks([createEmptyPortalBlock(type)])}
+                                        >
+                                          {formatPortalBlockTypeLabel(type)} hinzufügen
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : null}
                                 {blocks.map((block, blockIdx) => (
                                   <div
                                     key={`${field.key}:${blockIdx}`}
@@ -4899,51 +4935,58 @@ export default function AdminClient() {
                                   ))}
                                 </div>
                               </div>
-                            );
-                          })() : field.type === "textarea" ? (
-                            <textarea
-                              style={{ ...inputStyle, minHeight: 110, resize: "vertical" }}
-                              value={String(draft.fields_json[field.key] ?? "")}
-                              placeholder={field.placeholder ?? ""}
-                              onChange={(e) => {
-                                const nextValue = e.target.value;
-                                setPortalCmsDrafts((prev) => ({
-                                  ...prev,
-                                  [draftKey]: {
-                                    ...draft,
-                                    fields_json: {
-                                      ...draft.fields_json,
-                                      [field.key]: nextValue,
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <label key={field.key}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>{field.label}</div>
+                            {field.type === "textarea" ? (
+                              <textarea
+                                style={{ ...inputStyle, minHeight: 110, resize: "vertical" }}
+                                value={String(draft.fields_json[field.key] ?? "")}
+                                placeholder={field.placeholder ?? ""}
+                                onChange={(e) => {
+                                  const nextValue = e.target.value;
+                                  setPortalCmsDrafts((prev) => ({
+                                    ...prev,
+                                    [draftKey]: {
+                                      ...draft,
+                                      fields_json: {
+                                        ...draft.fields_json,
+                                        [field.key]: nextValue,
+                                      },
                                     },
-                                  },
-                                }));
-                              }}
-                            />
-                          ) : (
-                            <input
-                              style={inputStyle}
-                              value={String(draft.fields_json[field.key] ?? "")}
-                              placeholder={field.placeholder ?? ""}
-                              onChange={(e) => {
-                                const nextValue = e.target.value;
-                                setPortalCmsDrafts((prev) => ({
-                                  ...prev,
-                                  [draftKey]: {
-                                    ...draft,
-                                    fields_json: {
-                                      ...draft.fields_json,
-                                      [field.key]: nextValue,
+                                  }));
+                                }}
+                              />
+                            ) : (
+                              <input
+                                style={inputStyle}
+                                value={String(draft.fields_json[field.key] ?? "")}
+                                placeholder={field.placeholder ?? ""}
+                                onChange={(e) => {
+                                  const nextValue = e.target.value;
+                                  setPortalCmsDrafts((prev) => ({
+                                    ...prev,
+                                    [draftKey]: {
+                                      ...draft,
+                                      fields_json: {
+                                        ...draft.fields_json,
+                                        [field.key]: nextValue,
+                                      },
                                     },
-                                  },
-                                }));
-                              }}
-                            />
-                          )}
-                          {field.help ? (
-                            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>{field.help}</div>
-                          ) : null}
-                        </label>
-                      ))}
+                                  }));
+                                }}
+                              />
+                            )}
+                            {field.help ? (
+                              <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>{field.help}</div>
+                            ) : null}
+                          </label>
+                        );
+                      })}
                     </div>
 
                     <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>
