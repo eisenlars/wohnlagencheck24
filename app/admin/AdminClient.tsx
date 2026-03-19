@@ -11,6 +11,10 @@ import { getTextKeyLabel } from "@/lib/text-key-labels";
 import {
   buildPortalCmsEmptyFields,
   getPortalCmsPages,
+  normalizePortalCmsFields,
+  parsePortalContentBlocks,
+  serializePortalContentBlocks,
+  type PortalContentBlock,
   type PortalContentEntryRecord,
   type PortalContentEntryStatus,
   type PortalContentPageDefinition,
@@ -248,6 +252,26 @@ type AdminWelcomeAction = {
   badge?: string | null;
   onClick: () => void;
 };
+
+type PortalBlockType = PortalContentBlock["type"];
+
+function createEmptyPortalBlock(type: PortalBlockType): PortalContentBlock {
+  if (type === "heading") return { type: "heading", level: 2, text: "" };
+  if (type === "paragraph") return { type: "paragraph", text: "" };
+  if (type === "list") return { type: "list", style: "unordered", items: [""] };
+  if (type === "link_list") return { type: "link_list", items: [{ label: "", href: "" }] };
+  if (type === "contact") return { type: "contact", lines: [""] };
+  return { type: "note", variant: "info", text: "" };
+}
+
+function formatPortalBlockTypeLabel(type: PortalBlockType): string {
+  if (type === "heading") return "Überschrift";
+  if (type === "paragraph") return "Absatz";
+  if (type === "list") return "Liste";
+  if (type === "link_list") return "Linkliste";
+  if (type === "contact") return "Kontaktblock";
+  return "Hinweis";
+}
 
 function renderAdminNavIcon(icon: AdminNavIconKey, size = 17) {
   const baseProps = {
@@ -1090,17 +1114,22 @@ export default function AdminClient() {
           && entry.page_key === selectedPortalCmsPage.page_key
           && entry.section_key === section.section_key,
         );
-        const emptyFields = buildPortalCmsEmptyFields(section);
+        const normalizedExistingFields = normalizePortalCmsFields(
+          section,
+          existingEntry?.fields_json as Record<string, string> | undefined,
+        );
+        const normalizedDraftFields = normalizePortalCmsFields(
+          section,
+          next[key]?.fields_json as Record<string, string> | undefined,
+        );
         const nextDraft = {
           status: existingEntry?.status ?? next[key]?.status ?? "draft",
           fields_json: existingEntry
             ? {
-                ...emptyFields,
-                ...existingEntry.fields_json,
+                ...normalizedExistingFields,
               }
             : {
-                ...emptyFields,
-                ...(next[key]?.fields_json ?? {}),
+                ...normalizedDraftFields,
               },
         };
         const currentDraft = next[key];
@@ -4511,7 +4540,367 @@ export default function AdminClient() {
                       {section.fields.map((field) => (
                         <label key={field.key}>
                           <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>{field.label}</div>
-                          {field.type === "textarea" ? (
+                          {field.type === "block_content" ? (() => {
+                            const blocks = parsePortalContentBlocks(String(draft.fields_json[field.key] ?? "[]"));
+                            const updateBlocks = (nextBlocks: PortalContentBlock[]) => {
+                              setPortalCmsDrafts((prev) => ({
+                                ...prev,
+                                [draftKey]: {
+                                  ...draft,
+                                  fields_json: {
+                                    ...draft.fields_json,
+                                    [field.key]: serializePortalContentBlocks(nextBlocks),
+                                  },
+                                },
+                              }));
+                            };
+                            return (
+                              <div style={{ display: "grid", gap: 10 }}>
+                                {blocks.map((block, blockIdx) => (
+                                  <div
+                                    key={`${field.key}:${blockIdx}`}
+                                    style={{ border: "1px solid #cbd5e1", borderRadius: 8, padding: 10, background: "#fff" }}
+                                  >
+                                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
+                                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                        <select
+                                          style={{ ...inputStyle, minWidth: 170 }}
+                                          value={block.type}
+                                          onChange={(e) => {
+                                            const nextType = String(e.target.value) as PortalBlockType;
+                                            updateBlocks(blocks.map((item, itemIdx) => itemIdx === blockIdx ? createEmptyPortalBlock(nextType) : item));
+                                          }}
+                                        >
+                                          <option value="heading">Überschrift</option>
+                                          <option value="paragraph">Absatz</option>
+                                          <option value="list">Liste</option>
+                                          <option value="link_list">Linkliste</option>
+                                          <option value="contact">Kontaktblock</option>
+                                          <option value="note">Hinweis</option>
+                                        </select>
+                                        <span style={{ fontSize: 12, color: "#64748b" }}>{formatPortalBlockTypeLabel(block.type)}</span>
+                                      </div>
+                                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                        <button
+                                          type="button"
+                                          style={btnGhostStyle}
+                                          disabled={blockIdx === 0}
+                                          onClick={() => {
+                                            const nextBlocks = [...blocks];
+                                            [nextBlocks[blockIdx - 1], nextBlocks[blockIdx]] = [nextBlocks[blockIdx], nextBlocks[blockIdx - 1]];
+                                            updateBlocks(nextBlocks);
+                                          }}
+                                        >
+                                          Nach oben
+                                        </button>
+                                        <button
+                                          type="button"
+                                          style={btnGhostStyle}
+                                          disabled={blockIdx === blocks.length - 1}
+                                          onClick={() => {
+                                            const nextBlocks = [...blocks];
+                                            [nextBlocks[blockIdx + 1], nextBlocks[blockIdx]] = [nextBlocks[blockIdx], nextBlocks[blockIdx + 1]];
+                                            updateBlocks(nextBlocks);
+                                          }}
+                                        >
+                                          Nach unten
+                                        </button>
+                                        <button
+                                          type="button"
+                                          style={btnDangerStyle}
+                                          onClick={() => {
+                                            updateBlocks(blocks.filter((_, itemIdx) => itemIdx !== blockIdx));
+                                          }}
+                                        >
+                                          Block löschen
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {block.type === "heading" ? (
+                                      <div style={{ display: "grid", gap: 8 }}>
+                                        <select
+                                          style={{ ...inputStyle, maxWidth: 180 }}
+                                          value={String(block.level)}
+                                          onChange={(e) => {
+                                            const nextLevel = Number(e.target.value);
+                                            updateBlocks(blocks.map((item, itemIdx) => (
+                                              itemIdx === blockIdx && item.type === "heading"
+                                                ? { ...item, level: nextLevel === 1 || nextLevel === 3 ? nextLevel : 2 }
+                                                : item
+                                            )));
+                                          }}
+                                        >
+                                          <option value="1">H1</option>
+                                          <option value="2">H2</option>
+                                          <option value="3">H3</option>
+                                        </select>
+                                        <input
+                                          style={inputStyle}
+                                          value={block.text}
+                                          placeholder="Überschrift"
+                                          onChange={(e) => {
+                                            const nextValue = e.target.value;
+                                            updateBlocks(blocks.map((item, itemIdx) => (
+                                              itemIdx === blockIdx && item.type === "heading"
+                                                ? { ...item, text: nextValue }
+                                                : item
+                                            )));
+                                          }}
+                                        />
+                                      </div>
+                                    ) : null}
+
+                                    {block.type === "paragraph" ? (
+                                      <textarea
+                                        style={{ ...inputStyle, minHeight: 120, resize: "vertical" }}
+                                        value={block.text}
+                                        placeholder="Absatztext"
+                                        onChange={(e) => {
+                                          const nextValue = e.target.value;
+                                          updateBlocks(blocks.map((item, itemIdx) => (
+                                            itemIdx === blockIdx && item.type === "paragraph"
+                                              ? { ...item, text: nextValue }
+                                              : item
+                                          )));
+                                        }}
+                                      />
+                                    ) : null}
+
+                                    {block.type === "list" ? (
+                                      <div style={{ display: "grid", gap: 8 }}>
+                                        <select
+                                          style={{ ...inputStyle, maxWidth: 180 }}
+                                          value={block.style}
+                                          onChange={(e) => {
+                                            const nextStyle = String(e.target.value) === "ordered" ? "ordered" : "unordered";
+                                            updateBlocks(blocks.map((item, itemIdx) => (
+                                              itemIdx === blockIdx && item.type === "list"
+                                                ? { ...item, style: nextStyle }
+                                                : item
+                                            )));
+                                          }}
+                                        >
+                                          <option value="unordered">Aufzählung</option>
+                                          <option value="ordered">Nummeriert</option>
+                                        </select>
+                                        {block.items.map((item, itemIdx) => (
+                                          <div key={`${field.key}:${blockIdx}:item:${itemIdx}`} style={{ display: "flex", gap: 8 }}>
+                                            <input
+                                              style={inputStyle}
+                                              value={item}
+                                              placeholder={`Listenpunkt ${itemIdx + 1}`}
+                                              onChange={(e) => {
+                                                const nextValue = e.target.value;
+                                                updateBlocks(blocks.map((entry, entryIdx) => (
+                                                  entryIdx === blockIdx && entry.type === "list"
+                                                    ? {
+                                                      ...entry,
+                                                      items: entry.items.map((line, lineIdx) => lineIdx === itemIdx ? nextValue : line),
+                                                    }
+                                                    : entry
+                                                )));
+                                              }}
+                                            />
+                                            <button
+                                              type="button"
+                                              style={btnDangerStyle}
+                                              onClick={() => {
+                                                updateBlocks(blocks.map((entry, entryIdx) => (
+                                                  entryIdx === blockIdx && entry.type === "list"
+                                                    ? { ...entry, items: entry.items.filter((_, lineIdx) => lineIdx !== itemIdx) }
+                                                    : entry
+                                                )));
+                                              }}
+                                            >
+                                              Entfernen
+                                            </button>
+                                          </div>
+                                        ))}
+                                        <button
+                                          type="button"
+                                          style={btnGhostStyle}
+                                          onClick={() => {
+                                            updateBlocks(blocks.map((entry, entryIdx) => (
+                                              entryIdx === blockIdx && entry.type === "list"
+                                                ? { ...entry, items: [...entry.items, ""] }
+                                                : entry
+                                            )));
+                                          }}
+                                        >
+                                          Listenpunkt hinzufügen
+                                        </button>
+                                      </div>
+                                    ) : null}
+
+                                    {block.type === "link_list" ? (
+                                      <div style={{ display: "grid", gap: 8 }}>
+                                        {block.items.map((item, itemIdx) => (
+                                          <div key={`${field.key}:${blockIdx}:link:${itemIdx}`} style={{ display: "grid", gap: 8, border: "1px solid #e2e8f0", borderRadius: 8, padding: 8 }}>
+                                            <input
+                                              style={inputStyle}
+                                              value={item.label}
+                                              placeholder="Linktext"
+                                              onChange={(e) => {
+                                                const nextValue = e.target.value;
+                                                updateBlocks(blocks.map((entry, entryIdx) => (
+                                                  entryIdx === blockIdx && entry.type === "link_list"
+                                                    ? {
+                                                      ...entry,
+                                                      items: entry.items.map((linkRow, linkIdx) => linkIdx === itemIdx ? { ...linkRow, label: nextValue } : linkRow),
+                                                    }
+                                                    : entry
+                                                )));
+                                              }}
+                                            />
+                                            <input
+                                              style={inputStyle}
+                                              value={item.href}
+                                              placeholder="https://..."
+                                              onChange={(e) => {
+                                                const nextValue = e.target.value;
+                                                updateBlocks(blocks.map((entry, entryIdx) => (
+                                                  entryIdx === blockIdx && entry.type === "link_list"
+                                                    ? {
+                                                      ...entry,
+                                                      items: entry.items.map((linkRow, linkIdx) => linkIdx === itemIdx ? { ...linkRow, href: nextValue } : linkRow),
+                                                    }
+                                                    : entry
+                                                )));
+                                              }}
+                                            />
+                                            <button
+                                              type="button"
+                                              style={btnDangerStyle}
+                                              onClick={() => {
+                                                updateBlocks(blocks.map((entry, entryIdx) => (
+                                                  entryIdx === blockIdx && entry.type === "link_list"
+                                                    ? { ...entry, items: entry.items.filter((_, linkIdx) => linkIdx !== itemIdx) }
+                                                    : entry
+                                                )));
+                                              }}
+                                            >
+                                              Link entfernen
+                                            </button>
+                                          </div>
+                                        ))}
+                                        <button
+                                          type="button"
+                                          style={btnGhostStyle}
+                                          onClick={() => {
+                                            updateBlocks(blocks.map((entry, entryIdx) => (
+                                              entryIdx === blockIdx && entry.type === "link_list"
+                                                ? { ...entry, items: [...entry.items, { label: "", href: "" }] }
+                                                : entry
+                                            )));
+                                          }}
+                                        >
+                                          Link hinzufügen
+                                        </button>
+                                      </div>
+                                    ) : null}
+
+                                    {block.type === "contact" ? (
+                                      <div style={{ display: "grid", gap: 8 }}>
+                                        {block.lines.map((line, lineIdx) => (
+                                          <div key={`${field.key}:${blockIdx}:line:${lineIdx}`} style={{ display: "flex", gap: 8 }}>
+                                            <input
+                                              style={inputStyle}
+                                              value={line}
+                                              placeholder={`Kontaktzeile ${lineIdx + 1}`}
+                                              onChange={(e) => {
+                                                const nextValue = e.target.value;
+                                                updateBlocks(blocks.map((entry, entryIdx) => (
+                                                  entryIdx === blockIdx && entry.type === "contact"
+                                                    ? {
+                                                      ...entry,
+                                                      lines: entry.lines.map((row, rowIdx) => rowIdx === lineIdx ? nextValue : row),
+                                                    }
+                                                    : entry
+                                                )));
+                                              }}
+                                            />
+                                            <button
+                                              type="button"
+                                              style={btnDangerStyle}
+                                              onClick={() => {
+                                                updateBlocks(blocks.map((entry, entryIdx) => (
+                                                  entryIdx === blockIdx && entry.type === "contact"
+                                                    ? { ...entry, lines: entry.lines.filter((_, rowIdx) => rowIdx !== lineIdx) }
+                                                    : entry
+                                                )));
+                                              }}
+                                            >
+                                              Entfernen
+                                            </button>
+                                          </div>
+                                        ))}
+                                        <button
+                                          type="button"
+                                          style={btnGhostStyle}
+                                          onClick={() => {
+                                            updateBlocks(blocks.map((entry, entryIdx) => (
+                                              entryIdx === blockIdx && entry.type === "contact"
+                                                ? { ...entry, lines: [...entry.lines, ""] }
+                                                : entry
+                                            )));
+                                          }}
+                                        >
+                                          Zeile hinzufügen
+                                        </button>
+                                      </div>
+                                    ) : null}
+
+                                    {block.type === "note" ? (
+                                      <div style={{ display: "grid", gap: 8 }}>
+                                        <select
+                                          style={{ ...inputStyle, maxWidth: 180 }}
+                                          value={block.variant}
+                                          onChange={(e) => {
+                                            const nextVariant = String(e.target.value) === "warning" ? "warning" : "info";
+                                            updateBlocks(blocks.map((entry, entryIdx) => (
+                                              entryIdx === blockIdx && entry.type === "note"
+                                                ? { ...entry, variant: nextVariant }
+                                                : entry
+                                            )));
+                                          }}
+                                        >
+                                          <option value="info">Info</option>
+                                          <option value="warning">Warnung</option>
+                                        </select>
+                                        <textarea
+                                          style={{ ...inputStyle, minHeight: 100, resize: "vertical" }}
+                                          value={block.text}
+                                          placeholder="Hinweistext"
+                                          onChange={(e) => {
+                                            const nextValue = e.target.value;
+                                            updateBlocks(blocks.map((entry, entryIdx) => (
+                                              entryIdx === blockIdx && entry.type === "note"
+                                                ? { ...entry, text: nextValue }
+                                                : entry
+                                            )));
+                                          }}
+                                        />
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ))}
+
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  {(["heading", "paragraph", "list", "link_list", "contact", "note"] as PortalBlockType[]).map((type) => (
+                                    <button
+                                      key={`${field.key}:add:${type}`}
+                                      type="button"
+                                      style={btnGhostStyle}
+                                      onClick={() => updateBlocks([...blocks, createEmptyPortalBlock(type)])}
+                                    >
+                                      {formatPortalBlockTypeLabel(type)} hinzufügen
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })() : field.type === "textarea" ? (
                             <textarea
                               style={{ ...inputStyle, minHeight: 110, resize: "vertical" }}
                               value={String(draft.fields_json[field.key] ?? "")}

@@ -13,10 +13,18 @@ export type PortalLocaleConfigRecord = {
 export type PortalContentFieldDefinition = {
   key: string;
   label: string;
-  type: "text" | "textarea";
+  type: "text" | "textarea" | "block_content";
   placeholder?: string;
   help?: string;
 };
+
+export type PortalContentBlock =
+  | { type: "heading"; level: 1 | 2 | 3; text: string }
+  | { type: "paragraph"; text: string }
+  | { type: "list"; style: "unordered" | "ordered"; items: string[] }
+  | { type: "link_list"; items: Array<{ label: string; href: string }> }
+  | { type: "contact"; lines: string[] }
+  | { type: "note"; variant: "info" | "warning"; text: string };
 
 export type PortalContentSectionDefinition = {
   page_key: string;
@@ -132,10 +140,12 @@ const PORTAL_CMS_PAGES: PortalContentPageDefinition[] = [
         label: "Pflichtangaben",
         description: "Zentral gepflegte Impressumsinhalte fuer das Portal.",
         fields: [
-          { key: "headline", label: "Headline", type: "text", placeholder: "Impressum" },
-          { key: "company_block", label: "Unternehmen / Anschrift", type: "textarea", placeholder: "Unternehmen, Anschrift, Vertretung." },
-          { key: "contact_block", label: "Kontakt", type: "textarea", placeholder: "Telefon, Fax, E-Mail." },
-          { key: "legal_block", label: "Rechtstext", type: "textarea", placeholder: "Rechtliche Hinweise und Haftung." },
+          {
+            key: "blocks",
+            label: "Inhaltsblöcke",
+            type: "block_content",
+            help: "Strukturierte Blöcke für Überschriften, Absätze, Listen, Links und Kontaktangaben.",
+          },
         ],
       },
     ],
@@ -152,9 +162,12 @@ const PORTAL_CMS_PAGES: PortalContentPageDefinition[] = [
         label: "Einleitung",
         description: "Einleitende Datenschutzhinweise und Verantwortliche.",
         fields: [
-          { key: "headline", label: "Headline", type: "text", placeholder: "Datenschutz" },
-          { key: "intro", label: "Einleitung", type: "textarea", placeholder: "Kurze Datenschutzeinleitung." },
-          { key: "responsible_party", label: "Verantwortliche Stelle", type: "textarea", placeholder: "Name, Anschrift, Kontakt." },
+          {
+            key: "blocks",
+            label: "Inhaltsblöcke",
+            type: "block_content",
+            help: "Strukturierte Blöcke für Überschrift, Einleitung und Verantwortliche Stelle.",
+          },
         ],
       },
       {
@@ -163,7 +176,12 @@ const PORTAL_CMS_PAGES: PortalContentPageDefinition[] = [
         label: "Datenerhebung",
         description: "Erhebung, Speicherung und Nutzung personenbezogener Daten.",
         fields: [
-          { key: "body", label: "Text", type: "textarea", placeholder: "Angaben zur Datenerhebung und Speicherung." },
+          {
+            key: "blocks",
+            label: "Inhaltsblöcke",
+            type: "block_content",
+            help: "Strukturierte Blöcke für Datenerhebung, Speicherung und Nutzung.",
+          },
         ],
       },
       {
@@ -172,7 +190,12 @@ const PORTAL_CMS_PAGES: PortalContentPageDefinition[] = [
         label: "Tools und Dienste",
         description: "Hinweise zu Analyse-, Marketing- oder Trackingtools.",
         fields: [
-          { key: "body", label: "Text", type: "textarea", placeholder: "Angaben zu Analytics, Marketing Automation oder weiteren Diensten." },
+          {
+            key: "blocks",
+            label: "Inhaltsblöcke",
+            type: "block_content",
+            help: "Strukturierte Blöcke für Analyse-, Marketing- oder Trackingtools.",
+          },
         ],
       },
       {
@@ -181,7 +204,12 @@ const PORTAL_CMS_PAGES: PortalContentPageDefinition[] = [
         label: "Rechte und Kontakt",
         description: "Betroffenenrechte, Kontakt und abschliessende Hinweise.",
         fields: [
-          { key: "body", label: "Text", type: "textarea", placeholder: "Betroffenenrechte, Kontakt und Schlussabschnitt." },
+          {
+            key: "blocks",
+            label: "Inhaltsblöcke",
+            type: "block_content",
+            help: "Strukturierte Blöcke für Betroffenenrechte, Kontakt und Schlussabschnitt.",
+          },
         ],
       },
     ],
@@ -201,9 +229,134 @@ export function getPortalCmsSection(pageKey: string, sectionKey: string): Portal
   return page?.sections.find((section) => section.section_key === sectionKey) ?? null;
 }
 
+function buildPortalCmsEmptyFieldValue(field: PortalContentFieldDefinition): string {
+  if (field.type === "block_content") return "[]";
+  return "";
+}
+
 export function buildPortalCmsEmptyFields(section: PortalContentSectionDefinition): Record<string, string> {
   return section.fields.reduce<Record<string, string>>((acc, field) => {
-    acc[field.key] = "";
+    acc[field.key] = buildPortalCmsEmptyFieldValue(field);
+    return acc;
+  }, {});
+}
+
+function normalizeTextLines(raw: unknown): string[] {
+  return String(raw ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function migrateLegacyBlocks(pageKey: string, sectionKey: string, fields: Record<string, string>): PortalContentBlock[] | null {
+  if (pageKey === "impressum" && sectionKey === "impressum_main") {
+    const blocks: PortalContentBlock[] = [];
+    const headline = String(fields.headline ?? "").trim();
+    const companyLines = normalizeTextLines(fields.company_block);
+    const contactLines = normalizeTextLines(fields.contact_block);
+    const legalText = String(fields.legal_block ?? "").trim();
+    if (headline) blocks.push({ type: "heading", level: 1, text: headline });
+    if (companyLines.length > 0) blocks.push({ type: "contact", lines: companyLines });
+    if (contactLines.length > 0) blocks.push({ type: "contact", lines: contactLines });
+    if (legalText) blocks.push({ type: "paragraph", text: legalText });
+    return blocks.length > 0 ? blocks : null;
+  }
+
+  if (pageKey === "datenschutz" && sectionKey === "privacy_intro") {
+    const blocks: PortalContentBlock[] = [];
+    const headline = String(fields.headline ?? "").trim();
+    const intro = String(fields.intro ?? "").trim();
+    const responsibleLines = normalizeTextLines(fields.responsible_party);
+    if (headline) blocks.push({ type: "heading", level: 1, text: headline });
+    if (intro) blocks.push({ type: "paragraph", text: intro });
+    if (responsibleLines.length > 0) blocks.push({ type: "contact", lines: responsibleLines });
+    return blocks.length > 0 ? blocks : null;
+  }
+
+  if (pageKey === "datenschutz" && ["privacy_collection", "privacy_tools", "privacy_rights"].includes(sectionKey)) {
+    const body = String(fields.body ?? "").trim();
+    if (!body) return null;
+    return [{ type: "paragraph", text: body }];
+  }
+
+  return null;
+}
+
+export function parsePortalContentBlocks(value: string): PortalContentBlock[] {
+  const raw = String(value ?? "").trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.flatMap((entry) => {
+      if (!entry || typeof entry !== "object") return [];
+      const block = entry as Record<string, unknown>;
+      const type = String(block.type ?? "").trim();
+      if (type === "heading") {
+        const level = Number(block.level);
+        const text = String(block.text ?? "");
+        if (![1, 2, 3].includes(level) || !text.trim()) return [];
+        return [{ type: "heading", level: level as 1 | 2 | 3, text }];
+      }
+      if (type === "paragraph") {
+        const text = String(block.text ?? "");
+        return text.trim() ? [{ type: "paragraph", text }] : [];
+      }
+      if (type === "list") {
+        const style = String(block.style ?? "unordered") === "ordered" ? "ordered" : "unordered";
+        const items = Array.isArray(block.items) ? block.items.map((item) => String(item ?? "")).filter((item) => item.trim()) : [];
+        return items.length > 0 ? [{ type: "list", style, items }] : [];
+      }
+      if (type === "link_list") {
+        const items = Array.isArray(block.items)
+          ? block.items.flatMap((item) => {
+            if (!item || typeof item !== "object") return [];
+            const row = item as Record<string, unknown>;
+            const label = String(row.label ?? "").trim();
+            const href = String(row.href ?? "").trim();
+            return label && href ? [{ label, href }] : [];
+          })
+          : [];
+        return items.length > 0 ? [{ type: "link_list", items }] : [];
+      }
+      if (type === "contact") {
+        const lines = Array.isArray(block.lines) ? block.lines.map((line) => String(line ?? "")).filter((line) => line.trim()) : [];
+        return lines.length > 0 ? [{ type: "contact", lines }] : [];
+      }
+      if (type === "note") {
+        const variant = String(block.variant ?? "info") === "warning" ? "warning" : "info";
+        const text = String(block.text ?? "");
+        return text.trim() ? [{ type: "note", variant, text }] : [];
+      }
+      return [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+export function serializePortalContentBlocks(blocks: PortalContentBlock[]): string {
+  return JSON.stringify(blocks);
+}
+
+export function normalizePortalCmsFields(
+  section: PortalContentSectionDefinition,
+  rawFields: Record<string, string> | null | undefined,
+): Record<string, string> {
+  const fields = rawFields ?? {};
+  return section.fields.reduce<Record<string, string>>((acc, field) => {
+    if (field.type === "block_content") {
+      const existing = String(fields[field.key] ?? "").trim();
+      if (existing) {
+        const parsed = parsePortalContentBlocks(existing);
+        acc[field.key] = serializePortalContentBlocks(parsed);
+        return acc;
+      }
+      const migrated = migrateLegacyBlocks(section.page_key, section.section_key, fields);
+      acc[field.key] = serializePortalContentBlocks(migrated ?? []);
+      return acc;
+    }
+    acc[field.key] = String(fields[field.key] ?? buildPortalCmsEmptyFieldValue(field));
     return acc;
   }, {});
 }
