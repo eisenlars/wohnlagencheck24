@@ -1035,6 +1035,23 @@ export default function AdminClient() {
     }
     return pending;
   }, [partners, partnerIdsWithAreaMapping]);
+  const partnerWorkflowSignalById = useMemo(() => {
+    const byPartner = new Map<string, string[]>();
+    for (const row of areaOverview) {
+      const list = byPartner.get(row.partnerId) ?? [];
+      list.push(String(row.activationStatus ?? ""));
+      byPartner.set(row.partnerId, list);
+    }
+    const result = new Map<string, WorkflowSignalTone>();
+    for (const partner of partners) {
+      const states = byPartner.get(partner.id) ?? [];
+      result.set(
+        partner.id,
+        resolveWorkflowSignalTone(states, partnerNeedsAssignment.has(partner.id), Boolean(partner.is_active)),
+      );
+    }
+    return result;
+  }, [areaOverview, partners, partnerNeedsAssignment]);
 
   const filteredPartners = useMemo(() => {
     const q = partnerFilter.trim().toLowerCase();
@@ -1088,23 +1105,6 @@ export default function AdminClient() {
   }, [areaOverview, areaFilter, onlyActiveList]);
 
   const pendingAreaAssignmentCount = useMemo(() => partnerNeedsAssignment.size, [partnerNeedsAssignment]);
-  const partnerWorkflowSignalById = useMemo(() => {
-    const byPartner = new Map<string, string[]>();
-    for (const row of areaOverview) {
-      const list = byPartner.get(row.partnerId) ?? [];
-      list.push(String(row.activationStatus ?? ""));
-      byPartner.set(row.partnerId, list);
-    }
-    const result = new Map<string, WorkflowSignalTone>();
-    for (const partner of partners) {
-      const states = byPartner.get(partner.id) ?? [];
-      result.set(
-        partner.id,
-        resolveWorkflowSignalTone(states, partnerNeedsAssignment.has(partner.id), Boolean(partner.is_active)),
-      );
-    }
-    return result;
-  }, [areaOverview, partners, partnerNeedsAssignment]);
 
   useEffect(() => {
     if (navMode !== "partners") return;
