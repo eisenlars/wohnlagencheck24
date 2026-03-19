@@ -144,6 +144,27 @@ export const workflowClassActionRowStyle: CSSProperties = {
   gap: 8,
 };
 
+export const workflowActionButtonStyle = (options: {
+  borderColor?: string;
+  background?: string;
+  color?: string;
+  disabled?: boolean;
+}): CSSProperties => ({
+  width: 'auto',
+  minWidth: 0,
+  height: 40,
+  padding: '0 14px',
+  borderRadius: 10,
+  border: `1px solid ${options.borderColor ?? '#cbd5e1'}`,
+  background: options.background ?? '#f8fafc',
+  color: options.color ?? '#475569',
+  boxShadow: 'none',
+  cursor: options.disabled ? 'not-allowed' : 'pointer',
+  opacity: options.disabled ? 0.55 : 1,
+  fontSize: 13,
+  fontWeight: 700,
+});
+
 export const workflowAnchorLinkStyle = (color: string): CSSProperties => ({
   border: 'none',
   background: 'transparent',
@@ -156,6 +177,10 @@ export const workflowAnchorLinkStyle = (color: string): CSSProperties => ({
   cursor: 'pointer',
   alignSelf: 'center',
 });
+
+export const workflowAnchorTargetStyle: CSSProperties = {
+  scrollMarginTop: 120,
+};
 
 export const workflowSectionIntroStyle: CSSProperties = {
   marginTop: '2px',

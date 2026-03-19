@@ -21,6 +21,7 @@ import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import {
+  workflowActionButtonStyle,
   workflowAreaContentStackStyle,
   workflowAreaContentWrapStyle as textAreaEditorWrapStyle,
   workflowAreaGridStyle as textEditorGridStyle,
@@ -42,6 +43,7 @@ import {
   workflowClassTopStyle as textWorkflowClassTopStyle,
   workflowHeaderInlineStyle as textWorkflowHeaderInlineStyle,
   workflowHeaderStyle as textWorkflowHeaderStyle,
+  workflowAnchorTargetStyle,
   workflowInlineFieldStyle as textWorkflowInlineFieldStyle,
   workflowInlineSelectStyle as textWorkflowInlineSelectStyle,
   workflowCardStackStyle,
@@ -1547,7 +1549,12 @@ export default function TextEditorForm({
                           void runBulkByTextClass(classKey);
                         }}
                         disabled={buttonDisabled}
-                        style={textInlineWorkflowButtonStyle(classKey, active, buttonDisabled)}
+                        style={workflowActionButtonStyle({
+                          borderColor: String((displayTextBadgeStyle(classKey) as Record<string, unknown>).borderColor ?? '#cbd5e1'),
+                          background: String(displayTextBadgeStyle(classKey).background ?? '#f8fafc'),
+                          color: String(displayTextBadgeStyle(classKey).color ?? '#475569'),
+                          disabled: buttonDisabled,
+                        })}
                       >
                         {isRunningThisCard
                           ? `${meta.title} wird optimiert (${classBulkState?.done ?? 0}/${classBulkState?.total ?? 0})`
@@ -1584,9 +1591,9 @@ export default function TextEditorForm({
         </>
       ) : null}
 
-      <div id={topicSectionAnchorId} style={sectionEditorCardStyle}>
+      <div style={sectionEditorCardStyle}>
         {/* TABS */}
-        <div style={sectionTabsIntroStyle}>
+        <div id={topicSectionAnchorId} style={{ ...sectionTabsIntroStyle, ...workflowAnchorTargetStyle }}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
 
@@ -2186,21 +2193,6 @@ const textWorkflowEmptyStateStyle: React.CSSProperties = {
   color: '#64748b',
   background: '#f8fafc',
 };
-const textInlineWorkflowButtonStyle = (classKey: GlobalClassKey, selected: boolean, disabled: boolean): React.CSSProperties => ({
-  borderRadius: 8,
-  border: selected
-    ? `1px solid ${String((displayTextBadgeStyle(classKey) as Record<string, unknown>).borderColor ?? '#cbd5e1')}`
-    : '1px solid #cbd5e1',
-  background: String(displayTextBadgeStyle(classKey).background ?? '#f8fafc'),
-  color: String(displayTextBadgeStyle(classKey).color ?? '#475569'),
-  padding: '10px 14px',
-  fontSize: 13,
-  fontWeight: 700,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.5 : 1,
-  alignSelf: 'flex-end',
-  boxShadow: 'none',
-});
 const fieldCardStyle = { marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #f1f5f9' };
 const fieldHeaderGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', marginBottom: '16px' };
 const fieldHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' };

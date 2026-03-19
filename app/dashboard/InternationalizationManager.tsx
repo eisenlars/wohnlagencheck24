@@ -29,6 +29,7 @@ import { hashText } from '@/lib/text-hash';
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
 import {
+  workflowActionButtonStyle,
   workflowAreaContentStackStyle,
   workflowAreaContentWrapStyle,
   workflowAreaGridStyle,
@@ -50,6 +51,7 @@ import {
   workflowClassTopStyle as classCardTopStyle,
   workflowHeaderInlineStyle,
   workflowHeaderStyle as workflowCardHeaderStyle,
+  workflowAnchorTargetStyle,
   workflowInlineFieldStyle,
   workflowInlineSelectStyle,
   workflowCardStackStyle,
@@ -2640,7 +2642,7 @@ export default function InternationalizationManager({ config, availableLocales, 
 	                <div style={classCardActionRowStyle}>
 	                  <button
 	                    type="button"
-	                    style={workflowAnchorLinkStyle(displayClass)}
+	                    style={workflowAnchorLinkStyle(String(displayTextBadgeStyle(displayClass).color ?? '#486b7a'))}
 	                    onClick={(e) => {
 	                      e.stopPropagation();
 	                      scrollToTopicSection();
@@ -2650,7 +2652,12 @@ export default function InternationalizationManager({ config, availableLocales, 
 	                  </button>
 	                  <button
 	                    type="button"
-	                    style={inlineWorkflowButtonStyle(displayClass, active, buttonDisabled)}
+	                    style={workflowActionButtonStyle({
+	                      borderColor: String(displayTextBadgeStyle(displayClass).borderColor ?? '#cbd5e1'),
+	                      background: String(displayTextBadgeStyle(displayClass).background ?? '#f8fafc'),
+	                      color: String(displayTextBadgeStyle(displayClass).color ?? '#475569'),
+	                      disabled: buttonDisabled,
+	                    })}
 	                    onClick={() => {
 	                      if (!active) {
 	                        setActiveClass(displayClass);
@@ -2669,8 +2676,8 @@ export default function InternationalizationManager({ config, availableLocales, 
 	        </div>
 	      </div>
 
-	      <div id={topicSectionAnchorId} style={{ ...workflowPanelCardStyle, marginBottom: 0 }}>
-	        <div style={sectionTabsIntroStyle}>
+	      <div style={{ ...workflowPanelCardStyle, marginBottom: 0 }}>
+	        <div id={topicSectionAnchorId} style={{ ...sectionTabsIntroStyle, ...workflowAnchorTargetStyle }}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
         </div>
         {showScopeAreaSidebar ? (
@@ -4406,21 +4413,6 @@ const classCardCountStyle: React.CSSProperties = {
   fontWeight: 800,
   color: '#0f172a',
 };
-
-const inlineWorkflowButtonStyle = (displayClass: DisplayTextClass, selected: boolean, disabled: boolean): React.CSSProperties => ({
-  ...buttonPrimaryStyle(true),
-  width: 'auto',
-  minWidth: 0,
-  height: 40,
-  padding: '0 14px',
-  borderRadius: 10,
-  border: `1px solid ${String(displayTextBadgeStyle(displayClass).borderColor ?? '#cbd5e1')}`,
-  background: String(displayTextBadgeStyle(displayClass).background ?? '#f8fafc'),
-  color: String(displayTextBadgeStyle(displayClass).color ?? '#475569'),
-  boxShadow: 'none',
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.55 : 1,
-});
 
 const estimateLabelStyle: React.CSSProperties = {
   fontSize: 11,
