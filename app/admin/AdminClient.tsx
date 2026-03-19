@@ -612,6 +612,7 @@ async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> 
 export default function AdminClient() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const adminModeBarRef = useRef<HTMLElement | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
@@ -621,6 +622,8 @@ export default function AdminClient() {
   const [adminDisplayName, setAdminDisplayName] = useState<string>("Admin");
   const [lastLogin, setLastLogin] = useState<string>("");
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+  const [hoveredAdminNavId, setHoveredAdminNavId] = useState<string | null>(null);
+  const [hoveredAdminNavTop, setHoveredAdminNavTop] = useState<number | null>(null);
   const [busy, setBusy] = useState<boolean>(false);
   const [areaQuery, setAreaQuery] = useState<string>("");
   const [areaOptions, setAreaOptions] = useState<AreaOption[]>([]);
@@ -1299,6 +1302,22 @@ export default function AdminClient() {
     ],
     [partners.length, areaOverview.length, portalPartner?.id],
   );
+  const hoveredAdminNavLabel = useMemo(() => {
+    if (hoveredAdminNavId === "partners") return "Partnerverwaltung";
+    if (hoveredAdminNavId === "areas") return "Gebiete";
+    if (hoveredAdminNavId === "llm") return "LLM-Verwaltung";
+    if (hoveredAdminNavId === "billing") return "Leistungsabrechnung";
+    if (hoveredAdminNavId === "cms") return "Portal-CMS";
+    return null;
+  }, [hoveredAdminNavId]);
+
+  const updateHoveredAdminNav = (navId: string, element: HTMLElement) => {
+    const asideRect = adminModeBarRef.current?.getBoundingClientRect();
+    const buttonRect = element.getBoundingClientRect();
+    const nextTop = asideRect ? (buttonRect.top - asideRect.top) + (buttonRect.height / 2) : null;
+    setHoveredAdminNavId(navId);
+    setHoveredAdminNavTop(nextTop);
+  };
 
   async function loadPartners(selectId?: string, options?: { refreshSelectedDetails?: boolean }) {
     const data = await api<{ partners: Partner[] }>("/api/admin/partners?include_inactive=1");
@@ -2726,7 +2745,14 @@ export default function AdminClient() {
             : adminLayoutStyle.gridTemplateColumns,
         }}
       >
-        <aside style={modeBarStyle}>
+        <aside
+          ref={adminModeBarRef}
+          style={modeBarStyle}
+          onMouseLeave={() => {
+            setHoveredAdminNavId(null);
+            setHoveredAdminNavTop(null);
+          }}
+        >
           <button
             style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" && navMode === "partners")}
             onClick={async () => {
@@ -2742,6 +2768,8 @@ export default function AdminClient() {
               setActiveView("partner_edit");
             }}
             title="Partner"
+            onMouseEnter={(event) => updateHoveredAdminNav("partners", event.currentTarget)}
+            onFocus={(event) => updateHoveredAdminNav("partners", event.currentTarget)}
           >
             {renderAdminNavIcon("partners")}
           </button>
@@ -2752,6 +2780,8 @@ export default function AdminClient() {
               setActiveView("partner_edit");
             }}
             title="Gebiete"
+            onMouseEnter={(event) => updateHoveredAdminNav("areas", event.currentTarget)}
+            onFocus={(event) => updateHoveredAdminNav("areas", event.currentTarget)}
           >
             {renderAdminNavIcon("areas")}
           </button>
@@ -2764,6 +2794,8 @@ export default function AdminClient() {
               });
             }}
             title="Globale LLM-Verwaltung"
+            onMouseEnter={(event) => updateHoveredAdminNav("llm", event.currentTarget)}
+            onFocus={(event) => updateHoveredAdminNav("llm", event.currentTarget)}
           >
             {renderAdminNavIcon("llm")}
           </button>
@@ -2776,6 +2808,8 @@ export default function AdminClient() {
               });
             }}
             title="Billing-Standards"
+            onMouseEnter={(event) => updateHoveredAdminNav("billing", event.currentTarget)}
+            onFocus={(event) => updateHoveredAdminNav("billing", event.currentTarget)}
           >
             {renderAdminNavIcon("billing")}
           </button>
@@ -2788,10 +2822,17 @@ export default function AdminClient() {
               }, { showSuccessModal: false });
             }}
             title="Portal-CMS"
+            onMouseEnter={(event) => updateHoveredAdminNav("cms", event.currentTarget)}
+            onFocus={(event) => updateHoveredAdminNav("cms", event.currentTarget)}
           >
             {renderAdminNavIcon("cms")}
           </button>
           <div style={{ flex: 1 }} />
+          {hoveredAdminNavLabel && hoveredAdminNavTop !== null ? (
+            <div style={adminNavTooltipLayerStyle(hoveredAdminNavTop)}>
+              <div style={adminNavTooltipCardStyle}>{hoveredAdminNavLabel}</div>
+            </div>
+          ) : null}
         </aside>
 
         {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" ? (
@@ -5953,6 +5994,8 @@ const modeBarStyle: React.CSSProperties = {
   position: "sticky",
   top: 0,
   alignSelf: "stretch",
+  overflow: "visible",
+  zIndex: 50,
 };
 
 const modeButtonStyle = (active: boolean): React.CSSProperties => ({
@@ -5968,6 +6011,28 @@ const modeButtonStyle = (active: boolean): React.CSSProperties => ({
   alignItems: "center",
   justifyContent: "center",
 });
+
+const adminNavTooltipLayerStyle = (top: number): React.CSSProperties => ({
+  position: "absolute",
+  top: `${top}px`,
+  left: "calc(100% + 10px)",
+  transform: "translateY(-50%)",
+  pointerEvents: "none",
+  zIndex: 60,
+});
+
+const adminNavTooltipCardStyle: React.CSSProperties = {
+  minWidth: "168px",
+  maxWidth: "220px",
+  borderRadius: "12px",
+  border: "1px solid rgba(255,255,255,0.18)",
+  background: "#486b7a",
+  color: "#ffffff",
+  boxShadow: "0 18px 36px rgba(15,23,42,0.22)",
+  padding: "10px 14px",
+  fontSize: "13px",
+  fontWeight: 700,
+};
 
 const listPaneStyle: React.CSSProperties = {
   position: "sticky",
