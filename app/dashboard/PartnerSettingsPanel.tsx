@@ -25,6 +25,9 @@ type PartnerIntegration = {
   is_active: boolean;
   settings?: Record<string, unknown> | null;
   auth_config?: Record<string, unknown> | null;
+  api_key?: string | null;
+  token?: string | null;
+  secret?: string | null;
   local_site_api_key?: string | null;
   has_api_key?: boolean;
   has_token?: boolean;
@@ -88,6 +91,7 @@ type SecretDraft = {
 };
 
 type SecretFieldKey = keyof SecretDraft;
+type SecretVisibilityState = Record<string, Partial<Record<SecretFieldKey, boolean>>>;
 
 const AUTH_TYPE_LABELS: Record<string, string> = {
   api_key: "API Key",
@@ -396,6 +400,36 @@ function hasStoredSecret(integration: PartnerIntegration, field: SecretFieldKey)
   return integration.has_secret === true;
 }
 
+function renderSecretVisibilityIcon(visible: boolean) {
+  const baseProps = {
+    width: 16,
+    height: 16,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+  if (visible) {
+    return (
+      <svg {...baseProps}>
+        <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...baseProps}>
+      <path d="m3 3 18 18" />
+      <path d="M10.6 10.7A3 3 0 0 0 13.3 13.4" />
+      <path d="M9.9 5.2A11.4 11.4 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2" />
+      <path d="M6.2 6.2C3.7 8 2 12 2 12a17.7 17.7 0 0 0 7.2 5.4" />
+    </svg>
+  );
+}
+
 function getProviderBeginnerHint(kind: string, provider: string): string {
   const k = String(kind ?? "").toLowerCase();
   const p = String(provider ?? "").toLowerCase();
@@ -602,6 +636,7 @@ export default function PartnerSettingsPanel({
   const selectedIntegrationIdRef = useRef<string | null>(null);
   const isCreateModeRef = useRef(false);
   const [secretDraft, setSecretDraft] = useState<Record<string, SecretDraft>>({});
+  const [secretVisibility, setSecretVisibility] = useState<SecretVisibilityState>({});
   const [testResult, setTestResult] = useState<Record<string, { status: "ok" | "warning" | "error"; message: string }>>({});
   const [integrationPolicy, setIntegrationPolicy] = useState<IntegrationPolicy>({ llm_partner_managed_allowed: true });
   const [llmUsageMonth, setLlmUsageMonth] = useState<string>(new Date().toISOString().slice(0, 7));
@@ -1474,14 +1509,12 @@ export default function PartnerSettingsPanel({
                   {(() => {
                     const integration = selectedIntegration;
                     const isLocalSiteIntegration = String(integration.kind ?? "").toLowerCase() === "local_site";
-                    const savedLocalSiteToken = isLocalSiteIntegration
-                      ? asText(integration.local_site_api_key)
-                      : null;
                     const draft = secretDraft[integration.id] ?? {
-                      api_key: "",
-                      token: savedLocalSiteToken ?? "",
-                      secret: "",
+                      api_key: asText(integration.api_key),
+                      token: asText(isLocalSiteIntegration ? integration.local_site_api_key : integration.token),
+                      secret: asText(integration.secret),
                     };
+                    const visibility = secretVisibility[integration.id] ?? {};
                     const settings = (integration.settings ?? {}) as Record<string, unknown>;
                     const lastTestedAt = asText(settings.last_tested_at);
                     const lastTestStatus = asText(settings.last_test_status);
@@ -1511,18 +1544,38 @@ export default function PartnerSettingsPanel({
                             {relevantSecretFields.map((field) => (
                               <div key={`${integration.id}-${field}`} style={fieldWrapLeftStyle}>
                                 <label style={fieldLabelStyle}>{getSecretFieldMeta(integration, field).label}</label>
-                                <input
-                                  placeholder={getSecretFieldMeta(integration, field).placeholder}
-                                  aria-label={`${getSecretFieldMeta(integration, field).label} für ${integration.provider}`}
-                                  style={secretInputStyle}
-                                  value={draft[field]}
-                                  onChange={(e) =>
-                                    setSecretDraft((prev) => ({
-                                      ...prev,
-                                      [integration.id]: { ...draft, [field]: e.target.value },
-                                    }))
-                                  }
-                                />
+                                <div style={secretInputWrapStyle}>
+                                  <input
+                                    type={visibility[field] ? "text" : "password"}
+                                    placeholder={getSecretFieldMeta(integration, field).placeholder}
+                                    aria-label={`${getSecretFieldMeta(integration, field).label} für ${integration.provider}`}
+                                    style={secretInputStyle}
+                                    value={draft[field]}
+                                    onChange={(e) =>
+                                      setSecretDraft((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, [field]: e.target.value },
+                                      }))
+                                    }
+                                  />
+                                  <button
+                                    type="button"
+                                    style={secretVisibilityButtonStyle}
+                                    aria-label={visibility[field] ? "Wert verbergen" : "Wert anzeigen"}
+                                    aria-pressed={visibility[field] === true}
+                                    onClick={() =>
+                                      setSecretVisibility((prev) => ({
+                                        ...prev,
+                                        [integration.id]: {
+                                          ...(prev[integration.id] ?? {}),
+                                          [field]: !Boolean(prev[integration.id]?.[field]),
+                                        },
+                                      }))
+                                    }
+                                  >
+                                    {renderSecretVisibilityIcon(Boolean(visibility[field]))}
+                                  </button>
+                                </div>
                                 {isLocalSiteIntegration && field === "token" ? (
                                   <span style={fieldHintStyle}>
                                     Das ist dein geheimer API-Key. Gib ihn nicht öffentlich weiter.
@@ -1559,17 +1612,14 @@ export default function PartnerSettingsPanel({
                                       method: "POST",
                                       body: JSON.stringify(payload),
                                     });
-                                    if (isLocalSiteIntegration) {
-                                      setSecretDraft((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, token: payload.token ?? draft.token },
-                                      }));
-                                    } else {
-                                      setSecretDraft((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { api_key: "", token: "", secret: "" },
-                                      }));
-                                    }
+                                    setSecretDraft((prev) => ({
+                                      ...prev,
+                                      [integration.id]: {
+                                        api_key: payload.api_key ?? draft.api_key,
+                                        token: payload.token ?? draft.token,
+                                        secret: payload.secret ?? draft.secret,
+                                      },
+                                    }));
                                     await loadAll(integration.id);
                                   })
                                 }
@@ -2159,7 +2209,31 @@ const selectStyle: React.CSSProperties = {
 const secretInputStyle: React.CSSProperties = {
   ...inputStyle,
   minWidth: 0,
+  paddingRight: 42,
   fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+};
+
+const secretInputWrapStyle: React.CSSProperties = {
+  position: "relative",
+  display: "flex",
+  alignItems: "center",
+};
+
+const secretVisibilityButtonStyle: React.CSSProperties = {
+  position: "absolute",
+  right: 10,
+  top: "50%",
+  transform: "translateY(-50%)",
+  border: "none",
+  background: "transparent",
+  color: "#64748b",
+  padding: 0,
+  width: 20,
+  height: 20,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
 };
 
 const inputMutedStyle: React.CSSProperties = {

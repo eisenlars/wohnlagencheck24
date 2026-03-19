@@ -5,7 +5,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
 import { validateIntegrationConfig } from "@/lib/integrations/providers";
-import { decryptLocalSiteToken } from "@/lib/security/secret-crypto";
+import { decryptIntegrationSecret, decryptLocalSiteToken } from "@/lib/security/secret-crypto";
 import { normalizeLlmRuntimeMode } from "@/lib/llm/mode";
 import { loadPartnerLlmPolicy } from "@/lib/llm/partner-policy";
 
@@ -72,14 +72,20 @@ function normalizeSettings(kind: string, provider: string, settings: Record<stri
   return out;
 }
 
-function enrichLocalSiteApiKey(row: Record<string, unknown>) {
+function enrichReadableSecrets(row: Record<string, unknown>) {
   const kind = String(row.kind ?? "").toLowerCase();
-  if (kind !== "local_site") return row;
   const auth = (row.auth_config ?? {}) as Record<string, unknown>;
-  const apiKey = decryptLocalSiteToken(auth.token_encrypted);
+  const apiKey = decryptIntegrationSecret(auth.api_key_encrypted) ?? (String(auth.api_key ?? "").trim() || null);
+  const secret = decryptIntegrationSecret(auth.secret_encrypted) ?? (String(auth.secret ?? "").trim() || null);
+  const token = kind === "local_site"
+    ? (decryptLocalSiteToken(auth.token_encrypted) ?? (String(auth.token ?? "").trim() || null))
+    : (decryptIntegrationSecret(auth.token_encrypted) ?? (String(auth.token ?? "").trim() || null));
   return {
     ...row,
-    local_site_api_key: apiKey,
+    api_key: apiKey,
+    token,
+    secret,
+    local_site_api_key: kind === "local_site" ? token : null,
   };
 }
 
@@ -133,7 +139,7 @@ export async function GET(req: Request) {
       ok: true,
       policy,
       integrations: visible.map((row) =>
-        maskIntegrationForResponse(enrichStoredSecretFlags(enrichLocalSiteApiKey(row as Record<string, unknown>))),
+        maskIntegrationForResponse(enrichStoredSecretFlags(enrichReadableSecrets(row as Record<string, unknown>))),
       ),
     });
   } catch (error) {
