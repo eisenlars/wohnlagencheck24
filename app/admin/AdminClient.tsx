@@ -157,6 +157,7 @@ type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit"
 type AdminNavMode = "partners" | "areas";
 type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations" | "billing";
 type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "cms" | "purge" | "audit" | "logout";
+type WorkflowSignalTone = "none" | "red" | "orange" | "green";
 
 type HandoverApiResponse = {
   ok?: boolean;
@@ -405,6 +406,21 @@ function formatAreaStateLabel(isActive: boolean, activationStatus: unknown, isPu
   if (state === "changes_requested") return "nachbesserung";
   if (state === "in_progress") return "in bearbeitung";
   return "zugewiesen";
+}
+
+function resolveWorkflowSignalTone(states: string[], needsAssignment: boolean, isActive = true): WorkflowSignalTone {
+  if (!isActive) return "none";
+  if (needsAssignment) return "red";
+  if (states.length === 0) return "red";
+  if (states.every((state) => state === "live")) return "green";
+  return "orange";
+}
+
+function workflowSignalColor(tone: WorkflowSignalTone): string | null {
+  if (tone === "red") return "#dc2626";
+  if (tone === "orange") return "#f59e0b";
+  if (tone === "green") return "#16a34a";
+  return null;
 }
 
 function buildPreviewHrefFromArea(area: AreaMapping["areas"], areaId: string): string | null {
@@ -1039,15 +1055,21 @@ export default function AdminClient() {
         const aDefault = a.is_system_default ? 1 : 0;
         const bDefault = b.is_system_default ? 1 : 0;
         if (aDefault !== bDefault) return bDefault - aDefault;
-        const aPending = partnerNeedsAssignment.has(a.id) ? 1 : 0;
-        const bPending = partnerNeedsAssignment.has(b.id) ? 1 : 0;
-        if (aPending !== bPending) return bPending - aPending;
+        const signalPriority = (tone: WorkflowSignalTone) => {
+          if (tone === "red") return 3;
+          if (tone === "orange") return 2;
+          if (tone === "green") return 1;
+          return 0;
+        };
+        const aPriority = signalPriority(partnerWorkflowSignalById.get(a.id) ?? "none");
+        const bPriority = signalPriority(partnerWorkflowSignalById.get(b.id) ?? "none");
+        if (aPriority !== bPriority) return bPriority - aPriority;
         const aInactive = a.is_active ? 0 : 1;
         const bInactive = b.is_active ? 0 : 1;
         if (aInactive !== bInactive) return bInactive - aInactive;
         return String(a.company_name ?? "").localeCompare(String(b.company_name ?? ""), "de");
       });
-  }, [partners, partnerFilter, onlyActiveList, partnerNeedsAssignment]);
+  }, [partners, partnerFilter, onlyActiveList, partnerWorkflowSignalById]);
 
   const filteredAreaOverview = useMemo(() => {
     const q = areaFilter.trim().toLowerCase();
@@ -1066,6 +1088,23 @@ export default function AdminClient() {
   }, [areaOverview, areaFilter, onlyActiveList]);
 
   const pendingAreaAssignmentCount = useMemo(() => partnerNeedsAssignment.size, [partnerNeedsAssignment]);
+  const partnerWorkflowSignalById = useMemo(() => {
+    const byPartner = new Map<string, string[]>();
+    for (const row of areaOverview) {
+      const list = byPartner.get(row.partnerId) ?? [];
+      list.push(String(row.activationStatus ?? ""));
+      byPartner.set(row.partnerId, list);
+    }
+    const result = new Map<string, WorkflowSignalTone>();
+    for (const partner of partners) {
+      const states = byPartner.get(partner.id) ?? [];
+      result.set(
+        partner.id,
+        resolveWorkflowSignalTone(states, partnerNeedsAssignment.has(partner.id), Boolean(partner.is_active)),
+      );
+    }
+    return result;
+  }, [areaOverview, partners, partnerNeedsAssignment]);
 
   useEffect(() => {
     if (navMode !== "partners") return;
@@ -1192,6 +1231,21 @@ export default function AdminClient() {
         return state === "ready_for_review";
       }).length,
     [reviewAreaOptions],
+  );
+  const selectedPartnerWorkflowSignal = useMemo(
+    () =>
+      resolveWorkflowSignalTone(
+        displayAreaRows.map((row) =>
+          normalizeActivationStatus(
+            row.mapping.activation_status,
+            row.mapping.is_active,
+            Boolean(row.mapping.is_public_live),
+          ),
+        ),
+        selectedPartnerNeedsAreaAssignment,
+        Boolean(selectedPartner?.is_active),
+      ),
+    [displayAreaRows, selectedPartnerNeedsAreaAssignment, selectedPartner?.is_active],
   );
   const currentReviewState = useMemo(
     () => normalizeActivationStatus(
@@ -2866,20 +2920,22 @@ export default function AdminClient() {
                         void selectSidebarPartner(p.id);
                       }}
                     >
+                      {workflowSignalColor(partnerWorkflowSignalById.get(p.id) ?? "none") ? (
+                        <div
+                          aria-hidden="true"
+                          style={{
+                            position: "absolute",
+                            top: 12,
+                            right: 12,
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: workflowSignalColor(partnerWorkflowSignalById.get(p.id) ?? "none") ?? "transparent",
+                          }}
+                        />
+                      ) : null}
                       <div style={{ fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
                         <span>{formatPartnerName(p)}</span>
-                        {partnerNeedsAssignment.has(p.id) ? (
-                          <span
-                            aria-label="Gebietszuordnung fehlt"
-                            style={{
-                              display: "inline-block",
-                              width: 8,
-                              height: 8,
-                              borderRadius: "50%",
-                              background: "#dc2626",
-                            }}
-                          />
-                        ) : null}
                       </div>
                       <div style={{ fontSize: 12, color: "#64748b" }}>
                         {p.is_active ? "aktiv" : "inaktiv"}
@@ -3043,15 +3099,15 @@ export default function AdminClient() {
             </button>
             <button style={partnerTabButtonStyle(partnerTab === "review")} onClick={() => setPartnerTab("review")}>
               Freigabeprüfung
-              {pendingReviewCount > 0 ? (
+              {selectedPartnerWorkflowSignal === "orange" ? (
                 <span
-                  aria-label={`${pendingReviewCount} neue Freigabeprüfung${pendingReviewCount === 1 ? "" : "en"}`}
+                  aria-label="Freigabe oder Preview offen"
                   style={{
                     display: "inline-block",
                     width: 8,
                     height: 8,
                     borderRadius: "50%",
-                    background: "#dc2626",
+                    background: "#f59e0b",
                     marginLeft: 8,
                     verticalAlign: "middle",
                   }}
@@ -6077,6 +6133,7 @@ const contentPaneStyle: React.CSSProperties = {
 };
 
 const listLinkRowStyle = (active: boolean): React.CSSProperties => ({
+  position: "relative",
   width: "100%",
   textAlign: "left",
   border: `1px solid ${active ? "#cbd5e1" : "#e2e8f0"}`,
