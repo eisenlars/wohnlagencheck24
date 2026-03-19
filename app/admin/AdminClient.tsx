@@ -607,8 +607,18 @@ type PersistedPortalCmsViewState = {
   locale?: string;
 };
 
+type PersistedAdminViewState = {
+  activeView?: AdminView;
+  navMode?: AdminNavMode;
+  selectedPartnerId?: string;
+  partnerTab?: PartnerPanelTab;
+  integrationsAdminTab?: "overview" | "llm_partner";
+  llmGlobalTab?: "create" | "overview" | "pricing" | "usage";
+};
+
 const PORTAL_CMS_VIEW_STATE_KEY = "admin_portal_cms_view_state_v1";
 const PORTAL_CMS_SCROLL_STATE_KEY = "admin_portal_cms_scroll_v1";
+const ADMIN_VIEW_STATE_KEY = "admin_view_state_v1";
 
 async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const res = await fetch(input, {
@@ -837,10 +847,22 @@ export default function AdminClient() {
   const portalCmsPages = useMemo<PortalContentPageDefinition[]>(() => getPortalCmsPages(), []);
   const [portalLocaleConfigs, setPortalLocaleConfigs] = useState<PortalLocaleConfigRecord[]>([]);
   const [portalContentEntries, setPortalContentEntries] = useState<PortalContentEntryRecord[]>([]);
+  const adminInitialViewState = useMemo<PersistedAdminViewState>(() => ({
+    activeView: "home",
+    navMode: "partners",
+    selectedPartnerId: "",
+    partnerTab: "profile",
+    integrationsAdminTab: "overview",
+    llmGlobalTab: "create",
+  }), []);
   const portalCmsInitialViewState = useMemo<PersistedPortalCmsViewState>(() => ({
     pageKey: "home",
     locale: "de",
   }), []);
+  const [adminViewState, setAdminViewState, adminViewStateHydrated] = useSessionViewState<PersistedAdminViewState>(
+    ADMIN_VIEW_STATE_KEY,
+    adminInitialViewState,
+  );
   const [portalCmsViewState, setPortalCmsViewState] = useSessionViewState<PersistedPortalCmsViewState>(
     PORTAL_CMS_VIEW_STATE_KEY,
     portalCmsInitialViewState,
@@ -852,6 +874,7 @@ export default function AdminClient() {
     fields_json: Record<string, string>;
   }>>({});
   const pendingPortalCmsScrollRestoreRef = useRef(false);
+  const adminViewStateAppliedRef = useRef(false);
   const [llmProviderDrafts, setLlmProviderDrafts] = useState<Record<string, Partial<{
     model: string;
     display_label: string;
@@ -1015,6 +1038,54 @@ export default function AdminClient() {
     restoreSessionScroll(PORTAL_CMS_SCROLL_STATE_KEY);
   }, [portalContentEntries, portalCmsLocale, portalCmsPageKey]);
 
+  useEffect(() => {
+    if (!adminViewStateHydrated || adminViewStateAppliedRef.current) return;
+    const restoredActiveView = adminViewState.activeView ?? "home";
+    setActiveView(restoredActiveView);
+    setNavMode(adminViewState.navMode ?? "partners");
+    setSelectedPartnerId(String(adminViewState.selectedPartnerId ?? ""));
+    setPartnerTab(adminViewState.partnerTab ?? "profile");
+    setIntegrationsAdminTab(adminViewState.integrationsAdminTab ?? "overview");
+    setLlmGlobalTab(adminViewState.llmGlobalTab ?? "create");
+    if (restoredActiveView === "llm_global") {
+      void loadLlmGlobalDashboard();
+    } else if (restoredActiveView === "billing_defaults") {
+      void loadBillingDefaults();
+    } else if (restoredActiveView === "portal_cms") {
+      void loadPortalCms();
+    }
+    adminViewStateAppliedRef.current = true;
+  }, [
+    adminViewState.activeView,
+    adminViewState.integrationsAdminTab,
+    adminViewState.llmGlobalTab,
+    adminViewState.navMode,
+    adminViewState.partnerTab,
+    adminViewState.selectedPartnerId,
+    adminViewStateHydrated,
+  ]);
+
+  useEffect(() => {
+    if (!adminViewStateHydrated || !adminViewStateAppliedRef.current) return;
+    setAdminViewState({
+      activeView,
+      navMode,
+      selectedPartnerId,
+      partnerTab,
+      integrationsAdminTab,
+      llmGlobalTab,
+    });
+  }, [
+    activeView,
+    adminViewStateHydrated,
+    integrationsAdminTab,
+    llmGlobalTab,
+    navMode,
+    partnerTab,
+    selectedPartnerId,
+    setAdminViewState,
+  ]);
+
   const formatPartnerName = (partner: Pick<Partner, "company_name" | "is_system_default">) =>
     partner.is_system_default ? `${partner.company_name} (Portalpartner)` : partner.company_name;
 
@@ -1117,6 +1188,16 @@ export default function AdminClient() {
     if (pendingAreaAssignmentCount <= 0) return;
     setOnlyActiveList(false);
   }, [navMode, pendingAreaAssignmentCount]);
+
+  useEffect(() => {
+    if (!adminViewStateHydrated || !adminViewStateAppliedRef.current) return;
+    const persistedPartnerId = String(adminViewState.selectedPartnerId ?? "").trim();
+    if (!persistedPartnerId) return;
+    if (!partners.some((partner) => partner.id === persistedPartnerId)) return;
+    if (selectedPartner?.id === persistedPartnerId) return;
+    setSelectedPartnerId(persistedPartnerId);
+    void loadPartnerDetails(persistedPartnerId);
+  }, [adminViewState.selectedPartnerId, adminViewStateHydrated, partners, selectedPartner?.id]);
 
   async function loadAreaOverview(partnerList?: Partner[]) {
     const source = partnerList ?? partners;
@@ -2898,7 +2979,6 @@ export default function AdminClient() {
 
         {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" ? (
           <aside style={listPaneStyle}>
-            {navMode === "areas" ? <div style={sidebarSectionHeaderStyle}>Gebietsübersicht</div> : null}
             <div style={sidebarControlWrapStyle}>
               <input
                 style={inputStyle}
