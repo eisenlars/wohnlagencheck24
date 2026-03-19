@@ -72,6 +72,21 @@ type PersistedDashboardState = {
   showWelcome?: boolean;
 };
 
+type DashboardBootstrapPayload = {
+  ok?: boolean;
+  last_login?: string | null;
+  partner_first_name?: string | null;
+  partner_features?: PartnerFeatureRow[];
+  configs?: PartnerAreaConfig[];
+  requested_area_id?: string | null;
+  mandatory_progress?: {
+    area_id?: string | null;
+    completed?: number;
+    total?: number;
+    percent?: number;
+  } | null;
+};
+
 type UtilityIconKey =
   | 'factors'
   | 'texts'
@@ -181,36 +196,6 @@ function mergeAreaMappingUpdate(config: PartnerAreaConfig, mapping: Partial<Part
     partner_preview_signoff_at: ("partner_preview_signoff_at" in mapping) ? mapping.partner_preview_signoff_at : (config.partner_preview_signoff_at ?? null),
     admin_review_note: ("admin_review_note" in mapping) ? mapping.admin_review_note : (config.admin_review_note ?? null),
   };
-}
-
-function resolvePartnerFirstName(user: unknown): string | null {
-  const rec = (typeof user === 'object' && user !== null) ? (user as Record<string, unknown>) : null;
-  if (!rec) return null;
-  const meta = (typeof rec.user_metadata === 'object' && rec.user_metadata !== null)
-    ? (rec.user_metadata as Record<string, unknown>)
-    : {};
-  const candidates = [
-    meta.first_name,
-    meta.firstname,
-    meta.given_name,
-    meta.vorname,
-  ]
-    .map((v) => String(v ?? '').trim())
-    .filter(Boolean);
-  if (candidates.length > 0) return candidates[0];
-
-  const fullName = String(meta.full_name ?? meta.name ?? '').trim();
-  if (fullName) {
-    const token = fullName.split(/\s+/)[0]?.trim();
-    if (token) return token;
-  }
-  return null;
-}
-
-function resolveFirstNameFromProfile(value: { contact_first_name?: unknown } | null | undefined): string | null {
-  const fromFirstName = String(value?.contact_first_name ?? "").trim();
-  if (fromFirstName) return fromFirstName;
-  return null;
 }
 
 function renderUtilityIcon(icon: UtilityIconKey, size = 17) {
@@ -385,6 +370,7 @@ export default function DashboardClient() {
   });
   const [mandatoryProgressLoading, setMandatoryProgressLoading] = useState(true);
   const lastMandatoryAreaIdRef = useRef<string | null>(null);
+  const bootstrappedMandatoryAreaIdRef = useRef<string | null>(null);
   const [animatedMandatoryPercent, setAnimatedMandatoryPercent] = useState(0);
   const [hoveredActivationTabId, setHoveredActivationTabId] = useState<string | null>(null);
   const [progressRefreshTick, setProgressRefreshTick] = useState(0);
@@ -463,119 +449,24 @@ export default function DashboardClient() {
 
   useEffect(() => {
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      queueMicrotask(() => {
-        setLastLogin(user.last_sign_in_at ?? null);
-      });
+      const persisted = readSessionViewState<PersistedDashboardState>(DASHBOARD_UI_STATE_KEY);
+      const restoredAreaId = String(persisted?.selectedAreaId ?? '').trim();
+      const bootstrapUrl = restoredAreaId
+        ? `/api/partner/dashboard/bootstrap?selected_area_id=${encodeURIComponent(restoredAreaId)}`
+        : '/api/partner/dashboard/bootstrap';
 
-      const [{ data }, profileFirstName, featuresPayload] = await Promise.all([
-        supabase
-          .from('partner_area_map')
-          .select(`*, areas ( name, id, slug, parent_slug, bundesland_slug )`)
-          .eq('auth_user_id', user.id)
-          .order('area_id', { ascending: true }),
-        (async () => {
-          const fromAuth = resolvePartnerFirstName(user);
-          if (fromAuth) return fromAuth;
-          try {
-            const res = await fetch('/api/partner/profile', { method: 'GET', cache: 'no-store' });
-            if (!res.ok) return null;
-            const payload = await res.json().catch(() => null) as {
-              profile?: { contact_first_name?: string | null };
-            } | null;
-            return resolveFirstNameFromProfile(payload?.profile);
-          } catch {
-            return null;
-          }
-        })(),
-        (async () => {
-          try {
-            const res = await fetch('/api/partner/billing/features', { method: 'GET', cache: 'no-store' });
-            if (!res.ok) return [] as PartnerFeatureRow[];
-            const payload = await res.json().catch(() => null) as { rows?: PartnerFeatureRow[] } | null;
-            return Array.isArray(payload?.rows) ? payload.rows : [];
-          } catch {
-            return [] as PartnerFeatureRow[];
-          }
-        })(),
-      ]);
-      queueMicrotask(() => {
-        setPartnerFirstName(profileFirstName);
-        setPartnerFeatures(featuresPayload);
-      });
-
-      let mergedConfigs: PartnerAreaConfig[] = (data ?? []) as PartnerAreaConfig[];
-      if (mergedConfigs.length > 0) {
-        const activeDistricts = mergedConfigs.filter((cfg) => {
-          const areaId = String(cfg.area_id ?? '');
-          return areaId.split('-').length <= 3 && Boolean(cfg.is_active);
-        });
-        const activeDistrictSlugs = activeDistricts
-          .map((cfg) => String(cfg.areas?.slug ?? '').trim())
-          .filter((slug) => slug.length > 0);
-
-        if (activeDistrictSlugs.length > 0) {
-          const districtBySlug = new Map(
-            activeDistricts.map((cfg) => [String(cfg.areas?.slug ?? ''), cfg] as const),
-          );
-
-          mergedConfigs = mergedConfigs.map((cfg) => {
-            const areaId = String(cfg.area_id ?? '');
-            if (!areaId || areaId.split('-').length <= 3) return cfg;
-            const parentSlug = String(cfg.areas?.parent_slug ?? '').trim();
-            const parentDistrict = districtBySlug.get(parentSlug);
-            if (!parentDistrict) return cfg;
-            return {
-              ...cfg,
-              is_active: true,
-              is_public_live: Boolean(parentDistrict.is_public_live),
-              activation_status: parentDistrict.activation_status ?? 'active',
-            };
-          });
-
-          const mappedAreaIds = new Set(mergedConfigs.map((cfg) => String(cfg.area_id ?? '')));
-          const { data: childAreas } = await supabase
-            .from('areas')
-            .select('id, name, slug, parent_slug, bundesland_slug')
-            .in('parent_slug', activeDistrictSlugs)
-            .order('name', { ascending: true });
-
-          const derivedOrtslagen: PartnerAreaConfig[] = (childAreas ?? [])
-            .map((area) => {
-              const areaId = String(area.id ?? '');
-              if (!areaId || mappedAreaIds.has(areaId)) return null;
-              const parentSlug = String(area.parent_slug ?? '');
-              const parentDistrict = districtBySlug.get(parentSlug);
-              if (!parentDistrict) return null;
-              return {
-                area_id: areaId,
-                is_active: true,
-                activation_status: parentDistrict.activation_status ?? 'active',
-                areas: {
-                  id: areaId,
-                  name: String(area.name ?? ''),
-                  slug: String(area.slug ?? ''),
-                  parent_slug: parentSlug,
-                  bundesland_slug: String(area.bundesland_slug ?? ''),
-                },
-              } as PartnerAreaConfig;
-            })
-            .filter((entry): entry is PartnerAreaConfig => Boolean(entry));
-
-          if (derivedOrtslagen.length > 0) {
-            mergedConfigs = [...mergedConfigs, ...derivedOrtslagen].sort((a, b) =>
-              String(a.area_id ?? '').localeCompare(String(b.area_id ?? ''), 'de'),
-            );
-          }
-        }
+      const res = await fetch(bootstrapUrl, { method: 'GET', cache: 'no-store' });
+      const payload = await res.json().catch(() => null) as DashboardBootstrapPayload | null;
+      if (!res.ok) {
+        throw new Error(String(payload && 'error' in payload ? (payload as { error?: unknown }).error ?? 'Dashboard konnte nicht geladen werden.' : 'Dashboard konnte nicht geladen werden.'));
       }
+      const mergedConfigs: PartnerAreaConfig[] = Array.isArray(payload?.configs) ? payload.configs : [];
 
       queueMicrotask(() => {
+        setLastLogin(String(payload?.last_login ?? '').trim() || null);
+        setPartnerFirstName(String(payload?.partner_first_name ?? '').trim() || null);
+        setPartnerFeatures(Array.isArray(payload?.partner_features) ? payload.partner_features : []);
         if (mergedConfigs.length > 0) {
-          const persisted = readSessionViewState<PersistedDashboardState>(DASHBOARD_UI_STATE_KEY);
-
-          const restoredAreaId = String(persisted?.selectedAreaId ?? '');
           const restoredArea = restoredAreaId ? mergedConfigs.find((cfg) => cfg.area_id === restoredAreaId) : undefined;
           const hasActiveAreasLocal = mergedConfigs.some((cfg) => Boolean(cfg.is_active));
           const restoredTab = isMainTab(persisted?.activeMainTab) ? persisted?.activeMainTab : undefined;
@@ -584,17 +475,36 @@ export default function DashboardClient() {
             : (restoredTab ?? 'factors');
           const nextShowWelcome = typeof persisted?.showWelcome === 'boolean' ? persisted.showWelcome : true;
           const nextSelected = restoredArea ?? mergedConfigs[0];
+          const bootstrapProgress = payload?.mandatory_progress;
+          const bootstrapProgressAreaId = String(bootstrapProgress?.area_id ?? '').trim();
 
           setConfigs(mergedConfigs);
           setSelectedConfig(nextSelected);
           setExpandedDistrict(nextSelected.area_id.split('-').slice(0, 3).join('-'));
           setActiveMainTab(nextTab);
           setShowWelcome(nextShowWelcome);
+          if (bootstrapProgressAreaId && bootstrapProgressAreaId === nextSelected.area_id) {
+            const completed = Number(bootstrapProgress?.completed ?? 0);
+            const total = Number(bootstrapProgress?.total ?? (INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length));
+            setMandatoryProgress({
+              completed: Number.isFinite(completed) ? completed : 0,
+              total: Number.isFinite(total) && total > 0 ? total : INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length,
+            });
+            setMandatoryProgressLoading(false);
+            lastMandatoryAreaIdRef.current = nextSelected.area_id;
+            bootstrappedMandatoryAreaIdRef.current = nextSelected.area_id;
+          } else {
+            setMandatoryProgressLoading(Boolean(nextSelected?.area_id));
+            bootstrappedMandatoryAreaIdRef.current = null;
+          }
+        } else {
+          setMandatoryProgress({ completed: 0, total: INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length });
+          setMandatoryProgressLoading(false);
         }
         setLoading(false);
       });
     }
-    loadData();
+    void loadData();
   }, [supabase]);
 
   const featuresByCode = useMemo(() => {
@@ -791,6 +701,10 @@ export default function DashboardClient() {
           setMandatoryProgress({ completed: 0, total: INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length });
           setMandatoryProgressLoading(false);
         }
+        return;
+      }
+      if (bootstrappedMandatoryAreaIdRef.current === currentAreaId && progressRefreshTick === 0 && !submitReviewMessage) {
+        bootstrappedMandatoryAreaIdRef.current = null;
         return;
       }
       if (mounted && progressRequestRef.current === requestId && (areaChanged || mandatoryProgressLoading)) {

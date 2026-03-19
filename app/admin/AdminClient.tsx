@@ -139,6 +139,43 @@ function buildAreaOverviewRows(partnerList: Partner[]): AreaOverviewRow[] {
   });
 }
 
+function mergeAreaMappingRecord(
+  current: AreaMapping | null | undefined,
+  patch: Partial<AreaMapping> & Pick<AreaMapping, "area_id" | "auth_user_id">,
+): AreaMapping {
+  return {
+    id: String(patch.id ?? current?.id ?? `${patch.auth_user_id}:${patch.area_id}`),
+    auth_user_id: String(patch.auth_user_id ?? current?.auth_user_id ?? ""),
+    area_id: String(patch.area_id ?? current?.area_id ?? ""),
+    is_active: Boolean(("is_active" in patch) ? patch.is_active : current?.is_active),
+    is_public_live: ("is_public_live" in patch) ? patch.is_public_live : current?.is_public_live,
+    activation_status: ("activation_status" in patch) ? patch.activation_status : current?.activation_status,
+    partner_preview_signoff_at: ("partner_preview_signoff_at" in patch)
+      ? patch.partner_preview_signoff_at
+      : (current?.partner_preview_signoff_at ?? null),
+    admin_review_note: ("admin_review_note" in patch)
+      ? patch.admin_review_note
+      : (current?.admin_review_note ?? null),
+    areas: patch.areas ?? current?.areas ?? null,
+  };
+}
+
+function upsertAreaMapping(
+  list: AreaMapping[],
+  patch: Partial<AreaMapping> & Pick<AreaMapping, "area_id" | "auth_user_id">,
+): AreaMapping[] {
+  const existingIndex = list.findIndex((entry) => entry.area_id === patch.area_id);
+  if (existingIndex === -1) {
+    return [...list, mergeAreaMappingRecord(undefined, patch)].sort((a, b) =>
+      String(a.area_id ?? "").localeCompare(String(b.area_id ?? ""), "de"),
+    );
+  }
+
+  const next = [...list];
+  next[existingIndex] = mergeAreaMappingRecord(next[existingIndex], patch);
+  return next;
+}
+
 type MandatoryMissingEntry = {
   key?: string;
   reason?: "missing" | "default" | "unapproved";
@@ -721,7 +758,6 @@ export default function AdminClient() {
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
-  const [areaOverview, setAreaOverview] = useState<AreaOverviewRow[]>([]);
   const [reviewAreaId, setReviewAreaId] = useState<string>("");
   const [reviewData, setReviewData] = useState<AreaReviewPayload | null>(null);
   const [reviewBusy, setReviewBusy] = useState(false);
@@ -1128,6 +1164,7 @@ export default function AdminClient() {
   const selectedPartnerLabel = selectedPartner
     ? `${formatPartnerName(selectedPartner)} (${selectedPartner.id})`
     : "Kein Partner ausgewählt";
+  const areaOverview = useMemo(() => buildAreaOverviewRows(partners), [partners]);
 
   const partnerIdsWithAreaMapping = useMemo(() => {
     const ids = new Set<string>();
@@ -1463,7 +1500,6 @@ export default function AdminClient() {
     const data = await api<{ partners: Partner[] }>("/api/admin/partners?include_inactive=1");
     const nextPartners = data.partners ?? [];
     setPartners(nextPartners);
-    setAreaOverview(buildAreaOverviewRows(nextPartners));
 
     const existingSelected = selectedPartnerId
       ? nextPartners.find((p) => p.id === selectedPartnerId)?.id ?? ""
@@ -1482,6 +1518,28 @@ export default function AdminClient() {
       setAreaMappings([]);
       setIntegrations([]);
     }
+  }
+
+  function applyLocalAreaMappingUpdate(
+    partnerId: string,
+    mappingPatch: Partial<AreaMapping> & Pick<AreaMapping, "area_id" | "auth_user_id">,
+  ) {
+    setPartners((prev) => prev.map((partner) => (
+      partner.id !== partnerId
+        ? partner
+        : {
+          ...partner,
+          area_mappings: upsertAreaMapping(partner.area_mappings ?? [], mappingPatch),
+        }
+    )));
+    setAreaMappings((prev) => upsertAreaMapping(prev, mappingPatch));
+    setReviewData((prev) => {
+      if (!prev?.mapping || prev.mapping.area_id !== mappingPatch.area_id) return prev;
+      return {
+        ...prev,
+        mapping: mergeAreaMappingRecord(prev.mapping, mappingPatch),
+      };
+    });
   }
 
   async function loadPartnerDetails(partnerId: string) {
@@ -1569,9 +1627,11 @@ export default function AdminClient() {
         method: "PATCH",
         body: JSON.stringify({ action, note: note || null }),
       });
-      await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
-      await loadPartnerDetails(selectedPartnerId);
-      await loadAreaReview(reviewAreaId);
+      if (response.mapping) {
+        applyLocalAreaMappingUpdate(selectedPartnerId, response.mapping);
+      }
+      setReviewData(response);
+      setReviewNoteDraft(String(response.mapping?.admin_review_note ?? ""));
       if ((action === "approve" || action === "changes_requested") && response?.notification?.partner?.sent === false) {
         const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
         setReviewActionError(
@@ -1609,9 +1669,9 @@ export default function AdminClient() {
           method: live ? "POST" : "DELETE",
         },
       );
-      await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
-      await loadPartnerDetails(selectedPartnerId);
-      await loadAreaReview(reviewAreaId);
+      if (response.mapping) {
+        applyLocalAreaMappingUpdate(selectedPartnerId, response.mapping);
+      }
       if (live && response?.notification?.partner?.sent === false) {
         const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
         setReviewActionError(`Gebiet wurde online geschaltet, Partner-Mail aber nicht versendet (${reason}).`);
