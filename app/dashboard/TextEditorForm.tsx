@@ -50,6 +50,10 @@ import {
   workflowAnchorTargetStyle,
   workflowInlineFieldStyle as textWorkflowInlineFieldStyle,
   workflowInlineSelectStyle as textWorkflowInlineSelectStyle,
+  workflowTopCardStyle as textWorkflowTopCardStyle,
+  workflowTopControlsStyle as textWorkflowTopControlsStyle,
+  workflowTopFieldStyle as textWorkflowTopFieldStyle,
+  workflowTopSelectStyle as textWorkflowTopSelectStyle,
   workflowCardStackStyle,
   workflowPanelCardStyle as textWorkflowCardStyle,
   workflowPromptLabelStyle as textWorkflowPromptLabelStyle,
@@ -2182,27 +2186,6 @@ const sectionEditorCardStyle: React.CSSProperties = {
   marginBottom: 0,
 };
 const contentWrapperStyle = { backgroundColor: '#fff', padding: '40px 20px 0', border: 'none' };
-const textWorkflowTopCardStyle: React.CSSProperties = {
-  borderRadius: 18,
-  background: 'rgb(72, 107, 122)',
-  padding: '18px 20px',
-  marginBottom: 16,
-};
-const textWorkflowTopControlsStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(260px, 420px)',
-  gap: 12,
-};
-const textWorkflowTopFieldStyle: React.CSSProperties = {
-  display: 'grid',
-};
-const textWorkflowTopSelectStyle: React.CSSProperties = {
-  ...textWorkflowSelectBaseStyle,
-  width: '100%',
-  minHeight: 42,
-  height: 42,
-  fontSize: 13,
-};
 const textWorkflowClassBadgeStyle = (classKey: GlobalClassKey): React.CSSProperties => ({
   ...displayTextBadgeStyle(classKey),
   fontSize: 16,

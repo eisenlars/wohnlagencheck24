@@ -58,6 +58,10 @@ import {
   workflowAnchorTargetStyle,
   workflowInlineFieldStyle,
   workflowInlineSelectStyle,
+  workflowTopCardStyle,
+  workflowTopControlsStyle,
+  workflowTopFieldStyle,
+  workflowTopSelectStyle,
   workflowCardStackStyle,
   workflowPanelCardStyle,
   workflowPromptLabelStyle,
@@ -769,6 +773,7 @@ function resolveSectionMeta(sectionKey: string): { label: string; type: SectionK
 
 const DEFAULT_WORKFLOW_CLASSES: DisplayTextClass[] = ['market_expert', 'data_driven', 'general', 'profile'];
 const MARKETING_WORKFLOW_CLASSES: DisplayTextClass[] = ['marketing'];
+const ORTSLAGE_HIDDEN_TAB_IDS = new Set(['berater', 'makler', 'marktueberblick']);
 
 export default function InternationalizationManager({ config, availableLocales, availableDomains }: Props) {
   const topicSectionAnchorId = 'i18n-topic-section';
@@ -2100,11 +2105,19 @@ export default function InternationalizationManager({ config, availableLocales, 
     () => (channel === 'marketing' ? MARKETING_WORKFLOW_CLASSES : DEFAULT_WORKFLOW_CLASSES),
     [channel],
   );
+  const selectedScopeAreaIsOrtslage = useMemo(
+    () => String(selectedScopeAreaId || config?.area_id || '').split('-').length > 3,
+    [config?.area_id, selectedScopeAreaId],
+  );
+  const visibleWorkflowTabs = useMemo(
+    () => (selectedScopeAreaIsOrtslage ? I18N_TAB_ORDER.filter((tab) => !ORTSLAGE_HIDDEN_TAB_IDS.has(tab.id)) : I18N_TAB_ORDER),
+    [selectedScopeAreaIsOrtslage],
+  );
 
   useEffect(() => {
-    if (I18N_TAB_ORDER.some((tab) => tab.id === activeTab)) return;
-    setActiveTab('marktueberblick');
-  }, [activeTab]);
+    if (visibleWorkflowTabs.some((tab) => tab.id === activeTab)) return;
+    setActiveTab(visibleWorkflowTabs[0]?.id ?? 'immobilienpreise');
+  }, [activeTab, visibleWorkflowTabs]);
 
   useEffect(() => {
     if (workflowClasses.includes(activeClass)) return;
@@ -2566,22 +2579,27 @@ export default function InternationalizationManager({ config, availableLocales, 
 
 	      {activeDomain === 'immobilienmarkt' ? (
 	      <div style={workflowCardStackStyle}>
+	      <div style={workflowTopCardStyle}>
+	        <div style={workflowTopControlsStyle}>
+	          <label style={workflowTopFieldStyle}>
+	            <select
+	              style={workflowTopSelectStyle}
+	              value={selectedLlmOptionId}
+	              onChange={(e) => setSelectedLlmOptionId(e.target.value)}
+	            >
+	              {llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+	              {llmOptions.map((opt) => (
+	                <option key={opt.id} value={opt.id}>{opt.label}</option>
+	              ))}
+	            </select>
+	          </label>
+	        </div>
+	      </div>
 	      <div style={{ ...workflowPanelCardStyle, marginBottom: 0 }}>
 	        <div style={workflowCardHeaderStyle}>
 	          <div style={workflowHeaderInlineStyle}>
 	            <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
 	            <div style={workflowInlineControlsStyle}>
-	              <label style={workflowInlineFieldStyle}>
-	                <select
-	                  style={workflowInlineSelectStyle}
-	                  value={channel}
-	                  onChange={(e) => setChannel(e.target.value as I18nChannel)}
-	                >
-	                  {I18N_CHANNEL_OPTIONS.map((item) => (
-	                    <option key={item.value} value={item.value}>{item.label}</option>
-	                  ))}
-	                </select>
-	              </label>
 	              <label style={workflowInlineFieldStyle}>
 	                <select
 	                  style={workflowInlineSelectStyle}
@@ -2740,7 +2758,7 @@ export default function InternationalizationManager({ config, availableLocales, 
             <div style={workflowAreaContentWrapStyle}>
               <div style={workflowAreaContentStackStyle}>
                 <div style={tabContainerStyle}>
-                  {I18N_TAB_ORDER.map((tab) => (
+                  {visibleWorkflowTabs.map((tab) => (
                     <button
                       key={tab.id}
                       type="button"
@@ -2901,7 +2919,7 @@ export default function InternationalizationManager({ config, availableLocales, 
           <>
             <div style={workflowAreaContentStackStyle}>
               <div style={tabContainerStyle}>
-                {I18N_TAB_ORDER.map((tab) => (
+                {visibleWorkflowTabs.map((tab) => (
                   <button
                     key={tab.id}
                     type="button"

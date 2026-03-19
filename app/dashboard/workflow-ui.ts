@@ -27,6 +27,23 @@ export const workflowHeaderInlineStyle: CSSProperties = {
   flexWrap: 'wrap',
 };
 
+export const workflowTopCardStyle: CSSProperties = {
+  borderRadius: 18,
+  background: 'rgb(72, 107, 122)',
+  padding: '18px 20px',
+  marginBottom: 16,
+};
+
+export const workflowTopControlsStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(260px, 420px)',
+  gap: 12,
+};
+
+export const workflowTopFieldStyle: CSSProperties = {
+  display: 'grid',
+};
+
 export const workflowSelectBaseStyle: CSSProperties = {
   border: '1px solid #cbd5e1',
   borderRadius: 10,
@@ -60,6 +77,14 @@ export const workflowInlineSelectStyle: CSSProperties = {
   minHeight: 36,
   height: 36,
   fontSize: 12,
+};
+
+export const workflowTopSelectStyle: CSSProperties = {
+  ...workflowSelectBaseStyle,
+  width: '100%',
+  minHeight: 42,
+  height: 42,
+  fontSize: 13,
 };
 
 export const workflowClassGridStyle: CSSProperties = {
