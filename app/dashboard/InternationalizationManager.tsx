@@ -58,10 +58,6 @@ import {
   workflowAnchorTargetStyle,
   workflowInlineFieldStyle,
   workflowInlineSelectStyle,
-  workflowTopCardStyle,
-  workflowTopControlsStyle,
-  workflowTopFieldStyle,
-  workflowTopSelectStyle,
   workflowCardStackStyle,
   workflowPanelCardStyle,
   workflowPromptLabelStyle,
@@ -2579,22 +2575,6 @@ export default function InternationalizationManager({ config, availableLocales, 
 
 	      {activeDomain === 'immobilienmarkt' ? (
 	      <div style={workflowCardStackStyle}>
-	      <div style={workflowTopCardStyle}>
-	        <div style={workflowTopControlsStyle}>
-	          <label style={workflowTopFieldStyle}>
-	            <select
-	              style={workflowTopSelectStyle}
-	              value={selectedLlmOptionId}
-	              onChange={(e) => setSelectedLlmOptionId(e.target.value)}
-	            >
-	              {llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
-	              {llmOptions.map((opt) => (
-	                <option key={opt.id} value={opt.id}>{opt.label}</option>
-	              ))}
-	            </select>
-	          </label>
-	        </div>
-	      </div>
 	      <div style={{ ...workflowPanelCardStyle, marginBottom: 0 }}>
 	        <div style={workflowCardHeaderStyle}>
 	          <div style={workflowHeaderInlineStyle}>
