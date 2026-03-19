@@ -409,7 +409,8 @@ function formatAreaStateLabel(isActive: boolean, activationStatus: unknown, isPu
 }
 
 function resolveWorkflowSignalTone(states: string[], needsAssignment: boolean, isActive = true, isSystemDefault = false): WorkflowSignalTone {
-  if (!isActive && !isSystemDefault) return "none";
+  if (isSystemDefault) return "none";
+  if (!isActive) return "none";
   if (needsAssignment) return "red";
   if (states.length === 0) return "red";
   if (states.every((state) => state === "live")) return "green";
