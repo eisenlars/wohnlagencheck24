@@ -222,10 +222,10 @@ type PartnerPurgeCheckPayload = {
   affected_counts?: Record<string, number>;
 };
 
-type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "portal_cms";
+type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "language_admin" | "portal_cms";
 type AdminNavMode = "partners" | "areas";
 type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations" | "billing";
-type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "cms" | "purge" | "audit" | "logout";
+type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "language" | "cms" | "purge" | "audit" | "logout";
 type WorkflowSignalTone = "none" | "red" | "orange" | "green";
 
 type HandoverApiResponse = {
@@ -293,6 +293,15 @@ function renderAdminNavIcon(icon: AdminNavIconKey, size = 17) {
         <svg {...baseProps}>
           <path d="M12 3v18" />
           <path d="M16 7.5c0-1.9-1.8-3.5-4-3.5s-4 1.6-4 3.5 1.8 3.5 4 3.5 4 1.6 4 3.5-1.8 3.5-4 3.5-4-1.6-4-3.5" />
+        </svg>
+      );
+    case "language":
+      return (
+        <svg {...baseProps}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M4 12h16" />
+          <path d="M12 4a12 12 0 0 1 0 16" />
+          <path d="M12 4a12 12 0 0 0 0 16" />
         </svg>
       );
     case "cms":
@@ -1123,6 +1132,8 @@ export default function AdminClient() {
       void loadLlmGlobalDashboard();
     } else if (restoredActiveView === "billing_defaults") {
       void loadBillingDefaults();
+    } else if (restoredActiveView === "language_admin") {
+      void loadPortalCms();
     } else if (restoredActiveView === "portal_cms") {
       void loadPortalCms();
     }
@@ -1465,6 +1476,19 @@ export default function AdminClient() {
         },
       },
       {
+        key: "language",
+        icon: "language",
+        title: "Sprachverwaltung",
+        text: "Globale Locale-Freigaben, Status und Partnerbuchbarkeit zentral steuern.",
+        badge: portalLocaleConfigs.length > 0 ? `${portalLocaleConfigs.length} Locales` : null,
+        onClick: () => {
+          setActiveView("language_admin");
+          void run("Sprachverwaltung laden", async () => {
+            await loadPortalCms();
+          }, { showSuccessModal: false });
+        },
+      },
+      {
         key: "cms",
         icon: "cms",
         title: "Portal-CMS",
@@ -1477,13 +1501,14 @@ export default function AdminClient() {
         },
       },
     ],
-    [partners.length, areaOverview.length, portalPartner?.id],
+    [partners.length, areaOverview.length, portalLocaleConfigs.length, portalPartner?.id],
   );
   const hoveredAdminNavLabel = useMemo(() => {
     if (hoveredAdminNavId === "partners") return "Partnerverwaltung";
     if (hoveredAdminNavId === "areas") return "Gebiete";
     if (hoveredAdminNavId === "llm") return "LLM-Verwaltung";
     if (hoveredAdminNavId === "billing") return "Leistungsabrechnung";
+    if (hoveredAdminNavId === "language") return "Sprachverwaltung";
     if (hoveredAdminNavId === "cms") return "Portal-CMS";
     return null;
   }, [hoveredAdminNavId]);
@@ -2954,7 +2979,7 @@ export default function AdminClient() {
       <div
         style={{
           ...adminLayoutStyle,
-          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults" || activeView === "portal_cms")
+          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults" || activeView === "language_admin" || activeView === "portal_cms")
             ? "50px minmax(0, 1fr)"
             : adminLayoutStyle.gridTemplateColumns,
         }}
@@ -2968,7 +2993,7 @@ export default function AdminClient() {
           }}
         >
           <button
-            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" && navMode === "partners")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "portal_cms" && navMode === "partners")}
             onClick={async () => {
               setNavMode("partners");
               if (selectedPartnerId) {
@@ -2988,7 +3013,7 @@ export default function AdminClient() {
             {renderAdminNavIcon("partners")}
           </button>
           <button
-            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" && navMode === "areas")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "portal_cms" && navMode === "areas")}
             onClick={() => {
               setNavMode("areas");
               setActiveView("partner_edit");
@@ -3028,6 +3053,20 @@ export default function AdminClient() {
             {renderAdminNavIcon("billing")}
           </button>
           <button
+            style={modeButtonStyle(activeView === "language_admin")}
+            onClick={() => {
+              setActiveView("language_admin");
+              void run("Sprachverwaltung laden", async () => {
+                await loadPortalCms();
+              }, { showSuccessModal: false });
+            }}
+            title="Sprachverwaltung"
+            onMouseEnter={(event) => updateHoveredAdminNav("language", event.currentTarget)}
+            onFocus={(event) => updateHoveredAdminNav("language", event.currentTarget)}
+          >
+            {renderAdminNavIcon("language")}
+          </button>
+          <button
             style={modeButtonStyle(activeView === "portal_cms")}
             onClick={() => {
               setActiveView("portal_cms");
@@ -3049,7 +3088,7 @@ export default function AdminClient() {
           ) : null}
         </aside>
 
-        {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "portal_cms" ? (
+        {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "portal_cms" ? (
           <aside style={listPaneStyle}>
             <div style={sidebarControlWrapStyle}>
               <input
@@ -4289,11 +4328,11 @@ export default function AdminClient() {
       </section>
       ) : null}
 
-      {activeView === "portal_cms" ? (
+      {activeView === "language_admin" ? (
       <section style={cardStyle}>
-        <h2 style={h2Style}>Portal-CMS</h2>
+        <h2 style={h2Style}>Sprachverwaltung</h2>
         <p style={mutedStyle}>
-          Globale Sprachen, statische Portalinhalte und die zentrale Freigabe portalweiter Locales. Partner koennen spaeter nur Sprachen nutzen, die hier global gepflegt und freigegeben sind.
+          Globale Sprachfreigaben, Locale-Status und Partnerbuchbarkeit zentral verwalten.
         </p>
 
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
@@ -4374,6 +4413,15 @@ export default function AdminClient() {
             </button>
           </div>
         </div>
+      </section>
+      ) : null}
+
+      {activeView === "portal_cms" ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Portal-CMS</h2>
+        <p style={mutedStyle}>
+          Globale Portalinhalte pro Bereich und Locale pflegen.
+        </p>
 
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Statische Portalbereiche</div>
