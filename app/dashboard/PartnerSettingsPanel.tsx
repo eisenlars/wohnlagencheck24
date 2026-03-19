@@ -445,6 +445,20 @@ function getIntegrationSetupSteps(kind: string): string[] {
   ];
 }
 
+function getIntegrationDeleteConfirmationMessage(integration: Pick<PartnerIntegration, "kind" | "provider">): string {
+  const kind = String(integration.kind ?? "").trim().toLowerCase();
+  const providerLabel = formatProviderLabel(integration.provider);
+  if (kind === "crm") {
+    return [
+      `${providerLabel}-Anbindung wirklich löschen?`,
+      "",
+      "Dabei werden auch importierte CRM-Daten dieses Systems, zugehörige Overrides und Übersetzungen entfernt.",
+      "Diesen Schritt nur ausführen, wenn die neue CRM-Anbindung bereits geprüft wurde.",
+    ].join("\n");
+  }
+  return `${providerLabel}-Anbindung wirklich löschen?\n\nDie gespeicherte Anbindung wird entfernt. Importierte CRM-Daten sind davon nicht betroffen.`;
+}
+
 function getSecretsStepHint(kind: string): string {
   const k = String(kind ?? "").toLowerCase();
   if (k === "local_site") {
@@ -1043,29 +1057,48 @@ export default function PartnerSettingsPanel({
               <div style={integrationDetailHeaderStyle}>
                 <strong style={{ color: "#0f172a", fontSize: 22, lineHeight: 1.2 }}>{isCreateMode ? "Neue Anbindung" : "Anbindung bearbeiten"}</strong>
                 {!isCreateMode && selectedIntegration ? (
-                  <button
-                    style={integrationToggleButtonStyle(selectedIntegration.is_active)}
-                    disabled={busy}
-                    onClick={() =>
-                      run(selectedIntegration.is_active ? "Anbindung deaktivieren" : "Anbindung aktivieren", async () => {
-                        await api("/api/partner/integrations", {
-                          method: "POST",
-                          body: JSON.stringify({
-                            kind: selectedIntegration.kind,
-                            provider: selectedIntegration.provider,
-                            base_url: selectedIntegration.base_url ?? "",
-                            auth_type: selectedIntegration.auth_type ?? "",
-                            detail_url_template: selectedIntegration.detail_url_template ?? "",
-                            settings: selectedIntegration.settings ?? null,
-                            is_active: !selectedIntegration.is_active,
-                          }),
+                  <div style={integrationActionRowStyle}>
+                    <button
+                      style={integrationToggleButtonStyle(selectedIntegration.is_active)}
+                      disabled={busy}
+                      onClick={() =>
+                        run(selectedIntegration.is_active ? "Anbindung deaktivieren" : "Anbindung aktivieren", async () => {
+                          await api("/api/partner/integrations", {
+                            method: "POST",
+                            body: JSON.stringify({
+                              kind: selectedIntegration.kind,
+                              provider: selectedIntegration.provider,
+                              base_url: selectedIntegration.base_url ?? "",
+                              auth_type: selectedIntegration.auth_type ?? "",
+                              detail_url_template: selectedIntegration.detail_url_template ?? "",
+                              settings: selectedIntegration.settings ?? null,
+                              is_active: !selectedIntegration.is_active,
+                            }),
+                          });
+                          await loadAll(selectedIntegration.id);
+                        })
+                      }
+                    >
+                      {selectedIntegration.is_active ? "Anbindung deaktivieren" : "Anbindung aktivieren"}
+                    </button>
+                    <button
+                      style={buttonDangerGhostStyle}
+                      disabled={busy}
+                      onClick={() => {
+                        if (!window.confirm(getIntegrationDeleteConfirmationMessage(selectedIntegration))) return;
+                        void run("Anbindung löschen", async () => {
+                          const purgeImportedData = String(selectedIntegration.kind ?? "").trim().toLowerCase() === "crm";
+                          const params = purgeImportedData ? "?purge_imported_data=1" : "";
+                          await api(`/api/partner/integrations/${selectedIntegration.id}${params}`, {
+                            method: "DELETE",
+                          });
+                          await loadAll(null);
                         });
-                        await loadAll(selectedIntegration.id);
-                      })
-                    }
-                  >
-                    {selectedIntegration.is_active ? "Anbindung deaktivieren" : "Anbindung aktivieren"}
-                  </button>
+                      }}
+                    >
+                      Anbindung löschen
+                    </button>
+                  </div>
                 ) : null}
               </div>
 
@@ -1992,6 +2025,14 @@ const integrationDetailHeaderStyle: React.CSSProperties = {
   marginBottom: 16,
 };
 
+const integrationActionRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-end",
+  gap: 8,
+  flexWrap: "wrap",
+};
+
 const integrationFlowTabsStyle: React.CSSProperties = {
   display: "flex",
   gap: 8,
@@ -2126,6 +2167,13 @@ const buttonGhostStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: "8px 12px",
   cursor: "pointer",
+};
+
+const buttonDangerGhostStyle: React.CSSProperties = {
+  ...buttonGhostStyle,
+  border: "1px solid #dc2626",
+  color: "#991b1b",
+  background: "#fff7f7",
 };
 
 function advancedToggleButtonStyle(open: boolean): React.CSSProperties {
