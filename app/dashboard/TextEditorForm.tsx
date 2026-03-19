@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import NextImage from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { INDIVIDUAL_MANDATORY_KEYS } from '@/lib/text-key-registry';
@@ -1229,7 +1229,7 @@ export default function TextEditorForm({
     }, { onConflict: 'partner_id,area_id,section_key' });
   };
 
-  const getCurrentTextForDataset = (
+  const getCurrentTextForDataset = useCallback((
     dataset: TextAreaData | null,
     areaIsOrtslage: boolean,
     sectionKey: string,
@@ -1237,7 +1237,7 @@ export default function TextEditorForm({
   ) => {
     const dbEntry = dataset?.dbTexts.find((t) => t.section_key === sectionKey);
     return dbEntry?.optimized_content ?? getRawTextFromDataset(dataset, areaIsOrtslage, sectionKey, sectionGroup);
-  };
+  }, []);
 
   const isProfileAiEligible = (sectionKey: string): boolean => {
     const key = String(sectionKey ?? '').toLowerCase();
@@ -1253,7 +1253,7 @@ export default function TextEditorForm({
     return true;
   };
 
-  const collectBulkTasks = (classKey: GlobalClassKey) => {
+  const collectBulkTasks = useCallback((classKey: GlobalClassKey) => {
     const tasks: Array<{ key: string; label: string; type: string; sectionGroup: string | null }> = [];
     const dedupe = new Set<string>();
     for (const tab of rootVisibleTabs) {
@@ -1269,7 +1269,7 @@ export default function TextEditorForm({
       }
     }
     return tasks;
-  };
+  }, [allowedSectionSet, rootVisibleTabs]);
 
   const selectedLlmOption = useMemo(
     () => llmIntegrations.find((item) => item.id === (selectedLlmIntegrationId || llmIntegrations[0]?.id)) ?? null,
@@ -1332,7 +1332,7 @@ export default function TextEditorForm({
         estimatedCostUsd: number | null;
         estimatedCostEur: number | null;
       }>);
-  }, [areaDataById, bulkScope, config?.area_id, isOrtslage, scopeAreaItems.length, selectedLlmOption]);
+  }, [areaDataById, bulkScope, collectBulkTasks, config?.area_id, getCurrentTextForDataset, isOrtslage, scopeAreaItems.length, selectedLlmOption]);
 
   const runBulkByTextClass = async (classKey: GlobalClassKey) => {
     if (classBulkState) return;
