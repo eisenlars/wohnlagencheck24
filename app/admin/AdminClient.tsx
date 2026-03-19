@@ -408,8 +408,8 @@ function formatAreaStateLabel(isActive: boolean, activationStatus: unknown, isPu
   return "zugewiesen";
 }
 
-function resolveWorkflowSignalTone(states: string[], needsAssignment: boolean, isActive = true): WorkflowSignalTone {
-  if (!isActive) return "none";
+function resolveWorkflowSignalTone(states: string[], needsAssignment: boolean, isActive = true, isSystemDefault = false): WorkflowSignalTone {
+  if (!isActive && !isSystemDefault) return "none";
   if (needsAssignment) return "red";
   if (states.length === 0) return "red";
   if (states.every((state) => state === "live")) return "green";
@@ -1047,7 +1047,12 @@ export default function AdminClient() {
       const states = byPartner.get(partner.id) ?? [];
       result.set(
         partner.id,
-        resolveWorkflowSignalTone(states, partnerNeedsAssignment.has(partner.id), Boolean(partner.is_active)),
+        resolveWorkflowSignalTone(
+          states,
+          partnerNeedsAssignment.has(partner.id),
+          Boolean(partner.is_active),
+          Boolean(partner.is_system_default),
+        ),
       );
     }
     return result;
@@ -1244,8 +1249,9 @@ export default function AdminClient() {
         ),
         selectedPartnerNeedsAreaAssignment,
         Boolean(selectedPartner?.is_active),
+        Boolean(selectedPartner?.is_system_default),
       ),
-    [displayAreaRows, selectedPartnerNeedsAreaAssignment, selectedPartner?.is_active],
+    [displayAreaRows, selectedPartnerNeedsAreaAssignment, selectedPartner?.is_active, selectedPartner?.is_system_default],
   );
   const currentReviewState = useMemo(
     () => normalizeActivationStatus(
