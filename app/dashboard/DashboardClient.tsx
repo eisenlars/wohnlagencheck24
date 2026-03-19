@@ -70,6 +70,7 @@ type PersistedDashboardState = {
   activeMainTab?: MainTab;
   selectedAreaId?: string;
   showWelcome?: boolean;
+  settingsSection?: SettingsSection;
 };
 
 type DashboardBootstrapPayload = {
@@ -125,6 +126,11 @@ const FEATURE_TAB_CODES: Partial<Record<MainTab, string>> = {
 function isMainTab(value: unknown): value is MainTab {
   return typeof value === 'string'
     && ['texts', 'factors', 'marketing', 'local_site', 'immobilien', 'referenzen', 'gesuche', 'blog', 'international', 'settings'].includes(value);
+}
+
+function isSettingsSection(value: unknown): value is SettingsSection {
+  return typeof value === 'string'
+    && ['konto', 'profil', 'integrationen', 'kostenmonitor'].includes(value);
 }
 
 function formatMandatoryLabel(key: string): string {
@@ -470,6 +476,7 @@ export default function DashboardClient() {
           const restoredArea = restoredAreaId ? mergedConfigs.find((cfg) => cfg.area_id === restoredAreaId) : undefined;
           const hasActiveAreasLocal = mergedConfigs.some((cfg) => Boolean(cfg.is_active));
           const restoredTab = isMainTab(persisted?.activeMainTab) ? persisted?.activeMainTab : undefined;
+          const restoredSettingsSection = isSettingsSection(persisted?.settingsSection) ? persisted.settingsSection : 'konto';
           const nextTab: MainTab = (!hasActiveAreasLocal && restoredTab && restoredTab !== 'texts')
             ? 'texts'
             : (restoredTab ?? 'factors');
@@ -482,6 +489,7 @@ export default function DashboardClient() {
           setSelectedConfig(nextSelected);
           setExpandedDistrict(nextSelected.area_id.split('-').slice(0, 3).join('-'));
           setActiveMainTab(nextTab);
+          setSettingsSection(restoredSettingsSection);
           setShowWelcome(nextShowWelcome);
           if (bootstrapProgressAreaId && bootstrapProgressAreaId === nextSelected.area_id) {
             const completed = Number(bootstrapProgress?.completed ?? 0);
@@ -772,9 +780,10 @@ export default function DashboardClient() {
       activeMainTab,
       selectedAreaId: selectedConfig?.area_id,
       showWelcome,
+      settingsSection,
     };
     writeSessionViewState(DASHBOARD_UI_STATE_KEY, payload);
-  }, [activeMainTab, selectedConfig?.area_id, showWelcome, loading]);
+  }, [activeMainTab, selectedConfig?.area_id, settingsSection, showWelcome, loading]);
 
   const activeConfigs = configs.filter((c) => Boolean(c.is_active));
   const inactiveConfigs = configs.filter((c) => !Boolean(c.is_active));

@@ -26,6 +26,9 @@ type PartnerIntegration = {
   settings?: Record<string, unknown> | null;
   auth_config?: Record<string, unknown> | null;
   local_site_api_key?: string | null;
+  has_api_key?: boolean;
+  has_token?: boolean;
+  has_secret?: boolean;
 };
 
 type IntegrationPolicy = {
@@ -385,6 +388,12 @@ function getSecretFieldMeta(
     return { label: "Bearer Token", placeholder: "Bearer Token eingeben" };
   }
   return { label: "Token", placeholder: "Token eingeben" };
+}
+
+function hasStoredSecret(integration: PartnerIntegration, field: SecretFieldKey): boolean {
+  if (field === "api_key") return integration.has_api_key === true;
+  if (field === "token") return integration.has_token === true;
+  return integration.has_secret === true;
 }
 
 function getProviderBeginnerHint(kind: string, provider: string): string {
@@ -1041,12 +1050,6 @@ export default function PartnerSettingsPanel({
               Neue Anbindung anlegen
             </button>
           </div>
-          {!llmPartnerManagedAllowed ? (
-            <div style={{ ...privacyHintStyle, marginTop: 0 }}>
-              Eigene LLM-Anbindungen sind aktuell nicht freigeschaltet. Die zentrale KI-Nutzung ist aktiv.
-              Für eine eigene LLM-Anbindung melde dich beim Admin-Support.
-            </div>
-          ) : null}
           <div style={integrationLayoutStyle}>
             <aside style={integrationListPaneStyle}>
               <div style={integrationListHeaderStyle}>
@@ -1523,6 +1526,11 @@ export default function PartnerSettingsPanel({
                                 {isLocalSiteIntegration && field === "token" ? (
                                   <span style={fieldHintStyle}>
                                     Das ist dein geheimer API-Key. Gib ihn nicht öffentlich weiter.
+                                  </span>
+                                ) : null}
+                                {!isLocalSiteIntegration && !draft[field].trim() && hasStoredSecret(integration, field) ? (
+                                  <span style={fieldHintStyle}>
+                                    Bereits gespeichert. Aus Sicherheitsgründen wird der Wert hier nicht erneut angezeigt.
                                   </span>
                                 ) : null}
                               </div>

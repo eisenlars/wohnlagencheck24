@@ -83,6 +83,19 @@ function enrichLocalSiteApiKey(row: Record<string, unknown>) {
   };
 }
 
+function enrichStoredSecretFlags(row: Record<string, unknown>) {
+  const auth = (row.auth_config ?? {}) as Record<string, unknown>;
+  const hasApiKey = Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
+  const hasToken = Boolean(String(auth.token ?? auth.token_encrypted ?? "").trim());
+  const hasSecret = Boolean(String(auth.secret ?? auth.secret_encrypted ?? "").trim());
+  return {
+    ...row,
+    has_api_key: hasApiKey,
+    has_token: hasToken,
+    has_secret: hasSecret,
+  };
+}
+
 async function requirePartnerUser(req: Request): Promise<string> {
   const supabase = createClient();
   const {
@@ -120,7 +133,7 @@ export async function GET(req: Request) {
       ok: true,
       policy,
       integrations: visible.map((row) =>
-        maskIntegrationForResponse(enrichLocalSiteApiKey(row as Record<string, unknown>)),
+        maskIntegrationForResponse(enrichStoredSecretFlags(enrichLocalSiteApiKey(row as Record<string, unknown>))),
       ),
     });
   } catch (error) {
