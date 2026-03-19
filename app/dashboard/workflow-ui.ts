@@ -125,6 +125,47 @@ export const workflowClassCostStyle: CSSProperties = {
   color: '#0f172a',
 };
 
+export const workflowCostInfoWrapStyle: CSSProperties = {
+  position: 'relative',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+};
+
+export const workflowCostInfoTriggerStyle: CSSProperties = {
+  width: 16,
+  height: 16,
+  borderRadius: 999,
+  border: '1px solid #cbd5e1',
+  background: '#fff',
+  color: '#64748b',
+  fontSize: 10,
+  fontWeight: 800,
+  lineHeight: 1,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'help',
+  padding: 0,
+};
+
+export const workflowCostInfoPopoverStyle: CSSProperties = {
+  position: 'absolute',
+  top: 'calc(100% + 8px)',
+  left: 0,
+  width: 240,
+  padding: '10px 12px',
+  borderRadius: 10,
+  border: '1px solid #e2e8f0',
+  background: '#ffffff',
+  boxShadow: '0 14px 32px rgba(15, 23, 42, 0.12)',
+  fontSize: 11,
+  lineHeight: 1.5,
+  color: '#475569',
+  fontWeight: 500,
+  zIndex: 30,
+};
+
 export const workflowPromptLabelStyle: CSSProperties = {
   display: 'grid',
   gap: 6,

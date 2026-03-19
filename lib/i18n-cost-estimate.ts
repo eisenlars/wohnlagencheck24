@@ -14,6 +14,12 @@ export type I18nEstimateTotals = {
   estimated_cost_eur: number | null;
 };
 
+export type EstimatePromptOptions = {
+  promptText?: string | null;
+  extraPromptText?: string | null;
+  fixedPromptOverheadTokens?: number;
+};
+
 function round6(value: number): number {
   return Number(value.toFixed(6));
 }
@@ -47,16 +53,27 @@ export function estimateTokensFromText(text: string): {
   };
 }
 
+function estimatePromptOverheadTokens(options?: EstimatePromptOptions): number {
+  const promptText = String(options?.promptText ?? '').trim();
+  const extraPromptText = String(options?.extraPromptText ?? '').trim();
+  const fixedPromptOverheadTokens = Math.max(0, Number(options?.fixedPromptOverheadTokens ?? 0));
+  const promptEstimate = promptText ? estimateTokensFromText(promptText).prompt_tokens : 0;
+  const extraEstimate = extraPromptText ? estimateTokensFromText(extraPromptText).prompt_tokens : 0;
+  return promptEstimate + extraEstimate + fixedPromptOverheadTokens;
+}
+
 export function estimateTranslationTotals(
   texts: string[],
   pricing: I18nEstimatePricing | null,
+  options?: EstimatePromptOptions,
 ): I18nEstimateTotals {
+  const promptOverheadTokens = estimatePromptOverheadTokens(options);
   const totals = texts.reduce(
     (acc, text) => {
       const estimate = estimateTokensFromText(text);
-      acc.prompt_tokens += estimate.prompt_tokens;
+      acc.prompt_tokens += estimate.prompt_tokens + promptOverheadTokens;
       acc.completion_tokens += estimate.completion_tokens;
-      acc.total_tokens += estimate.total_tokens;
+      acc.total_tokens += estimate.total_tokens + promptOverheadTokens;
       return acc;
     },
     {

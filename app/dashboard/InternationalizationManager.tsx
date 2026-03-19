@@ -44,6 +44,9 @@ import {
   workflowClassActionRowStyle as classCardActionRowStyle,
   workflowClassCardStyle as classCardStyle,
   workflowClassCostStyle as classCardCostStyle,
+  workflowCostInfoPopoverStyle,
+  workflowCostInfoTriggerStyle,
+  workflowCostInfoWrapStyle,
   workflowClassCycleStyle as classCardCycleStyle,
   workflowClassGridStyle as classGridStyle,
   workflowClassStatLineStyle as classCardStatLineStyle,
@@ -924,6 +927,7 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [requestSaving, setRequestSaving] = useState(false);
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
   const [requestStatusTone, setRequestStatusTone] = useState<'success' | 'error' | null>(null);
+  const [costInfoOpenClass, setCostInfoOpenClass] = useState<DisplayTextClass | null>(null);
   const isDistrict = isDistrictArea(config?.area_id ?? '');
   const channelMeta = I18N_CHANNEL_OPTIONS.find((item) => item.value === channel) ?? I18N_CHANNEL_OPTIONS[0];
   const areaScopeLabel = isDistrict ? 'Kreis' : 'Ortslage';
@@ -2173,10 +2177,13 @@ export default function InternationalizationManager({ config, availableLocales, 
     }
 
     for (const displayClass of Object.keys(groupedTexts) as DisplayTextClass[]) {
-      next[displayClass] = estimateTranslationTotals(groupedTexts[displayClass], pricingPreview);
+      next[displayClass] = estimateTranslationTotals(groupedTexts[displayClass], pricingPreview, {
+        promptText: getWorkflowPrompt(displayClass),
+        fixedPromptOverheadTokens: 48,
+      });
     }
     return next;
-  }, [rows, pricingPreview]);
+  }, [rows, pricingPreview, locale, workflowPromptDrafts]);
 
   const filteredRows = useMemo(() => {
     const withIndex = (rowsByTab.get(activeTab) ?? [])
@@ -2628,8 +2635,26 @@ export default function InternationalizationManager({ config, availableLocales, 
 	                  ) : null}
 	                </div>
 	                <div style={classCardCostStyle}>
-	                  <span>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
-	                  <span>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
+	                  <span style={classCardStatLineStyle}>USD ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_usd, 'USD')}</span>
+	                  <span style={classCardStatLineStyle}>EUR ca.: {formatCost(classEstimateMap[displayClass].estimated_cost_eur, 'EUR')}</span>
+	                  <span style={workflowCostInfoWrapStyle}>
+	                    <button
+	                      type="button"
+	                      style={workflowCostInfoTriggerStyle}
+	                      onClick={(e) => {
+	                        e.stopPropagation();
+	                        setCostInfoOpenClass((prev) => (prev === displayClass ? null : displayClass));
+	                      }}
+	                      aria-label="Hinweis zur Kostenberechnung"
+	                    >
+	                      i
+	                    </button>
+	                    {costInfoOpenClass === displayClass ? (
+	                      <span style={workflowCostInfoPopoverStyle}>
+	                        Unverbindliche Schätzung auf Basis von Textlänge, Prompt, Modellpreisen und pauschalem Request-Overhead. Tatsächliche API-Kosten können abweichen.
+	                      </span>
+	                    ) : null}
+	                  </span>
 	                </div>
 	                <label style={workflowPromptLabelStyle}>
 	                  Standardprompt (anpassbar)

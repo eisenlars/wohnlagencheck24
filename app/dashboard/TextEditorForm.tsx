@@ -36,6 +36,9 @@ import {
   workflowClassActionRowStyle as textWorkflowClassActionRowStyle,
   workflowClassCardStyle as textWorkflowClassCardStyle,
   workflowClassCostStyle as textWorkflowClassCostStyle,
+  workflowCostInfoPopoverStyle,
+  workflowCostInfoTriggerStyle,
+  workflowCostInfoWrapStyle,
   workflowClassCycleStyle as textWorkflowClassCycleStyle,
   workflowClassGridStyle as textWorkflowClassGridStyle,
   workflowClassStatLineStyle as textWorkflowClassStatLineStyle,
@@ -567,6 +570,7 @@ export default function TextEditorForm({
     profile: GLOBAL_CLASS_META.profile.defaultPrompt,
   });
   const [globalBulkReport, setGlobalBulkReport] = useState<GlobalBulkReport | null>(null);
+  const [costInfoOpenClass, setCostInfoOpenClass] = useState<GlobalClassKey | null>(null);
   const [mediaState, setMediaState] = useState<Record<MandatoryMediaKey, MediaFieldState>>({
     media_berater_avatar: { uploading: false, error: null },
     media_makler_logo: { uploading: false, error: null },
@@ -1305,22 +1309,26 @@ export default function TextEditorForm({
       const outputCostUsdPer1k = selectedLlmOption?.outputCostUsdPer1k ?? null;
       const inputCostEurPer1k = selectedLlmOption?.inputCostEurPer1k ?? null;
       const outputCostEurPer1k = selectedLlmOption?.outputCostEurPer1k ?? null;
+      const promptOverheadEstimate = estimateTokensFromText(String(globalPrompts[classKey] ?? '').trim());
+      const promptOverheadPerTask = promptOverheadEstimate.prompt_tokens + 48;
+      const adjustedPromptTokens = totals.promptTokens + (tasks.length * areaMultiplier * promptOverheadPerTask);
+      const adjustedTotalTokens = adjustedPromptTokens + totals.completionTokens;
       const estimatedCostUsd = inputCostUsdPer1k !== null && outputCostUsdPer1k !== null
         ? Number((
-          (totals.promptTokens / 1000) * inputCostUsdPer1k
+          (adjustedPromptTokens / 1000) * inputCostUsdPer1k
           + (totals.completionTokens / 1000) * outputCostUsdPer1k
         ).toFixed(4))
         : null;
       const estimatedCostEur = inputCostEurPer1k !== null && outputCostEurPer1k !== null
         ? Number((
-          (totals.promptTokens / 1000) * inputCostEurPer1k
+          (adjustedPromptTokens / 1000) * inputCostEurPer1k
           + (totals.completionTokens / 1000) * outputCostEurPer1k
         ).toFixed(4))
         : null;
       acc[classKey] = {
         totalTexts: tasks.length,
         areaMultiplier,
-        totalTokens: totals.totalTokens,
+        totalTokens: adjustedTotalTokens,
         estimatedCostUsd,
         estimatedCostEur,
       };
@@ -1511,8 +1519,26 @@ export default function TextEditorForm({
                       </span>
                     </div>
                     <div style={textWorkflowClassCostStyle}>
-                      <span>USD ca.: {formatEstimatedCost(estimate.estimatedCostUsd, 'USD')}</span>
-                      <span>EUR ca.: {formatEstimatedCost(estimate.estimatedCostEur, 'EUR')}</span>
+                      <span style={textWorkflowClassStatLineStyle}>USD ca.: {formatEstimatedCost(estimate.estimatedCostUsd, 'USD')}</span>
+                      <span style={textWorkflowClassStatLineStyle}>EUR ca.: {formatEstimatedCost(estimate.estimatedCostEur, 'EUR')}</span>
+                      <span style={workflowCostInfoWrapStyle}>
+                        <button
+                          type="button"
+                          style={workflowCostInfoTriggerStyle}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCostInfoOpenClass((prev) => (prev === classKey ? null : classKey));
+                          }}
+                          aria-label="Hinweis zur Kostenberechnung"
+                        >
+                          i
+                        </button>
+                        {costInfoOpenClass === classKey ? (
+                          <span style={workflowCostInfoPopoverStyle}>
+                            Unverbindliche Schätzung auf Basis von Textlänge, Prompt, Modellpreisen und pauschalem Request-Overhead. Tatsächliche API-Kosten können abweichen.
+                          </span>
+                        ) : null}
+                      </span>
                     </div>
                     <label style={textWorkflowPromptLabelStyle}>
                       Standardprompt (anpassbar)
