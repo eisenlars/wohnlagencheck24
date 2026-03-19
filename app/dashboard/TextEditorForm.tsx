@@ -577,6 +577,7 @@ export default function TextEditorForm({
   const [publishDone, setPublishDone] = useState(0);
   const [publishTotal, setPublishTotal] = useState(0);
   const [publishing, setPublishing] = useState(false);
+  const topicSectionAnchorId = 'text-editor-topic-section';
   const parts = config?.area_id ? config.area_id.split('-') : [];
   const isOrtslage = parts.length > 3;
   const isMarketing = tableName === 'partner_marketing_texts';
@@ -862,6 +863,13 @@ export default function TextEditorForm({
     }, 120);
     return () => window.clearTimeout(t);
   }, [focusSectionKey, onFocusHandled]);
+
+  const scrollToTopicSection = () => {
+    if (typeof document === 'undefined') return;
+    const el = document.getElementById(topicSectionAnchorId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const updateAreaDbTexts = (
     areaId: string,
@@ -1521,6 +1529,16 @@ export default function TextEditorForm({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          scrollToTopicSection();
+                        }}
+                        style={textWorkflowAnchorLinkStyle(classKey)}
+                      >
+                        Einzeltexte
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (!active) {
                             setActiveBulkClass(classKey);
                             return;
@@ -1565,7 +1583,7 @@ export default function TextEditorForm({
         </>
       ) : null}
 
-      <div style={sectionEditorCardStyle}>
+      <div id={topicSectionAnchorId} style={sectionEditorCardStyle}>
         {/* TABS */}
         <div style={sectionTabsIntroStyle}>
           <h3 style={sectionTabsIntroTitleStyle}>Themenbereiche prüfen oder bei Bedarf nacharbeiten</h3>
@@ -2181,6 +2199,18 @@ const textInlineWorkflowButtonStyle = (classKey: GlobalClassKey, selected: boole
   opacity: disabled ? 0.5 : 1,
   alignSelf: 'flex-end',
   boxShadow: 'none',
+});
+const textWorkflowAnchorLinkStyle = (classKey: GlobalClassKey): React.CSSProperties => ({
+  border: 'none',
+  background: 'transparent',
+  padding: 0,
+  fontSize: 13,
+  fontWeight: 700,
+  color: String(displayTextBadgeStyle(classKey).color ?? '#486b7a'),
+  textDecoration: 'underline',
+  textUnderlineOffset: 3,
+  cursor: 'pointer',
+  alignSelf: 'center',
 });
 const fieldCardStyle = { marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #f1f5f9' };
 const fieldHeaderGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', marginBottom: '16px' };
