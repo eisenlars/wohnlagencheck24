@@ -62,7 +62,11 @@ export function encryptLocalSiteToken(plain: string): string | null {
 }
 
 export function decryptLocalSiteToken(payload: unknown): string | null {
-  return decryptWithEnv(payload, ENCRYPTION_KEY_ENV);
+  const primary = decryptWithEnv(payload, ENCRYPTION_KEY_ENV);
+  if (primary) return primary;
+  const fallbackEnv = resolveIntegrationSecretsEnvName();
+  if (fallbackEnv === ENCRYPTION_KEY_ENV) return null;
+  return decryptWithEnv(payload, fallbackEnv);
 }
 
 export function encryptIntegrationSecret(plain: string): string | null {
