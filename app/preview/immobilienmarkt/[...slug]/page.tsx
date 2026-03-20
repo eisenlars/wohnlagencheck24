@@ -11,7 +11,10 @@ import { asArray, asRecord, asString } from "@/utils/records";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
 import { getReportBySlugs } from "@/lib/data";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { loadPreviewAccessForArea } from "@/lib/public-partner-mappings";
+import {
+  loadPreviewAccessForArea,
+  loadPreviewAreaOptionsForPartner,
+} from "@/lib/public-partner-mappings";
 import { createClient } from "@/utils/supabase/server";
 import { getAdminRoleForUser } from "@/lib/security/admin-auth";
 import { resolveLeadGeneratorConfig } from "@/features/lead-generators/core/resolver";
@@ -129,6 +132,15 @@ export default async function ImmobilienmarktPreviewPage({ params }: PageProps) 
   const previewAccess = areaId
     ? await loadPreviewAccessForArea(admin, areaId)
     : { partnerId: null, status: "none" as const };
+  const previewAreaOptionsRaw = previewAccess.partnerId
+    ? await loadPreviewAreaOptionsForPartner(admin, previewAccess.partnerId)
+    : [];
+  const previewAreaOptions = previewAreaOptionsRaw.length > 1
+    ? [
+        ...previewAreaOptionsRaw.filter((option) => option.areaId === areaId),
+        ...previewAreaOptionsRaw.filter((option) => option.areaId !== areaId),
+      ]
+    : [];
   const valuationConfig = resolveLeadGeneratorConfig({
     generatorType: VALUATION_RANGE_FLOW.generatorType,
     flowKey: VALUATION_RANGE_FLOW.key,
@@ -141,6 +153,8 @@ export default async function ImmobilienmarktPreviewPage({ params }: PageProps) 
     partnerId: previewAccess.partnerId,
     regionLabel: locationName,
     leadRecipientLabel: pageModel.kontakt?.name ?? "Wohnlagencheck24",
+    allowPartnerWideAreaSelection: previewAreaOptions.length > 1,
+    partnerAreaOptions: previewAreaOptions,
     canSubmit: false,
   });
   const valuationPriceContext: ValuationPriceContext | null = valuationConfig

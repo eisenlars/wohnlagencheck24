@@ -18,7 +18,10 @@ import {
   isKreisVisible,
   isOrtslageVisible,
 } from "@/lib/area-visibility";
-import { loadSinglePublicVisiblePartnerIdForArea } from "@/lib/public-partner-mappings";
+import {
+  loadPublicVisibleAreaOptionsForPartner,
+  loadSinglePublicVisiblePartnerIdForArea,
+} from "@/lib/public-partner-mappings";
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
 import { resolveLeadGeneratorConfig } from "@/features/lead-generators/core/resolver";
 import { VALUATION_RANGE_FLOW } from "@/features/lead-generators/valuation/flow";
@@ -204,6 +207,15 @@ export default async function ImmobilienmarktHierarchiePage({ params, locale = n
   const activePartnerId = areaId.length > 0 && (route.level === "kreis" || route.level === "ort")
     ? await loadSinglePublicVisiblePartnerIdForArea(admin, areaId)
     : null;
+  const partnerAreaOptionsRaw = activePartnerId
+    ? await loadPublicVisibleAreaOptionsForPartner(admin, activePartnerId)
+    : [];
+  const partnerAreaOptions = partnerAreaOptionsRaw.length > 1
+    ? [
+        ...partnerAreaOptionsRaw.filter((option) => option.areaId === areaId),
+        ...partnerAreaOptionsRaw.filter((option) => option.areaId !== areaId),
+      ]
+    : [];
   const valuationConfig = resolveLeadGeneratorConfig({
     generatorType: VALUATION_RANGE_FLOW.generatorType,
     flowKey: VALUATION_RANGE_FLOW.key,
@@ -216,6 +228,8 @@ export default async function ImmobilienmarktHierarchiePage({ params, locale = n
     partnerId: activePartnerId,
     regionLabel: locationName,
     leadRecipientLabel: pageModel.kontakt?.name ?? "Wohnlagencheck24",
+    allowPartnerWideAreaSelection: partnerAreaOptions.length > 1,
+    partnerAreaOptions,
     canSubmit: Boolean(activePartnerId),
   });
   const valuationPriceContext: ValuationPriceContext | null = valuationConfig

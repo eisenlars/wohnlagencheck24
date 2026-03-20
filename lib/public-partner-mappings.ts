@@ -93,12 +93,87 @@ export async function loadSinglePublicVisiblePartnerIdForArea(client: unknown, a
   return partnerIds.length === 1 ? partnerIds[0] : null;
 }
 
+export async function loadPublicVisibleAreaOptionsForPartner(client: unknown, partnerId: string): Promise<AreaOption[]> {
+  const normalizedPartnerId = String(partnerId ?? "").trim();
+  if (!normalizedPartnerId) return [];
+
+  const mappingClient = asMappingClient(client);
+  let { data, error } = await mappingClient
+    .from("partner_area_map")
+    .select("area_id")
+    .eq("auth_user_id", normalizedPartnerId)
+    .eq("is_public_live", true);
+
+  if (error && isMissingPublicLiveColumn(error)) {
+    const fallback = await mappingClient
+      .from("partner_area_map")
+      .select("area_id")
+      .eq("auth_user_id", normalizedPartnerId)
+      .eq("is_active", true);
+    data = fallback.data;
+    error = fallback.error;
+  }
+
+  if (error) throw new Error(String(error.message ?? "partner_area_map partner area lookup failed"));
+
+  const areaIds = Array.from(
+    new Set(
+      (data ?? [])
+        .map((row) => String(row.area_id ?? "").trim())
+        .filter((value) => value.length > 0),
+    ),
+  );
+
+  return loadAreaOptions(client, areaIds);
+}
+
 type PreviewAccessStatus = "none" | "preview" | "live";
 
 type PreviewAccessResult = {
   partnerId: string | null;
   status: PreviewAccessStatus;
 };
+
+type AreaOption = {
+  areaId: string;
+  label: string;
+};
+
+type AreaLookupClient = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      in: (column: string, values: string[]) => Promise<{
+        data?: Array<Record<string, unknown>> | null;
+        error?: { message?: string } | null;
+      }>;
+    };
+  };
+};
+
+async function loadAreaOptions(client: unknown, areaIds: string[]): Promise<AreaOption[]> {
+  if (areaIds.length === 0) return [];
+
+  const areaClient = client as AreaLookupClient;
+  const { data, error } = await areaClient
+    .from("areas")
+    .select("id, name")
+    .in("id", areaIds);
+
+  if (error) throw new Error(String(error.message ?? "areas lookup failed"));
+
+  const labelMap = new Map<string, string>();
+  for (const row of data ?? []) {
+    const id = String(row.id ?? "").trim();
+    const label = String(row.name ?? "").trim();
+    if (!id || !label) continue;
+    labelMap.set(id, label);
+  }
+
+  return areaIds.map((areaId) => ({
+    areaId,
+    label: labelMap.get(areaId) ?? areaId,
+  }));
+}
 
 function normalizePreviewStatus(row: Record<string, unknown>): PreviewAccessStatus {
   const isPublicLive = Boolean(row.is_public_live);
@@ -160,4 +235,41 @@ export async function loadPreviewAccessForArea(client: unknown, areaId: string):
 
   const status = normalizedRows.some((row) => row.status === "live") ? "live" : "preview";
   return { partnerId: partnerIds[0], status };
+}
+
+export async function loadPreviewAreaOptionsForPartner(client: unknown, partnerId: string): Promise<AreaOption[]> {
+  const normalizedPartnerId = String(partnerId ?? "").trim();
+  if (!normalizedPartnerId) return [];
+
+  const mappingClient = asMappingClient(client);
+  let { data, error } = await mappingClient
+    .from("partner_area_map")
+    .select("area_id, is_active, is_public_live, activation_status")
+    .eq("auth_user_id", normalizedPartnerId);
+
+  if (error && (isMissingPublicLiveColumn(error) || isMissingActivationStatusColumn(error))) {
+    const fallback = await mappingClient
+      .from("partner_area_map")
+      .select("area_id, is_active")
+      .eq("auth_user_id", normalizedPartnerId);
+    data = (fallback.data ?? []).map((row) => ({
+      ...row,
+      is_public_live: null,
+      activation_status: null,
+    }));
+    error = fallback.error;
+  }
+
+  if (error) throw new Error(String(error.message ?? "partner_area_map preview area lookup failed"));
+
+  const areaIds = Array.from(
+    new Set(
+      (data ?? [])
+        .filter((row) => normalizePreviewStatus(row) !== "none")
+        .map((row) => String(row.area_id ?? "").trim())
+        .filter((value) => value.length > 0),
+    ),
+  );
+
+  return loadAreaOptions(client, areaIds);
 }

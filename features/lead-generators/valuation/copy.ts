@@ -4,12 +4,20 @@ type ValuationCopy = {
   badge: string;
   title: string;
   intro: string;
-  trust: string;
+  modeIntro: string;
+  modeDataTitle: string;
+  modeDataHint: string;
+  modeAssistantTitle: string;
+  modeAssistantHint: string;
+  modeAdvisorTitle: string;
+  modeAdvisorHint: string;
+  multiAreaLabel: string;
+  multiAreaPlaceholder: string;
+  stepMode: string;
   stepLocation: string;
   stepObject: string;
   stepEstimate: string;
   stepContact: string;
-  fixedAreaLabel: string;
   entryModeLabel: string;
   entryModeAddress: string;
   entryModeAddressHint: string;
@@ -58,14 +66,22 @@ type ValuationCopy = {
 const COPY: Record<string, ValuationCopy> = {
   de: {
     badge: "Immobilienbewertung",
-    title: "Erste Preiseinschaetzung fuer Ihre Immobilie",
-    intro: "Sie erhalten eine regionale Orientierungsrange auf Basis der Marktdaten fuer dieses Gebiet und Ihrer Objektangaben.",
-    trust: "Die finale Einschaetzung erfolgt immer durch den regional zustaendigen Ansprechpartner.",
+    title: "Immobilie bewerten",
+    intro: "Waehlen Sie den passenden Bewertungsweg fuer Ihr Objekt.",
+    modeIntro: "Wie moechten Sie Ihre Bewertung erhalten?",
+    modeDataTitle: "Sofort eine erste Preisspanne sehen",
+    modeDataHint: "Datenbasierte Online-Einschaetzung mit direkter Orientierungsrange.",
+    modeAssistantTitle: "Mit digitalem Bewertungsassistenten starten",
+    modeAssistantHint: "Gefuehrter Einstieg mit mehr Rueckfragen fuer eine bessere Einordnung.",
+    modeAdvisorTitle: "Direkt eine persoenliche Einschaetzung anfragen",
+    modeAdvisorHint: "Ihre Anfrage geht ohne Umweg an den regional zustaendigen Ansprechpartner.",
+    multiAreaLabel: "Welches Partnergebiet betrifft Ihre Immobilie?",
+    multiAreaPlaceholder: "Bitte Gebiet waehlen",
+    stepMode: "Bewertungsweg",
     stepLocation: "Standort",
     stepObject: "Objekt",
     stepEstimate: "Preisspanne",
     stepContact: "Kontakt",
-    fixedAreaLabel: "Aktuelles Anfragegebiet",
     entryModeLabel: "Wie moechten Sie starten?",
     entryModeAddress: "Direkt mit Adresse",
     entryModeAddressHint: "Fuer eine spaetere Praezisierung der Mikrolage.",
@@ -112,14 +128,22 @@ const COPY: Record<string, ValuationCopy> = {
   },
   en: {
     badge: "Property valuation",
-    title: "Initial price estimate for your property",
-    intro: "You receive a first indicative range based on market data for this area and the property details you provide.",
-    trust: "The final assessment is always handled by the responsible local expert.",
+    title: "Value your property",
+    intro: "Choose the valuation path that fits your property.",
+    modeIntro: "How would you like to receive your valuation?",
+    modeDataTitle: "See an initial price range immediately",
+    modeDataHint: "Data-based online estimate with an instant indicative range.",
+    modeAssistantTitle: "Start with a digital valuation assistant",
+    modeAssistantHint: "A guided flow with more questions for better classification.",
+    modeAdvisorTitle: "Request a direct personal assessment",
+    modeAdvisorHint: "Your inquiry is sent straight to the locally responsible contact.",
+    multiAreaLabel: "Which partner area is your property located in?",
+    multiAreaPlaceholder: "Please select an area",
+    stepMode: "Valuation path",
     stepLocation: "Location",
     stepObject: "Property",
     stepEstimate: "Range",
     stepContact: "Contact",
-    fixedAreaLabel: "Current inquiry area",
     entryModeLabel: "How would you like to start?",
     entryModeAddress: "Start with the address",
     entryModeAddressHint: "For a later micro-location refinement.",

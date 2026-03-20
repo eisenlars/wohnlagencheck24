@@ -12,9 +12,11 @@ import {
   type ValuationPropertyType,
 } from "./pricing";
 
-type StepKey = "location" | "object" | "estimate" | "contact";
+type StepKey = "mode" | "location" | "object" | "estimate" | "contact";
+type ExperienceMode = "data_range" | "digital_assistant" | "advisor_direct";
 
 type FormState = {
+  experienceMode: ExperienceMode;
   entryMode: "soft" | "address";
   postalOrCity: string;
   address: string;
@@ -39,7 +41,7 @@ type Props = {
   previewMode?: boolean;
 };
 
-const STEPS: StepKey[] = ["location", "object", "estimate", "contact"];
+const STEPS: StepKey[] = ["mode", "location", "object", "estimate", "contact"];
 
 function formatCurrency(value: number, locale: string): string {
   return new Intl.NumberFormat(locale === "en" ? "en-US" : "de-DE").format(value) + " EUR";
@@ -62,6 +64,7 @@ export function ValuationLeadFlow({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState<FormState>({
+    experienceMode: "data_range",
     entryMode: "soft",
     postalOrCity: "",
     address: "",
@@ -109,6 +112,10 @@ export function ValuationLeadFlow({
     return Number.isFinite(numericLivingArea) && numericLivingArea > 15;
   }
 
+  function getNextStepAfterLocation(): number {
+    return form.experienceMode === "advisor_direct" ? 4 : 2;
+  }
+
   function canSubmit() {
     return form.name.trim().length > 1
       && form.email.trim().includes("@")
@@ -148,6 +155,7 @@ export function ValuationLeadFlow({
       },
       answers: {
         entryMode: form.entryMode,
+        experienceMode: form.experienceMode,
         postalOrCity: form.postalOrCity.trim() || null,
         address: form.entryMode === "address" ? form.address.trim() : null,
         propertyType: form.propertyType,
@@ -180,7 +188,11 @@ export function ValuationLeadFlow({
   }
 
   const step = STEPS[stepIndex];
-  const stepCounter = formatStepCounter(copy.stepCounter, stepIndex + 1, STEPS.length);
+  const visibleSteps: StepKey[] = form.experienceMode === "advisor_direct"
+    ? ["mode", "location", "contact"]
+    : STEPS;
+  const visibleStepIndex = Math.max(0, visibleSteps.indexOf(step));
+  const stepCounter = formatStepCounter(copy.stepCounter, visibleStepIndex + 1, visibleSteps.length);
   const areaSelectVisible = config.allowedAreaOptions.length > 1;
 
   if (success) {
@@ -204,7 +216,7 @@ export function ValuationLeadFlow({
           <div className="progress flex-grow-1" style={{ height: "4px" }}>
             <div
               className="progress-bar bg-dark"
-              style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
+              style={{ width: `${((visibleStepIndex + 1) / visibleSteps.length) * 100}%` }}
             />
           </div>
           <span className="small fw-semibold text-dark">{stepCounter}</span>
@@ -212,26 +224,73 @@ export function ValuationLeadFlow({
       </div>
 
       <div className="card-body p-4 p-md-5">
-        <div className="mb-4">
-          <span className="badge text-bg-dark mb-3">{copy.badge}</span>
-          <h3 className="fw-bold mb-2">{copy.title}</h3>
-          <p className="text-muted mb-2">{copy.intro}</p>
-          <p className="small text-muted mb-0">{copy.trust}</p>
+        <div className="mb-3">
+          <span className="badge text-bg-dark mb-2">{copy.badge}</span>
+          <h3 className="fw-bold mb-1">{copy.title}</h3>
+          <p className="text-muted mb-0">{copy.intro}</p>
         </div>
+
+        {step === "mode" ? (
+          <div className="animate-fade-in">
+            <h4 className="fw-bold mb-3">{copy.modeIntro}</h4>
+
+            <div className="row g-3">
+              <div className="col-md-4">
+                <button
+                  type="button"
+                  className={`btn text-start border w-100 h-100 p-3 ${form.experienceMode === "data_range" ? "btn-dark" : "btn-outline-dark"}`}
+                  onClick={() => updateField("experienceMode", "data_range")}
+                >
+                  <span className="fw-semibold d-block mb-1">{copy.modeDataTitle}</span>
+                  <span className={form.experienceMode === "data_range" ? "small text-white-50" : "small text-muted"}>
+                    {copy.modeDataHint}
+                  </span>
+                </button>
+              </div>
+              <div className="col-md-4">
+                <button
+                  type="button"
+                  className={`btn text-start border w-100 h-100 p-3 ${form.experienceMode === "digital_assistant" ? "btn-dark" : "btn-outline-dark"}`}
+                  onClick={() => updateField("experienceMode", "digital_assistant")}
+                >
+                  <span className="fw-semibold d-block mb-1">{copy.modeAssistantTitle}</span>
+                  <span className={form.experienceMode === "digital_assistant" ? "small text-white-50" : "small text-muted"}>
+                    {copy.modeAssistantHint}
+                  </span>
+                </button>
+              </div>
+              <div className="col-md-4">
+                <button
+                  type="button"
+                  className={`btn text-start border w-100 h-100 p-3 ${form.experienceMode === "advisor_direct" ? "btn-dark" : "btn-outline-dark"}`}
+                  onClick={() => updateField("experienceMode", "advisor_direct")}
+                >
+                  <span className="fw-semibold d-block mb-1">{copy.modeAdvisorTitle}</span>
+                  <span className={form.experienceMode === "advisor_direct" ? "small text-white-50" : "small text-muted"}>
+                    {copy.modeAdvisorHint}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <button
+              className="btn btn-dark w-100 py-3 fw-bold mt-4"
+              onClick={() => setStepIndex(1)}
+              type="button"
+            >
+              {copy.continue}
+            </button>
+          </div>
+        ) : null}
 
         {step === "location" ? (
           <div className="animate-fade-in">
             <h4 className="fw-bold mb-3">{copy.stepLocation}</h4>
 
-            <div className="alert alert-light border mb-4">
-              <div className="small text-uppercase text-muted fw-semibold mb-1">{copy.fixedAreaLabel}</div>
-              <div className="fw-semibold">{config.regionLabel}</div>
-            </div>
-
             {areaSelectVisible ? (
               <div className="mb-4">
                 <label className="form-label" htmlFor="valuation_area_select">
-                  {copy.fixedAreaLabel}
+                  {copy.multiAreaLabel}
                 </label>
                 <select
                   id="valuation_area_select"
@@ -239,6 +298,7 @@ export function ValuationLeadFlow({
                   value={form.targetAreaId}
                   onChange={(event) => updateField("targetAreaId", event.target.value)}
                 >
+                  <option value="" disabled>{copy.multiAreaPlaceholder}</option>
                   {config.allowedAreaOptions.map((option) => (
                     <option key={option.areaId} value={option.areaId}>
                       {option.label}
@@ -306,7 +366,7 @@ export function ValuationLeadFlow({
 
             <button
               className="btn btn-dark w-100 py-3 fw-bold"
-              onClick={() => canContinueFromLocation() && setStepIndex(1)}
+              onClick={() => canContinueFromLocation() && setStepIndex(getNextStepAfterLocation())}
               disabled={!canContinueFromLocation()}
               type="button"
             >
@@ -392,12 +452,12 @@ export function ValuationLeadFlow({
             </div>
 
             <div className="d-flex gap-3">
-              <button className="btn btn-outline-dark flex-fill" onClick={() => setStepIndex(0)} type="button">
+              <button className="btn btn-outline-dark flex-fill" onClick={() => setStepIndex(1)} type="button">
                 {copy.back}
               </button>
               <button
                 className="btn btn-dark flex-fill"
-                onClick={() => canContinueFromObject() && setStepIndex(2)}
+                onClick={() => canContinueFromObject() && setStepIndex(3)}
                 disabled={!canContinueFromObject()}
                 type="button"
               >
@@ -442,10 +502,10 @@ export function ValuationLeadFlow({
             </div>
 
             <div className="d-flex gap-3">
-              <button className="btn btn-outline-dark flex-fill" onClick={() => setStepIndex(1)} type="button">
+              <button className="btn btn-outline-dark flex-fill" onClick={() => setStepIndex(2)} type="button">
                 {copy.back}
               </button>
-              <button className="btn btn-dark flex-fill" onClick={() => setStepIndex(3)} type="button">
+              <button className="btn btn-dark flex-fill" onClick={() => setStepIndex(4)} type="button">
                 {copy.continue}
               </button>
             </div>
@@ -512,7 +572,11 @@ export function ValuationLeadFlow({
             ) : null}
 
             <div className="d-flex gap-3">
-              <button className="btn btn-outline-dark flex-fill" onClick={() => setStepIndex(2)} type="button">
+              <button
+                className="btn btn-outline-dark flex-fill"
+                onClick={() => setStepIndex(form.experienceMode === "advisor_direct" ? 1 : 3)}
+                type="button"
+              >
                 {copy.back}
               </button>
               <button
