@@ -112,6 +112,10 @@ type IntegrationSyncSummary = {
   lastSyncAt?: string | null;
   result?: CrmSyncResultPayload | null;
 };
+type IntegrationPreviewSummary = {
+  status: "ok" | "warning" | "error";
+  message: string;
+};
 
 const AUTH_TYPE_LABELS: Record<string, string> = {
   api_key: "API Key",
@@ -490,6 +494,37 @@ function readSyncSummaryFromIntegration(integration: PartnerIntegration): Integr
   });
 }
 
+function formatPreviewSummary(preview: {
+  skipped?: boolean;
+  reason?: string;
+  offers_count?: number;
+  listings_count?: number;
+  references_count?: number;
+  requests_count?: number;
+  notes?: string[];
+}): IntegrationPreviewSummary {
+  if (preview.skipped) {
+    return {
+      status: "warning",
+      message:
+        preview.reason === "integration inactive"
+          ? "Die CRM-Anbindung ist deaktiviert."
+          : "Der CRM-Abruf wurde übersprungen.",
+    };
+  }
+  const parts = [
+    `${Number(preview.offers_count ?? 0)} Angebote`,
+    `${Number(preview.listings_count ?? 0)} Rohobjekte`,
+    `${Number(preview.references_count ?? 0)} Referenzen`,
+    `${Number(preview.requests_count ?? 0)} Gesuche`,
+  ];
+  const note = Array.isArray(preview.notes) && preview.notes.length > 0 ? String(preview.notes[0] ?? "").trim() : "";
+  return {
+    status: "ok",
+    message: `${parts.join(" · ")} gefunden${note ? ` · ${note}` : ""}`,
+  };
+}
+
 function applyProviderSelection(
   draft: IntegrationDraft,
   nextProvider: string,
@@ -757,6 +792,7 @@ export default function PartnerSettingsPanel({
   const [secretVisibility, setSecretVisibility] = useState<SecretVisibilityState>({});
   const [testResult, setTestResult] = useState<Record<string, { status: "ok" | "warning" | "error"; message: string }>>({});
   const [syncResult, setSyncResult] = useState<Record<string, IntegrationSyncSummary>>({});
+  const [previewResult, setPreviewResult] = useState<Record<string, IntegrationPreviewSummary>>({});
   const [integrationPolicy, setIntegrationPolicy] = useState<IntegrationPolicy>({ llm_partner_managed_allowed: true });
   const [llmUsageMonth, setLlmUsageMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [llmUsagePeriod, setLlmUsagePeriod] = useState<"timeline" | "year">("timeline");
@@ -1076,6 +1112,12 @@ export default function PartnerSettingsPanel({
         return next;
       });
       setSyncResult((prev) => {
+        if (!prev[integrationId]) return prev;
+        const next = { ...prev };
+        delete next[integrationId];
+        return next;
+      });
+      setPreviewResult((prev) => {
         if (!prev[integrationId]) return prev;
         const next = { ...prev };
         delete next[integrationId];
@@ -1904,6 +1946,35 @@ export default function PartnerSettingsPanel({
                             {isCrmIntegration ? (
                               <button
                                 style={buttonGhostStyle}
+                                disabled={busy || !integration.is_active}
+                                onClick={() =>
+                                  run("CRM-Abruf testen", async () => {
+                                    const res = await api<{
+                                      preview?: {
+                                        skipped?: boolean;
+                                        reason?: string;
+                                        offers_count?: number;
+                                        listings_count?: number;
+                                        references_count?: number;
+                                        requests_count?: number;
+                                        notes?: string[];
+                                      };
+                                    }>(`/api/partner/integrations/${integration.id}/preview-sync`, {
+                                      method: "POST",
+                                    });
+                                    setPreviewResult((prev) => ({
+                                      ...prev,
+                                      [integration.id]: formatPreviewSummary(res.preview ?? {}),
+                                    }));
+                                  })
+                                }
+                              >
+                                CRM-Abruf testen
+                              </button>
+                            ) : null}
+                            {isCrmIntegration ? (
+                              <button
+                                style={buttonGhostStyle}
                                 disabled={busy || !integration.is_active || syncSummary?.status === "running"}
                                 onClick={() =>
                                   run("CRM synchronisieren", async () => {
@@ -1948,6 +2019,23 @@ export default function PartnerSettingsPanel({
                                   }}
                                 >
                                   {testResult[integration.id].message}
+                                </p>
+                              ) : null}
+                              {previewResult[integration.id] ? (
+                                <p
+                                  style={{
+                                    marginTop: 6,
+                                    marginBottom: 0,
+                                    fontSize: 12,
+                                    color:
+                                      previewResult[integration.id].status === "ok"
+                                        ? "#15803d"
+                                        : previewResult[integration.id].status === "warning"
+                                          ? "#b45309"
+                                          : "#b91c1c",
+                                  }}
+                                >
+                                  {previewResult[integration.id].message}
                                 </p>
                               ) : null}
                               {syncSummary ? (
