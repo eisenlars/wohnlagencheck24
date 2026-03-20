@@ -111,16 +111,17 @@ export async function HomeLandingPage({ locale = "de" }: { locale?: string }) {
 
   try {
     const admin = createAdminClient();
+    const blogQuery = admin
+      .from('partner_blog_posts')
+      .select('headline, subline, body_md, author_name, author_image_url, area_name, created_at, bundesland_slug, kreis_slug')
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
     const { data, error } = await withTimeout<{
       data: BlogBlock[] | null;
       error: { message?: string } | null;
     }>(
-      admin
-        .from('partner_blog_posts')
-        .select('headline, subline, body_md, author_name, author_image_url, area_name, created_at, bundesland_slug, kreis_slug')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1),
+      Promise.resolve(blogQuery),
       BLOG_QUERY_TIMEOUT_MS,
     );
     if (!error && data && data.length > 0) {
