@@ -5,6 +5,8 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { syncIntegrationResources } from "@/lib/providers";
 import type { PartnerIntegration } from "@/lib/providers/types";
+import { fetchPropstackUnits } from "@/lib/providers/propstack";
+import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
 
 async function requirePartnerUser(req: Request): Promise<string> {
   const supabase = createClient();
@@ -60,6 +62,50 @@ export async function POST(
         },
         { status: 200 },
       );
+    }
+
+    const isPropstack = String(integration.provider ?? "").toLowerCase() === "propstack";
+    if (isPropstack) {
+      const auth = (integration.auth_config ?? {}) as Record<string, unknown>;
+      const apiKey =
+        readSecretFromAuthConfig(auth, "api_key")
+        ?? readSecretFromAuthConfig(auth, "token");
+
+      if (!apiKey) {
+        return NextResponse.json({ error: "API-Key fehlt für Provider propstack" }, { status: 400 });
+      }
+
+      const units = await fetchPropstackUnits(integration, apiKey, { maxPages: 1, perPage: 10 });
+      return NextResponse.json({
+        ok: true,
+        preview: {
+          skipped: false,
+          provider: integration.provider,
+          diagnostic_mode: "propstack_first_page",
+          offers_count: units.length,
+          listings_count: units.length,
+          references_count: null,
+          requests_count: null,
+          references_fetched: null,
+          requests_fetched: null,
+          notes: [
+            "Preview nutzt bei Propstack nur die erste Units-Seite mit with_meta=1.",
+          ],
+          offers_preview: units.slice(0, 5).map((unit) => ({
+            external_id: String(unit.exposee_id ?? unit.id ?? ""),
+            title: unit.title ?? null,
+            offer_type: unit.marketing_type ?? null,
+            object_type: unit.rs_type ?? null,
+            address: [unit.street, unit.house_number, unit.zip_code, unit.city].filter(Boolean).join(" ") || null,
+          })),
+          listings_preview: units.slice(0, 5).map((unit) => ({
+            external_id: String(unit.exposee_id ?? unit.id ?? ""),
+            title: unit.title ?? null,
+            source_updated_at: unit.updated_at ?? null,
+            status: unit.status ?? null,
+          })),
+        },
+      });
     }
 
     const result = await syncIntegrationResources(integration);

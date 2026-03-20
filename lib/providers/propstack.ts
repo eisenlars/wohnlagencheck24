@@ -574,14 +574,20 @@ function buildDummyRequests(partnerId: string, provider: "propstack"): RawReques
 export async function fetchPropstackUnits(
   integration: PartnerIntegration,
   apiKey: string,
+  options?: {
+    maxPages?: number;
+    perPage?: number;
+  },
 ): Promise<PropstackUnit[]> {
   const base = integration.base_url?.trim() || "https://api.propstack.de/v1";
   const units: PropstackUnit[] = [];
-  const perPage = 50;
+  const perPage = Math.max(1, Math.min(100, options?.perPage ?? 25));
+  const maxPages = Math.max(1, Math.min(100, options?.maxPages ?? 25));
   let page = 1;
 
-  while (true) {
+  while (page <= maxPages) {
     const url = new URL(`${base.replace(/\/+$/, "")}/units`);
+    url.searchParams.set("with_meta", "1");
     url.searchParams.set("expand", "1");
     url.searchParams.set("page", String(page));
     url.searchParams.set("per", String(perPage));
