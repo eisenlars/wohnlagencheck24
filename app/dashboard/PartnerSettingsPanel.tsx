@@ -93,9 +93,24 @@ type SecretDraft = {
 
 type SecretFieldKey = keyof SecretDraft;
 type SecretVisibilityState = Record<string, Partial<Record<SecretFieldKey, boolean>>>;
+type CrmSyncResultPayload = {
+  listings_count: number;
+  references_count: number;
+  requests_count: number;
+  offers_count: number;
+  deactivated_listings: number;
+  deactivated_offers: number;
+  skipped: boolean;
+  reason?: string;
+  notes?: string[];
+};
 type IntegrationSyncSummary = {
-  status: "ok" | "warning" | "error";
+  status: "ok" | "warning" | "error" | "running";
   message: string;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  lastSyncAt?: string | null;
+  result?: CrmSyncResultPayload | null;
 };
 
 const AUTH_TYPE_LABELS: Record<string, string> = {
@@ -405,25 +420,15 @@ function hasStoredSecret(integration: PartnerIntegration, field: SecretFieldKey)
   return integration.has_secret === true;
 }
 
-function formatSyncSummary(result: {
-  listings_count: number;
-  references_count: number;
-  requests_count: number;
-  offers_count: number;
-  deactivated_listings: number;
-  deactivated_offers: number;
-  skipped: boolean;
-  reason?: string;
-  notes?: string[];
-}): IntegrationSyncSummary {
+function formatSyncResultMessage(result: CrmSyncResultPayload): string {
   if (result.skipped) {
-    const reason =
-      result.reason === "integration inactive"
-        ? "Die CRM-Anbindung ist derzeit deaktiviert."
-        : result.reason === "all capabilities disabled"
-          ? "Alle CRM-Bereiche sind in dieser Anbindung deaktiviert."
-          : "Der CRM-Sync wurde übersprungen.";
-    return { status: "warning", message: reason };
+    if (result.reason === "integration inactive") {
+      return "Die CRM-Anbindung ist derzeit deaktiviert.";
+    }
+    if (result.reason === "all capabilities disabled") {
+      return "Alle CRM-Bereiche sind in dieser Anbindung deaktiviert.";
+    }
+    return "Der CRM-Sync wurde übersprungen.";
   }
 
   const parts = [
@@ -435,10 +440,54 @@ function formatSyncSummary(result: {
   if (result.deactivated_offers > 0) extras.push(`${result.deactivated_offers} Angebote deaktiviert`);
   if (result.deactivated_listings > 0) extras.push(`${result.deactivated_listings} Rohobjekte deaktiviert`);
   if (result.notes?.length) extras.push(result.notes[0] ?? "");
+  return `${parts.join(" · ")} synchronisiert${extras.length ? ` · ${extras.join(" · ")}` : ""}`;
+}
+
+function readSyncSummaryFromStatusPayload(status: {
+  state?: string | null;
+  message?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+  last_sync_at?: string | null;
+  result?: CrmSyncResultPayload | null;
+  error?: string | null;
+}): IntegrationSyncSummary {
+  const state = String(status.state ?? "").trim().toLowerCase();
+  const result = status.result ?? null;
+  const message =
+    String(status.message ?? "").trim()
+    || (result ? formatSyncResultMessage(result) : state === "running" ? "CRM-Synchronisierung läuft..." : "CRM-Synchronisierung");
   return {
-    status: "ok",
-    message: `${parts.join(" · ")} synchronisiert${extras.length ? ` · ${extras.join(" · ")}` : ""}`,
+    status:
+      state === "running"
+        ? "running"
+        : state === "success"
+          ? "ok"
+          : state === "error"
+            ? "error"
+            : "warning",
+    message,
+    startedAt: asText(status.started_at),
+    finishedAt: asText(status.finished_at),
+    lastSyncAt: asText(status.last_sync_at),
+    result,
   };
+}
+
+function readSyncSummaryFromIntegration(integration: PartnerIntegration): IntegrationSyncSummary | null {
+  const settings = (integration.settings ?? {}) as Record<string, unknown>;
+  const state = String(settings.sync_state ?? "").trim().toLowerCase();
+  const lastSyncAt = asText(integration.last_sync_at);
+  if (!state && !lastSyncAt) return null;
+  return readSyncSummaryFromStatusPayload({
+    state: state || (lastSyncAt ? "success" : "idle"),
+    message: asText(settings.sync_message),
+    started_at: asText(settings.sync_started_at),
+    finished_at: asText(settings.sync_finished_at),
+    last_sync_at: lastSyncAt,
+    result: (settings.sync_result ?? null) as CrmSyncResultPayload | null,
+    error: asText(settings.sync_error),
+  });
 }
 
 function applyProviderSelection(
@@ -743,6 +792,13 @@ export default function PartnerSettingsPanel({
     () => integrations.find((entry) => entry.id === selectedIntegrationId) ?? null,
     [integrations, selectedIntegrationId],
   );
+  const selectedIntegrationSyncSummary = useMemo(
+    () =>
+      selectedIntegration
+        ? syncResult[selectedIntegration.id] ?? readSyncSummaryFromIntegration(selectedIntegration)
+        : null,
+    [selectedIntegration, syncResult],
+  );
   const hasActivePartnerLlm = useMemo(
     () => integrations.some((entry) => String(entry.kind ?? "").toLowerCase() === "llm" && entry.is_active === true),
     [integrations],
@@ -828,6 +884,19 @@ export default function PartnerSettingsPanel({
     const nextIntegrations = integrationsRes.integrations ?? [];
     setIntegrationPolicy(integrationsRes.policy ?? { llm_partner_managed_allowed: true });
     setIntegrations(nextIntegrations);
+    setSyncResult((prev) => {
+      const next: Record<string, IntegrationSyncSummary> = {};
+      nextIntegrations.forEach((integration) => {
+        const summary = readSyncSummaryFromIntegration(integration);
+        if (summary) next[integration.id] = summary;
+      });
+      Object.entries(prev).forEach(([integrationId, summary]) => {
+        if (!next[integrationId] && summary.status === "running") {
+          next[integrationId] = summary;
+        }
+      });
+      return next;
+    });
     if (isCreateModeRef.current && !preferredIntegrationId) return;
 
     const desiredId = preferredIntegrationId ?? selectedIntegrationIdRef.current;
@@ -849,6 +918,63 @@ export default function PartnerSettingsPanel({
       setIsCreateMode(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!selectedIntegration) return;
+    if (String(selectedIntegration.kind ?? "").toLowerCase() !== "crm") return;
+    if (selectedIntegrationSyncSummary?.status !== "running") return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const integrationId = selectedIntegration.id;
+
+    const poll = async () => {
+      try {
+        const payload = await api<{
+          status?: {
+            state?: string | null;
+            message?: string | null;
+            started_at?: string | null;
+            finished_at?: string | null;
+            last_sync_at?: string | null;
+            result?: CrmSyncResultPayload | null;
+            error?: string | null;
+          };
+        }>(`/api/partner/integrations/${integrationId}/sync`);
+        if (cancelled) return;
+        const summary = readSyncSummaryFromStatusPayload(payload.status ?? {});
+        setSyncResult((prev) => ({
+          ...prev,
+          [integrationId]: summary,
+        }));
+        if (summary.status === "running") {
+          timer = setTimeout(() => {
+            void poll();
+          }, 3000);
+          return;
+        }
+        await loadAll(integrationId);
+      } catch (error) {
+        if (cancelled) return;
+        setSyncResult((prev) => ({
+          ...prev,
+          [integrationId]: {
+            status: "error",
+            message: error instanceof Error ? error.message : "Sync-Status konnte nicht geladen werden.",
+          },
+        }));
+      }
+    };
+
+    timer = setTimeout(() => {
+      void poll();
+    }, 2000);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [selectedIntegration, selectedIntegrationSyncSummary, loadAll]);
 
   const loadPartnerLlmUsage = useCallback(async () => {
     try {
@@ -1567,7 +1693,28 @@ export default function PartnerSettingsPanel({
                           if (isLocalSiteDraft && !integrationDraft.base_url.trim()) {
                             throw new Error("Bitte URL deiner Website eintragen.");
                           }
-                          const settings = buildIntegrationSettings(integrationDraft, selectedIntegration?.settings ?? null);
+                          const providerChanged =
+                            !isCreateMode
+                            && String(selectedIntegration?.kind ?? "").toLowerCase() === "crm"
+                            && String(selectedIntegration?.provider ?? "").toLowerCase() !== String(integrationDraft.provider ?? "").toLowerCase();
+                          const builtSettings = buildIntegrationSettings(integrationDraft, selectedIntegration?.settings ?? null);
+                          const settings =
+                            builtSettings && typeof builtSettings === "object"
+                              ? { ...(builtSettings as Record<string, unknown>) }
+                              : builtSettings;
+                          if (providerChanged && settings && typeof settings === "object") {
+                            delete (settings as Record<string, unknown>).last_tested_at;
+                            delete (settings as Record<string, unknown>).last_test_status;
+                            delete (settings as Record<string, unknown>).last_test_message;
+                            delete (settings as Record<string, unknown>).last_test_http_status;
+                            delete (settings as Record<string, unknown>).sync_state;
+                            delete (settings as Record<string, unknown>).sync_started_at;
+                            delete (settings as Record<string, unknown>).sync_finished_at;
+                            delete (settings as Record<string, unknown>).sync_message;
+                            delete (settings as Record<string, unknown>).sync_error;
+                            delete (settings as Record<string, unknown>).sync_result;
+                            delete (settings as Record<string, unknown>).sync_job_id;
+                          }
                           const response = await api<{ integration?: PartnerIntegration }>("/api/partner/integrations", {
                             method: "POST",
                             body: JSON.stringify({
@@ -1621,7 +1768,7 @@ export default function PartnerSettingsPanel({
                     const lastTestedAt = asText(settings.last_tested_at);
                     const lastTestStatus = asText(settings.last_test_status);
                     const lastTestMessage = asText(settings.last_test_message);
-                    const lastSyncAt = asText(integration.last_sync_at);
+                    const syncSummary = syncResult[integration.id] ?? readSyncSummaryFromIntegration(integration);
                     const relevantSecretFields = getRelevantSecretFields(integration);
                     const supportsSecrets = relevantSecretFields.length > 0;
                     return (
@@ -1757,33 +1904,30 @@ export default function PartnerSettingsPanel({
                             {isCrmIntegration ? (
                               <button
                                 style={buttonGhostStyle}
-                                disabled={busy || !integration.is_active}
+                                disabled={busy || !integration.is_active || syncSummary?.status === "running"}
                                 onClick={() =>
                                   run("CRM synchronisieren", async () => {
                                     const res = await api<{
-                                      result: {
-                                        listings_count: number;
-                                        references_count: number;
-                                        requests_count: number;
-                                        offers_count: number;
-                                        deactivated_listings: number;
-                                        deactivated_offers: number;
-                                        skipped: boolean;
-                                        reason?: string;
-                                        notes?: string[];
+                                      status?: {
+                                        state?: string | null;
+                                        message?: string | null;
+                                        started_at?: string | null;
+                                        finished_at?: string | null;
+                                        last_sync_at?: string | null;
+                                        result?: CrmSyncResultPayload | null;
+                                        error?: string | null;
                                       };
                                     }>(`/api/partner/integrations/${integration.id}/sync`, {
                                       method: "POST",
                                     });
                                     setSyncResult((prev) => ({
                                       ...prev,
-                                      [integration.id]: formatSyncSummary(res.result),
+                                      [integration.id]: readSyncSummaryFromStatusPayload(res.status ?? {}),
                                     }));
-                                    await loadAll(integration.id);
                                   })
                                 }
                               >
-                                CRM jetzt synchronisieren
+                                {syncSummary?.status === "running" ? "CRM-Synchronisierung läuft..." : "CRM jetzt synchronisieren"}
                               </button>
                             ) : null}
                           </div>
@@ -1806,21 +1950,23 @@ export default function PartnerSettingsPanel({
                                   {testResult[integration.id].message}
                                 </p>
                               ) : null}
-                              {syncResult[integration.id] ? (
+                              {syncSummary ? (
                                 <p
                                   style={{
                                     marginTop: 6,
                                     marginBottom: 0,
                                     fontSize: 12,
                                     color:
-                                      syncResult[integration.id].status === "ok"
+                                      syncSummary?.status === "ok"
                                         ? "#15803d"
-                                        : syncResult[integration.id].status === "warning"
+                                        : syncSummary?.status === "warning"
                                           ? "#b45309"
+                                          : syncSummary?.status === "running"
+                                            ? "#1d4ed8"
                                           : "#b91c1c",
                                   }}
                                 >
-                                  {syncResult[integration.id].message}
+                                  {syncSummary?.message}
                                 </p>
                               ) : null}
                               {lastTestedAt ? (
@@ -1830,9 +1976,9 @@ export default function PartnerSettingsPanel({
                                   {lastTestMessage ? ` - ${lastTestMessage}` : ""}
                                 </p>
                               ) : null}
-                              {isCrmIntegration && lastSyncAt ? (
+                              {isCrmIntegration && syncSummary?.lastSyncAt ? (
                                 <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                  Zuletzt synchronisiert: {new Date(lastSyncAt).toLocaleString("de-DE")}
+                                  Zuletzt synchronisiert: {new Date(syncSummary.lastSyncAt).toLocaleString("de-DE")}
                                 </p>
                               ) : null}
                             </>
