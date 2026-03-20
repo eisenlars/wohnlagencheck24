@@ -1,4 +1,5 @@
-import { loadPortalCmsEntriesByPage, resolvePortalCmsField } from "@/lib/portal-cms-reader";
+import { loadPortalCmsEntriesByPage, resolvePortalCmsWraps } from "@/lib/portal-cms-reader";
+import { type PortalContentWrap, type PortalContentWrapTextBlock } from "@/lib/portal-cms";
 
 function renderParagraphs(text: string, className = "mb-0") {
   return text
@@ -15,6 +16,42 @@ function renderParagraphs(text: string, className = "mb-0") {
         ))}
       </p>
     ));
+}
+
+function resolvePageTitle(wraps: PortalContentWrap[], fallback: string): string {
+  for (const wrap of wraps) {
+    const heading = wrap.blocks.find((block) => block.type === "heading" && block.level === 1);
+    if (heading?.text.trim()) return heading.text.trim();
+    if (wrap.title.trim()) return wrap.title.trim();
+  }
+  return fallback;
+}
+
+function renderWrapBlock(
+  block: PortalContentWrapTextBlock,
+  wrapIndex: number,
+  blockIndex: number,
+  pageTitle: string,
+  firstHeadingConsumedRef: { current: boolean },
+) {
+  if (block.type === "heading") {
+    const text = block.text.trim();
+    if (!text) return null;
+    if (!firstHeadingConsumedRef.current && block.level === 1 && text === pageTitle) {
+      firstHeadingConsumedRef.current = true;
+      return null;
+    }
+    const className = block.level === 1 ? "h4 mb-3" : block.level === 2 ? "h5 mb-3" : "h6 mb-3";
+    if (block.level === 1) return <h2 key={`${wrapIndex}:${blockIndex}`} className={className}>{text}</h2>;
+    if (block.level === 2) return <h3 key={`${wrapIndex}:${blockIndex}`} className={className}>{text}</h3>;
+    return <h4 key={`${wrapIndex}:${blockIndex}`} className={className}>{text}</h4>;
+  }
+  if (!block.text.trim()) return null;
+  return (
+    <div key={`${wrapIndex}:${blockIndex}`}>
+      {renderParagraphs(block.text, "mb-3")}
+    </div>
+  );
 }
 
 function FallbackImpressumPage() {
@@ -109,39 +146,25 @@ function FallbackImpressumPage() {
 
 export async function ImpressumPageContent({ locale = "de" }: { locale?: string }) {
   const entries = await loadPortalCmsEntriesByPage("impressum", locale);
-  const companyBlock = resolvePortalCmsField(entries, "impressum_main", "company_block", "");
-  const contactBlock = resolvePortalCmsField(entries, "impressum_main", "contact_block", "");
-  const legalBlock = resolvePortalCmsField(entries, "impressum_main", "legal_block", "");
-  const hasCmsContent = Boolean(companyBlock || contactBlock || legalBlock);
+  const wraps = resolvePortalCmsWraps(entries, "impressum", "impressum_content");
+  const hasCmsContent = wraps.some((wrap) => wrap.title.trim() || wrap.blocks.some((block) => block.text.trim()));
 
   if (!hasCmsContent) {
     return <FallbackImpressumPage />;
   }
 
+  const pageTitle = resolvePageTitle(wraps, "Impressum");
+  const firstHeadingConsumedRef = { current: false };
+
   return (
     <div className="container py-4 text-dark">
-      <h1 className="h2 mb-4">{resolvePortalCmsField(entries, "impressum_main", "headline", "Impressum")}</h1>
-
-      {companyBlock ? (
-        <section className="mb-4">
-          <h2 className="h5">ANGABEN GEMASS §5 TMG</h2>
-          {renderParagraphs(companyBlock)}
+      <h1 className="h2 mb-4">{pageTitle}</h1>
+      {wraps.map((wrap, wrapIndex) => (
+        <section key={wrap.id || `wrap-${wrapIndex}`} className="mb-4">
+          {wrap.title.trim() && wrap.title.trim() !== pageTitle ? <h2 className="h5 mb-3">{wrap.title.trim()}</h2> : null}
+          {wrap.blocks.map((block, blockIndex) => renderWrapBlock(block, wrapIndex, blockIndex, pageTitle, firstHeadingConsumedRef))}
         </section>
-      ) : null}
-
-      {contactBlock ? (
-        <section className="mb-4">
-          <h2 className="h5">KONTAKT</h2>
-          {renderParagraphs(contactBlock)}
-        </section>
-      ) : null}
-
-      {legalBlock ? (
-        <section className="mb-4">
-          <h2 className="h5">RECHTLICHE HINWEISE</h2>
-          {renderParagraphs(legalBlock, "mb-3")}
-        </section>
-      ) : null}
+      ))}
     </div>
   );
 }
