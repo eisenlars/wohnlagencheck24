@@ -24,13 +24,13 @@ type BlogBlock = {
 
 const BLOG_QUERY_TIMEOUT_MS = 4000;
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+async function withTimeout<T>(promiseLike: PromiseLike<T>, timeoutMs: number): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error("BLOG_QUERY_TIMEOUT")), timeoutMs);
   });
   try {
-    return await Promise.race([promise, timeoutPromise]);
+    return await Promise.race([Promise.resolve(promiseLike), timeoutPromise]);
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }

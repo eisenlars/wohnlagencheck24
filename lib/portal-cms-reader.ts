@@ -16,13 +16,13 @@ function isMissingTable(error: unknown, table: string): boolean {
 
 const PORTAL_CMS_QUERY_TIMEOUT_MS = 4000;
 
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+async function withTimeout<T>(promiseLike: PromiseLike<T>, timeoutMs: number): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error("PORTAL_CMS_TIMEOUT")), timeoutMs);
   });
   try {
-    return await Promise.race([promise, timeoutPromise]);
+    return await Promise.race([Promise.resolve(promiseLike), timeoutPromise]);
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }
@@ -34,13 +34,24 @@ export const loadPortalCmsEntriesByPage = cache(async function loadPortalCmsEntr
 ): Promise<Map<string, PortalContentEntryRecord>> {
   try {
     const admin = createAdminClient();
-    const { data, error } = await withTimeout(
-      admin
-        .from("portal_content_entries")
-        .select("page_key, section_key, locale, status, fields_json, updated_at")
-        .eq("page_key", pageKey)
-        .eq("locale", locale)
-        .eq("status", "live"),
+    const contentQuery = admin
+      .from("portal_content_entries")
+      .select("page_key, section_key, locale, status, fields_json, updated_at")
+      .eq("page_key", pageKey)
+      .eq("locale", locale)
+      .eq("status", "live");
+    const { data, error } = await withTimeout<{
+      data: Array<{
+        page_key?: unknown;
+        section_key?: unknown;
+        locale?: unknown;
+        status?: unknown;
+        fields_json?: Record<string, unknown> | null;
+        updated_at?: string | null;
+      }> | null;
+      error: { message?: string } | null;
+    }>(
+      contentQuery,
       PORTAL_CMS_QUERY_TIMEOUT_MS,
     );
 
