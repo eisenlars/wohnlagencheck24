@@ -32,6 +32,7 @@ type PartnerIntegration = {
   has_api_key?: boolean;
   has_token?: boolean;
   has_secret?: boolean;
+  last_sync_at?: string | null;
 };
 
 type IntegrationPolicy = {
@@ -92,6 +93,10 @@ type SecretDraft = {
 
 type SecretFieldKey = keyof SecretDraft;
 type SecretVisibilityState = Record<string, Partial<Record<SecretFieldKey, boolean>>>;
+type IntegrationSyncSummary = {
+  status: "ok" | "warning" | "error";
+  message: string;
+};
 
 const AUTH_TYPE_LABELS: Record<string, string> = {
   api_key: "API Key",
@@ -400,6 +405,42 @@ function hasStoredSecret(integration: PartnerIntegration, field: SecretFieldKey)
   return integration.has_secret === true;
 }
 
+function formatSyncSummary(result: {
+  listings_count: number;
+  references_count: number;
+  requests_count: number;
+  offers_count: number;
+  deactivated_listings: number;
+  deactivated_offers: number;
+  skipped: boolean;
+  reason?: string;
+  notes?: string[];
+}): IntegrationSyncSummary {
+  if (result.skipped) {
+    const reason =
+      result.reason === "integration inactive"
+        ? "Die CRM-Anbindung ist derzeit deaktiviert."
+        : result.reason === "all capabilities disabled"
+          ? "Alle CRM-Bereiche sind in dieser Anbindung deaktiviert."
+          : "Der CRM-Sync wurde übersprungen.";
+    return { status: "warning", message: reason };
+  }
+
+  const parts = [
+    `${result.offers_count} Angebote`,
+    `${result.references_count} Referenzen`,
+    `${result.requests_count} Gesuche`,
+  ];
+  const extras: string[] = [];
+  if (result.deactivated_offers > 0) extras.push(`${result.deactivated_offers} Angebote deaktiviert`);
+  if (result.deactivated_listings > 0) extras.push(`${result.deactivated_listings} Rohobjekte deaktiviert`);
+  if (result.notes?.length) extras.push(result.notes[0] ?? "");
+  return {
+    status: "ok",
+    message: `${parts.join(" · ")} synchronisiert${extras.length ? ` · ${extras.join(" · ")}` : ""}`,
+  };
+}
+
 function renderSecretVisibilityIcon(visible: boolean) {
   const baseProps = {
     width: 16,
@@ -638,6 +679,7 @@ export default function PartnerSettingsPanel({
   const [secretDraft, setSecretDraft] = useState<Record<string, SecretDraft>>({});
   const [secretVisibility, setSecretVisibility] = useState<SecretVisibilityState>({});
   const [testResult, setTestResult] = useState<Record<string, { status: "ok" | "warning" | "error"; message: string }>>({});
+  const [syncResult, setSyncResult] = useState<Record<string, IntegrationSyncSummary>>({});
   const [integrationPolicy, setIntegrationPolicy] = useState<IntegrationPolicy>({ llm_partner_managed_allowed: true });
   const [llmUsageMonth, setLlmUsageMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [llmUsagePeriod, setLlmUsagePeriod] = useState<"timeline" | "year">("timeline");
@@ -1509,6 +1551,7 @@ export default function PartnerSettingsPanel({
                   {(() => {
                     const integration = selectedIntegration;
                     const isLocalSiteIntegration = String(integration.kind ?? "").toLowerCase() === "local_site";
+                    const isCrmIntegration = String(integration.kind ?? "").toLowerCase() === "crm";
                     const draft = secretDraft[integration.id] ?? {
                       api_key: asText(integration.api_key),
                       token: asText(isLocalSiteIntegration ? integration.local_site_api_key : integration.token),
@@ -1519,6 +1562,7 @@ export default function PartnerSettingsPanel({
                     const lastTestedAt = asText(settings.last_tested_at);
                     const lastTestStatus = asText(settings.last_test_status);
                     const lastTestMessage = asText(settings.last_test_message);
+                    const lastSyncAt = asText(integration.last_sync_at);
                     const relevantSecretFields = getRelevantSecretFields(integration);
                     const supportsSecrets = relevantSecretFields.length > 0;
                     return (
@@ -1651,6 +1695,38 @@ export default function PartnerSettingsPanel({
                                 Verbindung testen
                               </button>
                             ) : null}
+                            {isCrmIntegration ? (
+                              <button
+                                style={buttonGhostStyle}
+                                disabled={busy || !integration.is_active}
+                                onClick={() =>
+                                  run("CRM synchronisieren", async () => {
+                                    const res = await api<{
+                                      result: {
+                                        listings_count: number;
+                                        references_count: number;
+                                        requests_count: number;
+                                        offers_count: number;
+                                        deactivated_listings: number;
+                                        deactivated_offers: number;
+                                        skipped: boolean;
+                                        reason?: string;
+                                        notes?: string[];
+                                      };
+                                    }>(`/api/partner/integrations/${integration.id}/sync`, {
+                                      method: "POST",
+                                    });
+                                    setSyncResult((prev) => ({
+                                      ...prev,
+                                      [integration.id]: formatSyncSummary(res.result),
+                                    }));
+                                    await loadAll(integration.id);
+                                  })
+                                }
+                              >
+                                CRM jetzt synchronisieren
+                              </button>
+                            ) : null}
                           </div>
                           {!isLocalSiteIntegration ? (
                             <>
@@ -1671,11 +1747,33 @@ export default function PartnerSettingsPanel({
                                   {testResult[integration.id].message}
                                 </p>
                               ) : null}
+                              {syncResult[integration.id] ? (
+                                <p
+                                  style={{
+                                    marginTop: 6,
+                                    marginBottom: 0,
+                                    fontSize: 12,
+                                    color:
+                                      syncResult[integration.id].status === "ok"
+                                        ? "#15803d"
+                                        : syncResult[integration.id].status === "warning"
+                                          ? "#b45309"
+                                          : "#b91c1c",
+                                  }}
+                                >
+                                  {syncResult[integration.id].message}
+                                </p>
+                              ) : null}
                               {lastTestedAt ? (
                                 <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
                                   Zuletzt getestet: {new Date(lastTestedAt).toLocaleString("de-DE")}
                                   {lastTestStatus ? ` - ${lastTestStatus}` : ""}
                                   {lastTestMessage ? ` - ${lastTestMessage}` : ""}
+                                </p>
+                              ) : null}
+                              {isCrmIntegration && lastSyncAt ? (
+                                <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                  Zuletzt synchronisiert: {new Date(lastSyncAt).toLocaleString("de-DE")}
                                 </p>
                               ) : null}
                             </>
