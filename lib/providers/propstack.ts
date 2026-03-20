@@ -19,7 +19,7 @@ type PropstackUnit = {
   exposee_id?: string | null;
   marketing_type?: string | null;
   rs_type?: string | null;
-  title?: string | null;
+  title?: string | { label?: unknown; value?: unknown } | null;
   description_note?: string | null;
   location_note?: string | null;
   furnishing_note?: string | null;
@@ -226,6 +226,18 @@ function firstString(values: Array<unknown>): string | null {
   return null;
 }
 
+function normalizePropstackTitle(value: unknown): string | null {
+  if (typeof value === "string") {
+    const title = value.trim();
+    return title.length > 0 ? title : null;
+  }
+  if (value && typeof value === "object") {
+    const titleObject = value as Record<string, unknown>;
+    return firstString([titleObject.value, titleObject.label]);
+  }
+  return null;
+}
+
 function asNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim().length > 0) {
@@ -290,6 +302,7 @@ function normalizeUnitOffer(
 ): MappedOffer {
   const gallery = normalizeImages(unit.images);
   const address = buildAddress(unit);
+  const title = normalizePropstackTitle(unit.title);
 
   return {
     partner_id: partnerId,
@@ -297,7 +310,7 @@ function normalizeUnitOffer(
     external_id: String(unit.id),
     offer_type: normalizeOfferType(unit.marketing_type),
     object_type: normalizeObjectType(unit.rs_type),
-    title: unit.title ?? null,
+    title,
     price: unit.purchase_price ?? null,
     rent: unit.rent_net ?? null,
     area_sqm: unit.living_space ?? null,
@@ -336,6 +349,7 @@ function mapUnitReference(
   unit: PropstackUnit,
 ): RawReference {
   const gallery = normalizeImages(unit.images);
+  const sourceTitle = normalizePropstackTitle(unit.title);
   const city = String(unit.city ?? "").trim();
   const district = String(unit.region ?? "").trim() || null;
   const saleType = normalizeOfferType(unit.marketing_type) === "miete" ? "vermietet" : "verkauft";
@@ -343,7 +357,7 @@ function mapUnitReference(
   const referenceTitle = `Erfolgreich ${saleType} in ${locationLabel}`;
   const normalizedPayload: Record<string, unknown> = {
     title: referenceTitle,
-    source_title: unit.title ?? null,
+    source_title: sourceTitle,
     transaction_result: saleType,
     city: city || null,
     district,
@@ -660,7 +674,8 @@ export async function syncPropstackResources(
 ): Promise<ResourceSyncData & { offers: MappedOffer[] }> {
   const cfg = toSettings(integration.settings);
   const notes: string[] = [];
-  const units = await fetchPropstackUnits(integration, apiKey);
+  const units = await fetchPropstackUnits(integration, apiKey, { maxPages: 1, perPage: 10 });
+  notes.push("propstack sync limited to first page for write-path validation");
   const offers = units.map((unit) => normalizeUnitOffer(integration.partner_id, integration, unit));
   const listings = offers.map((offer) =>
     makeRawRowBase(
