@@ -31,6 +31,7 @@ export type PortalContentWrapTextBlock = Extract<PortalContentBlock, { type: "he
 export type PortalContentWrap = {
   id: string;
   title: string;
+  show_title?: boolean;
   blocks: PortalContentWrapTextBlock[];
 };
 
@@ -391,6 +392,7 @@ export function parsePortalContentWraps(value: string): PortalContentWrap[] {
       wraps.push({
         id: String(wrap.id ?? buildPortalWrapId(wraps.length)),
         title,
+        show_title: wrap.show_title === true,
         blocks,
       });
     }
@@ -405,6 +407,7 @@ export function serializePortalContentWraps(wraps: PortalContentWrap[]): string 
     wraps.map((wrap, index) => ({
       id: String(wrap.id ?? buildPortalWrapId(index)),
       title: normalizePortalWrapTitle(wrap.title),
+      show_title: wrap.show_title === true,
       blocks: wrap.blocks.map((block) => (
         block.type === "heading"
           ? { type: "heading", level: block.level, text: String(block.text ?? "") }
@@ -435,6 +438,7 @@ function buildLegacyWrapFromEntry(
   return {
     id: buildPortalWrapId(index),
     title: LEGACY_PORTAL_WRAP_LABELS[sectionKey] ?? `Bereich ${index + 1}`,
+    show_title: false,
     blocks: migratedBlocks,
   };
 }

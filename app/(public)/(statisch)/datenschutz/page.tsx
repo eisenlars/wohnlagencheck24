@@ -67,7 +67,7 @@ export async function DatenschutzPageContent({ locale = "de" }: { locale?: strin
         <h1 className="h2 mb-4">{pageTitle}</h1>
         {wraps.map((wrap, wrapIndex) => (
           <section key={wrap.id || `wrap-${wrapIndex}`} className="mb-4">
-            {wrap.title.trim() && wrap.title.trim() !== pageTitle ? <h2 className="h5 mb-3">{wrap.title.trim()}</h2> : null}
+            {wrap.show_title === true && wrap.title.trim() && wrap.title.trim() !== pageTitle ? <h2 className="h5 mb-3">{wrap.title.trim()}</h2> : null}
             {wrap.blocks.map((block, blockIndex) => renderWrapBlock(block, wrapIndex, blockIndex, pageTitle, firstHeadingConsumedRef))}
           </section>
         ))}

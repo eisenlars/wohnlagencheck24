@@ -283,6 +283,7 @@ function createEmptyPortalWrap(): PortalContentWrap {
   return {
     id: createPortalWrapId(),
     title: "",
+    show_title: false,
     blocks: [],
   };
 }
@@ -4647,6 +4648,19 @@ export default function AdminClient() {
                                             )));
                                           }}
                                         />
+                                        <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, fontSize: 12, color: "#334155" }}>
+                                          <input
+                                            type="checkbox"
+                                            checked={wrap.show_title === true}
+                                            onChange={(e) => {
+                                              const checked = e.target.checked;
+                                              updateWraps(wraps.map((item, itemIdx) => (
+                                                itemIdx === wrapIdx ? { ...item, show_title: checked } : item
+                                              )));
+                                            }}
+                                          />
+                                          Bereichstitel einblenden
+                                        </label>
                                       </div>
                                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                                         <button
