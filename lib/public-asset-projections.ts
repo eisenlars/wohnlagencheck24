@@ -195,19 +195,116 @@ function groupByKey<T>(rows: T[], buildKey: (row: T) => string): Map<string, T> 
   return map;
 }
 
-function groupTranslationsByEntityAndLocale<T>(
+function groupTranslationsByEntityId<T>(
   rows: T[],
   getEntityId: (row: T) => string,
   getLocale: (row: T) => string,
-): Map<string, T> {
-  const map = new Map<string, T>();
+): Map<string, Array<{ locale: string; row: T }>> {
+  const map = new Map<string, Array<{ locale: string; row: T }>>();
   for (const row of rows) {
     const entityId = getEntityId(row);
     const locale = getLocale(row);
     if (!entityId || !locale) continue;
-    map.set(`${entityId}::${locale}`, row);
+    const bucket = map.get(entityId) ?? [];
+    bucket.push({ locale, row });
+    map.set(entityId, bucket);
   }
   return map;
+}
+
+function buildCompositeKey(row: Record<string, unknown>, columns: string[]): string {
+  return columns.map((column) => String(row[column] ?? "")).join("::");
+}
+
+function normalizeComparableValue(value: unknown): unknown {
+  if (value === undefined) return null;
+  if (Array.isArray(value)) return value.map((entry) => normalizeComparableValue(entry));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, normalizeComparableValue(entry)]),
+    );
+  }
+  return value;
+}
+
+function buildComparableSnapshot(row: Record<string, unknown>, columns: string[]): string {
+  const payload = Object.fromEntries(
+    columns.map((column) => [column, normalizeComparableValue(row[column])]),
+  );
+  return JSON.stringify(payload);
+}
+
+function chunkRows<T>(rows: T[], size = 250): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) {
+    out.push(rows.slice(i, i + size));
+  }
+  return out;
+}
+
+async function reconcileProjectionRows(args: {
+  admin: AdminClient;
+  table: "public_offer_entries" | "public_request_entries" | "public_reference_entries";
+  partnerId: string;
+  rows: Array<Record<string, unknown>>;
+  uniqueColumns: string[];
+  compareColumns: string[];
+}): Promise<number> {
+  const { admin, table, partnerId, rows, uniqueColumns, compareColumns } = args;
+  const selectColumns = Array.from(new Set(["id", ...uniqueColumns, ...compareColumns]));
+  const { data, error } = await admin
+    .from(table)
+    .select(selectColumns.join(","))
+    .eq("partner_id", partnerId);
+
+  if (error) throw new Error(`${table} existing lookup failed: ${error.message}`);
+
+  const existingRows = (data ?? []) as Array<Record<string, unknown>>;
+  const existingByKey = new Map<string, Record<string, unknown>>();
+  for (const row of existingRows) {
+    existingByKey.set(buildCompositeKey(row, uniqueColumns), row);
+  }
+
+  const desiredByKey = new Map<string, Record<string, unknown>>();
+  for (const row of rows) {
+    desiredByKey.set(buildCompositeKey(row, uniqueColumns), row);
+  }
+
+  const writeRows: Array<Record<string, unknown>> = [];
+  for (const [key, row] of desiredByKey.entries()) {
+    const existing = existingByKey.get(key);
+    if (!existing) {
+      writeRows.push(row);
+      continue;
+    }
+
+    const existingSnapshot = buildComparableSnapshot(existing, compareColumns);
+    const desiredSnapshot = buildComparableSnapshot(row, compareColumns);
+    if (existingSnapshot !== desiredSnapshot) {
+      writeRows.push(row);
+    }
+  }
+
+  const staleIds = existingRows
+    .filter((row) => !desiredByKey.has(buildCompositeKey(row, uniqueColumns)))
+    .map((row) => asText(row.id))
+    .filter(Boolean);
+
+  for (const chunk of chunkRows(staleIds)) {
+    const { error: deleteError } = await admin.from(table).delete().in("id", chunk);
+    if (deleteError) throw new Error(`${table} stale delete failed: ${deleteError.message}`);
+  }
+
+  for (const chunk of chunkRows(writeRows)) {
+    const { error: upsertError } = await admin.from(table).upsert(chunk, {
+      onConflict: uniqueColumns.join(","),
+    });
+    if (upsertError) throw new Error(`${table} upsert failed: ${upsertError.message}`);
+  }
+
+  return desiredByKey.size;
 }
 
 async function loadPublicLiveAreaIdsForPartner(admin: AdminClient, partnerId: string): Promise<string[]> {
@@ -228,10 +325,41 @@ export async function rebuildPublicOfferEntriesForPartner(
   admin = createAdminClient(),
 ): Promise<number> {
   const visibleAreaIds = await loadPublicLiveAreaIdsForPartner(admin, partnerId);
-
-  const { error: clearError } = await admin.from("public_offer_entries").delete().eq("partner_id", partnerId);
-  if (clearError) throw new Error(`public_offer_entries clear failed: ${clearError.message}`);
-  if (visibleAreaIds.length === 0) return 0;
+  if (visibleAreaIds.length === 0) {
+    return reconcileProjectionRows({
+      admin,
+      table: "public_offer_entries",
+      partnerId,
+      rows: [],
+      uniqueColumns: ["partner_id", "offer_id", "visible_area_id", "locale"],
+      compareColumns: [
+        "source",
+        "external_id",
+        "offer_type",
+        "object_type",
+        "title",
+        "seo_title",
+        "seo_description",
+        "seo_h1",
+        "short_description",
+        "long_description",
+        "location_text",
+        "features_text",
+        "highlights",
+        "image_alt_texts",
+        "price",
+        "rent",
+        "area_sqm",
+        "rooms",
+        "address",
+        "image_url",
+        "detail_url",
+        "is_top",
+        "is_live",
+        "source_updated_at",
+      ],
+    });
+  }
 
   const [offersRes, overridesRes, i18nRes] = await Promise.all([
     admin
@@ -259,13 +387,14 @@ export async function rebuildPublicOfferEntriesForPartner(
     (overridesRes.data ?? []) as OfferOverrideRow[],
     (row) => `${asText(row.partner_id)}::${asText(row.source)}::${asText(row.external_id)}`,
   );
-  const translationsByEntityAndLocale = groupTranslationsByEntityAndLocale(
+  const translationsByEntityId = groupTranslationsByEntityId(
     (i18nRes.data ?? []) as OfferI18nRow[],
     (row) => asText(row.offer_id),
     (row) => asText(row.target_locale).toLowerCase(),
   );
 
   const projectionRows: Array<Record<string, unknown>> = [];
+  const rebuildTimestamp = new Date().toISOString();
   for (const offer of offers) {
     const offerId = asText(offer.id);
     const source = asText(offer.source) || "manual";
@@ -303,12 +432,11 @@ export async function rebuildPublicOfferEntriesForPartner(
       is_top: Boolean(offer.is_top),
       is_live: true,
       source_updated_at: asNullableText(offer.updated_at),
-      updated_at: new Date().toISOString(),
+      updated_at: rebuildTimestamp,
     });
 
-    for (const [key, translation] of translationsByEntityAndLocale.entries()) {
-      const [entityId, locale] = key.split("::");
-      if (entityId !== offerId || !locale) continue;
+    for (const translationEntry of translationsByEntityId.get(offerId) ?? []) {
+      const { locale, row: translation } = translationEntry;
       const translatedTitle =
         asNullableText(translation.translated_seo_h1) ?? asNullableText(translation.translated_seo_title);
       if (!translatedTitle) continue;
@@ -341,15 +469,44 @@ export async function rebuildPublicOfferEntriesForPartner(
         is_top: Boolean(offer.is_top),
         is_live: true,
         source_updated_at: asNullableText(offer.updated_at),
-        updated_at: new Date().toISOString(),
+        updated_at: rebuildTimestamp,
       });
     }
   }
 
-  if (projectionRows.length === 0) return 0;
-  const { error: insertError } = await admin.from("public_offer_entries").insert(projectionRows);
-  if (insertError) throw new Error(`public_offer_entries insert failed: ${insertError.message}`);
-  return projectionRows.length;
+  return reconcileProjectionRows({
+    admin,
+    table: "public_offer_entries",
+    partnerId,
+    rows: projectionRows,
+    uniqueColumns: ["partner_id", "offer_id", "visible_area_id", "locale"],
+    compareColumns: [
+      "source",
+      "external_id",
+      "offer_type",
+      "object_type",
+      "title",
+      "seo_title",
+      "seo_description",
+      "seo_h1",
+      "short_description",
+      "long_description",
+      "location_text",
+      "features_text",
+      "highlights",
+      "image_alt_texts",
+      "price",
+      "rent",
+      "area_sqm",
+      "rooms",
+      "address",
+      "image_url",
+      "detail_url",
+      "is_top",
+      "is_live",
+      "source_updated_at",
+    ],
+  });
 }
 
 export async function rebuildPublicRequestEntriesForPartner(
@@ -357,10 +514,37 @@ export async function rebuildPublicRequestEntriesForPartner(
   admin = createAdminClient(),
 ): Promise<number> {
   const visibleAreaIds = await loadPublicLiveAreaIdsForPartner(admin, partnerId);
-
-  const { error: clearError } = await admin.from("public_request_entries").delete().eq("partner_id", partnerId);
-  if (clearError) throw new Error(`public_request_entries clear failed: ${clearError.message}`);
-  if (visibleAreaIds.length === 0) return 0;
+  if (visibleAreaIds.length === 0) {
+    return reconcileProjectionRows({
+      admin,
+      table: "public_request_entries",
+      partnerId,
+      rows: [],
+      uniqueColumns: ["partner_id", "request_id", "visible_area_id", "locale"],
+      compareColumns: [
+        "provider",
+        "external_id",
+        "request_type",
+        "object_type",
+        "title",
+        "seo_title",
+        "seo_description",
+        "seo_h1",
+        "short_description",
+        "long_description",
+        "location_text",
+        "features_text",
+        "highlights",
+        "image_alt_texts",
+        "min_rooms",
+        "max_price",
+        "region_targets",
+        "region_target_keys",
+        "is_live",
+        "source_updated_at",
+      ],
+    });
+  }
 
   const [requestsRes, overridesRes, i18nRes] = await Promise.all([
     admin
@@ -388,13 +572,14 @@ export async function rebuildPublicRequestEntriesForPartner(
     (overridesRes.data ?? []) as RequestOverrideRow[],
     (row) => `${asText(row.partner_id)}::${asText(row.source)}::${asText(row.external_id)}`,
   );
-  const translationsByEntityAndLocale = groupTranslationsByEntityAndLocale(
+  const translationsByEntityId = groupTranslationsByEntityId(
     (i18nRes.data ?? []) as RequestI18nRow[],
     (row) => asText(row.request_id),
     (row) => asText(row.target_locale).toLowerCase(),
   );
 
   const projectionRows: Array<Record<string, unknown>> = [];
+  const rebuildTimestamp = new Date().toISOString();
   for (const request of requests) {
     const requestId = asText(request.id);
     const provider = asText(request.provider);
@@ -435,12 +620,11 @@ export async function rebuildPublicRequestEntriesForPartner(
         region_target_keys: regionTargetKeys,
         is_live: true,
         source_updated_at: asNullableText(request.source_updated_at) ?? asNullableText(request.updated_at),
-        updated_at: new Date().toISOString(),
+        updated_at: rebuildTimestamp,
       });
 
-      for (const [key, translation] of translationsByEntityAndLocale.entries()) {
-        const [entityId, locale] = key.split("::");
-        if (entityId !== requestId || !locale) continue;
+      for (const translationEntry of translationsByEntityId.get(requestId) ?? []) {
+        const { locale, row: translation } = translationEntry;
         const translatedTitle =
           asNullableText(translation.translated_seo_h1) ?? asNullableText(translation.translated_seo_title);
         if (!translatedTitle) continue;
@@ -469,16 +653,41 @@ export async function rebuildPublicRequestEntriesForPartner(
           region_target_keys: regionTargetKeys,
           is_live: true,
           source_updated_at: asNullableText(request.source_updated_at) ?? asNullableText(request.updated_at),
-          updated_at: new Date().toISOString(),
+          updated_at: rebuildTimestamp,
         });
       }
     }
   }
 
-  if (projectionRows.length === 0) return 0;
-  const { error: insertError } = await admin.from("public_request_entries").insert(projectionRows);
-  if (insertError) throw new Error(`public_request_entries insert failed: ${insertError.message}`);
-  return projectionRows.length;
+  return reconcileProjectionRows({
+    admin,
+    table: "public_request_entries",
+    partnerId,
+    rows: projectionRows,
+    uniqueColumns: ["partner_id", "request_id", "visible_area_id", "locale"],
+    compareColumns: [
+      "provider",
+      "external_id",
+      "request_type",
+      "object_type",
+      "title",
+      "seo_title",
+      "seo_description",
+      "seo_h1",
+      "short_description",
+      "long_description",
+      "location_text",
+      "features_text",
+      "highlights",
+      "image_alt_texts",
+      "min_rooms",
+      "max_price",
+      "region_targets",
+      "region_target_keys",
+      "is_live",
+      "source_updated_at",
+    ],
+  });
 }
 
 export async function rebuildPublicReferenceEntriesForPartner(
@@ -486,10 +695,35 @@ export async function rebuildPublicReferenceEntriesForPartner(
   admin = createAdminClient(),
 ): Promise<number> {
   const visibleAreaIds = await loadPublicLiveAreaIdsForPartner(admin, partnerId);
-
-  const { error: clearError } = await admin.from("public_reference_entries").delete().eq("partner_id", partnerId);
-  if (clearError) throw new Error(`public_reference_entries clear failed: ${clearError.message}`);
-  if (visibleAreaIds.length === 0) return 0;
+  if (visibleAreaIds.length === 0) {
+    return reconcileProjectionRows({
+      admin,
+      table: "public_reference_entries",
+      partnerId,
+      rows: [],
+      uniqueColumns: ["partner_id", "reference_id", "visible_area_id", "locale"],
+      compareColumns: [
+        "provider",
+        "external_id",
+        "title",
+        "seo_title",
+        "seo_description",
+        "seo_h1",
+        "short_description",
+        "long_description",
+        "location_text",
+        "features_text",
+        "highlights",
+        "image_alt_texts",
+        "description",
+        "image_url",
+        "city",
+        "district",
+        "is_live",
+        "source_updated_at",
+      ],
+    });
+  }
 
   const [referencesRes, overridesRes, i18nRes] = await Promise.all([
     admin
@@ -517,13 +751,14 @@ export async function rebuildPublicReferenceEntriesForPartner(
     (overridesRes.data ?? []) as ReferenceOverrideRow[],
     (row) => `${asText(row.partner_id)}::${asText(row.source)}::${asText(row.external_id)}`,
   );
-  const translationsByEntityAndLocale = groupTranslationsByEntityAndLocale(
+  const translationsByEntityId = groupTranslationsByEntityId(
     (i18nRes.data ?? []) as ReferenceI18nRow[],
     (row) => asText(row.reference_id),
     (row) => asText(row.target_locale).toLowerCase(),
   );
 
   const projectionRows: Array<Record<string, unknown>> = [];
+  const rebuildTimestamp = new Date().toISOString();
   for (const reference of references) {
     const referenceId = asText(reference.id);
     const provider = asText(reference.provider);
@@ -565,12 +800,11 @@ export async function rebuildPublicReferenceEntriesForPartner(
         district,
         is_live: true,
         source_updated_at: asNullableText(reference.source_updated_at) ?? asNullableText(reference.updated_at),
-        updated_at: new Date().toISOString(),
+        updated_at: rebuildTimestamp,
       });
 
-      for (const [key, translation] of translationsByEntityAndLocale.entries()) {
-        const [entityId, locale] = key.split("::");
-        if (entityId !== referenceId || !locale) continue;
+      for (const translationEntry of translationsByEntityId.get(referenceId) ?? []) {
+        const { locale, row: translation } = translationEntry;
         const translatedTitle =
           asNullableText(translation.translated_seo_h1) ?? asNullableText(translation.translated_seo_title);
         if (!translatedTitle) continue;
@@ -599,16 +833,39 @@ export async function rebuildPublicReferenceEntriesForPartner(
           district,
           is_live: true,
           source_updated_at: asNullableText(reference.source_updated_at) ?? asNullableText(reference.updated_at),
-          updated_at: new Date().toISOString(),
+          updated_at: rebuildTimestamp,
         });
       }
     }
   }
 
-  if (projectionRows.length === 0) return 0;
-  const { error: insertError } = await admin.from("public_reference_entries").insert(projectionRows);
-  if (insertError) throw new Error(`public_reference_entries insert failed: ${insertError.message}`);
-  return projectionRows.length;
+  return reconcileProjectionRows({
+    admin,
+    table: "public_reference_entries",
+    partnerId,
+    rows: projectionRows,
+    uniqueColumns: ["partner_id", "reference_id", "visible_area_id", "locale"],
+    compareColumns: [
+      "provider",
+      "external_id",
+      "title",
+      "seo_title",
+      "seo_description",
+      "seo_h1",
+      "short_description",
+      "long_description",
+      "location_text",
+      "features_text",
+      "highlights",
+      "image_alt_texts",
+      "description",
+      "image_url",
+      "city",
+      "district",
+      "is_live",
+      "source_updated_at",
+    ],
+  });
 }
 
 export async function rebuildAllPublicAssetEntriesForPartner(

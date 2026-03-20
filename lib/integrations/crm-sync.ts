@@ -241,7 +241,7 @@ export async function runCrmIntegrationSync(
     supabase,
   );
   mergedNotes.push(
-    `public projections rebuilt: offers=${projectionCounts.offers}, requests=${projectionCounts.requests}, references=${projectionCounts.references}`,
+    `public projections reconciled: offers=${projectionCounts.offers}, requests=${projectionCounts.requests}, references=${projectionCounts.references}`,
   );
 
   const lastSyncAt = new Date().toISOString();

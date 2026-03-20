@@ -17,10 +17,13 @@ Diese Datei dokumentiert den aktuell produktionsnahen Tabellenstand in Supabase 
 - `partner_listings`
 - `partner_property_offers`
 - `partner_property_overrides`
+- `public_offer_entries`
 - `partner_references`
 - `partner_reference_overrides`
+- `public_reference_entries`
 - `partner_requests`
 - `partner_request_overrides`
+- `public_request_entries`
 - `security_audit_log`
 - `security_rate_limits`
 
@@ -62,6 +65,22 @@ create unique index if not exists partner_integrations_kind_unique_non_llm
 
 Der vollständige SQL-Export kann je Umgebung leicht abweichen (z. B. Dev/Staging/Prod).  
 Bei Migrationen immer zuerst den echten Zielstand (`to_regclass`, `information_schema`) prüfen.
+
+## Aenderung 2026-03-20
+
+- Performance-Hardening fuer erhoehten Supabase Disk IO vorbereitet.
+- Neue Read-Indizes fuer:
+  - `areas`
+  - `partner_area_map`
+  - `report_texts`
+  - `partner_marketing_texts`
+  - `public_offer_entries`
+  - `public_request_entries`
+  - `public_reference_entries`
+- Public-Projektionen bleiben fachlich unveraendert, sollen aber inkrementell gepflegt werden statt partnerweise komplett geloescht und neu geschrieben zu werden.
+- Runbooks:
+  - `docs/sql/performance_disk_io_2026-03-20.sql`
+  - `docs/sql/public_asset_projections.sql`
 
 ## Aenderung 2026-03-04
 

@@ -45,6 +45,10 @@ create unique index if not exists public_offer_entries_unique
 create index if not exists public_offer_entries_area_locale_offer_idx
   on public.public_offer_entries (visible_area_id, locale, offer_type, updated_at desc);
 
+create index if not exists public_offer_entries_live_feed_idx
+  on public.public_offer_entries (visible_area_id, locale, offer_type, is_top, source_updated_at desc)
+  where is_live = true;
+
 create table if not exists public.public_request_entries (
   id uuid primary key default gen_random_uuid(),
   partner_id uuid not null references public.partners(id) on delete cascade,
@@ -81,6 +85,10 @@ create unique index if not exists public_request_entries_unique
 create index if not exists public_request_entries_area_locale_type_idx
   on public.public_request_entries (visible_area_id, locale, request_type, updated_at desc);
 
+create index if not exists public_request_entries_live_feed_idx
+  on public.public_request_entries (visible_area_id, locale, source_updated_at desc)
+  where is_live = true;
+
 create table if not exists public.public_reference_entries (
   id uuid primary key default gen_random_uuid(),
   partner_id uuid not null references public.partners(id) on delete cascade,
@@ -114,6 +122,10 @@ create unique index if not exists public_reference_entries_unique
 
 create index if not exists public_reference_entries_area_locale_updated_idx
   on public.public_reference_entries (visible_area_id, locale, updated_at desc);
+
+create index if not exists public_reference_entries_live_feed_idx
+  on public.public_reference_entries (visible_area_id, locale, source_updated_at desc)
+  where is_live = true;
 
 alter table public.public_offer_entries enable row level security;
 alter table public.public_request_entries enable row level security;

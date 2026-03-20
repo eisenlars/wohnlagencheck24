@@ -11,6 +11,10 @@ CREATE TABLE public.areas (
   bundesland_slug text,
   CONSTRAINT areas_pkey PRIMARY KEY (id)
 );
+CREATE INDEX areas_bundesland_slug_idx
+  ON public.areas (bundesland_slug, slug);
+CREATE INDEX areas_bundesland_parent_slug_idx
+  ON public.areas (bundesland_slug, parent_slug);
 CREATE TABLE public.data_value_settings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   auth_user_id uuid,
@@ -61,6 +65,12 @@ CREATE TABLE public.partner_area_map (
   CONSTRAINT partner_area_map_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES public.partners(id),
   CONSTRAINT partner_area_map_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
 );
+CREATE INDEX partner_area_map_area_active_partner_idx
+  ON public.partner_area_map (area_id, is_active, auth_user_id);
+CREATE INDEX partner_area_map_area_public_partner_idx
+  ON public.partner_area_map (area_id, is_public_live, auth_user_id);
+CREATE INDEX partner_area_map_partner_public_area_idx
+  ON public.partner_area_map (auth_user_id, is_public_live, area_id);
 CREATE TABLE public.partners (
   id uuid NOT NULL DEFAULT auth.uid(),
   company_name text NOT NULL,
@@ -85,6 +95,9 @@ CREATE TABLE public.report_texts (
   CONSTRAINT report_texts_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
   CONSTRAINT report_texts_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
 );
+CREATE INDEX report_texts_approved_area_partner_idx
+  ON public.report_texts (area_id, partner_id)
+  WHERE (status = 'approved'::text);
 
 -- ------------------------------
 -- Lokale Website Texte (partner_local_site_texts)
@@ -137,6 +150,9 @@ CREATE TABLE public.partner_marketing_texts (
 
 CREATE UNIQUE INDEX partner_marketing_texts_unique
   ON public.partner_marketing_texts (partner_id, area_id, section_key);
+CREATE INDEX partner_marketing_texts_approved_area_partner_idx
+  ON public.partner_marketing_texts (area_id, partner_id)
+  WHERE (status = 'approved'::text);
 
 ALTER TABLE public.partner_marketing_texts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY partner_marketing_texts_deny_select
