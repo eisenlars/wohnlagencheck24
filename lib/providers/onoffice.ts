@@ -29,6 +29,7 @@ const ACTION_READ = "urn:onoffice-de-ns:smart:2.5:smartml:action:read";
 const RESOURCE_ESTATE = "estate";
 const RESOURCE_SEARCH_CRITERIA = "searchcriteria";
 const HMAC_VERSION = 2;
+const PROVIDER_FETCH_TIMEOUT_MS = 12000;
 
 type OnOfficeResourceSettings = {
   sold_status_id: number;
@@ -194,6 +195,25 @@ function extractImages(elements: Record<string, unknown>): string[] {
 
 function toIsoNow(): string {
   return new Date().toISOString();
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = PROVIDER_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      cache: "no-store",
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`onOffice request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function makeRawRowBase(
@@ -506,11 +526,10 @@ async function fetchOnOfficeResource(
       filter,
     });
 
-    const res = await fetch(base, {
+    const res = await fetchWithTimeout(base, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      cache: "no-store",
     });
 
     if (!res.ok) {

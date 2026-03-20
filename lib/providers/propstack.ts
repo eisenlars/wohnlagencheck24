@@ -83,6 +83,8 @@ type RegionTarget = {
   key: string;
 };
 
+const PROVIDER_FETCH_TIMEOUT_MS = 12000;
+
 function toSettings(settings: Record<string, unknown> | null): PropstackResourceSettings {
   const resourceFilters = (settings?.resource_filters ?? {}) as Record<string, unknown>;
   const referencesCfg = (resourceFilters.references ?? {}) as Record<string, unknown>;
@@ -146,6 +148,25 @@ function normalizeImages(images?: PropstackImage[] | null): string[] {
 
 function toIsoNow(): string {
   return new Date().toISOString();
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = PROVIDER_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      cache: "no-store",
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`Propstack request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function makeRawRowBase(
@@ -565,11 +586,10 @@ export async function fetchPropstackUnits(
     url.searchParams.set("page", String(page));
     url.searchParams.set("per", String(perPage));
 
-    const res = await fetch(url.toString(), {
+    const res = await fetchWithTimeout(url.toString(), {
       headers: {
         "X-API-KEY": apiKey,
       },
-      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -605,11 +625,10 @@ export async function fetchPropstackSearchProfiles(
     url.searchParams.set("page", String(page));
     url.searchParams.set("per", String(perPage));
 
-    const res = await fetch(url.toString(), {
+    const res = await fetchWithTimeout(url.toString(), {
       headers: {
         "X-API-KEY": apiKey,
       },
-      cache: "no-store",
     });
 
     if (res.status === 404 || res.status === 405) return [];
