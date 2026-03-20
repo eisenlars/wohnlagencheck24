@@ -441,6 +441,34 @@ function formatSyncSummary(result: {
   };
 }
 
+function applyProviderSelection(
+  draft: IntegrationDraft,
+  nextProvider: string,
+): IntegrationDraft {
+  const nextAuthType = getDefaultAuthType(draft.kind, nextProvider);
+  const nextDefaults = getDraftDefaults(draft.kind, nextProvider);
+  const nextDraft: IntegrationDraft = {
+    ...draft,
+    provider: nextProvider,
+    auth_type: nextAuthType,
+  };
+
+  if ("base_url" in nextDefaults) {
+    nextDraft.base_url = nextDefaults.base_url ?? "";
+  }
+  if ("detail_url_template" in nextDefaults) {
+    nextDraft.detail_url_template = nextDefaults.detail_url_template ?? "";
+  }
+  if (draft.kind === "llm") {
+    if ("llm_model" in nextDefaults) nextDraft.llm_model = nextDefaults.llm_model ?? "";
+    if ("llm_api_version" in nextDefaults) nextDraft.llm_api_version = nextDefaults.llm_api_version ?? "";
+    if ("llm_temperature" in nextDefaults) nextDraft.llm_temperature = nextDefaults.llm_temperature ?? "";
+    if ("llm_max_tokens" in nextDefaults) nextDraft.llm_max_tokens = nextDefaults.llm_max_tokens ?? "";
+  }
+
+  return nextDraft;
+}
+
 function renderSecretVisibilityIcon(visible: boolean) {
   const baseProps = {
     width: 16,
@@ -911,6 +939,25 @@ export default function PartnerSettingsPanel({
     setIntegrationDraft(buildDraftFromIntegration(integration));
   }
 
+  function updateIntegrationProvider(nextProvider: string) {
+    setIntegrationDraft((prev) => applyProviderSelection(prev, nextProvider));
+    if (selectedIntegrationIdRef.current) {
+      const integrationId = selectedIntegrationIdRef.current;
+      setTestResult((prev) => {
+        if (!prev[integrationId]) return prev;
+        const next = { ...prev };
+        delete next[integrationId];
+        return next;
+      });
+      setSyncResult((prev) => {
+        if (!prev[integrationId]) return prev;
+        const next = { ...prev };
+        delete next[integrationId];
+        return next;
+      });
+    }
+  }
+
   useEffect(() => {
     (async () => {
       try {
@@ -1241,24 +1288,18 @@ export default function PartnerSettingsPanel({
                             setIntegrationDraft((v) => {
                               const nextKind = e.target.value;
                               const nextProvider = getDefaultProviderId(nextKind);
-                              const nextAuth = getDefaultAuthType(nextKind, nextProvider);
-                              const nextDefaults = getDraftDefaults(nextKind, nextProvider);
-                              return {
+                              return applyProviderSelection({
                                 ...v,
                                 kind: nextKind,
-                                provider: nextProvider,
-                                auth_type: nextAuth,
-                                base_url: nextDefaults.base_url ?? "",
-                                detail_url_template: nextDefaults.detail_url_template ?? "",
                                 ...(nextKind === "llm"
                                   ? {
-                                      llm_model: nextDefaults.llm_model ?? v.llm_model,
-                                      llm_api_version: nextDefaults.llm_api_version ?? v.llm_api_version,
-                                      llm_temperature: nextDefaults.llm_temperature ?? v.llm_temperature,
-                                      llm_max_tokens: nextDefaults.llm_max_tokens ?? v.llm_max_tokens,
+                                      llm_model: v.llm_model,
+                                      llm_api_version: v.llm_api_version,
+                                      llm_temperature: v.llm_temperature,
+                                      llm_max_tokens: v.llm_max_tokens,
                                     }
                                   : {}),
-                              };
+                              }, nextProvider);
                             })
                           }
                         >
@@ -1287,14 +1328,7 @@ export default function PartnerSettingsPanel({
                             aria-label="Provider"
                             value={integrationDraft.provider}
                             disabled={!isCreateMode}
-                            onChange={(e) =>
-                              setIntegrationDraft((v) => ({
-                                ...v,
-                                provider: e.target.value,
-                                auth_type: getDefaultAuthType(v.kind, e.target.value),
-                                ...getDraftDefaults(v.kind, e.target.value),
-                              }))
-                            }
+                            onChange={(e) => updateIntegrationProvider(e.target.value)}
                           >
                             {providerOptions.map((provider) => (
                               <option key={provider.id} value={provider.id}>
@@ -1342,22 +1376,47 @@ export default function PartnerSettingsPanel({
                       ) : null}
                     </div>
                   ) : (
-                    <>
-                      <div
-                        style={{
-                          marginTop: 40,
-                          marginBottom: 10,
-                          color: "#0f172a",
-                          fontSize: 18,
-                          fontWeight: 700,
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {isLocalSiteDraft
-                          ? getIntegrationPrimaryLabel(integrationDraft)
-                          : `${getKindLabel(integrationDraft.kind)} · ${getIntegrationPrimaryLabel(integrationDraft)}`}
+                    <div style={{ ...grid3Style, marginTop: 40 }}>
+                      <div style={fieldWrapStyle}>
+                        <label style={fieldLabelStyle}>Anbindungstyp</label>
+                        <input
+                          style={inputMutedStyle}
+                          aria-label="Anbindungstyp"
+                          value={getKindLabel(integrationDraft.kind)}
+                          readOnly
+                        />
+                        <span style={fieldHintStyle}>Der Anbindungstyp bleibt bei bestehenden Einträgen fix.</span>
                       </div>
-                    </>
+                      {isLocalSiteDraft ? (
+                        <div style={fieldWrapStyle}>
+                          <label style={fieldLabelStyle}>Kanal</label>
+                          <input
+                            style={inputMutedStyle}
+                            aria-label="Kanal"
+                            value="Local Site (Ausspielkanal)"
+                            readOnly
+                          />
+                          <span style={fieldHintStyle}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
+                        </div>
+                      ) : (
+                        <div style={fieldWrapStyle}>
+                          <label style={fieldLabelStyle}>Provider</label>
+                          <select
+                            style={selectStyle}
+                            aria-label="Provider"
+                            value={integrationDraft.provider}
+                            onChange={(e) => updateIntegrationProvider(e.target.value)}
+                          >
+                            {providerOptions.map((provider) => (
+                              <option key={provider.id} value={provider.id}>
+                                {provider.label}
+                              </option>
+                            ))}
+                          </select>
+                          <span style={fieldHintStyle}>{getProviderBeginnerHint(integrationDraft.kind, integrationDraft.provider)}</span>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {!isLocalSiteDraft ? (
