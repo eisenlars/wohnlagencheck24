@@ -4,6 +4,7 @@ import type {
   RawListing,
   RawReference,
   RawRequest,
+  ResourceSyncDiagnostics,
 } from "@/lib/providers/types";
 import { syncPropstackResources } from "@/lib/providers/propstack";
 import { syncOnOfficeResources } from "@/lib/providers/onoffice";
@@ -18,6 +19,7 @@ export type IntegrationSyncResult = {
   referencesFetched: boolean;
   requestsFetched: boolean;
   notes?: string[];
+  diagnostics?: ResourceSyncDiagnostics;
 };
 
 export async function syncIntegrationResources(

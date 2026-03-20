@@ -85,6 +85,12 @@ type RegionTarget = {
 
 const PROVIDER_FETCH_TIMEOUT_MS = 12000;
 
+type PropstackFetchBatchResult<T> = {
+  items: T[];
+  requestsMade: number;
+  pagesFetched: number;
+};
+
 function toSettings(settings: Record<string, unknown> | null): PropstackResourceSettings {
   const resourceFilters = (settings?.resource_filters ?? {}) as Record<string, unknown>;
   const referencesCfg = (resourceFilters.references ?? {}) as Record<string, unknown>;
@@ -593,11 +599,25 @@ export async function fetchPropstackUnits(
     perPage?: number;
   },
 ): Promise<PropstackUnit[]> {
+  const result = await fetchPropstackUnitsDetailed(integration, apiKey, options);
+  return result.items;
+}
+
+async function fetchPropstackUnitsDetailed(
+  integration: PartnerIntegration,
+  apiKey: string,
+  options?: {
+    maxPages?: number;
+    perPage?: number;
+  },
+): Promise<PropstackFetchBatchResult<PropstackUnit>> {
   const base = integration.base_url?.trim() || "https://api.propstack.de/v1";
   const units: PropstackUnit[] = [];
   const perPage = Math.max(1, Math.min(100, options?.perPage ?? 25));
   const maxPages = Math.max(1, Math.min(100, options?.maxPages ?? 25));
   let page = 1;
+  let requestsMade = 0;
+  let pagesFetched = 0;
 
   while (page <= maxPages) {
     const url = new URL(`${base.replace(/\/+$/, "")}/units`);
@@ -611,6 +631,7 @@ export async function fetchPropstackUnits(
         "X-API-KEY": apiKey,
       },
     });
+    requestsMade += 1;
 
     if (!res.ok) {
       const body = await res.text();
@@ -623,24 +644,48 @@ export async function fetchPropstackUnits(
     if (!Array.isArray(batch) || batch.length === 0) break;
 
     units.push(...(batch as PropstackUnit[]));
+    pagesFetched += 1;
 
     if (batch.length < perPage) break;
     page += 1;
   }
 
-  return units;
+  return {
+    items: units,
+    requestsMade,
+    pagesFetched,
+  };
 }
 
 export async function fetchPropstackSearchProfiles(
   integration: PartnerIntegration,
   apiKey: string,
+  options?: {
+    maxPages?: number;
+    perPage?: number;
+  },
 ): Promise<PropstackSearchProfile[]> {
+  const result = await fetchPropstackSearchProfilesDetailed(integration, apiKey, options);
+  return result.items;
+}
+
+async function fetchPropstackSearchProfilesDetailed(
+  integration: PartnerIntegration,
+  apiKey: string,
+  options?: {
+    maxPages?: number;
+    perPage?: number;
+  },
+): Promise<PropstackFetchBatchResult<PropstackSearchProfile>> {
   const base = integration.base_url?.trim() || "https://api.propstack.de/v1";
   const out: PropstackSearchProfile[] = [];
-  const perPage = 50;
+  const perPage = Math.max(1, Math.min(100, options?.perPage ?? 50));
+  const maxPages = Math.max(1, Math.min(20, options?.maxPages ?? 20));
   let page = 1;
+  let requestsMade = 0;
+  let pagesFetched = 0;
 
-  while (true) {
+  while (page <= maxPages) {
     const url = new URL(`${base.replace(/\/+$/, "")}/saved_queries`);
     url.searchParams.set("page", String(page));
     url.searchParams.set("per", String(perPage));
@@ -650,8 +695,15 @@ export async function fetchPropstackSearchProfiles(
         "X-API-KEY": apiKey,
       },
     });
+    requestsMade += 1;
 
-    if (res.status === 404 || res.status === 405) return [];
+    if (res.status === 404 || res.status === 405) {
+      return {
+        items: [],
+        requestsMade,
+        pagesFetched,
+      };
+    }
     if (!res.ok) {
       const body = await res.text();
       throw new Error(`Propstack saved_queries fetch failed (${res.status}): ${body}`);
@@ -661,11 +713,16 @@ export async function fetchPropstackSearchProfiles(
     const batch = Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : [];
     if (!Array.isArray(batch) || batch.length === 0) break;
     out.push(...(batch as PropstackSearchProfile[]));
+    pagesFetched += 1;
     if (batch.length < perPage) break;
     page += 1;
   }
 
-  return out;
+  return {
+    items: out,
+    requestsMade,
+    pagesFetched,
+  };
 }
 
 export async function syncPropstackResources(
@@ -674,7 +731,18 @@ export async function syncPropstackResources(
 ): Promise<ResourceSyncData & { offers: MappedOffer[] }> {
   const cfg = toSettings(integration.settings);
   const notes: string[] = [];
-  const units = await fetchPropstackUnits(integration, apiKey, { maxPages: 1, perPage: 10 });
+  let providerRequestCount = 0;
+  let providerPagesFetched = 0;
+  const providerBreakdown: Record<string, { requests: number; pages_fetched: number }> = {};
+
+  const unitsResult = await fetchPropstackUnitsDetailed(integration, apiKey, { maxPages: 1, perPage: 10 });
+  providerRequestCount += unitsResult.requestsMade;
+  providerPagesFetched += unitsResult.pagesFetched;
+  providerBreakdown.units = {
+    requests: unitsResult.requestsMade,
+    pages_fetched: unitsResult.pagesFetched,
+  };
+  const units = unitsResult.items;
   notes.push("propstack sync limited to first page for write-path validation");
   const offers = units.map((unit) => normalizeUnitOffer(integration.partner_id, integration, unit));
   const listings = offers.map((offer) =>
@@ -697,11 +765,18 @@ export async function syncPropstackResources(
   let requests: RawRequest[] = [];
 
   try {
-    const profiles = await fetchPropstackSearchProfiles(integration, apiKey);
-    requests = profiles
+    const profilesResult = await fetchPropstackSearchProfilesDetailed(integration, apiKey, { maxPages: 1, perPage: 50 });
+    providerRequestCount += profilesResult.requestsMade;
+    providerPagesFetched += profilesResult.pagesFetched;
+    providerBreakdown.saved_queries = {
+      requests: profilesResult.requestsMade,
+      pages_fetched: profilesResult.pagesFetched,
+    };
+    requests = profilesResult.items
       .filter((p) => p.active !== false)
       .map((p) => mapSearchProfileRequest(integration.partner_id, p));
     requestsFetched = true;
+    notes.push("propstack saved_queries limited to first page for guarded sync");
   } catch (error) {
     notes.push(`propstack saved_queries live fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
   }
@@ -728,6 +803,11 @@ export async function syncPropstackResources(
     referencesFetched,
     requestsFetched,
     notes,
+    diagnostics: {
+      provider_request_count: providerRequestCount,
+      provider_pages_fetched: providerPagesFetched,
+      provider_breakdown: providerBreakdown,
+    },
   };
 }
 

@@ -104,12 +104,28 @@ type CrmSyncResultPayload = {
   reason?: string;
   notes?: string[];
 };
+type SyncLogPayload = {
+  at?: string | null;
+  step?: string | null;
+  status?: "running" | "ok" | "warning" | "error" | null;
+  message?: string | null;
+};
 type IntegrationSyncSummary = {
   status: "ok" | "warning" | "error" | "running";
   message: string;
   startedAt?: string | null;
   finishedAt?: string | null;
   lastSyncAt?: string | null;
+  errorClass?: string | null;
+  requestCount?: number | null;
+  pagesFetched?: number | null;
+  traceId?: string | null;
+  step?: string | null;
+  heartbeatAt?: string | null;
+  deadlineAt?: string | null;
+  cancelRequested?: boolean;
+  retryAfterSec?: number | null;
+  log?: SyncLogPayload[];
   result?: CrmSyncResultPayload | null;
 };
 type IntegrationPreviewSummary = {
@@ -235,6 +251,12 @@ async function readJsonSafe(res: Response) {
     return null;
   }
 }
+
+type ApiError = Error & {
+  status?: number;
+  retryAfterSec?: number | null;
+  data?: unknown;
+};
 
 function asText(value: unknown): string | null {
   const v = String(value ?? "").trim();
@@ -453,9 +475,18 @@ function readSyncSummaryFromStatusPayload(status: {
   started_at?: string | null;
   finished_at?: string | null;
   last_sync_at?: string | null;
+  error_class?: string | null;
+  request_count?: number | null;
+  pages_fetched?: number | null;
+  trace_id?: string | null;
+  step?: string | null;
+  heartbeat_at?: string | null;
+  deadline_at?: string | null;
+  cancel_requested?: boolean | null;
+  log?: SyncLogPayload[] | null;
   result?: CrmSyncResultPayload | null;
   error?: string | null;
-}): IntegrationSyncSummary {
+}, options?: { retryAfterSec?: number | null }): IntegrationSyncSummary {
   const state = String(status.state ?? "").trim().toLowerCase();
   const result = status.result ?? null;
   const message =
@@ -474,6 +505,16 @@ function readSyncSummaryFromStatusPayload(status: {
     startedAt: asText(status.started_at),
     finishedAt: asText(status.finished_at),
     lastSyncAt: asText(status.last_sync_at),
+    errorClass: asText(status.error_class),
+    requestCount: typeof status.request_count === "number" ? status.request_count : null,
+    pagesFetched: typeof status.pages_fetched === "number" ? status.pages_fetched : null,
+    traceId: asText(status.trace_id),
+    step: asText(status.step),
+    heartbeatAt: asText(status.heartbeat_at),
+    deadlineAt: asText(status.deadline_at),
+    cancelRequested: status.cancel_requested === true,
+    retryAfterSec: options?.retryAfterSec ?? null,
+    log: Array.isArray(status.log) ? status.log : [],
     result,
   };
 }
@@ -489,6 +530,15 @@ function readSyncSummaryFromIntegration(integration: PartnerIntegration): Integr
     started_at: asText(settings.sync_started_at),
     finished_at: asText(settings.sync_finished_at),
     last_sync_at: lastSyncAt,
+    error_class: asText(settings.sync_error_class),
+    request_count: typeof settings.sync_request_count === "number" ? settings.sync_request_count : null,
+    pages_fetched: typeof settings.sync_pages_fetched === "number" ? settings.sync_pages_fetched : null,
+    trace_id: asText(settings.sync_trace_id),
+    step: asText(settings.sync_step),
+    heartbeat_at: asText(settings.sync_heartbeat_at),
+    deadline_at: asText(settings.sync_deadline_at),
+    cancel_requested: settings.sync_cancel_requested === true,
+    log: Array.isArray(settings.sync_log) ? (settings.sync_log as SyncLogPayload[]) : [],
     result: (settings.sync_result ?? null) as CrmSyncResultPayload | null,
     error: asText(settings.sync_error),
   });
@@ -755,6 +805,32 @@ async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> 
   return data as T;
 }
 
+async function apiWithMeta<T>(input: RequestInfo | URL, init?: RequestInit): Promise<{
+  data: T;
+  status: number;
+  retryAfterSec: number | null;
+}> {
+  const res = await fetch(input, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+    cache: "no-store",
+  });
+  const data = await readJsonSafe(res);
+  const retryAfterRaw = res.headers.get("Retry-After");
+  const retryAfterSec = retryAfterRaw ? Number(retryAfterRaw) || null : null;
+  if (!res.ok) {
+    const error = new Error(String(data?.error ?? `HTTP ${res.status}`)) as ApiError;
+    error.status = res.status;
+    error.retryAfterSec = retryAfterSec;
+    error.data = data;
+    throw error;
+  }
+  return { data: data as T, status: res.status, retryAfterSec };
+}
+
 export default function PartnerSettingsPanel({
   section,
   onSectionChange,
@@ -966,19 +1042,30 @@ export default function PartnerSettingsPanel({
 
     const poll = async () => {
       try {
-        const payload = await api<{
+        const response = await apiWithMeta<{
           status?: {
             state?: string | null;
             message?: string | null;
             started_at?: string | null;
             finished_at?: string | null;
             last_sync_at?: string | null;
+            error_class?: string | null;
+            request_count?: number | null;
+            pages_fetched?: number | null;
+            trace_id?: string | null;
+            step?: string | null;
+            heartbeat_at?: string | null;
+            deadline_at?: string | null;
+            cancel_requested?: boolean | null;
+            log?: SyncLogPayload[] | null;
             result?: CrmSyncResultPayload | null;
             error?: string | null;
           };
         }>(`/api/partner/integrations/${integrationId}/sync`);
         if (cancelled) return;
-        const summary = readSyncSummaryFromStatusPayload(payload.status ?? {});
+        const summary = readSyncSummaryFromStatusPayload(response.data.status ?? {}, {
+          retryAfterSec: response.retryAfterSec,
+        });
         setSyncResult((prev) => ({
           ...prev,
           [integrationId]: summary,
@@ -992,11 +1079,16 @@ export default function PartnerSettingsPanel({
         await loadAll(integrationId);
       } catch (error) {
         if (cancelled) return;
+        const retryAfterSec =
+          error instanceof Error && "retryAfterSec" in error
+            ? (error as ApiError).retryAfterSec ?? null
+            : null;
         setSyncResult((prev) => ({
           ...prev,
           [integrationId]: {
             status: "error",
             message: error instanceof Error ? error.message : "Sync-Status konnte nicht geladen werden.",
+            retryAfterSec,
           },
         }));
       }
@@ -1978,13 +2070,22 @@ export default function PartnerSettingsPanel({
                                 disabled={busy || !integration.is_active || syncSummary?.status === "running"}
                                 onClick={() =>
                                   run("CRM synchronisieren", async () => {
-                                    const res = await api<{
+                                    const response = await apiWithMeta<{
                                       status?: {
                                         state?: string | null;
                                         message?: string | null;
                                         started_at?: string | null;
                                         finished_at?: string | null;
                                         last_sync_at?: string | null;
+                                        error_class?: string | null;
+                                        request_count?: number | null;
+                                        pages_fetched?: number | null;
+                                        trace_id?: string | null;
+                                        step?: string | null;
+                                        heartbeat_at?: string | null;
+                                        deadline_at?: string | null;
+                                        cancel_requested?: boolean | null;
+                                        log?: SyncLogPayload[] | null;
                                         result?: CrmSyncResultPayload | null;
                                         error?: string | null;
                                       };
@@ -1993,12 +2094,76 @@ export default function PartnerSettingsPanel({
                                     });
                                     setSyncResult((prev) => ({
                                       ...prev,
-                                      [integration.id]: readSyncSummaryFromStatusPayload(res.status ?? {}),
+                                      [integration.id]: readSyncSummaryFromStatusPayload(response.data.status ?? {}, {
+                                        retryAfterSec: response.retryAfterSec,
+                                      }),
                                     }));
+                                  }).catch((error) => {
+                                    const apiError = error as ApiError;
+                                    const retryAfterSec = apiError?.retryAfterSec ?? null;
+                                    if (apiError?.status === 429) {
+                                      setSyncResult((prev) => ({
+                                        ...prev,
+                                        [integration.id]: {
+                                          status: "warning",
+                                          message:
+                                            retryAfterSec && retryAfterSec > 0
+                                              ? `CRM-Synchronisierung im Cooldown. Neuer Versuch in ca. ${retryAfterSec}s.`
+                                              : "CRM-Synchronisierung ist derzeit im Cooldown.",
+                                          retryAfterSec,
+                                        },
+                                      }));
+                                      throw new Error(
+                                        retryAfterSec && retryAfterSec > 0
+                                          ? `CRM-Synchronisierung im Cooldown. Neuer Versuch in ca. ${retryAfterSec}s.`
+                                          : "CRM-Synchronisierung ist derzeit im Cooldown.",
+                                      );
+                                    }
+                                    throw error;
                                   })
                                 }
                               >
                                 {syncSummary?.status === "running" ? "CRM-Synchronisierung läuft..." : "CRM jetzt synchronisieren"}
+                              </button>
+                            ) : null}
+                            {isCrmIntegration && syncSummary?.status === "running" ? (
+                              <button
+                                style={buttonGhostStyle}
+                                disabled={busy}
+                                onClick={() =>
+                                  run("CRM-Synchronisierung abbrechen", async () => {
+                                    const response = await apiWithMeta<{
+                                      status?: {
+                                        state?: string | null;
+                                        message?: string | null;
+                                        started_at?: string | null;
+                                        finished_at?: string | null;
+                                        last_sync_at?: string | null;
+                                        error_class?: string | null;
+                                        request_count?: number | null;
+                                        pages_fetched?: number | null;
+                                        trace_id?: string | null;
+                                        step?: string | null;
+                                        heartbeat_at?: string | null;
+                                        deadline_at?: string | null;
+                                        cancel_requested?: boolean | null;
+                                        log?: SyncLogPayload[] | null;
+                                        result?: CrmSyncResultPayload | null;
+                                        error?: string | null;
+                                      };
+                                    }>(`/api/partner/integrations/${integration.id}/sync`, {
+                                      method: "DELETE",
+                                    });
+                                    setSyncResult((prev) => ({
+                                      ...prev,
+                                      [integration.id]: readSyncSummaryFromStatusPayload(response.data.status ?? {}, {
+                                        retryAfterSec: response.retryAfterSec,
+                                      }),
+                                    }));
+                                  })
+                                }
+                              >
+                                CRM-Synchronisierung abbrechen
                               </button>
                             ) : null}
                           </div>
@@ -2039,23 +2204,74 @@ export default function PartnerSettingsPanel({
                                 </p>
                               ) : null}
                               {syncSummary ? (
-                                <p
-                                  style={{
-                                    marginTop: 6,
-                                    marginBottom: 0,
-                                    fontSize: 12,
-                                    color:
-                                      syncSummary?.status === "ok"
-                                        ? "#15803d"
-                                        : syncSummary?.status === "warning"
-                                          ? "#b45309"
-                                          : syncSummary?.status === "running"
-                                            ? "#1d4ed8"
-                                          : "#b91c1c",
-                                  }}
-                                >
-                                  {syncSummary?.message}
-                                </p>
+                                <>
+                                  <p
+                                    style={{
+                                      marginTop: 6,
+                                      marginBottom: 0,
+                                      fontSize: 12,
+                                      color:
+                                        syncSummary?.status === "ok"
+                                          ? "#15803d"
+                                          : syncSummary?.status === "warning"
+                                            ? "#b45309"
+                                            : syncSummary?.status === "running"
+                                              ? "#1d4ed8"
+                                              : "#b91c1c",
+                                    }}
+                                  >
+                                    {syncSummary?.message}
+                                  </p>
+                                  {syncSummary.step ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                      Aktueller Schritt: {syncSummary.step}
+                                      {syncSummary.cancelRequested ? " · Abbruch angefordert" : ""}
+                                    </p>
+                                  ) : null}
+                                  {syncSummary.heartbeatAt ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                      Letzter Heartbeat: {new Date(syncSummary.heartbeatAt).toLocaleString("de-DE")}
+                                    </p>
+                                  ) : null}
+                                  {syncSummary.deadlineAt ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                      Deadline: {new Date(syncSummary.deadlineAt).toLocaleString("de-DE")}
+                                    </p>
+                                  ) : null}
+                                  {syncSummary.retryAfterSec ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                      Cooldown: neuer Versuch in ca. {syncSummary.retryAfterSec}s
+                                    </p>
+                                  ) : null}
+                                  {syncSummary.errorClass ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                      Fehlerklasse: {syncSummary.errorClass}
+                                    </p>
+                                  ) : null}
+                                  {typeof syncSummary.requestCount === "number" || typeof syncSummary.pagesFetched === "number" ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                      Provider-Last: {typeof syncSummary.requestCount === "number" ? `${syncSummary.requestCount} Requests` : "0 Requests"}
+                                      {typeof syncSummary.pagesFetched === "number" ? ` · ${syncSummary.pagesFetched} Seiten` : ""}
+                                    </p>
+                                  ) : null}
+                                  {syncSummary.traceId ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569", wordBreak: "break-all" }}>
+                                      Trace-ID: {syncSummary.traceId}
+                                    </p>
+                                  ) : null}
+                                  {Array.isArray(syncSummary.log) && syncSummary.log.length > 0 ? (
+                                    <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                                      <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
+                                        Sync-Debug
+                                      </p>
+                                      {syncSummary.log.slice(-5).map((entry, index) => (
+                                        <p key={`${entry.at ?? "log"}-${entry.step ?? "step"}-${index}`} style={{ marginTop: 0, marginBottom: 4, fontSize: 11, color: "#475569" }}>
+                                          {entry.at ? new Date(entry.at).toLocaleTimeString("de-DE") : "--:--:--"} · {entry.step ?? "step"} · {entry.message ?? ""}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  ) : null}
+                                </>
                               ) : null}
                               {lastTestedAt ? (
                                 <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>

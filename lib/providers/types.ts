@@ -53,6 +53,12 @@ export type RawListing = {
 export type RawReference = RawListing;
 export type RawRequest = RawListing;
 
+export type ResourceSyncDiagnostics = {
+  provider_request_count: number;
+  provider_pages_fetched: number;
+  provider_breakdown?: Record<string, { requests: number; pages_fetched: number }>;
+};
+
 export type ResourceSyncData = {
   listings: RawListing[];
   references: RawReference[];
@@ -60,4 +66,5 @@ export type ResourceSyncData = {
   referencesFetched: boolean;
   requestsFetched: boolean;
   notes: string[];
+  diagnostics?: ResourceSyncDiagnostics;
 };

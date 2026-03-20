@@ -5,6 +5,11 @@ import type { PartnerIntegration } from "@/lib/providers/types";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
+type CrmSyncHooks = {
+  onProgress?: (step: string, message: string) => Promise<void>;
+  assertCanContinue?: () => Promise<void>;
+};
+
 export type CrmSyncResult = {
   partner_id: string;
   provider: string;
@@ -14,6 +19,9 @@ export type CrmSyncResult = {
   offers_count: number;
   deactivated_listings: number;
   deactivated_offers: number;
+  provider_request_count?: number;
+  provider_pages_fetched?: number;
+  provider_breakdown?: Record<string, { requests: number; pages_fetched: number }>;
   skipped: boolean;
   reason?: string;
   notes?: string[];
@@ -120,6 +128,7 @@ async function syncRawResourceLayer(
 export async function runCrmIntegrationSync(
   supabase: AdminClient,
   integration: PartnerIntegration,
+  hooks?: CrmSyncHooks,
 ): Promise<CrmSyncResult> {
   if (integration.kind !== "crm") {
     return {
@@ -170,12 +179,21 @@ export async function runCrmIntegrationSync(
     };
   }
 
-  const { offers, listings, references, requests, referencesFetched, requestsFetched, notes } =
+  await hooks?.assertCanContinue?.();
+  await hooks?.onProgress?.("fetch_resources", "CRM-Daten werden vom Anbieter geladen.");
+  const { offers, listings, references, requests, referencesFetched, requestsFetched, notes, diagnostics } =
     await syncIntegrationResources(integration);
+  await hooks?.assertCanContinue?.();
+  await hooks?.onProgress?.(
+    "resources_fetched",
+    `CRM-Daten geladen: Angebote=${offers.length}, Rohobjekte=${listings.length}, Referenzen=${references.length}, Gesuche=${requests.length}.`,
+  );
 
   let listingsCount = 0;
   let deactivatedListings = 0;
   if (syncListings) {
+    await hooks?.assertCanContinue?.();
+    await hooks?.onProgress?.("upsert_listings", "Rohobjekte werden gespeichert.");
     const layer = await syncRawResourceLayer(
       supabase,
       "partner_listings",
@@ -189,6 +207,8 @@ export async function runCrmIntegrationSync(
 
   let referencesCount = 0;
   if (syncReferences) {
+    await hooks?.assertCanContinue?.();
+    await hooks?.onProgress?.("upsert_references", "Referenzen werden gespeichert.");
     const layer = await syncRawResourceLayer(
       supabase,
       "partner_references",
@@ -201,6 +221,8 @@ export async function runCrmIntegrationSync(
 
   let requestsCount = 0;
   if (syncRequests) {
+    await hooks?.assertCanContinue?.();
+    await hooks?.onProgress?.("upsert_requests", "Gesuche werden gespeichert.");
     const layer = await syncRawResourceLayer(
       supabase,
       "partner_requests",
@@ -212,9 +234,13 @@ export async function runCrmIntegrationSync(
   }
 
   if (syncListings) {
+    await hooks?.assertCanContinue?.();
+    await hooks?.onProgress?.("upsert_offers", "Angebote werden gespeichert.");
     await upsertOffers(supabase, offers as unknown as Array<Record<string, unknown>>);
   }
 
+  await hooks?.assertCanContinue?.();
+  await hooks?.onProgress?.("deactivate_stale", "Veraltete CRM-Eintraege werden abgeglichen.");
   const activeOfferExternalIds = offers.map((row) => row.external_id);
   const deactivatedOffers = syncListings
     ? await deactivateMissingByExternalId(
@@ -236,6 +262,8 @@ export async function runCrmIntegrationSync(
     mergedNotes.push("requests capability enabled, provider mapping pending");
   }
 
+  await hooks?.assertCanContinue?.();
+  await hooks?.onProgress?.("rebuild_projections", "Oeffentliche Projektionen werden aktualisiert.");
   const projectionCounts = await rebuildAllPublicAssetEntriesForPartner(
     integration.partner_id,
     supabase,
@@ -244,6 +272,8 @@ export async function runCrmIntegrationSync(
     `public projections reconciled: offers=${projectionCounts.offers}, requests=${projectionCounts.requests}, references=${projectionCounts.references}`,
   );
 
+  await hooks?.assertCanContinue?.();
+  await hooks?.onProgress?.("finalize", "Sync-Lauf wird abgeschlossen.");
   const lastSyncAt = new Date().toISOString();
   const { error: updateError } = await supabase
     .from("partner_integrations")
@@ -262,6 +292,9 @@ export async function runCrmIntegrationSync(
     offers_count: syncListings ? offers.length : 0,
     deactivated_listings: deactivatedListings,
     deactivated_offers: deactivatedOffers,
+    provider_request_count: diagnostics?.provider_request_count,
+    provider_pages_fetched: diagnostics?.provider_pages_fetched,
+    provider_breakdown: diagnostics?.provider_breakdown,
     skipped: false,
     notes: mergedNotes.length ? mergedNotes : undefined,
   };
