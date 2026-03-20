@@ -111,7 +111,10 @@ export async function HomeLandingPage({ locale = "de" }: { locale?: string }) {
 
   try {
     const admin = createAdminClient();
-    const { data, error } = await withTimeout(
+    const { data, error } = await withTimeout<{
+      data: BlogBlock[] | null;
+      error: { message?: string } | null;
+    }>(
       admin
         .from('partner_blog_posts')
         .select('headline, subline, body_md, author_name, author_image_url, area_name, created_at, bundesland_slug, kreis_slug')
