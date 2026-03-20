@@ -261,7 +261,7 @@ async function reconcileProjectionRows(args: {
 
   if (error) throw new Error(`${table} existing lookup failed: ${error.message}`);
 
-  const existingRows = (data ?? []) as Array<Record<string, unknown>>;
+  const existingRows = (Array.isArray(data) ? data : []) as unknown as Array<Record<string, unknown>>;
   const existingByKey = new Map<string, Record<string, unknown>>();
   for (const row of existingRows) {
     existingByKey.set(buildCompositeKey(row, uniqueColumns), row);
