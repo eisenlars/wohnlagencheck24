@@ -20,6 +20,22 @@ type IntegrationRow = {
   settings?: Record<string, unknown> | null;
 };
 
+type IntegrationStepLogEntry = {
+  at: string;
+  step: string;
+  status: "running" | "ok" | "warning" | "error";
+  message: string;
+};
+
+type TestResultPayload = {
+  status: "ok" | "warning" | "error";
+  message: string;
+  http_status?: number;
+};
+
+const TEST_LOG_LIMIT = 12;
+const TEST_TIMEOUT_MS = 8000;
+
 function asText(value: unknown): string | null {
   const v = String(value ?? "").trim();
   return v.length > 0 ? v : null;
@@ -32,6 +48,22 @@ function asFiniteNumber(value: unknown): number | null {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object") return {};
+  return value as Record<string, unknown>;
+}
+
+function appendIntegrationLog(
+  value: unknown,
+  entry: IntegrationStepLogEntry,
+  limit = TEST_LOG_LIMIT,
+): IntegrationStepLogEntry[] {
+  const current = Array.isArray(value)
+    ? value.filter((item): item is IntegrationStepLogEntry => Boolean(item) && typeof item === "object")
+    : [];
+  return [...current, entry].slice(-limit);
 }
 
 async function requirePartnerUser(req: Request): Promise<string> {
@@ -50,7 +82,7 @@ async function requirePartnerUser(req: Request): Promise<string> {
   return user.id;
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 8000) {
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = TEST_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -106,24 +138,79 @@ function buildOnOfficeReadRequest(
   };
 }
 
-async function persistTestResult(
+async function patchIntegrationSettings(
   admin: ReturnType<typeof createAdminClient>,
   integration: IntegrationRow,
-  result: { status: "ok" | "warning" | "error"; message: string; http_status?: number },
+  patch: Record<string, unknown>,
 ) {
-  const prev = (integration.settings ?? {}) as Record<string, unknown>;
+  const prev = asObject(integration.settings);
   const nextSettings: Record<string, unknown> = {
     ...prev,
-    last_tested_at: new Date().toISOString(),
-    last_test_status: result.status,
-    last_test_message: result.message.slice(0, 300),
-    last_test_http_status: result.http_status ?? null,
+    ...patch,
   };
-  await admin
+  const { error } = await admin
     .from("partner_integrations")
     .update({ settings: nextSettings })
     .eq("id", integration.id)
     .eq("partner_id", integration.partner_id);
+
+  if (!error) integration.settings = nextSettings;
+}
+
+function buildDiagnostics(
+  traceId: string,
+  startedAtMs: number,
+  requestCount: number,
+  targetPath: string | null,
+  extra?: Record<string, unknown>,
+) {
+  return {
+    trace_id: traceId,
+    duration_ms: Date.now() - startedAtMs,
+    request_count: requestCount,
+    target_path: targetPath,
+    timeout_ms: TEST_TIMEOUT_MS,
+    ...extra,
+  };
+}
+
+async function persistTestResult(
+  admin: ReturnType<typeof createAdminClient>,
+  integration: IntegrationRow,
+  result: TestResultPayload,
+  diagnostics: Record<string, unknown>,
+  step: string,
+) {
+  const prev = asObject(integration.settings);
+  const finishedAt = new Date().toISOString();
+  const nextSettings: Record<string, unknown> = {
+    ...prev,
+    last_tested_at: finishedAt,
+    last_test_status: result.status,
+    last_test_message: result.message.slice(0, 300),
+    last_test_http_status: result.http_status ?? null,
+    last_test_trace_id: diagnostics.trace_id ?? null,
+    last_test_step: step,
+    last_test_duration_ms: diagnostics.duration_ms ?? null,
+    last_test_request_count: diagnostics.request_count ?? null,
+    last_test_target_path: diagnostics.target_path ?? null,
+    last_test_timeout_ms: diagnostics.timeout_ms ?? TEST_TIMEOUT_MS,
+    last_test_finished_at: finishedAt,
+    last_test_log: appendIntegrationLog(prev.last_test_log, {
+      at: finishedAt,
+      step,
+      status: result.status,
+      message: result.message,
+    }),
+  };
+
+  const { error } = await admin
+    .from("partner_integrations")
+    .update({ settings: nextSettings })
+    .eq("id", integration.id)
+    .eq("partner_id", integration.partner_id);
+
+  if (!error) integration.settings = nextSettings;
 }
 
 export async function POST(
@@ -149,9 +236,50 @@ export async function POST(
     if (!data) return NextResponse.json({ error: "Integration not found" }, { status: 404 });
 
     const integration = data as IntegrationRow;
+    const traceId = crypto.randomUUID();
+    const startedAtMs = Date.now();
+    let requestCount = 0;
+    let targetPath: string | null = null;
+
+    const finish = async (result: TestResultPayload, step: string) => {
+      const diagnostics = buildDiagnostics(traceId, startedAtMs, requestCount, targetPath, {
+        provider_http_status: result.http_status ?? null,
+      });
+      await persistTestResult(admin, integration, result, diagnostics, step);
+      return NextResponse.json({ ok: true, result, diagnostics });
+    };
+
+    await patchIntegrationSettings(admin, integration, {
+      last_test_trace_id: traceId,
+      last_test_step: "started",
+      last_test_started_at: new Date(startedAtMs).toISOString(),
+      last_test_finished_at: null,
+      last_test_duration_ms: null,
+      last_test_request_count: 0,
+      last_test_target_path: null,
+      last_test_timeout_ms: TEST_TIMEOUT_MS,
+      last_test_log: appendIntegrationLog(asObject(integration.settings).last_test_log, {
+        at: new Date(startedAtMs).toISOString(),
+        step: "started",
+        status: "running",
+        message: "Verbindungstest gestartet.",
+      }),
+    });
+
     if (String(integration.partner_id) !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    await patchIntegrationSettings(admin, integration, {
+      last_test_step: "integration_loaded",
+      last_test_log: appendIntegrationLog(asObject(integration.settings).last_test_log, {
+        at: new Date().toISOString(),
+        step: "integration_loaded",
+        status: "ok",
+        message: `Integration ${integration.provider} geladen.`,
+      }),
+    });
+
     if (integration.kind === "llm") {
       const policy = await loadPartnerLlmPolicy(admin, userId);
       if (!policy.llm_partner_managed_allowed) {
@@ -163,15 +291,7 @@ export async function POST(
     }
 
     if (!integration.is_active) {
-      const result = {
-        status: "warning" as const,
-        message: "Integration ist deaktiviert.",
-      };
-      await persistTestResult(admin, integration, result);
-      return NextResponse.json({
-        ok: true,
-        result,
-      });
+      return finish({ status: "warning", message: "Integration ist deaktiviert." }, "completed");
     }
 
     const baseUrl = asText(integration.base_url);
@@ -187,29 +307,32 @@ export async function POST(
         .maybeSingle();
 
       if (!hasTokenHash) {
-        const result = {
-          status: "error" as const,
-          message: "Kein API-Key hinterlegt. Bitte zuerst im Schritt 'API-Key und Verbindungstest' speichern.",
-        };
-        await persistTestResult(admin, integration, result);
-        return NextResponse.json({ ok: true, result });
+        return finish(
+          {
+            status: "error",
+            message: "Kein API-Key hinterlegt. Bitte zuerst im Schritt 'API-Key und Verbindungstest' speichern.",
+          },
+          "config_error",
+        );
       }
 
       if (!activeArea?.id) {
-        const result = {
-          status: "warning" as const,
-          message: "Zugangsschluessel ist gespeichert, aber es ist noch kein aktives Gebiet zugeordnet.",
-        };
-        await persistTestResult(admin, integration, result);
-        return NextResponse.json({ ok: true, result });
+        return finish(
+          {
+            status: "warning",
+            message: "Zugangsschluessel ist gespeichert, aber es ist noch kein aktives Gebiet zugeordnet.",
+          },
+          "completed",
+        );
       }
 
-      const result = {
-        status: "ok" as const,
-        message: "Konfiguration ist bereit: Zugangsschluessel gespeichert und aktives Gebiet vorhanden.",
-      };
-      await persistTestResult(admin, integration, result);
-      return NextResponse.json({ ok: true, result });
+      return finish(
+        {
+          status: "ok",
+          message: "Konfiguration ist bereit: Zugangsschluessel gespeichert und aktives Gebiet vorhanden.",
+        },
+        "completed",
+      );
     }
 
     const defaultLlmBaseUrlByProvider: Record<string, string> = {
@@ -222,29 +345,20 @@ export async function POST(
     };
     const llmSettings = (integration.settings ?? {}) as Record<string, unknown>;
     const resolvedBaseUrl =
-      baseUrl ??
-      asText(llmSettings.base_url) ??
-      (integration.kind === "llm" ? defaultLlmBaseUrlByProvider[integration.provider] ?? null : null);
+      baseUrl
+      ?? asText(llmSettings.base_url)
+      ?? (integration.kind === "llm" ? defaultLlmBaseUrlByProvider[integration.provider] ?? null : null);
 
     if (!resolvedBaseUrl) {
-      const result = {
-        status: "error" as const,
-        message: "Keine base_url konfiguriert.",
-      };
-      await persistTestResult(admin, integration, result);
-      return NextResponse.json({
-        ok: true,
-        result,
-      });
+      return finish({ status: "error", message: "Keine base_url konfiguriert." }, "config_error");
     }
+
     const baseUrlCheck = await validateOutboundUrl(resolvedBaseUrl);
     if (!baseUrlCheck.ok) {
-      const result = {
-        status: "error" as const,
-        message: `Base URL blockiert (${baseUrlCheck.reason}).`,
-      };
-      await persistTestResult(admin, integration, result);
-      return NextResponse.json({ ok: true, result });
+      return finish(
+        { status: "error", message: `Base URL blockiert (${baseUrlCheck.reason}).` },
+        "config_error",
+      );
     }
 
     const authType = asText(integration.auth_type)?.toLowerCase() ?? "";
@@ -256,23 +370,32 @@ export async function POST(
     try {
       if (integration.kind === "crm" && integration.provider === "propstack") {
         if (!apiKey) {
-          const result = {
-            status: "error" as const,
-            message: "Propstack API-Key fehlt (Secret api_key).",
-          };
-          await persistTestResult(admin, integration, result);
-          return NextResponse.json({ ok: true, result });
+          return finish(
+            { status: "error", message: "Propstack API-Key fehlt (Secret api_key)." },
+            "config_error",
+          );
         }
         const url = `${resolvedBaseUrl.replace(/\/+$/, "")}/units?per=1&page=1`;
         const targetCheck = await validateOutboundUrl(url);
         if (!targetCheck.ok) {
-          const result = {
-            status: "error" as const,
-            message: `Ziel-URL blockiert (${targetCheck.reason}).`,
-          };
-          await persistTestResult(admin, integration, result);
-          return NextResponse.json({ ok: true, result });
+          return finish(
+            { status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` },
+            "config_error",
+          );
         }
+        targetPath = "/units?per=1&page=1";
+        requestCount = 1;
+        await patchIntegrationSettings(admin, integration, {
+          last_test_step: "provider_request_started",
+          last_test_request_count: requestCount,
+          last_test_target_path: targetPath,
+          last_test_log: appendIntegrationLog(asObject(integration.settings).last_test_log, {
+            at: new Date().toISOString(),
+            step: "provider_request_started",
+            status: "running",
+            message: "Propstack-Minimalabruf gestartet.",
+          }),
+        });
         res = await fetchWithTimeout(url, {
           method: "GET",
           headers: {
@@ -283,22 +406,31 @@ export async function POST(
       } else if (integration.kind === "crm" && integration.provider === "onoffice") {
         const secret = readSecretFromAuthConfig(authConfig, "secret");
         if (!token || !secret) {
-          const result = {
-            status: "error" as const,
-            message: "onOffice Zugangsdaten fehlen (Token + Secret erforderlich).",
-          };
-          await persistTestResult(admin, integration, result);
-          return NextResponse.json({ ok: true, result });
+          return finish(
+            { status: "error", message: "onOffice Zugangsdaten fehlen (Token + Secret erforderlich)." },
+            "config_error",
+          );
         }
         const targetCheck = await validateOutboundUrl(resolvedBaseUrl);
         if (!targetCheck.ok) {
-          const result = {
-            status: "error" as const,
-            message: `Ziel-URL blockiert (${targetCheck.reason}).`,
-          };
-          await persistTestResult(admin, integration, result);
-          return NextResponse.json({ ok: true, result });
+          return finish(
+            { status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` },
+            "config_error",
+          );
         }
+        targetPath = "/onoffice/estate/read";
+        requestCount = 1;
+        await patchIntegrationSettings(admin, integration, {
+          last_test_step: "provider_request_started",
+          last_test_request_count: requestCount,
+          last_test_target_path: targetPath,
+          last_test_log: appendIntegrationLog(asObject(integration.settings).last_test_log, {
+            at: new Date().toISOString(),
+            step: "provider_request_started",
+            status: "running",
+            message: "onOffice-Minimalabruf gestartet.",
+          }),
+        });
         const body = buildOnOfficeReadRequest(token, secret, "estate", ["Id"]);
         res = await fetchWithTimeout(targetCheck.url, {
           method: "POST",
@@ -310,34 +442,39 @@ export async function POST(
         });
       } else if (integration.kind === "llm") {
         if (!apiKey) {
-          const result = {
-            status: "error" as const,
-            message: "LLM API-Key fehlt (Secret api_key).",
-          };
-          await persistTestResult(admin, integration, result);
-          return NextResponse.json({ ok: true, result });
+          return finish({ status: "error", message: "LLM API-Key fehlt (Secret api_key)." }, "config_error");
         }
         if (!model) {
-          const result = {
-            status: "error" as const,
-            message: "LLM Modell fehlt (settings.model).",
-          };
-          await persistTestResult(admin, integration, result);
-          return NextResponse.json({ ok: true, result });
+          return finish({ status: "error", message: "LLM Modell fehlt (settings.model)." }, "config_error");
         }
+
+        const markLlmRequestStarted = async () => {
+          await patchIntegrationSettings(admin, integration, {
+            last_test_step: "provider_request_started",
+            last_test_request_count: requestCount,
+            last_test_target_path: targetPath,
+            last_test_log: appendIntegrationLog(asObject(integration.settings).last_test_log, {
+              at: new Date().toISOString(),
+              step: "provider_request_started",
+              status: "running",
+              message: "LLM-Minimalabruf gestartet.",
+            }),
+          });
+        };
 
         if (integration.provider === "google_gemini") {
           const normalizedBase = resolvedBaseUrl.replace(/\/+$/, "");
           const url = `${normalizedBase}/models`;
           const targetCheck = await validateOutboundUrl(url);
           if (!targetCheck.ok) {
-            const result = {
-              status: "error" as const,
-              message: `Ziel-URL blockiert (${targetCheck.reason}).`,
-            };
-            await persistTestResult(admin, integration, result);
-            return NextResponse.json({ ok: true, result });
+            return finish(
+              { status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` },
+              "config_error",
+            );
           }
+          targetPath = "/models";
+          requestCount = 1;
+          await markLlmRequestStarted();
           res = await fetchWithTimeout(url, {
             method: "GET",
             headers: {
@@ -350,13 +487,14 @@ export async function POST(
           const url = `${normalizedBase}/messages`;
           const targetCheck = await validateOutboundUrl(url);
           if (!targetCheck.ok) {
-            const result = {
-              status: "error" as const,
-              message: `Ziel-URL blockiert (${targetCheck.reason}).`,
-            };
-            await persistTestResult(admin, integration, result);
-            return NextResponse.json({ ok: true, result });
+            return finish(
+              { status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` },
+              "config_error",
+            );
           }
+          targetPath = "/messages";
+          requestCount = 1;
+          await markLlmRequestStarted();
           res = await fetchWithTimeout(url, {
             method: "POST",
             headers: {
@@ -377,13 +515,14 @@ export async function POST(
           const url = `${normalizedBase}/openai/deployments/${encodeURIComponent(model)}/chat/completions?api-version=${encodeURIComponent(apiVersion)}`;
           const targetCheck = await validateOutboundUrl(url);
           if (!targetCheck.ok) {
-            const result = {
-              status: "error" as const,
-              message: `Ziel-URL blockiert (${targetCheck.reason}).`,
-            };
-            await persistTestResult(admin, integration, result);
-            return NextResponse.json({ ok: true, result });
+            return finish(
+              { status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` },
+              "config_error",
+            );
           }
+          targetPath = `/openai/deployments/${encodeURIComponent(model)}/chat/completions`;
+          requestCount = 1;
+          await markLlmRequestStarted();
           res = await fetchWithTimeout(url, {
             method: "POST",
             headers: {
@@ -402,13 +541,14 @@ export async function POST(
           const url = `${normalizedBase}/models`;
           const targetCheck = await validateOutboundUrl(url);
           if (!targetCheck.ok) {
-            const result = {
-              status: "error" as const,
-              message: `Ziel-URL blockiert (${targetCheck.reason}).`,
-            };
-            await persistTestResult(admin, integration, result);
-            return NextResponse.json({ ok: true, result });
+            return finish(
+              { status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` },
+              "config_error",
+            );
           }
+          targetPath = "/models";
+          requestCount = 1;
+          await markLlmRequestStarted();
           res = await fetchWithTimeout(url, {
             method: "GET",
             headers: {
@@ -424,46 +564,67 @@ export async function POST(
         } else if (apiKey) {
           headers["x-api-key"] = apiKey;
         }
+        targetPath = "/";
+        requestCount = 1;
+        await patchIntegrationSettings(admin, integration, {
+          last_test_step: "provider_request_started",
+          last_test_request_count: requestCount,
+          last_test_target_path: targetPath,
+          last_test_log: appendIntegrationLog(asObject(integration.settings).last_test_log, {
+            at: new Date().toISOString(),
+            step: "provider_request_started",
+            status: "running",
+            message: "Minimaler Verbindungsaufruf gestartet.",
+          }),
+        });
         res = await fetchWithTimeout(resolvedBaseUrl, { method: "HEAD", headers });
         if (res.status === 405 || res.status === 501) {
+          requestCount = 2;
           res = await fetchWithTimeout(resolvedBaseUrl, { method: "GET", headers });
         }
       }
-    } catch (error) {
-      const result = {
-        status: "error" as const,
-        message: `Verbindung fehlgeschlagen: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`,
-      };
-      await persistTestResult(admin, integration, result);
-      return NextResponse.json({
-        ok: true,
-        result,
+
+      await patchIntegrationSettings(admin, integration, {
+        last_test_step: "provider_request_finished",
+        last_test_request_count: requestCount,
+        last_test_target_path: targetPath,
+        last_test_http_status: res.status,
+        last_test_log: appendIntegrationLog(asObject(integration.settings).last_test_log, {
+          at: new Date().toISOString(),
+          step: "provider_request_finished",
+          status: res.ok ? "ok" : "warning",
+          message: `Provider antwortete mit HTTP ${res.status}.`,
+        }),
       });
+    } catch (error) {
+      return finish(
+        {
+          status: "error",
+          message: `Verbindung fehlgeschlagen: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`,
+        },
+        "failed",
+      );
     }
 
     if (res.ok) {
-      const result = {
-        status: "ok" as const,
-        message: `Verbindung erfolgreich (${res.status}).`,
-        http_status: res.status,
-      };
-      await persistTestResult(admin, integration, result);
-      return NextResponse.json({
-        ok: true,
-        result,
-      });
+      return finish(
+        {
+          status: "ok",
+          message: `Verbindung erfolgreich (${res.status}).`,
+          http_status: res.status,
+        },
+        "completed",
+      );
     }
 
-    const result = {
-      status: "warning" as const,
-      message: `Server erreichbar, aber Antwort ist ${res.status}.`,
-      http_status: res.status,
-    };
-    await persistTestResult(admin, integration, result);
-    return NextResponse.json({
-      ok: true,
-      result,
-    });
+    return finish(
+      {
+        status: "warning",
+        message: `Server erreichbar, aber Antwort ist ${res.status}.`,
+        http_status: res.status,
+      },
+      "completed",
+    );
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
