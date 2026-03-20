@@ -22,6 +22,20 @@ type BlogBlock = {
   created_at: string | null;
 };
 
+const BLOG_QUERY_TIMEOUT_MS = 4000;
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error("BLOG_QUERY_TIMEOUT")), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
 function renderMarkdown(md: string) {
   const lines = md.split('\n');
   const blocks: Array<{ type: 'p' | 'h2' | 'h3' | 'ul'; content: string | string[] }> = [];
@@ -97,12 +111,15 @@ export async function HomeLandingPage({ locale = "de" }: { locale?: string }) {
 
   try {
     const admin = createAdminClient();
-    const { data, error } = await admin
-      .from('partner_blog_posts')
-      .select('headline, subline, body_md, author_name, author_image_url, area_name, created_at, bundesland_slug, kreis_slug')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(1);
+    const { data, error } = await withTimeout(
+      admin
+        .from('partner_blog_posts')
+        .select('headline, subline, body_md, author_name, author_image_url, area_name, created_at, bundesland_slug, kreis_slug')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1),
+      BLOG_QUERY_TIMEOUT_MS,
+    );
     if (!error && data && data.length > 0) {
       latestBlog = data[0] as BlogBlock;
     }

@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import {
   migratePortalContentWraps,
   parsePortalContentWraps,
@@ -12,15 +14,35 @@ function isMissingTable(error: unknown, table: string): boolean {
   return msg.includes(`public.${table}`) && msg.includes("does not exist");
 }
 
-export async function loadPortalCmsEntriesByPage(pageKey: string, locale = "de"): Promise<Map<string, PortalContentEntryRecord>> {
+const PORTAL_CMS_QUERY_TIMEOUT_MS = 4000;
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error("PORTAL_CMS_TIMEOUT")), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+}
+
+export const loadPortalCmsEntriesByPage = cache(async function loadPortalCmsEntriesByPage(
+  pageKey: string,
+  locale = "de",
+): Promise<Map<string, PortalContentEntryRecord>> {
   try {
     const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("portal_content_entries")
-      .select("page_key, section_key, locale, status, fields_json, updated_at")
-      .eq("page_key", pageKey)
-      .eq("locale", locale)
-      .eq("status", "live");
+    const { data, error } = await withTimeout(
+      admin
+        .from("portal_content_entries")
+        .select("page_key, section_key, locale, status, fields_json, updated_at")
+        .eq("page_key", pageKey)
+        .eq("locale", locale)
+        .eq("status", "live"),
+      PORTAL_CMS_QUERY_TIMEOUT_MS,
+    );
 
     if (error) throw error;
 
@@ -44,7 +66,7 @@ export async function loadPortalCmsEntriesByPage(pageKey: string, locale = "de")
     if (isMissingTable(error, "portal_content_entries")) return new Map();
     return new Map();
   }
-}
+});
 
 export function resolvePortalCmsField(
   entries: Map<string, PortalContentEntryRecord>,
