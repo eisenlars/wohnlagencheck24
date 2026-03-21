@@ -662,8 +662,15 @@ Flow:
 Verbindliche Schichtung:
 1. Raw-Sync (`partner_listings`, `partner_references`, `partner_requests`)
 2. Portal-Readmodell (`partner_property_offers`)
-3. Regionale Projection-Layer (`public_offer_entries`, `public_request_entries`, `public_reference_entries`)
-4. Redaktioneller Layer (`partner_property_overrides`)
+3. Angebots-Gebietszuordnung (`partner_offer_area_targets`) fuer spaetere lokale Sichtbarkeitsregeln
+4. Regionale Projection-Layer (`public_offer_entries`, `public_request_entries`, `public_reference_entries`)
+5. Redaktioneller Layer (`partner_property_overrides`)
+
+Ergaenzung zur Angebotslogik:
+- `partner_property_offers` bleibt kanonisch partnergebunden
+- lokale Angebotszuordnung wird nicht hart im Kernmodell gespeichert, sondern separat in `partner_offer_area_targets`
+- dadurch koennen `partner_wide` und spaeter `strict_local` parallel unterstuetzt werden
+- dieselbe Zuordnungsschicht ist spaeter auch fuer Karten, Geo-Filter und KI-Suchagenten nutzbar
 
 **Wichtig:**  
 `SUPABASE_SERVICE_ROLE_KEY` darf **nie** im Client verwendet werden.
