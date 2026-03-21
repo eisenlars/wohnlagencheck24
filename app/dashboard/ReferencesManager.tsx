@@ -8,7 +8,7 @@ export default function ReferencesManager() {
       title="Referenzobjekte"
       rawTable="partner_references"
       overrideTable="partner_reference_overrides"
-      emptyHint="Keine Referenzen vorhanden. Nach dem Sync werden hier Live- oder Dummy-Daten angezeigt."
+      emptyHint="Keine Referenzen vorhanden. Nach dem CRM-Sync werden hier synchronisierte Referenzobjekte angezeigt."
     />
   );
 }

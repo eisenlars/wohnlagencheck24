@@ -150,6 +150,8 @@ function buildDefaultForm(row: RawAssetRow, rawTable: Props['rawTable'], overrid
 
 export default function CrmAssetManager(props: Props) {
   const { title, rawTable, overrideTable, emptyHint } = props;
+  const isRequestTable = rawTable === 'partner_requests';
+  const isReferenceTable = rawTable === 'partner_references';
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
@@ -369,15 +371,30 @@ export default function CrmAssetManager(props: Props) {
   };
 
   const selectedType = asText(selectedPayload.object_type) || '—';
-  const selectedMode = rawTable === 'partner_requests'
+  const selectedMode = isRequestTable
     ? (asText(selectedPayload.request_type) || '—')
-    : (asText(selectedPayload.offer_type) || '—');
+    : isReferenceTable
+      ? (asText(selectedPayload.transaction_result) || '—')
+      : (asText(selectedPayload.offer_type) || '—');
   const selectedRooms = asNumber(selectedPayload.rooms) ?? asNumber(selectedPayload.min_rooms);
   const selectedArea = asNumber(selectedPayload.area_sqm);
   const selectedBudget = asNumber(selectedPayload.max_price) ?? asNumber(selectedPayload.price) ?? asNumber(selectedPayload.rent);
-  const selectedLocation = rawTable === 'partner_requests'
+  const selectedLocation = isRequestTable
     ? (getRegionTargetLabels(selectedPayload).join(', ') || asText(selectedPayload.region) || '—')
     : (asText(selectedPayload.location) || [asText(selectedPayload.city), asText(selectedPayload.district)].filter(Boolean).join(' ') || '—');
+  const selectedMetricLabel = isRequestTable
+    ? 'Max. Budget'
+    : isReferenceTable
+      ? 'Ergebnis'
+      : 'Preis/Miete';
+  const selectedMetricValue = isReferenceTable
+    ? (asText(selectedPayload.transaction_result) || '—')
+    : formatEuro(selectedBudget);
+  const selectedLocationLabel = isRequestTable ? 'Zielregionen' : isReferenceTable ? 'Ort' : 'Lage';
+  const selectedUpdatedAt = selectedRow?.source_updated_at ?? selectedRow?.updated_at ?? null;
+  const referenceDescription = isReferenceTable
+    ? getPayloadText(selectedPayload, ['description', 'reference_text_seed'])
+    : '';
 
   if (loading) return <FullscreenLoader show label={`${title} werden geladen...`} />;
 
@@ -412,10 +429,14 @@ export default function CrmAssetManager(props: Props) {
                 {row.provider} · {row.external_id}
               </span>
               <span style={{ color: '#64748b', fontSize: 11 }}>
-                {rawTable === 'partner_requests'
+                {isRequestTable
                   ? `${asText(((row.normalized_payload ?? {}) as Record<string, unknown>).request_type) || '—'} · ${
                       asText(((row.normalized_payload ?? {}) as Record<string, unknown>).object_type) || '—'
                     }`
+                  : isReferenceTable
+                    ? `${asText(((row.normalized_payload ?? {}) as Record<string, unknown>).transaction_result) || '—'} · ${
+                        asText(((row.normalized_payload ?? {}) as Record<string, unknown>).object_type) || '—'
+                      }`
                   : `${asText(((row.normalized_payload ?? {}) as Record<string, unknown>).offer_type) || '—'} · ${
                       asText(((row.normalized_payload ?? {}) as Record<string, unknown>).object_type) || '—'
                     }`}
@@ -449,19 +470,19 @@ export default function CrmAssetManager(props: Props) {
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
-                    {rawTable === 'partner_requests' ? 'Gesuchstyp' : 'Vermarktung'}
+                    {isRequestTable ? 'Gesuchstyp' : isReferenceTable ? 'Transaktion' : 'Vermarktung'}
                   </div>
                   <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedMode}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
-                    {rawTable === 'partner_requests' ? 'Max. Budget' : 'Preis/Miete'}
+                    {selectedMetricLabel}
                   </div>
-                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{formatEuro(selectedBudget)}</div>
+                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedMetricValue}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
-                    {rawTable === 'partner_requests' ? 'Zimmer min.' : 'Zimmer'}
+                    {isRequestTable ? 'Zimmer min.' : 'Zimmer'}
                   </div>
                   <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedRooms ?? '—'}</div>
                 </div>
@@ -473,17 +494,29 @@ export default function CrmAssetManager(props: Props) {
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
-                    {rawTable === 'partner_requests' ? 'Zielregionen' : 'Lage'}
+                    {selectedLocationLabel}
                   </div>
                   <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedLocation}</div>
                 </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>Aktualisiert</div>
+                  <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{selectedUpdatedAt ?? '—'}</div>
+                </div>
               </div>
             </div>
-            {rawTable === 'partner_requests' ? (
+            {isRequestTable ? (
               <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', background: '#f8fafc' }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: '#334155', marginBottom: 4 }}>Zielregionen</div>
                 <div style={{ fontSize: 12, color: '#0f172a' }}>
                   {getRegionTargetLabels((selectedRow.normalized_payload ?? {}) as Record<string, unknown>).join(', ') || '—'}
+                </div>
+              </div>
+            ) : null}
+            {isReferenceTable ? (
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', background: '#f8fafc' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#334155', marginBottom: 4 }}>Referenztext</div>
+                <div style={{ fontSize: 12, color: '#0f172a' }}>
+                  {referenceDescription || 'Kein Referenztext im normalisierten Payload vorhanden.'}
                 </div>
               </div>
             ) : null}

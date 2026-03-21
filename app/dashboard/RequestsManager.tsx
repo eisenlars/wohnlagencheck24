@@ -8,7 +8,7 @@ export default function RequestsManager() {
       title="Immobiliengesuche"
       rawTable="partner_requests"
       overrideTable="partner_request_overrides"
-      emptyHint="Keine Gesuche vorhanden. Nach dem Sync werden hier Live- oder Dummy-Daten angezeigt."
+      emptyHint="Keine Gesuche vorhanden. Nach dem CRM-Sync werden hier synchronisierte Gesuche angezeigt."
     />
   );
 }
