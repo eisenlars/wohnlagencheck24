@@ -489,10 +489,16 @@ function readSyncSummaryFromStatusPayload(status: {
 }, options?: { retryAfterSec?: number | null }): IntegrationSyncSummary {
   const state = String(status.state ?? "").trim().toLowerCase();
   const result = status.result ?? null;
+  const rawMessage = String(status.message ?? "").trim();
   const errorClass = asText(status.error_class);
-  const isHistoricalOperatorNotice = state === "idle" && (errorClass === "manual_reset" || errorClass === "cancelled");
+  const isLegacyOperatorMessage =
+    state !== "running"
+    && (rawMessage.toLowerCase().includes("manuell zurückgesetzt") || rawMessage.toLowerCase().includes("manuell abgebrochen"));
+  const isHistoricalOperatorNotice =
+    (state === "idle" && (errorClass === "manual_reset" || errorClass === "cancelled"))
+    || isLegacyOperatorMessage;
   const message =
-    String(status.message ?? "").trim()
+    (isHistoricalOperatorNotice ? "" : rawMessage)
     || (result ? formatSyncResultMessage(result) : state === "running" ? "CRM-Synchronisierung läuft..." : "CRM-Synchronisierung");
   return {
     status:

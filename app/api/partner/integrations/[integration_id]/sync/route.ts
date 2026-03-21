@@ -149,8 +149,14 @@ function buildSyncStatus(
 ): SyncStatusPayload {
   const settings = asObject(integration.settings);
   const rawState = String(settings.sync_state ?? "").trim().toLowerCase();
+  const rawMessage = asText(settings.sync_message);
   const errorClass = asText(settings.sync_error_class);
-  const isHistoricalOperatorNotice = rawState === "error" && (errorClass === "manual_reset" || errorClass === "cancelled");
+  const isLegacyOperatorMessage =
+    rawState !== "running"
+    && ((rawMessage?.toLowerCase().includes("manuell zurückgesetzt") ?? false) || (rawMessage?.toLowerCase().includes("manuell abgebrochen") ?? false));
+  const isHistoricalOperatorNotice =
+    (rawState === "error" && (errorClass === "manual_reset" || errorClass === "cancelled"))
+    || isLegacyOperatorMessage;
   const state: SyncState =
     isHistoricalOperatorNotice
       ? "idle"
@@ -170,7 +176,7 @@ function buildSyncStatus(
             : "Noch keine CRM-Synchronisierung gestartet.";
   return {
     state,
-    message: isHistoricalOperatorNotice ? fallbackMessage : (asText(settings.sync_message) ?? fallbackMessage),
+    message: isHistoricalOperatorNotice ? fallbackMessage : (rawMessage ?? fallbackMessage),
     started_at: asText(settings.sync_started_at),
     finished_at: asText(settings.sync_finished_at),
     last_sync_at: asText(integration.last_sync_at),
