@@ -262,6 +262,10 @@ function chunkRows<T>(rows: T[], size = 250): T[][] {
   return out;
 }
 
+function isNonNull<T>(value: T | null): value is T {
+  return value !== null;
+}
+
 function isMissingTableError(error: unknown, table: string): boolean {
   const message = String((error as { message?: unknown })?.message ?? error ?? "").toLowerCase();
   const normalized = table.toLowerCase();
@@ -374,7 +378,7 @@ async function loadOfferAreaCandidatesForPartner(
         bundeslandSlug: asNullableText(area?.bundesland_slug),
       } satisfies OfferAreaCandidate;
     })
-    .filter((row): row is OfferAreaCandidate => Boolean(row));
+    .filter(isNonNull);
 
   const districtRows = directRows.filter((row) => row.id.split("-").length <= 3);
   const districtBySlug = new Map(
@@ -413,7 +417,7 @@ async function loadOfferAreaCandidatesForPartner(
           bundeslandSlug: asNullableText(row.bundesland_slug),
         } satisfies OfferAreaCandidate;
       })
-      .filter((row): row is OfferAreaCandidate => Boolean(row));
+      .filter(isNonNull);
   }
 
   return Array.from(new Map([...directRows, ...derivedRows].map((row) => [row.id, row])).values());
