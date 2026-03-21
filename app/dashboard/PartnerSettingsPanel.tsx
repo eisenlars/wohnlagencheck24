@@ -2270,6 +2270,18 @@ export default function PartnerSettingsPanel({
                                       Trace-ID: {syncSummary.traceId}
                                     </p>
                                   ) : null}
+                                  {Array.isArray(syncSummary.result?.notes) && syncSummary.result.notes.length > 0 ? (
+                                    <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                                      <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
+                                        Sync-Notes
+                                      </p>
+                                      {syncSummary.result.notes.slice(0, 5).map((note, index) => (
+                                        <p key={`sync-note-${index}`} style={{ marginTop: 0, marginBottom: 4, fontSize: 11, color: "#475569" }}>
+                                          {note}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  ) : null}
                                   {Array.isArray(syncSummary.log) && syncSummary.log.length > 0 ? (
                                     <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                                       <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
