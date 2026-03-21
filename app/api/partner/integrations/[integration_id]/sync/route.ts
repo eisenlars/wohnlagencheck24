@@ -149,10 +149,14 @@ function buildSyncStatus(
 ): SyncStatusPayload {
   const settings = asObject(integration.settings);
   const rawState = String(settings.sync_state ?? "").trim().toLowerCase();
+  const errorClass = asText(settings.sync_error_class);
+  const isHistoricalOperatorNotice = rawState === "error" && (errorClass === "manual_reset" || errorClass === "cancelled");
   const state: SyncState =
-    rawState === "running" || rawState === "success" || rawState === "error"
-      ? (rawState as SyncState)
-      : "idle";
+    isHistoricalOperatorNotice
+      ? "idle"
+      : rawState === "running" || rawState === "success" || rawState === "error"
+        ? (rawState as SyncState)
+        : "idle";
   const result = (settings.sync_result ?? null) as CrmSyncResult | null;
   const fallbackMessage =
     state === "running"
@@ -166,12 +170,12 @@ function buildSyncStatus(
             : "Noch keine CRM-Synchronisierung gestartet.";
   return {
     state,
-    message: asText(settings.sync_message) ?? fallbackMessage,
+    message: isHistoricalOperatorNotice ? fallbackMessage : (asText(settings.sync_message) ?? fallbackMessage),
     started_at: asText(settings.sync_started_at),
     finished_at: asText(settings.sync_finished_at),
     last_sync_at: asText(integration.last_sync_at),
-    error: asText(settings.sync_error),
-    error_class: asText(settings.sync_error_class),
+    error: isHistoricalOperatorNotice ? null : asText(settings.sync_error),
+    error_class: isHistoricalOperatorNotice ? null : errorClass,
     request_count: asNumber(settings.sync_request_count),
     pages_fetched: asNumber(settings.sync_pages_fetched),
     result,

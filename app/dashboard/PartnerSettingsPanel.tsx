@@ -489,6 +489,8 @@ function readSyncSummaryFromStatusPayload(status: {
 }, options?: { retryAfterSec?: number | null }): IntegrationSyncSummary {
   const state = String(status.state ?? "").trim().toLowerCase();
   const result = status.result ?? null;
+  const errorClass = asText(status.error_class);
+  const isHistoricalOperatorNotice = state === "idle" && (errorClass === "manual_reset" || errorClass === "cancelled");
   const message =
     String(status.message ?? "").trim()
     || (result ? formatSyncResultMessage(result) : state === "running" ? "CRM-Synchronisierung läuft..." : "CRM-Synchronisierung");
@@ -505,7 +507,7 @@ function readSyncSummaryFromStatusPayload(status: {
     startedAt: asText(status.started_at),
     finishedAt: asText(status.finished_at),
     lastSyncAt: asText(status.last_sync_at),
-    errorClass: asText(status.error_class),
+    errorClass: isHistoricalOperatorNotice ? null : errorClass,
     requestCount: typeof status.request_count === "number" ? status.request_count : null,
     pagesFetched: typeof status.pages_fetched === "number" ? status.pages_fetched : null,
     traceId: asText(status.trace_id),
