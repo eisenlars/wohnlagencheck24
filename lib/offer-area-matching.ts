@@ -1,4 +1,4 @@
-type OfferAreaCandidate = {
+export type OfferAreaCandidate = {
   id: string;
   name?: string | null;
   slug?: string | null;
@@ -155,6 +155,13 @@ export function rankOfferAreaMatches(
     .sort((a, b) => b.score - a.score || a.areaId.localeCompare(b.areaId));
 
   return ranked;
+}
+
+export function filterOfferAreaMatches(
+  matches: OfferAreaMatch[],
+  minScore = 60,
+): OfferAreaMatch[] {
+  return matches.filter((match) => match.score >= minScore);
 }
 
 export function getPrimaryOfferAreaMatch(

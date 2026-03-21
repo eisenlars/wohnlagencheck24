@@ -1,3 +1,9 @@
+import {
+  extractOfferGeoSignals,
+  filterOfferAreaMatches,
+  rankOfferAreaMatches,
+  type OfferAreaCandidate,
+} from "@/lib/offer-area-matching";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -10,6 +16,18 @@ type ProjectionCounts = {
 
 type PartnerAreaMapRow = {
   area_id?: string | null;
+};
+
+type PartnerAreaConfigRow = {
+  area_id?: string | null;
+  is_active?: boolean | null;
+  areas?: {
+    id?: string | null;
+    name?: string | null;
+    slug?: string | null;
+    parent_slug?: string | null;
+    bundesland_slug?: string | null;
+  } | null;
 };
 
 type OfferRow = {
@@ -29,6 +47,7 @@ type OfferRow = {
   updated_at?: string | null;
   source?: string | null;
   external_id?: string | null;
+  raw?: Record<string, unknown> | null;
 };
 
 type OfferOverrideRow = {
@@ -243,6 +262,15 @@ function chunkRows<T>(rows: T[], size = 250): T[][] {
   return out;
 }
 
+function isMissingTableError(error: unknown, table: string): boolean {
+  const message = String((error as { message?: unknown })?.message ?? error ?? "").toLowerCase();
+  const normalized = table.toLowerCase();
+  return (
+    (message.includes("does not exist") && message.includes(normalized)) ||
+    (message.includes("schema cache") && message.includes(normalized))
+  );
+}
+
 async function reconcileProjectionRows(args: {
   admin: AdminClient;
   table: "public_offer_entries" | "public_request_entries" | "public_reference_entries";
@@ -319,12 +347,167 @@ async function loadPublicLiveAreaIdsForPartner(admin: AdminClient, partnerId: st
   );
 }
 
+async function loadOfferAreaCandidatesForPartner(
+  admin: AdminClient,
+  partnerId: string,
+): Promise<OfferAreaCandidate[]> {
+  const { data, error } = await admin
+    .from("partner_area_map")
+    .select("area_id, is_active, areas(id, name, slug, parent_slug, bundesland_slug)")
+    .eq("auth_user_id", partnerId)
+    .eq("is_active", true)
+    .order("area_id", { ascending: true });
+
+  if (error) throw new Error(`partner_area_map candidate lookup failed: ${error.message}`);
+
+  const directRows = ((data ?? []) as PartnerAreaConfigRow[])
+    .map((row) => {
+      const area = row.areas ?? null;
+      const areaId = asText(row.area_id) || asText(area?.id);
+      if (!areaId) return null;
+      return {
+        id: areaId,
+        name: asNullableText(area?.name),
+        slug: asNullableText(area?.slug),
+        parentSlug: asNullableText(area?.parent_slug),
+        parentName: null,
+        bundeslandSlug: asNullableText(area?.bundesland_slug),
+      } satisfies OfferAreaCandidate;
+    })
+    .filter((row): row is OfferAreaCandidate => Boolean(row));
+
+  const districtRows = directRows.filter((row) => row.id.split("-").length <= 3);
+  const districtBySlug = new Map(
+    districtRows
+      .map((row) => [asText(row.slug), row] as const)
+      .filter(([slug]) => Boolean(slug)),
+  );
+  const districtSlugs = districtRows.map((row) => asText(row.slug)).filter(Boolean) as string[];
+  const bundeslandSlugs = Array.from(
+    new Set(districtRows.map((row) => asText(row.bundeslandSlug)).filter(Boolean) as string[]),
+  );
+
+  let derivedRows: OfferAreaCandidate[] = [];
+  if (districtSlugs.length > 0 && bundeslandSlugs.length > 0) {
+    const { data: childAreas, error: childAreasError } = await admin
+      .from("areas")
+      .select("id, name, slug, parent_slug, bundesland_slug")
+      .in("parent_slug", districtSlugs)
+      .in("bundesland_slug", bundeslandSlugs)
+      .order("name", { ascending: true });
+
+    if (childAreasError) throw new Error(`areas child lookup failed: ${childAreasError.message}`);
+
+    derivedRows = ((childAreas ?? []) as Array<Record<string, unknown>>)
+      .map((row) => {
+        const areaId = asText(row.id);
+        if (!areaId) return null;
+        const parentSlug = asNullableText(row.parent_slug);
+        const parentArea = parentSlug ? districtBySlug.get(parentSlug) ?? null : null;
+        return {
+          id: areaId,
+          name: asNullableText(row.name),
+          slug: asNullableText(row.slug),
+          parentSlug,
+          parentName: parentArea?.name ?? null,
+          bundeslandSlug: asNullableText(row.bundesland_slug),
+        } satisfies OfferAreaCandidate;
+      })
+      .filter((row): row is OfferAreaCandidate => Boolean(row));
+  }
+
+  return Array.from(new Map([...directRows, ...derivedRows].map((row) => [row.id, row])).values());
+}
+
+async function reconcileOfferAreaTargets(args: {
+  admin: AdminClient;
+  partnerId: string;
+  rows: Array<Record<string, unknown>>;
+}): Promise<number> {
+  const { admin, partnerId, rows } = args;
+  const uniqueColumns = ["offer_id", "area_id"];
+  const compareColumns = [
+    "partner_id",
+    "is_primary",
+    "match_source",
+    "match_confidence",
+    "score",
+    "matched_zip_code",
+    "matched_city",
+    "matched_region",
+  ];
+
+  const { data, error } = await admin
+    .from("partner_offer_area_targets")
+    .select(["id", ...uniqueColumns, ...compareColumns].join(","))
+    .eq("partner_id", partnerId);
+
+  if (error) {
+    if (isMissingTableError(error, "partner_offer_area_targets")) return 0;
+    throw new Error(`partner_offer_area_targets existing lookup failed: ${error.message}`);
+  }
+
+  const existingRows = (Array.isArray(data) ? data : []) as unknown as Array<Record<string, unknown>>;
+  const existingByKey = new Map<string, Record<string, unknown>>();
+  for (const row of existingRows) {
+    existingByKey.set(buildCompositeKey(row, uniqueColumns), row);
+  }
+
+  const desiredByKey = new Map<string, Record<string, unknown>>();
+  for (const row of rows) {
+    desiredByKey.set(buildCompositeKey(row, uniqueColumns), row);
+  }
+
+  const writeRows: Array<Record<string, unknown>> = [];
+  for (const [key, row] of desiredByKey.entries()) {
+    const existing = existingByKey.get(key);
+    if (!existing) {
+      writeRows.push(row);
+      continue;
+    }
+    const existingSnapshot = buildComparableSnapshot(existing, compareColumns);
+    const desiredSnapshot = buildComparableSnapshot(row, compareColumns);
+    if (existingSnapshot !== desiredSnapshot) {
+      writeRows.push(row);
+    }
+  }
+
+  const staleIds = existingRows
+    .filter((row) => !desiredByKey.has(buildCompositeKey(row, uniqueColumns)))
+    .map((row) => asText(row.id))
+    .filter(Boolean);
+
+  for (const chunk of chunkRows(staleIds)) {
+    const { error: deleteError } = await admin.from("partner_offer_area_targets").delete().in("id", chunk);
+    if (deleteError) {
+      if (isMissingTableError(deleteError, "partner_offer_area_targets")) return desiredByKey.size;
+      throw new Error(`partner_offer_area_targets stale delete failed: ${deleteError.message}`);
+    }
+  }
+
+  for (const chunk of chunkRows(writeRows)) {
+    const { error: upsertError } = await admin.from("partner_offer_area_targets").upsert(chunk, {
+      onConflict: uniqueColumns.join(","),
+    });
+    if (upsertError) {
+      if (isMissingTableError(upsertError, "partner_offer_area_targets")) return desiredByKey.size;
+      throw new Error(`partner_offer_area_targets upsert failed: ${upsertError.message}`);
+    }
+  }
+
+  return desiredByKey.size;
+}
+
 export async function rebuildPublicOfferEntriesForPartner(
   partnerId: string,
   admin = createAdminClient(),
 ): Promise<number> {
-  const visibleAreaIds = await loadPublicLiveAreaIdsForPartner(admin, partnerId);
+  const [visibleAreaIds, offerAreaCandidates] = await Promise.all([
+    loadPublicLiveAreaIdsForPartner(admin, partnerId),
+    loadOfferAreaCandidatesForPartner(admin, partnerId),
+  ]);
   if (visibleAreaIds.length === 0) {
+    await reconcileOfferAreaTargets({ admin, partnerId, rows: [] });
     return reconcileProjectionRows({
       admin,
       table: "public_offer_entries",
@@ -363,7 +546,7 @@ export async function rebuildPublicOfferEntriesForPartner(
   const [offersRes, overridesRes, i18nRes] = await Promise.all([
     admin
       .from("partner_property_offers")
-      .select("id, partner_id, offer_type, object_type, title, price, rent, area_sqm, rooms, address, image_url, detail_url, is_top, updated_at, source, external_id")
+      .select("id, partner_id, offer_type, object_type, title, price, rent, area_sqm, rooms, address, image_url, detail_url, is_top, updated_at, source, external_id, raw")
       .eq("partner_id", partnerId),
     admin
       .from("partner_property_overrides")
@@ -392,6 +575,7 @@ export async function rebuildPublicOfferEntriesForPartner(
   );
 
   const projectionRows: Array<Record<string, unknown>> = [];
+  const offerAreaTargetRows: Array<Record<string, unknown>> = [];
   const rebuildTimestamp = new Date().toISOString();
   for (const offer of offers) {
     const offerId = asText(offer.id);
@@ -400,6 +584,31 @@ export async function rebuildPublicOfferEntriesForPartner(
     if (!offerId) continue;
 
     const override = overridesByKey.get(`${partnerId}::${source}::${externalId}`);
+    const raw = (offer.raw ?? {}) as Record<string, unknown>;
+    const geoSignals = extractOfferGeoSignals(raw);
+    const matchedZipCode = asNullableText(raw.zip_code);
+    const matchedCity = asNullableText(raw.city);
+    const matchedRegion = asNullableText(raw.region);
+    const rankedMatches = filterOfferAreaMatches(
+      rankOfferAreaMatches(geoSignals, offerAreaCandidates),
+    );
+
+    rankedMatches.forEach((match, index) => {
+      offerAreaTargetRows.push({
+        partner_id: partnerId,
+        offer_id: offerId,
+        area_id: match.areaId,
+        is_primary: index === 0,
+        match_source: match.source,
+        match_confidence: match.confidence,
+        score: match.score,
+        matched_zip_code: matchedZipCode,
+        matched_city: matchedCity,
+        matched_region: matchedRegion,
+        updated_at: rebuildTimestamp,
+      });
+    });
+
     for (const visibleAreaId of visibleAreaIds) {
       projectionRows.push({
         partner_id: partnerId,
@@ -472,6 +681,12 @@ export async function rebuildPublicOfferEntriesForPartner(
       }
     }
   }
+
+  await reconcileOfferAreaTargets({
+    admin,
+    partnerId,
+    rows: offerAreaTargetRows,
+  });
 
   return reconcileProjectionRows({
     admin,
