@@ -32,13 +32,13 @@ type PropstackUnit = {
   lat?: number | null;
   lng?: number | null;
   hide_address?: boolean | null;
-  purchase_price?: number | null;
-  rent_net?: number | null;
-  living_space?: number | null;
-  number_of_rooms?: number | null;
+  purchase_price?: number | string | { label?: unknown; value?: unknown } | null;
+  rent_net?: number | string | { label?: unknown; value?: unknown } | null;
+  living_space?: number | string | { label?: unknown; value?: unknown } | null;
+  number_of_rooms?: number | string | { label?: unknown; value?: unknown } | null;
   energy_certificate_type?: string | null;
-  energy_consumption_value?: number | null;
-  construction_year?: number | null;
+  energy_consumption_value?: number | string | { label?: unknown; value?: unknown } | null;
+  construction_year?: number | string | { label?: unknown; value?: unknown } | null;
   custom_fields?: Record<string, unknown> | null;
   updated_at?: string | null;
   images?: PropstackImage[] | null;
@@ -253,6 +253,16 @@ function asNumber(value: unknown): number | null {
   return null;
 }
 
+function normalizePropstackNumber(value: unknown): number | null {
+  const direct = asNumber(value);
+  if (direct !== null) return direct;
+  if (value && typeof value === "object") {
+    const numberObject = value as Record<string, unknown>;
+    return asNumber(numberObject.value) ?? asNumber(numberObject.label);
+  }
+  return null;
+}
+
 function toRegionTarget(cityRaw: string, districtRaw?: string | null): RegionTarget | null {
   const city = cityRaw.trim();
   const district = String(districtRaw ?? "").trim() || null;
@@ -317,10 +327,10 @@ function normalizeUnitOffer(
     offer_type: normalizeOfferType(unit.marketing_type),
     object_type: normalizeObjectType(unit.rs_type),
     title,
-    price: unit.purchase_price ?? null,
-    rent: unit.rent_net ?? null,
-    area_sqm: unit.living_space ?? null,
-    rooms: unit.number_of_rooms ?? null,
+    price: normalizePropstackNumber(unit.purchase_price),
+    rent: normalizePropstackNumber(unit.rent_net),
+    area_sqm: normalizePropstackNumber(unit.living_space),
+    rooms: normalizePropstackNumber(unit.number_of_rooms),
     address,
     image_url: gallery[0] ?? null,
     detail_url: buildDetailUrl(integration.detail_url_template, unit),
@@ -333,8 +343,8 @@ function normalizeUnitOffer(
       features_note: unit.furnishing_note ?? null,
       energy: {
         type: unit.energy_certificate_type ?? null,
-        demand: unit.energy_consumption_value ?? null,
-        year: unit.construction_year ?? null,
+        demand: normalizePropstackNumber(unit.energy_consumption_value),
+        year: normalizePropstackNumber(unit.construction_year),
       },
       gallery,
       lat: unit.lat ?? null,
@@ -371,8 +381,8 @@ function mapUnitReference(
     location: locationLabel,
     offer_type: normalizeOfferType(unit.marketing_type),
     object_type: normalizeObjectType(unit.rs_type),
-    area_sqm: unit.living_space ?? null,
-    rooms: unit.number_of_rooms ?? null,
+    area_sqm: normalizePropstackNumber(unit.living_space),
+    rooms: normalizePropstackNumber(unit.number_of_rooms),
     reference_text_seed: `Das Objekt wurde erfolgreich ${saleType}.`,
     description: `Das Objekt wurde erfolgreich ${saleType}.`,
     image_url: gallery[0] ?? null,
