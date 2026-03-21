@@ -845,7 +845,7 @@ export async function syncPropstackResources(
     notes.push(`propstack property_statuses fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
   }
 
-  const knownReferenceStatusNames = new Set(
+  const knownReferenceStatusNames: Set<string> = new Set(
     propertyStatuses
       .map((status) => normalizePropstackStatusName(status))
       .filter((statusName) => statusName === "verkauft" || statusName === "vermietet" || statusName === "sold" || statusName === "rented"),
