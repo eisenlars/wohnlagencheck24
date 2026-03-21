@@ -3,6 +3,13 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { checkAdminApiRateLimit } from "@/lib/security/rate-limit";
 import {
+  buildPortalCmsSourceSnapshotHash,
+  buildPortalContentI18nMetaViews,
+  loadPortalContentI18nMeta,
+  upsertPortalContentI18nMeta,
+  type PortalContentI18nMetaViewRecord,
+} from "@/lib/portal-cms-i18n-meta";
+import {
   DEFAULT_PORTAL_LOCALES,
   getPortalCmsPage,
   getPortalCmsPages,
@@ -68,7 +75,7 @@ function sanitizeFields(value: unknown): Record<string, string> {
 }
 
 async function loadPortalContent(admin: ReturnType<typeof createAdminClient>) {
-  const [localeRes, contentRes] = await Promise.all([
+  const [localeRes, contentRes, metaRes] = await Promise.all([
     admin
       .from("portal_locale_config")
       .select("locale, status, partner_bookable, is_active, updated_at")
@@ -79,6 +86,7 @@ async function loadPortalContent(admin: ReturnType<typeof createAdminClient>) {
       .order("page_key", { ascending: true })
       .order("section_key", { ascending: true })
       .order("locale", { ascending: true }),
+    loadPortalContentI18nMeta(admin),
   ]);
 
   if (localeRes.error) throw localeRes.error;
@@ -96,11 +104,16 @@ async function loadPortalContent(admin: ReturnType<typeof createAdminClient>) {
     fields_json: sanitizeFields(row.fields_json),
     updated_at: row.updated_at ?? null,
   }));
+  const metas: PortalContentI18nMetaViewRecord[] = buildPortalContentI18nMetaViews({
+    metas: metaRes,
+    entries,
+  });
 
   return {
     locales,
     pages: getPortalCmsPages(),
     entries,
+    metas,
   };
 }
 
@@ -188,6 +201,48 @@ export async function POST(req: Request) {
         onConflict: "page_key,section_key,locale",
       });
       if (error) throw error;
+
+      const translatedRows = entryRows.filter((row) => row.locale !== "de");
+      if (translatedRows.length > 0) {
+        const sourcePages = Array.from(new Set(translatedRows.map((row) => row.page_key)));
+        const sourceRes = await admin
+          .from("portal_content_entries")
+          .select("page_key, section_key, locale, status, fields_json, updated_at")
+          .in("page_key", sourcePages)
+          .eq("locale", "de");
+        if (sourceRes.error) throw sourceRes.error;
+        const sourceMap = new Map(
+          (sourceRes.data ?? []).map((row) => {
+            const entry: PortalContentEntryRecord = {
+              page_key: String(row.page_key ?? ""),
+              section_key: String(row.section_key ?? ""),
+              locale: String(row.locale ?? ""),
+              status: normalizeContentStatus(row.status),
+              fields_json: sanitizeFields(row.fields_json),
+              updated_at: row.updated_at ?? null,
+            };
+            return [`${entry.page_key}::${entry.section_key}`, entry] as const;
+          }),
+        );
+        await upsertPortalContentI18nMeta(admin, translatedRows.map((row) => {
+          const sourceEntry = sourceMap.get(`${row.page_key}::${row.section_key}`);
+          return {
+            page_key: row.page_key,
+            section_key: row.section_key,
+            locale: row.locale,
+            source_locale: "de",
+            source_snapshot_hash: sourceEntry
+              ? buildPortalCmsSourceSnapshotHash({
+                  pageKey: row.page_key,
+                  sectionKey: row.section_key,
+                  fieldsJson: sourceEntry.fields_json,
+                })
+              : null,
+            source_updated_at: sourceEntry?.updated_at ?? null,
+            translation_origin: "manual" as const,
+          };
+        }));
+      }
     }
 
     const payload = await loadPortalContent(admin);

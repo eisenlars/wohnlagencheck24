@@ -26,6 +26,7 @@ import {
   type PortalLocaleConfigRecord,
   type PortalLocaleStatus,
 } from "@/lib/portal-cms";
+import type { PortalContentI18nMetaViewRecord } from "@/lib/portal-cms-i18n-meta";
 import {
   restoreSessionScroll,
   storeSessionScroll,
@@ -733,6 +734,14 @@ function formatPortalEntryStatus(status: PortalContentEntryStatus): string {
   return "entwurf";
 }
 
+function formatPortalTranslationOrigin(origin: string | null | undefined): string {
+  if (origin === "ai") return "KI";
+  if (origin === "sync_copy_all") return "komplett aus DE uebernommen";
+  if (origin === "sync_fill_missing") return "fehlende Felder aus DE uebernommen";
+  if (origin === "manual") return "manuell";
+  return "unbekannt";
+}
+
 type PersistedPortalCmsViewState = {
   pageKey?: string;
   locale?: string;
@@ -749,6 +758,7 @@ type PersistedAdminViewState = {
 
 const PORTAL_CMS_VIEW_STATE_KEY = "admin_portal_cms_view_state_v1";
 const PORTAL_CMS_SCROLL_STATE_KEY = "admin_portal_cms_scroll_v1";
+const PORTAL_CMS_SOURCE_LOCALE = "de";
 const ADMIN_VIEW_STATE_KEY = "admin_view_state_v1";
 
 async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
@@ -977,6 +987,7 @@ export default function AdminClient() {
   const portalCmsPages = useMemo<PortalContentPageDefinition[]>(() => getPortalCmsPages(), []);
   const [portalLocaleConfigs, setPortalLocaleConfigs] = useState<PortalLocaleConfigRecord[]>([]);
   const [portalContentEntries, setPortalContentEntries] = useState<PortalContentEntryRecord[]>([]);
+  const [portalContentMetas, setPortalContentMetas] = useState<PortalContentI18nMetaViewRecord[]>([]);
   const adminInitialViewState = useMemo<PersistedAdminViewState>(() => ({
     activeView: "home",
     navMode: "partners",
@@ -1080,6 +1091,10 @@ export default function AdminClient() {
   const activePortalLocales = useMemo(
     () => portalLocaleConfigs.filter((row) => row.is_active).sort((a, b) => a.locale.localeCompare(b.locale, "de")),
     [portalLocaleConfigs],
+  );
+  const portalContentMetaMap = useMemo(
+    () => new Map(portalContentMetas.map((meta) => [`${meta.page_key}::${meta.section_key}::${meta.locale}`, meta] as const)),
+    [portalContentMetas],
   );
 
   useEffect(() => {
@@ -2050,9 +2065,11 @@ export default function AdminClient() {
       locales?: PortalLocaleConfigRecord[];
       pages?: PortalContentPageDefinition[];
       entries?: PortalContentEntryRecord[];
+      metas?: PortalContentI18nMetaViewRecord[];
     }>("/api/admin/portal-content");
     setPortalLocaleConfigs(data.locales ?? []);
     setPortalContentEntries(data.entries ?? []);
+    setPortalContentMetas(data.metas ?? []);
     const fallbackLocale = (data.locales ?? []).find((row) => row.is_active)?.locale ?? data.locales?.[0]?.locale ?? "de";
     setPortalCmsViewState((prev) => {
       const nextLocale = (data.locales ?? []).some((row) => row.locale === prev.locale)
@@ -2067,6 +2084,100 @@ export default function AdminClient() {
         pageKey: nextPageKey,
       };
     });
+  }
+
+  function buildPortalCmsPageDraftEntries(page: PortalContentPageDefinition, locale: string) {
+    return page.sections.map((section) => {
+      const draftKey = `${locale}::${page.page_key}::${section.section_key}`;
+      const draft = portalCmsDrafts[draftKey] ?? {
+        status: "draft" as PortalContentEntryStatus,
+        fields_json: buildPortalCmsEmptyFields(section),
+      };
+      return {
+        section_key: section.section_key,
+        status: draft.status,
+        fields_json: draft.fields_json,
+      };
+    });
+  }
+
+  async function syncSelectedPortalCmsPageFromDe(mode: "copy_all" | "fill_missing" = "copy_all") {
+    if (!selectedPortalCmsPage || !portalCmsLocale) return;
+    storeSessionScroll(PORTAL_CMS_SCROLL_STATE_KEY);
+    pendingPortalCmsScrollRestoreRef.current = true;
+    await api("/api/admin/portal-content/sync", {
+      method: "POST",
+      body: JSON.stringify({
+        page_key: selectedPortalCmsPage.page_key,
+        source_locale: PORTAL_CMS_SOURCE_LOCALE,
+        target_locale: portalCmsLocale,
+        mode,
+        target_entries: buildPortalCmsPageDraftEntries(selectedPortalCmsPage, portalCmsLocale),
+      }),
+    });
+    await loadPortalCms();
+  }
+
+  async function translatePortalCmsSectionFromDe(args: {
+    section: PortalContentPageDefinition["sections"][number];
+    fieldKey?: string;
+    applyMode?: "overwrite" | "fill_missing";
+  }) {
+    if (!selectedPortalCmsPage || !portalCmsLocale) return;
+    const { section, fieldKey, applyMode = "overwrite" } = args;
+    const draftKey = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
+    const draft = portalCmsDrafts[draftKey] ?? {
+      status: "draft" as PortalContentEntryStatus,
+      fields_json: buildPortalCmsEmptyFields(section),
+    };
+    storeSessionScroll(PORTAL_CMS_SCROLL_STATE_KEY);
+    pendingPortalCmsScrollRestoreRef.current = true;
+    await api("/api/admin/portal-content/ai", {
+      method: "POST",
+      body: JSON.stringify({
+        page_key: selectedPortalCmsPage.page_key,
+        section_key: section.section_key,
+        field_key: fieldKey,
+        source_locale: PORTAL_CMS_SOURCE_LOCALE,
+        target_locale: portalCmsLocale,
+        apply_mode: applyMode,
+        target_entry: {
+          section_key: section.section_key,
+          status: draft.status,
+          fields_json: draft.fields_json,
+        },
+      }),
+    });
+    await loadPortalCms();
+  }
+
+  async function translateSelectedPortalCmsPageMissingFromDe() {
+    if (!selectedPortalCmsPage || !portalCmsLocale) return;
+    storeSessionScroll(PORTAL_CMS_SCROLL_STATE_KEY);
+    pendingPortalCmsScrollRestoreRef.current = true;
+    for (const section of selectedPortalCmsPage.sections) {
+      const draftKey = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
+      const draft = portalCmsDrafts[draftKey] ?? {
+        status: "draft" as PortalContentEntryStatus,
+        fields_json: buildPortalCmsEmptyFields(section),
+      };
+      await api("/api/admin/portal-content/ai", {
+        method: "POST",
+        body: JSON.stringify({
+          page_key: selectedPortalCmsPage.page_key,
+          section_key: section.section_key,
+          source_locale: PORTAL_CMS_SOURCE_LOCALE,
+          target_locale: portalCmsLocale,
+          apply_mode: "fill_missing",
+          target_entry: {
+            section_key: section.section_key,
+            status: draft.status,
+            fields_json: draft.fields_json,
+          },
+        }),
+      });
+    }
+    await loadPortalCms();
   }
 
   async function loadPartnerBillingConfig(partnerId: string) {
@@ -4530,6 +4641,50 @@ export default function AdminClient() {
             </div>
           </div>
 
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
+            <button
+              type="button"
+              style={btnGhostStyle}
+              disabled={busy || !selectedPortalCmsPage || !portalCmsLocale || portalCmsLocale === PORTAL_CMS_SOURCE_LOCALE}
+              onClick={() =>
+                run("Fehlende Portal-Inhalte aus DE ergänzen", async () => {
+                  await syncSelectedPortalCmsPageFromDe("fill_missing");
+                })
+              }
+            >
+              Aus DE ergänzen
+            </button>
+            <button
+              type="button"
+              style={btnDangerStyle}
+              disabled={busy || !selectedPortalCmsPage || !portalCmsLocale || portalCmsLocale === PORTAL_CMS_SOURCE_LOCALE}
+              onClick={() =>
+                run("Portal-Seite komplett aus DE uebernehmen", async () => {
+                  await syncSelectedPortalCmsPageFromDe("copy_all");
+                })
+              }
+            >
+              DE komplett übernehmen
+            </button>
+            <button
+              type="button"
+              style={btnGhostStyle}
+              disabled={busy || !selectedPortalCmsPage || !portalCmsLocale || portalCmsLocale === PORTAL_CMS_SOURCE_LOCALE}
+              onClick={() =>
+                run("Leere Portal-Felder per KI fuellen", async () => {
+                  await translateSelectedPortalCmsPageMissingFromDe();
+                })
+              }
+            >
+              Leere Felder per KI
+            </button>
+            <div style={{ fontSize: 12, color: "#64748b" }}>
+              {portalCmsLocale === PORTAL_CMS_SOURCE_LOCALE
+                ? "DE ist die Basissprache. Sync- und KI-Uebersetzung laufen nur in Ziel-Locales."
+                : "Automatische Sync- und KI-Laeufe setzen geaenderte Inhalte auf Entwurf/Intern zurueck und markieren ihre DE-Quelle."}
+            </div>
+          </div>
+
           {selectedPortalCmsPage ? (
             <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
               {selectedPortalCmsPage.sections.map((section) => {
@@ -4538,6 +4693,7 @@ export default function AdminClient() {
                   status: "draft" as PortalContentEntryStatus,
                   fields_json: buildPortalCmsEmptyFields(section),
                 };
+                const sectionMeta = portalContentMetaMap.get(`${selectedPortalCmsPage.page_key}::${section.section_key}::${portalCmsLocale}`) ?? null;
                 return (
                   <div
                     key={section.section_key}
@@ -4552,8 +4708,27 @@ export default function AdminClient() {
                       <div>
                         <div style={{ fontWeight: 700, color: "#0f172a" }}>{section.label}</div>
                         <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.5 }}>{section.description}</div>
+                        {portalCmsLocale !== PORTAL_CMS_SOURCE_LOCALE ? (
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                            {sectionMeta ? (
+                              <span style={{ fontSize: 11, color: "#334155", background: "#e2e8f0", borderRadius: 999, padding: "3px 8px" }}>
+                                Herkunft: {formatPortalTranslationOrigin(sectionMeta.translation_origin)}
+                              </span>
+                            ) : null}
+                            {sectionMeta?.source_locale ? (
+                              <span style={{ fontSize: 11, color: "#334155", background: "#e2e8f0", borderRadius: 999, padding: "3px 8px" }}>
+                                Quelle: {sectionMeta.source_locale.toUpperCase()}
+                              </span>
+                            ) : null}
+                            {sectionMeta?.is_stale ? (
+                              <span style={{ fontSize: 11, color: "#991b1b", background: "#fee2e2", borderRadius: 999, padding: "3px 8px" }}>
+                                DE seitdem geändert
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </div>
-                      <div style={{ minWidth: 140 }}>
+                      <div style={{ minWidth: 140, display: "grid", gap: 8 }}>
                         <select
                           style={inputStyle}
                           value={draft.status}
@@ -4572,6 +4747,21 @@ export default function AdminClient() {
                           <option value="internal">Intern</option>
                           <option value="live">Live</option>
                         </select>
+                        <button
+                          type="button"
+                          style={{ ...btnGhostStyle, padding: "6px 8px", fontSize: 12 }}
+                          disabled={busy || portalCmsLocale === PORTAL_CMS_SOURCE_LOCALE}
+                          onClick={() =>
+                            run("Leere Section-Felder per KI fuellen", async () => {
+                              await translatePortalCmsSectionFromDe({
+                                section,
+                                applyMode: "fill_missing",
+                              });
+                            })
+                          }
+                        >
+                          Leere Felder per KI
+                        </button>
                       </div>
                     </div>
 
@@ -4598,7 +4788,25 @@ export default function AdminClient() {
                           };
                           return (
                             <div key={field.key}>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>{field.label}</div>
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>{field.label}</div>
+                                <button
+                                  type="button"
+                                  style={{ ...btnGhostStyle, padding: "6px 8px", fontSize: 12 }}
+                                  disabled={busy || portalCmsLocale === PORTAL_CMS_SOURCE_LOCALE}
+                                  onClick={() =>
+                                    run("Content-Wraps per KI uebersetzen", async () => {
+                                      await translatePortalCmsSectionFromDe({
+                                        section,
+                                        fieldKey: field.key,
+                                        applyMode: "overwrite",
+                                      });
+                                    })
+                                  }
+                                >
+                                  Aus DE via KI
+                                </button>
+                              </div>
                               {field.help ? (
                                 <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>{field.help}</div>
                               ) : null}
@@ -4926,7 +5134,25 @@ export default function AdminClient() {
                           };
                           return (
                             <div key={field.key}>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>{field.label}</div>
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>{field.label}</div>
+                                <button
+                                  type="button"
+                                  style={{ ...btnGhostStyle, padding: "6px 8px", fontSize: 12 }}
+                                  disabled={busy || portalCmsLocale === PORTAL_CMS_SOURCE_LOCALE}
+                                  onClick={() =>
+                                    run("Block-Content per KI uebersetzen", async () => {
+                                      await translatePortalCmsSectionFromDe({
+                                        section,
+                                        fieldKey: field.key,
+                                        applyMode: "overwrite",
+                                      });
+                                    })
+                                  }
+                                >
+                                  Aus DE via KI
+                                </button>
+                              </div>
                               {field.help ? (
                                 <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8 }}>{field.help}</div>
                               ) : null}
@@ -5310,7 +5536,25 @@ export default function AdminClient() {
 
                         return (
                           <label key={field.key}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#334155", marginBottom: 4 }}>{field.label}</div>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>{field.label}</div>
+                              <button
+                                type="button"
+                                style={{ ...btnGhostStyle, padding: "6px 8px", fontSize: 12 }}
+                                disabled={busy || portalCmsLocale === PORTAL_CMS_SOURCE_LOCALE}
+                                onClick={() =>
+                                  run("Feld per KI aus DE uebersetzen", async () => {
+                                    await translatePortalCmsSectionFromDe({
+                                      section,
+                                      fieldKey: field.key,
+                                      applyMode: "overwrite",
+                                    });
+                                  })
+                                }
+                              >
+                                Aus DE via KI
+                              </button>
+                            </div>
                             {field.type === "textarea" ? (
                               <textarea
                                 style={{ ...inputStyle, minHeight: 110, resize: "vertical" }}
@@ -5360,6 +5604,9 @@ export default function AdminClient() {
 
                     <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>
                       Status in dieser Locale: <strong>{formatPortalEntryStatus(draft.status)}</strong>
+                      {portalCmsLocale !== PORTAL_CMS_SOURCE_LOCALE
+                        ? " · Bei Sync/KI wird Live automatisch auf Intern oder Entwurf zurueckgesetzt."
+                        : ""}
                     </div>
                   </div>
                 );
