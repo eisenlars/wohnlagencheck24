@@ -572,6 +572,21 @@ Hinweis:
 - `source_payload` wird dort aktuell nicht geschrieben
 - die Geo-/Adressfelder in `raw` sind die Grundlage fuer spaetere automatische Angebots-zu-Gebiet-Zuordnung (`strict_local`)
 
+**Geplante Angebots-Gebietszuordnung (Phase 1/Grundlage):**
+- interne Matching-Signale werden aus Angebots-`raw` gelesen:
+  - `lat/lng`
+  - `zip_code`
+  - `city`
+  - `region`
+  - `country`
+- Matching-Prioritaet fuer spaetere `strict_local`-Logik:
+  1. `lat/lng` vorhanden (Grundlage fuer spaeteres Polygon-/Map-Matching)
+  2. `zip_code + city`
+  3. `city + region`
+  4. `city`
+  5. `region`
+- in Phase 1 wird diese Zuordnung nur als interne Hilfslogik vorbereitet; die Public-Ausspielung bleibt unveraendert `partner_wide`
+
 **Partner‑Exposé‑URL (optional):**  
 `detail_url = detail_url_template` mit Platzhaltern:
 ```
