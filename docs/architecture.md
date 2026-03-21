@@ -485,6 +485,28 @@ create index if not exists partner_property_offers_area_offer_idx
 Migrations‑Snippets:  
 - `docs/sql/partner_property_offers_extensions.sql`
 
+Aktuell wird `partner_property_offers` im Sync als schlankes Readmodell beschrieben. Erwartete Sync-Felder sind:
+- `partner_id`
+- `source`
+- `external_id`
+- `offer_type`
+- `object_type`
+- `title`
+- `price`
+- `rent`
+- `area_sqm`
+- `rooms`
+- `address`
+- `image_url`
+- `detail_url`
+- `is_top`
+- `raw`
+- `updated_at`
+
+Wichtig:
+- `source_payload` gehoert aktuell **nicht** zum Write-Modell von `partner_property_offers`
+- providernahe Rohdaten fuer Angebote liegen im Feld `raw`
+
 **RLS (öffentlich lesen, schreiben nur Service‑Role):**
 ```sql
 alter table public.partner_property_offers enable row level security;
@@ -539,6 +561,10 @@ Mapping (Beispiel):
 | `furnishing_note`        | `raw.features_note`                             |
 | `energy_*`               | `raw.energy`                                    |
 | `custom_fields`          | `raw.custom_fields`                             |
+
+Hinweis:
+- Angebots-Sync schreibt fuer `partner_property_offers` nur das Readmodell inkl. `raw`
+- `source_payload` wird dort aktuell nicht geschrieben
 
 **Partner‑Exposé‑URL (optional):**  
 `detail_url = detail_url_template` mit Platzhaltern:

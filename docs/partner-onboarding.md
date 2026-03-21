@@ -131,6 +131,8 @@ Migrations‑Snippets:
 Lifecycle-Hinweis (Angebote):
 - Identitaet ueber `(partner_id, provider/source, external_id)`.
 - Sync aktualisiert Raw/Readmodell; bestehende Inhalte in `partner_property_overrides` werden nicht ueberschrieben.
+- `partner_property_offers` wird aktuell als Readmodell mit `raw` beschrieben.
+- `source_payload` ist derzeit kein erwartetes Write-Feld fuer `partner_property_offers`.
 
 Lifecycle-Hinweis (Referenzen):
 - In `partner_references.normalized_payload` keine exakte Adresse und keine Preisangaben fuehren.

@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { rebuildAllPublicAssetEntriesForPartner } from "@/lib/public-asset-projections";
 import { syncIntegrationResources } from "@/lib/providers";
-import type { PartnerIntegration } from "@/lib/providers/types";
+import type { MappedOffer, PartnerIntegration } from "@/lib/providers/types";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -96,9 +96,27 @@ async function upsertRawResource(
 
 async function upsertOffers(
   supabase: AdminClient,
-  rows: Array<Record<string, unknown>>,
+  offers: MappedOffer[],
 ): Promise<void> {
-  if (!rows.length) return;
+  if (!offers.length) return;
+  const rows = offers.map((offer) => ({
+    partner_id: offer.partner_id,
+    source: offer.source,
+    external_id: offer.external_id,
+    offer_type: offer.offer_type,
+    object_type: offer.object_type,
+    title: offer.title,
+    price: offer.price,
+    rent: offer.rent,
+    area_sqm: offer.area_sqm,
+    rooms: offer.rooms,
+    address: offer.address,
+    image_url: offer.image_url,
+    detail_url: offer.detail_url,
+    is_top: offer.is_top,
+    updated_at: offer.updated_at ?? new Date().toISOString(),
+    raw: offer.raw,
+  }));
   const { error } = await supabase.from("partner_property_offers").upsert(rows, {
     onConflict: "partner_id,source,external_id",
   });
@@ -245,7 +263,7 @@ export async function runCrmIntegrationSync(
   if (syncListings) {
     await hooks?.assertCanContinue?.();
     await hooks?.onProgress?.("upsert_offers", "Angebote werden gespeichert.");
-    await upsertOffers(supabase, offers as unknown as Array<Record<string, unknown>>);
+    await upsertOffers(supabase, offers);
   }
 
   await hooks?.assertCanContinue?.();
