@@ -280,6 +280,11 @@ function normalizePropstackStatusId(value: unknown): string | null {
   return null;
 }
 
+function formatCountEntries(entries: Array<[string, number]>): string {
+  if (!entries.length) return "keine";
+  return entries.map(([key, count]) => `${key}:${count}`).join(", ");
+}
+
 function asNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim().length > 0) {
@@ -816,7 +821,6 @@ export async function syncPropstackResources(
     pages_fetched: unitsResult.pagesFetched,
   };
   const units = unitsResult.items;
-  notes.push("guarded test sync: propstack units limited to first page for write-path validation");
   const offers = units.map((unit) => normalizeUnitOffer(integration.partner_id, integration, unit));
   const listings = offers.map((offer) =>
     makeRawRowBase(
@@ -850,13 +854,33 @@ export async function syncPropstackResources(
       .map((status) => normalizePropstackStatusName(status))
       .filter((statusName) => statusName === "verkauft" || statusName === "vermietet" || statusName === "sold" || statusName === "rented"),
   );
-  const references = units.filter((unit) => {
+  const referenceCandidates = units.filter((unit) => {
     if (includeAsReference(unit, cfg)) return true;
     const statusName = normalizePropstackStatusName(unit.status);
     return Boolean(statusName && knownReferenceStatusNames.has(statusName));
-  }).map((unit) =>
+  });
+  const references = referenceCandidates.map((unit) =>
     mapUnitReference(integration.partner_id, integration, unit),
   );
+  const unitStatusCounts = new Map<string, number>();
+  const archivedCounts = new Map<string, number>([
+    ["true", 0],
+    ["false", 0],
+    ["null", 0],
+  ]);
+  for (const unit of units) {
+    const statusName = normalizePropstackStatusName(unit.status) ?? "unbekannt";
+    unitStatusCounts.set(statusName, (unitStatusCounts.get(statusName) ?? 0) + 1);
+    const archivedKey = unit.archived === true ? "true" : unit.archived === false ? "false" : "null";
+    archivedCounts.set(archivedKey, (archivedCounts.get(archivedKey) ?? 0) + 1);
+  }
+  notes.push(
+    `reference diagnostics: units=${units.length} · matched=${referenceCandidates.length} · status=${formatCountEntries(Array.from(unitStatusCounts.entries()).sort((left, right) => right[1] - left[1]))} · archived=${formatCountEntries(Array.from(archivedCounts.entries()))}`,
+  );
+  if (knownReferenceStatusNames.size > 0) {
+    notes.push(`reference diagnostics: recognized completion statuses=${Array.from(knownReferenceStatusNames).sort().join(", ")}`);
+  }
+  notes.push("guarded test sync: propstack units limited to first page for write-path validation");
   let referencesFetched = true;
   let requestsFetched = false;
   let requests: RawRequest[] = [];
