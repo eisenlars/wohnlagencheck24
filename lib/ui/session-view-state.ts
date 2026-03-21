@@ -25,18 +25,11 @@ export function useSessionViewState<T extends Record<string, unknown>>(
   key: string,
   initialState: T,
 ): [T, Dispatch<SetStateAction<T>>, boolean] {
-  const [state, setState] = useState<T>(initialState);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(false);
-    const persisted = readSessionViewState<T>(key);
-    setState({
-      ...initialState,
-      ...(persisted ?? {}),
-    });
-    setHydrated(true);
-  }, [initialState, key]);
+  const [state, setState] = useState<T>(() => ({
+    ...initialState,
+    ...(readSessionViewState<T>(key) ?? {}),
+  }));
+  const [hydrated, setHydrated] = useState(() => typeof window !== 'undefined');
 
   useEffect(() => {
     if (!hydrated) return;

@@ -886,10 +886,10 @@ export async function syncPropstackResources(
     notes.push(`reference diagnostics: recognized completion statuses=${Array.from(knownReferenceStatusNames).sort().join(", ")}`);
   }
   notes.push("guarded test sync: propstack units limited to first page for write-path validation");
-  let referencesFetched = true;
+  const referencesFetched = true;
   let requestsFetched = false;
   let requests: RawRequest[] = [];
-  let referencesSource: "live" | "unavailable" = "live";
+  const referencesSource: "live" | "unavailable" = "live";
   let requestsSource: "live" | "unavailable" = "unavailable";
 
   try {

@@ -83,10 +83,6 @@ export function AngebotePage(props: AngebotePageProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const normalizedLocale = normalizePublicLocale(locale);
   const texts = getPortalSystemTexts(normalizedLocale);
-  const priceFormatter = useMemo(
-    () => new Intl.NumberFormat(normalizedLocale === "en" ? "en-US" : "de-DE"),
-    [normalizedLocale],
-  );
 
   useEffect(() => {
     if (topOffers.length <= 1) return;
@@ -103,17 +99,17 @@ export function AngebotePage(props: AngebotePageProps) {
 
   function formatCurrency(value: number | null): string {
     if (value === null || !Number.isFinite(value)) return "—";
-    return `${priceFormatter.format(value)} €`;
+    return `${new Intl.NumberFormat(normalizedLocale === "en" ? "en-US" : "de-DE").format(value)} €`;
   }
 
   function formatArea(value: number | null): string {
     if (value === null || !Number.isFinite(value)) return "—";
-    return `${priceFormatter.format(value)} m²`;
+    return `${new Intl.NumberFormat(normalizedLocale === "en" ? "en-US" : "de-DE").format(value)} m²`;
   }
 
   function formatRooms(value: number | null): string {
     if (value === null || !Number.isFinite(value)) return "—";
-    return `${priceFormatter.format(value)}`;
+    return `${new Intl.NumberFormat(normalizedLocale === "en" ? "en-US" : "de-DE").format(value)}`;
   }
 
   function formatObjectType(value: OfferObjectType | string): string {
