@@ -382,6 +382,11 @@ function normalizeUnitOffer(
       description: unit.description_note ?? null,
       location: unit.location_note ?? null,
       features_note: unit.furnishing_note ?? null,
+      street: unit.street ?? null,
+      house_number: unit.house_number ?? null,
+      zip_code: unit.zip_code ?? null,
+      city: unit.city ?? null,
+      hide_address: unit.hide_address ?? null,
       energy: {
         type: unit.energy_certificate_type ?? null,
         demand: normalizePropstackNumber(unit.energy_consumption_value),

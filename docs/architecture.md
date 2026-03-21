@@ -507,6 +507,7 @@ Wichtig:
 - `source_payload` gehoert aktuell **nicht** zum Write-Modell von `partner_property_offers`
 - providernahe Rohdaten fuer Angebote liegen im Feld `raw`
 - regionale Ausspielung erfolgt nachgelagert ueber `public_offer_entries.visible_area_id`, nicht ueber ein hartes `area_id` im Angebots-Kernmodell
+- fuer spaetere lokale Gebietszuordnung werden Geo-/Adresssignale im `raw` des Angebots mitgefuehrt (z. B. `zip_code`, `city`, `region`, `lat`, `lng`)
 
 **RLS (öffentlich lesen, schreiben nur Service‑Role):**
 ```sql
@@ -555,6 +556,9 @@ Mapping (Beispiel):
 | `living_space`           | `area_sqm`                                      |
 | `number_of_rooms`        | `rooms`                                         |
 | `street/house_number/zip_code/city` | `address`                           |
+| `street` / `house_number` / `zip_code` / `city` / `region` / `country` | `raw` (Geo-/Adressbasis) |
+| `lat` / `lng`            | `raw.lat`, `raw.lng`                            |
+| `hide_address`           | `raw.hide_address`                              |
 | `images[].url`           | `image_url` (erstes), `raw.gallery` (alle)      |
 | `exposee_id`             | `raw.exposee_id`                                |
 | `description_note`       | `raw.description`                               |
@@ -566,6 +570,7 @@ Mapping (Beispiel):
 Hinweis:
 - Angebots-Sync schreibt fuer `partner_property_offers` nur das Readmodell inkl. `raw`
 - `source_payload` wird dort aktuell nicht geschrieben
+- die Geo-/Adressfelder in `raw` sind die Grundlage fuer spaetere automatische Angebots-zu-Gebiet-Zuordnung (`strict_local`)
 
 **Partner‑Exposé‑URL (optional):**  
 `detail_url = detail_url_template` mit Platzhaltern:

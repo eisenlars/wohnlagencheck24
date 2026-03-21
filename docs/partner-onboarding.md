@@ -135,6 +135,7 @@ Lifecycle-Hinweis (Angebote):
 - `partner_property_offers` wird aktuell als Readmodell mit `raw` beschrieben.
 - `source_payload` ist derzeit kein erwartetes Write-Feld fuer `partner_property_offers`.
 - `partner_property_offers` ist kanonisch partnergebunden; die regionale Ausspielung erfolgt erst spaeter ueber `public_offer_entries.visible_area_id`.
+- relevante Geo-/Adresssignale aus dem CRM bleiben im Angebots-`raw` erhalten (u. a. `zip_code`, `city`, `region`, `lat`, `lng`) und dienen spaeter als Basis fuer lokale Gebietszurodnung.
 
 Lifecycle-Hinweis (Referenzen):
 - In `partner_references.normalized_payload` keine exakte Adresse und keine Preisangaben fuehren.
