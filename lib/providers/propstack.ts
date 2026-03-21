@@ -731,6 +731,7 @@ export async function syncPropstackResources(
 ): Promise<ResourceSyncData & { offers: MappedOffer[] }> {
   const cfg = toSettings(integration.settings);
   const notes: string[] = [];
+  const partialSyncMode = true;
   let providerRequestCount = 0;
   let providerPagesFetched = 0;
   const providerBreakdown: Record<string, { requests: number; pages_fetched: number }> = {};
@@ -743,7 +744,7 @@ export async function syncPropstackResources(
     pages_fetched: unitsResult.pagesFetched,
   };
   const units = unitsResult.items;
-  notes.push("propstack sync limited to first page for write-path validation");
+  notes.push("guarded test sync: propstack units limited to first page for write-path validation");
   const offers = units.map((unit) => normalizeUnitOffer(integration.partner_id, integration, unit));
   const listings = offers.map((offer) =>
     makeRawRowBase(
@@ -763,6 +764,8 @@ export async function syncPropstackResources(
   let referencesFetched = true;
   let requestsFetched = false;
   let requests: RawRequest[] = [];
+  let referencesSource: "live" | "unavailable" = "live";
+  let requestsSource: "live" | "unavailable" = "unavailable";
 
   try {
     const profilesResult = await fetchPropstackSearchProfilesDetailed(integration, apiKey, { maxPages: 1, perPage: 50 });
@@ -776,23 +779,26 @@ export async function syncPropstackResources(
       .filter((p) => p.active !== false)
       .map((p) => mapSearchProfileRequest(integration.partner_id, p));
     requestsFetched = true;
-    notes.push("propstack saved_queries limited to first page for guarded sync");
+    requestsSource = "live";
+    notes.push("guarded test sync: propstack saved_queries limited to first page");
   } catch (error) {
+    requestsSource = "unavailable";
     notes.push(`propstack saved_queries live fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
   }
 
-  let finalReferences = references;
-  let finalRequests = requests;
-
+  const finalReferences = references;
+  const finalRequests = requests;
   if (!finalReferences.length) {
-    finalReferences = buildDummyReferences(integration.partner_id, "propstack");
-    referencesFetched = false;
-    notes.push("propstack references fallback: realistic dummy seed");
+    notes.push("propstack guarded sync found no reference units on the fetched page");
   }
   if (!finalRequests.length) {
-    finalRequests = buildDummyRequests(integration.partner_id, "propstack");
-    requestsFetched = false;
-    notes.push("propstack requests fallback: realistic dummy seed");
+    if (requestsSource === "unavailable") {
+      requestsFetched = false;
+      notes.push("guarded test sync: propstack saved_queries unavailable, no dummy fallback written");
+    } else {
+      requestsFetched = true;
+      notes.push("guarded test sync: no saved_queries found on the fetched page");
+    }
   }
 
   return {
@@ -807,6 +813,10 @@ export async function syncPropstackResources(
       provider_request_count: providerRequestCount,
       provider_pages_fetched: providerPagesFetched,
       provider_breakdown: providerBreakdown,
+      partial_sync_mode: partialSyncMode,
+      stale_deactivation_allowed: false,
+      references_source: referencesSource,
+      requests_source: requestsSource,
     },
   };
 }

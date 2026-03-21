@@ -111,8 +111,12 @@ async function syncRawResourceLayer(
   partnerId: string,
   provider: string,
   rows: Array<Record<string, unknown>>,
+  options?: { allowDeactivate?: boolean },
 ): Promise<{ count: number; deactivated: number }> {
   await upsertRawResource(supabase, table, rows);
+  if (options?.allowDeactivate === false) {
+    return { count: rows.length, deactivated: 0 };
+  }
   const activeExternalIds = rows.map((row) => String(row.external_id ?? "")).filter(Boolean);
   const deactivated = await deactivateMissingByExternalId(
     supabase,
@@ -188,6 +192,8 @@ export async function runCrmIntegrationSync(
     "resources_fetched",
     `CRM-Daten geladen: Angebote=${offers.length}, Rohobjekte=${listings.length}, Referenzen=${references.length}, Gesuche=${requests.length}.`,
   );
+  const partialSyncMode = diagnostics?.partial_sync_mode === true;
+  const allowDeactivate = diagnostics?.stale_deactivation_allowed !== false;
 
   let listingsCount = 0;
   let deactivatedListings = 0;
@@ -200,13 +206,14 @@ export async function runCrmIntegrationSync(
       integration.partner_id,
       integration.provider,
       listings as unknown as Array<Record<string, unknown>>,
+      { allowDeactivate },
     );
     listingsCount = layer.count;
     deactivatedListings = layer.deactivated;
   }
 
   let referencesCount = 0;
-  if (syncReferences) {
+  if (syncReferences && (referencesFetched || references.length > 0)) {
     await hooks?.assertCanContinue?.();
     await hooks?.onProgress?.("upsert_references", "Referenzen werden gespeichert.");
     const layer = await syncRawResourceLayer(
@@ -215,12 +222,13 @@ export async function runCrmIntegrationSync(
       integration.partner_id,
       integration.provider,
       references as unknown as Array<Record<string, unknown>>,
+      { allowDeactivate },
     );
     referencesCount = layer.count;
   }
 
   let requestsCount = 0;
-  if (syncRequests) {
+  if (syncRequests && (requestsFetched || requests.length > 0)) {
     await hooks?.assertCanContinue?.();
     await hooks?.onProgress?.("upsert_requests", "Gesuche werden gespeichert.");
     const layer = await syncRawResourceLayer(
@@ -229,6 +237,7 @@ export async function runCrmIntegrationSync(
       integration.partner_id,
       integration.provider,
       requests as unknown as Array<Record<string, unknown>>,
+      { allowDeactivate },
     );
     requestsCount = layer.count;
   }
@@ -242,7 +251,7 @@ export async function runCrmIntegrationSync(
   await hooks?.assertCanContinue?.();
   await hooks?.onProgress?.("deactivate_stale", "Veraltete CRM-Eintraege werden abgeglichen.");
   const activeOfferExternalIds = offers.map((row) => row.external_id);
-  const deactivatedOffers = syncListings
+  const deactivatedOffers = syncListings && allowDeactivate
     ? await deactivateMissingByExternalId(
         supabase,
         "partner_property_offers",
@@ -255,11 +264,14 @@ export async function runCrmIntegrationSync(
 
   const mergedNotes: string[] = [];
   if (notes?.length) mergedNotes.push(...notes);
+  if (partialSyncMode) {
+    mergedNotes.push("guarded partial sync active: stale deactivation skipped");
+  }
   if (syncReferences && !referencesFetched) {
-    mergedNotes.push("references capability enabled, provider mapping pending");
+    mergedNotes.push("references capability enabled, but live reference data unavailable");
   }
   if (syncRequests && !requestsFetched) {
-    mergedNotes.push("requests capability enabled, provider mapping pending");
+    mergedNotes.push("requests capability enabled, but live request data unavailable");
   }
 
   await hooks?.assertCanContinue?.();

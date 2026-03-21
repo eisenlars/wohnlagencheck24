@@ -2069,7 +2069,7 @@ export default function PartnerSettingsPanel({
                                 style={buttonGhostStyle}
                                 disabled={busy || !integration.is_active || syncSummary?.status === "running"}
                                 onClick={() =>
-                                  run("CRM synchronisieren", async () => {
+                                  run("CRM Guarded-Testlauf starten", async () => {
                                     const response = await apiWithMeta<{
                                       status?: {
                                         state?: string | null;
@@ -2123,7 +2123,7 @@ export default function PartnerSettingsPanel({
                                   })
                                 }
                               >
-                                {syncSummary?.status === "running" ? "CRM-Synchronisierung läuft..." : "CRM jetzt synchronisieren"}
+                                {syncSummary?.status === "running" ? "CRM Guarded-Testlauf läuft..." : "CRM Guarded-Testlauf starten"}
                               </button>
                             ) : null}
                             {isCrmIntegration && syncSummary?.status === "running" ? (
@@ -2205,6 +2205,9 @@ export default function PartnerSettingsPanel({
                               ) : null}
                               {syncSummary ? (
                                 <>
+                                  <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                    Guarded-Testlauf: erste Seite, keine Stale-Deaktivierung, keine Dummy-Daten.
+                                  </p>
                                   <p
                                     style={{
                                       marginTop: 6,

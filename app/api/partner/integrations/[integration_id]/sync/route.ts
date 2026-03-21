@@ -28,6 +28,16 @@ type SyncLogEntry = {
   message: string;
 };
 
+class SyncControlError extends Error {
+  code: string;
+
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = "SyncControlError";
+    this.code = code;
+  }
+}
+
 type SyncStatusPayload = {
   state: SyncState;
   message: string;
@@ -92,6 +102,25 @@ function classifySyncError(message: string): string {
   if (lower.includes("api-key fehlt") || lower.includes("base url fehlt") || lower.includes("blockiert")) return "config_error";
   if (lower.includes("fetch failed") || lower.includes("timed out")) return "crm_network_error";
   return "sync_error";
+}
+
+function normalizeSyncError(error: unknown): { message: string; errorClass: string } {
+  if (error instanceof SyncControlError) {
+    return {
+      message: error.message,
+      errorClass: error.code,
+    };
+  }
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      errorClass: classifySyncError(error.message),
+    };
+  }
+  return {
+    message: "CRM-Synchronisierung fehlgeschlagen.",
+    errorClass: "sync_error",
+  };
 }
 
 function formatSuccessMessage(result: CrmSyncResult): string {
@@ -191,7 +220,7 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: s
     return await Promise.race([
       promise,
       new Promise<T>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+        timer = setTimeout(() => reject(new SyncControlError(message, "timeout")), timeoutMs);
       }),
     ]);
   } finally {
@@ -344,6 +373,7 @@ async function finalizeSyncError(
   partnerId: string,
   jobId: string,
   message: string,
+  errorClass?: string,
 ) {
   const admin = createAdminClient();
   const now = new Date().toISOString();
@@ -362,7 +392,7 @@ async function finalizeSyncError(
       sync_finished_at: now,
       sync_message: message,
       sync_error: message,
-      sync_error_class: classifySyncError(message),
+      sync_error_class: errorClass ?? classifySyncError(message),
       sync_result: null,
     },
     {
@@ -425,14 +455,14 @@ async function ensureSyncCanContinue(
   if (!current) throw new Error("Integration not found");
   const settings = asObject(current.settings);
   if (String(settings.sync_job_id ?? "") !== jobId) {
-    throw new Error("CRM-Synchronisierung wurde ersetzt oder zurueckgesetzt.");
+    throw new SyncControlError("CRM-Synchronisierung wurde ersetzt oder zurueckgesetzt.", "stale_run");
   }
   if (settings.sync_cancel_requested === true) {
-    throw new Error("CRM-Synchronisierung manuell abgebrochen.");
+    throw new SyncControlError("CRM-Synchronisierung manuell abgebrochen.", "cancelled");
   }
   const staleMessage = getStaleRunningMessage(settings);
   if (staleMessage) {
-    throw new Error(staleMessage);
+    throw new SyncControlError(staleMessage, classifySyncError(staleMessage));
   }
 }
 
@@ -617,8 +647,8 @@ export async function POST(
         userAgent,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "CRM-Synchronisierung fehlgeschlagen.";
-      await finalizeSyncError(integrationId, userId, jobId, message);
+      const normalizedError = normalizeSyncError(error);
+      await finalizeSyncError(integrationId, userId, jobId, normalizedError.message, normalizedError.errorClass);
       await writeSecurityAuditLog({
         actorUserId: userId,
         actorRole: "system",
@@ -631,7 +661,8 @@ export async function POST(
           provider: integration.provider,
           sync_job_id: jobId,
           sync_trace_id: traceId,
-          error: message,
+          error: normalizedError.message,
+          error_class: normalizedError.errorClass,
         },
         ip,
         userAgent,
