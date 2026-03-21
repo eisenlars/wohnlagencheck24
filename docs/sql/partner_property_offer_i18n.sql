@@ -4,7 +4,7 @@ create table if not exists public.partner_property_offer_i18n (
   id uuid primary key default gen_random_uuid(),
   partner_id uuid not null references auth.users(id) on delete cascade,
   offer_id uuid not null references public.partner_property_offers(id) on delete cascade,
-  area_id text not null,
+  area_id text,
   source text not null,
   external_id text not null,
   target_locale text not null check (target_locale ~ '^[a-z]{2}(-[a-z]{2})?$'),
@@ -24,11 +24,26 @@ create table if not exists public.partner_property_offer_i18n (
   updated_at timestamptz not null default now()
 );
 
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'partner_property_offer_i18n'
+      and column_name = 'area_id'
+  ) then
+    execute 'alter table public.partner_property_offer_i18n alter column area_id drop not null';
+  end if;
+end $$;
+
 create unique index if not exists partner_property_offer_i18n_unique
   on public.partner_property_offer_i18n (partner_id, offer_id, target_locale);
 
-create index if not exists partner_property_offer_i18n_partner_area_locale_idx
-  on public.partner_property_offer_i18n (partner_id, area_id, target_locale);
+drop index if exists partner_property_offer_i18n_partner_area_locale_idx;
+
+create index if not exists partner_property_offer_i18n_partner_locale_idx
+  on public.partner_property_offer_i18n (partner_id, target_locale);
 
 alter table public.partner_property_offer_i18n enable row level security;
 

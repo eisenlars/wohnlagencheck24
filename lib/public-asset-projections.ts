@@ -15,7 +15,6 @@ type PartnerAreaMapRow = {
 type OfferRow = {
   id?: string | null;
   partner_id?: string | null;
-  area_id?: string | null;
   offer_type?: string | null;
   object_type?: string | null;
   title?: string | null;
@@ -364,9 +363,8 @@ export async function rebuildPublicOfferEntriesForPartner(
   const [offersRes, overridesRes, i18nRes] = await Promise.all([
     admin
       .from("partner_property_offers")
-      .select("id, partner_id, area_id, offer_type, object_type, title, price, rent, area_sqm, rooms, address, image_url, detail_url, is_top, updated_at, source, external_id")
-      .eq("partner_id", partnerId)
-      .in("area_id", visibleAreaIds),
+      .select("id, partner_id, offer_type, object_type, title, price, rent, area_sqm, rooms, address, image_url, detail_url, is_top, updated_at, source, external_id")
+      .eq("partner_id", partnerId),
     admin
       .from("partner_property_overrides")
       .select("partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts")
@@ -399,66 +397,29 @@ export async function rebuildPublicOfferEntriesForPartner(
     const offerId = asText(offer.id);
     const source = asText(offer.source) || "manual";
     const externalId = asText(offer.external_id) || offerId;
-    const visibleAreaId = asText(offer.area_id);
-    if (!offerId || !visibleAreaId) continue;
+    if (!offerId) continue;
 
     const override = overridesByKey.get(`${partnerId}::${source}::${externalId}`);
-    projectionRows.push({
-      partner_id: partnerId,
-      visible_area_id: visibleAreaId,
-      locale: "de",
-      offer_id: offerId,
-      source,
-      external_id: externalId,
-      offer_type: asText(offer.offer_type),
-      object_type: asNullableText(offer.object_type),
-      title: asNullableText(override?.seo_h1) ?? asNullableText(offer.title),
-      seo_title: asNullableText(override?.seo_title),
-      seo_description: asNullableText(override?.seo_description),
-      seo_h1: asNullableText(override?.seo_h1),
-      short_description: asNullableText(override?.short_description),
-      long_description: asNullableText(override?.long_description),
-      location_text: asNullableText(override?.location_text),
-      features_text: asNullableText(override?.features_text),
-      highlights: asArrayJson(override?.highlights),
-      image_alt_texts: asArrayJson(override?.image_alt_texts),
-      price: asNumberOrNull(offer.price),
-      rent: asNumberOrNull(offer.rent),
-      area_sqm: asNumberOrNull(offer.area_sqm),
-      rooms: asNumberOrNull(offer.rooms),
-      address: asNullableText(offer.address),
-      image_url: asNullableText(offer.image_url),
-      detail_url: asNullableText(offer.detail_url),
-      is_top: Boolean(offer.is_top),
-      is_live: true,
-      source_updated_at: asNullableText(offer.updated_at),
-      updated_at: rebuildTimestamp,
-    });
-
-    for (const translationEntry of translationsByEntityId.get(offerId) ?? []) {
-      const { locale, row: translation } = translationEntry;
-      const translatedTitle =
-        asNullableText(translation.translated_seo_h1) ?? asNullableText(translation.translated_seo_title);
-      if (!translatedTitle) continue;
+    for (const visibleAreaId of visibleAreaIds) {
       projectionRows.push({
         partner_id: partnerId,
         visible_area_id: visibleAreaId,
-        locale,
+        locale: "de",
         offer_id: offerId,
         source,
         external_id: externalId,
         offer_type: asText(offer.offer_type),
         object_type: asNullableText(offer.object_type),
-        title: translatedTitle,
-        seo_title: asNullableText(translation.translated_seo_title),
-        seo_description: asNullableText(translation.translated_seo_description),
-        seo_h1: asNullableText(translation.translated_seo_h1),
-        short_description: asNullableText(translation.translated_short_description),
-        long_description: asNullableText(translation.translated_long_description),
-        location_text: asNullableText(translation.translated_location_text),
-        features_text: asNullableText(translation.translated_features_text),
-        highlights: asArrayJson(translation.translated_highlights),
-        image_alt_texts: asArrayJson(translation.translated_image_alt_texts),
+        title: asNullableText(override?.seo_h1) ?? asNullableText(offer.title),
+        seo_title: asNullableText(override?.seo_title),
+        seo_description: asNullableText(override?.seo_description),
+        seo_h1: asNullableText(override?.seo_h1),
+        short_description: asNullableText(override?.short_description),
+        long_description: asNullableText(override?.long_description),
+        location_text: asNullableText(override?.location_text),
+        features_text: asNullableText(override?.features_text),
+        highlights: asArrayJson(override?.highlights),
+        image_alt_texts: asArrayJson(override?.image_alt_texts),
         price: asNumberOrNull(offer.price),
         rent: asNumberOrNull(offer.rent),
         area_sqm: asNumberOrNull(offer.area_sqm),
@@ -471,6 +432,44 @@ export async function rebuildPublicOfferEntriesForPartner(
         source_updated_at: asNullableText(offer.updated_at),
         updated_at: rebuildTimestamp,
       });
+
+      for (const translationEntry of translationsByEntityId.get(offerId) ?? []) {
+        const { locale, row: translation } = translationEntry;
+        const translatedTitle =
+          asNullableText(translation.translated_seo_h1) ?? asNullableText(translation.translated_seo_title);
+        if (!translatedTitle) continue;
+        projectionRows.push({
+          partner_id: partnerId,
+          visible_area_id: visibleAreaId,
+          locale,
+          offer_id: offerId,
+          source,
+          external_id: externalId,
+          offer_type: asText(offer.offer_type),
+          object_type: asNullableText(offer.object_type),
+          title: translatedTitle,
+          seo_title: asNullableText(translation.translated_seo_title),
+          seo_description: asNullableText(translation.translated_seo_description),
+          seo_h1: asNullableText(translation.translated_seo_h1),
+          short_description: asNullableText(translation.translated_short_description),
+          long_description: asNullableText(translation.translated_long_description),
+          location_text: asNullableText(translation.translated_location_text),
+          features_text: asNullableText(translation.translated_features_text),
+          highlights: asArrayJson(translation.translated_highlights),
+          image_alt_texts: asArrayJson(translation.translated_image_alt_texts),
+          price: asNumberOrNull(offer.price),
+          rent: asNumberOrNull(offer.rent),
+          area_sqm: asNumberOrNull(offer.area_sqm),
+          rooms: asNumberOrNull(offer.rooms),
+          address: asNullableText(offer.address),
+          image_url: asNullableText(offer.image_url),
+          detail_url: asNullableText(offer.detail_url),
+          is_top: Boolean(offer.is_top),
+          is_live: true,
+          source_updated_at: asNullableText(offer.updated_at),
+          updated_at: rebuildTimestamp,
+        });
+      }
     }
   }
 

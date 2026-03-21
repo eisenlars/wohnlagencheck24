@@ -258,7 +258,6 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
       [
         "id",
         "partner_id",
-        "area_id",
         "offer_type",
         "object_type",
         "title",
@@ -289,7 +288,7 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
   return {
     id: String(record["id"] ?? ""),
     partnerId: String(record["partner_id"] ?? ""),
-    areaId: String(record["area_id"] ?? ""),
+    areaId: "",
     offerType: (record["offer_type"] as OfferMode) ?? "kauf",
     objectType: (record["object_type"] as OfferObjectType) ?? "wohnung",
     title: String(record["title"] ?? ""),

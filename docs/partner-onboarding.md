@@ -118,13 +118,14 @@ Migrations‑Snippets:
 2. Pruefen: `partner_listings` gefuellt (Rohdaten-Sync)
 3. Optional je Capability pruefen: `partner_references`, `partner_requests`
 4. Pruefen: `partner_property_offers` gefuellt (Portal-Readmodell)
-5. Frontend:  
+5. Pruefen: `public_offer_entries` gefuellt (regionale Ausspielung)
+6. Frontend:  
    - Listen: `/immobilienangebote` / `/mietangebote`  
    - Detail: `/immobilienangebote/<id>_<slug>`
-6. Partner-Login pruefen:
+7. Partner-Login pruefen:
    - Zugriff auf `/dashboard` nur mit vorhandenem Datensatz in `public.partners` (`partners.id = auth_user_id`)
    - fehlt das Profil, erfolgt Redirect auf `/partner/login?message=Kein-Partnerprofil`
-7. Betriebsregel:
+8. Betriebsregel:
    - Admin- und Partner-Login nicht parallel im selben Browser-Kontext testen
    - fuer parallele Tests getrennte Browser-Profile/Incognito verwenden
 
@@ -133,6 +134,7 @@ Lifecycle-Hinweis (Angebote):
 - Sync aktualisiert Raw/Readmodell; bestehende Inhalte in `partner_property_overrides` werden nicht ueberschrieben.
 - `partner_property_offers` wird aktuell als Readmodell mit `raw` beschrieben.
 - `source_payload` ist derzeit kein erwartetes Write-Feld fuer `partner_property_offers`.
+- `partner_property_offers` ist kanonisch partnergebunden; die regionale Ausspielung erfolgt erst spaeter ueber `public_offer_entries.visible_area_id`.
 
 Lifecycle-Hinweis (Referenzen):
 - In `partner_references.normalized_payload` keine exakte Adresse und keine Preisangaben fuehren.

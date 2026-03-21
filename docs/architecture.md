@@ -469,7 +469,7 @@ Migrations‑Snippets:
 - `docs/sql/partner_references.sql`
 - `docs/sql/partner_requests.sql`
 
-**`partner_property_offers`** – Portal‑Readmodell (kanonisches Angebotsmodell fuer Rendering/SEO)
+**`partner_property_offers`** – Portal‑Readmodell (kanonisches partnergebundenes Angebotsmodell fuer Rendering/SEO)
 ```sql
 alter table public.partner_property_offers
   add column if not exists source text,
@@ -478,8 +478,8 @@ alter table public.partner_property_offers
 create unique index if not exists partner_property_offers_ext_idx
   on public.partner_property_offers (partner_id, source, external_id);
 
-create index if not exists partner_property_offers_area_offer_idx
-  on public.partner_property_offers (area_id, offer_type, updated_at);
+create index if not exists partner_property_offers_partner_offer_idx
+  on public.partner_property_offers (partner_id, offer_type, updated_at);
 ```
 
 Migrations‑Snippets:  
@@ -506,6 +506,7 @@ Aktuell wird `partner_property_offers` im Sync als schlankes Readmodell beschrie
 Wichtig:
 - `source_payload` gehoert aktuell **nicht** zum Write-Modell von `partner_property_offers`
 - providernahe Rohdaten fuer Angebote liegen im Feld `raw`
+- regionale Ausspielung erfolgt nachgelagert ueber `public_offer_entries.visible_area_id`, nicht ueber ein hartes `area_id` im Angebots-Kernmodell
 
 **RLS (öffentlich lesen, schreiben nur Service‑Role):**
 ```sql
@@ -630,17 +631,19 @@ GET /api/partner-sync?token=<CRON_SECRET>
 Flow:
 1. `partner_integrations` (kind=`crm`) laden
 2. Provider‑Adapter (Propstack, spaeter onOffice)
-3. Raw‑Sync je Ressource:
+3. Raw-Sync je Ressource:
    - Angebote -> `partner_listings`
    - Referenzen -> `partner_references`
    - Gesuche -> `partner_requests`
 4. Nachgelagerte Transformation ins Portal‑Readmodell `partner_property_offers` (nur Angebote)
-5. Upserts auf eindeutige Keys `(partner_id, provider|source, external_id)`
+5. Regionale Ausspielung in `public_*_entries` ueber `visible_area_id`
+6. Upserts auf eindeutige Keys `(partner_id, provider|source, external_id)`
 
 Verbindliche Schichtung:
 1. Raw-Sync (`partner_listings`, `partner_references`, `partner_requests`)
 2. Portal-Readmodell (`partner_property_offers`)
-3. Redaktioneller Layer (`partner_property_overrides`)
+3. Regionale Projection-Layer (`public_offer_entries`, `public_request_entries`, `public_reference_entries`)
+4. Redaktioneller Layer (`partner_property_overrides`)
 
 **Wichtig:**  
 `SUPABASE_SERVICE_ROLE_KEY` darf **nie** im Client verwendet werden.
@@ -685,6 +688,7 @@ insert into public.partner_integrations (
    - `/api/partner-sync?token=<CRON_SECRET>`  
    - Pruefen: neue Eintraege in `partner_listings` (und je nach Capabilities auch `partner_references`/`partner_requests`)
    - Pruefen: Angebote wurden in `partner_property_offers` uebernommen
+   - Pruefen: regionale Ausspielung wurde in `public_offer_entries` erzeugt
 5. **Frontend prüfen**  
    - Liste: `/immobilienangebote` bzw. `/mietangebote`  
    - Detailseite: `/immobilienangebote/<id>_<slug>`
@@ -697,7 +701,8 @@ insert into public.partner_integrations (
 - Prüfen: `partner_area_map` enthält den Kreis/Ort und `is_active = true`
 - Prüfen: `partner_integrations` aktiv (`is_active = true`) + korrekter `provider`
 - Pruefen: `partner_listings` enthaelt Datensaetze mit passendem `partner_id/provider`
-- Prüfen: `partner_property_offers` enthält Datensätze mit passendem `area_id` + `offer_type`
+- Prüfen: `partner_property_offers` enthaelt partnergebundene Datensaetze mit passendem `offer_type`
+- Prüfen: `public_offer_entries` wurde fuer das sichtbare Gebiet erzeugt (`visible_area_id`)
 
 **Sync schlägt fehl (HTTP 401/403)**
 - `auth_config.api_key` korrekt?
@@ -710,7 +715,7 @@ insert into public.partner_integrations (
 - `raw.gallery` befüllt? (ansonsten nur 1 Bild)
 
 **Pagination leer/fehlerhaft**
-- `partner_property_offers_area_offer_idx` vorhanden?
+- `partner_property_offers_partner_offer_idx` vorhanden?
 - `offer_type`‑Werte korrekt (`kauf` / `miete`)
 
 ### 9.8 Objekt-Lifecycle (verbindlich)

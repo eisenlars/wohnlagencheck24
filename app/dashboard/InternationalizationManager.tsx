@@ -1177,7 +1177,6 @@ export default function InternationalizationManager({ config, availableLocales, 
   }
 
   async function loadPropertyItems() {
-    if (!config?.area_id) return;
     setPropertyLoading(true);
     setPropertyStatus(null);
     setPropertyStatusTone(null);
@@ -1189,7 +1188,6 @@ export default function InternationalizationManager({ config, availableLocales, 
         .from('partner_property_offers')
         .select('id, partner_id, source, external_id, offer_type, object_type, title, address, raw, updated_at')
         .eq('partner_id', user.id)
-        .eq('area_id', config.area_id)
         .order('updated_at', { ascending: false });
 
       if (offersError) throw offersError;
@@ -1326,7 +1324,7 @@ export default function InternationalizationManager({ config, availableLocales, 
       setPropertyItems(nextItems);
       setPropertyBaselineByOfferId(nextBaseline);
       setPropertyStatus(nextItems.length === 0
-        ? 'Keine Immobilienangebote im aktuellen Gebiet vorhanden.'
+        ? 'Keine Immobilienangebote für den aktuellen Partner vorhanden.'
         : `Immobilien-Übersetzungsstand für ${nextItems.length} Angebot/Angebote geladen.`);
       setPropertyStatusTone('success');
     } catch (error) {
@@ -1351,7 +1349,6 @@ export default function InternationalizationManager({ config, availableLocales, 
       const payload = {
         partner_id: user.id,
         offer_id: selectedPropertyItem.offer_id,
-        area_id: config.area_id,
         source: selectedPropertyItem.source,
         external_id: selectedPropertyItem.external_id,
         target_locale: locale,
@@ -3291,7 +3288,7 @@ export default function InternationalizationManager({ config, availableLocales, 
               Je Angebot werden SEO-, Beschreibungs- und Bildtexte in der Zielsprache getrennt vom deutschen Exposé gepflegt.
             </div>
             {propertyItems.length === 0 ? (
-              <div style={blogEmptyStateStyle}>Im aktuellen Gebiet gibt es noch keine Partner-Immobilien.</div>
+              <div style={blogEmptyStateStyle}>Für den aktuellen Partner gibt es noch keine Partner-Immobilien.</div>
             ) : (
               <div style={blogListWrapStyle}>
                 {propertyItems.map((item) => {
