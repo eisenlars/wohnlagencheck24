@@ -42,8 +42,17 @@ type PropstackUnit = {
   custom_fields?: Record<string, unknown> | null;
   updated_at?: string | null;
   images?: PropstackImage[] | null;
-  status?: string | null;
+  status?: string | { id?: number | string | null; name?: unknown; title?: unknown } | null;
   sub_status?: string | null;
+  archived?: boolean | null;
+};
+
+type PropstackPropertyStatus = {
+  id?: number | string | null;
+  name?: string | null;
+  title?: string | null;
+  color?: string | null;
+  nonpublic?: boolean | null;
 };
 
 type PropstackSearchProfile = {
@@ -107,7 +116,7 @@ function toSettings(settings: Record<string, unknown> | null): PropstackResource
   };
 
   return {
-    references_statuses: toStringArray(statusesRaw) ?? ["archived"],
+    references_statuses: toStringArray(statusesRaw) ?? ["archived", "verkauft", "vermietet", "sold", "rented"],
     references_sub_statuses: toStringArray(subStatusesRaw) ?? ["sold", "rented"],
     references_custom_field_key: String(referencesCfg.custom_field_key ?? "referenz_webseite").trim(),
   };
@@ -207,15 +216,20 @@ function asObject(value: unknown): Record<string, unknown> {
 }
 
 function includeAsReference(unit: PropstackUnit, cfg: PropstackResourceSettings): boolean {
-  const status = String(unit.status ?? "").toLowerCase();
+  const statusName = normalizePropstackStatusName(unit.status);
+  const statusId = normalizePropstackStatusId(unit.status);
   const subStatus = String(unit.sub_status ?? "").toLowerCase();
+  const archived = unit.archived === true;
   const statuses = new Set(cfg.references_statuses ?? []);
   const subStatuses = new Set(cfg.references_sub_statuses ?? []);
   const customKey = cfg.references_custom_field_key ?? "";
   const customFields = asObject(unit.custom_fields);
   const customFlag = customKey ? Boolean(customFields[customKey]) : false;
-  const statusMatch = statuses.has(status) && subStatuses.has(subStatus);
-  return statusMatch || customFlag;
+  const archivedMatch = archived && statuses.has("archived");
+  const statusMatch = Boolean(statusName && statuses.has(statusName))
+    || Boolean(statusId && statuses.has(statusId));
+  const subStatusMatch = Boolean(subStatus && subStatuses.has(subStatus));
+  return archivedMatch || statusMatch || (!statusMatch && subStatusMatch) || customFlag;
 }
 
 function requestTypeFromProfile(profile: PropstackSearchProfile): "kauf" | "miete" {
@@ -240,6 +254,28 @@ function normalizePropstackTitle(value: unknown): string | null {
   if (value && typeof value === "object") {
     const titleObject = value as Record<string, unknown>;
     return firstString([titleObject.value, titleObject.label]);
+  }
+  return null;
+}
+
+function normalizePropstackStatusName(value: unknown): string | null {
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized.length > 0 ? normalized : null;
+  }
+  if (value && typeof value === "object") {
+    const statusObject = value as Record<string, unknown>;
+    const normalized = firstString([statusObject.name, statusObject.title])?.toLowerCase() ?? null;
+    return normalized && normalized.length > 0 ? normalized : null;
+  }
+  return null;
+}
+
+function normalizePropstackStatusId(value: unknown): string | null {
+  if (value && typeof value === "object") {
+    const statusObject = value as Record<string, unknown>;
+    const normalized = firstString([statusObject.id]);
+    return normalized && normalized.length > 0 ? normalized : null;
   }
   return null;
 }
@@ -735,6 +771,32 @@ async function fetchPropstackSearchProfilesDetailed(
   };
 }
 
+async function fetchPropstackPropertyStatusesDetailed(
+  integration: PartnerIntegration,
+  apiKey: string,
+): Promise<PropstackFetchBatchResult<PropstackPropertyStatus>> {
+  const base = integration.base_url?.trim() || "https://api.propstack.de/v1";
+  const url = new URL(`${base.replace(/\/+$/, "")}/property_statuses`);
+  const res = await fetchWithTimeout(url.toString(), {
+    headers: {
+      "X-API-KEY": apiKey,
+    },
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Propstack property_statuses fetch failed (${res.status}): ${body}`);
+  }
+
+  const json = await res.json();
+  const items = Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : [];
+  return {
+    items: Array.isArray(items) ? (items as PropstackPropertyStatus[]) : [],
+    requestsMade: 1,
+    pagesFetched: Array.isArray(items) && items.length > 0 ? 1 : 0,
+  };
+}
+
 export async function syncPropstackResources(
   integration: PartnerIntegration,
   apiKey: string,
@@ -768,7 +830,31 @@ export async function syncPropstackResources(
     ),
   );
 
-  const references = units.filter((unit) => includeAsReference(unit, cfg)).map((unit) =>
+  let propertyStatuses: PropstackPropertyStatus[] = [];
+  try {
+    const statusesResult = await fetchPropstackPropertyStatusesDetailed(integration, apiKey);
+    providerRequestCount += statusesResult.requestsMade;
+    providerPagesFetched += statusesResult.pagesFetched;
+    providerBreakdown.property_statuses = {
+      requests: statusesResult.requestsMade,
+      pages_fetched: statusesResult.pagesFetched,
+    };
+    propertyStatuses = statusesResult.items;
+    notes.push(`propstack property_statuses loaded: ${propertyStatuses.length}`);
+  } catch (error) {
+    notes.push(`propstack property_statuses fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
+  }
+
+  const knownReferenceStatusNames = new Set(
+    propertyStatuses
+      .map((status) => normalizePropstackStatusName(status))
+      .filter((statusName) => statusName === "verkauft" || statusName === "vermietet" || statusName === "sold" || statusName === "rented"),
+  );
+  const references = units.filter((unit) => {
+    if (includeAsReference(unit, cfg)) return true;
+    const statusName = normalizePropstackStatusName(unit.status);
+    return Boolean(statusName && knownReferenceStatusNames.has(statusName));
+  }).map((unit) =>
     mapUnitReference(integration.partner_id, integration, unit),
   );
   let referencesFetched = true;

@@ -266,19 +266,22 @@ export async function runCrmIntegrationSync(
     await upsertOffers(supabase, offers);
   }
 
-  await hooks?.assertCanContinue?.();
-  await hooks?.onProgress?.("deactivate_stale", "Veraltete CRM-Eintraege werden abgeglichen.");
   const activeOfferExternalIds = offers.map((row) => row.external_id);
-  const deactivatedOffers = syncListings && allowDeactivate
-    ? await deactivateMissingByExternalId(
-        supabase,
-        "partner_property_offers",
-        "source",
-        integration.partner_id,
-        integration.provider,
-        activeOfferExternalIds,
-      )
-    : 0;
+  let deactivatedOffers = 0;
+  await hooks?.assertCanContinue?.();
+  if (syncListings && allowDeactivate) {
+    await hooks?.onProgress?.("deactivate_stale", "Veraltete CRM-Eintraege werden abgeglichen.");
+    deactivatedOffers = await deactivateMissingByExternalId(
+      supabase,
+      "partner_property_offers",
+      "source",
+      integration.partner_id,
+      integration.provider,
+      activeOfferExternalIds,
+    );
+  } else if (syncListings) {
+    await hooks?.onProgress?.("skip_stale_deactivation", "Stale-Deaktivierung im Guarded-Modus uebersprungen.");
+  }
 
   const mergedNotes: string[] = [];
   if (notes?.length) mergedNotes.push(...notes);
