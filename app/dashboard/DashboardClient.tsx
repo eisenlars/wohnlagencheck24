@@ -51,6 +51,8 @@ type PartnerAreaConfig = {
   is_active?: boolean;
   is_public_live?: boolean | null;
   activation_status?: string | null;
+  offer_visibility_mode?: string | null;
+  request_visibility_mode?: string | null;
   partner_preview_signoff_at?: string | null;
   admin_review_note?: string | null;
   [key: string]: unknown;
@@ -167,6 +169,20 @@ function resolveActivationStatusKey(config: PartnerAreaConfig | null): string {
 function formatRegionScopeSuffix(config: PartnerAreaConfig | null): string {
   if (!config) return "";
   return (config.area_id.split('-').length > 3) ? "Ortslage" : "Kreis / Ortslagen";
+}
+
+function normalizeVisibilityMode(value: unknown): "partner_wide" | "strict_local" {
+  const raw = String(value ?? "").trim().toLowerCase();
+  return raw === "strict_local" ? "strict_local" : "partner_wide";
+}
+
+function formatVisibilityModeLabel(value: unknown): string {
+  return normalizeVisibilityMode(value) === "strict_local" ? "nur lokal" : "partnerweit";
+}
+
+function formatVisibilityModeSummary(config: PartnerAreaConfig | null): string {
+  if (!config) return "";
+  return `Angebote: ${formatVisibilityModeLabel(config.offer_visibility_mode)} · Gesuche: ${formatVisibilityModeLabel(config.request_visibility_mode)}`;
 }
 
 function buildPreviewHref(config: PartnerAreaConfig | null): string | null {
@@ -1338,7 +1354,12 @@ export default function DashboardClient() {
                     style={districtButtonStyle(isSelected, districtIsActive)}
                   >
                     <span style={{ fontSize: '10px' }}>{isExpanded ? '▼' : '▶'}</span>
-                    <span style={{ flex: 1, textAlign: 'left' }}>{district.areas?.name}</span>
+                    <span style={{ flex: 1, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span>{district.areas?.name}</span>
+                      <span style={sidebarVisibilityModeTextStyle}>
+                        {formatVisibilityModeSummary(district)}
+                      </span>
+                    </span>
                   </button>
 
                   {isExpanded && subAreas.length > 0 && (
@@ -1349,7 +1370,12 @@ export default function DashboardClient() {
                           onClick={() => handleSelectConfig(ort)}
                           style={subAreaButtonStyle(effectiveSelectedConfig?.area_id === ort.area_id)}
                         >
-                          {ort.areas?.name}
+                          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                            <span>{ort.areas?.name}</span>
+                            <span style={subAreaVisibilityModeTextStyle}>
+                              {formatVisibilityModeSummary(ort)}
+                            </span>
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -1647,6 +1673,11 @@ export default function DashboardClient() {
                       ? `Aktivierung - ${effectiveSelectedConfig.areas?.name ?? ''}`
                       : `${effectiveSelectedConfig.areas?.name ?? ''} (${formatRegionScopeSuffix(effectiveSelectedConfig)})`}
                   </h2>
+                  {!hideTextsHeaderInActivationFlow ? (
+                    <div style={regionVisibilityModeSummaryStyle}>
+                      {formatVisibilityModeSummary(effectiveSelectedConfig)}
+                    </div>
+                  ) : null}
                   {hideTextsHeaderInActivationFlow ? <div style={{ height: '40px' }} /> : null}
                   {!hideTextsHeaderInActivationFlow ? (
                     <div style={regionStatusStyle(resolveActivationStatusKey(effectiveSelectedConfig))}>
@@ -2165,6 +2196,20 @@ const subAreaButtonStyle = (active: boolean) => ({
   cursor: 'pointer'
 });
 
+const sidebarVisibilityModeTextStyle: React.CSSProperties = {
+  fontSize: '10px',
+  lineHeight: 1.3,
+  color: '#64748b',
+  fontWeight: 600,
+};
+
+const subAreaVisibilityModeTextStyle: React.CSSProperties = {
+  fontSize: '10px',
+  lineHeight: 1.3,
+  color: '#64748b',
+  fontWeight: 500,
+};
+
 const mainTitleStyle = {
   fontSize: '32px',
   fontWeight: '800',
@@ -2186,6 +2231,16 @@ const regionTitleStyle = {
   margin: 0,
   letterSpacing: '-0.01em'
 };
+
+const regionVisibilityModeSummaryStyle: React.CSSProperties = {
+  fontSize: '12px',
+  lineHeight: 1.5,
+  color: '#486b7a',
+  fontWeight: 700,
+  marginTop: '8px',
+  marginBottom: '6px',
+};
+
 const regionStatusStyle = (statusKey: string): React.CSSProperties => ({
   marginTop: '10px',
   marginBottom: '14px',
