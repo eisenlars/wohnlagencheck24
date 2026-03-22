@@ -1,9 +1,21 @@
+'use client';
+
+import { useMemo, useState } from "react";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { Offer, OfferMode, OfferOverrides } from "@/lib/angebote";
 import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { formatMetric } from "@/utils/format";
 import { asRecord } from "@/utils/records";
+
+type MediaAssetKind = "image" | "floorplan" | "location_map" | "document";
+
+type MediaAsset = {
+  url: string;
+  title: string | null;
+  position: number | null;
+  kind: MediaAssetKind;
+};
 
 type OfferDetailPageProps = {
   offer: Offer;
@@ -29,6 +41,64 @@ type OfferDetailPageProps = {
   };
   listPath: string;
 };
+
+function asText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function parseMediaAssets(value: unknown): MediaAsset[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      const record = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : null;
+      if (!record) return null;
+      const url = asText(record.url);
+      if (!url) return null;
+      const normalizedKind = String(record.kind ?? "").trim().toLowerCase();
+      const kind: MediaAssetKind = normalizedKind === "floorplan"
+        ? "floorplan"
+        : normalizedKind === "location_map"
+          ? "location_map"
+          : normalizedKind === "document"
+            ? "document"
+            : "image";
+      return {
+        url,
+        title: asText(record.title),
+        position: asNumber(record.position),
+        kind,
+      } satisfies MediaAsset;
+    })
+    .filter((entry): entry is MediaAsset => Boolean(entry))
+    .sort((left, right) => {
+      if (left.position == null && right.position == null) return left.url.localeCompare(right.url);
+      if (left.position == null) return 1;
+      if (right.position == null) return -1;
+      return left.position - right.position;
+    });
+}
+
+function uniqByUrl(items: MediaAsset[]): MediaAsset[] {
+  const seen = new Set<string>();
+  const out: MediaAsset[] = [];
+  for (const item of items) {
+    if (seen.has(item.url)) continue;
+    seen.add(item.url);
+    out.push(item);
+  }
+  return out;
+}
 
 export function OfferDetailPage(props: OfferDetailPageProps) {
   const { offer, overrides, mode, texts, formatProfile, breadcrumb, listPath } = props;
@@ -59,18 +129,56 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     numberLocale: formatProfile.intlLocale,
     fractionDigits: 0,
   });
-  const raw = asRecord(offer.raw) ?? {};
-  const gallery = Array.isArray(raw["gallery"]) ? (raw["gallery"] as string[]) : [];
-  const galleryImages =
-    gallery.length > 0
-      ? gallery
-      : offer.imageUrl
-        ? [offer.imageUrl]
-        : [];
-  const [heroImage, ...thumbImages] = galleryImages;
-  const hasThumbs = thumbImages.length > 0;
-  const floorplanUrl = typeof raw["floorplan_url"] === "string" ? raw["floorplan_url"] : null;
-  const mapUrl = typeof raw["map_url"] === "string" ? raw["map_url"] : null;
+  const raw = useMemo(() => asRecord(offer.raw) ?? {}, [offer.raw]);
+  const gallery = useMemo(
+    () => (Array.isArray(raw["gallery"]) ? (raw["gallery"] as string[]) : []),
+    [raw],
+  );
+  const galleryAssets = useMemo(() => parseMediaAssets(raw["gallery_assets"]), [raw]);
+  const fallbackPhotoAssets = useMemo(
+    () =>
+      gallery.length > 0
+        ? gallery.map((url, index) => ({
+            url,
+            title: null,
+            position: index + 1,
+            kind: "image" as const,
+          }))
+        : offer.imageUrl
+          ? [{ url: offer.imageUrl, title: null, position: 1, kind: "image" as const }]
+          : [],
+    [gallery, offer.imageUrl],
+  );
+  const photoAssets = useMemo(() => {
+    const explicitPhotos = galleryAssets.filter((asset) => asset.kind === "image");
+    return uniqByUrl(explicitPhotos.length > 0 ? explicitPhotos : fallbackPhotoAssets);
+  }, [fallbackPhotoAssets, galleryAssets]);
+  const floorplanAssets = useMemo(() => {
+    const explicit = galleryAssets.filter((asset) => asset.kind === "floorplan");
+    const legacyFloorplanUrl = asText(raw["floorplan_url"]);
+    const legacy = legacyFloorplanUrl
+      ? [{ url: legacyFloorplanUrl, title: texts.floor_plan, position: null, kind: "floorplan" as const }]
+      : [];
+    return uniqByUrl([...explicit, ...legacy]);
+  }, [galleryAssets, raw, texts.floor_plan]);
+  const locationMapAssets = useMemo(() => {
+    const explicit = galleryAssets.filter((asset) => asset.kind === "location_map");
+    const legacyMapUrl = asText(raw["map_url"]);
+    const legacy = legacyMapUrl
+      ? [{ url: legacyMapUrl, title: texts.location_map, position: null, kind: "location_map" as const }]
+      : [];
+    return uniqByUrl([...explicit, ...legacy]);
+  }, [galleryAssets, raw, texts.location_map]);
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
+  const [activeLocationMapIndex, setActiveLocationMapIndex] = useState(0);
+  const resolvedPhotoIndex = activePhotoIndex < photoAssets.length ? activePhotoIndex : 0;
+  const resolvedFloorplanIndex = activeFloorplanIndex < floorplanAssets.length ? activeFloorplanIndex : 0;
+  const resolvedLocationMapIndex =
+    activeLocationMapIndex < locationMapAssets.length ? activeLocationMapIndex : 0;
+  const activePhoto = photoAssets[resolvedPhotoIndex] ?? null;
+  const activeFloorplan = floorplanAssets[resolvedFloorplanIndex] ?? null;
+  const activeLocationMap = locationMapAssets[resolvedLocationMapIndex] ?? null;
   const features = Array.isArray(raw["features"]) ? (raw["features"] as string[]) : [];
   const energy = asRecord(raw["energy"]) ?? {};
 
@@ -154,26 +262,62 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
 
       <section className="offer-detail-gallery">
         <h2 className="h5 mb-3">{texts.image_gallery}</h2>
-        {heroImage ? (
-          <div className={`offer-detail-gallery-layout${hasThumbs ? "" : " is-single"}`}>
-            <div className="offer-detail-gallery-hero">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={heroImage}
-                alt={imageAltTexts[0] ?? `${title} Titelbild`}
-                loading="lazy"
-              />
+        {activePhoto ? (
+          <div className="offer-detail-slideshow">
+            <div className="offer-detail-slideshow-stage">
+              <button
+                type="button"
+                className="offer-detail-slideshow-nav"
+                onClick={() => setActivePhotoIndex((current) => (current <= 0 ? photoAssets.length - 1 : current - 1))}
+                aria-label="Vorheriges Bild anzeigen"
+              >
+                ‹
+              </button>
+              <div className="offer-detail-gallery-hero">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  key={activePhoto.url}
+                  src={activePhoto.url}
+                  alt={imageAltTexts[resolvedPhotoIndex] ?? activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                  loading="eager"
+                  decoding="async"
+                />
+              </div>
+              <button
+                type="button"
+                className="offer-detail-slideshow-nav"
+                onClick={() => setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1))}
+                aria-label="Nächstes Bild anzeigen"
+              >
+                ›
+              </button>
             </div>
-            {hasThumbs ? (
-              <div className="offer-detail-gallery-thumbs">
-                {thumbImages.map((src, index) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={`${src}-${index}`}
-                    src={src}
-                    alt={imageAltTexts[index + 1] ?? `${title} Bild ${index + 2}`}
-                    loading="lazy"
-                  />
+            <div className="offer-detail-slideshow-meta">
+                <div className="offer-detail-slideshow-caption">
+                  {activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                </div>
+                <div className="offer-detail-slideshow-counter">
+                  {resolvedPhotoIndex + 1} / {photoAssets.length}
+                </div>
+              </div>
+              {photoAssets.length > 1 ? (
+                <div className="offer-detail-gallery-thumbs">
+                  {photoAssets.map((asset, index) => (
+                    <button
+                      key={`${asset.url}-${index}`}
+                      type="button"
+                      className={`offer-detail-gallery-thumb${index === resolvedPhotoIndex ? " is-active" : ""}`}
+                      onClick={() => setActivePhotoIndex(index)}
+                      aria-label={`Bild ${index + 1} anzeigen`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={asset.url}
+                        alt={imageAltTexts[index] ?? asset.title ?? `${title} Bild ${index + 1}`}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                  </button>
                 ))}
               </div>
             ) : null}
@@ -211,9 +355,40 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
       <section className="offer-detail-grid">
         <div className="offer-detail-panel">
           <h3 className="h6 mb-3">{texts.floor_plan}</h3>
-          {floorplanUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={floorplanUrl} alt={texts.floor_plan} />
+          {activeFloorplan ? (
+            <div className="offer-detail-panel-media">
+              <div className="offer-detail-panel-media-frame is-floorplan">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  key={activeFloorplan.url}
+                  src={activeFloorplan.url}
+                  alt={activeFloorplan.title ?? texts.floor_plan}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              {floorplanAssets.length > 1 ? (
+                <div className="offer-detail-panel-thumbs">
+                  {floorplanAssets.map((asset, index) => (
+                    <button
+                      key={`${asset.url}-${index}`}
+                      type="button"
+                      className={`offer-detail-panel-thumb${index === resolvedFloorplanIndex ? " is-active" : ""}`}
+                      onClick={() => setActiveFloorplanIndex(index)}
+                      aria-label={`Grundriss ${index + 1} anzeigen`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={asset.url}
+                        alt={asset.title ?? `${texts.floor_plan} ${index + 1}`}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           ) : (
             <div className="offer-detail-placeholder">{texts.floor_plan_pending}</div>
           )}
@@ -221,9 +396,40 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
 
         <div className="offer-detail-panel">
           <h3 className="h6 mb-3">{texts.location_map}</h3>
-          {mapUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={mapUrl} alt={texts.location_map} />
+          {activeLocationMap ? (
+            <div className="offer-detail-panel-media">
+              <div className="offer-detail-panel-media-frame">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  key={activeLocationMap.url}
+                  src={activeLocationMap.url}
+                  alt={activeLocationMap.title ?? texts.location_map}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              {locationMapAssets.length > 1 ? (
+                <div className="offer-detail-panel-thumbs">
+                  {locationMapAssets.map((asset, index) => (
+                    <button
+                      key={`${asset.url}-${index}`}
+                      type="button"
+                      className={`offer-detail-panel-thumb${index === resolvedLocationMapIndex ? " is-active" : ""}`}
+                      onClick={() => setActiveLocationMapIndex(index)}
+                      aria-label={`Lagegrafik ${index + 1} anzeigen`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={asset.url}
+                        alt={asset.title ?? `${texts.location_map} ${index + 1}`}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           ) : (
             <div className="offer-detail-placeholder">{texts.location_map_pending}</div>
           )}
