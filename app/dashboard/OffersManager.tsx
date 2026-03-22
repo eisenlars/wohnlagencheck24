@@ -54,6 +54,24 @@ type VisibilityConfig = {
   };
 };
 
+type GalleryAsset = {
+  url: string;
+  title: string | null;
+  position: number | null;
+  kind: 'image' | 'floorplan';
+};
+
+type EnergySnapshot = {
+  certificate_type?: string | null;
+  value?: number | null;
+  value_kind?: 'bedarf' | 'verbrauch' | null;
+  construction_year?: number | null;
+  heating_energy_source?: string | null;
+  efficiency_class?: string | null;
+  demand?: number | null;
+  year?: number | null;
+};
+
 type Props = {
   visibilityConfig?: VisibilityConfig | null;
   visibilityMode?: VisibilityMode;
@@ -79,6 +97,59 @@ function formatProviderLabel(provider: string): string {
   if (p === 'azure_openai') return 'Azure OpenAI';
   if (p === 'mistral') return 'Mistral';
   return provider || 'LLM';
+}
+
+function asText(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function parseGalleryAssets(value: unknown): GalleryAsset[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      const record = entry && typeof entry === 'object' ? entry as Record<string, unknown> : null;
+      if (!record) return null;
+      const url = asText(record.url);
+      if (!url) return null;
+      const kind = String(record.kind ?? '').trim().toLowerCase() === 'floorplan' ? 'floorplan' : 'image';
+      return {
+        url,
+        title: asText(record.title),
+        position: asNumber(record.position),
+        kind,
+      } satisfies GalleryAsset;
+    })
+    .filter((entry): entry is GalleryAsset => Boolean(entry));
+}
+
+function parseEnergySnapshot(value: unknown): EnergySnapshot | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  return {
+    certificate_type: asText(record.certificate_type),
+    value: asNumber(record.value),
+    value_kind: String(record.value_kind ?? '').trim().toLowerCase() === 'bedarf'
+      ? 'bedarf'
+      : String(record.value_kind ?? '').trim().toLowerCase() === 'verbrauch'
+        ? 'verbrauch'
+        : null,
+    construction_year: asNumber(record.construction_year),
+    heating_energy_source: asText(record.heating_energy_source),
+    efficiency_class: asText(record.efficiency_class),
+    demand: asNumber(record.demand),
+    year: asNumber(record.year),
+  };
 }
 
 export default function OffersManager(props: Props) {
@@ -203,6 +274,32 @@ export default function OffersManager(props: Props) {
     ),
     [selectedRaw],
   );
+  const galleryAssets = useMemo(
+    () => parseGalleryAssets(selectedRaw.gallery_assets),
+    [selectedRaw],
+  );
+  const photoAssets = useMemo(
+    () => galleryAssets.filter((asset) => asset.kind === 'image'),
+    [galleryAssets],
+  );
+  const floorplanAssets = useMemo(
+    () => galleryAssets.filter((asset) => asset.kind === 'floorplan'),
+    [galleryAssets],
+  );
+  const energySnapshot = useMemo(
+    () => parseEnergySnapshot(selectedRaw.energy),
+    [selectedRaw],
+  );
+  const missingEnergyFields = useMemo(() => {
+    const missing: string[] = [];
+    if (!energySnapshot?.certificate_type) missing.push('Ausweisart');
+    if (energySnapshot?.value == null) missing.push('Kennwert');
+    if (!energySnapshot?.value_kind) missing.push('Bedarf/Verbrauch');
+    if (!energySnapshot?.heating_energy_source) missing.push('Energieträger');
+    if (energySnapshot?.construction_year == null) missing.push('Baujahr');
+    if (!energySnapshot?.efficiency_class) missing.push('Effizienzklasse');
+    return missing;
+  }, [energySnapshot]);
 
   const normalizedSelectedExternalId = (selectedOffer?.external_id ?? '').trim();
   const normalizedSelectedSource = (selectedOffer?.source ?? '').trim();
@@ -673,6 +770,18 @@ export default function OffersManager(props: Props) {
             {selectedOffer ? (
               <div style={offerSummaryCardStyle}>
                 <div style={offerSummaryHeaderStyle}>Objekt-Übersicht</div>
+                {selectedOffer.image_url ? (
+                  <div style={offerHeroImageWrapStyle}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={selectedOffer.image_url}
+                      alt={selectedOffer.title || 'Objektbild'}
+                      style={offerHeroImageStyle}
+                    />
+                  </div>
+                ) : (
+                  <div style={offerImagePlaceholderStyle}>Kein Hauptbild vorhanden.</div>
+                )}
                 <div style={offerSummaryGridStyle}>
                   <div>
                     <div style={offerSummaryLabelStyle}>Objekt-ID</div>
@@ -715,6 +824,96 @@ export default function OffersManager(props: Props) {
                     </div>
                   </div>
                 </div>
+              </div>
+            ) : null}
+            {selectedOffer ? (
+              <div style={mediaCardStyle}>
+                <div style={offerSummaryHeaderStyle}>Medien</div>
+                <div style={mediaSectionStyle}>
+                  <div style={mediaSectionHeadStyle}>
+                    Objektbilder
+                    <span style={mediaCountBadgeStyle}>{photoAssets.length}</span>
+                  </div>
+                  {photoAssets.length > 0 ? (
+                    <div style={mediaGridStyle}>
+                      {photoAssets.map((asset, index) => (
+                        <figure key={`${asset.url}-${index}`} style={mediaFigureStyle}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={asset.url} alt={asset.title ?? `Objektbild ${index + 1}`} style={mediaImageStyle} />
+                          <figcaption style={mediaCaptionStyle}>
+                            {asset.title ?? `Objektbild ${index + 1}`}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={mediaEmptyStyle}>Keine Objektbilder im CRM-Payload gefunden.</div>
+                  )}
+                </div>
+                <div style={mediaSectionStyle}>
+                  <div style={mediaSectionHeadStyle}>
+                    Grundrisse
+                    <span style={mediaCountBadgeStyle}>{floorplanAssets.length}</span>
+                  </div>
+                  {floorplanAssets.length > 0 ? (
+                    <div style={mediaGridStyle}>
+                      {floorplanAssets.map((asset, index) => (
+                        <figure key={`${asset.url}-${index}`} style={mediaFigureStyle}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={asset.url} alt={asset.title ?? `Grundriss ${index + 1}`} style={mediaImageStyle} />
+                          <figcaption style={mediaCaptionStyle}>
+                            {asset.title ?? `Grundriss ${index + 1}`}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={mediaEmptyStyle}>Keine Grundrisse erkannt.</div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+            {selectedOffer ? (
+              <div style={energyCardStyle}>
+                <div style={offerSummaryHeaderStyle}>Energieausweis</div>
+                <div style={energyGridStyle}>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Ausweisart</div>
+                    <div style={offerSummaryValueStyle}>{energySnapshot?.certificate_type ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Kennwert</div>
+                    <div style={offerSummaryValueStyle}>
+                      {energySnapshot?.value != null ? `${energySnapshot.value}` : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Bedarf / Verbrauch</div>
+                    <div style={offerSummaryValueStyle}>{energySnapshot?.value_kind ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Baujahr</div>
+                    <div style={offerSummaryValueStyle}>
+                      {energySnapshot?.construction_year ?? energySnapshot?.year ?? '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Energieträger</div>
+                    <div style={offerSummaryValueStyle}>{energySnapshot?.heating_energy_source ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Effizienzklasse</div>
+                    <div style={offerSummaryValueStyle}>{energySnapshot?.efficiency_class ?? '—'}</div>
+                  </div>
+                </div>
+                {missingEnergyFields.length > 0 ? (
+                  <div style={energyMissingWrapStyle}>
+                    <div style={energyMissingHeadStyle}>Für eine rechtssichere öffentliche Energieanzeige fehlen aktuell:</div>
+                    <div style={energyMissingListStyle}>{missingEnergyFields.join(' · ')}</div>
+                  </div>
+                ) : (
+                  <div style={energyReadyStyle}>Alle zentralen Energieangaben für die Anzeige sind aktuell befüllt.</div>
+                )}
               </div>
             ) : null}
             {selectedOffer && (!normalizedSelectedExternalId || !normalizedSelectedSource) ? (
@@ -935,6 +1134,32 @@ const offerSummaryGridStyle: React.CSSProperties = {
   gap: '12px',
 };
 
+const offerHeroImageWrapStyle: React.CSSProperties = {
+  marginBottom: '14px',
+  borderRadius: '12px',
+  overflow: 'hidden',
+  border: '1px solid #dbeafe',
+  background: '#ffffff',
+};
+
+const offerHeroImageStyle: React.CSSProperties = {
+  width: '100%',
+  maxHeight: '320px',
+  objectFit: 'cover',
+  display: 'block',
+};
+
+const offerImagePlaceholderStyle: React.CSSProperties = {
+  marginBottom: '14px',
+  borderRadius: '12px',
+  border: '1px dashed #cbd5e1',
+  background: '#ffffff',
+  padding: '24px',
+  fontSize: '13px',
+  color: '#64748b',
+  textAlign: 'center',
+};
+
 const offerSummaryLabelStyle: React.CSSProperties = {
   fontSize: '10px',
   textTransform: 'uppercase',
@@ -949,6 +1174,122 @@ const offerSummaryValueStyle: React.CSSProperties = {
   color: '#0f172a',
   fontWeight: 600,
   lineHeight: 1.4,
+};
+
+const mediaCardStyle: React.CSSProperties = {
+  backgroundColor: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: '12px',
+  padding: '14px 16px',
+  marginBottom: '16px',
+  display: 'grid',
+  gap: '16px',
+};
+
+const mediaSectionStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: '10px',
+};
+
+const mediaSectionHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  fontSize: '13px',
+  fontWeight: 700,
+  color: '#0f172a',
+};
+
+const mediaCountBadgeStyle: React.CSSProperties = {
+  borderRadius: '999px',
+  background: '#e0f2fe',
+  color: '#075985',
+  padding: '2px 8px',
+  fontSize: '11px',
+  fontWeight: 700,
+};
+
+const mediaGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+  gap: '12px',
+};
+
+const mediaFigureStyle: React.CSSProperties = {
+  margin: 0,
+  border: '1px solid #dbeafe',
+  borderRadius: '10px',
+  overflow: 'hidden',
+  background: '#ffffff',
+};
+
+const mediaImageStyle: React.CSSProperties = {
+  width: '100%',
+  height: '120px',
+  objectFit: 'cover',
+  display: 'block',
+};
+
+const mediaCaptionStyle: React.CSSProperties = {
+  padding: '10px',
+  fontSize: '12px',
+  lineHeight: 1.45,
+  color: '#334155',
+  fontWeight: 600,
+};
+
+const mediaEmptyStyle: React.CSSProperties = {
+  fontSize: '12px',
+  color: '#64748b',
+  padding: '12px 0 4px',
+};
+
+const energyCardStyle: React.CSSProperties = {
+  backgroundColor: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: '12px',
+  padding: '14px 16px',
+  marginBottom: '16px',
+};
+
+const energyGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+  gap: '12px',
+};
+
+const energyMissingWrapStyle: React.CSSProperties = {
+  marginTop: '14px',
+  borderRadius: '10px',
+  border: '1px solid #fde68a',
+  background: '#fffbeb',
+  padding: '12px 14px',
+};
+
+const energyMissingHeadStyle: React.CSSProperties = {
+  fontSize: '12px',
+  lineHeight: 1.45,
+  color: '#92400e',
+  fontWeight: 700,
+  marginBottom: '6px',
+};
+
+const energyMissingListStyle: React.CSSProperties = {
+  fontSize: '12px',
+  lineHeight: 1.5,
+  color: '#78350f',
+};
+
+const energyReadyStyle: React.CSSProperties = {
+  marginTop: '14px',
+  borderRadius: '10px',
+  border: '1px solid #bbf7d0',
+  background: '#f0fdf4',
+  padding: '12px 14px',
+  fontSize: '12px',
+  lineHeight: 1.45,
+  color: '#166534',
+  fontWeight: 700,
 };
 
 const aiButtonStyle: React.CSSProperties = {
