@@ -5025,6 +5025,7 @@ export default function AdminClient() {
             <thead>
               <tr>
                 <th style={thStyle}>Sprache</th>
+                <th style={thStyle}>Code</th>
                 <th style={thStyle}>Aktiviert</th>
                 <th style={thStyle}>Öffentlich</th>
                 <th style={thStyle}>Partner</th>
@@ -5037,12 +5038,9 @@ export default function AdminClient() {
                     <div style={{ fontWeight: 700, color: "#0f172a" }}>
                       {row.label_de || row.label_native || row.locale}
                     </div>
-                    <div style={mutedStyle}>
-                      {row.label_native ? `${row.label_native} · ` : ""}{row.bcp47_tag || row.locale}
-                    </div>
-                    <div style={{ ...mutedStyle, marginTop: 4 }}>
-                      <code>{row.locale}</code>
-                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <code>{row.bcp47_tag || row.locale}</code>
                   </td>
                   <td style={tdStyle}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
@@ -5093,9 +5091,6 @@ export default function AdminClient() {
             </tbody>
           </table>
           <div style={{ ...rowStyle, marginTop: 10 }}>
-            <div style={{ ...mutedStyle, fontSize: 12 }}>
-              Die Registry steuert nur noch die Betriebsfreigabe; technische Profilwerte und Altlastenbereinigung erfolgen nicht mehr in dieser Maske.
-            </div>
             <button
               style={btnStyle}
               disabled={busy}
