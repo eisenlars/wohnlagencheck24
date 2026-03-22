@@ -745,6 +745,52 @@ insert into public.partner_integrations (
 - `partner_property_offers_partner_offer_idx` vorhanden?
 - `offer_type`‑Werte korrekt (`kauf` / `miete`)
 
+### 9.7.1 Gebietsbezogene Sichtbarkeitsmodi
+
+`partner_area_map` steuert nicht nur, **wo** ein Partner aktiv/public-live ist, sondern perspektivisch auch, **wie** Assets je Gebiet ausgespielt werden.
+
+Vorbereitete Felder:
+- `offer_visibility_mode`
+- `request_visibility_mode`
+
+Gueltige Werte:
+- `partner_wide`
+  - auf Seiten dieses Gebiets werden alle Assets des Partners ausgespielt
+- `strict_local`
+  - auf Seiten dieses Gebiets werden spaeter nur lokal passende Assets ausgespielt
+
+Aktueller Betriebsstand:
+- Default fuer beide Modi ist `partner_wide`
+- die oeffentliche Ausspielung bleibt derzeit unveraendert breit
+- `strict_local` fuer Angebote wird erst aktiviert, wenn `partner_offer_area_targets` belastbar genug befuellt ist
+- `strict_local` fuer Gesuche kann spaeter frueher greifen, weil `region_targets` bereits explizite Zielgebiete liefern
+
+### 9.7.2 Angebots-Matching und Debugging
+
+Fuer Angebote gilt bewusst eine Schichtung in drei Ebenen:
+
+1. `partner_property_offers`
+   - kanonisches, partnergebundenes Angebots-Readmodell
+2. `partner_offer_area_targets`
+   - interne Gebietszuordnung je Angebot auf Basis von Geo-/Adresssignalen
+3. `public_offer_entries`
+   - tatsaechliche Ausspielung pro `visible_area_id`
+
+Die Matching-Logik arbeitet aktuell auf Basis von:
+- `zip_code`
+- `city`
+- `region`
+- `lat` / `lng`
+
+Wichtig:
+- Nicht jedes Angebot muss lokal zu einem aktiven Partnergebiet matchen.
+- Solange `offer_visibility_mode = 'partner_wide'`, bleibt ein fehlender Match **kein** Ausspielungsfehler.
+- Die Debug-Queries in `docs/sql/partner_offer_area_matching_debug.sql` sind der operative Einstieg fuer:
+  - aktive Partnergebiete
+  - Angebots-Geosignale
+  - persistierte `partner_offer_area_targets`
+  - Angebote ohne Match
+
 ### 9.8 Objekt-Lifecycle (verbindlich)
 
 Schluessel:
