@@ -280,12 +280,16 @@ function resolveAreaRecord(
   return area && typeof area === "object" ? area : null;
 }
 
+function hasAreasRelation(value: AreaLabelSource): value is Pick<AreaMapping, "areas"> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value) && "areas" in value;
+}
+
 function resolveAreaName(
   area: AreaLabelSource,
   fallbackId: string,
 ): string {
   const source: AreaRelationLike | Array<AreaRelationLike | null | undefined> | null | undefined =
-    area && typeof area === "object" && !Array.isArray(area) && "areas" in area
+    hasAreasRelation(area)
     ? area.areas
     : area;
   const name = String(resolveAreaRecord(source)?.name ?? "").trim();
