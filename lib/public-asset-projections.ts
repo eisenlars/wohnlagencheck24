@@ -171,6 +171,16 @@ function asNullableText(value: unknown): string | null {
   return text.length > 0 ? text : null;
 }
 
+function readTextValue(value: unknown): string | null {
+  const direct = asNullableText(value);
+  if (direct) return direct;
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return asNullableText(record["value"]) ?? asNullableText(record["label"]);
+  }
+  return null;
+}
+
 function asNumberOrNull(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim().length > 0) {
@@ -759,6 +769,9 @@ export async function rebuildPublicOfferEntriesForPartner(
 
     const override = overridesByKey.get(`${partnerId}::${source}::${externalId}`);
     const raw = (offer.raw ?? {}) as Record<string, unknown>;
+    const rawDescription = readTextValue(raw["description"]);
+    const rawLocation = readTextValue(raw["location"]) ?? rawDescription;
+    const rawFeatures = readTextValue(raw["features_note"]);
     const geoSignals = extractOfferGeoSignals(raw);
     const matchedZipCode = asNullableText(raw.zip_code);
     const matchedCity = asNullableText(raw.city);
@@ -807,10 +820,10 @@ export async function rebuildPublicOfferEntriesForPartner(
         seo_title: asNullableText(override?.seo_title),
         seo_description: asNullableText(override?.seo_description),
         seo_h1: asNullableText(override?.seo_h1),
-        short_description: asNullableText(override?.short_description),
-        long_description: asNullableText(override?.long_description),
-        location_text: asNullableText(override?.location_text),
-        features_text: asNullableText(override?.features_text),
+        short_description: asNullableText(override?.short_description) ?? rawDescription,
+        long_description: asNullableText(override?.long_description) ?? rawDescription,
+        location_text: asNullableText(override?.location_text) ?? rawLocation,
+        features_text: asNullableText(override?.features_text) ?? rawFeatures,
         highlights: asArrayJson(override?.highlights),
         image_alt_texts: asArrayJson(override?.image_alt_texts),
         price: asNumberOrNull(offer.price),

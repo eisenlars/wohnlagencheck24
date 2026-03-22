@@ -105,6 +105,16 @@ function asText(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+function readTextValue(value: unknown): string | null {
+  const direct = asText(value);
+  if (direct) return direct;
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return asText(record.value) ?? asText(record.label);
+  }
+  return null;
+}
+
 function asNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string' && value.trim().length > 0) {
@@ -254,17 +264,18 @@ export default function OffersManager(props: Props) {
     [selectedOffer],
   );
   const rawDescription = useMemo(
-    () => (typeof selectedRaw.description === 'string' ? selectedRaw.description : ''),
+    () => readTextValue(selectedRaw.description) ?? '',
     [selectedRaw],
   );
   const rawLocation = useMemo(() => {
-    if (typeof selectedRaw.location === 'string' && selectedRaw.location) {
-      return selectedRaw.location;
+    const locationText = readTextValue(selectedRaw.location);
+    if (locationText) {
+      return locationText;
     }
     return rawDescription;
   }, [selectedRaw, rawDescription]);
   const rawFeatures = useMemo(
-    () => (typeof selectedRaw.features_note === 'string' ? selectedRaw.features_note : ''),
+    () => readTextValue(selectedRaw.features_note) ?? '',
     [selectedRaw],
   );
   const rawHighlights = useMemo(

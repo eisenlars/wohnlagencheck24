@@ -48,6 +48,16 @@ function asText(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+function readTextValue(value: unknown): string | null {
+  const direct = asText(value);
+  if (direct) return direct;
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return asText(record["value"]) ?? asText(record["label"]);
+  }
+  return null;
+}
+
 function asNumber(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim().length > 0) {
@@ -186,13 +196,13 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const teaserText = offer.shortDescription || null;
   const description =
     offer.longDescription ??
-    (typeof raw["description"] === "string" ? raw["description"] : null);
+    readTextValue(raw["description"]);
   const locationText =
     offer.locationText ??
-    (typeof raw["location"] === "string" ? raw["location"] : null);
+    readTextValue(raw["location"]);
   const featuresText =
     offer.featuresText ??
-    (typeof raw["features_note"] === "string" ? raw["features_note"] : null);
+    readTextValue(raw["features_note"]);
   const highlights =
     offer.highlights ?? (Array.isArray(raw["highlights"]) ? (raw["highlights"] as string[]) : []);
   const imageAltTexts = offer.imageAltTexts ?? [];
