@@ -5047,7 +5047,7 @@ export default function AdminClient() {
                       {row.label_de || row.label_native || row.locale}
                     </div>
                     <div style={mutedStyle}>
-                      {row.label_native ? `${row.label_native} · ` : ""}{describePortalLocaleVariant(row.locale)}
+                      {row.label_native ? `${row.label_native} · ` : ""}<span>{describePortalLocaleVariant(row.locale)}</span>
                     </div>
                     <div style={{ ...mutedStyle, marginTop: 4 }}>
                       <code>{row.locale}</code>
@@ -5094,11 +5094,8 @@ export default function AdminClient() {
                           setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, partner_bookable: checked } : item));
                         }}
                       />
-                      Partner buchbar
+                      {row.partner_bookable ? "Partner buchbar - partnerseitig freigegeben" : "Partner buchbar - noch nicht partnerseitig freigegeben"}
                     </label>
-                    <div style={{ ...mutedStyle, marginTop: 8 }}>
-                      {row.partner_bookable ? "partnerseitig verfügbar" : "nicht partnerseitig freigegeben"}
-                    </div>
                   </td>
                 </tr>
               ))}
@@ -5106,7 +5103,7 @@ export default function AdminClient() {
           </table>
           <div style={{ ...rowStyle, marginTop: 10 }}>
             <div style={{ ...mutedStyle, fontSize: 12 }}>
-              Die Registry steuert nur noch die Betriebsfreigabe. Technische Profilwerte und Altlastenbereinigung erfolgen nicht mehr in dieser Maske.
+              `Aktiviert` schaltet die Sprache grundsätzlich frei. `live` macht sie öffentlich sichtbar. Die Registry steuert nur noch die Betriebsfreigabe; technische Profilwerte und Altlastenbereinigung erfolgen nicht mehr in dieser Maske.
             </div>
             <button
               style={btnStyle}
