@@ -54,6 +54,7 @@ export async function ImmobiliengesucheKreisPageContent({
       basePath={basePath}
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis }}
       names={{ bundeslandName, kreisName, regionName: kreisName }}
+      texts={texts}
       locale={normalizedLocale}
       availabilityNotice={availabilityNotice}
     />

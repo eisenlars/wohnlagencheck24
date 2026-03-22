@@ -5,7 +5,7 @@ import Image from "next/image";
 
 import type { Offer, OfferMode, OfferObjectType } from "@/lib/angebote";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
-import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
 import { slugifyOfferTitle } from "@/utils/slug";
 
@@ -37,6 +37,7 @@ type AngebotePageProps = {
     bundeslandName?: string;
     kreisName?: string;
   };
+  texts: PortalSystemTextMap;
   locale?: string;
   availabilityNotice?: {
     title: string;
@@ -76,13 +77,13 @@ export function AngebotePage(props: AngebotePageProps) {
     parentBasePath,
     ctx,
     names,
+    texts,
     locale,
     availabilityNotice,
   } = props;
   const [filter, setFilter] = useState<"all" | OfferObjectType>("all");
   const [activeIndex, setActiveIndex] = useState(0);
   const normalizedLocale = normalizePublicLocale(locale);
-  const texts = getPortalSystemTexts(normalizedLocale);
 
   useEffect(() => {
     if (topOffers.length <= 1) return;

@@ -94,6 +94,7 @@ export async function MietangeboteKreisPageContent({
       basePath={basePath}
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis }}
       names={{ bundeslandName, kreisName, regionName: kreisName }}
+      texts={texts}
       locale={normalizedLocale}
       availabilityNotice={availabilityNotice}
     />

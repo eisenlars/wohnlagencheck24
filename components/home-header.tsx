@@ -5,15 +5,14 @@ import Image from "next/image";
 
 import { MainNav } from "@/components/main-nav";
 import { buildLocalizedHref } from "@/lib/public-locale-routing";
-import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 
 type BundeslandNavItem = {
   slug: string;
   name: string;
 };
 
-export function HomeHeader({ bundeslaender, locale = null }: { bundeslaender: BundeslandNavItem[]; locale?: string | null }) {
-  const text = getPortalSystemTexts(locale);
+export function HomeHeader({ bundeslaender, text, locale = null }: { bundeslaender: BundeslandNavItem[]; text: PortalSystemTextMap; locale?: string | null }) {
   return (
     <header className="site-header site-header--home border-bottom bg-white text-dark sticky-top">
       <nav className="navbar navbar-light bg-white">
@@ -60,7 +59,7 @@ export function HomeHeader({ bundeslaender, locale = null }: { bundeslaender: Bu
               <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label={text.close} />
             </div>
             <div className="offcanvas-body">
-              <MainNav bundeslaender={bundeslaender} locale={locale} />
+              <MainNav bundeslaender={bundeslaender} text={text} locale={locale} />
             </div>
           </div>
         </div>

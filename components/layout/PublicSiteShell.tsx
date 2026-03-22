@@ -19,7 +19,7 @@ export async function PublicSiteShell({
   locale?: string | null;
 }) {
   const bundeslaenderRaw = await getBundeslaender();
-  const text = getPortalSystemTexts(locale);
+  const text = await getPortalSystemTexts(locale);
   const bundeslaender = (
     await Promise.all(
       bundeslaenderRaw.map(async (bl) => ((await isBundeslandVisible(bl.slug)) ? bl : null)),
@@ -43,7 +43,7 @@ export async function PublicSiteShell({
             </div>
           </>
         ) : null}
-        <HeaderSwitch bundeslaender={bundeslaender} locale={locale} />
+        <HeaderSwitch bundeslaender={bundeslaender} text={text} locale={locale} />
 
         <main id="main-content" className="flex-grow-1 py-2 py-md-4" tabIndex={-1}>
           {children}

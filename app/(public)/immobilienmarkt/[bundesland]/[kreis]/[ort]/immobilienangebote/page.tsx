@@ -101,6 +101,7 @@ export async function ImmobilienangeboteOrtPageContent({
       parentBasePath={localizeHref(rawParentBasePath)}
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis, ortSlug: ort }}
       names={{ bundeslandName, kreisName, regionName: ortName }}
+      texts={texts}
       locale={normalizedLocale}
       availabilityNotice={availabilityNotice}
     />

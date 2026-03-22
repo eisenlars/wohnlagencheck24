@@ -5,7 +5,7 @@ import Image from "next/image";
 
 import { MainNav } from "@/components/main-nav";
 import { buildLocalizedHref } from "@/lib/public-locale-routing";
-import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 
 type BundeslandNavItem = {
   slug: string;
@@ -15,11 +15,11 @@ type BundeslandNavItem = {
 type SiteHeaderProps = {
   bundeslaender: BundeslandNavItem[];
   showDesktopButtons?: boolean;
+  text: PortalSystemTextMap;
   locale?: string | null;
 };
 
-export function SiteHeader({ bundeslaender, showDesktopButtons = true, locale = null }: SiteHeaderProps) {
-  const text = getPortalSystemTexts(locale);
+export function SiteHeader({ bundeslaender, showDesktopButtons = true, text, locale = null }: SiteHeaderProps) {
   return (
     <header className="site-header site-header--default border-bottom bg-white text-dark sticky-top">
       <nav className="navbar navbar-light bg-white">
@@ -84,7 +84,7 @@ export function SiteHeader({ bundeslaender, showDesktopButtons = true, locale = 
               <button type="button" className="btn-close" data-bs-dismiss="offcanvas" aria-label={text.close} />
             </div>
             <div className="offcanvas-body">
-              <MainNav bundeslaender={bundeslaender} locale={locale} />
+              <MainNav bundeslaender={bundeslaender} text={text} locale={locale} />
             </div>
           </div>
         </div>

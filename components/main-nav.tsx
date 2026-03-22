@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useCallback } from "react";
 import { buildLocalizedHref } from "@/lib/public-locale-routing";
-import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 
 type BundeslandNavItem = {
   slug: string;
@@ -14,11 +14,11 @@ type BundeslandNavItem = {
 
 type MainNavProps = {
   bundeslaender: BundeslandNavItem[];
+  text: PortalSystemTextMap;
   locale?: string | null;
 };
 
-export function MainNav({ bundeslaender, locale = null }: MainNavProps) {
-  const text = getPortalSystemTexts(locale);
+export function MainNav({ bundeslaender, text, locale = null }: MainNavProps) {
   const handleNavClick = useCallback(() => {
     if (typeof document === "undefined") return;
 

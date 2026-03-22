@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { TabItem } from "@/features/immobilienmarkt/sections/types";
 import type { RegionalRequest, RequestMode } from "@/lib/gesuche";
-import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
 
 type GesuchePageProps = {
@@ -24,6 +24,7 @@ type GesuchePageProps = {
     bundeslandName?: string;
     kreisName?: string;
   };
+  texts: PortalSystemTextMap;
   locale?: string;
   availabilityNotice?: {
     title: string;
@@ -39,9 +40,8 @@ function formatMoney(value: number | null, locale: string): string {
 }
 
 export function GesuchePage(props: GesuchePageProps) {
-  const { heading, requests, mode, tabs, activeTabId, basePath, parentBasePath, ctx, names, locale, availabilityNotice } = props;
+  const { heading, requests, mode, tabs, activeTabId, basePath, parentBasePath, ctx, names, texts, locale, availabilityNotice } = props;
   const normalizedLocale = normalizePublicLocale(locale);
-  const texts = getPortalSystemTexts(normalizedLocale);
   const kaufPath = `${basePath}/immobiliengesuche`;
   const mietePath = `${basePath}/mietgesuche`;
 
