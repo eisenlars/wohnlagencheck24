@@ -110,6 +110,13 @@ type AreaRelationLike = {
   bundesland_slug?: string | null;
 };
 
+type AreaLabelSource =
+  | Pick<AreaMapping, "areas">
+  | AreaRelationLike
+  | Array<AreaRelationLike | null | undefined>
+  | null
+  | undefined;
+
 type AuditLogRow = {
   id: string;
   actor_user_id?: string | null;
@@ -262,7 +269,7 @@ function buildAreaOverviewRows(partnerList: Partner[]): AreaOverviewRow[] {
 }
 
 function resolveAreaRecord(
-  area: AreaMapping["areas"] | AreaRelationLike | Array<AreaRelationLike | null | undefined> | null | undefined,
+  area: AreaRelationLike | Array<AreaRelationLike | null | undefined> | null | undefined,
 ): AreaRelationLike | null {
   if (Array.isArray(area)) {
     for (const item of area) {
@@ -274,10 +281,11 @@ function resolveAreaRecord(
 }
 
 function resolveAreaName(
-  area: Pick<AreaMapping, "areas"> | AreaMapping["areas"] | AreaOption | Array<AreaOption | null | undefined> | null | undefined,
+  area: AreaLabelSource,
   fallbackId: string,
 ): string {
-  const source = area && typeof area === "object" && "areas" in area
+  const source: AreaRelationLike | Array<AreaRelationLike | null | undefined> | null | undefined =
+    area && typeof area === "object" && !Array.isArray(area) && "areas" in area
     ? area.areas
     : area;
   const name = String(resolveAreaRecord(source)?.name ?? "").trim();
@@ -285,7 +293,7 @@ function resolveAreaName(
 }
 
 function formatAreaLabel(
-  area: Pick<AreaMapping, "areas"> | AreaMapping["areas"] | AreaOption | Array<AreaOption | null | undefined> | null | undefined,
+  area: AreaLabelSource,
   fallbackId: string,
 ): string {
   const name = resolveAreaName(area, fallbackId);
