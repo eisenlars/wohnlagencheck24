@@ -82,6 +82,10 @@ type DashboardBootstrapPayload = {
   last_login?: string | null;
   partner_first_name?: string | null;
   partner_features?: PartnerFeatureRow[];
+  available_locales?: string[];
+  partner_enabled_locales?: string[];
+  global_partner_locales?: string[];
+  global_public_locales?: string[];
   configs?: PartnerAreaConfig[];
   requested_area_id?: string | null;
   mandatory_progress?: {
@@ -391,6 +395,8 @@ export default function DashboardClient() {
   const [visibilitySaveMessage, setVisibilitySaveMessage] = useState<string | null>(null);
   const [visibilitySaveTone, setVisibilitySaveTone] = useState<'info' | 'success' | 'error'>('info');
   const [partnerFeatures, setPartnerFeatures] = useState<PartnerFeatureRow[]>([]);
+  const [availableInternationalLocales, setAvailableInternationalLocales] = useState<string[]>([]);
+  const [globalPartnerInternationalLocales, setGlobalPartnerInternationalLocales] = useState<string[]>([]);
   const [mandatoryProgress, setMandatoryProgress] = useState<{ completed: number; total: number }>({
     completed: 0,
     total: INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length,
@@ -490,9 +496,16 @@ export default function DashboardClient() {
       const mergedConfigs: PartnerAreaConfig[] = Array.isArray(payload?.configs) ? payload.configs : [];
 
       queueMicrotask(() => {
+        const normalizeLocaleList = (value: unknown): string[] => Array.from(new Set(
+          (Array.isArray(value) ? value : [])
+            .map((item) => String(item ?? '').trim().toLowerCase())
+            .filter((item) => /^[a-z]{2}(?:-[a-z0-9]{2,8}){0,2}$/.test(item)),
+        ));
         setLastLogin(String(payload?.last_login ?? '').trim() || null);
         setPartnerFirstName(String(payload?.partner_first_name ?? '').trim() || null);
         setPartnerFeatures(Array.isArray(payload?.partner_features) ? payload.partner_features : []);
+        setAvailableInternationalLocales(normalizeLocaleList(payload?.available_locales));
+        setGlobalPartnerInternationalLocales(normalizeLocaleList(payload?.global_partner_locales));
         if (mergedConfigs.length > 0) {
           const restoredArea = restoredAreaId ? mergedConfigs.find((cfg) => cfg.area_id === restoredAreaId) : undefined;
           const hasActiveAreasLocal = mergedConfigs.some((cfg) => Boolean(cfg.is_active));
@@ -546,19 +559,17 @@ export default function DashboardClient() {
   }, [partnerFeatures]);
 
   const hasInternationalFeature = useMemo(
-    () => partnerFeatures.some((row) => String(row.key ?? '').trim().toLowerCase().startsWith('international')),
-    [partnerFeatures],
+    () => globalPartnerInternationalLocales.length > 0 || partnerFeatures.some((row) => String(row.key ?? '').trim().toLowerCase().startsWith('international')),
+    [globalPartnerInternationalLocales, partnerFeatures],
   );
 
   const hasInternationalEnabled = useMemo(
-    () => partnerFeatures.some((row) => {
-      const code = String(row.key ?? '').trim().toLowerCase();
-      return code.startsWith('international') && row.enabled === true;
-    }),
-    [partnerFeatures],
+    () => availableInternationalLocales.length > 0,
+    [availableInternationalLocales],
   );
 
   const internationalLocales = useMemo(() => {
+    if (availableInternationalLocales.length > 0) return availableInternationalLocales;
     const locales = partnerFeatures
       .map((row) => {
         const code = String(row.key ?? '').trim().toLowerCase();
@@ -570,7 +581,7 @@ export default function DashboardClient() {
       .filter((v): v is string => typeof v === 'string' && /^[a-z]{2}(-[a-z]{2})?$/.test(v));
     const unique = Array.from(new Set(locales));
     return unique.length > 0 ? unique : ['en'];
-  }, [partnerFeatures]);
+  }, [availableInternationalLocales, partnerFeatures]);
 
   const isTabEnabled = (tab: MainTab): boolean => {
     if (tab === 'international') return hasInternationalFeature ? hasInternationalEnabled : false;

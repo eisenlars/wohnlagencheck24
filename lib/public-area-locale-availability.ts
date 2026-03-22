@@ -1,18 +1,9 @@
 import { getReportBySlugs } from "@/lib/data";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
 import { loadSinglePublicVisiblePartnerIdForArea } from "@/lib/public-partner-mappings";
+import { loadPartnerLocaleAvailabilitySnapshot } from "@/lib/partner-locale-availability";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { asArray, asRecord, asString } from "@/utils/records";
-
-type BillingFeatureCatalogRow = {
-  code?: string | null;
-  default_enabled?: boolean | null;
-};
-
-type PartnerFeatureOverrideRow = {
-  feature_code?: string | null;
-  is_enabled?: boolean | null;
-};
 
 export type PublicAreaLocaleAvailabilityReason =
   | "feature_disabled"
@@ -32,51 +23,9 @@ export type PublicAreaLocaleAvailability = {
   reason: PublicAreaLocaleAvailabilityReason;
 };
 
-function normalizeFeatureCode(value: unknown): string {
-  return String(value ?? "").trim().toLowerCase();
-}
-
-function resolveFeatureCodesForLocale(locale: string): string[] {
-  const normalizedLocale = normalizePublicLocale(locale);
-  const codes = [`international_${normalizedLocale}`, `international-${normalizedLocale}`];
-  if (normalizedLocale === "en") {
-    codes.push("international");
-  }
-  return Array.from(new Set(codes));
-}
-
 async function isLocaleFeatureEnabled(partnerId: string, locale: string): Promise<boolean> {
-  const admin = createAdminClient();
-  const candidateCodes = resolveFeatureCodesForLocale(locale);
-
-  const [catalogRes, overridesRes] = await Promise.all([
-    admin
-      .from("billing_feature_catalog")
-      .select("code, default_enabled")
-      .eq("is_active", true)
-      .ilike("code", "international%"),
-    admin
-      .from("partner_feature_overrides")
-      .select("feature_code, is_enabled")
-      .eq("partner_id", partnerId)
-      .ilike("feature_code", "international%"),
-  ]);
-
-  if (catalogRes.error) throw new Error(String(catalogRes.error.message ?? "billing_feature_catalog lookup failed"));
-  if (overridesRes.error) throw new Error(String(overridesRes.error.message ?? "partner_feature_overrides lookup failed"));
-
-  const overrideByCode = new Map(
-    ((overridesRes.data ?? []) as PartnerFeatureOverrideRow[])
-      .map((row) => [normalizeFeatureCode(row.feature_code), row] as const)
-      .filter(([code]) => code.length > 0),
-  );
-
-  return ((catalogRes.data ?? []) as BillingFeatureCatalogRow[]).some((row) => {
-    const code = normalizeFeatureCode(row.code);
-    if (!candidateCodes.includes(code)) return false;
-    const override = overrideByCode.get(code);
-    return override?.is_enabled ?? row.default_enabled ?? false;
-  });
+  const snapshot = await loadPartnerLocaleAvailabilitySnapshot(partnerId);
+  return snapshot.available_locales.includes(normalizePublicLocale(locale));
 }
 
 async function loadTranslatedSectionCount(partnerId: string, areaId: string, locale: string): Promise<number> {

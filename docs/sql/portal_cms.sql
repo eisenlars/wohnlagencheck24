@@ -2,6 +2,8 @@
 -- Oeffentliche Locale-Routen unter /<locale>/... werden aus portal_locale_config
 -- abgeleitet. Oeffentlich sichtbar sind nur Locales mit is_active = true und
 -- status = 'live'.
+-- Partner-Dashboard International nutzt dieselbe Registry ueber partner_bookable
+-- + billing_feature_code als Bruecke zu Billing/Feature-Freischaltungen.
 
 create table if not exists public.portal_locale_config (
   locale text primary key,

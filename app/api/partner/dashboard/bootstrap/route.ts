@@ -6,6 +6,7 @@ import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/secu
 import { checkPartnerAreaMandatoryTexts } from "@/lib/partner-area-mandatory";
 import { INDIVIDUAL_MANDATORY_KEYS } from "@/lib/text-key-registry";
 import { MANDATORY_MEDIA_KEYS } from "@/lib/mandatory-media";
+import { loadPartnerLocaleAvailabilitySnapshot } from "@/lib/partner-locale-availability";
 
 type PartnerArea = {
   id?: string;
@@ -456,12 +457,18 @@ export async function GET(req: Request) {
       loadPartnerFeatures(admin, userId),
       requestedAreaId ? loadMandatoryProgress(admin, userId, requestedAreaId) : Promise.resolve(null),
     ]);
+    const localeAvailability = await loadPartnerLocaleAvailabilitySnapshot(userId);
 
     return NextResponse.json({
       ok: true,
       last_login: String(user.last_sign_in_at ?? "").trim() || null,
       partner_first_name: profileFirstName,
       partner_features: partnerFeatures,
+      international_locale_configs: localeAvailability.locales,
+      available_locales: localeAvailability.available_locales,
+      partner_enabled_locales: localeAvailability.partner_enabled_locales,
+      global_partner_locales: localeAvailability.global_partner_locales,
+      global_public_locales: localeAvailability.global_public_locales,
       configs,
       requested_area_id: requestedAreaId || null,
       mandatory_progress: mandatoryProgress,
