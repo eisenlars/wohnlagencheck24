@@ -135,6 +135,7 @@ type AreaOverviewRow = {
 };
 
 type PortalLocalePreset = {
+  variant_label: string;
   locale: string;
   label_native: string;
   label_de: string;
@@ -147,16 +148,79 @@ type PortalLocalePreset = {
   billing_feature_code: string;
 };
 
-const PORTAL_LOCALE_PRESETS: PortalLocalePreset[] = [
-  { locale: "en", label_native: "English", label_de: "Englisch", bcp47_tag: "en-US", number_locale: "en-US", date_locale: "en-US", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_en" },
-  { locale: "fr", label_native: "Français", label_de: "Französisch", bcp47_tag: "fr-FR", number_locale: "fr-FR", date_locale: "fr-FR", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_fr" },
-  { locale: "it", label_native: "Italiano", label_de: "Italienisch", bcp47_tag: "it-IT", number_locale: "it-IT", date_locale: "it-IT", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_it" },
-  { locale: "es", label_native: "Español", label_de: "Spanisch", bcp47_tag: "es-ES", number_locale: "es-ES", date_locale: "es-ES", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_es" },
-  { locale: "nl", label_native: "Nederlands", label_de: "Niederländisch", bcp47_tag: "nl-NL", number_locale: "nl-NL", date_locale: "nl-NL", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_nl" },
-  { locale: "pt", label_native: "Português", label_de: "Portugiesisch", bcp47_tag: "pt-PT", number_locale: "pt-PT", date_locale: "pt-PT", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_pt" },
-  { locale: "pl", label_native: "Polski", label_de: "Polnisch", bcp47_tag: "pl-PL", number_locale: "pl-PL", date_locale: "pl-PL", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_pl" },
-  { locale: "tr", label_native: "Türkçe", label_de: "Türkisch", bcp47_tag: "tr-TR", number_locale: "tr-TR", date_locale: "tr-TR", currency_code: "TRY", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_tr" },
-  { locale: "ar", label_native: "العربية", label_de: "Arabisch", bcp47_tag: "ar", number_locale: "ar", date_locale: "ar", currency_code: "EUR", fallback_locale: "de", text_direction: "rtl", billing_feature_code: "international_ar" },
+type PortalLocaleLanguagePreset = {
+  language_key: string;
+  label_de: string;
+  variants: PortalLocalePreset[];
+};
+
+const PORTAL_LOCALE_LANGUAGE_PRESETS: PortalLocaleLanguagePreset[] = [
+  {
+    language_key: "en",
+    label_de: "Englisch",
+    variants: [
+      { variant_label: "Standard", locale: "en", label_native: "English", label_de: "Englisch", bcp47_tag: "en-US", number_locale: "en-US", date_locale: "en-US", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_en" },
+      { variant_label: "USA", locale: "en-us", label_native: "English (US)", label_de: "Englisch (USA)", bcp47_tag: "en-US", number_locale: "en-US", date_locale: "en-US", currency_code: "USD", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_en-us" },
+      { variant_label: "Vereinigtes Königreich", locale: "en-gb", label_native: "English (UK)", label_de: "Englisch (UK)", bcp47_tag: "en-GB", number_locale: "en-GB", date_locale: "en-GB", currency_code: "GBP", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_en-gb" },
+    ],
+  },
+  {
+    language_key: "fr",
+    label_de: "Französisch",
+    variants: [
+      { variant_label: "Standard", locale: "fr", label_native: "Français", label_de: "Französisch", bcp47_tag: "fr-FR", number_locale: "fr-FR", date_locale: "fr-FR", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_fr" },
+    ],
+  },
+  {
+    language_key: "it",
+    label_de: "Italienisch",
+    variants: [
+      { variant_label: "Standard", locale: "it", label_native: "Italiano", label_de: "Italienisch", bcp47_tag: "it-IT", number_locale: "it-IT", date_locale: "it-IT", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_it" },
+    ],
+  },
+  {
+    language_key: "es",
+    label_de: "Spanisch",
+    variants: [
+      { variant_label: "Standard", locale: "es", label_native: "Español", label_de: "Spanisch", bcp47_tag: "es-ES", number_locale: "es-ES", date_locale: "es-ES", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_es" },
+    ],
+  },
+  {
+    language_key: "nl",
+    label_de: "Niederländisch",
+    variants: [
+      { variant_label: "Standard", locale: "nl", label_native: "Nederlands", label_de: "Niederländisch", bcp47_tag: "nl-NL", number_locale: "nl-NL", date_locale: "nl-NL", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_nl" },
+    ],
+  },
+  {
+    language_key: "pt",
+    label_de: "Portugiesisch",
+    variants: [
+      { variant_label: "Portugal", locale: "pt", label_native: "Português", label_de: "Portugiesisch", bcp47_tag: "pt-PT", number_locale: "pt-PT", date_locale: "pt-PT", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_pt" },
+      { variant_label: "Brasilien", locale: "pt-br", label_native: "Português (Brasil)", label_de: "Portugiesisch (Brasilien)", bcp47_tag: "pt-BR", number_locale: "pt-BR", date_locale: "pt-BR", currency_code: "BRL", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_pt-br" },
+    ],
+  },
+  {
+    language_key: "pl",
+    label_de: "Polnisch",
+    variants: [
+      { variant_label: "Standard", locale: "pl", label_native: "Polski", label_de: "Polnisch", bcp47_tag: "pl-PL", number_locale: "pl-PL", date_locale: "pl-PL", currency_code: "PLN", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_pl" },
+    ],
+  },
+  {
+    language_key: "tr",
+    label_de: "Türkisch",
+    variants: [
+      { variant_label: "Standard", locale: "tr", label_native: "Türkçe", label_de: "Türkisch", bcp47_tag: "tr-TR", number_locale: "tr-TR", date_locale: "tr-TR", currency_code: "TRY", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_tr" },
+    ],
+  },
+  {
+    language_key: "ar",
+    label_de: "Arabisch",
+    variants: [
+      { variant_label: "Standard", locale: "ar", label_native: "العربية", label_de: "Arabisch", bcp47_tag: "ar", number_locale: "ar", date_locale: "ar", currency_code: "EUR", fallback_locale: "de", text_direction: "rtl", billing_feature_code: "international_ar" },
+    ],
+  },
 ];
 
 function buildAreaOverviewRows(partnerList: Partner[]): AreaOverviewRow[] {
@@ -1089,6 +1153,7 @@ export default function AdminClient() {
     syncSystemTexts: true,
     syncPortalCms: true,
   });
+  const [newPortalLocaleLanguageKey, setNewPortalLocaleLanguageKey] = useState<string>("");
   const [newPortalLocalePresetKey, setNewPortalLocalePresetKey] = useState<string>("");
   const [showNewPortalLocaleAdvanced, setShowNewPortalLocaleAdvanced] = useState<boolean>(false);
   const adminInitialViewState = useMemo<PersistedAdminViewState>(() => ({
@@ -1113,6 +1178,16 @@ export default function AdminClient() {
   );
   const portalCmsPageKey = String(portalCmsViewState.pageKey ?? "home");
   const portalCmsLocale = String(portalCmsViewState.locale ?? "de");
+  const availableNewPortalLocaleLanguages = useMemo(() => PORTAL_LOCALE_LANGUAGE_PRESETS
+    .map((language) => ({
+      ...language,
+      variants: language.variants.filter((variant) => !portalLocaleConfigs.some((row) => row.locale === variant.locale)),
+    }))
+    .filter((language) => language.variants.length > 0), [portalLocaleConfigs]);
+  const selectedNewPortalLocaleLanguage = useMemo(
+    () => availableNewPortalLocaleLanguages.find((language) => language.language_key === newPortalLocaleLanguageKey) ?? null,
+    [availableNewPortalLocaleLanguages, newPortalLocaleLanguageKey],
+  );
   const [portalCmsDrafts, setPortalCmsDrafts] = useState<Record<string, {
     status: PortalContentEntryStatus;
     fields_json: Record<string, string>;
@@ -2241,6 +2316,7 @@ export default function AdminClient() {
       syncSystemTexts: true,
       syncPortalCms: true,
     });
+    setNewPortalLocaleLanguageKey("");
     setNewPortalLocalePresetKey("");
     setShowNewPortalLocaleAdvanced(false);
   }
@@ -2263,21 +2339,35 @@ export default function AdminClient() {
     };
   }
 
-  function applyNewPortalLocalePreset(locale: string) {
-    const normalized = normalizePortalLocaleCode(locale);
-    const preset = PORTAL_LOCALE_PRESETS.find((item) => item.locale === normalized);
+  function applyNewPortalLocalePreset(languageKey: string, locale: string) {
+    const normalizedLanguage = normalizePortalLocaleCode(languageKey);
+    const normalizedLocale = normalizePortalLocaleCode(locale);
+    const preset = PORTAL_LOCALE_LANGUAGE_PRESETS
+      .find((language) => language.language_key === normalizedLanguage)
+      ?.variants.find((item) => item.locale === normalizedLocale);
     if (!preset) {
-      setNewPortalLocalePresetKey("");
       resetNewPortalLocaleDraft();
       return;
     }
-    setNewPortalLocalePresetKey(normalized);
+    setNewPortalLocaleLanguageKey(normalizedLanguage);
+    setNewPortalLocalePresetKey(normalizedLocale);
     setNewPortalLocaleDraft(buildPortalLocaleDraftFromPreset(preset));
     setNewPortalLocaleSetup({
       syncSystemTexts: true,
       syncPortalCms: true,
     });
     setShowNewPortalLocaleAdvanced(false);
+  }
+
+  function handleNewPortalLocaleLanguageChange(languageKey: string) {
+    const normalizedLanguage = normalizePortalLocaleCode(languageKey);
+    const language = availableNewPortalLocaleLanguages.find((item) => item.language_key === normalizedLanguage);
+    if (!language) {
+      resetNewPortalLocaleDraft();
+      return;
+    }
+    const firstVariant = language.variants[0];
+    applyNewPortalLocalePreset(normalizedLanguage, firstVariant.locale);
   }
 
   function buildNewPortalLocaleDraftPayload() {
@@ -4841,20 +4931,38 @@ export default function AdminClient() {
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Neue Sprache hinzufügen</div>
           <div style={grid3Style}>
             <label>
-              Sprache auswählen
+              Sprache
+              <select
+                style={inputStyle}
+                value={newPortalLocaleLanguageKey}
+                onChange={(e) => handleNewPortalLocaleLanguageChange(e.target.value)}
+              >
+                <option value="">Bitte Sprache wählen</option>
+                {availableNewPortalLocaleLanguages.map((language) => (
+                  <option key={language.language_key} value={language.language_key}>
+                    {language.label_de}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Variante
               <select
                 style={inputStyle}
                 value={newPortalLocalePresetKey}
-                onChange={(e) => applyNewPortalLocalePreset(e.target.value)}
+                disabled={!selectedNewPortalLocaleLanguage || selectedNewPortalLocaleLanguage.variants.length <= 1}
+                onChange={(e) => {
+                  if (!selectedNewPortalLocaleLanguage) return;
+                  applyNewPortalLocalePreset(selectedNewPortalLocaleLanguage.language_key, e.target.value);
+                }}
               >
-                <option value="">Bitte Sprache wählen</option>
-                {PORTAL_LOCALE_PRESETS
-                  .filter((preset) => !portalLocaleConfigs.some((row) => row.locale === preset.locale))
-                  .map((preset) => (
-                    <option key={preset.locale} value={preset.locale}>
-                      {preset.label_de}
-                    </option>
-                  ))}
+                {!selectedNewPortalLocaleLanguage ? (
+                  <option value="">Bitte zuerst Sprache wählen</option>
+                ) : selectedNewPortalLocaleLanguage.variants.map((variant) => (
+                  <option key={variant.locale} value={variant.locale}>
+                    {variant.variant_label}
+                  </option>
+                ))}
               </select>
             </label>
             <label>
@@ -4875,15 +4983,6 @@ export default function AdminClient() {
                 placeholder="Französisch"
               />
             </label>
-            <label>
-              Interner Sprachcode
-              <input
-                style={{ ...inputStyle, background: "#f1f5f9" }}
-                value={newPortalLocaleDraft.locale ?? ""}
-                readOnly
-                placeholder="wird automatisch gesetzt"
-              />
-            </label>
           </div>
           <div style={{ marginTop: 10 }}>
             <button
@@ -4899,55 +4998,55 @@ export default function AdminClient() {
               <label>
                 BCP47
                 <input
-                  style={inputStyle}
+                  style={{ ...inputStyle, background: "#f1f5f9" }}
                   value={newPortalLocaleDraft.bcp47_tag ?? ""}
-                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, bcp47_tag: e.target.value }))}
+                  readOnly
                   placeholder="fr-FR"
                 />
               </label>
               <label>
                 Number-Locale
                 <input
-                  style={inputStyle}
+                  style={{ ...inputStyle, background: "#f1f5f9" }}
                   value={newPortalLocaleDraft.number_locale ?? ""}
-                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, number_locale: e.target.value }))}
+                  readOnly
                   placeholder="fr-FR"
                 />
               </label>
               <label>
                 Date-Locale
                 <input
-                  style={inputStyle}
+                  style={{ ...inputStyle, background: "#f1f5f9" }}
                   value={newPortalLocaleDraft.date_locale ?? ""}
-                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, date_locale: e.target.value }))}
+                  readOnly
                   placeholder="fr-FR"
                 />
               </label>
               <label>
                 Währung
                 <input
-                  style={inputStyle}
+                  style={{ ...inputStyle, background: "#f1f5f9" }}
                   value={newPortalLocaleDraft.currency_code ?? ""}
-                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, currency_code: e.target.value.toUpperCase() }))}
+                  readOnly
                   placeholder="EUR"
                 />
               </label>
               <label>
                 Fallback
                 <input
-                  style={inputStyle}
+                  style={{ ...inputStyle, background: "#f1f5f9" }}
                   value={newPortalLocaleDraft.fallback_locale ?? "de"}
-                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, fallback_locale: normalizePortalLocaleCode(e.target.value) || "de" }))}
+                  readOnly
                   placeholder="de"
                 />
               </label>
               <label>
-                Billing-Feature
+                Schreibrichtung
                 <input
-                  style={inputStyle}
-                  value={newPortalLocaleDraft.billing_feature_code ?? ""}
-                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, billing_feature_code: e.target.value }))}
-                  placeholder="international_fr"
+                  style={{ ...inputStyle, background: "#f1f5f9" }}
+                  value={newPortalLocaleDraft.text_direction ?? "ltr"}
+                  readOnly
+                  placeholder="ltr"
                 />
               </label>
             </div>
