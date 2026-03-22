@@ -103,6 +103,13 @@ type AreaOption = {
   bundesland_slug?: string | null;
 };
 
+type AreaRelationLike = {
+  name?: string | null;
+  slug?: string | null;
+  parent_slug?: string | null;
+  bundesland_slug?: string | null;
+};
+
 type AuditLogRow = {
   id: string;
   actor_user_id?: string | null;
@@ -255,8 +262,8 @@ function buildAreaOverviewRows(partnerList: Partner[]): AreaOverviewRow[] {
 }
 
 function resolveAreaRecord(
-  area: AreaMapping["areas"] | AreaOption | Array<AreaOption | null | undefined> | null | undefined,
-): AreaOption | null {
+  area: AreaMapping["areas"] | AreaRelationLike | Array<AreaRelationLike | null | undefined> | null | undefined,
+): AreaRelationLike | null {
   if (Array.isArray(area)) {
     for (const item of area) {
       if (item && typeof item === "object") return item;
