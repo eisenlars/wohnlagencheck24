@@ -204,15 +204,6 @@ function normalizeVisibilityMode(value: unknown): "partner_wide" | "strict_local
   return raw === "strict_local" ? "strict_local" : "partner_wide";
 }
 
-function formatVisibilityModeLabel(value: unknown): string {
-  return normalizeVisibilityMode(value) === "strict_local" ? "nur lokal" : "partnerweit";
-}
-
-function formatVisibilityModeSummary(config: PartnerAreaConfig | null): string {
-  if (!config) return "";
-  return `Angebote: ${formatVisibilityModeLabel(config.offer_visibility_mode)} · Gesuche: ${formatVisibilityModeLabel(config.request_visibility_mode)}`;
-}
-
 function buildPreviewHref(config: PartnerAreaConfig | null): string | null {
   if (!config?.areas) return null;
   const bundeslandSlug = String(config.areas.bundesland_slug ?? '').trim();
@@ -1430,7 +1421,7 @@ export default function DashboardClient() {
           <div style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
             {regionSidebarMainDistricts.map(district => {
               const isSelected = Boolean(effectiveSelectedConfig?.area_id?.startsWith(district.area_id));
-              const isExpanded = expandedDistrict === district.area_id || isSelected;
+              const isExpanded = expandedDistrict === district.area_id;
               const subAreas = regionSidebarScopeConfigs.filter(c => c.area_id.startsWith(district.area_id) && c.area_id.split('-').length > 3);
               const districtIsActive = Boolean(district.is_active);
 
@@ -1444,12 +1435,7 @@ export default function DashboardClient() {
                     style={districtButtonStyle(isSelected, districtIsActive)}
                   >
                     <span style={{ fontSize: '10px' }}>{isExpanded ? '▼' : '▶'}</span>
-                    <span style={{ flex: 1, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span>{district.areas?.name}</span>
-                      <span style={sidebarVisibilityModeTextStyle}>
-                        {formatVisibilityModeSummary(district)}
-                      </span>
-                    </span>
+                    <span style={{ flex: 1, textAlign: 'left' }}>{district.areas?.name}</span>
                   </button>
 
                   {isExpanded && subAreas.length > 0 && (
@@ -1460,12 +1446,7 @@ export default function DashboardClient() {
                           onClick={() => handleSelectConfig(ort)}
                           style={subAreaButtonStyle(effectiveSelectedConfig?.area_id === ort.area_id)}
                         >
-                          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                            <span>{ort.areas?.name}</span>
-                            <span style={subAreaVisibilityModeTextStyle}>
-                              {formatVisibilityModeSummary(ort)}
-                            </span>
-                          </span>
+                          <span>{ort.areas?.name}</span>
                         </button>
                       ))}
                     </div>
@@ -2294,20 +2275,6 @@ const subAreaButtonStyle = (active: boolean) => ({
   fontWeight: active ? '700' : '500',
   cursor: 'pointer'
 });
-
-const sidebarVisibilityModeTextStyle: React.CSSProperties = {
-  fontSize: '10px',
-  lineHeight: 1.3,
-  color: '#64748b',
-  fontWeight: 600,
-};
-
-const subAreaVisibilityModeTextStyle: React.CSSProperties = {
-  fontSize: '10px',
-  lineHeight: 1.3,
-  color: '#64748b',
-  fontWeight: 500,
-};
 
 const mainTitleStyle = {
   fontSize: '32px',
