@@ -101,7 +101,7 @@ function uniqByUrl(items: MediaAsset[]): MediaAsset[] {
 }
 
 export function OfferDetailPage(props: OfferDetailPageProps) {
-  const { offer, overrides, mode, texts, formatProfile, breadcrumb, listPath } = props;
+  const { offer, mode, texts, formatProfile, breadcrumb, listPath } = props;
   const priceLabel = mode === "miete" ? texts.warm_rent : texts.purchase_price;
   const priceSuffix = mode === "miete" ? texts.per_month : "";
   const formatCurrency = (value: number | null) => formatMetric(value, {
@@ -182,19 +182,20 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const features = Array.isArray(raw["features"]) ? (raw["features"] as string[]) : [];
   const energy = asRecord(raw["energy"]) ?? {};
 
-  const title = overrides?.seo_h1 || offer.title || texts.object_generic;
+  const title = offer.seoH1 || offer.title || texts.object_generic;
+  const teaserText = offer.shortDescription || null;
   const description =
-    overrides?.long_description ??
+    offer.longDescription ??
     (typeof raw["description"] === "string" ? raw["description"] : null);
   const locationText =
-    overrides?.location_text ??
+    offer.locationText ??
     (typeof raw["location"] === "string" ? raw["location"] : null);
   const featuresText =
-    overrides?.features_text ??
+    offer.featuresText ??
     (typeof raw["features_note"] === "string" ? raw["features_note"] : null);
   const highlights =
-    overrides?.highlights ?? (Array.isArray(raw["highlights"]) ? (raw["highlights"] as string[]) : []);
-  const imageAltTexts = overrides?.image_alt_texts ?? [];
+    offer.highlights ?? (Array.isArray(raw["highlights"]) ? (raw["highlights"] as string[]) : []);
+  const imageAltTexts = offer.imageAltTexts ?? [];
 
   return (
     <div className="container text-dark">
@@ -327,6 +328,13 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         )}
       </section>
 
+      {teaserText ? (
+        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
+          <h2 className="h5 mb-3">Teaser</h2>
+          <p className="mb-0">{teaserText}</p>
+        </section>
+      ) : null}
+
       {description ? (
         <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
           <h2 className="h5 mb-3">{texts.property_description}</h2>
@@ -338,6 +346,13 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
           <h2 className="h5 mb-3">{texts.location_label}</h2>
           <p className="mb-0">{locationText}</p>
+        </section>
+      ) : null}
+
+      {featuresText ? (
+        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
+          <h2 className="h5 mb-3">{texts.features_label}</h2>
+          <p className="mb-0">{featuresText}</p>
         </section>
       ) : null}
 
@@ -439,9 +454,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
       <section className="offer-detail-grid">
         <div className="offer-detail-panel">
           <h3 className="h6 mb-3">{texts.features_label}</h3>
-          {featuresText ? (
-            <p className="small text-muted mb-0">{featuresText}</p>
-          ) : features.length > 0 ? (
+          {features.length > 0 ? (
             <ul className="offer-detail-list">
               {features.map((item, index) => (
                 <li key={`${item}-${index}`}>{item}</li>

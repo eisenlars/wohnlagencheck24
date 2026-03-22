@@ -1121,6 +1121,33 @@ export default function OffersManager(props: Props) {
               </div>
             </div>
 
+            <div style={contentPreviewGridStyle}>
+              <div style={contentPreviewCardStyle}>
+                <div style={contentPreviewLabelStyle}>Teaser</div>
+                <div style={contentPreviewBodyStyle}>
+                  {form.short_description || 'Kein Teaser gepflegt.'}
+                </div>
+              </div>
+              <div style={contentPreviewCardStyle}>
+                <div style={contentPreviewLabelStyle}>Langtext</div>
+                <div style={contentPreviewBodyStyle}>
+                  {form.long_description || 'Kein Langtext gepflegt.'}
+                </div>
+              </div>
+              <div style={contentPreviewCardStyle}>
+                <div style={contentPreviewLabelStyle}>Lage</div>
+                <div style={contentPreviewBodyStyle}>
+                  {form.location_text || 'Kein Lage-Text gepflegt.'}
+                </div>
+              </div>
+              <div style={contentPreviewCardStyle}>
+                <div style={contentPreviewLabelStyle}>Ausstattung</div>
+                <div style={contentPreviewBodyStyle}>
+                  {form.features_text || 'Kein Ausstattungs-Text gepflegt.'}
+                </div>
+              </div>
+            </div>
+
             <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
               {saving ? 'Speichern...' : 'SEO-Overrides speichern'}
             </button>
@@ -1265,6 +1292,36 @@ const previewContentStyle: React.CSSProperties = {
   color: '#64748b',
   lineHeight: 1.5,
   fontStyle: 'italic',
+  whiteSpace: 'pre-wrap',
+};
+
+const contentPreviewGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  gap: '14px',
+  marginBottom: '16px',
+};
+
+const contentPreviewCardStyle: React.CSSProperties = {
+  backgroundColor: '#f8fafc',
+  borderRadius: '12px',
+  border: '1px solid #e2e8f0',
+  padding: '14px',
+};
+
+const contentPreviewLabelStyle: React.CSSProperties = {
+  fontSize: '11px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: '#64748b',
+  fontWeight: 700,
+  marginBottom: '8px',
+};
+
+const contentPreviewBodyStyle: React.CSSProperties = {
+  fontSize: '13px',
+  lineHeight: 1.55,
+  color: '#0f172a',
   whiteSpace: 'pre-wrap',
 };
 

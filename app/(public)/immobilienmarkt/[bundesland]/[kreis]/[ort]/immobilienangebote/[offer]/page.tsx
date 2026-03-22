@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import { OfferDetailPage } from "@/components/angebote/OfferDetailPage";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
-import { getOfferById, getOfferOverrides } from "@/lib/angebote";
+import { getOfferById } from "@/lib/angebote";
 import { getReportBySlugs } from "@/lib/data";
 import { loadPortalFormatProfile } from "@/lib/portal-format-config";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
@@ -19,22 +19,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = parseOfferParam(offer);
   const offerData = await getOfferById(id);
   if (!offerData) return {};
-  const effectiveSource = (offerData.source ?? "").trim() || "manual";
-  const effectiveExternalId = (offerData.externalId ?? "").trim() || offerData.id;
-  const overrides =
-    offerData.partnerId && effectiveSource && effectiveExternalId
-      ? await getOfferOverrides(offerData.partnerId, effectiveSource, effectiveExternalId)
-      : null;
   const raw = (offerData.raw ?? {}) as Record<string, unknown>;
   const title =
-    overrides?.seo_title ??
-    overrides?.seo_h1 ??
+    offerData.seoTitle ??
+    offerData.seoH1 ??
     offerData.title ??
     "Immobilienangebot";
   const description =
-    overrides?.seo_description ??
-    overrides?.short_description ??
-    overrides?.long_description ??
+    offerData.seoDescription ??
+    offerData.shortDescription ??
+    offerData.longDescription ??
     (typeof raw["description"] === "string" ? raw["description"] : undefined);
   const imageUrl =
     offerData.imageUrl && /^https?:\/\//i.test(offerData.imageUrl)
@@ -65,13 +59,6 @@ export default async function ImmobilienangebotOrtDetailPage({ params }: PagePro
 
   if (!offerData) notFound();
 
-  const effectiveSource = (offerData.source ?? "").trim() || "manual";
-  const effectiveExternalId = (offerData.externalId ?? "").trim() || offerData.id;
-  const overrides =
-    offerData.partnerId && effectiveSource && effectiveExternalId
-      ? await getOfferOverrides(offerData.partnerId, effectiveSource, effectiveExternalId)
-      : null;
-
   const kreisReport = await getReportBySlugs([bundesland, kreis]);
   const kreisMeta = asRecord(asArray(kreisReport?.meta)[0] ?? kreisReport?.meta) ?? {};
   const kreisName = getRegionDisplayName({ meta: kreisMeta, level: "kreis", fallbackSlug: kreis });
@@ -92,7 +79,6 @@ export default async function ImmobilienangebotOrtDetailPage({ params }: PagePro
   return (
     <OfferDetailPage
       offer={offerData}
-      overrides={overrides}
       mode="kauf"
       texts={texts}
       formatProfile={formatProfile}

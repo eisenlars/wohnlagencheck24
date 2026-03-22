@@ -25,6 +25,15 @@ export type Offer = {
   raw?: Record<string, unknown> | null;
   externalId?: string | null;
   source?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoH1?: string | null;
+  shortDescription?: string | null;
+  longDescription?: string | null;
+  locationText?: string | null;
+  featuresText?: string | null;
+  highlights?: string[] | null;
+  imageAltTexts?: string[] | null;
 };
 
 export type OfferOverrides = {
@@ -121,6 +130,40 @@ function mapProjectionRowToOffer(row: PublicOfferProjectionRow, fallbackMode: Of
     source: row.source ?? null,
     raw: null,
   };
+}
+
+type PublicOfferDetailRow = {
+  offer_id?: string | null;
+  partner_id?: string | null;
+  visible_area_id?: string | null;
+  offer_type?: string | null;
+  object_type?: string | null;
+  title?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  seo_h1?: string | null;
+  short_description?: string | null;
+  long_description?: string | null;
+  location_text?: string | null;
+  features_text?: string | null;
+  highlights?: unknown;
+  image_alt_texts?: unknown;
+  price?: number | string | null;
+  rent?: number | string | null;
+  area_sqm?: number | string | null;
+  rooms?: number | string | null;
+  address?: string | null;
+  image_url?: string | null;
+  detail_url?: string | null;
+  source_updated_at?: string | null;
+  external_id?: string | null;
+  source?: string | null;
+};
+
+function toStringArray(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  const items = value.filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0);
+  return items.length > 0 ? items : [];
 }
 
 export async function getOffers(args: GetOffersArgs): Promise<{
@@ -252,58 +295,108 @@ export async function getOffers(args: GetOffersArgs): Promise<{
 
 export async function getOfferById(offerId: string): Promise<Offer | null> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("partner_property_offers")
-    .select(
-      [
-        "id",
-        "partner_id",
-        "offer_type",
-        "object_type",
-        "title",
-        "price",
-        "rent",
-        "area_sqm",
-        "rooms",
-        "address",
-        "image_url",
-        "detail_url",
-        "is_top",
-        "updated_at",
-        "external_id",
-        "source",
-        "raw",
-      ].join(","),
-    )
-    .eq("id", offerId)
-    .maybeSingle();
+  const [offerRes, publicRes] = await Promise.all([
+    supabase
+      .from("partner_property_offers")
+      .select(
+        [
+          "id",
+          "partner_id",
+          "offer_type",
+          "object_type",
+          "title",
+          "price",
+          "rent",
+          "area_sqm",
+          "rooms",
+          "address",
+          "image_url",
+          "detail_url",
+          "is_top",
+          "updated_at",
+          "external_id",
+          "source",
+          "raw",
+        ].join(","),
+      )
+      .eq("id", offerId)
+      .maybeSingle(),
+    supabase
+      .from("public_offer_entries")
+      .select(
+        [
+          "offer_id",
+          "partner_id",
+          "visible_area_id",
+          "offer_type",
+          "object_type",
+          "title",
+          "seo_title",
+          "seo_description",
+          "seo_h1",
+          "short_description",
+          "long_description",
+          "location_text",
+          "features_text",
+          "highlights",
+          "image_alt_texts",
+          "price",
+          "rent",
+          "area_sqm",
+          "rooms",
+          "address",
+          "image_url",
+          "detail_url",
+          "source_updated_at",
+          "external_id",
+          "source",
+        ].join(","),
+      )
+      .eq("offer_id", offerId)
+      .eq("locale", "de")
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
-  if (error) {
-    console.warn("partner_property_offers by id failed:", error.message);
+  if (offerRes.error) {
+    console.warn("partner_property_offers by id failed:", offerRes.error.message);
     return null;
   }
-  if (!data) return null;
+  if (publicRes.error) {
+    console.warn("public_offer_entries by offer_id failed:", publicRes.error.message);
+  }
+  if (!offerRes.data) return null;
 
-  const record = data as unknown as Record<string, unknown>;
+  const record = offerRes.data as unknown as Record<string, unknown>;
+  const publicRecord = (publicRes.data ?? null) as PublicOfferDetailRow | null;
   return {
     id: String(record["id"] ?? ""),
     partnerId: String(record["partner_id"] ?? ""),
-    areaId: "",
-    offerType: (record["offer_type"] as OfferMode) ?? "kauf",
-    objectType: (record["object_type"] as OfferObjectType) ?? "wohnung",
-    title: String(record["title"] ?? ""),
-    price: toNumberOrNull(record["price"]),
-    rent: toNumberOrNull(record["rent"]),
-    areaSqm: toNumberOrNull(record["area_sqm"]),
-    rooms: toNumberOrNull(record["rooms"]),
-    address: (record["address"] as string | null) ?? null,
-    imageUrl: (record["image_url"] as string | null) ?? null,
-    detailUrl: (record["detail_url"] as string | null) ?? null,
+    areaId: String(publicRecord?.visible_area_id ?? ""),
+    offerType: (publicRecord?.offer_type as OfferMode) ?? (record["offer_type"] as OfferMode) ?? "kauf",
+    objectType: (publicRecord?.object_type as OfferObjectType) ?? (record["object_type"] as OfferObjectType) ?? "wohnung",
+    title: String(publicRecord?.title ?? record["title"] ?? ""),
+    price: toNumberOrNull(publicRecord?.price ?? record["price"]),
+    rent: toNumberOrNull(publicRecord?.rent ?? record["rent"]),
+    areaSqm: toNumberOrNull(publicRecord?.area_sqm ?? record["area_sqm"]),
+    rooms: toNumberOrNull(publicRecord?.rooms ?? record["rooms"]),
+    address: publicRecord?.address ?? (record["address"] as string | null) ?? null,
+    imageUrl: publicRecord?.image_url ?? (record["image_url"] as string | null) ?? null,
+    detailUrl: publicRecord?.detail_url ?? (record["detail_url"] as string | null) ?? null,
     isTop: Boolean(record["is_top"]),
-    updatedAt: (record["updated_at"] as string | null) ?? null,
-    externalId: (record["external_id"] as string | null) ?? null,
-    source: (record["source"] as string | null) ?? null,
+    updatedAt: publicRecord?.source_updated_at ?? (record["updated_at"] as string | null) ?? null,
+    externalId: publicRecord?.external_id ?? (record["external_id"] as string | null) ?? null,
+    source: publicRecord?.source ?? (record["source"] as string | null) ?? null,
     raw: (record["raw"] as Record<string, unknown> | null) ?? null,
+    seoTitle: publicRecord?.seo_title ?? null,
+    seoDescription: publicRecord?.seo_description ?? null,
+    seoH1: publicRecord?.seo_h1 ?? null,
+    shortDescription: publicRecord?.short_description ?? null,
+    longDescription: publicRecord?.long_description ?? null,
+    locationText: publicRecord?.location_text ?? null,
+    featuresText: publicRecord?.features_text ?? null,
+    highlights: toStringArray(publicRecord?.highlights) ?? null,
+    imageAltTexts: toStringArray(publicRecord?.image_alt_texts) ?? null,
   };
 }
 
