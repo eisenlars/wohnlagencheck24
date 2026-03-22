@@ -15,6 +15,7 @@ import {
   loadPreviewAccessForArea,
   loadPreviewAreaOptionsForPartner,
 } from "@/lib/public-partner-mappings";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { createClient } from "@/utils/supabase/server";
 import { getAdminRoleForUser } from "@/lib/security/admin-auth";
 import { resolveLeadGeneratorConfig } from "@/features/lead-generators/core/resolver";
@@ -108,6 +109,7 @@ export default async function ImmobilienmarktPreviewPage({ params }: PageProps) 
     ?? asString(meta["kreis_schluessel"])
     ?? ""
   ).trim();
+  const texts = await getPortalSystemTexts("de");
 
   const vm = entry.buildVM({
     report,
@@ -182,6 +184,7 @@ export default async function ImmobilienmarktPreviewPage({ params }: PageProps) 
         activeTabId={activeTabId}
         basePath={basePath}
         parentBasePath={parentBasePath}
+        texts={texts}
         ctx={ctx}
         assets={assets}
       />
