@@ -281,7 +281,8 @@ function resolveAreaRecord(
 }
 
 function hasAreasRelation(value: AreaLabelSource): value is Pick<AreaMapping, "areas"> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value) && "areas" in value;
+  const candidate = value;
+  return candidate !== null && typeof candidate === "object" && !Array.isArray(candidate) && "areas" in candidate;
 }
 
 function resolveAreaName(
