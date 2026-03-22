@@ -187,12 +187,15 @@ function formatRegionHeaderTitle(
 ): string {
   if (!config) return '';
   const areaName = String(config.areas?.name ?? '').trim();
-  if (!areaName) return '';
   const isOrtslage = config.area_id.split('-').length > 3;
-  if (!isOrtslage) return areaName;
   const districtName = String(findDistrictConfig(configs, config)?.areas?.name ?? '').trim();
-  if (!districtName || districtName === areaName) return areaName;
-  return `${areaName} (${districtName})`;
+  if (!isOrtslage) {
+    return areaName || districtName || config.area_id;
+  }
+  if (areaName && districtName && districtName !== areaName) {
+    return `${areaName} (${districtName})`;
+  }
+  return areaName || districtName || config.area_id;
 }
 
 function normalizeVisibilityMode(value: unknown): "partner_wide" | "strict_local" {
