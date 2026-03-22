@@ -134,6 +134,31 @@ type AreaOverviewRow = {
   activationStatus: string;
 };
 
+type PortalLocalePreset = {
+  locale: string;
+  label_native: string;
+  label_de: string;
+  bcp47_tag: string;
+  number_locale: string;
+  date_locale: string;
+  currency_code: string;
+  fallback_locale: string;
+  text_direction: "ltr" | "rtl";
+  billing_feature_code: string;
+};
+
+const PORTAL_LOCALE_PRESETS: PortalLocalePreset[] = [
+  { locale: "en", label_native: "English", label_de: "Englisch", bcp47_tag: "en-US", number_locale: "en-US", date_locale: "en-US", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_en" },
+  { locale: "fr", label_native: "Français", label_de: "Französisch", bcp47_tag: "fr-FR", number_locale: "fr-FR", date_locale: "fr-FR", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_fr" },
+  { locale: "it", label_native: "Italiano", label_de: "Italienisch", bcp47_tag: "it-IT", number_locale: "it-IT", date_locale: "it-IT", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_it" },
+  { locale: "es", label_native: "Español", label_de: "Spanisch", bcp47_tag: "es-ES", number_locale: "es-ES", date_locale: "es-ES", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_es" },
+  { locale: "nl", label_native: "Nederlands", label_de: "Niederländisch", bcp47_tag: "nl-NL", number_locale: "nl-NL", date_locale: "nl-NL", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_nl" },
+  { locale: "pt", label_native: "Português", label_de: "Portugiesisch", bcp47_tag: "pt-PT", number_locale: "pt-PT", date_locale: "pt-PT", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_pt" },
+  { locale: "pl", label_native: "Polski", label_de: "Polnisch", bcp47_tag: "pl-PL", number_locale: "pl-PL", date_locale: "pl-PL", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_pl" },
+  { locale: "tr", label_native: "Türkçe", label_de: "Türkisch", bcp47_tag: "tr-TR", number_locale: "tr-TR", date_locale: "tr-TR", currency_code: "TRY", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_tr" },
+  { locale: "ar", label_native: "العربية", label_de: "Arabisch", bcp47_tag: "ar", number_locale: "ar", date_locale: "ar", currency_code: "EUR", fallback_locale: "de", text_direction: "rtl", billing_feature_code: "international_ar" },
+];
+
 function buildAreaOverviewRows(partnerList: Partner[]): AreaOverviewRow[] {
   const rows = new Map<string, AreaOverviewRow>();
   for (const partner of partnerList) {
@@ -1064,6 +1089,8 @@ export default function AdminClient() {
     syncSystemTexts: true,
     syncPortalCms: true,
   });
+  const [newPortalLocalePresetKey, setNewPortalLocalePresetKey] = useState<string>("");
+  const [showNewPortalLocaleAdvanced, setShowNewPortalLocaleAdvanced] = useState<boolean>(false);
   const adminInitialViewState = useMemo<PersistedAdminViewState>(() => ({
     activeView: "home",
     navMode: "partners",
@@ -2214,6 +2241,43 @@ export default function AdminClient() {
       syncSystemTexts: true,
       syncPortalCms: true,
     });
+    setNewPortalLocalePresetKey("");
+    setShowNewPortalLocaleAdvanced(false);
+  }
+
+  function buildPortalLocaleDraftFromPreset(preset: PortalLocalePreset): PortalLocaleConfigRecord {
+    return {
+      locale: preset.locale,
+      status: "planned",
+      partner_bookable: false,
+      is_active: false,
+      label_native: preset.label_native,
+      label_de: preset.label_de,
+      bcp47_tag: preset.bcp47_tag,
+      fallback_locale: preset.fallback_locale,
+      text_direction: preset.text_direction,
+      number_locale: preset.number_locale,
+      date_locale: preset.date_locale,
+      currency_code: preset.currency_code,
+      billing_feature_code: preset.billing_feature_code,
+    };
+  }
+
+  function applyNewPortalLocalePreset(locale: string) {
+    const normalized = normalizePortalLocaleCode(locale);
+    const preset = PORTAL_LOCALE_PRESETS.find((item) => item.locale === normalized);
+    if (!preset) {
+      setNewPortalLocalePresetKey("");
+      resetNewPortalLocaleDraft();
+      return;
+    }
+    setNewPortalLocalePresetKey(normalized);
+    setNewPortalLocaleDraft(buildPortalLocaleDraftFromPreset(preset));
+    setNewPortalLocaleSetup({
+      syncSystemTexts: true,
+      syncPortalCms: true,
+    });
+    setShowNewPortalLocaleAdvanced(false);
   }
 
   function buildNewPortalLocaleDraftPayload() {
@@ -4777,23 +4841,21 @@ export default function AdminClient() {
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Neue Sprache hinzufügen</div>
           <div style={grid3Style}>
             <label>
-              Locale-Code
-              <input
+              Sprache auswählen
+              <select
                 style={inputStyle}
-                value={newPortalLocaleDraft.locale ?? ""}
-                placeholder="fr oder pt-br"
-                onChange={(e) => {
-                  const locale = normalizePortalLocaleCode(e.target.value);
-                  setNewPortalLocaleDraft((prev) => ({
-                    ...prev,
-                    locale,
-                    bcp47_tag: String(prev.bcp47_tag ?? "").trim() ? prev.bcp47_tag : locale,
-                    number_locale: String(prev.number_locale ?? "").trim() ? prev.number_locale : locale,
-                    date_locale: String(prev.date_locale ?? "").trim() ? prev.date_locale : locale,
-                    billing_feature_code: String(prev.billing_feature_code ?? "").trim() ? prev.billing_feature_code : buildPortalLocaleBillingFeatureCode(locale),
-                  }));
-                }}
-              />
+                value={newPortalLocalePresetKey}
+                onChange={(e) => applyNewPortalLocalePreset(e.target.value)}
+              >
+                <option value="">Bitte Sprache wählen</option>
+                {PORTAL_LOCALE_PRESETS
+                  .filter((preset) => !portalLocaleConfigs.some((row) => row.locale === preset.locale))
+                  .map((preset) => (
+                    <option key={preset.locale} value={preset.locale}>
+                      {preset.label_de}
+                    </option>
+                  ))}
+              </select>
             </label>
             <label>
               Anzeigename nativ
@@ -4814,33 +4876,82 @@ export default function AdminClient() {
               />
             </label>
             <label>
-              BCP47
+              Interner Sprachcode
               <input
-                style={inputStyle}
-                value={newPortalLocaleDraft.bcp47_tag ?? ""}
-                onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, bcp47_tag: e.target.value }))}
-                placeholder="fr-FR"
-              />
-            </label>
-            <label>
-              Fallback
-              <input
-                style={inputStyle}
-                value={newPortalLocaleDraft.fallback_locale ?? "de"}
-                onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, fallback_locale: normalizePortalLocaleCode(e.target.value) || "de" }))}
-                placeholder="de"
-              />
-            </label>
-            <label>
-              Billing-Feature
-              <input
-                style={inputStyle}
-                value={newPortalLocaleDraft.billing_feature_code ?? ""}
-                onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, billing_feature_code: e.target.value }))}
-                placeholder="international_fr"
+                style={{ ...inputStyle, background: "#f1f5f9" }}
+                value={newPortalLocaleDraft.locale ?? ""}
+                readOnly
+                placeholder="wird automatisch gesetzt"
               />
             </label>
           </div>
+          <div style={{ marginTop: 10 }}>
+            <button
+              type="button"
+              style={btnGhostStyle}
+              onClick={() => setShowNewPortalLocaleAdvanced((prev) => !prev)}
+            >
+              {showNewPortalLocaleAdvanced ? "Erweiterte Einstellungen ausblenden" : "Erweiterte Einstellungen anzeigen"}
+            </button>
+          </div>
+          {showNewPortalLocaleAdvanced ? (
+            <div style={{ ...grid3Style, marginTop: 10 }}>
+              <label>
+                BCP47
+                <input
+                  style={inputStyle}
+                  value={newPortalLocaleDraft.bcp47_tag ?? ""}
+                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, bcp47_tag: e.target.value }))}
+                  placeholder="fr-FR"
+                />
+              </label>
+              <label>
+                Number-Locale
+                <input
+                  style={inputStyle}
+                  value={newPortalLocaleDraft.number_locale ?? ""}
+                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, number_locale: e.target.value }))}
+                  placeholder="fr-FR"
+                />
+              </label>
+              <label>
+                Date-Locale
+                <input
+                  style={inputStyle}
+                  value={newPortalLocaleDraft.date_locale ?? ""}
+                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, date_locale: e.target.value }))}
+                  placeholder="fr-FR"
+                />
+              </label>
+              <label>
+                Währung
+                <input
+                  style={inputStyle}
+                  value={newPortalLocaleDraft.currency_code ?? ""}
+                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, currency_code: e.target.value.toUpperCase() }))}
+                  placeholder="EUR"
+                />
+              </label>
+              <label>
+                Fallback
+                <input
+                  style={inputStyle}
+                  value={newPortalLocaleDraft.fallback_locale ?? "de"}
+                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, fallback_locale: normalizePortalLocaleCode(e.target.value) || "de" }))}
+                  placeholder="de"
+                />
+              </label>
+              <label>
+                Billing-Feature
+                <input
+                  style={inputStyle}
+                  value={newPortalLocaleDraft.billing_feature_code ?? ""}
+                  onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, billing_feature_code: e.target.value }))}
+                  placeholder="international_fr"
+                />
+              </label>
+            </div>
+          ) : null}
           <div style={{ ...rowStyle, marginTop: 10 }}>
             <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#334155" }}>
@@ -4867,7 +4978,7 @@ export default function AdminClient() {
             </div>
             <button
               style={btnStyle}
-              disabled={busy}
+              disabled={busy || !newPortalLocaleDraft.locale}
               onClick={() =>
                 run("Neue Portal-Locale anlegen", async () => {
                   await createPortalLocaleWithSetup();
