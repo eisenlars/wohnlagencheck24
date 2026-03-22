@@ -153,6 +153,7 @@ export function AngebotePage(props: AngebotePageProps) {
           names={names}
           compact
           rootIconSrc="/logo/wohnlagencheck24.svg"
+          texts={texts}
           locale={normalizedLocale}
         />
       </div>

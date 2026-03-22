@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
-import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { formatRegionFallback } from "@/utils/regionName";
 
 import type { SectionCtx, TabItem } from "@/features/immobilienmarkt/sections/types";
@@ -26,12 +26,12 @@ export function ImmobilienmarktBreadcrumb(props: {
   names?: BreadcrumbNames;
   compact?: boolean;
   rootIconSrc?: string;
+  texts: PortalSystemTextMap;
   locale?: string;
 }) {
-  const { tabs, activeTabId, basePath, parentBasePath, ctx, names, compact, rootIconSrc, locale } = props;
+  const { tabs, activeTabId, basePath, parentBasePath, ctx, names, compact, rootIconSrc, texts, locale } = props;
   const siteUrl = "https://www.wohnlagencheck24.de";
   const normalizedLocale = normalizePublicLocale(locale);
-  const texts = getPortalSystemTexts(normalizedLocale);
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
 

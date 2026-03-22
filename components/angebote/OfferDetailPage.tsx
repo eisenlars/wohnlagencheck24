@@ -1,11 +1,13 @@
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { Offer, OfferMode, OfferOverrides } from "@/lib/angebote";
+import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { asRecord } from "@/utils/records";
 
 type OfferDetailPageProps = {
   offer: Offer;
   overrides?: OfferOverrides | null;
   mode: OfferMode;
+  texts: PortalSystemTextMap;
   breadcrumb: {
     tabs: { id: string; label: string }[];
     activeTabId: string;
@@ -43,7 +45,7 @@ function formatRooms(value: number | null): string {
 }
 
 export function OfferDetailPage(props: OfferDetailPageProps) {
-  const { offer, overrides, mode, breadcrumb, listPath } = props;
+  const { offer, overrides, mode, texts, breadcrumb, listPath } = props;
   const priceLabel = mode === "miete" ? "Warmmiete" : "Kaufpreis";
   const priceSuffix = mode === "miete" ? "/Monat" : "";
   const raw = asRecord(offer.raw) ?? {};
@@ -87,6 +89,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           names={breadcrumb.names}
           compact
           rootIconSrc="/logo/wohnlagencheck24.svg"
+          texts={texts}
         />
       </div>
 

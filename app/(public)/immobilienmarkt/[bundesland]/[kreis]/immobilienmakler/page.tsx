@@ -11,6 +11,7 @@ import { getRandomReferencesForKreis } from "@/lib/referenzen";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 import { loadSinglePublicVisiblePartnerIdForArea } from "@/lib/public-partner-mappings";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 
 type PageParams = { bundesland?: string; kreis?: string };
 type PageProps = { params: Promise<PageParams> };
@@ -82,6 +83,7 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
     kreisSlug,
     limit: 6,
   });
+  const texts = await getPortalSystemTexts("de");
 
   return (
     <>
@@ -100,6 +102,7 @@ export default async function ImmobilienmaklerPage({ params }: PageProps) {
         tabs={tabs}
         activeTabId="uebersicht"
         basePath={basePath}
+        texts={texts}
         ctx={{ bundeslandSlug, kreisSlug }}
         names={{ regionName: kreisName, bundeslandName, kreisName }}
       />

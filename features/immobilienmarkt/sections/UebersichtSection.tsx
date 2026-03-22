@@ -332,6 +332,7 @@ export function UebersichtSection(
           tabs={tabs}
           activeTabId={activeTabId}
           basePath={basePath}
+          texts={props.texts}
           parentBasePath={props.parentBasePath}
           ctx={props.ctx}
           names={{
@@ -406,6 +407,7 @@ export function UebersichtSection(
             }}
             compact
             rootIconSrc="/logo/wohnlagencheck24.svg"
+            texts={props.texts}
           />
         </div>
       ) : null}

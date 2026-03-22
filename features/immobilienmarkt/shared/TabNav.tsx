@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import { KreisSubnavScrollHandle } from "@/components/kreis-subnav-scroll-handle";
+import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 
 export type TabNavItem = {
   id: string;
@@ -15,6 +16,7 @@ export function TabNav(props: {
   tabs: TabNavItem[];
   activeTabId: string;
   basePath: string;
+  texts: PortalSystemTextMap;
 
   // NEU: für Ort-Ebene (Übersicht soll auf Kreis-Ebene verlinken)
   parentBasePath?: string;
@@ -29,7 +31,7 @@ export function TabNav(props: {
     kreisName?: string;
   };
 }) {
-  const { tabs, activeTabId, basePath, parentBasePath, ctx, names } = props;
+  const { tabs, activeTabId, basePath, parentBasePath, ctx, names, texts } = props;
 
   return (
     <section className="kreis-subnav kreis-subnav-sticky mb-4">
@@ -43,6 +45,7 @@ export function TabNav(props: {
           names={names}
           compact
           rootIconSrc="/logo/wohnlagencheck24.svg"
+          texts={texts}
         />
       </div>
       <div className="kreis-subnav-tabs-wrapper w-100" id="kreis-subnav-tabs-wrapper">

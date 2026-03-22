@@ -5,6 +5,7 @@ import { OfferDetailPage } from "@/components/angebote/OfferDetailPage";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { getOfferById, getOfferOverrides } from "@/lib/angebote";
 import { getReportBySlugs } from "@/lib/data";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { parseOfferParam } from "@/utils/slug";
@@ -81,12 +82,14 @@ export default async function MietangebotDetailPage({ params }: PageProps) {
     ...IMMOBILIENMARKT_THEME.tabsByLevel.kreis,
     { id: "mietangebote", label: "Mietangebote" },
   ];
+  const texts = await getPortalSystemTexts("de");
 
   return (
     <OfferDetailPage
       offer={offerData}
       overrides={overrides}
       mode="miete"
+      texts={texts}
       listPath={listPath}
       breadcrumb={{
         tabs,

@@ -10,6 +10,7 @@ import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
 import { loadSinglePublicVisiblePartnerIdForArea } from "@/lib/public-partner-mappings";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 
 type PageParams = { bundesland?: string; kreis?: string };
 type PageProps = { params: Promise<PageParams> };
@@ -79,6 +80,7 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
 
   const basePath = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}`;
   const tabs = IMMOBILIENMARKT_THEME.tabsByLevel.kreis ?? [];
+  const texts = await getPortalSystemTexts("de");
 
   return (
     <>
@@ -98,6 +100,7 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
         tabs={tabs}
         activeTabId="uebersicht"
         basePath={basePath}
+        texts={texts}
         ctx={{ bundeslandSlug, kreisSlug }}
         names={{ regionName: kreisName, bundeslandName, kreisName }}
       />

@@ -52,6 +52,7 @@ export function GrundstueckspreiseSection(props: Props) {
           tabs={tabs}
           activeTabId={activeTabId}
           basePath={basePath}
+          texts={props.texts}
           parentBasePath={props.parentBasePath}
           ctx={props.ctx}
           names={{

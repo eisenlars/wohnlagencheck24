@@ -23,6 +23,7 @@ import {
   loadSinglePublicVisiblePartnerIdForArea,
 } from "@/lib/public-partner-mappings";
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
+import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { resolveLeadGeneratorConfig } from "@/features/lead-generators/core/resolver";
 import { VALUATION_RANGE_FLOW } from "@/features/lead-generators/valuation/flow";
 import type { ValuationPriceContext } from "@/features/lead-generators/valuation/pricing";
@@ -178,6 +179,7 @@ export default async function ImmobilienmarktHierarchiePage({ params, locale = n
     ?? ""
   ).trim();
   const normalizedLocale = normalizePublicLocale(locale);
+  const texts = await getPortalSystemTexts(normalizedLocale);
   const slugPath = route.regionSlugs.join("/");
   const pagePath = buildLocalizedHref(
     locale,
@@ -257,6 +259,7 @@ export default async function ImmobilienmarktHierarchiePage({ params, locale = n
         activeTabId={activeTabId}
         basePath={basePath}
         parentBasePath={parentBasePath}
+        texts={texts}
         ctx={ctx}
         assets={assets}
       />

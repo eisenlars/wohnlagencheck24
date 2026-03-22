@@ -88,6 +88,7 @@ export function WirtschaftSection(
         tabs={tabs}
         activeTabId={activeTabId}
         basePath={basePath}
+        texts={props.texts}
         parentBasePath={props.parentBasePath}
         ctx={props.ctx}
         names={{

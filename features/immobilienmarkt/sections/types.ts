@@ -1,6 +1,7 @@
 // features/immobilienmarkt/sections/types.ts
 
 import type { ComponentType } from "react";
+import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 
 export type TabItem = {
   id: string;
@@ -63,6 +64,7 @@ export type SectionPropsBase = {
   tocItems: TocItem[];
   basePath: string;
   parentBasePath?: string;
+  texts: PortalSystemTextMap;
   ctx?: SectionCtx;
   assets?: SectionAssets;
 };
