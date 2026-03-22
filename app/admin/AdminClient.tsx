@@ -1155,7 +1155,6 @@ export default function AdminClient() {
   });
   const [newPortalLocaleLanguageKey, setNewPortalLocaleLanguageKey] = useState<string>("");
   const [newPortalLocalePresetKey, setNewPortalLocalePresetKey] = useState<string>("");
-  const [showNewPortalLocaleAdvanced, setShowNewPortalLocaleAdvanced] = useState<boolean>(false);
   const adminInitialViewState = useMemo<PersistedAdminViewState>(() => ({
     activeView: "home",
     navMode: "partners",
@@ -2318,7 +2317,6 @@ export default function AdminClient() {
     });
     setNewPortalLocaleLanguageKey("");
     setNewPortalLocalePresetKey("");
-    setShowNewPortalLocaleAdvanced(false);
   }
 
   function buildPortalLocaleDraftFromPreset(preset: PortalLocalePreset): PortalLocaleConfigRecord {
@@ -2356,7 +2354,6 @@ export default function AdminClient() {
       syncSystemTexts: true,
       syncPortalCms: true,
     });
-    setShowNewPortalLocaleAdvanced(false);
   }
 
   function handleNewPortalLocaleLanguageChange(languageKey: string) {
@@ -4984,73 +4981,6 @@ export default function AdminClient() {
               />
             </label>
           </div>
-          <div style={{ marginTop: 10 }}>
-            <button
-              type="button"
-              style={btnGhostStyle}
-              onClick={() => setShowNewPortalLocaleAdvanced((prev) => !prev)}
-            >
-              {showNewPortalLocaleAdvanced ? "Erweiterte Einstellungen ausblenden" : "Erweiterte Einstellungen anzeigen"}
-            </button>
-          </div>
-          {showNewPortalLocaleAdvanced ? (
-            <div style={{ ...grid3Style, marginTop: 10 }}>
-              <label>
-                BCP47
-                <input
-                  style={{ ...inputStyle, background: "#f1f5f9" }}
-                  value={newPortalLocaleDraft.bcp47_tag ?? ""}
-                  readOnly
-                  placeholder="fr-FR"
-                />
-              </label>
-              <label>
-                Number-Locale
-                <input
-                  style={{ ...inputStyle, background: "#f1f5f9" }}
-                  value={newPortalLocaleDraft.number_locale ?? ""}
-                  readOnly
-                  placeholder="fr-FR"
-                />
-              </label>
-              <label>
-                Date-Locale
-                <input
-                  style={{ ...inputStyle, background: "#f1f5f9" }}
-                  value={newPortalLocaleDraft.date_locale ?? ""}
-                  readOnly
-                  placeholder="fr-FR"
-                />
-              </label>
-              <label>
-                Währung
-                <input
-                  style={{ ...inputStyle, background: "#f1f5f9" }}
-                  value={newPortalLocaleDraft.currency_code ?? ""}
-                  readOnly
-                  placeholder="EUR"
-                />
-              </label>
-              <label>
-                Fallback
-                <input
-                  style={{ ...inputStyle, background: "#f1f5f9" }}
-                  value={newPortalLocaleDraft.fallback_locale ?? "de"}
-                  readOnly
-                  placeholder="de"
-                />
-              </label>
-              <label>
-                Schreibrichtung
-                <input
-                  style={{ ...inputStyle, background: "#f1f5f9" }}
-                  value={newPortalLocaleDraft.text_direction ?? "ltr"}
-                  readOnly
-                  placeholder="ltr"
-                />
-              </label>
-            </div>
-          ) : null}
           <div style={{ ...rowStyle, marginTop: 10 }}>
             <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#334155" }}>
