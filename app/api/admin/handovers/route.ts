@@ -201,7 +201,14 @@ export async function POST(req: Request) {
         )
         .select("id, auth_user_id, area_id, is_active");
       newMappings = Array.isArray(fallback.data)
-        ? fallback.data.map((row) => ({ ...row, activation_status: "assigned", is_public_live: null }))
+        ? fallback.data.map((row) => {
+          const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+          return {
+            ...baseRow,
+            activation_status: "assigned",
+            is_public_live: null,
+          };
+        })
         : null;
       upsertMappingError = fallback.error;
     }

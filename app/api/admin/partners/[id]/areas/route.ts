@@ -234,6 +234,17 @@ export async function POST(
     if (error && (isMissingActivationStatusColumn(error) || isMissingVisibilityModeColumn(error))) {
       const missingActivationStatus = isMissingActivationStatusColumn(error);
       const missingVisibilityMode = isMissingVisibilityModeColumn(error);
+      type PartnerAreaMapAssignmentRow = {
+        id: string | null;
+        auth_user_id: string | null;
+        area_id: string | null;
+        is_active: boolean | null;
+        is_public_live: boolean | null;
+        activation_status: string | null;
+        offer_visibility_mode: string | null;
+        request_visibility_mode: string | null;
+        created_at: string | null;
+      };
       const fallback = await admin
         .from("partner_area_map")
         .upsert(
@@ -259,21 +270,29 @@ export async function POST(
           "created_at",
         ].join(", "));
       data = Array.isArray(fallback.data)
-        ? fallback.data.map((row) => ({
-          ...row,
+        ? fallback.data.map((row) => {
+          const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+          const mappedRow: PartnerAreaMapAssignmentRow = {
+          id: typeof baseRow.id === "string" ? baseRow.id : null,
+          auth_user_id: typeof baseRow.auth_user_id === "string" ? baseRow.auth_user_id : null,
+          area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
+          is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : false,
           activation_status: missingActivationStatus
             ? "assigned"
-            : (row as { activation_status?: string | null }).activation_status ?? "assigned",
+            : (baseRow as { activation_status?: string | null }).activation_status ?? "assigned",
           is_public_live: missingActivationStatus
             ? null
-            : (row as { is_public_live?: boolean | null }).is_public_live ?? null,
+            : (baseRow as { is_public_live?: boolean | null }).is_public_live ?? null,
           offer_visibility_mode: missingVisibilityMode
             ? "partner_wide"
-            : (row as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
+            : (baseRow as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
           request_visibility_mode: missingVisibilityMode
             ? "partner_wide"
-            : (row as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
-        }))
+            : (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
+          created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
+        };
+          return mappedRow;
+        })
         : null;
       error = fallback.error;
     }

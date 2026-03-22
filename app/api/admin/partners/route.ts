@@ -155,16 +155,19 @@ async function loadPartnerAreaMappings(
         ].join(", "))
         .in("auth_user_id", partnerIds)
         .order("area_id", { ascending: true });
-      mappings = (fallback.data ?? []).map((row) => ({
-        ...row,
+      mappings = (fallback.data ?? []).map((row) => {
+        const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+        return {
+        ...baseRow,
         partner_preview_signoff_at: null,
         offer_visibility_mode: missingVisibilityMode
           ? "partner_wide"
-          : (row as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
+          : (baseRow as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
         request_visibility_mode: missingVisibilityMode
           ? "partner_wide"
-          : (row as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
-      }));
+          : (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
+      };
+      });
       mappingError = fallback.error;
     } else {
       const fallback = await admin
@@ -172,14 +175,17 @@ async function loadPartnerAreaMappings(
         .select("id, auth_user_id, area_id, is_active, created_at, areas(name, slug, parent_slug, bundesland_slug)")
         .in("auth_user_id", partnerIds)
         .order("area_id", { ascending: true });
-      mappings = (fallback.data ?? []).map((row) => ({
-        ...row,
+      mappings = (fallback.data ?? []).map((row) => {
+        const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+        return {
+        ...baseRow,
         activation_status: null,
         is_public_live: null,
         offer_visibility_mode: "partner_wide",
         request_visibility_mode: "partner_wide",
         partner_preview_signoff_at: null,
-      }));
+      };
+      });
       mappingError = fallback.error;
     }
   }

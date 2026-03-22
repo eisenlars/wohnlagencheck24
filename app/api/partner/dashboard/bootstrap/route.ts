@@ -165,17 +165,20 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         ].join(", "))
         .eq("auth_user_id", userId)
         .order("area_id", { ascending: true });
-      data = (fallback.data ?? []).map((row) => ({
-        ...row,
+      data = (fallback.data ?? []).map((row) => {
+        const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+        return {
+        ...baseRow,
         offer_visibility_mode: !missingVisibilityMode
-          ? (row as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide"
+          ? (baseRow as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide"
           : "partner_wide",
         request_visibility_mode: !missingVisibilityMode
-          ? (row as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide"
+          ? (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide"
           : "partner_wide",
         partner_preview_signoff_at: null,
         admin_review_note: null,
-      }));
+      };
+      });
       error = fallback.error;
     } else if (missingVisibilityMode && !missingActivationStatus) {
       const fallback = await admin
@@ -183,11 +186,14 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         .select("area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, admin_review_note, areas(id, name, slug, parent_slug, bundesland_slug)")
         .eq("auth_user_id", userId)
         .order("area_id", { ascending: true });
-      data = (fallback.data ?? []).map((row) => ({
-        ...row,
+      data = (fallback.data ?? []).map((row) => {
+        const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+        return {
+        ...baseRow,
         offer_visibility_mode: "partner_wide",
         request_visibility_mode: "partner_wide",
-      }));
+      };
+      });
       error = fallback.error;
     } else {
       const fallback = await admin
@@ -195,15 +201,18 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         .select("area_id, is_active, areas(id, name, slug, parent_slug, bundesland_slug)")
         .eq("auth_user_id", userId)
         .order("area_id", { ascending: true });
-      data = (fallback.data ?? []).map((row) => ({
-        ...row,
+      data = (fallback.data ?? []).map((row) => {
+        const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+        return {
+        ...baseRow,
         is_public_live: null,
         activation_status: null,
         offer_visibility_mode: "partner_wide",
         request_visibility_mode: "partner_wide",
         partner_preview_signoff_at: null,
         admin_review_note: null,
-      }));
+      };
+      });
       error = fallback.error;
     }
   }
