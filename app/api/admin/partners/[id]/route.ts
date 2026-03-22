@@ -323,10 +323,10 @@ export async function GET(
         partner_preview_signoff_at: string | null;
         created_at: string | null;
         areas: Array<{
-          name?: string | null;
-          slug?: string | null;
-          parent_slug?: string | null;
-          bundesland_slug?: string | null;
+          name: string | null;
+          slug: string | null;
+          parent_slug: string | null;
+          bundesland_slug: string | null;
         }>;
       };
       const missingActivationStatus = isMissingAreaActivationStatusColumn(mappingError);
@@ -367,9 +367,25 @@ export async function GET(
               : (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
             created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
             areas: Array.isArray(baseRow.areas)
-              ? (baseRow.areas as PartnerDetailAreaMappingRow["areas"])
+              ? (baseRow.areas as unknown[]).map((item) => {
+                  const area = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+                  return {
+                    name: typeof area.name === "string" ? area.name : null,
+                    slug: typeof area.slug === "string" ? area.slug : null,
+                    parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
+                    bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
+                  };
+                })
               : (baseRow.areas && typeof baseRow.areas === "object"
-                ? [baseRow.areas as PartnerDetailAreaMappingRow["areas"][number]]
+                ? [(() => {
+                    const area = baseRow.areas as Record<string, unknown>;
+                    return {
+                      name: typeof area.name === "string" ? area.name : null,
+                      slug: typeof area.slug === "string" ? area.slug : null,
+                      parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
+                      bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
+                    };
+                  })()]
                 : []),
           };
           return mappedRow;
@@ -395,9 +411,25 @@ export async function GET(
             partner_preview_signoff_at: null,
             created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
             areas: Array.isArray(baseRow.areas)
-              ? (baseRow.areas as PartnerDetailAreaMappingRow["areas"])
+              ? (baseRow.areas as unknown[]).map((item) => {
+                  const area = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+                  return {
+                    name: typeof area.name === "string" ? area.name : null,
+                    slug: typeof area.slug === "string" ? area.slug : null,
+                    parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
+                    bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
+                  };
+                })
               : (baseRow.areas && typeof baseRow.areas === "object"
-                ? [baseRow.areas as PartnerDetailAreaMappingRow["areas"][number]]
+                ? [(() => {
+                    const area = baseRow.areas as Record<string, unknown>;
+                    return {
+                      name: typeof area.name === "string" ? area.name : null,
+                      slug: typeof area.slug === "string" ? area.slug : null,
+                      parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
+                      bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
+                    };
+                  })()]
                 : []),
           };
           return mappedRow;
