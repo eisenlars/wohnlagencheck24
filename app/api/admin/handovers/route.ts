@@ -188,6 +188,14 @@ export async function POST(req: Request) {
       )
       .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status");
     if (upsertMappingError && isMissingActivationStatusColumn(upsertMappingError)) {
+      type HandoverMappingRow = {
+        id: string | null;
+        auth_user_id: string | null;
+        area_id: string | null;
+        is_active: boolean | null;
+        is_public_live: boolean | null;
+        activation_status: string | null;
+      };
       const fallback = await admin
         .from("partner_area_map")
         .upsert(
@@ -203,11 +211,15 @@ export async function POST(req: Request) {
       newMappings = Array.isArray(fallback.data)
         ? fallback.data.map((row) => {
           const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-          return {
-            ...baseRow,
+          const mappedRow: HandoverMappingRow = {
+            id: typeof baseRow.id === "string" ? baseRow.id : null,
+            auth_user_id: typeof baseRow.auth_user_id === "string" ? baseRow.auth_user_id : null,
+            area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
+            is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : false,
             activation_status: "assigned",
             is_public_live: null,
           };
+          return mappedRow;
         })
         : null;
       upsertMappingError = fallback.error;
