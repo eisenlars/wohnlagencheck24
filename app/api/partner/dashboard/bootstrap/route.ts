@@ -136,6 +136,38 @@ async function requirePartnerUser(req: Request) {
 }
 
 async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, userId: string): Promise<PartnerAreaConfig[]> {
+  const normalizeAreas = (value: unknown): PartnerArea[] => {
+    const mapArea = (item: unknown): PartnerArea => {
+      const area = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+      return {
+        id: typeof area.id === "string" ? area.id : undefined,
+        name: typeof area.name === "string" ? area.name : undefined,
+        slug: typeof area.slug === "string" ? area.slug : undefined,
+        parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : undefined,
+        bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : undefined,
+      };
+    };
+    if (Array.isArray(value)) return value.map(mapArea);
+    if (value && typeof value === "object") return [mapArea(value)];
+    return [];
+  };
+
+  const normalizeConfigRow = (row: unknown): PartnerAreaConfig => {
+    const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+    const normalizedAreas = normalizeAreas(baseRow.areas);
+    return {
+      area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : "",
+      is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : false,
+      is_public_live: typeof baseRow.is_public_live === "boolean" ? baseRow.is_public_live : null,
+      activation_status: typeof baseRow.activation_status === "string" ? baseRow.activation_status : null,
+      offer_visibility_mode: typeof baseRow.offer_visibility_mode === "string" ? baseRow.offer_visibility_mode : "partner_wide",
+      request_visibility_mode: typeof baseRow.request_visibility_mode === "string" ? baseRow.request_visibility_mode : "partner_wide",
+      partner_preview_signoff_at: typeof baseRow.partner_preview_signoff_at === "string" ? baseRow.partner_preview_signoff_at : null,
+      admin_review_note: typeof baseRow.admin_review_note === "string" ? baseRow.admin_review_note : null,
+      areas: normalizedAreas[0],
+    };
+  };
+
   let { data, error } = await admin
     .from("partner_area_map")
     .select("area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, partner_preview_signoff_at, admin_review_note, areas(id, name, slug, parent_slug, bundesland_slug)")
@@ -164,21 +196,6 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         parent_slug: string | null;
         bundesland_slug: string | null;
       }>;
-    };
-    const normalizeAreas = (value: unknown): PartnerDashboardConfigFallbackRow["areas"] => {
-      const mapArea = (item: unknown) => {
-        const area = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
-        return {
-          id: typeof area.id === "string" ? area.id : null,
-          name: typeof area.name === "string" ? area.name : null,
-          slug: typeof area.slug === "string" ? area.slug : null,
-          parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
-          bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
-        };
-      };
-      if (Array.isArray(value)) return value.map(mapArea);
-      if (value && typeof value === "object") return [mapArea(value)];
-      return [];
     };
     const missingActivationStatus = isMissingAreaActivationStatusColumn(error);
     const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(error);
@@ -267,7 +284,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
 
   if (error) throw new Error(error.message);
 
-  let mergedConfigs = (data ?? []) as PartnerAreaConfig[];
+  let mergedConfigs = (data ?? []).map((row) => normalizeConfigRow(row));
   if (mergedConfigs.length === 0) return mergedConfigs;
 
   const activeDistricts = mergedConfigs.filter((cfg) => {
