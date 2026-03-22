@@ -5017,7 +5017,7 @@ export default function AdminClient() {
                 Aus DE ergänzen
               </button>
               <button
-                style={ghostBtnStyle}
+                style={btnGhostStyle}
                 disabled={busy || portalSystemTextLocale === "de"}
                 onClick={() =>
                   run("Systemtexte komplett aus DE übernehmen", async () => {
@@ -5111,7 +5111,7 @@ export default function AdminClient() {
                           </select>
                           {portalSystemTextLocale !== "de" ? (
                             <button
-                              style={ghostBtnStyle}
+                              style={btnGhostStyle}
                               disabled={busy}
                               onClick={() => {
                                 const deDefault = (
