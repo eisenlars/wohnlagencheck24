@@ -156,7 +156,28 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
       request_visibility_mode: string | null;
       partner_preview_signoff_at: string | null;
       admin_review_note: string | null;
-      areas: PartnerArea | null;
+      areas: Array<{
+        id: string | null;
+        name: string | null;
+        slug: string | null;
+        parent_slug: string | null;
+        bundesland_slug: string | null;
+      }>;
+    };
+    const normalizeAreas = (value: unknown): PartnerDashboardConfigFallbackRow["areas"] => {
+      const mapArea = (item: unknown) => {
+        const area = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+        return {
+          id: typeof area.id === "string" ? area.id : null,
+          name: typeof area.name === "string" ? area.name : null,
+          slug: typeof area.slug === "string" ? area.slug : null,
+          parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
+          bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
+        };
+      };
+      if (Array.isArray(value)) return value.map(mapArea);
+      if (value && typeof value === "object") return [mapArea(value)];
+      return [];
     };
     const missingActivationStatus = isMissingAreaActivationStatusColumn(error);
     const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(error);
@@ -191,7 +212,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
             : "partner_wide",
           partner_preview_signoff_at: null,
           admin_review_note: null,
-          areas: baseRow.areas ?? null,
+          areas: normalizeAreas(baseRow.areas),
         };
         return mappedRow;
       });
@@ -213,7 +234,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
           request_visibility_mode: "partner_wide",
           partner_preview_signoff_at: typeof baseRow.partner_preview_signoff_at === "string" ? baseRow.partner_preview_signoff_at : null,
           admin_review_note: typeof baseRow.admin_review_note === "string" ? baseRow.admin_review_note : null,
-          areas: baseRow.areas ?? null,
+          areas: normalizeAreas(baseRow.areas),
         };
         return mappedRow;
       });
@@ -235,7 +256,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
           request_visibility_mode: "partner_wide",
           partner_preview_signoff_at: null,
           admin_review_note: null,
-          areas: baseRow.areas ?? null,
+          areas: normalizeAreas(baseRow.areas),
         };
         return mappedRow;
       });
