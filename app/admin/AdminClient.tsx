@@ -833,6 +833,10 @@ function formatPortalLocaleStatus(status: PortalLocaleStatus): string {
   return "geplant";
 }
 
+function getPortalLocaleBaseLanguage(locale: string): string {
+  return normalizePortalLocaleCode(locale).split("-")[0] ?? "";
+}
+
 function formatPortalEntryStatus(status: PortalContentEntryStatus): string {
   if (status === "internal") return "intern";
   if (status === "live") return "live";
@@ -2428,6 +2432,17 @@ export default function AdminClient() {
 
   async function createPortalLocaleWithSetup() {
     const { locale, nextConfigs } = buildNewPortalLocaleDraftPayload();
+    const baseLanguage = getPortalLocaleBaseLanguage(locale);
+    const existingVariants = portalLocaleConfigs.filter((row) => (
+      getPortalLocaleBaseLanguage(row.locale) === baseLanguage
+      && normalizePortalLocaleCode(row.locale) !== normalizePortalLocaleCode(locale)
+    ));
+    if (existingVariants.length > 0) {
+      const confirmed = window.confirm(
+        `Für ${newPortalLocaleDraft.label_de || locale} existiert bereits mindestens eine Variante (${existingVariants.map((row) => row.locale).join(", ")}). Möchtest du ${locale} wirklich zusätzlich anlegen?`,
+      );
+      if (!confirmed) return;
+    }
     await savePortalLocaleConfigs(nextConfigs);
     setPortalLocaleConfigs(nextConfigs);
     setPortalSystemTextLocale(locale);
