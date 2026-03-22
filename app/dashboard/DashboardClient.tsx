@@ -172,9 +172,27 @@ function resolveActivationStatusKey(config: PartnerAreaConfig | null): string {
   return "assigned";
 }
 
-function formatRegionScopeSuffix(config: PartnerAreaConfig | null): string {
-  if (!config) return "";
-  return (config.area_id.split('-').length > 3) ? "Ortslage" : "Kreis / Ortslagen";
+function findDistrictConfig(
+  configs: PartnerAreaConfig[],
+  config: PartnerAreaConfig | null,
+): PartnerAreaConfig | null {
+  if (!config) return null;
+  const districtId = config.area_id.split('-').slice(0, 3).join('-');
+  return configs.find((entry) => entry.area_id === districtId) ?? null;
+}
+
+function formatRegionHeaderTitle(
+  configs: PartnerAreaConfig[],
+  config: PartnerAreaConfig | null,
+): string {
+  if (!config) return '';
+  const areaName = String(config.areas?.name ?? '').trim();
+  if (!areaName) return '';
+  const isOrtslage = config.area_id.split('-').length > 3;
+  if (!isOrtslage) return areaName;
+  const districtName = String(findDistrictConfig(configs, config)?.areas?.name ?? '').trim();
+  if (!districtName || districtName === areaName) return areaName;
+  return `${areaName} (${districtName})`;
 }
 
 function normalizeVisibilityMode(value: unknown): "partner_wide" | "strict_local" {
@@ -934,6 +952,10 @@ export default function DashboardClient() {
     const districtConfig = configs.find((cfg) => cfg.area_id === districtId) ?? null;
     return String(districtConfig?.admin_review_note ?? '').trim();
   }, [configs, effectiveSelectedConfig]);
+  const effectiveRegionHeaderTitle = useMemo(
+    () => formatRegionHeaderTitle(configs, effectiveSelectedConfig),
+    [configs, effectiveSelectedConfig],
+  );
   const welcomeActivationReviewNote = useMemo(() => {
     if (!effectiveWelcomeActivationConfig) return '';
     return String(effectiveWelcomeActivationConfig.admin_review_note ?? '').trim();
@@ -1735,7 +1757,7 @@ export default function DashboardClient() {
                   <h2 style={regionTitleStyle}>
                     {hideTextsHeaderInActivationFlow
                       ? `Aktivierung - ${effectiveSelectedConfig.areas?.name ?? ''}`
-                      : `${effectiveSelectedConfig.areas?.name ?? ''} (${formatRegionScopeSuffix(effectiveSelectedConfig)})`}
+                      : effectiveRegionHeaderTitle}
                   </h2>
                   {hideTextsHeaderInActivationFlow ? <div style={{ height: '40px' }} /> : null}
                   {!hideTextsHeaderInActivationFlow ? (
