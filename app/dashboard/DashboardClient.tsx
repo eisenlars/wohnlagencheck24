@@ -189,13 +189,14 @@ function formatRegionHeaderTitle(
   const areaName = String(config.areas?.name ?? '').trim();
   const isOrtslage = config.area_id.split('-').length > 3;
   const districtName = String(findDistrictConfig(configs, config)?.areas?.name ?? '').trim();
+  const areaLabel = areaName ? `${config.area_id} ${areaName}` : config.area_id;
   if (!isOrtslage) {
-    return areaName || districtName || config.area_id;
+    return areaLabel || districtName || config.area_id;
   }
   if (areaName && districtName && districtName !== areaName) {
-    return `${areaName} (${districtName})`;
+    return `${areaLabel} (${districtName})`;
   }
-  return areaName || districtName || config.area_id;
+  return areaLabel || districtName || config.area_id;
 }
 
 function normalizeVisibilityMode(value: unknown): "partner_wide" | "strict_local" {
