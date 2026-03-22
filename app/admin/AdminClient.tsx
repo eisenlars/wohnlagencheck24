@@ -5034,6 +5034,7 @@ export default function AdminClient() {
             <thead>
               <tr>
                 <th style={thStyle}>Sprache</th>
+                <th style={thStyle}>Aktiviert</th>
                 <th style={thStyle}>Öffentlich</th>
                 <th style={thStyle}>Partner</th>
               </tr>
@@ -5053,19 +5054,7 @@ export default function AdminClient() {
                     </div>
                   </td>
                   <td style={tdStyle}>
-                    <select
-                      style={inputStyle}
-                      value={row.status}
-                      onChange={(e) => {
-                        const nextStatus = String(e.target.value) as PortalLocaleStatus;
-                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, status: nextStatus } : item));
-                      }}
-                    >
-                      <option value="planned">geplant</option>
-                      <option value="internal">intern</option>
-                      <option value="live">live</option>
-                    </select>
-                    <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 13, color: "#334155" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
                       <input
                         type="checkbox"
                         checked={row.is_active}
@@ -5076,6 +5065,20 @@ export default function AdminClient() {
                       />
                       Aktiviert
                     </label>
+                  </td>
+                  <td style={tdStyle}>
+                    <select
+                      style={{ ...inputStyle, width: 120, minWidth: 120 }}
+                      value={row.status}
+                      onChange={(e) => {
+                        const nextStatus = String(e.target.value) as PortalLocaleStatus;
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, status: nextStatus } : item));
+                      }}
+                    >
+                      <option value="planned">geplant</option>
+                      <option value="internal">intern</option>
+                      <option value="live">live</option>
+                    </select>
                     <div style={{ ...mutedStyle, marginTop: 8 }}>
                       `Aktiviert` schaltet die Sprache grundsätzlich frei. `live` macht sie öffentlich sichtbar.
                     </div>
