@@ -168,11 +168,13 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
     };
   };
 
-  let { data, error } = await admin
+  const initialQuery = await admin
     .from("partner_area_map")
     .select("area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, partner_preview_signoff_at, admin_review_note, areas(id, name, slug, parent_slug, bundesland_slug)")
     .eq("auth_user_id", userId)
     .order("area_id", { ascending: true });
+  let rawRows: unknown[] = initialQuery.data ?? [];
+  let error = initialQuery.error;
 
   if (error && (
     isMissingAreaActivationStatusColumn(error)
@@ -198,7 +200,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         ].join(", "))
         .eq("auth_user_id", userId)
         .order("area_id", { ascending: true });
-      data = (fallback.data ?? []).map((row) => {
+      rawRows = (fallback.data ?? []).map((row) => {
         const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
         const mappedRow = {
           area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
@@ -224,7 +226,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         .select("area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, admin_review_note, areas(id, name, slug, parent_slug, bundesland_slug)")
         .eq("auth_user_id", userId)
         .order("area_id", { ascending: true });
-      data = (fallback.data ?? []).map((row) => {
+      rawRows = (fallback.data ?? []).map((row) => {
         const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
         const mappedRow = {
           area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
@@ -246,7 +248,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         .select("area_id, is_active, areas(id, name, slug, parent_slug, bundesland_slug)")
         .eq("auth_user_id", userId)
         .order("area_id", { ascending: true });
-      data = (fallback.data ?? []).map((row) => {
+      rawRows = (fallback.data ?? []).map((row) => {
         const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
         const mappedRow = {
           area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
@@ -267,7 +269,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
 
   if (error) throw new Error(error.message);
 
-  let mergedConfigs = (data ?? []).map((row) => normalizeConfigRow(row));
+  let mergedConfigs = rawRows.map((row) => normalizeConfigRow(row));
   if (mergedConfigs.length === 0) return mergedConfigs;
 
   const activeDistricts = mergedConfigs.filter((cfg) => {
