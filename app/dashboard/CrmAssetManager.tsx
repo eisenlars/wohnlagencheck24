@@ -41,6 +41,7 @@ type Props = {
   rawTable: 'partner_references' | 'partner_requests';
   overrideTable: 'partner_reference_overrides' | 'partner_request_overrides';
   emptyHint: string;
+  headerContent?: React.ReactNode;
 };
 
 type RegionTarget = {
@@ -149,7 +150,7 @@ function buildDefaultForm(row: RawAssetRow, rawTable: Props['rawTable'], overrid
 }
 
 export default function CrmAssetManager(props: Props) {
-  const { title, rawTable, overrideTable, emptyHint } = props;
+  const { title, rawTable, overrideTable, emptyHint, headerContent } = props;
   const isRequestTable = rawTable === 'partner_requests';
   const isReferenceTable = rawTable === 'partner_references';
   const supabaseRef = useRef(createClient());
@@ -449,6 +450,7 @@ export default function CrmAssetManager(props: Props) {
 
       <section>
         <p style={{ marginTop: 0, marginBottom: 10, fontSize: 12, color: '#334155' }}>{status}</p>
+        {headerContent}
         {form && selectedRow ? (
           <div style={formStyle}>
             <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 12px', background: '#f8fafc' }}>

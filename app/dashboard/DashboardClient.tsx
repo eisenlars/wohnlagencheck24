@@ -1737,50 +1737,6 @@ export default function DashboardClient() {
                       ? `Aktivierung - ${effectiveSelectedConfig.areas?.name ?? ''}`
                       : `${effectiveSelectedConfig.areas?.name ?? ''} (${formatRegionScopeSuffix(effectiveSelectedConfig)})`}
                   </h2>
-                  {!hideTextsHeaderInActivationFlow ? (
-                    <div style={regionVisibilityModeSummaryStyle}>
-                      {formatVisibilityModeSummary(effectiveSelectedConfig)}
-                    </div>
-                  ) : null}
-                  {!hideTextsHeaderInActivationFlow ? (
-                    <div style={visibilityControlCardStyle}>
-                      <div style={visibilityControlHeadStyle}>Regionale Ausspielung</div>
-                      <div style={visibilityControlRowStyle}>
-                        <label style={visibilityControlLabelStyle}>
-                          <span>Angebote</span>
-                          <select
-                            value={effectiveOfferVisibilityMode}
-                            onChange={(event) => void handleVisibilityModeChange('offer_visibility_mode', event.target.value as VisibilityMode)}
-                            disabled={visibilitySaveBusy}
-                            style={visibilitySelectStyle}
-                          >
-                            <option value="partner_wide">partnerweit</option>
-                            <option value="strict_local">nur lokal</option>
-                          </select>
-                        </label>
-                        <label style={visibilityControlLabelStyle}>
-                          <span>Gesuche</span>
-                          <select
-                            value={effectiveRequestVisibilityMode}
-                            onChange={(event) => void handleVisibilityModeChange('request_visibility_mode', event.target.value as VisibilityMode)}
-                            disabled={visibilitySaveBusy}
-                            style={visibilitySelectStyle}
-                          >
-                            <option value="partner_wide">partnerweit</option>
-                            <option value="strict_local">nur lokal</option>
-                          </select>
-                        </label>
-                      </div>
-                      <div style={visibilityControlHintStyle}>
-                        `partnerweit` zeigt alle Assets des Partners im Gebiet. `nur lokal` ist die vorbereitete lokale Ausspielung.
-                      </div>
-                      {visibilitySaveMessage ? (
-                        <div style={{ marginTop: '10px' }}>
-                          <span style={reviewMessageStyle(visibilitySaveTone)}>{visibilitySaveMessage}</span>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
                   {hideTextsHeaderInActivationFlow ? <div style={{ height: '40px' }} /> : null}
                   {!hideTextsHeaderInActivationFlow ? (
                     <div style={regionStatusStyle(resolveActivationStatusKey(effectiveSelectedConfig))}>
@@ -2037,11 +1993,25 @@ export default function DashboardClient() {
                 availableDomains={internationalDomains}
               />
             ) : activeMainTab === 'immobilien' ? (
-              <OffersManager />
+              <OffersManager
+                visibilityConfig={effectiveSelectedConfig}
+                visibilityMode={effectiveOfferVisibilityMode}
+                visibilityBusy={visibilitySaveBusy}
+                visibilityMessage={visibilitySaveMessage}
+                visibilityTone={visibilitySaveTone}
+                onVisibilityModeChange={(value) => handleVisibilityModeChange('offer_visibility_mode', value)}
+              />
             ) : activeMainTab === 'referenzen' ? (
               <ReferencesManager />
             ) : activeMainTab === 'gesuche' ? (
-              <RequestsManager />
+              <RequestsManager
+                visibilityConfig={effectiveSelectedConfig}
+                visibilityMode={effectiveRequestVisibilityMode}
+                visibilityBusy={visibilitySaveBusy}
+                visibilityMessage={visibilitySaveMessage}
+                visibilityTone={visibilitySaveTone}
+                onVisibilityModeChange={(value) => handleVisibilityModeChange('request_visibility_mode', value)}
+              />
             ) : (
               <div style={{ padding: '20px', color: '#64748b' }}>
                 Bereich in Vorbereitung.
@@ -2335,64 +2305,6 @@ const regionTitleStyle = {
   letterSpacing: '-0.01em'
 };
 
-const regionVisibilityModeSummaryStyle: React.CSSProperties = {
-  fontSize: '12px',
-  lineHeight: 1.5,
-  color: '#486b7a',
-  fontWeight: 700,
-  marginTop: '8px',
-  marginBottom: '6px',
-};
-
-const visibilityControlCardStyle: React.CSSProperties = {
-  marginTop: '10px',
-  marginBottom: '14px',
-  border: '1px solid #dbeafe',
-  background: '#f8fbff',
-  borderRadius: '12px',
-  padding: '12px 14px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '10px',
-};
-
-const visibilityControlHeadStyle: React.CSSProperties = {
-  fontSize: '13px',
-  fontWeight: 800,
-  color: '#0f172a',
-};
-
-const visibilityControlRowStyle: React.CSSProperties = {
-  display: 'flex',
-  gap: '12px',
-  flexWrap: 'wrap',
-};
-
-const visibilityControlLabelStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '6px',
-  minWidth: '220px',
-  fontSize: '12px',
-  fontWeight: 700,
-  color: '#334155',
-};
-
-const visibilitySelectStyle: React.CSSProperties = {
-  border: '1px solid #cbd5e1',
-  borderRadius: '8px',
-  background: '#ffffff',
-  color: '#0f172a',
-  padding: '8px 10px',
-  fontSize: '13px',
-  fontWeight: 600,
-};
-
-const visibilityControlHintStyle: React.CSSProperties = {
-  fontSize: '12px',
-  lineHeight: 1.5,
-  color: '#64748b',
-};
 
 const regionStatusStyle = (statusKey: string): React.CSSProperties => ({
   marginTop: '10px',
