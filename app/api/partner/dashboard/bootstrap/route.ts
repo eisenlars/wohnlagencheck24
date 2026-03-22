@@ -21,6 +21,8 @@ type PartnerAreaConfig = {
   is_active?: boolean;
   is_public_live?: boolean | null;
   activation_status?: string | null;
+  offer_visibility_mode?: string | null;
+  request_visibility_mode?: string | null;
   partner_preview_signoff_at?: string | null;
   admin_review_note?: string | null;
   [key: string]: unknown;
@@ -55,6 +57,14 @@ function isMissingAdminReviewNoteColumn(error: unknown): boolean {
   return msg.includes("admin_review_note")
     && msg.includes("partner_area_map")
     && (msg.includes("does not exist") || msg.includes("schema cache"));
+}
+
+function isMissingAreaVisibilityModeColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return (
+    msg.includes("partner_area_map.offer_visibility_mode")
+    || msg.includes("partner_area_map.request_visibility_mode")
+  ) && (msg.includes("does not exist") || msg.includes("schema cache"));
 }
 
 function isMissingPartnerNameColumns(error: unknown): boolean {
@@ -127,25 +137,56 @@ async function requirePartnerUser(req: Request) {
 async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, userId: string): Promise<PartnerAreaConfig[]> {
   let { data, error } = await admin
     .from("partner_area_map")
-    .select("area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, admin_review_note, areas(id, name, slug, parent_slug, bundesland_slug)")
+    .select("area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, partner_preview_signoff_at, admin_review_note, areas(id, name, slug, parent_slug, bundesland_slug)")
     .eq("auth_user_id", userId)
     .order("area_id", { ascending: true });
 
-  if (error && (isMissingAreaActivationStatusColumn(error) || isMissingAreaPreviewSignoffColumn(error) || isMissingAdminReviewNoteColumn(error))) {
+  if (error && (
+    isMissingAreaActivationStatusColumn(error)
+    || isMissingAreaPreviewSignoffColumn(error)
+    || isMissingAdminReviewNoteColumn(error)
+    || isMissingAreaVisibilityModeColumn(error)
+  )) {
     const missingActivationStatus = isMissingAreaActivationStatusColumn(error);
     const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(error);
     const missingAdminReviewNote = isMissingAdminReviewNoteColumn(error);
+    const missingVisibilityMode = isMissingAreaVisibilityModeColumn(error);
 
     if ((missingPreviewSignoff || missingAdminReviewNote) && !missingActivationStatus) {
       const fallback = await admin
         .from("partner_area_map")
-        .select("area_id, is_active, is_public_live, activation_status, areas(id, name, slug, parent_slug, bundesland_slug)")
+        .select([
+          "area_id",
+          "is_active",
+          "is_public_live",
+          "activation_status",
+          ...(!missingVisibilityMode ? ["offer_visibility_mode", "request_visibility_mode"] : []),
+          "areas(id, name, slug, parent_slug, bundesland_slug)",
+        ].join(", "))
         .eq("auth_user_id", userId)
         .order("area_id", { ascending: true });
       data = (fallback.data ?? []).map((row) => ({
         ...row,
+        offer_visibility_mode: !missingVisibilityMode
+          ? (row as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide"
+          : "partner_wide",
+        request_visibility_mode: !missingVisibilityMode
+          ? (row as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide"
+          : "partner_wide",
         partner_preview_signoff_at: null,
         admin_review_note: null,
+      }));
+      error = fallback.error;
+    } else if (missingVisibilityMode && !missingActivationStatus) {
+      const fallback = await admin
+        .from("partner_area_map")
+        .select("area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, admin_review_note, areas(id, name, slug, parent_slug, bundesland_slug)")
+        .eq("auth_user_id", userId)
+        .order("area_id", { ascending: true });
+      data = (fallback.data ?? []).map((row) => ({
+        ...row,
+        offer_visibility_mode: "partner_wide",
+        request_visibility_mode: "partner_wide",
       }));
       error = fallback.error;
     } else {
@@ -158,6 +199,8 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         ...row,
         is_public_live: null,
         activation_status: null,
+        offer_visibility_mode: "partner_wide",
+        request_visibility_mode: "partner_wide",
         partner_preview_signoff_at: null,
         admin_review_note: null,
       }));
@@ -195,6 +238,8 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
       is_active: true,
       is_public_live: Boolean(parentDistrict.is_public_live),
       activation_status: parentDistrict.activation_status ?? "active",
+      offer_visibility_mode: parentDistrict.offer_visibility_mode ?? "partner_wide",
+      request_visibility_mode: parentDistrict.request_visibility_mode ?? "partner_wide",
     };
   });
 
@@ -219,6 +264,8 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         is_active: true,
         activation_status: parentDistrict.activation_status ?? "active",
         is_public_live: Boolean(parentDistrict.is_public_live),
+        offer_visibility_mode: parentDistrict.offer_visibility_mode ?? "partner_wide",
+        request_visibility_mode: parentDistrict.request_visibility_mode ?? "partner_wide",
         areas: {
           id: areaId,
           name: String(area.name ?? ""),

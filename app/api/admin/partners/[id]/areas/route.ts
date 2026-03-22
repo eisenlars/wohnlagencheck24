@@ -27,6 +27,14 @@ function isMissingActivationStatusColumn(error: unknown): boolean {
   );
 }
 
+function isMissingVisibilityModeColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return (
+    msg.includes("partner_area_map.offer_visibility_mode")
+    || msg.includes("partner_area_map.request_visibility_mode")
+  ) && (msg.includes("does not exist") || msg.includes("schema cache"));
+}
+
 function isKreisAreaId(areaId: string): boolean {
   const parts = String(areaId ?? "")
     .trim()
@@ -214,14 +222,18 @@ export async function POST(
       is_active: false,
       is_public_live: false,
       activation_status: "assigned",
+      offer_visibility_mode: "partner_wide",
+      request_visibility_mode: "partner_wide",
     }));
 
     let { data, error } = await admin
       .from("partner_area_map")
       .upsert(assignmentPayload, { onConflict: "auth_user_id,area_id" })
-      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at");
+      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, created_at");
 
-    if (error && isMissingActivationStatusColumn(error)) {
+    if (error && (isMissingActivationStatusColumn(error) || isMissingVisibilityModeColumn(error))) {
+      const missingActivationStatus = isMissingActivationStatusColumn(error);
+      const missingVisibilityMode = isMissingVisibilityModeColumn(error);
       const fallback = await admin
         .from("partner_area_map")
         .upsert(
@@ -230,12 +242,38 @@ export async function POST(
             area_id: targetAreaId,
             is_active: false,
             is_public_live: false,
+            ...(!missingVisibilityMode ? {
+              offer_visibility_mode: "partner_wide",
+              request_visibility_mode: "partner_wide",
+            } : {}),
           })),
           { onConflict: "auth_user_id,area_id" },
         )
-        .select("id, auth_user_id, area_id, is_active, created_at");
+        .select([
+          "id",
+          "auth_user_id",
+          "area_id",
+          "is_active",
+          ...(!missingActivationStatus ? ["is_public_live", "activation_status"] : []),
+          ...(!missingVisibilityMode ? ["offer_visibility_mode", "request_visibility_mode"] : []),
+          "created_at",
+        ].join(", "));
       data = Array.isArray(fallback.data)
-        ? fallback.data.map((row) => ({ ...row, activation_status: "assigned", is_public_live: null }))
+        ? fallback.data.map((row) => ({
+          ...row,
+          activation_status: missingActivationStatus
+            ? "assigned"
+            : (row as { activation_status?: string | null }).activation_status ?? "assigned",
+          is_public_live: missingActivationStatus
+            ? null
+            : (row as { is_public_live?: boolean | null }).is_public_live ?? null,
+          offer_visibility_mode: missingVisibilityMode
+            ? "partner_wide"
+            : (row as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
+          request_visibility_mode: missingVisibilityMode
+            ? "partner_wide"
+            : (row as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
+        }))
         : null;
       error = fallback.error;
     }

@@ -29,6 +29,8 @@ type PartnerAreaMappingRow = {
   is_active: boolean;
   is_public_live?: boolean | null;
   activation_status?: string | null;
+  offer_visibility_mode?: string | null;
+  request_visibility_mode?: string | null;
   partner_preview_signoff_at?: string | null;
   areas?: {
     name?: string | null;
@@ -107,6 +109,14 @@ function isMissingAreaPreviewSignoffColumn(error: unknown): boolean {
     && (msg.includes("does not exist") || msg.includes("schema cache"));
 }
 
+function isMissingAreaVisibilityModeColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return (
+    msg.includes("partner_area_map.offer_visibility_mode")
+    || msg.includes("partner_area_map.request_visibility_mode")
+  ) && (msg.includes("does not exist") || msg.includes("schema cache"));
+}
+
 async function loadPartnerAreaMappings(
   admin: ReturnType<typeof createAdminClient>,
   partnerIds: string[],
@@ -116,23 +126,44 @@ async function loadPartnerAreaMappings(
 
   let { data: mappings, error: mappingError } = await admin
     .from("partner_area_map")
-    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, partner_preview_signoff_at, created_at, areas(name, slug, parent_slug, bundesland_slug)")
+    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, partner_preview_signoff_at, created_at, areas(name, slug, parent_slug, bundesland_slug)")
     .in("auth_user_id", partnerIds)
     .order("area_id", { ascending: true });
 
-  if (mappingError && (isMissingAreaActivationStatusColumn(mappingError) || isMissingAreaPreviewSignoffColumn(mappingError))) {
+  if (mappingError && (
+    isMissingAreaActivationStatusColumn(mappingError)
+    || isMissingAreaPreviewSignoffColumn(mappingError)
+    || isMissingAreaVisibilityModeColumn(mappingError)
+  )) {
     const missingActivationStatus = isMissingAreaActivationStatusColumn(mappingError);
     const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(mappingError);
+    const missingVisibilityMode = isMissingAreaVisibilityModeColumn(mappingError);
 
-    if (missingPreviewSignoff && !missingActivationStatus) {
+    if ((missingPreviewSignoff || missingVisibilityMode) && !missingActivationStatus) {
       const fallback = await admin
         .from("partner_area_map")
-        .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, created_at, areas(name, slug, parent_slug, bundesland_slug)")
+        .select([
+          "id",
+          "auth_user_id",
+          "area_id",
+          "is_active",
+          "is_public_live",
+          "activation_status",
+          ...(!missingVisibilityMode ? ["offer_visibility_mode", "request_visibility_mode"] : []),
+          "created_at",
+          "areas(name, slug, parent_slug, bundesland_slug)",
+        ].join(", "))
         .in("auth_user_id", partnerIds)
         .order("area_id", { ascending: true });
       mappings = (fallback.data ?? []).map((row) => ({
         ...row,
         partner_preview_signoff_at: null,
+        offer_visibility_mode: missingVisibilityMode
+          ? "partner_wide"
+          : (row as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
+        request_visibility_mode: missingVisibilityMode
+          ? "partner_wide"
+          : (row as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
       }));
       mappingError = fallback.error;
     } else {
@@ -145,6 +176,8 @@ async function loadPartnerAreaMappings(
         ...row,
         activation_status: null,
         is_public_live: null,
+        offer_visibility_mode: "partner_wide",
+        request_visibility_mode: "partner_wide",
         partner_preview_signoff_at: null,
       }));
       mappingError = fallback.error;
