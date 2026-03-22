@@ -40,6 +40,27 @@ type PartnerAreaMappingRow = {
   } | null;
 };
 
+function normalizeAreaRelation(
+  value: unknown,
+): {
+  name?: string | null;
+  slug?: string | null;
+  parent_slug?: string | null;
+  bundesland_slug?: string | null;
+} | null {
+  const source = Array.isArray(value)
+    ? value.find((item) => item && typeof item === "object")
+    : value;
+  if (!source || typeof source !== "object") return null;
+  const area = source as Record<string, unknown>;
+  return {
+    name: typeof area.name === "string" ? area.name : null,
+    slug: typeof area.slug === "string" ? area.slug : null,
+    parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
+    bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
+  };
+}
+
 function isMissingIsActiveColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return msg.includes("partners.is_active") && msg.includes("does not exist");
@@ -146,12 +167,12 @@ async function loadPartnerAreaMappings(
       request_visibility_mode: string | null;
       partner_preview_signoff_at: string | null;
       created_at: string | null;
-      areas: Array<{
+      areas: {
         name: string | null;
         slug: string | null;
         parent_slug: string | null;
         bundesland_slug: string | null;
-      }>;
+      } | null;
     };
     const missingActivationStatus = isMissingAreaActivationStatusColumn(mappingError);
     const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(mappingError);
@@ -190,27 +211,7 @@ async function loadPartnerAreaMappings(
             ? "partner_wide"
             : (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
           created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
-          areas: Array.isArray(baseRow.areas)
-            ? (baseRow.areas as unknown[]).map((item) => {
-                const area = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
-                return {
-                  name: typeof area.name === "string" ? area.name : null,
-                  slug: typeof area.slug === "string" ? area.slug : null,
-                  parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
-                  bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
-                };
-              })
-            : (baseRow.areas && typeof baseRow.areas === "object"
-              ? [(() => {
-                  const area = baseRow.areas as Record<string, unknown>;
-                  return {
-                    name: typeof area.name === "string" ? area.name : null,
-                    slug: typeof area.slug === "string" ? area.slug : null,
-                    parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
-                    bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
-                  };
-                })()]
-              : []),
+          areas: normalizeAreaRelation(baseRow.areas),
         };
         return mappedRow;
       });
@@ -234,27 +235,7 @@ async function loadPartnerAreaMappings(
           request_visibility_mode: "partner_wide",
           partner_preview_signoff_at: null,
           created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
-          areas: Array.isArray(baseRow.areas)
-            ? (baseRow.areas as unknown[]).map((item) => {
-                const area = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
-                return {
-                  name: typeof area.name === "string" ? area.name : null,
-                  slug: typeof area.slug === "string" ? area.slug : null,
-                  parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
-                  bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
-                };
-              })
-            : (baseRow.areas && typeof baseRow.areas === "object"
-              ? [(() => {
-                  const area = baseRow.areas as Record<string, unknown>;
-                  return {
-                    name: typeof area.name === "string" ? area.name : null,
-                    slug: typeof area.slug === "string" ? area.slug : null,
-                    parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
-                    bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
-                  };
-                })()]
-              : []),
+          areas: normalizeAreaRelation(baseRow.areas),
         };
         return mappedRow;
       });

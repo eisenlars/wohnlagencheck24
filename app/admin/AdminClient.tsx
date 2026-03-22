@@ -234,7 +234,7 @@ function buildAreaOverviewRows(partnerList: Partner[]): AreaOverviewRow[] {
       rows.set(key, {
         key,
         kreisId,
-        kreisName: String(mapping.areas?.name ?? kreisId),
+        kreisName: resolveAreaName(mapping, kreisId),
         partnerId: partner.id,
         partnerName: partner.company_name,
         isActive: Boolean(mapping.is_active),
@@ -252,6 +252,37 @@ function buildAreaOverviewRows(partnerList: Partner[]): AreaOverviewRow[] {
     if (byKreis !== 0) return byKreis;
     return a.partnerName.localeCompare(b.partnerName, "de");
   });
+}
+
+function resolveAreaRecord(
+  area: AreaMapping["areas"] | AreaOption | Array<AreaOption | null | undefined> | null | undefined,
+): AreaOption | null {
+  if (Array.isArray(area)) {
+    for (const item of area) {
+      if (item && typeof item === "object") return item;
+    }
+    return null;
+  }
+  return area && typeof area === "object" ? area : null;
+}
+
+function resolveAreaName(
+  area: Pick<AreaMapping, "areas"> | AreaMapping["areas"] | AreaOption | Array<AreaOption | null | undefined> | null | undefined,
+  fallbackId: string,
+): string {
+  const source = area && typeof area === "object" && "areas" in area
+    ? area.areas
+    : area;
+  const name = String(resolveAreaRecord(source)?.name ?? "").trim();
+  return name || fallbackId;
+}
+
+function formatAreaLabel(
+  area: Pick<AreaMapping, "areas"> | AreaMapping["areas"] | AreaOption | Array<AreaOption | null | undefined> | null | undefined,
+  fallbackId: string,
+): string {
+  const name = resolveAreaName(area, fallbackId);
+  return name === fallbackId ? fallbackId : `${name} (${fallbackId})`;
 }
 
 function mergeAreaMappingRecord(
@@ -997,12 +1028,14 @@ export default function AdminClient() {
   const [handoverConfirmModal, setHandoverConfirmModal] = useState<{
     open: boolean;
     areaId: string;
+    areaLabel: string;
     oldPartnerId: string;
     newPartnerId: string;
     oldPartnerIsSystemDefault: boolean;
   }>({
     open: false,
     areaId: "",
+    areaLabel: "",
     oldPartnerId: "",
     newPartnerId: "",
     oldPartnerIsSystemDefault: false,
@@ -1677,8 +1710,16 @@ export default function AdminClient() {
   const currentReviewAllowsDirectGoLive = Boolean(selectedPartner?.is_system_default);
 
   const handoverAreaOptions = useMemo(
-    () => displayAreaRows.map((row) => ({ id: row.displayKreisId, label: row.mapping.areas?.name ?? row.displayKreisId })),
+    () => displayAreaRows.map((row) => ({
+      id: row.displayKreisId,
+      label: resolveAreaName(row.mapping, row.displayKreisId),
+      displayLabel: formatAreaLabel(row.mapping, row.displayKreisId),
+    })),
     [displayAreaRows],
+  );
+  const selectedHandoverAreaOption = useMemo(
+    () => handoverAreaOptions.find((option) => option.id === handoverDraft.area_id) ?? null,
+    [handoverAreaOptions, handoverDraft.area_id],
   );
   const handoverNewPartnerOptions = useMemo(
     () => partners
@@ -3028,7 +3069,7 @@ export default function AdminClient() {
       open: true,
       title: "Gebietsübergabe läuft",
       lines: [
-        `Kreis: ${input.areaId}`,
+        `Kreis: ${handoverConfirmModal.areaId === input.areaId && handoverConfirmModal.areaLabel ? handoverConfirmModal.areaLabel : input.areaId}`,
         "1/4 Übergabe auf Server starten...",
       ],
       done: false,
@@ -3074,7 +3115,7 @@ export default function AdminClient() {
         title: "Gebietsübergabe abgeschlossen",
         lines: [
           ...m.lines,
-          `Gebiet ${result.handover?.area_id ?? input.areaId} erfolgreich von ${input.oldPartnerId} an ${input.newPartnerId} übergeben!`,
+          `Gebiet ${result.handover?.area_name ? `${result.handover.area_name} (${result.handover.area_id ?? input.areaId})` : (result.handover?.area_id ?? input.areaId)} erfolgreich von ${input.oldPartnerId} an ${input.newPartnerId} übergeben!`,
         ],
         done: true,
       }));
@@ -3151,7 +3192,7 @@ export default function AdminClient() {
           >
             <h3 id="handover-confirm-title" style={modalTitleStyle}>Gebietsübergabe bestätigen</h3>
             <p id="handover-confirm-message" style={modalMessageStyle}>
-              Kreis <strong>{handoverConfirmModal.areaId}</strong> wird von
+              Kreis <strong>{handoverConfirmModal.areaLabel || handoverConfirmModal.areaId}</strong> wird von
               {" "}
               <strong>{selectedPartner?.company_name ?? handoverConfirmModal.oldPartnerId}</strong>
               {" "}an{" "}
@@ -4180,7 +4221,7 @@ export default function AdminClient() {
                 {displayAreaRows.map((row) => (
                   <tr key={row.key}>
                     <td style={tdStyle}>
-                      <div>{row.mapping.areas?.name ?? row.displayKreisId}</div>
+                      <div>{resolveAreaName(row.mapping, row.displayKreisId)}</div>
                       <small style={mutedStyle}>{row.displayKreisId}</small>
                     </td>
                     <td style={tdStyle}>
@@ -4197,7 +4238,7 @@ export default function AdminClient() {
                               ...prev,
                               area_id: row.mapping.area_id,
                             }));
-                            setStatus(`Übergabe vorbereitet: ${row.mapping.areas?.name ?? row.mapping.area_id}`);
+                            setStatus(`Übergabe vorbereitet: ${formatAreaLabel(row.mapping, row.displayKreisId)}`);
                           }}
                         >
                           Übergabe
@@ -4296,7 +4337,7 @@ export default function AdminClient() {
               <option value="">Gebiet wählen</option>
               {reviewAreaOptions.map((row) => (
                 <option key={row.mapping.area_id} value={row.mapping.area_id}>
-                  {row.mapping.areas?.name ?? row.mapping.area_id} ({formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status, Boolean(row.mapping.is_public_live))})
+                  {formatAreaLabel(row.mapping, row.mapping.area_id)} ({formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status, Boolean(row.mapping.is_public_live))})
                 </option>
               ))}
             </select>
@@ -4566,7 +4607,7 @@ export default function AdminClient() {
             <option value="">Kreis wählen</option>
             {handoverAreaOptions.map((opt) => (
               <option key={opt.id} value={opt.id}>
-                {opt.label} ({opt.id})
+                {opt.displayLabel}
               </option>
             ))}
           </select>
@@ -4594,7 +4635,7 @@ export default function AdminClient() {
           <div style={{ fontSize: 12, color: "#334155" }}>
             <strong>Vorschau:</strong>{" "}
             {selectedPartner && handoverDraft.area_id && handoverTargetPartner
-              ? `${handoverDraft.area_id} von ${formatPartnerName(selectedPartner)} zu ${formatPartnerName(handoverTargetPartner)}`
+              ? `${selectedHandoverAreaOption?.displayLabel ?? handoverDraft.area_id} von ${formatPartnerName(selectedPartner)} zu ${formatPartnerName(handoverTargetPartner)}`
               : "Bitte Kreis und Zielpartner auswählen."}
           </div>
         </div>
@@ -4607,6 +4648,7 @@ export default function AdminClient() {
               setHandoverConfirmModal({
                 open: true,
                 areaId: handoverDraft.area_id,
+                areaLabel: selectedHandoverAreaOption?.displayLabel ?? handoverDraft.area_id,
                 oldPartnerId: selectedPartnerId,
                 newPartnerId: handoverDraft.new_partner_id,
                 oldPartnerIsSystemDefault: Boolean(selectedPartner?.is_system_default),
