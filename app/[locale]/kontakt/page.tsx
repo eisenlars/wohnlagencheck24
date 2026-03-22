@@ -1,5 +1,7 @@
+import { notFound } from "next/navigation";
+
 import { ConceptPageContent } from "@/app/(public)/(statisch)/kontakt/page";
-import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { parsePublicLocale } from "@/lib/public-locale-routing";
 
 export default async function LocalizedConceptPage({
   params,
@@ -7,5 +9,7 @@ export default async function LocalizedConceptPage({
   params: Promise<{ locale: string }>;
 }) {
   const resolvedParams = await params;
-  return <ConceptPageContent locale={normalizePublicLocale(resolvedParams.locale)} />;
+  const locale = parsePublicLocale(resolvedParams.locale);
+  if (!locale) notFound();
+  return <ConceptPageContent locale={locale} />;
 }

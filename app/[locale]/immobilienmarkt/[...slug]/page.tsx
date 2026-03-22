@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
+import { notFound } from "next/navigation";
 
 import BaseImmobilienmarktPage, {
   generateMetadata as generateBaseMetadata,
 } from "@/app/(public)/immobilienmarkt/[...slug]/page";
 import { getPublicAreaLocaleAvailability } from "@/lib/public-area-locale-availability";
-import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
+import { buildLocalizedHref, parsePublicLocale } from "@/lib/public-locale-routing";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 
 type LocalizedPageProps = {
@@ -42,7 +43,8 @@ function fallbackButtonStyle(): CSSProperties {
 
 export async function generateMetadata({ params }: LocalizedPageProps): Promise<Metadata> {
   const resolvedParams = await params;
-  const locale = normalizePublicLocale(resolvedParams.locale);
+  const locale = parsePublicLocale(resolvedParams.locale);
+  if (!locale) notFound();
   const slug = resolvedParams.slug ?? [];
   const availability = await getPublicAreaLocaleAvailability(slug, locale);
 
@@ -94,7 +96,8 @@ export async function generateMetadata({ params }: LocalizedPageProps): Promise<
 
 export default async function LocalizedImmobilienmarktHierarchiePage({ params }: LocalizedPageProps) {
   const resolvedParams = await params;
-  const locale = normalizePublicLocale(resolvedParams.locale);
+  const locale = parsePublicLocale(resolvedParams.locale);
+  if (!locale) notFound();
   const slug = resolvedParams.slug ?? [];
   const availability = await getPublicAreaLocaleAvailability(slug, locale);
 

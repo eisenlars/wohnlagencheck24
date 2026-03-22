@@ -1,5 +1,7 @@
+import { notFound } from "next/navigation";
+
 import { ImmobilienmarktOverviewContent } from "@/app/(public)/immobilienmarkt/page";
-import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { parsePublicLocale } from "@/lib/public-locale-routing";
 
 export default async function LocalizedImmobilienmarktOverviewPage({
   params,
@@ -7,5 +9,7 @@ export default async function LocalizedImmobilienmarktOverviewPage({
   params: Promise<{ locale: string }>;
 }) {
   const resolvedParams = await params;
-  return <ImmobilienmarktOverviewContent locale={normalizePublicLocale(resolvedParams.locale)} />;
+  const locale = parsePublicLocale(resolvedParams.locale);
+  if (!locale) notFound();
+  return <ImmobilienmarktOverviewContent locale={locale} />;
 }

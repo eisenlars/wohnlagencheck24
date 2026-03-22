@@ -1,5 +1,7 @@
+import { notFound } from "next/navigation";
+
 import { ImpressumPageContent } from "@/app/(public)/(statisch)/impressum/page";
-import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { parsePublicLocale } from "@/lib/public-locale-routing";
 
 export default async function LocalizedImpressumPage({
   params,
@@ -7,5 +9,7 @@ export default async function LocalizedImpressumPage({
   params: Promise<{ locale: string }>;
 }) {
   const resolvedParams = await params;
-  return <ImpressumPageContent locale={normalizePublicLocale(resolvedParams.locale)} />;
+  const locale = parsePublicLocale(resolvedParams.locale);
+  if (!locale) notFound();
+  return <ImpressumPageContent locale={locale} />;
 }

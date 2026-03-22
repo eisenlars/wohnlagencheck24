@@ -1,4 +1,6 @@
-import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { notFound } from "next/navigation";
+
+import { parsePublicLocale } from "@/lib/public-locale-routing";
 import { MietgesucheKreisPageContent } from "@/app/(public)/immobilienmarkt/[bundesland]/[kreis]/mietgesuche/page";
 
 type PageProps = {
@@ -9,10 +11,12 @@ export default async function LocalizedMietgesucheKreisPage({
   params,
 }: PageProps) {
   const resolvedParams = await params;
+  const locale = parsePublicLocale(resolvedParams.locale);
+  if (!locale) notFound();
 
   return MietgesucheKreisPageContent({
     bundesland: resolvedParams.bundesland,
     kreis: resolvedParams.kreis,
-    locale: normalizePublicLocale(resolvedParams.locale),
+    locale,
   });
 }

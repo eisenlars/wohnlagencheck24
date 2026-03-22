@@ -1,4 +1,7 @@
 -- Portal-CMS fuer globale Sprachen und statische Portalinhalte
+-- Oeffentliche Locale-Routen unter /<locale>/... werden aus portal_locale_config
+-- abgeleitet. Oeffentlich sichtbar sind nur Locales mit is_active = true und
+-- status = 'live'.
 
 create table if not exists public.portal_locale_config (
   locale text primary key,

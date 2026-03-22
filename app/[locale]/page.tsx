@@ -1,5 +1,7 @@
-import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { notFound } from "next/navigation";
+
 import { HomeLandingPage } from "@/app/(public)/(statisch)/page";
+import { parsePublicLocale } from "@/lib/public-locale-routing";
 
 export default async function LocalizedHomePage({
   params,
@@ -7,5 +9,7 @@ export default async function LocalizedHomePage({
   params: Promise<{ locale: string }>;
 }) {
   const resolvedParams = await params;
-  return <HomeLandingPage locale={normalizePublicLocale(resolvedParams.locale)} />;
+  const locale = parsePublicLocale(resolvedParams.locale);
+  if (!locale) notFound();
+  return <HomeLandingPage locale={locale} />;
 }

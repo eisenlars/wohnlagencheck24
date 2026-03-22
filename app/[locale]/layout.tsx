@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { PublicSiteShell } from "@/components/layout/PublicSiteShell";
 import { isPublicPortalLocaleLive } from "@/lib/public-portal-locales";
-import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { parsePublicLocale } from "@/lib/public-locale-routing";
 
 export default async function LocalizedPublicLayout({
   children,
@@ -14,7 +14,10 @@ export default async function LocalizedPublicLayout({
   params: Promise<{ locale: string }>;
 }) {
   const resolvedParams = await params;
-  const locale = normalizePublicLocale(resolvedParams.locale);
+  const locale = parsePublicLocale(resolvedParams.locale);
+  if (!locale) {
+    notFound();
+  }
   if (!(await isPublicPortalLocaleLive(locale))) {
     notFound();
   }

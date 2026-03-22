@@ -1,5 +1,7 @@
+import { notFound } from "next/navigation";
+
 import { DatenschutzPageContent } from "@/app/(public)/(statisch)/datenschutz/page";
-import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { parsePublicLocale } from "@/lib/public-locale-routing";
 
 export default async function LocalizedDatenschutzPage({
   params,
@@ -7,5 +9,7 @@ export default async function LocalizedDatenschutzPage({
   params: Promise<{ locale: string }>;
 }) {
   const resolvedParams = await params;
-  return <DatenschutzPageContent locale={normalizePublicLocale(resolvedParams.locale)} />;
+  const locale = parsePublicLocale(resolvedParams.locale);
+  if (!locale) notFound();
+  return <DatenschutzPageContent locale={locale} />;
 }

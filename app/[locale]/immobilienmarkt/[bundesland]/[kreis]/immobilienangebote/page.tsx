@@ -1,4 +1,6 @@
-import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { notFound } from "next/navigation";
+
+import { parsePublicLocale } from "@/lib/public-locale-routing";
 import { ImmobilienangeboteKreisPageContent } from "@/app/(public)/immobilienmarkt/[bundesland]/[kreis]/immobilienangebote/page";
 
 type PageProps = {
@@ -13,11 +15,13 @@ export default async function LocalizedImmobilienangeboteKreisPage({
   const resolvedParams = await params;
   const rawPage = await (await searchParams)?.page;
   const page = rawPage ? Number(rawPage) : 1;
+  const locale = parsePublicLocale(resolvedParams.locale);
+  if (!locale) notFound();
 
   return ImmobilienangeboteKreisPageContent({
     bundesland: resolvedParams.bundesland,
     kreis: resolvedParams.kreis,
     page,
-    locale: normalizePublicLocale(resolvedParams.locale),
+    locale,
   });
 }
