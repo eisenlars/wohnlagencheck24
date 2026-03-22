@@ -176,21 +176,24 @@ export async function PATCH(
           "created_at",
         ].join(", "));
       data = Array.isArray(fallback.data)
-        ? fallback.data.map((row) => ({
-          ...row,
+        ? fallback.data.map((row) => {
+          const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+          return {
+          ...baseRow,
           activation_status: missingActivationStatus
             ? (body.is_active ? "approved_preview" : "in_progress")
-            : (row as { activation_status?: string | null }).activation_status ?? (body.is_active ? "approved_preview" : "in_progress"),
+            : (baseRow as { activation_status?: string | null }).activation_status ?? (body.is_active ? "approved_preview" : "in_progress"),
           is_public_live: missingActivationStatus
             ? null
-            : (row as { is_public_live?: boolean | null }).is_public_live ?? null,
+            : (baseRow as { is_public_live?: boolean | null }).is_public_live ?? null,
           offer_visibility_mode: missingVisibilityMode
             ? "partner_wide"
-            : (row as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
+            : (baseRow as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
           request_visibility_mode: missingVisibilityMode
             ? "partner_wide"
-            : (row as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
-        }))
+            : (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
+        };
+        })
         : null;
       error = fallback.error;
     }

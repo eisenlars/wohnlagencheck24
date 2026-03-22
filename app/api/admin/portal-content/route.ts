@@ -19,6 +19,15 @@ import {
   type PortalLocaleConfigRecord,
   type PortalLocaleStatus,
 } from "@/lib/portal-cms";
+import {
+  buildPortalLocaleBillingFeatureCode,
+  isValidPortalLocaleCode,
+  normalizePortalCurrencyCode,
+  normalizePortalFallbackLocale,
+  normalizePortalIntlLocale,
+  normalizePortalLocaleCode,
+  normalizePortalTextDirection,
+} from "@/lib/portal-locale-registry";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 type PortalLocaleConfigInput = {
@@ -26,6 +35,15 @@ type PortalLocaleConfigInput = {
   status?: unknown;
   partner_bookable?: unknown;
   is_active?: unknown;
+  label_native?: unknown;
+  label_de?: unknown;
+  bcp47_tag?: unknown;
+  fallback_locale?: unknown;
+  text_direction?: unknown;
+  number_locale?: unknown;
+  date_locale?: unknown;
+  currency_code?: unknown;
+  billing_feature_code?: unknown;
 };
 
 type PortalContentEntryInput = {
@@ -43,7 +61,10 @@ type Body = {
 
 function isMissingTable(error: unknown, table: string): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes(`public.${table}`) && msg.includes("does not exist");
+  return (
+    (msg.includes(`public.${table}`) && msg.includes("does not exist"))
+    || (msg.includes(table) && msg.includes("column") && msg.includes("does not exist"))
+  );
 }
 
 function asText(value: unknown): string {
@@ -78,7 +99,7 @@ async function loadPortalContent(admin: ReturnType<typeof createAdminClient>) {
   const [localeRes, contentRes, metaRes] = await Promise.all([
     admin
       .from("portal_locale_config")
-      .select("locale, status, partner_bookable, is_active, updated_at")
+      .select("locale, status, partner_bookable, is_active, label_native, label_de, bcp47_tag, fallback_locale, text_direction, number_locale, date_locale, currency_code, billing_feature_code, updated_at")
       .order("locale", { ascending: true }),
     admin
       .from("portal_content_entries")
@@ -93,7 +114,19 @@ async function loadPortalContent(admin: ReturnType<typeof createAdminClient>) {
   if (contentRes.error) throw contentRes.error;
 
   const locales = Array.isArray(localeRes.data) && localeRes.data.length > 0
-    ? (localeRes.data as PortalLocaleConfigRecord[])
+    ? (localeRes.data as PortalLocaleConfigRecord[]).map((row) => ({
+        ...row,
+        locale: normalizePortalLocaleCode(row.locale),
+        label_native: row.label_native ? String(row.label_native) : null,
+        label_de: row.label_de ? String(row.label_de) : null,
+        bcp47_tag: row.bcp47_tag ? String(row.bcp47_tag) : null,
+        fallback_locale: row.fallback_locale ? String(row.fallback_locale).toLowerCase() : "de",
+        text_direction: row.text_direction === "rtl" ? "rtl" : "ltr",
+        number_locale: row.number_locale ? String(row.number_locale) : null,
+        date_locale: row.date_locale ? String(row.date_locale) : null,
+        currency_code: row.currency_code ? String(row.currency_code).toUpperCase() : null,
+        billing_feature_code: row.billing_feature_code ? String(row.billing_feature_code) : null,
+      }))
     : DEFAULT_PORTAL_LOCALES;
 
   const entries: PortalContentEntryRecord[] = (contentRes.data ?? []).map((row) => ({
@@ -153,13 +186,27 @@ export async function POST(req: Request) {
 
     if (Array.isArray(body.locale_configs) && body.locale_configs.length > 0) {
       const localeRows = body.locale_configs.map((row) => {
-        const locale = asText(row.locale).toLowerCase();
+        const locale = normalizePortalLocaleCode(row.locale);
         if (!locale) throw new Error("Locale-Konfiguration benötigt einen Locale-Code.");
+        if (!isValidPortalLocaleCode(locale)) throw new Error(`Ungültiger Locale-Code: ${locale}`);
+        const fallbackLocale = normalizePortalFallbackLocale(row.fallback_locale);
+        const bcp47Tag = normalizePortalIntlLocale(row.bcp47_tag, locale);
+        const numberLocale = normalizePortalIntlLocale(row.number_locale, bcp47Tag);
+        const dateLocale = normalizePortalIntlLocale(row.date_locale, bcp47Tag);
         return {
           locale,
           status: normalizeLocaleStatus(row.status),
           partner_bookable: asBool(row.partner_bookable),
           is_active: asBool(row.is_active),
+          label_native: asText(row.label_native) || locale,
+          label_de: asText(row.label_de) || locale,
+          bcp47_tag: bcp47Tag,
+          fallback_locale: fallbackLocale,
+          text_direction: normalizePortalTextDirection(row.text_direction),
+          number_locale: numberLocale,
+          date_locale: dateLocale,
+          currency_code: normalizePortalCurrencyCode(row.currency_code),
+          billing_feature_code: asText(row.billing_feature_code) || buildPortalLocaleBillingFeatureCode(locale),
           updated_at: new Date().toISOString(),
         };
       });

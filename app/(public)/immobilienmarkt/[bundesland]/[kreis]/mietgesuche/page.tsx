@@ -17,7 +17,7 @@ export async function MietgesucheKreisPageContent({
   locale = "de",
 }: ContentProps) {
   const normalizedLocale = normalizePublicLocale(locale);
-  const texts = getPortalSystemTexts(normalizedLocale);
+  const texts = await getPortalSystemTexts(normalizedLocale);
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
   const { requests, sourceCount } = await getRegionalRequestsForKreis({

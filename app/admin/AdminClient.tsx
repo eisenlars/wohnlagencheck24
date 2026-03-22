@@ -28,6 +28,22 @@ import {
 } from "@/lib/portal-cms";
 import type { PortalContentI18nMetaViewRecord } from "@/lib/portal-cms-i18n-meta";
 import {
+  buildPortalLocaleBillingFeatureCode,
+  isValidPortalLocaleCode,
+  normalizePortalLocaleCode,
+} from "@/lib/portal-locale-registry";
+import {
+  PORTAL_SYSTEM_TEXT_DEFINITIONS,
+  getPortalSystemTextDefaultValue,
+  type PortalSystemTextDefinition,
+  type PortalSystemTextKey,
+} from "@/lib/portal-system-text-definitions";
+import type {
+  PortalSystemTextEntryRecord,
+  PortalSystemTextEntryStatus,
+  PortalSystemTextI18nMetaViewRecord,
+} from "@/lib/portal-system-text-meta";
+import {
   restoreSessionScroll,
   storeSessionScroll,
   useSessionViewState,
@@ -742,6 +758,39 @@ function formatPortalTranslationOrigin(origin: string | null | undefined): strin
   return "unbekannt";
 }
 
+function buildPortalSystemTextDraftKey(locale: string, key: PortalSystemTextKey): string {
+  return `${locale}::${key}`;
+}
+
+function buildPortalSystemTextDraftMap(args: {
+  locales: PortalLocaleConfigRecord[];
+  definitions: PortalSystemTextDefinition[];
+  entries: PortalSystemTextEntryRecord[];
+}): Record<string, { status: PortalSystemTextEntryStatus; value_text: string }> {
+  const entryMap = new Map(
+    args.entries.map((entry) => [buildPortalSystemTextDraftKey(entry.locale, entry.key), entry] as const),
+  );
+  const locales = args.locales.length > 0 ? args.locales : [{ locale: "de" } as PortalLocaleConfigRecord];
+
+  return locales.reduce<Record<string, { status: PortalSystemTextEntryStatus; value_text: string }>>((acc, localeRow) => {
+    const locale = String(localeRow.locale ?? "").trim().toLowerCase() || "de";
+    for (const def of args.definitions) {
+      const draftKey = buildPortalSystemTextDraftKey(locale, def.key);
+      const existing = entryMap.get(draftKey);
+      acc[draftKey] = existing
+        ? {
+            status: existing.status,
+            value_text: existing.value_text,
+          }
+        : {
+            status: locale === "de" ? "live" : "draft",
+            value_text: getPortalSystemTextDefaultValue(locale, def.key),
+          };
+    }
+    return acc;
+  }, {});
+}
+
 type PersistedPortalCmsViewState = {
   pageKey?: string;
   locale?: string;
@@ -988,6 +1037,29 @@ export default function AdminClient() {
   const [portalLocaleConfigs, setPortalLocaleConfigs] = useState<PortalLocaleConfigRecord[]>([]);
   const [portalContentEntries, setPortalContentEntries] = useState<PortalContentEntryRecord[]>([]);
   const [portalContentMetas, setPortalContentMetas] = useState<PortalContentI18nMetaViewRecord[]>([]);
+  const [portalSystemTextDefinitions, setPortalSystemTextDefinitions] = useState<PortalSystemTextDefinition[]>(PORTAL_SYSTEM_TEXT_DEFINITIONS);
+  const [portalSystemTextEntries, setPortalSystemTextEntries] = useState<PortalSystemTextEntryRecord[]>([]);
+  const [portalSystemTextMetas, setPortalSystemTextMetas] = useState<PortalSystemTextI18nMetaViewRecord[]>([]);
+  const [portalSystemTextLocale, setPortalSystemTextLocale] = useState<string>("de");
+  const [portalSystemTextDrafts, setPortalSystemTextDrafts] = useState<Record<string, {
+    status: PortalSystemTextEntryStatus;
+    value_text: string;
+  }>>({});
+  const [newPortalLocaleDraft, setNewPortalLocaleDraft] = useState<PortalLocaleConfigRecord>({
+    locale: "",
+    status: "planned",
+    partner_bookable: false,
+    is_active: false,
+    label_native: "",
+    label_de: "",
+    bcp47_tag: "",
+    fallback_locale: "de",
+    text_direction: "ltr",
+    number_locale: "",
+    date_locale: "",
+    currency_code: "EUR",
+    billing_feature_code: "",
+  });
   const adminInitialViewState = useMemo<PersistedAdminViewState>(() => ({
     activeView: "home",
     navMode: "partners",
@@ -1092,6 +1164,19 @@ export default function AdminClient() {
     () => portalLocaleConfigs.filter((row) => row.is_active).sort((a, b) => a.locale.localeCompare(b.locale, "de")),
     [portalLocaleConfigs],
   );
+  const portalSystemTextMetaMap = useMemo(
+    () => new Map(portalSystemTextMetas.map((meta) => [`${meta.locale}::${meta.key}`, meta] as const)),
+    [portalSystemTextMetas],
+  );
+  const portalSystemTextGroups = useMemo(() => {
+    const groups = new Map<string, PortalSystemTextDefinition[]>();
+    for (const def of portalSystemTextDefinitions) {
+      const current = groups.get(def.group) ?? [];
+      current.push(def);
+      groups.set(def.group, current);
+    }
+    return Array.from(groups.entries());
+  }, [portalSystemTextDefinitions]);
   const portalContentMetaMap = useMemo(
     () => new Map(portalContentMetas.map((meta) => [`${meta.page_key}::${meta.section_key}::${meta.locale}`, meta] as const)),
     [portalContentMetas],
@@ -2061,18 +2146,36 @@ export default function AdminClient() {
   }
 
   async function loadPortalCms() {
-    const data = await api<{
-      locales?: PortalLocaleConfigRecord[];
-      pages?: PortalContentPageDefinition[];
-      entries?: PortalContentEntryRecord[];
-      metas?: PortalContentI18nMetaViewRecord[];
-    }>("/api/admin/portal-content");
-    setPortalLocaleConfigs(data.locales ?? []);
-    setPortalContentEntries(data.entries ?? []);
-    setPortalContentMetas(data.metas ?? []);
-    const fallbackLocale = (data.locales ?? []).find((row) => row.is_active)?.locale ?? data.locales?.[0]?.locale ?? "de";
+    const [contentData, systemTextData] = await Promise.all([
+      api<{
+        locales?: PortalLocaleConfigRecord[];
+        pages?: PortalContentPageDefinition[];
+        entries?: PortalContentEntryRecord[];
+        metas?: PortalContentI18nMetaViewRecord[];
+      }>("/api/admin/portal-content"),
+      api<{
+        definitions?: PortalSystemTextDefinition[];
+        entries?: PortalSystemTextEntryRecord[];
+        metas?: PortalSystemTextI18nMetaViewRecord[];
+      }>("/api/admin/portal-system-texts"),
+    ]);
+    const nextLocales = contentData.locales ?? [];
+    const nextSystemDefinitions = systemTextData.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS;
+    const nextSystemEntries = systemTextData.entries ?? [];
+    setPortalLocaleConfigs(nextLocales);
+    setPortalContentEntries(contentData.entries ?? []);
+    setPortalContentMetas(contentData.metas ?? []);
+    setPortalSystemTextDefinitions(nextSystemDefinitions);
+    setPortalSystemTextEntries(nextSystemEntries);
+    setPortalSystemTextMetas(systemTextData.metas ?? []);
+    setPortalSystemTextDrafts(buildPortalSystemTextDraftMap({
+      locales: nextLocales,
+      definitions: nextSystemDefinitions,
+      entries: nextSystemEntries,
+    }));
+    const fallbackLocale = nextLocales.find((row) => row.is_active)?.locale ?? nextLocales[0]?.locale ?? "de";
     setPortalCmsViewState((prev) => {
-      const nextLocale = (data.locales ?? []).some((row) => row.locale === prev.locale)
+      const nextLocale = nextLocales.some((row) => row.locale === prev.locale)
         ? String(prev.locale ?? fallbackLocale)
         : fallbackLocale;
       const nextPageKey = portalCmsPages.some((page) => page.page_key === prev.pageKey)
@@ -2084,6 +2187,112 @@ export default function AdminClient() {
         pageKey: nextPageKey,
       };
     });
+    setPortalSystemTextLocale((prev) => nextLocales.some((row) => row.locale === prev) ? prev : fallbackLocale);
+  }
+
+  function appendPortalLocaleDraft() {
+    const locale = normalizePortalLocaleCode(newPortalLocaleDraft.locale);
+    if (!locale) throw new Error("Bitte zuerst einen Locale-Code eingeben.");
+    if (!isValidPortalLocaleCode(locale)) throw new Error(`Ungültiger Locale-Code: ${locale}`);
+    if (portalLocaleConfigs.some((row) => row.locale === locale)) throw new Error(`Locale ${locale} ist bereits vorhanden.`);
+
+    const bcp47Tag = String(newPortalLocaleDraft.bcp47_tag ?? "").trim() || locale;
+    const nextRow: PortalLocaleConfigRecord = {
+      locale,
+      status: newPortalLocaleDraft.status ?? "planned",
+      partner_bookable: false,
+      is_active: Boolean(newPortalLocaleDraft.is_active),
+      label_native: String(newPortalLocaleDraft.label_native ?? "").trim() || locale,
+      label_de: String(newPortalLocaleDraft.label_de ?? "").trim() || locale,
+      bcp47_tag: bcp47Tag,
+      fallback_locale: String(newPortalLocaleDraft.fallback_locale ?? "").trim().toLowerCase() || "de",
+      text_direction: newPortalLocaleDraft.text_direction === "rtl" ? "rtl" : "ltr",
+      number_locale: String(newPortalLocaleDraft.number_locale ?? "").trim() || bcp47Tag,
+      date_locale: String(newPortalLocaleDraft.date_locale ?? "").trim() || bcp47Tag,
+      currency_code: String(newPortalLocaleDraft.currency_code ?? "EUR").trim().toUpperCase() || "EUR",
+      billing_feature_code: String(newPortalLocaleDraft.billing_feature_code ?? "").trim() || buildPortalLocaleBillingFeatureCode(locale),
+    };
+
+    setPortalLocaleConfigs((prev) => [...prev, nextRow].sort((a, b) => a.locale.localeCompare(b.locale, "de")));
+    setPortalSystemTextDrafts((prev) => ({
+      ...prev,
+      ...buildPortalSystemTextDraftMap({
+        locales: [...portalLocaleConfigs, nextRow],
+        definitions: portalSystemTextDefinitions,
+        entries: portalSystemTextEntries,
+      }),
+    }));
+    setPortalSystemTextLocale(locale);
+    setNewPortalLocaleDraft({
+      locale: "",
+      status: "planned",
+      partner_bookable: false,
+      is_active: false,
+      label_native: "",
+      label_de: "",
+      bcp47_tag: "",
+      fallback_locale: "de",
+      text_direction: "ltr",
+      number_locale: "",
+      date_locale: "",
+      currency_code: "EUR",
+      billing_feature_code: "",
+    });
+  }
+
+  async function savePortalSystemTextLocale(locale: string) {
+    const rows = portalSystemTextDefinitions.map((def) => {
+      const draft = portalSystemTextDrafts[buildPortalSystemTextDraftKey(locale, def.key)] ?? {
+        status: locale === "de" ? "live" as PortalSystemTextEntryStatus : "draft" as PortalSystemTextEntryStatus,
+        value_text: getPortalSystemTextDefaultValue(locale, def.key),
+      };
+      return {
+        key: def.key,
+        locale,
+        status: draft.status,
+        value_text: draft.value_text,
+      };
+    });
+    const data = await api<{
+      definitions?: PortalSystemTextDefinition[];
+      entries?: PortalSystemTextEntryRecord[];
+      metas?: PortalSystemTextI18nMetaViewRecord[];
+    }>("/api/admin/portal-system-texts", {
+      method: "POST",
+      body: JSON.stringify({ entries: rows }),
+    });
+    setPortalSystemTextDefinitions(data.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS);
+    setPortalSystemTextEntries(data.entries ?? []);
+    setPortalSystemTextMetas(data.metas ?? []);
+    setPortalSystemTextDrafts(buildPortalSystemTextDraftMap({
+      locales: portalLocaleConfigs,
+      definitions: data.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS,
+      entries: data.entries ?? [],
+    }));
+  }
+
+  async function syncPortalSystemTextLocaleFromDe(locale: string, mode: "copy_all" | "fill_missing") {
+    const data = await api<{
+      definitions?: PortalSystemTextDefinition[];
+      entries?: PortalSystemTextEntryRecord[];
+      metas?: PortalSystemTextI18nMetaViewRecord[];
+    }>("/api/admin/portal-system-texts", {
+      method: "POST",
+      body: JSON.stringify({
+        sync: {
+          target_locale: locale,
+          mode,
+        },
+      }),
+    });
+    setPortalSystemTextDefinitions(data.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS);
+    setPortalSystemTextEntries(data.entries ?? []);
+    setPortalSystemTextMetas(data.metas ?? []);
+    setPortalSystemTextDrafts(buildPortalSystemTextDraftMap({
+      locales: portalLocaleConfigs,
+      definitions: data.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS,
+      entries: data.entries ?? [],
+    }));
   }
 
   function buildPortalCmsPageDraftEntries(page: PortalContentPageDefinition, locale: string) {
@@ -4511,18 +4720,106 @@ export default function AdminClient() {
       <section style={cardStyle}>
         <h2 style={h2Style}>Sprachverwaltung</h2>
         <p style={mutedStyle}>
-          Globale Sprachfreigaben, Locale-Status und Partnerbuchbarkeit zentral verwalten.
+          Locale-Registry, Freigaben und portalweite Systemtexte zentral verwalten.
         </p>
 
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
-          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Globale Sprachfreigabe</div>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Neue Sprache hinzufügen</div>
+          <div style={grid3Style}>
+            <label>
+              Locale-Code
+              <input
+                style={inputStyle}
+                value={newPortalLocaleDraft.locale ?? ""}
+                placeholder="fr oder pt-br"
+                onChange={(e) => {
+                  const locale = normalizePortalLocaleCode(e.target.value);
+                  setNewPortalLocaleDraft((prev) => ({
+                    ...prev,
+                    locale,
+                    bcp47_tag: String(prev.bcp47_tag ?? "").trim() ? prev.bcp47_tag : locale,
+                    number_locale: String(prev.number_locale ?? "").trim() ? prev.number_locale : locale,
+                    date_locale: String(prev.date_locale ?? "").trim() ? prev.date_locale : locale,
+                    billing_feature_code: String(prev.billing_feature_code ?? "").trim() ? prev.billing_feature_code : buildPortalLocaleBillingFeatureCode(locale),
+                  }));
+                }}
+              />
+            </label>
+            <label>
+              Anzeigename nativ
+              <input
+                style={inputStyle}
+                value={newPortalLocaleDraft.label_native ?? ""}
+                onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, label_native: e.target.value }))}
+                placeholder="Français"
+              />
+            </label>
+            <label>
+              Anzeigename DE
+              <input
+                style={inputStyle}
+                value={newPortalLocaleDraft.label_de ?? ""}
+                onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, label_de: e.target.value }))}
+                placeholder="Französisch"
+              />
+            </label>
+            <label>
+              BCP47
+              <input
+                style={inputStyle}
+                value={newPortalLocaleDraft.bcp47_tag ?? ""}
+                onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, bcp47_tag: e.target.value }))}
+                placeholder="fr-FR"
+              />
+            </label>
+            <label>
+              Fallback
+              <input
+                style={inputStyle}
+                value={newPortalLocaleDraft.fallback_locale ?? "de"}
+                onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, fallback_locale: normalizePortalLocaleCode(e.target.value) || "de" }))}
+                placeholder="de"
+              />
+            </label>
+            <label>
+              Billing-Feature
+              <input
+                style={inputStyle}
+                value={newPortalLocaleDraft.billing_feature_code ?? ""}
+                onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, billing_feature_code: e.target.value }))}
+                placeholder="international_fr"
+              />
+            </label>
+          </div>
+          <div style={{ ...rowStyle, marginTop: 10 }}>
+            <div style={{ ...mutedStyle, fontSize: 12 }}>
+              Neue Locales werden zuerst nur in die Registry aufgenommen. Öffentlich sichtbar werden sie erst mit `is_active = true` und `status = live`.
+            </div>
+            <button
+              style={btnStyle}
+              disabled={busy}
+              onClick={() =>
+                run("Neue Portal-Locale vormerken", async () => {
+                  appendPortalLocaleDraft();
+                })
+              }
+            >
+              Sprache vormerken
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Locale Registry</div>
           <table style={tableStyle}>
             <thead>
               <tr>
                 <th style={thStyle}>Locale</th>
-                <th style={thStyle}>Status</th>
-                <th style={thStyle}>Aktiv</th>
-                <th style={thStyle}>Partner buchbar</th>
+                <th style={thStyle}>Benennung</th>
+                <th style={thStyle}>Routing & Fallback</th>
+                <th style={thStyle}>Formatprofil</th>
+                <th style={thStyle}>Freigabe</th>
+                <th style={thStyle}>Billing</th>
               </tr>
             </thead>
             <tbody>
@@ -4531,6 +4828,88 @@ export default function AdminClient() {
                   <td style={tdStyle}>
                     <div style={{ fontWeight: 700, color: "#0f172a" }}>{row.locale}</div>
                     <div style={mutedStyle}>{formatPortalLocaleStatus(row.status)}</div>
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      style={inputStyle}
+                      value={row.label_native ?? ""}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, label_native: nextValue } : item));
+                      }}
+                      placeholder="Native Bezeichnung"
+                    />
+                    <input
+                      style={{ ...inputStyle, marginTop: 8 }}
+                      value={row.label_de ?? ""}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, label_de: nextValue } : item));
+                      }}
+                      placeholder="Deutsche Bezeichnung"
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      style={inputStyle}
+                      value={row.bcp47_tag ?? ""}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, bcp47_tag: nextValue } : item));
+                      }}
+                      placeholder="en-US"
+                    />
+                    <input
+                      style={{ ...inputStyle, marginTop: 8 }}
+                      value={row.fallback_locale ?? "de"}
+                      onChange={(e) => {
+                        const nextValue = normalizePortalLocaleCode(e.target.value) || "de";
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, fallback_locale: nextValue } : item));
+                      }}
+                      placeholder="de"
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      style={inputStyle}
+                      value={row.number_locale ?? ""}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, number_locale: nextValue } : item));
+                      }}
+                      placeholder="fr-FR"
+                    />
+                    <input
+                      style={{ ...inputStyle, marginTop: 8 }}
+                      value={row.date_locale ?? ""}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, date_locale: nextValue } : item));
+                      }}
+                      placeholder="fr-FR"
+                    />
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                      <input
+                        style={{ ...inputStyle, marginTop: 0 }}
+                        value={row.currency_code ?? "EUR"}
+                        onChange={(e) => {
+                          const nextValue = e.target.value.toUpperCase();
+                          setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, currency_code: nextValue } : item));
+                        }}
+                        placeholder="EUR"
+                      />
+                      <select
+                        style={{ ...inputStyle, marginTop: 0 }}
+                        value={row.text_direction ?? "ltr"}
+                        onChange={(e) => {
+                          const nextValue = String(e.target.value) === "rtl" ? "rtl" : "ltr";
+                          setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, text_direction: nextValue } : item));
+                        }}
+                      >
+                        <option value="ltr">LTR</option>
+                        <option value="rtl">RTL</option>
+                      </select>
+                    </div>
                   </td>
                   <td style={tdStyle}>
                     <select
@@ -4545,26 +4924,39 @@ export default function AdminClient() {
                       <option value="internal">intern</option>
                       <option value="live">live</option>
                     </select>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 13, color: "#334155" }}>
+                      <input
+                        type="checkbox"
+                        checked={row.is_active}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, is_active: checked } : item));
+                        }}
+                      />
+                      Aktiv
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 13, color: "#334155" }}>
+                      <input
+                        type="checkbox"
+                        checked={row.partner_bookable}
+                        disabled={row.status !== "live"}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, partner_bookable: checked } : item));
+                        }}
+                      />
+                      Partner buchbar
+                    </label>
                   </td>
                   <td style={tdStyle}>
                     <input
-                      type="checkbox"
-                      checked={row.is_active}
+                      style={inputStyle}
+                      value={row.billing_feature_code ?? ""}
                       onChange={(e) => {
-                        const checked = e.target.checked;
-                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, is_active: checked } : item));
+                        const nextValue = e.target.value;
+                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, billing_feature_code: nextValue } : item));
                       }}
-                    />
-                  </td>
-                  <td style={tdStyle}>
-                    <input
-                      type="checkbox"
-                      checked={row.partner_bookable}
-                      disabled={row.status !== "live"}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, partner_bookable: checked } : item));
-                      }}
+                      placeholder="international_fr"
                     />
                   </td>
                 </tr>
@@ -4573,7 +4965,7 @@ export default function AdminClient() {
           </table>
           <div style={{ ...rowStyle, marginTop: 10 }}>
             <div style={{ ...mutedStyle, fontSize: 12 }}>
-              Nur `live`-Locales sollten partnerbuchbar werden. `internal` ist fuer QA und inhaltliche Pruefung gedacht.
+              `status + is_active` steuern die öffentliche Verfügbarkeit. `billing_feature_code` ist die Brücke zum Partner-Dashboard International.
             </div>
             <button
               style={btnStyle}
@@ -4590,6 +4982,161 @@ export default function AdminClient() {
             >
               Sprachen speichern
             </button>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+          <div style={{ ...rowStyle, alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 700, color: "#0f172a" }}>Portalweite Systemtexte</div>
+              <div style={{ ...mutedStyle, marginTop: 4 }}>
+                Navigation, Fallback-Hinweise, Angebots- und Gesuche-Labels pro Locale.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <select
+                style={{ ...inputStyle, minWidth: 180 }}
+                value={portalSystemTextLocale}
+                onChange={(e) => setPortalSystemTextLocale(e.target.value)}
+              >
+                {(portalLocaleConfigs.length > 0 ? portalLocaleConfigs : [{ locale: "de" } as PortalLocaleConfigRecord]).map((row) => (
+                  <option key={row.locale} value={row.locale}>
+                    {row.locale}{row.label_native ? ` · ${row.label_native}` : ""}
+                  </option>
+                ))}
+              </select>
+              <button
+                style={btnStyle}
+                disabled={busy || portalSystemTextLocale === "de"}
+                onClick={() =>
+                  run("Systemtexte aus DE ergänzen", async () => {
+                    await syncPortalSystemTextLocaleFromDe(portalSystemTextLocale, "fill_missing");
+                  })
+                }
+              >
+                Aus DE ergänzen
+              </button>
+              <button
+                style={ghostBtnStyle}
+                disabled={busy || portalSystemTextLocale === "de"}
+                onClick={() =>
+                  run("Systemtexte komplett aus DE übernehmen", async () => {
+                    await syncPortalSystemTextLocaleFromDe(portalSystemTextLocale, "copy_all");
+                  })
+                }
+              >
+                DE komplett übernehmen
+              </button>
+              <button
+                style={btnStyle}
+                disabled={busy}
+                onClick={() =>
+                  run("Systemtexte speichern", async () => {
+                    await savePortalSystemTextLocale(portalSystemTextLocale);
+                  })
+                }
+              >
+                Systemtexte speichern
+              </button>
+            </div>
+          </div>
+
+          <div style={{ ...mutedStyle, fontSize: 12, marginTop: 10 }}>
+            Für Nicht-DE-Locales markieren Sync-Läufe geänderte Texte bewusst nicht direkt als `live`. Öffentliche Ausspielung erfolgt erst nach manuellem Statuswechsel.
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+            {portalSystemTextGroups.map(([groupName, defs]) => (
+              <div key={groupName} style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, background: "#f8fafc" }}>
+                <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>{groupName}</div>
+                <div style={{ display: "grid", gap: 12 }}>
+                  {defs.map((def) => {
+                    const draftKey = buildPortalSystemTextDraftKey(portalSystemTextLocale, def.key);
+                    const draft = portalSystemTextDrafts[draftKey] ?? {
+                      status: portalSystemTextLocale === "de" ? "live" as PortalSystemTextEntryStatus : "draft" as PortalSystemTextEntryStatus,
+                      value_text: getPortalSystemTextDefaultValue(portalSystemTextLocale, def.key),
+                    };
+                    const meta = portalSystemTextMetaMap.get(`${portalSystemTextLocale}::${def.key}`) ?? null;
+                    return (
+                      <div key={def.key} style={{ border: "1px solid #dbe4ee", borderRadius: 8, padding: 10, background: "#fff" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                          <div>
+                            <div style={{ fontWeight: 700, color: "#0f172a" }}>{def.label}</div>
+                            <div style={mutedStyle}>
+                              <code>{def.key}</code>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                            <span style={{ ...mutedStyle, fontSize: 12 }}>Status: <strong>{formatPortalEntryStatus(draft.status as PortalContentEntryStatus)}</strong></span>
+                            {portalSystemTextLocale !== "de" && meta ? (
+                              <span style={{ fontSize: 12, color: meta.translation_is_stale ? "#991b1b" : "#334155" }}>
+                                {formatPortalTranslationOrigin(meta.translation_origin)}
+                                {meta.translation_is_stale ? " · DE geändert" : ""}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                        <textarea
+                          style={{ ...inputStyle, minHeight: 96, marginTop: 10, resize: "vertical" }}
+                          value={draft.value_text}
+                          onChange={(e) => {
+                            const nextValue = e.target.value;
+                            setPortalSystemTextDrafts((prev) => ({
+                              ...prev,
+                              [draftKey]: {
+                                ...draft,
+                                value_text: nextValue,
+                              },
+                            }));
+                          }}
+                        />
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
+                          <select
+                            style={{ ...inputStyle, maxWidth: 180 }}
+                            value={draft.status}
+                            onChange={(e) => {
+                              const nextStatus = String(e.target.value) as PortalSystemTextEntryStatus;
+                              setPortalSystemTextDrafts((prev) => ({
+                                ...prev,
+                                [draftKey]: {
+                                  ...draft,
+                                  status: nextStatus,
+                                },
+                              }));
+                            }}
+                          >
+                            <option value="draft">entwurf</option>
+                            <option value="internal">intern</option>
+                            <option value="live">live</option>
+                          </select>
+                          {portalSystemTextLocale !== "de" ? (
+                            <button
+                              style={ghostBtnStyle}
+                              disabled={busy}
+                              onClick={() => {
+                                const deDefault = (
+                                  portalSystemTextDrafts[buildPortalSystemTextDraftKey("de", def.key)]?.value_text
+                                  ?? getPortalSystemTextDefaultValue("de", def.key)
+                                );
+                                setPortalSystemTextDrafts((prev) => ({
+                                  ...prev,
+                                  [draftKey]: {
+                                    status: draft.status === "live" ? "internal" : draft.status,
+                                    value_text: deDefault,
+                                  },
+                                }));
+                              }}
+                            >
+                              DE in Feld übernehmen
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -28,7 +28,7 @@ export async function MietangeboteOrtPageContent({
   locale = "de",
 }: ContentProps) {
   const normalizedLocale = normalizePublicLocale(locale);
-  const texts = getPortalSystemTexts(normalizedLocale);
+  const texts = await getPortalSystemTexts(normalizedLocale);
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
   const { offers, topOffers, total, totalWithTop, sourceTotal } = await getOffers({

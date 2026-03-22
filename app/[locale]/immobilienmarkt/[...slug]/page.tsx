@@ -65,7 +65,7 @@ export async function generateMetadata({ params }: LocalizedPageProps): Promise<
     };
   }
 
-  const texts = getPortalSystemTexts(locale);
+  const texts = await getPortalSystemTexts(locale);
   const slugPath = slug.join("/");
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
   const localizedPath = slugPath ? `/${locale}/immobilienmarkt/${slugPath}` : `/${locale}/immobilienmarkt`;
@@ -105,7 +105,7 @@ export default async function LocalizedImmobilienmarktHierarchiePage({ params }:
     return <BaseImmobilienmarktPage params={Promise.resolve({ slug })} locale={locale} />;
   }
 
-  const texts = getPortalSystemTexts(locale);
+  const texts = await getPortalSystemTexts(locale);
   const germanHref = buildLocalizedHref("de", `/immobilienmarkt/${slug.join("/")}`);
   const reasonText = availability.reason === "feature_disabled"
     ? texts.area_profile_unavailable_feature_disabled

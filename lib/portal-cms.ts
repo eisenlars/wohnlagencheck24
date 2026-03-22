@@ -7,6 +7,15 @@ export type PortalLocaleConfigRecord = {
   status: PortalLocaleStatus;
   partner_bookable: boolean;
   is_active: boolean;
+  label_native?: string | null;
+  label_de?: string | null;
+  bcp47_tag?: string | null;
+  fallback_locale?: string | null;
+  text_direction?: "ltr" | "rtl" | null;
+  number_locale?: string | null;
+  date_locale?: string | null;
+  currency_code?: string | null;
+  billing_feature_code?: string | null;
   updated_at?: string | null;
 };
 
@@ -66,12 +75,30 @@ export const DEFAULT_PORTAL_LOCALES: PortalLocaleConfigRecord[] = [
     status: "live",
     partner_bookable: false,
     is_active: true,
+    label_native: "Deutsch",
+    label_de: "Deutsch",
+    bcp47_tag: "de-DE",
+    fallback_locale: "de",
+    text_direction: "ltr",
+    number_locale: "de-DE",
+    date_locale: "de-DE",
+    currency_code: "EUR",
+    billing_feature_code: "international",
   },
   {
     locale: "en",
     status: "planned",
     partner_bookable: false,
     is_active: false,
+    label_native: "English",
+    label_de: "Englisch",
+    bcp47_tag: "en-US",
+    fallback_locale: "de",
+    text_direction: "ltr",
+    number_locale: "en-US",
+    date_locale: "en-US",
+    currency_code: "EUR",
+    billing_feature_code: "international_en",
   },
 ];
 

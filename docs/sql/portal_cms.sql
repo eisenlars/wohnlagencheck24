@@ -12,6 +12,17 @@ create table if not exists public.portal_locale_config (
   updated_at timestamptz not null default now()
 );
 
+alter table public.portal_locale_config add column if not exists label_native text;
+alter table public.portal_locale_config add column if not exists label_de text;
+alter table public.portal_locale_config add column if not exists bcp47_tag text;
+alter table public.portal_locale_config add column if not exists fallback_locale text not null default 'de';
+alter table public.portal_locale_config add column if not exists text_direction text not null default 'ltr'
+  check (text_direction in ('ltr', 'rtl'));
+alter table public.portal_locale_config add column if not exists number_locale text;
+alter table public.portal_locale_config add column if not exists date_locale text;
+alter table public.portal_locale_config add column if not exists currency_code text not null default 'EUR';
+alter table public.portal_locale_config add column if not exists billing_feature_code text;
+
 create table if not exists public.portal_content_entries (
   page_key text not null,
   section_key text not null,
@@ -36,13 +47,64 @@ create table if not exists public.portal_content_i18n_meta (
   primary key (page_key, section_key, locale)
 );
 
-insert into public.portal_locale_config (locale, status, partner_bookable, is_active)
+create table if not exists public.portal_system_text_entries (
+  key text not null,
+  locale text not null,
+  status text not null default 'draft'
+    check (status in ('draft', 'internal', 'live')),
+  value_text text not null default '',
+  updated_at timestamptz not null default now(),
+  primary key (key, locale)
+);
+
+create table if not exists public.portal_system_text_i18n_meta (
+  key text not null,
+  locale text not null,
+  source_locale text not null default 'de',
+  source_snapshot_hash text,
+  source_updated_at timestamptz,
+  translation_origin text not null default 'manual'
+    check (translation_origin in ('manual', 'ai', 'sync_copy_all', 'sync_fill_missing')),
+  updated_at timestamptz not null default now(),
+  primary key (key, locale)
+);
+
+insert into public.portal_locale_config (
+  locale,
+  status,
+  partner_bookable,
+  is_active,
+  label_native,
+  label_de,
+  bcp47_tag,
+  fallback_locale,
+  text_direction,
+  number_locale,
+  date_locale,
+  currency_code,
+  billing_feature_code
+)
 values
-  ('de', 'live', false, true),
-  ('en', 'planned', false, false)
+  ('de', 'live', false, true, 'Deutsch', 'Deutsch', 'de-DE', 'de', 'ltr', 'de-DE', 'de-DE', 'EUR', 'international'),
+  ('en', 'planned', false, false, 'English', 'Englisch', 'en-US', 'de', 'ltr', 'en-US', 'en-US', 'EUR', 'international_en')
 on conflict (locale) do update
 set
   status = excluded.status,
   partner_bookable = excluded.partner_bookable,
   is_active = excluded.is_active,
+  label_native = coalesce(public.portal_locale_config.label_native, excluded.label_native),
+  label_de = coalesce(public.portal_locale_config.label_de, excluded.label_de),
+  bcp47_tag = coalesce(public.portal_locale_config.bcp47_tag, excluded.bcp47_tag),
+  fallback_locale = coalesce(public.portal_locale_config.fallback_locale, excluded.fallback_locale),
+  text_direction = coalesce(public.portal_locale_config.text_direction, excluded.text_direction),
+  number_locale = coalesce(public.portal_locale_config.number_locale, excluded.number_locale),
+  date_locale = coalesce(public.portal_locale_config.date_locale, excluded.date_locale),
+  currency_code = coalesce(public.portal_locale_config.currency_code, excluded.currency_code),
+  billing_feature_code = coalesce(public.portal_locale_config.billing_feature_code, excluded.billing_feature_code),
   updated_at = now();
+
+comment on table public.portal_system_text_entries is
+  'Portalweite Systemtexte pro Locale. Oeffentlich zaehlt nur status=live.';
+
+comment on table public.portal_system_text_i18n_meta is
+  'Quelle und Veraltungsstatus fuer uebersetzte Portal-Systemtexte.';
