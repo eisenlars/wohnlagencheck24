@@ -322,12 +322,12 @@ export async function GET(
         request_visibility_mode: string | null;
         partner_preview_signoff_at: string | null;
         created_at: string | null;
-        areas: {
+        areas: Array<{
           name?: string | null;
           slug?: string | null;
           parent_slug?: string | null;
           bundesland_slug?: string | null;
-        } | null;
+        }>;
       };
       const missingActivationStatus = isMissingAreaActivationStatusColumn(mappingError);
       const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(mappingError);
@@ -366,7 +366,11 @@ export async function GET(
               ? "partner_wide"
               : (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
             created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
-            areas: baseRow.areas ?? null,
+            areas: Array.isArray(baseRow.areas)
+              ? (baseRow.areas as PartnerDetailAreaMappingRow["areas"])
+              : (baseRow.areas && typeof baseRow.areas === "object"
+                ? [baseRow.areas as PartnerDetailAreaMappingRow["areas"][number]]
+                : []),
           };
           return mappedRow;
         });
@@ -390,7 +394,11 @@ export async function GET(
             request_visibility_mode: "partner_wide",
             partner_preview_signoff_at: null,
             created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
-            areas: baseRow.areas ?? null,
+            areas: Array.isArray(baseRow.areas)
+              ? (baseRow.areas as PartnerDetailAreaMappingRow["areas"])
+              : (baseRow.areas && typeof baseRow.areas === "object"
+                ? [baseRow.areas as PartnerDetailAreaMappingRow["areas"][number]]
+                : []),
           };
           return mappedRow;
         });
