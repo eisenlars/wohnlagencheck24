@@ -163,7 +163,7 @@ function normalizeImages(images?: PropstackImage[] | null): string[] {
     .filter((url): url is string => typeof url === "string" && url.length > 0);
 }
 
-function inferPropstackMediaKind(title: string | null): "image" | "floorplan" {
+function inferPropstackMediaKind(title: string | null): "image" | "floorplan" | "location_map" | "document" {
   const normalized = String(title ?? "").trim().toLowerCase();
   if (!normalized) return "image";
   if (
@@ -172,6 +172,24 @@ function inferPropstackMediaKind(title: string | null): "image" | "floorplan" {
     || normalized.includes("lageplan")
   ) {
     return "floorplan";
+  }
+  if (
+    normalized.includes("standort")
+    || normalized.includes("mikrolage")
+    || normalized.includes("makrolage")
+    || normalized === "lage"
+  ) {
+    return "location_map";
+  }
+  if (
+    normalized.includes("wohnflächenberechnung")
+    || normalized.includes("wohnflaechenberechnung")
+    || normalized.includes("flächenberechnung")
+    || normalized.includes("flaechenberechnung")
+    || normalized.includes("berechnung")
+    || normalized.includes("beratung")
+  ) {
+    return "document";
   }
   return "image";
 }

@@ -58,7 +58,7 @@ type GalleryAsset = {
   url: string;
   title: string | null;
   position: number | null;
-  kind: 'image' | 'floorplan';
+  kind: 'image' | 'floorplan' | 'location_map' | 'document';
 };
 
 type EnergySnapshot = {
@@ -122,7 +122,14 @@ function parseGalleryAssets(value: unknown): GalleryAsset[] {
       if (!record) return null;
       const url = asText(record.url);
       if (!url) return null;
-      const kind = String(record.kind ?? '').trim().toLowerCase() === 'floorplan' ? 'floorplan' : 'image';
+      const normalizedKind = String(record.kind ?? '').trim().toLowerCase();
+      const kind: GalleryAsset['kind'] = normalizedKind === 'floorplan'
+        ? 'floorplan'
+        : normalizedKind === 'location_map'
+          ? 'location_map'
+          : normalizedKind === 'document'
+            ? 'document'
+            : 'image';
       return {
         url,
         title: asText(record.title),
@@ -285,6 +292,22 @@ export default function OffersManager(props: Props) {
   const floorplanAssets = useMemo(
     () => galleryAssets.filter((asset) => asset.kind === 'floorplan'),
     [galleryAssets],
+  );
+  const locationMapAssets = useMemo(
+    () => galleryAssets.filter((asset) => asset.kind === 'location_map'),
+    [galleryAssets],
+  );
+  const documentAssets = useMemo(
+    () => galleryAssets.filter((asset) => asset.kind === 'document'),
+    [galleryAssets],
+  );
+  const visiblePhotoAssets = useMemo(
+    () => photoAssets.slice(0, 6),
+    [photoAssets],
+  );
+  const visibleFloorplanAssets = useMemo(
+    () => floorplanAssets.slice(0, 4),
+    [floorplanAssets],
   );
   const energySnapshot = useMemo(
     () => parseEnergySnapshot(selectedRaw.energy),
@@ -834,12 +857,21 @@ export default function OffersManager(props: Props) {
                     Objektbilder
                     <span style={mediaCountBadgeStyle}>{photoAssets.length}</span>
                   </div>
+                  <div style={mediaSectionHintStyle}>Es werden nur echte Objektfotos gezeigt.</div>
                   {photoAssets.length > 0 ? (
                     <div style={mediaGridStyle}>
-                      {photoAssets.map((asset, index) => (
+                      {visiblePhotoAssets.map((asset, index) => (
                         <figure key={`${asset.url}-${index}`} style={mediaFigureStyle}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={asset.url} alt={asset.title ?? `Objektbild ${index + 1}`} style={mediaImageStyle} />
+                          <div style={mediaImageFrameStyle}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={asset.url}
+                              alt={asset.title ?? `Objektbild ${index + 1}`}
+                              style={mediaImageStyle}
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </div>
                           <figcaption style={mediaCaptionStyle}>
                             {asset.title ?? `Objektbild ${index + 1}`}
                           </figcaption>
@@ -849,18 +881,32 @@ export default function OffersManager(props: Props) {
                   ) : (
                     <div style={mediaEmptyStyle}>Keine Objektbilder im CRM-Payload gefunden.</div>
                   )}
+                  {photoAssets.length > visiblePhotoAssets.length ? (
+                    <div style={mediaOverflowHintStyle}>
+                      Weitere {photoAssets.length - visiblePhotoAssets.length} Objektbilder sind im CRM vorhanden.
+                    </div>
+                  ) : null}
                 </div>
                 <div style={mediaSectionStyle}>
                   <div style={mediaSectionHeadStyle}>
                     Grundrisse
                     <span style={mediaCountBadgeStyle}>{floorplanAssets.length}</span>
                   </div>
+                  <div style={mediaSectionHintStyle}>Grundrisse werden getrennt von den Objektfotos geführt.</div>
                   {floorplanAssets.length > 0 ? (
                     <div style={mediaGridStyle}>
-                      {floorplanAssets.map((asset, index) => (
+                      {visibleFloorplanAssets.map((asset, index) => (
                         <figure key={`${asset.url}-${index}`} style={mediaFigureStyle}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={asset.url} alt={asset.title ?? `Grundriss ${index + 1}`} style={mediaImageStyle} />
+                          <div style={mediaImageFrameStyle}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={asset.url}
+                              alt={asset.title ?? `Grundriss ${index + 1}`}
+                              style={mediaImageStyle}
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          </div>
                           <figcaption style={mediaCaptionStyle}>
                             {asset.title ?? `Grundriss ${index + 1}`}
                           </figcaption>
@@ -869,6 +915,61 @@ export default function OffersManager(props: Props) {
                     </div>
                   ) : (
                     <div style={mediaEmptyStyle}>Keine Grundrisse erkannt.</div>
+                  )}
+                  {floorplanAssets.length > visibleFloorplanAssets.length ? (
+                    <div style={mediaOverflowHintStyle}>
+                      Weitere {floorplanAssets.length - visibleFloorplanAssets.length} Grundrisse sind im CRM vorhanden.
+                    </div>
+                  ) : null}
+                </div>
+                <div style={mediaSectionStyle}>
+                  <div style={mediaSectionHeadStyle}>
+                    Lagegrafiken
+                    <span style={mediaCountBadgeStyle}>{locationMapAssets.length}</span>
+                  </div>
+                  <div style={mediaSectionHintStyle}>Standort-, Mikro- und Makrolagen werden separat geführt.</div>
+                  {locationMapAssets.length > 0 ? (
+                    <div style={mediaCompactListStyle}>
+                      {locationMapAssets.map((asset, index) => (
+                        <a
+                          key={`${asset.url}-${index}`}
+                          href={asset.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={mediaLinkCardStyle}
+                        >
+                          <span style={mediaLinkTitleStyle}>{asset.title ?? `Lagegrafik ${index + 1}`}</span>
+                          <span style={mediaLinkMetaStyle}>Bild extern öffnen</span>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={mediaEmptyStyle}>Keine Lagegrafiken erkannt.</div>
+                  )}
+                </div>
+                <div style={mediaSectionStyle}>
+                  <div style={mediaSectionHeadStyle}>
+                    Unterlagen
+                    <span style={mediaCountBadgeStyle}>{documentAssets.length}</span>
+                  </div>
+                  <div style={mediaSectionHintStyle}>Berechnungen und sonstige CRM-Grafiken werden hier gesammelt.</div>
+                  {documentAssets.length > 0 ? (
+                    <div style={mediaCompactListStyle}>
+                      {documentAssets.map((asset, index) => (
+                        <a
+                          key={`${asset.url}-${index}`}
+                          href={asset.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={mediaLinkCardStyle}
+                        >
+                          <span style={mediaLinkTitleStyle}>{asset.title ?? `Unterlage ${index + 1}`}</span>
+                          <span style={mediaLinkMetaStyle}>Datei extern öffnen</span>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={mediaEmptyStyle}>Keine zusätzlichen Unterlagen erkannt.</div>
                   )}
                 </div>
               </div>
@@ -1200,6 +1301,12 @@ const mediaSectionHeadStyle: React.CSSProperties = {
   color: '#0f172a',
 };
 
+const mediaSectionHintStyle: React.CSSProperties = {
+  fontSize: '12px',
+  lineHeight: 1.45,
+  color: '#64748b',
+};
+
 const mediaCountBadgeStyle: React.CSSProperties = {
   borderRadius: '999px',
   background: '#e0f2fe',
@@ -1215,6 +1322,11 @@ const mediaGridStyle: React.CSSProperties = {
   gap: '12px',
 };
 
+const mediaCompactListStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: '10px',
+};
+
 const mediaFigureStyle: React.CSSProperties = {
   margin: 0,
   border: '1px solid #dbeafe',
@@ -1223,10 +1335,19 @@ const mediaFigureStyle: React.CSSProperties = {
   background: '#ffffff',
 };
 
+const mediaImageFrameStyle: React.CSSProperties = {
+  background: '#e2e8f0',
+  aspectRatio: '4 / 3',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '8px',
+};
+
 const mediaImageStyle: React.CSSProperties = {
   width: '100%',
-  height: '120px',
-  objectFit: 'cover',
+  height: '100%',
+  objectFit: 'contain',
   display: 'block',
 };
 
@@ -1242,6 +1363,39 @@ const mediaEmptyStyle: React.CSSProperties = {
   fontSize: '12px',
   color: '#64748b',
   padding: '12px 0 4px',
+};
+
+const mediaOverflowHintStyle: React.CSSProperties = {
+  fontSize: '12px',
+  lineHeight: 1.45,
+  color: '#475569',
+};
+
+const mediaLinkCardStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  border: '1px solid #dbeafe',
+  borderRadius: '10px',
+  background: '#ffffff',
+  padding: '12px 14px',
+  textDecoration: 'none',
+};
+
+const mediaLinkTitleStyle: React.CSSProperties = {
+  fontSize: '13px',
+  lineHeight: 1.45,
+  fontWeight: 700,
+  color: '#0f172a',
+};
+
+const mediaLinkMetaStyle: React.CSSProperties = {
+  fontSize: '12px',
+  lineHeight: 1.45,
+  color: '#2563eb',
+  fontWeight: 600,
+  whiteSpace: 'nowrap',
 };
 
 const energyCardStyle: React.CSSProperties = {

@@ -19,7 +19,7 @@ export type OfferMediaAsset = {
   url: string;
   title: string | null;
   position: number | null;
-  kind: "image" | "floorplan";
+  kind: "image" | "floorplan" | "location_map" | "document";
 };
 
 export type OfferEnergySnapshot = {
