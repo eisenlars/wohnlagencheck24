@@ -833,15 +833,6 @@ function formatPortalLocaleStatus(status: PortalLocaleStatus): string {
   return "geplant";
 }
 
-function describePortalLocaleVariant(locale: string): string {
-  const normalized = normalizePortalLocaleCode(locale);
-  for (const language of PORTAL_LOCALE_LANGUAGE_PRESETS) {
-    const match = language.variants.find((variant) => variant.locale === normalized);
-    if (match) return match.variant_label;
-  }
-  return "Benutzerdefiniert";
-}
-
 function formatPortalEntryStatus(status: PortalContentEntryStatus): string {
   if (status === "internal") return "intern";
   if (status === "live") return "live";
@@ -5047,7 +5038,7 @@ export default function AdminClient() {
                       {row.label_de || row.label_native || row.locale}
                     </div>
                     <div style={mutedStyle}>
-                      {row.label_native ? `${row.label_native} · ` : ""}<span>{describePortalLocaleVariant(row.locale)}</span>
+                      {row.label_native ? `${row.label_native} · ` : ""}{row.bcp47_tag || row.locale}
                     </div>
                     <div style={{ ...mutedStyle, marginTop: 4 }}>
                       <code>{row.locale}</code>
@@ -5103,7 +5094,7 @@ export default function AdminClient() {
           </table>
           <div style={{ ...rowStyle, marginTop: 10 }}>
             <div style={{ ...mutedStyle, fontSize: 12 }}>
-              `Aktiviert` schaltet die Sprache grundsätzlich frei. `live` macht sie öffentlich sichtbar. Die Registry steuert nur noch die Betriebsfreigabe; technische Profilwerte und Altlastenbereinigung erfolgen nicht mehr in dieser Maske.
+              Die Registry steuert nur noch die Betriebsfreigabe; technische Profilwerte und Altlastenbereinigung erfolgen nicht mehr in dieser Maske.
             </div>
             <button
               style={btnStyle}
