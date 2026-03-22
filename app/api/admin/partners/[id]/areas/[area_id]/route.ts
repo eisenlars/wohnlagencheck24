@@ -161,6 +161,17 @@ export async function PATCH(
     if (error && (isMissingActivationStatusColumn(error) || isMissingVisibilityModeColumn(error))) {
       const missingActivationStatus = isMissingActivationStatusColumn(error);
       const missingVisibilityMode = isMissingVisibilityModeColumn(error);
+      type PartnerAreaMapUpdateRow = {
+        id: string | null;
+        auth_user_id: string | null;
+        area_id: string | null;
+        is_active: boolean | null;
+        is_public_live: boolean | null;
+        activation_status: string | null;
+        offer_visibility_mode: string | null;
+        request_visibility_mode: string | null;
+        created_at: string | null;
+      };
       const fallback = await admin
         .from("partner_area_map")
         .update({ is_active: Boolean(body.is_active) })
@@ -178,8 +189,11 @@ export async function PATCH(
       data = Array.isArray(fallback.data)
         ? fallback.data.map((row) => {
           const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-          return {
-          ...baseRow,
+          const mappedRow: PartnerAreaMapUpdateRow = {
+          id: typeof baseRow.id === "string" ? baseRow.id : null,
+          auth_user_id: typeof baseRow.auth_user_id === "string" ? baseRow.auth_user_id : null,
+          area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
+          is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : Boolean(body.is_active),
           activation_status: missingActivationStatus
             ? (body.is_active ? "approved_preview" : "in_progress")
             : (baseRow as { activation_status?: string | null }).activation_status ?? (body.is_active ? "approved_preview" : "in_progress"),
@@ -192,7 +206,9 @@ export async function PATCH(
           request_visibility_mode: missingVisibilityMode
             ? "partner_wide"
             : (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
+          created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
         };
+          return mappedRow;
         })
         : null;
       error = fallback.error;
