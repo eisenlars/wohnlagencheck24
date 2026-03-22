@@ -180,23 +180,6 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
     || isMissingAdminReviewNoteColumn(error)
     || isMissingAreaVisibilityModeColumn(error)
   )) {
-    type PartnerDashboardConfigFallbackRow = {
-      area_id: string | null;
-      is_active: boolean | null;
-      is_public_live: boolean | null;
-      activation_status: string | null;
-      offer_visibility_mode: string | null;
-      request_visibility_mode: string | null;
-      partner_preview_signoff_at: string | null;
-      admin_review_note: string | null;
-      areas: Array<{
-        id: string | null;
-        name: string | null;
-        slug: string | null;
-        parent_slug: string | null;
-        bundesland_slug: string | null;
-      }>;
-    };
     const missingActivationStatus = isMissingAreaActivationStatusColumn(error);
     const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(error);
     const missingAdminReviewNote = isMissingAdminReviewNoteColumn(error);
@@ -217,7 +200,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         .order("area_id", { ascending: true });
       data = (fallback.data ?? []).map((row) => {
         const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-        const mappedRow: PartnerDashboardConfigFallbackRow = {
+        const mappedRow = {
           area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
           is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
           is_public_live: typeof baseRow.is_public_live === "boolean" ? baseRow.is_public_live : null,
@@ -243,7 +226,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         .order("area_id", { ascending: true });
       data = (fallback.data ?? []).map((row) => {
         const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-        const mappedRow: PartnerDashboardConfigFallbackRow = {
+        const mappedRow = {
           area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
           is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
           is_public_live: typeof baseRow.is_public_live === "boolean" ? baseRow.is_public_live : null,
@@ -265,7 +248,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         .order("area_id", { ascending: true });
       data = (fallback.data ?? []).map((row) => {
         const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-        const mappedRow: PartnerDashboardConfigFallbackRow = {
+        const mappedRow = {
           area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
           is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
           is_public_live: null,
