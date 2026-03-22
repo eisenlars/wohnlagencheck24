@@ -163,18 +163,26 @@ function normalizeImages(images?: PropstackImage[] | null): string[] {
     .filter((url): url is string => typeof url === "string" && url.length > 0);
 }
 
-function inferPropstackMediaKind(title: string | null): "image" | "floorplan" | "location_map" | "document" {
-  const normalized = String(title ?? "").trim().toLowerCase();
+function inferPropstackMediaKind(
+  title: string | null,
+  url: string | null,
+): "image" | "floorplan" | "location_map" | "document" {
+  const normalizedTitle = String(title ?? "").trim().toLowerCase();
+  const normalizedUrl = String(url ?? "").trim().toLowerCase();
+  const normalized = `${normalizedTitle} ${normalizedUrl}`.trim();
   if (!normalized) return "image";
   if (
     normalized.includes("grundriss")
     || normalized.includes("floorplan")
-    || normalized.includes("lageplan")
+    || normalized.includes("floor plan")
+    || normalized.includes("planzeichnung")
   ) {
     return "floorplan";
   }
   if (
-    normalized.includes("standort")
+    normalized.includes("lageplan")
+    || normalized.includes("lage")
+    || normalized.includes("standort")
     || normalized.includes("mikrolage")
     || normalized.includes("makrolage")
     || normalized === "lage"
@@ -205,10 +213,16 @@ function normalizeImageAssets(images?: PropstackImage[] | null): OfferMediaAsset
         url,
         title,
         position: typeof img?.position === "number" && Number.isFinite(img.position) ? img.position : null,
-        kind: inferPropstackMediaKind(title),
+        kind: inferPropstackMediaKind(title, url),
       } satisfies OfferMediaAsset;
     })
-    .filter((asset): asset is OfferMediaAsset => Boolean(asset));
+    .filter((asset): asset is OfferMediaAsset => Boolean(asset))
+    .sort((left, right) => {
+      if (left.position == null && right.position == null) return left.url.localeCompare(right.url);
+      if (left.position == null) return 1;
+      if (right.position == null) return -1;
+      return left.position - right.position;
+    });
 }
 
 function normalizeEnergyValueKind(certificateType: string | null | undefined): "bedarf" | "verbrauch" | null {

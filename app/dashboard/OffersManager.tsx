@@ -182,6 +182,8 @@ export default function OffersManager(props: Props) {
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
+  const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -301,14 +303,8 @@ export default function OffersManager(props: Props) {
     () => galleryAssets.filter((asset) => asset.kind === 'document'),
     [galleryAssets],
   );
-  const visiblePhotoAssets = useMemo(
-    () => photoAssets.slice(0, 6),
-    [photoAssets],
-  );
-  const visibleFloorplanAssets = useMemo(
-    () => floorplanAssets.slice(0, 4),
-    [floorplanAssets],
-  );
+  const activePhotoAsset = photoAssets[activePhotoIndex] ?? null;
+  const activeFloorplanAsset = floorplanAssets[activeFloorplanIndex] ?? null;
   const energySnapshot = useMemo(
     () => parseEnergySnapshot(selectedRaw.energy),
     [selectedRaw],
@@ -358,6 +354,26 @@ export default function OffersManager(props: Props) {
       image_alt_texts: selectedOverride?.image_alt_texts ?? rawImageAltTexts ?? [],
     });
   }, [selectedOffer, selectedOverride, effectiveExternalId, effectiveSource, rawDescription, rawLocation, rawFeatures, rawHighlights, rawImageAltTexts]);
+
+  useEffect(() => {
+    setActivePhotoIndex(0);
+  }, [selectedOfferId]);
+
+  useEffect(() => {
+    setActiveFloorplanIndex(0);
+  }, [selectedOfferId]);
+
+  useEffect(() => {
+    if (activePhotoIndex >= photoAssets.length) {
+      setActivePhotoIndex(0);
+    }
+  }, [activePhotoIndex, photoAssets.length]);
+
+  useEffect(() => {
+    if (activeFloorplanIndex >= floorplanAssets.length) {
+      setActiveFloorplanIndex(0);
+    }
+  }, [activeFloorplanIndex, floorplanAssets.length]);
 
   const updateField = (key: keyof OverrideRow, value: OverrideRow[keyof OverrideRow]) => {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
@@ -793,18 +809,6 @@ export default function OffersManager(props: Props) {
             {selectedOffer ? (
               <div style={offerSummaryCardStyle}>
                 <div style={offerSummaryHeaderStyle}>Objekt-Übersicht</div>
-                {selectedOffer.image_url ? (
-                  <div style={offerHeroImageWrapStyle}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={selectedOffer.image_url}
-                      alt={selectedOffer.title || 'Objektbild'}
-                      style={offerHeroImageStyle}
-                    />
-                  </div>
-                ) : (
-                  <div style={offerImagePlaceholderStyle}>Kein Hauptbild vorhanden.</div>
-                )}
                 <div style={offerSummaryGridStyle}>
                   <div>
                     <div style={offerSummaryLabelStyle}>Objekt-ID</div>
@@ -857,70 +861,122 @@ export default function OffersManager(props: Props) {
                     Objektbilder
                     <span style={mediaCountBadgeStyle}>{photoAssets.length}</span>
                   </div>
-                  <div style={mediaSectionHintStyle}>Es werden nur echte Objektfotos gezeigt.</div>
-                  {photoAssets.length > 0 ? (
-                    <div style={mediaGridStyle}>
-                      {visiblePhotoAssets.map((asset, index) => (
-                        <figure key={`${asset.url}-${index}`} style={mediaFigureStyle}>
-                          <div style={mediaImageFrameStyle}>
+                  <div style={mediaSectionHintStyle}>Die Fotostrecke zeigt nur echte Objektfotos in ihrer Reihenfolge.</div>
+                  {activePhotoAsset ? (
+                    <div style={slideshowCardStyle}>
+                      <div style={slideshowStageStyle}>
+                        <button
+                          type="button"
+                          onClick={() => setActivePhotoIndex((current) => (current <= 0 ? photoAssets.length - 1 : current - 1))}
+                          style={slideshowNavButtonStyle}
+                          aria-label="Vorheriges Objektbild"
+                        >
+                          ‹
+                        </button>
+                        <div style={slideshowImageFrameStyle}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            key={activePhotoAsset.url}
+                            src={activePhotoAsset.url}
+                            alt={activePhotoAsset.title ?? `Objektbild ${activePhotoIndex + 1}`}
+                            style={slideshowImageStyle}
+                            loading="eager"
+                            decoding="async"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1))}
+                          style={slideshowNavButtonStyle}
+                          aria-label="Nächstes Objektbild"
+                        >
+                          ›
+                        </button>
+                      </div>
+                      <div style={slideshowMetaStyle}>
+                        <div style={slideshowCaptionStyle}>
+                          {activePhotoAsset.title ?? `Objektbild ${activePhotoIndex + 1}`}
+                        </div>
+                        <div style={slideshowCounterStyle}>
+                          {activePhotoIndex + 1} / {photoAssets.length}
+                        </div>
+                      </div>
+                      <div style={thumbnailRailStyle}>
+                        {photoAssets.map((asset, index) => (
+                          <button
+                            key={`${asset.url}-${index}`}
+                            type="button"
+                            onClick={() => setActivePhotoIndex(index)}
+                            style={thumbnailButtonStyle(index === activePhotoIndex)}
+                            aria-label={`Objektbild ${index + 1} anzeigen`}
+                          >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={asset.url}
                               alt={asset.title ?? `Objektbild ${index + 1}`}
-                              style={mediaImageStyle}
+                              style={thumbnailImageStyle}
                               loading="lazy"
                               decoding="async"
                             />
-                          </div>
-                          <figcaption style={mediaCaptionStyle}>
-                            {asset.title ?? `Objektbild ${index + 1}`}
-                          </figcaption>
-                        </figure>
-                      ))}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <div style={mediaEmptyStyle}>Keine Objektbilder im CRM-Payload gefunden.</div>
                   )}
-                  {photoAssets.length > visiblePhotoAssets.length ? (
-                    <div style={mediaOverflowHintStyle}>
-                      Weitere {photoAssets.length - visiblePhotoAssets.length} Objektbilder sind im CRM vorhanden.
-                    </div>
-                  ) : null}
                 </div>
                 <div style={mediaSectionStyle}>
                   <div style={mediaSectionHeadStyle}>
                     Grundrisse
                     <span style={mediaCountBadgeStyle}>{floorplanAssets.length}</span>
                   </div>
-                  <div style={mediaSectionHintStyle}>Grundrisse werden getrennt von den Objektfotos geführt.</div>
-                  {floorplanAssets.length > 0 ? (
-                    <div style={mediaGridStyle}>
-                      {visibleFloorplanAssets.map((asset, index) => (
-                        <figure key={`${asset.url}-${index}`} style={mediaFigureStyle}>
-                          <div style={mediaImageFrameStyle}>
+                  <div style={mediaSectionHintStyle}>Grundrisse liegen separat unterhalb der Fotostrecke.</div>
+                  {activeFloorplanAsset ? (
+                    <div style={floorplanCardStyle}>
+                      <div style={floorplanPreviewFrameStyle}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          key={activeFloorplanAsset.url}
+                          src={activeFloorplanAsset.url}
+                          alt={activeFloorplanAsset.title ?? `Grundriss ${activeFloorplanIndex + 1}`}
+                          style={floorplanPreviewImageStyle}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                      <div style={slideshowMetaStyle}>
+                        <div style={slideshowCaptionStyle}>
+                          {activeFloorplanAsset.title ?? `Grundriss ${activeFloorplanIndex + 1}`}
+                        </div>
+                        <div style={slideshowCounterStyle}>
+                          {activeFloorplanIndex + 1} / {floorplanAssets.length}
+                        </div>
+                      </div>
+                      <div style={thumbnailRailStyle}>
+                        {floorplanAssets.map((asset, index) => (
+                          <button
+                            key={`${asset.url}-${index}`}
+                            type="button"
+                            onClick={() => setActiveFloorplanIndex(index)}
+                            style={thumbnailButtonStyle(index === activeFloorplanIndex)}
+                            aria-label={`Grundriss ${index + 1} anzeigen`}
+                          >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={asset.url}
                               alt={asset.title ?? `Grundriss ${index + 1}`}
-                              style={mediaImageStyle}
+                              style={thumbnailImageStyle}
                               loading="lazy"
                               decoding="async"
                             />
-                          </div>
-                          <figcaption style={mediaCaptionStyle}>
-                            {asset.title ?? `Grundriss ${index + 1}`}
-                          </figcaption>
-                        </figure>
-                      ))}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <div style={mediaEmptyStyle}>Keine Grundrisse erkannt.</div>
                   )}
-                  {floorplanAssets.length > visibleFloorplanAssets.length ? (
-                    <div style={mediaOverflowHintStyle}>
-                      Weitere {floorplanAssets.length - visibleFloorplanAssets.length} Grundrisse sind im CRM vorhanden.
-                    </div>
-                  ) : null}
                 </div>
                 <div style={mediaSectionStyle}>
                   <div style={mediaSectionHeadStyle}>
@@ -1235,32 +1291,6 @@ const offerSummaryGridStyle: React.CSSProperties = {
   gap: '12px',
 };
 
-const offerHeroImageWrapStyle: React.CSSProperties = {
-  marginBottom: '14px',
-  borderRadius: '12px',
-  overflow: 'hidden',
-  border: '1px solid #dbeafe',
-  background: '#ffffff',
-};
-
-const offerHeroImageStyle: React.CSSProperties = {
-  width: '100%',
-  maxHeight: '320px',
-  objectFit: 'cover',
-  display: 'block',
-};
-
-const offerImagePlaceholderStyle: React.CSSProperties = {
-  marginBottom: '14px',
-  borderRadius: '12px',
-  border: '1px dashed #cbd5e1',
-  background: '#ffffff',
-  padding: '24px',
-  fontSize: '13px',
-  color: '#64748b',
-  textAlign: 'center',
-};
-
 const offerSummaryLabelStyle: React.CSSProperties = {
   fontSize: '10px',
   textTransform: 'uppercase',
@@ -1316,47 +1346,9 @@ const mediaCountBadgeStyle: React.CSSProperties = {
   fontWeight: 700,
 };
 
-const mediaGridStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-  gap: '12px',
-};
-
 const mediaCompactListStyle: React.CSSProperties = {
   display: 'grid',
   gap: '10px',
-};
-
-const mediaFigureStyle: React.CSSProperties = {
-  margin: 0,
-  border: '1px solid #dbeafe',
-  borderRadius: '10px',
-  overflow: 'hidden',
-  background: '#ffffff',
-};
-
-const mediaImageFrameStyle: React.CSSProperties = {
-  background: '#e2e8f0',
-  aspectRatio: '4 / 3',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '8px',
-};
-
-const mediaImageStyle: React.CSSProperties = {
-  width: '100%',
-  height: '100%',
-  objectFit: 'contain',
-  display: 'block',
-};
-
-const mediaCaptionStyle: React.CSSProperties = {
-  padding: '10px',
-  fontSize: '12px',
-  lineHeight: 1.45,
-  color: '#334155',
-  fontWeight: 600,
 };
 
 const mediaEmptyStyle: React.CSSProperties = {
@@ -1365,10 +1357,113 @@ const mediaEmptyStyle: React.CSSProperties = {
   padding: '12px 0 4px',
 };
 
-const mediaOverflowHintStyle: React.CSSProperties = {
+const slideshowCardStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: '12px',
+};
+
+const slideshowStageStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '44px minmax(0, 1fr) 44px',
+  gap: '12px',
+  alignItems: 'stretch',
+};
+
+const slideshowNavButtonStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  borderRadius: '10px',
+  background: '#ffffff',
+  color: '#0f172a',
+  fontSize: '28px',
+  lineHeight: 1,
+  cursor: 'pointer',
+};
+
+const slideshowImageFrameStyle: React.CSSProperties = {
+  minHeight: '340px',
+  border: '1px solid #dbeafe',
+  borderRadius: '12px',
+  background: '#e2e8f0',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'hidden',
+  padding: '10px',
+};
+
+const slideshowImageStyle: React.CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'contain',
+  display: 'block',
+};
+
+const slideshowMetaStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+};
+
+const slideshowCaptionStyle: React.CSSProperties = {
+  fontSize: '13px',
+  lineHeight: 1.45,
+  color: '#0f172a',
+  fontWeight: 700,
+};
+
+const slideshowCounterStyle: React.CSSProperties = {
   fontSize: '12px',
   lineHeight: 1.45,
-  color: '#475569',
+  color: '#64748b',
+  whiteSpace: 'nowrap',
+};
+
+const thumbnailRailStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))',
+  gap: '10px',
+};
+
+const thumbnailButtonStyle = (active: boolean): React.CSSProperties => ({
+  border: active ? '2px solid #2563eb' : '1px solid #cbd5e1',
+  borderRadius: '10px',
+  background: '#ffffff',
+  padding: '4px',
+  cursor: 'pointer',
+  overflow: 'hidden',
+});
+
+const thumbnailImageStyle: React.CSSProperties = {
+  width: '100%',
+  aspectRatio: '1 / 1',
+  objectFit: 'cover',
+  display: 'block',
+  borderRadius: '6px',
+};
+
+const floorplanCardStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: '12px',
+};
+
+const floorplanPreviewFrameStyle: React.CSSProperties = {
+  minHeight: '260px',
+  border: '1px solid #dbeafe',
+  borderRadius: '12px',
+  background: '#f8fafc',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'hidden',
+  padding: '12px',
+};
+
+const floorplanPreviewImageStyle: React.CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'contain',
+  display: 'block',
 };
 
 const mediaLinkCardStyle: React.CSSProperties = {
