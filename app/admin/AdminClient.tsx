@@ -833,6 +833,69 @@ function formatPortalLocaleStatus(status: PortalLocaleStatus): string {
   return "geplant";
 }
 
+function findPortalLocalePresetByLocale(locale: string): PortalLocalePreset | null {
+  const normalized = normalizePortalLocaleCode(locale);
+  for (const language of PORTAL_LOCALE_LANGUAGE_PRESETS) {
+    const match = language.variants.find((variant) => variant.locale === normalized);
+    if (match) return match;
+  }
+  return null;
+}
+
+function describePortalLocaleVariant(locale: string): string {
+  const normalized = normalizePortalLocaleCode(locale);
+  for (const language of PORTAL_LOCALE_LANGUAGE_PRESETS) {
+    const match = language.variants.find((variant) => variant.locale === normalized);
+    if (match) return match.variant_label;
+  }
+  return "Benutzerdefiniert";
+}
+
+function evaluatePortalLocaleProfile(row: PortalLocaleConfigRecord): {
+  tone: "green" | "orange" | "red";
+  label: string;
+  details: string[];
+  canRepair: boolean;
+} {
+  const preset = findPortalLocalePresetByLocale(row.locale);
+  const details: string[] = [];
+  if (!preset) {
+    return {
+      tone: "red",
+      label: "Kein Standardprofil",
+      details: ["Für diese Locale gibt es aktuell kein hinterlegtes Sprachprofil."],
+      canRepair: false,
+    };
+  }
+
+  if (String(row.bcp47_tag ?? "") !== preset.bcp47_tag) details.push("BCP47 weicht ab");
+  if (String(row.number_locale ?? "") !== preset.number_locale) details.push("Zahlenformat weicht ab");
+  if (String(row.date_locale ?? "") !== preset.date_locale) details.push("Datumsformat weicht ab");
+  if (String(row.currency_code ?? "") !== preset.currency_code) details.push("Währung weicht ab");
+  if (String(row.fallback_locale ?? "de") !== preset.fallback_locale) details.push("Fallback weicht ab");
+  if (String(row.text_direction ?? "ltr") !== preset.text_direction) details.push("Schreibrichtung weicht ab");
+  if (String(row.billing_feature_code ?? "") !== preset.billing_feature_code) details.push("Billing-Code weicht ab");
+  if (row.partner_bookable && !row.is_active) details.push("Partner buchbar obwohl Locale inaktiv ist");
+  if (row.status === "live" && !row.is_active) details.push("Live-Status ohne aktive Locale");
+
+  if (details.length === 0) {
+    return {
+      tone: "green",
+      label: "Profil konsistent",
+      details: [`${preset.bcp47_tag} · ${preset.currency_code} · ${preset.text_direction.toUpperCase()}`],
+      canRepair: false,
+    };
+  }
+
+  const hasCritical = details.some((item) => item.includes("Billing-Code") || item.includes("Live-Status"));
+  return {
+    tone: hasCritical ? "red" : "orange",
+    label: hasCritical ? "Profil fehlerhaft" : "Profil prüfen",
+    details,
+    canRepair: true,
+  };
+}
+
 function formatPortalEntryStatus(status: PortalContentEntryStatus): string {
   if (status === "internal") return "intern";
   if (status === "live") return "live";
@@ -2399,6 +2462,36 @@ export default function AdminClient() {
       method: "POST",
       body: JSON.stringify({ locale_configs: rows }),
     });
+  }
+
+  function repairPortalLocaleProfile(locale: string) {
+    const preset = findPortalLocalePresetByLocale(locale);
+    if (!preset) return;
+    setPortalLocaleConfigs((prev) => prev.map((row) => {
+      if (row.locale !== locale) return row;
+      return {
+        ...row,
+        bcp47_tag: preset.bcp47_tag,
+        number_locale: preset.number_locale,
+        date_locale: preset.date_locale,
+        currency_code: preset.currency_code,
+        fallback_locale: preset.fallback_locale,
+        text_direction: preset.text_direction,
+        billing_feature_code: preset.billing_feature_code,
+      };
+    }));
+  }
+
+  function deactivatePortalLocale(locale: string) {
+    setPortalLocaleConfigs((prev) => prev.map((row) => {
+      if (row.locale !== locale) return row;
+      return {
+        ...row,
+        is_active: false,
+        partner_bookable: false,
+        status: row.status === "live" ? "internal" : row.status,
+      };
+    }));
   }
 
   async function initializePortalLocaleFromDe(locale: string) {
@@ -5024,20 +5117,24 @@ export default function AdminClient() {
           <table style={tableStyle}>
             <thead>
               <tr>
-                <th style={thStyle}>Locale</th>
+                <th style={thStyle}>Sprache</th>
                 <th style={thStyle}>Benennung</th>
-                <th style={thStyle}>Routing & Fallback</th>
-                <th style={thStyle}>Formatprofil</th>
-                <th style={thStyle}>Freigabe</th>
-                <th style={thStyle}>Billing</th>
+                <th style={thStyle}>Public</th>
+                <th style={thStyle}>Partner</th>
+                <th style={thStyle}>Profil</th>
+                <th style={thStyle}>Aktionen</th>
               </tr>
             </thead>
             <tbody>
-              {portalLocaleConfigs.map((row, idx) => (
+              {portalLocaleConfigs.map((row, idx) => {
+                const profile = evaluatePortalLocaleProfile(row);
+                return (
                 <tr key={row.locale}>
                   <td style={tdStyle}>
-                    <div style={{ fontWeight: 700, color: "#0f172a" }}>{row.locale}</div>
-                    <div style={mutedStyle}>{formatPortalLocaleStatus(row.status)}</div>
+                    <div style={{ fontWeight: 700, color: "#0f172a" }}>{row.label_de || row.locale}</div>
+                    <div style={mutedStyle}>
+                      {describePortalLocaleVariant(row.locale)} · <code>{row.locale}</code>
+                    </div>
                   </td>
                   <td style={tdStyle}>
                     <input
@@ -5058,68 +5155,6 @@ export default function AdminClient() {
                       }}
                       placeholder="Deutsche Bezeichnung"
                     />
-                  </td>
-                  <td style={tdStyle}>
-                    <input
-                      style={inputStyle}
-                      value={row.bcp47_tag ?? ""}
-                      onChange={(e) => {
-                        const nextValue = e.target.value;
-                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, bcp47_tag: nextValue } : item));
-                      }}
-                      placeholder="en-US"
-                    />
-                    <input
-                      style={{ ...inputStyle, marginTop: 8 }}
-                      value={row.fallback_locale ?? "de"}
-                      onChange={(e) => {
-                        const nextValue = normalizePortalLocaleCode(e.target.value) || "de";
-                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, fallback_locale: nextValue } : item));
-                      }}
-                      placeholder="de"
-                    />
-                  </td>
-                  <td style={tdStyle}>
-                    <input
-                      style={inputStyle}
-                      value={row.number_locale ?? ""}
-                      onChange={(e) => {
-                        const nextValue = e.target.value;
-                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, number_locale: nextValue } : item));
-                      }}
-                      placeholder="fr-FR"
-                    />
-                    <input
-                      style={{ ...inputStyle, marginTop: 8 }}
-                      value={row.date_locale ?? ""}
-                      onChange={(e) => {
-                        const nextValue = e.target.value;
-                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, date_locale: nextValue } : item));
-                      }}
-                      placeholder="fr-FR"
-                    />
-                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                      <input
-                        style={{ ...inputStyle, marginTop: 0 }}
-                        value={row.currency_code ?? "EUR"}
-                        onChange={(e) => {
-                          const nextValue = e.target.value.toUpperCase();
-                          setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, currency_code: nextValue } : item));
-                        }}
-                        placeholder="EUR"
-                      />
-                      <select
-                        style={{ ...inputStyle, marginTop: 0 }}
-                        value={row.text_direction ?? "ltr"}
-                        onChange={(e) => {
-                          const nextValue = String(e.target.value) === "rtl" ? "rtl" : "ltr";
-                          setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, text_direction: nextValue } : item));
-                        }}
-                      >
-                        <option value="ltr">LTR</option>
-                        <option value="rtl">RTL</option>
-                      </select>
-                    </div>
                   </td>
                   <td style={tdStyle}>
                     <select
@@ -5145,7 +5180,9 @@ export default function AdminClient() {
                       />
                       Aktiv
                     </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, fontSize: 13, color: "#334155" }}>
+                  </td>
+                  <td style={tdStyle}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
                       <input
                         type="checkbox"
                         checked={row.partner_bookable}
@@ -5157,25 +5194,54 @@ export default function AdminClient() {
                       />
                       Partner buchbar
                     </label>
+                    <div style={{ ...mutedStyle, marginTop: 8 }}>
+                      {row.partner_bookable ? "für Partner freigeschaltet" : "nicht freigeschaltet"}
+                    </div>
                   </td>
                   <td style={tdStyle}>
-                    <input
-                      style={inputStyle}
-                      value={row.billing_feature_code ?? ""}
-                      onChange={(e) => {
-                        const nextValue = e.target.value;
-                        setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, billing_feature_code: nextValue } : item));
-                      }}
-                      placeholder="international_fr"
-                    />
+                    <div style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "4px 8px",
+                      borderRadius: 999,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      background: profile.tone === "green" ? "#dcfce7" : (profile.tone === "orange" ? "#fef3c7" : "#fee2e2"),
+                      color: profile.tone === "green" ? "#166534" : (profile.tone === "orange" ? "#92400e" : "#991b1b"),
+                    }}>
+                      {profile.label}
+                    </div>
+                    <div style={{ ...mutedStyle, marginTop: 8, whiteSpace: "normal" }}>
+                      {profile.details.join(" · ")}
+                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        style={btnGhostStyle}
+                        disabled={!profile.canRepair}
+                        onClick={() => repairPortalLocaleProfile(row.locale)}
+                      >
+                        Profil reparieren
+                      </button>
+                      <button
+                        style={btnGhostStyle}
+                        disabled={row.locale === "de" || (!row.is_active && !row.partner_bookable)}
+                        onClick={() => deactivatePortalLocale(row.locale)}
+                      >
+                        Deaktivieren
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           <div style={{ ...rowStyle, marginTop: 10 }}>
             <div style={{ ...mutedStyle, fontSize: 12 }}>
-              `status + is_active` steuern die öffentliche Verfügbarkeit. `billing_feature_code` ist die Brücke zum Partner-Dashboard International.
+              `status + is_active` steuern die öffentliche Verfügbarkeit. Inkonsistente Profilwerte werden hier nur angezeigt und können über `Profil reparieren` wieder auf das Standardprofil gesetzt werden.
             </div>
             <button
               style={btnStyle}
