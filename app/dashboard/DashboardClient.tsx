@@ -75,6 +75,8 @@ type PersistedDashboardState = {
   settingsSection?: SettingsSection;
 };
 
+type VisibilityMode = 'partner_wide' | 'strict_local';
+
 type DashboardBootstrapPayload = {
   ok?: boolean;
   last_login?: string | null;
@@ -385,6 +387,9 @@ export default function DashboardClient() {
   const [previewRequestBusy, setPreviewRequestBusy] = useState(false);
   const [previewRequestMessage, setPreviewRequestMessage] = useState<string | null>(null);
   const [previewRequestTone, setPreviewRequestTone] = useState<'info' | 'success' | 'error'>('info');
+  const [visibilitySaveBusy, setVisibilitySaveBusy] = useState(false);
+  const [visibilitySaveMessage, setVisibilitySaveMessage] = useState<string | null>(null);
+  const [visibilitySaveTone, setVisibilitySaveTone] = useState<'info' | 'success' | 'error'>('info');
   const [partnerFeatures, setPartnerFeatures] = useState<PartnerFeatureRow[]>([]);
   const [mandatoryProgress, setMandatoryProgress] = useState<{ completed: number; total: number }>({
     completed: 0,
@@ -923,6 +928,9 @@ export default function DashboardClient() {
     return String(effectiveWelcomeActivationConfig.admin_review_note ?? '').trim();
   }, [effectiveWelcomeActivationConfig]);
 
+  const effectiveOfferVisibilityMode = normalizeVisibilityMode(effectiveSelectedConfig?.offer_visibility_mode);
+  const effectiveRequestVisibilityMode = normalizeVisibilityMode(effectiveSelectedConfig?.request_visibility_mode);
+
   useEffect(() => {
     if (activeMainTab === 'settings') return;
     if (isTabEnabled(activeMainTab)) return;
@@ -1149,6 +1157,51 @@ export default function DashboardClient() {
       setPreviewRequestTone('error');
     } finally {
       setPreviewRequestBusy(false);
+    }
+  };
+
+  const handleVisibilityModeChange = async (
+    field: 'offer_visibility_mode' | 'request_visibility_mode',
+    value: VisibilityMode,
+  ) => {
+    if (!effectiveSelectedConfig || visibilitySaveBusy) return;
+    setVisibilitySaveBusy(true);
+    setVisibilitySaveMessage(null);
+    setVisibilitySaveTone('info');
+    try {
+      const res = await fetch(`/api/partner/areas/${encodeURIComponent(effectiveSelectedConfig.area_id)}/visibility`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setVisibilitySaveMessage(String(payload?.error ?? `Sichtbarkeitsmodus konnte nicht gespeichert werden (${res.status}).`));
+        setVisibilitySaveTone('error');
+        return;
+      }
+
+      const mapping = payload?.mapping as PartnerAreaConfig | undefined;
+      if (mapping?.area_id) {
+        setConfigs((prev) => prev.map((cfg) => (
+          cfg.area_id === mapping.area_id || cfg.area_id.startsWith(`${mapping.area_id}-`)
+            ? mergeAreaMappingUpdate(cfg, mapping)
+            : cfg
+        )));
+        setSelectedConfig((prev) => (
+          prev && (prev.area_id === mapping.area_id || prev.area_id.startsWith(`${mapping.area_id}-`))
+            ? mergeAreaMappingUpdate(prev, mapping)
+            : prev
+        ));
+      }
+
+      setVisibilitySaveMessage('Sichtbarkeitsmodus gespeichert.');
+      setVisibilitySaveTone('success');
+    } catch {
+      setVisibilitySaveMessage('Sichtbarkeitsmodus konnte nicht gespeichert werden. Bitte Verbindung prüfen und erneut versuchen.');
+      setVisibilitySaveTone('error');
+    } finally {
+      setVisibilitySaveBusy(false);
     }
   };
 
@@ -1676,6 +1729,45 @@ export default function DashboardClient() {
                   {!hideTextsHeaderInActivationFlow ? (
                     <div style={regionVisibilityModeSummaryStyle}>
                       {formatVisibilityModeSummary(effectiveSelectedConfig)}
+                    </div>
+                  ) : null}
+                  {!hideTextsHeaderInActivationFlow ? (
+                    <div style={visibilityControlCardStyle}>
+                      <div style={visibilityControlHeadStyle}>Regionale Ausspielung</div>
+                      <div style={visibilityControlRowStyle}>
+                        <label style={visibilityControlLabelStyle}>
+                          <span>Angebote</span>
+                          <select
+                            value={effectiveOfferVisibilityMode}
+                            onChange={(event) => void handleVisibilityModeChange('offer_visibility_mode', event.target.value as VisibilityMode)}
+                            disabled={visibilitySaveBusy}
+                            style={visibilitySelectStyle}
+                          >
+                            <option value="partner_wide">partnerweit</option>
+                            <option value="strict_local">nur lokal</option>
+                          </select>
+                        </label>
+                        <label style={visibilityControlLabelStyle}>
+                          <span>Gesuche</span>
+                          <select
+                            value={effectiveRequestVisibilityMode}
+                            onChange={(event) => void handleVisibilityModeChange('request_visibility_mode', event.target.value as VisibilityMode)}
+                            disabled={visibilitySaveBusy}
+                            style={visibilitySelectStyle}
+                          >
+                            <option value="partner_wide">partnerweit</option>
+                            <option value="strict_local">nur lokal</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div style={visibilityControlHintStyle}>
+                        `partnerweit` zeigt alle Assets des Partners im Gebiet. `nur lokal` ist die vorbereitete lokale Ausspielung.
+                      </div>
+                      {visibilitySaveMessage ? (
+                        <div style={{ marginTop: '10px' }}>
+                          <span style={reviewMessageStyle(visibilitySaveTone)}>{visibilitySaveMessage}</span>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                   {hideTextsHeaderInActivationFlow ? <div style={{ height: '40px' }} /> : null}
@@ -2239,6 +2331,56 @@ const regionVisibilityModeSummaryStyle: React.CSSProperties = {
   fontWeight: 700,
   marginTop: '8px',
   marginBottom: '6px',
+};
+
+const visibilityControlCardStyle: React.CSSProperties = {
+  marginTop: '10px',
+  marginBottom: '14px',
+  border: '1px solid #dbeafe',
+  background: '#f8fbff',
+  borderRadius: '12px',
+  padding: '12px 14px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+};
+
+const visibilityControlHeadStyle: React.CSSProperties = {
+  fontSize: '13px',
+  fontWeight: 800,
+  color: '#0f172a',
+};
+
+const visibilityControlRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '12px',
+  flexWrap: 'wrap',
+};
+
+const visibilityControlLabelStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '6px',
+  minWidth: '220px',
+  fontSize: '12px',
+  fontWeight: 700,
+  color: '#334155',
+};
+
+const visibilitySelectStyle: React.CSSProperties = {
+  border: '1px solid #cbd5e1',
+  borderRadius: '8px',
+  background: '#ffffff',
+  color: '#0f172a',
+  padding: '8px 10px',
+  fontSize: '13px',
+  fontWeight: 600,
+};
+
+const visibilityControlHintStyle: React.CSSProperties = {
+  fontSize: '12px',
+  lineHeight: 1.5,
+  color: '#64748b',
 };
 
 const regionStatusStyle = (statusKey: string): React.CSSProperties => ({
