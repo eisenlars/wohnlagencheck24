@@ -54,6 +54,29 @@ export type PortalSystemTextMap = {
   requests_unavailable_body: string;
   view_german_offers: string;
   view_german_requests: string;
+  interested_in_property: string;
+  partner_expose_provided: string;
+  to_partner_expose: string;
+  no_expose_link_available: string;
+  back_to_overview: string;
+  image_gallery: string;
+  no_images_available: string;
+  property_description: string;
+  location_label: string;
+  highlights_label: string;
+  floor_plan: string;
+  floor_plan_pending: string;
+  location_map: string;
+  location_map_pending: string;
+  features_label: string;
+  features_details_pending: string;
+  energy_label: string;
+  energy_class: string;
+  energy_demand: string;
+  primary_energy_source: string;
+  contact_request: string;
+  contact_request_hint: string;
+  request_now: string;
 };
 
 export type PortalSystemTextKey = keyof PortalSystemTextMap;
@@ -121,6 +144,29 @@ export const PORTAL_SYSTEM_TEXT_DEFAULTS: Record<string, PortalSystemTextMap> = 
     requests_unavailable_body: "Für diese Gesuche liegen aktuell noch keine freigegebenen Übersetzungen in der gewählten Sprache vor.",
     view_german_offers: "Deutsche Angebotsliste ansehen",
     view_german_requests: "Deutsche Gesuche ansehen",
+    interested_in_property: "Interesse an diesem Objekt?",
+    partner_expose_provided: "Das Exposé wird exklusiv vom Partner bereitgestellt.",
+    to_partner_expose: "Zum Partner-Exposé",
+    no_expose_link_available: "Kein Exposé-Link verfügbar.",
+    back_to_overview: "Zurück zur Übersicht",
+    image_gallery: "Bildergalerie",
+    no_images_available: "Keine Bilder verfügbar.",
+    property_description: "Objektbeschreibung",
+    location_label: "Lage",
+    highlights_label: "Highlights",
+    floor_plan: "Grundriss",
+    floor_plan_pending: "Grundriss folgt",
+    location_map: "Lagekarte",
+    location_map_pending: "Lagekarte folgt",
+    features_label: "Ausstattung",
+    features_details_pending: "Ausstattungsdetails werden ergänzt.",
+    energy_label: "Energie",
+    energy_class: "Energieklasse",
+    energy_demand: "Endenergiebedarf",
+    primary_energy_source: "Wesentlicher Energieträger",
+    contact_request: "Kontakt & Anfrage",
+    contact_request_hint: "Für eine Besichtigung oder weitere Informationen kontaktieren Sie bitte den Anbieter.",
+    request_now: "Jetzt Anfrage stellen",
   },
   en: {
     skip_to_content: "Skip to content",
@@ -178,6 +224,29 @@ export const PORTAL_SYSTEM_TEXT_DEFAULTS: Record<string, PortalSystemTextMap> = 
     requests_unavailable_body: "There are currently no approved translations for these requests in the selected language.",
     view_german_offers: "View German offers",
     view_german_requests: "View German requests",
+    interested_in_property: "Interested in this property?",
+    partner_expose_provided: "The listing brochure is provided exclusively by the partner.",
+    to_partner_expose: "Go to partner listing",
+    no_expose_link_available: "No listing link available.",
+    back_to_overview: "Back to overview",
+    image_gallery: "Image gallery",
+    no_images_available: "No images available.",
+    property_description: "Property description",
+    location_label: "Location",
+    highlights_label: "Highlights",
+    floor_plan: "Floor plan",
+    floor_plan_pending: "Floor plan coming soon",
+    location_map: "Location map",
+    location_map_pending: "Location map coming soon",
+    features_label: "Features",
+    features_details_pending: "Feature details will be added soon.",
+    energy_label: "Energy",
+    energy_class: "Energy class",
+    energy_demand: "Energy demand",
+    primary_energy_source: "Primary energy source",
+    contact_request: "Contact & inquiry",
+    contact_request_hint: "Please contact the provider for a viewing or further information.",
+    request_now: "Send inquiry now",
   },
 };
 
@@ -190,7 +259,46 @@ function buildPortalSystemTextLabel(key: PortalSystemTextKey): string {
 
 function resolvePortalSystemTextGroup(key: PortalSystemTextKey): string {
   if (key.startsWith("area_profile_") || key === "view_german_version") return "Gebiets-Fallback";
-  if (key.includes("offers") || key.includes("offer") || key === "purchase_price" || key === "warm_rent" || key === "living_area" || key === "rooms" || key === "to_expose" || key === "filter_object_type" || key === "house" || key === "apartment" || key === "top_property" || key === "page_navigation" || key === "previous_page" || key === "next_page" || key === "object_generic") {
+  if (
+    key.includes("offers")
+    || key.includes("offer")
+    || key === "purchase_price"
+    || key === "warm_rent"
+    || key === "living_area"
+    || key === "rooms"
+    || key === "to_expose"
+    || key === "filter_object_type"
+    || key === "house"
+    || key === "apartment"
+    || key === "top_property"
+    || key === "page_navigation"
+    || key === "previous_page"
+    || key === "next_page"
+    || key === "object_generic"
+    || key === "interested_in_property"
+    || key === "partner_expose_provided"
+    || key === "to_partner_expose"
+    || key === "no_expose_link_available"
+    || key === "back_to_overview"
+    || key === "image_gallery"
+    || key === "no_images_available"
+    || key === "property_description"
+    || key === "location_label"
+    || key === "highlights_label"
+    || key === "floor_plan"
+    || key === "floor_plan_pending"
+    || key === "location_map"
+    || key === "location_map_pending"
+    || key === "features_label"
+    || key === "features_details_pending"
+    || key === "energy_label"
+    || key === "energy_class"
+    || key === "energy_demand"
+    || key === "primary_energy_source"
+    || key === "contact_request"
+    || key === "contact_request_hint"
+    || key === "request_now"
+  ) {
     return "Angebote";
   }
   if (key.includes("requests") || key.includes("request") || key === "rooms_min") return "Gesuche";

@@ -1038,7 +1038,7 @@ export default function AdminClient() {
   const [portalContentEntries, setPortalContentEntries] = useState<PortalContentEntryRecord[]>([]);
   const [portalContentMetas, setPortalContentMetas] = useState<PortalContentI18nMetaViewRecord[]>([]);
   const [portalSystemTextDefinitions, setPortalSystemTextDefinitions] = useState<PortalSystemTextDefinition[]>(PORTAL_SYSTEM_TEXT_DEFINITIONS);
-  const [portalSystemTextEntries, setPortalSystemTextEntries] = useState<PortalSystemTextEntryRecord[]>([]);
+  const [, setPortalSystemTextEntries] = useState<PortalSystemTextEntryRecord[]>([]);
   const [portalSystemTextMetas, setPortalSystemTextMetas] = useState<PortalSystemTextI18nMetaViewRecord[]>([]);
   const [portalSystemTextLocale, setPortalSystemTextLocale] = useState<string>("de");
   const [portalSystemTextDrafts, setPortalSystemTextDrafts] = useState<Record<string, {
@@ -1059,6 +1059,10 @@ export default function AdminClient() {
     date_locale: "",
     currency_code: "EUR",
     billing_feature_code: "",
+  });
+  const [newPortalLocaleSetup, setNewPortalLocaleSetup] = useState({
+    syncSystemTexts: true,
+    syncPortalCms: true,
   });
   const adminInitialViewState = useMemo<PersistedAdminViewState>(() => ({
     activeView: "home",
@@ -2190,7 +2194,29 @@ export default function AdminClient() {
     setPortalSystemTextLocale((prev) => nextLocales.some((row) => row.locale === prev) ? prev : fallbackLocale);
   }
 
-  function appendPortalLocaleDraft() {
+  function resetNewPortalLocaleDraft() {
+    setNewPortalLocaleDraft({
+      locale: "",
+      status: "planned",
+      partner_bookable: false,
+      is_active: false,
+      label_native: "",
+      label_de: "",
+      bcp47_tag: "",
+      fallback_locale: "de",
+      text_direction: "ltr",
+      number_locale: "",
+      date_locale: "",
+      currency_code: "EUR",
+      billing_feature_code: "",
+    });
+    setNewPortalLocaleSetup({
+      syncSystemTexts: true,
+      syncPortalCms: true,
+    });
+  }
+
+  function buildNewPortalLocaleDraftPayload() {
     const locale = normalizePortalLocaleCode(newPortalLocaleDraft.locale);
     if (!locale) throw new Error("Bitte zuerst einen Locale-Code eingeben.");
     if (!isValidPortalLocaleCode(locale)) throw new Error(`Ungültiger Locale-Code: ${locale}`);
@@ -2213,31 +2239,55 @@ export default function AdminClient() {
       billing_feature_code: String(newPortalLocaleDraft.billing_feature_code ?? "").trim() || buildPortalLocaleBillingFeatureCode(locale),
     };
 
-    setPortalLocaleConfigs((prev) => [...prev, nextRow].sort((a, b) => a.locale.localeCompare(b.locale, "de")));
-    setPortalSystemTextDrafts((prev) => ({
-      ...prev,
-      ...buildPortalSystemTextDraftMap({
-        locales: [...portalLocaleConfigs, nextRow],
-        definitions: portalSystemTextDefinitions,
-        entries: portalSystemTextEntries,
-      }),
-    }));
-    setPortalSystemTextLocale(locale);
-    setNewPortalLocaleDraft({
-      locale: "",
-      status: "planned",
-      partner_bookable: false,
-      is_active: false,
-      label_native: "",
-      label_de: "",
-      bcp47_tag: "",
-      fallback_locale: "de",
-      text_direction: "ltr",
-      number_locale: "",
-      date_locale: "",
-      currency_code: "EUR",
-      billing_feature_code: "",
+    const nextConfigs = [...portalLocaleConfigs, nextRow].sort((a, b) => a.locale.localeCompare(b.locale, "de"));
+    return { locale, nextConfigs };
+  }
+
+  async function savePortalLocaleConfigs(rows: PortalLocaleConfigRecord[]) {
+    await api("/api/admin/portal-content", {
+      method: "POST",
+      body: JSON.stringify({ locale_configs: rows }),
     });
+  }
+
+  async function initializePortalLocaleFromDe(locale: string) {
+    if (!locale || locale === PORTAL_CMS_SOURCE_LOCALE) return;
+    if (newPortalLocaleSetup.syncSystemTexts) {
+      await syncPortalSystemTextLocaleFromDe(locale, "fill_missing");
+    }
+    if (newPortalLocaleSetup.syncPortalCms) {
+      for (const page of portalCmsPages) {
+        await api("/api/admin/portal-content/sync", {
+          method: "POST",
+          body: JSON.stringify({
+            page_key: page.page_key,
+            source_locale: PORTAL_CMS_SOURCE_LOCALE,
+            target_locale: locale,
+            mode: "copy_all",
+            target_entries: page.sections.map((section) => ({
+              section_key: section.section_key,
+              status: "draft",
+              fields_json: buildPortalCmsEmptyFields(section),
+            })),
+          }),
+        });
+      }
+    }
+  }
+
+  async function createPortalLocaleWithSetup() {
+    const { locale, nextConfigs } = buildNewPortalLocaleDraftPayload();
+    await savePortalLocaleConfigs(nextConfigs);
+    setPortalLocaleConfigs(nextConfigs);
+    setPortalSystemTextLocale(locale);
+    try {
+      await initializePortalLocaleFromDe(locale);
+      await loadPortalCms();
+      resetNewPortalLocaleDraft();
+    } catch (error) {
+      await loadPortalCms();
+      throw error;
+    }
   }
 
   async function savePortalSystemTextLocale(locale: string) {
@@ -4792,19 +4842,39 @@ export default function AdminClient() {
             </label>
           </div>
           <div style={{ ...rowStyle, marginTop: 10 }}>
+            <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#334155" }}>
+                <input
+                  type="checkbox"
+                  checked={newPortalLocaleSetup.syncSystemTexts}
+                  onChange={(e) => setNewPortalLocaleSetup((prev) => ({ ...prev, syncSystemTexts: e.target.checked }))}
+                />
+                Systemtexte aus DE vorbereiten
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#334155" }}>
+                <input
+                  type="checkbox"
+                  checked={newPortalLocaleSetup.syncPortalCms}
+                  onChange={(e) => setNewPortalLocaleSetup((prev) => ({ ...prev, syncPortalCms: e.target.checked }))}
+                />
+                Portal-CMS aus DE vorbereiten
+              </label>
+            </div>
+          </div>
+          <div style={{ ...rowStyle, marginTop: 10 }}>
             <div style={{ ...mutedStyle, fontSize: 12 }}>
-              Neue Locales werden zuerst nur in die Registry aufgenommen. Öffentlich sichtbar werden sie erst mit `is_active = true` und `status = live`.
+              Der Setup-Lauf speichert die Locale in der Registry und bereitet optional Systemtexte sowie Portal-CMS aus `de` vor. Öffentlich sichtbar wird sie erst mit `is_active = true` und `status = live`.
             </div>
             <button
               style={btnStyle}
               disabled={busy}
               onClick={() =>
-                run("Neue Portal-Locale vormerken", async () => {
-                  appendPortalLocaleDraft();
+                run("Neue Portal-Locale anlegen", async () => {
+                  await createPortalLocaleWithSetup();
                 })
               }
             >
-              Sprache vormerken
+              Sprache anlegen und vorbereiten
             </button>
           </div>
         </div>
@@ -4972,10 +5042,7 @@ export default function AdminClient() {
               disabled={busy}
               onClick={() =>
                 run("Portal-Locales speichern", async () => {
-                  await api("/api/admin/portal-content", {
-                    method: "POST",
-                    body: JSON.stringify({ locale_configs: portalLocaleConfigs }),
-                  });
+                  await savePortalLocaleConfigs(portalLocaleConfigs);
                   await loadPortalCms();
                 })
               }
