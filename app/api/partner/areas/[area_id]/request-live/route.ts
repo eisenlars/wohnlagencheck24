@@ -91,13 +91,32 @@ export async function POST(
       .maybeSingle();
 
     if (mappingError && isMissingPreviewSignoffColumn(mappingError)) {
+      type RequestLiveMappingFallbackRow = {
+        id: string | null;
+        auth_user_id: string | null;
+        area_id: string | null;
+        is_active: boolean | null;
+        is_public_live: boolean | null;
+        activation_status: string | null;
+        partner_preview_signoff_at: string | null;
+      };
       const fallback = await admin
         .from("partner_area_map")
         .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status")
         .eq("auth_user_id", userId)
         .eq("area_id", areaId)
         .maybeSingle();
-      mapping = fallback.data ? { ...fallback.data, partner_preview_signoff_at: null } : null;
+      mapping = fallback.data
+        ? {
+            id: String(fallback.data.id ?? ""),
+            auth_user_id: String(fallback.data.auth_user_id ?? ""),
+            area_id: String(fallback.data.area_id ?? ""),
+            is_active: Boolean(fallback.data.is_active),
+            is_public_live: typeof fallback.data.is_public_live === "boolean" ? fallback.data.is_public_live : null,
+            activation_status: typeof fallback.data.activation_status === "string" ? fallback.data.activation_status : null,
+            partner_preview_signoff_at: null,
+          } satisfies RequestLiveMappingFallbackRow
+        : null;
       mappingError = fallback.error;
     }
 

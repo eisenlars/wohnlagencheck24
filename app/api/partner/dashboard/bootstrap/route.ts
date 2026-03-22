@@ -147,6 +147,17 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
     || isMissingAdminReviewNoteColumn(error)
     || isMissingAreaVisibilityModeColumn(error)
   )) {
+    type PartnerDashboardConfigFallbackRow = {
+      area_id: string | null;
+      is_active: boolean | null;
+      is_public_live: boolean | null;
+      activation_status: string | null;
+      offer_visibility_mode: string | null;
+      request_visibility_mode: string | null;
+      partner_preview_signoff_at: string | null;
+      admin_review_note: string | null;
+      areas: PartnerArea | null;
+    };
     const missingActivationStatus = isMissingAreaActivationStatusColumn(error);
     const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(error);
     const missingAdminReviewNote = isMissingAdminReviewNoteColumn(error);
@@ -167,17 +178,22 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         .order("area_id", { ascending: true });
       data = (fallback.data ?? []).map((row) => {
         const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-        return {
-        ...baseRow,
-        offer_visibility_mode: !missingVisibilityMode
-          ? (baseRow as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide"
-          : "partner_wide",
-        request_visibility_mode: !missingVisibilityMode
-          ? (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide"
-          : "partner_wide",
-        partner_preview_signoff_at: null,
-        admin_review_note: null,
-      };
+        const mappedRow: PartnerDashboardConfigFallbackRow = {
+          area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
+          is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
+          is_public_live: typeof baseRow.is_public_live === "boolean" ? baseRow.is_public_live : null,
+          activation_status: typeof baseRow.activation_status === "string" ? baseRow.activation_status : null,
+          offer_visibility_mode: !missingVisibilityMode
+            ? (baseRow as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide"
+            : "partner_wide",
+          request_visibility_mode: !missingVisibilityMode
+            ? (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide"
+            : "partner_wide",
+          partner_preview_signoff_at: null,
+          admin_review_note: null,
+          areas: baseRow.areas ?? null,
+        };
+        return mappedRow;
       });
       error = fallback.error;
     } else if (missingVisibilityMode && !missingActivationStatus) {
@@ -188,11 +204,18 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         .order("area_id", { ascending: true });
       data = (fallback.data ?? []).map((row) => {
         const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-        return {
-        ...baseRow,
-        offer_visibility_mode: "partner_wide",
-        request_visibility_mode: "partner_wide",
-      };
+        const mappedRow: PartnerDashboardConfigFallbackRow = {
+          area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
+          is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
+          is_public_live: typeof baseRow.is_public_live === "boolean" ? baseRow.is_public_live : null,
+          activation_status: typeof baseRow.activation_status === "string" ? baseRow.activation_status : null,
+          offer_visibility_mode: "partner_wide",
+          request_visibility_mode: "partner_wide",
+          partner_preview_signoff_at: typeof baseRow.partner_preview_signoff_at === "string" ? baseRow.partner_preview_signoff_at : null,
+          admin_review_note: typeof baseRow.admin_review_note === "string" ? baseRow.admin_review_note : null,
+          areas: baseRow.areas ?? null,
+        };
+        return mappedRow;
       });
       error = fallback.error;
     } else {
@@ -203,15 +226,18 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
         .order("area_id", { ascending: true });
       data = (fallback.data ?? []).map((row) => {
         const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-        return {
-        ...baseRow,
-        is_public_live: null,
-        activation_status: null,
-        offer_visibility_mode: "partner_wide",
-        request_visibility_mode: "partner_wide",
-        partner_preview_signoff_at: null,
-        admin_review_note: null,
-      };
+        const mappedRow: PartnerDashboardConfigFallbackRow = {
+          area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
+          is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
+          is_public_live: null,
+          activation_status: null,
+          offer_visibility_mode: "partner_wide",
+          request_visibility_mode: "partner_wide",
+          partner_preview_signoff_at: null,
+          admin_review_note: null,
+          areas: baseRow.areas ?? null,
+        };
+        return mappedRow;
       });
       error = fallback.error;
     }

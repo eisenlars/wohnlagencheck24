@@ -85,6 +85,16 @@ async function loadMapping(admin: ReturnType<typeof createAdminClient>, partnerI
     .maybeSingle();
 
   if (error && (isMissingActivationStatusColumn(error) || isMissingPublicLiveColumn(error) || isMissingPreviewSignoffColumn(error) || isMissingAdminReviewNoteColumn(error))) {
+    type ReviewMappingFallbackRow = {
+      id: string | null;
+      auth_user_id: string | null;
+      area_id: string | null;
+      is_active: boolean | null;
+      is_public_live: boolean | null;
+      activation_status: string | null;
+      partner_preview_signoff_at: string | null;
+      admin_review_note: string | null;
+    };
     const missingActivationStatus = isMissingActivationStatusColumn(error);
     const missingPublicLive = isMissingPublicLiveColumn(error);
     const missingPreviewSignoff = isMissingPreviewSignoffColumn(error);
@@ -99,10 +109,15 @@ async function loadMapping(admin: ReturnType<typeof createAdminClient>, partnerI
         .maybeSingle();
       data = fallback.data
         ? {
-          ...fallback.data,
+          id: String(fallback.data.id ?? ""),
+          auth_user_id: String(fallback.data.auth_user_id ?? ""),
+          area_id: String(fallback.data.area_id ?? ""),
+          is_active: Boolean(fallback.data.is_active),
+          is_public_live: typeof fallback.data.is_public_live === "boolean" ? fallback.data.is_public_live : null,
+          activation_status: typeof fallback.data.activation_status === "string" ? fallback.data.activation_status : null,
           partner_preview_signoff_at: null,
           admin_review_note: null,
-        }
+        } satisfies ReviewMappingFallbackRow
         : null;
       error = fallback.error;
     } else {
@@ -112,7 +127,18 @@ async function loadMapping(admin: ReturnType<typeof createAdminClient>, partnerI
         .eq("auth_user_id", partnerId)
         .eq("area_id", areaId)
         .maybeSingle();
-      data = fallback.data ? { ...fallback.data, activation_status: null, is_public_live: null, partner_preview_signoff_at: null, admin_review_note: null } : null;
+      data = fallback.data
+        ? {
+            id: String(fallback.data.id ?? ""),
+            auth_user_id: String(fallback.data.auth_user_id ?? ""),
+            area_id: String(fallback.data.area_id ?? ""),
+            is_active: Boolean(fallback.data.is_active),
+            activation_status: null,
+            is_public_live: null,
+            partner_preview_signoff_at: null,
+            admin_review_note: null,
+          } satisfies ReviewMappingFallbackRow
+        : null;
       error = fallback.error;
     }
   }

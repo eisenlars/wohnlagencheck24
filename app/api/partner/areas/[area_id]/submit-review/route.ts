@@ -94,13 +94,28 @@ export async function POST(
       .eq("area_id", areaId)
       .maybeSingle();
     if (mappingError && isMissingActivationStatusColumn(mappingError)) {
+      type SubmitReviewMappingFallbackRow = {
+        id: string | null;
+        auth_user_id: string | null;
+        area_id: string | null;
+        is_active: boolean | null;
+        activation_status: string | null;
+      };
       const fallback = await admin
         .from("partner_area_map")
         .select("id, auth_user_id, area_id, is_active")
         .eq("auth_user_id", userId)
         .eq("area_id", areaId)
         .maybeSingle();
-      mapping = fallback.data ? { ...fallback.data, activation_status: null } : null;
+      mapping = fallback.data
+        ? {
+            id: String(fallback.data.id ?? ""),
+            auth_user_id: String(fallback.data.auth_user_id ?? ""),
+            area_id: String(fallback.data.area_id ?? ""),
+            is_active: Boolean(fallback.data.is_active),
+            activation_status: null,
+          } satisfies SubmitReviewMappingFallbackRow
+        : null;
       mappingError = fallback.error;
     }
     if (mappingError) {
@@ -148,6 +163,16 @@ export async function POST(
       .maybeSingle();
 
     if (updateError && (isMissingActivationStatusColumn(updateError) || isMissingAdminReviewNoteColumn(updateError))) {
+      type SubmitReviewUpdatedFallbackRow = {
+        id: string | null;
+        auth_user_id: string | null;
+        area_id: string | null;
+        is_active: boolean | null;
+        activation_status: string | null;
+        partner_submitted_at: string | null;
+        admin_review_note: string | null;
+        created_at: string | null;
+      };
       if (isMissingAdminReviewNoteColumn(updateError) && !isMissingActivationStatusColumn(updateError)) {
         const fallback = await admin
           .from("partner_area_map")
@@ -161,7 +186,16 @@ export async function POST(
           .select("id, auth_user_id, area_id, is_active, activation_status, partner_submitted_at, created_at")
           .maybeSingle();
         updated = fallback.data
-          ? { ...fallback.data, admin_review_note: null }
+          ? {
+              id: String(fallback.data.id ?? ""),
+              auth_user_id: String(fallback.data.auth_user_id ?? ""),
+              area_id: String(fallback.data.area_id ?? ""),
+              is_active: Boolean(fallback.data.is_active),
+              activation_status: typeof fallback.data.activation_status === "string" ? fallback.data.activation_status : null,
+              partner_submitted_at: typeof fallback.data.partner_submitted_at === "string" ? fallback.data.partner_submitted_at : null,
+              admin_review_note: null,
+              created_at: typeof fallback.data.created_at === "string" ? fallback.data.created_at : null,
+            } satisfies SubmitReviewUpdatedFallbackRow
           : null;
         updateError = fallback.error;
       } else {
@@ -173,7 +207,16 @@ export async function POST(
           .select("id, auth_user_id, area_id, is_active, created_at")
           .maybeSingle();
         updated = fallback.data
-          ? { ...fallback.data, activation_status: "ready_for_review", partner_submitted_at: new Date().toISOString(), admin_review_note: null }
+          ? {
+              id: String(fallback.data.id ?? ""),
+              auth_user_id: String(fallback.data.auth_user_id ?? ""),
+              area_id: String(fallback.data.area_id ?? ""),
+              is_active: Boolean(fallback.data.is_active),
+              activation_status: "ready_for_review",
+              partner_submitted_at: new Date().toISOString(),
+              admin_review_note: null,
+              created_at: typeof fallback.data.created_at === "string" ? fallback.data.created_at : null,
+            } satisfies SubmitReviewUpdatedFallbackRow
           : null;
         updateError = fallback.error;
       }

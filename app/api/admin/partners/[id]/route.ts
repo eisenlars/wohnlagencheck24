@@ -311,6 +311,24 @@ export async function GET(
       || isMissingAreaPreviewSignoffColumn(mappingError)
       || isMissingAreaVisibilityModeColumn(mappingError)
     )) {
+      type PartnerDetailAreaMappingRow = {
+        id: string | null;
+        auth_user_id: string | null;
+        area_id: string | null;
+        is_active: boolean | null;
+        is_public_live: boolean | null;
+        activation_status: string | null;
+        offer_visibility_mode: string | null;
+        request_visibility_mode: string | null;
+        partner_preview_signoff_at: string | null;
+        created_at: string | null;
+        areas: {
+          name?: string | null;
+          slug?: string | null;
+          parent_slug?: string | null;
+          bundesland_slug?: string | null;
+        } | null;
+      };
       const missingActivationStatus = isMissingAreaActivationStatusColumn(mappingError);
       const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(mappingError);
       const missingVisibilityMode = isMissingAreaVisibilityModeColumn(mappingError);
@@ -333,16 +351,24 @@ export async function GET(
           .order("area_id", { ascending: true });
         mappings = (fallback.data ?? []).map((row) => {
           const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-          return {
-          ...baseRow,
-          partner_preview_signoff_at: null,
-          offer_visibility_mode: missingVisibilityMode
-            ? "partner_wide"
-            : (baseRow as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
-          request_visibility_mode: missingVisibilityMode
-            ? "partner_wide"
-            : (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
-        };
+          const mappedRow: PartnerDetailAreaMappingRow = {
+            id: typeof baseRow.id === "string" ? baseRow.id : null,
+            auth_user_id: typeof baseRow.auth_user_id === "string" ? baseRow.auth_user_id : null,
+            area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
+            is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
+            is_public_live: typeof baseRow.is_public_live === "boolean" ? baseRow.is_public_live : null,
+            activation_status: typeof baseRow.activation_status === "string" ? baseRow.activation_status : null,
+            partner_preview_signoff_at: null,
+            offer_visibility_mode: missingVisibilityMode
+              ? "partner_wide"
+              : (baseRow as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
+            request_visibility_mode: missingVisibilityMode
+              ? "partner_wide"
+              : (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
+            created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
+            areas: baseRow.areas ?? null,
+          };
+          return mappedRow;
         });
         mappingError = fallback.error;
       } else {
@@ -353,14 +379,20 @@ export async function GET(
           .order("area_id", { ascending: true });
         mappings = (fallback.data ?? []).map((row) => {
           const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-          return {
-          ...baseRow,
-          activation_status: null,
-          is_public_live: null,
-          offer_visibility_mode: "partner_wide",
-          request_visibility_mode: "partner_wide",
-          partner_preview_signoff_at: null,
-        };
+          const mappedRow: PartnerDetailAreaMappingRow = {
+            id: typeof baseRow.id === "string" ? baseRow.id : null,
+            auth_user_id: typeof baseRow.auth_user_id === "string" ? baseRow.auth_user_id : null,
+            area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
+            is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
+            activation_status: null,
+            is_public_live: null,
+            offer_visibility_mode: "partner_wide",
+            request_visibility_mode: "partner_wide",
+            partner_preview_signoff_at: null,
+            created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
+            areas: baseRow.areas ?? null,
+          };
+          return mappedRow;
         });
         mappingError = fallback.error;
       }

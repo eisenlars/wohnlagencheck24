@@ -137,6 +137,15 @@ export async function POST(
       .eq("area_id", areaId)
       .maybeSingle();
     if (mappingError && (isMissingActivationStatusColumn(mappingError) || isMissingPublicLiveColumn(mappingError) || isMissingPreviewSignoffColumn(mappingError))) {
+      type PublishMappingFallbackRow = {
+        id: string | null;
+        auth_user_id: string | null;
+        area_id: string | null;
+        is_active: boolean | null;
+        is_public_live: boolean | null;
+        activation_status: string | null;
+        partner_preview_signoff_at: string | null;
+      };
       const missingActivationStatus = isMissingActivationStatusColumn(mappingError);
       const missingPublicLive = isMissingPublicLiveColumn(mappingError);
       const missingPreviewSignoff = isMissingPreviewSignoffColumn(mappingError);
@@ -148,7 +157,17 @@ export async function POST(
           .eq("auth_user_id", partnerId)
           .eq("area_id", areaId)
           .maybeSingle();
-        mapping = fallback.data ? { ...fallback.data, partner_preview_signoff_at: null } : null;
+        mapping = fallback.data
+          ? {
+              id: String(fallback.data.id ?? ""),
+              auth_user_id: String(fallback.data.auth_user_id ?? ""),
+              area_id: String(fallback.data.area_id ?? ""),
+              is_active: Boolean(fallback.data.is_active),
+              is_public_live: typeof fallback.data.is_public_live === "boolean" ? fallback.data.is_public_live : null,
+              activation_status: typeof fallback.data.activation_status === "string" ? fallback.data.activation_status : null,
+              partner_preview_signoff_at: null,
+            } satisfies PublishMappingFallbackRow
+          : null;
         mappingError = fallback.error;
       } else {
         const fallback = await admin
@@ -157,7 +176,17 @@ export async function POST(
           .eq("auth_user_id", partnerId)
           .eq("area_id", areaId)
           .maybeSingle();
-        mapping = fallback.data ? { ...fallback.data, is_public_live: null, activation_status: null, partner_preview_signoff_at: null } : null;
+        mapping = fallback.data
+          ? {
+              id: String(fallback.data.id ?? ""),
+              auth_user_id: String(fallback.data.auth_user_id ?? ""),
+              area_id: String(fallback.data.area_id ?? ""),
+              is_active: Boolean(fallback.data.is_active),
+              is_public_live: null,
+              activation_status: null,
+              partner_preview_signoff_at: null,
+            } satisfies PublishMappingFallbackRow
+          : null;
         mappingError = fallback.error;
       }
     }
