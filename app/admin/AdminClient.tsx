@@ -5083,9 +5083,6 @@ export default function AdminClient() {
                       <option value="internal">intern</option>
                       <option value="live">live</option>
                     </select>
-                    <div style={{ ...mutedStyle, marginTop: 8 }}>
-                      `Aktiviert` schaltet die Sprache grundsätzlich frei. `live` macht sie öffentlich sichtbar.
-                    </div>
                   </td>
                   <td style={tdStyle}>
                     <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
@@ -5107,7 +5104,7 @@ export default function AdminClient() {
           </table>
           <div style={{ ...rowStyle, marginTop: 10 }}>
             <button
-              style={btnStyle}
+              style={{ ...btnStyle, padding: "8px 12px", fontSize: 13 }}
               disabled={busy}
               onClick={() =>
                 run("Portal-Locales speichern", async () => {
