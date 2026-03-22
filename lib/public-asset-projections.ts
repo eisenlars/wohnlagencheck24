@@ -21,6 +21,9 @@ type PartnerAreaMapRow = {
 type PartnerAreaConfigRow = {
   area_id?: string | null;
   is_active?: boolean | null;
+  is_public_live?: boolean | null;
+  offer_visibility_mode?: string | null;
+  request_visibility_mode?: string | null;
   areas?: {
     id?: string | null;
     name?: string | null;
@@ -203,6 +206,17 @@ function parseRegionTargetKeys(payload: Record<string, unknown>): string[] {
   return raw.map((entry) => asText(entry).toLowerCase()).filter(Boolean);
 }
 
+function buildRegionTargetKey(city: string | null, district: string | null): string | null {
+  const normalizedCity = asText(city);
+  const normalizedDistrict = asText(district);
+  if (!normalizedCity) return null;
+  return `${normalizedCity.toLowerCase()}::${normalizedDistrict.toLowerCase()}`;
+}
+
+function normalizeVisibilityMode(value: unknown): "partner_wide" | "strict_local" {
+  return asText(value).toLowerCase() === "strict_local" ? "strict_local" : "partner_wide";
+}
+
 function groupByKey<T>(rows: T[], buildKey: (row: T) => string): Map<string, T> {
   const map = new Map<string, T>();
   for (const row of rows) {
@@ -273,6 +287,14 @@ function isMissingTableError(error: unknown, table: string): boolean {
     (message.includes("does not exist") && message.includes(normalized)) ||
     (message.includes("schema cache") && message.includes(normalized))
   );
+}
+
+function isMissingVisibilityModeColumn(error: unknown): boolean {
+  const message = String((error as { message?: unknown })?.message ?? error ?? "").toLowerCase();
+  return (
+    message.includes("partner_area_map.offer_visibility_mode")
+    || message.includes("partner_area_map.request_visibility_mode")
+  ) && (message.includes("does not exist") || message.includes("schema cache"));
 }
 
 async function reconcileProjectionRows(args: {
@@ -351,6 +373,36 @@ async function loadPublicLiveAreaIdsForPartner(admin: AdminClient, partnerId: st
   );
 }
 
+async function loadPublicLiveAreaConfigsForPartner(
+  admin: AdminClient,
+  partnerId: string,
+): Promise<PartnerAreaConfigRow[]> {
+  let { data, error } = await admin
+    .from("partner_area_map")
+    .select("area_id, is_public_live, offer_visibility_mode, request_visibility_mode, areas(id, name, slug, parent_slug, bundesland_slug)")
+    .eq("auth_user_id", partnerId)
+    .eq("is_public_live", true)
+    .order("area_id", { ascending: true });
+
+  if (error && isMissingVisibilityModeColumn(error)) {
+    const fallback = await admin
+      .from("partner_area_map")
+      .select("area_id, is_public_live, areas(id, name, slug, parent_slug, bundesland_slug)")
+      .eq("auth_user_id", partnerId)
+      .eq("is_public_live", true)
+      .order("area_id", { ascending: true });
+    data = (fallback.data ?? []).map((row) => ({
+      ...row,
+      offer_visibility_mode: "partner_wide",
+      request_visibility_mode: "partner_wide",
+    }));
+    error = fallback.error;
+  }
+
+  if (error) throw new Error(`partner_area_map visibility lookup failed: ${error.message}`);
+  return (data ?? []) as PartnerAreaConfigRow[];
+}
+
 async function loadOfferAreaCandidatesForPartner(
   admin: AdminClient,
   partnerId: string,
@@ -421,6 +473,122 @@ async function loadOfferAreaCandidatesForPartner(
   }
 
   return Array.from(new Map([...directRows, ...derivedRows].map((row) => [row.id, row])).values());
+}
+
+async function loadRequestMatchKeysByVisibleAreaId(
+  admin: AdminClient,
+  visibleAreaConfigs: PartnerAreaConfigRow[],
+): Promise<Map<string, Set<string>>> {
+  const districtRows = visibleAreaConfigs.filter((row) => asText(row.area_id).split("-").length <= 3);
+  const districtSlugs = districtRows.map((row) => asText(row.areas?.slug)).filter(Boolean) as string[];
+  const childAreaRowsByParentSlug = new Map<string, Array<{ name: string }>>();
+
+  if (districtSlugs.length > 0) {
+    const { data, error } = await admin
+      .from("areas")
+      .select("name, parent_slug")
+      .in("parent_slug", districtSlugs)
+      .order("name", { ascending: true });
+    if (error) throw new Error(`areas request child lookup failed: ${error.message}`);
+
+    for (const row of (data ?? []) as Array<Record<string, unknown>>) {
+      const parentSlug = asText(row.parent_slug);
+      const name = asText(row.name);
+      if (!parentSlug || !name) continue;
+      const bucket = childAreaRowsByParentSlug.get(parentSlug) ?? [];
+      bucket.push({ name });
+      childAreaRowsByParentSlug.set(parentSlug, bucket);
+    }
+  }
+
+  const districtBySlug = new Map(
+    districtRows
+      .map((row) => [asText(row.areas?.slug), row] as const)
+      .filter(([slug]) => Boolean(slug)),
+  );
+
+  const matchKeysByAreaId = new Map<string, Set<string>>();
+  for (const row of visibleAreaConfigs) {
+    const areaId = asText(row.area_id);
+    if (!areaId) continue;
+
+    const areaName = asNullableText(row.areas?.name);
+    const areaSlug = asText(row.areas?.slug);
+    const parentSlug = asText(row.areas?.parent_slug);
+    const parentDistrict = parentSlug ? districtBySlug.get(parentSlug) ?? null : null;
+    const parentName = asNullableText(parentDistrict?.areas?.name);
+
+    const keys = new Set<string>();
+    const directKey = buildRegionTargetKey(areaName, null);
+    if (directKey) keys.add(directKey);
+
+    if (parentName && areaName) {
+      const parentScopedKey = buildRegionTargetKey(parentName, areaName);
+      if (parentScopedKey) keys.add(parentScopedKey);
+    }
+
+    if (areaId.split("-").length <= 3 && areaName) {
+      const districtKey = buildRegionTargetKey(areaName, null);
+      if (districtKey) keys.add(districtKey);
+      for (const child of childAreaRowsByParentSlug.get(areaSlug) ?? []) {
+        const childDirectKey = buildRegionTargetKey(child.name, null);
+        if (childDirectKey) keys.add(childDirectKey);
+        const districtScopedKey = buildRegionTargetKey(areaName, child.name);
+        if (districtScopedKey) keys.add(districtScopedKey);
+      }
+    }
+
+    matchKeysByAreaId.set(areaId, keys);
+  }
+
+  return matchKeysByAreaId;
+}
+
+function buildOfferMatchAreaIdsByVisibleAreaId(
+  visibleAreaConfigs: PartnerAreaConfigRow[],
+  offerAreaCandidates: OfferAreaCandidate[],
+): Map<string, Set<string>> {
+  const candidatesByParentSlug = new Map<string, string[]>();
+  for (const candidate of offerAreaCandidates) {
+    const parentSlug = asText(candidate.parentSlug);
+    const areaId = asText(candidate.id);
+    if (!parentSlug || !areaId) continue;
+    const bucket = candidatesByParentSlug.get(parentSlug) ?? [];
+    bucket.push(areaId);
+    candidatesByParentSlug.set(parentSlug, bucket);
+  }
+
+  const matchAreaIdsByVisibleAreaId = new Map<string, Set<string>>();
+  for (const row of visibleAreaConfigs) {
+    const visibleAreaId = asText(row.area_id);
+    if (!visibleAreaId) continue;
+    const visibleAreaSlug = asText(row.areas?.slug);
+    const allowed = new Set<string>([visibleAreaId]);
+    if (visibleAreaId.split("-").length <= 3 && visibleAreaSlug) {
+      for (const childAreaId of candidatesByParentSlug.get(visibleAreaSlug) ?? []) {
+        allowed.add(childAreaId);
+      }
+    }
+    matchAreaIdsByVisibleAreaId.set(visibleAreaId, allowed);
+  }
+
+  return matchAreaIdsByVisibleAreaId;
+}
+
+function requestMatchesVisibleArea(
+  regionTargetKeys: string[],
+  regionTargets: Array<{ city: string; district: string | null; label: string }>,
+  allowedKeys: Set<string>,
+): boolean {
+  if (allowedKeys.size === 0) return false;
+  for (const key of regionTargetKeys) {
+    if (allowedKeys.has(asText(key).toLowerCase())) return true;
+  }
+  for (const target of regionTargets) {
+    const key = buildRegionTargetKey(target.city, target.district);
+    if (key && allowedKeys.has(key)) return true;
+  }
+  return false;
 }
 
 async function reconcileOfferAreaTargets(args: {
@@ -506,10 +674,12 @@ export async function rebuildPublicOfferEntriesForPartner(
   partnerId: string,
   admin = createAdminClient(),
 ): Promise<number> {
-  const [visibleAreaIds, offerAreaCandidates] = await Promise.all([
-    loadPublicLiveAreaIdsForPartner(admin, partnerId),
+  const [visibleAreaConfigs, offerAreaCandidates] = await Promise.all([
+    loadPublicLiveAreaConfigsForPartner(admin, partnerId),
     loadOfferAreaCandidatesForPartner(admin, partnerId),
   ]);
+  const visibleAreaIds = visibleAreaConfigs.map((row) => asText(row.area_id)).filter(Boolean);
+  const offerMatchAreaIdsByVisibleAreaId = buildOfferMatchAreaIdsByVisibleAreaId(visibleAreaConfigs, offerAreaCandidates);
   if (visibleAreaIds.length === 0) {
     await reconcileOfferAreaTargets({ admin, partnerId, rows: [] });
     return reconcileProjectionRows({
@@ -596,6 +766,7 @@ export async function rebuildPublicOfferEntriesForPartner(
     const rankedMatches = filterOfferAreaMatches(
       rankOfferAreaMatches(geoSignals, offerAreaCandidates),
     );
+    const matchedAreaIds = new Set(rankedMatches.map((match) => match.areaId));
 
     rankedMatches.forEach((match, index) => {
       offerAreaTargetRows.push({
@@ -613,7 +784,16 @@ export async function rebuildPublicOfferEntriesForPartner(
       });
     });
 
-    for (const visibleAreaId of visibleAreaIds) {
+    for (const visibleAreaConfig of visibleAreaConfigs) {
+      const visibleAreaId = asText(visibleAreaConfig.area_id);
+      if (!visibleAreaId) continue;
+      const offerVisibilityMode = normalizeVisibilityMode(visibleAreaConfig.offer_visibility_mode);
+      const allowedMatchAreaIds = offerMatchAreaIdsByVisibleAreaId.get(visibleAreaId) ?? new Set<string>([visibleAreaId]);
+      const hasLocalOfferMatch = Array.from(matchedAreaIds).some((areaId) => allowedMatchAreaIds.has(areaId));
+      if (offerVisibilityMode === "strict_local" && !hasLocalOfferMatch) {
+        continue;
+      }
+
       projectionRows.push({
         partner_id: partnerId,
         visible_area_id: visibleAreaId,
@@ -731,7 +911,8 @@ export async function rebuildPublicRequestEntriesForPartner(
   partnerId: string,
   admin = createAdminClient(),
 ): Promise<number> {
-  const visibleAreaIds = await loadPublicLiveAreaIdsForPartner(admin, partnerId);
+  const visibleAreaConfigs = await loadPublicLiveAreaConfigsForPartner(admin, partnerId);
+  const visibleAreaIds = visibleAreaConfigs.map((row) => asText(row.area_id)).filter(Boolean);
   if (visibleAreaIds.length === 0) {
     return reconcileProjectionRows({
       admin,
@@ -786,6 +967,7 @@ export async function rebuildPublicRequestEntriesForPartner(
   if (i18nRes.error) throw new Error(`partner_request_i18n lookup failed: ${i18nRes.error.message}`);
 
   const requests = (requestsRes.data ?? []) as RequestRow[];
+  const requestMatchKeysByVisibleAreaId = await loadRequestMatchKeysByVisibleAreaId(admin, visibleAreaConfigs);
   const overridesByKey = groupByKey(
     (overridesRes.data ?? []) as RequestOverrideRow[],
     (row) => `${asText(row.partner_id)}::${asText(row.source)}::${asText(row.external_id)}`,
@@ -812,7 +994,21 @@ export async function rebuildPublicRequestEntriesForPartner(
     const regionTargets = parseRegionTargets(payload);
     const regionTargetKeys = parseRegionTargetKeys(payload);
 
-    for (const visibleAreaId of visibleAreaIds) {
+    for (const visibleAreaConfig of visibleAreaConfigs) {
+      const visibleAreaId = asText(visibleAreaConfig.area_id);
+      if (!visibleAreaId) continue;
+      const requestVisibilityMode = normalizeVisibilityMode(visibleAreaConfig.request_visibility_mode);
+      if (
+        requestVisibilityMode === "strict_local"
+        && !requestMatchesVisibleArea(
+          regionTargetKeys,
+          regionTargets,
+          requestMatchKeysByVisibleAreaId.get(visibleAreaId) ?? new Set<string>(),
+        )
+      ) {
+        continue;
+      }
+
       projectionRows.push({
         partner_id: partnerId,
         visible_area_id: visibleAreaId,
