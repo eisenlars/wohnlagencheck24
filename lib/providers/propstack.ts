@@ -1,5 +1,7 @@
 import type {
   MappedOffer,
+  OfferEnergySnapshot,
+  OfferMediaAsset,
   PartnerIntegration,
   RawListing,
   RawReference,
@@ -159,6 +161,60 @@ function normalizeImages(images?: PropstackImage[] | null): string[] {
   return images
     .map((img) => img.url)
     .filter((url): url is string => typeof url === "string" && url.length > 0);
+}
+
+function inferPropstackMediaKind(title: string | null): "image" | "floorplan" {
+  const normalized = String(title ?? "").trim().toLowerCase();
+  if (!normalized) return "image";
+  if (
+    normalized.includes("grundriss")
+    || normalized.includes("floorplan")
+    || normalized.includes("lageplan")
+  ) {
+    return "floorplan";
+  }
+  return "image";
+}
+
+function normalizeImageAssets(images?: PropstackImage[] | null): OfferMediaAsset[] {
+  if (!Array.isArray(images)) return [];
+  return images
+    .map((img) => {
+      const url = typeof img?.url === "string" ? img.url.trim() : "";
+      if (!url) return null;
+      const title = typeof img?.title === "string" ? img.title.trim() || null : null;
+      return {
+        url,
+        title,
+        position: typeof img?.position === "number" && Number.isFinite(img.position) ? img.position : null,
+        kind: inferPropstackMediaKind(title),
+      } satisfies OfferMediaAsset;
+    })
+    .filter((asset): asset is OfferMediaAsset => Boolean(asset));
+}
+
+function normalizeEnergyValueKind(certificateType: string | null | undefined): "bedarf" | "verbrauch" | null {
+  const normalized = String(certificateType ?? "").trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized.includes("bedarf")) return "bedarf";
+  if (normalized.includes("verbrauch")) return "verbrauch";
+  return null;
+}
+
+function buildEnergySnapshot(unit: PropstackUnit): OfferEnergySnapshot {
+  const certificateType = unit.energy_certificate_type ?? null;
+  const value = normalizePropstackNumber(unit.energy_consumption_value);
+  const constructionYear = normalizePropstackNumber(unit.construction_year);
+  return {
+    certificate_type: certificateType,
+    value,
+    value_kind: normalizeEnergyValueKind(certificateType),
+    construction_year: constructionYear,
+    heating_energy_source: null,
+    efficiency_class: null,
+    demand: value,
+    year: constructionYear,
+  };
 }
 
 function toIsoNow(): string {
@@ -358,8 +414,11 @@ function normalizeUnitOffer(
   unit: PropstackUnit,
 ): MappedOffer {
   const gallery = normalizeImages(unit.images);
+  const galleryAssets = normalizeImageAssets(unit.images);
   const address = buildAddress(unit);
   const title = normalizePropstackTitle(unit.title);
+  const primaryImage = galleryAssets.find((asset) => asset.kind === "image")?.url ?? gallery[0] ?? null;
+  const energy = buildEnergySnapshot(unit);
 
   return {
     partner_id: partnerId,
@@ -373,7 +432,7 @@ function normalizeUnitOffer(
     area_sqm: normalizePropstackNumber(unit.living_space),
     rooms: normalizePropstackNumber(unit.number_of_rooms),
     address,
-    image_url: gallery[0] ?? null,
+    image_url: primaryImage,
     detail_url: buildDetailUrl(integration.detail_url_template, unit),
     is_top: false,
     updated_at: unit.updated_at ?? null,
@@ -387,12 +446,10 @@ function normalizeUnitOffer(
       zip_code: unit.zip_code ?? null,
       city: unit.city ?? null,
       hide_address: unit.hide_address ?? null,
-      energy: {
-        type: unit.energy_certificate_type ?? null,
-        demand: normalizePropstackNumber(unit.energy_consumption_value),
-        year: normalizePropstackNumber(unit.construction_year),
-      },
+      energy,
       gallery,
+      gallery_urls: gallery,
+      gallery_assets: galleryAssets,
       lat: unit.lat ?? null,
       lng: unit.lng ?? null,
       custom_fields: unit.custom_fields ?? null,

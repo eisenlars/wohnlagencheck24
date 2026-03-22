@@ -15,6 +15,24 @@ export type PartnerIntegration = {
 
 export type JsonObject = Record<string, unknown>;
 
+export type OfferMediaAsset = {
+  url: string;
+  title: string | null;
+  position: number | null;
+  kind: "image" | "floorplan";
+};
+
+export type OfferEnergySnapshot = {
+  certificate_type: string | null;
+  value: number | null;
+  value_kind: "bedarf" | "verbrauch" | null;
+  construction_year: number | null;
+  heating_energy_source: string | null;
+  efficiency_class: string | null;
+  demand: number | null;
+  year: number | null;
+};
+
 export type MappedOffer = {
   partner_id: string;
   source: ProviderKey;
