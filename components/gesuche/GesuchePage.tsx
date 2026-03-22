@@ -3,8 +3,10 @@ import Link from "next/link";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { TabItem } from "@/features/immobilienmarkt/sections/types";
 import type { RegionalRequest, RequestMode } from "@/lib/gesuche";
+import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { formatMetric } from "@/utils/format";
 
 type GesuchePageProps = {
   heading: string;
@@ -25,6 +27,7 @@ type GesuchePageProps = {
     kreisName?: string;
   };
   texts: PortalSystemTextMap;
+  formatProfile: PortalFormatProfile;
   locale?: string;
   availabilityNotice?: {
     title: string;
@@ -34,16 +37,20 @@ type GesuchePageProps = {
   } | null;
 };
 
-function formatMoney(value: number | null, locale: string): string {
-  if (value === null || !Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat(locale === "en" ? "en-US" : "de-DE").format(value) + " €";
-}
-
 export function GesuchePage(props: GesuchePageProps) {
-  const { heading, requests, mode, tabs, activeTabId, basePath, parentBasePath, ctx, names, texts, locale, availabilityNotice } = props;
+  const { heading, requests, mode, tabs, activeTabId, basePath, parentBasePath, ctx, names, texts, formatProfile, locale, availabilityNotice } = props;
   const normalizedLocale = normalizePublicLocale(locale);
   const kaufPath = `${basePath}/immobiliengesuche`;
   const mietePath = `${basePath}/mietgesuche`;
+  const formatMoney = (value: number | null) => formatMetric(value, {
+    kind: "currency",
+    ctx: "kpi",
+    unit: "eur",
+    locale: normalizedLocale,
+    numberLocale: formatProfile.intlLocale,
+    currencyCode: formatProfile.currencyCode,
+    fractionDigits: 0,
+  });
 
   return (
     <div className="container text-dark">
@@ -104,7 +111,7 @@ export function GesuchePage(props: GesuchePageProps) {
                         ? texts.apartment
                         : request.objectType ?? texts.object_generic}
                   </span>
-                  <span className="angebote-price">{formatMoney(request.maxPrice, normalizedLocale)}</span>
+                  <span className="angebote-price">{formatMoney(request.maxPrice)}</span>
                 </div>
                 <h2 className="h6 mb-2">{request.title}</h2>
                 <p className="angebote-address mb-2">

@@ -5,8 +5,10 @@ import Image from "next/image";
 
 import type { Offer, OfferMode, OfferObjectType } from "@/lib/angebote";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
+import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { formatMetric } from "@/utils/format";
 import { slugifyOfferTitle } from "@/utils/slug";
 
 type AngebotePageProps = {
@@ -38,6 +40,7 @@ type AngebotePageProps = {
     kreisName?: string;
   };
   texts: PortalSystemTextMap;
+  formatProfile: PortalFormatProfile;
   locale?: string;
   availabilityNotice?: {
     title: string;
@@ -78,6 +81,7 @@ export function AngebotePage(props: AngebotePageProps) {
     ctx,
     names,
     texts,
+    formatProfile,
     locale,
     availabilityNotice,
   } = props;
@@ -99,18 +103,37 @@ export function AngebotePage(props: AngebotePageProps) {
   }, [filter, offers]);
 
   function formatCurrency(value: number | null): string {
-    if (value === null || !Number.isFinite(value)) return "—";
-    return `${new Intl.NumberFormat(normalizedLocale === "en" ? "en-US" : "de-DE").format(value)} €`;
+    return formatMetric(value, {
+      kind: "currency",
+      ctx: "kpi",
+      unit: "eur",
+      locale: normalizedLocale,
+      numberLocale: formatProfile.intlLocale,
+      currencyCode: formatProfile.currencyCode,
+      fractionDigits: 0,
+    });
   }
 
   function formatArea(value: number | null): string {
-    if (value === null || !Number.isFinite(value)) return "—";
-    return `${new Intl.NumberFormat(normalizedLocale === "en" ? "en-US" : "de-DE").format(value)} m²`;
+    return formatMetric(value, {
+      kind: "flaeche",
+      ctx: "kpi",
+      unit: "none",
+      locale: normalizedLocale,
+      numberLocale: formatProfile.intlLocale,
+      fractionDigits: 0,
+    });
   }
 
   function formatRooms(value: number | null): string {
-    if (value === null || !Number.isFinite(value)) return "—";
-    return `${new Intl.NumberFormat(normalizedLocale === "en" ? "en-US" : "de-DE").format(value)}`;
+    return formatMetric(value, {
+      kind: "anzahl",
+      ctx: "kpi",
+      unit: "none",
+      locale: normalizedLocale,
+      numberLocale: formatProfile.intlLocale,
+      fractionDigits: 0,
+    });
   }
 
   function formatObjectType(value: OfferObjectType | string): string {
@@ -237,7 +260,7 @@ export function AngebotePage(props: AngebotePageProps) {
               <div className="angebote-facts">
                 <div>
                   <span className="angebote-fact-label">{texts.living_area}</span>
-                  <strong className="angebote-fact-value">{formatArea(activeTopOffer.areaSqm)}</strong>
+                  <strong className="angebote-fact-value">{`${formatArea(activeTopOffer.areaSqm)} m²`}</strong>
                 </div>
                 <div>
                   <span className="angebote-fact-label">{texts.rooms}</span>
@@ -378,7 +401,7 @@ export function AngebotePage(props: AngebotePageProps) {
                       <p className="angebote-address mb-3">{offer.address}</p>
                     ) : null}
                     <div className="angebote-card-facts">
-                      <span>{formatArea(offer.areaSqm)}</span>
+                      <span>{`${formatArea(offer.areaSqm)} m²`}</span>
                       <span>{formatRooms(offer.rooms)} {texts.rooms}</span>
                     </div>
                     {offer.detailUrl && detailHref ? (

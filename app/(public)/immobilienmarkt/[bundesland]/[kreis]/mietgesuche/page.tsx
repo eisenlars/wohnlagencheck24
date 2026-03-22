@@ -2,6 +2,7 @@ import { GesuchePage } from "@/components/gesuche/GesuchePage";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { getReportBySlugs } from "@/lib/data";
 import { getRegionalRequestsForKreis } from "@/lib/gesuche";
+import { loadPortalFormatProfile } from "@/lib/portal-format-config";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
@@ -18,6 +19,7 @@ export async function MietgesucheKreisPageContent({
 }: ContentProps) {
   const normalizedLocale = normalizePublicLocale(locale);
   const texts = await getPortalSystemTexts(normalizedLocale);
+  const formatProfile = await loadPortalFormatProfile(normalizedLocale);
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
   const { requests, sourceCount } = await getRegionalRequestsForKreis({
@@ -55,6 +57,7 @@ export async function MietgesucheKreisPageContent({
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis }}
       names={{ bundeslandName, kreisName, regionName: kreisName }}
       texts={texts}
+      formatProfile={formatProfile}
       locale={normalizedLocale}
       availabilityNotice={availabilityNotice}
     />

@@ -5,6 +5,7 @@ import { OfferDetailPage } from "@/components/angebote/OfferDetailPage";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { getOfferById, getOfferOverrides } from "@/lib/angebote";
 import { getReportBySlugs } from "@/lib/data";
+import { loadPortalFormatProfile } from "@/lib/portal-format-config";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
@@ -86,6 +87,7 @@ export default async function ImmobilienangebotOrtDetailPage({ params }: PagePro
     { id: "immobilienangebote", label: "Immobilienangebote" },
   ];
   const texts = await getPortalSystemTexts("de");
+  const formatProfile = await loadPortalFormatProfile("de");
 
   return (
     <OfferDetailPage
@@ -93,6 +95,7 @@ export default async function ImmobilienangebotOrtDetailPage({ params }: PagePro
       overrides={overrides}
       mode="kauf"
       texts={texts}
+      formatProfile={formatProfile}
       listPath={listPath}
       breadcrumb={{
         tabs,

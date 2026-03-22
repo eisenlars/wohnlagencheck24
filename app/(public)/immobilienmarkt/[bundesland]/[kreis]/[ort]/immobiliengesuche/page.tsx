@@ -2,6 +2,7 @@ import { GesuchePage } from "@/components/gesuche/GesuchePage";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { getReportBySlugs } from "@/lib/data";
 import { getRegionalRequestsForOrtslage } from "@/lib/gesuche";
+import { loadPortalFormatProfile } from "@/lib/portal-format-config";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
@@ -19,6 +20,7 @@ export async function ImmobiliengesucheOrtPageContent({
 }: ContentProps) {
   const normalizedLocale = normalizePublicLocale(locale);
   const texts = await getPortalSystemTexts(normalizedLocale);
+  const formatProfile = await loadPortalFormatProfile(normalizedLocale);
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
 
@@ -65,6 +67,7 @@ export async function ImmobiliengesucheOrtPageContent({
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis, ortSlug: ort }}
       names={{ bundeslandName, kreisName, regionName: ortName }}
       texts={texts}
+      formatProfile={formatProfile}
       locale={normalizedLocale}
       availabilityNotice={availabilityNotice}
     />

@@ -2,6 +2,7 @@ import { AngebotePage } from "@/components/angebote/AngebotePage";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { getOffers } from "@/lib/angebote";
 import { getReportBySlugs } from "@/lib/data";
+import { loadPortalFormatProfile } from "@/lib/portal-format-config";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
@@ -29,6 +30,7 @@ export async function ImmobilienangeboteOrtPageContent({
 }: ContentProps) {
   const normalizedLocale = normalizePublicLocale(locale);
   const texts = await getPortalSystemTexts(normalizedLocale);
+  const formatProfile = await loadPortalFormatProfile(normalizedLocale);
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
   const { offers, topOffers, total, totalWithTop, sourceTotal } = await getOffers({
@@ -102,6 +104,7 @@ export async function ImmobilienangeboteOrtPageContent({
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis, ortSlug: ort }}
       names={{ bundeslandName, kreisName, regionName: ortName }}
       texts={texts}
+      formatProfile={formatProfile}
       locale={normalizedLocale}
       availabilityNotice={availabilityNotice}
     />

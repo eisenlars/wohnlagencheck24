@@ -1,6 +1,8 @@
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { Offer, OfferMode, OfferOverrides } from "@/lib/angebote";
+import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
+import { formatMetric } from "@/utils/format";
 import { asRecord } from "@/utils/records";
 
 type OfferDetailPageProps = {
@@ -8,6 +10,7 @@ type OfferDetailPageProps = {
   overrides?: OfferOverrides | null;
   mode: OfferMode;
   texts: PortalSystemTextMap;
+  formatProfile: PortalFormatProfile;
   breadcrumb: {
     tabs: { id: string; label: string }[];
     activeTabId: string;
@@ -27,27 +30,35 @@ type OfferDetailPageProps = {
   listPath: string;
 };
 
-const priceFormatter = new Intl.NumberFormat("de-DE");
-
-function formatCurrency(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "—";
-  return `${priceFormatter.format(value)} €`;
-}
-
-function formatArea(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "—";
-  return `${priceFormatter.format(value)} m²`;
-}
-
-function formatRooms(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "—";
-  return `${priceFormatter.format(value)}`;
-}
-
 export function OfferDetailPage(props: OfferDetailPageProps) {
-  const { offer, overrides, mode, texts, breadcrumb, listPath } = props;
+  const { offer, overrides, mode, texts, formatProfile, breadcrumb, listPath } = props;
   const priceLabel = mode === "miete" ? "Warmmiete" : "Kaufpreis";
   const priceSuffix = mode === "miete" ? "/Monat" : "";
+  const formatCurrency = (value: number | null) => formatMetric(value, {
+    kind: "currency",
+    ctx: "kpi",
+    unit: "eur",
+    locale: formatProfile.locale,
+    numberLocale: formatProfile.intlLocale,
+    currencyCode: formatProfile.currencyCode,
+    fractionDigits: 0,
+  });
+  const formatArea = (value: number | null) => formatMetric(value, {
+    kind: "flaeche",
+    ctx: "kpi",
+    unit: "none",
+    locale: formatProfile.locale,
+    numberLocale: formatProfile.intlLocale,
+    fractionDigits: 0,
+  });
+  const formatRooms = (value: number | null) => formatMetric(value, {
+    kind: "anzahl",
+    ctx: "kpi",
+    unit: "none",
+    locale: formatProfile.locale,
+    numberLocale: formatProfile.intlLocale,
+    fractionDigits: 0,
+  });
   const raw = asRecord(offer.raw) ?? {};
   const gallery = Array.isArray(raw["gallery"]) ? (raw["gallery"] as string[]) : [];
   const galleryImages =
@@ -108,7 +119,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             </div>
             <div>
               <span className="offer-detail-label">Wohnfläche</span>
-              <strong>{formatArea(offer.areaSqm)}</strong>
+              <strong>{`${formatArea(offer.areaSqm)} m²`}</strong>
             </div>
             <div>
               <span className="offer-detail-label">Zimmer</span>
