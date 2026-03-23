@@ -837,7 +837,6 @@ export default function OffersManager(props: Props) {
       </section>
 
       <section style={panelStyle}>
-        <h3 style={panelTitleStyle}>Texte individualisieren</h3>
         {!form ? (
           <div style={{ color: '#94a3b8' }}>
             Kein Objekt ausgewählt.
@@ -882,7 +881,7 @@ export default function OffersManager(props: Props) {
               </div>
             ) : null}
 
-            {activeWorkspaceTab === 'media' && selectedOffer ? (
+            {selectedOffer ? (
               <div style={offerSummaryCardStyle}>
                 <div style={offerSummaryHeaderStyle}>Objekt-Übersicht</div>
                 <div style={offerSummaryGridStyle}>
