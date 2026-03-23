@@ -775,7 +775,7 @@ export default function OffersManager(props: Props) {
         </section>
       ) : null}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '520px 1fr', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' }}>
       <section style={panelStyle}>
         <h3 style={panelTitleStyle}>Angebote</h3>
         <input
@@ -843,37 +843,6 @@ export default function OffersManager(props: Props) {
           </div>
         ) : (
           <>
-            <div style={workspaceTabsRowStyle}>
-              <button
-                type="button"
-                onClick={() => setActiveWorkspaceTab('texts')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'texts')}
-              >
-                Texte
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveWorkspaceTab('seo')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'seo')}
-              >
-                SEO / GEO
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveWorkspaceTab('media')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'media')}
-              >
-                Medien
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveWorkspaceTab('energy')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'energy')}
-              >
-                Energie
-              </button>
-            </div>
-
             {selectedOffer && (!normalizedSelectedExternalId || !normalizedSelectedSource) ? (
               <div style={warningStyle}>
                 Hinweis: Dieses Objekt hat keine externe ID/Quelle. Overrides werden lokal mit
@@ -928,6 +897,36 @@ export default function OffersManager(props: Props) {
                 </div>
               </div>
             ) : null}
+            <div style={workspaceTabsRowStyle}>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('texts')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'texts')}
+              >
+                Texte
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('seo')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'seo')}
+              >
+                SEO / GEO
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('media')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'media')}
+              >
+                Medien
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('energy')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'energy')}
+              >
+                Energie
+              </button>
+            </div>
             {activeWorkspaceTab === 'media' && selectedOffer ? (
               <div style={mediaCardStyle}>
                 <div style={offerSummaryHeaderStyle}>Medien</div>
