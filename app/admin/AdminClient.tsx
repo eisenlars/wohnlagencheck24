@@ -5481,18 +5481,22 @@ export default function AdminClient() {
                     </select>
                   </td>
                   <td style={tdStyle}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
-                      <input
-                        type="checkbox"
-                        checked={row.partner_bookable}
-                        disabled={row.status !== "live"}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, partner_bookable: checked } : item));
-                        }}
-                      />
-                      {row.partner_bookable ? "Partner buchbar - partnerseitig freigegeben" : "Partner buchbar - noch nicht partnerseitig freigegeben"}
-                    </label>
+                    {row.locale === "de" ? (
+                      <span style={{ fontSize: 13, color: "#64748b" }}>Grundsprache</span>
+                    ) : (
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#334155" }}>
+                        <input
+                          type="checkbox"
+                          checked={row.partner_bookable}
+                          disabled={row.status !== "live"}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, partner_bookable: checked } : item));
+                          }}
+                        />
+                        {row.partner_bookable ? "Partner buchbar - partnerseitig freigegeben" : "Partner buchbar - noch nicht partnerseitig freigegeben"}
+                      </label>
+                    )}
                   </td>
                 </tr>
               ))}
