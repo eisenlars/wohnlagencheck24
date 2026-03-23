@@ -32,6 +32,9 @@ export type Offer = {
   longDescription?: string | null;
   locationText?: string | null;
   featuresText?: string | null;
+  answerSummary?: string | null;
+  locationSummary?: string | null;
+  targetAudience?: string | null;
   highlights?: string[] | null;
   imageAltTexts?: string[] | null;
 };
@@ -49,6 +52,9 @@ export type OfferOverrides = {
   long_description?: string | null;
   location_text?: string | null;
   features_text?: string | null;
+  answer_summary?: string | null;
+  location_summary?: string | null;
+  target_audience?: string | null;
   highlights?: string[] | null;
   image_alt_texts?: string[] | null;
   status?: string | null;
@@ -146,6 +152,9 @@ type PublicOfferDetailRow = {
   long_description?: string | null;
   location_text?: string | null;
   features_text?: string | null;
+  answer_summary?: string | null;
+  location_summary?: string | null;
+  target_audience?: string | null;
   highlights?: unknown;
   image_alt_texts?: unknown;
   price?: number | string | null;
@@ -338,6 +347,9 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
           "long_description",
           "location_text",
           "features_text",
+          "answer_summary",
+          "location_summary",
+          "target_audience",
           "highlights",
           "image_alt_texts",
           "price",
@@ -395,6 +407,9 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
     longDescription: publicRecord?.long_description ?? null,
     locationText: publicRecord?.location_text ?? null,
     featuresText: publicRecord?.features_text ?? null,
+    answerSummary: publicRecord?.answer_summary ?? null,
+    locationSummary: publicRecord?.location_summary ?? null,
+    targetAudience: publicRecord?.target_audience ?? null,
     highlights: toStringArray(publicRecord?.highlights) ?? null,
     imageAltTexts: toStringArray(publicRecord?.image_alt_texts) ?? null,
   };
@@ -422,6 +437,9 @@ export async function getOfferOverrides(
         "long_description",
         "location_text",
         "features_text",
+        "answer_summary",
+        "location_summary",
+        "target_audience",
         "highlights",
         "image_alt_texts",
         "status",

@@ -64,6 +64,9 @@ type OfferOverrideRow = {
   long_description?: string | null;
   location_text?: string | null;
   features_text?: string | null;
+  answer_summary?: string | null;
+  location_summary?: string | null;
+  target_audience?: string | null;
   highlights?: unknown;
   image_alt_texts?: unknown;
 };
@@ -711,6 +714,9 @@ export async function rebuildPublicOfferEntriesForPartner(
         "long_description",
         "location_text",
         "features_text",
+        "answer_summary",
+        "location_summary",
+        "target_audience",
         "highlights",
         "image_alt_texts",
         "price",
@@ -734,7 +740,7 @@ export async function rebuildPublicOfferEntriesForPartner(
       .eq("partner_id", partnerId),
     admin
       .from("partner_property_overrides")
-      .select("partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts")
+      .select("partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, answer_summary, location_summary, target_audience, highlights, image_alt_texts")
       .eq("partner_id", partnerId),
     admin
       .from("partner_property_offer_i18n")
@@ -824,6 +830,9 @@ export async function rebuildPublicOfferEntriesForPartner(
         long_description: asNullableText(override?.long_description) ?? rawDescription,
         location_text: asNullableText(override?.location_text) ?? rawLocation,
         features_text: asNullableText(override?.features_text) ?? rawFeatures,
+        answer_summary: asNullableText(override?.answer_summary),
+        location_summary: asNullableText(override?.location_summary),
+        target_audience: asNullableText(override?.target_audience),
         highlights: asArrayJson(override?.highlights),
         image_alt_texts: asArrayJson(override?.image_alt_texts),
         price: asNumberOrNull(offer.price),
@@ -861,6 +870,9 @@ export async function rebuildPublicOfferEntriesForPartner(
           long_description: asNullableText(translation.translated_long_description),
           location_text: asNullableText(translation.translated_location_text),
           features_text: asNullableText(translation.translated_features_text),
+          answer_summary: null,
+          location_summary: null,
+          target_audience: null,
           highlights: asArrayJson(translation.translated_highlights),
           image_alt_texts: asArrayJson(translation.translated_image_alt_texts),
           price: asNumberOrNull(offer.price),
@@ -904,6 +916,9 @@ export async function rebuildPublicOfferEntriesForPartner(
       "long_description",
       "location_text",
       "features_text",
+      "answer_summary",
+      "location_summary",
+      "target_audience",
       "highlights",
       "image_alt_texts",
       "price",

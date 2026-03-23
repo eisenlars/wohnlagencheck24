@@ -34,6 +34,9 @@ type OverrideRow = {
   long_description?: string | null;
   location_text?: string | null;
   features_text?: string | null;
+  answer_summary?: string | null;
+  location_summary?: string | null;
+  target_audience?: string | null;
   highlights?: string[] | null;
   image_alt_texts?: string[] | null;
 };
@@ -510,6 +513,9 @@ export default function OffersManager(props: Props) {
       long_description: selectedOverride?.long_description ?? rawDescription ?? '',
       location_text: selectedOverride?.location_text ?? rawLocation ?? '',
       features_text: selectedOverride?.features_text ?? rawFeatures ?? '',
+      answer_summary: selectedOverride?.answer_summary ?? selectedOverride?.short_description ?? rawDescription ?? '',
+      location_summary: selectedOverride?.location_summary ?? selectedOverride?.location_text ?? rawLocation ?? '',
+      target_audience: selectedOverride?.target_audience ?? '',
       highlights: selectedOverride?.highlights ?? rawHighlights ?? [],
       image_alt_texts: selectedOverride?.image_alt_texts ?? rawImageAltTexts ?? [],
     });
@@ -638,6 +644,15 @@ export default function OffersManager(props: Props) {
     }
     if (lowerLabel.includes('lage')) {
       return `Formuliere den Lage-Text klar und informativ. Keine erfundenen Fakten, keine Übertreibungen. Kontext: ${areaName}.`;
+    }
+    if (lowerLabel.includes('kurzantwort')) {
+      return `Schreibe eine knappe, sachliche Objekt-Kurzantwort in 2 bis 4 Sätzen für ${areaName}. Nur belegte Fakten verwenden.`;
+    }
+    if (lowerLabel.includes('lage in kürze')) {
+      return `Fasse die Lage in 2 bis 3 prägnanten Sätzen zusammen. Keine erfundenen Fakten, keine Floskeln. Kontext: ${areaName}.`;
+    }
+    if (lowerLabel.includes('geeignet für')) {
+      return `Beschreibe kurz, für welche Zielgruppe das Objekt geeignet ist. Nur plausible, aus den Objektfakten ableitbare Aussagen verwenden.`;
     }
     if (lowerLabel.includes('ausstatt')) {
       return `Formuliere den Ausstattungstext klar und strukturiert. Keine neuen Features hinzufügen.`;
@@ -1419,10 +1434,37 @@ export default function OffersManager(props: Props) {
 
             {activeWorkspaceTab === 'seo' ? (
               <>
+                <div style={offerSummaryCardStyle}>
+                  <div style={offerSummaryHeaderStyle}>Snippet</div>
+                  <div style={mediaSectionHintStyle}>
+                    Suchmaschinen-Snippet und Social-Vorschau für das Objekt.
+                  </div>
+                </div>
                 <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
                   {renderTextField('SEO‑Titel', 'seo_title', selectedOffer?.title ?? '', { multiline: false })}
                   {renderTextField('SEO‑Description', 'seo_description', rawDescription, { multiline: true })}
                   {renderTextField('Objekt-Titel', 'seo_h1', selectedOffer?.title ?? '', { multiline: false })}
+                </div>
+
+                <div style={offerSummaryCardStyle}>
+                  <div style={offerSummaryHeaderStyle}>AEO / GEO</div>
+                  <div style={mediaSectionHintStyle}>
+                    Kompakte Antwort- und Lagebausteine für Such-, Antwort- und Kartenkontexte.
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
+                  {renderTextField('Kurzantwort', 'answer_summary', form.short_description ?? rawDescription, { multiline: true })}
+                  {renderTextField('Lage in Kürze', 'location_summary', form.location_text ?? rawLocation, { multiline: true })}
+                  {renderTextField('Geeignet für', 'target_audience', '', { multiline: false, placeholder: 'z. B. Kapitalanleger, Paar, kleine Familie' })}
+                </div>
+
+                <div style={offerSummaryCardStyle}>
+                  <div style={offerSummaryHeaderStyle}>Highlights & Bildsprache</div>
+                  <div style={mediaSectionHintStyle}>
+                    Strukturierte Punkte für Snippets, Karten-Overlays und Bildkontext.
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
                   {renderListField('Highlights (eine Zeile = ein Punkt)', 'highlights', rawHighlights, 'Ein Punkt pro Zeile')}
                   {renderListField('Alt‑Texte (eine Zeile = ein Bild)', 'image_alt_texts', rawImageAltTexts, 'Ein Bildtitel pro Zeile')}
                 </div>
@@ -1454,6 +1496,27 @@ export default function OffersManager(props: Props) {
                   </div>
                   <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
                     {selectedOffer?.image_url ? `Bild: ${selectedOffer.image_url}` : 'Bild: (kein Bild gesetzt)'}
+                  </div>
+                </div>
+
+                <div style={contentPreviewGridStyle}>
+                  <div style={contentPreviewCardStyle}>
+                    <div style={contentPreviewLabelStyle}>Kurzantwort</div>
+                    <div style={contentPreviewBodyStyle}>
+                      {form.answer_summary || 'Keine Kurzantwort gepflegt.'}
+                    </div>
+                  </div>
+                  <div style={contentPreviewCardStyle}>
+                    <div style={contentPreviewLabelStyle}>Lage in Kürze</div>
+                    <div style={contentPreviewBodyStyle}>
+                      {form.location_summary || 'Keine Lage-Kurzfassung gepflegt.'}
+                    </div>
+                  </div>
+                  <div style={contentPreviewCardStyle}>
+                    <div style={contentPreviewLabelStyle}>Geeignet für</div>
+                    <div style={contentPreviewBodyStyle}>
+                      {form.target_audience || 'Keine Zielgruppe gepflegt.'}
+                    </div>
                   </div>
                 </div>
 
