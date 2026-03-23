@@ -5167,7 +5167,7 @@ export default function AdminClient() {
           </table>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
             <button
-              style={{ ...btnStyle, padding: "7px 12px", fontSize: 13, width: "auto", minWidth: 0 }}
+              style={{ ...btnStyle, width: "auto", minWidth: 0 }}
               disabled={busy}
               onClick={() =>
                 run("Portal-Locales speichern", async () => {
@@ -5202,7 +5202,7 @@ export default function AdminClient() {
                 ))}
               </select>
               <button
-                style={{ ...btnGhostStyle, borderColor: "#0f766e", color: "#0f766e" }}
+                style={btnSuccessGhostStyle}
                 disabled={busy || portalSystemTextLocale === "de"}
                 onClick={() =>
                   run("Systemtexte aus DE ergänzen", async () => {
@@ -5213,7 +5213,7 @@ export default function AdminClient() {
                 Aus DE ergänzen
               </button>
               <button
-                style={btnGhostStyle}
+                style={btnSuccessGhostStyle}
                 disabled={busy || portalSystemTextLocale === "de"}
                 onClick={() =>
                   run("Systemtexte komplett aus DE übernehmen", async () => {
@@ -5387,7 +5387,7 @@ export default function AdminClient() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
             <button
               type="button"
-              style={btnGhostStyle}
+              style={btnSuccessGhostStyle}
               disabled={busy || !selectedPortalCmsPage || !portalCmsLocale || portalCmsLocale === PORTAL_CMS_SOURCE_LOCALE}
               onClick={() =>
                 run("Fehlende Portal-Inhalte aus DE ergänzen", async () => {
@@ -5399,7 +5399,7 @@ export default function AdminClient() {
             </button>
             <button
               type="button"
-              style={btnDangerStyle}
+              style={btnSuccessGhostStyle}
               disabled={busy || !selectedPortalCmsPage || !portalCmsLocale || portalCmsLocale === PORTAL_CMS_SOURCE_LOCALE}
               onClick={() =>
                 run("Portal-Seite komplett aus DE uebernehmen", async () => {
@@ -8368,6 +8368,12 @@ const btnGhostStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: "8px 12px",
   cursor: "pointer",
+};
+
+const btnSuccessGhostStyle: React.CSSProperties = {
+  ...btnGhostStyle,
+  borderColor: "#0f766e",
+  color: "#0f766e",
 };
 
 const btnDangerStyle: React.CSSProperties = {
