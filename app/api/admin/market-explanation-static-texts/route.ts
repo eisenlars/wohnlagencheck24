@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { translateAdminTextItems } from "@/lib/admin-text-i18n";
 import {
   MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS,
   getMarketExplanationStaticTextDefaultValue,
@@ -31,9 +32,15 @@ type StaticTextSyncInput = {
   mode?: unknown;
 };
 
+type StaticTextTranslateInput = {
+  target_locale?: unknown;
+  keys?: unknown;
+};
+
 type Body = {
   entries?: StaticTextEntryInput[];
   sync?: StaticTextSyncInput;
+  translate?: StaticTextTranslateInput;
 };
 
 function isMissingTable(error: unknown, table: string): boolean {
@@ -68,6 +75,13 @@ function resolveAutoWriteStatus(
   if (currentStatus === "live") return "internal";
   if (currentStatus === "internal") return "internal";
   return "draft";
+}
+
+function normalizeTranslateKeys(value: unknown): MarketExplanationStaticTextKey[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    return MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS.map((item) => item.key);
+  }
+  return Array.from(new Set(value.map((item) => sanitizeKey(item))));
 }
 
 async function loadLocales(admin: ReturnType<typeof createAdminClient>): Promise<PortalLocaleConfigRecord[]> {
@@ -189,6 +203,80 @@ export async function POST(req: Request) {
 
     const body = (await req.json()) as Body;
     const admin = createAdminClient();
+
+    if (body.translate) {
+      const targetLocale = normalizePortalLocaleCode(body.translate.target_locale);
+      const selectedKeys = normalizeTranslateKeys(body.translate.keys);
+      if (!targetLocale || targetLocale === "de") {
+        throw new Error("Statische Erklaerungstext-KI-Uebersetzung benoetigt eine Ziel-Locale ungleich de.");
+      }
+
+      const [targetRes, sourceMap] = await Promise.all([
+        admin
+          .from("market_explanation_static_text_entries")
+          .select("key, locale, status, value_text, updated_at")
+          .eq("locale", targetLocale),
+        loadEffectiveGermanSourceMap(admin),
+      ]);
+      if (targetRes.error) throw targetRes.error;
+
+      const targetMap = new Map(
+        (targetRes.data ?? []).map((row) => [String(row.key ?? ""), row] as const),
+      );
+
+      const translatedValues = await translateAdminTextItems({
+        admin,
+        domain: "market_explanation_static_texts",
+        domainLabel: "Statische Markterklaerungstexte",
+        targetLocale,
+        items: selectedKeys.map((key) => ({
+          key,
+          label: MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS.find((item) => item.key === key)?.label ?? key,
+          sourceText: sourceMap.get(key)?.value_text ?? getMarketExplanationStaticTextDefaultValue("de", key),
+        })),
+      });
+
+      const upsertRows = selectedKeys.flatMap((key) => {
+        const translatedText = translatedValues.get(key);
+        if (!translatedText) return [];
+        const current = targetMap.get(key);
+        return [{
+          key,
+          locale: targetLocale,
+          status: resolveAutoWriteStatus(normalizeStatus(current?.status)),
+          value_text: translatedText,
+          updated_at: new Date().toISOString(),
+        }];
+      });
+
+      if (upsertRows.length > 0) {
+        const { error } = await admin.from("market_explanation_static_text_entries").upsert(
+          upsertRows,
+          { onConflict: "key,locale" },
+        );
+        if (error) throw error;
+
+        await upsertMarketExplanationStaticTextI18nMeta(
+          admin,
+          upsertRows.map((row) => {
+            const source = sourceMap.get(row.key);
+            return {
+              key: row.key,
+              locale: row.locale,
+              source_locale: "de",
+              source_snapshot_hash: source
+                ? buildMarketExplanationStaticTextSourceSnapshotHash({
+                    key: row.key,
+                    valueText: source.value_text,
+                  })
+                : null,
+              source_updated_at: source?.updated_at ?? null,
+              translation_origin: "ai" as const,
+            };
+          }),
+        );
+      }
+    }
 
     if (body.sync) {
       const targetLocale = normalizePortalLocaleCode(body.sync.target_locale);

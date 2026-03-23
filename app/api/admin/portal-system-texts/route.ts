@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { translateAdminTextItems } from "@/lib/admin-text-i18n";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { checkAdminApiRateLimit } from "@/lib/security/rate-limit";
 import {
@@ -30,9 +31,15 @@ type PortalSystemTextSyncInput = {
   mode?: unknown;
 };
 
+type PortalSystemTextTranslateInput = {
+  target_locale?: unknown;
+  keys?: unknown;
+};
+
 type Body = {
   entries?: PortalSystemTextEntryInput[];
   sync?: PortalSystemTextSyncInput;
+  translate?: PortalSystemTextTranslateInput;
 };
 
 function isMissingTable(error: unknown, table: string): boolean {
@@ -65,6 +72,13 @@ function resolveAutoWriteStatus(currentStatus: PortalSystemTextEntryStatus | nul
   if (currentStatus === "live") return "internal";
   if (currentStatus === "internal") return "internal";
   return "draft";
+}
+
+function normalizeTranslateKeys(value: unknown): PortalSystemTextKey[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    return PORTAL_SYSTEM_TEXT_DEFINITIONS.map((item) => item.key);
+  }
+  return Array.from(new Set(value.map((item) => sanitizeKey(item))));
 }
 
 async function loadSystemTexts(admin: ReturnType<typeof createAdminClient>) {
@@ -148,6 +162,71 @@ export async function POST(req: Request) {
 
     const body = (await req.json()) as Body;
     const admin = createAdminClient();
+
+    if (body.translate) {
+      const targetLocale = normalizePortalLocaleCode(body.translate.target_locale);
+      const selectedKeys = normalizeTranslateKeys(body.translate.keys);
+      if (!targetLocale || targetLocale === "de") {
+        throw new Error("Systemtext-KI-Uebersetzung benoetigt eine Ziel-Locale ungleich de.");
+      }
+
+      const [targetRes, sourceMap] = await Promise.all([
+        admin
+          .from("portal_system_text_entries")
+          .select("key, locale, status, value_text, updated_at")
+          .eq("locale", targetLocale),
+        loadEffectiveGermanSourceMap(admin),
+      ]);
+      if (targetRes.error) throw targetRes.error;
+
+      const targetMap = new Map(
+        (targetRes.data ?? []).map((row) => [String(row.key ?? ""), row] as const),
+      );
+
+      const translatedValues = await translateAdminTextItems({
+        admin,
+        domain: "portal_system_texts",
+        domainLabel: "Portalweite Systemtexte",
+        targetLocale,
+        items: selectedKeys.map((key) => ({
+          key,
+          label: PORTAL_SYSTEM_TEXT_DEFINITIONS.find((item) => item.key === key)?.label ?? key,
+          sourceText: sourceMap.get(key)?.value_text ?? getPortalSystemTextDefaultValue("de", key),
+        })),
+      });
+
+      const upsertRows = selectedKeys.flatMap((key) => {
+        const translatedText = translatedValues.get(key);
+        if (!translatedText) return [];
+        const current = targetMap.get(key);
+        return [{
+          key,
+          locale: targetLocale,
+          status: resolveAutoWriteStatus(normalizeStatus(current?.status)),
+          value_text: translatedText,
+          updated_at: new Date().toISOString(),
+        }];
+      });
+
+      if (upsertRows.length > 0) {
+        const { error } = await admin.from("portal_system_text_entries").upsert(upsertRows, {
+          onConflict: "key,locale",
+        });
+        if (error) throw error;
+
+        await upsertPortalSystemTextI18nMeta(admin, upsertRows.map((row) => {
+          const source = sourceMap.get(row.key);
+          return {
+            key: row.key,
+            locale: row.locale,
+            source_locale: "de",
+            source_snapshot_hash: source ? buildPortalSystemTextSourceSnapshotHash({ key: row.key, valueText: source.value_text }) : null,
+            source_updated_at: source?.updated_at ?? null,
+            translation_origin: "ai" as const,
+          };
+        }));
+      }
+    }
 
     if (body.sync) {
       const targetLocale = normalizePortalLocaleCode(body.sync.target_locale);

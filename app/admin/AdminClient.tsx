@@ -2790,6 +2790,30 @@ export default function AdminClient() {
     }));
   }
 
+  async function translatePortalSystemTextLocaleWithAi(locale: string, keys?: PortalSystemTextKey[]) {
+    const data = await api<{
+      definitions?: PortalSystemTextDefinition[];
+      entries?: PortalSystemTextEntryRecord[];
+      metas?: PortalSystemTextI18nMetaViewRecord[];
+    }>("/api/admin/portal-system-texts", {
+      method: "POST",
+      body: JSON.stringify({
+        translate: {
+          target_locale: locale,
+          keys: keys && keys.length > 0 ? keys : undefined,
+        },
+      }),
+    });
+    setPortalSystemTextDefinitions(data.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS);
+    setPortalSystemTextEntries(data.entries ?? []);
+    setPortalSystemTextMetas(data.metas ?? []);
+    setPortalSystemTextDrafts(buildPortalSystemTextDraftMap({
+      locales: portalLocaleConfigs,
+      definitions: data.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS,
+      entries: data.entries ?? [],
+    }));
+  }
+
   async function saveMarketExplanationStandardTexts() {
     const rows = marketExplanationStandardDefinitions.map((definition) => ({
       key: definition.key,
@@ -2859,6 +2883,35 @@ export default function AdminClient() {
         sync: {
           target_locale: locale,
           mode,
+        },
+      }),
+    });
+    const nextLocales = data.locales ?? portalLocaleConfigs;
+    const nextDefinitions = data.definitions ?? MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS;
+    const nextEntries = data.entries ?? [];
+    setPortalLocaleConfigs(nextLocales);
+    setMarketExplanationStaticDefinitions(nextDefinitions);
+    setMarketExplanationStaticEntries(nextEntries);
+    setMarketExplanationStaticMetas(data.metas ?? []);
+    setMarketExplanationStaticDrafts(buildMarketExplanationStaticDraftMap({
+      locales: nextLocales,
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
+  }
+
+  async function translateMarketExplanationStaticLocaleWithAi(locale: string, keys?: MarketExplanationStaticTextKey[]) {
+    const data = await api<{
+      locales?: PortalLocaleConfigRecord[];
+      definitions?: MarketExplanationStaticTextDefinition[];
+      entries?: MarketExplanationStaticTextEntryRecord[];
+      metas?: MarketExplanationStaticTextI18nMetaViewRecord[];
+    }>("/api/admin/market-explanation-static-texts", {
+      method: "POST",
+      body: JSON.stringify({
+        translate: {
+          target_locale: locale,
+          keys: keys && keys.length > 0 ? keys : undefined,
         },
       }),
     });
@@ -5570,6 +5623,31 @@ export default function AdminClient() {
                 DE komplett übernehmen
               </button>
               <button
+                style={btnGhostStyle}
+                disabled={busy || portalSystemTextLocale === "de" || activePortalSystemTextGroups.length === 0}
+                onClick={() =>
+                  run("Aktiven Systemtext-Tab per KI übersetzen", async () => {
+                    await translatePortalSystemTextLocaleWithAi(
+                      portalSystemTextLocale,
+                      activePortalSystemTextGroups.map((item) => item.key),
+                    );
+                  })
+                }
+              >
+                Tab per KI übersetzen
+              </button>
+              <button
+                style={btnGhostStyle}
+                disabled={busy || portalSystemTextLocale === "de"}
+                onClick={() =>
+                  run("Systemtext-Locale per KI übersetzen", async () => {
+                    await translatePortalSystemTextLocaleWithAi(portalSystemTextLocale);
+                  })
+                }
+              >
+                Locale per KI übersetzen
+              </button>
+              <button
                 style={btnStyle}
                 disabled={busy}
                 onClick={() =>
@@ -5661,25 +5739,38 @@ export default function AdminClient() {
                       <option value="live">live</option>
                     </select>
                     {portalSystemTextLocale !== "de" ? (
-                      <button
-                        style={btnGhostStyle}
-                        disabled={busy}
-                        onClick={() => {
-                          const deDefault = (
-                            portalSystemTextDrafts[buildPortalSystemTextDraftKey("de", def.key)]?.value_text
-                            ?? getPortalSystemTextDefaultValue("de", def.key)
-                          );
-                          setPortalSystemTextDrafts((prev) => ({
-                            ...prev,
-                            [draftKey]: {
-                              status: draft.status === "live" ? "internal" : draft.status,
-                              value_text: deDefault,
-                            },
-                          }));
-                        }}
-                      >
-                        DE in Feld übernehmen
-                      </button>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          style={btnGhostStyle}
+                          disabled={busy}
+                          onClick={() =>
+                            run(`Systemtext ${def.label} per KI übersetzen`, async () => {
+                              await translatePortalSystemTextLocaleWithAi(portalSystemTextLocale, [def.key]);
+                            })
+                          }
+                        >
+                          Per KI übersetzen
+                        </button>
+                        <button
+                          style={btnGhostStyle}
+                          disabled={busy}
+                          onClick={() => {
+                            const deDefault = (
+                              portalSystemTextDrafts[buildPortalSystemTextDraftKey("de", def.key)]?.value_text
+                              ?? getPortalSystemTextDefaultValue("de", def.key)
+                            );
+                            setPortalSystemTextDrafts((prev) => ({
+                              ...prev,
+                              [draftKey]: {
+                                status: draft.status === "live" ? "internal" : draft.status,
+                                value_text: deDefault,
+                              },
+                            }));
+                          }}
+                        >
+                          DE in Feld übernehmen
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 </div>
@@ -5779,6 +5870,31 @@ export default function AdminClient() {
                     }
                   >
                     DE komplett übernehmen
+                  </button>
+                  <button
+                    style={btnGhostStyle}
+                    disabled={busy || marketExplanationStaticLocale === "de" || activeMarketExplanationStaticDefinitions.length === 0}
+                    onClick={() =>
+                      run("Aktiven Markttext-Tab per KI übersetzen", async () => {
+                        await translateMarketExplanationStaticLocaleWithAi(
+                          marketExplanationStaticLocale,
+                          activeMarketExplanationStaticDefinitions.map((item) => item.key),
+                        );
+                      })
+                    }
+                  >
+                    Tab per KI übersetzen
+                  </button>
+                  <button
+                    style={btnGhostStyle}
+                    disabled={busy || marketExplanationStaticLocale === "de"}
+                    onClick={() =>
+                      run("Statische Erklärungstext-Locale per KI übersetzen", async () => {
+                        await translateMarketExplanationStaticLocaleWithAi(marketExplanationStaticLocale);
+                      })
+                    }
+                  >
+                    Locale per KI übersetzen
                   </button>
                   <button
                     style={btnStyle}
@@ -5915,25 +6031,38 @@ export default function AdminClient() {
                         <option value="live">live</option>
                       </select>
                       {marketExplanationStaticLocale !== "de" ? (
-                        <button
-                          style={btnGhostStyle}
-                          disabled={busy}
-                          onClick={() => {
-                            const deDefault = (
-                              marketExplanationStaticDrafts[buildMarketExplanationStaticDraftKey("de", definition.key)]?.value_text
-                              ?? getMarketExplanationStaticTextDefaultValue("de", definition.key)
-                            );
-                            setMarketExplanationStaticDrafts((prev) => ({
-                              ...prev,
-                              [draftKey]: {
-                                status: draft.status === "live" ? "internal" : draft.status,
-                                value_text: deDefault,
-                              },
-                            }));
-                          }}
-                        >
-                          DE in Feld übernehmen
-                        </button>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button
+                            style={btnGhostStyle}
+                            disabled={busy}
+                            onClick={() =>
+                              run(`Statischen Markttext ${definition.label} per KI übersetzen`, async () => {
+                                await translateMarketExplanationStaticLocaleWithAi(marketExplanationStaticLocale, [definition.key]);
+                              })
+                            }
+                          >
+                            Per KI übersetzen
+                          </button>
+                          <button
+                            style={btnGhostStyle}
+                            disabled={busy}
+                            onClick={() => {
+                              const deDefault = (
+                                marketExplanationStaticDrafts[buildMarketExplanationStaticDraftKey("de", definition.key)]?.value_text
+                                ?? getMarketExplanationStaticTextDefaultValue("de", definition.key)
+                              );
+                              setMarketExplanationStaticDrafts((prev) => ({
+                                ...prev,
+                                [draftKey]: {
+                                  status: draft.status === "live" ? "internal" : draft.status,
+                                  value_text: deDefault,
+                                },
+                              }));
+                            }}
+                          >
+                            DE in Feld übernehmen
+                          </button>
+                        </div>
                       ) : null}
                     </div>
                   </div>
