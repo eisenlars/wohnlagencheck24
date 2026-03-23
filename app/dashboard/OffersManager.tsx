@@ -558,22 +558,6 @@ export default function OffersManager(props: Props) {
               />
             )}
             <div style={aiActionsRowStyle}>
-              {llmOptions.length > 0 ? (
-                <select
-                  value={selectedLlmIntegrationId || llmOptions[0].id}
-                  onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                  style={aiSelectStyle}
-                  aria-label="KI-Modell auswählen"
-                >
-                  {llmOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span style={aiMissingHintStyle}>Keine aktive LLM-Integration</span>
-              )}
               <button
                 type="button"
                 style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
@@ -661,22 +645,6 @@ export default function OffersManager(props: Props) {
               placeholder={placeholder}
             />
             <div style={aiActionsRowStyle}>
-              {llmOptions.length > 0 ? (
-                <select
-                  value={selectedLlmIntegrationId || llmOptions[0].id}
-                  onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                  style={aiSelectStyle}
-                  aria-label="KI-Modell auswählen"
-                >
-                  {llmOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span style={aiMissingHintStyle}>Keine aktive LLM-Integration</span>
-              )}
               <button
                 type="button"
                 style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
@@ -1266,6 +1234,7 @@ const workspaceTabsRowStyle: React.CSSProperties = {
   display: 'flex',
   gap: '8px',
   flexWrap: 'wrap',
+  marginTop: '18px',
   marginBottom: '16px',
 };
 
@@ -1730,19 +1699,6 @@ const aiActionsRowStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '10px',
   flexWrap: 'wrap',
-};
-
-const aiSelectStyle: React.CSSProperties = {
-  minWidth: '240px',
-  maxWidth: '100%',
-  height: '38px',
-  border: '1px solid #dbeafe',
-  borderRadius: '8px',
-  backgroundColor: '#fff',
-  color: '#1e293b',
-  fontSize: '12px',
-  fontWeight: 600,
-  padding: '6px 10px',
 };
 
 const aiMissingHintStyle: React.CSSProperties = {
