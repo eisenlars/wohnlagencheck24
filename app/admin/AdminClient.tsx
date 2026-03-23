@@ -5004,11 +5004,11 @@ export default function AdminClient() {
 
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Neue Sprache hinzufügen</div>
-          <div style={grid3Style}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 0.9fr 0.9fr", gap: 10 }}>
             <label>
               Sprache
               <select
-                style={inputStyle}
+                style={{ ...inputStyle, height: 38, padding: "0 10px" }}
                 value={newPortalLocaleLanguageKey}
                 onChange={(e) => handleNewPortalLocaleLanguageChange(e.target.value)}
               >
@@ -5023,7 +5023,7 @@ export default function AdminClient() {
             <label>
               Variante
               <select
-                style={inputStyle}
+                style={{ ...inputStyle, height: 38, padding: "0 10px" }}
                 value={newPortalLocalePresetKey}
                 disabled={!selectedNewPortalLocaleLanguage || selectedNewPortalLocaleLanguage.variants.length <= 1}
                 onChange={(e) => {
@@ -5043,7 +5043,7 @@ export default function AdminClient() {
             <label>
               Anzeigename nativ
               <input
-                style={inputStyle}
+                style={{ ...inputStyle, height: 38 }}
                 value={newPortalLocaleDraft.label_native ?? ""}
                 onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, label_native: e.target.value }))}
                 placeholder="Français"
@@ -5052,7 +5052,7 @@ export default function AdminClient() {
             <label>
               Verwaltungsname
               <input
-                style={inputStyle}
+                style={{ ...inputStyle, height: 38 }}
                 value={newPortalLocaleDraft.label_de ?? ""}
                 onChange={(e) => setNewPortalLocaleDraft((prev) => ({ ...prev, label_de: e.target.value }))}
                 placeholder="Französisch"
