@@ -5167,7 +5167,7 @@ export default function AdminClient() {
           </table>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
             <button
-              style={{ ...btnStyle, padding: "7px 12px", fontSize: 12, width: "auto", minWidth: 0 }}
+              style={{ ...btnStyle, padding: "7px 12px", fontSize: 13, width: "auto", minWidth: 0 }}
               disabled={busy}
               onClick={() =>
                 run("Portal-Locales speichern", async () => {
@@ -5189,7 +5189,7 @@ export default function AdminClient() {
                 Navigation, Fallback-Hinweise, Angebots- und Gesuche-Labels pro Locale.
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap" }}>
               <select
                 style={{ ...inputStyle, minWidth: 180 }}
                 value={portalSystemTextLocale}
@@ -5202,7 +5202,7 @@ export default function AdminClient() {
                 ))}
               </select>
               <button
-                style={btnStyle}
+                style={{ ...btnGhostStyle, borderColor: "#0f766e", color: "#0f766e" }}
                 disabled={busy || portalSystemTextLocale === "de"}
                 onClick={() =>
                   run("Systemtexte aus DE ergänzen", async () => {
