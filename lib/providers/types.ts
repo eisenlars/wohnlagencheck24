@@ -22,6 +22,16 @@ export type OfferMediaAsset = {
   kind: "image" | "floorplan" | "location_map" | "document";
 };
 
+export type OfferDocumentAsset = {
+  url: string;
+  title: string | null;
+  name: string | null;
+  position: number | null;
+  kind: "document" | "floorplan" | "video";
+  is_exposee: boolean | null;
+  on_landing_page: boolean | null;
+};
+
 export type OfferEnergySnapshot = {
   certificate_type: string | null;
   value: number | null;
@@ -29,6 +39,10 @@ export type OfferEnergySnapshot = {
   construction_year: number | null;
   heating_energy_source: string | null;
   efficiency_class: string | null;
+  certificate_availability: string | null;
+  certificate_start_date: string | null;
+  certificate_end_date: string | null;
+  warm_water_included: boolean | null;
   demand: number | null;
   year: number | null;
 };

@@ -99,26 +99,36 @@ Ziel:
 | `raw.location` | `location_note` | `code_verified` | |
 | `raw.features_note` | `furnishing_note` | `code_verified` | |
 | `raw.details.living_area_sqm` | `living_space` | `code_verified` | |
+| `raw.details.usable_area_sqm` | `usable_floor_space` | `code_verified` | Live-Payload verifiziert |
+| `raw.details.plot_area_sqm` | `plot_area` | `code_verified` | Live-Payload verifiziert |
 | `raw.details.rooms` | `number_of_rooms` | `code_verified` | |
+| `raw.details.bedrooms` | `number_of_bed_rooms` | `code_verified` | Live-Payload verifiziert |
+| `raw.details.bathrooms` | `number_of_bath_rooms` | `code_verified` | Live-Payload verifiziert |
+| `raw.details.floor` | `floor` | `code_verified` | Live-Payload verifiziert |
 | `raw.details.construction_year` | `construction_year` | `code_verified` | |
+| `raw.details.condition` | `condition` | `code_verified` | Live-Payload verifiziert |
+| `raw.details.parking` | `parking_space_type`, `parking_space_types` | `code_verified` | Live-Payload verifiziert |
+| `raw.details.balcony` | `balcony` | `code_verified` | Live-Payload verifiziert |
+| `raw.details.terrace` | `terrace` | `code_verified` | Live-Payload verifiziert |
+| `raw.details.garden` | `garden` | `code_verified` | Live-Payload verifiziert |
 | `raw.details.address_hidden` | `hide_address` | `code_verified` | |
-| `raw.energy.certificate_type` | `energy_certificate_type` | `code_verified` | |
-| `raw.energy.value` | `energy_consumption_value` | `code_verified` | aktuell generischer Kennwert |
+| `raw.energy.certificate_type` | `building_energy_rating_type`, fallback `energy_certificate_type` | `code_verified` | Live-Payload verifiziert |
+| `raw.energy.value` | `energy_efficiency_value`, fallback `energy_consumption_value` | `code_verified` | Live-Payload verifiziert |
 | `raw.energy.construction_year` | `construction_year` | `code_verified` | |
-| `raw.gallery_assets` | `images[]` | `code_verified` | inkl. `kind`-Klassifizierung |
+| `raw.energy.heating_energy_source` | `heating_type` | `code_verified` | Live-Payload verifiziert |
+| `raw.energy.efficiency_class` | `energy_efficiency_class` | `code_verified` | Live-Payload verifiziert |
+| `raw.energy.certificate_availability` | `energy_certificate_availability` | `code_verified` | Live-Payload verifiziert |
+| `raw.energy.certificate_start_date` | `energy_certificate_start_date` | `code_verified` | Live-Payload verifiziert |
+| `raw.energy.certificate_end_date` | `energy_certificate_end_date` | `code_verified` | Live-Payload verifiziert |
+| `raw.energy.warm_water_included` | `energy_consumption_contains_warm_water` | `code_verified` | Live-Payload verifiziert |
+| `raw.gallery_assets` | `images[]` | `code_verified` | inkl. `kind`-Klassifizierung und `is_floorplan` |
+| `raw.documents` | `documents[]` | `code_verified` | Live-Payload verifiziert |
 
 ### Noch offen
 
 | Kanonisches Feld | Erwartetes Provider-Feld | Status | Naechster Schritt |
 |---|---|---|---|
-| `raw.details.usable_area_sqm` | unbekannt | `pending_live_check` | echten Unit-Payload pruefen |
-| `raw.details.plot_area_sqm` | unbekannt | `pending_live_check` | echten Unit-Payload pruefen |
-| `raw.details.floor` | unbekannt | `pending_live_check` | echten Unit-Payload pruefen |
-| `raw.details.condition` | unbekannt | `pending_live_check` | echten Unit-Payload pruefen |
 | `raw.details.availability` | unbekannt | `pending_live_check` | echten Unit-Payload pruefen |
-| `raw.energy.heating_energy_source` | unbekannt | `pending_live_check` | echten Unit-Payload pruefen |
-| `raw.energy.efficiency_class` | unbekannt | `pending_live_check` | echten Unit-Payload pruefen |
-| `raw.documents` | unbekannt | `pending_live_check` | echten Unit-/Attachment-Payload pruefen |
 
 ## Anbieter-Mapping: onOffice
 

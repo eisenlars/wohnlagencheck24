@@ -1,5 +1,6 @@
 import type {
   OfferDetailsSnapshot,
+  OfferDocumentAsset,
   MappedOffer,
   OfferEnergySnapshot,
   OfferMediaAsset,
@@ -15,6 +16,17 @@ type PropstackImage = {
   url?: string;
   title?: string;
   position?: number;
+  is_floorplan?: boolean | null;
+};
+
+type PropstackDocument = {
+  url?: string;
+  title?: string;
+  name?: string;
+  position?: number;
+  is_floorplan?: boolean | null;
+  is_exposee?: boolean | null;
+  on_landing_page?: boolean | null;
 };
 
 type PropstackUnit = {
@@ -41,10 +53,30 @@ type PropstackUnit = {
   number_of_rooms?: number | string | { label?: unknown; value?: unknown } | null;
   energy_certificate_type?: string | null;
   energy_consumption_value?: number | string | { label?: unknown; value?: unknown } | null;
+  building_energy_rating_type?: string | { label?: unknown; value?: unknown } | null;
+  energy_efficiency_value?: number | string | { label?: unknown; value?: unknown } | null;
+  energy_efficiency_class?: string | { label?: unknown; value?: unknown } | null;
+  energy_certificate_availability?: string | { label?: unknown; value?: unknown } | null;
+  energy_certificate_start_date?: string | { label?: unknown; value?: unknown } | null;
+  energy_certificate_end_date?: string | { label?: unknown; value?: unknown } | null;
+  energy_consumption_contains_warm_water?: boolean | { label?: unknown; value?: unknown } | null;
+  heating_type?: string | { label?: unknown; value?: unknown } | null;
   construction_year?: number | string | { label?: unknown; value?: unknown } | null;
+  usable_floor_space?: number | string | { label?: unknown; value?: unknown } | null;
+  plot_area?: number | string | { label?: unknown; value?: unknown } | null;
+  floor?: number | string | { label?: unknown; value?: unknown } | null;
+  condition?: string | { label?: unknown; value?: unknown } | null;
+  number_of_bed_rooms?: number | string | { label?: unknown; value?: unknown } | null;
+  number_of_bath_rooms?: number | string | { label?: unknown; value?: unknown } | null;
+  parking_space_type?: string | { label?: unknown; value?: unknown } | null;
+  parking_space_types?: string[] | { label?: unknown; value?: unknown } | null;
+  balcony?: boolean | { label?: unknown; value?: unknown } | null;
+  terrace?: boolean | { label?: unknown; value?: unknown } | null;
+  garden?: boolean | { label?: unknown; value?: unknown } | null;
   custom_fields?: Record<string, unknown> | null;
   updated_at?: string | null;
   images?: PropstackImage[] | null;
+  documents?: PropstackDocument[] | null;
   status?: string | { id?: number | string | null; name?: unknown; title?: unknown } | null;
   sub_status?: string | null;
   archived?: boolean | null;
@@ -164,10 +196,21 @@ function normalizeImages(images?: PropstackImage[] | null): string[] {
     .filter((url): url is string => typeof url === "string" && url.length > 0);
 }
 
+function asBoolean(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    if (typeof record.value === "boolean") return record.value;
+  }
+  return null;
+}
+
 function inferPropstackMediaKind(
   title: string | null,
   url: string | null,
+  isFloorplan?: boolean | null,
 ): "image" | "floorplan" | "location_map" | "document" {
+  if (isFloorplan === true) return "floorplan";
   const normalizedTitle = String(title ?? "").trim().toLowerCase();
   const normalizedUrl = String(url ?? "").trim().toLowerCase();
   const normalized = `${normalizedTitle} ${normalizedUrl}`.trim();
@@ -214,10 +257,44 @@ function normalizeImageAssets(images?: PropstackImage[] | null): OfferMediaAsset
         url,
         title,
         position: typeof img?.position === "number" && Number.isFinite(img.position) ? img.position : null,
-        kind: inferPropstackMediaKind(title, url),
+        kind: inferPropstackMediaKind(title, url, img?.is_floorplan ?? null),
       } satisfies OfferMediaAsset;
     })
     .filter((asset): asset is OfferMediaAsset => Boolean(asset))
+    .sort((left, right) => {
+      if (left.position == null && right.position == null) return left.url.localeCompare(right.url);
+      if (left.position == null) return 1;
+      if (right.position == null) return -1;
+      return left.position - right.position;
+    });
+}
+
+function normalizeDocumentKind(document: PropstackDocument): OfferDocumentAsset["kind"] {
+  if (document.is_floorplan === true) return "floorplan";
+  const url = String(document.url ?? "").trim().toLowerCase();
+  const title = String(document.title ?? document.name ?? "").trim().toLowerCase();
+  const combined = `${title} ${url}`.trim();
+  if (combined.includes(".mp4") || combined.includes("video")) return "video";
+  return "document";
+}
+
+function normalizeDocuments(documents?: PropstackDocument[] | null): OfferDocumentAsset[] {
+  if (!Array.isArray(documents)) return [];
+  return documents
+    .map((document) => {
+      const url = typeof document?.url === "string" ? document.url.trim() : "";
+      if (!url) return null;
+      return {
+        url,
+        title: typeof document?.title === "string" ? document.title.trim() || null : null,
+        name: typeof document?.name === "string" ? document.name.trim() || null : null,
+        position: typeof document?.position === "number" && Number.isFinite(document.position) ? document.position : null,
+        kind: normalizeDocumentKind(document),
+        is_exposee: document?.is_exposee ?? null,
+        on_landing_page: document?.on_landing_page ?? null,
+      } satisfies OfferDocumentAsset;
+    })
+    .filter((entry): entry is OfferDocumentAsset => Boolean(entry))
     .sort((left, right) => {
       if (left.position == null && right.position == null) return left.url.localeCompare(right.url);
       if (left.position == null) return 1;
@@ -235,16 +312,23 @@ function normalizeEnergyValueKind(certificateType: string | null | undefined): "
 }
 
 function buildEnergySnapshot(unit: PropstackUnit): OfferEnergySnapshot {
-  const certificateType = unit.energy_certificate_type ?? null;
-  const value = normalizePropstackNumber(unit.energy_consumption_value);
+  const certificateType = normalizePropstackTitle(unit.building_energy_rating_type)
+    ?? unit.energy_certificate_type
+    ?? null;
+  const value = normalizePropstackNumber(unit.energy_efficiency_value)
+    ?? normalizePropstackNumber(unit.energy_consumption_value);
   const constructionYear = normalizePropstackNumber(unit.construction_year);
   return {
     certificate_type: certificateType,
     value,
     value_kind: normalizeEnergyValueKind(certificateType),
     construction_year: constructionYear,
-    heating_energy_source: null,
-    efficiency_class: null,
+    heating_energy_source: normalizePropstackTitle(unit.heating_type),
+    efficiency_class: normalizePropstackTitle(unit.energy_efficiency_class),
+    certificate_availability: normalizePropstackTitle(unit.energy_certificate_availability),
+    certificate_start_date: normalizePropstackTitle(unit.energy_certificate_start_date),
+    certificate_end_date: normalizePropstackTitle(unit.energy_certificate_end_date),
+    warm_water_included: asBoolean(unit.energy_consumption_contains_warm_water),
     demand: value,
     year: constructionYear,
   };
@@ -253,19 +337,20 @@ function buildEnergySnapshot(unit: PropstackUnit): OfferEnergySnapshot {
 function buildDetailsSnapshot(unit: PropstackUnit): OfferDetailsSnapshot {
   return {
     living_area_sqm: normalizePropstackNumber(unit.living_space),
-    usable_area_sqm: null,
-    plot_area_sqm: null,
+    usable_area_sqm: normalizePropstackNumber(unit.usable_floor_space),
+    plot_area_sqm: normalizePropstackNumber(unit.plot_area),
     rooms: normalizePropstackNumber(unit.number_of_rooms),
-    bedrooms: null,
-    bathrooms: null,
-    floor: null,
+    bedrooms: normalizePropstackNumber(unit.number_of_bed_rooms),
+    bathrooms: normalizePropstackNumber(unit.number_of_bath_rooms),
+    floor: normalizePropstackNumber(unit.floor),
     construction_year: normalizePropstackNumber(unit.construction_year),
-    condition: null,
+    condition: normalizePropstackTitle(unit.condition),
     availability: null,
-    parking: null,
-    balcony: null,
-    terrace: null,
-    garden: null,
+    parking: normalizePropstackTitle(unit.parking_space_type)
+      ?? (Array.isArray(unit.parking_space_types) ? unit.parking_space_types.filter((entry) => typeof entry === "string").join(", ") || null : normalizePropstackTitle(unit.parking_space_types)),
+    balcony: asBoolean(unit.balcony),
+    terrace: asBoolean(unit.terrace),
+    garden: asBoolean(unit.garden),
     elevator: null,
     address_hidden: unit.hide_address ?? null,
   };
@@ -469,6 +554,7 @@ function normalizeUnitOffer(
 ): MappedOffer {
   const gallery = normalizeImages(unit.images);
   const galleryAssets = normalizeImageAssets(unit.images);
+  const documents = normalizeDocuments(unit.documents);
   const address = buildAddress(unit);
   const title = normalizePropstackTitle(unit.title);
   const primaryImage = galleryAssets.find((asset) => asset.kind === "image")?.url ?? gallery[0] ?? null;
@@ -506,6 +592,7 @@ function normalizeUnitOffer(
       gallery,
       gallery_urls: gallery,
       gallery_assets: galleryAssets,
+      documents,
       lat: unit.lat ?? null,
       lng: unit.lng ?? null,
       custom_fields: unit.custom_fields ?? null,
