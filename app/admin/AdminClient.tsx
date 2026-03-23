@@ -4810,7 +4810,7 @@ export default function AdminClient() {
         </p>
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Portalabo Override (Partner)</div>
-          <div style={grid3Style}>
+          <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
             <label>
               Grundpreis (EUR/Monat)
               <input
@@ -5050,7 +5050,7 @@ export default function AdminClient() {
               />
             </label>
             <label>
-              Anzeigename DE
+              Verwaltungsname
               <input
                 style={inputStyle}
                 value={newPortalLocaleDraft.label_de ?? ""}
