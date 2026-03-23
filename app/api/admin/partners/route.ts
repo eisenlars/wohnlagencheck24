@@ -43,10 +43,10 @@ type PartnerAreaMappingRow = {
 function normalizeAreaRelation(
   value: unknown,
 ): Array<{
-  name?: string | null;
-  slug?: string | null;
-  parent_slug?: string | null;
-  bundesland_slug?: string | null;
+  name: string | null;
+  slug: string | null;
+  parent_slug: string | null;
+  bundesland_slug: string | null;
 }> {
   const source = Array.isArray(value)
     ? value.find((item) => item && typeof item === "object")
