@@ -985,6 +985,7 @@ export default function DashboardClient() {
 
   const effectiveOfferVisibilityMode = normalizeVisibilityMode(effectiveAreaConfig?.offer_visibility_mode);
   const effectiveRequestVisibilityMode = normalizeVisibilityMode(effectiveAreaConfig?.request_visibility_mode);
+  const scopedContentAreaConfig = effectiveAreaConfig ?? effectiveSelectedConfig;
 
   useEffect(() => {
     if (activeMainTab === 'settings') return;
@@ -2006,32 +2007,32 @@ export default function DashboardClient() {
             {/* Die Forms nutzen nun die volle Breite des <main> Containers */}
             {activeMainTab === 'factors' ? (
               <FactorForm ref={factorFormRef} key={`f-${effectiveSelectedConfig.id}`} config={effectiveSelectedConfig} />
-            ) : activeMainTab === 'texts' ? (
+            ) : activeMainTab === 'texts' && scopedContentAreaConfig ? (
               isAwaitingAdminApproval ? null : (
                 <TextEditorForm
-                  key={`t-${effectiveAreaConfig.id}`}
-                  config={effectiveAreaConfig}
+                  key={`t-${scopedContentAreaConfig.id}`}
+                  config={scopedContentAreaConfig}
                   enableApproval
                   initialTabId={textFocusTarget?.tabId}
                   focusSectionKey={textFocusTarget?.sectionKey}
-                  lockedToMandatory={Boolean(!effectiveAreaConfig?.is_active)}
-                  allowedTabIds={effectiveAreaConfig?.is_active ? undefined : Array.from(MANDATORY_TAB_IDS)}
-                  allowedSectionKeys={effectiveAreaConfig?.is_active ? undefined : Array.from(mandatoryAllowedKeys)}
+                  lockedToMandatory={Boolean(!scopedContentAreaConfig.is_active)}
+                  allowedTabIds={scopedContentAreaConfig.is_active ? undefined : Array.from(MANDATORY_TAB_IDS)}
+                  allowedSectionKeys={scopedContentAreaConfig.is_active ? undefined : Array.from(mandatoryAllowedKeys)}
                   onFocusHandled={() => setTextFocusTarget(null)}
                   onPersistSuccess={() => setProgressRefreshTick((prev) => prev + 1)}
                 />
               )
-            ) : activeMainTab === 'marketing' ? (
+            ) : activeMainTab === 'marketing' && scopedContentAreaConfig ? (
               <TextEditorForm
-                key={`mkt-${effectiveAreaConfig.id}`}
-                config={effectiveAreaConfig}
+                key={`mkt-${scopedContentAreaConfig.id}`}
+                config={scopedContentAreaConfig}
                 tableName="partner_marketing_texts"
                 enableApproval
               />
-            ) : activeMainTab === 'local_site' ? (
+            ) : activeMainTab === 'local_site' && scopedContentAreaConfig ? (
               <TextEditorForm
-                key={`ls-${effectiveAreaConfig.id}`}
-                config={effectiveAreaConfig}
+                key={`ls-${scopedContentAreaConfig.id}`}
+                config={scopedContentAreaConfig}
                 tableName="partner_local_site_texts"
                 enableApproval
               />
@@ -2043,15 +2044,15 @@ export default function DashboardClient() {
                   openTextEditorAt(sectionKey);
                 }}
               />
-            ) : activeMainTab === 'international' ? (
+            ) : activeMainTab === 'international' && scopedContentAreaConfig ? (
               <InternationalizationManager
-                config={effectiveAreaConfig}
+                config={scopedContentAreaConfig}
                 availableLocales={internationalLocales}
                 availableDomains={internationalDomains}
               />
-            ) : activeMainTab === 'immobilien' ? (
+            ) : activeMainTab === 'immobilien' && scopedContentAreaConfig ? (
               <OffersManager
-                visibilityConfig={effectiveAreaConfig}
+                visibilityConfig={scopedContentAreaConfig}
                 visibilityMode={effectiveOfferVisibilityMode}
                 visibilityBusy={visibilitySaveBusy}
                 visibilityMessage={visibilitySaveMessage}
@@ -2060,9 +2061,9 @@ export default function DashboardClient() {
               />
             ) : activeMainTab === 'referenzen' ? (
               <ReferencesManager />
-            ) : activeMainTab === 'gesuche' ? (
+            ) : activeMainTab === 'gesuche' && scopedContentAreaConfig ? (
               <RequestsManager
-                visibilityConfig={effectiveAreaConfig}
+                visibilityConfig={scopedContentAreaConfig}
                 visibilityMode={effectiveRequestVisibilityMode}
                 visibilityBusy={visibilitySaveBusy}
                 visibilityMessage={visibilitySaveMessage}
