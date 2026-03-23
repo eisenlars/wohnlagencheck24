@@ -726,12 +726,10 @@ export default function OffersManager(props: Props) {
       {visibilityConfig ? (
         <section style={visibilityShellStyle}>
           <div style={visibilityCardStyle}>
-            <div style={visibilityHeadStyle}>Regionale Ausspielung für Angebote</div>
-            <div style={visibilityAreaStyle}>
-              {visibilityConfig.areas?.name ?? visibilityConfig.area_id}
-            </div>
+            <h3 style={visibilityHeadStyle}>
+              {`Regionale Ausspielung für Angebote - ${visibilityConfig.areas?.name ?? visibilityConfig.area_id}`}
+            </h3>
             <label style={visibilityLabelStyle}>
-              <span>Ausspielung</span>
               <select
                 value={visibilityMode}
                 onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
@@ -1743,43 +1741,34 @@ const visibilityCardStyle: React.CSSProperties = {
   padding: '14px 16px',
   display: 'grid',
   gap: '10px',
-  marginBottom: '16px',
+  marginBottom: '8px',
 };
 
 const visibilityHeadStyle: React.CSSProperties = {
-  fontSize: '12px',
-  lineHeight: 1.4,
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
+  margin: 0,
+  fontSize: '16px',
+  lineHeight: 1.35,
   fontWeight: 700,
-  color: '#486b7a',
-};
-
-const visibilityAreaStyle: React.CSSProperties = {
-  fontSize: '14px',
-  lineHeight: 1.5,
-  fontWeight: 600,
   color: '#0f172a',
 };
 
 const visibilityLabelStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: '6px',
-  fontSize: '13px',
-  lineHeight: 1.4,
-  fontWeight: 600,
-  color: '#334155',
+  display: 'block',
 };
 
 const visibilitySelectStyle: React.CSSProperties = {
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  MozAppearance: 'none',
   minHeight: '40px',
   borderRadius: '10px',
   border: '1px solid #cbd5e1',
   background: '#ffffff',
   color: '#0f172a',
-  padding: '0 12px',
+  padding: '0 40px 0 12px',
   fontSize: '13px',
   fontWeight: 600,
+  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
 };
 
 const visibilityHintStyle: React.CSSProperties = {
