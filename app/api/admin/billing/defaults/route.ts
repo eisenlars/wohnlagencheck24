@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 
+import {
+  buildLocaleBillingFeatureRows,
+  buildLocaleFeatureCatalogPatch,
+  isLocaleFeatureCode,
+} from "@/lib/locale-billing-features";
+import { loadPortalLocaleRegistry } from "@/lib/portal-locale-registry";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { checkAdminApiRateLimit } from "@/lib/security/rate-limit";
@@ -22,6 +28,14 @@ type Body = {
     portal_export_ortslage_price_eur?: number | null;
   };
   features?: FeatureInput[];
+  locale_features?: Array<{
+    locale?: unknown;
+    feature_is_active?: unknown;
+    default_enabled?: unknown;
+    default_monthly_price_eur?: unknown;
+    billing_unit?: unknown;
+    note?: unknown;
+  }>;
 };
 
 function isMissingTable(error: unknown, table: string): boolean {
@@ -44,7 +58,7 @@ function asText(value: unknown): string | null {
 }
 
 async function loadDefaultsAndFeatures(admin: ReturnType<typeof createAdminClient>) {
-  const [defaultsRes, featuresRes] = await Promise.all([
+  const [defaultsRes, featuresRes, locales] = await Promise.all([
     admin
       .from("billing_global_defaults")
       .select("id, portal_base_price_eur, portal_ortslage_price_eur, portal_export_ortslage_price_eur, updated_at")
@@ -55,6 +69,7 @@ async function loadDefaultsAndFeatures(admin: ReturnType<typeof createAdminClien
       .select("code, label, note, billing_unit, default_enabled, default_monthly_price_eur, sort_order, is_active, updated_at")
       .order("sort_order", { ascending: true })
       .order("code", { ascending: true }),
+    loadPortalLocaleRegistry(),
   ]);
 
   if (defaultsRes.error) throw defaultsRes.error;
@@ -68,7 +83,11 @@ async function loadDefaultsAndFeatures(admin: ReturnType<typeof createAdminClien
       portal_export_ortslage_price_eur: 1,
       updated_at: null,
     },
-    features: featuresRes.data ?? [],
+    features: (featuresRes.data ?? []).filter((feature) => !isLocaleFeatureCode(String(feature.code ?? ""), locales)),
+    locale_features: buildLocaleBillingFeatureRows({
+      locales,
+      catalogFeatures: featuresRes.data ?? [],
+    }),
   };
 }
 
@@ -144,6 +163,18 @@ export async function POST(req: Request) {
       }
       const { error } = await admin.from("billing_feature_catalog").upsert(rows, { onConflict: "code" });
       if (error) throw error;
+    }
+
+    if (Array.isArray(body.locale_features) && body.locale_features.length > 0) {
+      const locales = await loadPortalLocaleRegistry();
+      const rows = buildLocaleFeatureCatalogPatch({
+        locales,
+        rows: body.locale_features,
+      });
+      if (rows.length > 0) {
+        const { error } = await admin.from("billing_feature_catalog").upsert(rows, { onConflict: "code" });
+        if (error) throw error;
+      }
     }
 
     const payload = await loadDefaultsAndFeatures(admin);

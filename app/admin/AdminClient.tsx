@@ -690,6 +690,25 @@ type BillingFeature = {
   is_active: boolean;
 };
 
+type BillingLocaleFeature = {
+  locale: string;
+  label_native?: string | null;
+  label_de?: string | null;
+  bcp47_tag?: string | null;
+  feature_code: string;
+  matched_feature_code?: string | null;
+  partner_bookable: boolean;
+  is_active: boolean;
+  status: string;
+  feature_exists: boolean;
+  feature_is_active: boolean;
+  default_enabled: boolean;
+  default_monthly_price_eur: number;
+  billing_unit: string;
+  note?: string | null;
+  sort_order: number;
+};
+
 type PartnerBillingFeature = {
   code: string;
   label: string;
@@ -703,6 +722,13 @@ type PartnerBillingFeature = {
   override_monthly_price_eur?: number | null;
   is_active?: boolean;
   sort_order?: number;
+};
+
+type PartnerLocaleBillingFeature = BillingLocaleFeature & {
+  enabled: boolean;
+  monthly_price_eur: number;
+  override_enabled?: boolean | null;
+  override_monthly_price_eur?: number | null;
 };
 
 function normalizeActivationStatus(value: unknown, isActive: boolean, isPublicLive = false): string {
@@ -1246,6 +1272,7 @@ export default function AdminClient() {
     portal_export_ortslage_price_eur: "1.00",
   });
   const [billingFeatureCatalog, setBillingFeatureCatalog] = useState<BillingFeature[]>([]);
+  const [billingLocaleFeatureRows, setBillingLocaleFeatureRows] = useState<BillingLocaleFeature[]>([]);
   const [newBillingFeature, setNewBillingFeature] = useState({
     code: "",
     label: "",
@@ -1262,6 +1289,7 @@ export default function AdminClient() {
     portal_export_ortslage_price_eur: "",
   });
   const [partnerFeatureBillingRows, setPartnerFeatureBillingRows] = useState<PartnerBillingFeature[]>([]);
+  const [partnerLocaleBillingRows, setPartnerLocaleBillingRows] = useState<PartnerLocaleBillingFeature[]>([]);
   const portalCmsPages = useMemo<PortalContentPageDefinition[]>(() => getPortalCmsPages(), []);
   const [portalLocaleConfigs, setPortalLocaleConfigs] = useState<PortalLocaleConfigRecord[]>([]);
   const [portalContentEntries, setPortalContentEntries] = useState<PortalContentEntryRecord[]>([]);
@@ -2472,6 +2500,7 @@ export default function AdminClient() {
     const data = await api<{
       defaults?: BillingGlobalDefaults;
       features?: BillingFeature[];
+      locale_features?: BillingLocaleFeature[];
     }>("/api/admin/billing/defaults");
     const defaults = data.defaults ?? {
       portal_base_price_eur: 50,
@@ -2489,6 +2518,16 @@ export default function AdminClient() {
       sort_order: Number(feature.sort_order ?? 100),
       default_enabled: feature.default_enabled === true,
       is_active: feature.is_active !== false,
+    })));
+    setBillingLocaleFeatureRows((data.locale_features ?? []).map((row) => ({
+      ...row,
+      feature_exists: row.feature_exists === true,
+      feature_is_active: row.feature_is_active === true,
+      partner_bookable: row.partner_bookable === true,
+      is_active: row.is_active === true,
+      default_enabled: row.default_enabled === true,
+      default_monthly_price_eur: Number(row.default_monthly_price_eur ?? 0),
+      sort_order: Number(row.sort_order ?? 100),
     })));
   }
 
@@ -3034,6 +3073,7 @@ export default function AdminClient() {
         };
       };
       features?: PartnerBillingFeature[];
+      locale_features?: PartnerLocaleBillingFeature[];
     }>(`/api/admin/partners/${partnerId}/billing`);
     const overrides = data.portal?.overrides ?? {};
     setPartnerPortalBillingDraft({
@@ -3047,6 +3087,18 @@ export default function AdminClient() {
       monthly_price_eur: Number(row.monthly_price_eur ?? 0),
       default_enabled: row.default_enabled === true,
       default_monthly_price_eur: Number(row.default_monthly_price_eur ?? 0),
+    })));
+    setPartnerLocaleBillingRows((data.locale_features ?? []).map((row) => ({
+      ...row,
+      feature_exists: row.feature_exists === true,
+      feature_is_active: row.feature_is_active === true,
+      partner_bookable: row.partner_bookable === true,
+      is_active: row.is_active === true,
+      default_enabled: row.default_enabled === true,
+      default_monthly_price_eur: Number(row.default_monthly_price_eur ?? 0),
+      enabled: row.enabled === true,
+      monthly_price_eur: Number(row.monthly_price_eur ?? 0),
+      sort_order: Number(row.sort_order ?? 100),
     })));
   }
 
@@ -5259,7 +5311,110 @@ export default function AdminClient() {
         </div>
 
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
-          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Features (Partner-Override)</div>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Internationale Sprachen</div>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Sprache</th>
+                <th style={thStyle}>Global</th>
+                <th style={thStyle}>Partner</th>
+                <th style={thStyle}>Partner aktiv</th>
+                <th style={thStyle}>Preis EUR/Monat</th>
+                <th style={thStyle}>Hinweis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {partnerLocaleBillingRows.map((row, idx) => (
+                <tr key={row.locale}>
+                  <td style={tdStyle}>
+                    <div style={{ fontWeight: 600 }}>{row.label_de || row.label_native || row.locale}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>
+                      {row.locale}{row.bcp47_tag ? ` · ${row.bcp47_tag}` : ""}
+                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <div style={{ fontSize: 13, color: "#334155" }}>
+                      {row.is_active ? "aktiv" : "inaktiv"} · {row.status}
+                    </div>
+                    <div style={{ fontSize: 12, color: row.feature_exists ? "#64748b" : "#b45309" }}>
+                      {row.feature_exists
+                        ? (row.feature_is_active ? "global bepreist" : "global angelegt, aber inaktiv")
+                        : "global noch nicht bepreist"}
+                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <div style={{ fontSize: 13, color: "#334155" }}>
+                      {row.partner_bookable ? "partnerbuchbar" : "nicht partnerbuchbar"}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>
+                      {row.feature_code}
+                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      type="checkbox"
+                      checked={row.enabled}
+                      disabled={!row.feature_exists || !row.feature_is_active || !row.partner_bookable || !row.is_active}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setPartnerLocaleBillingRows((prev) => prev.map((item, itemIdx) => (
+                          itemIdx === idx ? { ...item, enabled: checked } : item
+                        )));
+                      }}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      style={{ ...inputStyle, maxWidth: 140 }}
+                      value={String(row.monthly_price_eur ?? 0)}
+                      disabled={!row.feature_exists}
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        setPartnerLocaleBillingRows((prev) =>
+                          prev.map((item, itemIdx) => (
+                            itemIdx === idx ? { ...item, monthly_price_eur: Number.isFinite(next) ? next : 0 } : item
+                          )),
+                        );
+                      }}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>
+                      Default: {row.default_enabled ? "aktiv" : "inaktiv"} · {Number(row.default_monthly_price_eur ?? 0).toFixed(2)} EUR
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ marginTop: 10 }}>
+            <button
+              style={btnStyle}
+              disabled={busy || !selectedPartnerId}
+              onClick={() =>
+                run("Partner-Sprachfeatures speichern", async () => {
+                  if (!selectedPartnerId) return;
+                  await api(`/api/admin/partners/${selectedPartnerId}/billing`, {
+                    method: "PATCH",
+                    body: JSON.stringify({
+                      locale_feature_overrides: partnerLocaleBillingRows.map((row) => ({
+                        locale: row.locale,
+                        is_enabled: row.enabled,
+                        monthly_price_eur: Number(Number(row.monthly_price_eur ?? 0).toFixed(2)),
+                      })),
+                    }),
+                  });
+                  await loadPartnerBillingConfig(selectedPartnerId);
+                })
+              }
+            >
+              Sprachfreigaben speichern
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Sonstige Features (Partner-Override)</div>
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -5326,7 +5481,7 @@ export default function AdminClient() {
                 })
               }
             >
-              Features speichern
+              Sonstige Features speichern
             </button>
           </div>
         </div>
@@ -7205,7 +7360,111 @@ export default function AdminClient() {
         </div>
 
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
-          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Feature-Katalog</div>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Internationale Sprachen</div>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={thStyle}>Sprache</th>
+                <th style={thStyle}>Portalstatus</th>
+                <th style={thStyle}>Feature aktiv</th>
+                <th style={thStyle}>Default aktiv</th>
+                <th style={thStyle}>Preis (Default)</th>
+                <th style={thStyle}>Code</th>
+              </tr>
+            </thead>
+            <tbody>
+              {billingLocaleFeatureRows.map((row, idx) => (
+                <tr key={row.locale}>
+                  <td style={tdStyle}>
+                    <div style={{ fontWeight: 600 }}>{row.label_de || row.label_native || row.locale}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>
+                      {row.locale}{row.bcp47_tag ? ` · ${row.bcp47_tag}` : ""}
+                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <div style={{ fontSize: 13, color: "#334155" }}>
+                      {row.is_active ? "aktiv" : "inaktiv"} · {row.status}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>
+                      {row.partner_bookable ? "partnerbuchbar" : "nicht partnerbuchbar"}
+                    </div>
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      type="checkbox"
+                      checked={row.feature_is_active}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setBillingLocaleFeatureRows((prev) => prev.map((item, itemIdx) => (
+                          itemIdx === idx ? { ...item, feature_is_active: checked } : item
+                        )));
+                      }}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      type="checkbox"
+                      checked={row.default_enabled}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setBillingLocaleFeatureRows((prev) => prev.map((item, itemIdx) => (
+                          itemIdx === idx ? { ...item, default_enabled: checked } : item
+                        )));
+                      }}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <input
+                      style={{ ...inputStyle, maxWidth: 140 }}
+                      value={String(row.default_monthly_price_eur)}
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        setBillingLocaleFeatureRows((prev) => prev.map((item, itemIdx) => (
+                          itemIdx === idx ? { ...item, default_monthly_price_eur: Number.isFinite(next) ? next : 0 } : item
+                        )));
+                      }}
+                    />
+                  </td>
+                  <td style={tdStyle}>
+                    <div style={{ fontSize: 13, color: "#334155" }}>{row.feature_code}</div>
+                    <div style={{ fontSize: 12, color: row.feature_exists ? "#64748b" : "#b45309" }}>
+                      {row.feature_exists ? "angelegt" : "wird beim Speichern angelegt"}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              style={btnStyle}
+              disabled={busy}
+              onClick={() =>
+                run("Sprachfeatures speichern", async () => {
+                  await api("/api/admin/billing/defaults", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      locale_features: billingLocaleFeatureRows.map((row) => ({
+                        locale: row.locale,
+                        feature_is_active: row.feature_is_active,
+                        default_enabled: row.default_enabled,
+                        default_monthly_price_eur: Number(Number(row.default_monthly_price_eur ?? 0).toFixed(2)),
+                        billing_unit: row.billing_unit,
+                        note: row.note,
+                      })),
+                    }),
+                  });
+                  await loadBillingDefaults();
+                })
+              }
+            >
+              Sprachfeatures speichern
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+          <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Sonstige Features</div>
           <table style={tableStyle}>
             <thead>
               <tr>

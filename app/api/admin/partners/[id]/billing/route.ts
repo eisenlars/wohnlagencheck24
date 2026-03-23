@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { buildPartnerLocaleBillingFeatureRows, isLocaleFeatureCode } from "@/lib/locale-billing-features";
+import { loadPortalLocaleRegistry, normalizePortalLocaleCode } from "@/lib/portal-locale-registry";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { checkAdminApiRateLimit } from "@/lib/security/rate-limit";
@@ -17,6 +19,11 @@ type Body = {
     portal_export_ortslage_price_eur?: number | null;
   };
   feature_overrides?: FeatureOverrideInput[];
+  locale_feature_overrides?: Array<{
+    locale?: unknown;
+    is_enabled?: boolean | null;
+    monthly_price_eur?: number | null;
+  }>;
 };
 
 function isMissingTable(error: unknown, table: string): boolean {
@@ -39,7 +46,7 @@ function asText(value: unknown): string | null {
 }
 
 async function loadPartnerBilling(admin: ReturnType<typeof createAdminClient>, partnerId: string) {
-  const [globalRes, portalRes, catalogRes, overridesRes] = await Promise.all([
+  const [globalRes, portalRes, catalogRes, overridesRes, locales] = await Promise.all([
     admin
       .from("billing_global_defaults")
       .select("id, portal_base_price_eur, portal_ortslage_price_eur, portal_export_ortslage_price_eur, updated_at")
@@ -59,6 +66,7 @@ async function loadPartnerBilling(admin: ReturnType<typeof createAdminClient>, p
       .from("partner_feature_overrides")
       .select("partner_id, feature_code, is_enabled, monthly_price_eur, updated_at")
       .eq("partner_id", partnerId),
+    loadPortalLocaleRegistry(),
   ]);
 
   if (globalRes.error) throw globalRes.error;
@@ -85,7 +93,9 @@ async function loadPartnerBilling(admin: ReturnType<typeof createAdminClient>, p
     (overridesRes.data ?? []).map((row) => [String(row.feature_code), row] as const),
   );
 
-  const features = (catalogRes.data ?? []).map((feature) => {
+  const features = (catalogRes.data ?? [])
+    .filter((feature) => !isLocaleFeatureCode(String(feature.code ?? ""), locales))
+    .map((feature) => {
     const code = String(feature.code ?? "");
     const override = overridesByCode.get(code);
     const enabled = override?.is_enabled ?? feature.default_enabled ?? false;
@@ -117,6 +127,11 @@ async function loadPartnerBilling(admin: ReturnType<typeof createAdminClient>, p
       },
     },
     features,
+    locale_features: buildPartnerLocaleBillingFeatureRows({
+      locales,
+      catalogFeatures: catalogRes.data ?? [],
+      partnerOverrides: overridesRes.data ?? [],
+    }),
   };
 }
 
@@ -198,6 +213,36 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         if (!code || !known.has(code)) return NextResponse.json({ error: `Unbekanntes Feature: ${code ?? "leer"}` }, { status: 400 });
         const price = asFiniteNumber(raw.monthly_price_eur);
         if (price !== null && price < 0) return NextResponse.json({ error: `Feature ${code}: Preis muss >= 0 sein.` }, { status: 400 });
+        rows.push({
+          partner_id: partnerId,
+          feature_code: code,
+          is_enabled: typeof raw.is_enabled === "boolean" ? raw.is_enabled : null,
+          monthly_price_eur: price === null ? null : Number(price.toFixed(2)),
+          updated_at: new Date().toISOString(),
+        });
+      }
+      const { error } = await admin.from("partner_feature_overrides").upsert(rows, { onConflict: "partner_id,feature_code" });
+      if (error) throw error;
+    }
+
+    if (Array.isArray(body.locale_feature_overrides) && body.locale_feature_overrides.length > 0) {
+      const locales = await loadPortalLocaleRegistry();
+      const localeMap = new Map(
+        locales.map((locale) => [normalizePortalLocaleCode(locale.locale), locale] as const),
+      );
+      const rows: Array<Record<string, unknown>> = [];
+      for (const raw of body.locale_feature_overrides) {
+        const locale = normalizePortalLocaleCode(raw.locale);
+        const localeConfig = localeMap.get(locale);
+        if (!localeConfig) {
+          return NextResponse.json({ error: `Unbekannte Locale: ${locale || "leer"}` }, { status: 400 });
+        }
+        const code = String(localeConfig.billing_feature_code ?? "").trim().toLowerCase();
+        if (!code) {
+          return NextResponse.json({ error: `Locale ${locale} hat keinen Billing-Feature-Code.` }, { status: 400 });
+        }
+        const price = asFiniteNumber(raw.monthly_price_eur);
+        if (price !== null && price < 0) return NextResponse.json({ error: `Locale ${locale}: Preis muss >= 0 sein.` }, { status: 400 });
         rows.push({
           partner_id: partnerId,
           feature_code: code,
