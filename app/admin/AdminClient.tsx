@@ -7,6 +7,11 @@ import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { getProvidersForKind } from "@/lib/integrations/providers";
 import { getMandatoryMediaLabel, isMandatoryMediaKey } from "@/lib/mandatory-media";
+import {
+  MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS,
+  MARKET_EXPLANATION_STANDARD_TABS,
+  type MarketExplanationStandardTextDefinition,
+} from "@/lib/market-explanation-standard-text-definitions";
 import { getTextKeyLabel } from "@/lib/text-key-labels";
 import {
   buildPortalCmsEmptyFields,
@@ -128,6 +133,11 @@ type AuditLogRow = {
   ip?: string | null;
   user_agent?: string | null;
   created_at: string;
+};
+
+type MarketExplanationStandardEntry = {
+  key: string;
+  value_text: string;
 };
 
 type DisplayAreaRow = {
@@ -924,6 +934,17 @@ function buildPortalSystemTextDraftKey(locale: string, key: PortalSystemTextKey)
   return `${locale}::${key}`;
 }
 
+function buildMarketExplanationStandardDraftMap(args: {
+  definitions: MarketExplanationStandardTextDefinition[];
+  entries: MarketExplanationStandardEntry[];
+}): Record<string, string> {
+  const entryMap = new Map(args.entries.map((entry) => [entry.key, entry.value_text] as const));
+  return args.definitions.reduce<Record<string, string>>((acc, definition) => {
+    acc[definition.key] = entryMap.get(definition.key) ?? "";
+    return acc;
+  }, {});
+}
+
 function buildPortalSystemTextDraftMap(args: {
   locales: PortalLocaleConfigRecord[];
   definitions: PortalSystemTextDefinition[];
@@ -1206,7 +1227,10 @@ export default function AdminClient() {
   const [portalSystemTextMetas, setPortalSystemTextMetas] = useState<PortalSystemTextI18nMetaViewRecord[]>([]);
   const [portalSystemTextLocale, setPortalSystemTextLocale] = useState<string>("de");
   const [portalSystemTextActiveGroup, setPortalSystemTextActiveGroup] = useState<string>("Navigation");
-  const [marketExplanationTab, setMarketExplanationTab] = useState<string>("Marktüberblick");
+  const [marketExplanationMode, setMarketExplanationMode] = useState<"standard" | "static">("standard");
+  const [marketExplanationTab, setMarketExplanationTab] = useState<string>(MARKET_EXPLANATION_STANDARD_TABS[0]?.label ?? "Übersicht");
+  const [marketExplanationStandardDefinitions, setMarketExplanationStandardDefinitions] = useState<MarketExplanationStandardTextDefinition[]>(MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS);
+  const [marketExplanationStandardDrafts, setMarketExplanationStandardDrafts] = useState<Record<string, string>>({});
   const [portalSystemTextDrafts, setPortalSystemTextDrafts] = useState<Record<string, {
     status: PortalSystemTextEntryStatus;
     value_text: string;
@@ -1363,6 +1387,13 @@ export default function AdminClient() {
     () => portalSystemTextGroups.find(([groupName]) => groupName === portalSystemTextActiveGroup)?.[1] ?? portalSystemTextGroups[0]?.[1] ?? [],
     [portalSystemTextActiveGroup, portalSystemTextGroups],
   );
+  const activeMarketExplanationStandardDefinitions = useMemo(
+    () => marketExplanationStandardDefinitions.filter((definition) => {
+      const tab = MARKET_EXPLANATION_STANDARD_TABS.find((entry) => entry.id === definition.tab);
+      return (tab?.label ?? definition.tab) === marketExplanationTab;
+    }),
+    [marketExplanationStandardDefinitions, marketExplanationTab],
+  );
   const portalContentMetaMap = useMemo(
     () => new Map(portalContentMetas.map((meta) => [`${meta.page_key}::${meta.section_key}::${meta.locale}`, meta] as const)),
     [portalContentMetas],
@@ -1490,6 +1521,8 @@ export default function AdminClient() {
       void loadPortalCms();
     } else if (restoredActiveView === "system_texts") {
       void loadPortalCms();
+    } else if (restoredActiveView === "market_texts") {
+      void loadMarketExplanationStandardTexts();
     } else if (restoredActiveView === "portal_cms") {
       void loadPortalCms();
     }
@@ -1510,6 +1543,13 @@ export default function AdminClient() {
       setPortalSystemTextActiveGroup(portalSystemTextGroups[0]?.[0] ?? "Navigation");
     }
   }, [portalSystemTextActiveGroup, portalSystemTextGroups]);
+
+  useEffect(() => {
+    if (MARKET_EXPLANATION_STANDARD_TABS.length === 0) return;
+    if (!MARKET_EXPLANATION_STANDARD_TABS.some((tab) => tab.label === marketExplanationTab)) {
+      setMarketExplanationTab(MARKET_EXPLANATION_STANDARD_TABS[0]?.label ?? "Übersicht");
+    }
+  }, [marketExplanationTab]);
 
   useEffect(() => {
     if (!adminViewStateHydrated || !adminViewStateAppliedRef.current) return;
@@ -1879,6 +1919,9 @@ export default function AdminClient() {
         text: "Fachliche Standard- und Erklärungstexte für den Immobilienmarkt strukturiert vorbereiten.",
         onClick: () => {
           setActiveView("market_texts");
+          void run("Markterklärungstexte laden", async () => {
+            await loadMarketExplanationStandardTexts();
+          }, { showSuccessModal: false });
         },
       },
       {
@@ -2417,6 +2460,20 @@ export default function AdminClient() {
     setPortalSystemTextLocale((prev) => nextLocales.some((row) => row.locale === prev) ? prev : fallbackLocale);
   }
 
+  async function loadMarketExplanationStandardTexts() {
+    const data = await api<{
+      definitions?: MarketExplanationStandardTextDefinition[];
+      entries?: MarketExplanationStandardEntry[];
+    }>("/api/admin/market-explanation-standard-texts");
+    const nextDefinitions = data.definitions ?? MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS;
+    const nextEntries = data.entries ?? [];
+    setMarketExplanationStandardDefinitions(nextDefinitions);
+    setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
+  }
+
   function resetNewPortalLocaleDraft() {
     setNewPortalLocaleDraft({
       locale: "",
@@ -2626,6 +2683,27 @@ export default function AdminClient() {
       locales: portalLocaleConfigs,
       definitions: data.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS,
       entries: data.entries ?? [],
+    }));
+  }
+
+  async function saveMarketExplanationStandardTexts() {
+    const rows = marketExplanationStandardDefinitions.map((definition) => ({
+      key: definition.key,
+      value_text: marketExplanationStandardDrafts[definition.key] ?? "",
+    }));
+    const data = await api<{
+      definitions?: MarketExplanationStandardTextDefinition[];
+      entries?: MarketExplanationStandardEntry[];
+    }>("/api/admin/market-explanation-standard-texts", {
+      method: "POST",
+      body: JSON.stringify({ entries: rows }),
+    });
+    const nextDefinitions = data.definitions ?? MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS;
+    const nextEntries = data.entries ?? [];
+    setMarketExplanationStandardDefinitions(nextDefinitions);
+    setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
+      definitions: nextDefinitions,
+      entries: nextEntries,
     }));
   }
 
@@ -3806,6 +3884,9 @@ export default function AdminClient() {
             style={modeButtonStyle(activeView === "market_texts")}
             onClick={() => {
               setActiveView("market_texts");
+              void run("Markterklärungstexte laden", async () => {
+                await loadMarketExplanationStandardTexts();
+              }, { showSuccessModal: false });
             }}
             title="Markterklärungstexte"
             onMouseEnter={(event) => updateHoveredAdminNav("market_texts", event.currentTarget)}
@@ -5439,23 +5520,120 @@ export default function AdminClient() {
       <section style={cardStyle}>
         <h2 style={h2Style}>Markterklärungstexte</h2>
         <p style={mutedStyle}>
-          Fachliche Standard- und Erklärungstexte für den Immobilienmarkt werden hier künftig getrennt von UI-Systemtexten gepflegt.
+          Fachliche Markttexte sind hier getrennt von UI-Systemtexten organisiert. Standardtexte mit Text-Key werden deutsch als Systempartner-Basis gepflegt, statische Erklärungstexte ohne Key folgen separat.
         </p>
 
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
-          <div style={partnerTabBarStyle}>
-            {["Marktüberblick", "Preise", "Mieten", "Rendite", "Nachfrage & Angebot", "Methodik & Begriffe"].map((tab) => (
-              <button key={tab} style={partnerTabButtonStyle(marketExplanationTab === tab)} onClick={() => setMarketExplanationTab(tab)}>
-                {tab}
+          <div style={{ ...rowStyle, alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 700, color: "#0f172a" }}>Markttexte-Arbeitsbereich</div>
+              <div style={{ ...mutedStyle, marginTop: 4 }}>
+                Die Tab-Reihenfolge folgt exakt der Frontend-Navigation des Immobilienmarkts.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <button
+                style={partnerTabButtonStyle(marketExplanationMode === "standard")}
+                disabled={busy}
+                onClick={() => setMarketExplanationMode("standard")}
+              >
+                Standardtexte
+              </button>
+              <button
+                style={partnerTabButtonStyle(marketExplanationMode === "static")}
+                disabled={busy}
+                onClick={() => setMarketExplanationMode("static")}
+              >
+                Statische Erklärungstexte
+              </button>
+              {marketExplanationMode === "standard" ? (
+                <>
+                  <button
+                    style={btnGhostStyle}
+                    disabled={busy}
+                    onClick={() =>
+                      run("Standardtexte neu laden", async () => {
+                        await loadMarketExplanationStandardTexts();
+                      })
+                    }
+                  >
+                    Neu laden
+                  </button>
+                  <button
+                    style={btnStyle}
+                    disabled={busy}
+                    onClick={() =>
+                      run("Standardtexte speichern", async () => {
+                        await saveMarketExplanationStandardTexts();
+                      })
+                    }
+                  >
+                    Standardtexte speichern
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </div>
+
+          <div style={{ ...partnerTabBarStyle, marginTop: 14 }}>
+            {MARKET_EXPLANATION_STANDARD_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                style={partnerTabButtonStyle(marketExplanationTab === tab.label)}
+                onClick={() => setMarketExplanationTab(tab.label)}
+              >
+                {tab.label}
+                {marketExplanationMode === "standard" ? (
+                  <span style={{ marginLeft: 8, opacity: 0.75 }}>
+                    {marketExplanationStandardDefinitions.filter((definition) => definition.tab === tab.id).length}
+                  </span>
+                ) : null}
               </button>
             ))}
           </div>
-          <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc" }}>
-            <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{marketExplanationTab}</div>
-            <div style={{ ...mutedStyle, lineHeight: 1.6 }}>
-              Dieser Bereich ist als eigener Redaktionsarbeitsplatz für fachliche Standardtexte vorgesehen, zum Beispiel KPI-Erklärungen wie Wohnungssaldo, Marktüberblick, Preis- und Mietdefinitionen sowie methodische Kurztexte. Die Datenstruktur wird im nächsten Schritt separat zu den Systemtexten aufgebaut, damit UI-Texte und fachliche Erklärungstexte nicht vermischt werden.
+
+          {marketExplanationMode === "standard" ? (
+            <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+              {activeMarketExplanationStandardDefinitions.map((definition) => (
+                <div key={definition.key} style={{ border: "1px solid #dbe4ee", borderRadius: 8, padding: 10, background: "#fff" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                        {getTextKeyLabel(definition.key, definition.key)}
+                      </div>
+                      <div style={mutedStyle}>
+                        <code>{definition.key}</code>
+                      </div>
+                    </div>
+                    <span style={{ ...mutedStyle, fontSize: 12 }}>Quelle: deutsche Standarddatei für Systempartner</span>
+                  </div>
+                  <textarea
+                    style={{ ...inputStyle, minHeight: 120, marginTop: 10, resize: "vertical" }}
+                    value={marketExplanationStandardDrafts[definition.key] ?? ""}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setMarketExplanationStandardDrafts((prev) => ({
+                        ...prev,
+                        [definition.key]: nextValue,
+                      }));
+                    }}
+                  />
+                </div>
+              ))}
+              {activeMarketExplanationStandardDefinitions.length === 0 ? (
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc", ...mutedStyle }}>
+                  Für diesen Tab sind aktuell noch keine Standardtexte mit Text-Key hinterlegt.
+                </div>
+              ) : null}
             </div>
-          </div>
+          ) : (
+            <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc" }}>
+              <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{marketExplanationTab}</div>
+              <div style={{ ...mutedStyle, lineHeight: 1.6 }}>
+                Dieser zweite Modus ist für kurze KPI-Erklärungen, Definitionen und FAQ-/Hinweistexte ohne bestehenden Text-Key vorgesehen. Diese Texte sitzen heute teilweise noch direkt im Code und werden im nächsten Schritt in ein separates, KI-übersetzbares Modell überführt.
+              </div>
+            </div>
+          )}
         </div>
       </section>
       ) : null}
