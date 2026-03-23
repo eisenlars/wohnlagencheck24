@@ -749,7 +749,7 @@ export default function OffersManager(props: Props) {
                     <select
                       value={selectedLlmIntegrationId || llmOptions[0].id}
                       onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                      style={visibilitySelectStyle}
+                      style={visibilityModelSelectStyle}
                       aria-label="KI-Modell auswählen"
                     >
                       {llmOptions.map((option) => (
@@ -1803,6 +1803,12 @@ const visibilitySelectStyle: React.CSSProperties = {
   fontWeight: 600,
   boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
   minWidth: '420px',
+};
+
+const visibilityModelSelectStyle: React.CSSProperties = {
+  ...visibilitySelectStyle,
+  minWidth: '320px',
+  maxWidth: '100%',
 };
 
 const visibilitySelectChevronStyle: React.CSSProperties = {
