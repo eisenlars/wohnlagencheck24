@@ -5696,7 +5696,7 @@ export default function AdminClient() {
                         <input
                           type="checkbox"
                           checked={row.partner_bookable}
-                          disabled={row.status !== "live"}
+                          disabled={!row.is_active}
                           onChange={(e) => {
                             const checked = e.target.checked;
                             setPortalLocaleConfigs((prev) => prev.map((item, itemIdx) => itemIdx === idx ? { ...item, partner_bookable: checked } : item));
