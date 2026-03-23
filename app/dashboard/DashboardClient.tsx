@@ -1793,7 +1793,6 @@ export default function DashboardClient() {
                   ) : null}
                   {headerConfig.showDistrictSelector && scopedMainDistricts.length > 0 ? (
                     <div style={headerDistrictSelectorWrapStyle}>
-                      <div style={headerDistrictSelectorLabelStyle}>Gebiet wechseln</div>
                       <div style={headerDistrictSelectorRowStyle}>
                         {scopedMainDistricts.map((district) => {
                           const active = district.area_id === effectiveAreaConfig.area_id;
@@ -2371,15 +2370,6 @@ const regionTitleStyle = {
 
 const headerDistrictSelectorWrapStyle: React.CSSProperties = {
   marginTop: '14px',
-};
-
-const headerDistrictSelectorLabelStyle: React.CSSProperties = {
-  fontSize: '11px',
-  fontWeight: 700,
-  color: '#64748b',
-  textTransform: 'uppercase',
-  letterSpacing: '0.08em',
-  marginBottom: '8px',
 };
 
 const headerDistrictSelectorRowStyle: React.CSSProperties = {
