@@ -111,6 +111,11 @@ Alternative kurzfristig:
   - `partner_requests` (Gesuche)
 - Readmodell:
   - `partner_property_offers` (portaloptimierte Angebotsausgabe)
+- Ausspiel-/Matching-Layer:
+  - `partner_offer_area_targets` (lokale Angebotszuordnung)
+  - `public_offer_entries`
+  - `public_request_entries`
+  - `public_reference_entries`
 - Override:
   - `partner_property_overrides` (redaktionelle Unique-Content-Felder pro Objekt)
 
@@ -118,6 +123,8 @@ Regel:
 - Sync schreibt Raw + Readmodell.
 - Sync darf keine Override-Felder ueberschreiben.
 - Objektidentitaet ueber `(partner_id, provider/source, external_id)`.
+- `partner_property_offers` bleibt partnergebunden; die regionale Sichtbarkeit entsteht erst in den Public-Projektionen.
+- Angebotstexte/SEO werden ueber Overrides und Projektionen public-normalisiert, Medien-/Energiedetails bleiben im Angebots-`raw`.
 - Referenzen: keine exakte Adresse/Preis in der Portal-Ausgabe; Zielausgabe ist `image + title + text`.
 - Gesuche: Mehrfach-Regionen strukturiert in `normalized_payload.region_targets` und `normalized_payload.region_target_keys`.
 

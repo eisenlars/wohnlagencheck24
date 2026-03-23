@@ -132,10 +132,15 @@ Migrations‑Snippets:
 Lifecycle-Hinweis (Angebote):
 - Identitaet ueber `(partner_id, provider/source, external_id)`.
 - Sync aktualisiert Raw/Readmodell; bestehende Inhalte in `partner_property_overrides` werden nicht ueberschrieben.
-- `partner_property_offers` wird aktuell als Readmodell mit `raw` beschrieben.
+- `partner_property_offers` ist das kanonische partnergebundene Angebots-Readmodell mit `raw`.
 - `source_payload` ist derzeit kein erwartetes Write-Feld fuer `partner_property_offers`.
-- `partner_property_offers` ist kanonisch partnergebunden; die regionale Ausspielung erfolgt erst spaeter ueber `public_offer_entries.visible_area_id`.
-- relevante Geo-/Adresssignale aus dem CRM bleiben im Angebots-`raw` erhalten (u. a. `zip_code`, `city`, `region`, `lat`, `lng`) und dienen spaeter als Basis fuer lokale Gebietszurodnung.
+- die regionale Ausspielung erfolgt aktuell ueber `public_offer_entries.visible_area_id`.
+- relevante Geo-/Adresssignale aus dem CRM bleiben im Angebots-`raw` erhalten (u. a. `zip_code`, `city`, `region`, `lat`, `lng`) und dienen als Basis fuer lokale Gebietszurodnung.
+- `partner_offer_area_targets` materialisiert das lokale Matching pro Angebot.
+- `partner_area_map.offer_visibility_mode` steuert je Gebiet:
+  - `partner_wide` = alle Partner-Angebote im Gebiet
+  - `strict_local` = nur lokal gematchte Angebote im Gebiet
+- fuer die Public-Detailseite kommen Texte/SEO aus `public_offer_entries`, Medien und Energie weiter aus `partner_property_offers.raw`.
 
 Lifecycle-Hinweis (Referenzen):
 - In `partner_references.normalized_payload` keine exakte Adresse und keine Preisangaben fuehren.

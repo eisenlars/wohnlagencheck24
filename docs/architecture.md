@@ -559,33 +559,39 @@ Mapping (Beispiel):
 | `street` / `house_number` / `zip_code` / `city` / `region` / `country` | `raw` (Geo-/Adressbasis) |
 | `lat` / `lng`            | `raw.lat`, `raw.lng`                            |
 | `hide_address`           | `raw.hide_address`                              |
-| `images[].url`           | `image_url` (erstes), `raw.gallery` (alle)      |
+| `images[]`               | `image_url` (erstes echtes Bild), `raw.gallery`, `raw.gallery_urls`, `raw.gallery_assets` |
 | `exposee_id`             | `raw.exposee_id`                                |
 | `description_note`       | `raw.description`                               |
 | `location_note`          | `raw.location`                                  |
 | `furnishing_note`        | `raw.features_note`                             |
-| `energy_*`               | `raw.energy`                                    |
+| `energy_*`               | `raw.energy` (normierter Snapshot)              |
 | `custom_fields`          | `raw.custom_fields`                             |
+| `status` / `sub_status`  | `raw.status`, `raw.sub_status`                  |
 
 Hinweis:
 - Angebots-Sync schreibt fuer `partner_property_offers` nur das Readmodell inkl. `raw`
 - `source_payload` wird dort aktuell nicht geschrieben
-- die Geo-/Adressfelder in `raw` sind die Grundlage fuer spaetere automatische Angebots-zu-Gebiet-Zuordnung (`strict_local`)
+- `raw` ist damit die kanonische Auswertebasis fuer Medien, Energie, Geo-Signale und Detailfelder
+- die Geo-/Adressfelder in `raw` sind die Grundlage fuer die lokale Angebotszuordnung und `strict_local`
 
-**Geplante Angebots-Gebietszuordnung (Phase 1/Grundlage):**
+**Aktuelle Angebots-Gebietszuordnung:**
 - interne Matching-Signale werden aus Angebots-`raw` gelesen:
   - `lat/lng`
   - `zip_code`
   - `city`
   - `region`
   - `country`
-- Matching-Prioritaet fuer spaetere `strict_local`-Logik:
+- Matching-Prioritaet:
   1. `lat/lng` vorhanden (Grundlage fuer spaeteres Polygon-/Map-Matching)
   2. `zip_code + city`
   3. `city + region`
   4. `city`
   5. `region`
-- in Phase 1 wird diese Zuordnung nur als interne Hilfslogik vorbereitet; die Public-Ausspielung bleibt unveraendert `partner_wide`
+- die Zuordnung wird in `partner_offer_area_targets` materialisiert
+- `partner_area_map.offer_visibility_mode` steuert die aktuelle Public-Ausspielung:
+  - `partner_wide`: alle Partner-Angebote innerhalb des zugewiesenen Gebiets
+  - `strict_local`: nur lokal gematchte Angebote innerhalb des zugewiesenen Gebiets
+- die physische Objektlage und das Ausspielgebiet bleiben bewusst getrennt
 
 **Partner‑Exposé‑URL (optional):**  
 `detail_url = detail_url_template` mit Platzhaltern:
@@ -650,7 +656,7 @@ GET /api/partner-sync?token=<CRON_SECRET>
 
 Flow:
 1. `partner_integrations` (kind=`crm`) laden
-2. Provider‑Adapter (Propstack, spaeter onOffice)
+2. Provider‑Adapter (Propstack, onOffice)
 3. Raw-Sync je Ressource:
    - Angebote -> `partner_listings`
    - Referenzen -> `partner_references`
@@ -662,14 +668,15 @@ Flow:
 Verbindliche Schichtung:
 1. Raw-Sync (`partner_listings`, `partner_references`, `partner_requests`)
 2. Portal-Readmodell (`partner_property_offers`)
-3. Angebots-Gebietszuordnung (`partner_offer_area_targets`) fuer spaetere lokale Sichtbarkeitsregeln
+3. Angebots-Gebietszuordnung (`partner_offer_area_targets`)
 4. Regionale Projection-Layer (`public_offer_entries`, `public_request_entries`, `public_reference_entries`)
 5. Redaktioneller Layer (`partner_property_overrides`)
+6. Freigegebene Uebersetzungen (`partner_property_offer_i18n` und analoge Tabellen)
 
 Ergaenzung zur Angebotslogik:
 - `partner_property_offers` bleibt kanonisch partnergebunden
 - lokale Angebotszuordnung wird nicht hart im Kernmodell gespeichert, sondern separat in `partner_offer_area_targets`
-- dadurch koennen `partner_wide` und spaeter `strict_local` parallel unterstuetzt werden
+- dadurch koennen `partner_wide` und `strict_local` parallel unterstuetzt werden
 - dieselbe Zuordnungsschicht ist spaeter auch fuer Karten, Geo-Filter und KI-Suchagenten nutzbar
 
 **Wichtig:**  
@@ -747,7 +754,7 @@ insert into public.partner_integrations (
 
 ### 9.7.1 Gebietsbezogene Sichtbarkeitsmodi
 
-`partner_area_map` steuert nicht nur, **wo** ein Partner aktiv/public-live ist, sondern perspektivisch auch, **wie** Assets je Gebiet ausgespielt werden.
+`partner_area_map` steuert nicht nur, **wo** ein Partner aktiv/public-live ist, sondern auch, **wie** Assets je Gebiet ausgespielt werden.
 
 Vorbereitete Felder:
 - `offer_visibility_mode`
@@ -757,7 +764,7 @@ Gueltige Werte:
 - `partner_wide`
   - auf Seiten dieses Gebiets werden alle Assets des Partners ausgespielt
 - `strict_local`
-  - auf Seiten dieses Gebiets werden spaeter nur lokal passende Assets ausgespielt
+  - auf Seiten dieses Gebiets werden nur lokal passende Assets ausgespielt
 
 Aktueller Betriebsstand:
 - Default fuer beide Modi ist `partner_wide`
