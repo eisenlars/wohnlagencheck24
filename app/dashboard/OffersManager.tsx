@@ -76,6 +76,10 @@ type EnergySnapshot = {
   construction_year?: number | null;
   heating_energy_source?: string | null;
   efficiency_class?: string | null;
+  certificate_availability?: string | null;
+  certificate_start_date?: string | null;
+  certificate_end_date?: string | null;
+  warm_water_included?: boolean | null;
   demand?: number | null;
   year?: number | null;
 };
@@ -97,6 +101,16 @@ type DetailsSnapshot = {
   garden?: boolean | null;
   elevator?: boolean | null;
   address_hidden?: boolean | null;
+};
+
+type DocumentAsset = {
+  url: string;
+  title: string | null;
+  name: string | null;
+  position: number | null;
+  kind: 'document' | 'floorplan' | 'video';
+  is_exposee: boolean | null;
+  on_landing_page: boolean | null;
 };
 
 type Props = {
@@ -185,6 +199,10 @@ function parseEnergySnapshot(value: unknown): EnergySnapshot | null {
     construction_year: asNumber(record.construction_year),
     heating_energy_source: asText(record.heating_energy_source),
     efficiency_class: asText(record.efficiency_class),
+    certificate_availability: asText(record.certificate_availability),
+    certificate_start_date: asText(record.certificate_start_date),
+    certificate_end_date: asText(record.certificate_end_date),
+    warm_water_included: parseBoolean(record.warm_water_included),
     demand: asNumber(record.demand),
     year: asNumber(record.year),
   };
@@ -216,6 +234,62 @@ function parseDetailsSnapshot(value: unknown): DetailsSnapshot | null {
     elevator: parseBoolean(record.elevator),
     address_hidden: parseBoolean(record.address_hidden),
   };
+}
+
+function parseDocumentAssets(value: unknown): DocumentAsset[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      const record = entry && typeof entry === 'object' ? entry as Record<string, unknown> : null;
+      if (!record) return null;
+      const url = asText(record.url);
+      if (!url) return null;
+      const normalizedKind = String(record.kind ?? '').trim().toLowerCase();
+      const kind: DocumentAsset['kind'] = normalizedKind === 'floorplan'
+        ? 'floorplan'
+        : normalizedKind === 'video'
+          ? 'video'
+          : 'document';
+      return {
+        url,
+        title: asText(record.title),
+        name: asText(record.name),
+        position: asNumber(record.position),
+        kind,
+        is_exposee: parseBoolean(record.is_exposee),
+        on_landing_page: parseBoolean(record.on_landing_page),
+      } satisfies DocumentAsset;
+    })
+    .filter((entry): entry is DocumentAsset => Boolean(entry))
+    .sort((left, right) => {
+      if (left.position == null && right.position == null) return left.url.localeCompare(right.url);
+      if (left.position == null) return 1;
+      if (right.position == null) return -1;
+      return left.position - right.position;
+    });
+}
+
+function uniqDocumentsByUrl(items: DocumentAsset[]): DocumentAsset[] {
+  const seen = new Set<string>();
+  const out: DocumentAsset[] = [];
+  for (const item of items) {
+    if (seen.has(item.url)) continue;
+    seen.add(item.url);
+    out.push(item);
+  }
+  return out;
+}
+
+function formatDateLabel(value: string | null | undefined): string {
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat('de-DE').format(parsed);
+}
+
+function formatBooleanLabel(value: boolean | null | undefined): string {
+  if (value == null) return '—';
+  return value ? 'ja' : 'nein';
 }
 
 export default function OffersManager(props: Props) {
@@ -365,6 +439,25 @@ export default function OffersManager(props: Props) {
   const documentAssets = useMemo(
     () => galleryAssets.filter((asset) => asset.kind === 'document'),
     [galleryAssets],
+  );
+  const documentFiles = useMemo(
+    () => parseDocumentAssets(selectedRaw.documents),
+    [selectedRaw],
+  );
+  const combinedDocumentAssets = useMemo(
+    () => uniqDocumentsByUrl([
+      ...documentFiles,
+      ...documentAssets.map((asset) => ({
+        url: asset.url,
+        title: asset.title,
+        name: null,
+        position: asset.position,
+        kind: 'document' as const,
+        is_exposee: null,
+        on_landing_page: null,
+      })),
+    ]),
+    [documentAssets, documentFiles],
   );
   const activePhotoAsset = photoAssets[activePhotoIndex] ?? null;
   const activeFloorplanAsset = floorplanAssets[activeFloorplanIndex] ?? null;
@@ -932,6 +1025,50 @@ export default function OffersManager(props: Props) {
                           : '—'}
                     </div>
                   </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Nutzfläche</div>
+                    <div style={offerSummaryValueStyle}>
+                      {detailsSnapshot?.usable_area_sqm != null ? `${detailsSnapshot.usable_area_sqm} m²` : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Grundstück</div>
+                    <div style={offerSummaryValueStyle}>
+                      {detailsSnapshot?.plot_area_sqm != null ? `${detailsSnapshot.plot_area_sqm} m²` : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Schlafzimmer</div>
+                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bedrooms ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Badezimmer</div>
+                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bathrooms ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Etage</div>
+                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.floor ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Zustand</div>
+                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.condition ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Stellplatz</div>
+                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.parking ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Balkon</div>
+                    <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.balcony)}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Terrasse</div>
+                    <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.terrace)}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Garten</div>
+                    <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.garden)}</div>
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -1118,12 +1255,12 @@ export default function OffersManager(props: Props) {
                 <div style={mediaSectionStyle}>
                   <div style={mediaSectionHeadStyle}>
                     Unterlagen
-                    <span style={mediaCountBadgeStyle}>{documentAssets.length}</span>
+                    <span style={mediaCountBadgeStyle}>{combinedDocumentAssets.length}</span>
                   </div>
-                  <div style={mediaSectionHintStyle}>Berechnungen und sonstige CRM-Grafiken werden hier gesammelt.</div>
-                  {documentAssets.length > 0 ? (
+                  <div style={mediaSectionHintStyle}>CRM-Unterlagen, Exposés und weitere Dateien werden hier gesammelt.</div>
+                  {combinedDocumentAssets.length > 0 ? (
                     <div style={mediaCompactListStyle}>
-                      {documentAssets.map((asset, index) => (
+                      {combinedDocumentAssets.map((asset, index) => (
                         <a
                           key={`${asset.url}-${index}`}
                           href={asset.url}
@@ -1131,8 +1268,14 @@ export default function OffersManager(props: Props) {
                           rel="noreferrer"
                           style={mediaLinkCardStyle}
                         >
-                          <span style={mediaLinkTitleStyle}>{asset.title ?? `Unterlage ${index + 1}`}</span>
-                          <span style={mediaLinkMetaStyle}>Datei extern öffnen</span>
+                          <span style={mediaLinkTitleStyle}>{asset.title ?? asset.name ?? `Unterlage ${index + 1}`}</span>
+                          <span style={mediaLinkMetaStyle}>
+                            {asset.kind === 'video'
+                              ? 'Video extern öffnen'
+                              : asset.is_exposee
+                                ? 'Exposé extern öffnen'
+                                : 'Datei extern öffnen'}
+                          </span>
                         </a>
                       ))}
                     </div>
@@ -1173,6 +1316,22 @@ export default function OffersManager(props: Props) {
                   <div>
                     <div style={offerSummaryLabelStyle}>Effizienzklasse</div>
                     <div style={offerSummaryValueStyle}>{energySnapshot?.efficiency_class ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Ausweis vorhanden</div>
+                    <div style={offerSummaryValueStyle}>{energySnapshot?.certificate_availability ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Ausgestellt am</div>
+                    <div style={offerSummaryValueStyle}>{formatDateLabel(energySnapshot?.certificate_start_date)}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Gültig bis</div>
+                    <div style={offerSummaryValueStyle}>{formatDateLabel(energySnapshot?.certificate_end_date)}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Warmwasser enthalten</div>
+                    <div style={offerSummaryValueStyle}>{formatBooleanLabel(energySnapshot?.warm_water_included)}</div>
                   </div>
                 </div>
                 {missingEnergyFields.length > 0 ? (

@@ -2596,6 +2596,33 @@ h6 {
   color: #3d3f42;
 }
 
+.offer-detail-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.9rem 1rem;
+  margin: 0;
+}
+
+.offer-detail-facts div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.85rem;
+  background: #f7f8fa;
+}
+
+.offer-detail-facts dt {
+  color: #6c757d;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.offer-detail-facts dd {
+  margin: 0;
+  color: #111;
+  font-weight: 600;
+}
+
 .offer-detail-energy {
   display: grid;
   gap: 0.75rem;
@@ -2618,6 +2645,36 @@ h6 {
   margin: 0;
   font-weight: 600;
   color: #111;
+}
+
+.offer-detail-documents {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.offer-detail-document {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  background: #f7f8fa;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(17, 17, 17, 0.06);
+}
+
+.offer-detail-document:hover {
+  background: #eef1f4;
+}
+
+.offer-detail-document-title {
+  font-weight: 600;
+  color: #111;
+}
+
+.offer-detail-document-meta {
+  color: #6c757d;
+  font-size: 0.85rem;
 }
 
 .offer-detail-contact {

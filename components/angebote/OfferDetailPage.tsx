@@ -17,6 +17,50 @@ type MediaAsset = {
   kind: MediaAssetKind;
 };
 
+type DocumentAsset = {
+  url: string;
+  title: string | null;
+  name: string | null;
+  position: number | null;
+  kind: "document" | "floorplan" | "video";
+  is_exposee: boolean | null;
+  on_landing_page: boolean | null;
+};
+
+type EnergySnapshot = {
+  certificate_type: string | null;
+  value: number | null;
+  value_kind: "bedarf" | "verbrauch" | null;
+  construction_year: number | null;
+  heating_energy_source: string | null;
+  efficiency_class: string | null;
+  certificate_availability: string | null;
+  certificate_start_date: string | null;
+  certificate_end_date: string | null;
+  warm_water_included: boolean | null;
+  demand: number | null;
+  year: number | null;
+};
+
+type DetailsSnapshot = {
+  living_area_sqm: number | null;
+  usable_area_sqm: number | null;
+  plot_area_sqm: number | null;
+  rooms: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  floor: number | null;
+  construction_year: number | null;
+  condition: string | null;
+  availability: string | null;
+  parking: string | null;
+  balcony: boolean | null;
+  terrace: boolean | null;
+  garden: boolean | null;
+  elevator: boolean | null;
+  address_hidden: boolean | null;
+};
+
 type OfferDetailPageProps = {
   offer: Offer;
   overrides?: OfferOverrides | null;
@@ -67,6 +111,11 @@ function asNumber(value: unknown): number | null {
   return null;
 }
 
+function asBoolean(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  return null;
+}
+
 function parseMediaAssets(value: unknown): MediaAsset[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -108,6 +157,109 @@ function uniqByUrl(items: MediaAsset[]): MediaAsset[] {
     out.push(item);
   }
   return out;
+}
+
+function parseDocumentAssets(value: unknown): DocumentAsset[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      const record = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : null;
+      if (!record) return null;
+      const url = asText(record.url);
+      if (!url) return null;
+      const normalizedKind = String(record.kind ?? "").trim().toLowerCase();
+      const kind: DocumentAsset["kind"] = normalizedKind === "floorplan"
+        ? "floorplan"
+        : normalizedKind === "video"
+          ? "video"
+          : "document";
+      return {
+        url,
+        title: asText(record.title),
+        name: asText(record.name),
+        position: asNumber(record.position),
+        kind,
+        is_exposee: asBoolean(record.is_exposee),
+        on_landing_page: asBoolean(record.on_landing_page),
+      } satisfies DocumentAsset;
+    })
+    .filter((entry): entry is DocumentAsset => Boolean(entry))
+    .sort((left, right) => {
+      if (left.position == null && right.position == null) return left.url.localeCompare(right.url);
+      if (left.position == null) return 1;
+      if (right.position == null) return -1;
+      return left.position - right.position;
+    });
+}
+
+function uniqDocumentsByUrl(items: DocumentAsset[]): DocumentAsset[] {
+  const seen = new Set<string>();
+  const out: DocumentAsset[] = [];
+  for (const item of items) {
+    if (seen.has(item.url)) continue;
+    seen.add(item.url);
+    out.push(item);
+  }
+  return out;
+}
+
+function parseEnergySnapshot(value: unknown): EnergySnapshot | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const normalizedValueKind = String(record.value_kind ?? "").trim().toLowerCase();
+  return {
+    certificate_type: asText(record.certificate_type),
+    value: asNumber(record.value),
+    value_kind: normalizedValueKind === "bedarf"
+      ? "bedarf"
+      : normalizedValueKind === "verbrauch"
+        ? "verbrauch"
+        : null,
+    construction_year: asNumber(record.construction_year),
+    heating_energy_source: asText(record.heating_energy_source),
+    efficiency_class: asText(record.efficiency_class),
+    certificate_availability: asText(record.certificate_availability),
+    certificate_start_date: asText(record.certificate_start_date),
+    certificate_end_date: asText(record.certificate_end_date),
+    warm_water_included: asBoolean(record.warm_water_included),
+    demand: asNumber(record.demand),
+    year: asNumber(record.year),
+  };
+}
+
+function parseDetailsSnapshot(value: unknown): DetailsSnapshot | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  return {
+    living_area_sqm: asNumber(record.living_area_sqm),
+    usable_area_sqm: asNumber(record.usable_area_sqm),
+    plot_area_sqm: asNumber(record.plot_area_sqm),
+    rooms: asNumber(record.rooms),
+    bedrooms: asNumber(record.bedrooms),
+    bathrooms: asNumber(record.bathrooms),
+    floor: asNumber(record.floor),
+    construction_year: asNumber(record.construction_year),
+    condition: asText(record.condition),
+    availability: asText(record.availability),
+    parking: asText(record.parking),
+    balcony: asBoolean(record.balcony),
+    terrace: asBoolean(record.terrace),
+    garden: asBoolean(record.garden),
+    elevator: asBoolean(record.elevator),
+    address_hidden: asBoolean(record.address_hidden),
+  };
+}
+
+function formatBooleanLabel(value: boolean | null | undefined): string {
+  if (value == null) return "—";
+  return value ? "Ja" : "Nein";
+}
+
+function formatDateLabel(value: string | null | undefined): string {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat("de-DE").format(parsed);
 }
 
 export function OfferDetailPage(props: OfferDetailPageProps) {
@@ -190,7 +342,26 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const activeFloorplan = floorplanAssets[resolvedFloorplanIndex] ?? null;
   const activeLocationMap = locationMapAssets[resolvedLocationMapIndex] ?? null;
   const features = Array.isArray(raw["features"]) ? (raw["features"] as string[]) : [];
-  const energy = asRecord(raw["energy"]) ?? {};
+  const energySnapshot = useMemo(() => parseEnergySnapshot(raw["energy"]), [raw]);
+  const detailsSnapshot = useMemo(() => parseDetailsSnapshot(raw["details"]), [raw]);
+  const rawDocuments = useMemo(() => parseDocumentAssets(raw["documents"]), [raw]);
+  const documentAssets = useMemo(
+    () => uniqDocumentsByUrl([
+      ...rawDocuments,
+      ...galleryAssets
+        .filter((asset) => asset.kind === "document")
+        .map((asset) => ({
+          url: asset.url,
+          title: asset.title,
+          name: null,
+          position: asset.position,
+          kind: "document" as const,
+          is_exposee: null,
+          on_landing_page: null,
+        })),
+    ]),
+    [galleryAssets, rawDocuments],
+  );
 
   const title = offer.seoH1 || offer.title || texts.object_generic;
   const teaserText = offer.shortDescription || null;
@@ -206,6 +377,34 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const highlights =
     offer.highlights ?? (Array.isArray(raw["highlights"]) ? (raw["highlights"] as string[]) : []);
   const imageAltTexts = offer.imageAltTexts ?? [];
+  const detailFacts = [
+    detailsSnapshot?.usable_area_sqm != null ? { label: "Nutzfläche", value: `${formatArea(detailsSnapshot.usable_area_sqm)} m²` } : null,
+    detailsSnapshot?.plot_area_sqm != null ? { label: "Grundstück", value: `${formatArea(detailsSnapshot.plot_area_sqm)} m²` } : null,
+    detailsSnapshot?.bedrooms != null ? { label: "Schlafzimmer", value: formatRooms(detailsSnapshot.bedrooms) } : null,
+    detailsSnapshot?.bathrooms != null ? { label: "Badezimmer", value: formatRooms(detailsSnapshot.bathrooms) } : null,
+    detailsSnapshot?.floor != null ? { label: "Etage", value: String(detailsSnapshot.floor) } : null,
+    detailsSnapshot?.condition ? { label: "Zustand", value: detailsSnapshot.condition } : null,
+    detailsSnapshot?.availability ? { label: "Verfügbarkeit", value: detailsSnapshot.availability } : null,
+    detailsSnapshot?.parking ? { label: "Stellplatz", value: detailsSnapshot.parking } : null,
+    detailsSnapshot?.balcony != null ? { label: "Balkon", value: formatBooleanLabel(detailsSnapshot.balcony) } : null,
+    detailsSnapshot?.terrace != null ? { label: "Terrasse", value: formatBooleanLabel(detailsSnapshot.terrace) } : null,
+    detailsSnapshot?.garden != null ? { label: "Garten", value: formatBooleanLabel(detailsSnapshot.garden) } : null,
+  ].filter((item): item is { label: string; value: string } => Boolean(item));
+  const energyFacts = [
+    { label: texts.energy_class, value: energySnapshot?.efficiency_class ?? "—" },
+    {
+      label: texts.energy_demand,
+      value: energySnapshot?.value != null
+        ? `${energySnapshot.value}${energySnapshot.value_kind ? ` (${energySnapshot.value_kind})` : ""}`
+        : "—",
+    },
+    { label: texts.primary_energy_source, value: energySnapshot?.heating_energy_source ?? "—" },
+    { label: "Ausweisart", value: energySnapshot?.certificate_type ?? "—" },
+    { label: "Ausweis vorhanden", value: energySnapshot?.certificate_availability ?? "—" },
+    { label: "Ausgestellt am", value: formatDateLabel(energySnapshot?.certificate_start_date) },
+    { label: "Gültig bis", value: formatDateLabel(energySnapshot?.certificate_end_date) },
+    { label: "Warmwasser enthalten", value: formatBooleanLabel(energySnapshot?.warm_water_included) },
+  ];
 
   return (
     <div className="container text-dark">
@@ -377,6 +576,20 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         </section>
       ) : null}
 
+      {detailFacts.length > 0 ? (
+        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
+          <h2 className="h5 mb-3">Objektdetails</h2>
+          <dl className="offer-detail-facts">
+            {detailFacts.map((item) => (
+              <div key={item.label}>
+                <dt>{item.label}</dt>
+                <dd>{item.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : null}
+
       <section className="offer-detail-grid">
         <div className="offer-detail-panel">
           <h3 className="h6 mb-3">{texts.floor_plan}</h3>
@@ -478,21 +691,46 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         <div className="offer-detail-panel">
           <h3 className="h6 mb-3">{texts.energy_label}</h3>
           <dl className="offer-detail-energy">
-            <div>
-              <dt>{texts.energy_class}</dt>
-              <dd>{String(energy["class"] ?? "—")}</dd>
-            </div>
-            <div>
-              <dt>{texts.energy_demand}</dt>
-              <dd>{String(energy["demand"] ?? "—")}</dd>
-            </div>
-            <div>
-              <dt>{texts.primary_energy_source}</dt>
-              <dd>{String(energy["fuel"] ?? "—")}</dd>
-            </div>
+            {energyFacts.map((item) => (
+              <div key={item.label}>
+                <dt>{item.label}</dt>
+                <dd>{item.value}</dd>
+              </div>
+            ))}
           </dl>
         </div>
       </section>
+
+      {documentAssets.length > 0 ? (
+        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
+          <h2 className="h5 mb-3">Unterlagen</h2>
+          <div className="offer-detail-documents">
+            {documentAssets.map((asset, index) => {
+              const meta = [
+                asset.kind === "video" ? "Video" : null,
+                asset.is_exposee ? "Exposé" : null,
+                asset.on_landing_page ? "Landingpage" : null,
+              ].filter((item): item is string => Boolean(item));
+              return (
+                <a
+                  key={`${asset.url}-${index}`}
+                  className="offer-detail-document"
+                  href={asset.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <span className="offer-detail-document-title">
+                    {asset.title ?? asset.name ?? `Unterlage ${index + 1}`}
+                  </span>
+                  <span className="offer-detail-document-meta">
+                    {meta.length > 0 ? meta.join(" · ") : "Datei extern öffnen"}
+                  </span>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <section className="offer-detail-contact">
         <div className="offer-detail-contact-card">
