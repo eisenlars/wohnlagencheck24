@@ -3951,14 +3951,14 @@ export default function AdminClient() {
       ) : null}
 
       {activeView === "partner_edit" ? (
-      <section style={cardStyle}>
+      <section style={{ ...cardStyle, background: "#f8fafc" }}>
         <h2 style={h2Style}>Partnerdetails</h2>
         <p style={{ margin: 0, color: "#475569" }}>
           {selectedPartner ? `${formatPartnerName(selectedPartner)} (${selectedPartner.id})` : "Bitte links einen Partner auswählen."}
         </p>
         {selectedPartner ? (
           <div style={adminPartnerSummaryGridStyle}>
-            <div style={adminPartnerSummaryCardStyle}>
+            <div style={{ ...adminPartnerSummaryCardStyle, background: "#ffffff" }}>
               <div style={adminPartnerSummaryLabelStyle}>Workflow</div>
               <div style={adminPartnerSummaryValueStyle}>
                 {selectedPartner.is_system_default
@@ -3972,19 +3972,19 @@ export default function AdminClient() {
                         : "Ohne Signal"}
               </div>
             </div>
-            <div style={adminPartnerSummaryCardStyle}>
+            <div style={{ ...adminPartnerSummaryCardStyle, background: "#ffffff" }}>
               <div style={adminPartnerSummaryLabelStyle}>Gebiete</div>
               <div style={adminPartnerSummaryValueStyle}>{selectedPartnerSummary.totalAreas}</div>
             </div>
-            <div style={adminPartnerSummaryCardStyle}>
+            <div style={{ ...adminPartnerSummaryCardStyle, background: "#ffffff" }}>
               <div style={adminPartnerSummaryLabelStyle}>Live</div>
               <div style={adminPartnerSummaryValueStyle}>{selectedPartnerSummary.liveAreas}</div>
             </div>
-            <div style={adminPartnerSummaryCardStyle}>
+            <div style={{ ...adminPartnerSummaryCardStyle, background: "#ffffff" }}>
               <div style={adminPartnerSummaryLabelStyle}>Offen</div>
               <div style={adminPartnerSummaryValueStyle}>{selectedPartnerSummary.activationOpen}</div>
             </div>
-            <div style={adminPartnerSummaryCardStyle}>
+            <div style={{ ...adminPartnerSummaryCardStyle, background: "#ffffff" }}>
               <div style={adminPartnerSummaryLabelStyle}>Anbindungen aktiv</div>
               <div style={adminPartnerSummaryValueStyle}>{selectedPartnerSummary.activeIntegrationCount}</div>
             </div>
@@ -3994,7 +3994,7 @@ export default function AdminClient() {
       ) : null}
 
       {activeView === "partner_edit" && selectedPartner ? (
-      <div style={partnerTabBarStyle}>
+      <div style={{ ...partnerTabBarStyle, marginBottom: 18 }}>
         <button style={partnerTabButtonStyle(partnerTab === "profile")} onClick={() => setPartnerTab("profile")}>Profil</button>
         <button style={partnerTabButtonStyle(partnerTab === "areas")} onClick={() => setPartnerTab("areas")}>
           Gebiete
