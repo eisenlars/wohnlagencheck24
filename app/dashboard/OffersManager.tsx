@@ -726,25 +726,43 @@ export default function OffersManager(props: Props) {
       {visibilityConfig ? (
         <section style={visibilityShellStyle}>
           <div style={visibilityCardStyle}>
-            <h3 style={visibilityHeadStyle}>
-              {`Regionale Ausspielung für Angebote - ${visibilityConfig.areas?.name ?? visibilityConfig.area_id}`}
-            </h3>
-            <label style={visibilityLabelStyle}>
-              <span style={visibilitySelectWrapStyle}>
-                <select
-                  value={visibilityMode}
-                  onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
-                  disabled={visibilityBusy}
-                  style={visibilitySelectStyle}
-                >
-                  <option value="partner_wide">partnerweit</option>
-                  <option value="strict_local">nur lokal</option>
-                </select>
-                <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
-              </span>
-            </label>
-            <div style={visibilityHintStyle}>
-              `partnerweit` zeigt alle Angebote des Partners im Gebiet. `nur lokal` nutzt nur lokal gematchte Angebote.
+            <h3 style={visibilityHeadStyle}>Regionale Ausspielung für Angebote</h3>
+            <div style={visibilityControlsRowStyle}>
+              <label style={visibilityLabelStyle}>
+                <span style={visibilitySelectWrapStyle}>
+                  <select
+                    value={visibilityMode}
+                    onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
+                    disabled={visibilityBusy}
+                    style={visibilitySelectStyle}
+                  >
+                    <option value="partner_wide">partnerweit - zeigt alle Angebote des Partners im Gebiet</option>
+                    <option value="strict_local">nur lokal - nutzt nur lokal gematchte Angebote</option>
+                  </select>
+                  <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+                </span>
+              </label>
+              <div style={visibilityModelWrapStyle}>
+                {llmOptions.length > 0 ? (
+                  <span style={visibilitySelectWrapStyle}>
+                    <select
+                      value={selectedLlmIntegrationId || llmOptions[0].id}
+                      onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                      style={visibilitySelectStyle}
+                      aria-label="KI-Modell auswählen"
+                    >
+                      {llmOptions.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+                  </span>
+                ) : (
+                  <span style={aiMissingHintStyle}>Keine aktive LLM-Integration</span>
+                )}
+              </div>
             </div>
             {visibilityMessage ? (
               <div style={visibilityMessageStyle(visibilityTone)}>{visibilityMessage}</div>
@@ -1740,9 +1758,9 @@ const resetButtonStyle = (hasOverride: boolean): React.CSSProperties => ({
 });
 
 const visibilityCardStyle: React.CSSProperties = {
-  border: '1px solid #e2e8f0',
+  border: '1px solid #99f6b4',
   borderRadius: '12px',
-  background: '#f8fafc',
+  background: '#ecfdf5',
   padding: '14px 16px',
   display: 'grid',
   gap: '10px',
@@ -1754,11 +1772,23 @@ const visibilityHeadStyle: React.CSSProperties = {
   fontSize: '16px',
   lineHeight: 1.35,
   fontWeight: 700,
-  color: '#0f172a',
+  color: '#065f46',
+};
+
+const visibilityControlsRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '12px',
+  alignItems: 'center',
+  flexWrap: 'wrap',
 };
 
 const visibilityLabelStyle: React.CSSProperties = {
   display: 'block',
+  flex: '1 1 420px',
+};
+
+const visibilityModelWrapStyle: React.CSSProperties = {
+  flex: '0 1 320px',
 };
 
 const visibilitySelectWrapStyle: React.CSSProperties = {
@@ -1791,12 +1821,6 @@ const visibilitySelectChevronStyle: React.CSSProperties = {
   lineHeight: 1,
   color: '#475569',
   pointerEvents: 'none',
-};
-
-const visibilityHintStyle: React.CSSProperties = {
-  fontSize: '12px',
-  lineHeight: 1.5,
-  color: '#64748b',
 };
 
 function visibilityMessageStyle(tone: VisibilityTone): React.CSSProperties {
