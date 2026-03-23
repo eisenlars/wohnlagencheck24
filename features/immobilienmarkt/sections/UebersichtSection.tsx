@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { formatMarketExplanationStaticText } from "@/lib/market-explanation-static-text-definitions";
 import { buildWebAssetUrl } from "@/utils/assets";
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
@@ -43,14 +44,17 @@ function clampAngleFromPercent(val: number): number {
 }
 
 // Textauswertung für Wohnraumsituation
-function getWohnungssaldoText(saldoPro1000: number): string {
-  if (saldoPro1000 < -20) return "(deutliches Wohnungsdefizit)";
-  if (saldoPro1000 < -10) return "(mittleres Wohnungsdefizit)";
-  if (saldoPro1000 < 0) return "(leichtes Wohnungsdefizit)";
-  if (saldoPro1000 <= 10) return "(Wohnungsangebot ausgeglichen)";
-  if (saldoPro1000 <= 25) return "(leichtes Wohnungsüberangebot)";
-  if (saldoPro1000 <= 40) return "(moderates Wohnungsüberangebot)";
-  return "(deutliches Wohnungsüberangebot)";
+function getWohnungssaldoText(
+  saldoPro1000: number,
+  texts: SectionPropsBase["marketExplanationTexts"],
+): string {
+  if (saldoPro1000 < -20) return texts.uebersicht_wohnungssaldo_starkes_defizit;
+  if (saldoPro1000 < -10) return texts.uebersicht_wohnungssaldo_mittleres_defizit;
+  if (saldoPro1000 < 0) return texts.uebersicht_wohnungssaldo_leichtes_defizit;
+  if (saldoPro1000 <= 10) return texts.uebersicht_wohnungssaldo_ausgeglichen;
+  if (saldoPro1000 <= 25) return texts.uebersicht_wohnungssaldo_leichtes_ueberangebot;
+  if (saldoPro1000 <= 40) return texts.uebersicht_wohnungssaldo_moderates_ueberangebot;
+  return texts.uebersicht_wohnungssaldo_starkes_ueberangebot;
 }
 
 // Gauge Style (aus deinem Bestand übernommen)
@@ -474,7 +478,9 @@ export function UebersichtSection(
         <section className="mb-5" id="standort">
           <h2 className="h2 mb-3 align-center text-center">Standortüberblick</h2>
           <p className="small text-muted mb-4 text-center">
-            Die folgenden Indikatoren beschreiben die strukturelle Dynamik der Region {vm.regionName}.
+            {formatMarketExplanationStaticText(props.marketExplanationTexts.uebersicht_standort_intro, {
+              regionName: vm.regionName,
+            })}
           </p>
 
           <div className="row g-3 mb-5">
@@ -541,7 +547,7 @@ export function UebersichtSection(
           <>
             <h5 className="h5 mb-3 text-center">Wohnraumsituation</h5>
             <p className="small text-muted mb-3 text-center teaser-text-narrow mx-auto">
-              Der Wohnungssaldo beschreibt, ob die Region tendenziell eher ein Wohnungsdefizit oder ein Wohnungsüberangebot aufweist.
+              {props.marketExplanationTexts.uebersicht_wohnungssaldo_definition}
             </p>
 
             <div className="card bg-transparent border-0 mb-5">
@@ -550,7 +556,7 @@ export function UebersichtSection(
                   label="Wohnungssaldo"
                   value={vm.standort.wohnraumsituation}
                   mode="saldo"
-                  extraText={getWohnungssaldoText(vm.standort.wohnraumsituation)}
+                  extraText={getWohnungssaldoText(vm.standort.wohnraumsituation, props.marketExplanationTexts)}
                 />
               </div>
             </div>
@@ -663,7 +669,7 @@ export function UebersichtSection(
           <h2 className="h2 mb-3 align-center text-center">Immobilienpreise {vm.regionName} im überregionalen Vergleich</h2>
 
           <p className="small text-muted mb-5 text-center teaser-text-narrow mx-auto">
-            Die folgenden Diagramme zeigen die Region im Vergleich zu Deutschland und dem Bundesland – jeweils auf Basis der aktuellen Angebotsdaten.
+            {props.marketExplanationTexts.uebersicht_preisvergleich_intro}
           </p>
 
           <div className="row g-3">
@@ -724,7 +730,7 @@ export function UebersichtSection(
           <h2 className="h2 mb-3 align-center text-center">Immobilienpreisentwicklung - {vm.regionName}</h2>
 
           <p className="small text-muted mb-5 text-center teaser-text-narrow mx-auto">
-            Die folgenden Diagramme zeigen die Entwicklung der durchschnittlichen Immobilienpreise, Grundstückspreise und Angebotsmieten je Quadratmeter nach Kalenderjahr.
+            {props.marketExplanationTexts.uebersicht_preisentwicklung_intro}
           </p>
 
           <div className="row g-3">
@@ -836,8 +842,7 @@ export function UebersichtSection(
           <h2 className="h2 mb-3 align-center text-center">Ortslagen-Preise und Vorjahresveränderung</h2>
 
           <p className="small text-muted mb-3 text-center teaser-text-narrow mx-auto">
-            Die Tabelle zeigt die durchschnittlichen Immobilienpreise, Grundstückspreise und Angebotsmieten je Quadratmeter
-            für die erfassten Ortslagen – jeweils inklusive prozentualer Veränderung gegenüber dem Vorjahr.
+            {props.marketExplanationTexts.uebersicht_ortslagen_tabelle_intro}
           </p>
 
           <OrtslagenUebersichtTable

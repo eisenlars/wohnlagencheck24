@@ -1,6 +1,7 @@
 // features/immobilienmarkt/sections/types.ts
 
 import type { ComponentType } from "react";
+import type { MarketExplanationStaticTextMap } from "@/lib/market-explanation-static-text-definitions";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 
 export type TabItem = {
@@ -65,6 +66,7 @@ export type SectionPropsBase = {
   basePath: string;
   parentBasePath?: string;
   texts: PortalSystemTextMap;
+  marketExplanationTexts: MarketExplanationStaticTextMap;
   ctx?: SectionCtx;
   assets?: SectionAssets;
 };

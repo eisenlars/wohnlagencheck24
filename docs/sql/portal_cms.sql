@@ -71,6 +71,28 @@ create table if not exists public.portal_system_text_i18n_meta (
   primary key (key, locale)
 );
 
+create table if not exists public.market_explanation_static_text_entries (
+  key text not null,
+  locale text not null,
+  status text not null default 'draft'
+    check (status in ('draft', 'internal', 'live')),
+  value_text text not null default '',
+  updated_at timestamptz not null default now(),
+  primary key (key, locale)
+);
+
+create table if not exists public.market_explanation_static_text_i18n_meta (
+  key text not null,
+  locale text not null,
+  source_locale text not null default 'de',
+  source_snapshot_hash text,
+  source_updated_at timestamptz,
+  translation_origin text not null default 'manual'
+    check (translation_origin in ('manual', 'ai', 'sync_copy_all', 'sync_fill_missing')),
+  updated_at timestamptz not null default now(),
+  primary key (key, locale)
+);
+
 insert into public.portal_locale_config (
   locale,
   status,
@@ -110,3 +132,9 @@ comment on table public.portal_system_text_entries is
 
 comment on table public.portal_system_text_i18n_meta is
   'Quelle und Veraltungsstatus fuer uebersetzte Portal-Systemtexte.';
+
+comment on table public.market_explanation_static_text_entries is
+  'Portalweite statische Markterklaerungstexte pro Locale. Oeffentlich zaehlt nur status=live.';
+
+comment on table public.market_explanation_static_text_i18n_meta is
+  'Quelle und Verwaltungsstatus fuer uebersetzte statische Markterklaerungstexte.';

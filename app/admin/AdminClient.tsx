@@ -8,6 +8,17 @@ import { createClient } from "@/utils/supabase/client";
 import { getProvidersForKind } from "@/lib/integrations/providers";
 import { getMandatoryMediaLabel, isMandatoryMediaKey } from "@/lib/mandatory-media";
 import {
+  MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS,
+  getMarketExplanationStaticTextDefaultValue,
+  type MarketExplanationStaticTextDefinition,
+  type MarketExplanationStaticTextKey,
+} from "@/lib/market-explanation-static-text-definitions";
+import type {
+  MarketExplanationStaticTextEntryRecord,
+  MarketExplanationStaticTextEntryStatus,
+  MarketExplanationStaticTextI18nMetaViewRecord,
+} from "@/lib/market-explanation-static-text-meta";
+import {
   MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS,
   MARKET_EXPLANATION_STANDARD_TABS,
   type MarketExplanationStandardTextDefinition,
@@ -945,6 +956,39 @@ function buildMarketExplanationStandardDraftMap(args: {
   }, {});
 }
 
+function buildMarketExplanationStaticDraftKey(locale: string, key: MarketExplanationStaticTextKey): string {
+  return `${locale}::${key}`;
+}
+
+function buildMarketExplanationStaticDraftMap(args: {
+  locales: PortalLocaleConfigRecord[];
+  definitions: MarketExplanationStaticTextDefinition[];
+  entries: MarketExplanationStaticTextEntryRecord[];
+}): Record<string, { status: MarketExplanationStaticTextEntryStatus; value_text: string }> {
+  const entryMap = new Map(
+    args.entries.map((entry) => [buildMarketExplanationStaticDraftKey(entry.locale, entry.key), entry] as const),
+  );
+  const locales = args.locales.length > 0 ? args.locales : [{ locale: "de" } as PortalLocaleConfigRecord];
+
+  return locales.reduce<Record<string, { status: MarketExplanationStaticTextEntryStatus; value_text: string }>>((acc, localeRow) => {
+    const locale = String(localeRow.locale ?? "").trim().toLowerCase() || "de";
+    for (const def of args.definitions) {
+      const draftKey = buildMarketExplanationStaticDraftKey(locale, def.key);
+      const existing = entryMap.get(draftKey);
+      acc[draftKey] = existing
+        ? {
+            status: existing.status,
+            value_text: existing.value_text,
+          }
+        : {
+            status: locale === "de" ? "live" : "draft",
+            value_text: getMarketExplanationStaticTextDefaultValue(locale, def.key),
+          };
+    }
+    return acc;
+  }, {});
+}
+
 function buildPortalSystemTextDraftMap(args: {
   locales: PortalLocaleConfigRecord[];
   definitions: PortalSystemTextDefinition[];
@@ -1231,6 +1275,14 @@ export default function AdminClient() {
   const [marketExplanationTab, setMarketExplanationTab] = useState<string>(MARKET_EXPLANATION_STANDARD_TABS[0]?.label ?? "Übersicht");
   const [marketExplanationStandardDefinitions, setMarketExplanationStandardDefinitions] = useState<MarketExplanationStandardTextDefinition[]>(MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS);
   const [marketExplanationStandardDrafts, setMarketExplanationStandardDrafts] = useState<Record<string, string>>({});
+  const [marketExplanationStaticLocale, setMarketExplanationStaticLocale] = useState<string>("de");
+  const [marketExplanationStaticDefinitions, setMarketExplanationStaticDefinitions] = useState<MarketExplanationStaticTextDefinition[]>(MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS);
+  const [, setMarketExplanationStaticEntries] = useState<MarketExplanationStaticTextEntryRecord[]>([]);
+  const [marketExplanationStaticMetas, setMarketExplanationStaticMetas] = useState<MarketExplanationStaticTextI18nMetaViewRecord[]>([]);
+  const [marketExplanationStaticDrafts, setMarketExplanationStaticDrafts] = useState<Record<string, {
+    status: MarketExplanationStaticTextEntryStatus;
+    value_text: string;
+  }>>({});
   const [portalSystemTextDrafts, setPortalSystemTextDrafts] = useState<Record<string, {
     status: PortalSystemTextEntryStatus;
     value_text: string;
@@ -1394,6 +1446,17 @@ export default function AdminClient() {
     }),
     [marketExplanationStandardDefinitions, marketExplanationTab],
   );
+  const marketExplanationStaticMetaMap = useMemo(
+    () => new Map(marketExplanationStaticMetas.map((meta) => [`${meta.locale}::${meta.key}`, meta] as const)),
+    [marketExplanationStaticMetas],
+  );
+  const activeMarketExplanationStaticDefinitions = useMemo(
+    () => marketExplanationStaticDefinitions.filter((definition) => {
+      const tab = MARKET_EXPLANATION_STANDARD_TABS.find((entry) => entry.id === definition.tab);
+      return (tab?.label ?? definition.tab) === marketExplanationTab;
+    }),
+    [marketExplanationStaticDefinitions, marketExplanationTab],
+  );
   const portalContentMetaMap = useMemo(
     () => new Map(portalContentMetas.map((meta) => [`${meta.page_key}::${meta.section_key}::${meta.locale}`, meta] as const)),
     [portalContentMetas],
@@ -1522,7 +1585,10 @@ export default function AdminClient() {
     } else if (restoredActiveView === "system_texts") {
       void loadPortalCms();
     } else if (restoredActiveView === "market_texts") {
-      void loadMarketExplanationStandardTexts();
+      void Promise.all([
+        loadMarketExplanationStandardTexts(),
+        loadMarketExplanationStaticTexts(),
+      ]);
     } else if (restoredActiveView === "portal_cms") {
       void loadPortalCms();
     }
@@ -1550,6 +1616,14 @@ export default function AdminClient() {
       setMarketExplanationTab(MARKET_EXPLANATION_STANDARD_TABS[0]?.label ?? "Übersicht");
     }
   }, [marketExplanationTab]);
+
+  useEffect(() => {
+    if (portalLocaleConfigs.length === 0) return;
+    if (!portalLocaleConfigs.some((row) => row.locale === marketExplanationStaticLocale)) {
+      const fallbackLocale = portalLocaleConfigs.find((row) => row.is_active)?.locale ?? portalLocaleConfigs[0]?.locale ?? "de";
+      setMarketExplanationStaticLocale(fallbackLocale);
+    }
+  }, [marketExplanationStaticLocale, portalLocaleConfigs]);
 
   useEffect(() => {
     if (!adminViewStateHydrated || !adminViewStateAppliedRef.current) return;
@@ -1920,7 +1994,10 @@ export default function AdminClient() {
         onClick: () => {
           setActiveView("market_texts");
           void run("Markterklärungstexte laden", async () => {
-            await loadMarketExplanationStandardTexts();
+            await Promise.all([
+              loadMarketExplanationStandardTexts(),
+              loadMarketExplanationStaticTexts(),
+            ]);
           }, { showSuccessModal: false });
         },
       },
@@ -2474,6 +2551,33 @@ export default function AdminClient() {
     }));
   }
 
+  async function loadMarketExplanationStaticTexts() {
+    const data = await api<{
+      locales?: PortalLocaleConfigRecord[];
+      definitions?: MarketExplanationStaticTextDefinition[];
+      entries?: MarketExplanationStaticTextEntryRecord[];
+      metas?: MarketExplanationStaticTextI18nMetaViewRecord[];
+    }>("/api/admin/market-explanation-static-texts");
+    const nextLocales = data.locales ?? [];
+    const nextDefinitions = data.definitions ?? MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS;
+    const nextEntries = data.entries ?? [];
+    setPortalLocaleConfigs((prev) => (nextLocales.length > 0 ? nextLocales : prev));
+    setMarketExplanationStaticDefinitions(nextDefinitions);
+    setMarketExplanationStaticEntries(nextEntries);
+    setMarketExplanationStaticMetas(data.metas ?? []);
+    setMarketExplanationStaticDrafts(buildMarketExplanationStaticDraftMap({
+      locales: nextLocales.length > 0 ? nextLocales : portalLocaleConfigs,
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
+    const fallbackLocale = (nextLocales.length > 0 ? nextLocales : portalLocaleConfigs).find((row) => row.is_active)?.locale
+      ?? (nextLocales.length > 0 ? nextLocales : portalLocaleConfigs)[0]?.locale
+      ?? "de";
+    setMarketExplanationStaticLocale((prev) =>
+      (nextLocales.length > 0 ? nextLocales : portalLocaleConfigs).some((row) => row.locale === prev) ? prev : fallbackLocale,
+    );
+  }
+
   function resetNewPortalLocaleDraft() {
     setNewPortalLocaleDraft({
       locale: "",
@@ -2702,6 +2806,71 @@ export default function AdminClient() {
     const nextEntries = data.entries ?? [];
     setMarketExplanationStandardDefinitions(nextDefinitions);
     setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
+  }
+
+  async function saveMarketExplanationStaticLocale(locale: string) {
+    const rows = marketExplanationStaticDefinitions.map((def) => {
+      const draft = marketExplanationStaticDrafts[buildMarketExplanationStaticDraftKey(locale, def.key)] ?? {
+        status: locale === "de" ? "live" as MarketExplanationStaticTextEntryStatus : "draft" as MarketExplanationStaticTextEntryStatus,
+        value_text: getMarketExplanationStaticTextDefaultValue(locale, def.key),
+      };
+      return {
+        key: def.key,
+        locale,
+        status: draft.status,
+        value_text: draft.value_text,
+      };
+    });
+    const data = await api<{
+      locales?: PortalLocaleConfigRecord[];
+      definitions?: MarketExplanationStaticTextDefinition[];
+      entries?: MarketExplanationStaticTextEntryRecord[];
+      metas?: MarketExplanationStaticTextI18nMetaViewRecord[];
+    }>("/api/admin/market-explanation-static-texts", {
+      method: "POST",
+      body: JSON.stringify({ entries: rows }),
+    });
+    const nextLocales = data.locales ?? portalLocaleConfigs;
+    const nextDefinitions = data.definitions ?? MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS;
+    const nextEntries = data.entries ?? [];
+    setPortalLocaleConfigs(nextLocales);
+    setMarketExplanationStaticDefinitions(nextDefinitions);
+    setMarketExplanationStaticEntries(nextEntries);
+    setMarketExplanationStaticMetas(data.metas ?? []);
+    setMarketExplanationStaticDrafts(buildMarketExplanationStaticDraftMap({
+      locales: nextLocales,
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
+  }
+
+  async function syncMarketExplanationStaticLocaleFromDe(locale: string, mode: "copy_all" | "fill_missing") {
+    const data = await api<{
+      locales?: PortalLocaleConfigRecord[];
+      definitions?: MarketExplanationStaticTextDefinition[];
+      entries?: MarketExplanationStaticTextEntryRecord[];
+      metas?: MarketExplanationStaticTextI18nMetaViewRecord[];
+    }>("/api/admin/market-explanation-static-texts", {
+      method: "POST",
+      body: JSON.stringify({
+        sync: {
+          target_locale: locale,
+          mode,
+        },
+      }),
+    });
+    const nextLocales = data.locales ?? portalLocaleConfigs;
+    const nextDefinitions = data.definitions ?? MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS;
+    const nextEntries = data.entries ?? [];
+    setPortalLocaleConfigs(nextLocales);
+    setMarketExplanationStaticDefinitions(nextDefinitions);
+    setMarketExplanationStaticEntries(nextEntries);
+    setMarketExplanationStaticMetas(data.metas ?? []);
+    setMarketExplanationStaticDrafts(buildMarketExplanationStaticDraftMap({
+      locales: nextLocales,
       definitions: nextDefinitions,
       entries: nextEntries,
     }));
@@ -3573,43 +3742,42 @@ export default function AdminClient() {
                     />
                   </>
                 ) : null}
-              </>
-            )}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
-              <button
-                style={btnGhostStyle}
-                disabled={partnerPurgeModal.deleting}
-                onClick={() => setPartnerPurgeModal((v) => ({ ...v, open: false }))}
-              >
-                Abbrechen
-              </button>
-              {(() => {
-                const purgeDisabled =
-                  partnerPurgeModal.loading
-                  || partnerPurgeModal.deleting
-                  || !partnerPurgeModal.canPurge
-                  || partnerPurgeModal.blockers.length > 0
-                  || partnerPurgeModal.summary.areaMappingsTotal > 0
-                  || String(partnerPurgeModal.confirmText).trim().toUpperCase() !== "LOESCHEN";
-                return (
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 12 }}>
                   <button
-                    style={{
-                      ...btnDangerStyle,
-                      background: purgeDisabled ? "#f1f5f9" : btnDangerStyle.background,
-                      borderColor: purgeDisabled ? "#cbd5e1" : "#ef4444",
-                      color: purgeDisabled ? "#94a3b8" : "#b91c1c",
-                      cursor: purgeDisabled ? "not-allowed" : "pointer",
-                    }}
-                    disabled={purgeDisabled}
-                    onClick={() => {
-                      void executePartnerPurge();
-                    }}
+                    style={btnGhostStyle}
+                    disabled={partnerPurgeModal.deleting}
+                    onClick={() => setPartnerPurgeModal((v) => ({ ...v, open: false }))}
                   >
-                    {partnerPurgeModal.deleting ? "Lösche..." : "Endgültig löschen"}
+                    Abbrechen
                   </button>
-                );
-              })()}
-            </div>
+                  {(() => {
+                    const purgeDisabled =
+                      partnerPurgeModal.loading
+                      || partnerPurgeModal.deleting
+                      || !partnerPurgeModal.canPurge
+                      || partnerPurgeModal.blockers.length > 0
+                      || partnerPurgeModal.summary.areaMappingsTotal > 0
+                      || String(partnerPurgeModal.confirmText).trim().toUpperCase() !== "LOESCHEN";
+                    return (
+                      <button
+                        style={{
+                          ...btnDangerStyle,
+                          background: purgeDisabled ? "#f1f5f9" : btnDangerStyle.background,
+                          borderColor: purgeDisabled ? "#cbd5e1" : "#ef4444",
+                          color: purgeDisabled ? "#94a3b8" : "#b91c1c",
+                          cursor: purgeDisabled ? "not-allowed" : "pointer",
+                        }}
+                        disabled={purgeDisabled}
+                        onClick={() => {
+                          void executePartnerPurge();
+                        }}
+                      >
+                        {partnerPurgeModal.deleting ? "Lösche..." : "Endgültig löschen"}
+                      </button>
+                    );
+                  })()}
+                </div>
+              </>)}
           </div>
         </div>
       ) : null}
@@ -3885,7 +4053,10 @@ export default function AdminClient() {
             onClick={() => {
               setActiveView("market_texts");
               void run("Markterklärungstexte laden", async () => {
-                await loadMarketExplanationStandardTexts();
+                await Promise.all([
+                  loadMarketExplanationStandardTexts(),
+                  loadMarketExplanationStaticTexts(),
+                ]);
               }, { showSuccessModal: false });
             }}
             title="Markterklärungstexte"
@@ -4433,8 +4604,7 @@ export default function AdminClient() {
                 ))}
               </tbody>
             </table>
-          </>
-        )}
+          </>)}
       </section>
       ) : null}
 
@@ -5571,7 +5741,54 @@ export default function AdminClient() {
                     Standardtexte speichern
                   </button>
                 </>
-              ) : null}
+              ) : (
+                <>
+                  <select
+                    style={{ ...inputStyle, minWidth: 180 }}
+                    value={marketExplanationStaticLocale}
+                    onChange={(e) => setMarketExplanationStaticLocale(e.target.value)}
+                  >
+                    {(portalLocaleConfigs.length > 0 ? portalLocaleConfigs : [{ locale: "de" } as PortalLocaleConfigRecord]).map((row) => (
+                      <option key={row.locale} value={row.locale}>
+                        {row.locale}{row.label_native ? ` · ${row.label_native}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    style={btnSuccessGhostStyle}
+                    disabled={busy || marketExplanationStaticLocale === "de"}
+                    onClick={() =>
+                      run("Statische Erklärungstexte aus DE ergänzen", async () => {
+                        await syncMarketExplanationStaticLocaleFromDe(marketExplanationStaticLocale, "fill_missing");
+                      })
+                    }
+                  >
+                    Aus DE ergänzen
+                  </button>
+                  <button
+                    style={btnSuccessGhostStyle}
+                    disabled={busy || marketExplanationStaticLocale === "de"}
+                    onClick={() =>
+                      run("Statische Erklärungstexte komplett aus DE übernehmen", async () => {
+                        await syncMarketExplanationStaticLocaleFromDe(marketExplanationStaticLocale, "copy_all");
+                      })
+                    }
+                  >
+                    DE komplett übernehmen
+                  </button>
+                  <button
+                    style={btnStyle}
+                    disabled={busy}
+                    onClick={() =>
+                      run("Statische Erklärungstexte speichern", async () => {
+                        await saveMarketExplanationStaticLocale(marketExplanationStaticLocale);
+                      })
+                    }
+                  >
+                    Statische Erklärungstexte speichern
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -5587,7 +5804,11 @@ export default function AdminClient() {
                   <span style={{ marginLeft: 8, opacity: 0.75 }}>
                     {marketExplanationStandardDefinitions.filter((definition) => definition.tab === tab.id).length}
                   </span>
-                ) : null}
+                ) : (
+                  <span style={{ marginLeft: 8, opacity: 0.75 }}>
+                    {marketExplanationStaticDefinitions.filter((definition) => definition.tab === tab.id).length}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -5627,11 +5848,98 @@ export default function AdminClient() {
               ) : null}
             </div>
           ) : (
-            <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc" }}>
-              <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{marketExplanationTab}</div>
-              <div style={{ ...mutedStyle, lineHeight: 1.6 }}>
-                Dieser zweite Modus ist für kurze KPI-Erklärungen, Definitionen und FAQ-/Hinweistexte ohne bestehenden Text-Key vorgesehen. Diese Texte sitzen heute teilweise noch direkt im Code und werden im nächsten Schritt in ein separates, KI-übersetzbares Modell überführt.
-              </div>
+            <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+              {activeMarketExplanationStaticDefinitions.map((definition) => {
+                const draftKey = buildMarketExplanationStaticDraftKey(marketExplanationStaticLocale, definition.key);
+                const draft = marketExplanationStaticDrafts[draftKey] ?? {
+                  status: marketExplanationStaticLocale === "de" ? "live" as MarketExplanationStaticTextEntryStatus : "draft" as MarketExplanationStaticTextEntryStatus,
+                  value_text: getMarketExplanationStaticTextDefaultValue(marketExplanationStaticLocale, definition.key),
+                };
+                const meta = marketExplanationStaticMetaMap.get(`${marketExplanationStaticLocale}::${definition.key}`) ?? null;
+                return (
+                  <div key={definition.key} style={{ border: "1px solid #dbe4ee", borderRadius: 8, padding: 10, background: "#fff" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: "#0f172a" }}>{definition.label}</div>
+                        <div style={mutedStyle}>
+                          <code>{definition.key}</code> · {definition.kind}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        <span style={{ ...mutedStyle, fontSize: 12 }}>
+                          Status: <strong>{formatPortalEntryStatus(draft.status as PortalContentEntryStatus)}</strong>
+                        </span>
+                        {marketExplanationStaticLocale !== "de" && meta ? (
+                          <span style={{ fontSize: 12, color: meta.translation_is_stale ? "#991b1b" : "#334155" }}>
+                            {formatPortalTranslationOrigin(meta.translation_origin)}
+                            {meta.translation_is_stale ? " · DE geändert" : ""}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <textarea
+                      style={{ ...inputStyle, minHeight: 120, marginTop: 10, resize: "vertical" }}
+                      value={draft.value_text}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        setMarketExplanationStaticDrafts((prev) => ({
+                          ...prev,
+                          [draftKey]: {
+                            ...draft,
+                            value_text: nextValue,
+                          },
+                        }));
+                      }}
+                    />
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
+                      <select
+                        style={{ ...inputStyle, maxWidth: 180 }}
+                        value={draft.status}
+                        onChange={(event) => {
+                          const nextStatus = String(event.target.value) as MarketExplanationStaticTextEntryStatus;
+                          setMarketExplanationStaticDrafts((prev) => ({
+                            ...prev,
+                            [draftKey]: {
+                              ...draft,
+                              status: nextStatus,
+                            },
+                          }));
+                        }}
+                      >
+                        <option value="draft">entwurf</option>
+                        <option value="internal">intern</option>
+                        <option value="live">live</option>
+                      </select>
+                      {marketExplanationStaticLocale !== "de" ? (
+                        <button
+                          style={btnGhostStyle}
+                          disabled={busy}
+                          onClick={() => {
+                            const deDefault = (
+                              marketExplanationStaticDrafts[buildMarketExplanationStaticDraftKey("de", definition.key)]?.value_text
+                              ?? getMarketExplanationStaticTextDefaultValue("de", definition.key)
+                            );
+                            setMarketExplanationStaticDrafts((prev) => ({
+                              ...prev,
+                              [draftKey]: {
+                                status: draft.status === "live" ? "internal" : draft.status,
+                                value_text: deDefault,
+                              },
+                            }));
+                          }}
+                        >
+                          DE in Feld übernehmen
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+              {activeMarketExplanationStaticDefinitions.length === 0 ? (
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc", ...mutedStyle }}>
+                  Für diesen Tab sind aktuell noch keine statischen Erklärungstexte ohne Text-Key hinterlegt.
+                </div>
+              ) : null}
             </div>
           )}
         </div>

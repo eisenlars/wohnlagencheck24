@@ -16,6 +16,7 @@ import { StackedComboChart } from "@/components/StackedComboChart";
 import { FaqSection } from "@/components/FaqSection";
 import { KpiValue } from "@/components/KpiValue";
 import { ImageModal } from "@/components/ImageModal";
+import { formatMarketExplanationStaticText } from "@/lib/market-explanation-static-text-definitions";
 
 import { formatMetric } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
@@ -90,12 +91,18 @@ export function WohnmarktsituationSection(
 
   const faqItems = [
     {
-      q: `Woher stammen die statistischen Daten zum Standort ${vm.regionName}?`,
-      a: "Die Quelle für die statistischen Informationen zur Bevölkerung, zum Arbeitsmarkt und zur Wirtschaft sind die Statistischen Bundes- und Landesämter.",
+      q: formatMarketExplanationStaticText(
+        props.marketExplanationTexts.wohnmarktsituation_faq_statistische_daten_frage,
+        { regionName: vm.regionName },
+      ),
+      a: props.marketExplanationTexts.wohnmarktsituation_faq_statistische_daten_antwort,
     },
     {
-      q: `Wie definieren sich die Standortfaktoren in ${vm.regionName}?`,
-      a: "Die Standortfaktoren werden durch unsere regionalen Partner und Immobilienspezialisten bereitgestellt.",
+      q: formatMarketExplanationStaticText(
+        props.marketExplanationTexts.wohnmarktsituation_faq_standortfaktoren_frage,
+        { regionName: vm.regionName },
+      ),
+      a: props.marketExplanationTexts.wohnmarktsituation_faq_standortfaktoren_antwort,
     },
   ];
   const einwohnerValue = parseSaldoValue(vm.kpis.einwohner);
@@ -234,7 +241,7 @@ export function WohnmarktsituationSection(
                 </>
               ) : (
                 <p className="small text-muted mb-0">
-                  Für diesen Landkreis liegt aktuell noch keine Wohnungssaldo-Karte vor.
+                  {props.marketExplanationTexts.wohnmarktsituation_wohnungssaldo_karte_fehlt}
                 </p>
               )}
             </div>
@@ -1262,7 +1269,7 @@ export function WohnmarktsituationSection(
 
         {vm.bauueberhangBaufortschrittUsesKreisFallback ? (
           <p className="small text-muted text-center mb-3">
-            Hinweis: Für die Ortsebene liegen keine Bauüberhang-Daten vor. Darstellung auf Kreisebene.
+            {props.marketExplanationTexts.wohnmarktsituation_bauueberhang_kreisfallback_hinweis}
           </p>
         ) : null}
 
