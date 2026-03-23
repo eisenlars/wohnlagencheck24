@@ -722,7 +722,7 @@ export default function OffersManager(props: Props) {
   if (loading) return <FullscreenLoader show label="Immobilien werden geladen..." />;
 
   return (
-    <div style={{ display: 'grid', gap: '20px' }}>
+    <div style={{ display: 'grid', gap: '10px' }}>
       {visibilityConfig ? (
         <section style={visibilityShellStyle}>
           <div style={visibilityCardStyle}>
@@ -730,15 +730,18 @@ export default function OffersManager(props: Props) {
               {`Regionale Ausspielung für Angebote - ${visibilityConfig.areas?.name ?? visibilityConfig.area_id}`}
             </h3>
             <label style={visibilityLabelStyle}>
-              <select
-                value={visibilityMode}
-                onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
-                disabled={visibilityBusy}
-                style={visibilitySelectStyle}
-              >
-                <option value="partner_wide">partnerweit</option>
-                <option value="strict_local">nur lokal</option>
-              </select>
+              <span style={visibilitySelectWrapStyle}>
+                <select
+                  value={visibilityMode}
+                  onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
+                  disabled={visibilityBusy}
+                  style={visibilitySelectStyle}
+                >
+                  <option value="partner_wide">partnerweit</option>
+                  <option value="strict_local">nur lokal</option>
+                </select>
+                <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+              </span>
             </label>
             <div style={visibilityHintStyle}>
               `partnerweit` zeigt alle Angebote des Partners im Gebiet. `nur lokal` nutzt nur lokal gematchte Angebote.
@@ -1182,6 +1185,7 @@ const panelStyle: React.CSSProperties = {
 
 const visibilityShellStyle: React.CSSProperties = {
   width: '100%',
+  marginBottom: '-2px',
 };
 
 const panelTitleStyle: React.CSSProperties = {
@@ -1756,6 +1760,11 @@ const visibilityLabelStyle: React.CSSProperties = {
   display: 'block',
 };
 
+const visibilitySelectWrapStyle: React.CSSProperties = {
+  position: 'relative',
+  display: 'block',
+};
+
 const visibilitySelectStyle: React.CSSProperties = {
   appearance: 'none',
   WebkitAppearance: 'none',
@@ -1769,6 +1778,18 @@ const visibilitySelectStyle: React.CSSProperties = {
   fontSize: '13px',
   fontWeight: 600,
   boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+  width: '100%',
+};
+
+const visibilitySelectChevronStyle: React.CSSProperties = {
+  position: 'absolute',
+  right: '14px',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  fontSize: '14px',
+  lineHeight: 1,
+  color: '#475569',
+  pointerEvents: 'none',
 };
 
 const visibilityHintStyle: React.CSSProperties = {
