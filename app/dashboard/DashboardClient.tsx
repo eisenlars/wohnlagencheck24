@@ -131,6 +131,16 @@ const FEATURE_TAB_CODES: Partial<Record<MainTab, string>> = {
   gesuche: 'gesuche',
 };
 
+const DISTRICT_HEADER_SELECTOR_TABS = new Set<MainTab>([
+  'texts',
+  'marketing',
+  'local_site',
+  'international',
+  'immobilien',
+  'referenzen',
+  'gesuche',
+]);
+
 function isMainTab(value: unknown): value is MainTab {
   return typeof value === 'string'
     && ['texts', 'factors', 'marketing', 'local_site', 'immobilien', 'referenzen', 'gesuche', 'blog', 'international', 'settings'].includes(value);
@@ -434,61 +444,71 @@ export default function DashboardClient() {
           title: 'Berichte & Texte',
           description: 'Texte und Berichte für die ausgewählte Region verwalten und optimieren.',
           isRegionBased: true,
+          showDistrictSelector: true,
         };
       case 'factors':
         return {
           title: 'Wertanpassungen',
           description: 'Werte, Faktoren und Kennzahlen der Region prüfen und bei Bedarf anpassen.',
           isRegionBased: true,
+          showDistrictSelector: false,
         };
       case 'marketing':
         return {
           title: 'SEO & GEO',
-          description: 'SEO- und GEO-Inhalte der Region pflegen und ausrichten.',
+          description: 'SEO- und GEO-Inhalte für das gewählte Gebiet pflegen und ausrichten.',
           isRegionBased: true,
+          showDistrictSelector: true,
         };
       case 'local_site':
         return {
           title: 'Lokale Website',
-          description: 'Regionale Inhalte für die lokale Website bearbeiten.',
+          description: 'Regionale Inhalte der lokalen Website für das gewählte Gebiet bearbeiten.',
           isRegionBased: true,
+          showDistrictSelector: true,
         };
       case 'blog':
         return {
           title: 'Blog',
           description: 'Blogbeiträge aus Marktüberblick-Texten generieren und veröffentlichen.',
           isRegionBased: true,
+          showDistrictSelector: false,
         };
       case 'international':
         return {
           title: 'Internationalisierung',
-          description: 'Sprachen und Übersetzungsstand für Portal und lokale Website verwalten.',
+          description: 'Sprachen und Übersetzungsstand für das gewählte Gebiet verwalten.',
           isRegionBased: true,
+          showDistrictSelector: true,
         };
       case 'gesuche':
         return {
           title: 'Gesuche',
-          description: 'Gesuche aus dem CRM prüfen und individuell anpassen.',
+          description: 'CRM-Gesuche im gewählten Ausspielgebiet prüfen und individuell anpassen.',
           isRegionBased: false,
+          showDistrictSelector: true,
         };
       case 'referenzen':
         return {
           title: 'Referenzen',
-          description: 'Referenzobjekte aus dem CRM prüfen und individuell anpassen.',
+          description: 'Referenzobjekte im gewählten Ausspielgebiet prüfen und individuell anpassen.',
           isRegionBased: false,
+          showDistrictSelector: true,
         };
       case 'settings':
         return {
           title: 'Einstellungen',
           description: 'Konto, Partnerprofil, Anbindungen und Kostenmonitor verwalten.',
           isRegionBased: false,
+          showDistrictSelector: false,
         };
       case 'immobilien':
       default:
         return {
           title: 'Immobilien',
-          description: 'SEO-Texte und Exposé-Inhalte pro Objekt individuell optimieren.',
+          description: 'CRM-Angebote im gewählten Ausspielgebiet prüfen und individuell anpassen.',
           isRegionBased: false,
+          showDistrictSelector: true,
         };
     }
   }, [activeMainTab]);
@@ -846,7 +866,6 @@ export default function DashboardClient() {
   const isAwaitingAreaAssignment = onboardingMode && activationDistricts.length === 0;
   const scopedMainDistricts = regionScopeConfigs.filter(c => c.area_id.split('-').length <= 3);
   const hasRegionAssignments = configs.length > 0;
-  const selectedAreaStatusLabel = formatActivationStatusLabel(selectedConfig);
   const mandatoryPercent = mandatoryProgress.total > 0
     ? Math.max(0, Math.min(100, Math.round((mandatoryProgress.completed / mandatoryProgress.total) * 100)))
     : 0;
@@ -921,43 +940,51 @@ export default function DashboardClient() {
   const effectiveWelcomePreviewConfig = selectedWelcomePreviewConfig ?? previewDistricts[0] ?? null;
   const effectiveWelcomePreviewHref = buildPreviewHref(effectiveWelcomePreviewConfig);
   const effectiveWelcomePreviewSignoffAt = String(effectiveWelcomePreviewConfig?.partner_preview_signoff_at ?? '').trim();
+  const effectiveAreaConfig = useMemo(
+    () => (
+      DISTRICT_HEADER_SELECTOR_TABS.has(activeMainTab)
+        ? (findDistrictConfig(configs, effectiveSelectedConfig) ?? effectiveSelectedConfig)
+        : effectiveSelectedConfig
+    ),
+    [activeMainTab, configs, effectiveSelectedConfig],
+  );
 
-  const showActivationPanelForEditorSelected = Boolean(effectiveSelectedConfig && !effectiveSelectedConfig.is_active);
+  const showActivationPanelForEditorSelected = Boolean(effectiveAreaConfig && !effectiveAreaConfig.is_active);
   const showActivationPanelForWelcomeSelected = Boolean(effectiveWelcomeActivationConfig && !effectiveWelcomeActivationConfig.is_active);
   const hideTextsHeaderInActivationFlow = activeMainTab === 'texts' && showActivationPanelForEditorSelected;
-  const activationStatusKey = resolveActivationStatusKey(effectiveSelectedConfig);
+  const activationStatusKey = resolveActivationStatusKey(effectiveAreaConfig);
   const isAwaitingAdminApproval = showActivationPanelForEditorSelected
     && (activationStatusKey === 'ready_for_review' || activationStatusKey === 'in_review');
   const welcomeActivationStatusKey = resolveActivationStatusKey(effectiveWelcomeActivationConfig);
   const isWelcomeAwaitingAdminApproval = showActivationPanelForWelcomeSelected
     && (welcomeActivationStatusKey === 'ready_for_review' || welcomeActivationStatusKey === 'in_review');
-  const selectedPreviewStatusKey = resolveActivationStatusKey(effectiveSelectedConfig);
+  const selectedPreviewStatusKey = resolveActivationStatusKey(effectiveAreaConfig);
   const showPreviewGuidanceForSelected = Boolean(
-    effectiveSelectedConfig
+    effectiveAreaConfig
     && selectedPreviewStatusKey === 'approved_preview'
-    && !Boolean(effectiveSelectedConfig.is_public_live),
+    && !Boolean(effectiveAreaConfig.is_public_live),
   );
-  const selectedPreviewHref = buildPreviewHref(effectiveSelectedConfig);
-  const selectedPreviewSignoffAt = String(effectiveSelectedConfig?.partner_preview_signoff_at ?? '').trim();
+  const selectedPreviewHref = buildPreviewHref(effectiveAreaConfig);
+  const selectedPreviewSignoffAt = String(effectiveAreaConfig?.partner_preview_signoff_at ?? '').trim();
   const effectiveSelectedReviewNote = useMemo(() => {
-    if (!effectiveSelectedConfig) return '';
-    const direct = String(effectiveSelectedConfig.admin_review_note ?? '').trim();
+    if (!effectiveAreaConfig) return '';
+    const direct = String(effectiveAreaConfig.admin_review_note ?? '').trim();
     if (direct) return direct;
-    const districtId = String(effectiveSelectedConfig.area_id ?? '').split('-').slice(0, 3).join('-');
+    const districtId = String(effectiveAreaConfig.area_id ?? '').split('-').slice(0, 3).join('-');
     const districtConfig = configs.find((cfg) => cfg.area_id === districtId) ?? null;
     return String(districtConfig?.admin_review_note ?? '').trim();
-  }, [configs, effectiveSelectedConfig]);
+  }, [configs, effectiveAreaConfig]);
   const effectiveRegionHeaderTitle = useMemo(
-    () => formatRegionHeaderTitle(configs, effectiveSelectedConfig),
-    [configs, effectiveSelectedConfig],
+    () => formatRegionHeaderTitle(configs, effectiveAreaConfig),
+    [configs, effectiveAreaConfig],
   );
   const welcomeActivationReviewNote = useMemo(() => {
     if (!effectiveWelcomeActivationConfig) return '';
     return String(effectiveWelcomeActivationConfig.admin_review_note ?? '').trim();
   }, [effectiveWelcomeActivationConfig]);
 
-  const effectiveOfferVisibilityMode = normalizeVisibilityMode(effectiveSelectedConfig?.offer_visibility_mode);
-  const effectiveRequestVisibilityMode = normalizeVisibilityMode(effectiveSelectedConfig?.request_visibility_mode);
+  const effectiveOfferVisibilityMode = normalizeVisibilityMode(effectiveAreaConfig?.offer_visibility_mode);
+  const effectiveRequestVisibilityMode = normalizeVisibilityMode(effectiveAreaConfig?.request_visibility_mode);
 
   useEffect(() => {
     if (activeMainTab === 'settings') return;
@@ -1031,12 +1058,12 @@ export default function DashboardClient() {
   };
 
   const handleSubmitForReview = async () => {
-    if (!effectiveSelectedConfig || effectiveSelectedConfig.is_active || submitReviewBusy) return;
+    if (!effectiveAreaConfig || effectiveAreaConfig.is_active || submitReviewBusy) return;
     setSubmitReviewBusy(true);
     setSubmitReviewMessage(null);
     setSubmitReviewTone('info');
     try {
-      const res = await fetch(`/api/partner/areas/${encodeURIComponent(effectiveSelectedConfig.area_id)}/submit-review`, {
+      const res = await fetch(`/api/partner/areas/${encodeURIComponent(effectiveAreaConfig.area_id)}/submit-review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -1192,12 +1219,12 @@ export default function DashboardClient() {
     field: 'offer_visibility_mode' | 'request_visibility_mode',
     value: VisibilityMode,
   ) => {
-    if (!effectiveSelectedConfig || visibilitySaveBusy) return;
+    if (!effectiveAreaConfig || visibilitySaveBusy) return;
     setVisibilitySaveBusy(true);
     setVisibilitySaveMessage(null);
     setVisibilitySaveTone('info');
     try {
-      const res = await fetch(`/api/partner/areas/${encodeURIComponent(effectiveSelectedConfig.area_id)}/visibility`, {
+      const res = await fetch(`/api/partner/areas/${encodeURIComponent(effectiveAreaConfig.area_id)}/visibility`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [field]: value }),
@@ -1737,17 +1764,40 @@ export default function DashboardClient() {
                   <p style={headerDescriptionStyle}>{headerConfig.description}</p>
                 </div>
               ) : null}
-              {headerConfig.isRegionBased && effectiveSelectedConfig ? (
+              {(headerConfig.isRegionBased || headerConfig.showDistrictSelector) && effectiveAreaConfig ? (
                 <div style={{ marginTop: hideTextsHeaderInActivationFlow ? '0' : '18px' }}>
                   <h2 style={regionTitleStyle}>
                     {hideTextsHeaderInActivationFlow
-                      ? `Aktivierung - ${effectiveSelectedConfig.areas?.name ?? ''}`
+                      ? `Aktivierung - ${effectiveAreaConfig.areas?.name ?? ''}`
                       : effectiveRegionHeaderTitle}
                   </h2>
                   {hideTextsHeaderInActivationFlow ? <div style={{ height: '40px' }} /> : null}
                   {!hideTextsHeaderInActivationFlow ? (
-                    <div style={regionStatusStyle(resolveActivationStatusKey(effectiveSelectedConfig))}>
-                      {selectedAreaStatusLabel}
+                    <div style={regionStatusStyle(resolveActivationStatusKey(effectiveAreaConfig))}>
+                      {formatActivationStatusLabel(effectiveAreaConfig)}
+                    </div>
+                  ) : null}
+                  {headerConfig.showDistrictSelector && scopedMainDistricts.length > 0 ? (
+                    <div style={headerDistrictSelectorWrapStyle}>
+                      <div style={headerDistrictSelectorLabelStyle}>Gebiet wechseln</div>
+                      <div style={headerDistrictSelectorRowStyle}>
+                        {scopedMainDistricts.map((district) => {
+                          const active = district.area_id === effectiveAreaConfig.area_id;
+                          return (
+                            <button
+                              key={district.area_id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedConfig(district);
+                                setExpandedDistrict(district.area_id);
+                              }}
+                              style={headerDistrictTabStyle(active)}
+                            >
+                              {formatRegionHeaderTitle(configs, district)}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   ) : null}
                   {showPreviewGuidanceForSelected ? (
@@ -1782,7 +1832,7 @@ export default function DashboardClient() {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => void handleRequestLive(effectiveSelectedConfig)}
+                            onClick={() => void handleRequestLive(effectiveAreaConfig)}
                             disabled={previewRequestBusy}
                             style={{ ...previewReadySuccessButtonStyle, marginLeft: 'auto' }}
                           >
@@ -1959,29 +2009,29 @@ export default function DashboardClient() {
             ) : activeMainTab === 'texts' ? (
               isAwaitingAdminApproval ? null : (
                 <TextEditorForm
-                  key={`t-${effectiveSelectedConfig.id}`}
-                  config={effectiveSelectedConfig}
+                  key={`t-${effectiveAreaConfig.id}`}
+                  config={effectiveAreaConfig}
                   enableApproval
                   initialTabId={textFocusTarget?.tabId}
                   focusSectionKey={textFocusTarget?.sectionKey}
-                  lockedToMandatory={Boolean(!effectiveSelectedConfig?.is_active)}
-                  allowedTabIds={effectiveSelectedConfig?.is_active ? undefined : Array.from(MANDATORY_TAB_IDS)}
-                  allowedSectionKeys={effectiveSelectedConfig?.is_active ? undefined : Array.from(mandatoryAllowedKeys)}
+                  lockedToMandatory={Boolean(!effectiveAreaConfig?.is_active)}
+                  allowedTabIds={effectiveAreaConfig?.is_active ? undefined : Array.from(MANDATORY_TAB_IDS)}
+                  allowedSectionKeys={effectiveAreaConfig?.is_active ? undefined : Array.from(mandatoryAllowedKeys)}
                   onFocusHandled={() => setTextFocusTarget(null)}
                   onPersistSuccess={() => setProgressRefreshTick((prev) => prev + 1)}
                 />
               )
             ) : activeMainTab === 'marketing' ? (
               <TextEditorForm
-                key={`mkt-${effectiveSelectedConfig.id}`}
-                config={effectiveSelectedConfig}
+                key={`mkt-${effectiveAreaConfig.id}`}
+                config={effectiveAreaConfig}
                 tableName="partner_marketing_texts"
                 enableApproval
               />
             ) : activeMainTab === 'local_site' ? (
               <TextEditorForm
-                key={`ls-${effectiveSelectedConfig.id}`}
-                config={effectiveSelectedConfig}
+                key={`ls-${effectiveAreaConfig.id}`}
+                config={effectiveAreaConfig}
                 tableName="partner_local_site_texts"
                 enableApproval
               />
@@ -1995,13 +2045,13 @@ export default function DashboardClient() {
               />
             ) : activeMainTab === 'international' ? (
               <InternationalizationManager
-                config={effectiveSelectedConfig}
+                config={effectiveAreaConfig}
                 availableLocales={internationalLocales}
                 availableDomains={internationalDomains}
               />
             ) : activeMainTab === 'immobilien' ? (
               <OffersManager
-                visibilityConfig={effectiveSelectedConfig}
+                visibilityConfig={effectiveAreaConfig}
                 visibilityMode={effectiveOfferVisibilityMode}
                 visibilityBusy={visibilitySaveBusy}
                 visibilityMessage={visibilitySaveMessage}
@@ -2012,7 +2062,7 @@ export default function DashboardClient() {
               <ReferencesManager />
             ) : activeMainTab === 'gesuche' ? (
               <RequestsManager
-                visibilityConfig={effectiveSelectedConfig}
+                visibilityConfig={effectiveAreaConfig}
                 visibilityMode={effectiveRequestVisibilityMode}
                 visibilityBusy={visibilitySaveBusy}
                 visibilityMessage={visibilitySaveMessage}
@@ -2297,6 +2347,37 @@ const regionTitleStyle = {
   margin: 0,
   letterSpacing: '-0.01em'
 };
+
+const headerDistrictSelectorWrapStyle: React.CSSProperties = {
+  marginTop: '14px',
+};
+
+const headerDistrictSelectorLabelStyle: React.CSSProperties = {
+  fontSize: '11px',
+  fontWeight: 700,
+  color: '#64748b',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  marginBottom: '8px',
+};
+
+const headerDistrictSelectorRowStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '10px',
+};
+
+const headerDistrictTabStyle = (active: boolean): React.CSSProperties => ({
+  border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
+  background: active ? '#ecfdf5' : '#ffffff',
+  color: active ? '#0f766e' : '#334155',
+  borderRadius: '999px',
+  padding: '8px 14px',
+  fontSize: '13px',
+  fontWeight: active ? 700 : 600,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+});
 
 
 const regionStatusStyle = (statusKey: string): React.CSSProperties => ({
