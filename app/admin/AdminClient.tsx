@@ -3990,59 +3990,60 @@ export default function AdminClient() {
             </div>
           </div>
         ) : null}
-        {selectedPartner ? (
-          <div style={partnerTabBarStyle}>
-            <button style={partnerTabButtonStyle(partnerTab === "profile")} onClick={() => setPartnerTab("profile")}>Profil</button>
-            <button style={partnerTabButtonStyle(partnerTab === "areas")} onClick={() => setPartnerTab("areas")}>
-              Gebiete
-              {selectedPartnerNeedsAreaAssignment ? (
-                <span
-                  aria-label="Gebiete zuweisen erforderlich"
-                  style={{
-                    display: "inline-block",
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: "#dc2626",
-                    marginLeft: 8,
-                    verticalAlign: "middle",
-                  }}
-                />
-              ) : null}
-            </button>
-            <button style={partnerTabButtonStyle(partnerTab === "review")} onClick={() => setPartnerTab("review")}>
-              Freigabeprüfung
-              {selectedPartnerWorkflowSignal === "orange" ? (
-                <span
-                  aria-label="Freigabe oder Preview offen"
-                  style={{
-                    display: "inline-block",
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: "#f59e0b",
-                    marginLeft: 8,
-                    verticalAlign: "middle",
-                  }}
-                />
-              ) : null}
-            </button>
-            <button
-              style={partnerTabButtonStyle(partnerTab === "integrations")}
-              onClick={() => {
-                setPartnerTab("integrations");
-                setIntegrationsAdminTab("llm_partner");
-              }}
-            >
-              Anbindungen
-            </button>
-            <button style={partnerTabButtonStyle(partnerTab === "billing")} onClick={() => setPartnerTab("billing")}>
-              Abrechnung
-            </button>
-            <button style={partnerTabButtonStyle(partnerTab === "handover")} onClick={() => setPartnerTab("handover")}>Übergabe</button>
-          </div>
-        ) : null}
       </section>
+      ) : null}
+
+      {activeView === "partner_edit" && selectedPartner ? (
+      <div style={partnerTabBarStyle}>
+        <button style={partnerTabButtonStyle(partnerTab === "profile")} onClick={() => setPartnerTab("profile")}>Profil</button>
+        <button style={partnerTabButtonStyle(partnerTab === "areas")} onClick={() => setPartnerTab("areas")}>
+          Gebiete
+          {selectedPartnerNeedsAreaAssignment ? (
+            <span
+              aria-label="Gebiete zuweisen erforderlich"
+              style={{
+                display: "inline-block",
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#dc2626",
+                marginLeft: 8,
+                verticalAlign: "middle",
+              }}
+            />
+          ) : null}
+        </button>
+        <button style={partnerTabButtonStyle(partnerTab === "review")} onClick={() => setPartnerTab("review")}>
+          Freigabeprüfung
+          {selectedPartnerWorkflowSignal === "orange" ? (
+            <span
+              aria-label="Freigabe oder Preview offen"
+              style={{
+                display: "inline-block",
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#f59e0b",
+                marginLeft: 8,
+                verticalAlign: "middle",
+              }}
+            />
+          ) : null}
+        </button>
+        <button
+          style={partnerTabButtonStyle(partnerTab === "integrations")}
+          onClick={() => {
+            setPartnerTab("integrations");
+            setIntegrationsAdminTab("llm_partner");
+          }}
+        >
+          Anbindungen
+        </button>
+        <button style={partnerTabButtonStyle(partnerTab === "billing")} onClick={() => setPartnerTab("billing")}>
+          Abrechnung
+        </button>
+        <button style={partnerTabButtonStyle(partnerTab === "handover")} onClick={() => setPartnerTab("handover")}>Übergabe</button>
+      </div>
       ) : null}
 
       {activeView === "partner_edit" && partnerTab === "profile" && Boolean(selectedPartner) ? (
