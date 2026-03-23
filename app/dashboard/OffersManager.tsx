@@ -1185,7 +1185,8 @@ const panelStyle: React.CSSProperties = {
 
 const visibilityShellStyle: React.CSSProperties = {
   width: '100%',
-  marginBottom: '-2px',
+  padding: '0 0 0',
+  marginBottom: 0,
 };
 
 const panelTitleStyle: React.CSSProperties = {
@@ -1762,7 +1763,7 @@ const visibilityLabelStyle: React.CSSProperties = {
 
 const visibilitySelectWrapStyle: React.CSSProperties = {
   position: 'relative',
-  display: 'block',
+  display: 'inline-block',
 };
 
 const visibilitySelectStyle: React.CSSProperties = {
@@ -1778,7 +1779,7 @@ const visibilitySelectStyle: React.CSSProperties = {
   fontSize: '13px',
   fontWeight: 600,
   boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-  width: '100%',
+  minWidth: '220px',
 };
 
 const visibilitySelectChevronStyle: React.CSSProperties = {
