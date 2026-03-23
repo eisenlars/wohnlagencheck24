@@ -218,6 +218,10 @@ function buildEnergySnapshot(elements: Record<string, unknown>): OfferEnergySnap
     construction_year: constructionYear,
     heating_energy_source: null,
     efficiency_class: null,
+    certificate_availability: null,
+    certificate_start_date: null,
+    certificate_end_date: null,
+    warm_water_included: null,
     demand: value,
     year: constructionYear,
   };
