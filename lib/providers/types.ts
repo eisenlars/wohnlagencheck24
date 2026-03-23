@@ -33,6 +33,25 @@ export type OfferEnergySnapshot = {
   year: number | null;
 };
 
+export type OfferDetailsSnapshot = {
+  living_area_sqm: number | null;
+  usable_area_sqm: number | null;
+  plot_area_sqm: number | null;
+  rooms: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  floor: number | null;
+  construction_year: number | null;
+  condition: string | null;
+  availability: string | null;
+  parking: string | null;
+  balcony: boolean | null;
+  terrace: boolean | null;
+  garden: boolean | null;
+  elevator: boolean | null;
+  address_hidden: boolean | null;
+};
+
 export type MappedOffer = {
   partner_id: string;
   source: ProviderKey;

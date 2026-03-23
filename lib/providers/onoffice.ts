@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 
 import type {
+  OfferDetailsSnapshot,
   MappedOffer,
   PartnerIntegration,
   RawListing,
@@ -197,6 +198,27 @@ function toIsoNow(): string {
   return new Date().toISOString();
 }
 
+function buildDetailsSnapshot(elements: Record<string, unknown>): OfferDetailsSnapshot {
+  return {
+    living_area_sqm: toNumber(elements["wohnflaeche"]),
+    usable_area_sqm: null,
+    plot_area_sqm: null,
+    rooms: toNumber(elements["anzahl_zimmer"]),
+    bedrooms: null,
+    bathrooms: null,
+    floor: null,
+    construction_year: toNumber(elements["baujahr"]),
+    condition: null,
+    availability: null,
+    parking: null,
+    balcony: null,
+    terrace: null,
+    garden: null,
+    elevator: null,
+    address_hidden: null,
+  };
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = PROVIDER_FETCH_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -251,6 +273,7 @@ function mapEstateToOffer(
   const gallery = extractImages(elements);
   const address = buildAddress(elements);
   const rent = toNumber(elements["warmmiete"]) ?? toNumber(elements["kaltmiete"]);
+  const details = buildDetailsSnapshot(elements);
 
   return {
     partner_id: partnerId,
@@ -272,6 +295,7 @@ function mapEstateToOffer(
       exposee_id: elements["objektnr_extern"] ?? null,
       description: elements["freitext_lage"] ?? null,
       features_note: elements["freitext_ausstattung"] ?? null,
+      details,
       energy: {
         type: elements["energiepass_art"] ?? null,
         demand: elements["energieverbrauchkennwert"] ?? null,

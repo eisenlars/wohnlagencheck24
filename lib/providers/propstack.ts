@@ -1,4 +1,5 @@
 import type {
+  OfferDetailsSnapshot,
   MappedOffer,
   OfferEnergySnapshot,
   OfferMediaAsset,
@@ -249,6 +250,27 @@ function buildEnergySnapshot(unit: PropstackUnit): OfferEnergySnapshot {
   };
 }
 
+function buildDetailsSnapshot(unit: PropstackUnit): OfferDetailsSnapshot {
+  return {
+    living_area_sqm: normalizePropstackNumber(unit.living_space),
+    usable_area_sqm: null,
+    plot_area_sqm: null,
+    rooms: normalizePropstackNumber(unit.number_of_rooms),
+    bedrooms: null,
+    bathrooms: null,
+    floor: null,
+    construction_year: normalizePropstackNumber(unit.construction_year),
+    condition: null,
+    availability: null,
+    parking: null,
+    balcony: null,
+    terrace: null,
+    garden: null,
+    elevator: null,
+    address_hidden: unit.hide_address ?? null,
+  };
+}
+
 function toIsoNow(): string {
   return new Date().toISOString();
 }
@@ -451,6 +473,7 @@ function normalizeUnitOffer(
   const title = normalizePropstackTitle(unit.title);
   const primaryImage = galleryAssets.find((asset) => asset.kind === "image")?.url ?? gallery[0] ?? null;
   const energy = buildEnergySnapshot(unit);
+  const details = buildDetailsSnapshot(unit);
 
   return {
     partner_id: partnerId,
@@ -478,6 +501,7 @@ function normalizeUnitOffer(
       zip_code: unit.zip_code ?? null,
       city: unit.city ?? null,
       hide_address: unit.hide_address ?? null,
+      details,
       energy,
       gallery,
       gallery_urls: gallery,
