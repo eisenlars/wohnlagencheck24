@@ -42,23 +42,23 @@ type PartnerAreaMappingRow = {
 
 function normalizeAreaRelation(
   value: unknown,
-): {
+): Array<{
   name?: string | null;
   slug?: string | null;
   parent_slug?: string | null;
   bundesland_slug?: string | null;
-} | null {
+}> {
   const source = Array.isArray(value)
     ? value.find((item) => item && typeof item === "object")
     : value;
-  if (!source || typeof source !== "object") return null;
+  if (!source || typeof source !== "object") return [];
   const area = source as Record<string, unknown>;
-  return {
+  return [{
     name: typeof area.name === "string" ? area.name : null,
     slug: typeof area.slug === "string" ? area.slug : null,
     parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
     bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
-  };
+  }];
 }
 
 function isMissingIsActiveColumn(error: unknown): boolean {
@@ -167,12 +167,12 @@ async function loadPartnerAreaMappings(
       request_visibility_mode: string | null;
       partner_preview_signoff_at: string | null;
       created_at: string | null;
-      areas: {
+      areas: Array<{
         name: string | null;
         slug: string | null;
         parent_slug: string | null;
         bundesland_slug: string | null;
-      } | null;
+      }>;
     };
     const missingActivationStatus = isMissingAreaActivationStatusColumn(mappingError);
     const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(mappingError);
