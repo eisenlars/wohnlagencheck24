@@ -80,6 +80,25 @@ type EnergySnapshot = {
   year?: number | null;
 };
 
+type DetailsSnapshot = {
+  living_area_sqm?: number | null;
+  usable_area_sqm?: number | null;
+  plot_area_sqm?: number | null;
+  rooms?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  floor?: number | null;
+  construction_year?: number | null;
+  condition?: string | null;
+  availability?: string | null;
+  parking?: string | null;
+  balcony?: boolean | null;
+  terrace?: boolean | null;
+  garden?: boolean | null;
+  elevator?: boolean | null;
+  address_hidden?: boolean | null;
+};
+
 type Props = {
   visibilityConfig?: VisibilityConfig | null;
   visibilityMode?: VisibilityMode;
@@ -168,6 +187,34 @@ function parseEnergySnapshot(value: unknown): EnergySnapshot | null {
     efficiency_class: asText(record.efficiency_class),
     demand: asNumber(record.demand),
     year: asNumber(record.year),
+  };
+}
+
+function parseBoolean(value: unknown): boolean | null {
+  if (typeof value === 'boolean') return value;
+  return null;
+}
+
+function parseDetailsSnapshot(value: unknown): DetailsSnapshot | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  return {
+    living_area_sqm: asNumber(record.living_area_sqm),
+    usable_area_sqm: asNumber(record.usable_area_sqm),
+    plot_area_sqm: asNumber(record.plot_area_sqm),
+    rooms: asNumber(record.rooms),
+    bedrooms: asNumber(record.bedrooms),
+    bathrooms: asNumber(record.bathrooms),
+    floor: asNumber(record.floor),
+    construction_year: asNumber(record.construction_year),
+    condition: asText(record.condition),
+    availability: asText(record.availability),
+    parking: asText(record.parking),
+    balcony: parseBoolean(record.balcony),
+    terrace: parseBoolean(record.terrace),
+    garden: parseBoolean(record.garden),
+    elevator: parseBoolean(record.elevator),
+    address_hidden: parseBoolean(record.address_hidden),
   };
 }
 
@@ -321,6 +368,10 @@ export default function OffersManager(props: Props) {
   );
   const activePhotoAsset = photoAssets[activePhotoIndex] ?? null;
   const activeFloorplanAsset = floorplanAssets[activeFloorplanIndex] ?? null;
+  const detailsSnapshot = useMemo(
+    () => parseDetailsSnapshot(selectedRaw.details),
+    [selectedRaw],
+  );
   const energySnapshot = useMemo(
     () => parseEnergySnapshot(selectedRaw.energy),
     [selectedRaw],
@@ -860,6 +911,25 @@ export default function OffersManager(props: Props) {
                       {selectedOffer.offer_type === 'miete'
                         ? (selectedOffer.rent ? `${selectedOffer.rent} €` : '—')
                         : (selectedOffer.price ? `${selectedOffer.price} €` : '—')}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Baujahr</div>
+                    <div style={offerSummaryValueStyle}>
+                      {detailsSnapshot?.construction_year
+                        ?? energySnapshot?.construction_year
+                        ?? energySnapshot?.year
+                        ?? '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Adresse im Portal</div>
+                    <div style={offerSummaryValueStyle}>
+                      {detailsSnapshot?.address_hidden === true
+                        ? 'verborgen'
+                        : detailsSnapshot?.address_hidden === false
+                          ? 'sichtbar'
+                          : '—'}
                     </div>
                   </div>
                 </div>

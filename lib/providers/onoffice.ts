@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 
 import type {
   OfferDetailsSnapshot,
+  OfferEnergySnapshot,
   MappedOffer,
   PartnerIntegration,
   RawListing,
@@ -198,6 +199,30 @@ function toIsoNow(): string {
   return new Date().toISOString();
 }
 
+function normalizeEnergyValueKind(certificateType: string | null | undefined): "bedarf" | "verbrauch" | null {
+  const normalized = String(certificateType ?? "").trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized.includes("bedarf")) return "bedarf";
+  if (normalized.includes("verbrauch")) return "verbrauch";
+  return null;
+}
+
+function buildEnergySnapshot(elements: Record<string, unknown>): OfferEnergySnapshot {
+  const certificateType = String(elements["energiepass_art"] ?? "").trim() || null;
+  const value = toNumber(elements["energieverbrauchkennwert"]);
+  const constructionYear = toNumber(elements["baujahr"]);
+  return {
+    certificate_type: certificateType,
+    value,
+    value_kind: normalizeEnergyValueKind(certificateType),
+    construction_year: constructionYear,
+    heating_energy_source: null,
+    efficiency_class: null,
+    demand: value,
+    year: constructionYear,
+  };
+}
+
 function buildDetailsSnapshot(elements: Record<string, unknown>): OfferDetailsSnapshot {
   return {
     living_area_sqm: toNumber(elements["wohnflaeche"]),
@@ -274,6 +299,7 @@ function mapEstateToOffer(
   const address = buildAddress(elements);
   const rent = toNumber(elements["warmmiete"]) ?? toNumber(elements["kaltmiete"]);
   const details = buildDetailsSnapshot(elements);
+  const energy = buildEnergySnapshot(elements);
 
   return {
     partner_id: partnerId,
@@ -296,11 +322,7 @@ function mapEstateToOffer(
       description: elements["freitext_lage"] ?? null,
       features_note: elements["freitext_ausstattung"] ?? null,
       details,
-      energy: {
-        type: elements["energiepass_art"] ?? null,
-        demand: elements["energieverbrauchkennwert"] ?? null,
-        year: elements["baujahr"] ?? null,
-      },
+      energy,
       gallery,
       lat: elements["breitengrad"] ?? null,
       lng: elements["laengengrad"] ?? null,
