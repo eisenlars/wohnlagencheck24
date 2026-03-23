@@ -182,6 +182,23 @@ function resolveActivationStatusKey(config: PartnerAreaConfig | null): string {
   return "assigned";
 }
 
+function getActivationStatusPalette(statusKey: string): {
+  backgroundColor: string;
+  color: string;
+  border: string;
+} {
+  if (statusKey === 'live') {
+    return { backgroundColor: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' };
+  }
+  if (statusKey === 'approved_preview' || statusKey === 'ready_for_review' || statusKey === 'in_review') {
+    return { backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' };
+  }
+  if (statusKey === 'changes_requested') {
+    return { backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #fecaca' };
+  }
+  return { backgroundColor: '#e2e8f0', color: '#334155', border: '1px solid #cbd5e1' };
+}
+
 function findDistrictConfig(
   configs: PartnerAreaConfig[],
   config: PartnerAreaConfig | null,
@@ -1491,11 +1508,9 @@ export default function DashboardClient() {
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: activeMainTab === 'immobilien'
-            ? '24px 48px'
-            : showWelcome
-              ? '40px'
-              : '0 40px 40px',
+          padding: showWelcome
+            ? '40px'
+            : '0 40px 40px',
         }}
       >
         {showWelcome ? (
@@ -1767,13 +1782,11 @@ export default function DashboardClient() {
               ) : null}
               {(headerConfig.isRegionBased || headerConfig.showDistrictSelector) && effectiveAreaConfig ? (
                 <div style={{ marginTop: hideTextsHeaderInActivationFlow ? '0' : '18px' }}>
-                  <h2 style={regionTitleStyle}>
-                    {hideTextsHeaderInActivationFlow
-                      ? `Aktivierung - ${effectiveAreaConfig.areas?.name ?? ''}`
-                      : effectiveRegionHeaderTitle}
-                  </h2>
                   {hideTextsHeaderInActivationFlow ? <div style={{ height: '40px' }} /> : null}
-                  {!hideTextsHeaderInActivationFlow ? (
+                  {!hideTextsHeaderInActivationFlow && !headerConfig.showDistrictSelector ? (
+                    <h2 style={regionTitleStyle}>{effectiveRegionHeaderTitle}</h2>
+                  ) : null}
+                  {!hideTextsHeaderInActivationFlow && !headerConfig.showDistrictSelector ? (
                     <div style={regionStatusStyle(resolveActivationStatusKey(effectiveAreaConfig))}>
                       {formatActivationStatusLabel(effectiveAreaConfig)}
                     </div>
@@ -1784,6 +1797,8 @@ export default function DashboardClient() {
                       <div style={headerDistrictSelectorRowStyle}>
                         {scopedMainDistricts.map((district) => {
                           const active = district.area_id === effectiveAreaConfig.area_id;
+                          const statusKey = resolveActivationStatusKey(district);
+                          const statusLabel = formatActivationStatusLabel(district);
                           return (
                             <button
                               key={district.area_id}
@@ -1792,9 +1807,14 @@ export default function DashboardClient() {
                                 setSelectedConfig(district);
                                 setExpandedDistrict(district.area_id);
                               }}
-                              style={headerDistrictTabStyle(active)}
+                              style={headerDistrictTabStyle(active, statusKey)}
                             >
-                              {formatRegionHeaderTitle(configs, district)}
+                              <span style={headerDistrictTabContentStyle}>
+                                <span>{formatRegionHeaderTitle(configs, district)}</span>
+                                <span style={headerDistrictTabStatusStyle(statusKey)}>
+                                  {statusLabel}
+                                </span>
+                              </span>
                             </button>
                           );
                         })}
@@ -2368,20 +2388,47 @@ const headerDistrictSelectorRowStyle: React.CSSProperties = {
   gap: '10px',
 };
 
-const headerDistrictTabStyle = (active: boolean): React.CSSProperties => ({
-  border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
-  background: active ? '#ecfdf5' : '#ffffff',
-  color: active ? '#0f766e' : '#334155',
+const headerDistrictTabStyle = (active: boolean, statusKey: string): React.CSSProperties => {
+  const palette = getActivationStatusPalette(statusKey);
+  return {
+  border: active ? `1px solid ${palette.color}` : palette.border,
+  background: active ? palette.backgroundColor : '#ffffff',
+  color: active ? palette.color : '#334155',
   borderRadius: '999px',
   padding: '8px 14px',
   fontSize: '13px',
   fontWeight: active ? 700 : 600,
   cursor: 'pointer',
   whiteSpace: 'nowrap',
-});
+  };
+};
+
+const headerDistrictTabContentStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+};
+
+const headerDistrictTabStatusStyle = (statusKey: string): React.CSSProperties => {
+  const palette = getActivationStatusPalette(statusKey);
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '3px 8px',
+    borderRadius: '999px',
+    fontSize: '10px',
+    fontWeight: 800,
+    letterSpacing: '0.03em',
+    textTransform: 'uppercase',
+    backgroundColor: palette.backgroundColor,
+    color: palette.color,
+    border: palette.border,
+  };
+};
 
 
 const regionStatusStyle = (statusKey: string): React.CSSProperties => ({
+  ...getActivationStatusPalette(statusKey),
   marginTop: '10px',
   marginBottom: '14px',
   display: 'inline-flex',
@@ -2392,24 +2439,6 @@ const regionStatusStyle = (statusKey: string): React.CSSProperties => ({
   fontWeight: 800,
   textTransform: 'uppercase' as const,
   letterSpacing: '0.04em',
-  backgroundColor:
-    statusKey === 'live' ? '#dcfce7'
-      : statusKey === 'approved_preview' ? '#fef3c7'
-        : statusKey === 'ready_for_review' || statusKey === 'in_review' ? '#fef3c7'
-          : statusKey === 'changes_requested' ? '#fee2e2'
-            : '#e2e8f0',
-  color:
-    statusKey === 'live' ? '#166534'
-      : statusKey === 'approved_preview' ? '#92400e'
-        : statusKey === 'ready_for_review' || statusKey === 'in_review' ? '#92400e'
-          : statusKey === 'changes_requested' ? '#991b1b'
-            : '#334155',
-  border:
-    statusKey === 'live' ? '1px solid #bbf7d0'
-      : statusKey === 'approved_preview' ? '1px solid #fde68a'
-        : statusKey === 'ready_for_review' || statusKey === 'in_review' ? '1px solid #fde68a'
-          : statusKey === 'changes_requested' ? '1px solid #fecaca'
-            : '1px solid #cbd5e1',
 });
 
 const emptyStateStyle = {
