@@ -5165,9 +5165,9 @@ export default function AdminClient() {
               ))}
             </tbody>
           </table>
-          <div style={{ ...rowStyle, marginTop: 10 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
             <button
-              style={{ ...btnStyle, padding: "8px 12px", fontSize: 13 }}
+              style={{ ...btnStyle, padding: "7px 12px", fontSize: 12, width: "auto", minWidth: 0 }}
               disabled={busy}
               onClick={() =>
                 run("Portal-Locales speichern", async () => {
