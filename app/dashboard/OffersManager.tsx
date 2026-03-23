@@ -122,7 +122,7 @@ type Props = {
   onVisibilityModeChange?: (value: VisibilityMode) => void | Promise<void>;
 };
 
-type WorkspaceTab = 'texts' | 'seo' | 'media' | 'energy';
+type WorkspaceTab = 'texts' | 'equipment' | 'seo' | 'media' | 'energy';
 
 function formatProviderLabel(provider: string): string {
   const p = String(provider ?? '').toLowerCase();
@@ -1016,16 +1016,6 @@ export default function OffersManager(props: Props) {
                     </div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Adresse im Portal</div>
-                    <div style={offerSummaryValueStyle}>
-                      {detailsSnapshot?.address_hidden === true
-                        ? 'verborgen'
-                        : detailsSnapshot?.address_hidden === false
-                          ? 'sichtbar'
-                          : '—'}
-                    </div>
-                  </div>
-                  <div>
                     <div style={offerSummaryLabelStyle}>Nutzfläche</div>
                     <div style={offerSummaryValueStyle}>
                       {detailsSnapshot?.usable_area_sqm != null ? `${detailsSnapshot.usable_area_sqm} m²` : '—'}
@@ -1049,26 +1039,6 @@ export default function OffersManager(props: Props) {
                     <div style={offerSummaryLabelStyle}>Etage</div>
                     <div style={offerSummaryValueStyle}>{detailsSnapshot?.floor ?? '—'}</div>
                   </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Zustand</div>
-                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.condition ?? '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Stellplatz</div>
-                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.parking ?? '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Balkon</div>
-                    <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.balcony)}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Terrasse</div>
-                    <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.terrace)}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Garten</div>
-                    <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.garden)}</div>
-                  </div>
                 </div>
               </div>
             ) : null}
@@ -1079,6 +1049,13 @@ export default function OffersManager(props: Props) {
                 style={workspaceTabStyle(activeWorkspaceTab === 'texts')}
               >
                 Texte
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('equipment')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'equipment')}
+              >
+                Ausstattung
               </button>
               <button
                 type="button"
@@ -1350,7 +1327,6 @@ export default function OffersManager(props: Props) {
                   {renderTextField('Teaser', 'short_description', rawDescription, { multiline: true })}
                   {renderTextField('Langtext', 'long_description', rawDescription, { multiline: true })}
                   {renderTextField('Lage‑Text', 'location_text', rawLocation, { multiline: true })}
-                  {renderTextField('Ausstattungs‑Text', 'features_text', rawFeatures, { multiline: true })}
                 </div>
 
                 <div style={contentPreviewGridStyle}>
@@ -1372,8 +1348,63 @@ export default function OffersManager(props: Props) {
                       {form.location_text || 'Kein Lage-Text gepflegt.'}
                     </div>
                   </div>
+                </div>
+
+                <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
+                  {saving ? 'Speichern...' : 'Texte speichern'}
+                </button>
+              </>
+            ) : null}
+
+            {activeWorkspaceTab === 'equipment' ? (
+              <>
+                <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
+                  {renderTextField('Ausstattungs‑Text', 'features_text', rawFeatures, { multiline: true })}
+                </div>
+
+                <div style={offerSummaryCardStyle}>
+                  <div style={offerSummaryHeaderStyle}>Strukturierte Ausstattung</div>
+                  <div style={offerSummaryGridStyle}>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Zustand</div>
+                      <div style={offerSummaryValueStyle}>{detailsSnapshot?.condition ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Stellplatz</div>
+                      <div style={offerSummaryValueStyle}>{detailsSnapshot?.parking ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Balkon</div>
+                      <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.balcony)}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Terrasse</div>
+                      <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.terrace)}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Garten</div>
+                      <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.garden)}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Aufzug</div>
+                      <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.elevator)}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Adresse im Portal</div>
+                      <div style={offerSummaryValueStyle}>
+                        {detailsSnapshot?.address_hidden === true
+                          ? 'verborgen'
+                          : detailsSnapshot?.address_hidden === false
+                            ? 'sichtbar'
+                            : '—'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={contentPreviewGridStyle}>
                   <div style={contentPreviewCardStyle}>
-                    <div style={contentPreviewLabelStyle}>Ausstattung</div>
+                    <div style={contentPreviewLabelStyle}>Ausstattungsbeschreibung</div>
                     <div style={contentPreviewBodyStyle}>
                       {form.features_text || 'Kein Ausstattungs-Text gepflegt.'}
                     </div>
@@ -1381,7 +1412,7 @@ export default function OffersManager(props: Props) {
                 </div>
 
                 <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
-                  {saving ? 'Speichern...' : 'Texte speichern'}
+                  {saving ? 'Speichern...' : 'Ausstattung speichern'}
                 </button>
               </>
             ) : null}

@@ -383,12 +383,18 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     detailsSnapshot?.bedrooms != null ? { label: "Schlafzimmer", value: formatRooms(detailsSnapshot.bedrooms) } : null,
     detailsSnapshot?.bathrooms != null ? { label: "Badezimmer", value: formatRooms(detailsSnapshot.bathrooms) } : null,
     detailsSnapshot?.floor != null ? { label: "Etage", value: String(detailsSnapshot.floor) } : null,
-    detailsSnapshot?.condition ? { label: "Zustand", value: detailsSnapshot.condition } : null,
+    (detailsSnapshot?.construction_year ?? energySnapshot?.construction_year ?? energySnapshot?.year) != null
+      ? { label: "Baujahr", value: String(detailsSnapshot?.construction_year ?? energySnapshot?.construction_year ?? energySnapshot?.year) }
+      : null,
     detailsSnapshot?.availability ? { label: "Verfügbarkeit", value: detailsSnapshot.availability } : null,
+  ].filter((item): item is { label: string; value: string } => Boolean(item));
+  const equipmentFacts = [
+    detailsSnapshot?.condition ? { label: "Zustand", value: detailsSnapshot.condition } : null,
     detailsSnapshot?.parking ? { label: "Stellplatz", value: detailsSnapshot.parking } : null,
     detailsSnapshot?.balcony != null ? { label: "Balkon", value: formatBooleanLabel(detailsSnapshot.balcony) } : null,
     detailsSnapshot?.terrace != null ? { label: "Terrasse", value: formatBooleanLabel(detailsSnapshot.terrace) } : null,
     detailsSnapshot?.garden != null ? { label: "Garten", value: formatBooleanLabel(detailsSnapshot.garden) } : null,
+    detailsSnapshot?.elevator != null ? { label: "Aufzug", value: formatBooleanLabel(detailsSnapshot.elevator) } : null,
   ].filter((item): item is { label: string; value: string } => Boolean(item));
   const energyFacts = [
     { label: texts.energy_class, value: energySnapshot?.efficiency_class ?? "—" },
@@ -581,6 +587,20 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           <h2 className="h5 mb-3">Objektdetails</h2>
           <dl className="offer-detail-facts">
             {detailFacts.map((item) => (
+              <div key={item.label}>
+                <dt>{item.label}</dt>
+                <dd>{item.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : null}
+
+      {equipmentFacts.length > 0 ? (
+        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
+          <h2 className="h5 mb-3">Ausstattung</h2>
+          <dl className="offer-detail-facts">
+            {equipmentFacts.map((item) => (
               <div key={item.label}>
                 <dt>{item.label}</dt>
                 <dd>{item.value}</dd>
