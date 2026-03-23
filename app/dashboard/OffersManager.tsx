@@ -89,6 +89,8 @@ type Props = {
   onVisibilityModeChange?: (value: VisibilityMode) => void | Promise<void>;
 };
 
+type WorkspaceTab = 'texts' | 'seo' | 'media' | 'energy';
+
 function formatProviderLabel(provider: string): string {
   const p = String(provider ?? '').toLowerCase();
   if (p === 'openai') return 'OpenAI';
@@ -194,6 +196,7 @@ export default function OffersManager(props: Props) {
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<WorkspaceTab>('texts');
 
   useEffect(() => {
     async function load() {
@@ -841,7 +844,45 @@ export default function OffersManager(props: Props) {
           </div>
         ) : (
           <>
-            {selectedOffer ? (
+            <div style={workspaceTabsRowStyle}>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('texts')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'texts')}
+              >
+                Texte
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('seo')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'seo')}
+              >
+                SEO / GEO
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('media')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'media')}
+              >
+                Medien
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('energy')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'energy')}
+              >
+                Energie
+              </button>
+            </div>
+
+            {selectedOffer && (!normalizedSelectedExternalId || !normalizedSelectedSource) ? (
+              <div style={warningStyle}>
+                Hinweis: Dieses Objekt hat keine externe ID/Quelle. Overrides werden lokal mit
+                einer Fallback‑ID gespeichert.
+              </div>
+            ) : null}
+
+            {activeWorkspaceTab === 'media' && selectedOffer ? (
               <div style={offerSummaryCardStyle}>
                 <div style={offerSummaryHeaderStyle}>Objekt-Übersicht</div>
                 <div style={offerSummaryGridStyle}>
@@ -888,7 +929,7 @@ export default function OffersManager(props: Props) {
                 </div>
               </div>
             ) : null}
-            {selectedOffer ? (
+            {activeWorkspaceTab === 'media' && selectedOffer ? (
               <div style={mediaCardStyle}>
                 <div style={offerSummaryHeaderStyle}>Medien</div>
                 <div style={mediaSectionStyle}>
@@ -1065,7 +1106,7 @@ export default function OffersManager(props: Props) {
                 </div>
               </div>
             ) : null}
-            {selectedOffer ? (
+            {activeWorkspaceTab === 'energy' && selectedOffer ? (
               <div style={energyCardStyle}>
                 <div style={offerSummaryHeaderStyle}>Energieausweis</div>
                 <div style={energyGridStyle}>
@@ -1108,84 +1149,93 @@ export default function OffersManager(props: Props) {
                 )}
               </div>
             ) : null}
-            {selectedOffer && (!normalizedSelectedExternalId || !normalizedSelectedSource) ? (
-              <div style={warningStyle}>
-                Hinweis: Dieses Objekt hat keine externe ID/Quelle. Overrides werden lokal mit
-                einer Fallback‑ID gespeichert.
-              </div>
+            {activeWorkspaceTab === 'texts' ? (
+              <>
+                <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
+                  {renderTextField('Teaser', 'short_description', rawDescription, { multiline: true })}
+                  {renderTextField('Langtext', 'long_description', rawDescription, { multiline: true })}
+                  {renderTextField('Lage‑Text', 'location_text', rawLocation, { multiline: true })}
+                  {renderTextField('Ausstattungs‑Text', 'features_text', rawFeatures, { multiline: true })}
+                </div>
+
+                <div style={contentPreviewGridStyle}>
+                  <div style={contentPreviewCardStyle}>
+                    <div style={contentPreviewLabelStyle}>Teaser</div>
+                    <div style={contentPreviewBodyStyle}>
+                      {form.short_description || 'Kein Teaser gepflegt.'}
+                    </div>
+                  </div>
+                  <div style={contentPreviewCardStyle}>
+                    <div style={contentPreviewLabelStyle}>Langtext</div>
+                    <div style={contentPreviewBodyStyle}>
+                      {form.long_description || 'Kein Langtext gepflegt.'}
+                    </div>
+                  </div>
+                  <div style={contentPreviewCardStyle}>
+                    <div style={contentPreviewLabelStyle}>Lage</div>
+                    <div style={contentPreviewBodyStyle}>
+                      {form.location_text || 'Kein Lage-Text gepflegt.'}
+                    </div>
+                  </div>
+                  <div style={contentPreviewCardStyle}>
+                    <div style={contentPreviewLabelStyle}>Ausstattung</div>
+                    <div style={contentPreviewBodyStyle}>
+                      {form.features_text || 'Kein Ausstattungs-Text gepflegt.'}
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
+                  {saving ? 'Speichern...' : 'Texte speichern'}
+                </button>
+              </>
             ) : null}
-            <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
-              {renderTextField('SEO‑Titel', 'seo_title', selectedOffer?.title ?? '', { multiline: false })}
-              {renderTextField('SEO‑Description', 'seo_description', rawDescription, { multiline: true })}
-              {renderTextField('Objekt-Titel', 'seo_h1', selectedOffer?.title ?? '', { multiline: false })}
-              {renderTextField('Teaser', 'short_description', rawDescription, { multiline: true })}
-              {renderTextField('Langtext', 'long_description', rawDescription, { multiline: true })}
-              {renderTextField('Lage‑Text', 'location_text', rawLocation, { multiline: true })}
-              {renderTextField('Ausstattungs‑Text', 'features_text', rawFeatures, { multiline: true })}
-              {renderListField('Highlights (eine Zeile = ein Punkt)', 'highlights', rawHighlights, 'Ein Punkt pro Zeile')}
-              {renderListField('Alt‑Texte (eine Zeile = ein Bild)', 'image_alt_texts', rawImageAltTexts, 'Ein Bildtitel pro Zeile')}
-            </div>
 
-            <div style={previewCardStyle}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
-                SEO‑Vorschau
-              </div>
-              <div style={{ fontWeight: 700, fontSize: '16px', marginTop: '6px' }}>
-                {form.seo_title || form.seo_h1 || selectedOffer?.title || 'SEO‑Titel'}
-              </div>
-              <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
-                {form.seo_description || form.short_description || form.long_description || 'SEO‑Description'}
-              </div>
-              <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
-                /immobilienangebote/{form.external_id}_&lt;titel&gt;
-              </div>
-            </div>
+            {activeWorkspaceTab === 'seo' ? (
+              <>
+                <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
+                  {renderTextField('SEO‑Titel', 'seo_title', selectedOffer?.title ?? '', { multiline: false })}
+                  {renderTextField('SEO‑Description', 'seo_description', rawDescription, { multiline: true })}
+                  {renderTextField('Objekt-Titel', 'seo_h1', selectedOffer?.title ?? '', { multiline: false })}
+                  {renderListField('Highlights (eine Zeile = ein Punkt)', 'highlights', rawHighlights, 'Ein Punkt pro Zeile')}
+                  {renderListField('Alt‑Texte (eine Zeile = ein Bild)', 'image_alt_texts', rawImageAltTexts, 'Ein Bildtitel pro Zeile')}
+                </div>
 
-            <div style={previewCardStyle}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
-                OG / Twitter Vorschau
-              </div>
-              <div style={{ fontWeight: 700, fontSize: '15px', marginTop: '6px' }}>
-                {form.seo_title || form.seo_h1 || selectedOffer?.title || 'Titel für Social'}
-              </div>
-              <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
-                {form.seo_description || form.short_description || form.long_description || 'Beschreibung für Social'}
-              </div>
-              <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
-                {selectedOffer?.image_url ? `Bild: ${selectedOffer.image_url}` : 'Bild: (kein Bild gesetzt)'}
-              </div>
-            </div>
+                <div style={previewCardStyle}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                    SEO‑Vorschau
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '16px', marginTop: '6px' }}>
+                    {form.seo_title || form.seo_h1 || selectedOffer?.title || 'SEO‑Titel'}
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
+                    {form.seo_description || form.short_description || form.long_description || 'SEO‑Description'}
+                  </div>
+                  <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
+                    /immobilienangebote/{form.external_id}_&lt;titel&gt;
+                  </div>
+                </div>
 
-            <div style={contentPreviewGridStyle}>
-              <div style={contentPreviewCardStyle}>
-                <div style={contentPreviewLabelStyle}>Teaser</div>
-                <div style={contentPreviewBodyStyle}>
-                  {form.short_description || 'Kein Teaser gepflegt.'}
+                <div style={previewCardStyle}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                    OG / Twitter Vorschau
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '15px', marginTop: '6px' }}>
+                    {form.seo_title || form.seo_h1 || selectedOffer?.title || 'Titel für Social'}
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
+                    {form.seo_description || form.short_description || form.long_description || 'Beschreibung für Social'}
+                  </div>
+                  <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
+                    {selectedOffer?.image_url ? `Bild: ${selectedOffer.image_url}` : 'Bild: (kein Bild gesetzt)'}
+                  </div>
                 </div>
-              </div>
-              <div style={contentPreviewCardStyle}>
-                <div style={contentPreviewLabelStyle}>Langtext</div>
-                <div style={contentPreviewBodyStyle}>
-                  {form.long_description || 'Kein Langtext gepflegt.'}
-                </div>
-              </div>
-              <div style={contentPreviewCardStyle}>
-                <div style={contentPreviewLabelStyle}>Lage</div>
-                <div style={contentPreviewBodyStyle}>
-                  {form.location_text || 'Kein Lage-Text gepflegt.'}
-                </div>
-              </div>
-              <div style={contentPreviewCardStyle}>
-                <div style={contentPreviewLabelStyle}>Ausstattung</div>
-                <div style={contentPreviewBodyStyle}>
-                  {form.features_text || 'Kein Ausstattungs-Text gepflegt.'}
-                </div>
-              </div>
-            </div>
 
-            <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
-              {saving ? 'Speichern...' : 'SEO-Overrides speichern'}
-            </button>
+                <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
+                  {saving ? 'Speichern...' : 'SEO / GEO speichern'}
+                </button>
+              </>
+            ) : null}
           </>
         )}
       </section>
@@ -1213,6 +1263,24 @@ const panelTitleStyle: React.CSSProperties = {
   fontSize: '16px',
   fontWeight: 700,
 };
+
+const workspaceTabsRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: '8px',
+  flexWrap: 'wrap',
+  marginBottom: '16px',
+};
+
+const workspaceTabStyle = (active: boolean): React.CSSProperties => ({
+  border: `1px solid ${active ? '#486b7a' : '#dbe5ea'}`,
+  backgroundColor: active ? '#486b7a' : '#f8fafc',
+  color: active ? '#ffffff' : '#334155',
+  borderRadius: '999px',
+  padding: '7px 12px',
+  fontSize: '12px',
+  fontWeight: active ? 700 : 600,
+  cursor: 'pointer',
+});
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
