@@ -43,6 +43,14 @@ type LlmIntegrationOption = {
   label: string;
 };
 
+type LlmOptionApiRow = {
+  id?: string | null;
+  provider?: string | null;
+  model?: string | null;
+  source?: string | null;
+  label?: string | null;
+};
+
 type VisibilityMode = 'partner_wide' | 'strict_local';
 
 type VisibilityTone = 'info' | 'success' | 'error';
@@ -79,14 +87,6 @@ type Props = {
   visibilityMessage?: string | null;
   visibilityTone?: VisibilityTone;
   onVisibilityModeChange?: (value: VisibilityMode) => void | Promise<void>;
-};
-
-type PartnerIntegrationRow = {
-  id?: string;
-  kind?: string;
-  provider?: string;
-  is_active?: boolean;
-  settings?: Record<string, unknown> | null;
 };
 
 function formatProviderLabel(provider: string): string {
@@ -211,23 +211,25 @@ export default function OffersManager(props: Props) {
         .select('*')
         .eq('partner_id', user.id);
 
-      const integrationsRes = await fetch('/api/partner/integrations');
+      const integrationsRes = await fetch('/api/partner/llm/options');
       if (integrationsRes.ok) {
         const payload = await integrationsRes.json().catch(() => ({}));
-        const items: PartnerIntegrationRow[] = Array.isArray(payload?.integrations)
-          ? (payload.integrations as PartnerIntegrationRow[])
+        const items: LlmOptionApiRow[] = Array.isArray(payload?.options)
+          ? (payload.options as LlmOptionApiRow[])
           : [];
         const llmItems: LlmIntegrationOption[] = items
-          .filter((entry) => String(entry?.kind ?? '').toLowerCase() === 'llm' && entry?.is_active === true)
           .map((entry) => {
-            const settings = (entry?.settings ?? {}) as Record<string, unknown>;
-            const model = String(settings?.model ?? settings?.model_name ?? '').trim() || 'Standardmodell';
+            const id = String(entry?.id ?? '').trim();
+            if (!id) return null;
+            const provider = String(entry?.provider ?? '').trim() || 'LLM';
+            const model = String(entry?.model ?? '').trim() || 'Standardmodell';
+            const source = String(entry?.source ?? '').trim().toLowerCase() === 'global' ? 'global' : 'partner';
             return {
-              id: String(entry?.id ?? ''),
-              label: `${formatProviderLabel(String(entry?.provider ?? ''))} · ${model}`,
+              id,
+              label: String(entry?.label ?? '').trim() || `${formatProviderLabel(provider)} · ${model}${source === 'global' ? ' (Global)' : ' (Partner)'}`,
             };
           })
-          .filter((entry) => entry.id.length > 0);
+          .filter((entry): entry is LlmIntegrationOption => Boolean(entry));
         setLlmOptions(llmItems);
         setSelectedLlmIntegrationId((prev) => {
           if (prev && llmItems.some((item) => item.id === prev)) return prev;
@@ -726,7 +728,6 @@ export default function OffersManager(props: Props) {
       {visibilityConfig ? (
         <section style={visibilityShellStyle}>
           <div style={visibilityCardStyle}>
-            <h3 style={visibilityHeadStyle}>Regionale Ausspielung für Angebote</h3>
             <div style={visibilityControlsRowStyle}>
               <label style={visibilityLabelStyle}>
                 <span style={visibilitySelectWrapStyle}>
@@ -736,8 +737,8 @@ export default function OffersManager(props: Props) {
                     disabled={visibilityBusy}
                     style={visibilitySelectStyle}
                   >
-                    <option value="partner_wide">partnerweit - zeigt alle Angebote des Partners im Gebiet</option>
-                    <option value="strict_local">nur lokal - nutzt nur lokal gematchte Angebote</option>
+                    <option value="partner_wide">Regionale Ausspielung für Angebote partnerweit (zeigt alle Angebote des Partners im Gebiet)</option>
+                    <option value="strict_local">Regionale Ausspielung für Angebote nur lokal (nutzt nur lokal gematchte Angebote)</option>
                   </select>
                   <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
                 </span>
@@ -1760,19 +1761,11 @@ const resetButtonStyle = (hasOverride: boolean): React.CSSProperties => ({
 const visibilityCardStyle: React.CSSProperties = {
   border: '1px solid #99f6b4',
   borderRadius: '12px',
-  background: '#ecfdf5',
+  background: 'rgb(72, 107, 122)',
   padding: '14px 16px',
   display: 'grid',
-  gap: '10px',
+  gap: '12px',
   marginBottom: '8px',
-};
-
-const visibilityHeadStyle: React.CSSProperties = {
-  margin: 0,
-  fontSize: '16px',
-  lineHeight: 1.35,
-  fontWeight: 700,
-  color: '#065f46',
 };
 
 const visibilityControlsRowStyle: React.CSSProperties = {
@@ -1802,14 +1795,14 @@ const visibilitySelectStyle: React.CSSProperties = {
   MozAppearance: 'none',
   minHeight: '40px',
   borderRadius: '10px',
-  border: '1px solid #cbd5e1',
+  border: '1px solid rgba(255, 255, 255, 0.35)',
   background: '#ffffff',
   color: '#0f172a',
   padding: '0 40px 0 12px',
   fontSize: '13px',
   fontWeight: 600,
   boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
-  minWidth: '220px',
+  minWidth: '420px',
 };
 
 const visibilitySelectChevronStyle: React.CSSProperties = {
