@@ -722,7 +722,37 @@ export default function OffersManager(props: Props) {
   if (loading) return <FullscreenLoader show label="Immobilien werden geladen..." />;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '520px 1fr', gap: '20px' }}>
+    <div style={{ display: 'grid', gap: '20px' }}>
+      {visibilityConfig ? (
+        <section style={visibilityShellStyle}>
+          <div style={visibilityCardStyle}>
+            <div style={visibilityHeadStyle}>Regionale Ausspielung für Angebote</div>
+            <div style={visibilityAreaStyle}>
+              {visibilityConfig.areas?.name ?? visibilityConfig.area_id}
+            </div>
+            <label style={visibilityLabelStyle}>
+              <span>Ausspielung</span>
+              <select
+                value={visibilityMode}
+                onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
+                disabled={visibilityBusy}
+                style={visibilitySelectStyle}
+              >
+                <option value="partner_wide">partnerweit</option>
+                <option value="strict_local">nur lokal</option>
+              </select>
+            </label>
+            <div style={visibilityHintStyle}>
+              `partnerweit` zeigt alle Angebote des Partners im Gebiet. `nur lokal` nutzt nur lokal gematchte Angebote.
+            </div>
+            {visibilityMessage ? (
+              <div style={visibilityMessageStyle(visibilityTone)}>{visibilityMessage}</div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '520px 1fr', gap: '20px' }}>
       <section style={panelStyle}>
         <h3 style={panelTitleStyle}>Angebote</h3>
         <input
@@ -784,33 +814,7 @@ export default function OffersManager(props: Props) {
       </section>
 
       <section style={panelStyle}>
-        <h3 style={panelTitleStyle}>SEO‑Overrides</h3>
-        {visibilityConfig ? (
-          <div style={visibilityCardStyle}>
-            <div style={visibilityHeadStyle}>Regionale Ausspielung für Angebote</div>
-            <div style={visibilityAreaStyle}>
-              {visibilityConfig.areas?.name ?? visibilityConfig.area_id}
-            </div>
-            <label style={visibilityLabelStyle}>
-              <span>Ausspielung</span>
-              <select
-                value={visibilityMode}
-                onChange={(event) => void onVisibilityModeChange?.(event.target.value as VisibilityMode)}
-                disabled={visibilityBusy}
-                style={visibilitySelectStyle}
-              >
-                <option value="partner_wide">partnerweit</option>
-                <option value="strict_local">nur lokal</option>
-              </select>
-            </label>
-            <div style={visibilityHintStyle}>
-              `partnerweit` zeigt alle Angebote des Partners im Gebiet. `nur lokal` nutzt nur lokal gematchte Angebote.
-            </div>
-            {visibilityMessage ? (
-              <div style={visibilityMessageStyle(visibilityTone)}>{visibilityMessage}</div>
-            ) : null}
-          </div>
-        ) : null}
+        <h3 style={panelTitleStyle}>Texte individualisieren</h3>
         {!form ? (
           <div style={{ color: '#94a3b8' }}>
             Kein Objekt ausgewählt.
@@ -1165,6 +1169,7 @@ export default function OffersManager(props: Props) {
           </>
         )}
       </section>
+      </div>
     </div>
   );
 }
@@ -1175,6 +1180,10 @@ const panelStyle: React.CSSProperties = {
   padding: '20px',
   border: '1px solid #e2e8f0',
   boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+};
+
+const visibilityShellStyle: React.CSSProperties = {
+  width: '100%',
 };
 
 const panelTitleStyle: React.CSSProperties = {
