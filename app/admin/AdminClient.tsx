@@ -388,10 +388,10 @@ type PartnerPurgeCheckPayload = {
   affected_counts?: Record<string, number>;
 };
 
-type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "language_admin" | "portal_cms";
+type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "language_admin" | "system_texts" | "market_texts" | "portal_cms";
 type AdminNavMode = "partners" | "areas";
 type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations" | "billing";
-type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "language" | "cms" | "purge" | "audit" | "logout";
+type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "language" | "texts" | "market_texts" | "cms" | "purge" | "audit" | "logout";
 type WorkflowSignalTone = "none" | "red" | "orange" | "green";
 
 type HandoverApiResponse = {
@@ -512,6 +512,24 @@ function renderAdminNavIcon(icon: AdminNavIconKey, size = 17) {
           <path d="M4 12h16" />
           <path d="M12 4a12 12 0 0 1 0 16" />
           <path d="M12 4a12 12 0 0 0 0 16" />
+        </svg>
+      );
+    case "texts":
+      return (
+        <svg {...baseProps}>
+          <path d="M6 5h12" />
+          <path d="M6 9h12" />
+          <path d="M6 13h8" />
+          <path d="M6 17h10" />
+        </svg>
+      );
+    case "market_texts":
+      return (
+        <svg {...baseProps}>
+          <path d="M4 18h16" />
+          <path d="M7 18V9" />
+          <path d="M12 18V6" />
+          <path d="M17 18v-4" />
         </svg>
       );
     case "cms":
@@ -1187,6 +1205,8 @@ export default function AdminClient() {
   const [, setPortalSystemTextEntries] = useState<PortalSystemTextEntryRecord[]>([]);
   const [portalSystemTextMetas, setPortalSystemTextMetas] = useState<PortalSystemTextI18nMetaViewRecord[]>([]);
   const [portalSystemTextLocale, setPortalSystemTextLocale] = useState<string>("de");
+  const [portalSystemTextActiveGroup, setPortalSystemTextActiveGroup] = useState<string>("Navigation");
+  const [marketExplanationTab, setMarketExplanationTab] = useState<string>("Marktüberblick");
   const [portalSystemTextDrafts, setPortalSystemTextDrafts] = useState<Record<string, {
     status: PortalSystemTextEntryStatus;
     value_text: string;
@@ -1339,6 +1359,10 @@ export default function AdminClient() {
     }
     return Array.from(groups.entries());
   }, [portalSystemTextDefinitions]);
+  const activePortalSystemTextGroups = useMemo(
+    () => portalSystemTextGroups.find(([groupName]) => groupName === portalSystemTextActiveGroup)?.[1] ?? portalSystemTextGroups[0]?.[1] ?? [],
+    [portalSystemTextActiveGroup, portalSystemTextGroups],
+  );
   const portalContentMetaMap = useMemo(
     () => new Map(portalContentMetas.map((meta) => [`${meta.page_key}::${meta.section_key}::${meta.locale}`, meta] as const)),
     [portalContentMetas],
@@ -1464,6 +1488,8 @@ export default function AdminClient() {
       void loadBillingDefaults();
     } else if (restoredActiveView === "language_admin") {
       void loadPortalCms();
+    } else if (restoredActiveView === "system_texts") {
+      void loadPortalCms();
     } else if (restoredActiveView === "portal_cms") {
       void loadPortalCms();
     }
@@ -1477,6 +1503,13 @@ export default function AdminClient() {
     adminViewState.selectedPartnerId,
     adminViewStateHydrated,
   ]);
+
+  useEffect(() => {
+    if (portalSystemTextGroups.length === 0) return;
+    if (!portalSystemTextGroups.some(([groupName]) => groupName === portalSystemTextActiveGroup)) {
+      setPortalSystemTextActiveGroup(portalSystemTextGroups[0]?.[0] ?? "Navigation");
+    }
+  }, [portalSystemTextActiveGroup, portalSystemTextGroups]);
 
   useEffect(() => {
     if (!adminViewStateHydrated || !adminViewStateAppliedRef.current) return;
@@ -1827,6 +1860,28 @@ export default function AdminClient() {
         },
       },
       {
+        key: "system_texts",
+        icon: "texts",
+        title: "Systemtexte",
+        text: "Navigation, Footer, Fallbacks und UI-Texte tabweise pro Locale bearbeiten.",
+        badge: portalSystemTextDefinitions.length > 0 ? `${portalSystemTextDefinitions.length} Texte` : null,
+        onClick: () => {
+          setActiveView("system_texts");
+          void run("Systemtexte laden", async () => {
+            await loadPortalCms();
+          }, { showSuccessModal: false });
+        },
+      },
+      {
+        key: "market_texts",
+        icon: "market_texts",
+        title: "Markterklärungstexte",
+        text: "Fachliche Standard- und Erklärungstexte für den Immobilienmarkt strukturiert vorbereiten.",
+        onClick: () => {
+          setActiveView("market_texts");
+        },
+      },
+      {
         key: "cms",
         icon: "cms",
         title: "Portal-CMS",
@@ -1839,7 +1894,7 @@ export default function AdminClient() {
         },
       },
     ],
-    [partners.length, areaOverview.length, portalLocaleConfigs.length, portalPartner?.id],
+    [partners.length, areaOverview.length, portalLocaleConfigs.length, portalPartner?.id, portalSystemTextDefinitions.length],
   );
   const hoveredAdminNavLabel = useMemo(() => {
     if (hoveredAdminNavId === "partners") return "Partnerverwaltung";
@@ -1847,6 +1902,8 @@ export default function AdminClient() {
     if (hoveredAdminNavId === "llm") return "LLM-Verwaltung";
     if (hoveredAdminNavId === "billing") return "Leistungsabrechnung";
     if (hoveredAdminNavId === "language") return "Sprachverwaltung";
+    if (hoveredAdminNavId === "texts") return "Systemtexte";
+    if (hoveredAdminNavId === "market_texts") return "Markterklärungstexte";
     if (hoveredAdminNavId === "cms") return "Portal-CMS";
     return null;
   }, [hoveredAdminNavId]);
@@ -3644,7 +3701,7 @@ export default function AdminClient() {
       <div
         style={{
           ...adminLayoutStyle,
-          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults" || activeView === "language_admin" || activeView === "portal_cms")
+          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults" || activeView === "language_admin" || activeView === "system_texts" || activeView === "market_texts" || activeView === "portal_cms")
             ? "50px minmax(0, 1fr)"
             : adminLayoutStyle.gridTemplateColumns,
         }}
@@ -3658,7 +3715,7 @@ export default function AdminClient() {
           }}
         >
           <button
-            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "portal_cms" && navMode === "partners")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "portal_cms" && navMode === "partners")}
             onClick={async () => {
               setNavMode("partners");
               if (selectedPartnerId) {
@@ -3678,7 +3735,7 @@ export default function AdminClient() {
             {renderAdminNavIcon("partners")}
           </button>
           <button
-            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "portal_cms" && navMode === "areas")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "portal_cms" && navMode === "areas")}
             onClick={() => {
               setNavMode("areas");
               setActiveView("partner_edit");
@@ -3732,6 +3789,31 @@ export default function AdminClient() {
             {renderAdminNavIcon("language")}
           </button>
           <button
+            style={modeButtonStyle(activeView === "system_texts")}
+            onClick={() => {
+              setActiveView("system_texts");
+              void run("Systemtexte laden", async () => {
+                await loadPortalCms();
+              }, { showSuccessModal: false });
+            }}
+            title="Systemtexte"
+            onMouseEnter={(event) => updateHoveredAdminNav("texts", event.currentTarget)}
+            onFocus={(event) => updateHoveredAdminNav("texts", event.currentTarget)}
+          >
+            {renderAdminNavIcon("texts")}
+          </button>
+          <button
+            style={modeButtonStyle(activeView === "market_texts")}
+            onClick={() => {
+              setActiveView("market_texts");
+            }}
+            title="Markterklärungstexte"
+            onMouseEnter={(event) => updateHoveredAdminNav("market_texts", event.currentTarget)}
+            onFocus={(event) => updateHoveredAdminNav("market_texts", event.currentTarget)}
+          >
+            {renderAdminNavIcon("market_texts")}
+          </button>
+          <button
             style={modeButtonStyle(activeView === "portal_cms")}
             onClick={() => {
               setActiveView("portal_cms");
@@ -3753,7 +3835,7 @@ export default function AdminClient() {
           ) : null}
         </aside>
 
-        {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "portal_cms" ? (
+        {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "portal_cms" ? (
           <aside style={listPaneStyle}>
             <div style={sidebarControlWrapStyle}>
               <input
@@ -4999,7 +5081,7 @@ export default function AdminClient() {
       <section style={cardStyle}>
         <h2 style={h2Style}>Sprachverwaltung</h2>
         <p style={mutedStyle}>
-          Locale-Registry, Freigaben und portalweite Systemtexte zentral verwalten.
+          Locale-Registry, Freigaben und Partnerbuchbarkeit zentral verwalten.
         </p>
 
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
@@ -5180,13 +5262,22 @@ export default function AdminClient() {
             </button>
           </div>
         </div>
+      </section>
+      ) : null}
+
+      {activeView === "system_texts" ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Systemtexte</h2>
+        <p style={mutedStyle}>
+          Navigation, Footer, Fallbacks und UI-Texte tabweise pro Locale pflegen.
+        </p>
 
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
           <div style={{ ...rowStyle, alignItems: "center" }}>
             <div>
               <div style={{ fontWeight: 700, color: "#0f172a" }}>Portalweite Systemtexte</div>
               <div style={{ ...mutedStyle, marginTop: 4 }}>
-                Navigation, Fallback-Hinweise, Angebots- und Gesuche-Labels pro Locale.
+                UI-Texte sind thematisch in Tabs getrennt, damit Übersetzungen ohne Endloslisten gepflegt werden können.
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -5241,98 +5332,129 @@ export default function AdminClient() {
             Für Nicht-DE-Locales markieren Sync-Läufe geänderte Texte bewusst nicht direkt als `live`. Öffentliche Ausspielung erfolgt erst nach manuellem Statuswechsel.
           </div>
 
-          <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+          <div style={{ ...partnerTabBarStyle, marginTop: 14 }}>
             {portalSystemTextGroups.map(([groupName, defs]) => (
-              <div key={groupName} style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, background: "#f8fafc" }}>
-                <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 10 }}>{groupName}</div>
-                <div style={{ display: "grid", gap: 12 }}>
-                  {defs.map((def) => {
-                    const draftKey = buildPortalSystemTextDraftKey(portalSystemTextLocale, def.key);
-                    const draft = portalSystemTextDrafts[draftKey] ?? {
-                      status: portalSystemTextLocale === "de" ? "live" as PortalSystemTextEntryStatus : "draft" as PortalSystemTextEntryStatus,
-                      value_text: getPortalSystemTextDefaultValue(portalSystemTextLocale, def.key),
-                    };
-                    const meta = portalSystemTextMetaMap.get(`${portalSystemTextLocale}::${def.key}`) ?? null;
-                    return (
-                      <div key={def.key} style={{ border: "1px solid #dbe4ee", borderRadius: 8, padding: 10, background: "#fff" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                          <div>
-                            <div style={{ fontWeight: 700, color: "#0f172a" }}>{def.label}</div>
-                            <div style={mutedStyle}>
-                              <code>{def.key}</code>
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                            <span style={{ ...mutedStyle, fontSize: 12 }}>Status: <strong>{formatPortalEntryStatus(draft.status as PortalContentEntryStatus)}</strong></span>
-                            {portalSystemTextLocale !== "de" && meta ? (
-                              <span style={{ fontSize: 12, color: meta.translation_is_stale ? "#991b1b" : "#334155" }}>
-                                {formatPortalTranslationOrigin(meta.translation_origin)}
-                                {meta.translation_is_stale ? " · DE geändert" : ""}
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                        <textarea
-                          style={{ ...inputStyle, minHeight: 96, marginTop: 10, resize: "vertical" }}
-                          value={draft.value_text}
-                          onChange={(e) => {
-                            const nextValue = e.target.value;
-                            setPortalSystemTextDrafts((prev) => ({
-                              ...prev,
-                              [draftKey]: {
-                                ...draft,
-                                value_text: nextValue,
-                              },
-                            }));
-                          }}
-                        />
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
-                          <select
-                            style={{ ...inputStyle, maxWidth: 180 }}
-                            value={draft.status}
-                            onChange={(e) => {
-                              const nextStatus = String(e.target.value) as PortalSystemTextEntryStatus;
-                              setPortalSystemTextDrafts((prev) => ({
-                                ...prev,
-                                [draftKey]: {
-                                  ...draft,
-                                  status: nextStatus,
-                                },
-                              }));
-                            }}
-                          >
-                            <option value="draft">entwurf</option>
-                            <option value="internal">intern</option>
-                            <option value="live">live</option>
-                          </select>
-                          {portalSystemTextLocale !== "de" ? (
-                            <button
-                              style={btnGhostStyle}
-                              disabled={busy}
-                              onClick={() => {
-                                const deDefault = (
-                                  portalSystemTextDrafts[buildPortalSystemTextDraftKey("de", def.key)]?.value_text
-                                  ?? getPortalSystemTextDefaultValue("de", def.key)
-                                );
-                                setPortalSystemTextDrafts((prev) => ({
-                                  ...prev,
-                                  [draftKey]: {
-                                    status: draft.status === "live" ? "internal" : draft.status,
-                                    value_text: deDefault,
-                                  },
-                                }));
-                              }}
-                            >
-                              DE in Feld übernehmen
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <button
+                key={groupName}
+                style={partnerTabButtonStyle(portalSystemTextActiveGroup === groupName)}
+                onClick={() => setPortalSystemTextActiveGroup(groupName)}
+              >
+                {groupName}
+                <span style={{ marginLeft: 8, opacity: 0.75 }}>{defs.length}</span>
+              </button>
             ))}
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+            {activePortalSystemTextGroups.map((def) => {
+              const draftKey = buildPortalSystemTextDraftKey(portalSystemTextLocale, def.key);
+              const draft = portalSystemTextDrafts[draftKey] ?? {
+                status: portalSystemTextLocale === "de" ? "live" as PortalSystemTextEntryStatus : "draft" as PortalSystemTextEntryStatus,
+                value_text: getPortalSystemTextDefaultValue(portalSystemTextLocale, def.key),
+              };
+              const meta = portalSystemTextMetaMap.get(`${portalSystemTextLocale}::${def.key}`) ?? null;
+              return (
+                <div key={def.key} style={{ border: "1px solid #dbe4ee", borderRadius: 8, padding: 10, background: "#fff" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{def.label}</div>
+                      <div style={mutedStyle}>
+                        <code>{def.key}</code>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      <span style={{ ...mutedStyle, fontSize: 12 }}>Status: <strong>{formatPortalEntryStatus(draft.status as PortalContentEntryStatus)}</strong></span>
+                      {portalSystemTextLocale !== "de" && meta ? (
+                        <span style={{ fontSize: 12, color: meta.translation_is_stale ? "#991b1b" : "#334155" }}>
+                          {formatPortalTranslationOrigin(meta.translation_origin)}
+                          {meta.translation_is_stale ? " · DE geändert" : ""}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <textarea
+                    style={{ ...inputStyle, minHeight: 96, marginTop: 10, resize: "vertical" }}
+                    value={draft.value_text}
+                    onChange={(e) => {
+                      const nextValue = e.target.value;
+                      setPortalSystemTextDrafts((prev) => ({
+                        ...prev,
+                        [draftKey]: {
+                          ...draft,
+                          value_text: nextValue,
+                        },
+                      }));
+                    }}
+                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
+                    <select
+                      style={{ ...inputStyle, maxWidth: 180 }}
+                      value={draft.status}
+                      onChange={(e) => {
+                        const nextStatus = String(e.target.value) as PortalSystemTextEntryStatus;
+                        setPortalSystemTextDrafts((prev) => ({
+                          ...prev,
+                          [draftKey]: {
+                            ...draft,
+                            status: nextStatus,
+                          },
+                        }));
+                      }}
+                    >
+                      <option value="draft">entwurf</option>
+                      <option value="internal">intern</option>
+                      <option value="live">live</option>
+                    </select>
+                    {portalSystemTextLocale !== "de" ? (
+                      <button
+                        style={btnGhostStyle}
+                        disabled={busy}
+                        onClick={() => {
+                          const deDefault = (
+                            portalSystemTextDrafts[buildPortalSystemTextDraftKey("de", def.key)]?.value_text
+                            ?? getPortalSystemTextDefaultValue("de", def.key)
+                          );
+                          setPortalSystemTextDrafts((prev) => ({
+                            ...prev,
+                            [draftKey]: {
+                              status: draft.status === "live" ? "internal" : draft.status,
+                              value_text: deDefault,
+                            },
+                          }));
+                        }}
+                      >
+                        DE in Feld übernehmen
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+      ) : null}
+
+      {activeView === "market_texts" ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Markterklärungstexte</h2>
+        <p style={mutedStyle}>
+          Fachliche Standard- und Erklärungstexte für den Immobilienmarkt werden hier künftig getrennt von UI-Systemtexten gepflegt.
+        </p>
+
+        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
+          <div style={partnerTabBarStyle}>
+            {["Marktüberblick", "Preise", "Mieten", "Rendite", "Nachfrage & Angebot", "Methodik & Begriffe"].map((tab) => (
+              <button key={tab} style={partnerTabButtonStyle(marketExplanationTab === tab)} onClick={() => setMarketExplanationTab(tab)}>
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc" }}>
+            <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>{marketExplanationTab}</div>
+            <div style={{ ...mutedStyle, lineHeight: 1.6 }}>
+              Dieser Bereich ist als eigener Redaktionsarbeitsplatz für fachliche Standardtexte vorgesehen, zum Beispiel KPI-Erklärungen wie Wohnungssaldo, Marktüberblick, Preis- und Mietdefinitionen sowie methodische Kurztexte. Die Datenstruktur wird im nächsten Schritt separat zu den Systemtexten aufgebaut, damit UI-Texte und fachliche Erklärungstexte nicht vermischt werden.
+            </div>
           </div>
         </div>
       </section>

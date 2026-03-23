@@ -258,27 +258,45 @@ function buildPortalSystemTextLabel(key: PortalSystemTextKey): string {
 }
 
 function resolvePortalSystemTextGroup(key: PortalSystemTextKey): string {
-  if (key.startsWith("area_profile_") || key === "view_german_version") return "Gebiets-Fallback";
+  if (key === "skip_to_content" || key === "navigation" || key === "open_navigation" || key === "close" || key === "contact" || key === "preview" || key === "price_check" || key === "market_profiles" || key === "concept" || key === "more_content") {
+    return "Navigation";
+  }
+  if (key === "all_rights_reserved" || key === "imprint" || key === "privacy") {
+    return "Footer & Rechtliches";
+  }
+  if (key.startsWith("area_profile_") || key === "view_german_version") {
+    return "Gebiets-Fallbacks";
+  }
   if (
-    key.includes("offers")
-    || key.includes("offer")
+    key === "buy_offers"
+    || key === "rent_offers"
     || key === "purchase_price"
     || key === "warm_rent"
+    || key === "per_month"
     || key === "living_area"
     || key === "rooms"
-    || key === "to_expose"
+    || key === "previous_top_offer"
+    || key === "next_top_offer"
     || key === "filter_object_type"
+    || key === "all"
     || key === "house"
     || key === "apartment"
+    || key === "no_image_available"
+    || key === "no_image"
     || key === "top_property"
+    || key === "no_matching_offers_available"
     || key === "page_navigation"
     || key === "previous_page"
     || key === "next_page"
-    || key === "object_generic"
+    || key === "offers_unavailable_title"
+    || key === "offers_unavailable_body"
+    || key === "view_german_offers"
+  ) {
+    return "Angebotsliste";
+  }
+  if (
+    key === "to_expose"
     || key === "interested_in_property"
-    || key === "partner_expose_provided"
-    || key === "to_partner_expose"
-    || key === "no_expose_link_available"
     || key === "back_to_overview"
     || key === "image_gallery"
     || key === "no_images_available"
@@ -295,17 +313,24 @@ function resolvePortalSystemTextGroup(key: PortalSystemTextKey): string {
     || key === "energy_class"
     || key === "energy_demand"
     || key === "primary_energy_source"
+    || key === "object_generic"
+  ) {
+    return "Angebotsdetail";
+  }
+  if (
+    key === "partner_expose_provided"
+    || key === "to_partner_expose"
+    || key === "no_expose_link_available"
     || key === "contact_request"
     || key === "contact_request_hint"
     || key === "request_now"
   ) {
-    return "Angebote";
+    return "Kontakt & CTA";
   }
-  if (key.includes("requests") || key.includes("request") || key === "rooms_min") return "Gesuche";
-  if (key === "skip_to_content" || key === "navigation" || key === "open_navigation" || key === "close" || key === "contact" || key === "all_rights_reserved" || key === "imprint" || key === "privacy" || key === "preview") {
-    return "Navigation & Footer";
+  if (key.includes("requests") || key.includes("request") || key === "rooms_min" || key === "region_not_specified") {
+    return "Gesuche";
   }
-  return "Portalweit";
+  return "Sonstiges";
 }
 
 export const PORTAL_SYSTEM_TEXT_DEFINITIONS: PortalSystemTextDefinition[] = (
