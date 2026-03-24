@@ -276,6 +276,131 @@ type PropertyOfferTranslationItem = {
   translation_is_stale: boolean;
 };
 
+type PropertyEditorTab = 'texts' | 'seo';
+
+type PropertyFieldDefinition = {
+  key: string;
+  label: string;
+  tab: PropertyEditorTab;
+  sourceKey: keyof PropertyOfferTranslationItem;
+  targetKey: keyof PropertyOfferTranslationItem;
+  displayClass: DisplayTextClass;
+  multiline?: boolean;
+  list?: boolean;
+  placeholder?: string;
+};
+
+const PROPERTY_FIELD_DEFINITIONS: PropertyFieldDefinition[] = [
+  {
+    key: 'seo_h1',
+    label: 'H1',
+    tab: 'texts',
+    sourceKey: 'source_seo_h1',
+    targetKey: 'translated_seo_h1',
+    displayClass: 'general',
+  },
+  {
+    key: 'short_description',
+    label: 'Kurzbeschreibung',
+    tab: 'texts',
+    sourceKey: 'source_short_description',
+    targetKey: 'translated_short_description',
+    displayClass: 'general',
+    multiline: true,
+  },
+  {
+    key: 'long_description',
+    label: 'Langbeschreibung',
+    tab: 'texts',
+    sourceKey: 'source_long_description',
+    targetKey: 'translated_long_description',
+    displayClass: 'general',
+    multiline: true,
+  },
+  {
+    key: 'location_text',
+    label: 'Lage',
+    tab: 'texts',
+    sourceKey: 'source_location_text',
+    targetKey: 'translated_location_text',
+    displayClass: 'general',
+    multiline: true,
+  },
+  {
+    key: 'features_text',
+    label: 'Ausstattung',
+    tab: 'texts',
+    sourceKey: 'source_features_text',
+    targetKey: 'translated_features_text',
+    displayClass: 'general',
+    multiline: true,
+  },
+  {
+    key: 'seo_title',
+    label: 'SEO-Titel',
+    tab: 'seo',
+    sourceKey: 'source_seo_title',
+    targetKey: 'translated_seo_title',
+    displayClass: 'marketing',
+  },
+  {
+    key: 'seo_description',
+    label: 'Meta-Description',
+    tab: 'seo',
+    sourceKey: 'source_seo_description',
+    targetKey: 'translated_seo_description',
+    displayClass: 'marketing',
+    multiline: true,
+  },
+  {
+    key: 'answer_summary',
+    label: 'Kurzantwort',
+    tab: 'seo',
+    sourceKey: 'source_answer_summary',
+    targetKey: 'translated_answer_summary',
+    displayClass: 'marketing',
+    multiline: true,
+  },
+  {
+    key: 'location_summary',
+    label: 'Lage in Kürze',
+    tab: 'seo',
+    sourceKey: 'source_location_summary',
+    targetKey: 'translated_location_summary',
+    displayClass: 'marketing',
+    multiline: true,
+  },
+  {
+    key: 'target_audience',
+    label: 'Geeignet für',
+    tab: 'seo',
+    sourceKey: 'source_target_audience',
+    targetKey: 'translated_target_audience',
+    displayClass: 'marketing',
+    placeholder: 'z. B. Kapitalanleger, Paar, kleine Familie',
+  },
+  {
+    key: 'highlights',
+    label: 'Highlights',
+    tab: 'seo',
+    sourceKey: 'source_highlights',
+    targetKey: 'translated_highlights',
+    displayClass: 'marketing',
+    multiline: true,
+    list: true,
+  },
+  {
+    key: 'image_alt_texts',
+    label: 'Bild-Alt-Texte',
+    tab: 'seo',
+    sourceKey: 'source_image_alt_texts',
+    targetKey: 'translated_image_alt_texts',
+    displayClass: 'marketing',
+    multiline: true,
+    list: true,
+  },
+];
+
 type ReferenceSourceRow = {
   id: string;
   partner_id: string;
@@ -925,6 +1050,9 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [propertySaving, setPropertySaving] = useState(false);
   const [propertyStatus, setPropertyStatus] = useState<string | null>(null);
   const [propertyStatusTone, setPropertyStatusTone] = useState<'success' | 'error' | null>(null);
+  const [propertyEditorTab, setPropertyEditorTab] = useState<PropertyEditorTab>('texts');
+  const [propertyAiKey, setPropertyAiKey] = useState<string | null>(null);
+  const [propertyBulkAiRunning, setPropertyBulkAiRunning] = useState(false);
   const [referenceItems, setReferenceItems] = useState<ReferenceTranslationItem[]>([]);
   const [referenceBaselineById, setReferenceBaselineById] = useState<Record<string, {
     translated_seo_title: string;
@@ -2521,10 +2649,211 @@ export default function InternationalizationManager({ config, availableLocales, 
     });
   }
 
+  const propertyVisibleFieldDefinitions = useMemo(
+    () => PROPERTY_FIELD_DEFINITIONS.filter((field) => field.tab === propertyEditorTab),
+    [propertyEditorTab],
+  );
+
+  const propertyDraftItemsCount = useMemo(
+    () => propertyItems.filter((item) => item.translation_status === 'draft').length,
+    [propertyItems],
+  );
+
+  function getPropertyFieldText(item: PropertyOfferTranslationItem, key: keyof PropertyOfferTranslationItem): string {
+    const value = item[key];
+    if (Array.isArray(value)) return value.join('\n');
+    return typeof value === 'string' ? value : '';
+  }
+
+  function updatePropertyField(
+    offerId: string,
+    key: keyof PropertyOfferTranslationItem,
+    nextValue: string,
+    isList = false,
+  ) {
+    setPropertyItems((prev) => prev.map((item) => {
+      if (item.offer_id !== offerId) return item;
+      return {
+        ...item,
+        [key]: isList
+          ? nextValue.split('\n').map((value) => value.trim()).filter(Boolean)
+          : nextValue,
+      };
+    }));
+  }
+
+  function getPropertyFieldPrompt(definition: PropertyFieldDefinition): string {
+    const basePrompt = getI18nStandardPrompt(definition.displayClass, locale);
+    const extraPrompt = definition.list
+      ? `Feld: ${definition.label}. Erhalte die Listenstruktur exakt. Eine Zeile im deutschen Input bleibt genau eine Zeile in der Zielsprache.`
+      : definition.multiline
+        ? `Feld: ${definition.label}. Uebersetze diesen Expose-Baustein natuerlich, fachlich exakt und ohne neue Fakten.`
+        : `Feld: ${definition.label}. Liefere eine praezise, natuerliche Uebersetzung nur fuer dieses Feld.`;
+    return buildI18nPromptWithExtras(basePrompt, extraPrompt);
+  }
+
+  async function rewritePropertyFieldViaAi(
+    item: PropertyOfferTranslationItem,
+    definition: PropertyFieldDefinition,
+  ): Promise<string> {
+    const selected = llmOptions.find((option) => option.id === selectedLlmOptionId) ?? null;
+    const sourceText = getPropertyFieldText(item, definition.sourceKey).trim();
+    if (!sourceText) return '';
+    const res = await fetch('/api/ai-rewrite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: sourceText,
+        areaName: String(config.areas?.name ?? config.area_id),
+        type: definition.displayClass === 'marketing' ? 'marketing' : 'general',
+        sectionLabel: `angebot_${definition.key}`,
+        customPrompt: getPropertyFieldPrompt(definition),
+        mock_context: 'i18n',
+        target_locale: locale,
+        llm_integration_id: selected?.partner_integration_id ?? undefined,
+        llm_global_provider_id: selected?.global_provider_id ?? undefined,
+      }),
+    });
+    const payload = await res.json().catch(() => null) as { optimizedText?: string; error?: string } | null;
+    if (!res.ok || !String(payload?.optimizedText ?? '').trim()) {
+      throw new Error(String(payload?.error ?? `KI-Übersetzung fehlgeschlagen (${res.status})`));
+    }
+    return String(payload?.optimizedText ?? '').trim();
+  }
+
+  async function runPropertyFieldAi(
+    item: PropertyOfferTranslationItem,
+    definition: PropertyFieldDefinition,
+  ) {
+    const sourceText = getPropertyFieldText(item, definition.sourceKey).trim();
+    if (!sourceText) {
+      setPropertyStatus(`Für „${definition.label}“ ist keine deutsche Quelle vorhanden.`);
+      setPropertyStatusTone('error');
+      return;
+    }
+    setPropertyAiKey(`${item.offer_id}:${definition.key}`);
+    setPropertyStatus(null);
+    setPropertyStatusTone(null);
+    try {
+      const translated = await rewritePropertyFieldViaAi(item, definition);
+      updatePropertyField(item.offer_id, definition.targetKey, translated, Boolean(definition.list));
+      setPropertyStatus(`„${definition.label}“ wurde mit KI vorbereitet.`);
+      setPropertyStatusTone('success');
+    } catch (error) {
+      setPropertyStatus(error instanceof Error ? error.message : 'KI-Übersetzung fehlgeschlagen.');
+      setPropertyStatusTone('error');
+    } finally {
+      setPropertyAiKey(null);
+    }
+  }
+
+  async function runPropertyDraftBatchAi() {
+    if (llmOptions.length === 0) {
+      setPropertyStatus('Kein LLM für die Immobilien-Übersetzung verfügbar.');
+      setPropertyStatusTone('error');
+      return;
+    }
+    const draftItems = propertyItems.filter((item) => item.translation_status === 'draft');
+    if (draftItems.length === 0) {
+      setPropertyStatus('Keine Draft-Angebote für die aktuelle Übersetzungsansicht vorhanden.');
+      setPropertyStatusTone('success');
+      return;
+    }
+
+    setPropertyBulkAiRunning(true);
+    setPropertyStatus(`Starte KI-Übersetzung für ${draftItems.length} Draft-Angebot/Angebote im Tab ${propertyEditorTab === 'texts' ? 'Texte' : 'SEO / GEO'} …`);
+    setPropertyStatusTone('success');
+    try {
+      let updatedFields = 0;
+      for (const item of draftItems) {
+        for (const definition of propertyVisibleFieldDefinitions) {
+          const sourceText = getPropertyFieldText(item, definition.sourceKey).trim();
+          if (!sourceText) continue;
+          const translated = await rewritePropertyFieldViaAi(item, definition);
+          updatePropertyField(item.offer_id, definition.targetKey, translated, Boolean(definition.list));
+          updatedFields += 1;
+        }
+      }
+      setPropertyStatus(`${updatedFields} Übersetzungsfelder für Draft-Angebote mit KI vorbereitet.`);
+      setPropertyStatusTone('success');
+    } catch (error) {
+      setPropertyStatus(error instanceof Error ? error.message : 'Globale KI-Übersetzung fehlgeschlagen.');
+      setPropertyStatusTone('error');
+    } finally {
+      setPropertyBulkAiRunning(false);
+    }
+  }
+
+  function renderPropertyFieldPair(
+    item: PropertyOfferTranslationItem,
+    definition: PropertyFieldDefinition,
+  ) {
+    const sourceValue = getPropertyFieldText(item, definition.sourceKey);
+    const targetValue = getPropertyFieldText(item, definition.targetKey);
+    const isBusy = propertyAiKey === `${item.offer_id}:${definition.key}`;
+
+    return (
+      <div key={`${item.offer_id}-${definition.key}`} style={propertyFieldRowStyle}>
+        <div style={propertyFieldRowHeadStyle}>
+          <div>
+            <div style={propertyFieldTitleStyle}>{definition.label}</div>
+            {definition.list ? (
+              <div style={propertyFieldHintStyle}>Eine Zeile entspricht genau einem Eintrag.</div>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            style={propertyFieldAiButtonStyle}
+            onClick={() => void runPropertyFieldAi(item, definition)}
+            disabled={propertySaving || propertyBulkAiRunning || llmOptions.length === 0 || isBusy}
+          >
+            {isBusy ? 'KI übersetzt …' : 'Mit KI übersetzen'}
+          </button>
+        </div>
+        <div style={propertyFieldPairGridStyle}>
+          <div style={propertyFieldColumnStyle}>
+            <div style={propertyFieldColumnLabelStyle}>Deutsch</div>
+            {definition.multiline || definition.list ? (
+              <textarea
+                style={propertyReadonlyTextareaStyle}
+                value={sourceValue}
+                readOnly
+              />
+            ) : (
+              <input
+                style={propertyReadonlyInputStyle}
+                value={sourceValue}
+                readOnly
+              />
+            )}
+          </div>
+          <div style={propertyFieldColumnStyle}>
+            <div style={propertyFieldColumnLabelStyle}>Übersetzung</div>
+            {definition.multiline || definition.list ? (
+              <textarea
+                style={propertyEditableTextareaStyle}
+                value={targetValue}
+                placeholder={definition.placeholder}
+                onChange={(e) => updatePropertyField(item.offer_id, definition.targetKey, e.target.value, Boolean(definition.list))}
+              />
+            ) : (
+              <input
+                style={propertyEditableInputStyle}
+                value={targetValue}
+                placeholder={definition.placeholder}
+                onChange={(e) => updatePropertyField(item.offer_id, definition.targetKey, e.target.value, false)}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <FullscreenLoader
-        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving || propertyLoading || propertySaving || referenceLoading || referenceSaving || requestLoading || requestSaving}
+        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving || propertyLoading || propertySaving || Boolean(propertyAiKey) || propertyBulkAiRunning || referenceLoading || referenceSaving || requestLoading || requestSaving}
         label={
           requestLoading
             ? 'Gesuche-Übersetzungen werden geladen...'
@@ -2538,6 +2867,10 @@ export default function InternationalizationManager({ config, availableLocales, 
             ? 'Immobilien-Übersetzungen werden geladen...'
             : propertySaving
               ? 'Immobilien-Übersetzung wird gespeichert...'
+            : propertyBulkAiRunning
+              ? 'Immobilien-Drafts werden mit KI übersetzt...'
+            : propertyAiKey
+              ? 'Immobilien-Feld wird mit KI übersetzt...'
           : blogLoading
             ? 'Blog-Übersetzungen werden geladen...'
             : blogSaving
@@ -3334,14 +3667,28 @@ export default function InternationalizationManager({ config, availableLocales, 
           <aside style={blogListCardStyle}>
             <div style={blogListHeadStyle}>
               <h3 style={sectionTabsIntroTitleStyle}>Angebote</h3>
-              <button
-                type="button"
-                style={secondaryActionButtonStyle}
-                onClick={() => void loadPropertyItems()}
-                disabled={propertyLoading || propertySaving}
-              >
-                Stand laden
-              </button>
+              <div style={propertySidebarActionsStyle}>
+                <button
+                  type="button"
+                  style={secondaryActionButtonStyle}
+                  onClick={() => void runPropertyDraftBatchAi()}
+                  disabled={propertyLoading || propertySaving || propertyBulkAiRunning || llmOptions.length === 0 || propertyDraftItemsCount === 0}
+                >
+                  {propertyBulkAiRunning
+                    ? 'Drafts werden übersetzt …'
+                    : propertyEditorTab === 'texts'
+                      ? 'Alle Draft-Texte mit KI übersetzen'
+                      : 'Alle Draft-SEO/GEO-Felder mit KI übersetzen'}
+                </button>
+                <button
+                  type="button"
+                  style={secondaryActionButtonStyle}
+                  onClick={() => void loadPropertyItems()}
+                  disabled={propertyLoading || propertySaving || propertyBulkAiRunning}
+                >
+                  Stand laden
+                </button>
+              </div>
             </div>
             <div style={blogListMetaStyle}>
               Je Angebot werden SEO-, Beschreibungs- und Bildtexte in der Zielsprache getrennt vom deutschen Exposé gepflegt.
@@ -3395,9 +3742,6 @@ export default function InternationalizationManager({ config, availableLocales, 
                 <div style={blogEditorHeadStyle}>
                   <div>
                     <h3 style={sectionTabsIntroTitleStyle}>{selectedPropertyItem.title || 'Ohne Titel'}</h3>
-                    <p style={blogEditorIntroStyle}>
-                      Übersetze hier die objektbezogenen Texte, die derzeit über die deutschen Override-Felder ausgespielt werden. Die deutsche Angebotsbearbeitung bleibt im Bereich „Immobilien“.
-                    </p>
                   </div>
                   <span style={blogTranslationBadgeStyle(selectedPropertyItem.translation_is_stale, Boolean(
                     selectedPropertyItem.translated_seo_title.trim()
@@ -3436,272 +3780,93 @@ export default function InternationalizationManager({ config, availableLocales, 
                   </div>
                 </div>
 
-                <div style={blogColumnGridStyle}>
-                  <div style={blogSourceCardStyle}>
-                    <div style={blogColumnHeadStyle}>Deutsch (Quelle)</div>
-                    <label style={fieldStyle}>
-                      SEO-Titel
-                      <input style={inputStyle} value={selectedPropertyItem.source_seo_title} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Meta-Description
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_seo_description} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      H1
-                      <input style={inputStyle} value={selectedPropertyItem.source_seo_h1} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Kurzbeschreibung
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_short_description} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Langbeschreibung
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_long_description} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Lage
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_location_text} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Ausstattung
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_features_text} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Kurzantwort
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_answer_summary} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Lage in Kürze
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_location_summary} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Geeignet für
-                      <input style={inputStyle} value={selectedPropertyItem.source_target_audience} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Highlights
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_highlights.join('\n')} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Bild-Alt-Texte
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_image_alt_texts.join('\n')} readOnly />
-                    </label>
-                  </div>
+                <div style={propertyTabBarStyle}>
+                  <button
+                    type="button"
+                    style={tabButtonStyle(propertyEditorTab === 'texts')}
+                    onClick={() => setPropertyEditorTab('texts')}
+                  >
+                    <span style={propertyTabLabelStyle}>Texte</span>
+                  </button>
+                  <button
+                    type="button"
+                    style={tabButtonStyle(propertyEditorTab === 'seo')}
+                    onClick={() => setPropertyEditorTab('seo')}
+                  >
+                    <span style={propertyTabLabelStyle}>SEO / GEO</span>
+                  </button>
+                </div>
 
-                  <div style={blogTargetCardStyle}>
-                    <div style={blogColumnHeadStyle}>Übersetzung</div>
-                    <label style={fieldStyle}>
-                      SEO-Titel
-                      <input
-                        style={inputStyle}
-                        value={selectedPropertyItem.translated_seo_title}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_seo_title: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Meta-Description
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedPropertyItem.translated_seo_description}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_seo_description: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      H1
-                      <input
-                        style={inputStyle}
-                        value={selectedPropertyItem.translated_seo_h1}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_seo_h1: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Kurzbeschreibung
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedPropertyItem.translated_short_description}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_short_description: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Langbeschreibung
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedPropertyItem.translated_long_description}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_long_description: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Lage
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedPropertyItem.translated_location_text}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_location_text: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Ausstattung
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedPropertyItem.translated_features_text}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_features_text: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Kurzantwort
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedPropertyItem.translated_answer_summary}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_answer_summary: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Lage in Kürze
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedPropertyItem.translated_location_summary}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_location_summary: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Geeignet für
-                      <input
-                        style={inputStyle}
-                        value={selectedPropertyItem.translated_target_audience}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_target_audience: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Highlights
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedPropertyItem.translated_highlights.join('\n')}
-                        onChange={(e) => {
-                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_highlights: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Bild-Alt-Texte
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedPropertyItem.translated_image_alt_texts.join('\n')}
-                        onChange={(e) => {
-                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_image_alt_texts: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Status
-                      <select
-                        style={inputStyle}
-                        value={selectedPropertyItem.translation_status}
-                        onChange={(e) => {
-                          const next = e.target.value as BlogTranslationStatus;
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translation_status: next } : item
-                          )));
-                        }}
-                      >
-                        <option value="draft">Entwurf</option>
-                        <option value="approved">Freigegeben</option>
-                        <option value="needs_review">Prüfen</option>
-                      </select>
-                    </label>
-                    <div style={blogActionRowStyle}>
-                      <button
-                        type="button"
-                        style={secondaryActionButtonStyle}
-                        onClick={() => {
-                          setPropertyItems((prev) => prev.map((item) => (
-                            item.offer_id === selectedPropertyItem.offer_id
-                              ? {
-                                  ...item,
-                                  translated_seo_title: item.source_seo_title,
-                                  translated_seo_description: item.source_seo_description,
-                                  translated_seo_h1: item.source_seo_h1,
-                                  translated_short_description: item.source_short_description,
-                                  translated_long_description: item.source_long_description,
-                                  translated_location_text: item.source_location_text,
-                                  translated_features_text: item.source_features_text,
-                                  translated_answer_summary: item.source_answer_summary,
-                                  translated_location_summary: item.source_location_summary,
-                                  translated_target_audience: item.source_target_audience,
-                                  translated_highlights: [...item.source_highlights],
-                                  translated_image_alt_texts: [...item.source_image_alt_texts],
-                                }
-                              : item
-                          )));
-                        }}
-                        disabled={propertySaving}
-                      >
-                        Deutsch übernehmen
-                      </button>
-                      <button
-                        type="button"
-                        style={buttonPrimaryStyle(propertyHasEdits && !propertySaving)}
-                        onClick={() => void saveSelectedPropertyItem()}
-                        disabled={!propertyHasEdits || propertySaving}
-                      >
-                        {propertySaving ? 'Speichern …' : 'Immobilien-Übersetzung speichern'}
-                      </button>
-                    </div>
+                <div style={propertySectionIntroCardStyle}>
+                  <div style={blogColumnHeadStyle}>
+                    {propertyEditorTab === 'texts' ? 'Texte übersetzen' : 'SEO / GEO übersetzen'}
+                  </div>
+                  <div style={propertySectionIntroTextStyle}>
+                    {propertyEditorTab === 'texts'
+                      ? 'Bearbeite die redaktionellen Exposé-Texte zeilen- und feldgenau. Quelle und Übersetzung sind jetzt pro Feld direkt gegenübergestellt.'
+                      : 'Pflege Snippet-, AEO- und Bildtexte separat für die Zielsprache. KI-Hilfen wirken immer nur auf den aktuell gewählten Feldtyp.'}
+                  </div>
+                </div>
+
+                <div style={propertyFieldStackStyle}>
+                  {propertyVisibleFieldDefinitions.map((definition) => renderPropertyFieldPair(selectedPropertyItem, definition))}
+                </div>
+
+                <div style={propertyStatusCardStyle}>
+                  <label style={fieldStyle}>
+                    Status
+                    <select
+                      style={inputStyle}
+                      value={selectedPropertyItem.translation_status}
+                      onChange={(e) => {
+                        const next = e.target.value as BlogTranslationStatus;
+                        setPropertyItems((prev) => prev.map((item) => (
+                          item.offer_id === selectedPropertyItem.offer_id ? { ...item, translation_status: next } : item
+                        )));
+                      }}
+                    >
+                      <option value="draft">Entwurf</option>
+                      <option value="approved">Freigegeben</option>
+                      <option value="needs_review">Prüfen</option>
+                    </select>
+                  </label>
+                  <div style={blogActionRowStyle}>
+                    <button
+                      type="button"
+                      style={secondaryActionButtonStyle}
+                      onClick={() => {
+                        setPropertyItems((prev) => prev.map((item) => (
+                          item.offer_id === selectedPropertyItem.offer_id
+                            ? {
+                                ...item,
+                                translated_seo_title: item.source_seo_title,
+                                translated_seo_description: item.source_seo_description,
+                                translated_seo_h1: item.source_seo_h1,
+                                translated_short_description: item.source_short_description,
+                                translated_long_description: item.source_long_description,
+                                translated_location_text: item.source_location_text,
+                                translated_features_text: item.source_features_text,
+                                translated_answer_summary: item.source_answer_summary,
+                                translated_location_summary: item.source_location_summary,
+                                translated_target_audience: item.source_target_audience,
+                                translated_highlights: [...item.source_highlights],
+                                translated_image_alt_texts: [...item.source_image_alt_texts],
+                              }
+                            : item
+                        )));
+                      }}
+                      disabled={propertySaving || propertyBulkAiRunning}
+                    >
+                      Deutsch übernehmen
+                    </button>
+                    <button
+                      type="button"
+                      style={buttonPrimaryStyle(propertyHasEdits && !propertySaving && !propertyBulkAiRunning)}
+                      onClick={() => void saveSelectedPropertyItem()}
+                      disabled={!propertyHasEdits || propertySaving || propertyBulkAiRunning}
+                    >
+                      {propertySaving ? 'Speichern …' : 'Immobilien-Übersetzung speichern'}
+                    </button>
                   </div>
                 </div>
               </>
@@ -4775,6 +4940,13 @@ const blogEditorIntroStyle: React.CSSProperties = {
   maxWidth: 760,
 };
 
+const propertySidebarActionsStyle: React.CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 10,
+  justifyContent: 'flex-end',
+};
+
 const blogSummaryGridStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -4794,6 +4966,156 @@ const blogColumnGridStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
   gap: 16,
+};
+
+const propertyTabBarStyle: React.CSSProperties = {
+  ...tabContainerStyle,
+  marginBottom: 0,
+};
+
+const propertyTabLabelStyle: React.CSSProperties = {
+  ...tabLabelStyle,
+  fontSize: 12,
+};
+
+const propertySectionIntroCardStyle: React.CSSProperties = {
+  border: '1px solid #dbe5ea',
+  borderRadius: 14,
+  background: '#f8fafc',
+  padding: '14px 16px',
+  display: 'grid',
+  gap: 6,
+};
+
+const propertySectionIntroTextStyle: React.CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.55,
+  color: '#64748b',
+};
+
+const propertyFieldStackStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 16,
+};
+
+const propertyFieldRowStyle: React.CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: 16,
+  background: '#ffffff',
+  padding: '16px',
+  display: 'grid',
+  gap: 14,
+};
+
+const propertyFieldRowHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 12,
+  alignItems: 'flex-start',
+  flexWrap: 'wrap',
+};
+
+const propertyFieldTitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 800,
+  color: '#0f172a',
+};
+
+const propertyFieldHintStyle: React.CSSProperties = {
+  marginTop: 4,
+  fontSize: 12,
+  lineHeight: 1.45,
+  color: '#64748b',
+};
+
+const propertyFieldAiButtonStyle: React.CSSProperties = {
+  border: '1px solid rgb(72, 107, 122)',
+  borderRadius: 10,
+  background: 'rgba(72, 107, 122, 0.12)',
+  color: 'rgb(72, 107, 122)',
+  minHeight: 40,
+  padding: '0 14px',
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: 'pointer',
+};
+
+const propertyFieldPairGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+  gap: 14,
+};
+
+const propertyFieldColumnStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 8,
+};
+
+const propertyFieldColumnLabelStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '0.03em',
+  textTransform: 'uppercase',
+  color: '#64748b',
+};
+
+const propertyFieldInputBaseStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 44,
+  padding: '10px 12px',
+  borderRadius: 10,
+  border: '1px solid #cbd5e1',
+  fontSize: 13,
+  lineHeight: 1.45,
+  boxSizing: 'border-box',
+};
+
+const propertyReadonlyInputStyle: React.CSSProperties = {
+  ...propertyFieldInputBaseStyle,
+  background: '#f8fafc',
+  color: '#475569',
+  border: '1px solid #e2e8f0',
+};
+
+const propertyEditableInputStyle: React.CSSProperties = {
+  ...propertyFieldInputBaseStyle,
+  background: '#ffffff',
+  color: '#0f172a',
+};
+
+const propertyFieldTextareaBaseStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: 180,
+  padding: '10px 12px',
+  borderRadius: 10,
+  border: '1px solid #cbd5e1',
+  fontSize: 13,
+  lineHeight: 1.55,
+  resize: 'vertical',
+  boxSizing: 'border-box',
+};
+
+const propertyReadonlyTextareaStyle: React.CSSProperties = {
+  ...propertyFieldTextareaBaseStyle,
+  background: '#f8fafc',
+  color: '#475569',
+  border: '1px solid #e2e8f0',
+};
+
+const propertyEditableTextareaStyle: React.CSSProperties = {
+  ...propertyFieldTextareaBaseStyle,
+  background: '#ffffff',
+  color: '#0f172a',
+};
+
+const propertyStatusCardStyle: React.CSSProperties = {
+  border: '1px solid #dbe5ea',
+  borderRadius: 14,
+  background: '#f8fafc',
+  padding: '16px',
+  display: 'grid',
+  gap: 14,
+  alignItems: 'start',
 };
 
 const blogSourceCardStyle: React.CSSProperties = {
