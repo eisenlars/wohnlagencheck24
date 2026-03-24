@@ -35,9 +35,10 @@ type PropstackUnit = {
   marketing_type?: string | null;
   rs_type?: string | null;
   title?: string | { label?: unknown; value?: unknown } | null;
-  description_note?: string | null;
-  location_note?: string | null;
-  furnishing_note?: string | null;
+  description_note?: string | { label?: unknown; value?: unknown } | null;
+  long_description_note?: string | { label?: unknown; value?: unknown } | null;
+  location_note?: string | { label?: unknown; value?: unknown } | null;
+  furnishing_note?: string | { label?: unknown; value?: unknown } | null;
   street?: string | null;
   house_number?: string | null;
   zip_code?: string | null;
@@ -580,6 +581,7 @@ function normalizeUnitOffer(
     raw: {
       exposee_id: unit.exposee_id ?? null,
       description: unit.description_note ?? null,
+      long_description: unit.long_description_note ?? null,
       location: unit.location_note ?? null,
       features_note: unit.furnishing_note ?? null,
       street: unit.street ?? null,

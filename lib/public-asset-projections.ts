@@ -776,6 +776,7 @@ export async function rebuildPublicOfferEntriesForPartner(
     const override = overridesByKey.get(`${partnerId}::${source}::${externalId}`);
     const raw = (offer.raw ?? {}) as Record<string, unknown>;
     const rawDescription = readTextValue(raw["description"]);
+    const rawLongDescription = readTextValue(raw["long_description"]) ?? rawDescription;
     const rawLocation = readTextValue(raw["location"]) ?? rawDescription;
     const rawFeatures = readTextValue(raw["features_note"]);
     const geoSignals = extractOfferGeoSignals(raw);
@@ -827,7 +828,7 @@ export async function rebuildPublicOfferEntriesForPartner(
         seo_description: asNullableText(override?.seo_description),
         seo_h1: asNullableText(override?.seo_h1),
         short_description: asNullableText(override?.short_description) ?? rawDescription,
-        long_description: asNullableText(override?.long_description) ?? rawDescription,
+        long_description: asNullableText(override?.long_description) ?? rawLongDescription,
         location_text: asNullableText(override?.location_text) ?? rawLocation,
         features_text: asNullableText(override?.features_text) ?? rawFeatures,
         answer_summary: asNullableText(override?.answer_summary),

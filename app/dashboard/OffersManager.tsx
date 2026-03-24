@@ -396,6 +396,10 @@ export default function OffersManager(props: Props) {
     () => readTextValue(selectedRaw.description) ?? '',
     [selectedRaw],
   );
+  const rawLongDescription = useMemo(
+    () => readTextValue(selectedRaw.long_description) ?? rawDescription,
+    [selectedRaw, rawDescription],
+  );
   const rawLocation = useMemo(() => {
     const locationText = readTextValue(selectedRaw.location);
     if (locationText) {
@@ -510,7 +514,7 @@ export default function OffersManager(props: Props) {
       seo_description: selectedOverride?.seo_description ?? rawDescription ?? '',
       seo_h1: selectedOverride?.seo_h1 ?? selectedOffer.title ?? '',
       short_description: selectedOverride?.short_description ?? rawDescription ?? '',
-      long_description: selectedOverride?.long_description ?? rawDescription ?? '',
+      long_description: selectedOverride?.long_description ?? rawLongDescription ?? '',
       location_text: selectedOverride?.location_text ?? rawLocation ?? '',
       features_text: selectedOverride?.features_text ?? rawFeatures ?? '',
       answer_summary: selectedOverride?.answer_summary ?? selectedOverride?.short_description ?? rawDescription ?? '',
@@ -519,7 +523,7 @@ export default function OffersManager(props: Props) {
       highlights: selectedOverride?.highlights ?? rawHighlights ?? [],
       image_alt_texts: selectedOverride?.image_alt_texts ?? rawImageAltTexts ?? [],
     });
-  }, [selectedOffer, selectedOverride, effectiveExternalId, effectiveSource, rawDescription, rawLocation, rawFeatures, rawHighlights, rawImageAltTexts]);
+  }, [selectedOffer, selectedOverride, effectiveExternalId, effectiveSource, rawDescription, rawLongDescription, rawLocation, rawFeatures, rawHighlights, rawImageAltTexts]);
 
   useEffect(() => {
     setActivePhotoIndex(0);
@@ -1340,7 +1344,7 @@ export default function OffersManager(props: Props) {
               <>
                 <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
                   {renderTextField('Teaser', 'short_description', rawDescription, { multiline: true })}
-                  {renderTextField('Langtext', 'long_description', rawDescription, { multiline: true })}
+                  {renderTextField('Langtext', 'long_description', rawLongDescription, { multiline: true })}
                   {renderTextField('Lage‑Text', 'location_text', rawLocation, { multiline: true })}
                 </div>
 

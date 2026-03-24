@@ -364,9 +364,9 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   );
 
   const title = offer.seoH1 || offer.title || texts.object_generic;
-  const teaserText = offer.shortDescription || null;
   const description =
     offer.longDescription ??
+    readTextValue(raw["long_description"]) ??
     readTextValue(raw["description"]);
   const locationText =
     offer.locationText ??
@@ -542,13 +542,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           <div className="offer-detail-placeholder">{texts.no_images_available}</div>
         )}
       </section>
-
-      {teaserText ? (
-        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
-          <h2 className="h5 mb-3">Teaser</h2>
-          <p className="mb-0">{teaserText}</p>
-        </section>
-      ) : null}
 
       {description ? (
         <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
