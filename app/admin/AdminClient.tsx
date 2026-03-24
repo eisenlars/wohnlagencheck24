@@ -9209,7 +9209,6 @@ const adminNavTooltipCardStyle: React.CSSProperties = {
   minWidth: "168px",
   maxWidth: "220px",
   borderRadius: "12px",
-  border: "1px solid #d4b100",
   background: "#ffe000",
   color: "#111111",
   boxShadow: "0 18px 36px rgba(15,23,42,0.18)",
