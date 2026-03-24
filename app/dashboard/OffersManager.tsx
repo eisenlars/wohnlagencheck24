@@ -729,18 +729,18 @@ export default function OffersManager(props: Props) {
                 onClick={() => handleAiRewrite(key, value, label, customPrompt)}
                 disabled={isRewriting || llmOptions.length === 0}
               >
-                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
+                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))
+                }
+                style={promptToggleStyle}
+              >
+                {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))
-              }
-              style={promptToggleStyle}
-            >
-              {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-            </button>
             {showPrompt ? (
               <div style={promptPanelStyle}>
                 <div style={promptLabelStyle}>Standard-Prompt</div>
@@ -816,18 +816,18 @@ export default function OffersManager(props: Props) {
                 onClick={() => handleAiRewrite(key, value, label, customPrompt)}
                 disabled={isRewriting || llmOptions.length === 0}
               >
-                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln (Fakten bleiben erhalten)'}
+                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))
+                }
+                style={promptToggleStyle}
+              >
+                {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))
-              }
-              style={promptToggleStyle}
-            >
-              {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-            </button>
             {showPrompt ? (
               <div style={promptPanelStyle}>
                 <div style={promptLabelStyle}>Standard-Prompt</div>
@@ -1636,7 +1636,7 @@ const customizedBadgeStyle: React.CSSProperties = {
 
 const editorGridStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: '1fr 280px',
+  gridTemplateColumns: 'minmax(0, 2fr) minmax(260px, 1fr)',
   gap: '18px',
 };
 
