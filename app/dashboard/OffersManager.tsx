@@ -511,7 +511,12 @@ export default function OffersManager(props: Props) {
       source: effectiveSource,
       external_id: effectiveExternalId,
       seo_title: selectedOverride?.seo_title ?? selectedOffer.title ?? '',
-      seo_description: selectedOverride?.seo_description ?? rawDescription ?? '',
+      seo_description:
+        selectedOverride?.seo_description
+        ?? selectedOverride?.answer_summary
+        ?? selectedOverride?.short_description
+        ?? rawDescription
+        ?? '',
       seo_h1: selectedOverride?.seo_h1 ?? selectedOffer.title ?? '',
       short_description: selectedOverride?.short_description ?? rawDescription ?? '',
       long_description: selectedOverride?.long_description ?? rawLongDescription ?? '',
@@ -628,46 +633,43 @@ export default function OffersManager(props: Props) {
 
   const getStandardPromptText = (label: string, areaName: string) => {
     const lowerLabel = String(label || '').toLowerCase();
-    if (lowerLabel.includes('objekt-titel') || lowerLabel.includes('h1') || lowerLabel.includes('titel')) {
-      return `Formuliere einen prägnanten Objekt-Titel (max. 60 Zeichen) für ${areaName}. Keine erfundenen Fakten.`;
+    if (lowerLabel.includes('objekt-titel') || lowerLabel.includes('h1')) {
+      return `Formuliere einen prägnanten, sachlichen Objekt-Titel für ${areaName}. Maximal 60 Zeichen, keine Clickbait-Formulierungen, keine erfundenen Fakten, keine Dopplung von Preis oder Adresse.`;
     }
     if (lowerLabel.includes('seo-title')) {
-      return `Schreibe einen SEO-Title (max. 60 Zeichen) für ein Immobilienangebot in ${areaName}. Fakten beibehalten.`;
+      return `Schreibe einen SEO-Titel für ein Immobilienangebot in ${areaName}. Maximal 60 Zeichen, primäres Objektmerkmal zuerst, sauber lesbar, keine erfundenen Fakten, keine Keyword-Stapelung.`;
     }
     if (lowerLabel.includes('seo-description')) {
-      return `Schreibe eine SEO-Description (140–160 Zeichen) für ein Immobilienangebot in ${areaName}. Fakten beibehalten.`;
+      return `Schreibe eine SEO-Description für ein Immobilienangebot in ${areaName}. 140 bis 160 Zeichen, klarer Nutzen, wichtigste Fakten zuerst, keine Füllwörter, keine erfundenen Angaben.`;
     }
     if (lowerLabel.includes('teaser')) {
-      return `Formuliere einen kurzen Teaser (1–2 Sätze) zum Objekt in ${areaName}. Keine neuen Fakten.`;
+      return `Formuliere einen kurzen Teaser zum Objekt in ${areaName}. 1 bis 2 Sätze, sachlich, aufmerksamkeitsstark, aber ohne Übertreibung und ohne neue Fakten.`;
     }
     if (lowerLabel.includes('langtext')) {
-      return `Optimiere den Langtext für bessere Lesbarkeit und Struktur. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
-    }
-    if (lowerLabel.includes('langtext') || lowerLabel.includes('beschreibung')) {
-      return `Optimiere den Text für bessere Lesbarkeit. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
+      return `Optimiere den Langtext für das Exposé in ${areaName}. Saubere Absätze, gute Lesbarkeit, sachlicher Stil, keine neuen Fakten, keine Wiederholung des Titels in jedem Satz.`;
     }
     if (lowerLabel.includes('lage')) {
-      return `Formuliere den Lage-Text klar und informativ. Keine erfundenen Fakten, keine Übertreibungen. Kontext: ${areaName}.`;
+      if (lowerLabel.includes('in kürze')) {
+        return `Fasse die Lage in 2 bis 3 prägnanten Sätzen zusammen. Fokus auf Mikrolage, Erreichbarkeit und Umfeld. Keine Floskeln, keine erfundenen Fakten. Kontext: ${areaName}.`;
+      }
+      return `Formuliere den Lage-Text klar und informativ. Fokus auf Lagequalität, Erreichbarkeit, Umfeld und Alltagstauglichkeit. Keine erfundenen Fakten, keine Übertreibungen. Kontext: ${areaName}.`;
     }
     if (lowerLabel.includes('kurzantwort')) {
-      return `Schreibe eine knappe, sachliche Objekt-Kurzantwort in 2 bis 4 Sätzen für ${areaName}. Nur belegte Fakten verwenden.`;
-    }
-    if (lowerLabel.includes('lage in kürze')) {
-      return `Fasse die Lage in 2 bis 3 prägnanten Sätzen zusammen. Keine erfundenen Fakten, keine Floskeln. Kontext: ${areaName}.`;
+      return `Schreibe eine knappe, sachliche Objekt-Kurzantwort in 2 bis 4 Sätzen für ${areaName}. Die Antwort soll direkt verständlich sein, die wichtigsten Merkmale bündeln und nur belegte Fakten verwenden.`;
     }
     if (lowerLabel.includes('geeignet für')) {
-      return `Beschreibe kurz, für welche Zielgruppe das Objekt geeignet ist. Nur plausible, aus den Objektfakten ableitbare Aussagen verwenden.`;
+      return `Beschreibe kurz, für welche Zielgruppe das Objekt geeignet ist. Nur plausible, aus den Objektfakten ableitbare Aussagen verwenden. Keine leeren Marketingfloskeln und keine Zielgruppen erfinden, die nicht passen.`;
     }
     if (lowerLabel.includes('ausstatt')) {
-      return `Formuliere den Ausstattungstext klar und strukturiert. Keine neuen Features hinzufügen.`;
+      return `Formuliere den Ausstattungstext klar und strukturiert. Fokus auf echte Ausstattungs- und Zustandsmerkmale, keine neuen Features hinzufügen, keine Doppelungen aus dem Langtext.`;
     }
     if (lowerLabel.includes('highlights')) {
-      return `Schreibe max. 6 Highlights (je 1 Zeile), kurz und konkret. Nur belegte Fakten verwenden.`;
+      return `Schreibe maximal 6 Highlights, jeweils 1 Zeile. Kurz, konkret, belegbar, keine Wiederholungen, keine vagen Adjektive ohne Substanz.`;
     }
     if (lowerLabel.includes('alt-texte') || lowerLabel.includes('alttexte')) {
-      return `Erstelle kurze, sachliche Alt-Texte (1 Zeile je Bild). Keine erfundenen Details.`;
+      return `Erstelle kurze, sachliche Alt-Texte, jeweils 1 Zeile pro Bild. Beschreibe das Motiv konkret, ohne erfundene Details und ohne SEO-Keyword-Stuffing.`;
     }
-    return `Optimiere den Text für bessere Lesbarkeit und SEO. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
+    return `Optimiere den Text für bessere Lesbarkeit, fachliche Klarheit und saubere Suchmaschinen-/Antwortsystem-Nutzung. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
   };
 
   const renderTextField = (
@@ -1343,12 +1345,19 @@ export default function OffersManager(props: Props) {
             {activeWorkspaceTab === 'texts' ? (
               <>
                 <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
+                  {renderTextField('Objekt-Titel', 'seo_h1', selectedOffer?.title ?? '', { multiline: false })}
                   {renderTextField('Teaser', 'short_description', rawDescription, { multiline: true })}
                   {renderTextField('Langtext', 'long_description', rawLongDescription, { multiline: true })}
                   {renderTextField('Lage‑Text', 'location_text', rawLocation, { multiline: true })}
                 </div>
 
                 <div style={contentPreviewGridStyle}>
+                  <div style={contentPreviewCardStyle}>
+                    <div style={contentPreviewLabelStyle}>Objekt-Titel</div>
+                    <div style={contentPreviewBodyStyle}>
+                      {form.seo_h1 || 'Kein Objekt-Titel gepflegt.'}
+                    </div>
+                  </div>
                   <div style={contentPreviewCardStyle}>
                     <div style={contentPreviewLabelStyle}>Teaser</div>
                     <div style={contentPreviewBodyStyle}>
@@ -1446,8 +1455,7 @@ export default function OffersManager(props: Props) {
                 </div>
                 <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
                   {renderTextField('SEO‑Titel', 'seo_title', selectedOffer?.title ?? '', { multiline: false })}
-                  {renderTextField('SEO‑Description', 'seo_description', rawDescription, { multiline: true })}
-                  {renderTextField('Objekt-Titel', 'seo_h1', selectedOffer?.title ?? '', { multiline: false })}
+                  {renderTextField('SEO‑Description', 'seo_description', form.answer_summary ?? form.short_description ?? rawDescription, { multiline: true })}
                 </div>
 
                 <div style={offerSummaryCardStyle}>
@@ -1471,6 +1479,13 @@ export default function OffersManager(props: Props) {
                 <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
                   {renderListField('Highlights (eine Zeile = ein Punkt)', 'highlights', rawHighlights, 'Ein Punkt pro Zeile')}
                   {renderListField('Alt‑Texte (eine Zeile = ein Bild)', 'image_alt_texts', rawImageAltTexts, 'Ein Bildtitel pro Zeile')}
+                </div>
+
+                <div style={offerSummaryCardStyle}>
+                  <div style={offerSummaryHeaderStyle}>Zusammenfassung</div>
+                  <div style={mediaSectionHintStyle}>
+                    Hier sehen Sie, wie die aktuell gepflegten Snippet-, Antwort- und Social-Texte zusammenwirken.
+                  </div>
                 </div>
 
                 <div style={previewCardStyle}>
