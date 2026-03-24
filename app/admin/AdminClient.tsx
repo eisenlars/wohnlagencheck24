@@ -8963,6 +8963,11 @@ const dashboardFooterStyle: React.CSSProperties = {
   padding: "0 20px",
   fontSize: "12px",
   width: "100%",
+  position: "fixed",
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 38,
 };
 
 const dashboardFooterCopyStyle: React.CSSProperties = {
@@ -8984,7 +8989,7 @@ const dashboardFooterLinkStyle: React.CSSProperties = {
 const adminWelcomeWrapStyle: React.CSSProperties = {
   flex: 1,
   width: "100%",
-  padding: "40px 36px 32px",
+  padding: "151px 36px 88px",
   boxSizing: "border-box",
   background: "#f8fafc",
   overflowY: "auto",
@@ -9105,10 +9110,10 @@ const modeBarStyle: React.CSSProperties = {
   flexDirection: "column",
   alignItems: "center",
   gap: 6,
-  position: "fixed",
+  position: "sticky",
   top: "111px",
-  left: 0,
-  bottom: 0,
+  alignSelf: "start",
+  height: "calc(100vh - 155px)",
   overflow: "visible",
   zIndex: 50,
 };
@@ -9150,16 +9155,16 @@ const adminNavTooltipCardStyle: React.CSSProperties = {
 };
 
 const listPaneStyle: React.CSSProperties = {
-  position: "fixed",
+  position: "sticky",
   top: "111px",
-  left: "50px",
-  bottom: 0,
+  alignSelf: "start",
   width: "260px",
   borderRight: "1px solid #e2e8f0",
   background: "#ffffff",
   display: "flex",
   flexDirection: "column",
-  maxHeight: "calc(100vh - 111px)",
+  height: "calc(100vh - 155px)",
+  maxHeight: "calc(100vh - 155px)",
   overflow: "hidden",
 };
 
@@ -9213,7 +9218,7 @@ const adminWorkflowLegendDotStyle = (color: string): React.CSSProperties => ({
 
 const contentPaneStyle: React.CSSProperties = {
   minWidth: 0,
-  padding: "0 0 0 14px",
+  padding: "0 0 72px 14px",
 };
 
 const listLinkRowStyle = (active: boolean): React.CSSProperties => ({
