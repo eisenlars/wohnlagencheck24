@@ -5601,8 +5601,8 @@ export default function AdminClient() {
       ) : null}
 
       {activeView === "language_admin" ? (
-      <section style={cardStyle}>
-        <h2 style={h2Style}>Sprachverwaltung</h2>
+      <section style={workspaceSectionStyle}>
+        <h1 style={workspaceTitleStyle}>Sprachverwaltung</h1>
         <p style={mutedStyle}>
           Locale-Registry, Freigaben und Partnerbuchbarkeit zentral verwalten.
         </p>
@@ -5793,8 +5793,8 @@ export default function AdminClient() {
       ) : null}
 
       {activeView === "system_texts" ? (
-      <section style={cardStyle}>
-        <h2 style={h2Style}>Systemtexte</h2>
+      <section style={workspaceSectionStyle}>
+        <h1 style={workspaceTitleStyle}>Systemtexte</h1>
         <p style={mutedStyle}>
           Navigation, Footer, Fallbacks und UI-Texte tabweise pro Locale pflegen.
         </p>
@@ -6001,8 +6001,8 @@ export default function AdminClient() {
       ) : null}
 
       {activeView === "market_texts" ? (
-      <section style={cardStyle}>
-        <h2 style={h2Style}>Markterklärungstexte</h2>
+      <section style={workspaceSectionStyle}>
+        <h1 style={workspaceTitleStyle}>Markterklärungstexte</h1>
         <p style={mutedStyle}>
           Fachliche Markttexte sind hier getrennt von UI-Systemtexten organisiert. Standardtexte mit Text-Key werden deutsch als Systempartner-Basis gepflegt, statische Erklärungstexte ohne Key folgen separat.
         </p>
@@ -6299,8 +6299,8 @@ export default function AdminClient() {
       ) : null}
 
       {activeView === "portal_cms" ? (
-      <section style={cardStyle}>
-        <h2 style={h2Style}>Portal-CMS</h2>
+      <section style={workspaceSectionStyle}>
+        <h1 style={workspaceTitleStyle}>Portal-CMS</h1>
         <p style={mutedStyle}>
           Globale Portalinhalte pro Bereich und Locale pflegen.
         </p>
@@ -7359,8 +7359,8 @@ export default function AdminClient() {
       ) : null}
 
       {activeView === "billing_defaults" ? (
-      <section style={cardStyle}>
-        <h2 style={h2Style}>Billing-Standards</h2>
+      <section style={workspaceSectionStyle}>
+        <h1 style={workspaceTitleStyle}>Billing-Standards</h1>
         <p style={mutedStyle}>
           Globale Standarddefinition für Portalabo und Feature-Katalog.
         </p>
@@ -7678,8 +7678,8 @@ export default function AdminClient() {
       ) : null}
 
       {activeView === "llm_global" ? (
-      <section style={cardStyle}>
-        <h2 style={h2Style}>Globale LLM-Verwaltung</h2>
+      <section style={workspaceSectionStyle}>
+        <h1 style={workspaceTitleStyle}>Globale LLM-Verwaltung</h1>
         <div style={partnerTabBarStyle}>
           <button style={partnerTabButtonStyle(llmGlobalTab === "create")} onClick={() => setLlmGlobalTab("create")}>
             LLM anlegen
@@ -9304,6 +9304,20 @@ const cardStyle: React.CSSProperties = {
   background: "#ffffff",
   padding: 16,
   marginBottom: 16,
+};
+
+const workspaceSectionStyle: React.CSSProperties = {
+  background: "#ffffff",
+  padding: 16,
+  marginBottom: 16,
+};
+
+const workspaceTitleStyle: React.CSSProperties = {
+  margin: "0 0 12px",
+  fontSize: 24,
+  lineHeight: 1.2,
+  color: "#0f172a",
+  fontWeight: 800,
 };
 
 const adminPartnerSummaryGridStyle: React.CSSProperties = {
