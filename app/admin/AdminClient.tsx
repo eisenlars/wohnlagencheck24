@@ -4082,6 +4082,14 @@ export default function AdminClient() {
             title="Partner"
             onMouseEnter={(event) => updateHoveredAdminNav("partners", event.currentTarget)}
             onFocus={(event) => updateHoveredAdminNav("partners", event.currentTarget)}
+            onMouseLeave={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+            onBlur={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
           >
             {renderAdminNavIcon("partners")}
           </button>
@@ -4094,6 +4102,14 @@ export default function AdminClient() {
             title="Gebiete"
             onMouseEnter={(event) => updateHoveredAdminNav("areas", event.currentTarget)}
             onFocus={(event) => updateHoveredAdminNav("areas", event.currentTarget)}
+            onMouseLeave={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+            onBlur={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
           >
             {renderAdminNavIcon("areas")}
           </button>
@@ -4108,6 +4124,14 @@ export default function AdminClient() {
             title="Globale LLM-Verwaltung"
             onMouseEnter={(event) => updateHoveredAdminNav("llm", event.currentTarget)}
             onFocus={(event) => updateHoveredAdminNav("llm", event.currentTarget)}
+            onMouseLeave={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+            onBlur={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
           >
             {renderAdminNavIcon("llm")}
           </button>
@@ -4122,6 +4146,14 @@ export default function AdminClient() {
             title="Billing-Standards"
             onMouseEnter={(event) => updateHoveredAdminNav("billing", event.currentTarget)}
             onFocus={(event) => updateHoveredAdminNav("billing", event.currentTarget)}
+            onMouseLeave={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+            onBlur={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
           >
             {renderAdminNavIcon("billing")}
           </button>
@@ -4136,6 +4168,14 @@ export default function AdminClient() {
             title="Sprachverwaltung"
             onMouseEnter={(event) => updateHoveredAdminNav("language", event.currentTarget)}
             onFocus={(event) => updateHoveredAdminNav("language", event.currentTarget)}
+            onMouseLeave={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+            onBlur={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
           >
             {renderAdminNavIcon("language")}
           </button>
@@ -4150,6 +4190,14 @@ export default function AdminClient() {
             title="Systemtexte"
             onMouseEnter={(event) => updateHoveredAdminNav("texts", event.currentTarget)}
             onFocus={(event) => updateHoveredAdminNav("texts", event.currentTarget)}
+            onMouseLeave={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+            onBlur={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
           >
             {renderAdminNavIcon("texts")}
           </button>
@@ -4167,6 +4215,14 @@ export default function AdminClient() {
             title="Markterklärungstexte"
             onMouseEnter={(event) => updateHoveredAdminNav("market_texts", event.currentTarget)}
             onFocus={(event) => updateHoveredAdminNav("market_texts", event.currentTarget)}
+            onMouseLeave={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+            onBlur={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
           >
             {renderAdminNavIcon("market_texts")}
           </button>
@@ -4181,6 +4237,14 @@ export default function AdminClient() {
             title="Portal-CMS"
             onMouseEnter={(event) => updateHoveredAdminNav("cms", event.currentTarget)}
             onFocus={(event) => updateHoveredAdminNav("cms", event.currentTarget)}
+            onMouseLeave={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+            onBlur={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
           >
             {renderAdminNavIcon("cms")}
           </button>
@@ -9145,10 +9209,10 @@ const adminNavTooltipCardStyle: React.CSSProperties = {
   minWidth: "168px",
   maxWidth: "220px",
   borderRadius: "12px",
-  border: "1px solid rgba(255,255,255,0.18)",
-  background: "#486b7a",
-  color: "#ffffff",
-  boxShadow: "0 18px 36px rgba(15,23,42,0.22)",
+  border: "1px solid #d4b100",
+  background: "#ffe000",
+  color: "#111111",
+  boxShadow: "0 18px 36px rgba(15,23,42,0.18)",
   padding: "10px 14px",
   fontSize: "13px",
   fontWeight: 700,
