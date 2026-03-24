@@ -2020,8 +2020,8 @@ const energyReadyStyle: React.CSSProperties = {
 const aiButtonStyle: React.CSSProperties = {
   alignSelf: 'flex-start',
   padding: '9px 16px',
-  backgroundColor: 'rgb(72, 107, 122)',
-  color: '#ffffff',
+  backgroundColor: 'rgba(72, 107, 122, 0.12)',
+  color: 'rgb(72, 107, 122)',
   border: '1px solid rgb(72, 107, 122)',
   borderRadius: '8px',
   fontSize: '12px',
