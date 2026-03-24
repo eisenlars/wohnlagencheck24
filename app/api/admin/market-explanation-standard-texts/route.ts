@@ -22,6 +22,7 @@ type TextTree = Record<string, Record<string, string>>;
 
 type StandardPayload = {
   text?: unknown;
+  bundeslandname?: { text?: unknown };
   kreisname?: { text?: unknown };
   ortslagenname?: { text?: unknown };
   [key: string]: unknown;
@@ -105,6 +106,8 @@ function resolveStandardTree(payload: StandardPayload | null): TextTree {
   if (!payload) return {};
   const top = toTextTree(payload.text);
   if (Object.keys(top).length > 0) return top;
+  const bundesland = toTextTree(payload.bundeslandname?.text);
+  if (Object.keys(bundesland).length > 0) return bundesland;
   const kreis = toTextTree(payload.kreisname?.text);
   if (Object.keys(kreis).length > 0) return kreis;
   return toTextTree(payload.ortslagenname?.text);
