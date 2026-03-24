@@ -984,7 +984,7 @@ export default function OffersManager(props: Props) {
             ) : null}
 
             {selectedOffer ? (
-              <div style={offerSummaryCardStyle}>
+              <div style={offerSummaryTopCardStyle}>
                 <div style={offerSummaryHeaderStyle}>Objekt-Übersicht</div>
                 <div style={offerSummaryGridStyle}>
                   <div>
@@ -1006,14 +1006,6 @@ export default function OffersManager(props: Props) {
                   <div>
                     <div style={offerSummaryLabelStyle}>Angebotstyp</div>
                     <div style={offerSummaryValueStyle}>{selectedOffer.offer_type || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Preis / Miete</div>
-                    <div style={offerSummaryValueStyle}>
-                      {selectedOffer.offer_type === 'miete'
-                        ? (selectedOffer.rent ? `${selectedOffer.rent} €` : '—')
-                        : (selectedOffer.price ? `${selectedOffer.price} €` : '—')}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1311,6 +1303,7 @@ export default function OffersManager(props: Props) {
                   {renderTextField('Teaser', 'short_description', rawDescription, { multiline: true })}
                   {renderTextField('Langtext', 'long_description', rawLongDescription, { multiline: true })}
                   {renderTextField('Lage‑Text', 'location_text', rawLocation, { multiline: true })}
+                  {renderTextField('Ausstattungs‑Text', 'features_text', rawFeatures, { multiline: true })}
                 </div>
 
                 <div style={contentPreviewGridStyle}>
@@ -1338,6 +1331,12 @@ export default function OffersManager(props: Props) {
                       {form.location_text || 'Kein Lage-Text gepflegt.'}
                     </div>
                   </div>
+                  <div style={contentPreviewCardStyle}>
+                    <div style={contentPreviewLabelStyle}>Ausstattung</div>
+                    <div style={contentPreviewBodyStyle}>
+                      {form.features_text || 'Kein Ausstattungs-Text gepflegt.'}
+                    </div>
+                  </div>
                 </div>
 
                 <button onClick={() => saveOverride()} disabled={saving} style={primaryButtonStyle}>
@@ -1349,18 +1348,8 @@ export default function OffersManager(props: Props) {
             {activeWorkspaceTab === 'facts' ? (
               <div style={offerSummaryCardStyle}>
                 <div style={offerSummaryHeaderStyle}>Objektmerkmale</div>
-                <div style={offerSummaryGridStyle}>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Zimmer</div>
-                    <div style={offerSummaryValueStyle}>{selectedOffer?.rooms ?? '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Fläche</div>
-                    <div style={offerSummaryValueStyle}>
-                      {selectedOffer?.area_sqm ? `${selectedOffer.area_sqm} m²` : '—'}
-                    </div>
-                  </div>
-                  <div>
+                <div style={offerSummaryStackStyle}>
+                  <div style={offerSummaryStackRowStyle}>
                     <div style={offerSummaryLabelStyle}>Preis / Miete</div>
                     <div style={offerSummaryValueStyle}>
                       {selectedOffer?.offer_type === 'miete'
@@ -1368,7 +1357,37 @@ export default function OffersManager(props: Props) {
                         : (selectedOffer?.price ? `${selectedOffer.price} €` : '—')}
                     </div>
                   </div>
-                  <div>
+                  <div style={offerSummaryStackRowStyle}>
+                    <div style={offerSummaryLabelStyle}>Fläche</div>
+                    <div style={offerSummaryValueStyle}>
+                      {selectedOffer?.area_sqm ? `${selectedOffer.area_sqm} m²` : '—'}
+                    </div>
+                  </div>
+                  <div style={offerSummaryStackRowStyle}>
+                    <div style={offerSummaryLabelStyle}>Nutzfläche</div>
+                    <div style={offerSummaryValueStyle}>
+                      {detailsSnapshot?.usable_area_sqm != null ? `${detailsSnapshot.usable_area_sqm} m²` : '—'}
+                    </div>
+                  </div>
+                  <div style={offerSummaryStackRowStyle}>
+                    <div style={offerSummaryLabelStyle}>Grundstück</div>
+                    <div style={offerSummaryValueStyle}>
+                      {detailsSnapshot?.plot_area_sqm != null ? `${detailsSnapshot.plot_area_sqm} m²` : '—'}
+                    </div>
+                  </div>
+                  <div style={offerSummaryStackRowStyle}>
+                    <div style={offerSummaryLabelStyle}>Zimmer</div>
+                    <div style={offerSummaryValueStyle}>{selectedOffer?.rooms ?? '—'}</div>
+                  </div>
+                  <div style={offerSummaryStackRowStyle}>
+                    <div style={offerSummaryLabelStyle}>Schlafzimmer</div>
+                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bedrooms ?? '—'}</div>
+                  </div>
+                  <div style={offerSummaryStackRowStyle}>
+                    <div style={offerSummaryLabelStyle}>Badezimmer</div>
+                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bathrooms ?? '—'}</div>
+                  </div>
+                  <div style={offerSummaryStackRowStyle}>
                     <div style={offerSummaryLabelStyle}>Baujahr</div>
                     <div style={offerSummaryValueStyle}>
                       {detailsSnapshot?.construction_year
@@ -1377,27 +1396,7 @@ export default function OffersManager(props: Props) {
                         ?? '—'}
                     </div>
                   </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Nutzfläche</div>
-                    <div style={offerSummaryValueStyle}>
-                      {detailsSnapshot?.usable_area_sqm != null ? `${detailsSnapshot.usable_area_sqm} m²` : '—'}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Grundstück</div>
-                    <div style={offerSummaryValueStyle}>
-                      {detailsSnapshot?.plot_area_sqm != null ? `${detailsSnapshot.plot_area_sqm} m²` : '—'}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Schlafzimmer</div>
-                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bedrooms ?? '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Badezimmer</div>
-                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bathrooms ?? '—'}</div>
-                  </div>
-                  <div>
+                  <div style={offerSummaryStackRowStyle}>
                     <div style={offerSummaryLabelStyle}>Etage</div>
                     <div style={offerSummaryValueStyle}>{detailsSnapshot?.floor ?? '—'}</div>
                   </div>
@@ -1407,38 +1406,34 @@ export default function OffersManager(props: Props) {
 
             {activeWorkspaceTab === 'equipment' ? (
               <>
-                <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
-                  {renderTextField('Ausstattungs‑Text', 'features_text', rawFeatures, { multiline: true })}
-                </div>
-
                 <div style={offerSummaryCardStyle}>
                   <div style={offerSummaryHeaderStyle}>Strukturierte Ausstattung</div>
-                  <div style={offerSummaryGridStyle}>
-                    <div>
+                  <div style={offerSummaryStackStyle}>
+                    <div style={offerSummaryStackRowStyle}>
                       <div style={offerSummaryLabelStyle}>Zustand</div>
                       <div style={offerSummaryValueStyle}>{detailsSnapshot?.condition ?? '—'}</div>
                     </div>
-                    <div>
+                    <div style={offerSummaryStackRowStyle}>
                       <div style={offerSummaryLabelStyle}>Stellplatz</div>
                       <div style={offerSummaryValueStyle}>{detailsSnapshot?.parking ?? '—'}</div>
                     </div>
-                    <div>
+                    <div style={offerSummaryStackRowStyle}>
                       <div style={offerSummaryLabelStyle}>Balkon</div>
                       <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.balcony)}</div>
                     </div>
-                    <div>
+                    <div style={offerSummaryStackRowStyle}>
                       <div style={offerSummaryLabelStyle}>Terrasse</div>
                       <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.terrace)}</div>
                     </div>
-                    <div>
+                    <div style={offerSummaryStackRowStyle}>
                       <div style={offerSummaryLabelStyle}>Garten</div>
                       <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.garden)}</div>
                     </div>
-                    <div>
+                    <div style={offerSummaryStackRowStyle}>
                       <div style={offerSummaryLabelStyle}>Aufzug</div>
                       <div style={offerSummaryValueStyle}>{formatBooleanLabel(detailsSnapshot?.elevator)}</div>
                     </div>
-                    <div>
+                    <div style={offerSummaryStackRowStyle}>
                       <div style={offerSummaryLabelStyle}>Adresse im Portal</div>
                       <div style={offerSummaryValueStyle}>
                         {detailsSnapshot?.address_hidden === true
@@ -1447,15 +1442,6 @@ export default function OffersManager(props: Props) {
                             ? 'sichtbar'
                             : '—'}
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={contentPreviewGridStyle}>
-                  <div style={contentPreviewCardStyle}>
-                    <div style={contentPreviewLabelStyle}>Ausstattungsbeschreibung</div>
-                    <div style={contentPreviewBodyStyle}>
-                      {form.features_text || 'Kein Ausstattungs-Text gepflegt.'}
                     </div>
                   </div>
                 </div>
@@ -1773,6 +1759,11 @@ const offerSummaryCardStyle: React.CSSProperties = {
   marginBottom: '16px',
 };
 
+const offerSummaryTopCardStyle: React.CSSProperties = {
+  ...offerSummaryCardStyle,
+  marginBottom: '40px',
+};
+
 const offerSummaryHeaderStyle: React.CSSProperties = {
   fontSize: '11px',
   textTransform: 'uppercase',
@@ -1786,6 +1777,16 @@ const offerSummaryGridStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
   gap: '12px',
+};
+
+const offerSummaryStackStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: '12px',
+};
+
+const offerSummaryStackRowStyle: React.CSSProperties = {
+  paddingBottom: '12px',
+  borderBottom: '1px solid #e2e8f0',
 };
 
 const offerSummaryLabelStyle: React.CSSProperties = {
