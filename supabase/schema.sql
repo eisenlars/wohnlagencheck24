@@ -261,3 +261,11 @@ CREATE POLICY overrides_partner_update
   ON public.partner_property_overrides FOR UPDATE USING (auth.uid() = partner_id);
 CREATE POLICY overrides_partner_delete
   ON public.partner_property_overrides FOR DELETE USING (auth.uid() = partner_id);
+
+-- ------------------------------
+-- partner_property_offer_i18n extensions
+-- ------------------------------
+ALTER TABLE public.partner_property_offer_i18n
+  ADD COLUMN IF NOT EXISTS translated_answer_summary text,
+  ADD COLUMN IF NOT EXISTS translated_location_summary text,
+  ADD COLUMN IF NOT EXISTS translated_target_audience text;

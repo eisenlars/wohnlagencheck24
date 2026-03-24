@@ -206,6 +206,9 @@ type PropertyOverrideRow = {
   long_description?: string | null;
   location_text?: string | null;
   features_text?: string | null;
+  answer_summary?: string | null;
+  location_summary?: string | null;
+  target_audience?: string | null;
   highlights?: string[] | null;
   image_alt_texts?: string[] | null;
 };
@@ -222,6 +225,9 @@ type PropertyOfferTranslationRow = {
   translated_long_description: string | null;
   translated_location_text: string | null;
   translated_features_text: string | null;
+  translated_answer_summary: string | null;
+  translated_location_summary: string | null;
+  translated_target_audience: string | null;
   translated_highlights: string[] | null;
   translated_image_alt_texts: string[] | null;
   status: BlogTranslationStatus;
@@ -247,6 +253,9 @@ type PropertyOfferTranslationItem = {
   source_long_description: string;
   source_location_text: string;
   source_features_text: string;
+  source_answer_summary: string;
+  source_location_summary: string;
+  source_target_audience: string;
   source_highlights: string[];
   source_image_alt_texts: string[];
   translated_seo_title: string;
@@ -256,6 +265,9 @@ type PropertyOfferTranslationItem = {
   translated_long_description: string;
   translated_location_text: string;
   translated_features_text: string;
+  translated_answer_summary: string;
+  translated_location_summary: string;
+  translated_target_audience: string;
   translated_highlights: string[];
   translated_image_alt_texts: string[];
   translation_status: BlogTranslationStatus;
@@ -668,6 +680,22 @@ function toStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
 
+function asText(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function readTextValue(value: unknown): string | null {
+  const direct = asText(value);
+  if (direct) return direct;
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return asText(record.value) ?? asText(record.label);
+  }
+  return null;
+}
+
 function getRegionTargetLabels(payload: Record<string, unknown>): string[] {
   const raw = payload.region_targets;
   if (!Array.isArray(raw)) return [];
@@ -686,8 +714,8 @@ function getRegionTargetLabels(payload: Record<string, unknown>): string[] {
 
 function getPayloadText(payload: Record<string, unknown>, keys: string[]): string {
   for (const key of keys) {
-    const value = payload[key];
-    if (typeof value === 'string' && value.trim().length > 0) return value;
+    const value = readTextValue(payload[key]);
+    if (value) return value;
   }
   return '';
 }
@@ -886,6 +914,9 @@ export default function InternationalizationManager({ config, availableLocales, 
     translated_long_description: string;
     translated_location_text: string;
     translated_features_text: string;
+    translated_answer_summary: string;
+    translated_location_summary: string;
+    translated_target_audience: string;
     translated_highlights: string[];
     translated_image_alt_texts: string[];
     translation_status: BlogTranslationStatus;
@@ -1201,7 +1232,7 @@ export default function InternationalizationManager({ config, availableLocales, 
       if (sources.length > 0 && externalIds.length > 0) {
         const { data: overridesData, error: overridesError } = await supabase
           .from('partner_property_overrides')
-          .select('partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts')
+          .select('partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, answer_summary, location_summary, target_audience, highlights, image_alt_texts')
           .eq('partner_id', user.id)
           .in('source', sources)
           .in('external_id', externalIds);
@@ -1214,7 +1245,7 @@ export default function InternationalizationManager({ config, availableLocales, 
       if (offerIds.length > 0) {
         const { data: translationsData, error: translationsError } = await supabase
           .from('partner_property_offer_i18n')
-          .select('id, offer_id, source, external_id, translated_seo_title, translated_seo_description, translated_seo_h1, translated_short_description, translated_long_description, translated_location_text, translated_features_text, translated_highlights, translated_image_alt_texts, status, source_snapshot_hash, source_last_updated, updated_at')
+          .select('id, offer_id, source, external_id, translated_seo_title, translated_seo_description, translated_seo_h1, translated_short_description, translated_long_description, translated_location_text, translated_features_text, translated_answer_summary, translated_location_summary, translated_target_audience, translated_highlights, translated_image_alt_texts, status, source_snapshot_hash, source_last_updated, updated_at')
           .eq('partner_id', user.id)
           .eq('target_locale', locale)
           .in('offer_id', offerIds);
@@ -1244,18 +1275,22 @@ export default function InternationalizationManager({ config, availableLocales, 
         const raw = (offer.raw ?? {}) as Record<string, unknown>;
         const override = overrideByKey.get(`${source}::${externalId}`);
         const translation = translationByOfferId.get(offerId);
-        const rawDescription = typeof raw.description === 'string' ? raw.description : '';
-        const rawLocation = typeof raw.location === 'string' && raw.location ? raw.location : rawDescription;
-        const rawFeatures = typeof raw.features_note === 'string' ? raw.features_note : '';
+        const rawDescription = readTextValue(raw.description) ?? '';
+        const rawLongDescription = readTextValue(raw.long_description) ?? rawDescription;
+        const rawLocation = readTextValue(raw.location) ?? rawDescription;
+        const rawFeatures = readTextValue(raw.features_note) ?? '';
         const rawHighlights = toStringArray(raw.highlights);
         const rawImageAltTexts = toStringArray(raw.image_alt_texts);
         const sourceSeoTitle = String(override?.seo_title ?? offer.title ?? '');
         const sourceSeoDescription = String(override?.seo_description ?? rawDescription ?? '');
         const sourceSeoH1 = String(override?.seo_h1 ?? offer.title ?? '');
         const sourceShortDescription = String(override?.short_description ?? rawDescription ?? '');
-        const sourceLongDescription = String(override?.long_description ?? rawDescription ?? '');
+        const sourceLongDescription = String(override?.long_description ?? rawLongDescription ?? '');
         const sourceLocationText = String(override?.location_text ?? rawLocation ?? '');
         const sourceFeaturesText = String(override?.features_text ?? rawFeatures ?? '');
+        const sourceAnswerSummary = String(override?.answer_summary ?? sourceShortDescription ?? '');
+        const sourceLocationSummary = String(override?.location_summary ?? sourceLocationText ?? '');
+        const sourceTargetAudience = String(override?.target_audience ?? '');
         const sourceHighlights = override?.highlights ?? rawHighlights;
         const sourceImageAltTexts = override?.image_alt_texts ?? rawImageAltTexts;
         const sourceSnapshotHash = hashText(JSON.stringify({
@@ -1266,6 +1301,9 @@ export default function InternationalizationManager({ config, availableLocales, 
           sourceLongDescription,
           sourceLocationText,
           sourceFeaturesText,
+          sourceAnswerSummary,
+          sourceLocationSummary,
+          sourceTargetAudience,
           sourceHighlights,
           sourceImageAltTexts,
         }));
@@ -1288,6 +1326,9 @@ export default function InternationalizationManager({ config, availableLocales, 
           source_long_description: sourceLongDescription,
           source_location_text: sourceLocationText,
           source_features_text: sourceFeaturesText,
+          source_answer_summary: sourceAnswerSummary,
+          source_location_summary: sourceLocationSummary,
+          source_target_audience: sourceTargetAudience,
           source_highlights: sourceHighlights,
           source_image_alt_texts: sourceImageAltTexts,
           translated_seo_title: String(translation?.translated_seo_title ?? ''),
@@ -1297,6 +1338,9 @@ export default function InternationalizationManager({ config, availableLocales, 
           translated_long_description: String(translation?.translated_long_description ?? ''),
           translated_location_text: String(translation?.translated_location_text ?? ''),
           translated_features_text: String(translation?.translated_features_text ?? ''),
+          translated_answer_summary: String(translation?.translated_answer_summary ?? ''),
+          translated_location_summary: String(translation?.translated_location_summary ?? ''),
+          translated_target_audience: String(translation?.translated_target_audience ?? ''),
           translated_highlights: translation?.translated_highlights ?? [],
           translated_image_alt_texts: translation?.translated_image_alt_texts ?? [],
           translation_status: (translation?.status ?? 'draft') as BlogTranslationStatus,
@@ -1315,6 +1359,9 @@ export default function InternationalizationManager({ config, availableLocales, 
           translated_long_description: item.translated_long_description,
           translated_location_text: item.translated_location_text,
           translated_features_text: item.translated_features_text,
+          translated_answer_summary: item.translated_answer_summary,
+          translated_location_summary: item.translated_location_summary,
+          translated_target_audience: item.translated_target_audience,
           translated_highlights: [...item.translated_highlights],
           translated_image_alt_texts: [...item.translated_image_alt_texts],
           translation_status: item.translation_status,
@@ -1359,6 +1406,9 @@ export default function InternationalizationManager({ config, availableLocales, 
         translated_long_description: selectedPropertyItem.translated_long_description.trim() || null,
         translated_location_text: selectedPropertyItem.translated_location_text.trim() || null,
         translated_features_text: selectedPropertyItem.translated_features_text.trim() || null,
+        translated_answer_summary: selectedPropertyItem.translated_answer_summary.trim() || null,
+        translated_location_summary: selectedPropertyItem.translated_location_summary.trim() || null,
+        translated_target_audience: selectedPropertyItem.translated_target_audience.trim() || null,
         translated_highlights: selectedPropertyItem.translated_highlights,
         translated_image_alt_texts: selectedPropertyItem.translated_image_alt_texts,
         status: selectedPropertyItem.translation_status,
@@ -1388,6 +1438,9 @@ export default function InternationalizationManager({ config, availableLocales, 
           translated_long_description: selectedPropertyItem.translated_long_description,
           translated_location_text: selectedPropertyItem.translated_location_text,
           translated_features_text: selectedPropertyItem.translated_features_text,
+          translated_answer_summary: selectedPropertyItem.translated_answer_summary,
+          translated_location_summary: selectedPropertyItem.translated_location_summary,
+          translated_target_audience: selectedPropertyItem.translated_target_audience,
           translated_highlights: [...selectedPropertyItem.translated_highlights],
           translated_image_alt_texts: [...selectedPropertyItem.translated_image_alt_texts],
           translation_status: selectedPropertyItem.translation_status,
@@ -2258,6 +2311,9 @@ export default function InternationalizationManager({ config, availableLocales, 
         || selectedPropertyItem.translated_long_description.trim().length > 0
         || selectedPropertyItem.translated_location_text.trim().length > 0
         || selectedPropertyItem.translated_features_text.trim().length > 0
+        || selectedPropertyItem.translated_answer_summary.trim().length > 0
+        || selectedPropertyItem.translated_location_summary.trim().length > 0
+        || selectedPropertyItem.translated_target_audience.trim().length > 0
         || selectedPropertyItem.translated_highlights.length > 0
         || selectedPropertyItem.translated_image_alt_texts.length > 0
         || selectedPropertyItem.translation_status !== 'draft'
@@ -2271,6 +2327,9 @@ export default function InternationalizationManager({ config, availableLocales, 
       || selectedPropertyItem.translated_long_description !== baseline.translated_long_description
       || selectedPropertyItem.translated_location_text !== baseline.translated_location_text
       || selectedPropertyItem.translated_features_text !== baseline.translated_features_text
+      || selectedPropertyItem.translated_answer_summary !== baseline.translated_answer_summary
+      || selectedPropertyItem.translated_location_summary !== baseline.translated_location_summary
+      || selectedPropertyItem.translated_target_audience !== baseline.translated_target_audience
       || JSON.stringify(selectedPropertyItem.translated_highlights) !== JSON.stringify(baseline.translated_highlights)
       || JSON.stringify(selectedPropertyItem.translated_image_alt_texts) !== JSON.stringify(baseline.translated_image_alt_texts)
       || selectedPropertyItem.translation_status !== baseline.translation_status
@@ -3300,6 +3359,9 @@ export default function InternationalizationManager({ config, availableLocales, 
                     || item.translated_long_description.trim()
                     || item.translated_location_text.trim()
                     || item.translated_features_text.trim()
+                    || item.translated_answer_summary.trim()
+                    || item.translated_location_summary.trim()
+                    || item.translated_target_audience.trim()
                     || item.translated_highlights.length > 0
                     || item.translated_image_alt_texts.length > 0,
                   );
@@ -3345,6 +3407,9 @@ export default function InternationalizationManager({ config, availableLocales, 
                     || selectedPropertyItem.translated_long_description.trim()
                     || selectedPropertyItem.translated_location_text.trim()
                     || selectedPropertyItem.translated_features_text.trim()
+                    || selectedPropertyItem.translated_answer_summary.trim()
+                    || selectedPropertyItem.translated_location_summary.trim()
+                    || selectedPropertyItem.translated_target_audience.trim()
                     || selectedPropertyItem.translated_highlights.length > 0
                     || selectedPropertyItem.translated_image_alt_texts.length > 0,
                   ))}>
@@ -3401,6 +3466,18 @@ export default function InternationalizationManager({ config, availableLocales, 
                     <label style={fieldStyle}>
                       Ausstattung
                       <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_features_text} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Kurzantwort
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_answer_summary} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Lage in Kürze
+                      <textarea style={blogReadonlyTextareaStyle} value={selectedPropertyItem.source_location_summary} readOnly />
+                    </label>
+                    <label style={fieldStyle}>
+                      Geeignet für
+                      <input style={inputStyle} value={selectedPropertyItem.source_target_audience} readOnly />
                     </label>
                     <label style={fieldStyle}>
                       Highlights
@@ -3506,6 +3583,45 @@ export default function InternationalizationManager({ config, availableLocales, 
                       />
                     </label>
                     <label style={fieldStyle}>
+                      Kurzantwort
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedPropertyItem.translated_answer_summary}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_answer_summary: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Lage in Kürze
+                      <textarea
+                        style={blogTextareaStyle}
+                        value={selectedPropertyItem.translated_location_summary}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_location_summary: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
+                      Geeignet für
+                      <input
+                        style={inputStyle}
+                        value={selectedPropertyItem.translated_target_audience}
+                        onChange={(e) => {
+                          const next = e.target.value;
+                          setPropertyItems((prev) => prev.map((item) => (
+                            item.offer_id === selectedPropertyItem.offer_id ? { ...item, translated_target_audience: next } : item
+                          )));
+                        }}
+                      />
+                    </label>
+                    <label style={fieldStyle}>
                       Highlights
                       <textarea
                         style={blogTextareaStyle}
@@ -3564,6 +3680,9 @@ export default function InternationalizationManager({ config, availableLocales, 
                                   translated_long_description: item.source_long_description,
                                   translated_location_text: item.source_location_text,
                                   translated_features_text: item.source_features_text,
+                                  translated_answer_summary: item.source_answer_summary,
+                                  translated_location_summary: item.source_location_summary,
+                                  translated_target_audience: item.source_target_audience,
                                   translated_highlights: [...item.source_highlights],
                                   translated_image_alt_texts: [...item.source_image_alt_texts],
                                 }

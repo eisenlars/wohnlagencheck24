@@ -81,6 +81,9 @@ type OfferI18nRow = {
   translated_long_description?: string | null;
   translated_location_text?: string | null;
   translated_features_text?: string | null;
+  translated_answer_summary?: string | null;
+  translated_location_summary?: string | null;
+  translated_target_audience?: string | null;
   translated_highlights?: unknown;
   translated_image_alt_texts?: unknown;
 };
@@ -744,7 +747,7 @@ export async function rebuildPublicOfferEntriesForPartner(
       .eq("partner_id", partnerId),
     admin
       .from("partner_property_offer_i18n")
-      .select("offer_id, target_locale, translated_seo_title, translated_seo_description, translated_seo_h1, translated_short_description, translated_long_description, translated_location_text, translated_features_text, translated_highlights, translated_image_alt_texts")
+      .select("offer_id, target_locale, translated_seo_title, translated_seo_description, translated_seo_h1, translated_short_description, translated_long_description, translated_location_text, translated_features_text, translated_answer_summary, translated_location_summary, translated_target_audience, translated_highlights, translated_image_alt_texts")
       .eq("partner_id", partnerId)
       .eq("status", "approved"),
   ]);
@@ -871,9 +874,9 @@ export async function rebuildPublicOfferEntriesForPartner(
           long_description: asNullableText(translation.translated_long_description),
           location_text: asNullableText(translation.translated_location_text),
           features_text: asNullableText(translation.translated_features_text),
-          answer_summary: null,
-          location_summary: null,
-          target_audience: null,
+          answer_summary: asNullableText(translation.translated_answer_summary),
+          location_summary: asNullableText(translation.translated_location_summary),
+          target_audience: asNullableText(translation.translated_target_audience),
           highlights: asArrayJson(translation.translated_highlights),
           image_alt_texts: asArrayJson(translation.translated_image_alt_texts),
           price: asNumberOrNull(offer.price),
