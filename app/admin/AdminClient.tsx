@@ -6147,64 +6147,66 @@ export default function AdminClient() {
           Fachliche Markttexte sind hier getrennt von UI-Systemtexten organisiert. Standardtexte mit Text-Key werden deutsch als Systempartner-Basis gepflegt, statische Erklärungstexte ohne Key folgen separat.
         </p>
 
-        <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
-          <div style={{ ...rowStyle, alignItems: "center" }}>
-            <div>
-              <div style={{ fontWeight: 700, color: "#0f172a" }}>Markttexte-Arbeitsbereich</div>
-              <div style={{ ...mutedStyle, marginTop: 4 }}>
-                Die Tab-Reihenfolge folgt exakt der Frontend-Navigation des Immobilienmarkts.
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end", flexWrap: "wrap" }}>
-              <button
-                style={partnerTabButtonStyle(marketExplanationMode === "standard")}
-                disabled={busy}
-                onClick={() => setMarketExplanationMode("standard")}
-              >
-                Standardtexte
-              </button>
-              <button
-                style={partnerTabButtonStyle(marketExplanationMode === "static")}
-                disabled={busy}
-                onClick={() => setMarketExplanationMode("static")}
-              >
-                Statische Erklärungstexte
-              </button>
-              {marketExplanationMode === "standard" ? (
-                <>
-                  <button
-                    style={partnerTabButtonStyle(marketExplanationStandardScope === "kreis")}
-                    disabled={busy}
-                    onClick={() => {
-                      setMarketExplanationStandardScope("kreis");
-                      setMarketExplanationStandardLocale("de");
-                      void run("Kreis-Standardtexte laden", async () => {
-                        await loadMarketExplanationStandardTexts({ scope: "kreis", locale: "de" });
-                      }, { showSuccessModal: false });
-                    }}
-                  >
-                    Kreis
-                  </button>
-                  <button
-                    style={partnerTabButtonStyle(marketExplanationStandardScope === "bundesland")}
-                    disabled={busy}
-                    onClick={() => {
-                      const fallbackBundesland = marketExplanationStandardBundeslandSlug || marketExplanationStandardBundeslaender[0]?.slug || "";
-                      setMarketExplanationStandardScope("bundesland");
-                      if (fallbackBundesland) {
-                        setMarketExplanationStandardBundeslandSlug(fallbackBundesland);
-                        void run("Bundesland-Standardtexte laden", async () => {
-                          await loadMarketExplanationStandardTexts({
-                            scope: "bundesland",
-                            bundeslandSlug: fallbackBundesland,
-                            locale: marketExplanationStandardLocale,
-                          });
-                        }, { showSuccessModal: false });
-                      }
-                    }}
-                  >
-                    Bundesland
-                  </button>
+        <div style={{ ...marketExplanationModeBarStyle, marginTop: 14 }}>
+          <button
+            style={marketExplanationModeButtonStyle(marketExplanationMode === "standard")}
+            disabled={busy}
+            onClick={() => setMarketExplanationMode("standard")}
+          >
+            Standardtexte
+          </button>
+          <button
+            style={marketExplanationModeButtonStyle(marketExplanationMode === "static")}
+            disabled={busy}
+            onClick={() => setMarketExplanationMode("static")}
+          >
+            Statische Erklärungstexte
+          </button>
+        </div>
+
+        {marketExplanationMode === "standard" ? (
+          <div style={marketExplanationScopeBarStyle}>
+            <button
+              style={marketExplanationScopeButtonStyle(marketExplanationStandardScope === "kreis")}
+              disabled={busy}
+              onClick={() => {
+                setMarketExplanationStandardScope("kreis");
+                setMarketExplanationStandardLocale("de");
+                void run("Kreis-Standardtexte laden", async () => {
+                  await loadMarketExplanationStandardTexts({ scope: "kreis", locale: "de" });
+                }, { showSuccessModal: false });
+              }}
+            >
+              Kreis
+            </button>
+            <button
+              style={marketExplanationScopeButtonStyle(marketExplanationStandardScope === "bundesland")}
+              disabled={busy}
+              onClick={() => {
+                const fallbackBundesland = marketExplanationStandardBundeslandSlug || marketExplanationStandardBundeslaender[0]?.slug || "";
+                setMarketExplanationStandardScope("bundesland");
+                if (fallbackBundesland) {
+                  setMarketExplanationStandardBundeslandSlug(fallbackBundesland);
+                  void run("Bundesland-Standardtexte laden", async () => {
+                    await loadMarketExplanationStandardTexts({
+                      scope: "bundesland",
+                      bundeslandSlug: fallbackBundesland,
+                      locale: marketExplanationStandardLocale,
+                    });
+                  }, { showSuccessModal: false });
+                }
+              }}
+            >
+              Bundesland
+            </button>
+          </div>
+        ) : null}
+
+        <div style={marketExplanationWorkspaceCardStyle}>
+          <div style={marketExplanationActionRowStyle}>
+            {marketExplanationMode === "standard" ? (
+              <>
+                <div style={marketExplanationActionGroupStyle}>
                   {marketExplanationStandardScope === "bundesland" ? (
                     <select
                       style={{ ...inputStyle, minWidth: 160 }}
@@ -6217,61 +6219,61 @@ export default function AdminClient() {
                         </option>
                       ))}
                     </select>
-                  ) : null}
+                  ) : (
+                    <div style={marketExplanationScopeHintStyle}>Kreis-Standardtexte werden deutsch gepflegt.</div>
+                  )}
+                </div>
+                <div style={marketExplanationActionGroupStyle}>
                   {marketExplanationStandardScope === "bundesland" ? (
-                    <button
-                      style={btnSuccessGhostStyle}
-                      disabled={busy || marketExplanationStandardLocale === "de" || !marketExplanationStandardBundeslandSlug}
-                      onClick={() =>
-                        run("Bundesland-Standardtexte aus DE ergänzen", async () => {
-                          await syncMarketExplanationStandardBundeslandFromDe(marketExplanationStandardLocale, "fill_missing");
-                        })
-                      }
-                    >
-                      Aus DE ergänzen
-                    </button>
-                  ) : null}
-                  {marketExplanationStandardScope === "bundesland" ? (
-                    <button
-                      style={btnSuccessGhostStyle}
-                      disabled={busy || marketExplanationStandardLocale === "de" || !marketExplanationStandardBundeslandSlug}
-                      onClick={() =>
-                        run("Bundesland-Standardtexte komplett aus DE übernehmen", async () => {
-                          await syncMarketExplanationStandardBundeslandFromDe(marketExplanationStandardLocale, "copy_all");
-                        })
-                      }
-                    >
-                      DE komplett übernehmen
-                    </button>
-                  ) : null}
-                  {marketExplanationStandardScope === "bundesland" ? (
-                    <button
-                      style={btnGhostStyle}
-                      disabled={busy || marketExplanationStandardLocale === "de" || activeMarketExplanationStandardDefinitions.length === 0 || !marketExplanationStandardBundeslandSlug}
-                      onClick={() =>
-                        run("Aktiven Bundesland-Tab per KI übersetzen", async () => {
-                          await translateMarketExplanationStandardBundeslandWithAi(
-                            marketExplanationStandardLocale,
-                            activeMarketExplanationStandardDefinitions.map((item) => item.key),
-                          );
-                        })
-                      }
-                    >
-                      Tab per KI übersetzen
-                    </button>
-                  ) : null}
-                  {marketExplanationStandardScope === "bundesland" ? (
-                    <button
-                      style={btnGhostStyle}
-                      disabled={busy || marketExplanationStandardLocale === "de" || !marketExplanationStandardBundeslandSlug}
-                      onClick={() =>
-                        run("Bundesland-Locale per KI übersetzen", async () => {
-                          await translateMarketExplanationStandardBundeslandWithAi(marketExplanationStandardLocale);
-                        })
-                      }
-                    >
-                      Locale per KI übersetzen
-                    </button>
+                    <>
+                      <button
+                        style={btnSuccessGhostStyle}
+                        disabled={busy || marketExplanationStandardLocale === "de" || !marketExplanationStandardBundeslandSlug}
+                        onClick={() =>
+                          run("Bundesland-Standardtexte aus DE ergänzen", async () => {
+                            await syncMarketExplanationStandardBundeslandFromDe(marketExplanationStandardLocale, "fill_missing");
+                          })
+                        }
+                      >
+                        Aus DE ergänzen
+                      </button>
+                      <button
+                        style={btnSuccessGhostStyle}
+                        disabled={busy || marketExplanationStandardLocale === "de" || !marketExplanationStandardBundeslandSlug}
+                        onClick={() =>
+                          run("Bundesland-Standardtexte komplett aus DE übernehmen", async () => {
+                            await syncMarketExplanationStandardBundeslandFromDe(marketExplanationStandardLocale, "copy_all");
+                          })
+                        }
+                      >
+                        DE komplett übernehmen
+                      </button>
+                      <button
+                        style={btnGhostStyle}
+                        disabled={busy || marketExplanationStandardLocale === "de" || activeMarketExplanationStandardDefinitions.length === 0 || !marketExplanationStandardBundeslandSlug}
+                        onClick={() =>
+                          run("Aktiven Bundesland-Tab per KI übersetzen", async () => {
+                            await translateMarketExplanationStandardBundeslandWithAi(
+                              marketExplanationStandardLocale,
+                              activeMarketExplanationStandardDefinitions.map((item) => item.key),
+                            );
+                          })
+                        }
+                      >
+                        Tab per KI übersetzen
+                      </button>
+                      <button
+                        style={btnGhostStyle}
+                        disabled={busy || marketExplanationStandardLocale === "de" || !marketExplanationStandardBundeslandSlug}
+                        onClick={() =>
+                          run("Bundesland-Locale per KI übersetzen", async () => {
+                            await translateMarketExplanationStandardBundeslandWithAi(marketExplanationStandardLocale);
+                          })
+                        }
+                      >
+                        Locale per KI übersetzen
+                      </button>
+                    </>
                   ) : null}
                   <button
                     style={btnGhostStyle}
@@ -6295,9 +6297,11 @@ export default function AdminClient() {
                   >
                     Standardtexte speichern
                   </button>
-                </>
-              ) : (
-                <>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={marketExplanationActionGroupStyle}>
                   <select
                     style={{ ...inputStyle, minWidth: 180 }}
                     value={marketExplanationStaticLocale}
@@ -6309,6 +6313,8 @@ export default function AdminClient() {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div style={marketExplanationActionGroupStyle}>
                   <button
                     style={btnSuccessGhostStyle}
                     disabled={busy || marketExplanationStaticLocale === "de"}
@@ -6367,17 +6373,17 @@ export default function AdminClient() {
                   >
                     Statische Erklärungstexte speichern
                   </button>
-                </>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
 
           {marketExplanationMode === "standard" && marketExplanationStandardScope === "bundesland" ? (
-            <div style={{ ...partnerTabBarStyle, marginTop: 14 }}>
+            <div style={marketExplanationBundeslandBarStyle}>
               {marketExplanationStandardBundeslaender.map((bundesland) => (
                 <button
                   key={bundesland.slug}
-                  style={partnerTabButtonStyle(marketExplanationStandardBundeslandSlug === bundesland.slug)}
+                  style={marketExplanationBundeslandButtonStyle(marketExplanationStandardBundeslandSlug === bundesland.slug)}
                   onClick={() => setMarketExplanationStandardBundeslandSlug(bundesland.slug)}
                 >
                   {bundesland.name}
@@ -6386,23 +6392,19 @@ export default function AdminClient() {
             </div>
           ) : null}
 
-          <div style={{ ...partnerTabBarStyle, marginTop: 14 }}>
+          <div style={marketExplanationThemeTabBarStyle}>
             {MARKET_EXPLANATION_STANDARD_TABS.map((tab) => (
               <button
                 key={tab.id}
-                style={partnerTabButtonStyle(marketExplanationTab === tab.label)}
+                style={marketExplanationThemeTabButtonStyle(marketExplanationTab === tab.label)}
                 onClick={() => setMarketExplanationTab(tab.label)}
               >
-                {tab.label}
-                {marketExplanationMode === "standard" ? (
-                  <span style={{ marginLeft: 8, opacity: 0.75 }}>
-                    {marketExplanationStandardDefinitions.filter((definition) => definition.tab === tab.id).length}
-                  </span>
-                ) : (
-                  <span style={{ marginLeft: 8, opacity: 0.75 }}>
-                    {marketExplanationStaticDefinitions.filter((definition) => definition.tab === tab.id).length}
-                  </span>
-                )}
+                <span style={marketExplanationThemeTabLabelStyle}>{tab.label}</span>
+                <span style={marketExplanationThemeTabCountStyle}>
+                  {marketExplanationMode === "standard"
+                    ? marketExplanationStandardDefinitions.filter((definition) => definition.tab === tab.id).length
+                    : marketExplanationStaticDefinitions.filter((definition) => definition.tab === tab.id).length}
+                </span>
               </button>
             ))}
           </div>
@@ -9654,6 +9656,137 @@ const partnerTabButtonStyle = (active: boolean): React.CSSProperties => ({
   fontWeight: 700,
   cursor: "pointer",
 });
+
+const marketExplanationModeBarStyle: React.CSSProperties = {
+  marginTop: 14,
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap",
+  justifyContent: "flex-start",
+};
+
+const marketExplanationModeButtonStyle = (active: boolean): React.CSSProperties => ({
+  border: active ? "1px solid #0f766e" : "1px solid #cbd5e1",
+  background: active ? "#ecfdf5" : "#ffffff",
+  color: active ? "#065f46" : "#0f172a",
+  borderRadius: 999,
+  padding: "8px 14px",
+  fontSize: 12,
+  fontWeight: 800,
+  cursor: "pointer",
+});
+
+const marketExplanationScopeBarStyle: React.CSSProperties = {
+  marginTop: 12,
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap",
+  justifyContent: "flex-start",
+};
+
+const marketExplanationScopeButtonStyle = (active: boolean): React.CSSProperties => ({
+  border: active ? "1px solid #486b7a" : "1px solid #cbd5e1",
+  background: active ? "#f1f5f9" : "#ffffff",
+  color: active ? "#486b7a" : "#334155",
+  borderRadius: 999,
+  padding: "7px 12px",
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: "pointer",
+});
+
+const marketExplanationWorkspaceCardStyle: React.CSSProperties = {
+  marginTop: 12,
+  padding: 12,
+  border: "1px solid #e2e8f0",
+  borderRadius: 8,
+  background: "#fff",
+};
+
+const marketExplanationActionRowStyle: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 10,
+  flexWrap: "wrap",
+};
+
+const marketExplanationActionGroupStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  flexWrap: "wrap",
+};
+
+const marketExplanationScopeHintStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 600,
+  color: "#64748b",
+};
+
+const marketExplanationBundeslandBarStyle: React.CSSProperties = {
+  marginTop: 14,
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap",
+};
+
+const marketExplanationBundeslandButtonStyle = (active: boolean): React.CSSProperties => ({
+  border: active ? "1px solid #0f766e" : "1px solid #cbd5e1",
+  background: active ? "#ecfdf5" : "#ffffff",
+  color: active ? "#065f46" : "#0f172a",
+  borderRadius: 999,
+  padding: "7px 12px",
+  fontSize: 12,
+  fontWeight: 700,
+  cursor: "pointer",
+});
+
+const marketExplanationThemeTabBarStyle: React.CSSProperties = {
+  display: "flex",
+  backgroundColor: "#fff",
+  padding: "8px 8px 0 8px",
+  borderRadius: "12px 12px 0 0",
+  borderBottom: "1px solid #e2e8f0",
+  gap: "6px",
+  overflowX: "auto",
+  marginTop: "16px",
+  marginBottom: "20px",
+};
+
+const marketExplanationThemeTabButtonStyle = (active: boolean): React.CSSProperties => ({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  minWidth: "118px",
+  padding: "12px 14px",
+  border: "none",
+  borderBottom: active ? "3px solid rgb(72, 107, 122)" : "3px solid transparent",
+  backgroundColor: active ? "#f1f5f9" : "transparent",
+  color: active ? "rgb(72, 107, 122)" : "#64748b",
+  fontWeight: active ? "700" : "500",
+  fontSize: "13px",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  transition: "all 0.2s",
+  borderRadius: "8px 8px 0 0",
+});
+
+const marketExplanationThemeTabLabelStyle: React.CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.2,
+  textAlign: "center",
+  fontWeight: "inherit",
+};
+
+const marketExplanationThemeTabCountStyle: React.CSSProperties = {
+  fontSize: 10,
+  lineHeight: 1,
+  opacity: 0.75,
+  fontWeight: 700,
+};
 
 const h2Style: React.CSSProperties = {
   marginTop: 0,
