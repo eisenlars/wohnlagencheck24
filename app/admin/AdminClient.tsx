@@ -8858,8 +8858,10 @@ const dashboardHeaderStyle: React.CSSProperties = {
   justifyContent: "space-between",
   padding: "10px 20px",
   borderBottom: "1px solid #e2e8f0",
-  position: "sticky",
+  position: "fixed",
   top: 0,
+  left: 0,
+  right: 0,
   zIndex: 40,
 };
 
@@ -8944,6 +8946,11 @@ const statusStyle: React.CSSProperties = {
   color: "#64748b",
   width: "100%",
   boxSizing: "border-box",
+  position: "fixed",
+  top: "72px",
+  left: 0,
+  right: 0,
+  zIndex: 39,
 };
 
 const dashboardFooterStyle: React.CSSProperties = {
@@ -9085,6 +9092,7 @@ const adminLayoutStyle: React.CSSProperties = {
   flex: 1,
   minHeight: 0,
   paddingRight: "16px",
+  paddingTop: "111px",
   boxSizing: "border-box",
 };
 
@@ -9097,9 +9105,10 @@ const modeBarStyle: React.CSSProperties = {
   flexDirection: "column",
   alignItems: "center",
   gap: 6,
-  position: "sticky",
-  top: 0,
-  alignSelf: "stretch",
+  position: "fixed",
+  top: "111px",
+  left: 0,
+  bottom: 0,
   overflow: "visible",
   zIndex: 50,
 };
@@ -9141,15 +9150,16 @@ const adminNavTooltipCardStyle: React.CSSProperties = {
 };
 
 const listPaneStyle: React.CSSProperties = {
-  position: "sticky",
-  top: 0,
-  alignSelf: "start",
+  position: "fixed",
+  top: "111px",
+  left: "50px",
+  bottom: 0,
   width: "260px",
   borderRight: "1px solid #e2e8f0",
   background: "#ffffff",
   display: "flex",
   flexDirection: "column",
-  maxHeight: "calc(100vh - 120px)",
+  maxHeight: "calc(100vh - 111px)",
   overflow: "hidden",
 };
 
