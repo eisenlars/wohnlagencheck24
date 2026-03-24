@@ -277,6 +277,7 @@ type PropertyOfferTranslationItem = {
 };
 
 type PropertyEditorTab = 'texts' | 'seo';
+type PropertyComputedStatus = 'open' | 'in_progress' | 'translated';
 
 type PropertyFieldDefinition = {
   key: string;
@@ -1521,6 +1522,7 @@ export default function InternationalizationManager({ config, availableLocales, 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) throw new Error('Nicht angemeldet.');
 
+      const computedStatus = getComputedPropertyStatus(selectedPropertyItem);
       const payload = {
         partner_id: user.id,
         offer_id: selectedPropertyItem.offer_id,
@@ -1539,7 +1541,7 @@ export default function InternationalizationManager({ config, availableLocales, 
         translated_target_audience: selectedPropertyItem.translated_target_audience.trim() || null,
         translated_highlights: selectedPropertyItem.translated_highlights,
         translated_image_alt_texts: selectedPropertyItem.translated_image_alt_texts,
-        status: selectedPropertyItem.translation_status,
+        status: computedStatus.code,
         source_snapshot_hash: selectedPropertyItem.source_snapshot_hash,
         source_last_updated: selectedPropertyItem.source_updated_at,
         updated_at: new Date().toISOString(),
@@ -1571,13 +1573,14 @@ export default function InternationalizationManager({ config, availableLocales, 
           translated_target_audience: selectedPropertyItem.translated_target_audience,
           translated_highlights: [...selectedPropertyItem.translated_highlights],
           translated_image_alt_texts: [...selectedPropertyItem.translated_image_alt_texts],
-          translation_status: selectedPropertyItem.translation_status,
+          translation_status: computedStatus.code,
         },
       }));
       setPropertyItems((prev) => prev.map((item) => (
         item.offer_id === selectedPropertyItem.offer_id
           ? {
               ...item,
+              translation_status: computedStatus.code,
               translation_is_stale: false,
               translation_updated_at: payload.updated_at,
             }
@@ -2682,6 +2685,56 @@ export default function InternationalizationManager({ config, availableLocales, 
     }));
   }
 
+  function getPropertyRequiredDefinitions(item: PropertyOfferTranslationItem): PropertyFieldDefinition[] {
+    return PROPERTY_FIELD_DEFINITIONS.filter((definition) => getPropertyFieldText(item, definition.sourceKey).trim().length > 0);
+  }
+
+  function getComputedPropertyStatus(item: PropertyOfferTranslationItem): {
+    code: BlogTranslationStatus;
+    visual: PropertyComputedStatus;
+    label: string;
+    requiredCount: number;
+    translatedCount: number;
+  } {
+    const requiredDefinitions = getPropertyRequiredDefinitions(item);
+    const translatedCount = requiredDefinitions.filter((definition) => getPropertyFieldText(item, definition.targetKey).trim().length > 0).length;
+    if (requiredDefinitions.length === 0 || translatedCount === 0) {
+      return {
+        code: 'draft',
+        visual: 'open',
+        label: 'Übersetzung offen',
+        requiredCount: requiredDefinitions.length,
+        translatedCount,
+      };
+    }
+    if (item.translation_is_stale || translatedCount < requiredDefinitions.length) {
+      return {
+        code: 'needs_review',
+        visual: 'in_progress',
+        label: 'Übersetzung in Arbeit',
+        requiredCount: requiredDefinitions.length,
+        translatedCount,
+      };
+    }
+    return {
+      code: 'approved',
+      visual: 'translated',
+      label: 'Übersetzt',
+      requiredCount: requiredDefinitions.length,
+      translatedCount,
+    };
+  }
+
+  function getPropertyStatusBadgeStyle(status: PropertyComputedStatus): React.CSSProperties {
+    if (status === 'translated') {
+      return propertyMetaBadgeStyle('#dcfce7', '#166534', '#bbf7d0');
+    }
+    if (status === 'in_progress') {
+      return propertyMetaBadgeStyle('#fef3c7', '#92400e', '#fde68a');
+    }
+    return propertyMetaBadgeStyle('#fee2e2', '#b91c1c', '#fecaca');
+  }
+
   function getPropertyFieldPrompt(definition: PropertyFieldDefinition): string {
     const basePrompt = getI18nStandardPrompt(definition.displayClass, locale);
     const extraPrompt = definition.list
@@ -3698,20 +3751,7 @@ export default function InternationalizationManager({ config, availableLocales, 
             ) : (
               <div style={blogListWrapStyle}>
                 {propertyItems.map((item) => {
-                  const translated = Boolean(
-                    item.translated_seo_title.trim()
-                    || item.translated_seo_description.trim()
-                    || item.translated_seo_h1.trim()
-                    || item.translated_short_description.trim()
-                    || item.translated_long_description.trim()
-                    || item.translated_location_text.trim()
-                    || item.translated_features_text.trim()
-                    || item.translated_answer_summary.trim()
-                    || item.translated_location_summary.trim()
-                    || item.translated_target_audience.trim()
-                    || item.translated_highlights.length > 0
-                    || item.translated_image_alt_texts.length > 0,
-                  );
+                  const computedStatus = getComputedPropertyStatus(item);
                   return (
                     <button
                       key={item.offer_id}
@@ -3721,8 +3761,8 @@ export default function InternationalizationManager({ config, availableLocales, 
                     >
                       <div style={blogListRowTopStyle}>
                         <strong style={blogListHeadlineStyle}>{item.title || 'Ohne Titel'}</strong>
-                        <span style={blogTranslationBadgeStyle(item.translation_is_stale, translated)}>
-                          {item.translation_is_stale ? 'Veraltet' : translated ? 'Übersetzt' : 'Fehlt'}
+                        <span style={getPropertyStatusBadgeStyle(computedStatus.visual)}>
+                          {computedStatus.label}
                         </span>
                       </div>
                       <div style={blogListSublineStyle}>{item.address || `${item.offer_type || 'angebot'} · ${item.object_type || 'Objekt'}`}</div>
@@ -3740,45 +3780,34 @@ export default function InternationalizationManager({ config, availableLocales, 
             {selectedPropertyItem ? (
               <>
                 <div style={blogEditorHeadStyle}>
-                  <div>
-                    <h3 style={sectionTabsIntroTitleStyle}>{selectedPropertyItem.title || 'Ohne Titel'}</h3>
+                  <div style={propertyTitleStackStyle}>
+                    <div style={propertyTitleRowStyle}>
+                      <h3 style={sectionTabsIntroTitleStyle}>{selectedPropertyItem.title || 'Ohne Titel'}</h3>
+                      <div style={propertyTitleBadgeRowStyle}>
+                        <span style={propertyContextBadgeStyle}>
+                          {selectedPropertyItem.object_type || 'Objekt'}
+                        </span>
+                        <span style={propertyContextBadgeStyle}>
+                          {selectedPropertyItem.offer_type || 'Angebot'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <span style={blogTranslationBadgeStyle(selectedPropertyItem.translation_is_stale, Boolean(
-                    selectedPropertyItem.translated_seo_title.trim()
-                    || selectedPropertyItem.translated_seo_description.trim()
-                    || selectedPropertyItem.translated_seo_h1.trim()
-                    || selectedPropertyItem.translated_short_description.trim()
-                    || selectedPropertyItem.translated_long_description.trim()
-                    || selectedPropertyItem.translated_location_text.trim()
-                    || selectedPropertyItem.translated_features_text.trim()
-                    || selectedPropertyItem.translated_answer_summary.trim()
-                    || selectedPropertyItem.translated_location_summary.trim()
-                    || selectedPropertyItem.translated_target_audience.trim()
-                    || selectedPropertyItem.translated_highlights.length > 0
-                    || selectedPropertyItem.translated_image_alt_texts.length > 0,
-                  ))}>
-                    {selectedPropertyItem.translation_is_stale ? 'Quelle geändert' : selectedPropertyItem.translation_status}
-                  </span>
                 </div>
 
-                <div style={blogSummaryGridStyle}>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Objekttyp</span>
-                    <strong>{selectedPropertyItem.object_type || 'Objekt'}</strong>
-                  </div>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Angebotsart</span>
-                    <strong>{selectedPropertyItem.offer_type || 'Angebot'}</strong>
-                  </div>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Übersetzungsstatus</span>
-                    <strong>{selectedPropertyItem.translation_status}</strong>
-                  </div>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Zuletzt aktualisiert</span>
-                    <strong>{selectedPropertyItem.translation_updated_at ? new Date(selectedPropertyItem.translation_updated_at).toLocaleString('de-DE') : 'Noch nicht gespeichert'}</strong>
-                  </div>
-                </div>
+                {(() => {
+                  const computedStatus = getComputedPropertyStatus(selectedPropertyItem);
+                  return (
+                    <div style={propertyMetaBadgeRowStyle}>
+                      <span style={getPropertyStatusBadgeStyle(computedStatus.visual)}>
+                        Übersetzungsstatus: {computedStatus.label}
+                      </span>
+                      <span style={propertyLastUpdatedBadgeStyle}>
+                        Zuletzt aktualisiert: {selectedPropertyItem.translation_updated_at ? new Date(selectedPropertyItem.translation_updated_at).toLocaleString('de-DE') : 'Noch nicht gespeichert'}
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 <div style={propertyTabBarStyle}>
                   <button
@@ -3813,23 +3842,6 @@ export default function InternationalizationManager({ config, availableLocales, 
                 </div>
 
                 <div style={propertyStatusCardStyle}>
-                  <label style={fieldStyle}>
-                    Status
-                    <select
-                      style={inputStyle}
-                      value={selectedPropertyItem.translation_status}
-                      onChange={(e) => {
-                        const next = e.target.value as BlogTranslationStatus;
-                        setPropertyItems((prev) => prev.map((item) => (
-                          item.offer_id === selectedPropertyItem.offer_id ? { ...item, translation_status: next } : item
-                        )));
-                      }}
-                    >
-                      <option value="draft">Entwurf</option>
-                      <option value="approved">Freigegeben</option>
-                      <option value="needs_review">Prüfen</option>
-                    </select>
-                  </label>
                   <div style={blogActionRowStyle}>
                     <button
                       type="button"
@@ -4890,18 +4902,6 @@ const blogListSublineStyle: React.CSSProperties = {
   lineHeight: 1.45,
 };
 
-const scopeAreaTypeBadgeStyle = (isDistrictItem: boolean): React.CSSProperties => ({
-  borderRadius: 999,
-  padding: '5px 10px',
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '0.03em',
-  textTransform: 'uppercase',
-  whiteSpace: 'nowrap',
-  background: isDistrictItem ? '#e2e8f0' : '#f1f5f9',
-  color: '#475569',
-});
-
 const blogListMetaLineStyle: React.CSSProperties = {
   fontSize: 11,
   color: '#64748b',
@@ -4930,6 +4930,61 @@ const blogEditorHeadStyle: React.CSSProperties = {
   gap: 16,
   alignItems: 'flex-start',
   flexWrap: 'wrap',
+};
+
+const propertyTitleStackStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 10,
+};
+
+const propertyTitleRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  flexWrap: 'wrap',
+};
+
+const propertyTitleBadgeRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: 8,
+  flexWrap: 'wrap',
+  alignItems: 'center',
+};
+
+const propertyMetaBadgeStyle = (
+  background: string,
+  color: string,
+  borderColor: string,
+): React.CSSProperties => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  borderRadius: 999,
+  padding: '6px 12px',
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '0.03em',
+  border: `1px solid ${borderColor}`,
+  background,
+  color,
+  whiteSpace: 'nowrap',
+});
+
+const propertyContextBadgeStyle: React.CSSProperties = {
+  ...propertyMetaBadgeStyle('#f8fafc', '#334155', '#cbd5e1'),
+  textTransform: 'none',
+};
+
+const propertyMetaBadgeRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: 10,
+  flexWrap: 'wrap',
+  alignItems: 'center',
+};
+
+const propertyLastUpdatedBadgeStyle: React.CSSProperties = {
+  ...propertyMetaBadgeStyle('#ffffff', '#475569', '#dbe5ea'),
+  textTransform: 'none',
 };
 
 const blogEditorIntroStyle: React.CSSProperties = {
