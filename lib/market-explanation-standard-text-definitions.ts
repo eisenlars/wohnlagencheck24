@@ -18,6 +18,8 @@ export type MarketExplanationStandardTextDefinition = {
   tab: MarketExplanationStandardTabId;
 };
 
+export type MarketExplanationStandardScope = "kreis" | "bundesland";
+
 export const MARKET_EXPLANATION_STANDARD_TABS: MarketExplanationStandardTab[] = [
   { id: "uebersicht", label: "Übersicht" },
   { id: "immobilienpreise", label: "Immobilienpreise" },
@@ -29,7 +31,7 @@ export const MARKET_EXPLANATION_STANDARD_TABS: MarketExplanationStandardTab[] = 
   { id: "wirtschaft", label: "Wirtschaft" },
 ];
 
-export const MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS: MarketExplanationStandardTextDefinition[] = [
+export const MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS_KREIS: MarketExplanationStandardTextDefinition[] = [
   { key: "immobilienmarkt_allgemein", tab: "uebersicht" },
   { key: "immobilienmarkt_standort_teaser", tab: "uebersicht" },
   { key: "immobilienmarkt_besonderheiten", tab: "uebersicht" },
@@ -75,6 +77,113 @@ export const MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS: MarketExplanationStan
   { key: "wirtschaft_sv_beschaeftigte_wohnort", tab: "wirtschaft" },
   { key: "wirtschaft_arbeitslosendichte", tab: "wirtschaft" },
 ];
+
+export const MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS_BUNDESLAND: MarketExplanationStandardTextDefinition[] = [
+  { key: "immobilienmarkt_allgemein", tab: "uebersicht" },
+  { key: "immobilienmarkt_standort_teaser", tab: "uebersicht" },
+  { key: "immobilienmarkt_beschreibung_01", tab: "uebersicht" },
+  { key: "immobilienmarkt_beschreibung_02", tab: "uebersicht" },
+  { key: "immobilienmarkt_besonderheiten", tab: "uebersicht" },
+
+  { key: "immobilienpreise_intro", tab: "immobilienpreise" },
+  { key: "ueberschrift_immobilienpreise_haus", tab: "immobilienpreise" },
+  { key: "immobilienpreise_haus_intro", tab: "immobilienpreise" },
+  { key: "immobilienpreise_haus_allgemein", tab: "immobilienpreise" },
+  { key: "immobilienpreise_haus_lage", tab: "immobilienpreise" },
+  { key: "immobilienpreise_haus_haustypen", tab: "immobilienpreise" },
+  { key: "immobilienpreise_haus_preisentwicklung", tab: "immobilienpreise" },
+  { key: "ueberschrift_immobilienpreise_wohnung", tab: "immobilienpreise" },
+  { key: "immobilienpreise_wohnung_intro", tab: "immobilienpreise" },
+  { key: "immobilienpreise_wohnung_allgemein", tab: "immobilienpreise" },
+  { key: "immobilienpreise_wohnung_lage", tab: "immobilienpreise" },
+  { key: "immobilienpreise_wohnung_preisentwicklung", tab: "immobilienpreise" },
+  { key: "immobilienpreise_wohnung_nach_flaechen_und_zimmern", tab: "immobilienpreise" },
+
+  { key: "mietpreise_intro", tab: "mietpreise" },
+  { key: "mietpreise_allgemein", tab: "mietpreise" },
+  { key: "ueberschrift_mietpreise_wohnung", tab: "mietpreise" },
+  { key: "mietpreise_wohnung_allgemein", tab: "mietpreise" },
+  { key: "mietpreise_wohnung_nach_flaechen_und_zimmern", tab: "mietpreise" },
+  { key: "mietpreise_wohnung_preisentwicklung", tab: "mietpreise" },
+  { key: "ueberschrift_mietpreise_haus", tab: "mietpreise" },
+  { key: "mietpreise_haus_allgemein", tab: "mietpreise" },
+  { key: "mietpreise_haus_preisentwicklung", tab: "mietpreise" },
+
+  { key: "mietrendite_intro", tab: "mietrendite" },
+  { key: "mietrendite_kaufpreisfaktor", tab: "mietrendite" },
+  { key: "ueberschrift_mietrendite_bruttomietrendite", tab: "mietrendite" },
+  { key: "mietrendite_allgemein", tab: "mietrendite" },
+  { key: "mietrendite_hinweis", tab: "mietrendite" },
+  { key: "mietrendite_etw", tab: "mietrendite" },
+  { key: "mietrendite_efh", tab: "mietrendite" },
+  { key: "mietrendite_mfh", tab: "mietrendite" },
+
+  { key: "wohnmarktsituation_intro", tab: "wohnmarktsituation" },
+  { key: "ueberschrift_wohnmarktsituation_wohnraumnachfrage_individuell", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_allgemein", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_wohnraumnachfrage", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_bevoelkerungsentwicklung", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_haushalte", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_natuerlicher_saldo_intro", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_natuerlicher_saldo", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_wanderungssaldo_intro", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_wanderungssaldo", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_jugendquotient_altenquotient_intro", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_alterstruktur", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_jugendquotient_altenquotient", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_wohnraumangebot_intro", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_wohnungsbestand_intro", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_wohnungsbestand_anzahl", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_wohnungsbestand_wohnflaeche", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_baufertigstellungen_intro", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_baufertigstellungen", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_baugenehmigungen_intro", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_baugenehmigungen", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_bautaetigkeit_intro", tab: "wohnmarktsituation" },
+  { key: "wohnmarktsituation_bauueberhang_baufortschritt", tab: "wohnmarktsituation" },
+
+  { key: "grundstueckspreise_intro", tab: "grundstueckspreise" },
+  { key: "ueberschrift_grundstueckspreise", tab: "grundstueckspreise" },
+  { key: "grundstueckspreise_allgemein", tab: "grundstueckspreise" },
+  { key: "grundstueckspreise_preisentwicklung", tab: "grundstueckspreise" },
+
+  { key: "ueberschrift_wohnlagencheck_allgemein", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_allgemein", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_lage", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_standortfaktoren_intro", tab: "wohnlagencheck" },
+  { key: "ueberschrift_wohnlagencheck_faktoren", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_faktor_mobilitaet", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_faktor_bildung", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_faktor_gesundheit", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_faktor_nahversorgung", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_faktor_naherholung", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_faktor_kultur_freizeit", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_faktor_arbeitsplatz", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_faktor_lebenserhaltungskosten", tab: "wohnlagencheck" },
+  { key: "wohnlagencheck_faktor_sicherheit", tab: "wohnlagencheck" },
+
+  { key: "wirtschaft_intro", tab: "wirtschaft" },
+  { key: "ueberschrift_wirtschaft_individuell", tab: "wirtschaft" },
+  { key: "wirtschaft_bruttoinlandsprodukt", tab: "wirtschaft" },
+  { key: "wirtschaft_gewerbesaldo", tab: "wirtschaft" },
+  { key: "wirtschaft_einkommen", tab: "wirtschaft" },
+  { key: "ueberschrift_arbeitsmarkt_individuell", tab: "wirtschaft" },
+  { key: "wirtschaft_arbeitsmarkt", tab: "wirtschaft" },
+  { key: "wirtschaft_arbeitsplatzzentralitaet", tab: "wirtschaft" },
+  { key: "wirtschaft_pendler", tab: "wirtschaft" },
+  { key: "wirtschaft_sv_beschaeftigte_wohnort", tab: "wirtschaft" },
+  { key: "wirtschaft_sv_beschaeftigte_arbeitsort", tab: "wirtschaft" },
+  { key: "wirtschaft_arbeitslosigkeit", tab: "wirtschaft" },
+  { key: "wirtschaft_arbeitslosendichte", tab: "wirtschaft" },
+];
+
+export const MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS = MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS_KREIS;
+
+export function getMarketExplanationStandardDefinitions(scope: MarketExplanationStandardScope): MarketExplanationStandardTextDefinition[] {
+  return scope === "bundesland"
+    ? MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS_BUNDESLAND
+    : MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS_KREIS;
+}
 
 export function inferMarketExplanationStandardGroup(key: string): string {
   if (key.startsWith("immobilienmarkt_")) return "immobilienmarkt_ueberblick";
