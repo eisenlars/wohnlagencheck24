@@ -55,15 +55,10 @@ export const MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS: MarketExplanationStan
   { key: "wohnmarktsituation_bautaetigkeit_intro", tab: "wohnmarktsituation" },
 
   { key: "grundstueckspreise_intro", tab: "grundstueckspreise" },
-  { key: "ueberschrift_grundstueckspreise", tab: "grundstueckspreise" },
-  { key: "grundstueckspreise_allgemein", tab: "grundstueckspreise" },
-  { key: "grundstueckspreise_preisentwicklung", tab: "grundstueckspreise" },
 
-  { key: "ueberschrift_wohnlagencheck_allgemein", tab: "wohnlagencheck" },
   { key: "wohnlagencheck_allgemein", tab: "wohnlagencheck" },
   { key: "wohnlagencheck_lage", tab: "wohnlagencheck" },
   { key: "wohnlagencheck_standortfaktoren_intro", tab: "wohnlagencheck" },
-  { key: "ueberschrift_wohnlagencheck_faktoren", tab: "wohnlagencheck" },
   { key: "wohnlagencheck_faktor_mobilitaet", tab: "wohnlagencheck" },
   { key: "wohnlagencheck_faktor_bildung", tab: "wohnlagencheck" },
   { key: "wohnlagencheck_faktor_gesundheit", tab: "wohnlagencheck" },
@@ -75,17 +70,9 @@ export const MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS: MarketExplanationStan
   { key: "wohnlagencheck_faktor_sicherheit", tab: "wohnlagencheck" },
 
   { key: "wirtschaft_intro", tab: "wirtschaft" },
-  { key: "ueberschrift_wirtschaft_individuell", tab: "wirtschaft" },
-  { key: "wirtschaft_bruttoinlandsprodukt", tab: "wirtschaft" },
   { key: "wirtschaft_gewerbesaldo", tab: "wirtschaft" },
-  { key: "wirtschaft_einkommen", tab: "wirtschaft" },
-  { key: "ueberschrift_arbeitsmarkt_individuell", tab: "wirtschaft" },
   { key: "wirtschaft_arbeitsmarkt", tab: "wirtschaft" },
-  { key: "wirtschaft_arbeitsplatzzentralitaet", tab: "wirtschaft" },
-  { key: "wirtschaft_pendler", tab: "wirtschaft" },
   { key: "wirtschaft_sv_beschaeftigte_wohnort", tab: "wirtschaft" },
-  { key: "wirtschaft_sv_beschaeftigte_arbeitsort", tab: "wirtschaft" },
-  { key: "wirtschaft_arbeitslosigkeit", tab: "wirtschaft" },
   { key: "wirtschaft_arbeitslosendichte", tab: "wirtschaft" },
 ];
 
