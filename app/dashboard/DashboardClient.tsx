@@ -3071,7 +3071,7 @@ const regionHeaderStickyStyle: React.CSSProperties = {
   top: 0,
   zIndex: 10,
   background: '#f8fafc',
-  padding: '20px 0 14px',
+  padding: '20px 0 40px',
 };
 
 const reviewPanelStrongStyle: React.CSSProperties = {

@@ -2532,31 +2532,31 @@ export default function InternationalizationManager({ config, availableLocales, 
       <section style={wrapStyle}>
         <div style={topCardStyle}>
           <div style={controlsStyle}>
-            <label style={fieldStyle}>
-              <select style={inputStyle} value={locale} onChange={(e) => setLocale(e.target.value)}>
-                {locales.map((item) => (
-                  <option key={item} value={item}>{normalizeLocaleLabel(item)}</option>
-                ))}
-              </select>
-            </label>
+            <div style={controlsLeftStyle}>
+              <label style={fieldStyle}>
+                <select style={inputStyle} value={locale} onChange={(e) => setLocale(e.target.value)}>
+                  {locales.map((item) => (
+                    <option key={item} value={item}>{normalizeLocaleLabel(item)}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
 
-            {activeDomain === 'immobilienmarkt' ? (
-              <>
-                <label style={{ ...fieldStyle, minWidth: 320 }}>
-                  <select
-                    style={inputStyle}
-                    value={selectedLlmOptionId}
-                    onChange={(e) => setSelectedLlmOptionId(e.target.value)}
-                    disabled={llmOptions.length === 0 || loading || saving}
-                  >
-                    {llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
-                    {llmOptions.map((opt) => (
-                      <option key={opt.id} value={opt.id}>{opt.label}</option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            ) : null}
+            <div style={controlsRightStyle}>
+              <label style={{ ...fieldStyle, minWidth: 320 }}>
+                <select
+                  style={inputStyle}
+                  value={selectedLlmOptionId}
+                  onChange={(e) => setSelectedLlmOptionId(e.target.value)}
+                  disabled={llmOptions.length === 0 || loading || saving}
+                >
+                  {llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+                  {llmOptions.map((opt) => (
+                    <option key={opt.id} value={opt.id}>{opt.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -4291,10 +4291,27 @@ const topCardStyle: React.CSSProperties = {
 };
 
 const controlsStyle: React.CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 280px))',
-  gap: 10,
+  display: 'flex',
+  justifyContent: 'space-between',
+  flexWrap: 'wrap',
+  gap: 12,
   alignItems: 'end',
+};
+
+const controlsLeftStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'end',
+  gap: 10,
+  flexWrap: 'wrap',
+};
+
+const controlsRightStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'end',
+  gap: 10,
+  marginLeft: 'auto',
+  flexWrap: 'wrap',
 };
 
 const fieldStyle: React.CSSProperties = {
