@@ -125,7 +125,7 @@ type Props = {
   onVisibilityModeChange?: (value: VisibilityMode) => void | Promise<void>;
 };
 
-type WorkspaceTab = 'texts' | 'equipment' | 'seo' | 'media' | 'energy';
+type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'equipment' | 'media' | 'energy';
 
 function formatProviderLabel(provider: string): string {
   const p = String(provider ?? '').toLowerCase();
@@ -1008,57 +1008,12 @@ export default function OffersManager(props: Props) {
                     <div style={offerSummaryValueStyle}>{selectedOffer.offer_type || '—'}</div>
                   </div>
                   <div>
-                    <div style={offerSummaryLabelStyle}>Zimmer</div>
-                    <div style={offerSummaryValueStyle}>
-                      {selectedOffer.rooms ?? '—'}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Fläche</div>
-                    <div style={offerSummaryValueStyle}>
-                      {selectedOffer.area_sqm ? `${selectedOffer.area_sqm} m²` : '—'}
-                    </div>
-                  </div>
-                  <div>
                     <div style={offerSummaryLabelStyle}>Preis / Miete</div>
                     <div style={offerSummaryValueStyle}>
                       {selectedOffer.offer_type === 'miete'
                         ? (selectedOffer.rent ? `${selectedOffer.rent} €` : '—')
                         : (selectedOffer.price ? `${selectedOffer.price} €` : '—')}
                     </div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Baujahr</div>
-                    <div style={offerSummaryValueStyle}>
-                      {detailsSnapshot?.construction_year
-                        ?? energySnapshot?.construction_year
-                        ?? energySnapshot?.year
-                        ?? '—'}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Nutzfläche</div>
-                    <div style={offerSummaryValueStyle}>
-                      {detailsSnapshot?.usable_area_sqm != null ? `${detailsSnapshot.usable_area_sqm} m²` : '—'}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Grundstück</div>
-                    <div style={offerSummaryValueStyle}>
-                      {detailsSnapshot?.plot_area_sqm != null ? `${detailsSnapshot.plot_area_sqm} m²` : '—'}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Schlafzimmer</div>
-                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bedrooms ?? '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Badezimmer</div>
-                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bathrooms ?? '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Etage</div>
-                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.floor ?? '—'}</div>
                   </div>
                 </div>
               </div>
@@ -1073,17 +1028,24 @@ export default function OffersManager(props: Props) {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveWorkspaceTab('equipment')}
-                style={workspaceTabStyle(activeWorkspaceTab === 'equipment')}
-              >
-                Ausstattung
-              </button>
-              <button
-                type="button"
                 onClick={() => setActiveWorkspaceTab('seo')}
                 style={workspaceTabStyle(activeWorkspaceTab === 'seo')}
               >
                 SEO / GEO
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('facts')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'facts')}
+              >
+                Objektmerkmale
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveWorkspaceTab('equipment')}
+                style={workspaceTabStyle(activeWorkspaceTab === 'equipment')}
+              >
+                Ausstattung
               </button>
               <button
                 type="button"
@@ -1097,7 +1059,7 @@ export default function OffersManager(props: Props) {
                 onClick={() => setActiveWorkspaceTab('energy')}
                 style={workspaceTabStyle(activeWorkspaceTab === 'energy')}
               >
-                Energie
+                Energieausweis
               </button>
             </div>
             {activeWorkspaceTab === 'media' && selectedOffer ? (
@@ -1382,6 +1344,65 @@ export default function OffersManager(props: Props) {
                   {saving ? 'Speichern...' : 'Texte speichern'}
                 </button>
               </>
+            ) : null}
+
+            {activeWorkspaceTab === 'facts' ? (
+              <div style={offerSummaryCardStyle}>
+                <div style={offerSummaryHeaderStyle}>Objektmerkmale</div>
+                <div style={offerSummaryGridStyle}>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Zimmer</div>
+                    <div style={offerSummaryValueStyle}>{selectedOffer?.rooms ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Fläche</div>
+                    <div style={offerSummaryValueStyle}>
+                      {selectedOffer?.area_sqm ? `${selectedOffer.area_sqm} m²` : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Preis / Miete</div>
+                    <div style={offerSummaryValueStyle}>
+                      {selectedOffer?.offer_type === 'miete'
+                        ? (selectedOffer?.rent ? `${selectedOffer.rent} €` : '—')
+                        : (selectedOffer?.price ? `${selectedOffer.price} €` : '—')}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Baujahr</div>
+                    <div style={offerSummaryValueStyle}>
+                      {detailsSnapshot?.construction_year
+                        ?? energySnapshot?.construction_year
+                        ?? energySnapshot?.year
+                        ?? '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Nutzfläche</div>
+                    <div style={offerSummaryValueStyle}>
+                      {detailsSnapshot?.usable_area_sqm != null ? `${detailsSnapshot.usable_area_sqm} m²` : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Grundstück</div>
+                    <div style={offerSummaryValueStyle}>
+                      {detailsSnapshot?.plot_area_sqm != null ? `${detailsSnapshot.plot_area_sqm} m²` : '—'}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Schlafzimmer</div>
+                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bedrooms ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Badezimmer</div>
+                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.bathrooms ?? '—'}</div>
+                  </div>
+                  <div>
+                    <div style={offerSummaryLabelStyle}>Etage</div>
+                    <div style={offerSummaryValueStyle}>{detailsSnapshot?.floor ?? '—'}</div>
+                  </div>
+                </div>
+              </div>
             ) : null}
 
             {activeWorkspaceTab === 'equipment' ? (
