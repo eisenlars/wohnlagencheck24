@@ -2020,9 +2020,9 @@ const energyReadyStyle: React.CSSProperties = {
 const aiButtonStyle: React.CSSProperties = {
   alignSelf: 'flex-start',
   padding: '9px 16px',
-  backgroundColor: '#eff6ff',
-  color: '#2563eb',
-  border: '1px solid #dbeafe',
+  backgroundColor: 'rgb(72, 107, 122)',
+  color: '#ffffff',
+  border: '1px solid rgb(72, 107, 122)',
   borderRadius: '8px',
   fontSize: '12px',
   fontWeight: 600,
@@ -2031,9 +2031,8 @@ const aiButtonStyle: React.CSSProperties = {
 
 const aiButtonLoadingStyle: React.CSSProperties = {
   ...aiButtonStyle,
-  opacity: 0.6,
+  opacity: 0.7,
   cursor: 'not-allowed',
-  backgroundColor: '#f1f5f9',
 };
 
 const aiActionsRowStyle: React.CSSProperties = {
@@ -2050,13 +2049,14 @@ const aiMissingHintStyle: React.CSSProperties = {
 
 const promptToggleStyle: React.CSSProperties = {
   alignSelf: 'flex-start',
-  background: 'transparent',
-  border: 'none',
-  color: '#2563eb',
+  backgroundColor: '#ffffff',
+  border: '1px solid rgb(72, 107, 122)',
+  color: 'rgb(72, 107, 122)',
   fontSize: '12px',
   fontWeight: 600,
   cursor: 'pointer',
-  padding: 0,
+  padding: '9px 16px',
+  borderRadius: '8px',
 };
 
 const promptPanelStyle: React.CSSProperties = {
