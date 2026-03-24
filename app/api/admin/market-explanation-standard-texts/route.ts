@@ -15,6 +15,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 
 const SUPABASE_BUCKET = "immobilienmarkt";
 const KREIS_STANDARD_TEXT_PATH = "text-standards/kreis/text_standard_kreis.json";
+const BUNDESLAND_STANDARD_TEXT_PATH = "text-standards/bundesland/text_standard_bundesland.json";
 
 type JsonObject = Record<string, unknown>;
 type TextTree = Record<string, Record<string, string>>;
@@ -26,12 +27,19 @@ type StandardPayload = {
   [key: string]: unknown;
 };
 
+type ReportPayload = {
+  text?: unknown;
+  data?: {
+    text?: unknown;
+    [key: string]: unknown;
+  } | unknown;
+  [key: string]: unknown;
+};
+
 type MarketExplanationStandardEntry = {
   key: string;
   value_text: string;
 };
-
-type LocaleSyncMode = "copy_all" | "fill_missing";
 
 type Body = {
   level?: unknown;
@@ -69,10 +77,6 @@ function sanitizeLocale(value: unknown): string {
 
 function sanitizeBundeslandSlug(value: unknown): string {
   return String(value ?? "").trim().toLowerCase();
-}
-
-function sanitizeSyncMode(value: unknown): LocaleSyncMode {
-  return String(value ?? "").trim().toLowerCase() === "fill_missing" ? "fill_missing" : "copy_all";
 }
 
 function toTextTree(value: unknown): TextTree {
@@ -134,61 +138,50 @@ function applyEntriesToTree(tree: TextTree, entries: MarketExplanationStandardEn
   return next;
 }
 
-function mergeFromSourceTree(targetTree: TextTree, sourceTree: TextTree, mode: LocaleSyncMode): TextTree {
-  if (mode === "copy_all") {
-    return cloneTextTree(sourceTree);
-  }
-
-  const next = cloneTextTree(targetTree);
-  for (const [groupKey, group] of Object.entries(sourceTree)) {
-    const current = next[groupKey] ?? {};
-    const merged: Record<string, string> = { ...current };
-    for (const [textKey, textValue] of Object.entries(group)) {
-      if (!String(merged[textKey] ?? "").trim()) {
-        merged[textKey] = textValue;
-      }
-    }
-    next[groupKey] = merged;
-  }
-  return next;
-}
-
 function ensureBundeslandScope(scope: MarketExplanationStandardScope, bundeslandSlug: string) {
   if (scope === "bundesland" && !bundeslandSlug) {
     throw new Error("Für Bundesland-Standardtexte wird ein Bundesland-Slug benötigt.");
   }
 }
 
-function buildStoragePath(scope: MarketExplanationStandardScope, bundeslandSlug: string, locale: string): string {
+function buildStoragePath(scope: MarketExplanationStandardScope): string {
   if (scope === "kreis") return KREIS_STANDARD_TEXT_PATH;
-  if (locale === "de") {
-    return `text-standards/bundesland/${bundeslandSlug}/text_standard_bundesland.json`;
-  }
-  return `text-standards/bundesland/${bundeslandSlug}/i18n/${locale}.json`;
+  return BUNDESLAND_STANDARD_TEXT_PATH;
+}
+
+function buildBundeslandReportPath(bundeslandSlug: string): string {
+  return `reports/deutschland/${bundeslandSlug}.json`;
 }
 
 async function downloadStandardPayload(
   admin: ReturnType<typeof createAdminClient>,
   scope: MarketExplanationStandardScope,
-  bundeslandSlug: string,
-  locale: string,
 ): Promise<StandardPayload | null> {
-  const res = await admin.storage.from(SUPABASE_BUCKET).download(buildStoragePath(scope, bundeslandSlug, locale));
+  const res = await admin.storage.from(SUPABASE_BUCKET).download(buildStoragePath(scope));
   if (res.error || !res.data) return null;
   const raw = await res.data.text();
   const payload = JSON.parse(raw);
   return isRecord(payload) ? (payload as StandardPayload) : null;
 }
 
-async function uploadStandardPayload(
+async function downloadBundeslandReport(
   admin: ReturnType<typeof createAdminClient>,
-  scope: MarketExplanationStandardScope,
   bundeslandSlug: string,
-  locale: string,
-  payload: StandardPayload,
+) : Promise<ReportPayload | null> {
+  const res = await admin.storage.from(SUPABASE_BUCKET).download(buildBundeslandReportPath(bundeslandSlug));
+  if (res.error || !res.data) return null;
+  const raw = await res.data.text();
+  const payload = JSON.parse(raw);
+  return isRecord(payload) ? (payload as ReportPayload) : null;
+}
+
+async function uploadBundeslandReport(
+  admin: ReturnType<typeof createAdminClient>,
+  bundeslandSlug: string,
+  payload: ReportPayload,
 ) {
   const res = await admin.storage.from(SUPABASE_BUCKET).upload(
-    buildStoragePath(scope, bundeslandSlug, locale),
+    buildBundeslandReportPath(bundeslandSlug),
     JSON.stringify(payload),
     {
       upsert: true,
@@ -223,6 +216,45 @@ function withTreePayload(payload: StandardPayload | null, tree: TextTree): Stand
   };
 }
 
+function resolveReportTree(payload: ReportPayload | null): TextTree {
+  if (!payload) return {};
+  const top = toTextTree(payload.text);
+  if (Object.keys(top).length > 0) return top;
+  if (isRecord(payload.data)) {
+    return toTextTree(payload.data.text);
+  }
+  return {};
+}
+
+function withReportTreePayload(payload: ReportPayload | null, tree: TextTree): ReportPayload {
+  const base = payload ?? {};
+  const data = isRecord(base.data) ? base.data : {};
+  return {
+    ...base,
+    text: tree,
+    data: {
+      ...data,
+      text: tree,
+    },
+  };
+}
+
+function mergeMissingEntriesFromStandard(reportTree: TextTree, standardTree: TextTree, definitions: MarketExplanationStandardTextDefinition[]): TextTree {
+  const next = cloneTextTree(reportTree);
+  for (const definition of definitions) {
+    const current = findTextByKey(next, definition.key).trim();
+    if (current) continue;
+    const fallbackValue = findTextByKey(standardTree, definition.key);
+    if (!String(fallbackValue ?? "").trim()) continue;
+    const groupKey = inferMarketExplanationStandardGroup(definition.key);
+    next[groupKey] = {
+      ...(next[groupKey] ?? {}),
+      [definition.key]: fallbackValue,
+    };
+  }
+  return next;
+}
+
 async function loadPayload(args: {
   admin: ReturnType<typeof createAdminClient>;
   scope: MarketExplanationStandardScope;
@@ -230,12 +262,21 @@ async function loadPayload(args: {
   locale: string;
 }) {
   const definitions = getMarketExplanationStandardDefinitions(args.scope);
-  const payload = await downloadStandardPayload(args.admin, args.scope, args.bundeslandSlug, args.locale);
-  const tree = resolveStandardTree(payload);
+  let tree: TextTree;
+  if (args.scope === "bundesland") {
+    const reportPayload = await downloadBundeslandReport(args.admin, args.bundeslandSlug);
+    const reportTree = resolveReportTree(reportPayload);
+    const standardPayload = await downloadStandardPayload(args.admin, "bundesland");
+    const standardTree = resolveStandardTree(standardPayload);
+    tree = mergeMissingEntriesFromStandard(reportTree, standardTree, definitions);
+  } else {
+    const payload = await downloadStandardPayload(args.admin, args.scope);
+    tree = resolveStandardTree(payload);
+  }
   const bundeslaender = await getBundeslaender();
   return {
     level: args.scope,
-    locale: args.locale,
+    locale: args.scope === "bundesland" ? "de" : args.locale,
     bundesland_slug: args.bundeslandSlug,
     bundeslaender,
     definitions,
@@ -290,15 +331,14 @@ export async function POST(req: Request) {
       if (scope !== "bundesland") {
         throw new Error("KI-Übersetzung ist für Standardtexte nur auf Bundeslandebene vorgesehen.");
       }
-      const targetLocale = sanitizeLocale(body.translate.target_locale);
-      if (targetLocale === "de") {
-        throw new Error("KI-Übersetzung benötigt eine Ziel-Locale ungleich de.");
-      }
-      const sourcePayload = await downloadStandardPayload(admin, scope, bundeslandSlug, "de");
-      const sourceTree = resolveStandardTree(sourcePayload);
       const requestedKeys = Array.isArray(body.translate.keys)
         ? body.translate.keys.map((item) => sanitizeKey(item, definitions))
         : definitions.map((definition) => definition.key);
+      const reportPayload = await downloadBundeslandReport(admin, bundeslandSlug);
+      const reportTree = resolveReportTree(reportPayload);
+      const standardPayload = await downloadStandardPayload(admin, "bundesland");
+      const standardTree = resolveStandardTree(standardPayload);
+      const sourceTree = mergeMissingEntriesFromStandard(reportTree, standardTree, definitions);
       const items = requestedKeys.map((key) => ({
         key,
         label: getTextKeyLabel(key, key),
@@ -308,51 +348,51 @@ export async function POST(req: Request) {
         admin,
         domain: `market-standard-${scope}`,
         domainLabel: `Markterklärungstexte ${bundeslandSlug}`,
-        targetLocale,
+        targetLocale: "de",
         items,
       });
-      const targetPayload = await downloadStandardPayload(admin, scope, bundeslandSlug, targetLocale);
-      const targetTree = resolveStandardTree(targetPayload);
+      const targetPayload = await downloadBundeslandReport(admin, bundeslandSlug);
+      const targetTree = resolveReportTree(targetPayload);
       const nextTree = applyEntriesToTree(
         targetTree,
         Array.from(translated.entries()).map(([key, value_text]) => ({ key, value_text })),
       );
-      await uploadStandardPayload(admin, scope, bundeslandSlug, targetLocale, withTreePayload(targetPayload, nextTree));
-      const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, locale: targetLocale });
+      await uploadBundeslandReport(admin, bundeslandSlug, withReportTreePayload(targetPayload, nextTree));
+      const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, locale: "de" });
       return NextResponse.json({ ok: true, ...responsePayload });
     }
 
     if (body.sync) {
-      if (scope !== "bundesland") {
-        throw new Error("DE-Sync ist für Standardtexte nur auf Bundeslandebene vorgesehen.");
-      }
-      const targetLocale = sanitizeLocale(body.sync.target_locale);
-      if (targetLocale === "de") {
-        throw new Error("DE-Sync benötigt eine Ziel-Locale ungleich de.");
-      }
-      const mode = sanitizeSyncMode(body.sync.mode);
-      const sourcePayload = await downloadStandardPayload(admin, scope, bundeslandSlug, "de");
-      const sourceTree = resolveStandardTree(sourcePayload);
-      const targetPayload = await downloadStandardPayload(admin, scope, bundeslandSlug, targetLocale);
-      const targetTree = resolveStandardTree(targetPayload);
-      const nextTree = mergeFromSourceTree(targetTree, sourceTree, mode);
-      await uploadStandardPayload(admin, scope, bundeslandSlug, targetLocale, withTreePayload(targetPayload, nextTree));
-      const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, locale: targetLocale });
-      return NextResponse.json({ ok: true, ...responsePayload });
+      throw new Error("DE-Sync ist für Bundesland-Standardtexte nicht vorgesehen.");
     }
 
     if (!Array.isArray(body.entries) || body.entries.length === 0) {
       throw new Error("Keine Standardtexte zum Speichern übergeben.");
     }
 
-    const currentPayload = await downloadStandardPayload(admin, scope, bundeslandSlug, locale);
-    const currentTree = resolveStandardTree(currentPayload);
+    const currentTree = scope === "bundesland"
+      ? resolveReportTree(await downloadBundeslandReport(admin, bundeslandSlug))
+      : resolveStandardTree(await downloadStandardPayload(admin, scope));
     const nextEntries: MarketExplanationStandardEntry[] = body.entries.map((entry) => ({
       key: sanitizeKey(entry.key, definitions),
       value_text: String(entry.value_text ?? ""),
     }));
     const nextTree = applyEntriesToTree(currentTree, nextEntries);
-    await uploadStandardPayload(admin, scope, bundeslandSlug, locale, withTreePayload(currentPayload, nextTree));
+    if (scope === "bundesland") {
+      const currentPayload = await downloadBundeslandReport(admin, bundeslandSlug);
+      await uploadBundeslandReport(admin, bundeslandSlug, withReportTreePayload(currentPayload, nextTree));
+    } else {
+      const currentPayload = await downloadStandardPayload(admin, scope);
+      await admin.storage.from(SUPABASE_BUCKET).upload(
+        buildStoragePath(scope),
+        JSON.stringify(withTreePayload(currentPayload, nextTree)),
+        {
+          upsert: true,
+          contentType: "application/json",
+          cacheControl: "0",
+        },
+      );
+    }
 
     const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, locale });
     return NextResponse.json({ ok: true, ...responsePayload });

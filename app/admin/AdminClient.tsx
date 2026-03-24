@@ -2944,41 +2944,6 @@ export default function AdminClient() {
     }));
   }
 
-  async function syncMarketExplanationStandardBundeslandFromDe(locale: string, mode: "copy_all" | "fill_missing") {
-    if (!marketExplanationStandardBundeslandSlug) {
-      throw new Error("Bitte zuerst ein Bundesland auswählen.");
-    }
-    const data = await api<{
-      level?: MarketExplanationStandardScope;
-      locale?: string;
-      bundesland_slug?: string;
-      bundeslaender?: MarketExplanationStandardBundesland[];
-      definitions?: MarketExplanationStandardTextDefinition[];
-      entries?: MarketExplanationStandardEntry[];
-    }>("/api/admin/market-explanation-standard-texts", {
-      method: "POST",
-      body: JSON.stringify({
-        level: "bundesland",
-        bundesland_slug: marketExplanationStandardBundeslandSlug,
-        sync: {
-          target_locale: locale,
-          mode,
-        },
-      }),
-    });
-    const nextDefinitions = data.definitions ?? getMarketExplanationStandardDefinitions("bundesland");
-    const nextEntries = data.entries ?? [];
-    setMarketExplanationStandardScope(data.level ?? "bundesland");
-    setMarketExplanationStandardLocale(data.locale ?? locale);
-    setMarketExplanationStandardBundeslandSlug(data.bundesland_slug ?? marketExplanationStandardBundeslandSlug);
-    setMarketExplanationStandardBundeslaender(data.bundeslaender ?? marketExplanationStandardBundeslaender);
-    setMarketExplanationStandardDefinitions(nextDefinitions);
-    setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
-      definitions: nextDefinitions,
-      entries: nextEntries,
-    }));
-  }
-
   async function translateMarketExplanationStandardBundeslandWithAi(locale: string, keys?: string[]) {
     if (!marketExplanationStandardBundeslandSlug) {
       throw new Error("Bitte zuerst ein Bundesland auswählen.");
@@ -6208,73 +6173,14 @@ export default function AdminClient() {
               <>
                 <div style={marketExplanationActionGroupStyle}>
                   {marketExplanationStandardScope === "bundesland" ? (
-                    <select
-                      style={{ ...inputStyle, minWidth: 160 }}
-                      value={marketExplanationStandardLocale}
-                      onChange={(e) => setMarketExplanationStandardLocale(e.target.value)}
-                    >
-                      {(portalLocaleConfigs.length > 0 ? portalLocaleConfigs : [{ locale: "de" } as PortalLocaleConfigRecord]).map((row) => (
-                        <option key={row.locale} value={row.locale}>
-                          {row.locale}{row.label_native ? ` · ${row.label_native}` : ""}
-                        </option>
-                      ))}
-                    </select>
+                    <div style={marketExplanationScopeHintStyle}>
+                      Bundeslandtexte werden direkt im jeweiligen Bundesland-Report gepflegt.
+                    </div>
                   ) : (
                     <div style={marketExplanationScopeHintStyle}>Kreis-Standardtexte werden deutsch gepflegt.</div>
                   )}
                 </div>
                 <div style={marketExplanationActionGroupStyle}>
-                  {marketExplanationStandardScope === "bundesland" ? (
-                    <>
-                      <button
-                        style={btnSuccessGhostStyle}
-                        disabled={busy || marketExplanationStandardLocale === "de" || !marketExplanationStandardBundeslandSlug}
-                        onClick={() =>
-                          run("Bundesland-Standardtexte aus DE ergänzen", async () => {
-                            await syncMarketExplanationStandardBundeslandFromDe(marketExplanationStandardLocale, "fill_missing");
-                          })
-                        }
-                      >
-                        Aus DE ergänzen
-                      </button>
-                      <button
-                        style={btnSuccessGhostStyle}
-                        disabled={busy || marketExplanationStandardLocale === "de" || !marketExplanationStandardBundeslandSlug}
-                        onClick={() =>
-                          run("Bundesland-Standardtexte komplett aus DE übernehmen", async () => {
-                            await syncMarketExplanationStandardBundeslandFromDe(marketExplanationStandardLocale, "copy_all");
-                          })
-                        }
-                      >
-                        DE komplett übernehmen
-                      </button>
-                      <button
-                        style={btnGhostStyle}
-                        disabled={busy || marketExplanationStandardLocale === "de" || activeMarketExplanationStandardDefinitions.length === 0 || !marketExplanationStandardBundeslandSlug}
-                        onClick={() =>
-                          run("Aktiven Bundesland-Tab per KI übersetzen", async () => {
-                            await translateMarketExplanationStandardBundeslandWithAi(
-                              marketExplanationStandardLocale,
-                              activeMarketExplanationStandardDefinitions.map((item) => item.key),
-                            );
-                          })
-                        }
-                      >
-                        Tab per KI übersetzen
-                      </button>
-                      <button
-                        style={btnGhostStyle}
-                        disabled={busy || marketExplanationStandardLocale === "de" || !marketExplanationStandardBundeslandSlug}
-                        onClick={() =>
-                          run("Bundesland-Locale per KI übersetzen", async () => {
-                            await translateMarketExplanationStandardBundeslandWithAi(marketExplanationStandardLocale);
-                          })
-                        }
-                      >
-                        Locale per KI übersetzen
-                      </button>
-                    </>
-                  ) : null}
                   <button
                     style={btnGhostStyle}
                     disabled={busy}
@@ -6424,7 +6330,7 @@ export default function AdminClient() {
                     </div>
                     <span style={{ ...mutedStyle, fontSize: 12 }}>
                       {marketExplanationStandardScope === "bundesland"
-                        ? `Quelle: ${marketExplanationStandardLocale === "de" ? "Bundesland-Standarddatei" : `Bundesland-Übersetzung ${marketExplanationStandardLocale}`}`
+                        ? "Quelle: Bundesland-Report mit Fallback aus text_standard_bundesland.json"
                         : "Quelle: deutsche Standarddatei für Systempartner"}
                     </span>
                   </div>
@@ -6439,6 +6345,21 @@ export default function AdminClient() {
                       }));
                     }}
                   />
+                  {marketExplanationStandardScope === "bundesland" ? (
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                      <button
+                        style={btnGhostStyle}
+                        disabled={busy || !marketExplanationStandardBundeslandSlug}
+                        onClick={() =>
+                          run(`Bundesland-Text ${definition.key} per KI überarbeiten`, async () => {
+                            await translateMarketExplanationStandardBundeslandWithAi("de", [definition.key]);
+                          })
+                        }
+                      >
+                        Per KI überarbeiten
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               ))}
               {activeMarketExplanationStandardDefinitions.length === 0 ? (
