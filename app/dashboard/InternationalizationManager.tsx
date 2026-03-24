@@ -2693,6 +2693,7 @@ export default function InternationalizationManager({ config, availableLocales, 
     code: BlogTranslationStatus;
     visual: PropertyComputedStatus;
     label: string;
+    shortLabel: string;
     requiredCount: number;
     translatedCount: number;
   } {
@@ -2703,6 +2704,7 @@ export default function InternationalizationManager({ config, availableLocales, 
         code: 'draft',
         visual: 'open',
         label: 'Übersetzung offen',
+        shortLabel: 'offen',
         requiredCount: requiredDefinitions.length,
         translatedCount,
       };
@@ -2712,6 +2714,7 @@ export default function InternationalizationManager({ config, availableLocales, 
         code: 'needs_review',
         visual: 'in_progress',
         label: 'Übersetzung in Arbeit',
+        shortLabel: 'in Arbeit',
         requiredCount: requiredDefinitions.length,
         translatedCount,
       };
@@ -2720,6 +2723,7 @@ export default function InternationalizationManager({ config, availableLocales, 
       code: 'approved',
       visual: 'translated',
       label: 'Übersetzt',
+      shortLabel: 'fertig',
       requiredCount: requiredDefinitions.length,
       translatedCount,
     };
@@ -3762,7 +3766,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                       <div style={blogListRowTopStyle}>
                         <strong style={blogListHeadlineStyle}>{item.title || 'Ohne Titel'}</strong>
                         <span style={getPropertyStatusBadgeStyle(computedStatus.visual)}>
-                          {computedStatus.label}
+                          {computedStatus.shortLabel}
                         </span>
                       </div>
                       <div style={blogListSublineStyle}>{item.address || `${item.offer_type || 'angebot'} · ${item.object_type || 'Objekt'}`}</div>
@@ -3800,7 +3804,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                   return (
                     <div style={propertyMetaBadgeRowStyle}>
                       <span style={getPropertyStatusBadgeStyle(computedStatus.visual)}>
-                        Übersetzungsstatus: {computedStatus.label}
+                        {computedStatus.label}
                       </span>
                       <span style={propertyLastUpdatedBadgeStyle}>
                         Zuletzt aktualisiert: {selectedPropertyItem.translation_updated_at ? new Date(selectedPropertyItem.translation_updated_at).toLocaleString('de-DE') : 'Noch nicht gespeichert'}
