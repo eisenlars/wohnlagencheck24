@@ -6128,53 +6128,6 @@ export default function AdminClient() {
                 ))}
               </select>
               <button
-                style={btnSuccessGhostStyle}
-                disabled={busy || portalSystemTextLocale === "de"}
-                onClick={() =>
-                  run("Systemtexte aus DE ergänzen", async () => {
-                    await syncPortalSystemTextLocaleFromDe(portalSystemTextLocale, "fill_missing");
-                  })
-                }
-              >
-                Aus DE ergänzen
-              </button>
-              <button
-                style={btnSuccessGhostStyle}
-                disabled={busy || portalSystemTextLocale === "de"}
-                onClick={() =>
-                  run("Systemtexte komplett aus DE übernehmen", async () => {
-                    await syncPortalSystemTextLocaleFromDe(portalSystemTextLocale, "copy_all");
-                  })
-                }
-              >
-                DE komplett übernehmen
-              </button>
-              <button
-                style={btnGhostStyle}
-                disabled={busy || portalSystemTextLocale === "de" || activePortalSystemTextGroups.length === 0}
-                onClick={() =>
-                  run("Aktiven Systemtext-Tab per KI übersetzen", async () => {
-                    await translatePortalSystemTextLocaleWithAi(
-                      portalSystemTextLocale,
-                      activePortalSystemTextGroups.map((item) => item.key),
-                    );
-                  })
-                }
-              >
-                Tab per KI übersetzen
-              </button>
-              <button
-                style={btnGhostStyle}
-                disabled={busy || portalSystemTextLocale === "de"}
-                onClick={() =>
-                  run("Systemtext-Locale per KI übersetzen", async () => {
-                    await translatePortalSystemTextLocaleWithAi(portalSystemTextLocale);
-                  })
-                }
-              >
-                Locale per KI übersetzen
-              </button>
-              <button
                 style={btnStyle}
                 disabled={busy}
                 onClick={() =>
@@ -6265,40 +6218,6 @@ export default function AdminClient() {
                       <option value="internal">intern</option>
                       <option value="live">live</option>
                     </select>
-                    {portalSystemTextLocale !== "de" ? (
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <button
-                          style={btnGhostStyle}
-                          disabled={busy}
-                          onClick={() =>
-                            run(`Systemtext ${def.label} per KI übersetzen`, async () => {
-                              await translatePortalSystemTextLocaleWithAi(portalSystemTextLocale, [def.key]);
-                            })
-                          }
-                        >
-                          Per KI übersetzen
-                        </button>
-                        <button
-                          style={btnGhostStyle}
-                          disabled={busy}
-                          onClick={() => {
-                            const deDefault = (
-                              portalSystemTextDrafts[buildPortalSystemTextDraftKey("de", def.key)]?.value_text
-                              ?? getPortalSystemTextDefaultValue("de", def.key)
-                            );
-                            setPortalSystemTextDrafts((prev) => ({
-                              ...prev,
-                              [draftKey]: {
-                                status: draft.status === "live" ? "internal" : draft.status,
-                                value_text: deDefault,
-                              },
-                            }));
-                          }}
-                        >
-                          DE in Feld übernehmen
-                        </button>
-                      </div>
-                    ) : null}
                   </div>
                 </div>
               );
