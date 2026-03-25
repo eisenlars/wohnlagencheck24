@@ -922,6 +922,7 @@ function resolveSectionMeta(sectionKey: string): { label: string; type: SectionK
 }
 
 const DEFAULT_WORKFLOW_CLASSES: DisplayTextClass[] = ['market_expert', 'data_driven', 'general', 'profile'];
+const LOCAL_SITE_WORKFLOW_CLASSES: DisplayTextClass[] = ['market_expert', 'data_driven', 'general'];
 const MARKETING_WORKFLOW_CLASSES: DisplayTextClass[] = ['marketing'];
 const ORTSLAGE_HIDDEN_TAB_IDS = new Set(['berater', 'makler', 'marktueberblick']);
 
@@ -2289,7 +2290,13 @@ export default function InternationalizationManager({ config, availableLocales, 
   }, [rows]);
 
   const workflowClasses = useMemo<DisplayTextClass[]>(
-    () => (channel === 'marketing' ? MARKETING_WORKFLOW_CLASSES : DEFAULT_WORKFLOW_CLASSES),
+    () => (
+      channel === 'marketing'
+        ? MARKETING_WORKFLOW_CLASSES
+        : channel === 'local_site'
+          ? LOCAL_SITE_WORKFLOW_CLASSES
+          : DEFAULT_WORKFLOW_CLASSES
+    ),
     [channel],
   );
   const selectedScopeAreaIsOrtslage = useMemo(
@@ -3036,6 +3043,19 @@ export default function InternationalizationManager({ config, availableLocales, 
 	          <div style={workflowHeaderInlineStyle}>
 	            <h3 style={sectionTabsIntroTitleStyle}>Bereich wählen -&gt;</h3>
 	            <div style={workflowInlineControlsStyle}>
+	              <label style={workflowInlineFieldStyle}>
+	                <select
+	                  style={workflowInlineSelectStyle}
+	                  value={channel}
+	                  onChange={(e) => setChannel(e.target.value as I18nChannel)}
+	                >
+	                  {I18N_CHANNEL_OPTIONS.map((item) => (
+	                    <option key={item.value} value={item.value}>
+	                      {item.label}
+	                    </option>
+	                  ))}
+	                </select>
+	              </label>
 	              <label style={workflowInlineFieldStyle}>
 	                <select
 	                  style={workflowInlineSelectStyle}

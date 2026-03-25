@@ -814,12 +814,13 @@ export default function TextEditorForm({
   }, []);
 
   const tabConfig = isMarketing ? MARKETING_TAB_CONFIG : TAB_CONFIG;
+  const visibleGlobalClassOrder = useMemo(
+    () => (isLocalSite ? GLOBAL_CLASS_ORDER.filter((classKey) => classKey !== 'profile') : GLOBAL_CLASS_ORDER),
+    [isLocalSite],
+  );
   const resolveVisibleTabs = (areaIsOrtslage: boolean) => {
     const hiddenTabIds = new Set(['berater', 'makler', 'marktueberblick']);
-    if (isLocalSite && !areaIsOrtslage) {
-      hiddenTabIds.delete('marktueberblick');
-    }
-    const shouldHideTabs = !isMarketing && (areaIsOrtslage || isLocalSite);
+    const shouldHideTabs = !isMarketing && areaIsOrtslage;
     let nextVisibleTabs = shouldHideTabs
       ? tabConfig.filter((tab) => !hiddenTabIds.has(tab.id))
       : tabConfig;
@@ -846,6 +847,11 @@ export default function TextEditorForm({
     const exists = visibleTabs.some((tab) => tab.id === activeTab);
     if (!exists) setActiveTab(visibleTabs[0].id);
   }, [activeTab, visibleTabs]);
+
+  useEffect(() => {
+    if (visibleGlobalClassOrder.includes(activeBulkClass)) return;
+    setActiveBulkClass(visibleGlobalClassOrder[0] ?? 'general');
+  }, [activeBulkClass, visibleGlobalClassOrder]);
 
   useEffect(() => {
     if (!initialTabId) return;
@@ -1286,7 +1292,7 @@ export default function TextEditorForm({
 
   const classEstimateMap = useMemo(() => {
     const areaMultiplier = bulkScope === 'kreis_ortslagen' && !isOrtslage ? Math.max(1, scopeAreaItems.length) : 1;
-    return GLOBAL_CLASS_ORDER.reduce((acc, classKey) => {
+    return visibleGlobalClassOrder.reduce((acc, classKey) => {
       const tasks = collectBulkTasks(classKey);
       const texts = tasks.flatMap((task) => {
         const source = getCurrentTextForDataset(
@@ -1344,7 +1350,7 @@ export default function TextEditorForm({
         estimatedCostUsd: number | null;
         estimatedCostEur: number | null;
       }>);
-  }, [areaDataById, bulkScope, collectBulkTasks, config?.area_id, getCurrentTextForDataset, isOrtslage, scopeAreaItems.length, selectedLlmOption]);
+  }, [areaDataById, bulkScope, collectBulkTasks, config?.area_id, getCurrentTextForDataset, isOrtslage, scopeAreaItems.length, selectedLlmOption, visibleGlobalClassOrder]);
 
   const runBulkByTextClass = async (classKey: GlobalClassKey) => {
     if (classBulkState) return;
@@ -1500,7 +1506,7 @@ export default function TextEditorForm({
             </div>
 
             <div style={textWorkflowClassGridStyle}>
-              {GLOBAL_CLASS_ORDER.map((classKey) => {
+              {visibleGlobalClassOrder.map((classKey) => {
                 const meta = GLOBAL_CLASS_META[classKey];
                 const active = activeBulkClass === classKey;
                 const estimate = classEstimateMap[classKey];
