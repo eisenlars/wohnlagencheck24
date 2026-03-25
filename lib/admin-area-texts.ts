@@ -1,4 +1,5 @@
 import { hashText } from "@/lib/text-hash";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export type AdminAreaTextScopeKind = "bundesland";
 export type AdminAreaTextType = "general" | "individual";
@@ -18,25 +19,7 @@ export type AdminAreaTextRecord = {
   last_updated: string | null;
 };
 
-type SupabaseQuery = {
-  select: (columns: string) => SupabaseQuery;
-  eq: (column: string, value: unknown) => SupabaseQuery;
-  in?: (column: string, values: unknown[]) => SupabaseQuery;
-  order?: (column: string, options?: { ascending?: boolean }) => SupabaseQuery;
-  upsert?: (
-    values: Record<string, unknown> | Array<Record<string, unknown>>,
-    options?: { onConflict?: string },
-  ) => Promise<{ error?: { message?: string } | null }>;
-  delete?: () => SupabaseQuery;
-  then: <TResult1 = { data?: unknown; error?: { message?: string } | null }, TResult2 = never>(
-    onfulfilled?: ((value: TResult1) => TResult2 | PromiseLike<TResult2>) | null,
-    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
-  ) => Promise<TResult1 | TResult2>;
-};
-
-export type SupabaseClientLike = {
-  from: (table: string) => SupabaseQuery;
-};
+export type SupabaseClientLike = ReturnType<typeof createAdminClient>;
 
 function asText(value: unknown): string {
   return String(value ?? "").trim();
