@@ -1103,6 +1103,10 @@ type PersistedAdminViewState = {
   partnerTab?: PartnerPanelTab;
   integrationsAdminTab?: "overview" | "llm_partner";
   llmGlobalTab?: "create" | "overview" | "pricing" | "usage";
+  marketExplanationMode?: "standard" | "static";
+  marketExplanationStandardScope?: MarketExplanationStandardScope;
+  marketExplanationStandardLocale?: string;
+  marketExplanationStandardBundeslandSlug?: string;
 };
 
 const PORTAL_CMS_VIEW_STATE_KEY = "admin_portal_cms_view_state_v1";
@@ -1396,6 +1400,10 @@ export default function AdminClient() {
     partnerTab: "profile",
     integrationsAdminTab: "overview",
     llmGlobalTab: "create",
+    marketExplanationMode: "standard",
+    marketExplanationStandardScope: "kreis",
+    marketExplanationStandardLocale: "de",
+    marketExplanationStandardBundeslandSlug: "",
   }), []);
   const portalCmsInitialViewState = useMemo<PersistedPortalCmsViewState>(() => ({
     pageKey: "home",
@@ -1662,12 +1670,20 @@ export default function AdminClient() {
   useEffect(() => {
     if (!adminViewStateHydrated || adminViewStateAppliedRef.current) return;
     const restoredActiveView = adminViewState.activeView ?? "home";
+    const restoredMarketExplanationMode = adminViewState.marketExplanationMode ?? "standard";
+    const restoredMarketExplanationScope = adminViewState.marketExplanationStandardScope ?? "kreis";
+    const restoredMarketExplanationLocale = String(adminViewState.marketExplanationStandardLocale ?? "de").trim().toLowerCase() || "de";
+    const restoredMarketExplanationBundeslandSlug = String(adminViewState.marketExplanationStandardBundeslandSlug ?? "").trim().toLowerCase();
     setActiveView(restoredActiveView);
     setNavMode(adminViewState.navMode ?? "partners");
     setSelectedPartnerId(String(adminViewState.selectedPartnerId ?? ""));
     setPartnerTab(adminViewState.partnerTab ?? "profile");
     setIntegrationsAdminTab(adminViewState.integrationsAdminTab ?? "overview");
     setLlmGlobalTab(adminViewState.llmGlobalTab ?? "create");
+    setMarketExplanationMode(restoredMarketExplanationMode);
+    setMarketExplanationStandardScope(restoredMarketExplanationScope);
+    setMarketExplanationStandardLocale(restoredMarketExplanationLocale);
+    setMarketExplanationStandardBundeslandSlug(restoredMarketExplanationBundeslandSlug);
     if (restoredActiveView === "llm_global") {
       void loadLlmGlobalDashboard();
     } else if (restoredActiveView === "billing_defaults") {
@@ -1678,7 +1694,11 @@ export default function AdminClient() {
       void loadPortalCms();
     } else if (restoredActiveView === "market_texts") {
       void Promise.all([
-        loadMarketExplanationStandardTexts(),
+        loadMarketExplanationStandardTexts({
+          scope: restoredMarketExplanationScope,
+          bundeslandSlug: restoredMarketExplanationBundeslandSlug || undefined,
+          locale: restoredMarketExplanationScope === "bundesland" ? restoredMarketExplanationLocale : "de",
+        }),
         loadMarketExplanationStaticTexts(),
       ]);
     } else if (restoredActiveView === "portal_cms") {
@@ -1692,6 +1712,10 @@ export default function AdminClient() {
     adminViewState.navMode,
     adminViewState.partnerTab,
     adminViewState.selectedPartnerId,
+    adminViewState.marketExplanationMode,
+    adminViewState.marketExplanationStandardBundeslandSlug,
+    adminViewState.marketExplanationStandardLocale,
+    adminViewState.marketExplanationStandardScope,
     adminViewStateHydrated,
   ]);
 
@@ -1755,12 +1779,20 @@ export default function AdminClient() {
       partnerTab,
       integrationsAdminTab,
       llmGlobalTab,
+      marketExplanationMode,
+      marketExplanationStandardScope,
+      marketExplanationStandardLocale,
+      marketExplanationStandardBundeslandSlug,
     });
   }, [
     activeView,
     adminViewStateHydrated,
     integrationsAdminTab,
     llmGlobalTab,
+    marketExplanationMode,
+    marketExplanationStandardBundeslandSlug,
+    marketExplanationStandardLocale,
+    marketExplanationStandardScope,
     navMode,
     partnerTab,
     selectedPartnerId,
