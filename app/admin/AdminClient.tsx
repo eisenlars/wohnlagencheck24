@@ -157,12 +157,16 @@ type MarketExplanationStandardEntry = {
   text_type?: MarketExplanationStandardTextDefinition["type"];
   override_status?: string | null;
   override_updated_at?: string | null;
+  translation_origin?: string | null;
+  translation_is_stale?: boolean;
 };
 
 type MarketExplanationStandardBundesland = {
   slug: string;
   name: string;
 };
+
+type MarketExplanationStandardTranslationStatus = "draft" | "internal" | "live";
 
 type DisplayAreaRow = {
   key: string;
@@ -995,6 +999,27 @@ function buildMarketExplanationStandardDraftMap(args: {
   }, {});
 }
 
+function buildMarketExplanationStandardStatusDraftKey(locale: string, key: string): string {
+  return `${locale}::${key}`;
+}
+
+function buildMarketExplanationStandardStatusDraftMap(args: {
+  locale: string;
+  definitions: MarketExplanationStandardTextDefinition[];
+  entries: MarketExplanationStandardEntry[];
+}): Record<string, MarketExplanationStandardTranslationStatus> {
+  if (args.locale === "de") return {};
+  const entryMap = new Map(args.entries.map((entry) => [entry.key, entry] as const));
+  return args.definitions.reduce<Record<string, MarketExplanationStandardTranslationStatus>>((acc, definition) => {
+    const entry = entryMap.get(definition.key);
+    acc[buildMarketExplanationStandardStatusDraftKey(args.locale, definition.key)] =
+      (entry?.override_status === "internal" || entry?.override_status === "live"
+        ? entry.override_status
+        : "draft") as MarketExplanationStandardTranslationStatus;
+    return acc;
+  }, {});
+}
+
 function buildMarketExplanationStandardEntryMap(
   entries: MarketExplanationStandardEntry[],
 ): Record<string, MarketExplanationStandardEntry> {
@@ -1330,6 +1355,7 @@ export default function AdminClient() {
   const [marketExplanationStandardDefinitions, setMarketExplanationStandardDefinitions] = useState<MarketExplanationStandardTextDefinition[]>(MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS);
   const [marketExplanationStandardEntries, setMarketExplanationStandardEntries] = useState<MarketExplanationStandardEntry[]>([]);
   const [marketExplanationStandardDrafts, setMarketExplanationStandardDrafts] = useState<Record<string, string>>({});
+  const [marketExplanationStandardStatusDrafts, setMarketExplanationStandardStatusDrafts] = useState<Record<string, MarketExplanationStandardTranslationStatus>>({});
   const [marketExplanationStaticLocale, setMarketExplanationStaticLocale] = useState<string>("de");
   const [marketExplanationStaticDefinitions, setMarketExplanationStaticDefinitions] = useState<MarketExplanationStaticTextDefinition[]>(MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS);
   const [, setMarketExplanationStaticEntries] = useState<MarketExplanationStaticTextEntryRecord[]>([]);
@@ -1699,6 +1725,18 @@ export default function AdminClient() {
       locale: marketExplanationStandardLocale,
     });
   }, [marketExplanationMode, marketExplanationStandardBundeslandSlug, marketExplanationStandardLocale, marketExplanationStandardScope]);
+
+  useEffect(() => {
+    if (marketExplanationStandardScope !== "bundesland") return;
+    if (portalLocaleConfigs.length === 0) return;
+    if (!portalLocaleConfigs.some((row) => row.locale === marketExplanationStandardLocale)) {
+      const fallbackLocale = portalLocaleConfigs.find((row) => row.locale === "de")?.locale
+        ?? portalLocaleConfigs.find((row) => row.is_active)?.locale
+        ?? portalLocaleConfigs[0]?.locale
+        ?? "de";
+      setMarketExplanationStandardLocale(fallbackLocale);
+    }
+  }, [marketExplanationStandardLocale, marketExplanationStandardScope, portalLocaleConfigs]);
 
   useEffect(() => {
     if (portalLocaleConfigs.length === 0) return;
@@ -2672,6 +2710,11 @@ export default function AdminClient() {
       definitions: nextDefinitions,
       entries: nextEntries,
     }));
+    setMarketExplanationStandardStatusDrafts(buildMarketExplanationStandardStatusDraftMap({
+      locale: nextLocale,
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
   }
 
   async function loadMarketExplanationStaticTexts() {
@@ -2993,9 +3036,15 @@ export default function AdminClient() {
       body: JSON.stringify({
         level: "bundesland",
         bundesland_slug: marketExplanationStandardBundeslandSlug,
+        locale: marketExplanationStandardLocale,
         entries: [{
           key,
           value_text: marketExplanationStandardDrafts[key] ?? "",
+          status: marketExplanationStandardLocale === "de"
+            ? undefined
+            : marketExplanationStandardStatusDrafts[
+              buildMarketExplanationStandardStatusDraftKey(marketExplanationStandardLocale, key)
+            ] ?? "draft",
         }],
       }),
     });
@@ -3008,6 +3057,11 @@ export default function AdminClient() {
     setMarketExplanationStandardDefinitions(nextDefinitions);
     setMarketExplanationStandardEntries(nextEntries);
     setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
+    setMarketExplanationStandardStatusDrafts(buildMarketExplanationStandardStatusDraftMap({
+      locale: data.locale ?? marketExplanationStandardLocale,
       definitions: nextDefinitions,
       entries: nextEntries,
     }));
@@ -3029,6 +3083,7 @@ export default function AdminClient() {
       body: JSON.stringify({
         level: "bundesland",
         bundesland_slug: marketExplanationStandardBundeslandSlug,
+        locale: marketExplanationStandardLocale,
         reset: {
           keys: [key],
         },
@@ -3043,6 +3098,11 @@ export default function AdminClient() {
     setMarketExplanationStandardDefinitions(nextDefinitions);
     setMarketExplanationStandardEntries(nextEntries);
     setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
+    setMarketExplanationStandardStatusDrafts(buildMarketExplanationStandardStatusDraftMap({
+      locale: data.locale ?? marketExplanationStandardLocale,
       definitions: nextDefinitions,
       entries: nextEntries,
     }));
@@ -3064,6 +3124,7 @@ export default function AdminClient() {
       body: JSON.stringify({
         level: "bundesland",
         bundesland_slug: marketExplanationStandardBundeslandSlug,
+        locale,
         translate: {
           target_locale: locale,
           keys: keys && keys.length > 0 ? keys : undefined,
@@ -3079,6 +3140,11 @@ export default function AdminClient() {
     setMarketExplanationStandardDefinitions(nextDefinitions);
     setMarketExplanationStandardEntries(nextEntries);
     setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
+    setMarketExplanationStandardStatusDrafts(buildMarketExplanationStandardStatusDraftMap({
+      locale: data.locale ?? locale,
       definitions: nextDefinitions,
       entries: nextEntries,
     }));
@@ -6278,9 +6344,17 @@ export default function AdminClient() {
               <>
                 <div style={marketExplanationActionGroupStyle}>
                   {marketExplanationStandardScope === "bundesland" ? (
-                    <div style={marketExplanationScopeHintStyle}>
-                      Bundeslandtexte arbeiten jetzt mit Basisreport plus Admin-Override, analog zum Partnerworkflow.
-                    </div>
+                    <select
+                      style={{ ...inputStyle, minWidth: 180 }}
+                      value={marketExplanationStandardLocale}
+                      onChange={(e) => setMarketExplanationStandardLocale(e.target.value)}
+                    >
+                      {(portalLocaleConfigs.length > 0 ? portalLocaleConfigs : [{ locale: "de" } as PortalLocaleConfigRecord]).map((row) => (
+                        <option key={row.locale} value={row.locale}>
+                          {row.locale}{row.label_native ? ` · ${row.label_native}` : ""}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <div style={marketExplanationScopeHintStyle}>Kreis-Standardtexte werden deutsch gepflegt.</div>
                   )}
@@ -6430,8 +6504,12 @@ export default function AdminClient() {
                 const baseValue = String(entry?.base_value_text ?? "");
                 const hasOverride = entry?.has_override === true;
                 const isBundesland = marketExplanationStandardScope === "bundesland";
+                const isTranslatedBundesland = isBundesland && marketExplanationStandardLocale !== "de";
                 const effectiveValue = String(entry?.value_text ?? "");
-                const isDirty = draftValue !== effectiveValue;
+                const statusDraftKey = buildMarketExplanationStandardStatusDraftKey(marketExplanationStandardLocale, definition.key);
+                const statusDraft = marketExplanationStandardStatusDrafts[statusDraftKey] ?? "draft";
+                const hasStatusChange = isTranslatedBundesland && statusDraft !== (entry?.override_status ?? "draft");
+                const isDirty = draftValue !== effectiveValue || hasStatusChange;
                 return (
                   <div key={definition.key} style={{ border: "1px solid #dbe4ee", borderRadius: 8, padding: 10, background: "#fff" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -6459,19 +6537,25 @@ export default function AdminClient() {
                         </div>
                         <div style={mutedStyle}>
                           <code>{definition.key}</code>
-                          {isBundesland ? ` · ${hasOverride ? "Admin-Override aktiv" : "Basistext aktiv"}` : ""}
+                          {isBundesland
+                            ? ` · ${isTranslatedBundesland
+                              ? (hasOverride ? "Übersetzung aktiv" : "DE-Quelle aktiv")
+                              : (hasOverride ? "Admin-Override aktiv" : "Basistext aktiv")}`
+                            : ""}
                         </div>
                       </div>
                       <span style={{ ...mutedStyle, fontSize: 12 }}>
                         {isBundesland
-                          ? "Quelle: Reportbasis mit Fallback aus text_standard_bundesland.json"
+                          ? isTranslatedBundesland
+                            ? "Quelle: DE-Override plus Bundesland-i18n"
+                            : "Quelle: Reportbasis mit Fallback aus text_standard_bundesland.json"
                           : "Quelle: deutsche Standarddatei für Systempartner"}
                       </span>
                     </div>
                     {isBundesland ? (
                       <div style={{ marginTop: 10, borderRadius: 8, background: "#f8fafc", padding: 10, border: "1px solid #e2e8f0" }}>
                         <div style={{ ...mutedStyle, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
-                          Basistext
+                          {isTranslatedBundesland ? "DE-Quelltext" : "Basistext"}
                         </div>
                         <div style={{ whiteSpace: "pre-wrap", color: "#334155", fontSize: 13 }}>
                           {baseValue || "Kein Basistext vorhanden."}
@@ -6491,34 +6575,93 @@ export default function AdminClient() {
                     />
                     {isBundesland ? (
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
-                        <span style={{ ...mutedStyle, fontSize: 12 }}>
-                          {hasOverride
-                            ? `Override aktiv${entry?.override_updated_at ? ` · ${new Date(entry.override_updated_at).toLocaleString("de-DE")}` : ""}`
-                            : "Noch kein Override gespeichert"}
-                        </span>
+                        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                          {isTranslatedBundesland ? (
+                            <>
+                              <select
+                                style={{ ...inputStyle, maxWidth: 180 }}
+                                value={statusDraft}
+                                onChange={(event) => {
+                                  const nextStatus = String(event.target.value) as MarketExplanationStandardTranslationStatus;
+                                  setMarketExplanationStandardStatusDrafts((prev) => ({
+                                    ...prev,
+                                    [statusDraftKey]: nextStatus,
+                                  }));
+                                }}
+                              >
+                                <option value="draft">entwurf</option>
+                                <option value="internal">intern</option>
+                                <option value="live">live</option>
+                              </select>
+                              <span style={{ ...mutedStyle, fontSize: 12 }}>
+                                {entry?.translation_origin
+                                  ? `${formatPortalTranslationOrigin(entry.translation_origin)}${entry.translation_is_stale ? " · DE geändert" : ""}`
+                                  : "Noch keine Übersetzung gespeichert"}
+                              </span>
+                            </>
+                          ) : (
+                            <span style={{ ...mutedStyle, fontSize: 12 }}>
+                              {hasOverride
+                                ? `Override aktiv${entry?.override_updated_at ? ` · ${new Date(entry.override_updated_at).toLocaleString("de-DE")}` : ""}`
+                                : "Noch kein Override gespeichert"}
+                            </span>
+                          )}
+                        </div>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <button
                             style={btnGhostStyle}
                             disabled={busy || !marketExplanationStandardBundeslandSlug || !hasOverride}
                             onClick={() =>
-                              run(`Bundesland-Text ${definition.key} auf Standard zurücksetzen`, async () => {
+                              run(`Bundesland-Text ${definition.key} zurücksetzen`, async () => {
                                 await resetMarketExplanationStandardBundeslandKey(definition.key);
                               })
                             }
                           >
-                            Auf Standard zurücksetzen
+                            {isTranslatedBundesland ? "Auf DE zurücksetzen" : "Auf Standard zurücksetzen"}
                           </button>
-                          <button
-                            style={btnGhostStyle}
-                            disabled={busy || !marketExplanationStandardBundeslandSlug}
-                            onClick={() =>
-                              run(`Bundesland-Text ${definition.key} per KI überarbeiten`, async () => {
-                                await translateMarketExplanationStandardBundeslandWithAi("de", [definition.key]);
-                              })
-                            }
-                          >
-                            Per KI überarbeiten
-                          </button>
+                          {isTranslatedBundesland ? (
+                            <>
+                              <button
+                                style={btnGhostStyle}
+                                disabled={busy || !marketExplanationStandardBundeslandSlug}
+                                onClick={() =>
+                                  run(`Bundesland-Text ${definition.key} per KI übersetzen`, async () => {
+                                    await translateMarketExplanationStandardBundeslandWithAi(marketExplanationStandardLocale, [definition.key]);
+                                  })
+                                }
+                              >
+                                Per KI übersetzen
+                              </button>
+                              <button
+                                style={btnGhostStyle}
+                                disabled={busy}
+                                onClick={() => {
+                                  setMarketExplanationStandardDrafts((prev) => ({
+                                    ...prev,
+                                    [definition.key]: baseValue,
+                                  }));
+                                  setMarketExplanationStandardStatusDrafts((prev) => ({
+                                    ...prev,
+                                    [statusDraftKey]: statusDraft === "live" ? "internal" : statusDraft,
+                                  }));
+                                }}
+                              >
+                                DE in Feld übernehmen
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              style={btnGhostStyle}
+                              disabled={busy || !marketExplanationStandardBundeslandSlug}
+                              onClick={() =>
+                                run(`Bundesland-Text ${definition.key} per KI überarbeiten`, async () => {
+                                  await translateMarketExplanationStandardBundeslandWithAi("de", [definition.key]);
+                                })
+                              }
+                            >
+                              Per KI überarbeiten
+                            </button>
+                          )}
                           <button
                             style={btnStyle}
                             disabled={busy || !marketExplanationStandardBundeslandSlug || !isDirty}

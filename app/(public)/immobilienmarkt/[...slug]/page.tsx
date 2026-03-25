@@ -162,7 +162,8 @@ export default async function ImmobilienmarktHierarchiePage({ params, locale = n
   const resolvedParams = await params;
   const slugs = resolvedParams.slug ?? [];
   const route = resolveRoute(slugs);
-  const pageModel = await buildPageModel(route);
+  const normalizedLocale = normalizePublicLocale(locale);
+  const pageModel = await buildPageModel(route, { locale: normalizedLocale });
 
   if (!pageModel) notFound();
 
@@ -179,7 +180,6 @@ export default async function ImmobilienmarktHierarchiePage({ params, locale = n
     ?? asString(meta["kreis_schluessel"])
     ?? ""
   ).trim();
-  const normalizedLocale = normalizePublicLocale(locale);
   const [texts, marketExplanationTexts] = await Promise.all([
     getPortalSystemTexts(normalizedLocale),
     getMarketExplanationStaticTexts(normalizedLocale),

@@ -1,7 +1,7 @@
 // lib/data.ts
 
 import { buildWebAssetUrl } from "@/utils/assets";
-import { loadAdminAreaTextRows } from "@/lib/admin-area-texts";
+import { loadAdminAreaTextI18nEntries, loadAdminAreaTextRows } from "@/lib/admin-area-texts";
 import {
   REPORTS_TAG,
   reportScopeTagsForRouteSlugs,
@@ -180,6 +180,31 @@ export async function getApprovedAdminAreaTexts(
     }));
   } catch (err) {
     console.warn("admin_area_texts fetch error:", err);
+    return [];
+  }
+}
+
+export async function getLiveAdminAreaTextTranslations(
+  supabaseClient: SupabaseClientLike,
+  scopeKind: "bundesland",
+  scopeKey: string,
+  locale: string,
+): Promise<ReportTextOverride[]> {
+  try {
+    const rows = await loadAdminAreaTextI18nEntries({
+      supabaseClient,
+      scopeKind,
+      scopeKey,
+      locale,
+      statuses: ["live"],
+    });
+    return rows.map((row) => ({
+      section_key: row.section_key,
+      optimized_content: row.value_text ?? null,
+      status: row.status,
+    }));
+  } catch (err) {
+    console.warn("admin_area_text_i18n_entries fetch error:", err);
     return [];
   }
 }

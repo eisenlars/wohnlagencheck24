@@ -93,6 +93,7 @@ export default async function ImmobilienmarktPreviewPage({ params }: PageProps) 
   const pageModel = await buildPageModel(route, {
     audience: "preview",
     pathPrefix: "/preview/immobilienmarkt",
+    locale: "de",
   });
 
   if (!pageModel) notFound();

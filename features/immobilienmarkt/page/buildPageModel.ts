@@ -21,6 +21,7 @@ import {
   getFlaechennutzungWohnbauImageSrc,
   getLegendHtml,
   getApprovedAdminAreaTexts,
+  getLiveAdminAreaTextTranslations,
   getApprovedReportTexts,
 } from "@/lib/data";
 import { buildWebAssetUrl } from "@/utils/assets";
@@ -103,6 +104,7 @@ export type PageModel = {
 export type BuildPageModelOptions = {
   audience?: "public" | "preview";
   pathPrefix?: string;
+  locale?: string;
 };
 
 function basePathFromRegionSlugs(regionSlugs: string[], pathPrefix = "/immobilienmarkt"): string {
@@ -373,6 +375,7 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
 
   const audience = options?.audience ?? "public";
   const pathPrefix = options?.pathPrefix ?? "/immobilienmarkt";
+  const locale = String(options?.locale ?? "de").trim().toLowerCase() || "de";
   const [routeBundeslandSlug, routeKreisSlug, routeOrtSlug] = route.regionSlugs;
   if (audience === "public" && route.level === "bundesland" && routeBundeslandSlug) {
     if (!(await isBundeslandVisible(routeBundeslandSlug))) return null;
@@ -562,6 +565,19 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     if (adminOverrides.length > 0) {
       const mergedBundeslandText = applyOverridesToTextTree(getTextTree(report), adminOverrides);
       report = withTextTree(report, mergedBundeslandText);
+    }
+
+    if (locale !== "de") {
+      const translatedOverrides = await getLiveAdminAreaTextTranslations(
+        admin,
+        "bundesland",
+        bundeslandSlug,
+        locale,
+      );
+      if (translatedOverrides.length > 0) {
+        const translatedBundeslandText = applyOverridesToTextTree(getTextTree(report), translatedOverrides);
+        report = withTextTree(report, translatedBundeslandText);
+      }
     }
 
     const kreisTextRows = (

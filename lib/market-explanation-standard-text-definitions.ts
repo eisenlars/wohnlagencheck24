@@ -83,6 +83,7 @@ export const MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS_BUNDESLAND: MarketExpl
   { key: "immobilienmarkt_allgemein", tab: "uebersicht", type: "general" },
   { key: "immobilienmarkt_standort_teaser", tab: "uebersicht", type: "general" },
   { key: "immobilienmarkt_individuell_01", tab: "uebersicht", type: "individual" },
+  { key: "immobilienmarkt_zitat", tab: "uebersicht", type: "individual" },
   { key: "immobilienmarkt_individuell_02", tab: "uebersicht", type: "individual" },
   { key: "immobilienmarkt_besonderheiten", tab: "uebersicht", type: "general" },
 ];

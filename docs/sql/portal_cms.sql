@@ -111,6 +111,34 @@ create table if not exists public.admin_area_texts (
   primary key (scope_kind, scope_key, section_key)
 );
 
+create table if not exists public.admin_area_text_i18n_entries (
+  scope_kind text not null
+    check (scope_kind in ('bundesland')),
+  scope_key text not null,
+  section_key text not null,
+  locale text not null,
+  status text not null default 'draft'
+    check (status in ('draft', 'internal', 'live')),
+  value_text text not null default '',
+  updated_at timestamptz not null default now(),
+  primary key (scope_kind, scope_key, section_key, locale)
+);
+
+create table if not exists public.admin_area_text_i18n_meta (
+  scope_kind text not null
+    check (scope_kind in ('bundesland')),
+  scope_key text not null,
+  section_key text not null,
+  locale text not null,
+  source_locale text not null default 'de',
+  source_snapshot_hash text,
+  source_updated_at timestamptz,
+  translation_origin text not null default 'manual'
+    check (translation_origin in ('manual', 'ai', 'sync_copy_all', 'sync_fill_missing')),
+  updated_at timestamptz not null default now(),
+  primary key (scope_kind, scope_key, section_key, locale)
+);
+
 insert into public.portal_locale_config (
   locale,
   status,
@@ -159,3 +187,9 @@ comment on table public.market_explanation_static_text_i18n_meta is
 
 comment on table public.admin_area_texts is
   'Admin-Overrides fuer portalverantwortete Gebietstexte, initial fuer Bundeslandseiten.';
+
+comment on table public.admin_area_text_i18n_entries is
+  'Mehrsprachige Admin-Overrides fuer portalverantwortete Gebietstexte, initial fuer Bundeslandseiten.';
+
+comment on table public.admin_area_text_i18n_meta is
+  'Quellbezug und Uebersetzungsstatus fuer mehrsprachige Admin-Gebietstexte.';
