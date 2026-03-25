@@ -151,6 +151,12 @@ type AuditLogRow = {
 type MarketExplanationStandardEntry = {
   key: string;
   value_text: string;
+  base_value_text?: string;
+  override_value_text?: string | null;
+  has_override?: boolean;
+  text_type?: MarketExplanationStandardTextDefinition["type"];
+  override_status?: string | null;
+  override_updated_at?: string | null;
 };
 
 type MarketExplanationStandardBundesland = {
@@ -989,6 +995,15 @@ function buildMarketExplanationStandardDraftMap(args: {
   }, {});
 }
 
+function buildMarketExplanationStandardEntryMap(
+  entries: MarketExplanationStandardEntry[],
+): Record<string, MarketExplanationStandardEntry> {
+  return entries.reduce<Record<string, MarketExplanationStandardEntry>>((acc, entry) => {
+    acc[entry.key] = entry;
+    return acc;
+  }, {});
+}
+
 function buildMarketExplanationStaticDraftKey(locale: string, key: MarketExplanationStaticTextKey): string {
   return `${locale}::${key}`;
 }
@@ -1313,6 +1328,7 @@ export default function AdminClient() {
   const [marketExplanationStandardBundeslaender, setMarketExplanationStandardBundeslaender] = useState<MarketExplanationStandardBundesland[]>([]);
   const [marketExplanationStandardBundeslandSlug, setMarketExplanationStandardBundeslandSlug] = useState<string>("");
   const [marketExplanationStandardDefinitions, setMarketExplanationStandardDefinitions] = useState<MarketExplanationStandardTextDefinition[]>(MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS);
+  const [marketExplanationStandardEntries, setMarketExplanationStandardEntries] = useState<MarketExplanationStandardEntry[]>([]);
   const [marketExplanationStandardDrafts, setMarketExplanationStandardDrafts] = useState<Record<string, string>>({});
   const [marketExplanationStaticLocale, setMarketExplanationStaticLocale] = useState<string>("de");
   const [marketExplanationStaticDefinitions, setMarketExplanationStaticDefinitions] = useState<MarketExplanationStaticTextDefinition[]>(MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS);
@@ -1485,6 +1501,17 @@ export default function AdminClient() {
     }),
     [marketExplanationStandardDefinitions, marketExplanationTab],
   );
+  const marketExplanationVisibleTabs = useMemo(() => {
+    const sourceDefinitions = marketExplanationMode === "standard"
+      ? marketExplanationStandardDefinitions
+      : marketExplanationStaticDefinitions;
+    const allowed = new Set(sourceDefinitions.map((definition) => definition.tab));
+    return MARKET_EXPLANATION_STANDARD_TABS.filter((tab) => allowed.has(tab.id));
+  }, [marketExplanationMode, marketExplanationStandardDefinitions, marketExplanationStaticDefinitions]);
+  const marketExplanationStandardEntryMap = useMemo(
+    () => buildMarketExplanationStandardEntryMap(marketExplanationStandardEntries),
+    [marketExplanationStandardEntries],
+  );
   const marketExplanationStaticMetaMap = useMemo(
     () => new Map(marketExplanationStaticMetas.map((meta) => [`${meta.locale}::${meta.key}`, meta] as const)),
     [marketExplanationStaticMetas],
@@ -1650,11 +1677,11 @@ export default function AdminClient() {
   }, [portalSystemTextActiveGroup, portalSystemTextGroups]);
 
   useEffect(() => {
-    if (MARKET_EXPLANATION_STANDARD_TABS.length === 0) return;
-    if (!MARKET_EXPLANATION_STANDARD_TABS.some((tab) => tab.label === marketExplanationTab)) {
-      setMarketExplanationTab(MARKET_EXPLANATION_STANDARD_TABS[0]?.label ?? "Übersicht");
+    if (marketExplanationVisibleTabs.length === 0) return;
+    if (!marketExplanationVisibleTabs.some((tab) => tab.label === marketExplanationTab)) {
+      setMarketExplanationTab(marketExplanationVisibleTabs[0]?.label ?? "Übersicht");
     }
-  }, [marketExplanationTab]);
+  }, [marketExplanationTab, marketExplanationVisibleTabs]);
 
   useEffect(() => {
     if (marketExplanationStandardBundeslaender.length === 0) return;
@@ -2640,6 +2667,7 @@ export default function AdminClient() {
     setMarketExplanationStandardBundeslandSlug(nextBundeslandSlug);
     setMarketExplanationStandardLocale(nextLocale);
     setMarketExplanationStandardDefinitions(nextDefinitions);
+    setMarketExplanationStandardEntries(nextEntries);
     setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
       definitions: nextDefinitions,
       entries: nextEntries,
@@ -2938,6 +2966,82 @@ export default function AdminClient() {
     setMarketExplanationStandardBundeslandSlug(data.bundesland_slug ?? marketExplanationStandardBundeslandSlug);
     setMarketExplanationStandardBundeslaender(data.bundeslaender ?? marketExplanationStandardBundeslaender);
     setMarketExplanationStandardDefinitions(nextDefinitions);
+    setMarketExplanationStandardEntries(nextEntries);
+    setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
+  }
+
+  async function saveMarketExplanationStandardBundeslandKey(key: string) {
+    if (!marketExplanationStandardBundeslandSlug) {
+      throw new Error("Bitte zuerst ein Bundesland auswählen.");
+    }
+    const definition = marketExplanationStandardDefinitions.find((entry) => entry.key === key);
+    if (!definition) {
+      throw new Error(`Unbekannter Standardtext-Key: ${key}`);
+    }
+    const data = await api<{
+      level?: MarketExplanationStandardScope;
+      locale?: string;
+      bundesland_slug?: string;
+      bundeslaender?: MarketExplanationStandardBundesland[];
+      definitions?: MarketExplanationStandardTextDefinition[];
+      entries?: MarketExplanationStandardEntry[];
+    }>("/api/admin/market-explanation-standard-texts", {
+      method: "POST",
+      body: JSON.stringify({
+        level: "bundesland",
+        bundesland_slug: marketExplanationStandardBundeslandSlug,
+        entries: [{
+          key,
+          value_text: marketExplanationStandardDrafts[key] ?? "",
+        }],
+      }),
+    });
+    const nextDefinitions = data.definitions ?? getMarketExplanationStandardDefinitions("bundesland");
+    const nextEntries = data.entries ?? [];
+    setMarketExplanationStandardScope(data.level ?? "bundesland");
+    setMarketExplanationStandardLocale(data.locale ?? "de");
+    setMarketExplanationStandardBundeslandSlug(data.bundesland_slug ?? marketExplanationStandardBundeslandSlug);
+    setMarketExplanationStandardBundeslaender(data.bundeslaender ?? marketExplanationStandardBundeslaender);
+    setMarketExplanationStandardDefinitions(nextDefinitions);
+    setMarketExplanationStandardEntries(nextEntries);
+    setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
+      definitions: nextDefinitions,
+      entries: nextEntries,
+    }));
+  }
+
+  async function resetMarketExplanationStandardBundeslandKey(key: string) {
+    if (!marketExplanationStandardBundeslandSlug) {
+      throw new Error("Bitte zuerst ein Bundesland auswählen.");
+    }
+    const data = await api<{
+      level?: MarketExplanationStandardScope;
+      locale?: string;
+      bundesland_slug?: string;
+      bundeslaender?: MarketExplanationStandardBundesland[];
+      definitions?: MarketExplanationStandardTextDefinition[];
+      entries?: MarketExplanationStandardEntry[];
+    }>("/api/admin/market-explanation-standard-texts", {
+      method: "POST",
+      body: JSON.stringify({
+        level: "bundesland",
+        bundesland_slug: marketExplanationStandardBundeslandSlug,
+        reset: {
+          keys: [key],
+        },
+      }),
+    });
+    const nextDefinitions = data.definitions ?? getMarketExplanationStandardDefinitions("bundesland");
+    const nextEntries = data.entries ?? [];
+    setMarketExplanationStandardScope(data.level ?? "bundesland");
+    setMarketExplanationStandardLocale(data.locale ?? "de");
+    setMarketExplanationStandardBundeslandSlug(data.bundesland_slug ?? marketExplanationStandardBundeslandSlug);
+    setMarketExplanationStandardBundeslaender(data.bundeslaender ?? marketExplanationStandardBundeslaender);
+    setMarketExplanationStandardDefinitions(nextDefinitions);
+    setMarketExplanationStandardEntries(nextEntries);
     setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
       definitions: nextDefinitions,
       entries: nextEntries,
@@ -2973,6 +3077,7 @@ export default function AdminClient() {
     setMarketExplanationStandardBundeslandSlug(data.bundesland_slug ?? marketExplanationStandardBundeslandSlug);
     setMarketExplanationStandardBundeslaender(data.bundeslaender ?? marketExplanationStandardBundeslaender);
     setMarketExplanationStandardDefinitions(nextDefinitions);
+    setMarketExplanationStandardEntries(nextEntries);
     setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
       definitions: nextDefinitions,
       entries: nextEntries,
@@ -6174,7 +6279,7 @@ export default function AdminClient() {
                 <div style={marketExplanationActionGroupStyle}>
                   {marketExplanationStandardScope === "bundesland" ? (
                     <div style={marketExplanationScopeHintStyle}>
-                      Bundeslandtexte werden direkt im jeweiligen Bundesland-Report gepflegt.
+                      Bundeslandtexte arbeiten jetzt mit Basisreport plus Admin-Override, analog zum Partnerworkflow.
                     </div>
                   ) : (
                     <div style={marketExplanationScopeHintStyle}>Kreis-Standardtexte werden deutsch gepflegt.</div>
@@ -6192,17 +6297,19 @@ export default function AdminClient() {
                   >
                     Neu laden
                   </button>
-                  <button
-                    style={btnStyle}
-                    disabled={busy}
-                    onClick={() =>
-                      run("Standardtexte speichern", async () => {
-                        await saveMarketExplanationStandardTexts();
-                      })
-                    }
-                  >
-                    Standardtexte speichern
-                  </button>
+                  {marketExplanationStandardScope === "kreis" ? (
+                    <button
+                      style={btnStyle}
+                      disabled={busy}
+                      onClick={() =>
+                        run("Standardtexte speichern", async () => {
+                          await saveMarketExplanationStandardTexts();
+                        })
+                      }
+                    >
+                      Standardtexte speichern
+                    </button>
+                  ) : null}
                 </div>
               </>
             ) : (
@@ -6299,7 +6406,7 @@ export default function AdminClient() {
           ) : null}
 
           <div style={marketExplanationThemeTabBarStyle}>
-            {MARKET_EXPLANATION_STANDARD_TABS.map((tab) => (
+            {marketExplanationVisibleTabs.map((tab) => (
               <button
                 key={tab.id}
                 style={marketExplanationThemeTabButtonStyle(marketExplanationTab === tab.label)}
@@ -6317,51 +6424,118 @@ export default function AdminClient() {
 
           {marketExplanationMode === "standard" ? (
             <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
-              {activeMarketExplanationStandardDefinitions.map((definition) => (
-                <div key={definition.key} style={{ border: "1px solid #dbe4ee", borderRadius: 8, padding: 10, background: "#fff" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-                    <div>
-                      <div style={{ fontWeight: 700, color: "#0f172a" }}>
-                        {getTextKeyLabel(definition.key, definition.key)}
+              {activeMarketExplanationStandardDefinitions.map((definition) => {
+                const entry = marketExplanationStandardEntryMap[definition.key] ?? null;
+                const draftValue = marketExplanationStandardDrafts[definition.key] ?? "";
+                const baseValue = String(entry?.base_value_text ?? "");
+                const hasOverride = entry?.has_override === true;
+                const isBundesland = marketExplanationStandardScope === "bundesland";
+                const effectiveValue = String(entry?.value_text ?? "");
+                const isDirty = draftValue !== effectiveValue;
+                return (
+                  <div key={definition.key} style={{ border: "1px solid #dbe4ee", borderRadius: 8, padding: 10, background: "#fff" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                      <div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                            {getTextKeyLabel(definition.key, definition.key)}
+                          </div>
+                          {isBundesland ? (
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                letterSpacing: 0.3,
+                                textTransform: "uppercase",
+                                borderRadius: 999,
+                                padding: "3px 8px",
+                                background: definition.type === "individual" ? "#fef3c7" : "#e0f2fe",
+                                color: definition.type === "individual" ? "#92400e" : "#075985",
+                              }}
+                            >
+                              {definition.type === "individual" ? "Individual" : "General"}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div style={mutedStyle}>
+                          <code>{definition.key}</code>
+                          {isBundesland ? ` · ${hasOverride ? "Admin-Override aktiv" : "Basistext aktiv"}` : ""}
+                        </div>
                       </div>
-                      <div style={mutedStyle}>
-                        <code>{definition.key}</code>
-                      </div>
+                      <span style={{ ...mutedStyle, fontSize: 12 }}>
+                        {isBundesland
+                          ? "Quelle: Reportbasis mit Fallback aus text_standard_bundesland.json"
+                          : "Quelle: deutsche Standarddatei für Systempartner"}
+                      </span>
                     </div>
-                    <span style={{ ...mutedStyle, fontSize: 12 }}>
-                      {marketExplanationStandardScope === "bundesland"
-                        ? "Quelle: Bundesland-Report mit Fallback aus text_standard_bundesland.json"
-                        : "Quelle: deutsche Standarddatei für Systempartner"}
-                    </span>
+                    {isBundesland ? (
+                      <div style={{ marginTop: 10, borderRadius: 8, background: "#f8fafc", padding: 10, border: "1px solid #e2e8f0" }}>
+                        <div style={{ ...mutedStyle, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
+                          Basistext
+                        </div>
+                        <div style={{ whiteSpace: "pre-wrap", color: "#334155", fontSize: 13 }}>
+                          {baseValue || "Kein Basistext vorhanden."}
+                        </div>
+                      </div>
+                    ) : null}
+                    <textarea
+                      style={{ ...inputStyle, minHeight: 120, marginTop: 10, resize: "vertical" }}
+                      value={draftValue}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        setMarketExplanationStandardDrafts((prev) => ({
+                          ...prev,
+                          [definition.key]: nextValue,
+                        }));
+                      }}
+                    />
+                    {isBundesland ? (
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
+                        <span style={{ ...mutedStyle, fontSize: 12 }}>
+                          {hasOverride
+                            ? `Override aktiv${entry?.override_updated_at ? ` · ${new Date(entry.override_updated_at).toLocaleString("de-DE")}` : ""}`
+                            : "Noch kein Override gespeichert"}
+                        </span>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button
+                            style={btnGhostStyle}
+                            disabled={busy || !marketExplanationStandardBundeslandSlug || !hasOverride}
+                            onClick={() =>
+                              run(`Bundesland-Text ${definition.key} auf Standard zurücksetzen`, async () => {
+                                await resetMarketExplanationStandardBundeslandKey(definition.key);
+                              })
+                            }
+                          >
+                            Auf Standard zurücksetzen
+                          </button>
+                          <button
+                            style={btnGhostStyle}
+                            disabled={busy || !marketExplanationStandardBundeslandSlug}
+                            onClick={() =>
+                              run(`Bundesland-Text ${definition.key} per KI überarbeiten`, async () => {
+                                await translateMarketExplanationStandardBundeslandWithAi("de", [definition.key]);
+                              })
+                            }
+                          >
+                            Per KI überarbeiten
+                          </button>
+                          <button
+                            style={btnStyle}
+                            disabled={busy || !marketExplanationStandardBundeslandSlug || !isDirty}
+                            onClick={() =>
+                              run(`Bundesland-Text ${definition.key} speichern`, async () => {
+                                await saveMarketExplanationStandardBundeslandKey(definition.key);
+                              })
+                            }
+                          >
+                            Speichern
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
-                  <textarea
-                    style={{ ...inputStyle, minHeight: 120, marginTop: 10, resize: "vertical" }}
-                    value={marketExplanationStandardDrafts[definition.key] ?? ""}
-                    onChange={(event) => {
-                      const nextValue = event.target.value;
-                      setMarketExplanationStandardDrafts((prev) => ({
-                        ...prev,
-                        [definition.key]: nextValue,
-                      }));
-                    }}
-                  />
-                  {marketExplanationStandardScope === "bundesland" ? (
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-                      <button
-                        style={btnGhostStyle}
-                        disabled={busy || !marketExplanationStandardBundeslandSlug}
-                        onClick={() =>
-                          run(`Bundesland-Text ${definition.key} per KI überarbeiten`, async () => {
-                            await translateMarketExplanationStandardBundeslandWithAi("de", [definition.key]);
-                          })
-                        }
-                      >
-                        Per KI überarbeiten
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              ))}
+                );
+              })}
               {activeMarketExplanationStandardDefinitions.length === 0 ? (
                 <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc", ...mutedStyle }}>
                   Für diesen Tab sind aktuell noch keine Standardtexte mit Text-Key hinterlegt.

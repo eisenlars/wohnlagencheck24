@@ -93,6 +93,24 @@ create table if not exists public.market_explanation_static_text_i18n_meta (
   primary key (key, locale)
 );
 
+create table if not exists public.admin_area_texts (
+  scope_kind text not null
+    check (scope_kind in ('bundesland')),
+  scope_key text not null,
+  section_key text not null,
+  text_type text not null default 'general'
+    check (text_type in ('general', 'individual')),
+  raw_content text not null default '',
+  optimized_content text not null default '',
+  status text not null default 'approved'
+    check (status in ('draft', 'approved')),
+  source_snapshot_hash text,
+  source_last_updated timestamptz,
+  updated_by text,
+  last_updated timestamptz not null default now(),
+  primary key (scope_kind, scope_key, section_key)
+);
+
 insert into public.portal_locale_config (
   locale,
   status,
@@ -138,3 +156,6 @@ comment on table public.market_explanation_static_text_entries is
 
 comment on table public.market_explanation_static_text_i18n_meta is
   'Quelle und Verwaltungsstatus fuer uebersetzte statische Markterklaerungstexte.';
+
+comment on table public.admin_area_texts is
+  'Admin-Overrides fuer portalverantwortete Gebietstexte, initial fuer Bundeslandseiten.';

@@ -1,6 +1,7 @@
 // lib/data.ts
 
 import { buildWebAssetUrl } from "@/utils/assets";
+import { loadAdminAreaTextRows } from "@/lib/admin-area-texts";
 import {
   REPORTS_TAG,
   reportScopeTagsForRouteSlugs,
@@ -156,6 +157,29 @@ export async function getApprovedMarketingTexts(
     return (data ?? []) as ReportTextOverride[];
   } catch (err) {
     console.warn("partner_marketing_texts fetch error:", err);
+    return [];
+  }
+}
+
+export async function getApprovedAdminAreaTexts(
+  supabaseClient: SupabaseClientLike,
+  scopeKind: "bundesland",
+  scopeKey: string,
+): Promise<ReportTextOverride[]> {
+  try {
+    const rows = await loadAdminAreaTextRows({
+      supabaseClient,
+      scopeKind,
+      scopeKey,
+      approvedOnly: true,
+    });
+    return rows.map((row) => ({
+      section_key: row.section_key,
+      optimized_content: row.optimized_content ?? null,
+      status: row.status,
+    }));
+  } catch (err) {
+    console.warn("admin_area_texts fetch error:", err);
     return [];
   }
 }

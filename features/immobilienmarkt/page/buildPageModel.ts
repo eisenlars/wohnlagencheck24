@@ -20,6 +20,7 @@ import {
   getFlaechennutzungGewerbeImageSrc,
   getFlaechennutzungWohnbauImageSrc,
   getLegendHtml,
+  getApprovedAdminAreaTexts,
   getApprovedReportTexts,
 } from "@/lib/data";
 import { buildWebAssetUrl } from "@/utils/assets";
@@ -556,6 +557,12 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
       slug: k.slug,
       name: k.name,
     }));
+
+    const adminOverrides = await getApprovedAdminAreaTexts(admin, "bundesland", bundeslandSlug);
+    if (adminOverrides.length > 0) {
+      const mergedBundeslandText = applyOverridesToTextTree(getTextTree(report), adminOverrides);
+      report = withTextTree(report, mergedBundeslandText);
+    }
 
     const kreisTextRows = (
       await Promise.all(

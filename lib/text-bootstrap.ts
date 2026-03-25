@@ -1,8 +1,13 @@
 import { applyDataDrivenTexts } from "@/lib/text-core";
-import { INDIVIDUAL_MANDATORY_KEYS } from "@/lib/text-key-registry";
+import {
+  GENERAL_REGION_FOCUS_KEYS,
+  GENERAL_STANDARD_KEYS,
+  INDIVIDUAL_MANDATORY_KEYS,
+} from "@/lib/text-key-registry";
 
 const SUPABASE_BUCKET = "immobilienmarkt";
 const STANDARD_TEXT_PATH = "text-standards/kreis/text_standard_kreis.json";
+const BUNDESLAND_STANDARD_TEXT_PATH = "text-standards/bundesland/text_standard_bundesland.json";
 
 export type AreaRow = {
   id: string;
@@ -18,6 +23,7 @@ type TextTree = Record<string, TextGroup>;
 
 type StandardPayload = {
   text?: unknown;
+  bundeslandname?: { text?: unknown };
   kreisname?: { text?: unknown };
   ortslagenname?: { text?: unknown };
 };
@@ -46,6 +52,17 @@ export type BootstrapResult = {
   reason?: string;
   changed_keys?: number;
 };
+
+const AREA_STANDARD_OVERWRITE_KEYS = new Set<string>([
+  ...GENERAL_STANDARD_KEYS,
+  ...GENERAL_REGION_FOCUS_KEYS,
+]);
+
+const BUNDESLAND_STANDARD_OVERWRITE_KEYS = new Set<string>([
+  ...GENERAL_STANDARD_KEYS,
+  ...GENERAL_REGION_FOCUS_KEYS,
+  ...INDIVIDUAL_MANDATORY_KEYS,
+]);
 
 function isRecord(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -127,10 +144,13 @@ export function buildReportPath(area: AreaRow): string {
   return `reports/deutschland/${area.bundesland_slug}/${String(area.parent_slug ?? "")}/${area.slug}.json`;
 }
 
-function resolveStandardTree(payload: StandardPayload | null, scope: "kreis" | "ortslage"): TextTree {
+function resolveStandardTree(payload: StandardPayload | null, scope: "kreis" | "ortslage" | "bundesland"): TextTree {
   if (!payload) return {};
   const top = toTextTree(payload.text);
   if (Object.keys(top).length > 0) return top;
+  if (scope === "bundesland") {
+    return toTextTree(payload.bundeslandname?.text);
+  }
   if (scope === "ortslage") {
     const ort = toTextTree(payload.ortslagenname?.text);
     if (Object.keys(ort).length > 0) return ort;
@@ -173,6 +193,48 @@ function extractOrtslageNameMap(areas: AreaRow[], kreisArea: AreaRow): Record<st
     out[area.slug] = String(area.name ?? area.slug);
   }
   return out;
+}
+
+function countKeys(tree: TextTree): number {
+  return Object.values(tree).reduce((sum, group) => sum + Object.keys(group).length, 0);
+}
+
+function setTreeValue(tree: TextTree, preferredGroupKey: string, textKey: string, value: string): boolean {
+  const nextValue = String(value ?? "");
+  for (const [groupKey, group] of Object.entries(tree)) {
+    if (Object.prototype.hasOwnProperty.call(group, textKey)) {
+      if (String(group[textKey] ?? "") === nextValue) return false;
+      tree[groupKey] = {
+        ...group,
+        [textKey]: nextValue,
+      };
+      return true;
+    }
+  }
+  tree[preferredGroupKey] = {
+    ...(tree[preferredGroupKey] ?? {}),
+    [textKey]: nextValue,
+  };
+  return true;
+}
+
+function overwriteTextTreeFromStandard(args: {
+  currentTree: TextTree;
+  standardTree: TextTree;
+  allowedKeys: Set<string>;
+}): { nextTree: TextTree; changed: number } {
+  const nextTree = cloneTextTree(args.currentTree);
+  let changed = 0;
+  for (const [groupKey, group] of Object.entries(args.standardTree)) {
+    for (const [textKey, textValue] of Object.entries(group)) {
+      if (!args.allowedKeys.has(textKey)) continue;
+      if (!String(textValue ?? "").trim()) continue;
+      if (setTreeValue(nextTree, groupKey, textKey, textValue)) {
+        changed += 1;
+      }
+    }
+  }
+  return { nextTree, changed };
 }
 
 export async function bootstrapAreaReportText(args: {
@@ -271,13 +333,187 @@ export async function bootstrapAreaReportText(args: {
     area_id: area.id,
     report_path: reportPath,
     status: "updated",
-    changed_keys: Object.values(finalText).reduce((sum, group) => sum + Object.keys(group).length, 0),
+    changed_keys: countKeys(finalText),
   };
 }
 
-export async function fetchStandardPayload(admin: AdminStorageLike): Promise<StandardPayload | null> {
+export async function refreshAreaReportTextFromStandard(args: {
+  admin: AdminStorageLike;
+  area: AreaRow;
+  standardPayload: StandardPayload | null;
+  dryRun?: boolean;
+}): Promise<BootstrapResult> {
+  const { admin, area, standardPayload } = args;
+  const dryRun = args.dryRun === true;
+  const reportPath = buildReportPath(area);
+
+  let reportRaw: unknown;
   try {
-    const payload = await downloadJson(admin, STANDARD_TEXT_PATH);
+    reportRaw = await downloadJson(admin, reportPath);
+  } catch (err) {
+    return {
+      area_id: area.id,
+      report_path: reportPath,
+      status: "error",
+      reason: `download_failed: ${String((err as Error)?.message ?? err)}`,
+    };
+  }
+  if (!isRecord(reportRaw)) {
+    return {
+      area_id: area.id,
+      report_path: reportPath,
+      status: "skipped",
+      reason: "report_not_found_or_invalid_json",
+    };
+  }
+
+  const scope = isKreisArea(area) ? "kreis" : "ortslage";
+  const standardTree = resolveStandardTree(standardPayload, scope);
+  const report = { ...reportRaw };
+  const existingText = extractTextTreeFromReport(report);
+  const { nextTree, changed } = overwriteTextTreeFromStandard({
+    currentTree: existingText,
+    standardTree,
+    allowedKeys: AREA_STANDARD_OVERWRITE_KEYS,
+  });
+
+  if (changed === 0) {
+    return {
+      area_id: area.id,
+      report_path: reportPath,
+      status: "skipped",
+      reason: "no_standard_changes",
+    };
+  }
+
+  const nextReport: JsonObject = {
+    ...report,
+    text: nextTree,
+    data: {
+      ...(isRecord(report.data) ? report.data : {}),
+      text: nextTree,
+    },
+  };
+
+  if (dryRun) {
+    return {
+      area_id: area.id,
+      report_path: reportPath,
+      status: "updated",
+      reason: "dry_run",
+      changed_keys: changed,
+    };
+  }
+
+  const uploadError = await uploadJson(admin, reportPath, nextReport);
+  if (uploadError) {
+    return {
+      area_id: area.id,
+      report_path: reportPath,
+      status: "error",
+      reason: `upload_failed: ${uploadError}`,
+    };
+  }
+
+  return {
+    area_id: area.id,
+    report_path: reportPath,
+    status: "updated",
+    changed_keys: changed,
+  };
+}
+
+export async function refreshBundeslandReportTextFromStandard(args: {
+  admin: AdminStorageLike;
+  bundeslandSlug: string;
+  standardPayload: StandardPayload | null;
+  dryRun?: boolean;
+}): Promise<BootstrapResult> {
+  const { admin, bundeslandSlug, standardPayload } = args;
+  const dryRun = args.dryRun === true;
+  const reportPath = `reports/deutschland/${bundeslandSlug}.json`;
+
+  let reportRaw: unknown;
+  try {
+    reportRaw = await downloadJson(admin, reportPath);
+  } catch (err) {
+    return {
+      area_id: `bundesland:${bundeslandSlug}`,
+      report_path: reportPath,
+      status: "error",
+      reason: `download_failed: ${String((err as Error)?.message ?? err)}`,
+    };
+  }
+  if (!isRecord(reportRaw)) {
+    return {
+      area_id: `bundesland:${bundeslandSlug}`,
+      report_path: reportPath,
+      status: "skipped",
+      reason: "report_not_found_or_invalid_json",
+    };
+  }
+
+  const standardTree = resolveStandardTree(standardPayload, "bundesland");
+  const report = { ...reportRaw };
+  const existingText = extractTextTreeFromReport(report);
+  const { nextTree, changed } = overwriteTextTreeFromStandard({
+    currentTree: existingText,
+    standardTree,
+    allowedKeys: BUNDESLAND_STANDARD_OVERWRITE_KEYS,
+  });
+
+  if (changed === 0) {
+    return {
+      area_id: `bundesland:${bundeslandSlug}`,
+      report_path: reportPath,
+      status: "skipped",
+      reason: "no_standard_changes",
+    };
+  }
+
+  const nextReport: JsonObject = {
+    ...report,
+    text: nextTree,
+    data: {
+      ...(isRecord(report.data) ? report.data : {}),
+      text: nextTree,
+    },
+  };
+
+  if (dryRun) {
+    return {
+      area_id: `bundesland:${bundeslandSlug}`,
+      report_path: reportPath,
+      status: "updated",
+      reason: "dry_run",
+      changed_keys: changed,
+    };
+  }
+
+  const uploadError = await uploadJson(admin, reportPath, nextReport);
+  if (uploadError) {
+    return {
+      area_id: `bundesland:${bundeslandSlug}`,
+      report_path: reportPath,
+      status: "error",
+      reason: `upload_failed: ${uploadError}`,
+    };
+  }
+
+  return {
+    area_id: `bundesland:${bundeslandSlug}`,
+    report_path: reportPath,
+    status: "updated",
+    changed_keys: changed,
+  };
+}
+
+export async function fetchStandardPayload(
+  admin: AdminStorageLike,
+  scope: "area" | "bundesland" = "area",
+): Promise<StandardPayload | null> {
+  try {
+    const payload = await downloadJson(admin, scope === "bundesland" ? BUNDESLAND_STANDARD_TEXT_PATH : STANDARD_TEXT_PATH);
     return isRecord(payload) ? (payload as StandardPayload) : null;
   } catch {
     return null;

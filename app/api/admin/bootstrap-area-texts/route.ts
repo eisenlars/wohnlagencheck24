@@ -8,6 +8,8 @@ import { checkAdminApiRateLimit } from "@/lib/security/rate-limit";
 import {
   bootstrapAreaReportText,
   fetchStandardPayload,
+  refreshAreaReportTextFromStandard,
+  refreshBundeslandReportTextFromStandard,
   type AreaRow,
   type BootstrapResult,
 } from "@/lib/text-bootstrap";
@@ -15,10 +17,11 @@ import { reportScopeTagsFromReportPath } from "@/lib/cache-tags";
 
 type Body = {
   area_id?: string;
+  bundesland_slug?: string;
   include_ortslagen?: boolean;
   force?: boolean;
   dry_run?: boolean;
-  mode?: "missing_only" | "all";
+  mode?: "missing_only" | "all" | "standard_overwrite";
   limit?: number;
 };
 
@@ -73,10 +76,15 @@ export async function POST(req: Request) {
 
     const body = (await req.json().catch(() => ({}))) as Body;
     const requestedAreaId = normalize(body.area_id);
+    const requestedBundeslandSlug = normalize(body.bundesland_slug).toLowerCase();
     const includeOrtslagen = body.include_ortslagen !== false;
     const force = body.force === true;
     const dryRun = body.dry_run === true;
-    const mode = body.mode === "all" ? "all" : "missing_only";
+    const mode = body.mode === "all"
+      ? "all"
+      : body.mode === "standard_overwrite"
+        ? "standard_overwrite"
+        : "missing_only";
     const limit = typeof body.limit === "number" && Number.isFinite(body.limit) && body.limit > 0
       ? Math.floor(body.limit)
       : null;
@@ -111,7 +119,20 @@ export async function POST(req: Request) {
     }
 
     let targetAreas: AreaRow[] = [];
-    if (requestedAreaId) {
+    const bundeslandSlugs = Array.from(new Set(allAreas.map((area) => area.bundesland_slug).filter(Boolean))).sort();
+    let targetBundeslaender: string[] = [];
+    if (mode === "standard_overwrite") {
+      targetBundeslaender = requestedBundeslandSlug
+        ? bundeslandSlugs.filter((slug) => slug === requestedBundeslandSlug)
+        : bundeslandSlugs;
+      if (requestedBundeslandSlug && targetBundeslaender.length === 0) {
+        return NextResponse.json({ error: "Bundesland not found" }, { status: 404 });
+      }
+    }
+
+    if (mode === "standard_overwrite" && requestedBundeslandSlug && !requestedAreaId) {
+      targetAreas = [];
+    } else if (requestedAreaId) {
       const rootArea = allAreas.find((area) => area.id === requestedAreaId);
       if (!rootArea) {
         return NextResponse.json({ error: "Area not found" }, { status: 404 });
@@ -132,25 +153,62 @@ export async function POST(req: Request) {
     targetAreas = dedupeAreas(targetAreas);
     if (limit) targetAreas = targetAreas.slice(0, limit);
 
-    const standardPayload = await fetchStandardPayload(admin as never);
-    if (!standardPayload) {
-      return NextResponse.json(
-        { error: "Standard text payload not found at text-standards/kreis/text_standard_kreis.json" },
-        { status: 500 },
-      );
-    }
-
     const results: BootstrapResult[] = [];
-    for (const area of targetAreas) {
-      const result = await bootstrapAreaReportText({
-        admin: admin as never,
-        area,
-        allAreas,
-        standardPayload,
-        force: mode === "all" ? true : force,
-        dryRun,
-      });
-      results.push(result);
+    if (mode === "standard_overwrite") {
+      const areaStandardPayload = await fetchStandardPayload(admin as never, "area");
+      if (!areaStandardPayload) {
+        return NextResponse.json(
+          { error: "Standard text payload not found at text-standards/kreis/text_standard_kreis.json" },
+          { status: 500 },
+        );
+      }
+      const bundeslandStandardPayload = await fetchStandardPayload(admin as never, "bundesland");
+      if (!bundeslandStandardPayload) {
+        return NextResponse.json(
+          { error: "Standard text payload not found at text-standards/bundesland/text_standard_bundesland.json" },
+          { status: 500 },
+        );
+      }
+
+      for (const bundeslandSlug of targetBundeslaender) {
+        const result = await refreshBundeslandReportTextFromStandard({
+          admin: admin as never,
+          bundeslandSlug,
+          standardPayload: bundeslandStandardPayload,
+          dryRun,
+        });
+        results.push(result);
+      }
+
+      for (const area of targetAreas) {
+        const result = await refreshAreaReportTextFromStandard({
+          admin: admin as never,
+          area,
+          standardPayload: areaStandardPayload,
+          dryRun,
+        });
+        results.push(result);
+      }
+    } else {
+      const standardPayload = await fetchStandardPayload(admin as never, "area");
+      if (!standardPayload) {
+        return NextResponse.json(
+          { error: "Standard text payload not found at text-standards/kreis/text_standard_kreis.json" },
+          { status: 500 },
+        );
+      }
+
+      for (const area of targetAreas) {
+        const result = await bootstrapAreaReportText({
+          admin: admin as never,
+          area,
+          allAreas,
+          standardPayload,
+          force: mode === "all" ? true : force,
+          dryRun,
+        });
+        results.push(result);
+      }
     }
 
     const updated = results.filter((row) => row.status === "updated");
@@ -176,6 +234,7 @@ export async function POST(req: Request) {
       force: mode === "all" ? true : force,
       dry_run: dryRun,
       requested_area_id: requestedAreaId || null,
+      requested_bundesland_slug: requestedBundeslandSlug || null,
       include_ortslagen: includeOrtslagen,
       total: results.length,
       updated: updated.length,

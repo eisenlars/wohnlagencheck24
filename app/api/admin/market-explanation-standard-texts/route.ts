@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { translateAdminTextItems } from "@/lib/admin-text-i18n";
+import {
+  deleteAdminAreaTextRows,
+  loadAdminAreaTextRows,
+  upsertAdminAreaTextRows,
+  type AdminAreaTextRecord,
+} from "@/lib/admin-area-texts";
 import { getBundeslaender } from "@/lib/data";
 import {
   getMarketExplanationStandardDefinitions,
@@ -40,6 +46,12 @@ type ReportPayload = {
 type MarketExplanationStandardEntry = {
   key: string;
   value_text: string;
+  base_value_text?: string;
+  override_value_text?: string | null;
+  has_override?: boolean;
+  text_type?: MarketExplanationStandardTextDefinition["type"];
+  override_status?: string | null;
+  override_updated_at?: string | null;
 };
 
 type Body = {
@@ -56,6 +68,9 @@ type Body = {
   };
   translate?: {
     target_locale?: unknown;
+    keys?: unknown;
+  };
+  reset?: {
     keys?: unknown;
   };
 };
@@ -178,25 +193,6 @@ async function downloadBundeslandReport(
   return isRecord(payload) ? (payload as ReportPayload) : null;
 }
 
-async function uploadBundeslandReport(
-  admin: ReturnType<typeof createAdminClient>,
-  bundeslandSlug: string,
-  payload: ReportPayload,
-) {
-  const res = await admin.storage.from(SUPABASE_BUCKET).upload(
-    buildBundeslandReportPath(bundeslandSlug),
-    JSON.stringify(payload),
-    {
-      upsert: true,
-      contentType: "application/json",
-      cacheControl: "0",
-    },
-  );
-  if (res.error?.message) {
-    throw new Error(res.error.message);
-  }
-}
-
 function sanitizeKey(value: unknown, definitions: MarketExplanationStandardTextDefinition[]): string {
   const key = asText(value);
   if (!definitions.some((entry) => entry.key === key)) {
@@ -209,6 +205,7 @@ function buildEntries(definitions: MarketExplanationStandardTextDefinition[], tr
   return definitions.map((definition) => ({
     key: definition.key,
     value_text: findTextByKey(tree, definition.key),
+    text_type: definition.type,
   }));
 }
 
@@ -229,19 +226,6 @@ function resolveReportTree(payload: ReportPayload | null): TextTree {
   return {};
 }
 
-function withReportTreePayload(payload: ReportPayload | null, tree: TextTree): ReportPayload {
-  const base = payload ?? {};
-  const data = isRecord(base.data) ? base.data : {};
-  return {
-    ...base,
-    text: tree,
-    data: {
-      ...data,
-      text: tree,
-    },
-  };
-}
-
 function mergeMissingEntriesFromStandard(reportTree: TextTree, standardTree: TextTree, definitions: MarketExplanationStandardTextDefinition[]): TextTree {
   const next = cloneTextTree(reportTree);
   for (const definition of definitions) {
@@ -258,6 +242,54 @@ function mergeMissingEntriesFromStandard(reportTree: TextTree, standardTree: Tex
   return next;
 }
 
+function applyAdminOverridesToTree(baseTree: TextTree, rows: AdminAreaTextRecord[]): TextTree {
+  return applyEntriesToTree(
+    baseTree,
+    rows
+      .filter((row) => asText(row.optimized_content).length > 0)
+      .map((row) => ({
+        key: row.section_key,
+        value_text: String(row.optimized_content ?? ""),
+      })),
+  );
+}
+
+function buildBundeslandEntries(args: {
+  definitions: MarketExplanationStandardTextDefinition[];
+  baseTree: TextTree;
+  effectiveTree: TextTree;
+  overrideRows: AdminAreaTextRecord[];
+}): MarketExplanationStandardEntry[] {
+  const overrideMap = new Map(args.overrideRows.map((row) => [row.section_key, row] as const));
+  return args.definitions.map((definition) => {
+    const override = overrideMap.get(definition.key) ?? null;
+    const baseValue = findTextByKey(args.baseTree, definition.key);
+    const effectiveValue = findTextByKey(args.effectiveTree, definition.key);
+    return {
+      key: definition.key,
+      value_text: effectiveValue,
+      base_value_text: baseValue,
+      override_value_text: override?.optimized_content ?? null,
+      has_override: Boolean(asText(override?.optimized_content)),
+      text_type: definition.type,
+      override_status: override?.status ?? null,
+      override_updated_at: override?.last_updated ?? null,
+    };
+  });
+}
+
+async function loadBundeslandBaseTree(args: {
+  admin: ReturnType<typeof createAdminClient>;
+  bundeslandSlug: string;
+  definitions: MarketExplanationStandardTextDefinition[];
+}): Promise<TextTree> {
+  const reportPayload = await downloadBundeslandReport(args.admin, args.bundeslandSlug);
+  const reportTree = resolveReportTree(reportPayload);
+  const standardPayload = await downloadStandardPayload(args.admin, "bundesland");
+  const standardTree = resolveStandardTree(standardPayload);
+  return mergeMissingEntriesFromStandard(reportTree, standardTree, args.definitions);
+}
+
 async function loadPayload(args: {
   admin: ReturnType<typeof createAdminClient>;
   scope: MarketExplanationStandardScope;
@@ -266,15 +298,31 @@ async function loadPayload(args: {
 }) {
   const definitions = getMarketExplanationStandardDefinitions(args.scope);
   let tree: TextTree;
+  let entries: MarketExplanationStandardEntry[];
   if (args.scope === "bundesland") {
-    const reportPayload = await downloadBundeslandReport(args.admin, args.bundeslandSlug);
-    const reportTree = resolveReportTree(reportPayload);
-    const standardPayload = await downloadStandardPayload(args.admin, "bundesland");
-    const standardTree = resolveStandardTree(standardPayload);
-    tree = mergeMissingEntriesFromStandard(reportTree, standardTree, definitions);
+    const baseTree = await loadBundeslandBaseTree({
+      admin: args.admin,
+      bundeslandSlug: args.bundeslandSlug,
+      definitions,
+    });
+    const overrideRows = await loadAdminAreaTextRows({
+      supabaseClient: args.admin,
+      scopeKind: "bundesland",
+      scopeKey: args.bundeslandSlug,
+      keys: definitions.map((definition) => definition.key),
+      approvedOnly: true,
+    });
+    tree = applyAdminOverridesToTree(baseTree, overrideRows);
+    entries = buildBundeslandEntries({
+      definitions,
+      baseTree,
+      effectiveTree: tree,
+      overrideRows,
+    });
   } else {
     const payload = await downloadStandardPayload(args.admin, args.scope);
     tree = resolveStandardTree(payload);
+    entries = buildEntries(definitions, tree);
   }
   const bundeslaender = await getBundeslaender();
   return {
@@ -283,7 +331,7 @@ async function loadPayload(args: {
     bundesland_slug: args.bundeslandSlug,
     bundeslaender,
     definitions,
-    entries: buildEntries(definitions, tree),
+    entries,
   };
 }
 
@@ -337,11 +385,19 @@ export async function POST(req: Request) {
       const requestedKeys = Array.isArray(body.translate.keys)
         ? body.translate.keys.map((item) => sanitizeKey(item, definitions))
         : definitions.map((definition) => definition.key);
-      const reportPayload = await downloadBundeslandReport(admin, bundeslandSlug);
-      const reportTree = resolveReportTree(reportPayload);
-      const standardPayload = await downloadStandardPayload(admin, "bundesland");
-      const standardTree = resolveStandardTree(standardPayload);
-      const sourceTree = mergeMissingEntriesFromStandard(reportTree, standardTree, definitions);
+      const baseTree = await loadBundeslandBaseTree({
+        admin,
+        bundeslandSlug,
+        definitions,
+      });
+      const existingOverrides = await loadAdminAreaTextRows({
+        supabaseClient: admin,
+        scopeKind: "bundesland",
+        scopeKey: bundeslandSlug,
+        keys: requestedKeys,
+        approvedOnly: true,
+      });
+      const sourceTree = applyAdminOverridesToTree(baseTree, existingOverrides);
       const items = requestedKeys.map((key) => ({
         key,
         label: getTextKeyLabel(key, key),
@@ -354,13 +410,26 @@ export async function POST(req: Request) {
         targetLocale: "de",
         items,
       });
-      const targetPayload = await downloadBundeslandReport(admin, bundeslandSlug);
-      const targetTree = resolveReportTree(targetPayload);
-      const nextTree = applyEntriesToTree(
-        targetTree,
-        Array.from(translated.entries()).map(([key, value_text]) => ({ key, value_text })),
-      );
-      await uploadBundeslandReport(admin, bundeslandSlug, withReportTreePayload(targetPayload, nextTree));
+      const rows = requestedKeys.map((key) => {
+        const definition = definitions.find((entry) => entry.key === key);
+        if (!definition) {
+          throw new Error(`Unbekannter Standardtext-Key: ${key}`);
+        }
+        return {
+          scope_kind: "bundesland" as const,
+          scope_key: bundeslandSlug,
+          section_key: key,
+          text_type: definition.type,
+          raw_content: findTextByKey(baseTree, key),
+          optimized_content: translated.get(key) ?? "",
+          status: "approved" as const,
+          updated_by: adminUser.userId,
+        };
+      }).filter((row) => asText(row.optimized_content).length > 0);
+      await upsertAdminAreaTextRows({
+        supabaseClient: admin,
+        rows,
+      });
       const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, locale: "de" });
       return NextResponse.json({ ok: true, ...responsePayload });
     }
@@ -369,22 +438,79 @@ export async function POST(req: Request) {
       throw new Error("DE-Sync ist für Bundesland-Standardtexte nicht vorgesehen.");
     }
 
+    if (body.reset) {
+      if (scope !== "bundesland") {
+        throw new Error("Zurücksetzen auf Standard ist nur auf Bundeslandebene vorgesehen.");
+      }
+      const resetKeys = Array.isArray(body.reset.keys)
+        ? body.reset.keys.map((item) => sanitizeKey(item, definitions))
+        : [];
+      if (resetKeys.length === 0) {
+        throw new Error("Keine Standardtext-Keys zum Zurücksetzen übergeben.");
+      }
+      await deleteAdminAreaTextRows({
+        supabaseClient: admin,
+        scopeKind: "bundesland",
+        scopeKey: bundeslandSlug,
+        keys: resetKeys,
+      });
+      const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, locale: "de" });
+      return NextResponse.json({ ok: true, ...responsePayload });
+    }
+
     if (!Array.isArray(body.entries) || body.entries.length === 0) {
       throw new Error("Keine Standardtexte zum Speichern übergeben.");
     }
 
-    const currentTree = scope === "bundesland"
-      ? resolveReportTree(await downloadBundeslandReport(admin, bundeslandSlug))
-      : resolveStandardTree(await downloadStandardPayload(admin, scope));
     const nextEntries: MarketExplanationStandardEntry[] = body.entries.map((entry) => ({
       key: sanitizeKey(entry.key, definitions),
       value_text: String(entry.value_text ?? ""),
     }));
-    const nextTree = applyEntriesToTree(currentTree, nextEntries);
     if (scope === "bundesland") {
-      const currentPayload = await downloadBundeslandReport(admin, bundeslandSlug);
-      await uploadBundeslandReport(admin, bundeslandSlug, withReportTreePayload(currentPayload, nextTree));
+      const baseTree = await loadBundeslandBaseTree({
+        admin,
+        bundeslandSlug,
+        definitions,
+      });
+      const rowsToUpsert: Parameters<typeof upsertAdminAreaTextRows>[0]["rows"] = [];
+      const rowsToDelete: string[] = [];
+      for (const entry of nextEntries) {
+        const definition = definitions.find((item) => item.key === entry.key);
+        if (!definition) continue;
+        const baseValue = findTextByKey(baseTree, entry.key);
+        const nextValue = String(entry.value_text ?? "");
+        if (!asText(nextValue) || nextValue === baseValue) {
+          rowsToDelete.push(entry.key);
+          continue;
+        }
+        rowsToUpsert.push({
+          scope_kind: "bundesland",
+          scope_key: bundeslandSlug,
+          section_key: entry.key,
+          text_type: definition.type,
+          raw_content: baseValue,
+          optimized_content: nextValue,
+          status: "approved",
+          updated_by: adminUser.userId,
+        });
+      }
+      if (rowsToDelete.length > 0) {
+        await deleteAdminAreaTextRows({
+          supabaseClient: admin,
+          scopeKind: "bundesland",
+          scopeKey: bundeslandSlug,
+          keys: rowsToDelete,
+        });
+      }
+      if (rowsToUpsert.length > 0) {
+        await upsertAdminAreaTextRows({
+          supabaseClient: admin,
+          rows: rowsToUpsert,
+        });
+      }
     } else {
+      const currentTree = resolveStandardTree(await downloadStandardPayload(admin, scope));
+      const nextTree = applyEntriesToTree(currentTree, nextEntries);
       const currentPayload = await downloadStandardPayload(admin, scope);
       await admin.storage.from(SUPABASE_BUCKET).upload(
         buildStoragePath(scope),
