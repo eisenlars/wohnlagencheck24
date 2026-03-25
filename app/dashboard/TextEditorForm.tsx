@@ -824,6 +824,9 @@ export default function TextEditorForm({
     let nextVisibleTabs = shouldHideTabs
       ? tabConfig.filter((tab) => !hiddenTabIds.has(tab.id))
       : tabConfig;
+    if (isLocalSite) {
+      nextVisibleTabs = nextVisibleTabs.filter((tab) => tab.id !== 'berater' && tab.id !== 'makler');
+    }
     if (Array.isArray(allowedTabIds) && allowedTabIds.length > 0) {
       const allowed = new Set(allowedTabIds);
       nextVisibleTabs = nextVisibleTabs.filter((tab) => allowed.has(tab.id));
@@ -1505,7 +1508,7 @@ export default function TextEditorForm({
               </div>
             </div>
 
-            <div style={textWorkflowClassGridStyle}>
+            <div style={isLocalSite ? localSiteClassGridStyle : textWorkflowClassGridStyle}>
               {visibleGlobalClassOrder.map((classKey) => {
                 const meta = GLOBAL_CLASS_META[classKey];
                 const active = activeBulkClass === classKey;
@@ -2208,6 +2211,10 @@ const textWorkflowEmptyStateStyle: React.CSSProperties = {
   fontSize: 13,
   color: '#64748b',
   background: '#f8fafc',
+};
+const localSiteClassGridStyle: React.CSSProperties = {
+  ...textWorkflowClassGridStyle,
+  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
 };
 const fieldCardStyle = { marginBottom: '40px', paddingBottom: '30px', borderBottom: '1px solid #f1f5f9' };
 const fieldHeaderGridStyle = { display: 'grid', gridTemplateColumns: '1fr 380px', gap: '30px', marginBottom: '16px' };

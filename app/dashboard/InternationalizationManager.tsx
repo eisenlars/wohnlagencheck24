@@ -2304,8 +2304,16 @@ export default function InternationalizationManager({ config, availableLocales, 
     [config?.area_id, selectedScopeAreaId],
   );
   const visibleWorkflowTabs = useMemo(
-    () => (selectedScopeAreaIsOrtslage ? I18N_TAB_ORDER.filter((tab) => !ORTSLAGE_HIDDEN_TAB_IDS.has(tab.id)) : I18N_TAB_ORDER),
-    [selectedScopeAreaIsOrtslage],
+    () => {
+      let nextTabs = selectedScopeAreaIsOrtslage
+        ? I18N_TAB_ORDER.filter((tab) => !ORTSLAGE_HIDDEN_TAB_IDS.has(tab.id))
+        : I18N_TAB_ORDER;
+      if (channel === 'local_site') {
+        nextTabs = nextTabs.filter((tab) => tab.id !== 'berater' && tab.id !== 'makler');
+      }
+      return nextTabs;
+    },
+    [channel, selectedScopeAreaIsOrtslage],
   );
 
   useEffect(() => {
@@ -3078,7 +3086,7 @@ export default function InternationalizationManager({ config, availableLocales, 
 	          </div>
 	        </div>
 
-	        <div style={classGridStyle}>
+	        <div style={channel === 'local_site' ? localI18nClassGridStyle : classGridStyle}>
 	          {workflowClasses.map((displayClass) => {
 	            const stats = classSummary[displayClass];
 	            const active = activeClass === displayClass;
@@ -5353,6 +5361,11 @@ const domainPlaceholderGridStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
   gap: 12,
+};
+
+const localI18nClassGridStyle: React.CSSProperties = {
+  ...classGridStyle,
+  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
 };
 
 const domainPlaceholderItemStyle: React.CSSProperties = {
