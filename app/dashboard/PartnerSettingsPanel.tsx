@@ -1973,66 +1973,10 @@ export default function PartnerSettingsPanel({
                                   >
                                     {syncSummary?.message}
                                   </p>
-                                  {syncSummary.step ? (
+                                  {syncSummary.lastSyncAt ? (
                                     <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                      Aktueller Schritt: {syncSummary.step}
-                                      {syncSummary.cancelRequested ? " · Abbruch angefordert" : ""}
+                                      Zuletzt synchronisiert: {new Date(syncSummary.lastSyncAt).toLocaleString("de-DE")}
                                     </p>
-                                  ) : null}
-                                  {syncSummary.heartbeatAt ? (
-                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                      Letzter Heartbeat: {new Date(syncSummary.heartbeatAt).toLocaleString("de-DE")}
-                                    </p>
-                                  ) : null}
-                                  {syncSummary.deadlineAt ? (
-                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                      Deadline: {new Date(syncSummary.deadlineAt).toLocaleString("de-DE")}
-                                    </p>
-                                  ) : null}
-                                  {syncSummary.retryAfterSec ? (
-                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                      Cooldown: neuer Versuch in ca. {syncSummary.retryAfterSec}s
-                                    </p>
-                                  ) : null}
-                                  {syncSummary.errorClass ? (
-                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                      Fehlerklasse: {syncSummary.errorClass}
-                                    </p>
-                                  ) : null}
-                                  {typeof syncSummary.requestCount === "number" || typeof syncSummary.pagesFetched === "number" ? (
-                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                      Provider-Last: {typeof syncSummary.requestCount === "number" ? `${syncSummary.requestCount} Requests` : "0 Requests"}
-                                      {typeof syncSummary.pagesFetched === "number" ? ` · ${syncSummary.pagesFetched} Seiten` : ""}
-                                    </p>
-                                  ) : null}
-                                  {syncSummary.traceId ? (
-                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569", wordBreak: "break-all" }}>
-                                      Trace-ID: {syncSummary.traceId}
-                                    </p>
-                                  ) : null}
-                                  {Array.isArray(syncSummary.result?.notes) && syncSummary.result.notes.length > 0 ? (
-                                    <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                                      <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
-                                        Sync-Notes
-                                      </p>
-                                      {syncSummary.result.notes.slice(0, 5).map((note, index) => (
-                                        <p key={`sync-note-${index}`} style={{ marginTop: 0, marginBottom: 4, fontSize: 11, color: "#475569" }}>
-                                          {note}
-                                        </p>
-                                      ))}
-                                    </div>
-                                  ) : null}
-                                  {Array.isArray(syncSummary.log) && syncSummary.log.length > 0 ? (
-                                    <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                                      <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
-                                        Sync-Debug
-                                      </p>
-                                      {syncSummary.log.slice(-5).map((entry, index) => (
-                                        <p key={`${entry.at ?? "log"}-${entry.step ?? "step"}-${index}`} style={{ marginTop: 0, marginBottom: 4, fontSize: 11, color: "#475569" }}>
-                                          {entry.at ? new Date(entry.at).toLocaleTimeString("de-DE") : "--:--:--"} · {entry.step ?? "step"} · {entry.message ?? ""}
-                                        </p>
-                                      ))}
-                                    </div>
                                   ) : null}
                                 </>
                               ) : null}
