@@ -1088,12 +1088,6 @@ export default function PartnerSettingsPanel({
         delete next[integrationId];
         return next;
       });
-      setPreviewResult((prev) => {
-        if (!prev[integrationId]) return prev;
-        const next = { ...prev };
-        delete next[integrationId];
-        return next;
-      });
     }
   }
 
