@@ -973,6 +973,7 @@ export async function fetchPropstackUnits(
   options?: {
     maxPages?: number;
     perPage?: number;
+    targetItemCount?: number;
   },
 ): Promise<PropstackUnit[]> {
   const result = await fetchPropstackUnitsDetailed(integration, apiKey, options);
@@ -985,6 +986,7 @@ async function fetchPropstackUnitsDetailed(
   options?: {
     maxPages?: number;
     perPage?: number;
+    targetItemCount?: number;
     endpointPath?: string;
     archived?: -1 | 0 | 1 | null;
     statusId?: string | null;
@@ -994,8 +996,14 @@ async function fetchPropstackUnitsDetailed(
   const units: PropstackUnit[] = [];
   const requestedPerPage = Math.max(1, Math.min(100, options?.perPage ?? 25));
   const requestedMaxPages = Math.max(1, Math.min(100, options?.maxPages ?? 25));
-  const perPage = Math.max(1, Math.min(20, requestedPerPage));
-  const targetItemCount = Math.max(1, Math.min(5000, requestedPerPage * requestedMaxPages));
+  const requestedTargetItemCount = readBoundedInteger(
+    options?.targetItemCount,
+    requestedPerPage * requestedMaxPages,
+    1,
+    5000,
+  );
+  const perPage = Math.max(1, Math.min(20, requestedPerPage, requestedTargetItemCount));
+  const targetItemCount = requestedTargetItemCount;
   const endpointPath = String(options?.endpointPath ?? "/units").trim() || "/units";
   let page = 1;
   let requestsMade = 0;
@@ -1058,9 +1066,12 @@ async function fetchPropstackReferenceUnitsDetailed(
   let pagesFetched = 0;
 
   for (const statusId of statusIds) {
+    const remainingTarget = limits.targetObjects - deduped.size;
+    if (remainingTarget <= 0) break;
     const result = await fetchPropstackUnitsDetailed(integration, apiKey, {
-      maxPages: limits.maxPages,
-      perPage: limits.perPage,
+      maxPages: Math.max(1, Math.ceil(remainingTarget / Math.max(1, Math.min(20, limits.perPage)))),
+      perPage: Math.min(limits.perPage, remainingTarget),
+      targetItemCount: remainingTarget,
       endpointPath: cfg.references_endpoint_path,
       archived: cfg.references_archived,
       statusId,
@@ -1093,9 +1104,12 @@ async function fetchPropstackListingUnitsDetailed(
   let pagesFetched = 0;
 
   for (const statusId of statusIds) {
+    const remainingTarget = limits.targetObjects - deduped.size;
+    if (remainingTarget <= 0) break;
     const result = await fetchPropstackUnitsDetailed(integration, apiKey, {
-      maxPages: limits.maxPages,
-      perPage: limits.perPage,
+      maxPages: Math.max(1, Math.ceil(remainingTarget / Math.max(1, Math.min(20, limits.perPage)))),
+      perPage: Math.min(limits.perPage, remainingTarget),
+      targetItemCount: remainingTarget,
       archived: 0,
       statusId,
     });
