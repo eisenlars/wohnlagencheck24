@@ -380,6 +380,17 @@ async function readInteractiveSvg(relPath: string, warnLabel: string): Promise<s
   return fetchTextNoStore(url, warnLabel);
 }
 
+function rewriteInteractiveSvgLinks(svg: string, pathPrefix = "/immobilienmarkt"): string {
+  const normalizedPrefix = pathPrefix.replace(/\/+$/, "");
+  if (normalizedPrefix === "/immobilienmarkt") return svg;
+
+  return svg.replace(
+    /((?:xlink:href|href)=["'])\/immobilienmarkt(\/[^"'#?]*)?([#?][^"']*)?(["'])/g,
+    (_full, attrPrefix: string, pathSuffix: string | undefined, tail: string | undefined, quote: string) =>
+      `${attrPrefix}${normalizedPrefix}${pathSuffix ?? ""}${tail ?? ""}${quote}`,
+  );
+}
+
 function filterBundeslandKreisMapSvg(svg: string, bundeslandSlug: string, allowedKreisSlugs: Set<string>): string {
   if (allowedKreisSlugs.size === 0) return svg;
 
@@ -421,6 +432,7 @@ function filterBundeslandKreisMapSvg(svg: string, bundeslandSlug: string, allowe
 export async function getKreisUebersichtMapSvg(
   bundeslandSlug: string,
   allowedKreisSlugs?: Set<string>,
+  pathPrefix = "/immobilienmarkt",
 ): Promise<string | null> {
   const relPath = joinPath(
     "visuals",
@@ -432,14 +444,17 @@ export async function getKreisUebersichtMapSvg(
 
   const svg = await readInteractiveSvg(relPath, "Kreisübersicht-SVG");
   if (!svg) return null;
-  if (!allowedKreisSlugs) return svg;
-  return filterBundeslandKreisMapSvg(svg, bundeslandSlug, allowedKreisSlugs);
+  const filteredSvg = allowedKreisSlugs
+    ? filterBundeslandKreisMapSvg(svg, bundeslandSlug, allowedKreisSlugs)
+    : svg;
+  return rewriteInteractiveSvgLinks(filteredSvg, pathPrefix);
 }
 
 // SVG Maps für Kreis aus visuals/map_interactive holen
 export async function getImmobilienpreisMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
+  pathPrefix = "/immobilienmarkt",
 ): Promise<string | null> {
   const relPath = joinPath(
     "visuals",
@@ -451,12 +466,14 @@ export async function getImmobilienpreisMapSvg(
     `immobilienpreis_${kreisSlug}.svg`,
   );
 
-  return readInteractiveSvg(relPath, "Immobilienpreis-SVG");
+  const svg = await readInteractiveSvg(relPath, "Immobilienpreis-SVG");
+  return svg ? rewriteInteractiveSvgLinks(svg, pathPrefix) : null;
 }
 
 export async function getMietpreisMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
+  pathPrefix = "/immobilienmarkt",
 ): Promise<string | null> {
   const relPath = joinPath(
     "visuals",
@@ -468,13 +485,15 @@ export async function getMietpreisMapSvg(
     `mietpreis_${kreisSlug}.svg`,
   );
 
-  return readInteractiveSvg(relPath, "Mietpreis-SVG");
+  const svg = await readInteractiveSvg(relPath, "Mietpreis-SVG");
+  return svg ? rewriteInteractiveSvgLinks(svg, pathPrefix) : null;
 }
 
 export async function getWohnlagencheckMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
   theme: string,
+  pathPrefix = "/immobilienmarkt",
 ): Promise<string | null> {
   const relPath = joinPath(
     "visuals",
@@ -486,12 +505,14 @@ export async function getWohnlagencheckMapSvg(
     `${theme}_${kreisSlug}.svg`,
   );
 
-  return readInteractiveSvg(relPath, "Wohnlagencheck-SVG");
+  const svg = await readInteractiveSvg(relPath, "Wohnlagencheck-SVG");
+  return svg ? rewriteInteractiveSvgLinks(svg, pathPrefix) : null;
 }
 
 export async function getGrundstueckspreisMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
+  pathPrefix = "/immobilienmarkt",
 ): Promise<string | null> {
   const relPath = joinPath(
     "visuals",
@@ -503,12 +524,14 @@ export async function getGrundstueckspreisMapSvg(
     `grundstueckspreis_${kreisSlug}.svg`,
   );
 
-  return readInteractiveSvg(relPath, "Grundstueckspreis-SVG");
+  const svg = await readInteractiveSvg(relPath, "Grundstueckspreis-SVG");
+  return svg ? rewriteInteractiveSvgLinks(svg, pathPrefix) : null;
 }
 
 export async function getKaufpreisfaktorMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
+  pathPrefix = "/immobilienmarkt",
 ): Promise<string | null> {
   const relPath = joinPath(
     "visuals",
@@ -520,12 +543,14 @@ export async function getKaufpreisfaktorMapSvg(
     `kaufpreisfaktor_${kreisSlug}.svg`,
   );
 
-  return readInteractiveSvg(relPath, "Kaufpreisfaktor-SVG");
+  const svg = await readInteractiveSvg(relPath, "Kaufpreisfaktor-SVG");
+  return svg ? rewriteInteractiveSvgLinks(svg, pathPrefix) : null;
 }
 
 export async function getWohnungssaldoMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
+  pathPrefix = "/immobilienmarkt",
 ): Promise<string | null> {
   const relPath = joinPath(
     "visuals",
@@ -537,12 +562,14 @@ export async function getWohnungssaldoMapSvg(
     `wohnungssaldo_${kreisSlug}.svg`,
   );
 
-  return readInteractiveSvg(relPath, "Wohnungssaldo-SVG");
+  const svg = await readInteractiveSvg(relPath, "Wohnungssaldo-SVG");
+  return svg ? rewriteInteractiveSvgLinks(svg, pathPrefix) : null;
 }
 
 export async function getKaufkraftindexMapSvg(
   bundeslandSlug: string,
   kreisSlug: string,
+  pathPrefix = "/immobilienmarkt",
 ): Promise<string | null> {
   const relPath = joinPath(
     "visuals",
@@ -554,7 +581,8 @@ export async function getKaufkraftindexMapSvg(
     `kaufkraftindex_${kreisSlug}.svg`,
   );
 
-  return readInteractiveSvg(relPath, "Kaufkraftindex-SVG");
+  const svg = await readInteractiveSvg(relPath, "Kaufkraftindex-SVG");
+  return svg ? rewriteInteractiveSvgLinks(svg, pathPrefix) : null;
 }
 
 export async function getFlaechennutzungGewerbeImageSrc(

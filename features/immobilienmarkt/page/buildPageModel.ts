@@ -678,7 +678,11 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     const heroImageSrc = buildWebAssetUrl(
       `/images/immobilienmarkt/${bundeslandSlug}/immobilienmarktbericht-${bundeslandSlug}.webp`,
     );
-    const kreisuebersichtMapSvg = await getKreisUebersichtMapSvg(bundeslandSlug, activeKreisSlugs);
+    const kreisuebersichtMapSvg = await getKreisUebersichtMapSvg(
+      bundeslandSlug,
+      activeKreisSlugs,
+      pathPrefix,
+    );
 
     assets = { heroImageSrc, kreisuebersichtMapSvg };
   }
@@ -694,17 +698,21 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     const heroImageSrc = buildWebAssetUrl(
       `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
     );
-    const immobilienpreisMapSvg = await getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug);
+    const immobilienpreisMapSvg = await getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug, pathPrefix);
     const immobilienpreisLegendHtml = await getLegendHtml("immobilienpreis");
-    const mietpreisMapSvg = await getMietpreisMapSvg(bundeslandSlug, kreisSlug);
+    const mietpreisMapSvg = await getMietpreisMapSvg(bundeslandSlug, kreisSlug, pathPrefix);
     const mietpreisLegendHtml = await getLegendHtml("mietpreis");
-    const grundstueckspreisMapSvg = await getGrundstueckspreisMapSvg(bundeslandSlug, kreisSlug);
+    const grundstueckspreisMapSvg = await getGrundstueckspreisMapSvg(
+      bundeslandSlug,
+      kreisSlug,
+      pathPrefix,
+    );
     const grundstueckspreisLegendHtml = await getLegendHtml("grundstueckspreis");
-    const kaufpreisfaktorMapSvg = await getKaufpreisfaktorMapSvg(bundeslandSlug, kreisSlug);
+    const kaufpreisfaktorMapSvg = await getKaufpreisfaktorMapSvg(bundeslandSlug, kreisSlug, pathPrefix);
     const kaufpreisfaktorLegendHtml = await getLegendHtml("kaufpreisfaktor");
-    const wohnungssaldoMapSvg = await getWohnungssaldoMapSvg(bundeslandSlug, kreisSlug);
+    const wohnungssaldoMapSvg = await getWohnungssaldoMapSvg(bundeslandSlug, kreisSlug, pathPrefix);
     const wohnungssaldoLegendHtml = await getLegendHtml("wohnungssaldo");
-    const kaufkraftindexMapSvg = await getKaufkraftindexMapSvg(bundeslandSlug, kreisSlug);
+    const kaufkraftindexMapSvg = await getKaufkraftindexMapSvg(bundeslandSlug, kreisSlug, pathPrefix);
     const kaufkraftindexLegendHtml = await getLegendHtml("kaufkraftindex");
     const {
       src: flaechennutzungGewerbeImageSrc,
@@ -735,7 +743,7 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
       await Promise.all(
         wohnlagenThemes.map(async (theme) => [
           theme,
-          await getWohnlagencheckMapSvg(bundeslandSlug, kreisSlug, theme),
+          await getWohnlagencheckMapSvg(bundeslandSlug, kreisSlug, theme, pathPrefix),
         ]),
       ),
     );
