@@ -14,6 +14,15 @@ import type {
 type PropstackImage = {
   id?: number;
   url?: string;
+  original?: string;
+  big?: string;
+  medium?: string;
+  thumb?: string;
+  big_url?: string;
+  medium_url?: string;
+  thumb_url?: string;
+  small_thumb_url?: string;
+  square_url?: string;
   title?: string;
   position?: number;
   is_floorplan?: boolean | null;
@@ -34,6 +43,7 @@ type PropstackUnit = {
   exposee_id?: string | null;
   marketing_type?: string | null;
   rs_type?: string | null;
+  name?: string | null;
   title?: string | { label?: unknown; value?: unknown } | null;
   description_note?: string | { label?: unknown; value?: unknown } | null;
   long_description_note?: string | { label?: unknown; value?: unknown } | null;
@@ -48,6 +58,8 @@ type PropstackUnit = {
   lat?: number | null;
   lng?: number | null;
   hide_address?: boolean | null;
+  price?: number | string | { label?: unknown; value?: unknown } | null;
+  base_rent?: number | string | { label?: unknown; value?: unknown } | null;
   purchase_price?: number | string | { label?: unknown; value?: unknown } | null;
   rent_net?: number | string | { label?: unknown; value?: unknown } | null;
   living_space?: number | string | { label?: unknown; value?: unknown } | null;
@@ -260,10 +272,25 @@ function buildDetailUrl(template: string | null, unit: Pick<PropstackUnit, "id" 
   return template.replace("{exposee_id}", String(exposeeId)).replace("{id}", String(id));
 }
 
+function resolvePropstackImageUrl(image: PropstackImage | null | undefined): string | null {
+  return firstString([
+    image?.url,
+    image?.original,
+    image?.medium,
+    image?.medium_url,
+    image?.big,
+    image?.big_url,
+    image?.thumb,
+    image?.thumb_url,
+    image?.small_thumb_url,
+    image?.square_url,
+  ]);
+}
+
 function normalizeImages(images?: PropstackImage[] | null): string[] {
   if (!Array.isArray(images)) return [];
   return images
-    .map((img) => img.url)
+    .map((img) => resolvePropstackImageUrl(img))
     .filter((url): url is string => typeof url === "string" && url.length > 0);
 }
 
@@ -321,7 +348,7 @@ function normalizeImageAssets(images?: PropstackImage[] | null): OfferMediaAsset
   if (!Array.isArray(images)) return [];
   return images
     .map((img) => {
-      const url = typeof img?.url === "string" ? img.url.trim() : "";
+      const url = resolvePropstackImageUrl(img) ?? "";
       if (!url) return null;
       const title = typeof img?.title === "string" ? img.title.trim() || null : null;
       return {
@@ -513,13 +540,17 @@ function firstString(values: Array<unknown>): string | null {
 }
 
 function normalizePropstackTitle(value: unknown): string | null {
+  return normalizePropstackText(value);
+}
+
+function normalizePropstackText(value: unknown): string | null {
   if (typeof value === "string") {
-    const title = value.trim();
-    return title.length > 0 ? title : null;
+    const text = value.trim();
+    return text.length > 0 ? text : null;
   }
   if (value && typeof value === "object") {
-    const titleObject = value as Record<string, unknown>;
-    return firstString([titleObject.value, titleObject.label]);
+    const textObject = value as Record<string, unknown>;
+    return firstString([textObject.value, textObject.label]);
   }
   return null;
 }
@@ -639,8 +670,8 @@ function normalizeUnitOffer(
     offer_type: normalizeOfferType(unit.marketing_type),
     object_type: normalizeObjectType(unit.rs_type),
     title,
-    price: normalizePropstackNumber(unit.purchase_price),
-    rent: normalizePropstackNumber(unit.rent_net),
+    price: normalizePropstackNumber(unit.price) ?? normalizePropstackNumber(unit.purchase_price),
+    rent: normalizePropstackNumber(unit.base_rent) ?? normalizePropstackNumber(unit.rent_net),
     area_sqm: normalizePropstackNumber(unit.living_space),
     rooms: normalizePropstackNumber(unit.number_of_rooms),
     address,
@@ -683,16 +714,16 @@ function mapUnitReference(
   unit: PropstackUnit,
 ): RawReference {
   const gallery = normalizeImages(unit.images);
-  const sourceTitle = normalizePropstackTitle(unit.title);
+  const sourceTitle = firstString([normalizePropstackTitle(unit.title), unit.name]);
+  const sourceDescription =
+    normalizePropstackText(unit.long_description_note) ?? normalizePropstackText(unit.description_note);
   const city = String(unit.city ?? "").trim();
   const district = String(unit.region ?? "").trim() || null;
-  const saleType = normalizeOfferType(unit.marketing_type) === "miete" ? "vermietet" : "verkauft";
   const locationLabel = district ? `${city} ${district}` : city || "der Region";
-  const referenceTitle = `Erfolgreich ${saleType} in ${locationLabel}`;
   const normalizedPayload: Record<string, unknown> = {
-    title: referenceTitle,
+    title: sourceTitle,
     source_title: sourceTitle,
-    transaction_result: saleType,
+    transaction_result: null,
     city: city || null,
     district,
     location_scope: district ? "stadtteil" : "stadt",
@@ -701,8 +732,8 @@ function mapUnitReference(
     object_type: normalizeObjectType(unit.rs_type),
     area_sqm: normalizePropstackNumber(unit.living_space),
     rooms: normalizePropstackNumber(unit.number_of_rooms),
-    reference_text_seed: `Das Objekt wurde erfolgreich ${saleType}.`,
-    description: `Das Objekt wurde erfolgreich ${saleType}.`,
+    reference_text_seed: sourceDescription,
+    description: sourceDescription,
     image_url: gallery[0] ?? null,
     status: unit.status ?? null,
     sub_status: unit.sub_status ?? null,
@@ -712,7 +743,7 @@ function mapUnitReference(
     partnerId,
     "propstack",
     `reference:${String(unit.id)}`,
-    referenceTitle,
+    sourceTitle,
     unit.updated_at ?? null,
     normalizedPayload,
     unit as unknown as Record<string, unknown>,
@@ -944,19 +975,21 @@ async function fetchPropstackUnitsDetailed(
 ): Promise<PropstackFetchBatchResult<PropstackUnit>> {
   const base = integration.base_url?.trim() || "https://api.propstack.de/v1";
   const units: PropstackUnit[] = [];
-  const perPage = Math.max(1, Math.min(100, options?.perPage ?? 25));
-  const maxPages = Math.max(1, Math.min(100, options?.maxPages ?? 25));
+  const requestedPerPage = Math.max(1, Math.min(100, options?.perPage ?? 25));
+  const requestedMaxPages = Math.max(1, Math.min(100, options?.maxPages ?? 25));
+  const perPage = Math.max(1, Math.min(20, requestedPerPage));
+  const targetItemCount = Math.max(1, Math.min(5000, requestedPerPage * requestedMaxPages));
   const endpointPath = String(options?.endpointPath ?? "/units").trim() || "/units";
   let page = 1;
   let requestsMade = 0;
   let pagesFetched = 0;
 
-  while (page <= maxPages) {
+  while (units.length < targetItemCount) {
     const url = new URL(`${base.replace(/\/+$/, "")}${endpointPath.startsWith("/") ? endpointPath : `/${endpointPath}`}`);
     url.searchParams.set("with_meta", "1");
     url.searchParams.set("expand", "1");
     url.searchParams.set("page", String(page));
-    url.searchParams.set("per", String(perPage));
+    url.searchParams.set("per_page", String(perPage));
     if (options?.archived !== null && options?.archived !== undefined) {
       url.searchParams.set("archived", String(options.archived));
     }
@@ -981,7 +1014,8 @@ async function fetchPropstackUnitsDetailed(
 
     if (!Array.isArray(batch) || batch.length === 0) break;
 
-    units.push(...(batch as PropstackUnit[]));
+    const remaining = targetItemCount - units.length;
+    units.push(...(batch as PropstackUnit[]).slice(0, remaining));
     pagesFetched += 1;
 
     if (batch.length < perPage) break;
