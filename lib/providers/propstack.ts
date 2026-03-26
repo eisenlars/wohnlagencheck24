@@ -26,6 +26,8 @@ type PropstackImage = {
   title?: string;
   position?: number;
   is_floorplan?: boolean | null;
+  is_private?: boolean | null;
+  is_not_for_exposee?: boolean | null;
 };
 
 type PropstackDocument = {
@@ -42,7 +44,11 @@ type PropstackUnit = {
   id: number | string;
   exposee_id?: string | null;
   marketing_type?: string | null;
+  commercialization_type?: string | { label?: unknown; value?: unknown } | null;
+  object_type?: string | null;
   rs_type?: string | null;
+  rs_category?: string | null;
+  unit_id?: string | null;
   name?: string | null;
   title?: string | { label?: unknown; value?: unknown } | null;
   description_note?: string | { label?: unknown; value?: unknown } | null;
@@ -53,6 +59,11 @@ type PropstackUnit = {
   house_number?: string | null;
   zip_code?: string | null;
   city?: string | null;
+  address?: string | null;
+  short_address?: string | null;
+  district?: string | { label?: unknown; value?: unknown } | null;
+  location_name?: string | null;
+  sublocality_level_1?: string | null;
   region?: string | null;
   country?: string | null;
   lat?: number | null;
@@ -77,8 +88,10 @@ type PropstackUnit = {
   construction_year?: number | string | { label?: unknown; value?: unknown } | null;
   usable_floor_space?: number | string | { label?: unknown; value?: unknown } | null;
   plot_area?: number | string | { label?: unknown; value?: unknown } | null;
+  property_space_value?: number | string | { label?: unknown; value?: unknown } | null;
   floor?: number | string | { label?: unknown; value?: unknown } | null;
   condition?: string | { label?: unknown; value?: unknown } | null;
+  free_from?: string | { label?: unknown; value?: unknown } | null;
   number_of_bed_rooms?: number | string | { label?: unknown; value?: unknown } | null;
   number_of_bath_rooms?: number | string | { label?: unknown; value?: unknown } | null;
   parking_space_type?: string | { label?: unknown; value?: unknown } | null;
@@ -86,13 +99,17 @@ type PropstackUnit = {
   balcony?: boolean | { label?: unknown; value?: unknown } | null;
   terrace?: boolean | { label?: unknown; value?: unknown } | null;
   garden?: boolean | { label?: unknown; value?: unknown } | null;
+  lift?: boolean | { label?: unknown; value?: unknown } | null;
   custom_fields?: Record<string, unknown> | null;
   updated_at?: string | null;
   images?: PropstackImage[] | null;
   documents?: PropstackDocument[] | null;
   status?: string | { id?: number | string | null; name?: unknown; title?: unknown } | null;
+  property_status?: string | { id?: number | string | null; name?: unknown; title?: unknown } | null;
   sub_status?: string | null;
   archived?: boolean | null;
+  recommended_use_types?: unknown[] | null;
+  public_expose_url?: string | null;
 };
 
 type PropstackPropertyStatus = {
@@ -264,15 +281,81 @@ function normalizeOfferType(marketingType?: string | null): "kauf" | "miete" {
   return "kauf";
 }
 
-function normalizeObjectType(rsType?: string | null): "haus" | "wohnung" {
-  if (!rsType) return "wohnung";
-  const value = rsType.toUpperCase();
-  if (value.includes("HOUSE") || value.includes("HAUS")) return "haus";
+function normalizeObjectType(unit: Pick<PropstackUnit, "object_type" | "rs_type" | "rs_category" | "recommended_use_types">): string {
+  const combined = [
+    unit.object_type,
+    unit.rs_type,
+    unit.rs_category,
+    ...(Array.isArray(unit.recommended_use_types) ? unit.recommended_use_types.map((value) => String(value ?? "")) : []),
+  ]
+    .map((value) => String(value ?? "").trim().toUpperCase())
+    .filter(Boolean)
+    .join(" ");
+
+  if (!combined) return "wohnung";
+  if (
+    combined.includes("TRADE_SITE")
+    || combined.includes("PLOT")
+    || combined.includes("LAND")
+    || combined.includes("GRUNDST")
+    || combined.includes("SITE")
+  ) {
+    return "grundstueck";
+  }
+  if (
+    combined.includes("HOUSE")
+    || combined.includes("HAUS")
+    || combined.includes("VILLA")
+    || combined.includes("BUNGALOW")
+  ) {
+    return "haus";
+  }
   return "wohnung";
+}
+
+function normalizePropstackOfferType(
+  unit: Pick<PropstackUnit, "marketing_type" | "commercialization_type">,
+): "kauf" | "miete" {
+  return normalizeOfferType(
+    firstString([
+      unit.marketing_type,
+      normalizePropstackText(unit.commercialization_type),
+    ]),
+  );
+}
+
+function buildDistrict(unit: Pick<PropstackUnit, "district" | "location_name" | "sublocality_level_1">): string | null {
+  return firstString([
+    normalizePropstackText(unit.district),
+    unit.location_name,
+    unit.sublocality_level_1,
+  ]);
+}
+
+function getEffectivePropstackStatus(
+  unit: Pick<PropstackUnit, "property_status" | "status">,
+): PropstackUnit["status"] | PropstackUnit["property_status"] {
+  return unit.property_status ?? unit.status ?? null;
+}
+
+function normalizePropstackArea(unit: PropstackUnit): number | null {
+  const objectType = normalizeObjectType(unit);
+  if (objectType === "grundstueck") {
+    return normalizePropstackNumber(unit.plot_area)
+      ?? normalizePropstackNumber(unit.property_space_value)
+      ?? normalizePropstackNumber(unit.living_space)
+      ?? normalizePropstackNumber(unit.usable_floor_space);
+  }
+  return normalizePropstackNumber(unit.living_space)
+    ?? normalizePropstackNumber(unit.property_space_value)
+    ?? normalizePropstackNumber(unit.usable_floor_space)
+    ?? normalizePropstackNumber(unit.plot_area);
 }
 
 function buildAddress(unit: PropstackUnit): string | null {
   if (unit.hide_address) return null;
+  const fullAddress = firstString([unit.address, unit.short_address]);
+  if (fullAddress) return fullAddress;
   const parts = [
     unit.street?.trim(),
     unit.house_number?.trim(),
@@ -284,8 +367,12 @@ function buildAddress(unit: PropstackUnit): string | null {
 
 function buildDetailUrl(template: string | null, unit: Pick<PropstackUnit, "id" | "exposee_id">): string | null {
   if (!template) return null;
+  const needsExposeeId = template.includes("{exposee_id}");
+  const needsId = template.includes("{id}");
   const exposeeId = unit.exposee_id ?? "";
   const id = unit.id ?? "";
+  if (needsExposeeId && !String(exposeeId).trim()) return null;
+  if (needsId && !String(id).trim()) return null;
   return template.replace("{exposee_id}", String(exposeeId)).replace("{id}", String(id));
 }
 
@@ -307,6 +394,7 @@ function resolvePropstackImageUrl(image: PropstackImage | null | undefined): str
 function normalizeImages(images?: PropstackImage[] | null): string[] {
   if (!Array.isArray(images)) return [];
   return images
+    .filter((img) => img?.is_private !== true && img?.is_not_for_exposee !== true)
     .map((img) => resolvePropstackImageUrl(img))
     .filter((url): url is string => typeof url === "string" && url.length > 0);
 }
@@ -364,6 +452,7 @@ function inferPropstackMediaKind(
 function normalizeImageAssets(images?: PropstackImage[] | null): OfferMediaAsset[] {
   if (!Array.isArray(images)) return [];
   return images
+    .filter((img) => img?.is_private !== true && img?.is_not_for_exposee !== true)
     .map((img) => {
       const url = resolvePropstackImageUrl(img) ?? "";
       if (!url) return null;
@@ -460,13 +549,13 @@ function buildDetailsSnapshot(unit: PropstackUnit): OfferDetailsSnapshot {
     floor: normalizePropstackNumber(unit.floor),
     construction_year: normalizePropstackNumber(unit.construction_year),
     condition: normalizePropstackTitle(unit.condition),
-    availability: null,
+    availability: normalizePropstackText(unit.free_from),
     parking: normalizePropstackTitle(unit.parking_space_type)
       ?? (Array.isArray(unit.parking_space_types) ? unit.parking_space_types.filter((entry) => typeof entry === "string").join(", ") || null : normalizePropstackTitle(unit.parking_space_types)),
     balcony: asBoolean(unit.balcony),
     terrace: asBoolean(unit.terrace),
     garden: asBoolean(unit.garden),
-    elevator: null,
+    elevator: asBoolean(unit.lift),
     address_hidden: unit.hide_address ?? null,
   };
 }
@@ -499,6 +588,7 @@ function makeRawRowBase(
   provider: "propstack",
   externalId: string,
   title: string | null,
+  status: string | null,
   sourceUpdatedAt: string | null,
   normalizedPayload: Record<string, unknown>,
   sourcePayload: Record<string, unknown>,
@@ -509,7 +599,7 @@ function makeRawRowBase(
     provider,
     external_id: externalId,
     title,
-    status: null,
+    status,
     source_updated_at: sourceUpdatedAt,
     normalized_payload: normalizedPayload,
     source_payload: sourcePayload,
@@ -526,8 +616,9 @@ function asObject(value: unknown): Record<string, unknown> {
 }
 
 function includeAsReference(unit: PropstackUnit, cfg: PropstackResourceSettings): boolean {
-  const statusName = normalizePropstackStatusName(unit.status);
-  const statusId = normalizePropstackStatusId(unit.status);
+  const status = getEffectivePropstackStatus(unit);
+  const statusName = normalizePropstackStatusName(status);
+  const statusId = normalizePropstackStatusId(status);
   const subStatus = String(unit.sub_status ?? "").toLowerCase();
   const archived = unit.archived === true;
   const statuses = new Set(cfg.references_statuses ?? []);
@@ -621,6 +712,78 @@ function normalizePropstackNumber(value: unknown): number | null {
   return null;
 }
 
+function buildNormalizedListingPayload(
+  integration: PartnerIntegration,
+  unit: PropstackUnit,
+): Record<string, unknown> {
+  const title = normalizePropstackTitle(unit.title);
+  const name = normalizePropstackText(unit.name);
+  const displayTitle = firstString([title, name]);
+  const gallery = normalizeImages(unit.images);
+  const galleryAssets = normalizeImageAssets(unit.images);
+  const documents = normalizeDocuments(unit.documents);
+  const energy = buildEnergySnapshot(unit);
+  const details = buildDetailsSnapshot(unit);
+  const address = buildAddress(unit);
+  const district = buildDistrict(unit);
+  const status = getEffectivePropstackStatus(unit);
+  const imageUrl = galleryAssets.find((asset) => asset.kind === "image")?.url ?? gallery[0] ?? null;
+  const objectType = normalizeObjectType(unit);
+
+  return {
+    title,
+    source_title: displayTitle,
+    name,
+    external_id: String(unit.id),
+    unit_id: unit.unit_id ?? null,
+    exposee_id: unit.exposee_id ?? null,
+    offer_type: normalizePropstackOfferType(unit),
+    object_type: objectType,
+    marketing_type: unit.marketing_type ?? null,
+    commercialization_type: normalizePropstackText(unit.commercialization_type),
+    rs_type: unit.rs_type ?? null,
+    rs_category: unit.rs_category ?? null,
+    price: normalizePropstackNumber(unit.price) ?? normalizePropstackNumber(unit.purchase_price),
+    rent: normalizePropstackNumber(unit.base_rent) ?? normalizePropstackNumber(unit.rent_net),
+    area_sqm: normalizePropstackArea(unit),
+    rooms: normalizePropstackNumber(unit.number_of_rooms),
+    address,
+    short_address: unit.hide_address ? null : firstString([unit.short_address, unit.address]),
+    street: unit.street ?? null,
+    house_number: unit.house_number ?? null,
+    zip_code: unit.zip_code ?? null,
+    city: unit.city ?? null,
+    district,
+    region: unit.region ?? null,
+    country: unit.country ?? null,
+    hide_address: unit.hide_address ?? null,
+    image_url: imageUrl,
+    public_expose_url: unit.public_expose_url ?? null,
+    detail_url: buildDetailUrl(integration.detail_url_template, unit),
+    description: normalizePropstackText(unit.description_note),
+    long_description: normalizePropstackText(unit.long_description_note),
+    location: normalizePropstackText(unit.location_note),
+    features_note: normalizePropstackText(unit.furnishing_note),
+    details,
+    energy,
+    gallery,
+    gallery_urls: gallery,
+    gallery_assets: galleryAssets,
+    documents,
+    lat: unit.lat ?? null,
+    lng: unit.lng ?? null,
+    custom_fields: unit.custom_fields ?? null,
+    status: normalizePropstackStatusName(status),
+    status_id: normalizePropstackStatusId(status),
+    status_raw: status ?? null,
+    sub_status: unit.sub_status ?? null,
+    archived: unit.archived ?? null,
+    property_space_value: normalizePropstackNumber(unit.property_space_value),
+    plot_area: normalizePropstackNumber(unit.plot_area),
+    living_space: normalizePropstackNumber(unit.living_space),
+  };
+}
+
 function toRegionTarget(cityRaw: string, districtRaw?: string | null): RegionTarget | null {
   const city = cityRaw.trim();
   const district = String(districtRaw ?? "").trim() || null;
@@ -674,58 +837,51 @@ function normalizeUnitOffer(
   integration: PartnerIntegration,
   unit: PropstackUnit,
 ): MappedOffer {
-  const gallery = normalizeImages(unit.images);
-  const galleryAssets = normalizeImageAssets(unit.images);
-  const documents = normalizeDocuments(unit.documents);
-  const address = buildAddress(unit);
-  const title = normalizePropstackTitle(unit.title);
-  const primaryImage = galleryAssets.find((asset) => asset.kind === "image")?.url ?? gallery[0] ?? null;
-  const energy = buildEnergySnapshot(unit);
-  const details = buildDetailsSnapshot(unit);
+  const raw = buildNormalizedListingPayload(integration, unit);
 
   return {
     partner_id: partnerId,
     source: "propstack",
     external_id: String(unit.id),
-    offer_type: normalizeOfferType(unit.marketing_type),
-    object_type: normalizeObjectType(unit.rs_type),
-    title,
-    price: normalizePropstackNumber(unit.price) ?? normalizePropstackNumber(unit.purchase_price),
-    rent: normalizePropstackNumber(unit.base_rent) ?? normalizePropstackNumber(unit.rent_net),
-    area_sqm: normalizePropstackNumber(unit.living_space),
-    rooms: normalizePropstackNumber(unit.number_of_rooms),
-    address,
-    image_url: primaryImage,
-    detail_url: buildDetailUrl(integration.detail_url_template, unit),
+    offer_type: normalizePropstackOfferType(unit),
+    object_type: String(raw.object_type ?? "wohnung"),
+    title: typeof raw.source_title === "string" ? raw.source_title : null,
+    price: typeof raw.price === "number" ? raw.price : null,
+    rent: typeof raw.rent === "number" ? raw.rent : null,
+    area_sqm: typeof raw.area_sqm === "number" ? raw.area_sqm : null,
+    rooms: typeof raw.rooms === "number" ? raw.rooms : null,
+    address: typeof raw.address === "string" ? raw.address : null,
+    image_url: typeof raw.image_url === "string" ? raw.image_url : null,
+    detail_url: typeof raw.detail_url === "string" ? raw.detail_url : null,
     is_top: false,
     updated_at: unit.updated_at ?? null,
-    raw: {
-      exposee_id: unit.exposee_id ?? null,
-      description: unit.description_note ?? null,
-      long_description: unit.long_description_note ?? null,
-      location: unit.location_note ?? null,
-      features_note: unit.furnishing_note ?? null,
-      street: unit.street ?? null,
-      house_number: unit.house_number ?? null,
-      zip_code: unit.zip_code ?? null,
-      city: unit.city ?? null,
-      hide_address: unit.hide_address ?? null,
-      details,
-      energy,
-      gallery,
-      gallery_urls: gallery,
-      gallery_assets: galleryAssets,
-      documents,
-      lat: unit.lat ?? null,
-      lng: unit.lng ?? null,
-      custom_fields: unit.custom_fields ?? null,
-      region: unit.region ?? null,
-      country: unit.country ?? null,
-      status: unit.status ?? null,
-      sub_status: unit.sub_status ?? null,
-    },
+    raw,
     source_payload: unit as unknown as Record<string, unknown>,
   };
+}
+
+function mapUnitListing(
+  partnerId: string,
+  integration: PartnerIntegration,
+  unit: PropstackUnit,
+): RawListing {
+  const normalizedPayload = buildNormalizedListingPayload(integration, unit);
+  const listingTitle = firstString([
+    normalizedPayload.source_title,
+    normalizedPayload.title,
+    normalizedPayload.name,
+  ]);
+  const listingStatus = typeof normalizedPayload.status === "string" ? normalizedPayload.status : null;
+  return makeRawRowBase(
+    partnerId,
+    "propstack",
+    String(unit.id),
+    listingTitle,
+    listingStatus,
+    unit.updated_at ?? null,
+    normalizedPayload,
+    unit as unknown as Record<string, unknown>,
+  );
 }
 
 function mapUnitReference(
@@ -734,28 +890,32 @@ function mapUnitReference(
   unit: PropstackUnit,
 ): RawReference {
   const gallery = normalizeImages(unit.images);
-  const sourceTitle = firstString([normalizePropstackTitle(unit.title), unit.name]);
+  const sourceTitle = firstString([normalizePropstackTitle(unit.title), normalizePropstackText(unit.name)]);
   const sourceDescription =
     normalizePropstackText(unit.long_description_note) ?? normalizePropstackText(unit.description_note);
   const city = String(unit.city ?? "").trim();
-  const district = String(unit.region ?? "").trim() || null;
+  const district = buildDistrict(unit);
   const locationLabel = district ? `${city} ${district}` : city || "der Region";
+  const status = getEffectivePropstackStatus(unit);
   const normalizedPayload: Record<string, unknown> = {
     title: sourceTitle,
     source_title: sourceTitle,
     transaction_result: null,
     city: city || null,
     district,
+    region: unit.region ?? null,
     location_scope: district ? "stadtteil" : "stadt",
     location: locationLabel,
-    offer_type: normalizeOfferType(unit.marketing_type),
-    object_type: normalizeObjectType(unit.rs_type),
-    area_sqm: normalizePropstackNumber(unit.living_space),
+    offer_type: normalizePropstackOfferType(unit),
+    object_type: normalizeObjectType(unit),
+    area_sqm: normalizePropstackArea(unit),
     rooms: normalizePropstackNumber(unit.number_of_rooms),
     reference_text_seed: sourceDescription,
     description: sourceDescription,
     image_url: gallery[0] ?? null,
-    status: unit.status ?? null,
+    status: normalizePropstackStatusName(status),
+    status_id: normalizePropstackStatusId(status),
+    status_raw: status ?? null,
     sub_status: unit.sub_status ?? null,
     exposee_id: unit.exposee_id ?? null,
   };
@@ -764,6 +924,7 @@ function mapUnitReference(
     "propstack",
     `reference:${String(unit.id)}`,
     sourceTitle,
+    normalizePropstackStatusName(status),
     unit.updated_at ?? null,
     normalizedPayload,
     unit as unknown as Record<string, unknown>,
@@ -815,6 +976,7 @@ function mapSearchProfileRequest(
     "propstack",
     `request:${String(profile.id ?? "")}`,
     title,
+    String(profile.status ?? "").trim() || null,
     profile.updated_at ?? null,
     normalizedPayload,
     profile as unknown as Record<string, unknown>,
@@ -871,6 +1033,7 @@ function buildDummyReferences(partnerId: string, provider: "propstack"): RawRefe
       provider,
       row.external_id,
       row.title,
+      row.transaction_result,
       now,
       {
         title: row.title,
@@ -947,6 +1110,7 @@ function buildDummyRequests(partnerId: string, provider: "propstack"): RawReques
       provider,
       row.external_id,
       row.title,
+      null,
       now,
       {
         title: row.title,
@@ -1253,17 +1417,7 @@ export async function syncPropstackResources(
   };
   const units = unitsResult.items;
   const offers = units.map((unit) => normalizeUnitOffer(integration.partner_id, integration, unit));
-  const listings = offers.map((offer) =>
-    makeRawRowBase(
-      offer.partner_id,
-      "propstack",
-      offer.external_id,
-      offer.title,
-      offer.updated_at,
-      offer.raw,
-      offer.source_payload,
-    ),
-  );
+  const listings = units.map((unit) => mapUnitListing(integration.partner_id, integration, unit));
 
   let propertyStatuses: PropstackPropertyStatus[] = [];
   try {
@@ -1310,7 +1464,7 @@ export async function syncPropstackResources(
 
   const fallbackReferenceCandidates = units.filter((unit) => {
     if (includeAsReference(unit, cfg)) return true;
-    const statusName = normalizePropstackStatusName(unit.status);
+    const statusName = normalizePropstackStatusName(getEffectivePropstackStatus(unit));
     return Boolean(statusName && knownReferenceStatusNames.has(statusName));
   });
   const effectiveReferenceUnits = referenceUnits.length > 0 ? referenceUnits : fallbackReferenceCandidates;
@@ -1324,7 +1478,7 @@ export async function syncPropstackResources(
     ["null", 0],
   ]);
   for (const unit of units) {
-    const statusName = normalizePropstackStatusName(unit.status) ?? "unbekannt";
+    const statusName = normalizePropstackStatusName(getEffectivePropstackStatus(unit)) ?? "unbekannt";
     unitStatusCounts.set(statusName, (unitStatusCounts.get(statusName) ?? 0) + 1);
     const archivedKey = unit.archived === true ? "true" : unit.archived === false ? "false" : "null";
     archivedCounts.set(archivedKey, (archivedCounts.get(archivedKey) ?? 0) + 1);

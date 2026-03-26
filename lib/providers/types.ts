@@ -71,7 +71,7 @@ export type MappedOffer = {
   source: ProviderKey;
   external_id: string;
   offer_type: "kauf" | "miete";
-  object_type: "haus" | "wohnung";
+  object_type: string;
   title: string | null;
   price: number | null;
   rent: number | null;
