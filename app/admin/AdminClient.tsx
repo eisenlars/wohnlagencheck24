@@ -489,6 +489,13 @@ type HandoverApiResponse = {
     new_partner?: { id?: string; company_name?: string };
     deactivate_old_integrations_applied?: boolean;
     old_partner_remains_active?: boolean;
+    transfer_mode?: "base_reset" | "copy_partner_state";
+    copied_partner_state?: {
+      data_value_settings?: number;
+      report_texts?: number;
+      runtime_states?: number;
+      generated_texts?: number;
+    };
   };
 };
 
@@ -1244,6 +1251,7 @@ export default function AdminClient() {
   const [handoverDraft, setHandoverDraft] = useState({
     area_id: "",
     new_partner_id: "",
+    transfer_mode: "base_reset" as "base_reset" | "copy_partner_state",
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
@@ -1275,6 +1283,7 @@ export default function AdminClient() {
     areaLabel: string;
     oldPartnerId: string;
     newPartnerId: string;
+    transferMode: "base_reset" | "copy_partner_state";
     oldPartnerIsSystemDefault: boolean;
   }>({
     open: false,
@@ -1282,6 +1291,7 @@ export default function AdminClient() {
     areaLabel: "",
     oldPartnerId: "",
     newPartnerId: "",
+    transferMode: "base_reset",
     oldPartnerIsSystemDefault: false,
   });
   const [handoverStatusModal, setHandoverStatusModal] = useState<{
@@ -4118,6 +4128,7 @@ export default function AdminClient() {
     areaId: string;
     oldPartnerId: string;
     newPartnerId: string;
+    transferMode: "base_reset" | "copy_partner_state";
     oldPartnerIsSystemDefault: boolean;
   }) {
     setBusy(true);
@@ -4138,6 +4149,7 @@ export default function AdminClient() {
           area_id: input.areaId,
           old_partner_id: input.oldPartnerId,
           new_partner_id: input.newPartnerId,
+          transfer_mode: input.transferMode,
         }),
       });
       setHandoverStatusModal((m) => ({
@@ -4145,9 +4157,13 @@ export default function AdminClient() {
         lines: [
           ...m.lines,
           "2/4 Server-Übergabe abgeschlossen.",
+          `Übergabemodus: ${result.handover?.transfer_mode === "copy_partner_state" ? "Partnerzustand übernommen" : "Basiszustand"}`,
           input.oldPartnerIsSystemDefault
             ? "Hinweis: Das Gebiet wurde vom Portalpartner auf einen operativen Partner überführt. Der Portalpartner bleibt dauerhaft aktiv."
             : `Alte Integrationen deaktiviert: ${result.handover?.deactivate_old_integrations_applied ? "Ja" : "Nein"}`,
+          result.handover?.transfer_mode === "copy_partner_state"
+            ? `Kopiert: Faktoren ${result.handover?.copied_partner_state?.data_value_settings ?? 0}, Report-Texte ${result.handover?.copied_partner_state?.report_texts ?? 0}, Runtime ${result.handover?.copied_partner_state?.runtime_states ?? 0}, data-driven Texte ${result.handover?.copied_partner_state?.generated_texts ?? 0}`
+            : "Zielpartner startet auf Basiszustand ohne Übernahme von Partnerdaten.",
           input.oldPartnerIsSystemDefault
             ? "Hinweis: Der Portalpartner wird nicht über Datenbereinigung entfernt."
             : "Hinweis: Alter Partner bleibt aktiv. Eine vollständige Entfernung erfolgt nur separat über Datenbereinigung.",
@@ -4164,6 +4180,7 @@ export default function AdminClient() {
       setHandoverDraft({
         area_id: "",
         new_partner_id: "",
+        transfer_mode: "base_reset",
       });
 
       setHandoverStatusModal((m) => ({
@@ -4256,6 +4273,9 @@ export default function AdminClient() {
               {" "}übergeben.
             </p>
             <p style={{ ...modalMessageStyle, marginTop: -4 }}>
+              Übergabemodus: <strong>{handoverConfirmModal.transferMode === "copy_partner_state" ? "Partnerzustand übernehmen" : "Basiszustand"}</strong>
+            </p>
+            <p style={{ ...modalMessageStyle, marginTop: -4 }}>
               {handoverConfirmModal.oldPartnerIsSystemDefault
                 ? "Hinweis: Der Portalpartner bleibt dauerhaft aktiv."
                 : "Hinweis: Dieser Partner bleibt noch aktiv, seine Integrationen werden deaktiviert bis zur vollständigen Löschung des Accounts."}
@@ -4276,6 +4296,7 @@ export default function AdminClient() {
                     areaId: payload.areaId,
                     oldPartnerId: payload.oldPartnerId,
                     newPartnerId: payload.newPartnerId,
+                    transferMode: payload.transferMode,
                     oldPartnerIsSystemDefault: payload.oldPartnerIsSystemDefault,
                   });
                 }}
@@ -5801,16 +5822,37 @@ export default function AdminClient() {
             ))}
           </select>
         </div>
+        <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            style={partnerTabButtonStyle(handoverDraft.transfer_mode === "base_reset")}
+            onClick={() => setHandoverDraft((v) => ({ ...v, transfer_mode: "base_reset" }))}
+          >
+            Basiszustand
+          </button>
+          <button
+            type="button"
+            style={partnerTabButtonStyle(handoverDraft.transfer_mode === "copy_partner_state")}
+            onClick={() => setHandoverDraft((v) => ({ ...v, transfer_mode: "copy_partner_state" }))}
+          >
+            Partnerzustand übernehmen
+          </button>
+        </div>
         <div style={{ marginTop: 10, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", background: "#f8fafc" }}>
           <div style={{ fontSize: 12, color: "#334155", marginBottom: 6 }}>
             {selectedPartner?.is_system_default
               ? "Hinweis: Der Portalpartner bleibt dauerhaft aktiv."
               : "Hinweis: Dieser Partner bleibt noch aktiv, seine Integrationen werden deaktiviert bis zur vollständigen Löschung des Accounts."}
           </div>
+          <div style={{ fontSize: 12, color: "#334155", marginBottom: 6 }}>
+            {handoverDraft.transfer_mode === "copy_partner_state"
+              ? "Es werden Faktoren, Report-Overrides sowie der neue Runtime-/data-driven Zustand des Gebiets auf den Zielpartner kopiert."
+              : "Der Zielpartner startet mit Basiszustand. Vorhandene Partnerdaten des Zielpartners für dieses Gebiet werden dabei entfernt."}
+          </div>
           <div style={{ fontSize: 12, color: "#334155" }}>
             <strong>Vorschau:</strong>{" "}
             {selectedPartner && handoverDraft.area_id && handoverTargetPartner
-              ? `${selectedHandoverAreaOption?.displayLabel ?? handoverDraft.area_id} von ${formatPartnerName(selectedPartner)} zu ${formatPartnerName(handoverTargetPartner)}`
+              ? `${selectedHandoverAreaOption?.displayLabel ?? handoverDraft.area_id} von ${formatPartnerName(selectedPartner)} zu ${formatPartnerName(handoverTargetPartner)} (${handoverDraft.transfer_mode === "copy_partner_state" ? "Partnerzustand übernehmen" : "Basiszustand"})`
               : "Bitte Kreis und Zielpartner auswählen."}
           </div>
         </div>
@@ -5826,6 +5868,7 @@ export default function AdminClient() {
                 areaLabel: selectedHandoverAreaOption?.displayLabel ?? handoverDraft.area_id,
                 oldPartnerId: selectedPartnerId,
                 newPartnerId: handoverDraft.new_partner_id,
+                transferMode: handoverDraft.transfer_mode,
                 oldPartnerIsSystemDefault: Boolean(selectedPartner?.is_system_default),
               });
             }}

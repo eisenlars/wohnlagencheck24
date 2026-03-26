@@ -11,7 +11,10 @@ type HandoverBody = {
   area_id?: string;
   old_partner_id?: string;
   new_partner_id?: string;
+  transfer_mode?: "base_reset" | "copy_partner_state";
 };
+
+type TransferMode = "base_reset" | "copy_partner_state";
 
 function normalize(value: unknown): string {
   return String(value ?? "").trim();
@@ -29,6 +32,17 @@ function isMissingActivationStatusColumn(error: unknown): boolean {
   ) || (
     msg.includes("partner_area_map.is_public_live") && msg.includes("does not exist")
   );
+}
+
+function isMissingTable(error: unknown, table: string): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes(table.toLowerCase()) && msg.includes("does not exist");
+}
+
+function normalizeTransferMode(value: unknown): TransferMode {
+  return String(value ?? "").trim().toLowerCase() === "copy_partner_state"
+    ? "copy_partner_state"
+    : "base_reset";
 }
 
 async function resolveTransferAreaIds(
@@ -85,6 +99,7 @@ export async function POST(req: Request) {
     const areaId = normalize(body.area_id);
     const oldPartnerId = normalize(body.old_partner_id);
     const newPartnerId = normalize(body.new_partner_id);
+    const transferMode = normalizeTransferMode(body.transfer_mode);
     const deactivateOldIntegrations = true;
 
     if (!areaId || !oldPartnerId || !newPartnerId) {
@@ -158,6 +173,7 @@ export async function POST(req: Request) {
         transferred_area_count: transferAreaIds.length,
         old_partner_id: oldPartnerId,
         new_partner_id: newPartnerId,
+        transfer_mode: transferMode,
       },
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
@@ -172,6 +188,129 @@ export async function POST(req: Request) {
       if (deactivateIntegrationsError) {
         return NextResponse.json({ error: deactivateIntegrationsError.message }, { status: 500 });
       }
+    }
+
+    const deleteRowsByArea = async (table: string, partnerColumn: string) => {
+      const { error } = await admin
+        .from(table)
+        .delete()
+        .eq(partnerColumn, newPartnerId)
+        .in("area_id", transferAreaIds);
+      if (error && !isMissingTable(error, table)) {
+        throw new Error(error.message);
+      }
+    };
+
+    const copyDataValueSettings = async () => {
+      const { data, error } = await admin
+        .from("data_value_settings")
+        .select("*")
+        .eq("auth_user_id", oldPartnerId)
+        .in("area_id", transferAreaIds);
+      if (error) {
+        if (isMissingTable(error, "data_value_settings")) return 0;
+        throw new Error(error.message);
+      }
+      const rows = Array.isArray(data) ? data : [];
+      if (rows.length === 0) return 0;
+      const payload = rows.map((row) => {
+        const next = { ...(row as Record<string, unknown>) };
+        delete next.id;
+        next.auth_user_id = newPartnerId;
+        return next;
+      });
+      const { error: upsertError } = await admin
+        .from("data_value_settings")
+        .upsert(payload, { onConflict: "auth_user_id,area_id" });
+      if (upsertError) throw new Error(upsertError.message);
+      return payload.length;
+    };
+
+    const copyReportTexts = async () => {
+      const { data, error } = await admin
+        .from("report_texts")
+        .select("area_id, section_key, text_type, raw_content, optimized_content, status, last_updated")
+        .eq("partner_id", oldPartnerId)
+        .in("area_id", transferAreaIds);
+      if (error) {
+        if (isMissingTable(error, "report_texts")) return 0;
+        throw new Error(error.message);
+      }
+      const rows = Array.isArray(data) ? data : [];
+      if (rows.length === 0) return 0;
+      const payload = rows.map((row) => ({
+        ...(row as Record<string, unknown>),
+        partner_id: newPartnerId,
+      }));
+      const { error: upsertError } = await admin
+        .from("report_texts")
+        .upsert(payload, { onConflict: "partner_id,area_id,section_key" });
+      if (upsertError) throw new Error(upsertError.message);
+      return payload.length;
+    };
+
+    const copyRuntimeStates = async () => {
+      const { data, error } = await admin
+        .from("partner_area_runtime_states")
+        .select("area_id, scope, factors_snapshot, data_json, textgen_inputs_json, helpers_json, rebuilt_at, updated_at")
+        .eq("partner_id", oldPartnerId)
+        .in("area_id", transferAreaIds);
+      if (error) {
+        if (isMissingTable(error, "partner_area_runtime_states")) return 0;
+        throw new Error(error.message);
+      }
+      const rows = Array.isArray(data) ? data : [];
+      if (rows.length === 0) return 0;
+      const payload = rows.map((row) => ({
+        ...(row as Record<string, unknown>),
+        partner_id: newPartnerId,
+      }));
+      const { error: upsertError } = await admin
+        .from("partner_area_runtime_states")
+        .upsert(payload, { onConflict: "partner_id,area_id,scope" });
+      if (upsertError) throw new Error(upsertError.message);
+      return payload.length;
+    };
+
+    const copyGeneratedTexts = async () => {
+      const { data, error } = await admin
+        .from("partner_area_generated_texts")
+        .select("area_id, scope, section_key, value_text, source_signature, updated_at")
+        .eq("partner_id", oldPartnerId)
+        .in("area_id", transferAreaIds);
+      if (error) {
+        if (isMissingTable(error, "partner_area_generated_texts")) return 0;
+        throw new Error(error.message);
+      }
+      const rows = Array.isArray(data) ? data : [];
+      if (rows.length === 0) return 0;
+      const payload = rows.map((row) => ({
+        ...(row as Record<string, unknown>),
+        partner_id: newPartnerId,
+      }));
+      const { error: upsertError } = await admin
+        .from("partner_area_generated_texts")
+        .upsert(payload, { onConflict: "partner_id,area_id,scope,section_key" });
+      if (upsertError) throw new Error(upsertError.message);
+      return payload.length;
+    };
+
+    await deleteRowsByArea("data_value_settings", "auth_user_id");
+    await deleteRowsByArea("report_texts", "partner_id");
+    await deleteRowsByArea("partner_area_runtime_states", "partner_id");
+    await deleteRowsByArea("partner_area_generated_texts", "partner_id");
+
+    const copiedPartnerState = {
+      data_value_settings: 0,
+      report_texts: 0,
+      runtime_states: 0,
+      generated_texts: 0,
+    };
+    if (transferMode === "copy_partner_state") {
+      copiedPartnerState.data_value_settings = await copyDataValueSettings();
+      copiedPartnerState.report_texts = await copyReportTexts();
+      copiedPartnerState.runtime_states = await copyRuntimeStates();
+      copiedPartnerState.generated_texts = await copyGeneratedTexts();
     }
 
     let { data: newMappings, error: upsertMappingError } = await admin
@@ -292,6 +431,8 @@ export async function POST(req: Request) {
         old_partner_id: oldPartnerId,
         new_partner_id: newPartnerId,
         deactivate_old_integrations: deactivateOldIntegrations,
+        transfer_mode: transferMode,
+        copied_partner_state: copiedPartnerState,
         old_partner_retained: true,
         old_partner_retention_reason: "Old partner remains active after handover by policy",
       },
@@ -369,9 +510,11 @@ export async function POST(req: Request) {
         },
         deactivate_old_integrations_applied: deactivateOldIntegrations,
         old_partner_remains_active: true,
+        transfer_mode: transferMode,
         transferred_area_count: transferAreaIds.length,
         new_mapping_status: String((newRootMapping as { activation_status?: string | null }).activation_status ?? "assigned"),
         new_mapping_is_active: false,
+        copied_partner_state: copiedPartnerState,
       },
       notification: {
         partner: {
