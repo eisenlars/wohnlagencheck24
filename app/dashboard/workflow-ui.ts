@@ -35,13 +35,19 @@ export const workflowTopCardStyle: CSSProperties = {
 };
 
 export const workflowTopControlsStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(260px, 420px)',
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'flex-end',
+  flexWrap: 'wrap',
   gap: 12,
+  width: '100%',
 };
 
 export const workflowTopFieldStyle: CSSProperties = {
   display: 'grid',
+  marginLeft: 'auto',
+  minWidth: 320,
+  flex: '0 1 420px',
 };
 
 export const workflowSelectBaseStyle: CSSProperties = {

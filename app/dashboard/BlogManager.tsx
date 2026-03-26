@@ -4,6 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { buildWebAssetUrl } from '@/utils/assets';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import {
+  workflowTopCardStyle,
+  workflowTopControlsStyle,
+  workflowTopFieldStyle,
+  workflowTopSelectStyle,
+} from '@/app/dashboard/workflow-ui';
 
 type PartnerArea = {
   id?: string;
@@ -39,6 +45,11 @@ type BlogPostRow = {
   created_at: string | null;
 };
 
+type LlmIntegrationOption = {
+  id: string;
+  label: string;
+};
+
 const SOURCE_KEYS = [
   'immobilienmarkt_individuell_01',
   'immobilienmarkt_individuell_02',
@@ -61,6 +72,8 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
+  const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
 
   const areaName = config?.areas?.name || '';
   const bundeslandSlug = String(config?.areas?.bundesland_slug || '');
@@ -178,6 +191,38 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
     loadPosts();
   }, [areaId, supabase, saving]);
 
+  useEffect(() => {
+    async function loadLlmOptions() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data, error: loadError } = await supabase
+          .from('partner_integrations')
+          .select('id, provider, settings, is_active')
+          .eq('partner_id', user.id)
+          .eq('kind', 'llm')
+          .eq('is_active', true)
+          .order('created_at', { ascending: true });
+        if (loadError) throw loadError;
+        const nextOptions = (data ?? []).map((entry) => {
+          const settings = (entry.settings ?? {}) as Record<string, unknown>;
+          const provider = String(entry.provider ?? '').trim() || 'LLM';
+          const model = String(settings.model ?? settings.model_name ?? '').trim();
+          return {
+            id: String(entry.id),
+            label: model ? `${provider} · ${model}` : provider,
+          };
+        });
+        setLlmOptions(nextOptions);
+        setSelectedLlmIntegrationId((prev) => prev || nextOptions[0]?.id || '');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    void loadLlmOptions();
+  }, [supabase]);
+
   const handleGenerate = async () => {
     if (!areaName || !hasAllSources) return;
     setGenerating(true);
@@ -191,6 +236,7 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
           authorName: authorName || undefined,
           source,
           customPrompt: customPrompt || undefined,
+          llm_integration_id: selectedLlmIntegrationId || undefined,
         }),
       });
       const data = await res.json();
@@ -303,6 +349,26 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
 
   return (
     <div style={{ width: '100%' }}>
+      <div style={workflowTopCardStyle}>
+        <div style={workflowTopControlsStyle}>
+          <label style={workflowTopFieldStyle}>
+            <select
+              value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
+              onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+              style={workflowTopSelectStyle}
+              aria-label="KI-Modell auswählen"
+              disabled={llmOptions.length === 0}
+            >
+              {llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+              {llmOptions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
       <div style={layoutGridStyle(isNarrow)}>
         <div style={layoutLeftStyle}>
           <div style={listCardStyle}>
@@ -440,7 +506,7 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
                   type="button"
                   onClick={handleGenerate}
                   style={primaryButtonStyle}
-                  disabled={!hasAllSources || generating}
+                  disabled={!hasAllSources || generating || llmOptions.length === 0}
                 >
                   {generating ? '⏳ KI generiert Blog...' : '✨ Blog per KI generieren'}
                 </button>

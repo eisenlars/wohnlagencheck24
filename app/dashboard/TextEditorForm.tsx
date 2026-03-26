@@ -1461,13 +1461,14 @@ export default function TextEditorForm({
     return resolveDisplayTextClass(section.key, section.type) === activeBulkClass;
   });
   const isBulkRewriting = Boolean(classBulkState);
+  const showTopLlmCard = !lockedToMandatory;
   const showGlobalClassActions = !isMarketing && !lockedToMandatory;
   const showScopeAreaSidebar = !lockedToMandatory && !isOrtslage && scopeAreaItems.length > 1;
 
   return (
     <div style={{ width: '100%' }}>
-      <div style={showGlobalClassActions ? workflowCardStackStyle : undefined}>
-      {showGlobalClassActions ? (
+      <div style={showTopLlmCard || showGlobalClassActions ? workflowCardStackStyle : undefined}>
+      {showTopLlmCard ? (
         <>
           <div style={textWorkflowTopCardStyle}>
             <div style={textWorkflowTopControlsStyle}>
@@ -1489,7 +1490,10 @@ export default function TextEditorForm({
               </label>
             </div>
           </div>
-
+        </>
+      ) : null}
+      {showGlobalClassActions ? (
+        <>
           <div style={{ ...textWorkflowCardStyle, marginBottom: 0 }}>
             <div style={textWorkflowHeaderStyle}>
               <div style={textWorkflowHeaderInlineStyle}>

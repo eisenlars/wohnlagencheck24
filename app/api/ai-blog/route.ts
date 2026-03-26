@@ -137,15 +137,20 @@ async function callOpenAICompatible({
   };
 }
 
-async function loadPartnerLlmConfig(partnerId: string): Promise<LlmConfig | null> {
+async function loadPartnerLlmConfig(partnerId: string, integrationId?: string | null): Promise<LlmConfig | null> {
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let query = admin
     .from('partner_integrations')
     .select('provider, base_url, auth_config, settings, is_active')
     .eq('partner_id', partnerId)
     .eq('kind', 'llm')
-    .eq('is_active', true)
-    .maybeSingle();
+    .eq('is_active', true);
+
+  if (integrationId) {
+    query = query.eq('id', integrationId).limit(1);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     console.error('partner_integrations llm lookup failed:', error.message);
@@ -222,6 +227,7 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { areaName, authorName, source, customPrompt } = body ?? {};
+    const selectedLlmIntegrationId = asString(body?.llm_integration_id);
 
     if (!areaName || !source?.individual01 || !source?.individual02 || !source?.zitat) {
       return NextResponse.json({ error: 'Missing inputs' }, { status: 400 });
@@ -248,7 +254,7 @@ export async function POST(req: Request) {
 
     const admin = createAdminClient();
     const partnerPolicy = await loadPartnerLlmPolicy(admin, user.id);
-    const partnerConfig = await loadPartnerLlmConfig(user.id);
+    const partnerConfig = await loadPartnerLlmConfig(user.id, selectedLlmIntegrationId);
     const llmMode = normalizeLlmRuntimeMode(partnerConfig?.settings?.llm_mode ?? partnerPolicy.llm_mode_default);
     const hasOwnLlmConfig = llmMode === 'partner_managed' && Boolean(partnerConfig?.provider);
     const budget = await checkGlobalAndPartnerBudget(user.id);
