@@ -498,20 +498,19 @@ export async function POST(req: Request) {
         throw new Error(i18nError.message);
       }
 
-      const translationPayload = (Array.isArray(i18nRows) ? i18nRows : [])
-        .map((row) => {
+      const translationPayload = (Array.isArray(i18nRows) ? i18nRows : []).reduce<Record<string, unknown>[]>((acc, row) => {
           const sourcePostId = String((row as { post_id?: string | null }).post_id ?? "").trim();
           const newPostId = postIdMap.get(sourcePostId);
-          if (!newPostId) return null;
-          return {
+          if (!newPostId) return acc;
+          acc.push({
             ...(row as Record<string, unknown>),
             id: randomUUID(),
             partner_id: newPartnerId,
             post_id: newPostId,
             status: mode === "copy_as_draft" ? "draft" : (row as { status?: string | null }).status ?? "draft",
-          };
-        })
-        .filter((row): row is NonNullable<typeof row> => row !== null);
+          });
+          return acc;
+        }, []);
 
       if (translationPayload.length > 0) {
         const { error: insertTranslationError } = await admin
