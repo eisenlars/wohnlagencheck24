@@ -357,6 +357,27 @@ function formatAreaLabel(
   return name === fallbackId ? fallbackId : `${name} (${fallbackId})`;
 }
 
+function isKreisAreaOption(area: Pick<AreaOption, "parent_slug" | "bundesland_slug"> | null | undefined): boolean {
+  return String(area?.parent_slug ?? "") === String(area?.bundesland_slug ?? "");
+}
+
+function formatAreaOptionLabel(area: AreaOption): string {
+  const id = String(area.id ?? "").trim();
+  const name = String(area.name ?? "").trim() || id;
+  return name === id ? id : `${name} (${id})`;
+}
+
+function formatStandardTextRefreshReason(reason: string | undefined): string {
+  const normalized = String(reason ?? "").trim();
+  if (!normalized) return "ohne Zusatz";
+  if (normalized === "dry_run") return "Dry-Run";
+  if (normalized === "no_standard_changes") return "keine Änderungen";
+  if (normalized === "report_not_found_or_invalid_json") return "Report fehlt oder ist ungültig";
+  if (normalized.startsWith("download_failed")) return normalized.replace("download_failed:", "Download fehlgeschlagen:");
+  if (normalized.startsWith("upload_failed")) return normalized.replace("upload_failed:", "Upload fehlgeschlagen:");
+  return normalized;
+}
+
 function mergeAreaMappingRecord(
   current: AreaMapping | null | undefined,
   patch: Partial<AreaMapping> & Pick<AreaMapping, "area_id" | "auth_user_id">,
@@ -440,11 +461,24 @@ type PartnerPurgeCheckPayload = {
   affected_counts?: Record<string, number>;
 };
 
-type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "language_admin" | "system_texts" | "market_texts" | "portal_cms";
+type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "language_admin" | "system_texts" | "market_texts" | "standard_text_refresh" | "portal_cms";
 type AdminNavMode = "partners" | "areas";
 type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations" | "billing";
-type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "language" | "texts" | "market_texts" | "cms" | "purge" | "audit" | "logout";
+type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "language" | "texts" | "market_texts" | "refresh" | "cms" | "purge" | "audit" | "logout";
 type WorkflowSignalTone = "none" | "red" | "orange" | "green";
+type StandardTextRefreshScope = "bundesland" | "kreis" | "kreis_ortslagen" | "ortslage";
+
+type StandardTextRefreshResult = {
+  area_id: string;
+  report_path: string;
+  status: "updated" | "skipped" | "error";
+  reason?: string;
+  changed_keys?: number;
+};
+
+type StandardTextRefreshSelection = AreaOption & {
+  id: string;
+};
 
 type HandoverApiResponse = {
   ok?: boolean;
@@ -582,6 +616,15 @@ function renderAdminNavIcon(icon: AdminNavIconKey, size = 17) {
           <path d="M7 18V9" />
           <path d="M12 18V6" />
           <path d="M17 18v-4" />
+        </svg>
+      );
+    case "refresh":
+      return (
+        <svg {...baseProps}>
+          <path d="M20 7v5h-5" />
+          <path d="M4 17v-5h5" />
+          <path d="M7.5 9A6 6 0 0 1 18 12" />
+          <path d="M16.5 15A6 6 0 0 1 6 12" />
         </svg>
       );
     case "cms":
@@ -1121,6 +1164,13 @@ type PersistedAdminViewState = {
   marketExplanationStandardScope?: MarketExplanationStandardScope;
   marketExplanationStandardLocale?: string;
   marketExplanationStandardBundeslandSlug?: string;
+  standardTextRefreshScope?: StandardTextRefreshScope;
+  standardTextRefreshBundeslandSlug?: string;
+  standardTextRefreshAreaId?: string;
+  standardTextRefreshAreaName?: string;
+  standardTextRefreshAreaSlug?: string;
+  standardTextRefreshAreaParentSlug?: string;
+  standardTextRefreshAreaBundeslandSlug?: string;
 };
 
 const PORTAL_CMS_VIEW_STATE_KEY = "admin_portal_cms_view_state_v1";
@@ -1382,6 +1432,19 @@ export default function AdminClient() {
     status: MarketExplanationStaticTextEntryStatus;
     value_text: string;
   }>>({});
+  const [standardTextRefreshScope, setStandardTextRefreshScope] = useState<StandardTextRefreshScope>("bundesland");
+  const [standardTextRefreshBundeslandSlug, setStandardTextRefreshBundeslandSlug] = useState<string>("");
+  const [standardTextRefreshAreaQuery, setStandardTextRefreshAreaQuery] = useState<string>("");
+  const [standardTextRefreshAreaOptions, setStandardTextRefreshAreaOptions] = useState<AreaOption[]>([]);
+  const [standardTextRefreshSelection, setStandardTextRefreshSelection] = useState<StandardTextRefreshSelection | null>(null);
+  const [standardTextRefreshResults, setStandardTextRefreshResults] = useState<StandardTextRefreshResult[]>([]);
+  const [standardTextRefreshSummary, setStandardTextRefreshSummary] = useState<{
+    dryRun: boolean;
+    total: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+  } | null>(null);
   const [portalSystemTextDrafts, setPortalSystemTextDrafts] = useState<Record<string, {
     status: PortalSystemTextEntryStatus;
     value_text: string;
@@ -1418,6 +1481,13 @@ export default function AdminClient() {
     marketExplanationStandardScope: "kreis",
     marketExplanationStandardLocale: "de",
     marketExplanationStandardBundeslandSlug: "",
+    standardTextRefreshScope: "bundesland",
+    standardTextRefreshBundeslandSlug: "",
+    standardTextRefreshAreaId: "",
+    standardTextRefreshAreaName: "",
+    standardTextRefreshAreaSlug: "",
+    standardTextRefreshAreaParentSlug: "",
+    standardTextRefreshAreaBundeslandSlug: "",
   }), []);
   const portalCmsInitialViewState = useMemo<PersistedPortalCmsViewState>(() => ({
     pageKey: "home",
@@ -1688,6 +1758,13 @@ export default function AdminClient() {
     const restoredMarketExplanationScope = adminViewState.marketExplanationStandardScope ?? "kreis";
     const restoredMarketExplanationLocale = String(adminViewState.marketExplanationStandardLocale ?? "de").trim().toLowerCase() || "de";
     const restoredMarketExplanationBundeslandSlug = String(adminViewState.marketExplanationStandardBundeslandSlug ?? "").trim().toLowerCase();
+    const restoredStandardTextRefreshScope = adminViewState.standardTextRefreshScope ?? "bundesland";
+    const restoredStandardTextRefreshBundeslandSlug = String(adminViewState.standardTextRefreshBundeslandSlug ?? "").trim().toLowerCase();
+    const restoredStandardTextRefreshAreaId = String(adminViewState.standardTextRefreshAreaId ?? "").trim();
+    const restoredStandardTextRefreshAreaName = String(adminViewState.standardTextRefreshAreaName ?? "").trim();
+    const restoredStandardTextRefreshAreaSlug = String(adminViewState.standardTextRefreshAreaSlug ?? "").trim();
+    const restoredStandardTextRefreshAreaParentSlug = String(adminViewState.standardTextRefreshAreaParentSlug ?? "").trim();
+    const restoredStandardTextRefreshAreaBundeslandSlug = String(adminViewState.standardTextRefreshAreaBundeslandSlug ?? "").trim();
     setActiveView(restoredActiveView);
     setNavMode(adminViewState.navMode ?? "partners");
     setSelectedPartnerId(String(adminViewState.selectedPartnerId ?? ""));
@@ -1698,6 +1775,24 @@ export default function AdminClient() {
     setMarketExplanationStandardScope(restoredMarketExplanationScope);
     setMarketExplanationStandardLocale(restoredMarketExplanationLocale);
     setMarketExplanationStandardBundeslandSlug(restoredMarketExplanationBundeslandSlug);
+    setStandardTextRefreshScope(restoredStandardTextRefreshScope);
+    setStandardTextRefreshBundeslandSlug(restoredStandardTextRefreshBundeslandSlug);
+    setStandardTextRefreshSelection(restoredStandardTextRefreshAreaId ? {
+      id: restoredStandardTextRefreshAreaId,
+      name: restoredStandardTextRefreshAreaName || restoredStandardTextRefreshAreaId,
+      slug: restoredStandardTextRefreshAreaSlug || null,
+      parent_slug: restoredStandardTextRefreshAreaParentSlug || null,
+      bundesland_slug: restoredStandardTextRefreshAreaBundeslandSlug || null,
+    } : null);
+    setStandardTextRefreshAreaQuery(restoredStandardTextRefreshAreaId
+      ? formatAreaOptionLabel({
+        id: restoredStandardTextRefreshAreaId,
+        name: restoredStandardTextRefreshAreaName || restoredStandardTextRefreshAreaId,
+        slug: restoredStandardTextRefreshAreaSlug || null,
+        parent_slug: restoredStandardTextRefreshAreaParentSlug || null,
+        bundesland_slug: restoredStandardTextRefreshAreaBundeslandSlug || null,
+      })
+      : "");
     if (restoredActiveView === "llm_global") {
       void loadLlmGlobalDashboard();
     } else if (restoredActiveView === "billing_defaults") {
@@ -1715,6 +1810,8 @@ export default function AdminClient() {
         }),
         loadMarketExplanationStaticTexts(),
       ]);
+    } else if (restoredActiveView === "standard_text_refresh") {
+      void loadMarketExplanationBundeslaender();
     } else if (restoredActiveView === "portal_cms") {
       void loadPortalCms();
     }
@@ -1730,6 +1827,13 @@ export default function AdminClient() {
     adminViewState.marketExplanationStandardBundeslandSlug,
     adminViewState.marketExplanationStandardLocale,
     adminViewState.marketExplanationStandardScope,
+    adminViewState.standardTextRefreshAreaBundeslandSlug,
+    adminViewState.standardTextRefreshAreaId,
+    adminViewState.standardTextRefreshAreaName,
+    adminViewState.standardTextRefreshAreaParentSlug,
+    adminViewState.standardTextRefreshAreaSlug,
+    adminViewState.standardTextRefreshBundeslandSlug,
+    adminViewState.standardTextRefreshScope,
     adminViewStateHydrated,
   ]);
 
@@ -1753,6 +1857,13 @@ export default function AdminClient() {
       setMarketExplanationStandardBundeslandSlug(marketExplanationStandardBundeslaender[0]?.slug ?? "");
     }
   }, [marketExplanationStandardBundeslandSlug, marketExplanationStandardBundeslaender]);
+
+  useEffect(() => {
+    if (marketExplanationStandardBundeslaender.length === 0) return;
+    if (!marketExplanationStandardBundeslaender.some((entry) => entry.slug === standardTextRefreshBundeslandSlug)) {
+      setStandardTextRefreshBundeslandSlug(marketExplanationStandardBundeslaender[0]?.slug ?? "");
+    }
+  }, [marketExplanationStandardBundeslaender, standardTextRefreshBundeslandSlug]);
 
   useEffect(() => {
     if (marketExplanationMode !== "standard" || marketExplanationStandardScope !== "bundesland") return;
@@ -1785,6 +1896,36 @@ export default function AdminClient() {
   }, [marketExplanationStaticLocale, portalLocaleConfigs]);
 
   useEffect(() => {
+    if (!standardTextRefreshAreaQuery.trim()) {
+      setStandardTextRefreshAreaOptions([]);
+      return;
+    }
+    if (
+      standardTextRefreshSelection
+      && standardTextRefreshAreaQuery.trim() === formatAreaOptionLabel(standardTextRefreshSelection)
+    ) {
+      setStandardTextRefreshAreaOptions([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const data = await api<{ areas: AreaOption[] }>(
+          `/api/admin/areas?q=${encodeURIComponent(standardTextRefreshAreaQuery)}&limit=20`,
+        );
+        setStandardTextRefreshAreaOptions(data.areas ?? []);
+      } catch {
+        setStandardTextRefreshAreaOptions([]);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [standardTextRefreshAreaQuery, standardTextRefreshSelection]);
+
+  useEffect(() => {
+    setStandardTextRefreshResults([]);
+    setStandardTextRefreshSummary(null);
+  }, [standardTextRefreshScope, standardTextRefreshBundeslandSlug, standardTextRefreshSelection?.id]);
+
+  useEffect(() => {
     if (!adminViewStateHydrated || !adminViewStateAppliedRef.current) return;
     setAdminViewState({
       activeView,
@@ -1797,6 +1938,13 @@ export default function AdminClient() {
       marketExplanationStandardScope,
       marketExplanationStandardLocale,
       marketExplanationStandardBundeslandSlug,
+      standardTextRefreshScope,
+      standardTextRefreshBundeslandSlug,
+      standardTextRefreshAreaId: standardTextRefreshSelection?.id ?? "",
+      standardTextRefreshAreaName: standardTextRefreshSelection?.name ?? "",
+      standardTextRefreshAreaSlug: String(standardTextRefreshSelection?.slug ?? ""),
+      standardTextRefreshAreaParentSlug: String(standardTextRefreshSelection?.parent_slug ?? ""),
+      standardTextRefreshAreaBundeslandSlug: String(standardTextRefreshSelection?.bundesland_slug ?? ""),
     });
   }, [
     activeView,
@@ -1810,6 +1958,9 @@ export default function AdminClient() {
     navMode,
     partnerTab,
     selectedPartnerId,
+    standardTextRefreshBundeslandSlug,
+    standardTextRefreshScope,
+    standardTextRefreshSelection,
     setAdminViewState,
   ]);
 
@@ -2169,6 +2320,18 @@ export default function AdminClient() {
         },
       },
       {
+        key: "standard_text_refresh",
+        icon: "refresh",
+        title: "Standardtext-Refresh",
+        text: "Verbesserte Standardtexte kontrolliert auf die Report-Basis von Bundesländern, Kreisen und Ortslagen anwenden.",
+        onClick: () => {
+          setActiveView("standard_text_refresh");
+          void run("Standardtext-Refresh laden", async () => {
+            await loadMarketExplanationBundeslaender();
+          }, { showSuccessModal: false });
+        },
+      },
+      {
         key: "cms",
         icon: "cms",
         title: "Portal-CMS",
@@ -2191,6 +2354,7 @@ export default function AdminClient() {
     if (hoveredAdminNavId === "language") return "Sprachverwaltung";
     if (hoveredAdminNavId === "texts") return "Systemtexte";
     if (hoveredAdminNavId === "market_texts") return "Markterklärungstexte";
+    if (hoveredAdminNavId === "refresh") return "Standardtext-Refresh";
     if (hoveredAdminNavId === "cms") return "Portal-CMS";
     return null;
   }, [hoveredAdminNavId]);
@@ -2788,6 +2952,66 @@ export default function AdminClient() {
     setMarketExplanationStaticLocale((prev) =>
       (nextLocales.length > 0 ? nextLocales : portalLocaleConfigs).some((row) => row.locale === prev) ? prev : fallbackLocale,
     );
+  }
+
+  async function loadMarketExplanationBundeslaender() {
+    const data = await api<{ bundeslaender?: MarketExplanationStandardBundesland[] }>(
+      "/api/admin/market-explanation-standard-texts?level=kreis",
+    );
+    const nextBundeslaender = data.bundeslaender ?? [];
+    setMarketExplanationStandardBundeslaender(nextBundeslaender);
+    setStandardTextRefreshBundeslandSlug((prev) => {
+      if (nextBundeslaender.some((entry) => entry.slug === prev)) return prev;
+      return nextBundeslaender[0]?.slug ?? "";
+    });
+  }
+
+  async function runStandardTextRefresh(dryRun: boolean) {
+    const selection = standardTextRefreshSelection;
+    const areaIsKreis = isKreisAreaOption(selection);
+    if (standardTextRefreshScope === "bundesland") {
+      if (!standardTextRefreshBundeslandSlug) {
+        throw new Error("Bitte zuerst ein Bundesland auswählen.");
+      }
+    } else {
+      if (!selection?.id) {
+        throw new Error("Bitte zuerst ein Gebiet auswählen.");
+      }
+      if ((standardTextRefreshScope === "kreis" || standardTextRefreshScope === "kreis_ortslagen") && !areaIsKreis) {
+        throw new Error("Für diesen Modus muss ein Kreis ausgewählt werden.");
+      }
+      if (standardTextRefreshScope === "ortslage" && areaIsKreis) {
+        throw new Error("Für den Ortslagen-Modus bitte eine Ortslage auswählen.");
+      }
+    }
+
+    const data = await api<{
+      dry_run?: boolean;
+      total?: number;
+      updated?: number;
+      skipped?: number;
+      failed?: number;
+      results?: StandardTextRefreshResult[];
+    }>("/api/admin/bootstrap-area-texts", {
+      method: "POST",
+      body: JSON.stringify({
+        mode: "standard_overwrite",
+        dry_run: dryRun,
+        bundesland_slug: standardTextRefreshScope === "bundesland" ? standardTextRefreshBundeslandSlug : undefined,
+        area_id: standardTextRefreshScope === "bundesland" ? undefined : selection?.id,
+        include_ortslagen: standardTextRefreshScope === "kreis_ortslagen",
+      }),
+    });
+
+    const nextResults = data.results ?? [];
+    setStandardTextRefreshResults(nextResults);
+    setStandardTextRefreshSummary({
+      dryRun: data.dry_run === true,
+      total: Number(data.total ?? nextResults.length),
+      updated: Number(data.updated ?? nextResults.filter((row) => row.status === "updated").length),
+      skipped: Number(data.skipped ?? nextResults.filter((row) => row.status === "skipped").length),
+      failed: Number(data.failed ?? nextResults.filter((row) => row.status === "error").length),
+    });
   }
 
   function resetNewPortalLocaleDraft() {
@@ -4374,7 +4598,7 @@ export default function AdminClient() {
       <div
         style={{
           ...adminLayoutStyle,
-          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults" || activeView === "language_admin" || activeView === "system_texts" || activeView === "market_texts" || activeView === "portal_cms")
+          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults" || activeView === "language_admin" || activeView === "system_texts" || activeView === "market_texts" || activeView === "standard_text_refresh" || activeView === "portal_cms")
             ? "50px minmax(0, 1fr)"
             : adminLayoutStyle.gridTemplateColumns,
         }}
@@ -4388,7 +4612,7 @@ export default function AdminClient() {
           }}
         >
           <button
-            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "portal_cms" && navMode === "partners")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" && navMode === "partners")}
             onClick={async () => {
               setNavMode("partners");
               if (selectedPartnerId) {
@@ -4416,7 +4640,7 @@ export default function AdminClient() {
             {renderAdminNavIcon("partners")}
           </button>
           <button
-            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "portal_cms" && navMode === "areas")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" && navMode === "areas")}
             onClick={() => {
               setNavMode("areas");
               setActiveView("partner_edit");
@@ -4549,6 +4773,28 @@ export default function AdminClient() {
             {renderAdminNavIcon("market_texts")}
           </button>
           <button
+            style={modeButtonStyle(activeView === "standard_text_refresh")}
+            onClick={() => {
+              setActiveView("standard_text_refresh");
+              void run("Standardtext-Refresh laden", async () => {
+                await loadMarketExplanationBundeslaender();
+              }, { showSuccessModal: false });
+            }}
+            title="Standardtext-Refresh"
+            onMouseEnter={(event) => updateHoveredAdminNav("refresh", event.currentTarget)}
+            onFocus={(event) => updateHoveredAdminNav("refresh", event.currentTarget)}
+            onMouseLeave={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+            onBlur={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+          >
+            {renderAdminNavIcon("refresh")}
+          </button>
+          <button
             style={modeButtonStyle(activeView === "portal_cms")}
             onClick={() => {
               setActiveView("portal_cms");
@@ -4578,7 +4824,7 @@ export default function AdminClient() {
           ) : null}
         </aside>
 
-        {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "portal_cms" ? (
+        {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" ? (
           <aside style={listPaneStyle}>
             <div style={sidebarControlWrapStyle}>
               <input
@@ -6758,6 +7004,224 @@ export default function AdminClient() {
               ) : null}
             </div>
           )}
+        </div>
+      </section>
+      ) : null}
+
+      {activeView === "standard_text_refresh" ? (
+      <section style={workspaceSectionStyle}>
+        <h1 style={workspaceTitleStyle}>Standardtext-Refresh</h1>
+        <p style={mutedStyle}>
+          Verbesserte Standardtexte werden hier kontrolliert auf die Report-Basis angewendet. Overrides aus Partner- und Admin-Workflows bleiben unberührt, aktualisiert wird nur die Basis im Storage.
+        </p>
+
+        <div style={{ ...marketExplanationScopeBarStyle, marginTop: 14 }}>
+          <button
+            style={marketExplanationScopeButtonStyle(standardTextRefreshScope === "bundesland")}
+            disabled={busy}
+            onClick={() => setStandardTextRefreshScope("bundesland")}
+          >
+            Bundesland
+          </button>
+          <button
+            style={marketExplanationScopeButtonStyle(standardTextRefreshScope === "kreis")}
+            disabled={busy}
+            onClick={() => setStandardTextRefreshScope("kreis")}
+          >
+            Kreis
+          </button>
+          <button
+            style={marketExplanationScopeButtonStyle(standardTextRefreshScope === "kreis_ortslagen")}
+            disabled={busy}
+            onClick={() => setStandardTextRefreshScope("kreis_ortslagen")}
+          >
+            Kreis + Ortslagen
+          </button>
+          <button
+            style={marketExplanationScopeButtonStyle(standardTextRefreshScope === "ortslage")}
+            disabled={busy}
+            onClick={() => setStandardTextRefreshScope("ortslage")}
+          >
+            Ortslage
+          </button>
+        </div>
+
+        <div style={marketExplanationWorkspaceCardStyle}>
+          {standardTextRefreshScope === "bundesland" ? (
+            <>
+              <div style={marketExplanationActionRowStyle}>
+                <div style={marketExplanationActionGroupStyle}>
+                  <div style={marketExplanationScopeHintStyle}>
+                    Quelle: <code>text-standards/bundesland/text_standard_bundesland.json</code>
+                  </div>
+                  <div style={marketExplanationScopeHintStyle}>
+                    Ziel: <code>reports/deutschland/&lt;bundesland&gt;.json</code>
+                  </div>
+                </div>
+                <button
+                  style={btnGhostStyle}
+                  disabled={busy}
+                  onClick={() =>
+                    run("Bundesländer neu laden", async () => {
+                      await loadMarketExplanationBundeslaender();
+                    })
+                  }
+                >
+                  Neu laden
+                </button>
+              </div>
+
+              <div style={marketExplanationBundeslandBarStyle}>
+                {marketExplanationStandardBundeslaender.map((bundesland) => (
+                  <button
+                    key={bundesland.slug}
+                    style={marketExplanationBundeslandButtonStyle(standardTextRefreshBundeslandSlug === bundesland.slug)}
+                    onClick={() => setStandardTextRefreshBundeslandSlug(bundesland.slug)}
+                  >
+                    {bundesland.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div style={marketExplanationActionRowStyle}>
+                <div style={marketExplanationActionGroupStyle}>
+                  <div style={marketExplanationScopeHintStyle}>
+                    Quelle: <code>text-standards/kreis/text_standard_kreis.json</code>
+                  </div>
+                  <div style={marketExplanationScopeHintStyle}>
+                    Ziel: <code>reports/deutschland/&lt;bundesland&gt;/...json</code>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gap: 10, maxWidth: 760 }}>
+                <input
+                  style={inputStyle}
+                  value={standardTextRefreshAreaQuery}
+                  placeholder={standardTextRefreshScope === "ortslage" ? "Ortslage suchen" : "Kreis oder Gebiet suchen"}
+                  onChange={(event) => setStandardTextRefreshAreaQuery(event.target.value)}
+                />
+                {standardTextRefreshAreaOptions.length > 0 ? (
+                  <div style={standardTextRefreshSearchResultsStyle}>
+                    {standardTextRefreshAreaOptions.map((area) => {
+                      const active = standardTextRefreshSelection?.id === area.id;
+                      const isKreis = isKreisAreaOption(area);
+                      return (
+                        <button
+                          key={area.id}
+                          type="button"
+                          style={standardTextRefreshSearchResultButtonStyle(active)}
+                          onClick={() => {
+                            setStandardTextRefreshSelection({
+                              id: area.id,
+                              name: area.name ?? area.id,
+                              slug: area.slug ?? null,
+                              parent_slug: area.parent_slug ?? null,
+                              bundesland_slug: area.bundesland_slug ?? null,
+                            });
+                            setStandardTextRefreshAreaOptions([]);
+                            setStandardTextRefreshAreaQuery(formatAreaOptionLabel(area));
+                          }}
+                        >
+                          <span style={{ fontWeight: 700, color: "#0f172a" }}>{formatAreaOptionLabel(area)}</span>
+                          <span style={{ fontSize: 12, color: "#64748b" }}>
+                            {isKreis ? "Kreis" : "Ortslage"}{area.slug ? ` · ${area.slug}` : ""}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                {standardTextRefreshSelection ? (
+                  <div style={standardTextRefreshSelectionCardStyle}>
+                    <div style={{ fontWeight: 700, color: "#0f172a" }}>{formatAreaOptionLabel(standardTextRefreshSelection)}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>
+                      {isKreisAreaOption(standardTextRefreshSelection) ? "Kreis" : "Ortslage"}
+                      {standardTextRefreshSelection.slug ? ` · ${standardTextRefreshSelection.slug}` : ""}
+                      {standardTextRefreshSelection.bundesland_slug ? ` · ${standardTextRefreshSelection.bundesland_slug}` : ""}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={marketExplanationScopeHintStyle}>Noch kein Gebiet ausgewählt.</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div style={{ ...marketExplanationActionRowStyle, marginTop: 16 }}>
+            <div style={marketExplanationScopeHintStyle}>
+              {standardTextRefreshScope === "bundesland"
+                ? "Bundesland-Refresh überschreibt allgemeine und individuelle Standardtexte in der Basisdatei."
+                : standardTextRefreshScope === "ortslage"
+                  ? "Ortslagen-Refresh überschreibt nur standardfähige General-Texte."
+                  : standardTextRefreshScope === "kreis_ortslagen"
+                    ? "Kreis und zugehörige Ortslagen werden gemeinsam aus der Kreis-Standarddatei aktualisiert."
+                    : "Kreis-Refresh überschreibt nur standardfähige General-Texte."}
+            </div>
+            <div style={marketExplanationActionGroupStyle}>
+              <button
+                style={btnGhostStyle}
+                disabled={busy}
+                onClick={() =>
+                  run("Standardtext-Refresh analysieren", async () => {
+                    await runStandardTextRefresh(true);
+                  })
+                }
+              >
+                Analyse (Dry-Run)
+              </button>
+              <button
+                style={btnStyle}
+                disabled={busy}
+                onClick={() =>
+                  run("Standardtext-Basis aktualisieren", async () => {
+                    await runStandardTextRefresh(false);
+                  })
+                }
+              >
+                Standardtexte anwenden
+              </button>
+            </div>
+          </div>
+
+          {standardTextRefreshSummary ? (
+            <div style={standardTextRefreshSummaryStyle}>
+              <strong>{standardTextRefreshSummary.dryRun ? "Dry-Run" : "Anwendung"}</strong>
+              <span>Gesamt: {standardTextRefreshSummary.total}</span>
+              <span>Aktualisiert: {standardTextRefreshSummary.updated}</span>
+              <span>Übersprungen: {standardTextRefreshSummary.skipped}</span>
+              <span>Fehler: {standardTextRefreshSummary.failed}</span>
+            </div>
+          ) : null}
+
+          {standardTextRefreshResults.length > 0 ? (
+            <div style={{ marginTop: 14 }}>
+              <table style={tableStyle}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Gebiet</th>
+                    <th style={thStyle}>Report</th>
+                    <th style={thStyle}>Status</th>
+                    <th style={thStyle}>Keys</th>
+                    <th style={thStyle}>Hinweis</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {standardTextRefreshResults.map((row) => (
+                    <tr key={`${row.area_id}:${row.report_path}`}>
+                      <td style={tdStyle}>{row.area_id}</td>
+                      <td style={tdStyle}><code>{row.report_path}</code></td>
+                      <td style={tdStyle}>{row.status}</td>
+                      <td style={tdStyle}>{Number(row.changed_keys ?? 0)}</td>
+                      <td style={tdStyle}>{formatStandardTextRefreshReason(row.reason)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
         </div>
       </section>
       ) : null}
@@ -9989,6 +10453,52 @@ const marketExplanationThemeTabCountStyle: React.CSSProperties = {
   lineHeight: 1,
   opacity: 0.75,
   fontWeight: 700,
+};
+
+const standardTextRefreshSearchResultsStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 8,
+  border: "1px solid #e2e8f0",
+  borderRadius: 8,
+  padding: 8,
+  background: "#f8fafc",
+  maxHeight: 260,
+  overflowY: "auto",
+};
+
+const standardTextRefreshSearchResultButtonStyle = (active: boolean): React.CSSProperties => ({
+  width: "100%",
+  textAlign: "left",
+  border: active ? "1px solid #0f766e" : "1px solid #dbe4ee",
+  borderRadius: 8,
+  background: active ? "#ecfdf5" : "#ffffff",
+  padding: "10px 12px",
+  display: "grid",
+  gap: 4,
+  cursor: "pointer",
+});
+
+const standardTextRefreshSelectionCardStyle: React.CSSProperties = {
+  border: "1px solid #e2e8f0",
+  borderRadius: 8,
+  background: "#fff",
+  padding: "10px 12px",
+  display: "grid",
+  gap: 4,
+};
+
+const standardTextRefreshSummaryStyle: React.CSSProperties = {
+  marginTop: 14,
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 12,
+  alignItems: "center",
+  border: "1px solid #e2e8f0",
+  borderRadius: 8,
+  background: "#f8fafc",
+  padding: "10px 12px",
+  fontSize: 12,
+  color: "#334155",
 };
 
 const h2Style: React.CSSProperties = {
