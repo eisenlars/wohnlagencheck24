@@ -24,6 +24,8 @@ const PARTNER_PURGE_TABLES: Array<{ table: string; column: string }> = [
   { table: "public_request_entries", column: "partner_id" },
   { table: "public_reference_entries", column: "partner_id" },
   { table: "report_texts", column: "partner_id" },
+  { table: "partner_area_generated_texts", column: "partner_id" },
+  { table: "partner_area_runtime_states", column: "partner_id" },
   { table: "llm_partner_budget_overrides", column: "partner_id" },
   { table: "llm_usage_events", column: "partner_id" },
   { table: "data_value_settings", column: "auth_user_id" },

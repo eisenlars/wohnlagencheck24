@@ -10,6 +10,12 @@ import {
   generateKreisPriceTexts,
   generateOrtslagePriceTexts,
 } from "@/lib/text-core";
+import {
+  extractGeneratedTextRows,
+  loadPartnerAreaRuntimeState,
+  replacePartnerAreaGeneratedTexts,
+  upsertPartnerAreaRuntimeState,
+} from "@/lib/partner-area-runtime";
 import { reportScopeTagsFromSlugs } from "@/lib/cache-tags";
 
 export const runtime = "nodejs";
@@ -790,6 +796,12 @@ function computeDeltaFactors(target: NormalizedFactors, previous: NormalizedFact
   };
 }
 
+function toRecord(value: unknown): AnyRecord {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as AnyRecord)
+    : {};
+}
+
 export async function POST(req: Request) {
   if (!isEnabled()) {
     return NextResponse.json({ error: "Rebuild is disabled." }, { status: 403 });
@@ -889,7 +901,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "helpers missing in report JSON." }, { status: 400 });
     }
 
-    let targetFactors = normalizeFactors(helpers?.applied_factors ?? DEFAULT_FACTORS);
+    const existingRuntimeState = await loadPartnerAreaRuntimeState({
+      supabaseClient: admin as never,
+      partnerId: user.id,
+      areaId,
+      scope,
+    });
+
+    let effectiveData = data;
+    let effectiveHelpers = helpers;
+    let effectiveTextInputs = textInputs;
+    let effectiveScopeInputs = scopeInputs;
+
+    if (mode === "textgen_only" && existingRuntimeState) {
+      const runtimeData = toRecord(existingRuntimeState.data_json);
+      const runtimeHelpers = toRecord(existingRuntimeState.helpers_json);
+      const runtimeTextInputs = toRecord(existingRuntimeState.textgen_inputs_json);
+      effectiveTextInputs = {
+        ...toRecord(textInputs),
+        ...(Object.keys(runtimeTextInputs).length > 0 ? { [scope]: runtimeTextInputs } : {}),
+      };
+      effectiveData = {
+        ...toRecord(data),
+        ...runtimeData,
+        textgen_inputs: effectiveTextInputs,
+      };
+      effectiveHelpers = {
+        ...toRecord(helpers),
+        ...runtimeHelpers,
+      };
+      effectiveScopeInputs = runtimeTextInputs;
+    }
+
+    let targetFactors = normalizeFactors(
+      existingRuntimeState?.factors_snapshot
+      ?? existingRuntimeState?.helpers_json?.applied_factors
+      ?? helpers?.applied_factors
+      ?? DEFAULT_FACTORS,
+    );
     let debugPayload: Record<string, unknown> | null = null;
     if (mode === "full") {
       const { data: settings } = await admin
@@ -900,7 +949,11 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       targetFactors = normalizeFactors(settings ?? DEFAULT_FACTORS);
-      const previousFactorsRaw = helpers?.applied_factors ?? payload.previous_factors;
+      const previousFactorsRaw =
+        existingRuntimeState?.factors_snapshot
+        ?? existingRuntimeState?.helpers_json?.applied_factors
+        ?? helpers?.applied_factors
+        ?? payload.previous_factors;
       const previousFactors = previousFactorsRaw
         ? normalizeFactors(previousFactorsRaw)
         : targetFactors;
@@ -919,8 +972,8 @@ export async function POST(req: Request) {
           publicUrl,
           publicUrlFresh: publicUrl ? `${publicUrl}?ts=${Date.now()}` : null,
           before: {
-            haus_kaufpreis: toNumber(getFirstRow(data, "haus_kaufpreis")?.kaufpreis_haus),
-            immobilien_kaufpreis: toNumber(getFirstRow(data, "immobilien_kaufpreis")?.kaufpreis_immobilien),
+            haus_kaufpreis: toNumber(getFirstRow(toRecord(data), "haus_kaufpreis")?.kaufpreis_haus),
+            immobilien_kaufpreis: toNumber(getFirstRow(toRecord(data), "immobilien_kaufpreis")?.kaufpreis_immobilien),
             market_immobilienpreise: toNumber(
               scopeInputs?.marketValues_generallyPrices_dict?.immobilienpreise_mittel_jahr01_kreis ??
               scopeInputs?.marketValues_generallyPrices_dict?.immobilienpreise_mittel_jahr01_ortslage,
@@ -946,24 +999,24 @@ export async function POST(req: Request) {
       }
 
       applyFactorsToData(
-        data,
+        effectiveData,
         meta,
-        deltaFactors,
+        targetFactors,
         typeof scopeInputs?.year01 === "number" ? scopeInputs.year01 : null,
       );
       applyFactorsToTextInputs(
-        scopeInputs,
-        deltaFactors,
+        effectiveScopeInputs,
+        targetFactors,
         typeof scopeInputs?.year01 === "number" ? scopeInputs.year01 : null,
       );
-      recomputeAggregatedPrices(data, scopeInputs, scope, meta);
+      recomputeAggregatedPrices(effectiveData, effectiveScopeInputs, scope, meta);
       if (debugPayload) {
         debugPayload.after = {
-          haus_kaufpreis: toNumber(getFirstRow(data, "haus_kaufpreis")?.kaufpreis_haus),
-          immobilien_kaufpreis: toNumber(getFirstRow(data, "immobilien_kaufpreis")?.kaufpreis_immobilien),
+          haus_kaufpreis: toNumber(getFirstRow(effectiveData, "haus_kaufpreis")?.kaufpreis_haus),
+          immobilien_kaufpreis: toNumber(getFirstRow(effectiveData, "immobilien_kaufpreis")?.kaufpreis_immobilien),
           market_immobilienpreise: toNumber(
-            scopeInputs?.marketValues_generallyPrices_dict?.immobilienpreise_mittel_jahr01_kreis ??
-            scopeInputs?.marketValues_generallyPrices_dict?.immobilienpreise_mittel_jahr01_ortslage,
+            effectiveScopeInputs?.marketValues_generallyPrices_dict?.immobilienpreise_mittel_jahr01_kreis ??
+            effectiveScopeInputs?.marketValues_generallyPrices_dict?.immobilienpreise_mittel_jahr01_ortslage,
           ),
         };
       }
@@ -971,10 +1024,14 @@ export async function POST(req: Request) {
 
     const nextSignatures =
       scope === "ortslage"
-        ? buildOrtslageSectionSignatures(scopeInputs)
-        : buildKreisSectionSignatures(scopeInputs);
-    const previousSignatures =
-      (helpers?.textgen_signatures && helpers.textgen_signatures[scope]) || {};
+        ? buildOrtslageSectionSignatures(effectiveScopeInputs)
+        : buildKreisSectionSignatures(effectiveScopeInputs);
+    const previousSignatures = toRecord(
+      (existingRuntimeState?.helpers_json?.textgen_signatures
+        && toRecord(existingRuntimeState.helpers_json.textgen_signatures)[scope])
+      || (effectiveHelpers?.textgen_signatures && effectiveHelpers.textgen_signatures[scope])
+      || {},
+    ) as Record<string, string>;
     const changedSignatureKeys = new Set<string>();
     for (const [sectionKey, signature] of Object.entries(nextSignatures)) {
       if (previousSignatures?.[sectionKey] !== signature) {
@@ -1003,35 +1060,48 @@ export async function POST(req: Request) {
 
     const updatedText =
       scope === "ortslage"
-        ? generateOrtslagePriceTexts(text, scopeInputs, allowedKeys)
-        : generateKreisPriceTexts(text, scopeInputs, allowedKeys);
+        ? generateOrtslagePriceTexts(text, effectiveScopeInputs, allowedKeys)
+        : generateKreisPriceTexts(text, effectiveScopeInputs, allowedKeys);
 
-    report.text = updatedText;
-    report.data = { ...data, textgen_inputs: textInputs };
-    report.meta = {
-      ...meta,
-    };
-    report.helpers = {
-      ...helpers,
+    const nextHelpers = {
+      ...toRecord(effectiveHelpers),
       textgen_last_aktualisierung: meta?.aktualisierung ?? null,
       applied_factors: targetFactors,
       textgen_signatures: {
-        ...(helpers?.textgen_signatures ?? {}),
+        ...toRecord(effectiveHelpers?.textgen_signatures),
         [scope]: nextSignatures,
       },
     };
+    const runtimeData = { ...toRecord(effectiveData) };
+    delete runtimeData.textgen_inputs;
+    delete runtimeData.text;
 
-    const uploadRes = await admin.storage
-      .from(SUPABASE_BUCKET)
-      .upload(reportPath, JSON.stringify(report), {
-        upsert: true,
-        contentType: "application/json",
-        cacheControl: "0",
-      });
+    await upsertPartnerAreaRuntimeState({
+      supabaseClient: admin as never,
+      row: {
+        partner_id: user.id,
+        area_id: areaId,
+        scope,
+        factors_snapshot: targetFactors as unknown as Record<string, unknown>,
+        data_json: runtimeData,
+        textgen_inputs_json: toRecord(effectiveScopeInputs),
+        helpers_json: nextHelpers,
+      },
+    });
 
-    if (uploadRes.error) {
-      return NextResponse.json({ error: uploadRes.error.message }, { status: 500 });
-    }
+    await replacePartnerAreaGeneratedTexts({
+      supabaseClient: admin as never,
+      partnerId: user.id,
+      areaId,
+      scope,
+      rows: extractGeneratedTextRows({
+        partnerId: user.id,
+        areaId,
+        scope,
+        textTree: updatedText as Record<string, Record<string, string>>,
+        signatures: nextSignatures,
+      }),
+    });
 
     const reportTags =
       scope === "ortslage"
@@ -1047,7 +1117,17 @@ export async function POST(req: Request) {
     for (const tag of reportTags) {
       revalidateTag(tag, "max");
     }
-    return NextResponse.json({ ok: true, area_id: areaId, scope, mode, upload_summary: null, debug: debugPayload });
+    return NextResponse.json({
+      ok: true,
+      area_id: areaId,
+      scope,
+      mode,
+      upload_summary: null,
+      runtime_state_saved: true,
+      generated_text_count: Object.keys(nextSignatures).length,
+      storage_write: false,
+      debug: debugPayload,
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : null;
     return NextResponse.json(

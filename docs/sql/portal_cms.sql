@@ -139,6 +139,40 @@ create table if not exists public.admin_area_text_i18n_meta (
   primary key (scope_kind, scope_key, section_key, locale)
 );
 
+-- Partner-Runtime-Layer fuer Kreis/Ortslage
+-- Storage-Reports bleiben Base; partnerbezogene Rebuild-Ergebnisse liegen in der DB.
+create table if not exists public.partner_area_runtime_states (
+  partner_id text not null,
+  area_id text not null,
+  scope text not null
+    check (scope in ('kreis', 'ortslage')),
+  factors_snapshot jsonb not null default '{}'::jsonb,
+  data_json jsonb not null default '{}'::jsonb,
+  textgen_inputs_json jsonb not null default '{}'::jsonb,
+  helpers_json jsonb not null default '{}'::jsonb,
+  rebuilt_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (partner_id, area_id, scope)
+);
+
+create table if not exists public.partner_area_generated_texts (
+  partner_id text not null,
+  area_id text not null,
+  scope text not null
+    check (scope in ('kreis', 'ortslage')),
+  section_key text not null,
+  value_text text not null default '',
+  source_signature text,
+  updated_at timestamptz not null default now(),
+  primary key (partner_id, area_id, scope, section_key)
+);
+
+create index if not exists partner_area_runtime_states_area_idx
+  on public.partner_area_runtime_states (area_id, scope);
+
+create index if not exists partner_area_generated_texts_area_idx
+  on public.partner_area_generated_texts (area_id, scope);
+
 insert into public.portal_locale_config (
   locale,
   status,
@@ -193,3 +227,9 @@ comment on table public.admin_area_text_i18n_entries is
 
 comment on table public.admin_area_text_i18n_meta is
   'Quellbezug und Uebersetzungsstatus fuer mehrsprachige Admin-Gebietstexte.';
+
+comment on table public.partner_area_runtime_states is
+  'Partnerbezogene Runtime-Snapshots fuer faktorisierte Gebietsdaten, textgen_inputs und helper state. Storage-Reports bleiben damit Base.';
+
+comment on table public.partner_area_generated_texts is
+  'Partnerbezogene data-driven Texte pro Gebiet als DB-Layer ueber dem neutralen Storage-Report.';

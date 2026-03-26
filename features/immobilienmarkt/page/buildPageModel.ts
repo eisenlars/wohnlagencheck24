@@ -22,6 +22,8 @@ import {
   getLegendHtml,
   getApprovedAdminAreaTexts,
   getLiveAdminAreaTextTranslations,
+  getPartnerAreaGeneratedTexts,
+  getPartnerAreaRuntimeState,
   getApprovedReportTexts,
 } from "@/lib/data";
 import { buildWebAssetUrl } from "@/utils/assets";
@@ -223,6 +225,35 @@ function withTextTree(report: Report, textTree: TextTree): Report {
   };
 }
 
+function withPartnerRuntimeState(
+  report: Report,
+  runtimeState: {
+    data_json: Record<string, unknown>;
+    textgen_inputs_json: Record<string, unknown>;
+    helpers_json: Record<string, unknown>;
+  },
+  scope: "kreis" | "ortslage",
+): Report {
+  const currentData = asRecord(report.data) ?? {};
+  const nextData = {
+    ...currentData,
+    ...runtimeState.data_json,
+    textgen_inputs: {
+      ...(asRecord(currentData.textgen_inputs) ?? {}),
+      [scope]: runtimeState.textgen_inputs_json,
+    },
+    text: getTextTree(report),
+  };
+  return {
+    ...report,
+    data: nextData,
+    helpers: {
+      ...(asRecord(report.helpers) ?? {}),
+      ...runtimeState.helpers_json,
+    },
+  };
+}
+
 function setTextIfMissing(textTree: TextTree, sectionKey: string, value: string): boolean {
   const normalized = String(value ?? "").trim();
   if (!normalized) return false;
@@ -413,6 +444,21 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     (asString(meta["ortslage_schluessel"]) ??
       asString(meta["kreis_schluessel"]) ??
       "") || "";
+  const areaScope = areaId
+    ? (route.level === "ort" ? "ortslage" : "kreis")
+    : null;
+  const supabase = areaId ? (createAdminClient() as unknown as SupabaseClientLike) : null;
+  const scopedPartnerId = areaId && supabase
+    ? await resolveScopedPartnerIdForArea(supabase, areaId)
+    : null;
+
+  if (areaId && areaScope && supabase && scopedPartnerId) {
+    const runtimeState = await getPartnerAreaRuntimeState(supabase, scopedPartnerId, areaId, areaScope);
+    if (runtimeState) {
+      report = withPartnerRuntimeState(report, runtimeState, areaScope);
+    }
+  }
+
   if (areaId) {
     let ortslageNameMap: Record<string, string> | undefined = undefined;
     if (route.level === "kreis" && route.regionSlugs.length >= 2) {
@@ -421,12 +467,20 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
       ortslageNameMap = Object.fromEntries(orte.map((o) => [o.slug, o.name]));
     }
     report = applyDataDrivenTexts(report, areaId, ortslageNameMap);
+
+    if (supabase && scopedPartnerId && areaScope) {
+      const generatedTexts = await getPartnerAreaGeneratedTexts(supabase, scopedPartnerId, areaId, areaScope);
+      if (generatedTexts.length > 0) {
+        report = withTextTree(
+          report,
+          applyOverridesToTextTree(getTextTree(report), generatedTexts),
+        );
+      }
+    }
   }
 
   // DB-Overrides: approved report_texts überschreiben JSON-Texte (if present)
-  if (areaId) {
-    const supabase = createAdminClient() as unknown as SupabaseClientLike;
-    const scopedPartnerId = await resolveScopedPartnerIdForArea(supabase, areaId);
+  if (areaId && supabase) {
     const overrides = scopedPartnerId
       ? await getApprovedReportTexts(supabase, areaId, scopedPartnerId)
       : [];

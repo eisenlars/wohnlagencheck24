@@ -2,6 +2,7 @@
 
 import { buildWebAssetUrl } from "@/utils/assets";
 import { loadAdminAreaTextI18nEntries, loadAdminAreaTextRows } from "@/lib/admin-area-texts";
+import { loadPartnerAreaGeneratedTexts, loadPartnerAreaRuntimeState } from "@/lib/partner-area-runtime";
 import {
   REPORTS_TAG,
   reportScopeTagsForRouteSlugs,
@@ -49,6 +50,18 @@ export type ReportTextOverride = {
   section_key: string;
   optimized_content: string | null;
   status?: string | null;
+};
+
+export type PartnerAreaRuntimeStateView = {
+  partner_id: string;
+  area_id: string;
+  scope: "kreis" | "ortslage";
+  factors_snapshot: Record<string, unknown>;
+  data_json: Record<string, unknown>;
+  textgen_inputs_json: Record<string, unknown>;
+  helpers_json: Record<string, unknown>;
+  rebuilt_at: string | null;
+  updated_at: string | null;
 };
 
 const SUPABASE_PUBLIC_BASE_URL = process.env.SUPABASE_PUBLIC_BASE_URL ?? "";
@@ -180,6 +193,48 @@ export async function getApprovedAdminAreaTexts(
     }));
   } catch (err) {
     console.warn("admin_area_texts fetch error:", err);
+    return [];
+  }
+}
+
+export async function getPartnerAreaRuntimeState(
+  supabaseClient: SupabaseClientLike,
+  partnerId: string,
+  areaId: string,
+  scope: "kreis" | "ortslage",
+): Promise<PartnerAreaRuntimeStateView | null> {
+  try {
+    return await loadPartnerAreaRuntimeState({
+      supabaseClient,
+      partnerId,
+      areaId,
+      scope,
+    });
+  } catch (err) {
+    console.warn("partner_area_runtime_states fetch error:", err);
+    return null;
+  }
+}
+
+export async function getPartnerAreaGeneratedTexts(
+  supabaseClient: SupabaseClientLike,
+  partnerId: string,
+  areaId: string,
+  scope: "kreis" | "ortslage",
+): Promise<ReportTextOverride[]> {
+  try {
+    const rows = await loadPartnerAreaGeneratedTexts({
+      supabaseClient,
+      partnerId,
+      areaId,
+      scope,
+    });
+    return rows.map((row) => ({
+      section_key: row.section_key,
+      optimized_content: row.value_text ?? null,
+    }));
+  } catch (err) {
+    console.warn("partner_area_generated_texts fetch error:", err);
     return [];
   }
 }
