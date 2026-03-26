@@ -128,11 +128,6 @@ type IntegrationSyncSummary = {
   log?: SyncLogPayload[];
   result?: CrmSyncResultPayload | null;
 };
-type IntegrationPreviewSummary = {
-  status: "ok" | "warning" | "error";
-  message: string;
-};
-
 const AUTH_TYPE_LABELS: Record<string, string> = {
   api_key: "API Key",
   token: "Token",
@@ -546,21 +541,6 @@ function readSyncSummaryFromIntegration(integration: PartnerIntegration): Integr
   });
 }
 
-function readPreviewSummaryFromIntegration(integration: PartnerIntegration): IntegrationPreviewSummary | null {
-  const settings = (integration.settings ?? {}) as Record<string, unknown>;
-  const status = String(settings.last_preview_status ?? "").trim().toLowerCase();
-  const message = asText(settings.last_preview_message);
-  const testedAt = asText(settings.last_preview_finished_at) ?? asText(settings.last_previewed_at);
-  if (!status && !message && !testedAt) return null;
-  return {
-    status:
-      status === "ok" || status === "warning" || status === "error"
-        ? (status as IntegrationPreviewSummary["status"])
-        : "warning",
-    message: message ?? "Kein CRM-Abruf-Test protokolliert.",
-  };
-}
-
 function applyProviderSelection(
   draft: IntegrationDraft,
   nextProvider: string,
@@ -827,7 +807,6 @@ export default function PartnerSettingsPanel({
   const [secretDraft, setSecretDraft] = useState<Record<string, SecretDraft>>({});
   const [secretVisibility, setSecretVisibility] = useState<SecretVisibilityState>({});
   const [testResult, setTestResult] = useState<Record<string, { status: "ok" | "warning" | "error"; message: string }>>({});
-  const [syncResult, setSyncResult] = useState<Record<string, IntegrationSyncSummary>>({});
   const [integrationPolicy, setIntegrationPolicy] = useState<IntegrationPolicy>({ llm_partner_managed_allowed: true });
   const [llmUsageMonth, setLlmUsageMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [llmUsagePeriod, setLlmUsagePeriod] = useState<"timeline" | "year">("timeline");
@@ -1077,12 +1056,6 @@ export default function PartnerSettingsPanel({
     if (selectedIntegrationIdRef.current) {
       const integrationId = selectedIntegrationIdRef.current;
       setTestResult((prev) => {
-        if (!prev[integrationId]) return prev;
-        const next = { ...prev };
-        delete next[integrationId];
-        return next;
-      });
-      setSyncResult((prev) => {
         if (!prev[integrationId]) return prev;
         const next = { ...prev };
         delete next[integrationId];
@@ -1775,8 +1748,6 @@ export default function PartnerSettingsPanel({
                     const lastTestedAt = asText(settings.last_tested_at);
                     const lastTestStatus = asText(settings.last_test_status);
                     const lastTestMessage = asText(settings.last_test_message);
-                    const syncSummary = syncResult[integration.id] ?? readSyncSummaryFromIntegration(integration);
-                    const previewSummary = readPreviewSummaryFromIntegration(integration);
                     const relevantSecretFields = getRelevantSecretFields(integration);
                     const supportsSecrets = relevantSecretFields.length > 0;
                     return (
@@ -1933,52 +1904,6 @@ export default function PartnerSettingsPanel({
                                 >
                                   {testResult[integration.id].message}
                                 </p>
-                              ) : null}
-                              {previewSummary ? (
-                                <p
-                                  style={{
-                                    marginTop: 6,
-                                    marginBottom: 0,
-                                    fontSize: 12,
-                                    color:
-                                      previewSummary.status === "ok"
-                                        ? "#15803d"
-                                        : previewSummary.status === "warning"
-                                          ? "#b45309"
-                                          : "#b91c1c",
-                                  }}
-                                >
-                                  {previewSummary.message}
-                                </p>
-                              ) : null}
-                              {syncSummary ? (
-                                <>
-                                  <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                    Guarded-Testläufe und Referenzdiagnostik werden im Admin-Bereich ausgeführt.
-                                  </p>
-                                  <p
-                                    style={{
-                                      marginTop: 6,
-                                      marginBottom: 0,
-                                      fontSize: 12,
-                                      color:
-                                        syncSummary?.status === "ok"
-                                          ? "#15803d"
-                                          : syncSummary?.status === "warning"
-                                            ? "#b45309"
-                                            : syncSummary?.status === "running"
-                                              ? "#1d4ed8"
-                                              : "#b91c1c",
-                                    }}
-                                  >
-                                    {syncSummary?.message}
-                                  </p>
-                                  {syncSummary.lastSyncAt ? (
-                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                      Zuletzt synchronisiert: {new Date(syncSummary.lastSyncAt).toLocaleString("de-DE")}
-                                    </p>
-                                  ) : null}
-                                </>
                               ) : null}
                               {lastTestedAt ? (
                                 <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
