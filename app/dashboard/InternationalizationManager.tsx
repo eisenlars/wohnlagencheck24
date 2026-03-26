@@ -674,7 +674,7 @@ const TAB_SECTION_CONFIG_RAW: Record<string, Array<{ key: string; label: string;
   ],
   mietrendite: [
     { key: 'mietrendite_intro', label: 'Einleitung Rendite', type: 'general' },
-    { key: 'mietrendite_kaufpreisfaktor', label: 'Kaufpreisfaktor Info', type: 'general' },
+    { key: 'mietrendite_kaufpreisfaktor', label: 'Kaufpreisfaktor Info', type: 'data_driven' },
     { key: 'ueberschrift_mietrendite_bruttomietrendite', label: 'H2 Bruttomietrendite', type: 'individual' },
     { key: 'mietrendite_allgemein', label: 'Rendite Analyse', type: 'data_driven' },
     { key: 'mietrendite_hinweis', label: 'Wichtiger Hinweis', type: 'general' },

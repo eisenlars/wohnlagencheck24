@@ -49,7 +49,6 @@ export const GENERAL_STANDARD_KEYS = [
   "immobilienpreise_wohnung_intro",
   "mietpreise_intro",
   "mietrendite_intro",
-  "mietrendite_kaufpreisfaktor",
   "mietrendite_hinweis",
   "wohnmarktsituation_intro",
   "wohnmarktsituation_wohnraumnachfrage",

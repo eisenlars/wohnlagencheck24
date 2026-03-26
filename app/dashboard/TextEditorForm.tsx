@@ -178,7 +178,7 @@ const RAW_TAB_CONFIG = [
   ]},
   { id: 'mietrendite', label: 'Mietrendite', icon: '/icons/ws24_marktbericht_mietrendite.svg', sections: [
     { key: 'mietrendite_intro', label: 'Einleitung Rendite', type: 'general' },
-    { key: 'mietrendite_kaufpreisfaktor', label: 'Kaufpreisfaktor Info', type: 'general' },
+    { key: 'mietrendite_kaufpreisfaktor', label: 'Kaufpreisfaktor Info', type: 'data_driven' },
     { key: 'ueberschrift_mietrendite_bruttomietrendite', label: 'H2 Bruttomietrendite', type: 'individual' },
     { key: 'mietrendite_allgemein', label: 'Rendite Analyse', type: 'data_driven' },
     { key: 'mietrendite_hinweis', label: 'Wichtiger Hinweis', type: 'general' },
