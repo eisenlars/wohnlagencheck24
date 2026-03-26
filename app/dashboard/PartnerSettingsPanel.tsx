@@ -1758,11 +1758,6 @@ export default function PartnerSettingsPanel({
                                   {lastTestMessage ? ` - ${lastTestMessage}` : ""}
                                 </p>
                               ) : null}
-                              {isCrmIntegration && syncSummary?.lastSyncAt ? (
-                                <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                  Zuletzt synchronisiert: {new Date(syncSummary.lastSyncAt).toLocaleString("de-DE")}
-                                </p>
-                              ) : null}
                             </>
                           ) : null}
                         </div>
