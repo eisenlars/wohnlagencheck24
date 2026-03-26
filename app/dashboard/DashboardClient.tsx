@@ -135,6 +135,7 @@ const DISTRICT_HEADER_SELECTOR_TABS = new Set<MainTab>([
   'texts',
   'marketing',
   'local_site',
+  'blog',
   'international',
   'immobilien',
   'referenzen',
@@ -489,7 +490,7 @@ export default function DashboardClient() {
           title: 'Blog',
           description: 'Blogbeiträge aus Marktüberblick-Texten generieren und veröffentlichen.',
           isRegionBased: true,
-          showDistrictSelector: false,
+          showDistrictSelector: true,
         };
       case 'international':
         return {
