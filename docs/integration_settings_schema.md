@@ -44,7 +44,15 @@ Der Entwurf gilt fuer Integrationen in `public.partner_integrations`, insbesonde
   "resource_filters": {
     "listings": { "status": ["active"] },
     "requests": { "status": ["active"] },
-    "references": { "status": ["published"] }
+    "references": {
+      "archived": 1,
+      "status_ids": [123, 456]
+    }
+  },
+  "guarded": {
+    "units": { "max_pages": 1, "per_page": 10 },
+    "references": { "max_pages": 1, "per_page": 10 },
+    "saved_queries": { "max_pages": 1, "per_page": 50 }
   },
   "sync_mode": "polling",
   "cursor_config": {
@@ -80,6 +88,28 @@ Provider-spezifische Filterstruktur je Ressourcentyp, z. B. Status, Vermarktungs
 - `listings` (`object`)
 - `requests` (`object`)
 - `references` (`object`)
+
+Propstack-spezifisch fuer `references`:
+
+- `archived` (`-1 | 0 | 1`)
+  - `1`: nur archivierte Objekte
+  - `-1`: aktive + archivierte Objekte
+  - `0`: nur aktive Objekte
+- `status_ids` (`string[] | number[]`)
+  - gezielte Status-IDs fuer verkauft / vermietet / referenzrelevant
+- `custom_field_key` (`string`)
+  - optionaler Fallback fuer kontospezifische Referenzkennzeichen
+
+### `guarded` (optional, fuer Testlaeufe empfohlen)
+
+Budgetiert den Guarded-Sync je Ressourcentyp.
+
+- `units.max_pages`
+- `units.per_page`
+- `references.max_pages`
+- `references.per_page`
+- `saved_queries.max_pages`
+- `saved_queries.per_page`
 
 ### `sync_mode` (optional, empfohlen)
 
