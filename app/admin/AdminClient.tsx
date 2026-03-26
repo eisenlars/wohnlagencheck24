@@ -273,6 +273,20 @@ const PORTAL_LOCALE_LANGUAGE_PRESETS: PortalLocaleLanguagePreset[] = [
       { variant_label: "Standard", locale: "ar", label_native: "العربية", label_de: "Arabisch", bcp47_tag: "ar", number_locale: "ar", date_locale: "ar", currency_code: "EUR", fallback_locale: "de", text_direction: "rtl", billing_feature_code: "international_ar" },
     ],
   },
+  {
+    language_key: "ru",
+    label_de: "Russisch",
+    variants: [
+      { variant_label: "Standard", locale: "ru", label_native: "Русский", label_de: "Russisch", bcp47_tag: "ru-RU", number_locale: "ru-RU", date_locale: "ru-RU", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_ru" },
+    ],
+  },
+  {
+    language_key: "zh",
+    label_de: "Chinesisch (Mandarin)",
+    variants: [
+      { variant_label: "Standard", locale: "zh", label_native: "中文", label_de: "Chinesisch (Mandarin)", bcp47_tag: "zh-CN", number_locale: "zh-CN", date_locale: "zh-CN", currency_code: "EUR", fallback_locale: "de", text_direction: "ltr", billing_feature_code: "international_zh" },
+    ],
+  },
 ];
 
 function buildAreaOverviewRows(partnerList: Partner[]): AreaOverviewRow[] {
