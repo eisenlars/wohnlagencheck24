@@ -1445,6 +1445,11 @@ export default function AdminClient() {
     skipped: number;
     failed: number;
   } | null>(null);
+  const [standardTextSourceDefinitions, setStandardTextSourceDefinitions] = useState<MarketExplanationStandardTextDefinition[]>(
+    getMarketExplanationStandardDefinitions("bundesland"),
+  );
+  const [standardTextSourceDrafts, setStandardTextSourceDrafts] = useState<Record<string, string>>({});
+  const [standardTextSourceTab, setStandardTextSourceTab] = useState<string>(MARKET_EXPLANATION_STANDARD_TABS[0]?.label ?? "Übersicht");
   const [portalSystemTextDrafts, setPortalSystemTextDrafts] = useState<Record<string, {
     status: PortalSystemTextEntryStatus;
     value_text: string;
@@ -1618,6 +1623,18 @@ export default function AdminClient() {
       return (tab?.label ?? definition.tab) === marketExplanationTab;
     }),
     [marketExplanationStandardDefinitions, marketExplanationTab],
+  );
+  const standardTextRefreshSourceScope = standardTextRefreshScope === "bundesland" ? "bundesland" : "kreis";
+  const standardTextSourceVisibleTabs = useMemo(() => {
+    const allowed = new Set(standardTextSourceDefinitions.map((definition) => definition.tab));
+    return MARKET_EXPLANATION_STANDARD_TABS.filter((tab) => allowed.has(tab.id));
+  }, [standardTextSourceDefinitions]);
+  const activeStandardTextSourceDefinitions = useMemo(
+    () => standardTextSourceDefinitions.filter((definition) => {
+      const tab = MARKET_EXPLANATION_STANDARD_TABS.find((entry) => entry.id === definition.tab);
+      return (tab?.label ?? definition.tab) === standardTextSourceTab;
+    }),
+    [standardTextSourceDefinitions, standardTextSourceTab],
   );
   const marketExplanationVisibleTabs = useMemo(() => {
     const sourceDefinitions = marketExplanationMode === "standard"
@@ -1811,7 +1828,10 @@ export default function AdminClient() {
         loadMarketExplanationStaticTexts(),
       ]);
     } else if (restoredActiveView === "standard_text_refresh") {
-      void loadMarketExplanationBundeslaender();
+      void Promise.all([
+        loadMarketExplanationBundeslaender(),
+        loadStandardTextSource(restoredStandardTextRefreshScope === "bundesland" ? "bundesland" : "kreis"),
+      ]);
     } else if (restoredActiveView === "portal_cms") {
       void loadPortalCms();
     }
@@ -1850,6 +1870,13 @@ export default function AdminClient() {
       setMarketExplanationTab(marketExplanationVisibleTabs[0]?.label ?? "Übersicht");
     }
   }, [marketExplanationTab, marketExplanationVisibleTabs]);
+
+  useEffect(() => {
+    if (standardTextSourceVisibleTabs.length === 0) return;
+    if (!standardTextSourceVisibleTabs.some((tab) => tab.label === standardTextSourceTab)) {
+      setStandardTextSourceTab(standardTextSourceVisibleTabs[0]?.label ?? "Übersicht");
+    }
+  }, [standardTextSourceTab, standardTextSourceVisibleTabs]);
 
   useEffect(() => {
     if (marketExplanationStandardBundeslaender.length === 0) return;
@@ -1924,6 +1951,11 @@ export default function AdminClient() {
     setStandardTextRefreshResults([]);
     setStandardTextRefreshSummary(null);
   }, [standardTextRefreshScope, standardTextRefreshBundeslandSlug, standardTextRefreshSelection?.id]);
+
+  useEffect(() => {
+    if (activeView !== "standard_text_refresh") return;
+    void loadStandardTextSource(standardTextRefreshSourceScope);
+  }, [activeView, standardTextRefreshSourceScope]);
 
   useEffect(() => {
     if (!adminViewStateHydrated || !adminViewStateAppliedRef.current) return;
@@ -2327,7 +2359,10 @@ export default function AdminClient() {
         onClick: () => {
           setActiveView("standard_text_refresh");
           void run("Standardtext-Refresh laden", async () => {
-            await loadMarketExplanationBundeslaender();
+            await Promise.all([
+              loadMarketExplanationBundeslaender(),
+              loadStandardTextSource("bundesland"),
+            ]);
           }, { showSuccessModal: false });
         },
       },
@@ -2964,6 +2999,52 @@ export default function AdminClient() {
       if (nextBundeslaender.some((entry) => entry.slug === prev)) return prev;
       return nextBundeslaender[0]?.slug ?? "";
     });
+  }
+
+  async function loadStandardTextSource(scope: MarketExplanationStandardScope) {
+    const data = await api<{
+      scope?: MarketExplanationStandardScope;
+      definitions?: MarketExplanationStandardTextDefinition[];
+      entries?: MarketExplanationStandardEntry[];
+    }>(`/api/admin/standard-text-sources?scope=${encodeURIComponent(scope)}`);
+    const nextScope = data.scope ?? scope;
+    const nextDefinitions = data.definitions ?? getMarketExplanationStandardDefinitions(nextScope);
+    const nextEntries = data.entries ?? [];
+    setStandardTextSourceDefinitions(nextDefinitions);
+    setStandardTextSourceDrafts(
+      nextEntries.reduce<Record<string, string>>((acc, entry) => {
+        acc[entry.key] = entry.value_text ?? "";
+        return acc;
+      }, {}),
+    );
+  }
+
+  async function saveStandardTextSource(scope: MarketExplanationStandardScope) {
+    const rows = standardTextSourceDefinitions.map((definition) => ({
+      key: definition.key,
+      value_text: standardTextSourceDrafts[definition.key] ?? "",
+    }));
+    const data = await api<{
+      scope?: MarketExplanationStandardScope;
+      definitions?: MarketExplanationStandardTextDefinition[];
+      entries?: MarketExplanationStandardEntry[];
+    }>("/api/admin/standard-text-sources", {
+      method: "POST",
+      body: JSON.stringify({
+        scope,
+        entries: rows,
+      }),
+    });
+    const nextScope = data.scope ?? scope;
+    const nextDefinitions = data.definitions ?? getMarketExplanationStandardDefinitions(nextScope);
+    const nextEntries = data.entries ?? [];
+    setStandardTextSourceDefinitions(nextDefinitions);
+    setStandardTextSourceDrafts(
+      nextEntries.reduce<Record<string, string>>((acc, entry) => {
+        acc[entry.key] = entry.value_text ?? "";
+        return acc;
+      }, {}),
+    );
   }
 
   async function runStandardTextRefresh(dryRun: boolean) {
@@ -4777,7 +4858,10 @@ export default function AdminClient() {
             onClick={() => {
               setActiveView("standard_text_refresh");
               void run("Standardtext-Refresh laden", async () => {
-                await loadMarketExplanationBundeslaender();
+                await Promise.all([
+                  loadMarketExplanationBundeslaender(),
+                  loadStandardTextSource(standardTextRefreshSourceScope),
+                ]);
               }, { showSuccessModal: false });
             }}
             title="Standardtext-Refresh"
@@ -7047,6 +7131,115 @@ export default function AdminClient() {
         </div>
 
         <div style={marketExplanationWorkspaceCardStyle}>
+          <div style={{ display: "grid", gap: 14 }}>
+            <div style={marketExplanationActionRowStyle}>
+              <div style={marketExplanationActionGroupStyle}>
+                <div style={{ fontWeight: 700, color: "#0f172a" }}>Standardquelle bearbeiten</div>
+                <div style={marketExplanationScopeHintStyle}>
+                  {standardTextRefreshSourceScope === "bundesland"
+                    ? "Bearbeitet wird die Bundesland-Standarddatei im Storage."
+                    : "Bearbeitet wird die Kreis-/Ortslagen-Standarddatei im Storage."}
+                </div>
+              </div>
+              <div style={marketExplanationActionGroupStyle}>
+                <button
+                  style={btnGhostStyle}
+                  disabled={busy}
+                  onClick={() =>
+                    run("Standardquelle neu laden", async () => {
+                      await loadStandardTextSource(standardTextRefreshSourceScope);
+                    })
+                  }
+                >
+                  Neu laden
+                </button>
+                <button
+                  style={btnStyle}
+                  disabled={busy}
+                  onClick={() =>
+                    run("Standardquelle speichern", async () => {
+                      await saveStandardTextSource(standardTextRefreshSourceScope);
+                    })
+                  }
+                >
+                  Standardquelle speichern
+                </button>
+              </div>
+            </div>
+
+            <div style={marketExplanationScopeHintStyle}>
+              {standardTextRefreshSourceScope === "bundesland"
+                ? "Quelle: text-standards/bundesland/text_standard_bundesland.json"
+                : "Quelle: text-standards/kreis/text_standard_kreis.json"}
+            </div>
+
+            <div style={marketExplanationThemeTabBarStyle}>
+              {standardTextSourceVisibleTabs.map((tab) => (
+                <button
+                  key={`source:${tab.id}`}
+                  style={marketExplanationThemeTabButtonStyle(standardTextSourceTab === tab.label)}
+                  onClick={() => setStandardTextSourceTab(tab.label)}
+                >
+                  <span style={marketExplanationThemeTabLabelStyle}>{tab.label}</span>
+                  <span style={marketExplanationThemeTabCountStyle}>
+                    {standardTextSourceDefinitions.filter((definition) => definition.tab === tab.id).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: "grid", gap: 14 }}>
+              {activeStandardTextSourceDefinitions.map((definition) => (
+                <div key={`source:${definition.key}`} style={{ border: "1px solid #dbe4ee", borderRadius: 8, padding: 10, background: "#fff" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                          {getTextKeyLabel(definition.key, definition.key)}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            letterSpacing: 0.3,
+                            textTransform: "uppercase",
+                            borderRadius: 999,
+                            padding: "3px 8px",
+                            background: definition.type === "individual" ? "#fef3c7" : "#e0f2fe",
+                            color: definition.type === "individual" ? "#92400e" : "#075985",
+                          }}
+                        >
+                          {definition.type === "individual" ? "Individual" : "General"}
+                        </span>
+                      </div>
+                      <div style={mutedStyle}>
+                        <code>{definition.key}</code>
+                      </div>
+                    </div>
+                  </div>
+                  <textarea
+                    style={{ ...inputStyle, minHeight: 120, marginTop: 10, resize: "vertical" }}
+                    value={standardTextSourceDrafts[definition.key] ?? ""}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setStandardTextSourceDrafts((prev) => ({
+                        ...prev,
+                        [definition.key]: nextValue,
+                      }));
+                    }}
+                  />
+                </div>
+              ))}
+              {activeStandardTextSourceDefinitions.length === 0 ? (
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc", ...mutedStyle }}>
+                  Für diesen Tab sind aktuell keine editierbaren Standardtexte in der Quelle hinterlegt.
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div style={{ height: 1, background: "#e2e8f0", margin: "18px 0" }} />
+
           {standardTextRefreshScope === "bundesland" ? (
             <>
               <div style={marketExplanationActionRowStyle}>
