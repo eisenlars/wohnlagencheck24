@@ -536,6 +536,9 @@ type StandardTextRefreshSelection = AreaOption & {
   id: string;
 };
 
+type HandoverLocaleMode = "skip" | "copy_disabled" | "copy_and_enable";
+type HandoverBlogTransferMode = "keep_old_partner" | "copy_as_draft" | "copy_as_is";
+
 type HandoverApiResponse = {
   ok?: boolean;
   handover?: {
@@ -546,11 +549,23 @@ type HandoverApiResponse = {
     deactivate_old_integrations_applied?: boolean;
     old_partner_remains_active?: boolean;
     transfer_mode?: "base_reset" | "copy_partner_state";
+    include_report_customization?: boolean;
+    include_seo_geo?: boolean;
+    blog_transfer_mode?: HandoverBlogTransferMode;
+    locale_modes?: Record<string, HandoverLocaleMode>;
     copied_partner_state?: {
       data_value_settings?: number;
       report_texts?: number;
       runtime_states?: number;
       generated_texts?: number;
+      portal_i18n?: number;
+      marketing_texts?: number;
+      marketing_i18n?: number;
+      blog_posts?: number;
+      blog_i18n?: number;
+      locales_enabled?: number;
+      locales_disabled?: number;
+      locales_skipped?: number;
     };
   };
 };
@@ -563,6 +578,18 @@ type AdminWelcomeAction = {
   badge?: string | null;
   onClick: () => void;
 };
+
+function formatHandoverLocaleModeLabel(mode: HandoverLocaleMode): string {
+  if (mode === "copy_and_enable") return "übernehmen und aktivieren";
+  if (mode === "copy_disabled") return "übernehmen, deaktiviert";
+  return "nicht übernehmen";
+}
+
+function formatHandoverBlogTransferModeLabel(mode: HandoverBlogTransferMode): string {
+  if (mode === "copy_as_draft") return "als Entwurf kopieren";
+  if (mode === "copy_as_is") return "wie bisher übernehmen";
+  return "beim alten Partner lassen";
+}
 
 type PortalBlockType = PortalContentBlock["type"];
 type PortalWrapBlockType = PortalContentWrapTextBlock["type"];
@@ -1530,6 +1557,10 @@ export default function AdminClient() {
     area_id: "",
     new_partner_id: "",
     transfer_mode: "base_reset" as "base_reset" | "copy_partner_state",
+    include_report_customization: true,
+    include_seo_geo: true,
+    blog_transfer_mode: "copy_as_draft" as HandoverBlogTransferMode,
+    locale_modes: {} as Record<string, HandoverLocaleMode>,
   });
 
   const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
@@ -1562,6 +1593,10 @@ export default function AdminClient() {
     oldPartnerId: string;
     newPartnerId: string;
     transferMode: "base_reset" | "copy_partner_state";
+    includeReportCustomization: boolean;
+    includeSeoGeo: boolean;
+    blogTransferMode: HandoverBlogTransferMode;
+    localeModes: Record<string, HandoverLocaleMode>;
     oldPartnerIsSystemDefault: boolean;
   }>({
     open: false,
@@ -1570,6 +1605,10 @@ export default function AdminClient() {
     oldPartnerId: "",
     newPartnerId: "",
     transferMode: "base_reset",
+    includeReportCustomization: true,
+    includeSeoGeo: true,
+    blogTransferMode: "copy_as_draft",
+    localeModes: {},
     oldPartnerIsSystemDefault: false,
   });
   const [handoverStatusModal, setHandoverStatusModal] = useState<{
@@ -2542,6 +2581,27 @@ export default function AdminClient() {
     () => partners.find((p) => p.id === handoverDraft.new_partner_id) ?? null,
     [partners, handoverDraft.new_partner_id],
   );
+  const handoverLocaleOptions = useMemo(
+    () => partnerLocaleBillingRows
+      .filter((row) => row.enabled)
+      .slice()
+      .sort((a, b) => Number(a.sort_order ?? 100) - Number(b.sort_order ?? 100)),
+    [partnerLocaleBillingRows],
+  );
+  useEffect(() => {
+    setHandoverDraft((prev) => {
+      const nextModes: Record<string, HandoverLocaleMode> = {};
+      for (const row of handoverLocaleOptions) {
+        const locale = String(row.locale ?? "").trim().toLowerCase();
+        if (!locale || locale === "de") continue;
+        nextModes[locale] = prev.locale_modes[locale] ?? "copy_and_enable";
+      }
+      const sameKeys = Object.keys(nextModes).length === Object.keys(prev.locale_modes).length
+        && Object.entries(nextModes).every(([locale, mode]) => prev.locale_modes[locale] === mode);
+      if (sameKeys) return prev;
+      return { ...prev, locale_modes: nextModes };
+    });
+  }, [handoverLocaleOptions]);
   const portalPartner = useMemo(
     () => partners.find((partner) => partner.is_system_default === true) ?? null,
     [partners],
@@ -4416,6 +4476,10 @@ export default function AdminClient() {
     oldPartnerId: string;
     newPartnerId: string;
     transferMode: "base_reset" | "copy_partner_state";
+    includeReportCustomization: boolean;
+    includeSeoGeo: boolean;
+    blogTransferMode: HandoverBlogTransferMode;
+    localeModes: Record<string, HandoverLocaleMode>;
     oldPartnerIsSystemDefault: boolean;
   }) {
     setBusy(true);
@@ -4437,6 +4501,10 @@ export default function AdminClient() {
           old_partner_id: input.oldPartnerId,
           new_partner_id: input.newPartnerId,
           transfer_mode: input.transferMode,
+          include_report_customization: input.includeReportCustomization,
+          include_seo_geo: input.includeSeoGeo,
+          blog_transfer_mode: input.blogTransferMode,
+          locale_modes: input.localeModes,
         }),
       });
       setHandoverStatusModal((m) => ({
@@ -4444,13 +4512,16 @@ export default function AdminClient() {
         lines: [
           ...m.lines,
           "2/4 Server-Übergabe abgeschlossen.",
-          `Übergabemodus: ${result.handover?.transfer_mode === "copy_partner_state" ? "Partnerzustand übernommen" : "Basiszustand"}`,
+          `Berichtindividualisierung: ${result.handover?.include_report_customization ? "übernommen" : "Basiszustand"}`,
+          `SEO & GEO: ${result.handover?.include_seo_geo ? "übernommen" : "nicht übernommen"}`,
+          `Blogarchiv: ${formatHandoverBlogTransferModeLabel(result.handover?.blog_transfer_mode ?? input.blogTransferMode)}`,
           input.oldPartnerIsSystemDefault
             ? "Hinweis: Das Gebiet wurde vom Portalpartner auf einen operativen Partner überführt. Der Portalpartner bleibt dauerhaft aktiv."
             : `Alte Integrationen deaktiviert: ${result.handover?.deactivate_old_integrations_applied ? "Ja" : "Nein"}`,
-          result.handover?.transfer_mode === "copy_partner_state"
-            ? `Kopiert: Faktoren ${result.handover?.copied_partner_state?.data_value_settings ?? 0}, Report-Texte ${result.handover?.copied_partner_state?.report_texts ?? 0}, Runtime ${result.handover?.copied_partner_state?.runtime_states ?? 0}, data-driven Texte ${result.handover?.copied_partner_state?.generated_texts ?? 0}`
-            : "Zielpartner startet auf Basiszustand ohne Übernahme von Partnerdaten.",
+          `Kopiert Bericht: Faktoren ${result.handover?.copied_partner_state?.data_value_settings ?? 0}, Report-Texte ${result.handover?.copied_partner_state?.report_texts ?? 0}, Runtime ${result.handover?.copied_partner_state?.runtime_states ?? 0}, data-driven Texte ${result.handover?.copied_partner_state?.generated_texts ?? 0}, Übersetzungen ${result.handover?.copied_partner_state?.portal_i18n ?? 0}`,
+          `Kopiert SEO/GEO: Texte ${result.handover?.copied_partner_state?.marketing_texts ?? 0}, Übersetzungen ${result.handover?.copied_partner_state?.marketing_i18n ?? 0}`,
+          `Kopiert Blog: Beiträge ${result.handover?.copied_partner_state?.blog_posts ?? 0}, Übersetzungen ${result.handover?.copied_partner_state?.blog_i18n ?? 0}`,
+          `Sprachen: aktiviert ${result.handover?.copied_partner_state?.locales_enabled ?? 0}, deaktiviert ${result.handover?.copied_partner_state?.locales_disabled ?? 0}, übersprungen ${result.handover?.copied_partner_state?.locales_skipped ?? 0}`,
           input.oldPartnerIsSystemDefault
             ? "Hinweis: Der Portalpartner wird nicht über Datenbereinigung entfernt."
             : "Hinweis: Alter Partner bleibt aktiv. Eine vollständige Entfernung erfolgt nur separat über Datenbereinigung.",
@@ -4468,6 +4539,10 @@ export default function AdminClient() {
         area_id: "",
         new_partner_id: "",
         transfer_mode: "base_reset",
+        include_report_customization: true,
+        include_seo_geo: true,
+        blog_transfer_mode: "copy_as_draft",
+        locale_modes: {},
       });
 
       setHandoverStatusModal((m) => ({
@@ -4560,7 +4635,19 @@ export default function AdminClient() {
               {" "}übergeben.
             </p>
             <p style={{ ...modalMessageStyle, marginTop: -4 }}>
-              Übergabemodus: <strong>{handoverConfirmModal.transferMode === "copy_partner_state" ? "Partnerzustand übernehmen" : "Basiszustand"}</strong>
+              Berichtindividualisierung: <strong>{handoverConfirmModal.includeReportCustomization ? "übernehmen" : "Basiszustand"}</strong> · SEO &amp; GEO: <strong>{handoverConfirmModal.includeSeoGeo ? "übernehmen" : "nicht übernehmen"}</strong>
+            </p>
+            <p style={{ ...modalMessageStyle, marginTop: -4 }}>
+              Blogarchiv: <strong>{formatHandoverBlogTransferModeLabel(handoverConfirmModal.blogTransferMode)}</strong>
+            </p>
+            <p style={{ ...modalMessageStyle, marginTop: -4 }}>
+              Sprachen: <strong>{
+                Object.keys(handoverConfirmModal.localeModes).length > 0
+                  ? Object.entries(handoverConfirmModal.localeModes)
+                    .map(([locale, mode]) => `${locale} (${formatHandoverLocaleModeLabel(mode)})`)
+                    .join(", ")
+                  : "keine zusätzlichen Sprachen"
+              }</strong>
             </p>
             <p style={{ ...modalMessageStyle, marginTop: -4 }}>
               {handoverConfirmModal.oldPartnerIsSystemDefault
@@ -4584,6 +4671,10 @@ export default function AdminClient() {
                     oldPartnerId: payload.oldPartnerId,
                     newPartnerId: payload.newPartnerId,
                     transferMode: payload.transferMode,
+                    includeReportCustomization: payload.includeReportCustomization,
+                    includeSeoGeo: payload.includeSeoGeo,
+                    blogTransferMode: payload.blogTransferMode,
+                    localeModes: payload.localeModes,
                     oldPartnerIsSystemDefault: payload.oldPartnerIsSystemDefault,
                   });
                 }}
@@ -6109,37 +6200,99 @@ export default function AdminClient() {
             ))}
           </select>
         </div>
-        <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            style={partnerTabButtonStyle(handoverDraft.transfer_mode === "base_reset")}
-            onClick={() => setHandoverDraft((v) => ({ ...v, transfer_mode: "base_reset" }))}
-          >
-            Basiszustand
-          </button>
-          <button
-            type="button"
-            style={partnerTabButtonStyle(handoverDraft.transfer_mode === "copy_partner_state")}
-            onClick={() => setHandoverDraft((v) => ({ ...v, transfer_mode: "copy_partner_state" }))}
-          >
-            Partnerzustand übernehmen
-          </button>
-        </div>
         <div style={{ marginTop: 10, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", background: "#f8fafc" }}>
           <div style={{ fontSize: 12, color: "#334155", marginBottom: 6 }}>
             {selectedPartner?.is_system_default
               ? "Hinweis: Der Portalpartner bleibt dauerhaft aktiv."
               : "Hinweis: Dieser Partner bleibt noch aktiv, seine Integrationen werden deaktiviert bis zur vollständigen Löschung des Accounts."}
           </div>
-          <div style={{ fontSize: 12, color: "#334155", marginBottom: 6 }}>
-            {handoverDraft.transfer_mode === "copy_partner_state"
-              ? "Es werden Faktoren, Report-Overrides sowie der neue Runtime-/data-driven Zustand des Gebiets auf den Zielpartner kopiert."
-              : "Der Zielpartner startet mit Basiszustand. Vorhandene Partnerdaten des Zielpartners für dieses Gebiet werden dabei entfernt."}
+          <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <input
+                type="checkbox"
+                checked={handoverDraft.include_report_customization}
+                onChange={(e) => setHandoverDraft((v) => ({
+                  ...v,
+                  include_report_customization: e.target.checked,
+                  transfer_mode: e.target.checked || v.include_seo_geo ? "copy_partner_state" : "base_reset",
+                }))}
+              />
+              <span style={{ fontSize: 12, color: "#334155" }}>
+                <strong>Berichtindividualisierung mitnehmen</strong><br />
+                Faktoren, Runtime-Snapshots, data-driven Texte, Report-Overrides und Portal-Übersetzungen.
+              </span>
+            </label>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <input
+                type="checkbox"
+                checked={handoverDraft.include_seo_geo}
+                onChange={(e) => setHandoverDraft((v) => ({
+                  ...v,
+                  include_seo_geo: e.target.checked,
+                  transfer_mode: v.include_report_customization || e.target.checked ? "copy_partner_state" : "base_reset",
+                }))}
+              />
+              <span style={{ fontSize: 12, color: "#334155" }}>
+                <strong>SEO &amp; GEO Texte mitnehmen</strong><br />
+                Marketingtexte und deren Übersetzungen für Title, Description und weitere Metadaten.
+              </span>
+            </label>
+            <div style={{ fontSize: 12, color: "#334155" }}>
+              <strong>Lokale Website</strong><br />
+              Bleibt unberührt. Der neue Partner startet dort ohne kanalbezogene Local-Site-Texte.
+            </div>
+            <label style={{ display: "grid", gap: 6, fontSize: 12, color: "#334155" }}>
+              <span><strong>Blogarchiv</strong></span>
+              <select
+                style={inputStyle}
+                value={handoverDraft.blog_transfer_mode}
+                onChange={(e) => setHandoverDraft((v) => ({ ...v, blog_transfer_mode: e.target.value as HandoverBlogTransferMode }))}
+              >
+                <option value="keep_old_partner">Beim alten Partner lassen</option>
+                <option value="copy_as_draft">Zum neuen Partner als Entwurf kopieren</option>
+                <option value="copy_as_is">Zum neuen Partner wie bisher übernehmen</option>
+              </select>
+            </label>
+            {handoverLocaleOptions.length > 0 ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                <div style={{ fontSize: 12, color: "#334155" }}>
+                  <strong>Sprachen</strong><br />
+                  Für jede bisher freigeschaltete Sprache wird festgelegt, ob Übersetzungen kopiert und beim Zielpartner aktiviert werden.
+                </div>
+                {handoverLocaleOptions.map((row) => {
+                  const locale = String(row.locale ?? "").trim().toLowerCase();
+                  const currentMode = handoverDraft.locale_modes[locale] ?? "copy_and_enable";
+                  return (
+                    <div key={`handover-locale-${locale}`} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 220px", gap: 10, alignItems: "center" }}>
+                      <div style={{ fontSize: 12, color: "#334155" }}>
+                        <strong>{row.label_de || row.label_native || locale}</strong>
+                        <div style={{ color: "#64748b" }}>{locale}{row.bcp47_tag ? ` · ${row.bcp47_tag}` : ""}</div>
+                      </div>
+                      <select
+                        style={inputStyle}
+                        value={currentMode}
+                        onChange={(e) => setHandoverDraft((v) => ({
+                          ...v,
+                          locale_modes: {
+                            ...v.locale_modes,
+                            [locale]: e.target.value as HandoverLocaleMode,
+                          },
+                        }))}
+                      >
+                        <option value="skip">Nicht übernehmen</option>
+                        <option value="copy_disabled">Übernehmen, deaktiviert</option>
+                        <option value="copy_and_enable">Übernehmen und aktivieren</option>
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
           <div style={{ fontSize: 12, color: "#334155" }}>
             <strong>Vorschau:</strong>{" "}
             {selectedPartner && handoverDraft.area_id && handoverTargetPartner
-              ? `${selectedHandoverAreaOption?.displayLabel ?? handoverDraft.area_id} von ${formatPartnerName(selectedPartner)} zu ${formatPartnerName(handoverTargetPartner)} (${handoverDraft.transfer_mode === "copy_partner_state" ? "Partnerzustand übernehmen" : "Basiszustand"})`
+              ? `${selectedHandoverAreaOption?.displayLabel ?? handoverDraft.area_id} von ${formatPartnerName(selectedPartner)} zu ${formatPartnerName(handoverTargetPartner)} · Bericht ${handoverDraft.include_report_customization ? "ja" : "nein"} · SEO/GEO ${handoverDraft.include_seo_geo ? "ja" : "nein"} · Blog ${formatHandoverBlogTransferModeLabel(handoverDraft.blog_transfer_mode)}`
               : "Bitte Kreis und Zielpartner auswählen."}
           </div>
         </div>
@@ -6156,6 +6309,10 @@ export default function AdminClient() {
                 oldPartnerId: selectedPartnerId,
                 newPartnerId: handoverDraft.new_partner_id,
                 transferMode: handoverDraft.transfer_mode,
+                includeReportCustomization: handoverDraft.include_report_customization,
+                includeSeoGeo: handoverDraft.include_seo_geo,
+                blogTransferMode: handoverDraft.blog_transfer_mode,
+                localeModes: handoverDraft.locale_modes,
                 oldPartnerIsSystemDefault: Boolean(selectedPartner?.is_system_default),
               });
             }}
