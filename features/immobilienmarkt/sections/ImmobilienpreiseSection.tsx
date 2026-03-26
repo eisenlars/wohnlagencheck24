@@ -502,7 +502,7 @@ export function ImmobilienpreiseSection(props: Props) {
                   {orte.map((ort) => {
                     const isActive = !!ortSlug && ort.slug === ortSlug;
                     const sectionSuffix = activeTabId && activeTabId !== "uebersicht" ? `/${activeTabId}` : "";
-                    const href = `/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ort.slug}${sectionSuffix}`;
+                    const href = `${basePath}/${ort.slug}${sectionSuffix}`;
 
                     return (
                       <Link

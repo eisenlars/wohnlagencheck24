@@ -1342,7 +1342,7 @@ export function WohnmarktsituationSection(
                 {(props.ctx?.orte ?? []).map((ort) => {
                   const isActive = !!props.ctx?.ortSlug && ort.slug === props.ctx.ortSlug;
                   const sectionSuffix = activeTabId && activeTabId !== "uebersicht" ? `/${activeTabId}` : "";
-                  const href = `/immobilienmarkt/${props.ctx?.bundeslandSlug}/${props.ctx?.kreisSlug}/${ort.slug}${sectionSuffix}`;
+                  const href = `${basePath}/${ort.slug}${sectionSuffix}`;
 
                   return (
                     <Link

@@ -28,8 +28,7 @@ export type OrtslagenUebersichtRow = {
 type OrtslagenUebersichtTableProps = {
   rows: OrtslagenUebersichtRow[];
   orte: OrtsRef[];
-  bundeslandSlug: string;
-  kreisSlug: string;
+  basePath: string;
 
   // Farbkonzept (wie bei Ihnen: Header kräftig, Cells leicht getönt)
   colorImmo: string;  // z.B. "rgb(75,192,192,0.6)"
@@ -54,8 +53,7 @@ function trendColor(t: number | null): string {
 export function OrtslagenUebersichtTable({
   rows,
   orte,
-  bundeslandSlug,
-  kreisSlug,
+  basePath,
   colorImmo,
   colorGrund,
   colorMiete,
@@ -175,7 +173,7 @@ export function OrtslagenUebersichtTable({
                     >
                       {ortMatch ? (
                         <Link
-                          href={`/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/${ortMatch.slug}`}
+                          href={`${basePath}/${ortMatch.slug}`}
                           className="link-primary text-decoration-none"
                         >
                           {ortMatch.name}

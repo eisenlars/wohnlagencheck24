@@ -848,8 +848,7 @@ export function UebersichtSection(
           <OrtslagenUebersichtTable
             rows={vm.ortslagenUebersicht}
             orte={orte}
-            bundeslandSlug={bundeslandSlug}
-            kreisSlug={kreisSlug}
+            basePath={basePath}
             colorImmo={COLOR_IMMO}
             colorGrund={COLOR_GRUND}
             colorMiete={COLOR_MIETE}
