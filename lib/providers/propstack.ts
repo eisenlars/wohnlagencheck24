@@ -136,6 +136,49 @@ type PropstackFetchBatchResult<T> = {
   pagesFetched: number;
 };
 
+type PropstackGuardedResourceLimits = {
+  maxPages: number;
+  perPage: number;
+};
+
+type PropstackGuardedLimits = {
+  units: PropstackGuardedResourceLimits;
+  savedQueries: PropstackGuardedResourceLimits;
+};
+
+function readNestedObject(record: Record<string, unknown> | null | undefined, key: string): Record<string, unknown> {
+  const value = record?.[key];
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function readBoundedInteger(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = typeof value === "number"
+    ? value
+    : typeof value === "string" && value.trim().length > 0
+      ? Number(value)
+      : NaN;
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, Math.floor(parsed)));
+}
+
+function getPropstackGuardedLimits(settings: Record<string, unknown> | null): PropstackGuardedLimits {
+  const guarded = readNestedObject(settings, "guarded");
+  const units = readNestedObject(guarded, "units");
+  const savedQueries = readNestedObject(guarded, "saved_queries");
+
+  return {
+    units: {
+      maxPages: readBoundedInteger(units.max_pages, 1, 1, 20),
+      perPage: readBoundedInteger(units.per_page, 10, 1, 100),
+    },
+    savedQueries: {
+      maxPages: readBoundedInteger(savedQueries.max_pages, 1, 1, 10),
+      perPage: readBoundedInteger(savedQueries.per_page, 50, 1, 100),
+    },
+  };
+}
+
 function toSettings(settings: Record<string, unknown> | null): PropstackResourceSettings {
   const resourceFilters = (settings?.resource_filters ?? {}) as Record<string, unknown>;
   const referencesCfg = (resourceFilters.references ?? {}) as Record<string, unknown>;
@@ -1014,13 +1057,17 @@ export async function syncPropstackResources(
   apiKey: string,
 ): Promise<ResourceSyncData & { offers: MappedOffer[] }> {
   const cfg = toSettings(integration.settings);
+  const guardedLimits = getPropstackGuardedLimits(integration.settings);
   const notes: string[] = [];
   const partialSyncMode = true;
   let providerRequestCount = 0;
   let providerPagesFetched = 0;
   const providerBreakdown: Record<string, { requests: number; pages_fetched: number }> = {};
 
-  const unitsResult = await fetchPropstackUnitsDetailed(integration, apiKey, { maxPages: 1, perPage: 10 });
+  const unitsResult = await fetchPropstackUnitsDetailed(integration, apiKey, {
+    maxPages: guardedLimits.units.maxPages,
+    perPage: guardedLimits.units.perPage,
+  });
   providerRequestCount += unitsResult.requestsMade;
   providerPagesFetched += unitsResult.pagesFetched;
   providerBreakdown.units = {
@@ -1087,7 +1134,9 @@ export async function syncPropstackResources(
   if (knownReferenceStatusNames.size > 0) {
     notes.push(`reference diagnostics: recognized completion statuses=${Array.from(knownReferenceStatusNames).sort().join(", ")}`);
   }
-  notes.push("guarded test sync: propstack units limited to first page for write-path validation");
+  notes.push(
+    `guarded sync: propstack units limited to maxPages=${guardedLimits.units.maxPages}, perPage=${guardedLimits.units.perPage}`,
+  );
   const referencesFetched = true;
   let requestsFetched = false;
   let requests: RawRequest[] = [];
@@ -1095,7 +1144,10 @@ export async function syncPropstackResources(
   let requestsSource: "live" | "unavailable" = "unavailable";
 
   try {
-    const profilesResult = await fetchPropstackSearchProfilesDetailed(integration, apiKey, { maxPages: 1, perPage: 50 });
+    const profilesResult = await fetchPropstackSearchProfilesDetailed(integration, apiKey, {
+      maxPages: guardedLimits.savedQueries.maxPages,
+      perPage: guardedLimits.savedQueries.perPage,
+    });
     providerRequestCount += profilesResult.requestsMade;
     providerPagesFetched += profilesResult.pagesFetched;
     providerBreakdown.saved_queries = {
@@ -1107,7 +1159,9 @@ export async function syncPropstackResources(
       .map((p) => mapSearchProfileRequest(integration.partner_id, p));
     requestsFetched = true;
     requestsSource = "live";
-    notes.push("guarded test sync: propstack saved_queries limited to first page");
+    notes.push(
+      `guarded sync: propstack saved_queries limited to maxPages=${guardedLimits.savedQueries.maxPages}, perPage=${guardedLimits.savedQueries.perPage}`,
+    );
   } catch (error) {
     requestsSource = "unavailable";
     notes.push(`propstack saved_queries live fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
@@ -1140,6 +1194,16 @@ export async function syncPropstackResources(
       provider_request_count: providerRequestCount,
       provider_pages_fetched: providerPagesFetched,
       provider_breakdown: providerBreakdown,
+      guarded_limits: {
+        units: {
+          max_pages: guardedLimits.units.maxPages,
+          per_page: guardedLimits.units.perPage,
+        },
+        saved_queries: {
+          max_pages: guardedLimits.savedQueries.maxPages,
+          per_page: guardedLimits.savedQueries.perPage,
+        },
+      },
       partial_sync_mode: partialSyncMode,
       stale_deactivation_allowed: false,
       references_source: referencesSource,

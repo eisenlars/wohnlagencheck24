@@ -5,8 +5,6 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { syncIntegrationResources } from "@/lib/providers";
 import type { PartnerIntegration } from "@/lib/providers/types";
-import { fetchPropstackUnits } from "@/lib/providers/propstack";
-import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
 
 type IntegrationStepLogEntry = {
   at: string;
@@ -253,44 +251,26 @@ export async function POST(
 
     const isPropstack = String(integration.provider ?? "").toLowerCase() === "propstack";
     if (isPropstack) {
-      const auth = (integration.auth_config ?? {}) as Record<string, unknown>;
-      const apiKey =
-        readSecretFromAuthConfig(auth, "api_key")
-        ?? readSecretFromAuthConfig(auth, "token");
-
-      if (!apiKey) {
-        return finish(
-          "error",
-          "API-Key fehlt für Provider propstack.",
-          "config_error",
-          {
-            skipped: true,
-            reason: "missing api key",
-          },
-          400,
-        );
-      }
-
-      requestCount = 1;
-      pagesFetched = 1;
       await patchIntegrationSettings(admin, integration, {
         last_preview_step: "provider_request_started",
-        last_preview_request_count: requestCount,
-        last_preview_pages_fetched: pagesFetched,
+        last_preview_request_count: 0,
+        last_preview_pages_fetched: 0,
         last_preview_log: appendIntegrationLog(asObject(integration.settings).last_preview_log, {
           at: new Date().toISOString(),
           step: "provider_request_started",
           status: "running",
-          message: "Propstack-Preview mit erster Units-Seite gestartet.",
+          message: "Propstack-Preview mit guarded CRM-Diagnostik gestartet.",
         }),
       });
 
       try {
-        const units = await withTimeout(
-          fetchPropstackUnits(integration, apiKey, { maxPages: PREVIEW_MAX_PAGES, perPage: PREVIEW_PER_PAGE }),
+        const result = await withTimeout(
+          syncIntegrationResources(integration),
           PREVIEW_MAX_RUNTIME_MS,
           `CRM-Abrufbudget überschritten (max. ${PREVIEW_MAX_RUNTIME_MS}ms).`,
         );
+        requestCount = result.diagnostics?.provider_request_count ?? 0;
+        pagesFetched = result.diagnostics?.provider_pages_fetched ?? 0;
         await patchIntegrationSettings(admin, integration, {
           last_preview_step: "provider_request_finished",
           last_preview_request_count: requestCount,
@@ -299,45 +279,60 @@ export async function POST(
             at: new Date().toISOString(),
             step: "provider_request_finished",
             status: "ok",
-            message: `Propstack-Preview erfolgreich geladen (${units.length} Datensaetze).`,
+            message: `Propstack-Preview erfolgreich geladen (${result.offers.length} Angebote, ${result.references.length} Referenzen, ${result.requests.length} Gesuche).`,
           }),
         });
 
         return finish(
           "ok",
-          `CRM-Abruf erfolgreich (${units.length} Datensaetze).`,
+          `CRM-Abruf erfolgreich (${result.offers.length} Angebote, ${result.references.length} Referenzen, ${result.requests.length} Gesuche).`,
           "completed",
           {
             skipped: false,
             provider: integration.provider,
-            diagnostic_mode: "propstack_first_page",
-            offers_count: units.length,
-            listings_count: units.length,
-            references_count: null,
-            requests_count: null,
-            references_fetched: null,
-            requests_fetched: null,
-            notes: [
-              "Preview nutzt bei Propstack nur die erste Units-Seite mit with_meta=1.",
-            ],
-            offers_preview: units.slice(0, 5).map((unit) => ({
-              external_id: String(unit.exposee_id ?? unit.id ?? ""),
-              title: unit.title ?? null,
-              offer_type: unit.marketing_type ?? null,
-              object_type: unit.rs_type ?? null,
-              address: [unit.street, unit.house_number, unit.zip_code, unit.city].filter(Boolean).join(" ") || null,
+            diagnostic_mode: "propstack_guarded_sync",
+            offers_count: result.offers.length,
+            listings_count: result.listings.length,
+            references_count: result.references.length,
+            requests_count: result.requests.length,
+            references_fetched: result.referencesFetched,
+            requests_fetched: result.requestsFetched,
+            notes: result.notes ?? [],
+            provider_breakdown: result.diagnostics?.provider_breakdown ?? null,
+            guarded_limits: result.diagnostics?.guarded_limits ?? null,
+            offers_preview: result.offers.slice(0, 5).map((offer) => ({
+              external_id: offer.external_id,
+              title: offer.title,
+              offer_type: offer.offer_type,
+              object_type: offer.object_type,
+              address: offer.address,
             })),
-            listings_preview: units.slice(0, 5).map((unit) => ({
-              external_id: String(unit.exposee_id ?? unit.id ?? ""),
-              title: unit.title ?? null,
-              source_updated_at: unit.updated_at ?? null,
-              status: unit.status ?? null,
+            listings_preview: result.listings.slice(0, 5).map((listing) => ({
+              external_id: listing.external_id,
+              title: listing.title,
+              source_updated_at: listing.source_updated_at,
+              status: listing.status,
+            })),
+            references_preview: result.references.slice(0, 5).map((reference) => ({
+              external_id: reference.external_id,
+              title: reference.title,
+              source_updated_at: reference.source_updated_at,
+              status: reference.status,
+            })),
+            requests_preview: result.requests.slice(0, 5).map((request) => ({
+              external_id: request.external_id,
+              title: request.title,
+              source_updated_at: request.source_updated_at,
+              status: request.status,
             })),
           },
           200,
           {
             stopped_due_to_budget: false,
             provider_http_status: 200,
+            max_requests: Math.max(requestCount, PREVIEW_MAX_REQUESTS),
+            max_pages: Math.max(pagesFetched, PREVIEW_MAX_PAGES),
+            per_page: result.diagnostics?.guarded_limits?.units?.per_page ?? PREVIEW_PER_PAGE,
           },
         );
       } catch (previewError) {
