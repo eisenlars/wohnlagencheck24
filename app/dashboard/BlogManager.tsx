@@ -47,7 +47,22 @@ type BlogPostRow = {
 
 type LlmIntegrationOption = {
   id: string;
+  source: 'partner' | 'global';
+  provider: string;
+  model: string;
   label: string;
+  partnerIntegrationId: string | null;
+  globalProviderId: string | null;
+};
+
+type LlmOptionApiRow = {
+  id?: string | null;
+  source?: string | null;
+  provider?: string | null;
+  model?: string | null;
+  label?: string | null;
+  partner_integration_id?: string | null;
+  global_provider_id?: string | null;
 };
 
 const SOURCE_KEYS = [
@@ -194,40 +209,56 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
   useEffect(() => {
     async function loadLlmOptions() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data, error: loadError } = await supabase
-          .from('partner_integrations')
-          .select('id, provider, settings, is_active')
-          .eq('partner_id', user.id)
-          .eq('kind', 'llm')
-          .eq('is_active', true)
-          .order('created_at', { ascending: true });
-        if (loadError) throw loadError;
-        const nextOptions = (data ?? []).map((entry) => {
-          const settings = (entry.settings ?? {}) as Record<string, unknown>;
-          const provider = String(entry.provider ?? '').trim() || 'LLM';
-          const model = String(settings.model ?? settings.model_name ?? '').trim();
+        const integrationsRes = await fetch('/api/partner/llm/options');
+        if (!integrationsRes.ok) throw new Error('LLM-Optionen konnten nicht geladen werden.');
+        const payload = await integrationsRes.json().catch(() => ({}));
+        const items: LlmOptionApiRow[] = Array.isArray(payload?.options)
+          ? (payload.options as LlmOptionApiRow[])
+          : [];
+        const llmModeDefault = String(payload?.llm_mode_default ?? '').trim().toLowerCase();
+        const nextOptions = items
+          .map((entry) => {
+            const id = String(entry?.id ?? '').trim();
+            if (!id) return null;
+            const provider = String(entry?.provider ?? '').trim() || 'LLM';
+            const model = String(entry?.model ?? '').trim() || 'Standardmodell';
+            const source = String(entry?.source ?? '').trim().toLowerCase() === 'global' ? 'global' : 'partner';
           return {
-            id: String(entry.id),
-            label: model ? `${provider} · ${model}` : provider,
-          };
-        });
+            id,
+            source,
+            provider,
+            model,
+            label: String(entry?.label ?? '').trim() || `${provider} · ${model}${source === 'global' ? ' (Global)' : ' (Partner)'}`,
+            partnerIntegrationId: String(entry?.partner_integration_id ?? '').trim() || null,
+            globalProviderId: String(entry?.global_provider_id ?? '').trim() || null,
+          } satisfies LlmIntegrationOption;
+        })
+          .filter((entry): entry is LlmIntegrationOption => Boolean(entry));
         setLlmOptions(nextOptions);
-        setSelectedLlmIntegrationId((prev) => prev || nextOptions[0]?.id || '');
+        setSelectedLlmIntegrationId((prev) => {
+          if (prev && nextOptions.some((item) => item.id === prev)) return prev;
+          if (llmModeDefault === 'central_managed') {
+            return nextOptions.find((item) => item.source === 'global')?.id ?? nextOptions[0]?.id ?? '';
+          }
+          if (llmModeDefault === 'partner_managed') {
+            return nextOptions.find((item) => item.source === 'partner')?.id ?? nextOptions[0]?.id ?? '';
+          }
+          return nextOptions[0]?.id ?? '';
+        });
       } catch (err) {
         console.error(err);
       }
     }
 
     void loadLlmOptions();
-  }, [supabase]);
+  }, []);
 
   const handleGenerate = async () => {
     if (!areaName || !hasAllSources) return;
     setGenerating(true);
     setError(null);
     try {
+      const selectedOption = llmOptions.find((item) => item.id === (selectedLlmIntegrationId || llmOptions[0]?.id)) ?? null;
       const res = await fetch('/api/ai-blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -236,7 +267,8 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
           authorName: authorName || undefined,
           source,
           customPrompt: customPrompt || undefined,
-          llm_integration_id: selectedLlmIntegrationId || undefined,
+          llm_integration_id: selectedOption?.partnerIntegrationId || undefined,
+          llm_global_provider_id: selectedOption?.globalProviderId || undefined,
         }),
       });
       const data = await res.json();
