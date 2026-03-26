@@ -113,6 +113,62 @@ type Integration = {
   last_sync_at?: string | null;
 };
 
+type CrmSyncResultPayload = {
+  listings_count: number;
+  references_count: number;
+  requests_count: number;
+  offers_count: number;
+  deactivated_listings: number;
+  deactivated_offers: number;
+  skipped: boolean;
+  reason?: string;
+  notes?: string[];
+};
+
+type SyncLogPayload = {
+  at?: string | null;
+  step?: string | null;
+  status?: "running" | "ok" | "warning" | "error" | null;
+  message?: string | null;
+};
+
+type IntegrationSyncSummary = {
+  status: "ok" | "warning" | "error" | "running";
+  message: string;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  lastSyncAt?: string | null;
+  errorClass?: string | null;
+  requestCount?: number | null;
+  pagesFetched?: number | null;
+  traceId?: string | null;
+  step?: string | null;
+  heartbeatAt?: string | null;
+  deadlineAt?: string | null;
+  cancelRequested?: boolean;
+  log?: SyncLogPayload[];
+  result?: CrmSyncResultPayload | null;
+};
+
+type IntegrationPreviewSummary = {
+  status: "ok" | "warning" | "error";
+  message: string;
+  testedAt?: string | null;
+  traceId?: string | null;
+};
+
+type CrmIntegrationAdminDraft = {
+  referencesArchived: string;
+  referencesStatusIds: string;
+  referencesCustomFieldKey: string;
+  guardedUnitsMaxPages: string;
+  guardedUnitsPerPage: string;
+  guardedReferencesMaxPages: string;
+  guardedReferencesPerPage: string;
+  guardedSavedQueriesMaxPages: string;
+  guardedSavedQueriesPerPage: string;
+};
+
 type AreaOption = {
   id: string;
   name?: string | null;
@@ -1020,8 +1076,229 @@ async function readJsonSafe(res: Response) {
   }
 }
 
+function asObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function asText(value: unknown): string | null {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : null;
+}
+
 function extractErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
+}
+
+function parseOptionalPositiveInteger(value: string, label: string): number | null {
+  const trimmed = String(value ?? "").trim();
+  if (!trimmed) return null;
+  if (!/^\d+$/.test(trimmed)) {
+    throw new Error(`${label} muss eine positive Ganzzahl sein.`);
+  }
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`${label} muss eine positive Ganzzahl sein.`);
+  }
+  return parsed;
+}
+
+function formatCsvInput(values: unknown): string {
+  if (!Array.isArray(values)) return "";
+  return values
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
+function parseCsvNumberList(value: string, label: string): number[] {
+  const parts = String(value ?? "")
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const seen = new Set<number>();
+  const numbers: number[] = [];
+  for (const part of parts) {
+    if (!/^\d+$/.test(part)) {
+      throw new Error(`${label} darf nur ganze Zahlen enthalten.`);
+    }
+    const parsed = Number(part);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw new Error(`${label} darf nur positive IDs enthalten.`);
+    }
+    if (seen.has(parsed)) continue;
+    seen.add(parsed);
+    numbers.push(parsed);
+  }
+  return numbers;
+}
+
+function formatSyncResultMessage(result: CrmSyncResultPayload): string {
+  if (result.skipped) {
+    if (result.reason === "integration inactive") return "Die CRM-Anbindung ist derzeit deaktiviert.";
+    if (result.reason === "all capabilities disabled") return "Alle CRM-Bereiche sind in dieser Anbindung deaktiviert.";
+    return "Der CRM-Sync wurde übersprungen.";
+  }
+
+  const parts = [
+    `${result.offers_count} Angebote`,
+    `${result.references_count} Referenzen`,
+    `${result.requests_count} Gesuche`,
+  ];
+  const extras: string[] = [];
+  if (result.deactivated_offers > 0) extras.push(`${result.deactivated_offers} Angebote deaktiviert`);
+  if (result.deactivated_listings > 0) extras.push(`${result.deactivated_listings} Rohobjekte deaktiviert`);
+  if (result.notes?.length) extras.push(result.notes[0] ?? "");
+  return `${parts.join(" · ")} synchronisiert${extras.length ? ` · ${extras.join(" · ")}` : ""}`;
+}
+
+function readSyncSummaryFromIntegration(integration: Integration): IntegrationSyncSummary | null {
+  const settings = asObject(integration.settings);
+  const state = String(settings.sync_state ?? "").trim().toLowerCase();
+  const lastSyncAt = asText(integration.last_sync_at);
+  if (!state && !lastSyncAt) return null;
+
+  const result = (settings.sync_result ?? null) as CrmSyncResultPayload | null;
+  const rawMessage = String(settings.sync_message ?? "").trim();
+  const errorClass = asText(settings.sync_error_class);
+  const isLegacyOperatorMessage =
+    state !== "running"
+    && (rawMessage.toLowerCase().includes("manuell zurückgesetzt") || rawMessage.toLowerCase().includes("manuell abgebrochen"));
+  const isHistoricalOperatorNotice =
+    (state === "idle" && (errorClass === "manual_reset" || errorClass === "cancelled"))
+    || isLegacyOperatorMessage;
+  const message =
+    (isHistoricalOperatorNotice ? "" : rawMessage)
+    || (result ? formatSyncResultMessage(result) : state === "running" ? "CRM-Synchronisierung läuft..." : "CRM-Synchronisierung");
+
+  return {
+    status:
+      state === "running"
+        ? "running"
+        : state === "success"
+          ? "ok"
+          : state === "error"
+            ? "error"
+            : "warning",
+    message,
+    startedAt: asText(settings.sync_started_at),
+    finishedAt: asText(settings.sync_finished_at),
+    lastSyncAt,
+    errorClass: isHistoricalOperatorNotice ? null : errorClass,
+    requestCount: typeof settings.sync_request_count === "number" ? settings.sync_request_count : null,
+    pagesFetched: typeof settings.sync_pages_fetched === "number" ? settings.sync_pages_fetched : null,
+    traceId: asText(settings.sync_trace_id),
+    step: asText(settings.sync_step),
+    heartbeatAt: asText(settings.sync_heartbeat_at),
+    deadlineAt: asText(settings.sync_deadline_at),
+    cancelRequested: settings.sync_cancel_requested === true,
+    log: Array.isArray(settings.sync_log) ? (settings.sync_log as SyncLogPayload[]) : [],
+    result,
+  };
+}
+
+function readPreviewSummaryFromIntegration(integration: Integration): IntegrationPreviewSummary | null {
+  const settings = asObject(integration.settings);
+  const status = String(settings.last_preview_status ?? "").trim().toLowerCase();
+  const message = asText(settings.last_preview_message);
+  const testedAt = asText(settings.last_preview_finished_at) ?? asText(settings.last_previewed_at);
+  if (!status && !message && !testedAt) return null;
+  return {
+    status:
+      status === "ok" || status === "warning" || status === "error"
+        ? (status as IntegrationPreviewSummary["status"])
+        : "warning",
+    message: message ?? "Kein CRM-Abruf-Test protokolliert.",
+    testedAt,
+    traceId: asText(settings.last_preview_trace_id),
+  };
+}
+
+function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegrationAdminDraft {
+  const settings = asObject(integration.settings);
+  const resourceFilters = asObject(settings.resource_filters);
+  const references = asObject(resourceFilters.references);
+  const guarded = asObject(settings.guarded);
+  const units = asObject(guarded.units);
+  const refLimits = asObject(guarded.references);
+  const savedQueries = asObject(guarded.saved_queries);
+
+  return {
+    referencesArchived: asText(references.archived) ?? "",
+    referencesStatusIds: formatCsvInput(references.status_ids),
+    referencesCustomFieldKey: asText(references.custom_field_key) ?? "",
+    guardedUnitsMaxPages: asText(units.max_pages) ?? "",
+    guardedUnitsPerPage: asText(units.per_page) ?? "",
+    guardedReferencesMaxPages: asText(refLimits.max_pages) ?? "",
+    guardedReferencesPerPage: asText(refLimits.per_page) ?? "",
+    guardedSavedQueriesMaxPages: asText(savedQueries.max_pages) ?? "",
+    guardedSavedQueriesPerPage: asText(savedQueries.per_page) ?? "",
+  };
+}
+
+function applyCrmAdminDraftToSettings(
+  integration: Integration,
+  draft: CrmIntegrationAdminDraft,
+): Record<string, unknown> {
+  const settings = { ...asObject(integration.settings) };
+  const resourceFilters = { ...asObject(settings.resource_filters) };
+  const references = { ...asObject(resourceFilters.references) };
+  const guarded = { ...asObject(settings.guarded) };
+  const units = { ...asObject(guarded.units) };
+  const referenceLimits = { ...asObject(guarded.references) };
+  const savedQueries = { ...asObject(guarded.saved_queries) };
+
+  const archived = asText(draft.referencesArchived);
+  if (archived === "1" || archived === "0" || archived === "-1") references.archived = Number(archived);
+  else delete references.archived;
+
+  const statusIds = parseCsvNumberList(draft.referencesStatusIds, "Status-IDs für Referenzen");
+  if (statusIds.length > 0) references.status_ids = statusIds;
+  else delete references.status_ids;
+
+  const customFieldKey = asText(draft.referencesCustomFieldKey);
+  if (customFieldKey) references.custom_field_key = customFieldKey;
+  else delete references.custom_field_key;
+
+  const unitsMaxPages = parseOptionalPositiveInteger(draft.guardedUnitsMaxPages, "Guarded Units max_pages");
+  const unitsPerPage = parseOptionalPositiveInteger(draft.guardedUnitsPerPage, "Guarded Units per_page");
+  const referencesMaxPages = parseOptionalPositiveInteger(draft.guardedReferencesMaxPages, "Guarded Referenzen max_pages");
+  const referencesPerPage = parseOptionalPositiveInteger(draft.guardedReferencesPerPage, "Guarded Referenzen per_page");
+  const savedQueriesMaxPages = parseOptionalPositiveInteger(draft.guardedSavedQueriesMaxPages, "Guarded Gesuche max_pages");
+  const savedQueriesPerPage = parseOptionalPositiveInteger(draft.guardedSavedQueriesPerPage, "Guarded Gesuche per_page");
+
+  if (unitsMaxPages !== null) units.max_pages = unitsMaxPages;
+  else delete units.max_pages;
+  if (unitsPerPage !== null) units.per_page = unitsPerPage;
+  else delete units.per_page;
+
+  if (referencesMaxPages !== null) referenceLimits.max_pages = referencesMaxPages;
+  else delete referenceLimits.max_pages;
+  if (referencesPerPage !== null) referenceLimits.per_page = referencesPerPage;
+  else delete referenceLimits.per_page;
+
+  if (savedQueriesMaxPages !== null) savedQueries.max_pages = savedQueriesMaxPages;
+  else delete savedQueries.max_pages;
+  if (savedQueriesPerPage !== null) savedQueries.per_page = savedQueriesPerPage;
+  else delete savedQueries.per_page;
+
+  if (Object.keys(references).length > 0) resourceFilters.references = references;
+  else delete resourceFilters.references;
+
+  if (Object.keys(resourceFilters).length > 0) settings.resource_filters = resourceFilters;
+  else delete settings.resource_filters;
+
+  if (Object.keys(units).length > 0) guarded.units = units;
+  else delete guarded.units;
+  if (Object.keys(referenceLimits).length > 0) guarded.references = referenceLimits;
+  else delete guarded.references;
+  if (Object.keys(savedQueries).length > 0) guarded.saved_queries = savedQueries;
+  else delete guarded.saved_queries;
+
+  if (Object.keys(guarded).length > 0) settings.guarded = guarded;
+  else delete settings.guarded;
+
+  return settings;
 }
 
 function formatPortalLocaleStatus(status: PortalLocaleStatus): string {
@@ -1210,6 +1487,7 @@ export default function AdminClient() {
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [areaMappings, setAreaMappings] = useState<AreaMapping[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [crmIntegrationDrafts, setCrmIntegrationDrafts] = useState<Record<string, CrmIntegrationAdminDraft>>({});
   const [status, setStatus] = useState<string>("Lade Admin-Daten...");
   const [adminDisplayName, setAdminDisplayName] = useState<string>("Admin");
   const [lastLogin, setLastLogin] = useState<string>("");
@@ -3817,6 +4095,15 @@ export default function AdminClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPartnerId, reviewAreaId]);
 
+  useEffect(() => {
+    const nextDrafts: Record<string, CrmIntegrationAdminDraft> = {};
+    for (const integration of integrations) {
+      if (String(integration.kind ?? "").toLowerCase() !== "crm") continue;
+      nextDrafts[integration.id] = buildCrmIntegrationAdminDraft(integration);
+    }
+    setCrmIntegrationDrafts(nextDrafts);
+  }, [integrations]);
+
   function closeSuccessModal() {
     setSuccessModal((v) => ({ ...v, open: false }));
     if (clearReviewOnSuccessClose) {
@@ -5935,6 +6222,7 @@ export default function AdminClient() {
         ) : null}
 
         {integrationsAdminTab === "overview" ? (
+        <>
         <table style={tableStyle}>
           <thead>
             <tr>
@@ -5995,6 +6283,344 @@ export default function AdminClient() {
             })}
           </tbody>
         </table>
+        <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
+          {integrations
+            .filter((integration) => String(integration.kind ?? "").toLowerCase() === "crm")
+            .map((integration) => {
+              const draft = crmIntegrationDrafts[integration.id] ?? buildCrmIntegrationAdminDraft(integration);
+              const syncSummary = readSyncSummaryFromIntegration(integration);
+              const previewSummary = readPreviewSummaryFromIntegration(integration);
+              return (
+                <div
+                  key={`crm-admin-${integration.id}`}
+                  style={{ border: "1px solid #dbeafe", borderRadius: 10, padding: 14, background: "#f8fbff" }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>
+                        CRM-Steuerung · {integration.provider}
+                      </div>
+                      <div style={{ ...mutedStyle, marginTop: 4, fontSize: 12 }}>
+                        Referenz-Mapping und Testläufe sind hier admin-only. Partner sehen nur noch Status und Ergebnis.
+                      </div>
+                    </div>
+                    <div style={{ ...mutedStyle, fontSize: 12 }}>
+                      {getIntegrationHealthSummary(integration)}
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+                    <label>
+                      Referenz-Archivfilter
+                      <select
+                        style={inputStyle}
+                        value={draft.referencesArchived}
+                        onChange={(e) =>
+                          setCrmIntegrationDrafts((prev) => ({
+                            ...prev,
+                            [integration.id]: { ...draft, referencesArchived: e.target.value },
+                          }))
+                        }
+                      >
+                        <option value="">Provider-Default</option>
+                        <option value="1">Nur archivierte</option>
+                        <option value="-1">Aktive + archivierte</option>
+                        <option value="0">Nur aktive</option>
+                      </select>
+                    </label>
+                    <label>
+                      Status-IDs für Referenzen
+                      <input
+                        style={inputStyle}
+                        value={draft.referencesStatusIds}
+                        onChange={(e) =>
+                          setCrmIntegrationDrafts((prev) => ({
+                            ...prev,
+                            [integration.id]: { ...draft, referencesStatusIds: e.target.value },
+                          }))
+                        }
+                        placeholder="z. B. 274, 311"
+                      />
+                    </label>
+                    <label>
+                      Optionales Custom-Field
+                      <input
+                        style={inputStyle}
+                        value={draft.referencesCustomFieldKey}
+                        onChange={(e) =>
+                          setCrmIntegrationDrafts((prev) => ({
+                            ...prev,
+                            [integration.id]: { ...draft, referencesCustomFieldKey: e.target.value },
+                          }))
+                        }
+                        placeholder="z. B. referenz_webseite"
+                      />
+                    </label>
+                  </div>
+
+                  <div style={{ marginTop: 14, fontWeight: 700, color: "#0f172a" }}>Guarded-Limits</div>
+                  <div style={{ marginTop: 8, display: "grid", gap: 12, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+                    <label>
+                      Units max_pages
+                      <input
+                        style={inputStyle}
+                        value={draft.guardedUnitsMaxPages}
+                        onChange={(e) =>
+                          setCrmIntegrationDrafts((prev) => ({
+                            ...prev,
+                            [integration.id]: { ...draft, guardedUnitsMaxPages: e.target.value },
+                          }))
+                        }
+                        placeholder="z. B. 2"
+                      />
+                    </label>
+                    <label>
+                      Units per_page
+                      <input
+                        style={inputStyle}
+                        value={draft.guardedUnitsPerPage}
+                        onChange={(e) =>
+                          setCrmIntegrationDrafts((prev) => ({
+                            ...prev,
+                            [integration.id]: { ...draft, guardedUnitsPerPage: e.target.value },
+                          }))
+                        }
+                        placeholder="z. B. 100"
+                      />
+                    </label>
+                    <label>
+                      Referenzen max_pages
+                      <input
+                        style={inputStyle}
+                        value={draft.guardedReferencesMaxPages}
+                        onChange={(e) =>
+                          setCrmIntegrationDrafts((prev) => ({
+                            ...prev,
+                            [integration.id]: { ...draft, guardedReferencesMaxPages: e.target.value },
+                          }))
+                        }
+                        placeholder="z. B. 2"
+                      />
+                    </label>
+                    <label>
+                      Referenzen per_page
+                      <input
+                        style={inputStyle}
+                        value={draft.guardedReferencesPerPage}
+                        onChange={(e) =>
+                          setCrmIntegrationDrafts((prev) => ({
+                            ...prev,
+                            [integration.id]: { ...draft, guardedReferencesPerPage: e.target.value },
+                          }))
+                        }
+                        placeholder="z. B. 100"
+                      />
+                    </label>
+                    <label>
+                      Gesuche max_pages
+                      <input
+                        style={inputStyle}
+                        value={draft.guardedSavedQueriesMaxPages}
+                        onChange={(e) =>
+                          setCrmIntegrationDrafts((prev) => ({
+                            ...prev,
+                            [integration.id]: { ...draft, guardedSavedQueriesMaxPages: e.target.value },
+                          }))
+                        }
+                        placeholder="z. B. 1"
+                      />
+                    </label>
+                    <label>
+                      Gesuche per_page
+                      <input
+                        style={inputStyle}
+                        value={draft.guardedSavedQueriesPerPage}
+                        onChange={(e) =>
+                          setCrmIntegrationDrafts((prev) => ({
+                            ...prev,
+                            [integration.id]: { ...draft, guardedSavedQueriesPerPage: e.target.value },
+                          }))
+                        }
+                        placeholder="z. B. 50"
+                      />
+                    </label>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+                    <button
+                      style={btnStyle}
+                      disabled={busy || !selectedPartnerId}
+                      onClick={() =>
+                        run("CRM-Settings speichern", async () => {
+                          const settings = applyCrmAdminDraftToSettings(integration, draft);
+                          await api(`/api/admin/integrations/${integration.id}`, {
+                            method: "PATCH",
+                            body: JSON.stringify({ settings }),
+                          });
+                          await loadPartnerDetails(selectedPartnerId);
+                        })
+                      }
+                    >
+                      CRM-Settings speichern
+                    </button>
+                    <button
+                      style={btnGhostStyle}
+                      disabled={busy || !integration.is_active || !selectedPartnerId}
+                      onClick={() =>
+                        run("CRM-Abruf testen", async () => {
+                          await api(`/api/admin/integrations/${integration.id}/preview-sync`, {
+                            method: "POST",
+                          });
+                          await loadPartnerDetails(selectedPartnerId);
+                        })
+                      }
+                    >
+                      CRM-Abruf testen
+                    </button>
+                    <button
+                      style={btnGhostStyle}
+                      disabled={busy || !integration.is_active || !selectedPartnerId || syncSummary?.status === "running"}
+                      onClick={() =>
+                        run("CRM Guarded-Testlauf starten", async () => {
+                          await api(`/api/admin/integrations/${integration.id}/sync`, {
+                            method: "POST",
+                          });
+                          await loadPartnerDetails(selectedPartnerId);
+                        })
+                      }
+                    >
+                      {syncSummary?.status === "running" ? "CRM Guarded-Testlauf läuft..." : "CRM Guarded-Testlauf starten"}
+                    </button>
+                    {syncSummary?.status === "running" ? (
+                      <button
+                        style={btnGhostStyle}
+                        disabled={busy || !selectedPartnerId}
+                        onClick={() =>
+                          run("CRM-Synchronisierung abbrechen", async () => {
+                            await api(`/api/admin/integrations/${integration.id}/sync`, {
+                              method: "DELETE",
+                            });
+                            await loadPartnerDetails(selectedPartnerId);
+                          })
+                        }
+                      >
+                        CRM-Synchronisierung abbrechen
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {previewSummary ? (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>Letzter CRM-Abruf-Test</div>
+                      <p
+                        style={{
+                          marginTop: 6,
+                          marginBottom: 0,
+                          fontSize: 12,
+                          color:
+                            previewSummary.status === "ok"
+                              ? "#15803d"
+                              : previewSummary.status === "warning"
+                                ? "#b45309"
+                                : "#b91c1c",
+                        }}
+                      >
+                        {previewSummary.message}
+                      </p>
+                      {previewSummary.testedAt ? (
+                        <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                          Zuletzt getestet: {new Date(previewSummary.testedAt).toLocaleString("de-DE")}
+                        </p>
+                      ) : null}
+                      {previewSummary.traceId ? (
+                        <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569", wordBreak: "break-all" }}>
+                          Trace-ID: {previewSummary.traceId}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {syncSummary ? (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>Letzter Guarded-Testlauf</div>
+                      <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                        Guarded-Modus: keine Stale-Deaktivierung, kein Vollsync.
+                      </p>
+                      <p
+                        style={{
+                          marginTop: 6,
+                          marginBottom: 0,
+                          fontSize: 12,
+                          color:
+                            syncSummary.status === "ok"
+                              ? "#15803d"
+                              : syncSummary.status === "warning"
+                                ? "#b45309"
+                                : syncSummary.status === "running"
+                                  ? "#1d4ed8"
+                                  : "#b91c1c",
+                        }}
+                      >
+                        {syncSummary.message}
+                      </p>
+                      {syncSummary.step ? (
+                        <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                          Aktueller Schritt: {syncSummary.step}
+                          {syncSummary.cancelRequested ? " · Abbruch angefordert" : ""}
+                        </p>
+                      ) : null}
+                      {syncSummary.heartbeatAt ? (
+                        <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                          Letzter Heartbeat: {new Date(syncSummary.heartbeatAt).toLocaleString("de-DE")}
+                        </p>
+                      ) : null}
+                      {syncSummary.errorClass ? (
+                        <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                          Fehlerklasse: {syncSummary.errorClass}
+                        </p>
+                      ) : null}
+                      {typeof syncSummary.requestCount === "number" || typeof syncSummary.pagesFetched === "number" ? (
+                        <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                          Provider-Last: {typeof syncSummary.requestCount === "number" ? `${syncSummary.requestCount} Requests` : "0 Requests"}
+                          {typeof syncSummary.pagesFetched === "number" ? ` · ${syncSummary.pagesFetched} Seiten` : ""}
+                        </p>
+                      ) : null}
+                      {syncSummary.traceId ? (
+                        <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569", wordBreak: "break-all" }}>
+                          Trace-ID: {syncSummary.traceId}
+                        </p>
+                      ) : null}
+                      {Array.isArray(syncSummary.result?.notes) && syncSummary.result.notes.length > 0 ? (
+                        <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#fff", border: "1px solid #e2e8f0" }}>
+                          <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
+                            Sync-Notes
+                          </p>
+                          {syncSummary.result.notes.slice(0, 5).map((note, index) => (
+                            <p key={`admin-sync-note-${integration.id}-${index}`} style={{ marginTop: 0, marginBottom: 4, fontSize: 11, color: "#475569" }}>
+                              {note}
+                            </p>
+                          ))}
+                        </div>
+                      ) : null}
+                      {Array.isArray(syncSummary.log) && syncSummary.log.length > 0 ? (
+                        <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#fff", border: "1px solid #e2e8f0" }}>
+                          <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
+                            Sync-Debug
+                          </p>
+                          {syncSummary.log.slice(-5).map((entry, index) => (
+                            <p key={`${entry.at ?? "log"}-${entry.step ?? "step"}-${index}`} style={{ marginTop: 0, marginBottom: 4, fontSize: 11, color: "#475569" }}>
+                              {entry.at ? new Date(entry.at).toLocaleTimeString("de-DE") : "--:--:--"} · {entry.step ?? "step"} · {entry.message ?? ""}
+                            </p>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+        </div>
+        </>
         ) : null}
       </section>
       ) : null}

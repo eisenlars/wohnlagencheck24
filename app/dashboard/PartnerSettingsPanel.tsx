@@ -252,12 +252,6 @@ async function readJsonSafe(res: Response) {
   }
 }
 
-type ApiError = Error & {
-  status?: number;
-  retryAfterSec?: number | null;
-  data?: unknown;
-};
-
 function asText(value: unknown): string | null {
   const v = String(value ?? "").trim();
   return v.length > 0 ? v : null;
@@ -552,34 +546,18 @@ function readSyncSummaryFromIntegration(integration: PartnerIntegration): Integr
   });
 }
 
-function formatPreviewSummary(preview: {
-  skipped?: boolean;
-  reason?: string;
-  offers_count?: number;
-  listings_count?: number;
-  references_count?: number;
-  requests_count?: number;
-  notes?: string[];
-}): IntegrationPreviewSummary {
-  if (preview.skipped) {
-    return {
-      status: "warning",
-      message:
-        preview.reason === "integration inactive"
-          ? "Die CRM-Anbindung ist deaktiviert."
-          : "Der CRM-Abruf wurde übersprungen.",
-    };
-  }
-  const parts = [
-    `${Number(preview.offers_count ?? 0)} Angebote`,
-    `${Number(preview.listings_count ?? 0)} Rohobjekte`,
-    `${Number(preview.references_count ?? 0)} Referenzen`,
-    `${Number(preview.requests_count ?? 0)} Gesuche`,
-  ];
-  const note = Array.isArray(preview.notes) && preview.notes.length > 0 ? String(preview.notes[0] ?? "").trim() : "";
+function readPreviewSummaryFromIntegration(integration: PartnerIntegration): IntegrationPreviewSummary | null {
+  const settings = (integration.settings ?? {}) as Record<string, unknown>;
+  const status = String(settings.last_preview_status ?? "").trim().toLowerCase();
+  const message = asText(settings.last_preview_message);
+  const testedAt = asText(settings.last_preview_finished_at) ?? asText(settings.last_previewed_at);
+  if (!status && !message && !testedAt) return null;
   return {
-    status: "ok",
-    message: `${parts.join(" · ")} gefunden${note ? ` · ${note}` : ""}`,
+    status:
+      status === "ok" || status === "warning" || status === "error"
+        ? (status as IntegrationPreviewSummary["status"])
+        : "warning",
+    message: message ?? "Kein CRM-Abruf-Test protokolliert.",
   };
 }
 
@@ -813,32 +791,6 @@ async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> 
   return data as T;
 }
 
-async function apiWithMeta<T>(input: RequestInfo | URL, init?: RequestInit): Promise<{
-  data: T;
-  status: number;
-  retryAfterSec: number | null;
-}> {
-  const res = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
-  const data = await readJsonSafe(res);
-  const retryAfterRaw = res.headers.get("Retry-After");
-  const retryAfterSec = retryAfterRaw ? Number(retryAfterRaw) || null : null;
-  if (!res.ok) {
-    const error = new Error(String(data?.error ?? `HTTP ${res.status}`)) as ApiError;
-    error.status = res.status;
-    error.retryAfterSec = retryAfterSec;
-    error.data = data;
-    throw error;
-  }
-  return { data: data as T, status: res.status, retryAfterSec };
-}
-
 export default function PartnerSettingsPanel({
   section,
   onSectionChange,
@@ -876,7 +828,6 @@ export default function PartnerSettingsPanel({
   const [secretVisibility, setSecretVisibility] = useState<SecretVisibilityState>({});
   const [testResult, setTestResult] = useState<Record<string, { status: "ok" | "warning" | "error"; message: string }>>({});
   const [syncResult, setSyncResult] = useState<Record<string, IntegrationSyncSummary>>({});
-  const [previewResult, setPreviewResult] = useState<Record<string, IntegrationPreviewSummary>>({});
   const [integrationPolicy, setIntegrationPolicy] = useState<IntegrationPolicy>({ llm_partner_managed_allowed: true });
   const [llmUsageMonth, setLlmUsageMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [llmUsagePeriod, setLlmUsagePeriod] = useState<"timeline" | "year">("timeline");
@@ -911,13 +862,6 @@ export default function PartnerSettingsPanel({
   const selectedIntegration = useMemo(
     () => integrations.find((entry) => entry.id === selectedIntegrationId) ?? null,
     [integrations, selectedIntegrationId],
-  );
-  const selectedIntegrationSyncSummary = useMemo(
-    () =>
-      selectedIntegration
-        ? syncResult[selectedIntegration.id] ?? readSyncSummaryFromIntegration(selectedIntegration)
-        : null,
-    [selectedIntegration, syncResult],
   );
   const hasActivePartnerLlm = useMemo(
     () => integrations.some((entry) => String(entry.kind ?? "").toLowerCase() === "llm" && entry.is_active === true),
@@ -1038,79 +982,6 @@ export default function PartnerSettingsPanel({
       setIsCreateMode(true);
     }
   }, []);
-
-  useEffect(() => {
-    if (!selectedIntegration) return;
-    if (String(selectedIntegration.kind ?? "").toLowerCase() !== "crm") return;
-    if (selectedIntegrationSyncSummary?.status !== "running") return;
-
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const integrationId = selectedIntegration.id;
-
-    const poll = async () => {
-      try {
-        const response = await apiWithMeta<{
-          status?: {
-            state?: string | null;
-            message?: string | null;
-            started_at?: string | null;
-            finished_at?: string | null;
-            last_sync_at?: string | null;
-            error_class?: string | null;
-            request_count?: number | null;
-            pages_fetched?: number | null;
-            trace_id?: string | null;
-            step?: string | null;
-            heartbeat_at?: string | null;
-            deadline_at?: string | null;
-            cancel_requested?: boolean | null;
-            log?: SyncLogPayload[] | null;
-            result?: CrmSyncResultPayload | null;
-            error?: string | null;
-          };
-        }>(`/api/partner/integrations/${integrationId}/sync`);
-        if (cancelled) return;
-        const summary = readSyncSummaryFromStatusPayload(response.data.status ?? {}, {
-          retryAfterSec: response.retryAfterSec,
-        });
-        setSyncResult((prev) => ({
-          ...prev,
-          [integrationId]: summary,
-        }));
-        if (summary.status === "running") {
-          timer = setTimeout(() => {
-            void poll();
-          }, 3000);
-          return;
-        }
-        await loadAll(integrationId);
-      } catch (error) {
-        if (cancelled) return;
-        const retryAfterSec =
-          error instanceof Error && "retryAfterSec" in error
-            ? (error as ApiError).retryAfterSec ?? null
-            : null;
-        setSyncResult((prev) => ({
-          ...prev,
-          [integrationId]: {
-            status: "error",
-            message: error instanceof Error ? error.message : "Sync-Status konnte nicht geladen werden.",
-            retryAfterSec,
-          },
-        }));
-      }
-    };
-
-    timer = setTimeout(() => {
-      void poll();
-    }, 2000);
-
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-    };
-  }, [selectedIntegration, selectedIntegrationSyncSummary, loadAll]);
 
   const loadPartnerLlmUsage = useCallback(async () => {
     try {
@@ -1911,6 +1782,7 @@ export default function PartnerSettingsPanel({
                     const lastTestStatus = asText(settings.last_test_status);
                     const lastTestMessage = asText(settings.last_test_message);
                     const syncSummary = syncResult[integration.id] ?? readSyncSummaryFromIntegration(integration);
+                    const previewSummary = readPreviewSummaryFromIntegration(integration);
                     const relevantSecretFields = getRelevantSecretFields(integration);
                     const supportsSecrets = relevantSecretFields.length > 0;
                     return (
@@ -2044,135 +1916,9 @@ export default function PartnerSettingsPanel({
                               </button>
                             ) : null}
                             {isCrmIntegration ? (
-                              <button
-                                style={buttonGhostStyle}
-                                disabled={busy || !integration.is_active}
-                                onClick={() =>
-                                  run("CRM-Abruf testen", async () => {
-                                    const res = await api<{
-                                      preview?: {
-                                        skipped?: boolean;
-                                        reason?: string;
-                                        offers_count?: number;
-                                        listings_count?: number;
-                                        references_count?: number;
-                                        requests_count?: number;
-                                        notes?: string[];
-                                      };
-                                    }>(`/api/partner/integrations/${integration.id}/preview-sync`, {
-                                      method: "POST",
-                                    });
-                                    setPreviewResult((prev) => ({
-                                      ...prev,
-                                      [integration.id]: formatPreviewSummary(res.preview ?? {}),
-                                    }));
-                                  })
-                                }
-                              >
-                                CRM-Abruf testen
-                              </button>
-                            ) : null}
-                            {isCrmIntegration ? (
-                              <button
-                                style={buttonGhostStyle}
-                                disabled={busy || !integration.is_active || syncSummary?.status === "running"}
-                                onClick={() =>
-                                  run("CRM Guarded-Testlauf starten", async () => {
-                                    const response = await apiWithMeta<{
-                                      status?: {
-                                        state?: string | null;
-                                        message?: string | null;
-                                        started_at?: string | null;
-                                        finished_at?: string | null;
-                                        last_sync_at?: string | null;
-                                        error_class?: string | null;
-                                        request_count?: number | null;
-                                        pages_fetched?: number | null;
-                                        trace_id?: string | null;
-                                        step?: string | null;
-                                        heartbeat_at?: string | null;
-                                        deadline_at?: string | null;
-                                        cancel_requested?: boolean | null;
-                                        log?: SyncLogPayload[] | null;
-                                        result?: CrmSyncResultPayload | null;
-                                        error?: string | null;
-                                      };
-                                    }>(`/api/partner/integrations/${integration.id}/sync`, {
-                                      method: "POST",
-                                    });
-                                    setSyncResult((prev) => ({
-                                      ...prev,
-                                      [integration.id]: readSyncSummaryFromStatusPayload(response.data.status ?? {}, {
-                                        retryAfterSec: response.retryAfterSec,
-                                      }),
-                                    }));
-                                  }).catch((error) => {
-                                    const apiError = error as ApiError;
-                                    const retryAfterSec = apiError?.retryAfterSec ?? null;
-                                    if (apiError?.status === 429) {
-                                      setSyncResult((prev) => ({
-                                        ...prev,
-                                        [integration.id]: {
-                                          status: "warning",
-                                          message:
-                                            retryAfterSec && retryAfterSec > 0
-                                              ? `CRM-Synchronisierung im Cooldown. Neuer Versuch in ca. ${retryAfterSec}s.`
-                                              : "CRM-Synchronisierung ist derzeit im Cooldown.",
-                                          retryAfterSec,
-                                        },
-                                      }));
-                                      throw new Error(
-                                        retryAfterSec && retryAfterSec > 0
-                                          ? `CRM-Synchronisierung im Cooldown. Neuer Versuch in ca. ${retryAfterSec}s.`
-                                          : "CRM-Synchronisierung ist derzeit im Cooldown.",
-                                      );
-                                    }
-                                    throw error;
-                                  })
-                                }
-                              >
-                                {syncSummary?.status === "running" ? "CRM Guarded-Testlauf läuft..." : "CRM Guarded-Testlauf starten"}
-                              </button>
-                            ) : null}
-                            {isCrmIntegration && syncSummary?.status === "running" ? (
-                              <button
-                                style={buttonGhostStyle}
-                                disabled={busy}
-                                onClick={() =>
-                                  run("CRM-Synchronisierung abbrechen", async () => {
-                                    const response = await apiWithMeta<{
-                                      status?: {
-                                        state?: string | null;
-                                        message?: string | null;
-                                        started_at?: string | null;
-                                        finished_at?: string | null;
-                                        last_sync_at?: string | null;
-                                        error_class?: string | null;
-                                        request_count?: number | null;
-                                        pages_fetched?: number | null;
-                                        trace_id?: string | null;
-                                        step?: string | null;
-                                        heartbeat_at?: string | null;
-                                        deadline_at?: string | null;
-                                        cancel_requested?: boolean | null;
-                                        log?: SyncLogPayload[] | null;
-                                        result?: CrmSyncResultPayload | null;
-                                        error?: string | null;
-                                      };
-                                    }>(`/api/partner/integrations/${integration.id}/sync`, {
-                                      method: "DELETE",
-                                    });
-                                    setSyncResult((prev) => ({
-                                      ...prev,
-                                      [integration.id]: readSyncSummaryFromStatusPayload(response.data.status ?? {}, {
-                                        retryAfterSec: response.retryAfterSec,
-                                      }),
-                                    }));
-                                  })
-                                }
-                              >
-                                CRM-Synchronisierung abbrechen
-                              </button>
+                              <span style={{ ...fieldHintStyle, alignSelf: "center" }}>
+                                CRM-Testläufe und Referenz-Mappings werden zentral im Admin-Bereich gesteuert.
+                              </span>
                             ) : null}
                           </div>
                           {!isLocalSiteIntegration ? (
@@ -2194,27 +1940,27 @@ export default function PartnerSettingsPanel({
                                   {testResult[integration.id].message}
                                 </p>
                               ) : null}
-                              {previewResult[integration.id] ? (
+                              {previewSummary ? (
                                 <p
                                   style={{
                                     marginTop: 6,
                                     marginBottom: 0,
                                     fontSize: 12,
                                     color:
-                                      previewResult[integration.id].status === "ok"
+                                      previewSummary.status === "ok"
                                         ? "#15803d"
-                                        : previewResult[integration.id].status === "warning"
+                                        : previewSummary.status === "warning"
                                           ? "#b45309"
                                           : "#b91c1c",
                                   }}
                                 >
-                                  {previewResult[integration.id].message}
+                                  {previewSummary.message}
                                 </p>
                               ) : null}
                               {syncSummary ? (
                                 <>
                                   <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                    Guarded-Testlauf: erste Seite, keine Stale-Deaktivierung, keine Dummy-Daten.
+                                    Guarded-Testläufe und Referenzdiagnostik werden im Admin-Bereich ausgeführt.
                                   </p>
                                   <p
                                     style={{
