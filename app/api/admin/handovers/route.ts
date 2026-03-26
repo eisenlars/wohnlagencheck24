@@ -511,7 +511,7 @@ export async function POST(req: Request) {
             status: mode === "copy_as_draft" ? "draft" : (row as { status?: string | null }).status ?? "draft",
           };
         })
-        .filter((row): row is Record<string, unknown> => Boolean(row));
+        .filter((row): row is NonNullable<typeof row> => row !== null);
 
       if (translationPayload.length > 0) {
         const { error: insertTranslationError } = await admin
