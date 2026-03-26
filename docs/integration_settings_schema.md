@@ -42,7 +42,7 @@ Der Entwurf gilt fuer Integrationen in `public.partner_integrations`, insbesonde
     "references_path": "/api/v1/references"
   },
   "resource_filters": {
-    "listings": { "status": ["active"] },
+    "listings": { "status_ids": [274, 276] },
     "requests": { "status": ["active"] },
     "references": {
       "archived": 1,
@@ -99,6 +99,12 @@ Propstack-spezifisch fuer `references`:
   - gezielte Status-IDs fuer verkauft / vermietet / referenzrelevant
 - `custom_field_key` (`string`)
   - optionaler Fallback fuer kontospezifische Referenzkennzeichen
+
+Propstack-spezifisch fuer `listings`:
+
+- `status_ids` (`string[] | number[]`)
+  - Positivliste fuer aktive Angebots-Status
+  - wenn gesetzt, werden nur Objekte mit passender `status.id` importiert
 
 ### `guarded` (optional, fuer Testlaeufe empfohlen)
 

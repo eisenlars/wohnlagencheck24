@@ -128,6 +128,7 @@ type PropstackSearchProfile = {
 };
 
 type PropstackResourceSettings = {
+  listings_status_ids?: string[];
   references_statuses?: string[];
   references_sub_statuses?: string[];
   references_custom_field_key?: string;
@@ -220,6 +221,7 @@ function getPropstackGuardedLimits(settings: Record<string, unknown> | null): Pr
 function toSettings(settings: Record<string, unknown> | null): PropstackResourceSettings {
   const resourceEndpoints = (settings?.resource_endpoints ?? {}) as Record<string, unknown>;
   const resourceFilters = (settings?.resource_filters ?? {}) as Record<string, unknown>;
+  const listingsCfg = (resourceFilters.listings ?? {}) as Record<string, unknown>;
   const referencesCfg = (resourceFilters.references ?? {}) as Record<string, unknown>;
 
   const statusesRaw = referencesCfg.statuses;
@@ -245,6 +247,7 @@ function toSettings(settings: Record<string, unknown> | null): PropstackResource
   const referencesPath = String(resourceEndpoints.references_path ?? "/units").trim() || "/units";
 
   return {
+    listings_status_ids: toIdArray(listingsCfg.status_ids ?? listingsCfg.status_id),
     references_statuses: toStringArray(statusesRaw) ?? ["archived", "verkauft", "vermietet", "sold", "rented"],
     references_sub_statuses: toStringArray(subStatusesRaw) ?? ["sold", "rented"],
     references_custom_field_key: String(referencesCfg.custom_field_key ?? "referenz_webseite").trim(),
@@ -1078,6 +1081,40 @@ async function fetchPropstackReferenceUnitsDetailed(
   };
 }
 
+async function fetchPropstackListingUnitsDetailed(
+  integration: PartnerIntegration,
+  apiKey: string,
+  cfg: PropstackResourceSettings,
+  limits: PropstackGuardedResourceLimits,
+): Promise<PropstackFetchBatchResult<PropstackUnit>> {
+  const statusIds = cfg.listings_status_ids?.length ? cfg.listings_status_ids : [null];
+  const deduped = new Map<string, PropstackUnit>();
+  let requestsMade = 0;
+  let pagesFetched = 0;
+
+  for (const statusId of statusIds) {
+    const result = await fetchPropstackUnitsDetailed(integration, apiKey, {
+      maxPages: limits.maxPages,
+      perPage: limits.perPage,
+      archived: 0,
+      statusId,
+    });
+    requestsMade += result.requestsMade;
+    pagesFetched += result.pagesFetched;
+    for (const unit of result.items) {
+      const key = String(unit.id ?? "").trim();
+      if (!key) continue;
+      if (!deduped.has(key)) deduped.set(key, unit);
+    }
+  }
+
+  return {
+    items: Array.from(deduped.values()),
+    requestsMade,
+    pagesFetched,
+  };
+}
+
 export async function fetchPropstackSearchProfiles(
   integration: PartnerIntegration,
   apiKey: string,
@@ -1184,10 +1221,13 @@ export async function syncPropstackResources(
   let providerPagesFetched = 0;
   const providerBreakdown: Record<string, { requests: number; pages_fetched: number }> = {};
 
-  const unitsResult = await fetchPropstackUnitsDetailed(integration, apiKey, {
-    maxPages: guardedLimits.units.maxPages,
-    perPage: guardedLimits.units.perPage,
-  });
+  const unitsResult = cfg.listings_status_ids?.length
+    ? await fetchPropstackListingUnitsDetailed(integration, apiKey, cfg, guardedLimits.units)
+    : await fetchPropstackUnitsDetailed(integration, apiKey, {
+        maxPages: guardedLimits.units.maxPages,
+        perPage: guardedLimits.units.perPage,
+        archived: 0,
+      });
   providerRequestCount += unitsResult.requestsMade;
   providerPagesFetched += unitsResult.pagesFetched;
   providerBreakdown.units = {
@@ -1279,7 +1319,7 @@ export async function syncPropstackResources(
     notes.push(`reference diagnostics: recognized completion statuses=${Array.from(knownReferenceStatusNames).sort().join(", ")}`);
   }
   notes.push(
-    `guarded sync: propstack units target_objects=${guardedLimits.units.targetObjects}`,
+    `guarded sync: propstack units target_objects=${guardedLimits.units.targetObjects}${cfg.listings_status_ids?.length ? `, status_ids=${cfg.listings_status_ids.join(",")}` : ", archived=0"}`,
   );
   const referencesFetched = true;
   let requestsFetched = false;

@@ -158,6 +158,7 @@ type IntegrationPreviewSummary = {
 };
 
 type CrmIntegrationAdminDraft = {
+  listingsStatusIds: string;
   referencesArchived: string;
   referencesStatusIds: string;
   referencesCustomFieldKey: string;
@@ -1241,6 +1242,7 @@ function readPreviewSummaryFromIntegration(integration: Integration): Integratio
 function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegrationAdminDraft {
   const settings = asObject(integration.settings);
   const resourceFilters = asObject(settings.resource_filters);
+  const listings = asObject(resourceFilters.listings);
   const references = asObject(resourceFilters.references);
   const guarded = asObject(settings.guarded);
   const units = asObject(guarded.units);
@@ -1258,6 +1260,7 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
   };
 
   return {
+    listingsStatusIds: formatCsvInput(listings.status_ids),
     referencesArchived: asText(references.archived) ?? "",
     referencesStatusIds: formatCsvInput(references.status_ids),
     referencesCustomFieldKey: asText(references.custom_field_key) ?? "",
@@ -1273,11 +1276,16 @@ function applyCrmAdminDraftToSettings(
 ): Record<string, unknown> {
   const settings = { ...asObject(integration.settings) };
   const resourceFilters = { ...asObject(settings.resource_filters) };
+  const listings = { ...asObject(resourceFilters.listings) };
   const references = { ...asObject(resourceFilters.references) };
   const guarded = { ...asObject(settings.guarded) };
   const units = { ...asObject(guarded.units) };
   const referenceLimits = { ...asObject(guarded.references) };
   const savedQueries = { ...asObject(guarded.saved_queries) };
+
+  const listingStatusIds = parseCsvNumberList(draft.listingsStatusIds, "Status-IDs für Angebote");
+  if (listingStatusIds.length > 0) listings.status_ids = listingStatusIds;
+  else delete listings.status_ids;
 
   const archived = asText(draft.referencesArchived);
   if (archived === "1" || archived === "0" || archived === "-1") references.archived = Number(archived);
@@ -1309,6 +1317,9 @@ function applyCrmAdminDraftToSettings(
   else delete savedQueries.target_objects;
   delete savedQueries.max_pages;
   delete savedQueries.per_page;
+
+  if (Object.keys(listings).length > 0) resourceFilters.listings = listings;
+  else delete resourceFilters.listings;
 
   if (Object.keys(references).length > 0) resourceFilters.references = references;
   else delete resourceFilters.references;
@@ -6468,6 +6479,20 @@ export default function AdminClient() {
                   </div>
 
                   <div style={{ marginTop: 14, display: "grid", gap: 12, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+                    <label>
+                      Status-IDs für Angebote
+                      <input
+                        style={inputStyle}
+                        value={draft.listingsStatusIds}
+                        onChange={(e) =>
+                          setCrmIntegrationDrafts((prev) => ({
+                            ...prev,
+                            [integration.id]: { ...draft, listingsStatusIds: e.target.value },
+                          }))
+                        }
+                        placeholder="z. B. 274, 276"
+                      />
+                    </label>
                     <label>
                       Referenz-Archivfilter
                       <select
