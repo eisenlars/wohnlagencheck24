@@ -152,6 +152,7 @@ type PropstackFetchBatchResult<T> = {
 };
 
 type PropstackGuardedResourceLimits = {
+  targetObjects: number;
   maxPages: number;
   perPage: number;
 };
@@ -178,28 +179,41 @@ function readBoundedInteger(value: unknown, fallback: number, min: number, max: 
   return Math.max(min, Math.min(max, Math.floor(parsed)));
 }
 
+function buildTargetObjectLimit(
+  config: Record<string, unknown>,
+  fallbackTargetObjects: number,
+  pageSize: number,
+  maxPages: number,
+): PropstackGuardedResourceLimits {
+  const legacyMaxPages = readBoundedInteger(config.max_pages, Math.max(1, Math.ceil(fallbackTargetObjects / pageSize)), 1, maxPages);
+  const legacyPerPage = readBoundedInteger(config.per_page, fallbackTargetObjects, 1, 100);
+  const targetObjects = readBoundedInteger(
+    config.target_objects,
+    legacyMaxPages * legacyPerPage,
+    1,
+    pageSize * maxPages,
+  );
+  const perPage = Math.max(1, Math.min(pageSize, targetObjects));
+  return {
+    targetObjects,
+    maxPages: Math.max(1, Math.ceil(targetObjects / perPage)),
+    perPage,
+  };
+}
+
 function getPropstackGuardedLimits(settings: Record<string, unknown> | null): PropstackGuardedLimits {
   const guarded = readNestedObject(settings, "guarded");
   const units = readNestedObject(guarded, "units");
   const references = readNestedObject(guarded, "references");
   const savedQueries = readNestedObject(guarded, "saved_queries");
-
-  const unitMaxPages = readBoundedInteger(units.max_pages, 1, 1, 20);
-  const unitPerPage = readBoundedInteger(units.per_page, 10, 1, 100);
+  const unitLimits = buildTargetObjectLimit(units, 10, 20, 20);
+  const referenceLimits = buildTargetObjectLimit(references, unitLimits.targetObjects, 20, 20);
+  const savedQueryLimits = buildTargetObjectLimit(savedQueries, 50, 50, 10);
 
   return {
-    units: {
-      maxPages: unitMaxPages,
-      perPage: unitPerPage,
-    },
-    references: {
-      maxPages: readBoundedInteger(references.max_pages, unitMaxPages, 1, 20),
-      perPage: readBoundedInteger(references.per_page, unitPerPage, 1, 100),
-    },
-    savedQueries: {
-      maxPages: readBoundedInteger(savedQueries.max_pages, 1, 1, 10),
-      perPage: readBoundedInteger(savedQueries.per_page, 50, 1, 100),
-    },
+    units: unitLimits,
+    references: referenceLimits,
+    savedQueries: savedQueryLimits,
   };
 }
 
@@ -1231,7 +1245,7 @@ export async function syncPropstackResources(
     };
     referenceUnits = referenceUnitsResult.items;
     notes.push(
-      `guarded sync: propstack reference units loaded via ${cfg.references_endpoint_path} with archived=${cfg.references_archived}${cfg.references_status_ids?.length ? `, status_ids=${cfg.references_status_ids.join(",")}` : ""}, maxPages=${guardedLimits.references.maxPages}, perPage=${guardedLimits.references.perPage}`,
+      `guarded sync: propstack references target_objects=${guardedLimits.references.targetObjects} via ${cfg.references_endpoint_path} with archived=${cfg.references_archived}${cfg.references_status_ids?.length ? `, status_ids=${cfg.references_status_ids.join(",")}` : ""}`,
     );
   } catch (error) {
     notes.push(`propstack reference fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
@@ -1265,7 +1279,7 @@ export async function syncPropstackResources(
     notes.push(`reference diagnostics: recognized completion statuses=${Array.from(knownReferenceStatusNames).sort().join(", ")}`);
   }
   notes.push(
-    `guarded sync: propstack units limited to maxPages=${guardedLimits.units.maxPages}, perPage=${guardedLimits.units.perPage}`,
+    `guarded sync: propstack units target_objects=${guardedLimits.units.targetObjects}`,
   );
   const referencesFetched = true;
   let requestsFetched = false;
@@ -1290,7 +1304,7 @@ export async function syncPropstackResources(
     requestsFetched = true;
     requestsSource = "live";
     notes.push(
-      `guarded sync: propstack saved_queries limited to maxPages=${guardedLimits.savedQueries.maxPages}, perPage=${guardedLimits.savedQueries.perPage}`,
+      `guarded sync: propstack saved_queries target_objects=${guardedLimits.savedQueries.targetObjects}`,
     );
   } catch (error) {
     requestsSource = "unavailable";
@@ -1326,14 +1340,17 @@ export async function syncPropstackResources(
       provider_breakdown: providerBreakdown,
       guarded_limits: {
         units: {
+          target_objects: guardedLimits.units.targetObjects,
           max_pages: guardedLimits.units.maxPages,
           per_page: guardedLimits.units.perPage,
         },
         references: {
+          target_objects: guardedLimits.references.targetObjects,
           max_pages: guardedLimits.references.maxPages,
           per_page: guardedLimits.references.perPage,
         },
         saved_queries: {
+          target_objects: guardedLimits.savedQueries.targetObjects,
           max_pages: guardedLimits.savedQueries.maxPages,
           per_page: guardedLimits.savedQueries.perPage,
         },

@@ -108,7 +108,7 @@ export type ResourceSyncDiagnostics = {
   provider_request_count: number;
   provider_pages_fetched: number;
   provider_breakdown?: Record<string, { requests: number; pages_fetched: number }>;
-  guarded_limits?: Record<string, { max_pages: number; per_page: number }>;
+  guarded_limits?: Record<string, { target_objects: number; max_pages?: number; per_page?: number }>;
   partial_sync_mode?: boolean;
   stale_deactivation_allowed?: boolean;
   references_source?: "live" | "unavailable";

@@ -50,9 +50,9 @@ Der Entwurf gilt fuer Integrationen in `public.partner_integrations`, insbesonde
     }
   },
   "guarded": {
-    "units": { "max_pages": 1, "per_page": 10 },
-    "references": { "max_pages": 1, "per_page": 10 },
-    "saved_queries": { "max_pages": 1, "per_page": 50 }
+    "units": { "target_objects": 10 },
+    "references": { "target_objects": 10 },
+    "saved_queries": { "target_objects": 50 }
   },
   "sync_mode": "polling",
   "cursor_config": {
@@ -104,12 +104,15 @@ Propstack-spezifisch fuer `references`:
 
 Budgetiert den Guarded-Sync je Ressourcentyp.
 
-- `units.max_pages`
-- `units.per_page`
-- `references.max_pages`
-- `references.per_page`
-- `saved_queries.max_pages`
-- `saved_queries.per_page`
+- `units.target_objects`
+- `references.target_objects`
+- `saved_queries.target_objects`
+
+Propstack-spezifisch:
+
+- `target_objects` ist die fachliche Zielmenge fuer den Guarded-Testlauf.
+- Die providerinterne Pagination wird daraus abgeleitet.
+- Legacy-Felder wie `max_pages` / `per_page` koennen weiterhin eingelesen werden, sollten im produktiven Betrieb aber nicht mehr neu gepflegt werden.
 
 ### `sync_mode` (optional, empfohlen)
 

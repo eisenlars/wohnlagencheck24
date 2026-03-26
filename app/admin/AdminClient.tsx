@@ -161,12 +161,9 @@ type CrmIntegrationAdminDraft = {
   referencesArchived: string;
   referencesStatusIds: string;
   referencesCustomFieldKey: string;
-  guardedUnitsMaxPages: string;
-  guardedUnitsPerPage: string;
-  guardedReferencesMaxPages: string;
-  guardedReferencesPerPage: string;
-  guardedSavedQueriesMaxPages: string;
-  guardedSavedQueriesPerPage: string;
+  guardedUnitsTargetObjects: string;
+  guardedReferencesTargetObjects: string;
+  guardedSavedQueriesTargetObjects: string;
 };
 
 type AreaOption = {
@@ -1249,17 +1246,24 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
   const units = asObject(guarded.units);
   const refLimits = asObject(guarded.references);
   const savedQueries = asObject(guarded.saved_queries);
+  const readTargetObjects = (section: Record<string, unknown>) => {
+    const direct = asText(section.target_objects);
+    if (direct) return direct;
+    const maxPages = typeof section.max_pages === "number" ? section.max_pages : Number(asText(section.max_pages) ?? "");
+    const perPage = typeof section.per_page === "number" ? section.per_page : Number(asText(section.per_page) ?? "");
+    if (Number.isFinite(maxPages) && Number.isFinite(perPage) && maxPages > 0 && perPage > 0) {
+      return String(Math.floor(maxPages * perPage));
+    }
+    return "";
+  };
 
   return {
     referencesArchived: asText(references.archived) ?? "",
     referencesStatusIds: formatCsvInput(references.status_ids),
     referencesCustomFieldKey: asText(references.custom_field_key) ?? "",
-    guardedUnitsMaxPages: asText(units.max_pages) ?? "",
-    guardedUnitsPerPage: asText(units.per_page) ?? "",
-    guardedReferencesMaxPages: asText(refLimits.max_pages) ?? "",
-    guardedReferencesPerPage: asText(refLimits.per_page) ?? "",
-    guardedSavedQueriesMaxPages: asText(savedQueries.max_pages) ?? "",
-    guardedSavedQueriesPerPage: asText(savedQueries.per_page) ?? "",
+    guardedUnitsTargetObjects: readTargetObjects(units),
+    guardedReferencesTargetObjects: readTargetObjects(refLimits),
+    guardedSavedQueriesTargetObjects: readTargetObjects(savedQueries),
   };
 }
 
@@ -1287,27 +1291,24 @@ function applyCrmAdminDraftToSettings(
   if (customFieldKey) references.custom_field_key = customFieldKey;
   else delete references.custom_field_key;
 
-  const unitsMaxPages = parseOptionalPositiveInteger(draft.guardedUnitsMaxPages, "Guarded Units max_pages");
-  const unitsPerPage = parseOptionalPositiveInteger(draft.guardedUnitsPerPage, "Guarded Units per_page");
-  const referencesMaxPages = parseOptionalPositiveInteger(draft.guardedReferencesMaxPages, "Guarded Referenzen max_pages");
-  const referencesPerPage = parseOptionalPositiveInteger(draft.guardedReferencesPerPage, "Guarded Referenzen per_page");
-  const savedQueriesMaxPages = parseOptionalPositiveInteger(draft.guardedSavedQueriesMaxPages, "Guarded Gesuche max_pages");
-  const savedQueriesPerPage = parseOptionalPositiveInteger(draft.guardedSavedQueriesPerPage, "Guarded Gesuche per_page");
+  const unitsTargetObjects = parseOptionalPositiveInteger(draft.guardedUnitsTargetObjects, "Guarded Angebote target_objects");
+  const referencesTargetObjects = parseOptionalPositiveInteger(draft.guardedReferencesTargetObjects, "Guarded Referenzen target_objects");
+  const savedQueriesTargetObjects = parseOptionalPositiveInteger(draft.guardedSavedQueriesTargetObjects, "Guarded Gesuche target_objects");
 
-  if (unitsMaxPages !== null) units.max_pages = unitsMaxPages;
-  else delete units.max_pages;
-  if (unitsPerPage !== null) units.per_page = unitsPerPage;
-  else delete units.per_page;
+  if (unitsTargetObjects !== null) units.target_objects = unitsTargetObjects;
+  else delete units.target_objects;
+  delete units.max_pages;
+  delete units.per_page;
 
-  if (referencesMaxPages !== null) referenceLimits.max_pages = referencesMaxPages;
-  else delete referenceLimits.max_pages;
-  if (referencesPerPage !== null) referenceLimits.per_page = referencesPerPage;
-  else delete referenceLimits.per_page;
+  if (referencesTargetObjects !== null) referenceLimits.target_objects = referencesTargetObjects;
+  else delete referenceLimits.target_objects;
+  delete referenceLimits.max_pages;
+  delete referenceLimits.per_page;
 
-  if (savedQueriesMaxPages !== null) savedQueries.max_pages = savedQueriesMaxPages;
-  else delete savedQueries.max_pages;
-  if (savedQueriesPerPage !== null) savedQueries.per_page = savedQueriesPerPage;
-  else delete savedQueries.per_page;
+  if (savedQueriesTargetObjects !== null) savedQueries.target_objects = savedQueriesTargetObjects;
+  else delete savedQueries.target_objects;
+  delete savedQueries.max_pages;
+  delete savedQueries.per_page;
 
   if (Object.keys(references).length > 0) resourceFilters.references = references;
   else delete resourceFilters.references;
@@ -6515,87 +6516,45 @@ export default function AdminClient() {
                     </label>
                   </div>
 
-                  <div style={{ marginTop: 14, fontWeight: 700, color: "#0f172a" }}>Guarded-Limits</div>
+                  <div style={{ marginTop: 14, fontWeight: 700, color: "#0f172a" }}>Guarded-Testmengen</div>
                   <div style={{ marginTop: 8, display: "grid", gap: 12, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
                     <label>
-                      Units max_pages
+                      Angebote target_objects
                       <input
                         style={inputStyle}
-                        value={draft.guardedUnitsMaxPages}
+                        value={draft.guardedUnitsTargetObjects}
                         onChange={(e) =>
                           setCrmIntegrationDrafts((prev) => ({
                             ...prev,
-                            [integration.id]: { ...draft, guardedUnitsMaxPages: e.target.value },
-                          }))
-                        }
-                        placeholder="z. B. 2"
-                      />
-                    </label>
-                    <label>
-                      Units per_page
-                      <input
-                        style={inputStyle}
-                        value={draft.guardedUnitsPerPage}
-                        onChange={(e) =>
-                          setCrmIntegrationDrafts((prev) => ({
-                            ...prev,
-                            [integration.id]: { ...draft, guardedUnitsPerPage: e.target.value },
+                            [integration.id]: { ...draft, guardedUnitsTargetObjects: e.target.value },
                           }))
                         }
                         placeholder="z. B. 100"
                       />
                     </label>
                     <label>
-                      Referenzen max_pages
+                      Referenzen target_objects
                       <input
                         style={inputStyle}
-                        value={draft.guardedReferencesMaxPages}
+                        value={draft.guardedReferencesTargetObjects}
                         onChange={(e) =>
                           setCrmIntegrationDrafts((prev) => ({
                             ...prev,
-                            [integration.id]: { ...draft, guardedReferencesMaxPages: e.target.value },
-                          }))
-                        }
-                        placeholder="z. B. 2"
-                      />
-                    </label>
-                    <label>
-                      Referenzen per_page
-                      <input
-                        style={inputStyle}
-                        value={draft.guardedReferencesPerPage}
-                        onChange={(e) =>
-                          setCrmIntegrationDrafts((prev) => ({
-                            ...prev,
-                            [integration.id]: { ...draft, guardedReferencesPerPage: e.target.value },
+                            [integration.id]: { ...draft, guardedReferencesTargetObjects: e.target.value },
                           }))
                         }
                         placeholder="z. B. 100"
                       />
                     </label>
                     <label>
-                      Gesuche max_pages
+                      Gesuche target_objects
                       <input
                         style={inputStyle}
-                        value={draft.guardedSavedQueriesMaxPages}
+                        value={draft.guardedSavedQueriesTargetObjects}
                         onChange={(e) =>
                           setCrmIntegrationDrafts((prev) => ({
                             ...prev,
-                            [integration.id]: { ...draft, guardedSavedQueriesMaxPages: e.target.value },
-                          }))
-                        }
-                        placeholder="z. B. 1"
-                      />
-                    </label>
-                    <label>
-                      Gesuche per_page
-                      <input
-                        style={inputStyle}
-                        value={draft.guardedSavedQueriesPerPage}
-                        onChange={(e) =>
-                          setCrmIntegrationDrafts((prev) => ({
-                            ...prev,
-                            [integration.id]: { ...draft, guardedSavedQueriesPerPage: e.target.value },
+                            [integration.id]: { ...draft, guardedSavedQueriesTargetObjects: e.target.value },
                           }))
                         }
                         placeholder="z. B. 50"
