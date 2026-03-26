@@ -567,7 +567,10 @@ function normalizePropstackText(value: unknown): string | null {
   }
   if (value && typeof value === "object") {
     const textObject = value as Record<string, unknown>;
-    return firstString([textObject.value, textObject.label]);
+    if (Object.prototype.hasOwnProperty.call(textObject, "value")) {
+      return firstString([textObject.value]);
+    }
+    return firstString([textObject.title, textObject.name]);
   }
   return null;
 }
