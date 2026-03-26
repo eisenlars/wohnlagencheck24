@@ -98,6 +98,7 @@ Empfohlen:
 - Rate-Limit-Store: `docs/sql/security_rate_limits.sql`
 - Local-Site Token-Hash-Migration: `docs/sql/local_site_token_hash_migration.sql`
 - Offboarding/Uebergabe: `docs/partner_handover_process.md`
+  - aktueller Workflow mit granularen Inhaltsbloecken; Local Site wird dabei bewusst nicht migriert
 - Live Security Preflight (read-only): `docs/sql/live_security_preflight.sql`
 - Live RLS Hardening (write migration): `docs/sql/live_rls_hardening.sql`
 - Policy Cleanup (redundante Policies entfernen): `docs/sql/policy_cleanup.sql`

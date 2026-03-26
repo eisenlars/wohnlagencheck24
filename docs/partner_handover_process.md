@@ -2,172 +2,290 @@
 
 ## Zweck
 
-Dieses Runbook beschreibt den sicheren Prozess, wenn ein Partner kuendigt und ein Gebiet (Kreis) an einen neuen Partner uebergeben wird.
+Dieses Runbook beschreibt den aktuellen Admin-Prozess, wenn ein Kreisgebiet von einem bestehenden Partner auf einen neuen Partner uebergeben wird.
 
 Ziele:
 
-- keine Doppelvergabe aktiver Gebiete
-- keine unkontrollierte Datenmigration
-- reproduzierbarer Admin-Prozess
+- keine aktive Doppelvergabe von Gebieten
+- reproduzierbarer Admin-Workflow
+- gezielte Uebernahme von Inhalts- und Sprachbloecken
+- keine unbeabsichtigte Migration von kanalgebundenen Daten
 - lueckenlose Nachvollziehbarkeit im Audit-Log
+
+## Aktueller Systemstand
+
+Die Gebietsuebergabe laeuft produktiv ueber:
+
+- Admin-UI: `Partnerverwaltung > Uebergabe`
+- API: `POST /api/admin/handovers`
+
+Wichtige technische Leitlinien des aktuellen Codes:
+
+- Kreis plus zugehoerige Ortslagen werden gemeinsam uebertragen.
+- Alte Integrationen des Altpartners werden deaktiviert.
+- Der Altpartner bleibt als Konto bestehen.
+- Die neue Gebietszurodnung wird beim Zielpartner immer als `assigned` und `is_active = false` angelegt.
+- Die inhaltliche Uebernahme ist jetzt **granular steuerbar**.
+- `partner_local_site_texts` und `partner_texts_i18n` fuer `channel = local_site` bleiben bewusst unberuehrt.
 
 ## Fachliche Leitlinie
 
-- Inhalte sind **partnergebunden** (Historie bleibt beim alten Partner), ausser es wird explizit ein Migrationsauftrag definiert.
-- Gebietszuordnung ist **kreisgebunden** und darf aktiv nur bei einem Partner liegen.
-- Secrets werden nie zwischen Partnern uebertragen.
+- Gebietszuordnung ist operativ exklusiv: ein Gebiet darf nur einen aktiven Besitzer haben.
+- Berichtindividualisierung, SEO/GEO, Blog und Sprachen sind getrennte Inhaltsbloecke.
+- Secrets und Integrationen werden nie zwischen Partnern uebertragen.
+- Die lokale Website ist ein eigener Ausspielkanal und wird bei der Gebietsuebergabe bewusst nicht migriert.
+- Sprachinhalte und Sprachfreigabe sind getrennte Dinge:
+  - Inhalte koennen kopiert werden
+  - oeffentliche Verfuegbarkeit entsteht erst durch die Partner-Sprachfreigabe
 
 ## Betroffene Tabellen/Objekte
 
-Pflichtpruefung bei jeder Uebergabe:
+### Pflicht bei jeder Gebietsuebergabe
 
 1. `public.partners`
 2. `public.partner_area_map`
 3. `public.partner_integrations`
 4. `public.security_audit_log`
-5. Supabase `auth.users` (Admin API)
 
-Pruefung je nach Fachregel:
+### Berichtindividualisierung
 
-1. `public.partner_listings`
-2. `public.partner_references`
-3. `public.partner_requests`
-4. `public.partner_property_offers`
-5. `public.partner_property_overrides`
-6. `public.partner_marketing_texts`
-7. `public.partner_blog_posts`
-8. `public.data_value_settings`
+1. `public.data_value_settings`
+2. `public.report_texts`
+3. `public.partner_area_runtime_states`
+4. `public.partner_area_generated_texts`
+5. `public.partner_texts_i18n` mit `channel = 'portal'`
 
-Optional/Legacy (nur falls in eurer Umgebung vorhanden):
-- `public.partner_local_site_texts`
+### SEO & GEO
 
-Hinweis: Diese Tabellen werden standardmaessig **nicht** migriert, sondern verbleiben beim alten Partner (Historie). Das gilt explizit auch fuer `partner_property_overrides` (keine automatische Uebernahme/Loeschung im Standardsync).
+1. `public.partner_marketing_texts`
+2. `public.partner_texts_i18n` mit `channel = 'marketing'`
 
-## Standardprozess (Uebergabe)
+### Blogarchiv
 
-1. Preflight
-- alter Partner, neuer Partner, Kreis-ID validieren
-- sicherstellen, dass Kreis-ID dem Kreisformat entspricht (3 Segmente)
-- sicherstellen, dass kein zweiter aktiver Besitzer fuer den Kreis existiert
+1. `public.partner_blog_posts`
+2. `public.partner_blog_post_i18n`
 
-2. Offboarding alter Partner (fachlich konfigurierbar)
-- alte aktive Zuordnung in `partner_area_map` auf `is_active = false`
-- alte Integrationen in `partner_integrations` auf `is_active = false`
-- optional alten Partner in `partners.is_active = false`
-- optional Login fuer alten Auth-User sperren
+### Sprachen / Freischaltung
 
-3. Onboarding neuer Partner
-- Auth-Invite (Setz-Link) senden
-- neue inaktive Kreiszuordnung in `partner_area_map` anlegen (`is_active = false`, `activation_status = assigned`)
-- Partner fuellt Mandatory-Texte und sendet `Freigabe anfordern`
-- Admin aktiviert erst nach Pruefung (`is_active = true`)
-- erforderliche Integrationen fuer den neuen Partner aktivieren/anlegen
+1. `public.partner_feature_overrides`
+2. `public.billing_feature_catalog`
+3. `public.portal_locale_config`
 
-4. Audit
-- pro Schritt Audit-Events schreiben:
-  - `handover_start`
-  - `deactivate_old_mapping`
-  - `deactivate_old_integrations`
-  - `assign_new_mapping`
-  - `handover_done`
+### Bewusst nicht Teil der Gebietsuebergabe
 
-## SQL-Runbook (manuell)
+1. `public.partner_local_site_texts`
+2. `public.partner_texts_i18n` mit `channel = 'local_site'`
+3. `public.partner_property_offers`
+4. `public.partner_property_overrides`
+5. `public.partner_requests`
+6. `public.partner_references`
+7. `public.partner_integrations` Secrets / Tokens / Teststatus
 
-Die folgenden SQLs sind als manuelles Fallback gedacht (z. B. Incidents), wenn kein Wizard genutzt wird.
+## Standardprozess im Admin
 
-### A) Preflight
+1. Altpartner im Admin oeffnen
+2. Tab `Uebergabe` waehlen
+3. Kreisgebiet waehlen
+4. Zielpartner waehlen
+5. Inhaltsbloecke festlegen:
+   - Berichtindividualisierung
+   - SEO & GEO
+   - Blogarchiv
+   - Sprachen
+6. Sprachmatrix pro bisher verfuegbarer Sprache festlegen
+7. Uebergabe bestaetigen
+8. Der Zielpartner bekommt:
+   - neue Zuordnung `assigned`
+   - gewaehlte Inhaltsbloecke
+   - gewaehlte Sprachfreigaben
+9. Danach normale Aktivierung/Freigabepruefung fuer das Gebiet beim Zielpartner
 
-```sql
--- Parameter
--- :kreis_id
--- :old_partner_id
--- :new_partner_id
+## Uebergabeoptionen
 
--- 1) Partner vorhanden?
-select id, company_name, is_active
-from public.partners
-where id in (:old_partner_id, :new_partner_id);
+### 1. Berichtindividualisierung mitnehmen
 
--- 2) Aktive Zuordnungen fuer den Kreis
-select pam.id, pam.auth_user_id, p.company_name, pam.area_id, pam.is_active, pam.created_at
-from public.partner_area_map pam
-left join public.partners p on p.id = pam.auth_user_id
-where pam.area_id = :kreis_id
-order by pam.is_active desc, pam.created_at asc nulls last;
-```
+Wenn aktiv, werden uebernommen:
 
-### B) Uebergabe (transaktional)
+- `data_value_settings`
+- `report_texts`
+- `partner_area_runtime_states`
+- `partner_area_generated_texts`
+- `partner_texts_i18n` mit `channel = 'portal'`
 
-```sql
-begin;
+Fachlich bedeutet das:
 
--- 1) Alte aktive Kreiszuordnung deaktivieren
-update public.partner_area_map
-set is_active = false
-where area_id = :kreis_id
-  and auth_user_id = :old_partner_id
-  and is_active = true;
+- faktorisierte Daten
+- partnerbezogene Runtime-Snapshots
+- data-driven Texte
+- manuelle Berichtstexte
+- Portal-Uebersetzungen der Berichtstexte
 
--- 2) Alte Integrationen deaktivieren
-update public.partner_integrations
-set is_active = false
-where partner_id = :old_partner_id
-  and is_active = true;
+Wenn deaktiviert:
 
--- 3) Neue inaktive Zuordnung setzen
-insert into public.partner_area_map (auth_user_id, area_id, is_active, activation_status)
-values (:new_partner_id, :kreis_id, false, 'assigned')
-on conflict (auth_user_id, area_id)
-do update set is_active = excluded.is_active,
-              activation_status = excluded.activation_status;
+- der Zielpartner startet fuer diesen Block auf Basiszustand
 
-commit;
-```
+### 2. SEO & GEO Texte mitnehmen
 
-### C) Post-Checks
+Wenn aktiv, werden uebernommen:
 
-```sql
--- Es darf nur eine aktive Zuordnung fuer den Kreis geben
-select area_id, count(*) as active_count
-from public.partner_area_map
-where area_id = :kreis_id
-  and is_active = true
-group by area_id;
+- `partner_marketing_texts`
+- `partner_texts_i18n` mit `channel = 'marketing'`
 
--- Integrationen alter Partner sind deaktiviert?
-select kind, provider, is_active
-from public.partner_integrations
-where partner_id = :old_partner_id
-order by kind;
-```
+Das betrifft vor allem:
 
-## Rollback-Plan (kurz)
+- Title
+- Description
+- Keywords / Entities
+- sonstige marketingbezogene Geo-/SEO-Texte
 
-Wenn Uebergabe fehlschlaegt:
+Wenn deaktiviert:
 
-1. offene Transaktion `rollback;`
-2. falls bereits committed:
-- neue Zuordnung auf `is_active=false`
-- alte Zuordnung wieder `is_active=true`
-- alte Integrationen wieder aktivieren (falls fachlich erforderlich)
-3. Incident im Audit-Log dokumentieren (`handover_rollback`)
+- der Zielpartner startet fuer diesen Block ohne SEO/GEO-Overrides
 
-## Implementierungs-Checkliste fuer den Wizard
+### 3. Lokale Website bleibt unberuehrt
 
-1. API-Endpunkt `POST /api/admin/handovers` (neu)
-2. serverseitige Guards:
-- nur Kreis-ID erlaubt
-- keine aktive Doppelvergabe
-- Admin-Rolle erforderlich
-3. atomare Ausfuehrung (RPC/Transaction)
-4. Audit-Events fuer jeden Teilschritt
-5. UI-Flow:
-- Altpartner + Kreis waehlen
-- Neupartner waehlen/erstellen
-- dry-run Anzeige
-- final bestaetigen
+Bewusst **nicht** uebernommen werden:
 
-## Datenmigration (optional, nur bei Auftrag)
+- `partner_local_site_texts`
+- `partner_texts_i18n` mit `channel = 'local_site'`
+- Local-Site-Integrationen / Tokens
 
-Wenn Inhalte ausnahmsweise migriert werden sollen, muessen Quelle/Ziel und Umfang pro Tabelle explizit freigegeben werden.
-Standard bleibt: keine automatische Migration von Content/Overrides/Offers.
+Begruendung:
+
+- die lokale Website ist ein eigener Produktkanal
+- nach dem Umzug zieht sie sich ihre Inhalte wieder aus:
+  - `partner_local_site_texts` (falls spaeter neu gepflegt)
+  - `report_texts`
+  - Standard-/Basistexten
+
+### 4. Blogarchiv
+
+Es gibt drei Modi:
+
+1. `Beim alten Partner lassen`
+2. `Zum neuen Partner als Entwurf kopieren`
+3. `Zum neuen Partner wie bisher uebernehmen`
+
+Bei Blog-Uebernahme werden genutzt:
+
+- `partner_blog_posts`
+- `partner_blog_post_i18n`
+
+Empfohlener Standard:
+
+- `als Entwurf kopieren`
+
+Begruendung:
+
+- Inhalte wechseln damit nicht ungeprueft live den Verantwortlichen
+- der neue Partner kann die Texte pruefen, anpassen und gezielt aktivieren
+
+### 5. Sprachen
+
+Die Sprachmatrix wird pro bisher verfuegbarer Gebietssprache festgelegt.
+
+Moegliche Modi:
+
+1. `nicht uebernehmen`
+2. `uebernehmen, deaktiviert`
+3. `uebernehmen und aktivieren`
+
+Bedeutung:
+
+- `nicht uebernehmen`
+  - keine Uebersetzungen kopieren
+  - keine Sprachfreigabe beim Zielpartner aktivieren
+
+- `uebernehmen, deaktiviert`
+  - Uebersetzungsinhalte kopieren
+  - Sprachfeature beim Zielpartner deaktiviert lassen
+  - Sprache bleibt damit intern erhalten, aber nicht oeffentlich verfuegbar
+
+- `uebernehmen und aktivieren`
+  - Uebersetzungsinhalte kopieren
+  - Sprachfeature beim Zielpartner aktivieren
+
+Wichtig:
+
+- die oeffentliche Verfuegbarkeit einer Sprache haengt nicht nur von kopierten Uebersetzungen ab
+- sie haengt zusaetzlich an der Partner-Sprachfreigabe ueber `partner_feature_overrides`
+
+## Audit-Log
+
+Wichtige Events:
+
+1. `handover_start`
+2. `assign_new_mapping`
+3. `handover_done`
+4. Partner-Mail-Event:
+   - `mail_admin_handover_partner_notify`
+
+Im Audit-Payload werden aktuell mitprotokolliert:
+
+- `transfer_mode`
+- `include_report_customization`
+- `include_seo_geo`
+- `blog_transfer_mode`
+- kopierte Mengen je Inhaltskanal
+
+## Rollback-Leitlinie
+
+Wenn eine Uebergabe fachlich rueckgaengig gemacht werden muss:
+
+1. Zielpartner-Zuordnung deaktivieren oder loeschen
+2. Altpartner-Zuordnung wiederherstellen
+3. je nach Uebergabefall gezielt ruecksetzen:
+   - Berichtindividualisierung
+   - SEO/GEO
+   - Blog
+   - Sprachfreigaben
+4. Integrationen beim Altpartner bei Bedarf reaktivieren
+5. Incident im Audit-Log dokumentieren
+
+Hinweis:
+
+- ein vollautomatischer Transaktions-Rollback ueber alle Tabellen ist nicht der Standardprozess
+- Korrekturen erfolgen kontrolliert ueber Admin und Datenpflege
+
+## Manuelles SQL-Fallback
+
+Direkte SQL-Eingriffe sind nur noch Incident-/Recovery-Fallback.
+
+Der fachliche Standardprozess ist der Admin-Wizard.
+
+Wenn SQL notwendig wird, muessen mindestens geprueft werden:
+
+- `partner_area_map`
+- `partner_integrations`
+- die je Uebergabeblock betroffenen Tabellen aus diesem Runbook
+
+Die alte Minimal-SQL-Variante reicht fuer den aktuellen Produktstand fachlich nicht mehr aus, weil sie:
+
+- keine Inhaltsbloecke
+- keine Sprachmatrix
+- kein Blogarchiv
+- keine kanalgetrennten Uebersetzungen
+
+abbildet.
+
+## Implementierungs-Checkliste (Ist-Stand)
+
+Vorhanden:
+
+1. API-Endpunkt `POST /api/admin/handovers`
+2. Admin-GUIs fuer:
+   - Berichtindividualisierung
+   - SEO & GEO
+   - Blogarchiv
+   - Sprachen
+3. serverseitige Guards:
+   - nur Kreis-ID erlaubt
+   - keine operative Doppelvergabe
+   - Admin-Rolle erforderlich
+4. Audit-Events fuer Start/Abschluss
+5. Partner-Benachrichtigung nach erfolgreicher Uebergabe
+
+Offene fachliche Restthemen:
+
+1. `public-area-locale-availability` zaehlt aktuell Uebersetzungen kanaluebergreifend; fuer den granularen Handover ist ein engerer Channel-Fokus sinnvoll.
+2. Falls spaeter weitere Inhaltskanaele uebergeben werden sollen, muessen sie explizit als eigener Handover-Block modelliert werden.

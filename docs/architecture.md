@@ -351,6 +351,7 @@ Pro Partner sind mehrere Integrationen moeglich (z. B. CRM + LLM + Local Site; b
 Weitere Details: `docs/partner-onboarding.md`
 Settings-Vertrag fuer `partner_integrations.settings`: `docs/integration_settings_schema.md`
 Offboarding/Uebergabe-Runbook: `docs/partner_handover_process.md`
+Aktueller Stand: die Gebietsuebergabe ist nicht mehr nur Mapping-Wechsel, sondern ein granularer Inhaltsworkflow fuer Berichtindividualisierung, SEO/GEO, Blog und Sprachen. Local Site bleibt bewusst separat.
 
 ### 9.1 Datenmodell (Supabase)
 
