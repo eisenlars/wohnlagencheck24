@@ -4623,23 +4623,25 @@ const controlsStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   flexWrap: 'wrap',
   gap: 12,
-  alignItems: 'end',
+  alignItems: 'flex-end',
 };
 
 const controlsLeftStyle: React.CSSProperties = {
   display: 'flex',
-  alignItems: 'end',
+  alignItems: 'flex-end',
   gap: 10,
   flexWrap: 'wrap',
+  flex: '1 1 auto',
 };
 
 const controlsRightStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'flex-end',
-  alignItems: 'end',
+  alignItems: 'flex-end',
   gap: 10,
   marginLeft: 'auto',
   flexWrap: 'wrap',
+  flex: '0 0 auto',
 };
 
 const fieldStyle: React.CSSProperties = {

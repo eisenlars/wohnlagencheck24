@@ -2159,6 +2159,7 @@ const visibilityControlsRowStyle: React.CSSProperties = {
   gap: '12px',
   alignItems: 'center',
   flexWrap: 'wrap',
+  width: '100%',
 };
 
 const visibilityLabelStyle: React.CSSProperties = {
@@ -2168,6 +2169,10 @@ const visibilityLabelStyle: React.CSSProperties = {
 
 const visibilityModelWrapStyle: React.CSSProperties = {
   flex: '0 1 320px',
+  marginLeft: 'auto',
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
 };
 
 const visibilitySelectWrapStyle: React.CSSProperties = {
