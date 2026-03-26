@@ -93,41 +93,6 @@ type SecretDraft = {
 
 type SecretFieldKey = keyof SecretDraft;
 type SecretVisibilityState = Record<string, Partial<Record<SecretFieldKey, boolean>>>;
-type CrmSyncResultPayload = {
-  listings_count: number;
-  references_count: number;
-  requests_count: number;
-  offers_count: number;
-  deactivated_listings: number;
-  deactivated_offers: number;
-  skipped: boolean;
-  reason?: string;
-  notes?: string[];
-};
-type SyncLogPayload = {
-  at?: string | null;
-  step?: string | null;
-  status?: "running" | "ok" | "warning" | "error" | null;
-  message?: string | null;
-};
-type IntegrationSyncSummary = {
-  status: "ok" | "warning" | "error" | "running";
-  message: string;
-  startedAt?: string | null;
-  finishedAt?: string | null;
-  lastSyncAt?: string | null;
-  errorClass?: string | null;
-  requestCount?: number | null;
-  pagesFetched?: number | null;
-  traceId?: string | null;
-  step?: string | null;
-  heartbeatAt?: string | null;
-  deadlineAt?: string | null;
-  cancelRequested?: boolean;
-  retryAfterSec?: number | null;
-  log?: SyncLogPayload[];
-  result?: CrmSyncResultPayload | null;
-};
 const AUTH_TYPE_LABELS: Record<string, string> = {
   api_key: "API Key",
   token: "Token",
@@ -433,112 +398,6 @@ function hasStoredSecret(integration: PartnerIntegration, field: SecretFieldKey)
   if (field === "api_key") return integration.has_api_key === true;
   if (field === "token") return integration.has_token === true;
   return integration.has_secret === true;
-}
-
-function formatSyncResultMessage(result: CrmSyncResultPayload): string {
-  if (result.skipped) {
-    if (result.reason === "integration inactive") {
-      return "Die CRM-Anbindung ist derzeit deaktiviert.";
-    }
-    if (result.reason === "all capabilities disabled") {
-      return "Alle CRM-Bereiche sind in dieser Anbindung deaktiviert.";
-    }
-    return "Der CRM-Sync wurde übersprungen.";
-  }
-
-  const parts = [
-    `${result.offers_count} Angebote`,
-    `${result.references_count} Referenzen`,
-    `${result.requests_count} Gesuche`,
-  ];
-  const extras: string[] = [];
-  if (result.deactivated_offers > 0) extras.push(`${result.deactivated_offers} Angebote deaktiviert`);
-  if (result.deactivated_listings > 0) extras.push(`${result.deactivated_listings} Rohobjekte deaktiviert`);
-  if (result.notes?.length) extras.push(result.notes[0] ?? "");
-  return `${parts.join(" · ")} synchronisiert${extras.length ? ` · ${extras.join(" · ")}` : ""}`;
-}
-
-function readSyncSummaryFromStatusPayload(status: {
-  state?: string | null;
-  message?: string | null;
-  started_at?: string | null;
-  finished_at?: string | null;
-  last_sync_at?: string | null;
-  error_class?: string | null;
-  request_count?: number | null;
-  pages_fetched?: number | null;
-  trace_id?: string | null;
-  step?: string | null;
-  heartbeat_at?: string | null;
-  deadline_at?: string | null;
-  cancel_requested?: boolean | null;
-  log?: SyncLogPayload[] | null;
-  result?: CrmSyncResultPayload | null;
-  error?: string | null;
-}, options?: { retryAfterSec?: number | null }): IntegrationSyncSummary {
-  const state = String(status.state ?? "").trim().toLowerCase();
-  const result = status.result ?? null;
-  const rawMessage = String(status.message ?? "").trim();
-  const errorClass = asText(status.error_class);
-  const isLegacyOperatorMessage =
-    state !== "running"
-    && (rawMessage.toLowerCase().includes("manuell zurückgesetzt") || rawMessage.toLowerCase().includes("manuell abgebrochen"));
-  const isHistoricalOperatorNotice =
-    (state === "idle" && (errorClass === "manual_reset" || errorClass === "cancelled"))
-    || isLegacyOperatorMessage;
-  const message =
-    (isHistoricalOperatorNotice ? "" : rawMessage)
-    || (result ? formatSyncResultMessage(result) : state === "running" ? "CRM-Synchronisierung läuft..." : "CRM-Synchronisierung");
-  return {
-    status:
-      state === "running"
-        ? "running"
-        : state === "success"
-          ? "ok"
-          : state === "error"
-            ? "error"
-            : "warning",
-    message,
-    startedAt: asText(status.started_at),
-    finishedAt: asText(status.finished_at),
-    lastSyncAt: asText(status.last_sync_at),
-    errorClass: isHistoricalOperatorNotice ? null : errorClass,
-    requestCount: typeof status.request_count === "number" ? status.request_count : null,
-    pagesFetched: typeof status.pages_fetched === "number" ? status.pages_fetched : null,
-    traceId: asText(status.trace_id),
-    step: asText(status.step),
-    heartbeatAt: asText(status.heartbeat_at),
-    deadlineAt: asText(status.deadline_at),
-    cancelRequested: status.cancel_requested === true,
-    retryAfterSec: options?.retryAfterSec ?? null,
-    log: Array.isArray(status.log) ? status.log : [],
-    result,
-  };
-}
-
-function readSyncSummaryFromIntegration(integration: PartnerIntegration): IntegrationSyncSummary | null {
-  const settings = (integration.settings ?? {}) as Record<string, unknown>;
-  const state = String(settings.sync_state ?? "").trim().toLowerCase();
-  const lastSyncAt = asText(integration.last_sync_at);
-  if (!state && !lastSyncAt) return null;
-  return readSyncSummaryFromStatusPayload({
-    state: state || (lastSyncAt ? "success" : "idle"),
-    message: asText(settings.sync_message),
-    started_at: asText(settings.sync_started_at),
-    finished_at: asText(settings.sync_finished_at),
-    last_sync_at: lastSyncAt,
-    error_class: asText(settings.sync_error_class),
-    request_count: typeof settings.sync_request_count === "number" ? settings.sync_request_count : null,
-    pages_fetched: typeof settings.sync_pages_fetched === "number" ? settings.sync_pages_fetched : null,
-    trace_id: asText(settings.sync_trace_id),
-    step: asText(settings.sync_step),
-    heartbeat_at: asText(settings.sync_heartbeat_at),
-    deadline_at: asText(settings.sync_deadline_at),
-    cancel_requested: settings.sync_cancel_requested === true,
-    log: Array.isArray(settings.sync_log) ? (settings.sync_log as SyncLogPayload[]) : [],
-    result: (settings.sync_result ?? null) as CrmSyncResultPayload | null,
-    error: asText(settings.sync_error),
-  });
 }
 
 function applyProviderSelection(
@@ -927,19 +786,6 @@ export default function PartnerSettingsPanel({
     const nextIntegrations = integrationsRes.integrations ?? [];
     setIntegrationPolicy(integrationsRes.policy ?? { llm_partner_managed_allowed: true });
     setIntegrations(nextIntegrations);
-    setSyncResult((prev) => {
-      const next: Record<string, IntegrationSyncSummary> = {};
-      nextIntegrations.forEach((integration) => {
-        const summary = readSyncSummaryFromIntegration(integration);
-        if (summary) next[integration.id] = summary;
-      });
-      Object.entries(prev).forEach(([integrationId, summary]) => {
-        if (!next[integrationId] && summary.status === "running") {
-          next[integrationId] = summary;
-        }
-      });
-      return next;
-    });
     if (isCreateModeRef.current && !preferredIntegrationId) return;
 
     const desiredId = preferredIntegrationId ?? selectedIntegrationIdRef.current;
