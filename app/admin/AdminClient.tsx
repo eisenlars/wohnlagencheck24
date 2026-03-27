@@ -969,6 +969,21 @@ function buildPreviewHrefFromArea(area: AreaMapping["areas"], areaId: string): s
   return `/preview/immobilienmarkt/${bundeslandSlug}/${parentSlug}/${slug}`;
 }
 
+function buildLiveHrefFromArea(area: AreaMapping["areas"], areaId: string): string | null {
+  const bundeslandSlug = String(area?.bundesland_slug ?? "").trim();
+  const slug = String(area?.slug ?? "").trim();
+  const parentSlug = String(area?.parent_slug ?? "").trim();
+  if (!bundeslandSlug || !slug) return null;
+
+  const isOrtslage = String(areaId ?? "").split("-").length > 3;
+  if (!isOrtslage) {
+    return `/de/immobilienmarkt/${bundeslandSlug}/${slug}`;
+  }
+
+  if (!parentSlug) return null;
+  return `/de/immobilienmarkt/${bundeslandSlug}/${parentSlug}/${slug}`;
+}
+
 function formatAdminDateTime(value: string | null | undefined): string {
   const iso = String(value ?? "").trim();
   if (!iso) return "";
@@ -1686,6 +1701,11 @@ export default function AdminClient() {
   const [visibilityIndexBusy, setVisibilityIndexBusy] = useState(false);
   const [reviewActionError, setReviewActionError] = useState<string | null>(null);
   const [reviewActionMessage, setReviewActionMessage] = useState<string | null>(null);
+  const [areaActionFeedback, setAreaActionFeedback] = useState<{
+    kind: "success" | "error";
+    message: string;
+    href: string | null;
+  } | null>(null);
   const [reviewNoteDraft, setReviewNoteDraft] = useState("");
   const [clearReviewOnSuccessClose, setClearReviewOnSuccessClose] = useState(false);
   const [reviewContentDismissed, setReviewContentDismissed] = useState(false);
@@ -3074,6 +3094,7 @@ export default function AdminClient() {
   async function setAreaPublicationForArea(areaId: string, live: boolean) {
     if (!selectedPartnerId || !areaId) return;
     setReviewBusy(true);
+    setAreaActionFeedback(null);
     try {
       const response = await api<AreaReviewPayload>(
         `/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(areaId)}/publish`,
@@ -3084,16 +3105,32 @@ export default function AdminClient() {
       if (response.mapping) {
         applyLocalAreaMappingUpdate(selectedPartnerId, response.mapping);
       }
+      const feedbackHref = live ? buildLiveHrefFromArea(response.mapping?.areas ?? null, response.mapping?.area_id ?? areaId) : null;
       if (live && response?.notification?.partner?.sent === false && !selectedPartner?.is_system_default) {
         const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
+        setAreaActionFeedback({
+          kind: "error",
+          message: `Gebiet wurde online geschaltet, Partner-Mail aber nicht versendet (${reason}).`,
+          href: feedbackHref,
+        });
         setReviewActionError(`Gebiet wurde online geschaltet, Partner-Mail aber nicht versendet (${reason}).`);
         setReviewActionMessage(null);
         return;
       }
       setReviewActionError(null);
       setReviewActionMessage(live ? "Gebiet erfolgreich online geschaltet." : "Gebiet erfolgreich offline genommen.");
+      setAreaActionFeedback({
+        kind: "success",
+        message: live ? "Gebiet erfolgreich online geschaltet." : "Gebiet erfolgreich offline genommen.",
+        href: feedbackHref,
+      });
       setStatus(live ? "Gebiet erfolgreich online geschaltet." : "Gebiet erfolgreich offline genommen.");
     } catch (error) {
+      setAreaActionFeedback({
+        kind: "error",
+        message: error instanceof Error ? error.message : "Veröffentlichung konnte nicht aktualisiert werden.",
+        href: null,
+      });
       setReviewActionError(error instanceof Error ? error.message : "Veröffentlichung konnte nicht aktualisiert werden.");
       setReviewActionMessage(null);
       throw error;
@@ -6175,6 +6212,23 @@ export default function AdminClient() {
                 ))}
               </div>
             ) : null}
+            {areaActionFeedback ? (
+              <div style={reviewInlineFeedbackStyle(areaActionFeedback.kind === "error")}>
+                <div>{areaActionFeedback.message}</div>
+                {areaActionFeedback.href ? (
+                  <div style={{ marginTop: 6 }}>
+                    <a
+                      href={areaActionFeedback.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: "inherit", textDecoration: "underline", fontWeight: 700 }}
+                    >
+                      Gebiet live öffnen
+                    </a>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             <table style={tableStyle}>
               <thead>
                 <tr>
@@ -6216,19 +6270,29 @@ export default function AdminClient() {
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         {selectedPartner?.is_system_default && !row.derivedFromOrtslagen ? (
                           Boolean(row.mapping.is_public_live) ? (
-                            <button
-                              style={btnGhostStyle}
-                              disabled={busy || reviewBusy}
-                              onClick={() =>
-                                run("Gebiet offline nehmen", async () => {
-                                  await setAreaPublicationForArea(row.mapping.area_id, false);
-                                  await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
-                                  await loadPartnerDetails(selectedPartnerId);
-                                }, { showSuccessModal: false })
-                              }
-                            >
-                              Offline nehmen
-                            </button>
+                            <>
+                              <button
+                                style={btnGhostStyle}
+                                disabled={busy || reviewBusy}
+                                onClick={() =>
+                                  run("Gebiet offline nehmen", async () => {
+                                    await setAreaPublicationForArea(row.mapping.area_id, false);
+                                  }, { showSuccessModal: false })
+                                }
+                              >
+                                Offline nehmen
+                              </button>
+                              {buildLiveHrefFromArea(row.mapping.areas ?? null, row.mapping.area_id) ? (
+                                <a
+                                  href={buildLiveHrefFromArea(row.mapping.areas ?? null, row.mapping.area_id) ?? "#"}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={handoverLinkButtonStyle}
+                                >
+                                  Live-Seite öffnen
+                                </a>
+                              ) : null}
+                            </>
                           ) : (
                             <button
                               style={btnStyle}
@@ -6240,8 +6304,6 @@ export default function AdminClient() {
                                     throw new Error(`Bitte zuerst im Tab "Systempartner-Default" diese Pflichtfelder ausfüllen: ${systempartnerDefaultMissingLabels.join(", ")}.`);
                                   }
                                   await setAreaPublicationForArea(row.mapping.area_id, true);
-                                  await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
-                                  await loadPartnerDetails(selectedPartnerId);
                                 }, { showSuccessModal: false })
                               }
                             >
