@@ -101,8 +101,55 @@ export type RawListing = {
   updated_at: string;
 };
 
-export type RawReference = RawListing;
-export type RawRequest = RawListing;
+export type RawReferenceRow = RawListing;
+export type RawRequestRow = RawListing;
+
+export type CanonicalLifecycleStatus = "active" | "stale" | "expired" | "hidden" | "draft";
+
+export type CanonicalReference = {
+  partner_id: string;
+  provider: ProviderKey;
+  source: ProviderKey;
+  external_id: string;
+  title: string | null;
+  status: string | null;
+  source_updated_at: string | null;
+  normalized_payload: JsonObject;
+  source_payload: JsonObject;
+  is_active: boolean;
+  sync_status: string;
+  last_seen_at: string;
+  updated_at: string;
+  lifecycle_status: CanonicalLifecycleStatus;
+  is_live: boolean;
+  canonical_payload: JsonObject;
+  owner_account_id?: string | null;
+  publisher_account_id?: string | null;
+};
+
+export type CanonicalRequest = {
+  partner_id: string;
+  provider: ProviderKey;
+  source: ProviderKey;
+  external_id: string;
+  title: string | null;
+  status: string | null;
+  source_updated_at: string | null;
+  normalized_payload: JsonObject;
+  source_payload: JsonObject;
+  is_active: boolean;
+  sync_status: string;
+  last_seen_at: string;
+  updated_at: string;
+  lifecycle_status: CanonicalLifecycleStatus;
+  is_live: boolean;
+  canonical_payload: JsonObject;
+  owner_account_id?: string | null;
+  publisher_account_id?: string | null;
+};
+
+export type RawReference = RawReferenceRow;
+export type RawRequest = RawRequestRow;
 
 export type ResourceSyncDiagnostics = {
   provider_request_count: number;

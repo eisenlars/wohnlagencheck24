@@ -1,6 +1,20 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.admin_area_texts (
+  scope_kind text NOT NULL CHECK (scope_kind = 'bundesland'::text),
+  scope_key text NOT NULL,
+  section_key text NOT NULL,
+  text_type text NOT NULL DEFAULT 'general'::text CHECK (text_type = ANY (ARRAY['general'::text, 'individual'::text])),
+  raw_content text NOT NULL DEFAULT ''::text,
+  optimized_content text NOT NULL DEFAULT ''::text,
+  status text NOT NULL DEFAULT 'approved'::text CHECK (status = ANY (ARRAY['draft'::text, 'approved'::text])),
+  source_snapshot_hash text,
+  source_last_updated timestamp with time zone,
+  updated_by text,
+  last_updated timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT admin_area_texts_pkey PRIMARY KEY (scope_kind, scope_key, section_key)
+);
 CREATE TABLE public.areas (
   id text NOT NULL,
   name text NOT NULL,
@@ -11,18 +25,68 @@ CREATE TABLE public.areas (
   bundesland_slug text,
   CONSTRAINT areas_pkey PRIMARY KEY (id)
 );
-CREATE INDEX areas_bundesland_slug_idx
-  ON public.areas (bundesland_slug, slug);
-CREATE INDEX areas_bundesland_parent_slug_idx
-  ON public.areas (bundesland_slug, parent_slug);
+CREATE TABLE public.billing_feature_catalog (
+  code text NOT NULL,
+  label text NOT NULL,
+  note text,
+  billing_unit text NOT NULL DEFAULT 'pro Monat'::text,
+  default_enabled boolean NOT NULL DEFAULT false,
+  default_monthly_price_eur numeric NOT NULL DEFAULT 0.00 CHECK (default_monthly_price_eur >= 0::numeric),
+  sort_order integer NOT NULL DEFAULT 100,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT billing_feature_catalog_pkey PRIMARY KEY (code)
+);
+CREATE TABLE public.billing_global_defaults (
+  id integer NOT NULL DEFAULT 1 CHECK (id = 1),
+  portal_base_price_eur numeric NOT NULL DEFAULT 50.00 CHECK (portal_base_price_eur >= 0::numeric),
+  portal_ortslage_price_eur numeric NOT NULL DEFAULT 1.00 CHECK (portal_ortslage_price_eur >= 0::numeric),
+  portal_export_ortslage_price_eur numeric NOT NULL DEFAULT 1.00 CHECK (portal_export_ortslage_price_eur >= 0::numeric),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT billing_global_defaults_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.crm_raw_references (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  provider text NOT NULL,
+  external_id text NOT NULL,
+  title text,
+  status text,
+  source_updated_at timestamp with time zone,
+  normalized_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  source_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  sync_status text NOT NULL DEFAULT 'ok'::text,
+  last_seen_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT crm_raw_references_pkey PRIMARY KEY (id),
+  CONSTRAINT crm_raw_references_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.crm_raw_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  provider text NOT NULL,
+  external_id text NOT NULL,
+  title text,
+  status text,
+  source_updated_at timestamp with time zone,
+  normalized_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  source_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  sync_status text NOT NULL DEFAULT 'ok'::text,
+  last_seen_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT crm_raw_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT crm_raw_requests_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
 CREATE TABLE public.data_value_settings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   auth_user_id uuid,
   area_id text,
-  price_factor_houses double precision DEFAULT 1.0,
-  price_factor_apartments double precision DEFAULT 1.0,
-  custom_intro_text text,
-  custom_market_report text,
   is_active boolean DEFAULT true,
   last_update timestamp with time zone DEFAULT now(),
   standortfaktoren jsonb DEFAULT '{"bildung": 1, "gesundheit": 1, "mobilitaet": 1, "naherholung": 1, "arbeitsplatz": 1, "nahversorgung": 1, "lebenserhaltungskosten": 1}'::jsonb,
@@ -37,6 +101,147 @@ CREATE TABLE public.data_value_settings (
   CONSTRAINT data_value_settings_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES public.partners(id),
   CONSTRAINT data_value_settings_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
 );
+CREATE TABLE public.llm_fx_monthly_rates (
+  month_start date NOT NULL,
+  from_currency text NOT NULL,
+  to_currency text NOT NULL,
+  rate numeric NOT NULL,
+  source text,
+  is_locked boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT llm_fx_monthly_rates_pkey PRIMARY KEY (month_start, from_currency, to_currency)
+);
+CREATE TABLE public.llm_global_config (
+  id boolean NOT NULL DEFAULT true,
+  central_enabled boolean NOT NULL DEFAULT true,
+  monthly_token_budget bigint,
+  monthly_cost_budget_eur numeric,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT llm_global_config_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.llm_global_providers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  provider text NOT NULL,
+  model text NOT NULL,
+  base_url text NOT NULL,
+  auth_type text NOT NULL DEFAULT 'api_key'::text,
+  auth_config jsonb,
+  priority integer NOT NULL DEFAULT 100,
+  is_active boolean NOT NULL DEFAULT true,
+  temperature numeric,
+  max_tokens integer,
+  input_cost_eur_per_1k numeric,
+  output_cost_eur_per_1k numeric,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  price_source text,
+  price_source_url text,
+  price_updated_at timestamp with time zone,
+  price_source_url_override text,
+  display_label text,
+  hint text,
+  badges jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(badges) = 'array'::text),
+  recommended boolean NOT NULL DEFAULT false,
+  CONSTRAINT llm_global_providers_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.llm_partner_budget_overrides (
+  partner_id uuid NOT NULL,
+  monthly_token_budget bigint,
+  monthly_cost_budget_eur numeric,
+  is_active boolean NOT NULL DEFAULT true,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT llm_partner_budget_overrides_pkey PRIMARY KEY (partner_id),
+  CONSTRAINT llm_partner_budget_overrides_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.llm_provider_accounts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  provider text NOT NULL,
+  display_name text,
+  base_url text NOT NULL,
+  auth_type text NOT NULL DEFAULT 'api_key'::text,
+  auth_config jsonb,
+  api_version text,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT llm_provider_accounts_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.llm_provider_models (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  provider_account_id uuid NOT NULL,
+  model text NOT NULL,
+  display_label text,
+  hint text,
+  badges jsonb NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(badges) = 'array'::text),
+  recommended boolean NOT NULL DEFAULT false,
+  sort_order integer NOT NULL DEFAULT 100,
+  temperature numeric,
+  max_tokens integer,
+  input_cost_usd_per_1k numeric,
+  output_cost_usd_per_1k numeric,
+  cache_read_cost_usd_per_1k numeric,
+  cache_write_cost_usd_per_1k numeric,
+  reasoning_cost_usd_per_1k numeric,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT llm_provider_models_pkey PRIMARY KEY (id),
+  CONSTRAINT llm_provider_models_provider_account_id_fkey FOREIGN KEY (provider_account_id) REFERENCES public.llm_provider_accounts(id)
+);
+CREATE TABLE public.llm_provider_price_observations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  provider text NOT NULL,
+  model text NOT NULL,
+  source_kind text NOT NULL DEFAULT 'provider_web'::text,
+  source_url text,
+  fetched_at timestamp with time zone NOT NULL DEFAULT now(),
+  input_cost_eur_per_1k numeric,
+  output_cost_eur_per_1k numeric,
+  parse_confidence numeric,
+  parse_status text NOT NULL DEFAULT 'unknown'::text,
+  parse_message text,
+  raw_excerpt text,
+  is_applied boolean NOT NULL DEFAULT false,
+  applied_at timestamp with time zone,
+  CONSTRAINT llm_provider_price_observations_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.llm_usage_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  partner_id uuid,
+  route_name text NOT NULL,
+  mode text NOT NULL,
+  provider text NOT NULL,
+  model text NOT NULL,
+  prompt_tokens integer,
+  completion_tokens integer,
+  total_tokens integer,
+  estimated_cost_eur numeric,
+  status text NOT NULL DEFAULT 'ok'::text,
+  error_code text,
+  provider_account_id uuid,
+  provider_model_id uuid,
+  billing_currency text NOT NULL DEFAULT 'USD'::text CHECK (char_length(TRIM(BOTH FROM billing_currency)) > 0),
+  fx_rate_usd_to_eur numeric,
+  input_cost_usd_per_1k_snapshot numeric,
+  output_cost_usd_per_1k_snapshot numeric,
+  cache_read_cost_usd_per_1k_snapshot numeric,
+  cache_write_cost_usd_per_1k_snapshot numeric,
+  reasoning_cost_usd_per_1k_snapshot numeric,
+  estimated_cost_usd numeric,
+  cached_tokens integer,
+  cache_read_tokens integer,
+  cache_write_tokens integer,
+  reasoning_tokens integer,
+  request_id text,
+  raw_usage_json jsonb,
+  CONSTRAINT llm_usage_events_pkey PRIMARY KEY (id),
+  CONSTRAINT llm_usage_events_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT llm_usage_events_provider_account_id_fkey FOREIGN KEY (provider_account_id) REFERENCES public.llm_provider_accounts(id),
+  CONSTRAINT llm_usage_events_provider_model_id_fkey FOREIGN KEY (provider_model_id) REFERENCES public.llm_provider_models(id)
+);
 CREATE TABLE public.market_data (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   area_id text,
@@ -48,6 +253,34 @@ CREATE TABLE public.market_data (
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT market_data_pkey PRIMARY KEY (id),
   CONSTRAINT market_data_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
+CREATE TABLE public.market_explanation_static_text_entries (
+  key text NOT NULL,
+  locale text NOT NULL,
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'internal'::text, 'live'::text])),
+  value_text text NOT NULL DEFAULT ''::text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT market_explanation_static_text_entries_pkey PRIMARY KEY (key, locale)
+);
+CREATE TABLE public.market_explanation_static_text_i18n_meta (
+  key text NOT NULL,
+  locale text NOT NULL,
+  source_locale text NOT NULL DEFAULT 'de'::text,
+  source_snapshot_hash text,
+  source_updated_at timestamp with time zone,
+  translation_origin text NOT NULL DEFAULT 'manual'::text CHECK (translation_origin = ANY (ARRAY['manual'::text, 'ai'::text, 'sync_copy_all'::text, 'sync_fill_missing'::text])),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT market_explanation_static_text_i18n_meta_pkey PRIMARY KEY (key, locale)
+);
+CREATE TABLE public.partner_area_generated_texts (
+  partner_id text NOT NULL,
+  area_id text NOT NULL,
+  scope text NOT NULL CHECK (scope = ANY (ARRAY['kreis'::text, 'ortslage'::text])),
+  section_key text NOT NULL,
+  value_text text NOT NULL DEFAULT ''::text,
+  source_signature text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_area_generated_texts_pkey PRIMARY KEY (partner_id, area_id, scope, section_key)
 );
 CREATE TABLE public.partner_area_map (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -61,112 +294,82 @@ CREATE TABLE public.partner_area_map (
   partner_submitted_at timestamp with time zone,
   is_public_live boolean NOT NULL DEFAULT false,
   admin_review_note text,
+  partner_preview_signoff_at timestamp with time zone,
   CONSTRAINT partner_area_map_pkey PRIMARY KEY (id),
   CONSTRAINT partner_area_map_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES public.partners(id),
   CONSTRAINT partner_area_map_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
 );
-CREATE INDEX partner_area_map_area_active_partner_idx
-  ON public.partner_area_map (area_id, is_active, auth_user_id);
-CREATE INDEX partner_area_map_area_public_partner_idx
-  ON public.partner_area_map (area_id, is_public_live, auth_user_id);
-CREATE INDEX partner_area_map_partner_public_area_idx
-  ON public.partner_area_map (auth_user_id, is_public_live, area_id);
-CREATE TABLE public.partners (
-  id uuid NOT NULL DEFAULT auth.uid(),
-  company_name text NOT NULL,
-  contact_person text,
-  website_url text,
-  created_at timestamp with time zone DEFAULT now(),
-  contact_email text,
-  is_system_default boolean NOT NULL DEFAULT false,
-  CONSTRAINT partners_pkey PRIMARY KEY (id)
+CREATE TABLE public.partner_area_runtime_states (
+  partner_id text NOT NULL,
+  area_id text NOT NULL,
+  scope text NOT NULL CHECK (scope = ANY (ARRAY['kreis'::text, 'ortslage'::text])),
+  factors_snapshot jsonb NOT NULL DEFAULT '{}'::jsonb,
+  data_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  textgen_inputs_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  helpers_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  rebuilt_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_area_runtime_states_pkey PRIMARY KEY (partner_id, area_id, scope)
 );
-CREATE TABLE public.report_texts (
+CREATE TABLE public.partner_billing_settings (
+  partner_id uuid NOT NULL,
+  portal_base_price_eur numeric CHECK (portal_base_price_eur IS NULL OR portal_base_price_eur >= 0::numeric),
+  portal_ortslage_price_eur numeric CHECK (portal_ortslage_price_eur IS NULL OR portal_ortslage_price_eur >= 0::numeric),
+  portal_export_ortslage_price_eur numeric CHECK (portal_export_ortslage_price_eur IS NULL OR portal_export_ortslage_price_eur >= 0::numeric),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_billing_settings_pkey PRIMARY KEY (partner_id),
+  CONSTRAINT partner_billing_settings_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.partner_blog_post_i18n (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  post_id uuid NOT NULL,
+  area_id text NOT NULL,
+  target_locale text NOT NULL CHECK (target_locale ~ '^[a-z]{2}(-[a-z]{2})?$'::text),
+  translated_headline text,
+  translated_subline text,
+  translated_body_md text,
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'approved'::text, 'needs_review'::text])),
+  source_snapshot_hash text,
+  source_last_updated timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_blog_post_i18n_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_blog_post_i18n_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES auth.users(id),
+  CONSTRAINT partner_blog_post_i18n_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.partner_blog_posts(id)
+);
+CREATE TABLE public.partner_blog_posts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   partner_id uuid NOT NULL,
   area_id text NOT NULL,
-  section_key text NOT NULL,
-  text_type USER-DEFINED NOT NULL,
-  raw_content text,
-  optimized_content text,
-  status text DEFAULT 'approved'::text,
-  last_updated timestamp with time zone DEFAULT now(),
-  CONSTRAINT report_texts_pkey PRIMARY KEY (id),
-  CONSTRAINT report_texts_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
-  CONSTRAINT report_texts_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+  area_name text,
+  bundesland_slug text,
+  kreis_slug text,
+  headline text NOT NULL,
+  subline text,
+  body_md text NOT NULL,
+  author_name text,
+  author_image_url text,
+  source_individual_01 text,
+  source_individual_02 text,
+  source_zitat text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  status text NOT NULL DEFAULT 'draft'::text,
+  CONSTRAINT partner_blog_posts_pkey PRIMARY KEY (id)
 );
-CREATE INDEX report_texts_approved_area_partner_idx
-  ON public.report_texts (area_id, partner_id)
-  WHERE (status = 'approved'::text);
-
--- ------------------------------
--- Lokale Website Texte (partner_local_site_texts)
--- ------------------------------
-CREATE TABLE public.partner_local_site_texts (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
+CREATE TABLE public.partner_feature_overrides (
   partner_id uuid NOT NULL,
-  area_id text NOT NULL,
-  section_key text NOT NULL,
-  text_type text,
-  raw_content text,
-  optimized_content text,
-  status text DEFAULT 'draft'::text,
-  last_updated timestamp with time zone DEFAULT now(),
-  CONSTRAINT partner_local_site_texts_pkey PRIMARY KEY (id),
-  CONSTRAINT partner_local_site_texts_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
-  CONSTRAINT partner_local_site_texts_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+  feature_code text NOT NULL,
+  is_enabled boolean,
+  monthly_price_eur numeric CHECK (monthly_price_eur IS NULL OR monthly_price_eur >= 0::numeric),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_feature_overrides_pkey PRIMARY KEY (partner_id, feature_code),
+  CONSTRAINT partner_feature_overrides_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_feature_overrides_feature_code_fkey FOREIGN KEY (feature_code) REFERENCES public.billing_feature_catalog(code)
 );
-
-CREATE UNIQUE INDEX partner_local_site_texts_unique
-  ON public.partner_local_site_texts (partner_id, area_id, section_key);
-
-ALTER TABLE public.partner_local_site_texts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY partner_local_site_texts_deny_select
-  ON public.partner_local_site_texts FOR SELECT USING (false);
-CREATE POLICY partner_local_site_texts_deny_insert
-  ON public.partner_local_site_texts FOR INSERT WITH CHECK (false);
-CREATE POLICY partner_local_site_texts_deny_update
-  ON public.partner_local_site_texts FOR UPDATE USING (false);
-CREATE POLICY partner_local_site_texts_deny_delete
-  ON public.partner_local_site_texts FOR DELETE USING (false);
-
--- ------------------------------
--- Online-Marketing Texte (partner_marketing_texts)
--- ------------------------------
-CREATE TABLE public.partner_marketing_texts (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  partner_id uuid NOT NULL,
-  area_id text NOT NULL,
-  section_key text NOT NULL,
-  text_type text,
-  raw_content text,
-  optimized_content text,
-  status text DEFAULT 'draft'::text,
-  last_updated timestamp with time zone DEFAULT now(),
-  CONSTRAINT partner_marketing_texts_pkey PRIMARY KEY (id),
-  CONSTRAINT partner_marketing_texts_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
-  CONSTRAINT partner_marketing_texts_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
-);
-
-CREATE UNIQUE INDEX partner_marketing_texts_unique
-  ON public.partner_marketing_texts (partner_id, area_id, section_key);
-CREATE INDEX partner_marketing_texts_approved_area_partner_idx
-  ON public.partner_marketing_texts (area_id, partner_id)
-  WHERE (status = 'approved'::text);
-
-ALTER TABLE public.partner_marketing_texts ENABLE ROW LEVEL SECURITY;
-CREATE POLICY partner_marketing_texts_deny_select
-  ON public.partner_marketing_texts FOR SELECT USING (false);
-CREATE POLICY partner_marketing_texts_deny_insert
-  ON public.partner_marketing_texts FOR INSERT WITH CHECK (false);
-CREATE POLICY partner_marketing_texts_deny_update
-  ON public.partner_marketing_texts FOR UPDATE USING (false);
-CREATE POLICY partner_marketing_texts_deny_delete
-  ON public.partner_marketing_texts FOR DELETE USING (false);
-
--- ------------------------------
--- CRM Integrations (partner_integrations)
--- ------------------------------
 CREATE TABLE public.partner_integrations (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   partner_id uuid NOT NULL,
@@ -182,48 +385,123 @@ CREATE TABLE public.partner_integrations (
   CONSTRAINT partner_integrations_pkey PRIMARY KEY (id),
   CONSTRAINT partner_integrations_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
 );
-
--- Unique per partner + kind (crm / llm / other)
-CREATE UNIQUE INDEX partner_integrations_kind_unique
-  ON public.partner_integrations (partner_id, kind);
-
--- RLS (deny all for anon/auth; service-role bypasses)
-ALTER TABLE public.partner_integrations ENABLE ROW LEVEL SECURITY;
-CREATE POLICY partner_integrations_deny_select
-  ON public.partner_integrations FOR SELECT USING (false);
-CREATE POLICY partner_integrations_deny_insert
-  ON public.partner_integrations FOR INSERT WITH CHECK (false);
-CREATE POLICY partner_integrations_deny_update
-  ON public.partner_integrations FOR UPDATE USING (false);
-CREATE POLICY partner_integrations_deny_delete
-  ON public.partner_integrations FOR DELETE USING (false);
-
--- ------------------------------
--- partner_property_offers extensions
--- ------------------------------
-ALTER TABLE public.partner_property_offers
-  ADD COLUMN source text,
-  ADD COLUMN external_id text;
-
-CREATE UNIQUE INDEX partner_property_offers_ext_idx
-  ON public.partner_property_offers (partner_id, source, external_id);
-
-CREATE INDEX partner_property_offers_area_offer_idx
-  ON public.partner_property_offers (area_id, offer_type, updated_at);
-
-ALTER TABLE public.partner_property_offers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY offers_public_read
-  ON public.partner_property_offers FOR SELECT USING (true);
-CREATE POLICY offers_deny_insert
-  ON public.partner_property_offers FOR INSERT WITH CHECK (false);
-CREATE POLICY offers_deny_update
-  ON public.partner_property_offers FOR UPDATE USING (false);
-CREATE POLICY offers_deny_delete
-  ON public.partner_property_offers FOR DELETE USING (false);
-
--- ------------------------------
--- partner_property_overrides (SEO/Content Overrides)
--- ------------------------------
+CREATE TABLE public.partner_listings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  provider text NOT NULL,
+  external_id text NOT NULL,
+  title text,
+  status text,
+  source_updated_at timestamp with time zone,
+  normalized_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  source_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  sync_status text NOT NULL DEFAULT 'ok'::text,
+  last_seen_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_listings_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_listings_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.partner_local_site_texts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  area_id text NOT NULL,
+  section_key text NOT NULL,
+  text_type text,
+  raw_content text,
+  optimized_content text,
+  status text NOT NULL DEFAULT 'draft'::text,
+  last_updated timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_local_site_texts_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_local_site_texts_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_local_site_texts_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
+CREATE TABLE public.partner_marketing_texts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  area_id text NOT NULL,
+  section_key text NOT NULL,
+  text_type text,
+  raw_content text,
+  optimized_content text,
+  status text DEFAULT 'draft'::text,
+  last_updated timestamp with time zone DEFAULT now(),
+  CONSTRAINT partner_marketing_texts_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_marketing_texts_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_marketing_texts_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
+CREATE TABLE public.partner_offer_area_targets (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  offer_id uuid NOT NULL,
+  area_id text NOT NULL,
+  is_primary boolean NOT NULL DEFAULT false,
+  match_source text NOT NULL,
+  match_confidence text NOT NULL CHECK (match_confidence = ANY (ARRAY['high'::text, 'medium'::text, 'low'::text])),
+  score numeric,
+  matched_zip_code text,
+  matched_city text,
+  matched_region text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_offer_area_targets_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_offer_area_targets_offer_id_fkey FOREIGN KEY (offer_id) REFERENCES public.partner_property_offers(id),
+  CONSTRAINT partner_offer_area_targets_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id),
+  CONSTRAINT partner_offer_area_targets_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.partner_property_offer_i18n (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  offer_id uuid NOT NULL,
+  area_id text,
+  source text NOT NULL,
+  external_id text NOT NULL,
+  target_locale text NOT NULL CHECK (target_locale ~ '^[a-z]{2}(-[a-z]{2})?$'::text),
+  translated_seo_title text,
+  translated_seo_description text,
+  translated_seo_h1 text,
+  translated_short_description text,
+  translated_long_description text,
+  translated_location_text text,
+  translated_features_text text,
+  translated_highlights ARRAY NOT NULL DEFAULT '{}'::text[],
+  translated_image_alt_texts ARRAY NOT NULL DEFAULT '{}'::text[],
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'approved'::text, 'needs_review'::text])),
+  source_snapshot_hash text,
+  source_last_updated timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  translated_answer_summary text,
+  translated_location_summary text,
+  translated_target_audience text,
+  CONSTRAINT partner_property_offer_i18n_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_property_offer_i18n_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES auth.users(id),
+  CONSTRAINT partner_property_offer_i18n_offer_id_fkey FOREIGN KEY (offer_id) REFERENCES public.partner_property_offers(id)
+);
+CREATE TABLE public.partner_property_offers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  area_id text,
+  offer_type text NOT NULL CHECK (offer_type = ANY (ARRAY['kauf'::text, 'miete'::text])),
+  object_type text NOT NULL CHECK (object_type = ANY (ARRAY['haus'::text, 'wohnung'::text])),
+  title text,
+  price numeric,
+  rent numeric,
+  area_sqm numeric,
+  rooms numeric,
+  address text,
+  image_url text,
+  detail_url text,
+  is_top boolean DEFAULT false,
+  updated_at timestamp with time zone DEFAULT now(),
+  raw jsonb,
+  source text,
+  external_id text,
+  CONSTRAINT partner_property_offers_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_property_offers_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_property_offers_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
 CREATE TABLE public.partner_property_overrides (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   partner_id uuid NOT NULL,
@@ -238,34 +516,380 @@ CREATE TABLE public.partner_property_overrides (
   long_description text,
   location_text text,
   features_text text,
-  answer_summary text,
-  location_summary text,
-  target_audience text,
   highlights jsonb,
   image_alt_texts jsonb,
   status text DEFAULT 'draft'::text,
   last_updated timestamp with time zone DEFAULT now(),
+  answer_summary text,
+  location_summary text,
+  target_audience text,
   CONSTRAINT partner_property_overrides_pkey PRIMARY KEY (id),
   CONSTRAINT partner_property_overrides_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
 );
-
-CREATE UNIQUE INDEX partner_property_overrides_unique
-  ON public.partner_property_overrides (partner_id, source, external_id);
-
-ALTER TABLE public.partner_property_overrides ENABLE ROW LEVEL SECURITY;
-CREATE POLICY overrides_public_read
-  ON public.partner_property_overrides FOR SELECT USING (true);
-CREATE POLICY overrides_partner_write
-  ON public.partner_property_overrides FOR INSERT WITH CHECK (auth.uid() = partner_id);
-CREATE POLICY overrides_partner_update
-  ON public.partner_property_overrides FOR UPDATE USING (auth.uid() = partner_id);
-CREATE POLICY overrides_partner_delete
-  ON public.partner_property_overrides FOR DELETE USING (auth.uid() = partner_id);
-
--- ------------------------------
--- partner_property_offer_i18n extensions
--- ------------------------------
-ALTER TABLE public.partner_property_offer_i18n
-  ADD COLUMN IF NOT EXISTS translated_answer_summary text,
-  ADD COLUMN IF NOT EXISTS translated_location_summary text,
-  ADD COLUMN IF NOT EXISTS translated_target_audience text;
+CREATE TABLE public.partner_reference_i18n (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  reference_id uuid NOT NULL,
+  area_id text NOT NULL,
+  source text NOT NULL,
+  external_id text NOT NULL,
+  target_locale text NOT NULL CHECK (target_locale ~ '^[a-z]{2}(-[a-z]{2})?$'::text),
+  translated_seo_title text,
+  translated_seo_description text,
+  translated_seo_h1 text,
+  translated_short_description text,
+  translated_long_description text,
+  translated_location_text text,
+  translated_features_text text,
+  translated_highlights ARRAY NOT NULL DEFAULT '{}'::text[],
+  translated_image_alt_texts ARRAY NOT NULL DEFAULT '{}'::text[],
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'approved'::text, 'needs_review'::text])),
+  source_snapshot_hash text,
+  source_last_updated timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_reference_i18n_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_reference_i18n_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES auth.users(id),
+  CONSTRAINT partner_reference_i18n_reference_id_fkey FOREIGN KEY (reference_id) REFERENCES public.partner_references(id)
+);
+CREATE TABLE public.partner_reference_overrides (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  source text NOT NULL,
+  external_id text NOT NULL,
+  is_active_override boolean,
+  seo_title text,
+  seo_description text,
+  seo_h1 text,
+  short_description text,
+  long_description text,
+  location_text text,
+  features_text text,
+  highlights jsonb,
+  image_alt_texts jsonb,
+  status text DEFAULT 'draft'::text,
+  last_updated timestamp with time zone DEFAULT now(),
+  CONSTRAINT partner_reference_overrides_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_reference_overrides_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.partner_references (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  provider text NOT NULL,
+  external_id text NOT NULL,
+  title text,
+  status text,
+  source_updated_at timestamp with time zone,
+  normalized_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  source_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  sync_status text NOT NULL DEFAULT 'ok'::text,
+  last_seen_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  source text,
+  lifecycle_status text NOT NULL DEFAULT 'active'::text CHECK (lifecycle_status = ANY (ARRAY['active'::text, 'stale'::text, 'expired'::text, 'hidden'::text, 'draft'::text])),
+  is_live boolean NOT NULL DEFAULT true,
+  canonical_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  owner_account_id uuid,
+  publisher_account_id uuid,
+  CONSTRAINT partner_references_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_references_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_references_owner_account_id_fkey FOREIGN KEY (owner_account_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_references_publisher_account_id_fkey FOREIGN KEY (publisher_account_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.partner_request_i18n (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  request_id uuid NOT NULL,
+  area_id text NOT NULL,
+  source text NOT NULL,
+  external_id text NOT NULL,
+  target_locale text NOT NULL CHECK (target_locale ~ '^[a-z]{2}(-[a-z]{2})?$'::text),
+  translated_seo_title text,
+  translated_seo_description text,
+  translated_seo_h1 text,
+  translated_short_description text,
+  translated_long_description text,
+  translated_location_text text,
+  translated_features_text text,
+  translated_highlights ARRAY NOT NULL DEFAULT '{}'::text[],
+  translated_image_alt_texts ARRAY NOT NULL DEFAULT '{}'::text[],
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'approved'::text, 'needs_review'::text])),
+  source_snapshot_hash text,
+  source_last_updated timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_request_i18n_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_request_i18n_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES auth.users(id),
+  CONSTRAINT partner_request_i18n_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.partner_requests(id)
+);
+CREATE TABLE public.partner_request_overrides (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  source text NOT NULL,
+  external_id text NOT NULL,
+  is_active_override boolean,
+  seo_title text,
+  seo_description text,
+  seo_h1 text,
+  short_description text,
+  long_description text,
+  location_text text,
+  features_text text,
+  highlights jsonb,
+  image_alt_texts jsonb,
+  status text DEFAULT 'draft'::text,
+  last_updated timestamp with time zone DEFAULT now(),
+  CONSTRAINT partner_request_overrides_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_request_overrides_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.partner_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  provider text NOT NULL,
+  external_id text NOT NULL,
+  title text,
+  status text,
+  source_updated_at timestamp with time zone,
+  normalized_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  source_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  sync_status text NOT NULL DEFAULT 'ok'::text,
+  last_seen_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  source text,
+  lifecycle_status text NOT NULL DEFAULT 'active'::text CHECK (lifecycle_status = ANY (ARRAY['active'::text, 'stale'::text, 'expired'::text, 'hidden'::text, 'draft'::text])),
+  is_live boolean NOT NULL DEFAULT true,
+  canonical_payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  owner_account_id uuid,
+  publisher_account_id uuid,
+  CONSTRAINT partner_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_requests_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_requests_owner_account_id_fkey FOREIGN KEY (owner_account_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_requests_publisher_account_id_fkey FOREIGN KEY (publisher_account_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.partner_texts_i18n (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  area_id text NOT NULL,
+  section_key text NOT NULL,
+  channel text NOT NULL CHECK (channel = ANY (ARRAY['portal'::text, 'local_site'::text, 'marketing'::text])),
+  target_locale text NOT NULL CHECK (target_locale ~ '^[a-z]{2}(-[a-z]{2})?$'::text),
+  translated_content text,
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'approved'::text, 'needs_review'::text])),
+  source_snapshot_hash text,
+  source_last_updated timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_texts_i18n_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_texts_i18n_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.partners (
+  id uuid NOT NULL DEFAULT auth.uid(),
+  company_name text NOT NULL,
+  website_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  contact_email text,
+  is_active boolean NOT NULL DEFAULT true,
+  contact_first_name text NOT NULL,
+  contact_last_name text NOT NULL,
+  llm_partner_managed_allowed boolean NOT NULL DEFAULT false,
+  llm_mode_default text NOT NULL DEFAULT 'central_managed'::text,
+  is_system_default boolean NOT NULL DEFAULT false,
+  CONSTRAINT partners_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.portal_content_entries (
+  page_key text NOT NULL,
+  section_key text NOT NULL,
+  locale text NOT NULL,
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'internal'::text, 'live'::text])),
+  fields_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT portal_content_entries_pkey PRIMARY KEY (page_key, section_key, locale)
+);
+CREATE TABLE public.portal_content_i18n_meta (
+  page_key text NOT NULL,
+  section_key text NOT NULL,
+  locale text NOT NULL,
+  source_locale text NOT NULL DEFAULT 'de'::text,
+  source_snapshot_hash text,
+  source_updated_at timestamp with time zone,
+  translation_origin text NOT NULL DEFAULT 'manual'::text CHECK (translation_origin = ANY (ARRAY['manual'::text, 'ai'::text, 'sync_copy_all'::text, 'sync_fill_missing'::text])),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT portal_content_i18n_meta_pkey PRIMARY KEY (page_key, section_key, locale)
+);
+CREATE TABLE public.portal_locale_config (
+  locale text NOT NULL,
+  status text NOT NULL DEFAULT 'planned'::text CHECK (status = ANY (ARRAY['planned'::text, 'internal'::text, 'live'::text])),
+  partner_bookable boolean NOT NULL DEFAULT false,
+  is_active boolean NOT NULL DEFAULT false,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  label_native text,
+  label_de text,
+  bcp47_tag text,
+  fallback_locale text NOT NULL DEFAULT 'de'::text,
+  text_direction text NOT NULL DEFAULT 'ltr'::text CHECK (text_direction = ANY (ARRAY['ltr'::text, 'rtl'::text])),
+  number_locale text,
+  date_locale text,
+  currency_code text NOT NULL DEFAULT 'EUR'::text,
+  billing_feature_code text,
+  CONSTRAINT portal_locale_config_pkey PRIMARY KEY (locale)
+);
+CREATE TABLE public.portal_system_text_entries (
+  key text NOT NULL,
+  locale text NOT NULL,
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'internal'::text, 'live'::text])),
+  value_text text NOT NULL DEFAULT ''::text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT portal_system_text_entries_pkey PRIMARY KEY (key, locale)
+);
+CREATE TABLE public.portal_system_text_i18n_meta (
+  key text NOT NULL,
+  locale text NOT NULL,
+  source_locale text NOT NULL DEFAULT 'de'::text,
+  source_snapshot_hash text,
+  source_updated_at timestamp with time zone,
+  translation_origin text NOT NULL DEFAULT 'manual'::text CHECK (translation_origin = ANY (ARRAY['manual'::text, 'ai'::text, 'sync_copy_all'::text, 'sync_fill_missing'::text])),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT portal_system_text_i18n_meta_pkey PRIMARY KEY (key, locale)
+);
+CREATE TABLE public.public_offer_entries (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  visible_area_id text NOT NULL,
+  locale text NOT NULL CHECK (locale ~ '^[a-z]{2}(-[a-z]{2})?$'::text),
+  offer_id uuid NOT NULL,
+  source text NOT NULL,
+  external_id text NOT NULL,
+  offer_type text NOT NULL,
+  object_type text,
+  title text,
+  seo_title text,
+  seo_description text,
+  seo_h1 text,
+  short_description text,
+  long_description text,
+  location_text text,
+  features_text text,
+  highlights jsonb NOT NULL DEFAULT '[]'::jsonb,
+  image_alt_texts jsonb NOT NULL DEFAULT '[]'::jsonb,
+  price numeric,
+  rent numeric,
+  area_sqm numeric,
+  rooms numeric,
+  address text,
+  image_url text,
+  detail_url text,
+  is_top boolean NOT NULL DEFAULT false,
+  is_live boolean NOT NULL DEFAULT true,
+  source_updated_at timestamp with time zone,
+  published_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  answer_summary text,
+  location_summary text,
+  target_audience text,
+  CONSTRAINT public_offer_entries_pkey PRIMARY KEY (id),
+  CONSTRAINT public_offer_entries_offer_id_fkey FOREIGN KEY (offer_id) REFERENCES public.partner_property_offers(id),
+  CONSTRAINT public_offer_entries_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT public_offer_entries_visible_area_id_fkey FOREIGN KEY (visible_area_id) REFERENCES public.areas(id)
+);
+CREATE TABLE public.public_reference_entries (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  visible_area_id text NOT NULL,
+  locale text NOT NULL CHECK (locale ~ '^[a-z]{2}(-[a-z]{2})?$'::text),
+  reference_id uuid NOT NULL,
+  provider text NOT NULL,
+  external_id text NOT NULL,
+  title text,
+  seo_title text,
+  seo_description text,
+  seo_h1 text,
+  short_description text,
+  long_description text,
+  location_text text,
+  features_text text,
+  highlights jsonb NOT NULL DEFAULT '[]'::jsonb,
+  image_alt_texts jsonb NOT NULL DEFAULT '[]'::jsonb,
+  description text,
+  image_url text,
+  city text,
+  district text,
+  is_live boolean NOT NULL DEFAULT true,
+  source_updated_at timestamp with time zone,
+  published_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT public_reference_entries_pkey PRIMARY KEY (id),
+  CONSTRAINT public_reference_entries_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT public_reference_entries_visible_area_id_fkey FOREIGN KEY (visible_area_id) REFERENCES public.areas(id),
+  CONSTRAINT public_reference_entries_reference_id_fkey FOREIGN KEY (reference_id) REFERENCES public.partner_references(id)
+);
+CREATE TABLE public.public_request_entries (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  visible_area_id text NOT NULL,
+  locale text NOT NULL CHECK (locale ~ '^[a-z]{2}(-[a-z]{2})?$'::text),
+  request_id uuid NOT NULL,
+  provider text NOT NULL,
+  external_id text NOT NULL,
+  request_type text NOT NULL,
+  object_type text,
+  title text,
+  seo_title text,
+  seo_description text,
+  seo_h1 text,
+  short_description text,
+  long_description text,
+  location_text text,
+  features_text text,
+  highlights jsonb NOT NULL DEFAULT '[]'::jsonb,
+  image_alt_texts jsonb NOT NULL DEFAULT '[]'::jsonb,
+  min_rooms numeric,
+  max_price numeric,
+  region_targets jsonb NOT NULL DEFAULT '[]'::jsonb,
+  region_target_keys jsonb NOT NULL DEFAULT '[]'::jsonb,
+  is_live boolean NOT NULL DEFAULT true,
+  source_updated_at timestamp with time zone,
+  published_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT public_request_entries_pkey PRIMARY KEY (id),
+  CONSTRAINT public_request_entries_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT public_request_entries_visible_area_id_fkey FOREIGN KEY (visible_area_id) REFERENCES public.areas(id),
+  CONSTRAINT public_request_entries_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.partner_requests(id)
+);
+CREATE TABLE public.report_texts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  area_id text NOT NULL,
+  section_key text NOT NULL,
+  text_type USER-DEFINED NOT NULL,
+  raw_content text,
+  optimized_content text,
+  status text DEFAULT 'approved'::text,
+  last_updated timestamp with time zone DEFAULT now(),
+  CONSTRAINT report_texts_pkey PRIMARY KEY (id),
+  CONSTRAINT report_texts_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT report_texts_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
+CREATE TABLE public.security_audit_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  actor_user_id uuid,
+  actor_role text NOT NULL,
+  event_type text NOT NULL,
+  entity_type text NOT NULL,
+  entity_id text NOT NULL,
+  payload jsonb,
+  ip text,
+  user_agent text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT security_audit_log_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.security_rate_limits (
+  key_hash text NOT NULL,
+  count integer NOT NULL DEFAULT 0,
+  reset_at timestamp with time zone NOT NULL,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT security_rate_limits_pkey PRIMARY KEY (key_hash)
+);

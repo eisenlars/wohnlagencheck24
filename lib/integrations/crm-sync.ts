@@ -1,7 +1,14 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { rebuildAllPublicAssetEntriesForPartner } from "@/lib/public-asset-projections";
 import { syncIntegrationResources } from "@/lib/providers";
-import type { MappedOffer, PartnerIntegration } from "@/lib/providers/types";
+import type {
+  CanonicalReference,
+  CanonicalRequest,
+  MappedOffer,
+  PartnerIntegration,
+  RawReference,
+  RawRequest,
+} from "@/lib/providers/types";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
 
@@ -89,7 +96,13 @@ async function withProgressKeepalive<T>(
 
 async function deactivateMissingByExternalId(
   supabase: AdminClient,
-  table: "partner_listings" | "partner_references" | "partner_requests" | "partner_property_offers",
+  table:
+    | "partner_listings"
+    | "crm_raw_references"
+    | "crm_raw_requests"
+    | "partner_references"
+    | "partner_requests"
+    | "partner_property_offers",
   providerField: "provider" | "source",
   partnerId: string,
   provider: string,
@@ -113,9 +126,17 @@ async function deactivateMissingByExternalId(
 
   const now = new Date().toISOString();
   const patch =
-    table === "partner_listings" || table === "partner_references" || table === "partner_requests"
-      ? { is_active: false, sync_status: "stale", updated_at: now }
-      : { is_active: false, updated_at: now };
+    table === "partner_references" || table === "partner_requests"
+      ? {
+          is_active: false,
+          sync_status: "stale",
+          updated_at: now,
+          lifecycle_status: "stale",
+          is_live: false,
+        }
+      : table === "partner_listings" || table === "crm_raw_references" || table === "crm_raw_requests"
+        ? { is_active: false, sync_status: "stale", updated_at: now }
+        : { is_active: false, updated_at: now };
 
   const { error: updateError } = await supabase
     .from(table)
@@ -130,7 +151,7 @@ async function deactivateMissingByExternalId(
 
 async function upsertRawResource(
   supabase: AdminClient,
-  table: "partner_listings" | "partner_references" | "partner_requests",
+  table: "partner_listings" | "crm_raw_references" | "crm_raw_requests",
   rows: Array<Record<string, unknown>>,
 ): Promise<void> {
   if (!rows.length) return;
@@ -138,6 +159,74 @@ async function upsertRawResource(
     onConflict: "partner_id,provider,external_id",
   });
   if (error) throw new Error(`${table} upsert failed: ${error.message}`);
+}
+
+function toCanonicalReference(raw: RawReference): CanonicalReference {
+  return {
+    partner_id: raw.partner_id,
+    provider: raw.provider,
+    source: raw.provider,
+    external_id: raw.external_id,
+    title: raw.title,
+    status: raw.status,
+    source_updated_at: raw.source_updated_at,
+    normalized_payload: raw.normalized_payload,
+    source_payload: raw.source_payload,
+    is_active: raw.is_active,
+    sync_status: raw.sync_status,
+    last_seen_at: raw.last_seen_at,
+    updated_at: raw.updated_at,
+    lifecycle_status: raw.is_active ? "active" : "stale",
+    is_live: raw.is_active,
+    canonical_payload: raw.normalized_payload,
+    owner_account_id: raw.partner_id,
+    publisher_account_id: raw.partner_id,
+  };
+}
+
+function toCanonicalRequest(raw: RawRequest): CanonicalRequest {
+  return {
+    partner_id: raw.partner_id,
+    provider: raw.provider,
+    source: raw.provider,
+    external_id: raw.external_id,
+    title: raw.title,
+    status: raw.status,
+    source_updated_at: raw.source_updated_at,
+    normalized_payload: raw.normalized_payload,
+    source_payload: raw.source_payload,
+    is_active: raw.is_active,
+    sync_status: raw.sync_status,
+    last_seen_at: raw.last_seen_at,
+    updated_at: raw.updated_at,
+    lifecycle_status: raw.is_active ? "active" : "stale",
+    is_live: raw.is_active,
+    canonical_payload: raw.normalized_payload,
+    owner_account_id: raw.partner_id,
+    publisher_account_id: raw.partner_id,
+  };
+}
+
+async function upsertCanonicalReferences(
+  supabase: AdminClient,
+  rows: CanonicalReference[],
+): Promise<void> {
+  if (!rows.length) return;
+  const { error } = await supabase.from("partner_references").upsert(rows, {
+    onConflict: "partner_id,provider,external_id",
+  });
+  if (error) throw new Error(`partner_references upsert failed: ${error.message}`);
+}
+
+async function upsertCanonicalRequests(
+  supabase: AdminClient,
+  rows: CanonicalRequest[],
+): Promise<void> {
+  if (!rows.length) return;
+  const { error } = await supabase.from("partner_requests").upsert(rows, {
+    onConflict: "partner_id,provider,external_id",
+  });
+  if (error) throw new Error(`partner_requests upsert failed: ${error.message}`);
 }
 
 async function upsertOffers(
@@ -171,7 +260,7 @@ async function upsertOffers(
 
 async function syncRawResourceLayer(
   supabase: AdminClient,
-  table: "partner_listings" | "partner_references" | "partner_requests",
+  table: "partner_listings" | "crm_raw_references" | "crm_raw_requests",
   partnerId: string,
   provider: string,
   rows: Array<Record<string, unknown>>,
@@ -186,6 +275,52 @@ async function syncRawResourceLayer(
     supabase,
     table,
     "provider",
+    partnerId,
+    provider,
+    activeExternalIds,
+  );
+  return { count: rows.length, deactivated };
+}
+
+async function syncCanonicalReferenceLayer(
+  supabase: AdminClient,
+  partnerId: string,
+  provider: string,
+  rows: CanonicalReference[],
+  options?: { allowDeactivate?: boolean },
+): Promise<{ count: number; deactivated: number }> {
+  await upsertCanonicalReferences(supabase, rows);
+  if (options?.allowDeactivate === false) {
+    return { count: rows.length, deactivated: 0 };
+  }
+  const activeExternalIds = rows.map((row) => String(row.external_id ?? "")).filter(Boolean);
+  const deactivated = await deactivateMissingByExternalId(
+    supabase,
+    "partner_references",
+    "source",
+    partnerId,
+    provider,
+    activeExternalIds,
+  );
+  return { count: rows.length, deactivated };
+}
+
+async function syncCanonicalRequestLayer(
+  supabase: AdminClient,
+  partnerId: string,
+  provider: string,
+  rows: CanonicalRequest[],
+  options?: { allowDeactivate?: boolean },
+): Promise<{ count: number; deactivated: number }> {
+  await upsertCanonicalRequests(supabase, rows);
+  if (options?.allowDeactivate === false) {
+    return { count: rows.length, deactivated: 0 };
+  }
+  const activeExternalIds = rows.map((row) => String(row.external_id ?? "")).filter(Boolean);
+  const deactivated = await deactivateMissingByExternalId(
+    supabase,
+    "partner_requests",
+    "source",
     partnerId,
     provider,
     activeExternalIds,
@@ -287,13 +422,22 @@ export async function runCrmIntegrationSync(
   let referencesCount = 0;
   if (syncReferences && (referencesFetched || references.length > 0)) {
     await hooks?.assertCanContinue?.();
-    await hooks?.onProgress?.("upsert_references", "Referenzen werden gespeichert.");
-    const layer = await syncRawResourceLayer(
+    await hooks?.onProgress?.("upsert_references_raw", "Referenz-Rohdaten werden gespeichert.");
+    await syncRawResourceLayer(
       supabase,
-      "partner_references",
+      "crm_raw_references",
       integration.partner_id,
       integration.provider,
       references as unknown as Array<Record<string, unknown>>,
+      { allowDeactivate },
+    );
+    await hooks?.assertCanContinue?.();
+    await hooks?.onProgress?.("upsert_references", "Referenzen werden kanonisch gespeichert.");
+    const layer = await syncCanonicalReferenceLayer(
+      supabase,
+      integration.partner_id,
+      integration.provider,
+      references.map(toCanonicalReference),
       { allowDeactivate },
     );
     referencesCount = layer.count;
@@ -302,13 +446,22 @@ export async function runCrmIntegrationSync(
   let requestsCount = 0;
   if (syncRequests && (requestsFetched || requests.length > 0)) {
     await hooks?.assertCanContinue?.();
-    await hooks?.onProgress?.("upsert_requests", "Gesuche werden gespeichert.");
-    const layer = await syncRawResourceLayer(
+    await hooks?.onProgress?.("upsert_requests_raw", "Gesuch-Rohdaten werden gespeichert.");
+    await syncRawResourceLayer(
       supabase,
-      "partner_requests",
+      "crm_raw_requests",
       integration.partner_id,
       integration.provider,
       requests as unknown as Array<Record<string, unknown>>,
+      { allowDeactivate },
+    );
+    await hooks?.assertCanContinue?.();
+    await hooks?.onProgress?.("upsert_requests", "Gesuche werden kanonisch gespeichert.");
+    const layer = await syncCanonicalRequestLayer(
+      supabase,
+      integration.partner_id,
+      integration.provider,
+      requests.map(toCanonicalRequest),
       { allowDeactivate },
     );
     requestsCount = layer.count;
