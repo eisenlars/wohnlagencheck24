@@ -6,6 +6,13 @@ import {
   readCrmResourceLimits,
   readCrmResourceSettings,
 } from "@/lib/integrations/settings";
+import {
+  markIntegrationSyncRunError,
+  markIntegrationSyncRunSuccess,
+  startIntegrationSyncRun,
+  updateIntegrationSyncRun,
+  type SyncRunLogEntry,
+} from "@/lib/integrations/sync-run-log";
 import { runCrmIntegrationSync, type CrmSyncResult } from "@/lib/integrations/crm-sync";
 import type { CrmSyncMode, PartnerIntegration } from "@/lib/providers/types";
 
@@ -102,6 +109,13 @@ function appendSyncLog(value: unknown, entry: SyncLogEntry, limit = SYNC_LOG_LIM
     ? value.filter((item): item is SyncLogEntry => Boolean(item) && typeof item === "object")
     : [];
   return [...current, entry].slice(-limit);
+}
+
+function asRunLogEntries(value: unknown): SyncRunLogEntry[] {
+  const current = Array.isArray(value)
+    ? value.filter((item): item is SyncRunLogEntry => Boolean(item) && typeof item === "object")
+    : [];
+  return current;
 }
 
 function readSyncRuntime(settings: Record<string, unknown>, resource: ScopedSyncResource | "all"): Record<string, unknown> {
@@ -311,6 +325,14 @@ async function updateRunningSyncProgress(
       },
     },
   );
+  await updateIntegrationSyncRun(admin, {
+    integrationId,
+    syncJobId: jobId,
+    status: "running",
+    step,
+    message,
+    heartbeatAt: now,
+  });
 }
 
 async function finalizeSyncSuccess(
@@ -319,6 +341,7 @@ async function finalizeSyncSuccess(
   resource: ScopedSyncResource,
   jobId: string,
   result: CrmSyncResult,
+  startedAtMs: number,
 ) {
   const now = new Date().toISOString();
   await patchSyncSettings(
@@ -354,6 +377,16 @@ async function finalizeSyncSuccess(
       },
     },
   );
+  const current = await loadIntegration(admin, integrationId);
+  const runtime = current ? readSyncRuntime(asObject(current.settings), resource) : {};
+  await markIntegrationSyncRunSuccess(admin, integrationId, jobId, result, {
+    finishedAt: now,
+    durationMs: Math.max(0, Date.now() - startedAtMs),
+    message: formatSuccessMessage(result),
+    step: "completed",
+    heartbeatAt: now,
+    log: asRunLogEntries(runtime.sync_log),
+  });
 }
 
 async function finalizeSyncError(
@@ -362,6 +395,7 @@ async function finalizeSyncError(
   resource: ScopedSyncResource,
   jobId: string,
   message: string,
+  startedAtMs: number,
   errorClass?: string,
 ) {
   const now = new Date().toISOString();
@@ -394,6 +428,17 @@ async function finalizeSyncError(
       },
     },
   );
+  const current = await loadIntegration(admin, integrationId);
+  const runtime = current ? readSyncRuntime(asObject(current.settings), resource) : {};
+  await markIntegrationSyncRunError(admin, integrationId, jobId, {
+    finishedAt: now,
+    durationMs: Math.max(0, Date.now() - startedAtMs),
+    step: "failed",
+    message,
+    errorClass: errorClass ?? classifySyncError(message),
+    heartbeatAt: now,
+    log: asRunLogEntries(runtime.sync_log),
+  });
 }
 
 async function expireStaleRunningSync(
@@ -433,6 +478,16 @@ async function expireStaleRunningSync(
       },
     },
   );
+  if (jobId) {
+    await markIntegrationSyncRunError(admin, integration.id, jobId, {
+      status: "expired",
+      finishedAt: now,
+      step: "expired",
+      message,
+      errorClass: "stale_run",
+      heartbeatAt: now,
+    });
+  }
 }
 
 async function ensureSyncCanContinue(
@@ -564,6 +619,7 @@ async function runScheduledSyncJob(
 
   const jobId = crypto.randomUUID();
   const traceId = crypto.randomUUID();
+  const startedAtMs = Date.now();
   const now = new Date().toISOString();
   const deadlineAt = new Date(Date.now() + job.timeoutMs).toISOString();
 
@@ -603,6 +659,26 @@ async function runScheduledSyncJob(
     },
   );
 
+  await startIntegrationSyncRun(admin, {
+    integration,
+    resource: job.resource,
+    mode: job.mode,
+    triggeredBy: "auto_scheduler",
+    syncJobId: jobId,
+    traceId,
+    startedAt: now,
+    heartbeatAt: now,
+    deadlineAt,
+    message: "Automatische CRM-Synchronisierung gestartet.",
+    step: "started",
+    timeoutMs: job.timeoutMs,
+    metadata: {
+      trigger: "auto",
+      interval_minutes: job.intervalMinutes,
+      night_only: job.nightOnly,
+    },
+  });
+
   try {
     await updateRunningSyncProgress(admin, integration.id, job.resource, jobId, "prepare", "Automatischer Sync-Lauf wird vorbereitet.");
     const freshIntegration = await loadIntegration(admin, integration.id);
@@ -626,11 +702,11 @@ async function runScheduledSyncJob(
       job.timeoutMs,
       "CRM-Auto-Synchronisierung wegen Zeitlimit beendet.",
     );
-    await finalizeSyncSuccess(admin, integration.id, job.resource, jobId, result);
+    await finalizeSyncSuccess(admin, integration.id, job.resource, jobId, result, startedAtMs);
     return result;
   } catch (error) {
     const normalized = normalizeSyncError(error);
-    await finalizeSyncError(admin, integration.id, job.resource, jobId, normalized.message, normalized.errorClass);
+    await finalizeSyncError(admin, integration.id, job.resource, jobId, normalized.message, startedAtMs, normalized.errorClass);
     return {
       partner_id: integration.partner_id,
       provider: integration.provider,

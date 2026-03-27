@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
 import { normalizeCrmSyncSelection, readCrmResourceLimits } from "@/lib/integrations/settings";
+import {
+  markIntegrationSyncRunError,
+  markIntegrationSyncRunSuccess,
+  startIntegrationSyncRun,
+  type SyncRunLogEntry,
+  updateIntegrationSyncRun,
+} from "@/lib/integrations/sync-run-log";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
@@ -135,6 +142,10 @@ function appendSyncLog(value: unknown, entry: SyncLogEntry, limit = SYNC_LOG_LIM
 
 function asNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function asRunLogEntries(value: unknown): SyncRunLogEntry[] {
+  return asLogEntries(value);
 }
 
 function clampSyncTimeoutMs(value: number | null | undefined): number {
@@ -367,7 +378,7 @@ async function updateRunningSyncProgress(
   message: string,
 ) {
   const now = new Date().toISOString();
-  return patchSyncSettings(
+  const status = await patchSyncSettings(
     admin,
     integrationId,
     resource,
@@ -386,6 +397,16 @@ async function updateRunningSyncProgress(
       },
     },
   );
+  await updateIntegrationSyncRun(admin, {
+    integrationId,
+    syncJobId: jobId,
+    status: "running",
+    step,
+    message,
+    heartbeatAt: now,
+    log: status?.log ? asRunLogEntries(status.log) : undefined,
+  });
+  return status;
 }
 
 async function finalizeSyncSuccess(
@@ -393,10 +414,11 @@ async function finalizeSyncSuccess(
   resource: ScopedSyncResource,
   jobId: string,
   result: CrmSyncResult,
+  startedAtMs: number,
 ) {
   const admin = createAdminClient();
   const now = new Date().toISOString();
-  await patchSyncSettings(
+  const status = await patchSyncSettings(
     admin,
     integrationId,
     resource,
@@ -429,6 +451,14 @@ async function finalizeSyncSuccess(
       },
     },
   );
+  await markIntegrationSyncRunSuccess(admin, integrationId, jobId, result, {
+    finishedAt: now,
+    durationMs: Math.max(0, Date.now() - startedAtMs),
+    message: formatSuccessMessage(result),
+    step: "completed",
+    heartbeatAt: now,
+    log: status?.log ? asRunLogEntries(status.log) : null,
+  });
 }
 
 async function finalizeSyncError(
@@ -436,11 +466,12 @@ async function finalizeSyncError(
   resource: ScopedSyncResource,
   jobId: string,
   message: string,
+  startedAtMs: number,
   errorClass?: string,
 ) {
   const admin = createAdminClient();
   const now = new Date().toISOString();
-  await patchSyncSettings(
+  const status = await patchSyncSettings(
     admin,
     integrationId,
     resource,
@@ -469,6 +500,15 @@ async function finalizeSyncError(
       },
     },
   );
+  await markIntegrationSyncRunError(admin, integrationId, jobId, {
+    finishedAt: now,
+    durationMs: Math.max(0, Date.now() - startedAtMs),
+    step: "failed",
+    message,
+    errorClass: errorClass ?? classifySyncError(message),
+    heartbeatAt: now,
+    log: status?.log ? asRunLogEntries(status.log) : null,
+  });
 }
 
 async function expireStaleRunningSync(
@@ -508,6 +548,16 @@ async function expireStaleRunningSync(
       },
     },
   );
+  if (jobId) {
+    await markIntegrationSyncRunError(admin, integration.id, jobId, {
+      status: "expired",
+      finishedAt: now,
+      step: "expired",
+      message,
+      errorClass: "stale_run",
+      heartbeatAt: now,
+    });
+  }
 }
 
 async function ensureSyncCanContinue(
@@ -626,6 +676,7 @@ export async function POST(
     const userAgent = req.headers.get("user-agent");
     const jobId = crypto.randomUUID();
     const traceId = crypto.randomUUID();
+    const startedAtMs = Date.now();
     const now = new Date().toISOString();
     const syncTimeoutMs = resolveSyncTimeoutMs(asObject(integration.settings), resource, mode);
     const deadlineAt = new Date(Date.now() + syncTimeoutMs).toISOString();
@@ -665,6 +716,27 @@ export async function POST(
         },
       },
     );
+
+    await startIntegrationSyncRun(admin, {
+      integration,
+      resource,
+      mode,
+      triggeredBy: "admin_manual",
+      triggerUserId: adminUser.userId,
+      syncJobId: jobId,
+      traceId,
+      startedAt: now,
+      heartbeatAt: now,
+      deadlineAt,
+      message: "CRM-Synchronisierung gestartet.",
+      step: "started",
+      timeoutMs: syncTimeoutMs,
+      metadata: {
+        trigger: "admin",
+        ip,
+        user_agent: userAgent,
+      },
+    });
 
     await writeSecurityAuditLog({
       actorUserId: adminUser.userId,
@@ -707,7 +779,7 @@ export async function POST(
         syncTimeoutMs,
         "CRM-Synchronisierung wegen Zeitlimit beendet.",
       );
-      await finalizeSyncSuccess(integrationId, resource, jobId, result);
+      await finalizeSyncSuccess(integrationId, resource, jobId, result, startedAtMs);
       await writeSecurityAuditLog({
         actorUserId: adminUser.userId,
         actorRole: adminUser.role,
@@ -730,7 +802,7 @@ export async function POST(
       });
     } catch (error) {
       const normalizedError = normalizeSyncError(error);
-      await finalizeSyncError(integrationId, resource, jobId, normalizedError.message, normalizedError.errorClass);
+      await finalizeSyncError(integrationId, resource, jobId, normalizedError.message, startedAtMs, normalizedError.errorClass);
       await writeSecurityAuditLog({
         actorUserId: adminUser.userId,
         actorRole: adminUser.role,
@@ -833,6 +905,17 @@ export async function DELETE(
           },
         },
       );
+      if (jobId) {
+        await markIntegrationSyncRunError(admin, integrationId, jobId, {
+          status: "cancelled",
+          finishedAt: now,
+          step: "cancelled",
+          message: "CRM-Synchronisierung manuell zurückgesetzt.",
+          errorClass: "manual_reset",
+          heartbeatAt: now,
+          log: nextStatus?.log ? asRunLogEntries(nextStatus.log) : null,
+        });
+      }
     } else {
       nextStatus = await patchSyncSettings(
         admin,
@@ -854,6 +937,18 @@ export async function DELETE(
           },
         },
       );
+      if (jobId) {
+        await updateIntegrationSyncRun(admin, {
+          integrationId,
+          syncJobId: jobId,
+          status: "cancel_requested",
+          step: "cancel_requested",
+          message: "Abbruch der CRM-Synchronisierung angefordert.",
+          heartbeatAt: now,
+          cancelRequested: true,
+          log: nextStatus?.log ? asRunLogEntries(nextStatus.log) : null,
+        });
+      }
     }
 
     await writeSecurityAuditLog({

@@ -385,6 +385,48 @@ CREATE TABLE public.partner_integrations (
   CONSTRAINT partner_integrations_pkey PRIMARY KEY (id),
   CONSTRAINT partner_integrations_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
 );
+CREATE TABLE public.integration_sync_runs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  integration_id uuid NOT NULL,
+  partner_id uuid NOT NULL,
+  kind text NOT NULL,
+  provider text NOT NULL,
+  resource text NOT NULL,
+  mode text,
+  triggered_by text NOT NULL,
+  trigger_user_id uuid,
+  sync_job_id text,
+  trace_id text,
+  status text NOT NULL DEFAULT 'running'::text,
+  step text,
+  message text,
+  error text,
+  error_class text,
+  request_count integer,
+  pages_fetched integer,
+  listings_count integer,
+  offers_count integer,
+  references_count integer,
+  requests_count integer,
+  deactivated_listings integer,
+  deactivated_offers integer,
+  safety_limited boolean NOT NULL DEFAULT false,
+  log jsonb,
+  notes jsonb,
+  result_json jsonb,
+  metadata jsonb,
+  started_at timestamp with time zone NOT NULL DEFAULT now(),
+  heartbeat_at timestamp with time zone,
+  deadline_at timestamp with time zone,
+  cancel_requested boolean NOT NULL DEFAULT false,
+  finished_at timestamp with time zone,
+  duration_ms integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT integration_sync_runs_pkey PRIMARY KEY (id),
+  CONSTRAINT integration_sync_runs_integration_id_fkey FOREIGN KEY (integration_id) REFERENCES public.partner_integrations(id),
+  CONSTRAINT integration_sync_runs_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
 CREATE TABLE public.partner_listings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   partner_id uuid NOT NULL,
@@ -893,3 +935,9 @@ CREATE TABLE public.security_rate_limits (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT security_rate_limits_pkey PRIMARY KEY (key_hash)
 );
+CREATE INDEX integration_sync_runs_integration_started_idx
+  ON public.integration_sync_runs (integration_id, started_at DESC);
+CREATE INDEX integration_sync_runs_partner_started_idx
+  ON public.integration_sync_runs (partner_id, started_at DESC);
+CREATE INDEX integration_sync_runs_job_idx
+  ON public.integration_sync_runs (integration_id, sync_job_id);
