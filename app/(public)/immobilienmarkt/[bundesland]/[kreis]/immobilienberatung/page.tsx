@@ -9,7 +9,7 @@ import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { IMMOBILIENMARKT_THEME } from "@/features/immobilienmarkt/config/theme";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
-import { loadSinglePublicVisiblePartnerIdForArea } from "@/lib/public-partner-mappings";
+import { loadPublicVisiblePartnerContextForArea } from "@/lib/public-partner-mappings";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 
 type PageParams = { bundesland?: string; kreis?: string };
@@ -41,9 +41,12 @@ export default async function ImmobilienberatungPage({ params }: PageProps) {
         };
       };
     };
-    const partnerId = await loadSinglePublicVisiblePartnerIdForArea(admin, areaId);
-    if (partnerId) {
-      const overrides = await getApprovedReportTexts(admin, areaId, partnerId);
+    const partnerContext = await loadPublicVisiblePartnerContextForArea(admin, areaId);
+    if (partnerContext.isSystemDefault) {
+      notFound();
+    }
+    if (partnerContext.partnerId) {
+      const overrides = await getApprovedReportTexts(admin, areaId, partnerContext.partnerId);
       if (overrides.length > 0) {
         const textBase = asRecord(report["text"]) ?? {};
         const berater = asRecord(textBase["berater"]) ?? {};

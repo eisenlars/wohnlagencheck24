@@ -127,6 +127,7 @@ export function buildUebersichtVM(args: {
   const text = asRecord(data.text) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
   const makler = asRecord(text["makler"]) ?? {};
+  const isSystemDefaultPartner = Boolean(meta["active_partner_is_system_default"]);
 
   // Region Name: robustes Fallback auf Kreis/Bundesland-Slug
   const regionName = getRegionDisplayName({
@@ -362,6 +363,7 @@ export function buildUebersichtVM(args: {
 
   return {
     level,
+    isSystemDefaultPartner,
     regionName,
     bundeslandName: bundeslandName || undefined,
     kreisName: level === "kreis" ? regionName : undefined,

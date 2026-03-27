@@ -296,6 +296,7 @@ export function UebersichtSection(
       : "/immobilienmarkt";
   
   const isBundesland = vm.level === "bundesland";
+  const showSystempartnerNeutralMode = vm.isSystemDefaultPartner === true && !isBundesland;
   const bundeslandBerater = isBundesland ? (props.ctx?.berater ?? []) : [];
   const bundeslandMakler = isBundesland ? (props.ctx?.makler ?? []) : [];
   const kreisMapSvg = props.assets?.kreisuebersichtMapSvg ?? null;
@@ -325,10 +326,13 @@ export function UebersichtSection(
     (Array.isArray(vm.historien.miete) && vm.historien.miete.length > 0);
 
   const showOrtslagenTable = vm.level === "kreis" && Array.isArray(vm.ortslagenUebersicht) && vm.ortslagenUebersicht.length > 0;
+  const visibleTocItems = showSystempartnerNeutralMode
+    ? (tocItems ?? []).filter((item) => item.id !== "persoenliche_markteinschaetzung" && item.id !== "maklerempfehlung")
+    : tocItems;
 
   return (
     <div className="text-dark">
-      {tocItems?.length > 0 ? <RightEdgeControls tocItems={tocItems} /> : null}
+      {visibleTocItems?.length > 0 ? <RightEdgeControls tocItems={visibleTocItems} /> : null}
 
       {/* Subnavigation */}
       {!isBundesland ? (
@@ -613,6 +617,7 @@ export function UebersichtSection(
       </section>
       
       {/* Persönliche Markteinschätzung */}
+      {!showSystempartnerNeutralMode ? (
       <section className="mb-5 p-4 markteinschaetzung-block" id="persoenliche_markteinschaetzung">
         <h2 className="text-center my-4">
           {isBundesland ? `Markteinschätzung - ${vm.regionName}` : `Persönliche Markteinschätzung  - ${vm.regionName}`}
@@ -662,6 +667,7 @@ export function UebersichtSection(
 
         {vm.texts.individual02 ? <div ><p>{vm.texts.individual02}</p></div> : null}
       </section>
+      ) : null}
 
       {/* Vergleich */}
       {hasVergleich ? (
@@ -937,7 +943,7 @@ export function UebersichtSection(
       ) : null}
 
       {/* Maklerempfehlung */}
-      {vm.texts.agentSuggest ? (
+      {vm.texts.agentSuggest && !showSystempartnerNeutralMode ? (
         <section className="mb-5" id="maklerempfehlung">
           {isBundesland ? (
             <>

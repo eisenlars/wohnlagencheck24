@@ -3,6 +3,11 @@ export function isMissingPublicLiveColumn(error: unknown): boolean {
   return msg.includes("partner_area_map.is_public_live") && msg.includes("does not exist");
 }
 
+function isMissingPartnerSystemDefaultColumn(error: unknown): boolean {
+  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
+  return msg.includes("partners.is_system_default") && msg.includes("does not exist");
+}
+
 function isMissingActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return msg.includes("partner_area_map.activation_status") && msg.includes("does not exist");
@@ -91,6 +96,52 @@ export async function loadPublicVisiblePartnerIdsForAreaIds(client: unknown, are
 export async function loadSinglePublicVisiblePartnerIdForArea(client: unknown, areaId: string): Promise<string | null> {
   const partnerIds = await loadPublicVisiblePartnerIdsForAreaIds(client, [areaId]);
   return partnerIds.length === 1 ? partnerIds[0] : null;
+}
+
+export async function loadPublicVisiblePartnerContextForArea(
+  client: unknown,
+  areaId: string,
+): Promise<{ partnerId: string | null; isSystemDefault: boolean }> {
+  const partnerId = await loadSinglePublicVisiblePartnerIdForArea(client, areaId);
+  if (!partnerId) {
+    return { partnerId: null, isSystemDefault: false };
+  }
+
+  const partnerClient = client as {
+    from: (table: string) => {
+      select: (columns: string) => {
+        eq: (column: string, value: unknown) => {
+          maybeSingle: () => Promise<{
+            data?: Record<string, unknown> | null;
+            error?: { message?: string } | null;
+          }>;
+        };
+      };
+    };
+  };
+
+  let { data, error } = await partnerClient
+    .from("partners")
+    .select("id, is_system_default")
+    .eq("id", partnerId)
+    .maybeSingle();
+
+  if (error && isMissingPartnerSystemDefaultColumn(error)) {
+    const fallback = await partnerClient
+      .from("partners")
+      .select("id")
+      .eq("id", partnerId)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
+
+  if (error) throw new Error(String(error.message ?? "partner system-default lookup failed"));
+
+  return {
+    partnerId,
+    isSystemDefault: Boolean(data?.is_system_default),
+  };
 }
 
 export async function loadPublicVisibleAreaOptionsForPartner(client: unknown, partnerId: string): Promise<AreaOption[]> {

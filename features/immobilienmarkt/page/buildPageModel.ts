@@ -38,8 +38,12 @@ import {
   isKreisVisible,
   isOrtslageVisible,
 } from "@/lib/area-visibility";
-import { loadPublicVisibleAreaIds } from "@/lib/public-partner-mappings";
+import { loadPublicVisibleAreaIds, loadPublicVisiblePartnerContextForArea } from "@/lib/public-partner-mappings";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
+import {
+  applySystempartnerDefaultProfileToReportText,
+  downloadSystempartnerDefaultProfile,
+} from "@/lib/systempartner-default-profile";
 
 export type PageModel = {
   route: RouteModel;
@@ -100,6 +104,10 @@ export type PageModel = {
     wohnungssaldoLegendHtml?: string | null;
     wohnlagencheckMapSvgs?: Partial<Record<string, string | null>>;
     wohnlagencheckLegendHtml?: Partial<Record<string, string | null>>;
+  };
+
+  flags?: {
+    isSystemDefaultPartner?: boolean;
   };
 };
 
@@ -300,35 +308,30 @@ const ORTSLAGE_MAKLER_FALLBACK_KEYS = [
   "media_makler_bild_02",
 ] as const;
 
-async function resolveScopedPartnerIdForArea(
-  supabase: SupabaseClientLike,
-  areaId: string,
-): Promise<string | null> {
-  const normalizedAreaId = String(areaId ?? "").trim();
-  if (!normalizedAreaId) return null;
-
-  const partnerMapRes = await (supabase as unknown as {
-    from: (table: string) => {
-      select: (columns: string) => {
-        eq: (column: string, value: unknown) => {
-          eq: (column: string, value: unknown) => Promise<{ data?: Array<{ auth_user_id?: string | null }> | null }>;
-        };
-      };
+function withMetaValue(report: Report, key: string, value: unknown): Report {
+  const rawMeta = report.meta;
+  if (Array.isArray(rawMeta)) {
+    const first = asRecord(rawMeta[0]) ?? {};
+    return {
+      ...report,
+      meta: [
+        {
+          ...first,
+          [key]: value,
+        },
+        ...rawMeta.slice(1),
+      ],
     };
-  })
-    .from("partner_area_map")
-    .select("auth_user_id")
-    .eq("area_id", normalizedAreaId)
-    .eq("is_active", true);
+  }
 
-  const partnerIds = Array.from(
-    new Set(
-      (partnerMapRes?.data ?? [])
-        .map((row) => String(row?.auth_user_id ?? "").trim())
-        .filter((value) => value.length > 0),
-    ),
-  );
-  return partnerIds.length === 1 ? partnerIds[0] : null;
+  const meta = asRecord(rawMeta) ?? {};
+  return {
+    ...report,
+    meta: {
+      ...meta,
+      [key]: value,
+    },
+  };
 }
 
 async function loadActiveKreisSlugsForBundeslandLive(bundeslandSlug: string): Promise<Set<string>> {
@@ -448,9 +451,18 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     ? (route.level === "ort" ? "ortslage" : "kreis")
     : null;
   const supabase = areaId ? (createAdminClient() as unknown as SupabaseClientLike) : null;
-  const scopedPartnerId = areaId && supabase
-    ? await resolveScopedPartnerIdForArea(supabase, areaId)
-    : null;
+  const scopedPartnerContext = areaId && supabase
+    ? await loadPublicVisiblePartnerContextForArea(supabase, areaId)
+    : { partnerId: null, isSystemDefault: false };
+  const scopedPartnerId = scopedPartnerContext.partnerId;
+  const isSystemDefaultPartner = scopedPartnerContext.isSystemDefault;
+
+  if ((route.level === "kreis" || route.level === "ort") && isSystemDefaultPartner && supabase) {
+    const profile = await downloadSystempartnerDefaultProfile(createAdminClient());
+    const nextText = applySystempartnerDefaultProfileToReportText(report["text"], profile);
+    report = withTextTree(report, toTextTree(nextText));
+  }
+  report = withMetaValue(report, "active_partner_is_system_default", isSystemDefaultPartner);
 
   if (areaId && areaScope && supabase && scopedPartnerId) {
     const runtimeState = await getPartnerAreaRuntimeState(supabase, scopedPartnerId, areaId, areaScope);
@@ -508,9 +520,14 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
       const kreisMeta = asRecord(asArray(kreisReport.meta)[0] ?? kreisReport.meta) ?? {};
       const kreisAreaId = asString(kreisMeta["kreis_schluessel"]) ?? "";
       if (kreisAreaId) {
-        const scopedPartnerId = await resolveScopedPartnerIdForArea(supabase, kreisAreaId);
-        const overrides = scopedPartnerId
-          ? await getApprovedReportTexts(supabase, kreisAreaId, scopedPartnerId)
+        const kreisPartnerContext = await loadPublicVisiblePartnerContextForArea(supabase, kreisAreaId);
+        if (kreisPartnerContext.isSystemDefault) {
+          const profile = await downloadSystempartnerDefaultProfile(createAdminClient());
+          const nextText = applySystempartnerDefaultProfileToReportText(kreisReport["text"], profile);
+          kreisReport = withTextTree(kreisReport, toTextTree(nextText));
+        }
+        const overrides = kreisPartnerContext.partnerId
+          ? await getApprovedReportTexts(supabase, kreisAreaId, kreisPartnerContext.partnerId)
           : [];
         if (overrides.length > 0) {
           const mergedKreisText = applyOverridesToTextTree(
@@ -901,5 +918,8 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     assets,
 
     kontakt,
+    flags: {
+      isSystemDefaultPartner,
+    },
   };
 }

@@ -66,6 +66,10 @@ import {
   storeSessionScroll,
   useSessionViewState,
 } from "@/lib/ui/session-view-state";
+import {
+  EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE,
+  type SystempartnerDefaultProfile,
+} from "@/lib/systempartner-default-profile";
 import FullscreenLoader from "@/components/ui/FullscreenLoader";
 
 type Partner = {
@@ -517,7 +521,7 @@ type PartnerPurgeCheckPayload = {
 
 type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "language_admin" | "system_texts" | "market_texts" | "standard_text_refresh" | "portal_cms";
 type AdminNavMode = "partners" | "areas";
-type PartnerPanelTab = "profile" | "areas" | "review" | "handover" | "integrations" | "billing";
+type PartnerPanelTab = "profile" | "systempartner_default" | "areas" | "review" | "handover" | "integrations" | "billing";
 type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "language" | "texts" | "market_texts" | "refresh" | "cms" | "purge" | "audit" | "logout";
 type WorkflowSignalTone = "none" | "red" | "orange" | "green";
 type StandardTextRefreshScope = "bundesland" | "kreis" | "kreis_ortslagen" | "ortslage";
@@ -1563,6 +1567,9 @@ export default function AdminClient() {
     is_active: true,
     llm_partner_managed_allowed: false,
   });
+  const [systempartnerDefaultProfile, setSystempartnerDefaultProfile] = useState<SystempartnerDefaultProfile>({
+    ...EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE,
+  });
 
   const [assignAreaId, setAssignAreaId] = useState("");
   const [handoverDraft, setHandoverDraft] = useState({
@@ -2297,6 +2304,19 @@ export default function AdminClient() {
   }, [activeView, standardTextRefreshSourceScope]);
 
   useEffect(() => {
+    if (partnerTab === "systempartner_default" && !selectedPartner?.is_system_default) {
+      setPartnerTab("profile");
+    }
+  }, [partnerTab, selectedPartner?.is_system_default]);
+
+  useEffect(() => {
+    if (activeView !== "partner_edit") return;
+    if (partnerTab !== "systempartner_default") return;
+    if (!selectedPartner?.is_system_default) return;
+    void loadSystempartnerDefaultProfile();
+  }, [activeView, partnerTab, selectedPartner?.id, selectedPartner?.is_system_default]);
+
+  useEffect(() => {
     if (!adminViewStateHydrated || !adminViewStateAppliedRef.current) return;
     setAdminViewState({
       activeView,
@@ -2335,8 +2355,8 @@ export default function AdminClient() {
     setAdminViewState,
   ]);
 
-  const formatPartnerName = (partner: Pick<Partner, "company_name" | "is_system_default">) =>
-    partner.is_system_default ? `${partner.company_name} (Portalpartner)` : partner.company_name;
+  const formatPartnerName = (partner: Pick<Partner, "company_name">) =>
+    partner.company_name;
 
   const selectedPartnerLabel = selectedPartner
     ? `${formatPartnerName(selectedPartner)} (${selectedPartner.id})`
@@ -3405,6 +3425,27 @@ export default function AdminClient() {
         return acc;
       }, {}),
     );
+  }
+
+  async function loadSystempartnerDefaultProfile() {
+    const data = await api<{ profile?: SystempartnerDefaultProfile }>("/api/admin/systempartner-default-profile");
+    setSystempartnerDefaultProfile({
+      ...EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE,
+      ...(data.profile ?? {}),
+    });
+  }
+
+  async function saveSystempartnerDefaultProfile() {
+    const data = await api<{ profile?: SystempartnerDefaultProfile }>("/api/admin/systempartner-default-profile", {
+      method: "POST",
+      body: JSON.stringify({
+        profile: systempartnerDefaultProfile,
+      }),
+    });
+    setSystempartnerDefaultProfile({
+      ...EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE,
+      ...(data.profile ?? {}),
+    });
   }
 
   async function runStandardTextRefresh(dryRun: boolean) {
@@ -5360,7 +5401,7 @@ export default function AdminClient() {
                 ? filteredPartners.map((p) => (
                     <button
                       key={p.id}
-                      style={listLinkRowStyle(selectedPartnerId === p.id)}
+                      style={listLinkRowStyle(selectedPartnerId === p.id, Boolean(p.is_system_default))}
                       onClick={() => {
                         void selectSidebarPartner(p.id);
                       }}
@@ -5384,7 +5425,6 @@ export default function AdminClient() {
                       </div>
                       <div style={{ fontSize: 12, color: "#64748b" }}>
                         {p.is_active ? "aktiv" : "inaktiv"}
-                        {p.is_system_default ? " · Systempartner" : ""}
                       </div>
                     </button>
                   ))
@@ -5562,6 +5602,11 @@ export default function AdminClient() {
       {activeView === "partner_edit" && selectedPartner ? (
       <div style={{ ...partnerTabBarStyle, marginBottom: 18 }}>
         <button style={partnerTabButtonStyle(partnerTab === "profile")} onClick={() => setPartnerTab("profile")}>Profil</button>
+        {selectedPartner.is_system_default ? (
+          <button style={partnerTabButtonStyle(partnerTab === "systempartner_default")} onClick={() => setPartnerTab("systempartner_default")}>
+            Systempartner-Default
+          </button>
+        ) : null}
         <button style={partnerTabButtonStyle(partnerTab === "areas")} onClick={() => setPartnerTab("areas")}>
           Gebiete
           {selectedPartnerNeedsAreaAssignment ? (
@@ -5698,6 +5743,67 @@ export default function AdminClient() {
               </button>
             ) : null}
           </div>
+        </div>
+      </section>
+      ) : null}
+
+      {activeView === "partner_edit" && partnerTab === "systempartner_default" && Boolean(selectedPartner?.is_system_default) ? (
+      <section style={cardStyle}>
+        <h2 style={h2Style}>Systempartner-Default</h2>
+        <p style={mutedStyle}>
+          Diese Angaben werden als neutraler Default genutzt, solange ein Gebiet noch keinem operativen Partner zugeordnet ist.
+        </p>
+        <div style={grid2Style}>
+          <input
+            placeholder="Beratername"
+            aria-label="Beratername Standard"
+            style={inputStyle}
+            value={systempartnerDefaultProfile.berater_name}
+            onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, berater_name: e.target.value }))}
+          />
+          <input
+            placeholder="Berater-E-Mail"
+            aria-label="Berater-E-Mail Standard"
+            style={inputStyle}
+            value={systempartnerDefaultProfile.berater_email}
+            onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, berater_email: e.target.value }))}
+          />
+          <input
+            placeholder="Telefon Festnetz"
+            aria-label="Telefon Festnetz Standard"
+            style={inputStyle}
+            value={systempartnerDefaultProfile.berater_telefon_fest}
+            onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, berater_telefon_fest: e.target.value }))}
+          />
+          <input
+            placeholder="Telefon Mobil"
+            aria-label="Telefon Mobil Standard"
+            style={inputStyle}
+            value={systempartnerDefaultProfile.berater_telefon_mobil}
+            onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, berater_telefon_mobil: e.target.value }))}
+          />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <input
+            placeholder="Avatar-Quelle / Bildpfad"
+            aria-label="Avatar-Quelle Standard"
+            style={inputStyle}
+            value={systempartnerDefaultProfile.media_berater_avatar}
+            onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, media_berater_avatar: e.target.value }))}
+          />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <button
+            style={btnStyle}
+            disabled={busy}
+            onClick={() =>
+              run("Systempartner-Default speichern", async () => {
+                await saveSystempartnerDefaultProfile();
+              })
+            }
+          >
+            Speichern
+          </button>
         </div>
       </section>
       ) : null}
@@ -11215,11 +11321,11 @@ const contentPaneStyle: React.CSSProperties = {
   padding: "0 0 72px 14px",
 };
 
-const listLinkRowStyle = (active: boolean): React.CSSProperties => ({
+const listLinkRowStyle = (active: boolean, isSystemDefault = false): React.CSSProperties => ({
   position: "relative",
   width: "100%",
   textAlign: "left",
-  border: `1px solid ${active ? "#cbd5e1" : "#e2e8f0"}`,
+  border: `1px solid ${isSystemDefault ? (active ? "#16a34a" : "#86efac") : (active ? "#cbd5e1" : "#e2e8f0")}`,
   borderRadius: 8,
   background: active ? "#f8fafc" : "#ffffff",
   padding: "10px 12px",
@@ -11227,6 +11333,7 @@ const listLinkRowStyle = (active: boolean): React.CSSProperties => ({
   display: "flex",
   flexDirection: "column",
   gap: 2,
+  boxShadow: isSystemDefault ? "inset 3px 0 0 #16a34a" : undefined,
 });
 
 const cardStyle: React.CSSProperties = {

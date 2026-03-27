@@ -40,6 +40,7 @@ export type OrtslagenUebersichtRow = {
 
 export type UebersichtVM = {
   level: UebersichtLevel;
+  isSystemDefaultPartner?: boolean;
 
   regionName: string;
   bundeslandName?: string;
