@@ -984,10 +984,14 @@ function buildPreviewHrefFromArea(area: AreaMapping["areas"], areaId: string): s
   return `/preview/immobilienmarkt/${bundeslandSlug}/${parentSlug}/${slug}`;
 }
 
-function buildLiveHrefFromArea(area: AreaMapping["areas"], areaId: string): string | null {
-  const bundeslandSlug = String(area?.bundesland_slug ?? "").trim();
-  const slug = String(area?.slug ?? "").trim();
-  const parentSlug = String(area?.parent_slug ?? "").trim();
+function buildLiveHrefFromArea(
+  area: AreaRelationLike | Array<AreaRelationLike | null | undefined> | null | undefined,
+  areaId: string,
+): string | null {
+  const source = resolveAreaRecord(area);
+  const bundeslandSlug = String(source?.bundesland_slug ?? "").trim();
+  const slug = String(source?.slug ?? "").trim();
+  const parentSlug = String(source?.parent_slug ?? "").trim();
   if (!bundeslandSlug || !slug) return null;
 
   const isOrtslage = String(areaId ?? "").split("-").length > 3;
