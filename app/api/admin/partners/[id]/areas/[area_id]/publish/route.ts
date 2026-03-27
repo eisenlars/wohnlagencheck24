@@ -8,7 +8,7 @@ import { publishVisibilityIndex } from "@/lib/visibility-index";
 import { isMissingPublicLiveColumn } from "@/lib/public-partner-mappings";
 import { rebuildAllPublicAssetEntriesForPartner } from "@/lib/public-asset-projections";
 import { sendPartnerAreaLiveEmail } from "@/lib/notifications/admin-review-email";
-import { checkPartnerAreaMandatoryTexts } from "@/lib/partner-area-mandatory";
+import { checkSystempartnerDefaultProfileMandatory } from "@/lib/systempartner-default-profile";
 
 function isMissingActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
@@ -204,21 +204,15 @@ export async function POST(
       if (!isSystemDefaultPartner) {
         return NextResponse.json({ error: "Gebiet ist noch nicht fuer Preview freigegeben." }, { status: 409 });
       }
-      const mandatoryCheck = await checkPartnerAreaMandatoryTexts({
-        admin,
-        partnerId,
-        areaId,
-        requireApprovedMedia: false,
-      });
+      const mandatoryCheck = await checkSystempartnerDefaultProfileMandatory(admin);
       if (!mandatoryCheck.ok) {
         return NextResponse.json(
           {
             error: mandatoryCheck.error,
             missing_keys: mandatoryCheck.missing ?? [],
-            scope: mandatoryCheck.scope,
-            gate: "INDIVIDUAL_MANDATORY",
+            gate: mandatoryCheck.gate,
           },
-          { status: mandatoryCheck.status },
+          { status: mandatoryCheck.status ?? 409 },
         );
       }
     }

@@ -1,5 +1,6 @@
 export const SYSTEMPARTNER_DEFAULT_PROFILE_BUCKET = "immobilienmarkt";
 export const SYSTEMPARTNER_DEFAULT_PROFILE_PATH = "text-standards/systempartner/systempartner_default_profile.json";
+export const SYSTEMPARTNER_DEFAULT_PROFILE_AVATAR_PATH = "media/systempartner/default/media_berater_avatar.webp";
 
 export const SYSTEMPARTNER_DEFAULT_PROFILE_KEYS = [
   "berater_name",
@@ -30,7 +31,7 @@ type DownloadClient = {
       }>;
       upload: (
         path: string,
-        body: string,
+        body: string | File,
         options: { upsert: boolean; contentType: string; cacheControl: string },
       ) => Promise<{
         error?: { message?: string } | null;
@@ -41,6 +42,13 @@ type DownloadClient = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function buildPublicStorageUrl(relPath: string): string | null {
+  const base = String(process.env.SUPABASE_PUBLIC_BASE_URL ?? "").trim().replace(/\/+$/, "");
+  if (!base) return null;
+  const rel = relPath.replace(/^\/+/, "");
+  return `${base}/${SYSTEMPARTNER_DEFAULT_PROFILE_BUCKET}/${rel}`;
 }
 
 export function normalizeSystempartnerDefaultProfile(value: unknown): SystempartnerDefaultProfile {
@@ -81,6 +89,68 @@ export async function uploadSystempartnerDefaultProfile(
   if (res.error?.message) {
     throw new Error(res.error.message);
   }
+}
+
+export async function uploadSystempartnerDefaultAvatar(
+  admin: DownloadClient,
+  file: File,
+): Promise<string> {
+  const res = await admin.storage
+    .from(SYSTEMPARTNER_DEFAULT_PROFILE_BUCKET)
+    .upload(SYSTEMPARTNER_DEFAULT_PROFILE_AVATAR_PATH, file, {
+      upsert: true,
+      contentType: "image/webp",
+      cacheControl: "3600",
+    });
+  if (res.error?.message) {
+    throw new Error(res.error.message);
+  }
+  const publicUrl = buildPublicStorageUrl(SYSTEMPARTNER_DEFAULT_PROFILE_AVATAR_PATH);
+  if (!publicUrl) {
+    throw new Error("SUPABASE_PUBLIC_BASE_URL fehlt");
+  }
+  return publicUrl;
+}
+
+export type SystempartnerDefaultProfileMandatoryResult =
+  | {
+      ok: true;
+      missing: Array<{ key: SystempartnerDefaultProfileKey; reason: "missing" }>;
+      profile: SystempartnerDefaultProfile;
+    }
+  | {
+      ok: false;
+      status: number;
+      error: string;
+      missing: Array<{ key: SystempartnerDefaultProfileKey; reason: "missing" }>;
+      gate: "SYSTEMPARTNER_DEFAULT_MISSING";
+      profile: SystempartnerDefaultProfile;
+    };
+
+export async function checkSystempartnerDefaultProfileMandatory(
+  admin: DownloadClient,
+): Promise<SystempartnerDefaultProfileMandatoryResult> {
+  const profile = await downloadSystempartnerDefaultProfile(admin);
+  const missing = SYSTEMPARTNER_DEFAULT_PROFILE_KEYS
+    .filter((key) => String(profile[key] ?? "").trim().length === 0)
+    .map((key) => ({ key, reason: "missing" as const }));
+
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      status: 409,
+      error: "Systempartner-Default unvollständig.",
+      missing,
+      gate: "SYSTEMPARTNER_DEFAULT_MISSING",
+      profile,
+    };
+  }
+
+  return {
+    ok: true,
+    missing: [],
+    profile,
+  };
 }
 
 export function applySystempartnerDefaultProfileToReportText(

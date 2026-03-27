@@ -1658,6 +1658,13 @@ export default function AdminClient() {
   const [systempartnerDefaultProfile, setSystempartnerDefaultProfile] = useState<SystempartnerDefaultProfile>({
     ...EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE,
   });
+  const [systempartnerDefaultAvatarUpload, setSystempartnerDefaultAvatarUpload] = useState<{
+    uploading: boolean;
+    error: string | null;
+  }>({
+    uploading: false,
+    error: null,
+  });
 
   const [assignAreaId, setAssignAreaId] = useState("");
   const [handoverDraft, setHandoverDraft] = useState({
@@ -3540,6 +3547,33 @@ export default function AdminClient() {
       ...EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE,
       ...(data.profile ?? {}),
     });
+  }
+
+  async function uploadSystempartnerDefaultAvatar(rawFile: File) {
+    setSystempartnerDefaultAvatarUpload({ uploading: true, error: null });
+    try {
+      const form = new FormData();
+      form.append("file", rawFile);
+      const res = await fetch("/api/admin/systempartner-default-profile/media/upload", {
+        method: "POST",
+        body: form,
+        cache: "no-store",
+      });
+      const data = await readJsonSafe(res);
+      if (!res.ok) {
+        throw new Error(String(data?.error ?? `HTTP ${res.status}`));
+      }
+      setSystempartnerDefaultProfile({
+        ...EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE,
+        ...(data?.profile ?? {}),
+      });
+      setSystempartnerDefaultAvatarUpload({ uploading: false, error: null });
+      setStatus("Systempartner-Avatar erfolgreich hochgeladen.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Avatar konnte nicht hochgeladen werden.";
+      setSystempartnerDefaultAvatarUpload({ uploading: false, error: message });
+      throw error;
+    }
   }
 
   async function runStandardTextRefresh(dryRun: boolean) {
@@ -5891,13 +5925,96 @@ export default function AdminClient() {
           />
         </div>
         <div style={{ marginTop: 12 }}>
-          <input
-            placeholder="Avatar-Quelle / Bildpfad"
-            aria-label="Avatar-Quelle Standard"
-            style={inputStyle}
-            value={systempartnerDefaultProfile.media_berater_avatar}
-            onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, media_berater_avatar: e.target.value }))}
-          />
+          <div
+            style={{
+              border: "1px solid #e2e8f0",
+              borderRadius: 10,
+              padding: 14,
+              background: "#f8fafc",
+              display: "grid",
+              gap: 10,
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>
+              {getMandatoryMediaLabel("media_berater_avatar")}
+            </div>
+            {systempartnerDefaultProfile.media_berater_avatar ? (
+              <Image
+                src={systempartnerDefaultProfile.media_berater_avatar}
+                alt="Systempartner-Avatar"
+                width={220}
+                height={220}
+                unoptimized
+                style={{
+                  width: 160,
+                  height: 160,
+                  objectFit: "cover",
+                  borderRadius: 12,
+                  border: "1px solid #cbd5e1",
+                  background: "#fff",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 160,
+                  height: 160,
+                  borderRadius: 12,
+                  border: "1px dashed #cbd5e1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#64748b",
+                  fontSize: 12,
+                  background: "#fff",
+                }}
+              >
+                Noch kein Avatar hochgeladen.
+              </div>
+            )}
+            <div style={{ fontSize: 12, color: "#64748b" }}>
+              Format: WebP · Ziel: 220 × 220 px · max. {Math.round(300000 / 1024)} KB
+            </div>
+            <label
+              htmlFor="systempartner-default-avatar-upload"
+              style={{
+                ...btnGhostStyle,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "fit-content",
+                opacity: systempartnerDefaultAvatarUpload.uploading ? 0.6 : 1,
+                cursor: systempartnerDefaultAvatarUpload.uploading ? "not-allowed" : "pointer",
+              }}
+            >
+              {systempartnerDefaultAvatarUpload.uploading ? "Upload läuft..." : "Avatar hochladen"}
+              <input
+                id="systempartner-default-avatar-upload"
+                type="file"
+                accept="image/webp"
+                disabled={systempartnerDefaultAvatarUpload.uploading}
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  void run("Systempartner-Avatar hochladen", async () => {
+                    await uploadSystempartnerDefaultAvatar(file);
+                  }, { showSuccessModal: false });
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+            <input
+              placeholder="Avatar-Quelle / Bildpfad"
+              aria-label="Avatar-Quelle Standard"
+              style={inputStyle}
+              value={systempartnerDefaultProfile.media_berater_avatar}
+              onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, media_berater_avatar: e.target.value }))}
+            />
+            {systempartnerDefaultAvatarUpload.error ? (
+              <div style={{ fontSize: 12, color: "#b91c1c" }}>{systempartnerDefaultAvatarUpload.error}</div>
+            ) : null}
+          </div>
         </div>
         <div style={{ marginTop: 12 }}>
           <button

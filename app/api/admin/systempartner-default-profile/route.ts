@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE,
+  SYSTEMPARTNER_DEFAULT_PROFILE_KEYS,
   downloadSystempartnerDefaultProfile,
   normalizeSystempartnerDefaultProfile,
   uploadSystempartnerDefaultProfile,
@@ -52,6 +53,41 @@ export async function POST(req: Request) {
     const admin = createAdminClient();
     await uploadSystempartnerDefaultProfile(admin, profile);
     return NextResponse.json({ ok: true, profile });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (error.message === "FORBIDDEN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
+    const limit = await checkAdminApiRateLimit(req, adminUser.userId);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSec) } },
+      );
+    }
+
+    const body = (await req.json()) as { key?: string; value?: unknown };
+    const key = String(body.key ?? "").trim() as keyof typeof EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE;
+    if (!(SYSTEMPARTNER_DEFAULT_PROFILE_KEYS as readonly string[]).includes(key)) {
+      return NextResponse.json({ error: "Invalid key" }, { status: 400 });
+    }
+
+    const admin = createAdminClient();
+    const current = await downloadSystempartnerDefaultProfile(admin);
+    const next = normalizeSystempartnerDefaultProfile({
+      ...current,
+      [key]: body.value,
+    });
+    await uploadSystempartnerDefaultProfile(admin, next);
+    return NextResponse.json({ ok: true, profile: next });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
