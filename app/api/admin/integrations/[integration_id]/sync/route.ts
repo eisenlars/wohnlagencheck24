@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
-import { normalizeCrmSyncSelection } from "@/lib/integrations/settings";
+import { normalizeCrmSyncSelection, readCrmResourceLimits } from "@/lib/integrations/settings";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { runCrmIntegrationSync, type CrmSyncResult } from "@/lib/integrations/crm-sync";
 import type { CrmSyncMode, CrmSyncResource, PartnerIntegration } from "@/lib/providers/types";
 
-export const maxDuration = 300;
+export const maxDuration = 900;
 
-const SYNC_TIMEOUT_MS = 300_000;
+const DEFAULT_SYNC_TIMEOUT_MS = 300_000;
+const MIN_SYNC_TIMEOUT_MS = 15_000;
+const MAX_SYNC_TIMEOUT_MS = maxDuration * 1000;
 const SYNC_STALE_HEARTBEAT_MS = 20_000;
 const SYNC_STALE_GRACE_MS = 15_000;
 const SYNC_ERROR_COOLDOWN_MS = 60_000;
@@ -135,6 +137,23 @@ function asNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function clampSyncTimeoutMs(value: number | null | undefined): number {
+  if (!Number.isFinite(value ?? NaN)) return DEFAULT_SYNC_TIMEOUT_MS;
+  const normalized = Math.floor(Number(value));
+  if (normalized <= 0) return DEFAULT_SYNC_TIMEOUT_MS;
+  return Math.max(MIN_SYNC_TIMEOUT_MS, Math.min(MAX_SYNC_TIMEOUT_MS, normalized));
+}
+
+function resolveSyncTimeoutMs(
+  settings: Record<string, unknown>,
+  resource: ScopedSyncResource,
+  mode: CrmSyncMode,
+): number {
+  if (resource === "all") return DEFAULT_SYNC_TIMEOUT_MS;
+  const limits = readCrmResourceLimits(settings, resource, mode);
+  return clampSyncTimeoutMs(limits.max_runtime_ms);
+}
+
 function classifySyncError(message: string): string {
   const lower = message.toLowerCase();
   if (lower.includes("zeitlimit")) return "timeout";
@@ -247,6 +266,7 @@ function getStaleRunningMessage(settings: Record<string, unknown>): string | nul
   if (state !== "running") return null;
 
   const now = Date.now();
+  const timeoutMs = clampSyncTimeoutMs(asNumber(settings.sync_timeout_ms));
   const deadlineAt = asIsoMs(settings.sync_deadline_at);
   const heartbeatAt = asIsoMs(settings.sync_heartbeat_at);
   const startedAt = asIsoMs(settings.sync_started_at);
@@ -255,7 +275,7 @@ function getStaleRunningMessage(settings: Record<string, unknown>): string | nul
   if (heartbeatAt && heartbeatAt < now - SYNC_STALE_HEARTBEAT_MS) {
     return "CRM-Synchronisierung wegen fehlendem Heartbeat automatisch beendet.";
   }
-  if (startedAt && startedAt < now - (SYNC_TIMEOUT_MS + SYNC_STALE_GRACE_MS)) {
+  if (startedAt && startedAt < now - (timeoutMs + SYNC_STALE_GRACE_MS)) {
     return "CRM-Synchronisierung wegen veraltetem Lauf automatisch beendet.";
   }
   return null;
@@ -397,6 +417,7 @@ async function finalizeSyncSuccess(
       sync_request_count: result.provider_request_count ?? null,
       sync_pages_fetched: result.provider_pages_fetched ?? null,
       sync_result: result,
+      sync_timeout_ms: null,
     },
     {
       expectedJobId: jobId,
@@ -436,6 +457,7 @@ async function finalizeSyncError(
       sync_error: message,
       sync_error_class: errorClass ?? classifySyncError(message),
       sync_result: null,
+      sync_timeout_ms: null,
     },
     {
       expectedJobId: jobId,
@@ -605,7 +627,8 @@ export async function POST(
     const jobId = crypto.randomUUID();
     const traceId = crypto.randomUUID();
     const now = new Date().toISOString();
-    const deadlineAt = new Date(Date.now() + SYNC_TIMEOUT_MS).toISOString();
+    const syncTimeoutMs = resolveSyncTimeoutMs(asObject(integration.settings), resource, mode);
+    const deadlineAt = new Date(Date.now() + syncTimeoutMs).toISOString();
 
     await patchSyncSettings(
       admin,
@@ -626,6 +649,7 @@ export async function POST(
         sync_request_count: null,
         sync_pages_fetched: null,
         sync_result: null,
+        sync_timeout_ms: syncTimeoutMs,
         sync_heartbeat_at: now,
         sync_deadline_at: deadlineAt,
         sync_cancel_requested: false,
@@ -680,7 +704,7 @@ export async function POST(
             await ensureSyncCanContinue(admin, integrationId, jobId);
           },
         }),
-        SYNC_TIMEOUT_MS,
+        syncTimeoutMs,
         "CRM-Synchronisierung wegen Zeitlimit beendet.",
       );
       await finalizeSyncSuccess(integrationId, resource, jobId, result);

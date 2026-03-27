@@ -178,6 +178,18 @@ type CrmIntegrationAdminDraft = {
   offersSyncMaxRuntimeSec: string;
   referencesSyncMaxRuntimeSec: string;
   requestsSyncMaxRuntimeSec: string;
+  offersAutoSyncEnabled: boolean;
+  offersAutoSyncMode: "guarded" | "full";
+  offersAutoSyncIntervalMinutes: string;
+  offersAutoSyncNightOnly: boolean;
+  referencesAutoSyncEnabled: boolean;
+  referencesAutoSyncMode: "guarded" | "full";
+  referencesAutoSyncIntervalMinutes: string;
+  referencesAutoSyncNightOnly: boolean;
+  requestsAutoSyncEnabled: boolean;
+  requestsAutoSyncMode: "guarded" | "full";
+  requestsAutoSyncIntervalMinutes: string;
+  requestsAutoSyncNightOnly: boolean;
   requestFreshnessEnabled: boolean;
   requestFreshnessBasis: "source_updated_at" | "last_seen_at";
   requestFreshnessBuyDays: string;
@@ -1144,6 +1156,11 @@ function asText(value: unknown): string | null {
   return text.length > 0 ? text : null;
 }
 
+function asScalarInput(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  return asText(value) ?? "";
+}
+
 function extractErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
@@ -1319,6 +1336,9 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
   const offerSync = asObject(offerResource.sync);
   const referenceSync = asObject(referenceResource.sync);
   const requestSync = asObject(requestResource.sync);
+  const offerAutoSync = asObject(offerResource.auto_sync);
+  const referenceAutoSync = asObject(referenceResource.auto_sync);
+  const requestAutoSync = asObject(requestResource.auto_sync);
   const requestFreshness = asObject(requestResource.freshness ?? settings.request_freshness);
   const readTargetObjects = (section: Record<string, unknown>) => {
     const direct = asText(section.target_objects);
@@ -1337,6 +1357,7 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     }
     return "";
   };
+  const readAutoMode = (section: Record<string, unknown>) => (asText(section.mode) === "guarded" ? "guarded" : "full");
 
   return {
     listingsStatusIds: formatCsvInput(listings.status_ids),
@@ -1349,10 +1370,22 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     offersSyncMaxRuntimeSec: readMaxRuntimeSec(offerSync),
     referencesSyncMaxRuntimeSec: readMaxRuntimeSec(referenceSync),
     requestsSyncMaxRuntimeSec: readMaxRuntimeSec(requestSync),
+    offersAutoSyncEnabled: offerAutoSync.enabled === true,
+    offersAutoSyncMode: readAutoMode(offerAutoSync),
+    offersAutoSyncIntervalMinutes: asScalarInput(offerAutoSync.interval_minutes),
+    offersAutoSyncNightOnly: offerAutoSync.night_only === true,
+    referencesAutoSyncEnabled: referenceAutoSync.enabled === true,
+    referencesAutoSyncMode: readAutoMode(referenceAutoSync),
+    referencesAutoSyncIntervalMinutes: asScalarInput(referenceAutoSync.interval_minutes),
+    referencesAutoSyncNightOnly: referenceAutoSync.night_only === true,
+    requestsAutoSyncEnabled: requestAutoSync.enabled === true,
+    requestsAutoSyncMode: readAutoMode(requestAutoSync),
+    requestsAutoSyncIntervalMinutes: asScalarInput(requestAutoSync.interval_minutes),
+    requestsAutoSyncNightOnly: requestAutoSync.night_only === true,
     requestFreshnessEnabled: requestFreshness.enabled === true,
     requestFreshnessBasis: requestFreshness.basis === "last_seen_at" ? "last_seen_at" : "source_updated_at",
-    requestFreshnessBuyDays: asText(requestFreshness.max_age_days_buy) ?? "",
-    requestFreshnessRentDays: asText(requestFreshness.max_age_days_rent) ?? "",
+    requestFreshnessBuyDays: asScalarInput(requestFreshness.max_age_days_buy),
+    requestFreshnessRentDays: asScalarInput(requestFreshness.max_age_days_rent),
     requestFreshnessFallbackToLastSeen: requestFreshness.fallback_to_last_seen === true,
   };
 }
@@ -1376,6 +1409,9 @@ function applyCrmAdminDraftToSettings(
   const offerSync = { ...asObject(offerResource.sync) };
   const referenceSync = { ...asObject(referenceResource.sync) };
   const requestSync = { ...asObject(requestResource.sync) };
+  const offerAutoSync = { ...asObject(offerResource.auto_sync) };
+  const referenceAutoSync = { ...asObject(referenceResource.auto_sync) };
+  const requestAutoSync = { ...asObject(requestResource.auto_sync) };
 
   const listingStatusIds = parseCsvNumberList(draft.listingsStatusIds, "Status-IDs für Angebote");
   if (listingStatusIds.length > 0) listings.status_ids = listingStatusIds;
@@ -1399,6 +1435,9 @@ function applyCrmAdminDraftToSettings(
   const offersSyncMaxRuntimeSec = parseOptionalPositiveInteger(draft.offersSyncMaxRuntimeSec, "Angebote Vollsync Timeout (Sek.)");
   const referencesSyncMaxRuntimeSec = parseOptionalPositiveInteger(draft.referencesSyncMaxRuntimeSec, "Referenzen Vollsync Timeout (Sek.)");
   const requestsSyncMaxRuntimeSec = parseOptionalPositiveInteger(draft.requestsSyncMaxRuntimeSec, "Gesuche Vollsync Timeout (Sek.)");
+  const offersAutoSyncIntervalMinutes = parseOptionalPositiveInteger(draft.offersAutoSyncIntervalMinutes, "Angebote Auto-Sync Intervall (Min.)");
+  const referencesAutoSyncIntervalMinutes = parseOptionalPositiveInteger(draft.referencesAutoSyncIntervalMinutes, "Referenzen Auto-Sync Intervall (Min.)");
+  const requestsAutoSyncIntervalMinutes = parseOptionalPositiveInteger(draft.requestsAutoSyncIntervalMinutes, "Gesuche Auto-Sync Intervall (Min.)");
 
   if (unitsTargetObjects !== null) units.target_objects = unitsTargetObjects;
   else delete units.target_objects;
@@ -1424,6 +1463,42 @@ function applyCrmAdminDraftToSettings(
   if (requestsSyncMaxRuntimeSec !== null) requestSync.max_runtime_ms = requestsSyncMaxRuntimeSec * 1000;
   else delete requestSync.max_runtime_ms;
 
+  if (draft.offersAutoSyncEnabled || offersAutoSyncIntervalMinutes !== null) {
+    offerAutoSync.enabled = draft.offersAutoSyncEnabled;
+    offerAutoSync.mode = draft.offersAutoSyncMode;
+    offerAutoSync.interval_minutes = offersAutoSyncIntervalMinutes;
+    offerAutoSync.night_only = draft.offersAutoSyncNightOnly;
+  } else {
+    delete offerAutoSync.enabled;
+    delete offerAutoSync.mode;
+    delete offerAutoSync.interval_minutes;
+    delete offerAutoSync.night_only;
+  }
+
+  if (draft.referencesAutoSyncEnabled || referencesAutoSyncIntervalMinutes !== null) {
+    referenceAutoSync.enabled = draft.referencesAutoSyncEnabled;
+    referenceAutoSync.mode = draft.referencesAutoSyncMode;
+    referenceAutoSync.interval_minutes = referencesAutoSyncIntervalMinutes;
+    referenceAutoSync.night_only = draft.referencesAutoSyncNightOnly;
+  } else {
+    delete referenceAutoSync.enabled;
+    delete referenceAutoSync.mode;
+    delete referenceAutoSync.interval_minutes;
+    delete referenceAutoSync.night_only;
+  }
+
+  if (draft.requestsAutoSyncEnabled || requestsAutoSyncIntervalMinutes !== null) {
+    requestAutoSync.enabled = draft.requestsAutoSyncEnabled;
+    requestAutoSync.mode = draft.requestsAutoSyncMode;
+    requestAutoSync.interval_minutes = requestsAutoSyncIntervalMinutes;
+    requestAutoSync.night_only = draft.requestsAutoSyncNightOnly;
+  } else {
+    delete requestAutoSync.enabled;
+    delete requestAutoSync.mode;
+    delete requestAutoSync.interval_minutes;
+    delete requestAutoSync.night_only;
+  }
+
   if (Object.keys(listings).length > 0) resourceFilters.listings = listings;
   else delete resourceFilters.listings;
 
@@ -1445,15 +1520,21 @@ function applyCrmAdminDraftToSettings(
 
   if (Object.keys(offerSync).length > 0) offerResource.sync = offerSync;
   else delete offerResource.sync;
+  if (Object.keys(offerAutoSync).length > 0) offerResource.auto_sync = offerAutoSync;
+  else delete offerResource.auto_sync;
 
   if (Object.keys(referenceSync).length > 0) referenceResource.sync = referenceSync;
   else delete referenceResource.sync;
+  if (Object.keys(referenceAutoSync).length > 0) referenceResource.auto_sync = referenceAutoSync;
+  else delete referenceResource.auto_sync;
 
   const freshnessEnabled = draft.requestFreshnessEnabled;
   const freshnessBuyDays = parseOptionalPositiveInteger(draft.requestFreshnessBuyDays, "Gesuche Freshness Kauf (Tage)");
   const freshnessRentDays = parseOptionalPositiveInteger(draft.requestFreshnessRentDays, "Gesuche Freshness Miete (Tage)");
   if (Object.keys(requestSync).length > 0) requestResource.sync = requestSync;
   else delete requestResource.sync;
+  if (Object.keys(requestAutoSync).length > 0) requestResource.auto_sync = requestAutoSync;
+  else delete requestResource.auto_sync;
   if (freshnessEnabled || freshnessBuyDays !== null || freshnessRentDays !== null) {
     requestResource.freshness = {
       enabled: freshnessEnabled,
@@ -7129,6 +7210,62 @@ export default function AdminClient() {
                                     placeholder="z. B. 300"
                                   />
                                 </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={draft.offersAutoSyncEnabled}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, offersAutoSyncEnabled: e.target.checked },
+                                      }))
+                                    }
+                                  />
+                                  <span>Auto-Sync aktiv</span>
+                                </label>
+                                <label>
+                                  Auto-Sync Modus
+                                  <select
+                                    style={inputStyle}
+                                    value={draft.offersAutoSyncMode}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, offersAutoSyncMode: e.target.value as "guarded" | "full" },
+                                      }))
+                                    }
+                                  >
+                                    <option value="full">Vollsync</option>
+                                    <option value="guarded">Guarded</option>
+                                  </select>
+                                </label>
+                                <label>
+                                  Auto-Sync Intervall (Min.)
+                                  <input
+                                    style={inputStyle}
+                                    value={draft.offersAutoSyncIntervalMinutes}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, offersAutoSyncIntervalMinutes: e.target.value },
+                                      }))
+                                    }
+                                    placeholder="z. B. 60"
+                                  />
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={draft.offersAutoSyncNightOnly}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, offersAutoSyncNightOnly: e.target.checked },
+                                      }))
+                                    }
+                                  />
+                                  <span>Nur nachts</span>
+                                </label>
                               </>
                             ) : null}
 
@@ -7208,6 +7345,62 @@ export default function AdminClient() {
                                     placeholder="z. B. 300"
                                   />
                                 </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={draft.referencesAutoSyncEnabled}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, referencesAutoSyncEnabled: e.target.checked },
+                                      }))
+                                    }
+                                  />
+                                  <span>Auto-Sync aktiv</span>
+                                </label>
+                                <label>
+                                  Auto-Sync Modus
+                                  <select
+                                    style={inputStyle}
+                                    value={draft.referencesAutoSyncMode}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, referencesAutoSyncMode: e.target.value as "guarded" | "full" },
+                                      }))
+                                    }
+                                  >
+                                    <option value="full">Vollsync</option>
+                                    <option value="guarded">Guarded</option>
+                                  </select>
+                                </label>
+                                <label>
+                                  Auto-Sync Intervall (Min.)
+                                  <input
+                                    style={inputStyle}
+                                    value={draft.referencesAutoSyncIntervalMinutes}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, referencesAutoSyncIntervalMinutes: e.target.value },
+                                      }))
+                                    }
+                                    placeholder="z. B. 1440"
+                                  />
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={draft.referencesAutoSyncNightOnly}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, referencesAutoSyncNightOnly: e.target.checked },
+                                      }))
+                                    }
+                                  />
+                                  <span>Nur nachts</span>
+                                </label>
                               </>
                             ) : null}
 
@@ -7240,6 +7433,62 @@ export default function AdminClient() {
                                     }
                                     placeholder="z. B. 300"
                                   />
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={draft.requestsAutoSyncEnabled}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, requestsAutoSyncEnabled: e.target.checked },
+                                      }))
+                                    }
+                                  />
+                                  <span>Auto-Sync aktiv</span>
+                                </label>
+                                <label>
+                                  Auto-Sync Modus
+                                  <select
+                                    style={inputStyle}
+                                    value={draft.requestsAutoSyncMode}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, requestsAutoSyncMode: e.target.value as "guarded" | "full" },
+                                      }))
+                                    }
+                                  >
+                                    <option value="full">Vollsync</option>
+                                    <option value="guarded">Guarded</option>
+                                  </select>
+                                </label>
+                                <label>
+                                  Auto-Sync Intervall (Min.)
+                                  <input
+                                    style={inputStyle}
+                                    value={draft.requestsAutoSyncIntervalMinutes}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, requestsAutoSyncIntervalMinutes: e.target.value },
+                                      }))
+                                    }
+                                    placeholder="z. B. 1440"
+                                  />
+                                </label>
+                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={draft.requestsAutoSyncNightOnly}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, requestsAutoSyncNightOnly: e.target.checked },
+                                      }))
+                                    }
+                                  />
+                                  <span>Nur nachts</span>
                                 </label>
                                 <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
                                   <input

@@ -17,10 +17,18 @@ export type NormalizedCrmResourceLimits = {
   max_runtime_ms: number | null;
 };
 
+export type NormalizedCrmAutoSyncSettings = {
+  enabled: boolean;
+  mode: CrmSyncMode;
+  interval_minutes: number | null;
+  night_only: boolean;
+};
+
 export type NormalizedCrmResourceSettings = {
   enabled: boolean;
   guarded: NormalizedCrmResourceLimits;
   sync: NormalizedCrmResourceLimits;
+  auto_sync: NormalizedCrmAutoSyncSettings | null;
   freshness: NormalizedRequestFreshnessSettings | null;
 };
 
@@ -30,6 +38,10 @@ type NormalizeSettingsResult =
 
 type NormalizeFreshnessResult =
   | { ok: true; value: NormalizedRequestFreshnessSettings | null }
+  | { ok: false; error: string };
+
+type NormalizeAutoSyncResult =
+  | { ok: true; value: NormalizedCrmAutoSyncSettings | null }
   | { ok: false; error: string };
 
 function asObject(value: unknown): Record<string, unknown> | null {
@@ -102,6 +114,35 @@ function normalizeResourceLimits(value: unknown): NormalizedCrmResourceLimits {
   };
 }
 
+function normalizeAutoSyncValue(value: unknown): NormalizeAutoSyncResult {
+  const raw = asObject(value);
+  if (!raw) return { ok: true, value: null };
+
+  const explicitEnabled = asBoolean(raw.enabled);
+  const rawMode = String(raw.mode ?? "").trim().toLowerCase();
+  const mode: CrmSyncMode = rawMode === "guarded" ? "guarded" : "full";
+  const intervalMinutes = asPositiveInteger(raw.interval_minutes);
+  const nightOnly = asBoolean(raw.night_only) ?? false;
+  const enabled = explicitEnabled ?? intervalMinutes !== null;
+
+  if (enabled && intervalMinutes === null) {
+    return {
+      ok: false,
+      error: "Für auto_sync muss bei aktivierter Automatik interval_minutes gesetzt sein.",
+    };
+  }
+
+  return {
+    ok: true,
+    value: {
+      enabled,
+      mode,
+      interval_minutes: intervalMinutes,
+      night_only: nightOnly,
+    },
+  };
+}
+
 function toResourceEnabled(
   settings: Record<string, unknown> | null | undefined,
   resource: Exclude<CrmSyncResource, "all">,
@@ -153,6 +194,7 @@ export function readCrmResourceSettings(
   const legacyGuarded = readLegacyGuardedSettings(settings, resource);
   const guarded = normalizeResourceLimits(resourceSettings?.guarded ?? legacyGuarded);
   const sync = normalizeResourceLimits(resourceSettings?.sync);
+  const autoSync = normalizeAutoSyncValue(resourceSettings?.auto_sync);
   const freshness =
     resource === "requests"
       ? readRequestFreshnessSettings(settings)
@@ -162,6 +204,7 @@ export function readCrmResourceSettings(
     enabled: toResourceEnabled(settings, resource),
     guarded,
     sync,
+    auto_sync: autoSync.ok ? autoSync.value : null,
     freshness,
   };
 }
@@ -220,6 +263,14 @@ export function normalizeCrmIntegrationSettings(
       normalizedResource.sync = current.sync;
     } else {
       delete normalizedResource.sync;
+    }
+
+    const normalizedAutoSync = normalizeAutoSyncValue(rawResource.auto_sync);
+    if (!normalizedAutoSync.ok) return normalizedAutoSync;
+    if (normalizedAutoSync.value) {
+      normalizedResource.auto_sync = normalizedAutoSync.value;
+    } else {
+      delete normalizedResource.auto_sync;
     }
 
     if (resource === "requests") {
