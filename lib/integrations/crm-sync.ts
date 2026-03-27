@@ -13,6 +13,7 @@ import type {
   CrmSyncResource,
   MappedOffer,
   PartnerIntegration,
+  RawListing,
   RawReference,
   RawRequest,
 } from "@/lib/providers/types";
@@ -57,6 +58,77 @@ function asObject(value: unknown): Record<string, unknown> {
 
 function asText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function parseTimestampScore(value: unknown): number {
+  if (typeof value !== "string" || value.trim().length === 0) return Number.NEGATIVE_INFINITY;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+}
+
+function chooseMoreRecentRow<T extends Record<string, unknown>>(current: T, incoming: T): T {
+  const currentScore = Math.max(
+    parseTimestampScore(current.source_updated_at),
+    parseTimestampScore(current.updated_at),
+    parseTimestampScore(current.last_seen_at),
+  );
+  const incomingScore = Math.max(
+    parseTimestampScore(incoming.source_updated_at),
+    parseTimestampScore(incoming.updated_at),
+    parseTimestampScore(incoming.last_seen_at),
+  );
+  return incomingScore >= currentScore ? incoming : current;
+}
+
+function dedupeRowsByConflictKey<T extends Record<string, unknown>>(
+  rows: T[],
+  buildKey: (row: T) => string,
+): { rows: T[]; removed: number } {
+  const deduped = new Map<string, T>();
+  let removed = 0;
+
+  for (const row of rows) {
+    const key = buildKey(row);
+    if (!key) continue;
+    const current = deduped.get(key);
+    if (!current) {
+      deduped.set(key, row);
+      continue;
+    }
+    deduped.set(key, chooseMoreRecentRow(current, row));
+    removed += 1;
+  }
+
+  return {
+    rows: Array.from(deduped.values()),
+    removed,
+  };
+}
+
+function dedupeRawRows<T extends RawListing | RawReference | RawRequest>(
+  rows: T[],
+): { rows: T[]; removed: number } {
+  return dedupeRowsByConflictKey(rows, (row) =>
+    [row.partner_id, row.provider, row.external_id].map((value) => String(value ?? "").trim()).join("::"),
+  );
+}
+
+function dedupeCanonicalRows<T extends CanonicalReference | CanonicalRequest>(
+  rows: T[],
+): { rows: T[]; removed: number } {
+  return dedupeRowsByConflictKey(rows, (row) =>
+    [row.partner_id, row.source ?? row.provider, row.external_id]
+      .map((value) => String(value ?? "").trim())
+      .join("::"),
+  );
+}
+
+function dedupeOffers(
+  offers: MappedOffer[],
+): { rows: MappedOffer[]; removed: number } {
+  return dedupeRowsByConflictKey(offers as Array<MappedOffer & Record<string, unknown>>, (offer) =>
+    [offer.partner_id, offer.source, offer.external_id].map((value) => String(value ?? "").trim()).join("::"),
+  );
 }
 
 function shouldSyncCapability(
@@ -503,6 +575,10 @@ export async function runCrmIntegrationSync(
   let listingsCount = 0;
   let deactivatedListings = 0;
   if (syncListings) {
+    const dedupedListings = dedupeRawRows(listings);
+    if (dedupedListings.removed > 0) {
+      mergedNotes.push(`listings dedupe: ${dedupedListings.removed} Duplikate vor dem Upsert entfernt`);
+    }
     await hooks?.assertCanContinue?.();
     await hooks?.onProgress?.("upsert_listings", "Rohobjekte werden gespeichert.");
     const layer = await syncRawResourceLayer(
@@ -510,7 +586,7 @@ export async function runCrmIntegrationSync(
       "partner_listings",
       integration.partner_id,
       integration.provider,
-      listings as unknown as Array<Record<string, unknown>>,
+      dedupedListings.rows as unknown as Array<Record<string, unknown>>,
       { allowDeactivate },
     );
     listingsCount = layer.count;
@@ -520,6 +596,11 @@ export async function runCrmIntegrationSync(
   let referencesCount = 0;
   let deactivatedReferences = 0;
   if (syncReferences && (referencesFetched || references.length > 0)) {
+    const dedupedReferences = dedupeRawRows(references);
+    if (dedupedReferences.removed > 0) {
+      mergedNotes.push(`references dedupe: ${dedupedReferences.removed} Duplikate vor dem Upsert entfernt`);
+    }
+    const canonicalReferences = dedupeCanonicalRows(dedupedReferences.rows.map(toCanonicalReference));
     await hooks?.assertCanContinue?.();
     await hooks?.onProgress?.("upsert_references_raw", "Referenz-Rohdaten werden gespeichert.");
     await syncRawResourceLayer(
@@ -527,7 +608,7 @@ export async function runCrmIntegrationSync(
       "crm_raw_references",
       integration.partner_id,
       integration.provider,
-      references as unknown as Array<Record<string, unknown>>,
+      dedupedReferences.rows as unknown as Array<Record<string, unknown>>,
       { allowDeactivate },
     );
     await hooks?.assertCanContinue?.();
@@ -536,7 +617,7 @@ export async function runCrmIntegrationSync(
       supabase,
       integration.partner_id,
       integration.provider,
-      references.map(toCanonicalReference),
+      canonicalReferences.rows,
       { allowDeactivate },
     );
     referencesCount = layer.count;
@@ -547,12 +628,16 @@ export async function runCrmIntegrationSync(
   let deactivatedRequests = 0;
   if (syncRequests && (requestsFetched || requests.length > 0)) {
     const freshness = filterFreshRequests(requests, integration.settings);
-    const activeRequests = freshness.rows;
+    const activeRequests = dedupeRawRows(freshness.rows);
     if (freshness.filtered > 0) {
       mergedNotes.push(
         `request freshness filter: ${freshness.filtered} Gesuche via ${freshness.basis ?? "source_updated_at"} ausgeschlossen`,
       );
     }
+    if (activeRequests.removed > 0) {
+      mergedNotes.push(`requests dedupe: ${activeRequests.removed} Duplikate vor dem Upsert entfernt`);
+    }
+    const canonicalRequests = dedupeCanonicalRows(activeRequests.rows.map(toCanonicalRequest));
     await hooks?.assertCanContinue?.();
     await hooks?.onProgress?.("upsert_requests_raw", "Gesuch-Rohdaten werden gespeichert.");
     await syncRawResourceLayer(
@@ -560,7 +645,7 @@ export async function runCrmIntegrationSync(
       "crm_raw_requests",
       integration.partner_id,
       integration.provider,
-      activeRequests as unknown as Array<Record<string, unknown>>,
+      activeRequests.rows as unknown as Array<Record<string, unknown>>,
       { allowDeactivate },
     );
     await hooks?.assertCanContinue?.();
@@ -569,7 +654,7 @@ export async function runCrmIntegrationSync(
       supabase,
       integration.partner_id,
       integration.provider,
-      activeRequests.map(toCanonicalRequest),
+      canonicalRequests.rows,
       { allowDeactivate },
     );
     requestsCount = layer.count;
@@ -577,12 +662,16 @@ export async function runCrmIntegrationSync(
   }
 
   if (syncListings) {
+    const dedupedOffers = dedupeOffers(offers);
+    if (dedupedOffers.removed > 0) {
+      mergedNotes.push(`offers dedupe: ${dedupedOffers.removed} Duplikate vor dem Upsert entfernt`);
+    }
     await hooks?.assertCanContinue?.();
     await hooks?.onProgress?.("upsert_offers", "Angebote werden gespeichert.");
-    await upsertOffers(supabase, offers);
+    await upsertOffers(supabase, dedupedOffers.rows);
   }
 
-  const activeOfferExternalIds = offers.map((row) => row.external_id);
+  const activeOfferExternalIds = dedupeOffers(offers).rows.map((row) => row.external_id);
   let deactivatedOffers = 0;
   await hooks?.assertCanContinue?.();
   if (syncListings && allowDeactivate) {
