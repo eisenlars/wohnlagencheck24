@@ -34,10 +34,11 @@ export async function POST(req: Request) {
     if (file.size <= 0 || file.size > MAX_RAW_FILE_BYTES) {
       return NextResponse.json({ error: "Datei zu groß" }, { status: 413 });
     }
-    if (!String(file.type ?? "").toLowerCase().includes("webp")) {
+    const fileType = String(file.type ?? "").toLowerCase();
+    if (fileType !== "image/webp" && fileType !== "image/png") {
       return NextResponse.json(
         {
-          error: `Ungültiges Format. Bitte als WebP hochladen (${getMandatoryMediaLabel("media_berater_avatar")}).`,
+          error: `Ungültiges Format. Bitte als WebP oder PNG hochladen (${getMandatoryMediaLabel("media_berater_avatar")}).`,
         },
         { status: 422 },
       );

@@ -68,6 +68,7 @@ import {
 } from "@/lib/ui/session-view-state";
 import {
   EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE,
+  getMissingSystempartnerDefaultProfileKeys,
   type SystempartnerDefaultProfile,
 } from "@/lib/systempartner-default-profile";
 import FullscreenLoader from "@/components/ui/FullscreenLoader";
@@ -2679,6 +2680,29 @@ export default function AdminClient() {
     [reviewData],
   );
   const currentReviewAllowsDirectGoLive = Boolean(selectedPartner?.is_system_default);
+  const systempartnerDefaultMissingKeys = useMemo(
+    () => getMissingSystempartnerDefaultProfileKeys(systempartnerDefaultProfile),
+    [systempartnerDefaultProfile],
+  );
+  const systempartnerDefaultMissingLabels = useMemo(
+    () =>
+      systempartnerDefaultMissingKeys.map((key) => {
+        switch (key) {
+          case "berater_name":
+            return "Beratername";
+          case "berater_email":
+            return "Berater-E-Mail";
+          case "berater_telefon_fest":
+            return "Telefon Festnetz";
+          case "media_berater_avatar":
+            return getMandatoryMediaLabel("media_berater_avatar");
+          default:
+            return key;
+        }
+      }),
+    [systempartnerDefaultMissingKeys],
+  );
+  const systempartnerDefaultCanSave = systempartnerDefaultMissingKeys.length === 0;
 
   const handoverAreaOptions = useMemo(
     () => displayAreaRows.map((row) => ({
@@ -5898,21 +5922,21 @@ export default function AdminClient() {
           <input
             placeholder="Beratername"
             aria-label="Beratername Standard"
-            style={inputStyle}
+            style={systempartnerDefaultMissingKeys.includes("berater_name") ? requiredInputStyle : inputStyle}
             value={systempartnerDefaultProfile.berater_name}
             onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, berater_name: e.target.value }))}
           />
           <input
             placeholder="Berater-E-Mail"
             aria-label="Berater-E-Mail Standard"
-            style={inputStyle}
+            style={systempartnerDefaultMissingKeys.includes("berater_email") ? requiredInputStyle : inputStyle}
             value={systempartnerDefaultProfile.berater_email}
             onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, berater_email: e.target.value }))}
           />
           <input
             placeholder="Telefon Festnetz"
             aria-label="Telefon Festnetz Standard"
-            style={inputStyle}
+            style={systempartnerDefaultMissingKeys.includes("berater_telefon_fest") ? requiredInputStyle : inputStyle}
             value={systempartnerDefaultProfile.berater_telefon_fest}
             onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, berater_telefon_fest: e.target.value }))}
           />
@@ -5924,13 +5948,29 @@ export default function AdminClient() {
             onChange={(e) => setSystempartnerDefaultProfile((prev) => ({ ...prev, berater_telefon_mobil: e.target.value }))}
           />
         </div>
+        {systempartnerDefaultMissingKeys.length > 0 ? (
+          <div
+            style={{
+              marginTop: 12,
+              border: "1px solid #f59e0b",
+              background: "#fffbeb",
+              borderRadius: 10,
+              padding: 12,
+            }}
+          >
+            <div style={requiredFieldHintStyle}>Pflichtfelder</div>
+            <div style={{ fontSize: 13, color: "#92400e", lineHeight: 1.5 }}>
+              Bitte zuerst diese Pflichtfelder ausfüllen: {systempartnerDefaultMissingLabels.join(", ")}.
+            </div>
+          </div>
+        ) : null}
         <div style={{ marginTop: 12 }}>
           <div
             style={{
-              border: "1px solid #e2e8f0",
+              border: systempartnerDefaultMissingKeys.includes("media_berater_avatar") ? "1px solid #f59e0b" : "1px solid #e2e8f0",
               borderRadius: 10,
               padding: 14,
-              background: "#f8fafc",
+              background: systempartnerDefaultMissingKeys.includes("media_berater_avatar") ? "#fffbeb" : "#f8fafc",
               display: "grid",
               gap: 10,
             }}
@@ -5973,7 +6013,7 @@ export default function AdminClient() {
               </div>
             )}
             <div style={{ fontSize: 12, color: "#64748b" }}>
-              Format: WebP · Ziel: 220 × 220 px · max. {Math.round(300000 / 1024)} KB
+              Format: WebP oder PNG · Ziel: 220 × 220 px · max. {Math.round(300000 / 1024)} KB
             </div>
             <label
               htmlFor="systempartner-default-avatar-upload"
@@ -5991,7 +6031,7 @@ export default function AdminClient() {
               <input
                 id="systempartner-default-avatar-upload"
                 type="file"
-                accept="image/webp"
+                accept="image/webp,image/png"
                 disabled={systempartnerDefaultAvatarUpload.uploading}
                 style={{ display: "none" }}
                 onChange={(e) => {
@@ -6019,7 +6059,7 @@ export default function AdminClient() {
         <div style={{ marginTop: 12 }}>
           <button
             style={btnStyle}
-            disabled={busy}
+            disabled={busy || !systempartnerDefaultCanSave}
             onClick={() =>
               run("Systempartner-Default speichern", async () => {
                 await saveSystempartnerDefaultProfile();
@@ -6164,7 +6204,7 @@ export default function AdminClient() {
                           ) : (
                             <button
                               style={btnStyle}
-                              disabled={busy || reviewBusy}
+                              disabled={busy || reviewBusy || !systempartnerDefaultCanSave}
                               onClick={() =>
                                 run("Gebiet direkt online schalten", async () => {
                                   await setAreaPublicationForArea(row.mapping.area_id, true);

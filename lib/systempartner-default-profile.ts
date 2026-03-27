@@ -1,6 +1,6 @@
 export const SYSTEMPARTNER_DEFAULT_PROFILE_BUCKET = "immobilienmarkt";
 export const SYSTEMPARTNER_DEFAULT_PROFILE_PATH = "text-standards/systempartner/systempartner_default_profile.json";
-export const SYSTEMPARTNER_DEFAULT_PROFILE_AVATAR_PATH = "media/systempartner/default/media_berater_avatar.webp";
+export const SYSTEMPARTNER_DEFAULT_PROFILE_AVATAR_PATH = "media/systempartner/default/media_berater_avatar";
 
 export const SYSTEMPARTNER_DEFAULT_PROFILE_KEYS = [
   "berater_name",
@@ -10,9 +10,17 @@ export const SYSTEMPARTNER_DEFAULT_PROFILE_KEYS = [
   "media_berater_avatar",
 ] as const;
 
+export const SYSTEMPARTNER_DEFAULT_PROFILE_REQUIRED_KEYS = [
+  "berater_name",
+  "berater_email",
+  "berater_telefon_fest",
+  "media_berater_avatar",
+] as const;
+
 export type SystempartnerDefaultProfileKey = (typeof SYSTEMPARTNER_DEFAULT_PROFILE_KEYS)[number];
 
 export type SystempartnerDefaultProfile = Record<SystempartnerDefaultProfileKey, string>;
+export type SystempartnerDefaultProfileRequiredKey = (typeof SYSTEMPARTNER_DEFAULT_PROFILE_REQUIRED_KEYS)[number];
 
 export const EMPTY_SYSTEMPARTNER_DEFAULT_PROFILE: SystempartnerDefaultProfile = {
   berater_name: "",
@@ -95,11 +103,13 @@ export async function uploadSystempartnerDefaultAvatar(
   admin: DownloadClient,
   file: File,
 ): Promise<string> {
+  const fileType = String(file.type ?? "").trim().toLowerCase();
+  const contentType = fileType === "image/png" ? "image/png" : "image/webp";
   const res = await admin.storage
     .from(SYSTEMPARTNER_DEFAULT_PROFILE_BUCKET)
     .upload(SYSTEMPARTNER_DEFAULT_PROFILE_AVATAR_PATH, file, {
       upsert: true,
-      contentType: "image/webp",
+      contentType,
       cacheControl: "3600",
     });
   if (res.error?.message) {
@@ -115,24 +125,30 @@ export async function uploadSystempartnerDefaultAvatar(
 export type SystempartnerDefaultProfileMandatoryResult =
   | {
       ok: true;
-      missing: Array<{ key: SystempartnerDefaultProfileKey; reason: "missing" }>;
+      missing: Array<{ key: SystempartnerDefaultProfileRequiredKey; reason: "missing" }>;
       profile: SystempartnerDefaultProfile;
     }
   | {
       ok: false;
       status: number;
       error: string;
-      missing: Array<{ key: SystempartnerDefaultProfileKey; reason: "missing" }>;
+      missing: Array<{ key: SystempartnerDefaultProfileRequiredKey; reason: "missing" }>;
       gate: "SYSTEMPARTNER_DEFAULT_MISSING";
       profile: SystempartnerDefaultProfile;
     };
+
+export function getMissingSystempartnerDefaultProfileKeys(
+  profile: SystempartnerDefaultProfile,
+): SystempartnerDefaultProfileRequiredKey[] {
+  return SYSTEMPARTNER_DEFAULT_PROFILE_REQUIRED_KEYS
+    .filter((key) => String(profile[key] ?? "").trim().length === 0);
+}
 
 export async function checkSystempartnerDefaultProfileMandatory(
   admin: DownloadClient,
 ): Promise<SystempartnerDefaultProfileMandatoryResult> {
   const profile = await downloadSystempartnerDefaultProfile(admin);
-  const missing = SYSTEMPARTNER_DEFAULT_PROFILE_KEYS
-    .filter((key) => String(profile[key] ?? "").trim().length === 0)
+  const missing = getMissingSystempartnerDefaultProfileKeys(profile)
     .map((key) => ({ key, reason: "missing" as const }));
 
   if (missing.length > 0) {
