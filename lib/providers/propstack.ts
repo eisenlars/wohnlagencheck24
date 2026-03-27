@@ -161,6 +161,12 @@ type RegionTarget = {
   key: string;
 };
 
+type PropstackClassification = {
+  usageType: "wohnen" | "grundstueck" | "gewerbe" | "anlage" | "spezial";
+  objectType: string;
+  legacyObjectType: "haus" | "wohnung";
+};
+
 const PROVIDER_FETCH_TIMEOUT_MS = 12000;
 
 type PropstackFetchBatchResult<T> = {
@@ -281,7 +287,9 @@ function normalizeOfferType(marketingType?: string | null): "kauf" | "miete" {
   return "kauf";
 }
 
-function normalizeObjectType(unit: Pick<PropstackUnit, "object_type" | "rs_type" | "rs_category" | "recommended_use_types">): string {
+function classifyPropstackUnit(
+  unit: Pick<PropstackUnit, "object_type" | "rs_type" | "rs_category" | "recommended_use_types">,
+): PropstackClassification {
   const combined = [
     unit.object_type,
     unit.rs_type,
@@ -292,7 +300,13 @@ function normalizeObjectType(unit: Pick<PropstackUnit, "object_type" | "rs_type"
     .filter(Boolean)
     .join(" ");
 
-  if (!combined) return "wohnung";
+  if (!combined) {
+    return {
+      usageType: "wohnen",
+      objectType: "wohnung",
+      legacyObjectType: "wohnung",
+    };
+  }
   if (
     combined.includes("TRADE_SITE")
     || combined.includes("PLOT")
@@ -300,7 +314,48 @@ function normalizeObjectType(unit: Pick<PropstackUnit, "object_type" | "rs_type"
     || combined.includes("GRUNDST")
     || combined.includes("SITE")
   ) {
-    return "grundstueck";
+    return {
+      usageType: "grundstueck",
+      objectType: "grundstueck",
+      legacyObjectType: "wohnung",
+    };
+  }
+  if (
+    combined.includes("INVEST")
+    || combined.includes("ANLAGE")
+    || combined.includes("MULTI_FAMILY")
+    || combined.includes("MEHRFAMIL")
+    || combined.includes("APARTMENT_BUILDING")
+    || combined.includes("RESIDENTIAL_AND_COMMERCIAL")
+    || combined.includes("ZINSHAUS")
+  ) {
+    return {
+      usageType: "anlage",
+      objectType: "anlage",
+      legacyObjectType: "wohnung",
+    };
+  }
+  if (
+    combined.includes("COMMERCIAL")
+    || combined.includes("GEWERBE")
+    || combined.includes("OFFICE")
+    || combined.includes("BUERO")
+    || combined.includes("BÜRO")
+    || combined.includes("PRAXIS")
+    || combined.includes("STORE")
+    || combined.includes("SHOP")
+    || combined.includes("RETAIL")
+    || combined.includes("INDUSTR")
+    || combined.includes("HALLE")
+    || combined.includes("GASTRO")
+    || combined.includes("HOTEL")
+    || combined.includes("LOGIST")
+  ) {
+    return {
+      usageType: "gewerbe",
+      objectType: "gewerbe",
+      legacyObjectType: "wohnung",
+    };
   }
   if (
     combined.includes("HOUSE")
@@ -308,9 +363,34 @@ function normalizeObjectType(unit: Pick<PropstackUnit, "object_type" | "rs_type"
     || combined.includes("VILLA")
     || combined.includes("BUNGALOW")
   ) {
-    return "haus";
+    return {
+      usageType: "wohnen",
+      objectType: "haus",
+      legacyObjectType: "haus",
+    };
   }
-  return "wohnung";
+  if (
+    combined.includes("APART")
+    || combined.includes("FLAT")
+    || combined.includes("WOHNUNG")
+    || combined.includes("CONDO")
+    || combined.includes("LIVING")
+  ) {
+    return {
+      usageType: "wohnen",
+      objectType: "wohnung",
+      legacyObjectType: "wohnung",
+    };
+  }
+  return {
+    usageType: "spezial",
+    objectType: "spezial",
+    legacyObjectType: "wohnung",
+  };
+}
+
+function normalizeObjectType(unit: Pick<PropstackUnit, "object_type" | "rs_type" | "rs_category" | "recommended_use_types">): string {
+  return classifyPropstackUnit(unit).objectType;
 }
 
 function normalizePropstackOfferType(
@@ -339,8 +419,8 @@ function getEffectivePropstackStatus(
 }
 
 function normalizePropstackArea(unit: PropstackUnit): number | null {
-  const objectType = normalizeObjectType(unit);
-  if (objectType === "grundstueck") {
+  const classification = classifyPropstackUnit(unit);
+  if (classification.usageType === "grundstueck") {
     return normalizePropstackNumber(unit.plot_area)
       ?? normalizePropstackNumber(unit.property_space_value)
       ?? normalizePropstackNumber(unit.living_space)
@@ -716,6 +796,7 @@ function buildNormalizedListingPayload(
   integration: PartnerIntegration,
   unit: PropstackUnit,
 ): Record<string, unknown> {
+  const classification = classifyPropstackUnit(unit);
   const title = normalizePropstackTitle(unit.title);
   const name = normalizePropstackText(unit.name);
   const displayTitle = firstString([title, name]);
@@ -728,7 +809,6 @@ function buildNormalizedListingPayload(
   const district = buildDistrict(unit);
   const status = getEffectivePropstackStatus(unit);
   const imageUrl = galleryAssets.find((asset) => asset.kind === "image")?.url ?? gallery[0] ?? null;
-  const objectType = normalizeObjectType(unit);
 
   return {
     title,
@@ -738,11 +818,19 @@ function buildNormalizedListingPayload(
     unit_id: unit.unit_id ?? null,
     exposee_id: unit.exposee_id ?? null,
     offer_type: normalizePropstackOfferType(unit),
-    object_type: objectType,
+    usage_type: classification.usageType,
+    object_type: classification.objectType,
+    legacy_object_type: classification.legacyObjectType,
     marketing_type: unit.marketing_type ?? null,
     commercialization_type: normalizePropstackText(unit.commercialization_type),
+    source_object_type: unit.object_type ?? null,
     rs_type: unit.rs_type ?? null,
+    source_rs_type: unit.rs_type ?? null,
     rs_category: unit.rs_category ?? null,
+    source_rs_category: unit.rs_category ?? null,
+    recommended_use_types: Array.isArray(unit.recommended_use_types)
+      ? unit.recommended_use_types.map((value) => String(value ?? "").trim()).filter(Boolean)
+      : null,
     price: normalizePropstackNumber(unit.price) ?? normalizePropstackNumber(unit.purchase_price),
     rent: normalizePropstackNumber(unit.base_rent) ?? normalizePropstackNumber(unit.rent_net),
     area_sqm: normalizePropstackArea(unit),
@@ -844,7 +932,7 @@ function normalizeUnitOffer(
     source: "propstack",
     external_id: String(unit.id),
     offer_type: normalizePropstackOfferType(unit),
-    object_type: String(raw.object_type ?? "wohnung"),
+    object_type: String(raw.legacy_object_type ?? raw.object_type ?? "wohnung"),
     title: typeof raw.source_title === "string" ? raw.source_title : null,
     price: typeof raw.price === "number" ? raw.price : null,
     rent: typeof raw.rent === "number" ? raw.rent : null,

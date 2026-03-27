@@ -216,6 +216,14 @@ function parseBoolean(value: unknown): boolean | null {
   return null;
 }
 
+function getEffectiveOfferObjectType(offer: OfferRow | null | undefined): string {
+  if (!offer) return '';
+  const raw = offer.raw;
+  const rawObjectType = typeof raw?.object_type === 'string' ? raw.object_type.trim().toLowerCase() : '';
+  const columnObjectType = String(offer.object_type || '').trim().toLowerCase();
+  return rawObjectType || columnObjectType;
+}
+
 function parseDetailsSnapshot(value: unknown): DetailsSnapshot | null {
   if (!value || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
@@ -313,7 +321,7 @@ export default function OffersManager(props: Props) {
   const [saving, setSaving] = useState(false);
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'haus' | 'wohnung'>('all');
+  const [filterType, setFilterType] = useState<string>('all');
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
@@ -375,11 +383,20 @@ export default function OffersManager(props: Props) {
     load();
   }, [supabase]);
 
+  const availableObjectTypes = useMemo(() => {
+    const types = new Set<string>();
+    for (const offer of offers) {
+      const objectType = getEffectiveOfferObjectType(offer);
+      if (objectType) types.add(objectType);
+    }
+    return Array.from(types).sort((left, right) => left.localeCompare(right, 'de'));
+  }, [offers]);
+
   const filteredOffers = useMemo(() => {
     const term = query.trim().toLowerCase();
     return offers.filter((offer) => {
       const matchesType =
-        filterType === 'all' ? true : String(offer.object_type || '').toLowerCase() === filterType;
+        filterType === 'all' ? true : getEffectiveOfferObjectType(offer) === filterType;
       const matchesQuery = term.length === 0
         ? true
         : `${offer.title ?? ''} ${offer.address ?? ''}`.toLowerCase().includes(term);
@@ -924,18 +941,15 @@ export default function OffersManager(props: Props) {
           >
             Alle
           </button>
-          <button
-            onClick={() => setFilterType('haus')}
-            style={filterButtonStyle(filterType === 'haus')}
-          >
-            Haus
-          </button>
-          <button
-            onClick={() => setFilterType('wohnung')}
-            style={filterButtonStyle(filterType === 'wohnung')}
-          >
-            Wohnung
-          </button>
+          {availableObjectTypes.map((objectType) => (
+            <button
+              key={objectType}
+              onClick={() => setFilterType(objectType)}
+              style={filterButtonStyle(filterType === objectType)}
+            >
+              {objectType}
+            </button>
+          ))}
         </div>
         <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
           {filteredOffers.map((offer) => {
@@ -1001,7 +1015,7 @@ export default function OffersManager(props: Props) {
                   </div>
                   <div>
                     <div style={offerSummaryLabelStyle}>Objektart</div>
-                    <div style={offerSummaryValueStyle}>{selectedOffer.object_type || '—'}</div>
+                    <div style={offerSummaryValueStyle}>{getEffectiveOfferObjectType(selectedOffer) || '—'}</div>
                   </div>
                   <div>
                     <div style={offerSummaryLabelStyle}>Angebotstyp</div>
