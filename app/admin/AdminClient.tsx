@@ -1775,6 +1775,7 @@ export default function AdminClient() {
   const [areaMappings, setAreaMappings] = useState<AreaMapping[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [crmIntegrationDrafts, setCrmIntegrationDrafts] = useState<Record<string, CrmIntegrationAdminDraft>>({});
+  const [crmIntegrationTabs, setCrmIntegrationTabs] = useState<Record<string, CrmResourceKey>>({});
   const [status, setStatus] = useState<string>("Lade Admin-Daten...");
   const [adminDisplayName, setAdminDisplayName] = useState<string>("Admin");
   const [lastLogin, setLastLogin] = useState<string>("");
@@ -7119,6 +7120,9 @@ export default function AdminClient() {
               const draft = crmIntegrationDrafts[integration.id] ?? buildCrmIntegrationAdminDraft(integration);
               const globalSyncSummary = readSyncSummaryFromIntegration(integration, "all");
               const resourceKeys: CrmResourceKey[] = ["offers", "references", "requests"];
+              const activeResourceKey = resourceKeys.includes(crmIntegrationTabs[integration.id] ?? "offers")
+                ? (crmIntegrationTabs[integration.id] ?? "offers")
+                : "offers";
               return (
                 <div
                   key={`crm-admin-${integration.id}`}
@@ -7137,8 +7141,37 @@ export default function AdminClient() {
                       {getIntegrationHealthSummary(integration)}
                     </div>
                   </div>
-                  <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+                  <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {resourceKeys.map((resourceKey) => {
+                      const isActiveTab = activeResourceKey === resourceKey;
+                      return (
+                        <button
+                          key={`crm-resource-tab-${integration.id}-${resourceKey}`}
+                          type="button"
+                          onClick={() =>
+                            setCrmIntegrationTabs((prev) => ({
+                              ...prev,
+                              [integration.id]: resourceKey,
+                            }))
+                          }
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: 999,
+                            border: isActiveTab ? "1px solid #1d4ed8" : "1px solid #cbd5e1",
+                            background: isActiveTab ? "#dbeafe" : "#fff",
+                            color: isActiveTab ? "#1d4ed8" : "#334155",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {formatCrmResourceLabel(resourceKey)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+                    {[activeResourceKey].map((resourceKey) => {
                       const resourceSyncSummary = readSyncSummaryFromIntegration(integration, resourceKey);
                       const resourcePreviewSummary = readPreviewSummaryFromIntegration(integration, resourceKey);
                       const isRunningThisResource = resourceSyncSummary?.status === "running";
