@@ -2947,10 +2947,15 @@ export default function AdminClient() {
 
   async function setAreaPublication(live: boolean) {
     if (!selectedPartnerId || !reviewAreaId) return;
+    return setAreaPublicationForArea(reviewAreaId, live);
+  }
+
+  async function setAreaPublicationForArea(areaId: string, live: boolean) {
+    if (!selectedPartnerId || !areaId) return;
     setReviewBusy(true);
     try {
       const response = await api<AreaReviewPayload>(
-        `/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(reviewAreaId)}/publish`,
+        `/api/admin/partners/${selectedPartnerId}/areas/${encodeURIComponent(areaId)}/publish`,
         {
           method: live ? "POST" : "DELETE",
         },
@@ -2958,7 +2963,7 @@ export default function AdminClient() {
       if (response.mapping) {
         applyLocalAreaMappingUpdate(selectedPartnerId, response.mapping);
       }
-      if (live && response?.notification?.partner?.sent === false) {
+      if (live && response?.notification?.partner?.sent === false && !selectedPartner?.is_system_default) {
         const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
         setReviewActionError(`Gebiet wurde online geschaltet, Partner-Mail aber nicht versendet (${reason}).`);
         setReviewActionMessage(null);
@@ -2966,6 +2971,7 @@ export default function AdminClient() {
       }
       setReviewActionError(null);
       setReviewActionMessage(live ? "Gebiet erfolgreich online geschaltet." : "Gebiet erfolgreich offline genommen.");
+      setStatus(live ? "Gebiet erfolgreich online geschaltet." : "Gebiet erfolgreich offline genommen.");
     } catch (error) {
       setReviewActionError(error instanceof Error ? error.message : "Veröffentlichung konnte nicht aktualisiert werden.");
       setReviewActionMessage(null);
@@ -4207,6 +4213,13 @@ export default function AdminClient() {
     void loadAreaReview(reviewAreaId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPartnerId, reviewAreaId]);
+
+  useEffect(() => {
+    if (!selectedPartner?.is_system_default) return;
+    if (partnerTab === "review" || partnerTab === "integrations" || partnerTab === "billing") {
+      setPartnerTab("areas");
+    }
+  }, [selectedPartner?.is_system_default, partnerTab]);
 
   useEffect(() => {
     const nextDrafts: Record<string, CrmIntegrationAdminDraft> = {};
@@ -5624,35 +5637,41 @@ export default function AdminClient() {
             />
           ) : null}
         </button>
-        <button style={partnerTabButtonStyle(partnerTab === "review")} onClick={() => setPartnerTab("review")}>
-          Freigabeprüfung
-          {selectedPartnerWorkflowSignal === "orange" ? (
-            <span
-              aria-label="Freigabe oder Preview offen"
-              style={{
-                display: "inline-block",
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#f59e0b",
-                marginLeft: 8,
-                verticalAlign: "middle",
-              }}
-            />
-          ) : null}
-        </button>
-        <button
-          style={partnerTabButtonStyle(partnerTab === "integrations")}
-          onClick={() => {
-            setPartnerTab("integrations");
-            setIntegrationsAdminTab("llm_partner");
-          }}
-        >
-          Anbindungen
-        </button>
-        <button style={partnerTabButtonStyle(partnerTab === "billing")} onClick={() => setPartnerTab("billing")}>
-          Abrechnung
-        </button>
+        {!selectedPartner.is_system_default ? (
+          <button style={partnerTabButtonStyle(partnerTab === "review")} onClick={() => setPartnerTab("review")}>
+            Freigabeprüfung
+            {selectedPartnerWorkflowSignal === "orange" ? (
+              <span
+                aria-label="Freigabe oder Preview offen"
+                style={{
+                  display: "inline-block",
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#f59e0b",
+                  marginLeft: 8,
+                  verticalAlign: "middle",
+                }}
+              />
+            ) : null}
+          </button>
+        ) : null}
+        {!selectedPartner.is_system_default ? (
+          <button
+            style={partnerTabButtonStyle(partnerTab === "integrations")}
+            onClick={() => {
+              setPartnerTab("integrations");
+              setIntegrationsAdminTab("llm_partner");
+            }}
+          >
+            Anbindungen
+          </button>
+        ) : null}
+        {!selectedPartner.is_system_default ? (
+          <button style={partnerTabButtonStyle(partnerTab === "billing")} onClick={() => setPartnerTab("billing")}>
+            Abrechnung
+          </button>
+        ) : null}
         <button style={partnerTabButtonStyle(partnerTab === "handover")} onClick={() => setPartnerTab("handover")}>Übergabe</button>
       </div>
       ) : null}
@@ -5921,7 +5940,38 @@ export default function AdminClient() {
                       {formatAreaStateLabel(row.mapping.is_active, row.mapping.activation_status, Boolean(row.mapping.is_public_live))}
                     </td>
                     <td style={tdStyle}>
-                      <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {selectedPartner?.is_system_default && !row.derivedFromOrtslagen ? (
+                          Boolean(row.mapping.is_public_live) ? (
+                            <button
+                              style={btnGhostStyle}
+                              disabled={busy || reviewBusy}
+                              onClick={() =>
+                                run("Gebiet offline nehmen", async () => {
+                                  await setAreaPublicationForArea(row.mapping.area_id, false);
+                                  await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
+                                  await loadPartnerDetails(selectedPartnerId);
+                                }, { showSuccessModal: false })
+                              }
+                            >
+                              Offline nehmen
+                            </button>
+                          ) : (
+                            <button
+                              style={btnStyle}
+                              disabled={busy || reviewBusy}
+                              onClick={() =>
+                                run("Gebiet direkt online schalten", async () => {
+                                  await setAreaPublicationForArea(row.mapping.area_id, true);
+                                  await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
+                                  await loadPartnerDetails(selectedPartnerId);
+                                }, { showSuccessModal: false })
+                              }
+                            >
+                              Direkt online (DE)
+                            </button>
+                          )
+                        ) : null}
                         <button
                           style={handoverLinkButtonStyle}
                           disabled={busy || !selectedPartner || row.derivedFromOrtslagen}

@@ -8,6 +8,7 @@ import { publishVisibilityIndex } from "@/lib/visibility-index";
 import { isMissingPublicLiveColumn } from "@/lib/public-partner-mappings";
 import { rebuildAllPublicAssetEntriesForPartner } from "@/lib/public-asset-projections";
 import { sendPartnerAreaLiveEmail } from "@/lib/notifications/admin-review-email";
+import { checkPartnerAreaMandatoryTexts } from "@/lib/partner-area-mandatory";
 
 function isMissingActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
@@ -194,8 +195,32 @@ export async function POST(
     if (!mapping) return NextResponse.json({ error: "Mapping not found" }, { status: 404 });
 
     const activationStatus = String((mapping as { activation_status?: string | null }).activation_status ?? "").trim().toLowerCase();
-    if (!(Boolean((mapping as { is_active?: boolean | null }).is_active) || activationStatus === "approved_preview" || activationStatus === "live" || activationStatus === "active")) {
-      return NextResponse.json({ error: "Gebiet ist noch nicht fuer Preview freigegeben." }, { status: 409 });
+    const isPreviewReady =
+      Boolean((mapping as { is_active?: boolean | null }).is_active)
+      || activationStatus === "approved_preview"
+      || activationStatus === "live"
+      || activationStatus === "active";
+    if (!isPreviewReady) {
+      if (!isSystemDefaultPartner) {
+        return NextResponse.json({ error: "Gebiet ist noch nicht fuer Preview freigegeben." }, { status: 409 });
+      }
+      const mandatoryCheck = await checkPartnerAreaMandatoryTexts({
+        admin,
+        partnerId,
+        areaId,
+        requireApprovedMedia: false,
+      });
+      if (!mandatoryCheck.ok) {
+        return NextResponse.json(
+          {
+            error: mandatoryCheck.error,
+            missing_keys: mandatoryCheck.missing ?? [],
+            scope: mandatoryCheck.scope,
+            gate: "INDIVIDUAL_MANDATORY",
+          },
+          { status: mandatoryCheck.status },
+        );
+      }
     }
     const previewSignoffAt = String((mapping as { partner_preview_signoff_at?: string | null }).partner_preview_signoff_at ?? "").trim();
     if (!previewSignoffAt && !isSystemDefaultPartner) {
