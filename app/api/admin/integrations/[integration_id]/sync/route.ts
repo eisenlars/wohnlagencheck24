@@ -8,11 +8,11 @@ import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { runCrmIntegrationSync, type CrmSyncResult } from "@/lib/integrations/crm-sync";
 import type { CrmSyncMode, CrmSyncResource, PartnerIntegration } from "@/lib/providers/types";
 
-export const maxDuration = 900;
+export const maxDuration = 300;
 
 const DEFAULT_SYNC_TIMEOUT_MS = 300_000;
 const MIN_SYNC_TIMEOUT_MS = 15_000;
-const MAX_SYNC_TIMEOUT_MS = maxDuration * 1000;
+const MAX_SYNC_TIMEOUT_MS = 300_000;
 const SYNC_STALE_HEARTBEAT_MS = 20_000;
 const SYNC_STALE_GRACE_MS = 15_000;
 const SYNC_ERROR_COOLDOWN_MS = 60_000;
