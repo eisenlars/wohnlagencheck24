@@ -1676,7 +1676,7 @@ async function fetchPropstackSearchProfilesDetailed(
   const base = integration.base_url?.trim() || "https://api.propstack.de/v1";
   const out: PropstackSearchProfile[] = [];
   const perPage = Math.max(1, Math.min(100, options?.perPage ?? 50));
-  const maxPages = Math.max(1, Math.min(20, options?.maxPages ?? 20));
+  const maxPages = Math.max(1, Math.min(200, options?.maxPages ?? 20));
   let page = 1;
   let requestsMade = 0;
   let pagesFetched = 0;
