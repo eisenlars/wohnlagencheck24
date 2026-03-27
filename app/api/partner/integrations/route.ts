@@ -5,6 +5,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
 import { validateIntegrationConfig } from "@/lib/integrations/providers";
+import { normalizeCrmIntegrationSettings } from "@/lib/integrations/settings";
 import { decryptIntegrationSecret, decryptLocalSiteToken } from "@/lib/security/secret-crypto";
 import { normalizeLlmRuntimeMode } from "@/lib/llm/mode";
 import { loadPartnerLlmPolicy } from "@/lib/llm/partner-policy";
@@ -46,6 +47,10 @@ function isMissingOnConflictConstraint(error: { message?: string; code?: string 
 
 function normalizeSettings(kind: string, provider: string, settings: Record<string, unknown> | null | undefined) {
   if (!settings || typeof settings !== "object") return null;
+  if (kind === "crm") {
+    const normalized = normalizeCrmIntegrationSettings(settings);
+    return normalized.ok ? normalized.value : normalized;
+  }
   if (kind !== "llm") return settings;
 
   const model = norm(settings.model) ?? norm(settings.model_name);

@@ -6,6 +6,7 @@ import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
 import { validateIntegrationConfig } from "@/lib/integrations/providers";
+import { normalizeCrmIntegrationSettings } from "@/lib/integrations/settings";
 
 type IntegrationBody = {
   kind?: string;
@@ -125,6 +126,14 @@ export async function POST(
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
+    const normalizedSettings =
+      kind === "crm"
+        ? normalizeCrmIntegrationSettings(body.settings ?? null)
+        : { ok: true as const, value: body.settings ?? null };
+    if (!normalizedSettings.ok) {
+      return NextResponse.json({ error: normalizedSettings.error }, { status: 400 });
+    }
+
     const payload = {
       partner_id: partnerId,
       kind,
@@ -133,7 +142,7 @@ export async function POST(
       auth_type: validation.authType,
       detail_url_template: norm(body.detail_url_template),
       is_active: body.is_active === false ? false : true,
-      settings: body.settings ?? null,
+      settings: normalizedSettings.value,
     };
 
     let data: Record<string, unknown> | null = null;

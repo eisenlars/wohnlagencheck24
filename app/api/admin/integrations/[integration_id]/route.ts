@@ -6,6 +6,7 @@ import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
 import { validateIntegrationConfig } from "@/lib/integrations/providers";
+import { normalizeCrmIntegrationSettings } from "@/lib/integrations/settings";
 
 type UpdateIntegrationBody = {
   provider?: string;
@@ -92,12 +93,6 @@ export async function PATCH(
     if (body.auth_type !== undefined) patch.auth_type = norm(body.auth_type)?.toLowerCase() ?? null;
     if (body.detail_url_template !== undefined) patch.detail_url_template = norm(body.detail_url_template);
     if (body.is_active !== undefined) patch.is_active = Boolean(body.is_active);
-    if (body.settings !== undefined) patch.settings = body.settings ?? null;
-
-    if (Object.keys(patch).length === 0) {
-      return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
-    }
-
     const admin = createAdminClient();
     const { data: existing, error: existingError } = await admin
       .from("partner_integrations")
@@ -131,6 +126,21 @@ export async function PATCH(
     patch.provider = validation.provider;
     patch.auth_type = validation.authType;
     patch.base_url = validation.baseUrl;
+
+    if (body.settings !== undefined) {
+      const normalizedSettings =
+        nextKind === "crm"
+          ? normalizeCrmIntegrationSettings(body.settings ?? null)
+          : { ok: true as const, value: body.settings ?? null };
+      if (!normalizedSettings.ok) {
+        return NextResponse.json({ error: normalizedSettings.error }, { status: 400 });
+      }
+      patch.settings = normalizedSettings.value;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json({ error: "No update fields provided" }, { status: 400 });
+    }
 
     const { data, error } = await admin
       .from("partner_integrations")

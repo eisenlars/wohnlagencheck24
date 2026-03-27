@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import { readRequestFreshnessSettings } from "@/lib/integrations/settings";
 import { rebuildAllPublicAssetEntriesForPartner } from "@/lib/public-asset-projections";
 import { syncIntegrationResources } from "@/lib/providers";
 import type {
@@ -38,6 +39,15 @@ export type CrmSyncResult = {
 
 function readBoolean(value: unknown): boolean | null {
   return typeof value === "boolean" ? value : null;
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function asText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function shouldSyncCapability(
@@ -161,6 +171,61 @@ async function upsertRawResource(
   if (error) throw new Error(`${table} upsert failed: ${error.message}`);
 }
 
+function sanitizeCanonicalRequestPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const sanitized = { ...payload };
+  delete sanitized.note;
+  return sanitized;
+}
+
+function getRequestFreshnessType(row: RawRequest): "kauf" | "miete" {
+  const payload = asObject(row.normalized_payload);
+  return asText(payload.request_type).toLowerCase() === "miete" ? "miete" : "kauf";
+}
+
+function parseIsoTimestamp(value: string | null | undefined): number | null {
+  if (!value) return null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function filterFreshRequests(
+  requests: RawRequest[],
+  settings: Record<string, unknown> | null,
+): { rows: RawRequest[]; filtered: number; basis: "source_updated_at" | "last_seen_at" | null } {
+  const freshness = readRequestFreshnessSettings(settings);
+  if (!freshness?.enabled) {
+    return { rows: requests, filtered: 0, basis: null };
+  }
+
+  const nowMs = Date.now();
+  const filteredRows = requests.filter((row) => {
+    const requestType = getRequestFreshnessType(row);
+    const maxAgeDays =
+      requestType === "miete" ? freshness.max_age_days_rent : freshness.max_age_days_buy;
+    if (maxAgeDays === null) return true;
+
+    const primaryTimestamp =
+      freshness.basis === "last_seen_at"
+        ? parseIsoTimestamp(row.last_seen_at)
+        : parseIsoTimestamp(row.source_updated_at);
+    const fallbackTimestamp =
+      freshness.fallback_to_last_seen && freshness.basis === "source_updated_at"
+        ? parseIsoTimestamp(row.last_seen_at)
+        : null;
+    const effectiveTimestamp = primaryTimestamp ?? fallbackTimestamp;
+    if (effectiveTimestamp === null) return true;
+
+    const ageMs = nowMs - effectiveTimestamp;
+    return ageMs <= maxAgeDays * 24 * 60 * 60 * 1000;
+  });
+
+  return {
+    rows: filteredRows,
+    filtered: Math.max(0, requests.length - filteredRows.length),
+    basis: freshness.basis,
+  };
+}
+
 function toCanonicalReference(raw: RawReference): CanonicalReference {
   return {
     partner_id: raw.partner_id,
@@ -185,6 +250,7 @@ function toCanonicalReference(raw: RawReference): CanonicalReference {
 }
 
 function toCanonicalRequest(raw: RawRequest): CanonicalRequest {
+  const sanitizedPayload = sanitizeCanonicalRequestPayload(asObject(raw.normalized_payload));
   return {
     partner_id: raw.partner_id,
     provider: raw.provider,
@@ -193,7 +259,7 @@ function toCanonicalRequest(raw: RawRequest): CanonicalRequest {
     title: raw.title,
     status: raw.status,
     source_updated_at: raw.source_updated_at,
-    normalized_payload: raw.normalized_payload,
+    normalized_payload: sanitizedPayload,
     source_payload: raw.source_payload,
     is_active: raw.is_active,
     sync_status: raw.sync_status,
@@ -201,7 +267,7 @@ function toCanonicalRequest(raw: RawRequest): CanonicalRequest {
     updated_at: raw.updated_at,
     lifecycle_status: raw.is_active ? "active" : "stale",
     is_live: raw.is_active,
-    canonical_payload: raw.normalized_payload,
+    canonical_payload: sanitizedPayload,
     owner_account_id: raw.partner_id,
     publisher_account_id: raw.partner_id,
   };
@@ -401,6 +467,17 @@ export async function runCrmIntegrationSync(
   );
   const partialSyncMode = diagnostics?.partial_sync_mode === true;
   const allowDeactivate = diagnostics?.stale_deactivation_allowed !== false;
+  const mergedNotes: string[] = [];
+  if (notes?.length) mergedNotes.push(...notes);
+  if (partialSyncMode) {
+    mergedNotes.push("guarded partial sync active: stale deactivation skipped");
+  }
+  if (syncReferences && !referencesFetched) {
+    mergedNotes.push("references capability enabled, but live reference data unavailable");
+  }
+  if (syncRequests && !requestsFetched) {
+    mergedNotes.push("requests capability enabled, but live request data unavailable");
+  }
 
   let listingsCount = 0;
   let deactivatedListings = 0;
@@ -445,6 +522,13 @@ export async function runCrmIntegrationSync(
 
   let requestsCount = 0;
   if (syncRequests && (requestsFetched || requests.length > 0)) {
+    const freshness = filterFreshRequests(requests, integration.settings);
+    const activeRequests = freshness.rows;
+    if (freshness.filtered > 0) {
+      mergedNotes.push(
+        `request freshness filter: ${freshness.filtered} Gesuche via ${freshness.basis ?? "source_updated_at"} ausgeschlossen`,
+      );
+    }
     await hooks?.assertCanContinue?.();
     await hooks?.onProgress?.("upsert_requests_raw", "Gesuch-Rohdaten werden gespeichert.");
     await syncRawResourceLayer(
@@ -452,7 +536,7 @@ export async function runCrmIntegrationSync(
       "crm_raw_requests",
       integration.partner_id,
       integration.provider,
-      requests as unknown as Array<Record<string, unknown>>,
+      activeRequests as unknown as Array<Record<string, unknown>>,
       { allowDeactivate },
     );
     await hooks?.assertCanContinue?.();
@@ -461,7 +545,7 @@ export async function runCrmIntegrationSync(
       supabase,
       integration.partner_id,
       integration.provider,
-      requests.map(toCanonicalRequest),
+      activeRequests.map(toCanonicalRequest),
       { allowDeactivate },
     );
     requestsCount = layer.count;
@@ -488,18 +572,6 @@ export async function runCrmIntegrationSync(
     );
   } else if (syncListings) {
     await hooks?.onProgress?.("skip_stale_deactivation", "Stale-Deaktivierung im Guarded-Modus uebersprungen.");
-  }
-
-  const mergedNotes: string[] = [];
-  if (notes?.length) mergedNotes.push(...notes);
-  if (partialSyncMode) {
-    mergedNotes.push("guarded partial sync active: stale deactivation skipped");
-  }
-  if (syncReferences && !referencesFetched) {
-    mergedNotes.push("references capability enabled, but live reference data unavailable");
-  }
-  if (syncRequests && !requestsFetched) {
-    mergedNotes.push("requests capability enabled, but live request data unavailable");
   }
 
   await hooks?.assertCanContinue?.();

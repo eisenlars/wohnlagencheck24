@@ -207,6 +207,38 @@ type PropstackClassification = {
   legacyObjectType: "haus" | "wohnung";
 };
 
+const PROPSTACK_REFERENCE_APARTMENT_HINTS = [
+  "WOHNUNG",
+  "EIGENTUMSWOHNUNG",
+  "APARTMENT",
+  "PENTHOUSE",
+  "MAISONETTE",
+  "DACHGESCHOSSWOHNUNG",
+  "DACHGESCHOSS",
+  "ETAGENWOHNUNG",
+  "ERDGESCHOSSWOHNUNG",
+  "HOCHPARTERRE",
+  "SOUTERRAIN",
+  "TERRASSENWOHNUNG",
+  "LOFT",
+];
+
+const PROPSTACK_REFERENCE_HOUSE_HINTS = [
+  "EINFAMILIENHAUS",
+  "DOPPELHAUSHAELFTE",
+  "DOPPELHAUSHÄLFTE",
+  "REIHENHAUS",
+  "REIHENENDHAUS",
+  "REIHENECKHAUS",
+  "REIHENMITTELHAUS",
+  "BUNGALOW",
+  "VILLA",
+  "STADTHAUS",
+  "FERIENHAUS",
+  "LANDHAUS",
+  "TOWNHOUSE",
+];
+
 const PROVIDER_FETCH_TIMEOUT_MS = 12000;
 
 type PropstackFetchBatchResult<T> = {
@@ -429,8 +461,39 @@ function classifyPropstackUnit(
   };
 }
 
-function normalizeObjectType(unit: Pick<PropstackUnit, "object_type" | "rs_type" | "rs_category" | "recommended_use_types">): string {
-  return classifyPropstackUnit(unit).objectType;
+function containsPropstackHint(text: string, hints: string[]): boolean {
+  return hints.some((hint) => text.includes(hint));
+}
+
+function classifyPropstackReference(
+  unit: Pick<PropstackUnit, "object_type" | "rs_type" | "rs_category" | "recommended_use_types">,
+  sourceTitle: string | null,
+  sourceDescription: string | null,
+): PropstackClassification {
+  const base = classifyPropstackUnit(unit);
+  if (base.usageType === "wohnen" || base.usageType === "grundstueck") return base;
+
+  const textSignals = [sourceTitle, sourceDescription]
+    .map((value) => String(value ?? "").trim().toUpperCase())
+    .filter(Boolean)
+    .join(" ");
+
+  if (!textSignals) return base;
+  if (containsPropstackHint(textSignals, PROPSTACK_REFERENCE_APARTMENT_HINTS)) {
+    return {
+      usageType: "wohnen",
+      objectType: "wohnung",
+      legacyObjectType: "wohnung",
+    };
+  }
+  if (containsPropstackHint(textSignals, PROPSTACK_REFERENCE_HOUSE_HINTS)) {
+    return {
+      usageType: "wohnen",
+      objectType: "haus",
+      legacyObjectType: "haus",
+    };
+  }
+  return base;
 }
 
 function normalizePropstackOfferType(
@@ -1097,6 +1160,7 @@ function mapUnitReference(
   const district = buildDistrict(unit);
   const locationLabel = district ? `${city} ${district}` : city || "der Region";
   const status = getEffectivePropstackStatus(unit);
+  const classification = classifyPropstackReference(unit, sourceTitle, sourceDescription);
   const normalizedPayload: Record<string, unknown> = {
     title: sourceTitle,
     source_title: sourceTitle,
@@ -1107,7 +1171,7 @@ function mapUnitReference(
     location_scope: district ? "stadtteil" : "stadt",
     location: locationLabel,
     offer_type: normalizePropstackOfferType(unit),
-    object_type: normalizeObjectType(unit),
+    object_type: classification.objectType,
     area_sqm: normalizePropstackArea(unit),
     rooms: normalizePropstackNumber(unit.number_of_rooms),
     reference_text_seed: sourceDescription,
