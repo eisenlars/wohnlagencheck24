@@ -5661,7 +5661,7 @@ export default function AdminClient() {
             style={partnerTabButtonStyle(partnerTab === "integrations")}
             onClick={() => {
               setPartnerTab("integrations");
-              setIntegrationsAdminTab("llm_partner");
+              setIntegrationsAdminTab("overview");
             }}
           >
             Anbindungen
