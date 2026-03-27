@@ -122,6 +122,8 @@ type PropstackPropertyStatus = {
 
 type PropstackSearchProfile = {
   id?: number | string;
+  created_at?: string | null;
+  broker_id?: number | string | null;
   title?: string | null;
   name?: string | null;
   query_title?: string | null;
@@ -129,13 +131,51 @@ type PropstackSearchProfile = {
   active?: boolean | null;
   request_type?: string | null;
   marketing_type?: string | null;
+  lat?: number | string | null;
+  lng?: number | string | null;
+  radius?: number | string | null;
   category?: string | null;
   rs_types?: string[] | null;
+  rs_categories?: string[] | null;
+  property_status_ids?: Array<number | string> | null;
+  location_ids?: Array<number | string> | null;
+  group_ids?: Array<number | string> | null;
+  note?: string | null;
   min_rooms?: number | null;
   number_of_rooms?: number | null;
   number_of_rooms_from?: number | null;
+  number_of_rooms_to?: number | null;
   max_price?: number | null;
+  price?: number | null;
   price_to?: number | null;
+  base_rent?: number | null;
+  base_rent_to?: number | null;
+  total_rent?: number | null;
+  total_rent_to?: number | null;
+  living_space?: number | null;
+  living_space_to?: number | null;
+  plot_area?: number | null;
+  plot_area_to?: number | null;
+  number_of_bedrooms?: number | string | null;
+  number_of_bedrooms_to?: number | string | null;
+  number_of_bed_rooms?: number | string | null;
+  number_of_bed_rooms_to?: number | string | null;
+  floor?: number | string | null;
+  floor_to?: number | string | null;
+  construction_year?: number | string | null;
+  construction_year_to?: number | string | null;
+  condition?: string | null;
+  lift?: string | boolean | null;
+  balcony?: string | boolean | null;
+  garden?: string | boolean | null;
+  built_in_kitchen?: string | boolean | null;
+  cellar?: string | boolean | null;
+  rented?: string | boolean | null;
+  recommended_use_types?: string[] | null;
+  site_development_type?: string | null;
+  building_permission?: string | boolean | null;
+  preliminary_enquiry?: string | boolean | null;
+  short_term_constructible?: string | boolean | null;
   city?: string | null;
   cities?: string[] | null;
   region?: string | null;
@@ -719,6 +759,117 @@ function requestTypeFromProfile(profile: PropstackSearchProfile): "kauf" | "miet
   return "kauf";
 }
 
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => String(entry ?? "").trim())
+    .filter(Boolean);
+}
+
+function normalizeSearchProfileBoolean(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  const text = String(value ?? "").trim().toLowerCase();
+  if (!text) return null;
+  if (["true", "1", "yes", "ja"].includes(text)) return true;
+  if (["false", "0", "no", "nein"].includes(text)) return false;
+  return null;
+}
+
+function normalizeSearchProfileIdArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => String(entry ?? "").trim())
+    .filter(Boolean);
+}
+
+function normalizeSearchProfileRoomsMin(profile: PropstackSearchProfile): number | null {
+  return asNumber(profile.min_rooms)
+    ?? asNumber(profile.number_of_rooms)
+    ?? asNumber(profile.number_of_rooms_from);
+}
+
+function normalizeSearchProfileRoomsMax(profile: PropstackSearchProfile): number | null {
+  return asNumber(profile.number_of_rooms_to);
+}
+
+function normalizeSearchProfileBudgetMax(profile: PropstackSearchProfile): number | null {
+  if (requestTypeFromProfile(profile) === "miete") {
+    return asNumber(profile.base_rent_to)
+      ?? asNumber(profile.total_rent_to)
+      ?? asNumber(profile.base_rent)
+      ?? asNumber(profile.total_rent);
+  }
+  return asNumber(profile.max_price)
+    ?? asNumber(profile.price_to)
+    ?? asNumber(profile.price);
+}
+
+function normalizeSearchProfileBudgetMin(profile: PropstackSearchProfile): number | null {
+  if (requestTypeFromProfile(profile) === "miete") {
+    return asNumber(profile.base_rent)
+      ?? asNumber(profile.total_rent);
+  }
+  return asNumber(profile.price);
+}
+
+function classifyPropstackSearchProfile(profile: Pick<PropstackSearchProfile, "rs_types" | "rs_categories" | "recommended_use_types" | "category">): PropstackClassification {
+  const combined = [
+    profile.category,
+    ...normalizeStringArray(profile.rs_types),
+    ...normalizeStringArray(profile.rs_categories),
+    ...normalizeStringArray(profile.recommended_use_types),
+  ]
+    .map((value) => value.toUpperCase())
+    .filter(Boolean)
+    .join(" ");
+
+  return classifyPropstackUnit({
+    object_type: null,
+    rs_type: combined,
+    rs_category: combined,
+    recommended_use_types: null,
+  });
+}
+
+function buildSearchProfileRegionTargets(profile: PropstackSearchProfile): Array<RegionTarget & { kind: "city" | "region" }> {
+  const seen = new Set<string>();
+  const out: Array<RegionTarget & { kind: "city" | "region" }> = [];
+  const add = (target: RegionTarget | null, kind: "city" | "region") => {
+    if (!target) return;
+    const key = `${kind}:${target.key}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ ...target, kind });
+  };
+
+  const cities = normalizeStringArray(profile.cities);
+  const regions = normalizeStringArray(profile.regions);
+
+  for (const city of cities) add(toRegionTarget(city, null), "city");
+  if (cities.length === 0) {
+    for (const region of regions) add(toRegionTarget(region, null), "region");
+  }
+
+  return out;
+}
+
+function buildSearchProfileTitle(
+  profile: PropstackSearchProfile,
+  requestType: "kauf" | "miete",
+  classification: PropstackClassification,
+  targets: Array<RegionTarget & { kind: "city" | "region" }>,
+): string {
+  const explicitTitle = firstString([profile.title, profile.query_title, profile.name]);
+  if (explicitTitle) return explicitTitle;
+
+  const typeLabel = requestType === "miete" ? "Mietgesuch" : "Kaufgesuch";
+  const objectLabel = classification.objectType ? ` ${classification.objectType}` : "";
+  const targetLabel = targets.length > 0
+    ? ` in ${targets.slice(0, 3).map((target) => target.label).join(", ")}`
+    : "";
+  return `${typeLabel}${objectLabel}${targetLabel}`.trim();
+}
+
 function firstString(values: Array<unknown>): string | null {
   for (const value of values) {
     const asString = String(value ?? "").trim();
@@ -881,45 +1032,6 @@ function toRegionTarget(cityRaw: string, districtRaw?: string | null): RegionTar
   return { city, district, label, key };
 }
 
-function parseRegionTargetsFromHint(hint: unknown, fallbackCity?: string | null): RegionTarget[] {
-  const raw = String(hint ?? "").trim();
-  const out: RegionTarget[] = [];
-  const seen = new Set<string>();
-
-  const add = (target: RegionTarget | null) => {
-    if (!target) return;
-    if (seen.has(target.key)) return;
-    seen.add(target.key);
-    out.push(target);
-  };
-
-  if (raw) {
-    const normalized = raw
-      .replace(/\boder\b/gi, ",")
-      .replace(/\bund\b/gi, ",")
-      .replace(/\//g, ",")
-      .replace(/\s{2,}/g, " ");
-    const parts = normalized
-      .split(",")
-      .map((v) => v.trim())
-      .filter(Boolean);
-    for (const part of parts) {
-      const tokens = part.split(/\s+/).filter(Boolean);
-      if (tokens.length >= 2) {
-        add(toRegionTarget(tokens[0], tokens.slice(1).join(" ")));
-      } else {
-        const fallback = String(fallbackCity ?? "").trim();
-        if (fallback && fallback.toLowerCase() !== part.toLowerCase()) add(toRegionTarget(fallback, part));
-        else add(toRegionTarget(part, null));
-      }
-    }
-  }
-
-  const fallback = String(fallbackCity ?? "").trim();
-  if (out.length === 0 && fallback) add(toRegionTarget(fallback, null));
-  return out;
-}
-
 function normalizeUnitOffer(
   partnerId: string,
   integration: PartnerIntegration,
@@ -1023,41 +1135,87 @@ function mapSearchProfileRequest(
   partnerId: string,
   profile: PropstackSearchProfile,
 ): RawRequest {
-  const city = firstString([profile.city, profile.cities?.[0]]);
-  const region = firstString([profile.region, profile.regions?.[0]]);
-  const regionHint = [
-    ...(Array.isArray(profile.cities) ? profile.cities : []),
-    ...(Array.isArray(profile.regions) ? profile.regions : []),
-    profile.region ?? "",
-  ]
-    .map((v) => String(v ?? "").trim())
-    .filter(Boolean)
-    .join(", ");
-  const targets = parseRegionTargetsFromHint(regionHint || region, city);
-  const objectType = firstString([
-    profile.category,
-    Array.isArray(profile.rs_types) ? profile.rs_types[0] : null,
-  ]);
-  const minRooms = asNumber(profile.min_rooms) ?? asNumber(profile.number_of_rooms) ?? asNumber(profile.number_of_rooms_from);
-  const maxPrice = asNumber(profile.max_price) ?? asNumber(profile.price_to);
-  const title = firstString([profile.title, profile.query_title, profile.name]) ?? `Gesuch ${String(profile.id ?? "")}`.trim();
+  const cities = normalizeStringArray(profile.cities);
+  const regions = normalizeStringArray(profile.regions);
+  const rsTypes = normalizeStringArray(profile.rs_types);
+  const rsCategories = normalizeStringArray(profile.rs_categories);
+  const recommendedUseTypes = normalizeStringArray(profile.recommended_use_types);
+  const targets = buildSearchProfileRegionTargets(profile);
+  const classification = classifyPropstackSearchProfile(profile);
+  const requestType = requestTypeFromProfile(profile);
+  const minRooms = normalizeSearchProfileRoomsMin(profile);
+  const maxRooms = normalizeSearchProfileRoomsMax(profile);
+  const minBudget = normalizeSearchProfileBudgetMin(profile);
+  const maxBudget = normalizeSearchProfileBudgetMax(profile);
+  const minLivingArea = asNumber(profile.living_space);
+  const maxLivingArea = asNumber(profile.living_space_to);
+  const minPlotArea = asNumber(profile.plot_area);
+  const maxPlotArea = asNumber(profile.plot_area_to);
+  const minBedrooms = asNumber(profile.number_of_bedrooms) ?? asNumber(profile.number_of_bed_rooms);
+  const maxBedrooms = asNumber(profile.number_of_bedrooms_to) ?? asNumber(profile.number_of_bed_rooms_to);
+  const city = firstString([profile.city, cities[0]]);
+  const region = firstString([profile.region, regions[0]]);
+  const title = buildSearchProfileTitle(profile, requestType, classification, targets);
   const normalizedPayload: Record<string, unknown> = {
     title,
-    request_type: requestTypeFromProfile(profile),
-    object_type: objectType ? objectType.toLowerCase() : null,
+    request_type: requestType,
+    usage_type: classification.usageType,
+    object_type: classification.objectType,
+    legacy_object_type: classification.legacyObjectType,
+    object_type_detail: firstString([rsCategories[0], rsTypes[0], profile.category])?.toLowerCase() ?? null,
     min_rooms: minRooms,
-    max_price: maxPrice,
+    max_rooms: maxRooms,
+    min_price: minBudget,
+    max_price: maxBudget,
+    min_living_area_sqm: minLivingArea,
+    max_living_area_sqm: maxLivingArea,
+    min_plot_area_sqm: minPlotArea,
+    max_plot_area_sqm: maxPlotArea,
+    min_bedrooms: minBedrooms,
+    max_bedrooms: maxBedrooms,
     city,
     region,
     region_targets: targets.map((target) => ({
       city: target.city,
       district: target.district,
       label: target.label,
+      kind: target.kind,
     })),
     region_target_keys: targets.map((target) => target.key),
+    search_locations: [
+      ...cities.map((entry) => ({ kind: "city", label: entry })),
+      ...regions.map((entry) => ({ kind: "region", label: entry })),
+    ],
+    cities,
+    regions,
     client_id: profile.client_id ?? null,
     status: profile.status ?? null,
     active: profile.active ?? null,
+    note: profile.note ?? null,
+    lat: asNumber(profile.lat),
+    lng: asNumber(profile.lng),
+    radius_m: asNumber(profile.radius),
+    rs_types: rsTypes,
+    rs_categories: rsCategories,
+    recommended_use_types: recommendedUseTypes,
+    property_status_ids: normalizeSearchProfileIdArray(profile.property_status_ids),
+    location_ids: normalizeSearchProfileIdArray(profile.location_ids),
+    group_ids: normalizeSearchProfileIdArray(profile.group_ids),
+    floor_from: asNumber(profile.floor),
+    floor_to: asNumber(profile.floor_to),
+    construction_year_from: asNumber(profile.construction_year),
+    construction_year_to: asNumber(profile.construction_year_to),
+    condition: profile.condition ?? null,
+    lift: normalizeSearchProfileBoolean(profile.lift),
+    balcony: normalizeSearchProfileBoolean(profile.balcony),
+    garden: normalizeSearchProfileBoolean(profile.garden),
+    built_in_kitchen: normalizeSearchProfileBoolean(profile.built_in_kitchen),
+    cellar: normalizeSearchProfileBoolean(profile.cellar),
+    rented: normalizeSearchProfileBoolean(profile.rented),
+    short_term_constructible: normalizeSearchProfileBoolean(profile.short_term_constructible),
+    building_permission: normalizeSearchProfileBoolean(profile.building_permission),
+    preliminary_enquiry: normalizeSearchProfileBoolean(profile.preliminary_enquiry),
+    site_development_type: profile.site_development_type ?? null,
   };
   return makeRawRowBase(
     partnerId,
