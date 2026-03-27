@@ -6314,12 +6314,22 @@ export default function AdminClient() {
                 ) : null}
                 {displayAreaRows.map((row) => (
                   <tr key={row.key}>
+                    {(() => {
+                      const rowIsLive =
+                        normalizeActivationStatus(
+                          row.mapping.activation_status,
+                          row.mapping.is_active,
+                          Boolean(row.mapping.is_public_live),
+                        ) === "live";
+                      const rowLiveHref = buildLiveHrefFromArea(row.mapping.areas ?? null, row.mapping.area_id);
+                      return (
+                  <>
                     <td style={tdStyle}>
                       <div>{resolveAreaName(row.mapping, row.displayKreisId)}</div>
-                      {selectedPartner?.is_system_default && Boolean(row.mapping.is_public_live) && buildLiveHrefFromArea(row.mapping.areas ?? null, row.mapping.area_id) ? (
+                      {selectedPartner?.is_system_default && rowIsLive && rowLiveHref ? (
                         <div style={{ marginTop: 4 }}>
                           <a
-                            href={buildLiveHrefFromArea(row.mapping.areas ?? null, row.mapping.area_id) ?? "#"}
+                            href={rowLiveHref}
                             target="_blank"
                             rel="noreferrer"
                             style={{ color: "#0f766e", textDecoration: "underline", fontSize: 12, fontWeight: 700 }}
@@ -6336,7 +6346,7 @@ export default function AdminClient() {
                     <td style={tdStyle}>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         {selectedPartner?.is_system_default && !row.derivedFromOrtslagen ? (
-                          Boolean(row.mapping.is_public_live) ? (
+                          rowIsLive ? (
                             <>
                               <button
                                 style={btnGhostStyle}
@@ -6349,9 +6359,9 @@ export default function AdminClient() {
                               >
                                 Offline nehmen
                               </button>
-                              {buildLiveHrefFromArea(row.mapping.areas ?? null, row.mapping.area_id) ? (
+                              {rowLiveHref ? (
                                 <a
-                                  href={buildLiveHrefFromArea(row.mapping.areas ?? null, row.mapping.area_id) ?? "#"}
+                                  href={rowLiveHref}
                                   target="_blank"
                                   rel="noreferrer"
                                   style={handoverLinkButtonStyle}
@@ -6394,6 +6404,9 @@ export default function AdminClient() {
                         </button>
                       </div>
                     </td>
+                  </>
+                      );
+                    })()}
                   </tr>
                 ))}
               </tbody>
