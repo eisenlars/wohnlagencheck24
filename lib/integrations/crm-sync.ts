@@ -10,6 +10,8 @@ type CrmSyncHooks = {
   assertCanContinue?: () => Promise<void>;
 };
 
+const FETCH_RESOURCES_HEARTBEAT_MS = 5_000;
+
 export type CrmSyncResult = {
   partner_id: string;
   provider: string;
@@ -39,6 +41,50 @@ function shouldSyncCapability(
   if (!caps || typeof caps !== "object") return true;
   const value = readBoolean((caps as Record<string, unknown>)[capability]);
   return value ?? true;
+}
+
+async function withProgressKeepalive<T>(
+  run: () => Promise<T>,
+  intervalMs: number,
+  onTick?: () => Promise<void>,
+): Promise<T> {
+  if (!onTick) return run();
+
+  let timer: ReturnType<typeof setInterval> | null = null;
+  let tickRunning = false;
+  let finished = false;
+  let rejectHeartbeat: ((reason?: unknown) => void) | null = null;
+
+  const heartbeatFailure = new Promise<never>((_, reject) => {
+    rejectHeartbeat = reject;
+  });
+
+  const tick = async () => {
+    if (finished || tickRunning) return;
+    tickRunning = true;
+    try {
+      await onTick();
+    } catch (error) {
+      if (!finished) {
+        finished = true;
+        if (timer) clearInterval(timer);
+        rejectHeartbeat?.(error);
+      }
+    } finally {
+      tickRunning = false;
+    }
+  };
+
+  timer = setInterval(() => {
+    void tick();
+  }, intervalMs);
+
+  try {
+    return await Promise.race([run(), heartbeatFailure]);
+  } finally {
+    finished = true;
+    if (timer) clearInterval(timer);
+  }
 }
 
 async function deactivateMissingByExternalId(
@@ -204,7 +250,15 @@ export async function runCrmIntegrationSync(
   await hooks?.assertCanContinue?.();
   await hooks?.onProgress?.("fetch_resources", "CRM-Daten werden vom Anbieter geladen.");
   const { offers, listings, references, requests, referencesFetched, requestsFetched, notes, diagnostics } =
-    await syncIntegrationResources(integration);
+    await withProgressKeepalive(
+      () => syncIntegrationResources(integration),
+      FETCH_RESOURCES_HEARTBEAT_MS,
+      hooks?.onProgress
+        ? async () => {
+            await hooks.onProgress?.("fetch_resources", "CRM-Daten werden vom Anbieter geladen.");
+          }
+        : undefined,
+    );
   await hooks?.assertCanContinue?.();
   await hooks?.onProgress?.(
     "resources_fetched",
