@@ -819,8 +819,8 @@ function classifyPropstackSearchProfile(profile: Pick<PropstackSearchProfile, "r
     ...normalizeStringArray(profile.rs_categories),
     ...normalizeStringArray(profile.recommended_use_types),
   ]
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
     .map((value) => value.toUpperCase())
-    .filter(Boolean)
     .join(" ");
 
   return classifyPropstackUnit({
