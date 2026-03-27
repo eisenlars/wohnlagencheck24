@@ -57,6 +57,8 @@ export async function GET(req: Request) {
       results.push({
         partner_id: integration.partner_id,
         provider: integration.provider,
+        resource: "all",
+        mode: "full",
         listings_count: 0,
         references_count: 0,
         requests_count: 0,

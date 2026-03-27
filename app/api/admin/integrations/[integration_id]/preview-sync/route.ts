@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
+import { normalizeCrmSyncSelection } from "@/lib/integrations/settings";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { syncIntegrationResources } from "@/lib/providers";
-import type { PartnerIntegration } from "@/lib/providers/types";
+import type { CrmSyncResource, PartnerIntegration } from "@/lib/providers/types";
 
 type IntegrationStepLogEntry = {
   at: string;
@@ -25,6 +26,38 @@ function asObject(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+function readPreviewRuntime(settings: Record<string, unknown>, resource: Exclude<CrmSyncResource, "all"> | "all") {
+  if (resource === "all") return settings;
+  return asObject(asObject(settings.preview_resources)[resource]);
+}
+
+function writePreviewRuntime(
+  settings: Record<string, unknown>,
+  resource: Exclude<CrmSyncResource, "all"> | "all",
+  patch: Record<string, unknown>,
+) {
+  const nextSettings: Record<string, unknown> = {
+    ...settings,
+    ...patch,
+  };
+  if (resource !== "all") {
+    const previews = { ...asObject(settings.preview_resources) };
+    previews[resource] = {
+      ...asObject(previews[resource]),
+      ...patch,
+    };
+    nextSettings.preview_resources = previews;
+  }
+  return nextSettings;
+}
+
+function formatPreviewResourceLabel(resource: Exclude<CrmSyncResource, "all"> | "all"): string {
+  if (resource === "offers") return "Angebote";
+  if (resource === "references") return "Referenzen";
+  if (resource === "requests") return "Gesuche";
+  return "CRM";
+}
+
 function appendIntegrationLog(
   value: unknown,
   entry: IntegrationStepLogEntry,
@@ -39,13 +72,11 @@ function appendIntegrationLog(
 async function patchIntegrationSettings(
   admin: ReturnType<typeof createAdminClient>,
   integration: PartnerIntegration,
+  resource: Exclude<CrmSyncResource, "all"> | "all",
   patch: Record<string, unknown>,
 ) {
   const prev = asObject(integration.settings);
-  const nextSettings: Record<string, unknown> = {
-    ...prev,
-    ...patch,
-  };
+  const nextSettings = writePreviewRuntime(prev, resource, patch);
   const { error } = await admin
     .from("partner_integrations")
     .update({ settings: nextSettings })
@@ -78,6 +109,7 @@ function buildPreviewDiagnostics(
 async function persistPreviewResult(
   admin: ReturnType<typeof createAdminClient>,
   integration: PartnerIntegration,
+  resource: Exclude<CrmSyncResource, "all"> | "all",
   status: "ok" | "warning" | "error",
   message: string,
   diagnostics: Record<string, unknown>,
@@ -85,8 +117,7 @@ async function persistPreviewResult(
 ) {
   const prev = asObject(integration.settings);
   const finishedAt = new Date().toISOString();
-  const nextSettings: Record<string, unknown> = {
-    ...prev,
+  const nextSettings = writePreviewRuntime(prev, resource, {
     last_previewed_at: finishedAt,
     last_preview_status: status,
     last_preview_message: message.slice(0, 300),
@@ -100,13 +131,13 @@ async function persistPreviewResult(
     last_preview_max_requests: diagnostics.max_requests ?? PREVIEW_MAX_REQUESTS,
     last_preview_max_pages: diagnostics.max_pages ?? PREVIEW_MAX_PAGES,
     last_preview_finished_at: finishedAt,
-    last_preview_log: appendIntegrationLog(prev.last_preview_log, {
+    last_preview_log: appendIntegrationLog(readPreviewRuntime(prev, resource).last_preview_log, {
       at: finishedAt,
       step,
       status,
       message,
     }),
-  };
+  });
   const { error } = await admin
     .from("partner_integrations")
     .update({ settings: nextSettings })
@@ -160,6 +191,8 @@ export async function POST(
     if (!data) return NextResponse.json({ error: "Integration not found" }, { status: 404 });
 
     const integration = data as PartnerIntegration;
+    const body = await req.json().catch(() => null);
+    const resource = normalizeCrmSyncSelection(body).resource;
     const traceId = crypto.randomUUID();
     const startedAtMs = Date.now();
     let requestCount = 0;
@@ -180,7 +213,7 @@ export async function POST(
         pagesFetched,
         extraDiagnostics,
       );
-      await persistPreviewResult(admin, integration, status, message, diagnostics, step);
+      await persistPreviewResult(admin, integration, resource, status, message, diagnostics, step);
       await writeSecurityAuditLog({
         actorUserId: adminUser.userId,
         actorRole: adminUser.role,
@@ -191,6 +224,7 @@ export async function POST(
           action: "admin_preview_sync",
           integration_id: integration.id,
           provider: integration.provider,
+          resource,
           status,
           step,
           diagnostics,
@@ -210,8 +244,9 @@ export async function POST(
       );
     };
 
-    await patchIntegrationSettings(admin, integration, {
+    await patchIntegrationSettings(admin, integration, resource, {
       last_preview_trace_id: traceId,
+      last_preview_resource: resource,
       last_preview_step: "started",
       last_preview_started_at: new Date(startedAtMs).toISOString(),
       last_preview_finished_at: null,
@@ -222,11 +257,11 @@ export async function POST(
       last_preview_max_runtime_ms: PREVIEW_MAX_RUNTIME_MS,
       last_preview_max_requests: PREVIEW_MAX_REQUESTS,
       last_preview_max_pages: PREVIEW_MAX_PAGES,
-      last_preview_log: appendIntegrationLog(asObject(integration.settings).last_preview_log, {
+      last_preview_log: appendIntegrationLog(readPreviewRuntime(asObject(integration.settings), resource).last_preview_log, {
         at: new Date(startedAtMs).toISOString(),
         step: "started",
         status: "running",
-        message: "CRM-Abruf-Test gestartet.",
+        message: `${formatPreviewResourceLabel(resource)}-Abruf-Test gestartet.`,
       }),
     });
 
@@ -234,9 +269,9 @@ export async function POST(
       return NextResponse.json({ error: "Nur CRM-Anbindungen können geprüft werden." }, { status: 400 });
     }
 
-    await patchIntegrationSettings(admin, integration, {
+    await patchIntegrationSettings(admin, integration, resource, {
       last_preview_step: "integration_loaded",
-      last_preview_log: appendIntegrationLog(asObject(integration.settings).last_preview_log, {
+      last_preview_log: appendIntegrationLog(readPreviewRuntime(asObject(integration.settings), resource).last_preview_log, {
         at: new Date().toISOString(),
         step: "integration_loaded",
         status: "ok",
@@ -258,15 +293,15 @@ export async function POST(
 
     const isPropstack = String(integration.provider ?? "").toLowerCase() === "propstack";
     if (isPropstack) {
-      await patchIntegrationSettings(admin, integration, {
+      await patchIntegrationSettings(admin, integration, resource, {
         last_preview_step: "provider_request_started",
         last_preview_request_count: 0,
         last_preview_pages_fetched: 0,
-        last_preview_log: appendIntegrationLog(asObject(integration.settings).last_preview_log, {
+        last_preview_log: appendIntegrationLog(readPreviewRuntime(asObject(integration.settings), resource).last_preview_log, {
           at: new Date().toISOString(),
           step: "provider_request_started",
           status: "running",
-          message: "Propstack-Preview startet mit guardiertem Ressourcenlauf.",
+          message: `${formatPreviewResourceLabel(resource)}-Preview startet mit guardiertem Ressourcenlauf.`,
         }),
       });
     }
@@ -274,17 +309,17 @@ export async function POST(
     if (isPropstack) {
       try {
         const result = await withTimeout(
-          syncIntegrationResources(integration),
+          syncIntegrationResources(integration, { resource, mode: "guarded" }),
           PREVIEW_MAX_RUNTIME_MS,
           `CRM-Abrufbudget überschritten (max. ${PREVIEW_MAX_RUNTIME_MS}ms).`,
         );
         requestCount = result.diagnostics?.provider_request_count ?? 0;
         pagesFetched = result.diagnostics?.provider_pages_fetched ?? 0;
-        await patchIntegrationSettings(admin, integration, {
+        await patchIntegrationSettings(admin, integration, resource, {
           last_preview_step: "provider_request_finished",
           last_preview_request_count: requestCount,
           last_preview_pages_fetched: pagesFetched,
-          last_preview_log: appendIntegrationLog(asObject(integration.settings).last_preview_log, {
+          last_preview_log: appendIntegrationLog(readPreviewRuntime(asObject(integration.settings), resource).last_preview_log, {
             at: new Date().toISOString(),
             step: "provider_request_finished",
             status: "ok",
@@ -363,11 +398,11 @@ export async function POST(
       }
     }
 
-    await patchIntegrationSettings(admin, integration, {
+    await patchIntegrationSettings(admin, integration, resource, {
       last_preview_step: "provider_request_started",
       last_preview_request_count: PREVIEW_MAX_REQUESTS,
       last_preview_pages_fetched: PREVIEW_MAX_PAGES,
-      last_preview_log: appendIntegrationLog(asObject(integration.settings).last_preview_log, {
+      last_preview_log: appendIntegrationLog(readPreviewRuntime(asObject(integration.settings), resource).last_preview_log, {
         at: new Date().toISOString(),
         step: "provider_request_started",
         status: "running",
@@ -379,7 +414,7 @@ export async function POST(
 
     try {
       const result = await withTimeout(
-        syncIntegrationResources(integration),
+        syncIntegrationResources(integration, { resource, mode: "guarded" }),
         PREVIEW_MAX_RUNTIME_MS,
         `CRM-Abrufbudget überschritten (max. ${PREVIEW_MAX_RUNTIME_MS}ms).`,
       );

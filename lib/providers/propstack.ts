@@ -1,4 +1,7 @@
+import { readCrmResourceLimits } from "@/lib/integrations/settings";
 import type {
+  CrmSyncMode,
+  CrmSyncResource,
   OfferDetailsSnapshot,
   OfferDocumentAsset,
   MappedOffer,
@@ -10,6 +13,7 @@ import type {
   RawRequest,
   ResourceSyncData,
 } from "@/lib/providers/types";
+import type { IntegrationSyncOptions } from "@/lib/providers";
 
 type PropstackImage = {
   id?: number;
@@ -245,6 +249,7 @@ type PropstackFetchBatchResult<T> = {
   items: T[];
   requestsMade: number;
   pagesFetched: number;
+  hitLimit: boolean;
 };
 
 type PropstackGuardedResourceLimits = {
@@ -310,6 +315,33 @@ function getPropstackGuardedLimits(settings: Record<string, unknown> | null): Pr
     units: unitLimits,
     references: referenceLimits,
     savedQueries: savedQueryLimits,
+  };
+}
+
+function getPropstackResourceLimit(
+  settings: Record<string, unknown> | null,
+  resource: Exclude<CrmSyncResource, "all">,
+  mode: CrmSyncMode,
+): PropstackGuardedResourceLimits {
+  const limits = readCrmResourceLimits(settings, resource, mode);
+  const defaults =
+    resource === "offers"
+      ? mode === "full"
+        ? { targetObjects: null, maxPages: 150, perPage: 20 }
+        : { targetObjects: 10, maxPages: 20, perPage: 10 }
+      : resource === "references"
+        ? mode === "full"
+          ? { targetObjects: null, maxPages: 150, perPage: 20 }
+          : { targetObjects: 10, maxPages: 20, perPage: 10 }
+        : mode === "full"
+          ? { targetObjects: null, maxPages: 40, perPage: 100 }
+          : { targetObjects: 50, maxPages: 10, perPage: 50 };
+
+  const targetObjects = limits.target_objects ?? defaults.targetObjects;
+  return {
+    targetObjects: targetObjects ?? (limits.max_pages ?? defaults.maxPages) * (limits.per_page ?? defaults.perPage),
+    maxPages: Math.max(1, Math.min(mode === "full" ? 200 : 20, limits.max_pages ?? defaults.maxPages)),
+    perPage: Math.max(1, Math.min(resource === "requests" ? 100 : 20, limits.per_page ?? defaults.perPage)),
   };
 }
 
@@ -1450,7 +1482,7 @@ export async function fetchPropstackUnits(
   options?: {
     maxPages?: number;
     perPage?: number;
-    targetItemCount?: number;
+    targetItemCount?: number | null;
   },
 ): Promise<PropstackUnit[]> {
   const result = await fetchPropstackUnitsDetailed(integration, apiKey, options);
@@ -1463,7 +1495,7 @@ async function fetchPropstackUnitsDetailed(
   options?: {
     maxPages?: number;
     perPage?: number;
-    targetItemCount?: number;
+    targetItemCount?: number | null;
     endpointPath?: string;
     archived?: -1 | 0 | 1 | null;
     statusId?: string | null;
@@ -1473,20 +1505,22 @@ async function fetchPropstackUnitsDetailed(
   const units: PropstackUnit[] = [];
   const requestedPerPage = Math.max(1, Math.min(100, options?.perPage ?? 25));
   const requestedMaxPages = Math.max(1, Math.min(100, options?.maxPages ?? 25));
-  const requestedTargetItemCount = readBoundedInteger(
-    options?.targetItemCount,
-    requestedPerPage * requestedMaxPages,
+  const requestedTargetItemCount =
+    options?.targetItemCount == null
+      ? null
+      : readBoundedInteger(options.targetItemCount, requestedPerPage * requestedMaxPages, 1, 5000);
+  const perPage = Math.max(
     1,
-    5000,
+    Math.min(20, requestedPerPage, requestedTargetItemCount ?? requestedPerPage),
   );
-  const perPage = Math.max(1, Math.min(20, requestedPerPage, requestedTargetItemCount));
   const targetItemCount = requestedTargetItemCount;
   const endpointPath = String(options?.endpointPath ?? "/units").trim() || "/units";
   let page = 1;
   let requestsMade = 0;
   let pagesFetched = 0;
+  let hitLimit = false;
 
-  while (units.length < targetItemCount) {
+  while (page <= requestedMaxPages && (targetItemCount === null || units.length < targetItemCount)) {
     const url = new URL(`${base.replace(/\/+$/, "")}${endpointPath.startsWith("/") ? endpointPath : `/${endpointPath}`}`);
     url.searchParams.set("with_meta", "1");
     url.searchParams.set("expand", "1");
@@ -1516,7 +1550,7 @@ async function fetchPropstackUnitsDetailed(
 
     if (!Array.isArray(batch) || batch.length === 0) break;
 
-    const remaining = targetItemCount - units.length;
+    const remaining = targetItemCount === null ? batch.length : targetItemCount - units.length;
     units.push(...(batch as PropstackUnit[]).slice(0, remaining));
     pagesFetched += 1;
 
@@ -1524,10 +1558,17 @@ async function fetchPropstackUnitsDetailed(
     page += 1;
   }
 
+  if (targetItemCount !== null && units.length >= targetItemCount) {
+    hitLimit = true;
+  } else if (page > requestedMaxPages && units.length > 0) {
+    hitLimit = true;
+  }
+
   return {
     items: units,
     requestsMade,
     pagesFetched,
+    hitLimit,
   };
 }
 
@@ -1541,6 +1582,7 @@ async function fetchPropstackReferenceUnitsDetailed(
   const deduped = new Map<string, PropstackUnit>();
   let requestsMade = 0;
   let pagesFetched = 0;
+  let hitLimit = false;
 
   for (const statusId of statusIds) {
     const remainingTarget = limits.targetObjects - deduped.size;
@@ -1555,6 +1597,7 @@ async function fetchPropstackReferenceUnitsDetailed(
     });
     requestsMade += result.requestsMade;
     pagesFetched += result.pagesFetched;
+    hitLimit = hitLimit || result.hitLimit;
     for (const unit of result.items) {
       const key = String(unit.id ?? "").trim();
       if (!key) continue;
@@ -1566,6 +1609,7 @@ async function fetchPropstackReferenceUnitsDetailed(
     items: Array.from(deduped.values()),
     requestsMade,
     pagesFetched,
+    hitLimit,
   };
 }
 
@@ -1579,6 +1623,7 @@ async function fetchPropstackListingUnitsDetailed(
   const deduped = new Map<string, PropstackUnit>();
   let requestsMade = 0;
   let pagesFetched = 0;
+  let hitLimit = false;
 
   for (const statusId of statusIds) {
     const remainingTarget = limits.targetObjects - deduped.size;
@@ -1592,6 +1637,7 @@ async function fetchPropstackListingUnitsDetailed(
     });
     requestsMade += result.requestsMade;
     pagesFetched += result.pagesFetched;
+    hitLimit = hitLimit || result.hitLimit;
     for (const unit of result.items) {
       const key = String(unit.id ?? "").trim();
       if (!key) continue;
@@ -1603,6 +1649,7 @@ async function fetchPropstackListingUnitsDetailed(
     items: Array.from(deduped.values()),
     requestsMade,
     pagesFetched,
+    hitLimit,
   };
 }
 
@@ -1633,6 +1680,7 @@ async function fetchPropstackSearchProfilesDetailed(
   let page = 1;
   let requestsMade = 0;
   let pagesFetched = 0;
+  let hitLimit = false;
 
   while (page <= maxPages) {
     const url = new URL(`${base.replace(/\/+$/, "")}/saved_queries`);
@@ -1651,6 +1699,7 @@ async function fetchPropstackSearchProfilesDetailed(
         items: [],
         requestsMade,
         pagesFetched,
+        hitLimit: false,
       };
     }
     if (!res.ok) {
@@ -1667,10 +1716,13 @@ async function fetchPropstackSearchProfilesDetailed(
     page += 1;
   }
 
+  if (page > maxPages && out.length > 0) hitLimit = true;
+
   return {
     items: out,
     requestsMade,
     pagesFetched,
+    hitLimit,
   };
 }
 
@@ -1697,40 +1749,68 @@ async function fetchPropstackPropertyStatusesDetailed(
     items: Array.isArray(items) ? (items as PropstackPropertyStatus[]) : [],
     requestsMade: 1,
     pagesFetched: Array.isArray(items) && items.length > 0 ? 1 : 0,
+    hitLimit: false,
   };
 }
 
 export async function syncPropstackResources(
   integration: PartnerIntegration,
   apiKey: string,
+  options?: IntegrationSyncOptions,
 ): Promise<ResourceSyncData & { offers: MappedOffer[] }> {
+  const resource = options?.resource ?? "all";
+  const mode = options?.mode ?? "guarded";
   const cfg = toSettings(integration.settings);
   const guardedLimits = getPropstackGuardedLimits(integration.settings);
+  const syncOfferLimits = getPropstackResourceLimit(integration.settings, "offers", mode);
+  const syncReferenceLimits = getPropstackResourceLimit(integration.settings, "references", mode);
+  const syncRequestLimits = getPropstackResourceLimit(integration.settings, "requests", mode);
   const notes: string[] = [];
-  const partialSyncMode = true;
+  const partialSyncMode = mode === "guarded";
   let providerRequestCount = 0;
   let providerPagesFetched = 0;
   const providerBreakdown: Record<string, { requests: number; pages_fetched: number }> = {};
+  const selectedResources =
+    resource === "all" ? (["offers", "references", "requests"] as const) : ([resource] as const);
+  const shouldFetchUnits = resource === "all" || resource === "offers" || resource === "references";
+  const shouldFetchReferences = resource === "all" || resource === "references";
+  const shouldFetchRequests = resource === "all" || resource === "requests";
 
-  const unitsResult = cfg.listings_status_ids?.length
-    ? await fetchPropstackListingUnitsDetailed(integration, apiKey, cfg, guardedLimits.units)
-    : await fetchPropstackUnitsDetailed(integration, apiKey, {
-        maxPages: guardedLimits.units.maxPages,
-        perPage: guardedLimits.units.perPage,
-        archived: 0,
-      });
-  providerRequestCount += unitsResult.requestsMade;
-  providerPagesFetched += unitsResult.pagesFetched;
-  providerBreakdown.units = {
-    requests: unitsResult.requestsMade,
-    pages_fetched: unitsResult.pagesFetched,
-  };
-  const units = unitsResult.items;
-  const offers = units.map((unit) => normalizeUnitOffer(integration.partner_id, integration, unit));
-  const listings = units.map((unit) => mapUnitListing(integration.partner_id, integration, unit));
+  let units: PropstackUnit[] = [];
+  let offers: MappedOffer[] = [];
+  let listings: RawListing[] = [];
+  let unitsHitLimit = false;
+
+  if (shouldFetchUnits) {
+    const activeOfferLimits = mode === "guarded" ? guardedLimits.units : syncOfferLimits;
+    const unitsResult = cfg.listings_status_ids?.length
+      ? await fetchPropstackListingUnitsDetailed(integration, apiKey, cfg, activeOfferLimits)
+      : await fetchPropstackUnitsDetailed(integration, apiKey, {
+          maxPages: activeOfferLimits.maxPages,
+          perPage: activeOfferLimits.perPage,
+          targetItemCount: mode === "guarded" ? activeOfferLimits.targetObjects : null,
+          archived: 0,
+        });
+    providerRequestCount += unitsResult.requestsMade;
+    providerPagesFetched += unitsResult.pagesFetched;
+    providerBreakdown.units = {
+      requests: unitsResult.requestsMade,
+      pages_fetched: unitsResult.pagesFetched,
+    };
+    unitsHitLimit = unitsResult.hitLimit;
+    units = unitsResult.items;
+    if (resource !== "references") {
+      offers = units.map((unit) => normalizeUnitOffer(integration.partner_id, integration, unit));
+      listings = units.map((unit) => mapUnitListing(integration.partner_id, integration, unit));
+    }
+    notes.push(
+      `${mode} sync: propstack units${mode === "guarded" ? ` target_objects=${activeOfferLimits.targetObjects}` : ` max_pages=${activeOfferLimits.maxPages}`}${cfg.listings_status_ids?.length ? `, status_ids=${cfg.listings_status_ids.join(",")}` : ", archived=0"}`,
+    );
+  }
 
   let propertyStatuses: PropstackPropertyStatus[] = [];
-  try {
+  if (shouldFetchReferences) {
+    try {
     const statusesResult = await fetchPropstackPropertyStatusesDetailed(integration, apiKey);
     providerRequestCount += statusesResult.requestsMade;
     providerPagesFetched += statusesResult.pagesFetched;
@@ -1743,6 +1823,7 @@ export async function syncPropstackResources(
   } catch (error) {
     notes.push(`propstack property_statuses fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
   }
+  }
 
   const knownReferenceStatusNames: Set<string> = new Set(
     propertyStatuses
@@ -1751,25 +1832,30 @@ export async function syncPropstackResources(
   );
 
   let referenceUnits: PropstackUnit[] = [];
-  try {
-    const referenceUnitsResult = await fetchPropstackReferenceUnitsDetailed(
-      integration,
-      apiKey,
-      cfg,
-      guardedLimits.references,
-    );
-    providerRequestCount += referenceUnitsResult.requestsMade;
-    providerPagesFetched += referenceUnitsResult.pagesFetched;
-    providerBreakdown.reference_units = {
-      requests: referenceUnitsResult.requestsMade,
-      pages_fetched: referenceUnitsResult.pagesFetched,
-    };
-    referenceUnits = referenceUnitsResult.items;
-    notes.push(
-      `guarded sync: propstack references target_objects=${guardedLimits.references.targetObjects} via ${cfg.references_endpoint_path} with archived=${cfg.references_archived}${cfg.references_status_ids?.length ? `, status_ids=${cfg.references_status_ids.join(",")}` : ""}`,
-    );
-  } catch (error) {
-    notes.push(`propstack reference fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
+  let referencesHitLimit = false;
+  if (shouldFetchReferences) {
+    try {
+      const activeReferenceLimits = mode === "guarded" ? guardedLimits.references : syncReferenceLimits;
+      const referenceUnitsResult = await fetchPropstackReferenceUnitsDetailed(
+        integration,
+        apiKey,
+        cfg,
+        activeReferenceLimits,
+      );
+      providerRequestCount += referenceUnitsResult.requestsMade;
+      providerPagesFetched += referenceUnitsResult.pagesFetched;
+      providerBreakdown.reference_units = {
+        requests: referenceUnitsResult.requestsMade,
+        pages_fetched: referenceUnitsResult.pagesFetched,
+      };
+      referencesHitLimit = referenceUnitsResult.hitLimit;
+      referenceUnits = referenceUnitsResult.items;
+      notes.push(
+        `${mode} sync: propstack references${mode === "guarded" ? ` target_objects=${activeReferenceLimits.targetObjects}` : ` max_pages=${activeReferenceLimits.maxPages}`} via ${cfg.references_endpoint_path} with archived=${cfg.references_archived}${cfg.references_status_ids?.length ? `, status_ids=${cfg.references_status_ids.join(",")}` : ""}`,
+      );
+    } catch (error) {
+      notes.push(`propstack reference fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
+    }
   }
 
   const fallbackReferenceCandidates = units.filter((unit) => {
@@ -1778,9 +1864,9 @@ export async function syncPropstackResources(
     return Boolean(statusName && knownReferenceStatusNames.has(statusName));
   });
   const effectiveReferenceUnits = referenceUnits.length > 0 ? referenceUnits : fallbackReferenceCandidates;
-  const references = effectiveReferenceUnits.map((unit) =>
-    mapUnitReference(integration.partner_id, integration, unit),
-  );
+  const references = shouldFetchReferences
+    ? effectiveReferenceUnits.map((unit) => mapUnitReference(integration.partner_id, integration, unit))
+    : [];
   const unitStatusCounts = new Map<string, number>();
   const archivedCounts = new Map<string, number>([
     ["true", 0],
@@ -1793,58 +1879,71 @@ export async function syncPropstackResources(
     const archivedKey = unit.archived === true ? "true" : unit.archived === false ? "false" : "null";
     archivedCounts.set(archivedKey, (archivedCounts.get(archivedKey) ?? 0) + 1);
   }
-  notes.push(
-    `reference diagnostics: units=${units.length} · matched=${effectiveReferenceUnits.length} · status=${formatCountEntries(Array.from(unitStatusCounts.entries()).sort((left, right) => right[1] - left[1]))} · archived=${formatCountEntries(Array.from(archivedCounts.entries()))}`,
-  );
-  if (knownReferenceStatusNames.size > 0) {
-    notes.push(`reference diagnostics: recognized completion statuses=${Array.from(knownReferenceStatusNames).sort().join(", ")}`);
+  if (shouldFetchReferences) {
+    notes.push(
+      `reference diagnostics: units=${units.length} · matched=${effectiveReferenceUnits.length} · status=${formatCountEntries(Array.from(unitStatusCounts.entries()).sort((left, right) => right[1] - left[1]))} · archived=${formatCountEntries(Array.from(archivedCounts.entries()))}`,
+    );
+    if (knownReferenceStatusNames.size > 0) {
+      notes.push(`reference diagnostics: recognized completion statuses=${Array.from(knownReferenceStatusNames).sort().join(", ")}`);
+    }
   }
-  notes.push(
-    `guarded sync: propstack units target_objects=${guardedLimits.units.targetObjects}${cfg.listings_status_ids?.length ? `, status_ids=${cfg.listings_status_ids.join(",")}` : ", archived=0"}`,
-  );
-  const referencesFetched = true;
+  const referencesFetched = shouldFetchReferences;
   let requestsFetched = false;
   let requests: RawRequest[] = [];
   const referencesSource: "live" | "unavailable" = "live";
   let requestsSource: "live" | "unavailable" = "unavailable";
 
-  try {
-    const profilesResult = await fetchPropstackSearchProfilesDetailed(integration, apiKey, {
-      maxPages: guardedLimits.savedQueries.maxPages,
-      perPage: guardedLimits.savedQueries.perPage,
-    });
-    providerRequestCount += profilesResult.requestsMade;
-    providerPagesFetched += profilesResult.pagesFetched;
-    providerBreakdown.saved_queries = {
-      requests: profilesResult.requestsMade,
-      pages_fetched: profilesResult.pagesFetched,
-    };
-    requests = profilesResult.items
-      .filter((p) => p.active !== false)
-      .map((p) => mapSearchProfileRequest(integration.partner_id, p));
-    requestsFetched = true;
-    requestsSource = "live";
-    notes.push(
-      `guarded sync: propstack saved_queries target_objects=${guardedLimits.savedQueries.targetObjects}`,
-    );
-  } catch (error) {
-    requestsSource = "unavailable";
-    notes.push(`propstack saved_queries live fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
+  let requestsHitLimit = false;
+  if (shouldFetchRequests) {
+    try {
+      const activeRequestLimits = mode === "guarded" ? guardedLimits.savedQueries : syncRequestLimits;
+      const profilesResult = await fetchPropstackSearchProfilesDetailed(integration, apiKey, {
+        maxPages: activeRequestLimits.maxPages,
+        perPage: activeRequestLimits.perPage,
+      });
+      providerRequestCount += profilesResult.requestsMade;
+      providerPagesFetched += profilesResult.pagesFetched;
+      providerBreakdown.saved_queries = {
+        requests: profilesResult.requestsMade,
+        pages_fetched: profilesResult.pagesFetched,
+      };
+      requestsHitLimit = profilesResult.hitLimit;
+      requests = profilesResult.items
+        .filter((p) => p.active !== false)
+        .map((p) => mapSearchProfileRequest(integration.partner_id, p));
+      requestsFetched = true;
+      requestsSource = "live";
+      notes.push(
+        `${mode} sync: propstack saved_queries${mode === "guarded" ? ` target_objects=${activeRequestLimits.targetObjects}` : ` max_pages=${activeRequestLimits.maxPages}`}`,
+      );
+    } catch (error) {
+      requestsSource = "unavailable";
+      notes.push(`propstack saved_queries live fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
+    }
   }
 
   const finalReferences = references;
   const finalRequests = requests;
-  if (!finalReferences.length) {
-    notes.push("propstack guarded sync found no reference units via dedicated fetch or fallback heuristics");
+  if (shouldFetchReferences && !finalReferences.length) {
+    notes.push(`propstack ${mode} sync found no reference units via dedicated fetch or fallback heuristics`);
   }
-  if (!finalRequests.length) {
+  if (shouldFetchRequests && !finalRequests.length) {
     if (requestsSource === "unavailable") {
       requestsFetched = false;
-      notes.push("guarded test sync: propstack saved_queries unavailable, no dummy fallback written");
+      notes.push(`${mode} sync: propstack saved_queries unavailable, no dummy fallback written`);
     } else {
       requestsFetched = true;
-      notes.push("guarded test sync: no saved_queries found on the fetched page");
+      notes.push(`${mode} sync: no saved_queries found on the fetched page`);
     }
+  }
+
+  const fullSyncLimitReached =
+    mode === "full"
+      && (((selectedResources.includes("offers") || resource === "references") && unitsHitLimit)
+        || (selectedResources.includes("references") && referencesHitLimit)
+        || (selectedResources.includes("requests") && requestsHitLimit));
+  if (fullSyncLimitReached) {
+    notes.push("full sync safety: stale deactivation skipped because at least one resource reached its configured fetch limit");
   }
 
   return {
@@ -1876,10 +1975,29 @@ export async function syncPropstackResources(
           per_page: guardedLimits.savedQueries.perPage,
         },
       },
+      sync_limits: {
+        units: {
+          target_objects: syncOfferLimits.targetObjects,
+          max_pages: syncOfferLimits.maxPages,
+          per_page: syncOfferLimits.perPage,
+        },
+        references: {
+          target_objects: syncReferenceLimits.targetObjects,
+          max_pages: syncReferenceLimits.maxPages,
+          per_page: syncReferenceLimits.perPage,
+        },
+        saved_queries: {
+          target_objects: syncRequestLimits.targetObjects,
+          max_pages: syncRequestLimits.maxPages,
+          per_page: syncRequestLimits.perPage,
+        },
+      },
       partial_sync_mode: partialSyncMode,
-      stale_deactivation_allowed: false,
+      stale_deactivation_allowed: mode === "full" && !fullSyncLimitReached,
       references_source: referencesSource,
       requests_source: requestsSource,
+      resource,
+      mode,
     },
   };
 }

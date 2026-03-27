@@ -1,10 +1,16 @@
 import { createAdminClient } from "@/utils/supabase/admin";
-import { readRequestFreshnessSettings } from "@/lib/integrations/settings";
-import { rebuildAllPublicAssetEntriesForPartner } from "@/lib/public-asset-projections";
-import { syncIntegrationResources } from "@/lib/providers";
+import { readCrmResourceSettings } from "@/lib/integrations/settings";
+import {
+  rebuildPublicOfferEntriesForPartner,
+  rebuildPublicReferenceEntriesForPartner,
+  rebuildPublicRequestEntriesForPartner,
+} from "@/lib/public-asset-projections";
+import { syncIntegrationResources, type IntegrationSyncOptions } from "@/lib/providers";
 import type {
   CanonicalReference,
   CanonicalRequest,
+  CrmSyncMode,
+  CrmSyncResource,
   MappedOffer,
   PartnerIntegration,
   RawReference,
@@ -18,11 +24,18 @@ type CrmSyncHooks = {
   assertCanContinue?: () => Promise<void>;
 };
 
+export type CrmSyncScope = {
+  resource?: CrmSyncResource;
+  mode?: CrmSyncMode;
+};
+
 const FETCH_RESOURCES_HEARTBEAT_MS = 5_000;
 
 export type CrmSyncResult = {
   partner_id: string;
   provider: string;
+  resource: CrmSyncResource;
+  mode: CrmSyncMode;
   listings_count: number;
   references_count: number;
   requests_count: number;
@@ -37,10 +50,6 @@ export type CrmSyncResult = {
   notes?: string[];
 };
 
-function readBoolean(value: unknown): boolean | null {
-  return typeof value === "boolean" ? value : null;
-}
-
 function asObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
@@ -54,10 +63,8 @@ function shouldSyncCapability(
   settings: Record<string, unknown> | null,
   capability: "listings" | "references" | "requests",
 ): boolean {
-  const caps = settings?.capabilities;
-  if (!caps || typeof caps !== "object") return true;
-  const value = readBoolean((caps as Record<string, unknown>)[capability]);
-  return value ?? true;
+  const resource = capability === "listings" ? "offers" : capability;
+  return readCrmResourceSettings(settings, resource).enabled;
 }
 
 async function withProgressKeepalive<T>(
@@ -192,7 +199,7 @@ function filterFreshRequests(
   requests: RawRequest[],
   settings: Record<string, unknown> | null,
 ): { rows: RawRequest[]; filtered: number; basis: "source_updated_at" | "last_seen_at" | null } {
-  const freshness = readRequestFreshnessSettings(settings);
+  const freshness = readCrmResourceSettings(settings, "requests").freshness;
   if (!freshness?.enabled) {
     return { rows: requests, filtered: 0, basis: null };
   }
@@ -397,12 +404,19 @@ async function syncCanonicalRequestLayer(
 export async function runCrmIntegrationSync(
   supabase: AdminClient,
   integration: PartnerIntegration,
+  scope?: CrmSyncScope,
   hooks?: CrmSyncHooks,
 ): Promise<CrmSyncResult> {
+  const resource = scope?.resource ?? "all";
+  const mode = scope?.mode ?? "full";
+  const providerOptions: IntegrationSyncOptions = { resource, mode };
+
   if (integration.kind !== "crm") {
     return {
       partner_id: integration.partner_id,
       provider: integration.provider,
+      resource,
+      mode,
       listings_count: 0,
       references_count: 0,
       requests_count: 0,
@@ -418,6 +432,8 @@ export async function runCrmIntegrationSync(
     return {
       partner_id: integration.partner_id,
       provider: integration.provider,
+      resource,
+      mode,
       listings_count: 0,
       references_count: 0,
       requests_count: 0,
@@ -429,14 +445,19 @@ export async function runCrmIntegrationSync(
     };
   }
 
-  const syncListings = shouldSyncCapability(integration.settings, "listings");
-  const syncReferences = shouldSyncCapability(integration.settings, "references");
-  const syncRequests = shouldSyncCapability(integration.settings, "requests");
+  const syncListings =
+    (resource === "all" || resource === "offers") && shouldSyncCapability(integration.settings, "listings");
+  const syncReferences =
+    (resource === "all" || resource === "references") && shouldSyncCapability(integration.settings, "references");
+  const syncRequests =
+    (resource === "all" || resource === "requests") && shouldSyncCapability(integration.settings, "requests");
 
   if (!syncListings && !syncReferences && !syncRequests) {
     return {
       partner_id: integration.partner_id,
       provider: integration.provider,
+      resource,
+      mode,
       listings_count: 0,
       references_count: 0,
       requests_count: 0,
@@ -452,7 +473,7 @@ export async function runCrmIntegrationSync(
   await hooks?.onProgress?.("fetch_resources", "CRM-Daten werden vom Anbieter geladen.");
   const { offers, listings, references, requests, referencesFetched, requestsFetched, notes, diagnostics } =
     await withProgressKeepalive(
-      () => syncIntegrationResources(integration),
+      () => syncIntegrationResources(integration, providerOptions),
       FETCH_RESOURCES_HEARTBEAT_MS,
       hooks?.onProgress
         ? async () => {
@@ -466,7 +487,7 @@ export async function runCrmIntegrationSync(
     `CRM-Daten geladen: Angebote=${offers.length}, Rohobjekte=${listings.length}, Referenzen=${references.length}, Gesuche=${requests.length}.`,
   );
   const partialSyncMode = diagnostics?.partial_sync_mode === true;
-  const allowDeactivate = diagnostics?.stale_deactivation_allowed !== false;
+  const allowDeactivate = mode === "full" && diagnostics?.stale_deactivation_allowed !== false;
   const mergedNotes: string[] = [];
   if (notes?.length) mergedNotes.push(...notes);
   if (partialSyncMode) {
@@ -497,6 +518,7 @@ export async function runCrmIntegrationSync(
   }
 
   let referencesCount = 0;
+  let deactivatedReferences = 0;
   if (syncReferences && (referencesFetched || references.length > 0)) {
     await hooks?.assertCanContinue?.();
     await hooks?.onProgress?.("upsert_references_raw", "Referenz-Rohdaten werden gespeichert.");
@@ -518,9 +540,11 @@ export async function runCrmIntegrationSync(
       { allowDeactivate },
     );
     referencesCount = layer.count;
+    deactivatedReferences = layer.deactivated;
   }
 
   let requestsCount = 0;
+  let deactivatedRequests = 0;
   if (syncRequests && (requestsFetched || requests.length > 0)) {
     const freshness = filterFreshRequests(requests, integration.settings);
     const activeRequests = freshness.rows;
@@ -549,6 +573,7 @@ export async function runCrmIntegrationSync(
       { allowDeactivate },
     );
     requestsCount = layer.count;
+    deactivatedRequests = layer.deactivated;
   }
 
   if (syncListings) {
@@ -576,13 +601,19 @@ export async function runCrmIntegrationSync(
 
   await hooks?.assertCanContinue?.();
   await hooks?.onProgress?.("rebuild_projections", "Oeffentliche Projektionen werden aktualisiert.");
-  const projectionCounts = await rebuildAllPublicAssetEntriesForPartner(
-    integration.partner_id,
-    supabase,
-  );
-  mergedNotes.push(
-    `public projections reconciled: offers=${projectionCounts.offers}, requests=${projectionCounts.requests}, references=${projectionCounts.references}`,
-  );
+  const projectionCounts = { offers: 0, requests: 0, references: 0 };
+  if (syncListings) {
+    projectionCounts.offers = await rebuildPublicOfferEntriesForPartner(integration.partner_id, supabase);
+  }
+  if (syncRequests) {
+    projectionCounts.requests = await rebuildPublicRequestEntriesForPartner(integration.partner_id, supabase);
+  }
+  if (syncReferences) {
+    projectionCounts.references = await rebuildPublicReferenceEntriesForPartner(integration.partner_id, supabase);
+  }
+  mergedNotes.push(`public projections reconciled: offers=${projectionCounts.offers}, requests=${projectionCounts.requests}, references=${projectionCounts.references}`);
+  if (deactivatedReferences > 0) mergedNotes.push(`${deactivatedReferences} Referenzen deaktiviert`);
+  if (deactivatedRequests > 0) mergedNotes.push(`${deactivatedRequests} Gesuche deaktiviert`);
 
   await hooks?.assertCanContinue?.();
   await hooks?.onProgress?.("finalize", "Sync-Lauf wird abgeschlossen.");
@@ -598,6 +629,8 @@ export async function runCrmIntegrationSync(
   return {
     partner_id: integration.partner_id,
     provider: integration.provider,
+    resource,
+    mode,
     listings_count: listingsCount,
     references_count: referencesCount,
     requests_count: requestsCount,

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { createAdminClient } from "@/utils/supabase/admin";
+import { normalizeCrmSyncSelection } from "@/lib/integrations/settings";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { runCrmIntegrationSync, type CrmSyncResult } from "@/lib/integrations/crm-sync";
-import type { PartnerIntegration } from "@/lib/providers/types";
+import type { CrmSyncMode, CrmSyncResource, PartnerIntegration } from "@/lib/providers/types";
 
 export const maxDuration = 60;
 
@@ -40,6 +41,8 @@ class SyncControlError extends Error {
 
 type SyncStatusPayload = {
   state: SyncState;
+  resource: CrmSyncResource;
+  mode: CrmSyncMode | null;
   message: string;
   started_at: string | null;
   finished_at: string | null;
@@ -57,9 +60,53 @@ type SyncStatusPayload = {
   log: SyncLogEntry[];
 };
 
+type ScopedSyncResource = Exclude<CrmSyncResource, "all"> | "all";
+
 function asObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object") return {};
   return value as Record<string, unknown>;
+}
+
+function readSyncRuntime(settings: Record<string, unknown>, resource: ScopedSyncResource): Record<string, unknown> {
+  if (resource === "all") return settings;
+  const runtimes = asObject(settings.sync_resources);
+  return asObject(runtimes[resource]);
+}
+
+function writeSyncRuntime(
+  settings: Record<string, unknown>,
+  resource: ScopedSyncResource,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  const nextSettings: Record<string, unknown> = {
+    ...settings,
+    ...patch,
+  };
+  if (resource !== "all") {
+    const runtimes = { ...asObject(settings.sync_resources) };
+    const current = asObject(runtimes[resource]);
+    runtimes[resource] = {
+      ...current,
+      ...patch,
+    };
+    nextSettings.sync_resources = runtimes;
+  }
+  return nextSettings;
+}
+
+function readSyncMode(value: unknown): CrmSyncMode | null {
+  return value === "full" || value === "guarded" ? value : null;
+}
+
+function formatResourceLabel(resource: ScopedSyncResource): string {
+  if (resource === "offers") return "Angebote";
+  if (resource === "references") return "Referenzen";
+  if (resource === "requests") return "Gesuche";
+  return "CRM";
+}
+
+function formatModeLabel(mode: CrmSyncMode | null): string {
+  return mode === "full" ? "Vollsync" : mode === "guarded" ? "Guarded-Sync" : "Sync";
 }
 
 function asText(value: unknown): string | null {
@@ -142,11 +189,14 @@ function formatSuccessMessage(result: CrmSyncResult): string {
 
 function buildSyncStatus(
   integration: Pick<IntegrationRow, "settings" | "last_sync_at">,
+  resource: ScopedSyncResource = "all",
 ): SyncStatusPayload {
   const settings = asObject(integration.settings);
-  const rawState = String(settings.sync_state ?? "").trim().toLowerCase();
-  const rawMessage = asText(settings.sync_message);
-  const errorClass = asText(settings.sync_error_class);
+  const runtime = readSyncRuntime(settings, resource);
+  const rawState = String(runtime.sync_state ?? "").trim().toLowerCase();
+  const rawMessage = asText(runtime.sync_message);
+  const errorClass = asText(runtime.sync_error_class);
+  const mode = readSyncMode(runtime.sync_mode);
   const isLegacyOperatorMessage =
     rawState !== "running"
     && ((rawMessage?.toLowerCase().includes("manuell zurückgesetzt") ?? false) || (rawMessage?.toLowerCase().includes("manuell abgebrochen") ?? false));
@@ -159,10 +209,10 @@ function buildSyncStatus(
       : rawState === "running" || rawState === "success" || rawState === "error"
         ? (rawState as SyncState)
         : "idle";
-  const result = (settings.sync_result ?? null) as CrmSyncResult | null;
+  const result = (runtime.sync_result ?? null) as CrmSyncResult | null;
   const fallbackMessage =
     state === "running"
-      ? "CRM-Synchronisierung läuft..."
+      ? `${formatResourceLabel(resource)} ${formatModeLabel(mode)} läuft...`
       : state === "success"
         ? (result ? formatSuccessMessage(result) : "CRM-Synchronisierung erfolgreich abgeschlossen.")
         : state === "error"
@@ -172,21 +222,23 @@ function buildSyncStatus(
             : "Noch keine CRM-Synchronisierung gestartet.";
   return {
     state,
+    resource,
+    mode,
     message: isHistoricalOperatorNotice ? fallbackMessage : (rawMessage ?? fallbackMessage),
-    started_at: asText(settings.sync_started_at),
-    finished_at: asText(settings.sync_finished_at),
+    started_at: asText(runtime.sync_started_at),
+    finished_at: asText(runtime.sync_finished_at),
     last_sync_at: asText(integration.last_sync_at),
-    error: isHistoricalOperatorNotice ? null : asText(settings.sync_error),
+    error: isHistoricalOperatorNotice ? null : asText(runtime.sync_error),
     error_class: isHistoricalOperatorNotice ? null : errorClass,
-    request_count: asNumber(settings.sync_request_count),
-    pages_fetched: asNumber(settings.sync_pages_fetched),
+    request_count: asNumber(runtime.sync_request_count),
+    pages_fetched: asNumber(runtime.sync_pages_fetched),
     result,
-    trace_id: asText(settings.sync_trace_id),
-    step: asText(settings.sync_step),
-    heartbeat_at: asText(settings.sync_heartbeat_at),
-    deadline_at: asText(settings.sync_deadline_at),
-    cancel_requested: settings.sync_cancel_requested === true,
-    log: asLogEntries(settings.sync_log),
+    trace_id: asText(runtime.sync_trace_id),
+    step: asText(runtime.sync_step),
+    heartbeat_at: asText(runtime.sync_heartbeat_at),
+    deadline_at: asText(runtime.sync_deadline_at),
+    cancel_requested: runtime.sync_cancel_requested === true,
+    log: asLogEntries(runtime.sync_log),
   };
 }
 
@@ -249,6 +301,7 @@ async function loadIntegration(
 async function patchSyncSettings(
   admin: ReturnType<typeof createAdminClient>,
   integrationId: string,
+  resource: ScopedSyncResource,
   patch: Record<string, unknown>,
   options?: {
     expectedJobId?: string;
@@ -263,12 +316,18 @@ async function patchSyncSettings(
     return null;
   }
 
-  const nextSettings: Record<string, unknown> = {
-    ...currentSettings,
-    ...patch,
-  };
+  const nextSettings = writeSyncRuntime(currentSettings, resource, patch);
 
-  if (options?.logEntry) nextSettings.sync_log = appendSyncLog(nextSettings.sync_log, options.logEntry);
+  if (options?.logEntry) {
+    nextSettings.sync_log = appendSyncLog(nextSettings.sync_log, options.logEntry);
+    if (resource !== "all") {
+      const runtimes = { ...asObject(nextSettings.sync_resources) };
+      const runtime = asObject(runtimes[resource]);
+      runtime.sync_log = appendSyncLog(runtime.sync_log, options.logEntry);
+      runtimes[resource] = runtime;
+      nextSettings.sync_resources = runtimes;
+    }
+  }
 
   const { error } = await admin
     .from("partner_integrations")
@@ -276,12 +335,13 @@ async function patchSyncSettings(
     .eq("id", integrationId);
 
   if (error) throw new Error(error.message);
-  return buildSyncStatus({ settings: nextSettings, last_sync_at: current.last_sync_at ?? null });
+  return buildSyncStatus({ settings: nextSettings, last_sync_at: current.last_sync_at ?? null }, resource);
 }
 
 async function updateRunningSyncProgress(
   admin: ReturnType<typeof createAdminClient>,
   integrationId: string,
+  resource: ScopedSyncResource,
   jobId: string,
   step: string,
   message: string,
@@ -290,6 +350,7 @@ async function updateRunningSyncProgress(
   return patchSyncSettings(
     admin,
     integrationId,
+    resource,
     {
       sync_step: step,
       sync_message: message,
@@ -307,16 +368,24 @@ async function updateRunningSyncProgress(
   );
 }
 
-async function finalizeSyncSuccess(integrationId: string, jobId: string, result: CrmSyncResult) {
+async function finalizeSyncSuccess(
+  integrationId: string,
+  resource: ScopedSyncResource,
+  jobId: string,
+  result: CrmSyncResult,
+) {
   const admin = createAdminClient();
   const now = new Date().toISOString();
   await patchSyncSettings(
     admin,
     integrationId,
+    resource,
     {
       sync_state: "success",
       sync_job_id: null,
       sync_step: "completed",
+      sync_mode: result.mode,
+      sync_resource: result.resource,
       sync_heartbeat_at: now,
       sync_deadline_at: null,
       sync_cancel_requested: false,
@@ -343,6 +412,7 @@ async function finalizeSyncSuccess(integrationId: string, jobId: string, result:
 
 async function finalizeSyncError(
   integrationId: string,
+  resource: ScopedSyncResource,
   jobId: string,
   message: string,
   errorClass?: string,
@@ -352,6 +422,7 @@ async function finalizeSyncError(
   await patchSyncSettings(
     admin,
     integrationId,
+    resource,
     {
       sync_state: "error",
       sync_job_id: null,
@@ -381,6 +452,7 @@ async function finalizeSyncError(
 async function expireStaleRunningSync(
   admin: ReturnType<typeof createAdminClient>,
   integration: IntegrationRow,
+  resource: ScopedSyncResource,
   message: string,
 ) {
   const settings = asObject(integration.settings);
@@ -389,6 +461,7 @@ async function expireStaleRunningSync(
   await patchSyncSettings(
     admin,
     integration.id,
+    resource,
     {
       sync_state: "error",
       sync_job_id: null,
@@ -448,6 +521,8 @@ export async function GET(
 ) {
   try {
     await requireAdminAccess(req);
+    const { searchParams } = new URL(req.url);
+    const resource = normalizeCrmSyncSelection({ resource: searchParams.get("resource") }).resource;
     const params = await ctx.params;
     const integrationId = String(params.integration_id ?? "").trim();
     if (!integrationId) return NextResponse.json({ error: "Missing integration id" }, { status: 400 });
@@ -461,12 +536,12 @@ export async function GET(
 
     const staleMessage = getStaleRunningMessage(asObject(integration.settings));
     if (staleMessage) {
-      await expireStaleRunningSync(admin, integration, staleMessage);
+      await expireStaleRunningSync(admin, integration, "all", staleMessage);
       integration = await loadIntegration(admin, integrationId);
       if (!integration) return NextResponse.json({ error: "Integration not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true, status: buildSyncStatus(integration) });
+    return NextResponse.json({ ok: true, status: buildSyncStatus(integration, resource) });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -490,6 +565,10 @@ export async function POST(
 ) {
   try {
     const adminUser = await requireAdminAccess(req);
+    const body = await req.json().catch(() => null);
+    const selection = normalizeCrmSyncSelection(body);
+    const resource = selection.resource;
+    const mode = selection.mode;
     const params = await ctx.params;
     const integrationId = String(params.integration_id ?? "").trim();
     if (!integrationId) return NextResponse.json({ error: "Missing integration id" }, { status: 400 });
@@ -503,14 +582,14 @@ export async function POST(
 
     const staleMessage = getStaleRunningMessage(asObject(integration.settings));
     if (staleMessage) {
-      await expireStaleRunningSync(admin, integration, staleMessage);
+      await expireStaleRunningSync(admin, integration, "all", staleMessage);
       integration = await loadIntegration(admin, integrationId);
       if (!integration) return NextResponse.json({ error: "Integration not found" }, { status: 404 });
     }
 
-    const currentStatus = buildSyncStatus(integration);
+    const currentStatus = buildSyncStatus(integration, "all");
     if (currentStatus.state === "running") {
-      return NextResponse.json({ ok: true, status: currentStatus }, { status: 202 });
+      return NextResponse.json({ ok: true, status: buildSyncStatus(integration, resource) }, { status: 202 });
     }
 
     const retryAfterSec = getErrorCooldownRetryAfterSec(asObject(integration.settings));
@@ -531,10 +610,13 @@ export async function POST(
     await patchSyncSettings(
       admin,
       integrationId,
+      resource,
       {
         sync_state: "running",
         sync_job_id: jobId,
         sync_trace_id: traceId,
+        sync_resource: resource,
+        sync_mode: mode,
         sync_step: "started",
         sync_started_at: now,
         sync_finished_at: null,
@@ -573,21 +655,26 @@ export async function POST(
         provider: integration.provider,
         sync_job_id: jobId,
         sync_trace_id: traceId,
+        sync_resource: resource,
+        sync_mode: mode,
       },
       ip,
       userAgent,
     });
 
     try {
-      await updateRunningSyncProgress(admin, integrationId, jobId, "prepare", "Sync-Lauf wird vorbereitet.");
+      await updateRunningSyncProgress(admin, integrationId, resource, jobId, "prepare", "Sync-Lauf wird vorbereitet.");
       const freshIntegration = await loadIntegration(admin, integrationId);
       if (!freshIntegration) throw new Error("Integration not found");
 
       const result = await withTimeout(
         runCrmIntegrationSync(admin, freshIntegration, {
+          resource,
+          mode,
+        }, {
           onProgress: async (step, message) => {
             await ensureSyncCanContinue(admin, integrationId, jobId);
-            await updateRunningSyncProgress(admin, integrationId, jobId, step, message);
+            await updateRunningSyncProgress(admin, integrationId, resource, jobId, step, message);
           },
           assertCanContinue: async () => {
             await ensureSyncCanContinue(admin, integrationId, jobId);
@@ -596,7 +683,7 @@ export async function POST(
         SYNC_TIMEOUT_MS,
         "CRM-Synchronisierung wegen Zeitlimit beendet.",
       );
-      await finalizeSyncSuccess(integrationId, jobId, result);
+      await finalizeSyncSuccess(integrationId, resource, jobId, result);
       await writeSecurityAuditLog({
         actorUserId: adminUser.userId,
         actorRole: adminUser.role,
@@ -610,6 +697,8 @@ export async function POST(
           provider: integration.provider,
           sync_job_id: jobId,
           sync_trace_id: traceId,
+          sync_resource: resource,
+          sync_mode: mode,
           result,
         },
         ip,
@@ -617,7 +706,7 @@ export async function POST(
       });
     } catch (error) {
       const normalizedError = normalizeSyncError(error);
-      await finalizeSyncError(integrationId, jobId, normalizedError.message, normalizedError.errorClass);
+      await finalizeSyncError(integrationId, resource, jobId, normalizedError.message, normalizedError.errorClass);
       await writeSecurityAuditLog({
         actorUserId: adminUser.userId,
         actorRole: adminUser.role,
@@ -631,6 +720,8 @@ export async function POST(
           provider: integration.provider,
           sync_job_id: jobId,
           sync_trace_id: traceId,
+          sync_resource: resource,
+          sync_mode: mode,
           error: normalizedError.message,
           error_class: normalizedError.errorClass,
         },
@@ -641,7 +732,7 @@ export async function POST(
 
     const finalIntegration = await loadIntegration(admin, integrationId);
     if (!finalIntegration) return NextResponse.json({ error: "Integration not found" }, { status: 404 });
-    return NextResponse.json({ ok: true, status: buildSyncStatus(finalIntegration) }, { status: 200 });
+    return NextResponse.json({ ok: true, status: buildSyncStatus(finalIntegration, resource) }, { status: 200 });
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -665,6 +756,8 @@ export async function DELETE(
 ) {
   try {
     const adminUser = await requireAdminAccess(req);
+    const { searchParams } = new URL(req.url);
+    const resource = normalizeCrmSyncSelection({ resource: searchParams.get("resource") }).resource;
     const params = await ctx.params;
     const integrationId = String(params.integration_id ?? "").trim();
     if (!integrationId) return NextResponse.json({ error: "Missing integration id" }, { status: 400 });
@@ -677,9 +770,9 @@ export async function DELETE(
     }
 
     const settings = asObject(integration.settings);
-    const currentStatus = buildSyncStatus(integration);
+    const currentStatus = buildSyncStatus(integration, "all");
     if (currentStatus.state !== "running") {
-      return NextResponse.json({ ok: true, status: currentStatus }, { status: 200 });
+      return NextResponse.json({ ok: true, status: buildSyncStatus(integration, resource) }, { status: 200 });
     }
 
     const staleMessage = getStaleRunningMessage(settings);
@@ -691,6 +784,7 @@ export async function DELETE(
       nextStatus = await patchSyncSettings(
         admin,
         integrationId,
+        resource,
         {
           sync_state: "error",
           sync_job_id: null,
@@ -719,6 +813,7 @@ export async function DELETE(
       nextStatus = await patchSyncSettings(
         admin,
         integrationId,
+        resource,
         {
           sync_cancel_requested: true,
           sync_cancel_requested_at: now,
@@ -757,7 +852,7 @@ export async function DELETE(
     integration = await loadIntegration(admin, integrationId);
     if (!integration) return NextResponse.json({ error: "Integration not found" }, { status: 404 });
     return NextResponse.json(
-      { ok: true, status: nextStatus ?? buildSyncStatus(integration) },
+      { ok: true, status: nextStatus ?? buildSyncStatus(integration, resource) },
       { status: staleMessage ? 200 : 202 },
     );
   } catch (error) {

@@ -1,4 +1,6 @@
 import type {
+  CrmSyncMode,
+  CrmSyncResource,
   PartnerIntegration,
   MappedOffer,
   RawListing,
@@ -22,8 +24,14 @@ export type IntegrationSyncResult = {
   diagnostics?: ResourceSyncDiagnostics;
 };
 
+export type IntegrationSyncOptions = {
+  resource?: CrmSyncResource;
+  mode?: CrmSyncMode;
+};
+
 export async function syncIntegrationResources(
   integration: PartnerIntegration,
+  options?: IntegrationSyncOptions,
 ): Promise<IntegrationSyncResult> {
   if (!integration.is_active || integration.kind !== "crm") {
     return {
@@ -59,7 +67,7 @@ export async function syncIntegrationResources(
   };
 
   if (integration.provider === "propstack") {
-    return syncPropstackResources(sanitizedIntegration, apiKey);
+    return syncPropstackResources(sanitizedIntegration, apiKey, options);
   }
 
   if (integration.provider === "onoffice") {

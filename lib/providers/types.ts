@@ -1,5 +1,8 @@
 export type ProviderKey = "propstack" | "onoffice";
 
+export type CrmSyncResource = "offers" | "references" | "requests" | "all";
+export type CrmSyncMode = "guarded" | "full";
+
 export type PartnerIntegration = {
   id: string;
   partner_id: string;
@@ -156,10 +159,13 @@ export type ResourceSyncDiagnostics = {
   provider_pages_fetched: number;
   provider_breakdown?: Record<string, { requests: number; pages_fetched: number }>;
   guarded_limits?: Record<string, { target_objects: number; max_pages?: number; per_page?: number }>;
+  sync_limits?: Record<string, { target_objects?: number; max_pages?: number; per_page?: number }>;
   partial_sync_mode?: boolean;
   stale_deactivation_allowed?: boolean;
   references_source?: "live" | "unavailable";
   requests_source?: "live" | "unavailable";
+  resource?: CrmSyncResource;
+  mode?: CrmSyncMode;
 };
 
 export type ResourceSyncData = {
