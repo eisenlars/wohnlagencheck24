@@ -197,12 +197,16 @@ async function deactivateMissingByExternalId(
   provider: string,
   activeExternalIds: string[],
 ): Promise<number> {
-  const { data, error } = await supabase
+  const baseQuery = supabase
     .from(table)
     .select("external_id")
     .eq("partner_id", partnerId)
-    .eq(providerField, provider)
-    .eq("is_active", true);
+    .eq(providerField, provider);
+
+  const { data, error } =
+    table === "partner_property_offers"
+      ? await baseQuery
+      : await baseQuery.eq("is_active", true);
 
   if (error) throw new Error(error.message);
 
@@ -214,6 +218,18 @@ async function deactivateMissingByExternalId(
   if (stale.length === 0) return 0;
 
   const now = new Date().toISOString();
+  if (table === "partner_property_offers") {
+    const { error: deleteError } = await supabase
+      .from(table)
+      .delete()
+      .eq("partner_id", partnerId)
+      .eq(providerField, provider)
+      .in("external_id", stale);
+
+    if (deleteError) throw new Error(deleteError.message);
+    return stale.length;
+  }
+
   const patch =
     table === "partner_references" || table === "partner_requests"
       ? {
@@ -223,9 +239,7 @@ async function deactivateMissingByExternalId(
           lifecycle_status: "stale",
           is_live: false,
         }
-      : table === "partner_listings" || table === "crm_raw_references" || table === "crm_raw_requests"
-        ? { is_active: false, sync_status: "stale", updated_at: now }
-        : { is_active: false, updated_at: now };
+      : { is_active: false, sync_status: "stale", updated_at: now };
 
   const { error: updateError } = await supabase
     .from(table)
