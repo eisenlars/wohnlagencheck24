@@ -250,6 +250,8 @@ type PropstackFetchBatchResult<T> = {
   requestsMade: number;
   pagesFetched: number;
   hitLimit: boolean;
+  totalCount?: number | null;
+  requiredPages?: number | null;
 };
 
 type PropstackGuardedResourceLimits = {
@@ -1677,6 +1679,7 @@ async function fetchPropstackSearchProfilesDetailed(
   const out: PropstackSearchProfile[] = [];
   const perPage = Math.max(1, Math.min(100, options?.perPage ?? 50));
   const maxPages = Math.max(1, Math.min(200, options?.maxPages ?? 20));
+  let totalCount: number | null = null;
   let page = 1;
   let requestsMade = 0;
   let pagesFetched = 0;
@@ -1686,6 +1689,7 @@ async function fetchPropstackSearchProfilesDetailed(
     const url = new URL(`${base.replace(/\/+$/, "")}/saved_queries`);
     url.searchParams.set("page", String(page));
     url.searchParams.set("per", String(perPage));
+    url.searchParams.set("with_meta", "1");
 
     const res = await fetchWithTimeout(url.toString(), {
       headers: {
@@ -1708,6 +1712,17 @@ async function fetchPropstackSearchProfilesDetailed(
     }
 
     const json = await res.json();
+    if (totalCount === null) {
+      const metaTotalCount = json?.meta?.total_count;
+      if (typeof metaTotalCount === "number" && Number.isFinite(metaTotalCount) && metaTotalCount >= 0) {
+        totalCount = Math.trunc(metaTotalCount);
+      } else if (typeof metaTotalCount === "string") {
+        const parsed = Number(metaTotalCount);
+        if (Number.isFinite(parsed) && parsed >= 0) {
+          totalCount = Math.trunc(parsed);
+        }
+      }
+    }
     const batch = Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : [];
     if (!Array.isArray(batch) || batch.length === 0) break;
     out.push(...(batch as PropstackSearchProfile[]));
@@ -1716,13 +1731,22 @@ async function fetchPropstackSearchProfilesDetailed(
     page += 1;
   }
 
-  if (page > maxPages && out.length > 0) hitLimit = true;
+  const requiredPages =
+    totalCount === null ? null : totalCount <= 0 ? 0 : Math.ceil(totalCount / Math.max(1, perPage));
+
+  if (totalCount !== null) {
+    hitLimit = out.length < totalCount;
+  } else if (page > maxPages && out.length > 0) {
+    hitLimit = true;
+  }
 
   return {
     items: out,
     requestsMade,
     pagesFetched,
     hitLimit,
+    totalCount,
+    requiredPages,
   };
 }
 
@@ -1914,7 +1938,7 @@ export async function syncPropstackResources(
       requestsFetched = true;
       requestsSource = "live";
       notes.push(
-        `${mode} sync: propstack saved_queries${mode === "guarded" ? ` target_objects=${activeRequestLimits.targetObjects}` : ` max_pages=${activeRequestLimits.maxPages}`}`,
+        `${mode} sync: propstack saved_queries${mode === "guarded" ? ` target_objects=${activeRequestLimits.targetObjects}` : ` max_pages=${activeRequestLimits.maxPages}`}${profilesResult.totalCount === null ? "" : `, total_count=${profilesResult.totalCount}, required_pages=${profilesResult.requiredPages ?? "?"}, per=${activeRequestLimits.perPage}`}`,
       );
     } catch (error) {
       requestsSource = "unavailable";
