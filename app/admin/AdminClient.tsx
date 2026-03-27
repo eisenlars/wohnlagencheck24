@@ -175,6 +175,9 @@ type CrmIntegrationAdminDraft = {
   guardedUnitsTargetObjects: string;
   guardedReferencesTargetObjects: string;
   guardedSavedQueriesTargetObjects: string;
+  offersSyncMaxRuntimeSec: string;
+  referencesSyncMaxRuntimeSec: string;
+  requestsSyncMaxRuntimeSec: string;
   requestFreshnessEnabled: boolean;
   requestFreshnessBasis: "source_updated_at" | "last_seen_at";
   requestFreshnessBuyDays: string;
@@ -1310,7 +1313,12 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
   const refLimits = asObject(guarded.references);
   const savedQueries = asObject(guarded.saved_queries);
   const resources = asObject(settings.resources);
+  const offerResource = asObject(resources.offers);
+  const referenceResource = asObject(resources.references);
   const requestResource = asObject(resources.requests);
+  const offerSync = asObject(offerResource.sync);
+  const referenceSync = asObject(referenceResource.sync);
+  const requestSync = asObject(requestResource.sync);
   const requestFreshness = asObject(requestResource.freshness ?? settings.request_freshness);
   const readTargetObjects = (section: Record<string, unknown>) => {
     const direct = asText(section.target_objects);
@@ -1319,6 +1327,13 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     const perPage = typeof section.per_page === "number" ? section.per_page : Number(asText(section.per_page) ?? "");
     if (Number.isFinite(maxPages) && Number.isFinite(perPage) && maxPages > 0 && perPage > 0) {
       return String(Math.floor(maxPages * perPage));
+    }
+    return "";
+  };
+  const readMaxRuntimeSec = (section: Record<string, unknown>) => {
+    const runtimeMs = typeof section.max_runtime_ms === "number" ? section.max_runtime_ms : Number(asText(section.max_runtime_ms) ?? "");
+    if (Number.isFinite(runtimeMs) && runtimeMs > 0) {
+      return String(Math.floor(runtimeMs / 1000));
     }
     return "";
   };
@@ -1331,6 +1346,9 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     guardedUnitsTargetObjects: readTargetObjects(units),
     guardedReferencesTargetObjects: readTargetObjects(refLimits),
     guardedSavedQueriesTargetObjects: readTargetObjects(savedQueries),
+    offersSyncMaxRuntimeSec: readMaxRuntimeSec(offerSync),
+    referencesSyncMaxRuntimeSec: readMaxRuntimeSec(referenceSync),
+    requestsSyncMaxRuntimeSec: readMaxRuntimeSec(requestSync),
     requestFreshnessEnabled: requestFreshness.enabled === true,
     requestFreshnessBasis: requestFreshness.basis === "last_seen_at" ? "last_seen_at" : "source_updated_at",
     requestFreshnessBuyDays: asText(requestFreshness.max_age_days_buy) ?? "",
@@ -1352,7 +1370,12 @@ function applyCrmAdminDraftToSettings(
   const referenceLimits = { ...asObject(guarded.references) };
   const savedQueries = { ...asObject(guarded.saved_queries) };
   const resources = { ...asObject(settings.resources) };
+  const offerResource = { ...asObject(resources.offers) };
+  const referenceResource = { ...asObject(resources.references) };
   const requestResource = { ...asObject(resources.requests) };
+  const offerSync = { ...asObject(offerResource.sync) };
+  const referenceSync = { ...asObject(referenceResource.sync) };
+  const requestSync = { ...asObject(requestResource.sync) };
 
   const listingStatusIds = parseCsvNumberList(draft.listingsStatusIds, "Status-IDs für Angebote");
   if (listingStatusIds.length > 0) listings.status_ids = listingStatusIds;
@@ -1373,6 +1396,9 @@ function applyCrmAdminDraftToSettings(
   const unitsTargetObjects = parseOptionalPositiveInteger(draft.guardedUnitsTargetObjects, "Guarded Angebote target_objects");
   const referencesTargetObjects = parseOptionalPositiveInteger(draft.guardedReferencesTargetObjects, "Guarded Referenzen target_objects");
   const savedQueriesTargetObjects = parseOptionalPositiveInteger(draft.guardedSavedQueriesTargetObjects, "Guarded Gesuche target_objects");
+  const offersSyncMaxRuntimeSec = parseOptionalPositiveInteger(draft.offersSyncMaxRuntimeSec, "Angebote Vollsync Timeout (Sek.)");
+  const referencesSyncMaxRuntimeSec = parseOptionalPositiveInteger(draft.referencesSyncMaxRuntimeSec, "Referenzen Vollsync Timeout (Sek.)");
+  const requestsSyncMaxRuntimeSec = parseOptionalPositiveInteger(draft.requestsSyncMaxRuntimeSec, "Gesuche Vollsync Timeout (Sek.)");
 
   if (unitsTargetObjects !== null) units.target_objects = unitsTargetObjects;
   else delete units.target_objects;
@@ -1388,6 +1414,15 @@ function applyCrmAdminDraftToSettings(
   else delete savedQueries.target_objects;
   delete savedQueries.max_pages;
   delete savedQueries.per_page;
+
+  if (offersSyncMaxRuntimeSec !== null) offerSync.max_runtime_ms = offersSyncMaxRuntimeSec * 1000;
+  else delete offerSync.max_runtime_ms;
+
+  if (referencesSyncMaxRuntimeSec !== null) referenceSync.max_runtime_ms = referencesSyncMaxRuntimeSec * 1000;
+  else delete referenceSync.max_runtime_ms;
+
+  if (requestsSyncMaxRuntimeSec !== null) requestSync.max_runtime_ms = requestsSyncMaxRuntimeSec * 1000;
+  else delete requestSync.max_runtime_ms;
 
   if (Object.keys(listings).length > 0) resourceFilters.listings = listings;
   else delete resourceFilters.listings;
@@ -1408,9 +1443,17 @@ function applyCrmAdminDraftToSettings(
   if (Object.keys(guarded).length > 0) settings.guarded = guarded;
   else delete settings.guarded;
 
+  if (Object.keys(offerSync).length > 0) offerResource.sync = offerSync;
+  else delete offerResource.sync;
+
+  if (Object.keys(referenceSync).length > 0) referenceResource.sync = referenceSync;
+  else delete referenceResource.sync;
+
   const freshnessEnabled = draft.requestFreshnessEnabled;
   const freshnessBuyDays = parseOptionalPositiveInteger(draft.requestFreshnessBuyDays, "Gesuche Freshness Kauf (Tage)");
   const freshnessRentDays = parseOptionalPositiveInteger(draft.requestFreshnessRentDays, "Gesuche Freshness Miete (Tage)");
+  if (Object.keys(requestSync).length > 0) requestResource.sync = requestSync;
+  else delete requestResource.sync;
   if (freshnessEnabled || freshnessBuyDays !== null || freshnessRentDays !== null) {
     requestResource.freshness = {
       enabled: freshnessEnabled,
@@ -1423,6 +1466,18 @@ function applyCrmAdminDraftToSettings(
   } else {
     delete requestResource.freshness;
     delete settings.request_freshness;
+  }
+
+  if (Object.keys(offerResource).length > 0) {
+    resources.offers = offerResource;
+  } else {
+    delete resources.offers;
+  }
+
+  if (Object.keys(referenceResource).length > 0) {
+    resources.references = referenceResource;
+  } else {
+    delete resources.references;
   }
 
   if (Object.keys(requestResource).length > 0) {
@@ -6261,6 +6316,18 @@ export default function AdminClient() {
                   <tr key={row.key}>
                     <td style={tdStyle}>
                       <div>{resolveAreaName(row.mapping, row.displayKreisId)}</div>
+                      {selectedPartner?.is_system_default && Boolean(row.mapping.is_public_live) && buildLiveHrefFromArea(row.mapping.areas ?? null, row.mapping.area_id) ? (
+                        <div style={{ marginTop: 4 }}>
+                          <a
+                            href={buildLiveHrefFromArea(row.mapping.areas ?? null, row.mapping.area_id) ?? "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: "#0f766e", textDecoration: "underline", fontSize: 12, fontWeight: 700 }}
+                          >
+                            Marktüberblick {resolveAreaName(row.mapping, row.displayKreisId)}
+                          </a>
+                        </div>
+                      ) : null}
                       <small style={mutedStyle}>{row.displayKreisId}</small>
                     </td>
                     <td style={tdStyle}>
@@ -7035,6 +7102,20 @@ export default function AdminClient() {
                                     placeholder="z. B. 100"
                                   />
                                 </label>
+                                <label>
+                                  Vollsync Timeout (Sek.)
+                                  <input
+                                    style={inputStyle}
+                                    value={draft.offersSyncMaxRuntimeSec}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, offersSyncMaxRuntimeSec: e.target.value },
+                                      }))
+                                    }
+                                    placeholder="z. B. 300"
+                                  />
+                                </label>
                               </>
                             ) : null}
 
@@ -7100,6 +7181,20 @@ export default function AdminClient() {
                                     placeholder="z. B. 100"
                                   />
                                 </label>
+                                <label>
+                                  Vollsync Timeout (Sek.)
+                                  <input
+                                    style={inputStyle}
+                                    value={draft.referencesSyncMaxRuntimeSec}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, referencesSyncMaxRuntimeSec: e.target.value },
+                                      }))
+                                    }
+                                    placeholder="z. B. 300"
+                                  />
+                                </label>
                               </>
                             ) : null}
 
@@ -7117,6 +7212,20 @@ export default function AdminClient() {
                                       }))
                                     }
                                     placeholder="z. B. 50"
+                                  />
+                                </label>
+                                <label>
+                                  Vollsync Timeout (Sek.)
+                                  <input
+                                    style={inputStyle}
+                                    value={draft.requestsSyncMaxRuntimeSec}
+                                    onChange={(e) =>
+                                      setCrmIntegrationDrafts((prev) => ({
+                                        ...prev,
+                                        [integration.id]: { ...draft, requestsSyncMaxRuntimeSec: e.target.value },
+                                      }))
+                                    }
+                                    placeholder="z. B. 300"
                                   />
                                 </label>
                                 <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
