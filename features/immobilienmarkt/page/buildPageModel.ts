@@ -309,22 +309,7 @@ const ORTSLAGE_MAKLER_FALLBACK_KEYS = [
 ] as const;
 
 function withMetaValue(report: Report, key: string, value: unknown): Report {
-  const rawMeta = report.meta;
-  if (Array.isArray(rawMeta)) {
-    const first = asRecord(rawMeta[0]) ?? {};
-    return {
-      ...report,
-      meta: [
-        {
-          ...first,
-          [key]: value,
-        },
-        ...rawMeta.slice(1),
-      ],
-    };
-  }
-
-  const meta = asRecord(rawMeta) ?? {};
+  const meta = asRecord(report.meta) ?? {};
   return {
     ...report,
     meta: {
