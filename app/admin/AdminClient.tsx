@@ -8809,7 +8809,6 @@ export default function AdminClient() {
                 setMarketExplanationStandardScope("kreis");
                 if (marketExplanationStandardSelection && !isKreisAreaOption(marketExplanationStandardSelection)) {
                   setMarketExplanationStandardSelection(null);
-                  setMarketExplanationStandardAreaQuery("");
                 }
                 void run("Kreis-Standardtexte laden", async () => {
                   await loadMarketExplanationStandardTexts({ scope: "kreis", locale: marketExplanationStandardLocale });
@@ -8825,7 +8824,6 @@ export default function AdminClient() {
                 setMarketExplanationStandardScope("ortslage");
                 if (marketExplanationStandardSelection && isKreisAreaOption(marketExplanationStandardSelection)) {
                   setMarketExplanationStandardSelection(null);
-                  setMarketExplanationStandardAreaQuery("");
                 }
                 void run("Ortslagen-Standardtexte laden", async () => {
                   await loadMarketExplanationStandardTexts({ scope: "ortslage", locale: marketExplanationStandardLocale });
