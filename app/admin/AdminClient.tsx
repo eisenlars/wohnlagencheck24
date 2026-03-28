@@ -1460,8 +1460,6 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     }
     return "";
   };
-  const readAutoMode = (section: Record<string, unknown>) => (asText(section.mode) === "guarded" ? "guarded" : "full");
-
   return {
     listingsStatusIds: formatCsvInput(listings.status_ids),
     referencesArchived: asText(references.archived) ?? "",
@@ -1474,15 +1472,15 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     referencesSyncMaxRuntimeSec: readMaxRuntimeSec(referenceSync),
     requestsSyncMaxRuntimeSec: readMaxRuntimeSec(requestSync),
     offersAutoSyncEnabled: offerAutoSync.enabled === true,
-    offersAutoSyncMode: readAutoMode(offerAutoSync),
+    offersAutoSyncMode: "full",
     offersAutoSyncIntervalMinutes: asScalarInput(offerAutoSync.interval_minutes),
     offersAutoSyncNightOnly: offerAutoSync.night_only === true,
     referencesAutoSyncEnabled: referenceAutoSync.enabled === true,
-    referencesAutoSyncMode: readAutoMode(referenceAutoSync),
+    referencesAutoSyncMode: "full",
     referencesAutoSyncIntervalMinutes: asScalarInput(referenceAutoSync.interval_minutes),
     referencesAutoSyncNightOnly: referenceAutoSync.night_only === true,
     requestsAutoSyncEnabled: requestAutoSync.enabled === true,
-    requestsAutoSyncMode: readAutoMode(requestAutoSync),
+    requestsAutoSyncMode: "full",
     requestsAutoSyncIntervalMinutes: asScalarInput(requestAutoSync.interval_minutes),
     requestsAutoSyncNightOnly: requestAutoSync.night_only === true,
     requestFreshnessEnabled: requestFreshness.enabled === true,
@@ -1568,7 +1566,7 @@ function applyCrmAdminDraftToSettings(
 
   if (draft.offersAutoSyncEnabled || offersAutoSyncIntervalMinutes !== null) {
     offerAutoSync.enabled = draft.offersAutoSyncEnabled;
-    offerAutoSync.mode = draft.offersAutoSyncMode;
+    offerAutoSync.mode = "full";
     offerAutoSync.interval_minutes = offersAutoSyncIntervalMinutes;
     offerAutoSync.night_only = draft.offersAutoSyncNightOnly;
   } else {
@@ -1580,7 +1578,7 @@ function applyCrmAdminDraftToSettings(
 
   if (draft.referencesAutoSyncEnabled || referencesAutoSyncIntervalMinutes !== null) {
     referenceAutoSync.enabled = draft.referencesAutoSyncEnabled;
-    referenceAutoSync.mode = draft.referencesAutoSyncMode;
+    referenceAutoSync.mode = "full";
     referenceAutoSync.interval_minutes = referencesAutoSyncIntervalMinutes;
     referenceAutoSync.night_only = draft.referencesAutoSyncNightOnly;
   } else {
@@ -1592,7 +1590,7 @@ function applyCrmAdminDraftToSettings(
 
   if (draft.requestsAutoSyncEnabled || requestsAutoSyncIntervalMinutes !== null) {
     requestAutoSync.enabled = draft.requestsAutoSyncEnabled;
-    requestAutoSync.mode = draft.requestsAutoSyncMode;
+    requestAutoSync.mode = "full";
     requestAutoSync.interval_minutes = requestsAutoSyncIntervalMinutes;
     requestAutoSync.night_only = draft.requestsAutoSyncNightOnly;
   } else {
@@ -7587,7 +7585,7 @@ export default function AdminClient() {
                               <div style={sectionCardStyle}>
                                 <div style={sectionTitleStyle}>Automatik</div>
                                 <p style={sectionHintStyle}>
-                                  Betriebssteuerung für wiederkehrende Läufe. Diese Werte steuern Intervall, Modus und Laufzeit.
+                                  Betriebssteuerung für wiederkehrende Läufe. Automatische Läufe arbeiten immer als Vollsync; hier werden Intervall und Laufzeit gesteuert.
                                 </p>
                                 <div style={fieldGridStyle}>
                                   {resourceKey === "offers" ? (
@@ -7618,22 +7616,6 @@ export default function AdminClient() {
                                           }
                                         />
                                         <span>Auto-Sync aktiv</span>
-                                      </label>
-                                      <label>
-                                        Auto-Sync Modus
-                                        <select
-                                          style={inputStyle}
-                                          value={draft.offersAutoSyncMode}
-                                          onChange={(e) =>
-                                            setCrmIntegrationDrafts((prev) => ({
-                                              ...prev,
-                                              [integration.id]: { ...draft, offersAutoSyncMode: e.target.value as "guarded" | "full" },
-                                            }))
-                                          }
-                                        >
-                                          <option value="full">Vollsync</option>
-                                          <option value="guarded">Guarded</option>
-                                        </select>
                                       </label>
                                       <label>
                                         Auto-Sync Intervall (Min.)
@@ -7695,22 +7677,6 @@ export default function AdminClient() {
                                         <span>Auto-Sync aktiv</span>
                                       </label>
                                       <label>
-                                        Auto-Sync Modus
-                                        <select
-                                          style={inputStyle}
-                                          value={draft.referencesAutoSyncMode}
-                                          onChange={(e) =>
-                                            setCrmIntegrationDrafts((prev) => ({
-                                              ...prev,
-                                              [integration.id]: { ...draft, referencesAutoSyncMode: e.target.value as "guarded" | "full" },
-                                            }))
-                                          }
-                                        >
-                                          <option value="full">Vollsync</option>
-                                          <option value="guarded">Guarded</option>
-                                        </select>
-                                      </label>
-                                      <label>
                                         Auto-Sync Intervall (Min.)
                                         <input
                                           style={inputStyle}
@@ -7768,22 +7734,6 @@ export default function AdminClient() {
                                           }
                                         />
                                         <span>Auto-Sync aktiv</span>
-                                      </label>
-                                      <label>
-                                        Auto-Sync Modus
-                                        <select
-                                          style={inputStyle}
-                                          value={draft.requestsAutoSyncMode}
-                                          onChange={(e) =>
-                                            setCrmIntegrationDrafts((prev) => ({
-                                              ...prev,
-                                              [integration.id]: { ...draft, requestsAutoSyncMode: e.target.value as "guarded" | "full" },
-                                            }))
-                                          }
-                                        >
-                                          <option value="full">Vollsync</option>
-                                          <option value="guarded">Guarded</option>
-                                        </select>
                                       </label>
                                       <label>
                                         Auto-Sync Intervall (Min.)

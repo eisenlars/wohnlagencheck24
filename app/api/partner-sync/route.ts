@@ -545,8 +545,8 @@ function collectDueJobs(integration: IntegrationRow, nowMs: number): ScheduledSy
     jobs.push({
       integration,
       resource,
-      mode: autoSync.mode,
-      timeoutMs: resolveSyncTimeoutMs(settings, resource, autoSync.mode),
+      mode: "full",
+      timeoutMs: resolveSyncTimeoutMs(settings, resource, "full"),
       intervalMinutes: autoSync.interval_minutes,
       nightOnly: autoSync.night_only,
     });
