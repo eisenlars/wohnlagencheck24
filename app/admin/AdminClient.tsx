@@ -2667,29 +2667,7 @@ export default function AdminClient() {
     }
   }, [marketExplanationStandardLocale, portalLocaleConfigs]);
 
-  useEffect(() => {
-    if (marketExplanationMode !== "standard") return;
-    if (marketExplanationStandardScope === "bundesland") return;
-    if (marketExplanationStandardSelection?.id) {
-      const selectedKreisId = getKreisIdFromAreaId(marketExplanationStandardSelection.id);
-      const matchedKreis = systemPartnerKreisOptions.find((item) => item.id === selectedKreisId);
-      if (matchedKreis) {
-        setMarketExplanationStandardKreisSelection((prev) => prev?.id === matchedKreis.id ? prev : matchedKreis);
-        return;
-      }
-    }
-    const fallback = systemPartnerKreisOptions[0] ?? null;
-    if (!fallback) return;
-    setMarketExplanationStandardKreisSelection((prev) => prev?.id === fallback.id ? prev : fallback);
-    if (!marketExplanationStandardSelection?.id && marketExplanationStandardScope === "kreis") {
-      setMarketExplanationStandardSelection(fallback);
-    }
-  }, [
-    marketExplanationMode,
-    marketExplanationStandardScope,
-    marketExplanationStandardSelection?.id,
-    systemPartnerKreisOptions,
-  ]);
+  
 
   useEffect(() => {
     if (marketExplanationMode !== "standard") return;
@@ -2996,6 +2974,7 @@ export default function AdminClient() {
     () => partners.find((partner) => partner.is_system_default) ?? null,
     [partners],
   );
+
   const systemPartnerKreisOptions = useMemo<StandardTextRefreshSelection[]>(() => {
     const mappings = systemPartner?.area_mappings ?? [];
     const rows = mappings
@@ -3010,6 +2989,31 @@ export default function AdminClient() {
       .filter((row) => row.id);
     return rows.sort((a, b) => formatAreaOptionLabel(a).localeCompare(formatAreaOptionLabel(b), "de"));
   }, [systemPartner?.area_mappings]);
+  
+  useEffect(() => {
+    if (marketExplanationMode !== "standard") return;
+    if (marketExplanationStandardScope === "bundesland") return;
+    if (marketExplanationStandardSelection?.id) {
+      const selectedKreisId = getKreisIdFromAreaId(marketExplanationStandardSelection.id);
+      const matchedKreis = systemPartnerKreisOptions.find((item) => item.id === selectedKreisId);
+      if (matchedKreis) {
+        setMarketExplanationStandardKreisSelection((prev) => prev?.id === matchedKreis.id ? prev : matchedKreis);
+        return;
+      }
+    }
+    const fallback = systemPartnerKreisOptions[0] ?? null;
+    if (!fallback) return;
+    setMarketExplanationStandardKreisSelection((prev) => prev?.id === fallback.id ? prev : fallback);
+    if (!marketExplanationStandardSelection?.id && marketExplanationStandardScope === "kreis") {
+      setMarketExplanationStandardSelection(fallback);
+    }
+  }, [
+    marketExplanationMode,
+    marketExplanationStandardScope,
+    marketExplanationStandardSelection?.id,
+    systemPartnerKreisOptions,
+  ]);
+  
   const selectedPartnerSummary = useMemo(() => {
     const states = displayAreaRows.map((row) =>
       normalizeActivationStatus(
@@ -3151,6 +3155,8 @@ export default function AdminClient() {
       .sort((a, b) => Number(a.sort_order ?? 100) - Number(b.sort_order ?? 100)),
     [partnerLocaleBillingRows],
   );
+  
+  
   useEffect(() => {
     setHandoverDraft((prev) => {
       const nextModes: Record<string, HandoverLocaleMode> = {};
