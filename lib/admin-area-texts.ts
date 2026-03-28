@@ -1,6 +1,6 @@
 import { hashText } from "@/lib/text-hash";
 
-export type AdminAreaTextScopeKind = "bundesland";
+export type AdminAreaTextScopeKind = "bundesland" | "kreis" | "ortslage";
 export type AdminAreaTextType = "general" | "individual";
 export type AdminAreaTextStatus = "draft" | "approved";
 

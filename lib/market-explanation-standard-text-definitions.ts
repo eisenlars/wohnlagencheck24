@@ -19,7 +19,7 @@ export type MarketExplanationStandardTextDefinition = {
   type: "general" | "individual";
 };
 
-export type MarketExplanationStandardScope = "kreis" | "bundesland";
+export type MarketExplanationStandardScope = "kreis" | "ortslage" | "bundesland";
 
 export const MARKET_EXPLANATION_STANDARD_TABS: MarketExplanationStandardTab[] = [
   { id: "uebersicht", label: "Übersicht" },

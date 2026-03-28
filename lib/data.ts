@@ -176,7 +176,7 @@ export async function getApprovedMarketingTexts(
 
 export async function getApprovedAdminAreaTexts(
   supabaseClient: SupabaseClientLike,
-  scopeKind: "bundesland",
+  scopeKind: "bundesland" | "kreis" | "ortslage",
   scopeKey: string,
 ): Promise<ReportTextOverride[]> {
   try {
@@ -241,7 +241,7 @@ export async function getPartnerAreaGeneratedTexts(
 
 export async function getLiveAdminAreaTextTranslations(
   supabaseClient: SupabaseClientLike,
-  scopeKind: "bundesland",
+  scopeKind: "bundesland" | "kreis" | "ortslage",
   scopeKey: string,
   locale: string,
 ): Promise<ReportTextOverride[]> {

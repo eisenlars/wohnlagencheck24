@@ -24,6 +24,7 @@ import {
   type MarketExplanationStandardScope,
   type MarketExplanationStandardTextDefinition,
 } from "@/lib/market-explanation-standard-text-definitions";
+import { buildReportPath, type AreaRow } from "@/lib/text-bootstrap";
 import { getTextKeyLabel } from "@/lib/text-key-labels";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { checkAdminApiRateLimit } from "@/lib/security/rate-limit";
@@ -69,6 +70,7 @@ type MarketExplanationStandardEntry = {
 type Body = {
   level?: unknown;
   bundesland_slug?: unknown;
+  area_id?: unknown;
   locale?: unknown;
   entries?: Array<{
     key?: unknown;
@@ -88,6 +90,24 @@ type Body = {
   };
 };
 
+type ScopedSelection =
+  | {
+      scope: "bundesland";
+      scopeKind: "bundesland";
+      scopeKey: string;
+      bundeslandSlug: string;
+      areaId: "";
+      area: null;
+    }
+  | {
+      scope: "kreis" | "ortslage";
+      scopeKind: "kreis" | "ortslage";
+      scopeKey: string;
+      bundeslandSlug: "";
+      areaId: string;
+      area: AreaRow;
+    };
+
 function isRecord(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -97,7 +117,10 @@ function asText(value: unknown): string {
 }
 
 function sanitizeScope(value: unknown): MarketExplanationStandardScope {
-  return String(value ?? "").trim().toLowerCase() === "bundesland" ? "bundesland" : "kreis";
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "bundesland") return "bundesland";
+  if (normalized === "ortslage") return "ortslage";
+  return "kreis";
 }
 
 function sanitizeLocale(value: unknown): string {
@@ -106,6 +129,10 @@ function sanitizeLocale(value: unknown): string {
 
 function sanitizeBundeslandSlug(value: unknown): string {
   return String(value ?? "").trim().toLowerCase();
+}
+
+function sanitizeAreaId(value: unknown): string {
+  return String(value ?? "").trim();
 }
 
 function normalizeBundeslandTranslationStatus(value: unknown): AdminAreaTextI18nEntryStatus {
@@ -141,15 +168,22 @@ function cloneTextTree(tree: TextTree): TextTree {
   return out;
 }
 
-function resolveStandardTree(payload: StandardPayload | null): TextTree {
+function resolveStandardTree(
+  payload: StandardPayload | null,
+  preferredScope?: MarketExplanationStandardScope,
+): TextTree {
   if (!payload) return {};
   const top = toTextTree(payload.text);
   if (Object.keys(top).length > 0) return top;
   const bundesland = toTextTree(payload.bundeslandname?.text);
-  if (Object.keys(bundesland).length > 0) return bundesland;
   const kreis = toTextTree(payload.kreisname?.text);
+  const ortslage = toTextTree(payload.ortslagenname?.text);
+  if (preferredScope === "bundesland" && Object.keys(bundesland).length > 0) return bundesland;
+  if (preferredScope === "kreis" && Object.keys(kreis).length > 0) return kreis;
+  if (preferredScope === "ortslage" && Object.keys(ortslage).length > 0) return ortslage;
+  if (Object.keys(bundesland).length > 0) return bundesland;
   if (Object.keys(kreis).length > 0) return kreis;
-  return toTextTree(payload.ortslagenname?.text);
+  return ortslage;
 }
 
 function findTextByKey(tree: TextTree, key: string): string {
@@ -186,6 +220,16 @@ function ensureBundeslandScope(scope: MarketExplanationStandardScope, bundesland
   }
 }
 
+function ensureAreaScope(scope: MarketExplanationStandardScope, areaId: string) {
+  if ((scope === "kreis" || scope === "ortslage") && !areaId) {
+    throw new Error("Für Kreis-/Ortslagen-Standardtexte wird ein Gebiet benötigt.");
+  }
+}
+
+function resolveScopeKind(scope: MarketExplanationStandardScope): "bundesland" | "kreis" | "ortslage" {
+  return scope === "bundesland" ? "bundesland" : scope;
+}
+
 function buildStoragePath(scope: MarketExplanationStandardScope): string {
   if (scope === "kreis") return KREIS_STANDARD_TEXT_PATH;
   return BUNDESLAND_STANDARD_TEXT_PATH;
@@ -215,6 +259,46 @@ async function downloadBundeslandReport(
   const raw = await res.data.text();
   const payload = JSON.parse(raw);
   return isRecord(payload) ? (payload as ReportPayload) : null;
+}
+
+async function downloadAreaReport(
+  admin: ReturnType<typeof createAdminClient>,
+  area: AreaRow,
+): Promise<ReportPayload | null> {
+  const res = await admin.storage.from(SUPABASE_BUCKET).download(buildReportPath(area));
+  if (res.error || !res.data) return null;
+  const raw = await res.data.text();
+  const payload = JSON.parse(raw);
+  return isRecord(payload) ? (payload as ReportPayload) : null;
+}
+
+async function loadAreaRow(
+  admin: ReturnType<typeof createAdminClient>,
+  areaId: string,
+): Promise<AreaRow | null> {
+  const res = await admin
+    .from("areas")
+    .select("id, slug, name, parent_slug, bundesland_slug")
+    .eq("id", areaId)
+    .maybeSingle();
+  if (res.error?.message) {
+    throw new Error(String(res.error.message));
+  }
+  const row = res.data as {
+    id?: string | null;
+    slug?: string | null;
+    name?: string | null;
+    parent_slug?: string | null;
+    bundesland_slug?: string | null;
+  } | null;
+  if (!row?.id || !row?.slug || !row?.bundesland_slug) return null;
+  return {
+    id: String(row.id),
+    slug: String(row.slug),
+    name: row.name ? String(row.name) : null,
+    parent_slug: row.parent_slug ? String(row.parent_slug) : null,
+    bundesland_slug: String(row.bundesland_slug),
+  };
 }
 
 function sanitizeKey(value: unknown, definitions: MarketExplanationStandardTextDefinition[]): string {
@@ -302,6 +386,15 @@ function buildBundeslandEntries(args: {
   });
 }
 
+function buildScopedEntries(args: {
+  definitions: MarketExplanationStandardTextDefinition[];
+  baseTree: TextTree;
+  effectiveTree: TextTree;
+  overrideRows: AdminAreaTextRecord[];
+}): MarketExplanationStandardEntry[] {
+  return buildBundeslandEntries(args);
+}
+
 function buildBundeslandSourceEntries(args: {
   definitions: MarketExplanationStandardTextDefinition[];
   effectiveTree: TextTree;
@@ -314,6 +407,24 @@ function buildBundeslandSourceEntries(args: {
     section_key: definition.key,
     value_text: findTextByKey(args.effectiveTree, definition.key),
     updated_at: overrideMap.get(definition.key)?.last_updated ?? null,
+  }));
+}
+
+function buildScopedSourceEntries(args: {
+  definitions: MarketExplanationStandardTextDefinition[];
+  effectiveTree: TextTree;
+  overrideRows: AdminAreaTextRecord[];
+  scopeKind: "bundesland" | "kreis" | "ortslage";
+  scopeKey: string;
+}) {
+  return buildBundeslandSourceEntries({
+    definitions: args.definitions,
+    effectiveTree: args.effectiveTree,
+    overrideRows: args.overrideRows,
+  }).map((entry) => ({
+    ...entry,
+    scope_kind: args.scopeKind,
+    scope_key: args.scopeKey,
   }));
 }
 
@@ -349,6 +460,19 @@ function buildBundeslandTranslatedEntries(args: {
   });
 }
 
+function buildScopedTranslatedEntries(args: {
+  definitions: MarketExplanationStandardTextDefinition[];
+  sourceEntries: Array<{
+    section_key: string;
+    value_text: string;
+    updated_at?: string | null;
+  }>;
+  targetRows: AdminAreaTextI18nEntryRecord[];
+  metas: ReturnType<typeof buildAdminAreaTextI18nMetaViews>;
+}): MarketExplanationStandardEntry[] {
+  return buildBundeslandTranslatedEntries(args);
+}
+
 async function loadBundeslandBaseTree(args: {
   admin: ReturnType<typeof createAdminClient>;
   bundeslandSlug: string;
@@ -361,55 +485,136 @@ async function loadBundeslandBaseTree(args: {
   return mergeMissingEntriesFromStandard(reportTree, standardTree, args.definitions);
 }
 
+async function loadAreaBaseTree(args: {
+  admin: ReturnType<typeof createAdminClient>;
+  area: AreaRow;
+  scope: "kreis" | "ortslage";
+  definitions: MarketExplanationStandardTextDefinition[];
+}): Promise<TextTree> {
+  const reportPayload = await downloadAreaReport(args.admin, args.area);
+  const reportTree = resolveReportTree(reportPayload);
+  const standardPayload = await downloadStandardPayload(args.admin, "kreis");
+  const standardTree = resolveStandardTree(standardPayload, args.scope);
+  return mergeMissingEntriesFromStandard(reportTree, standardTree, args.definitions);
+}
+
+async function resolveScopedSelection(args: {
+  admin: ReturnType<typeof createAdminClient>;
+  scope: MarketExplanationStandardScope;
+  bundeslandSlug: string;
+  areaId: string;
+  requireScopeKey?: boolean;
+}): Promise<ScopedSelection | null> {
+  if (args.scope === "bundesland") {
+    if (!args.bundeslandSlug) {
+      if (args.requireScopeKey) ensureBundeslandScope(args.scope, args.bundeslandSlug);
+      return null;
+    }
+    return {
+      scope: "bundesland",
+      scopeKind: "bundesland",
+      scopeKey: args.bundeslandSlug,
+      bundeslandSlug: args.bundeslandSlug,
+      areaId: "",
+      area: null,
+    };
+  }
+
+  if (!args.areaId) {
+    if (args.requireScopeKey) ensureAreaScope(args.scope, args.areaId);
+    return null;
+  }
+
+  const area = await loadAreaRow(args.admin, args.areaId);
+  if (!area) {
+    throw new Error("Gebiet konnte nicht geladen werden.");
+  }
+  const isKreis = String(area.parent_slug ?? "") === String(area.bundesland_slug ?? "");
+  if (args.scope === "kreis" && !isKreis) {
+    throw new Error("Für Kreis-Standardtexte muss ein Kreis ausgewählt werden.");
+  }
+  if (args.scope === "ortslage" && isKreis) {
+    throw new Error("Für Ortslagen-Standardtexte muss eine Ortslage ausgewählt werden.");
+  }
+  return {
+    scope: args.scope,
+    scopeKind: args.scope,
+    scopeKey: area.id,
+    bundeslandSlug: "",
+    areaId: area.id,
+    area,
+  };
+}
+
 async function loadPayload(args: {
   admin: ReturnType<typeof createAdminClient>;
   scope: MarketExplanationStandardScope;
   bundeslandSlug: string;
+  areaId: string;
   locale: string;
 }) {
   const definitions = getMarketExplanationStandardDefinitions(args.scope);
+  const selection = await resolveScopedSelection({
+    admin: args.admin,
+    scope: args.scope,
+    bundeslandSlug: args.bundeslandSlug,
+    areaId: args.areaId,
+    requireScopeKey: false,
+  });
   let tree: TextTree;
   let entries: MarketExplanationStandardEntry[];
-  if (args.scope === "bundesland") {
-    const baseTree = await loadBundeslandBaseTree({
-      admin: args.admin,
-      bundeslandSlug: args.bundeslandSlug,
-      definitions,
-    });
+  if (!selection) {
+    tree = {};
+    entries = buildEntries(definitions, tree);
+  } else {
+    const baseTree = selection.scope === "bundesland"
+      ? await loadBundeslandBaseTree({
+          admin: args.admin,
+          bundeslandSlug: selection.bundeslandSlug,
+          definitions,
+        })
+      : await loadAreaBaseTree({
+          admin: args.admin,
+          area: selection.area,
+          scope: selection.scope,
+          definitions,
+        });
     const overrideRows = await loadAdminAreaTextRows({
       supabaseClient: args.admin,
-      scopeKind: "bundesland",
-      scopeKey: args.bundeslandSlug,
+      scopeKind: selection.scopeKind,
+      scopeKey: selection.scopeKey,
       keys: definitions.map((definition) => definition.key),
       approvedOnly: true,
     });
     const effectiveGermanTree = applyAdminOverridesToTree(baseTree, overrideRows);
     if (args.locale === "de") {
       tree = effectiveGermanTree;
-      entries = buildBundeslandEntries({
+      entries = buildScopedEntries({
         definitions,
         baseTree,
         effectiveTree: tree,
         overrideRows,
       });
     } else {
-      const sourceEntries = buildBundeslandSourceEntries({
+      const sourceEntries = buildScopedSourceEntries({
         definitions,
         effectiveTree: effectiveGermanTree,
         overrideRows,
-      }).map((entry) => ({ ...entry, scope_key: args.bundeslandSlug }));
+        scopeKind: selection.scopeKind,
+        scopeKey: selection.scopeKey,
+      });
       const [targetRows, metas] = await Promise.all([
         loadAdminAreaTextI18nEntries({
           supabaseClient: args.admin,
-          scopeKind: "bundesland",
-          scopeKey: args.bundeslandSlug,
+          scopeKind: selection.scopeKind,
+          scopeKey: selection.scopeKey,
           locale: args.locale,
           keys: definitions.map((definition) => definition.key),
         }),
         loadAdminAreaTextI18nMeta({
           supabaseClient: args.admin,
-          scopeKind: "bundesland",
-          scopeKey: args.bundeslandSlug,
+          scopeKind: selection.scopeKind,
+          scopeKey: selection.scopeKey,
           locale: args.locale,
           keys: definitions.map((definition) => definition.key),
         }),
@@ -427,23 +632,20 @@ async function loadPayload(args: {
             value_text: row.value_text,
           })),
       );
-      entries = buildBundeslandTranslatedEntries({
+      entries = buildScopedTranslatedEntries({
         definitions,
         sourceEntries,
         targetRows,
         metas: metaViews,
       });
     }
-  } else {
-    const payload = await downloadStandardPayload(args.admin, args.scope);
-    tree = resolveStandardTree(payload);
-    entries = buildEntries(definitions, tree);
   }
   const bundeslaender = await getBundeslaender();
   return {
     level: args.scope,
     locale: args.locale,
     bundesland_slug: args.bundeslandSlug,
+    area_id: selection?.areaId ?? "",
     bundeslaender,
     definitions,
     entries,
@@ -462,10 +664,15 @@ export async function GET(req: Request) {
     const scope = sanitizeScope(url.searchParams.get("level"));
     const locale = sanitizeLocale(url.searchParams.get("locale"));
     const bundeslandSlug = sanitizeBundeslandSlug(url.searchParams.get("bundesland_slug"));
-    ensureBundeslandScope(scope, bundeslandSlug);
+    const areaId = sanitizeAreaId(url.searchParams.get("area_id"));
+    if (scope === "bundesland") {
+      ensureBundeslandScope(scope, bundeslandSlug);
+    } else if (areaId) {
+      ensureAreaScope(scope, areaId);
+    }
 
     const admin = createAdminClient();
-    const payload = await loadPayload({ admin, scope, bundeslandSlug, locale });
+    const payload = await loadPayload({ admin, scope, bundeslandSlug, areaId, locale });
     return NextResponse.json({ ok: true, ...payload });
   } catch (error) {
     if (error instanceof Error) {
@@ -489,27 +696,41 @@ export async function POST(req: Request) {
     const scope = sanitizeScope(body.level);
     const locale = sanitizeLocale(body.locale);
     const bundeslandSlug = sanitizeBundeslandSlug(body.bundesland_slug);
-    ensureBundeslandScope(scope, bundeslandSlug);
-    const definitions = getMarketExplanationStandardDefinitions(scope);
+    const areaId = sanitizeAreaId(body.area_id);
     const admin = createAdminClient();
+    const selection = await resolveScopedSelection({
+      admin,
+      scope,
+      bundeslandSlug,
+      areaId,
+      requireScopeKey: true,
+    });
+    if (!selection) {
+      throw new Error("Für diese Standardtexte fehlt die Gebietszuordnung.");
+    }
+    const definitions = getMarketExplanationStandardDefinitions(scope);
 
     if (body.translate) {
-      if (scope !== "bundesland") {
-        throw new Error("KI-Übersetzung ist für Standardtexte nur auf Bundeslandebene vorgesehen.");
-      }
       const targetLocale = sanitizeLocale(body.translate.target_locale ?? locale);
       const requestedKeys = Array.isArray(body.translate.keys)
         ? body.translate.keys.map((item) => sanitizeKey(item, definitions))
         : definitions.map((definition) => definition.key);
-      const baseTree = await loadBundeslandBaseTree({
-        admin,
-        bundeslandSlug,
-        definitions,
-      });
+      const baseTree = selection.scope === "bundesland"
+        ? await loadBundeslandBaseTree({
+            admin,
+            bundeslandSlug: selection.bundeslandSlug,
+            definitions,
+          })
+        : await loadAreaBaseTree({
+            admin,
+            area: selection.area,
+            scope: selection.scope,
+            definitions,
+          });
       const existingOverrides = await loadAdminAreaTextRows({
         supabaseClient: admin,
-        scopeKind: "bundesland",
-        scopeKey: bundeslandSlug,
+        scopeKind: selection.scopeKind,
+        scopeKey: selection.scopeKey,
         keys: requestedKeys,
         approvedOnly: true,
       });
@@ -522,7 +743,9 @@ export async function POST(req: Request) {
       const translated = await translateAdminTextItems({
         admin,
         domain: `market-standard-${scope}`,
-        domainLabel: `Markterklärungstexte ${bundeslandSlug}`,
+        domainLabel: selection.scope === "bundesland"
+          ? `Markterklärungstexte ${selection.bundeslandSlug}`
+          : `Markterklärungstexte ${selection.area.name ?? selection.area.slug ?? selection.area.id}`,
         targetLocale,
         items,
       });
@@ -533,8 +756,8 @@ export async function POST(req: Request) {
             throw new Error(`Unbekannter Standardtext-Key: ${key}`);
           }
           return {
-            scope_kind: "bundesland" as const,
-            scope_key: bundeslandSlug,
+            scope_kind: selection.scopeKind,
+            scope_key: selection.scopeKey,
             section_key: key,
             text_type: definition.type,
             raw_content: findTextByKey(baseTree, key),
@@ -550,8 +773,8 @@ export async function POST(req: Request) {
       } else {
         const existingEntries = await loadAdminAreaTextI18nEntries({
           supabaseClient: admin,
-          scopeKind: "bundesland",
-          scopeKey: bundeslandSlug,
+          scopeKind: selection.scopeKind,
+          scopeKey: selection.scopeKey,
           locale: targetLocale,
           keys: requestedKeys,
         });
@@ -561,8 +784,8 @@ export async function POST(req: Request) {
           if (!translatedText) return [];
           const current = existingMap.get(key);
           return [{
-            scope_kind: "bundesland" as const,
-            scope_key: bundeslandSlug,
+            scope_kind: selection.scopeKind,
+            scope_key: selection.scopeKey,
             section_key: key,
             locale: targetLocale,
             status: resolveAutoWriteStatus(normalizeBundeslandTranslationStatus(current?.status)),
@@ -594,7 +817,13 @@ export async function POST(req: Request) {
           });
         }
       }
-      const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, locale: targetLocale });
+      const responsePayload = await loadPayload({
+        admin,
+        scope,
+        bundeslandSlug,
+        areaId,
+        locale: targetLocale,
+      });
       return NextResponse.json({ ok: true, ...responsePayload });
     }
 
@@ -603,9 +832,6 @@ export async function POST(req: Request) {
     }
 
     if (body.reset) {
-      if (scope !== "bundesland") {
-        throw new Error("Zurücksetzen auf Standard ist nur auf Bundeslandebene vorgesehen.");
-      }
       const resetKeys = Array.isArray(body.reset.keys)
         ? body.reset.keys.map((item) => sanitizeKey(item, definitions))
         : [];
@@ -615,27 +841,27 @@ export async function POST(req: Request) {
       if (locale === "de") {
         await deleteAdminAreaTextRows({
           supabaseClient: admin,
-          scopeKind: "bundesland",
-          scopeKey: bundeslandSlug,
+          scopeKind: selection.scopeKind,
+          scopeKey: selection.scopeKey,
           keys: resetKeys,
         });
       } else {
         await deleteAdminAreaTextI18nEntries({
           supabaseClient: admin,
-          scopeKind: "bundesland",
-          scopeKey: bundeslandSlug,
+          scopeKind: selection.scopeKind,
+          scopeKey: selection.scopeKey,
           locale,
           keys: resetKeys,
         });
         await deleteAdminAreaTextI18nMeta({
           supabaseClient: admin,
-          scopeKind: "bundesland",
-          scopeKey: bundeslandSlug,
+          scopeKind: selection.scopeKind,
+          scopeKey: selection.scopeKey,
           locale,
           keys: resetKeys,
         });
       }
-      const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, locale });
+      const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, areaId, locale });
       return NextResponse.json({ ok: true, ...responsePayload });
     }
 
@@ -648,138 +874,130 @@ export async function POST(req: Request) {
       value_text: String(entry.value_text ?? ""),
       override_status: entry.status ? String(entry.status) : undefined,
     }));
-    if (scope === "bundesland") {
-      const baseTree = await loadBundeslandBaseTree({
-        admin,
-        bundeslandSlug,
-        definitions,
-      });
-      if (locale === "de") {
-        const rowsToUpsert: Parameters<typeof upsertAdminAreaTextRows>[0]["rows"] = [];
-        const rowsToDelete: string[] = [];
-        for (const entry of nextEntries) {
-          const definition = definitions.find((item) => item.key === entry.key);
-          if (!definition) continue;
-          const baseValue = findTextByKey(baseTree, entry.key);
-          const nextValue = String(entry.value_text ?? "");
-          if (!asText(nextValue) || nextValue === baseValue) {
-            rowsToDelete.push(entry.key);
-            continue;
-          }
-          rowsToUpsert.push({
-            scope_kind: "bundesland",
-            scope_key: bundeslandSlug,
-            section_key: entry.key,
-            text_type: definition.type,
-            raw_content: baseValue,
-            optimized_content: nextValue,
-            status: "approved",
-            updated_by: adminUser.userId,
-          });
-        }
-        if (rowsToDelete.length > 0) {
-          await deleteAdminAreaTextRows({
-            supabaseClient: admin,
-            scopeKind: "bundesland",
-            scopeKey: bundeslandSlug,
-            keys: rowsToDelete,
-          });
-        }
-        if (rowsToUpsert.length > 0) {
-          await upsertAdminAreaTextRows({
-            supabaseClient: admin,
-            rows: rowsToUpsert,
-          });
-        }
-      } else {
-        const approvedOverrides = await loadAdminAreaTextRows({
-          supabaseClient: admin,
-          scopeKind: "bundesland",
-          scopeKey: bundeslandSlug,
-          keys: definitions.map((definition) => definition.key),
-          approvedOnly: true,
+    const baseTree = selection.scope === "bundesland"
+      ? await loadBundeslandBaseTree({
+          admin,
+          bundeslandSlug: selection.bundeslandSlug,
+          definitions,
+        })
+      : await loadAreaBaseTree({
+          admin,
+          area: selection.area,
+          scope: selection.scope,
+          definitions,
         });
-        const germanSourceTree = applyAdminOverridesToTree(baseTree, approvedOverrides);
-        const rowsToUpsert: Parameters<typeof upsertAdminAreaTextI18nEntries>[0]["rows"] = [];
-        const rowsToDelete: string[] = [];
-        for (const entry of nextEntries) {
-          const nextValue = String(entry.value_text ?? "");
-          if (!asText(nextValue)) {
-            rowsToDelete.push(entry.key);
-            continue;
-          }
-          rowsToUpsert.push({
-            scope_kind: "bundesland",
-            scope_key: bundeslandSlug,
-            section_key: entry.key,
-            locale,
-            status: normalizeBundeslandTranslationStatus(entry.override_status),
-            value_text: nextValue,
-          });
+    if (locale === "de") {
+      const rowsToUpsert: Parameters<typeof upsertAdminAreaTextRows>[0]["rows"] = [];
+      const rowsToDelete: string[] = [];
+      for (const entry of nextEntries) {
+        const definition = definitions.find((item) => item.key === entry.key);
+        if (!definition) continue;
+        const baseValue = findTextByKey(baseTree, entry.key);
+        const nextValue = String(entry.value_text ?? "");
+        if (!asText(nextValue) || nextValue === baseValue) {
+          rowsToDelete.push(entry.key);
+          continue;
         }
-        if (rowsToDelete.length > 0) {
-          await deleteAdminAreaTextI18nEntries({
-            supabaseClient: admin,
-            scopeKind: "bundesland",
-            scopeKey: bundeslandSlug,
-            locale,
-            keys: rowsToDelete,
-          });
-          await deleteAdminAreaTextI18nMeta({
-            supabaseClient: admin,
-            scopeKind: "bundesland",
-            scopeKey: bundeslandSlug,
-            locale,
-            keys: rowsToDelete,
-          });
-        }
-        if (rowsToUpsert.length > 0) {
-          await upsertAdminAreaTextI18nEntries({
-            supabaseClient: admin,
-            rows: rowsToUpsert,
-          });
-          await upsertAdminAreaTextI18nMeta({
-            supabaseClient: admin,
-            rows: rowsToUpsert.map((row) => ({
-              scope_kind: row.scope_kind,
-              scope_key: row.scope_key,
-              section_key: row.section_key,
-              locale: row.locale,
-              source_locale: "de",
-              source_snapshot_hash: buildAdminAreaTextI18nSourceSnapshotHash({
-                scopeKind: row.scope_kind,
-                scopeKey: row.scope_key,
-                sectionKey: row.section_key,
-                valueText: findTextByKey(germanSourceTree, row.section_key),
-              }),
-              source_updated_at: approvedOverrides.find((item) => item.section_key === row.section_key)?.last_updated ?? null,
-              translation_origin: "manual",
-            })),
-          });
-        }
+        rowsToUpsert.push({
+          scope_kind: selection.scopeKind,
+          scope_key: selection.scopeKey,
+          section_key: entry.key,
+          text_type: definition.type,
+          raw_content: baseValue,
+          optimized_content: nextValue,
+          status: "approved",
+          updated_by: adminUser.userId,
+        });
+      }
+      if (rowsToDelete.length > 0) {
+        await deleteAdminAreaTextRows({
+          supabaseClient: admin,
+          scopeKind: selection.scopeKind,
+          scopeKey: selection.scopeKey,
+          keys: rowsToDelete,
+        });
+      }
+      if (rowsToUpsert.length > 0) {
+        await upsertAdminAreaTextRows({
+          supabaseClient: admin,
+          rows: rowsToUpsert,
+        });
       }
     } else {
-      const currentTree = resolveStandardTree(await downloadStandardPayload(admin, scope));
-      const nextTree = applyEntriesToTree(currentTree, nextEntries);
-      const currentPayload = await downloadStandardPayload(admin, scope);
-      await admin.storage.from(SUPABASE_BUCKET).upload(
-        buildStoragePath(scope),
-        JSON.stringify(withTreePayload(currentPayload, nextTree)),
-        {
-          upsert: true,
-          contentType: "application/json",
-          cacheControl: "0",
-        },
-      );
+      const approvedOverrides = await loadAdminAreaTextRows({
+        supabaseClient: admin,
+        scopeKind: selection.scopeKind,
+        scopeKey: selection.scopeKey,
+        keys: definitions.map((definition) => definition.key),
+        approvedOnly: true,
+      });
+      const germanSourceTree = applyAdminOverridesToTree(baseTree, approvedOverrides);
+      const rowsToUpsert: Parameters<typeof upsertAdminAreaTextI18nEntries>[0]["rows"] = [];
+      const rowsToDelete: string[] = [];
+      for (const entry of nextEntries) {
+        const nextValue = String(entry.value_text ?? "");
+        if (!asText(nextValue)) {
+          rowsToDelete.push(entry.key);
+          continue;
+        }
+        rowsToUpsert.push({
+          scope_kind: selection.scopeKind,
+          scope_key: selection.scopeKey,
+          section_key: entry.key,
+          locale,
+          status: normalizeBundeslandTranslationStatus(entry.override_status),
+          value_text: nextValue,
+        });
+      }
+      if (rowsToDelete.length > 0) {
+        await deleteAdminAreaTextI18nEntries({
+          supabaseClient: admin,
+          scopeKind: selection.scopeKind,
+          scopeKey: selection.scopeKey,
+          locale,
+          keys: rowsToDelete,
+        });
+        await deleteAdminAreaTextI18nMeta({
+          supabaseClient: admin,
+          scopeKind: selection.scopeKind,
+          scopeKey: selection.scopeKey,
+          locale,
+          keys: rowsToDelete,
+        });
+      }
+      if (rowsToUpsert.length > 0) {
+        await upsertAdminAreaTextI18nEntries({
+          supabaseClient: admin,
+          rows: rowsToUpsert,
+        });
+        await upsertAdminAreaTextI18nMeta({
+          supabaseClient: admin,
+          rows: rowsToUpsert.map((row) => ({
+            scope_kind: row.scope_kind,
+            scope_key: row.scope_key,
+            section_key: row.section_key,
+            locale: row.locale,
+            source_locale: "de",
+            source_snapshot_hash: buildAdminAreaTextI18nSourceSnapshotHash({
+              scopeKind: row.scope_kind,
+              scopeKey: row.scope_key,
+              sectionKey: row.section_key,
+              valueText: findTextByKey(germanSourceTree, row.section_key),
+            }),
+            source_updated_at: approvedOverrides.find((item) => item.section_key === row.section_key)?.last_updated ?? null,
+            translation_origin: "manual",
+          })),
+        });
+      }
     }
 
-    const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, locale });
+    const responsePayload = await loadPayload({ admin, scope, bundeslandSlug, areaId, locale });
     return NextResponse.json({ ok: true, ...responsePayload });
   } catch (error) {
     if (error instanceof Error) {
       const lowered = error.message.toLowerCase();
       if (lowered.includes("admin_area_text_i18n_entries") || lowered.includes("admin_area_text_i18n_meta")) {
-        return NextResponse.json({ error: "Bundesland-i18n-Tabellen fehlen. Bitte `docs/sql/portal_cms.sql` ausführen." }, { status: 409 });
+        return NextResponse.json({ error: "Admin-Area-i18n-Tabellen fehlen. Bitte `docs/sql/portal_cms.sql` ausführen." }, { status: 409 });
       }
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       if (error.message === "FORBIDDEN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });

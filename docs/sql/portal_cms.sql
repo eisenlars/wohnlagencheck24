@@ -95,7 +95,7 @@ create table if not exists public.market_explanation_static_text_i18n_meta (
 
 create table if not exists public.admin_area_texts (
   scope_kind text not null
-    check (scope_kind in ('bundesland')),
+    check (scope_kind in ('bundesland', 'kreis', 'ortslage')),
   scope_key text not null,
   section_key text not null,
   text_type text not null default 'general'
@@ -113,7 +113,7 @@ create table if not exists public.admin_area_texts (
 
 create table if not exists public.admin_area_text_i18n_entries (
   scope_kind text not null
-    check (scope_kind in ('bundesland')),
+    check (scope_kind in ('bundesland', 'kreis', 'ortslage')),
   scope_key text not null,
   section_key text not null,
   locale text not null,
@@ -126,7 +126,7 @@ create table if not exists public.admin_area_text_i18n_entries (
 
 create table if not exists public.admin_area_text_i18n_meta (
   scope_kind text not null
-    check (scope_kind in ('bundesland')),
+    check (scope_kind in ('bundesland', 'kreis', 'ortslage')),
   scope_key text not null,
   section_key text not null,
   locale text not null,
@@ -220,10 +220,10 @@ comment on table public.market_explanation_static_text_i18n_meta is
   'Quelle und Verwaltungsstatus fuer uebersetzte statische Markterklaerungstexte.';
 
 comment on table public.admin_area_texts is
-  'Admin-Overrides fuer portalverantwortete Gebietstexte, initial fuer Bundeslandseiten.';
+  'Admin-Overrides fuer portalverantwortete Gebietstexte auf Bundesland-, Kreis- und Ortslagenebene.';
 
 comment on table public.admin_area_text_i18n_entries is
-  'Mehrsprachige Admin-Overrides fuer portalverantwortete Gebietstexte, initial fuer Bundeslandseiten.';
+  'Mehrsprachige Admin-Overrides fuer portalverantwortete Gebietstexte auf Bundesland-, Kreis- und Ortslagenebene.';
 
 comment on table public.admin_area_text_i18n_meta is
   'Quellbezug und Uebersetzungsstatus fuer mehrsprachige Admin-Gebietstexte.';

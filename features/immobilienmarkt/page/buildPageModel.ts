@@ -456,6 +456,25 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     }
   }
 
+  if (areaId && areaScope && supabase && isSystemDefaultPartner) {
+    const adminOverrides = await getApprovedAdminAreaTexts(supabase, areaScope, areaId);
+    if (adminOverrides.length > 0) {
+      report = withTextTree(report, applyOverridesToTextTree(getTextTree(report), adminOverrides));
+    }
+
+    if (locale !== "de") {
+      const translatedAdminOverrides = await getLiveAdminAreaTextTranslations(
+        supabase,
+        areaScope,
+        areaId,
+        locale,
+      );
+      if (translatedAdminOverrides.length > 0) {
+        report = withTextTree(report, applyOverridesToTextTree(getTextTree(report), translatedAdminOverrides));
+      }
+    }
+  }
+
   if (areaId) {
     let ortslageNameMap: Record<string, string> | undefined = undefined;
     if (route.level === "kreis" && route.regionSlugs.length >= 2) {
@@ -510,6 +529,29 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
           const profile = await downloadSystempartnerDefaultProfile(createAdminClient());
           const nextText = applySystempartnerDefaultProfileToReportText(kreisReport["text"], profile);
           kreisReport = withTextTree(kreisReport, toTextTree(nextText));
+
+          const kreisAdminOverrides = await getApprovedAdminAreaTexts(supabase, "kreis", kreisAreaId);
+          if (kreisAdminOverrides.length > 0) {
+            kreisReport = withTextTree(
+              kreisReport,
+              applyOverridesToTextTree(getTextTree(kreisReport), kreisAdminOverrides),
+            );
+          }
+
+          if (locale !== "de") {
+            const kreisTranslatedAdminOverrides = await getLiveAdminAreaTextTranslations(
+              supabase,
+              "kreis",
+              kreisAreaId,
+              locale,
+            );
+            if (kreisTranslatedAdminOverrides.length > 0) {
+              kreisReport = withTextTree(
+                kreisReport,
+                applyOverridesToTextTree(getTextTree(kreisReport), kreisTranslatedAdminOverrides),
+              );
+            }
+          }
         }
         const overrides = kreisPartnerContext.partnerId
           ? await getApprovedReportTexts(supabase, kreisAreaId, kreisPartnerContext.partnerId)
