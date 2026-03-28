@@ -8758,7 +8758,7 @@ export default function AdminClient() {
 
       {activeView === "market_texts" ? (
       <section style={workspaceSectionStyle}>
-        <h1 style={workspaceTitleStyle}>Markterklärungstexte</h1>
+        <h1 style={workspaceTitleStyle}>Erklärtexte für systemeigene Marktbericht-Bereiche</h1>
         <p style={mutedStyle}>
           Fachliche Markttexte sind hier getrennt von UI-Systemtexten organisiert. Standardtexte mit Text-Key werden deutsch als Systempartner-Basis gepflegt, statische Erklärungstexte ohne Key folgen separat.
         </p>
