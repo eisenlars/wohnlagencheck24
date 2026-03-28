@@ -167,6 +167,14 @@ type IntegrationPreviewSummary = {
   traceId?: string | null;
 };
 
+type CrmSyncWarningBox = {
+  title: string;
+  cause: string;
+  effect: string;
+  action: string;
+  tone: "warning" | "error";
+};
+
 type CrmIntegrationAdminDraft = {
   listingsStatusIds: string;
   referencesArchived: string;
@@ -1229,6 +1237,97 @@ function formatSyncResultMessage(result: CrmSyncResultPayload): string {
   if (result.deactivated_listings > 0) extras.push(`${result.deactivated_listings} Rohobjekte deaktiviert`);
   if (result.notes?.length) extras.push(result.notes[0] ?? "");
   return `${parts.join(" · ")} synchronisiert${extras.length ? ` · ${extras.join(" · ")}` : ""}`;
+}
+
+function buildCrmSyncWarning(summary: IntegrationSyncSummary | null): CrmSyncWarningBox | null {
+  if (!summary || summary.mode !== "full") return null;
+
+  const notes = Array.isArray(summary.result?.notes) ? summary.result?.notes ?? [] : [];
+  const notesText = notes.join(" ").toLowerCase();
+  const messageText = String(summary.message ?? "").toLowerCase();
+  const errorClass = String(summary.errorClass ?? "").toLowerCase();
+
+  const staleSkipped = notesText.includes("stale deactivation skipped");
+  const fetchLimitReached =
+    notesText.includes("fetch limit")
+    || notesText.includes("required_pages=")
+    || notesText.includes("max_pages=");
+  const timeoutReached =
+    errorClass === "timeout"
+    || messageText.includes("zeitlimit")
+    || notesText.includes("zeitlimit");
+  const rateLimited =
+    errorClass === "crm_rate_limited"
+    || messageText.includes("rate limit")
+    || messageText.includes("(429)")
+    || notesText.includes("rate limit");
+  const networkIssue =
+    errorClass === "crm_network_error"
+    || messageText.includes("fetch failed")
+    || messageText.includes("netz")
+    || messageText.includes("timed out");
+
+  if (fetchLimitReached && staleSkipped) {
+    return {
+      title: "Vollsync nicht vollständig abgeschlossen",
+      cause: "Der Datenabruf wurde an einem Seiten- oder Sicherheitslimit gestoppt, bevor alle Datensätze geladen waren.",
+      effect: "Veraltete Einträge wurden vorsichtshalber nicht auf stale gesetzt und können vorerst weiter sichtbar bleiben.",
+      action: "Seitenlimit oder Laufzeit erhöhen und den Vollsync erneut starten.",
+      tone: "warning",
+    };
+  }
+
+  if (timeoutReached) {
+    return {
+      title: "Vollsync wegen Zeitlimit beendet",
+      cause: "Der Lauf hat die erlaubte maximale Ausführungszeit erreicht und wurde vorzeitig beendet.",
+      effect: "Der Bestand wurde nicht vollständig abgeglichen. Veraltete Einträge wurden dabei nicht zuverlässig auf stale gesetzt.",
+      action: "Timeout erhöhen und den Vollsync erneut starten.",
+      tone: "error",
+    };
+  }
+
+  if (rateLimited) {
+    return {
+      title: "Vollsync vom Anbieter begrenzt",
+      cause: "Der CRM-Anbieter hat den Abruf vorzeitig begrenzt oder abgewiesen.",
+      effect: "Der Bestand kann unvollständig sein. Veraltete Einträge wurden dabei nicht sicher auf stale gesetzt.",
+      action: "Lauf später erneut starten oder die Abruf-Frequenz und Limits prüfen.",
+      tone: "warning",
+    };
+  }
+
+  if (networkIssue) {
+    return {
+      title: "Vollsync wegen Verbindungsproblem unvollständig",
+      cause: "Während des Abrufs ist ein Netzwerk- oder Verbindungsfehler aufgetreten.",
+      effect: "Der Bestand kann unvollständig sein. Veraltete Einträge wurden dabei nicht sicher auf stale gesetzt.",
+      action: "Verbindung prüfen und den Vollsync erneut starten.",
+      tone: "error",
+    };
+  }
+
+  if ((summary.status === "error" || summary.status === "warning") && staleSkipped) {
+    return {
+      title: "Vollsync vorsichtshalber nicht vollständig übernommen",
+      cause: "Der Lauf wurde mit einer Sicherheitsprüfung abgeschlossen, weil der Abruf nicht vollständig oder nicht eindeutig abgeschlossen war.",
+      effect: "Veraltete Einträge wurden nicht auf stale gesetzt und können deshalb weiter sichtbar bleiben.",
+      action: "Hinweise im Verlauf prüfen und anschließend den Vollsync erneut starten.",
+      tone: "warning",
+    };
+  }
+
+  if (summary.status === "error") {
+    return {
+      title: "Vollsync fehlgeschlagen",
+      cause: "Der letzte Vollsync konnte nicht erfolgreich abgeschlossen werden.",
+      effect: "Der Datenbestand wurde nicht vollständig aktualisiert. Veraltete Einträge können weiter sichtbar bleiben.",
+      action: "Fehlerhinweise im Verlauf prüfen und danach den Vollsync erneut starten.",
+      tone: "error",
+    };
+  }
+
+  return null;
 }
 
 function readCrmRuntime(settings: Record<string, unknown>, resource: "all" | CrmResourceKey): Record<string, unknown> {
@@ -7272,6 +7371,7 @@ export default function AdminClient() {
                           : resourcePreviewSummary?.status === "warning"
                             ? "#b45309"
                             : "#b91c1c";
+                      const syncWarning = buildCrmSyncWarning(resourceSyncSummary);
                       const sectionCardStyle = {
                         border: "1px solid #e2e8f0",
                         borderRadius: 12,
@@ -7367,6 +7467,37 @@ export default function AdminClient() {
                                 <p style={{ marginTop: 10, marginBottom: 0, fontSize: 12, color: syncStatusColor }}>
                                   {resourceSyncSummary.message}
                                 </p>
+                              ) : null}
+                              {syncWarning ? (
+                                <div
+                                  style={{
+                                    marginTop: 12,
+                                    padding: 12,
+                                    borderRadius: 12,
+                                    border: `1px solid ${syncWarning.tone === "error" ? "#fca5a5" : "#fcd34d"}`,
+                                    background: syncWarning.tone === "error" ? "#fef2f2" : "#fffbeb",
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      fontSize: 12,
+                                      fontWeight: 700,
+                                      color: syncWarning.tone === "error" ? "#b91c1c" : "#b45309",
+                                      marginBottom: 8,
+                                    }}
+                                  >
+                                    {syncWarning.title}
+                                  </div>
+                                  <p style={{ marginTop: 0, marginBottom: 6, fontSize: 12, color: "#334155" }}>
+                                    <strong>Ursache:</strong> {syncWarning.cause}
+                                  </p>
+                                  <p style={{ marginTop: 0, marginBottom: 6, fontSize: 12, color: "#334155" }}>
+                                    <strong>Wirkung:</strong> {syncWarning.effect}
+                                  </p>
+                                  <p style={{ marginTop: 0, marginBottom: 0, fontSize: 12, color: "#334155" }}>
+                                    <strong>Nächster Schritt:</strong> {syncWarning.action}
+                                  </p>
+                                </div>
                               ) : null}
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                                 <button
