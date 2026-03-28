@@ -12,18 +12,25 @@ function parseCsv(value: string): string[] {
     .filter((v) => v.length > 0);
 }
 
+function withNoIndexHeaders(response: NextResponse): NextResponse {
+  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  return response;
+}
+
 function unauthorized() {
-  return new NextResponse("Unauthorized", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": 'Basic realm="Protected"',
-      "x-wc24-auth-source": "proxy-basic",
-    },
-  });
+  return withNoIndexHeaders(
+    new NextResponse("Unauthorized", {
+      status: 401,
+      headers: {
+        "WWW-Authenticate": 'Basic realm="Protected"',
+        "x-wc24-auth-source": "proxy-basic",
+      },
+    }),
+  );
 }
 
 function isBasicAuthDisabled(): boolean {
-  const raw = String(process.env.BASIC_AUTH_DISABLED ?? "").trim().toLowerCase();
+  const raw = String(process.env.BASIC_AUTH_DISABLED ??"").trim().toLowerCase();
   return raw === "1" || raw === "true" || raw === "yes" || raw === "on";
 }
 
@@ -39,17 +46,17 @@ export async function proxy(request: NextRequest) {
   const { locale } = stripLeadingLocale(pathname);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-wc24-locale", normalizePublicLocale(locale));
-  const isAdminPublicPath = pathname === "/admin/login" || pathname === "/admin/reset";
+  const isAdminPublicPath = pathname === "/admin/login" || pathname ==="/admin/reset";
   const needsDashboardAuth = pathname.startsWith("/dashboard");
   const needsAdminAuth = pathname.startsWith("/admin") && !isAdminPublicPath;
-  const resetFlow = String(request.cookies.get("wc24_reset_flow")?.value ?? "").trim().toLowerCase();
+  const resetFlow = String(request.cookies.get("wc24_reset_flow")?.value ??"").trim().toLowerCase();
 
   if (resetFlow === "partner" && needsDashboardAuth) {
-    return NextResponse.redirect(new URL("/partner/reset", request.url));
+    return withNoIndexHeaders(NextResponse.redirect(new URL("/partner/reset", request.url)));
   }
 
   if (resetFlow === "admin" && pathname.startsWith("/admin") && !isAdminPublicPath) {
-    return NextResponse.redirect(new URL("/admin/reset", request.url));
+    return withNoIndexHeaders(NextResponse.redirect(new URL("/admin/reset", request.url)));
   }
 
   if (
@@ -57,9 +64,11 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/api/local-site-texts") ||
     pathname.startsWith("/api/local-site-package")
   ) {
-    return NextResponse.next({
-      request: { headers: requestHeaders },
-    });
+    return withNoIndexHeaders(
+      NextResponse.next({
+        request: { headers: requestHeaders },
+      }),
+    );
   }
 
   const { user: basicUser, pass: basicPass } = getBasicCredentials();
@@ -89,36 +98,42 @@ export async function proxy(request: NextRequest) {
 
     if (!supabaseUrl || !supabaseAnonKey) {
       if (needsAdminAuth) {
-        return NextResponse.redirect(new URL("/admin/login?message=Auth-Konfiguration-fehlt", request.url));
+        return withNoIndexHeaders(
+          NextResponse.redirect(new URL("/admin/login?message=Auth-Konfiguration-fehlt", request.url)),
+        );
       }
-      return NextResponse.redirect(new URL("/partner/login?message=Auth-Konfiguration-fehlt", request.url));
+      return withNoIndexHeaders(
+        NextResponse.redirect(new URL("/partner/login?message=Auth-Konfiguration-fehlt", request.url)),
+      );
     }
 
-    let response = NextResponse.next({
-      request: { headers: requestHeaders },
-    });
+    let response = withNoIndexHeaders(
+      NextResponse.next({
+        request: { headers: requestHeaders },
+      }),
+    );
 
-    const supabase = createServerClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value;
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            request.cookies.set({ name, value, ...options });
-            response = NextResponse.next({ request: { headers: requestHeaders } });
-            response.cookies.set({ name, value, ...options });
-          },
-          remove(name: string, options: CookieOptions) {
-            request.cookies.set({ name, value: "", ...options });
-            response = NextResponse.next({ request: { headers: requestHeaders } });
-            response.cookies.set({ name, value: "", ...options });
-          },
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options });
+          response = withNoIndexHeaders(
+            NextResponse.next({ request: { headers: requestHeaders } }),
+          );
+          response.cookies.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: "", ...options });
+          response = withNoIndexHeaders(
+            NextResponse.next({ request: { headers: requestHeaders } }),
+          );
+          response.cookies.set({ name, value: "", ...options });
         },
       },
-    );
+    });
 
     const {
       data: { user: sessionUser },
@@ -126,24 +141,28 @@ export async function proxy(request: NextRequest) {
 
     if (!sessionUser) {
       if (needsAdminAuth) {
-        return NextResponse.redirect(new URL("/admin/login", request.url));
+        return withNoIndexHeaders(NextResponse.redirect(new URL("/admin/login", request.url)));
       }
-      return NextResponse.redirect(new URL("/partner/login", request.url));
+      return withNoIndexHeaders(NextResponse.redirect(new URL("/partner/login", request.url)));
     }
 
     if (needsAdminAuth) {
       const superAdmins = new Set(parseCsv(ADMIN_SUPER_USER_IDS));
       if (!superAdmins.has(String(sessionUser.id ?? "").trim())) {
-        return NextResponse.redirect(new URL("/admin/login?message=Kein-Admin-Zugriff", request.url));
+        return withNoIndexHeaders(
+          NextResponse.redirect(new URL("/admin/login?message=Kein-Admin-Zugriff", request.url)),
+        );
       }
     }
 
     return response;
   }
 
-  return NextResponse.next({
-    request: { headers: requestHeaders },
-  });
+  return withNoIndexHeaders(
+    NextResponse.next({
+      request: { headers: requestHeaders },
+    }),
+  );
 }
 
 export const config = {
