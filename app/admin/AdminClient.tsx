@@ -7176,6 +7176,49 @@ export default function AdminClient() {
                       const resourcePreviewSummary = readPreviewSummaryFromIntegration(integration, resourceKey);
                       const isRunningThisResource = resourceSyncSummary?.status === "running";
                       const anotherSyncRunning = globalSyncSummary?.status === "running" && !isRunningThisResource;
+                      const resourceDescription =
+                        resourceKey === "offers"
+                          ? "Häufige Aktualisierung, damit vermarktete Angebote schnell verschwinden."
+                          : resourceKey === "references"
+                            ? "Referenzen mit eigener Filter- und Testlogik."
+                            : "Gesuche mit eigener Freshness- und Lifecycle-Steuerung.";
+                      const syncStatusColor =
+                        resourceSyncSummary?.status === "ok"
+                          ? "#15803d"
+                          : resourceSyncSummary?.status === "warning"
+                            ? "#b45309"
+                            : resourceSyncSummary?.status === "running"
+                              ? "#1d4ed8"
+                              : "#b91c1c";
+                      const previewStatusColor =
+                        resourcePreviewSummary?.status === "ok"
+                          ? "#15803d"
+                          : resourcePreviewSummary?.status === "warning"
+                            ? "#b45309"
+                            : "#b91c1c";
+                      const sectionCardStyle = {
+                        border: "1px solid #e2e8f0",
+                        borderRadius: 12,
+                        padding: 12,
+                        background: "#f8fafc",
+                      };
+                      const sectionTitleStyle = {
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: "#0f172a",
+                        marginBottom: 8,
+                      };
+                      const sectionHintStyle = {
+                        marginTop: 0,
+                        marginBottom: 8,
+                        fontSize: 11,
+                        color: "#475569",
+                      };
+                      const fieldGridStyle = {
+                        display: "grid",
+                        gap: 12,
+                        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                      };
 
                       return (
                         <div
@@ -7188,11 +7231,7 @@ export default function AdminClient() {
                                 {formatCrmResourceLabel(resourceKey)}
                               </div>
                               <div style={{ ...mutedStyle, marginTop: 4, fontSize: 12 }}>
-                                {resourceKey === "offers"
-                                  ? "Häufige Aktualisierung, damit vermarktete Angebote schnell verschwinden."
-                                  : resourceKey === "references"
-                                    ? "Referenzen mit eigener Filter- und Testlogik."
-                                    : "Gesuche mit eigener Freshness- und Lifecycle-Steuerung."}
+                                {resourceDescription}
                               </div>
                             </div>
                             {anotherSyncRunning ? (
@@ -7202,600 +7241,686 @@ export default function AdminClient() {
                             ) : null}
                           </div>
 
-                          <div style={{ marginTop: 12, display: "grid", gap: 12, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-                            {resourceKey === "offers" ? (
-                              <>
-                                <label>
-                                  Status-IDs für Angebote
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.listingsStatusIds}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, listingsStatusIds: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 274, 276"
-                                  />
-                                </label>
-                                <label>
-                                  Guarded target_objects
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.guardedUnitsTargetObjects}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, guardedUnitsTargetObjects: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 100"
-                                  />
-                                </label>
-                                <label>
-                                  Vollsync Timeout (Sek.)
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.offersSyncMaxRuntimeSec}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, offersSyncMaxRuntimeSec: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 300"
-                                  />
-                                </label>
-                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={draft.offersAutoSyncEnabled}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, offersAutoSyncEnabled: e.target.checked },
-                                      }))
-                                    }
-                                  />
-                                  <span>Auto-Sync aktiv</span>
-                                </label>
-                                <label>
-                                  Auto-Sync Modus
-                                  <select
-                                    style={inputStyle}
-                                    value={draft.offersAutoSyncMode}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, offersAutoSyncMode: e.target.value as "guarded" | "full" },
-                                      }))
-                                    }
-                                  >
-                                    <option value="full">Vollsync</option>
-                                    <option value="guarded">Guarded</option>
-                                  </select>
-                                </label>
-                                <label>
-                                  Auto-Sync Intervall (Min.)
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.offersAutoSyncIntervalMinutes}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, offersAutoSyncIntervalMinutes: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 60"
-                                  />
-                                </label>
-                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={draft.offersAutoSyncNightOnly}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, offersAutoSyncNightOnly: e.target.checked },
-                                      }))
-                                    }
-                                  />
-                                  <span>Nur nachts</span>
-                                </label>
-                              </>
-                            ) : null}
-
-                            {resourceKey === "references" ? (
-                              <>
-                                <label>
-                                  Referenz-Archivfilter
-                                  <select
-                                    style={inputStyle}
-                                    value={draft.referencesArchived}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, referencesArchived: e.target.value },
-                                      }))
-                                    }
-                                  >
-                                    <option value="">Provider-Default</option>
-                                    <option value="1">Nur archivierte</option>
-                                    <option value="-1">Aktive + archivierte</option>
-                                    <option value="0">Nur aktive</option>
-                                  </select>
-                                </label>
-                                <label>
-                                  Status-IDs für Referenzen
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.referencesStatusIds}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, referencesStatusIds: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 274, 311"
-                                  />
-                                </label>
-                                <label>
-                                  Optionales Custom-Field
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.referencesCustomFieldKey}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, referencesCustomFieldKey: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. referenz_webseite"
-                                  />
-                                </label>
-                                <label>
-                                  Guarded target_objects
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.guardedReferencesTargetObjects}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, guardedReferencesTargetObjects: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 100"
-                                  />
-                                </label>
-                                <label>
-                                  Vollsync Timeout (Sek.)
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.referencesSyncMaxRuntimeSec}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, referencesSyncMaxRuntimeSec: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 300"
-                                  />
-                                </label>
-                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={draft.referencesAutoSyncEnabled}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, referencesAutoSyncEnabled: e.target.checked },
-                                      }))
-                                    }
-                                  />
-                                  <span>Auto-Sync aktiv</span>
-                                </label>
-                                <label>
-                                  Auto-Sync Modus
-                                  <select
-                                    style={inputStyle}
-                                    value={draft.referencesAutoSyncMode}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, referencesAutoSyncMode: e.target.value as "guarded" | "full" },
-                                      }))
-                                    }
-                                  >
-                                    <option value="full">Vollsync</option>
-                                    <option value="guarded">Guarded</option>
-                                  </select>
-                                </label>
-                                <label>
-                                  Auto-Sync Intervall (Min.)
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.referencesAutoSyncIntervalMinutes}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, referencesAutoSyncIntervalMinutes: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 1440"
-                                  />
-                                </label>
-                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={draft.referencesAutoSyncNightOnly}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, referencesAutoSyncNightOnly: e.target.checked },
-                                      }))
-                                    }
-                                  />
-                                  <span>Nur nachts</span>
-                                </label>
-                              </>
-                            ) : null}
-
-                            {resourceKey === "requests" ? (
-                              <>
-                                <label>
-                                  Guarded target_objects
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.guardedSavedQueriesTargetObjects}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, guardedSavedQueriesTargetObjects: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 50"
-                                  />
-                                </label>
-                                <label>
-                                  Vollsync Timeout (Sek.)
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.requestsSyncMaxRuntimeSec}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, requestsSyncMaxRuntimeSec: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 300"
-                                  />
-                                </label>
-                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={draft.requestsAutoSyncEnabled}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, requestsAutoSyncEnabled: e.target.checked },
-                                      }))
-                                    }
-                                  />
-                                  <span>Auto-Sync aktiv</span>
-                                </label>
-                                <label>
-                                  Auto-Sync Modus
-                                  <select
-                                    style={inputStyle}
-                                    value={draft.requestsAutoSyncMode}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, requestsAutoSyncMode: e.target.value as "guarded" | "full" },
-                                      }))
-                                    }
-                                  >
-                                    <option value="full">Vollsync</option>
-                                    <option value="guarded">Guarded</option>
-                                  </select>
-                                </label>
-                                <label>
-                                  Auto-Sync Intervall (Min.)
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.requestsAutoSyncIntervalMinutes}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, requestsAutoSyncIntervalMinutes: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 1440"
-                                  />
-                                </label>
-                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={draft.requestsAutoSyncNightOnly}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, requestsAutoSyncNightOnly: e.target.checked },
-                                      }))
-                                    }
-                                  />
-                                  <span>Nur nachts</span>
-                                </label>
-                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={draft.requestFreshnessEnabled}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, requestFreshnessEnabled: e.target.checked },
-                                      }))
-                                    }
-                                  />
-                                  <span>Freshness aktiv</span>
-                                </label>
-                                <label>
-                                  Freshness-Basis
-                                  <select
-                                    style={inputStyle}
-                                    value={draft.requestFreshnessBasis}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: {
-                                          ...draft,
-                                          requestFreshnessBasis: e.target.value as "source_updated_at" | "last_seen_at",
-                                        },
-                                      }))
-                                    }
-                                  >
-                                    <option value="source_updated_at">source_updated_at</option>
-                                    <option value="last_seen_at">last_seen_at</option>
-                                  </select>
-                                </label>
-                                <label>
-                                  Kauf max_age_days
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.requestFreshnessBuyDays}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, requestFreshnessBuyDays: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 180"
-                                  />
-                                </label>
-                                <label>
-                                  Miete max_age_days
-                                  <input
-                                    style={inputStyle}
-                                    value={draft.requestFreshnessRentDays}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, requestFreshnessRentDays: e.target.value },
-                                      }))
-                                    }
-                                    placeholder="z. B. 90"
-                                  />
-                                </label>
-                                <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={draft.requestFreshnessFallbackToLastSeen}
-                                    onChange={(e) =>
-                                      setCrmIntegrationDrafts((prev) => ({
-                                        ...prev,
-                                        [integration.id]: { ...draft, requestFreshnessFallbackToLastSeen: e.target.checked },
-                                      }))
-                                    }
-                                  />
-                                  <span>Fallback auf last_seen_at</span>
-                                </label>
-                              </>
-                            ) : null}
-                          </div>
-
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-                            <button
-                              style={btnStyle}
-                              disabled={busy || !selectedPartnerId}
-                              onClick={() =>
-                                run(`${formatCrmResourceLabel(resourceKey)}-Settings speichern`, async () => {
-                                  const settings = applyCrmAdminDraftToSettings(integration, draft);
-                                  await api(`/api/admin/integrations/${integration.id}`, {
-                                    method: "PATCH",
-                                    body: JSON.stringify({ settings }),
-                                  });
-                                  await loadPartnerDetails(selectedPartnerId);
-                                })
-                              }
-                            >
-                              Settings speichern
-                            </button>
-                            <button
-                              style={btnGhostStyle}
-                              disabled={busy || !integration.is_active || !selectedPartnerId || anotherSyncRunning}
-                              onClick={() =>
-                                run(`${formatCrmResourceLabel(resourceKey)}-Abruf testen`, async () => {
-                                  await api(`/api/admin/integrations/${integration.id}/preview-sync`, {
-                                    method: "POST",
-                                    body: JSON.stringify({ resource: resourceKey }),
-                                  });
-                                  await loadPartnerDetails(selectedPartnerId);
-                                })
-                              }
-                            >
-                              Abruf testen
-                            </button>
-                            <button
-                              style={btnGhostStyle}
-                              disabled={busy || !integration.is_active || !selectedPartnerId || anotherSyncRunning || isRunningThisResource}
-                              onClick={() =>
-                                run(`${formatCrmResourceLabel(resourceKey)} Guarded-Sync starten`, async () => {
-                                  await api(`/api/admin/integrations/${integration.id}/sync`, {
-                                    method: "POST",
-                                    body: JSON.stringify({ resource: resourceKey, mode: "guarded" }),
-                                  });
-                                  await loadPartnerDetails(selectedPartnerId);
-                                })
-                              }
-                            >
-                              {isRunningThisResource && resourceSyncSummary?.mode === "guarded" ? "Guarded-Sync läuft..." : "Guarded-Sync"}
-                            </button>
-                            <button
-                              style={btnDangerStyle}
-                              disabled={busy || !integration.is_active || !selectedPartnerId || anotherSyncRunning || isRunningThisResource}
-                              onClick={() =>
-                                run(`${formatCrmResourceLabel(resourceKey)} Vollsync starten`, async () => {
-                                  await api(`/api/admin/integrations/${integration.id}/sync`, {
-                                    method: "POST",
-                                    body: JSON.stringify({ resource: resourceKey, mode: "full" }),
-                                  });
-                                  await loadPartnerDetails(selectedPartnerId);
-                                })
-                              }
-                            >
-                              Vollsync
-                            </button>
-                            {isRunningThisResource ? (
-                              <button
-                                style={btnGhostStyle}
-                                disabled={busy || !selectedPartnerId}
-                                onClick={() =>
-                                  run(`${formatCrmResourceLabel(resourceKey)}-Sync abbrechen`, async () => {
-                                    await api(`/api/admin/integrations/${integration.id}/sync?resource=${resourceKey}`, {
-                                      method: "DELETE",
-                                    });
-                                    await loadPartnerDetails(selectedPartnerId);
-                                  })
-                                }
-                              >
-                                Synchronisierung abbrechen
-                              </button>
-                            ) : null}
-                          </div>
-
-                          <p style={{ marginTop: 8, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                            Vollsync läuft mit Safety-Limits und erlaubt nur dann Stale-Deaktivierung, wenn der Providerlauf nicht an einem Fetch-Limit abgeschnitten wurde.
-                          </p>
-
-                          {resourcePreviewSummary ? (
-                            <div style={{ marginTop: 12 }}>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>
-                                Letzter {formatCrmResourceLabel(resourceKey)}-Abruf-Test
-                              </div>
-                              <p
-                                style={{
-                                  marginTop: 6,
-                                  marginBottom: 0,
-                                  fontSize: 12,
-                                  color:
-                                    resourcePreviewSummary.status === "ok"
-                                      ? "#15803d"
-                                      : resourcePreviewSummary.status === "warning"
-                                        ? "#b45309"
-                                        : "#b91c1c",
-                                }}
-                              >
-                                {resourcePreviewSummary.message}
+                          <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+                            <div style={sectionCardStyle}>
+                              <div style={sectionTitleStyle}>Status & Aktionen</div>
+                              <p style={sectionHintStyle}>
+                                Erst Status prüfen, dann Test oder echten Sync auslösen. Guarded bleibt Testmodus, Vollsync ist der produktive Abgleich.
                               </p>
-                              {resourcePreviewSummary.testedAt ? (
-                                <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                  Zuletzt getestet: {new Date(resourcePreviewSummary.testedAt).toLocaleString("de-DE")}
-                                </p>
-                              ) : null}
-                              {resourcePreviewSummary.traceId ? (
-                                <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569", wordBreak: "break-all" }}>
-                                  Trace-ID: {resourcePreviewSummary.traceId}
-                                </p>
-                              ) : null}
-                            </div>
-                          ) : null}
-
-                          {resourceSyncSummary ? (
-                            <div style={{ marginTop: 12 }}>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>
-                                Letzter {formatCrmResourceLabel(resourceKey)}-{formatCrmSyncModeLabel(resourceSyncSummary.mode)}
-                              </div>
-                              <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                {resourceSyncSummary.mode === "full"
-                                  ? "Vollsync: mit Stale-Deaktivierung, sofern der Fetch nicht an Safety-Limits abgeschnitten wurde."
-                                  : "Guarded-Modus: keine Stale-Deaktivierung."}
-                              </p>
-                              <p
-                                style={{
-                                  marginTop: 6,
-                                  marginBottom: 0,
-                                  fontSize: 12,
-                                  color:
-                                    resourceSyncSummary.status === "ok"
-                                      ? "#15803d"
-                                      : resourceSyncSummary.status === "warning"
-                                        ? "#b45309"
-                                        : resourceSyncSummary.status === "running"
-                                          ? "#1d4ed8"
-                                          : "#b91c1c",
-                                }}
-                              >
-                                {resourceSyncSummary.message}
-                              </p>
-                              {resourceSyncSummary.step ? (
-                                <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                  Aktueller Schritt: {resourceSyncSummary.step}
-                                  {resourceSyncSummary.cancelRequested ? " · Abbruch angefordert" : ""}
-                                </p>
-                              ) : null}
-                              {resourceSyncSummary.heartbeatAt ? (
-                                <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                  Letzter Heartbeat: {new Date(resourceSyncSummary.heartbeatAt).toLocaleString("de-DE")}
-                                </p>
-                              ) : null}
-                              {typeof resourceSyncSummary.requestCount === "number" || typeof resourceSyncSummary.pagesFetched === "number" ? (
-                                <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
-                                  Provider-Last: {typeof resourceSyncSummary.requestCount === "number" ? `${resourceSyncSummary.requestCount} Requests` : "0 Requests"}
-                                  {typeof resourceSyncSummary.pagesFetched === "number" ? ` · ${resourceSyncSummary.pagesFetched} Seiten` : ""}
-                                </p>
-                              ) : null}
-                              {resourceSyncSummary.traceId ? (
-                                <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569", wordBreak: "break-all" }}>
-                                  Trace-ID: {resourceSyncSummary.traceId}
-                                </p>
-                              ) : null}
-                              {Array.isArray(resourceSyncSummary.result?.notes) && resourceSyncSummary.result.notes.length > 0 ? (
-                                <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                                  <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
-                                    Sync-Notes
-                                  </p>
-                                  {resourceSyncSummary.result.notes.slice(0, 5).map((note, index) => (
-                                    <p key={`admin-sync-note-${integration.id}-${resourceKey}-${index}`} style={{ marginTop: 0, marginBottom: 4, fontSize: 11, color: "#475569" }}>
-                                      {note}
-                                    </p>
-                                  ))}
+                              <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+                                <div style={{ borderRadius: 10, background: "#fff", border: "1px solid #e2e8f0", padding: 10 }}>
+                                  <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>Status</div>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: resourceSyncSummary ? syncStatusColor : "#475569" }}>
+                                    {resourceSyncSummary
+                                      ? resourceSyncSummary.status === "running"
+                                        ? "Läuft"
+                                        : resourceSyncSummary.status === "ok"
+                                          ? "OK"
+                                          : resourceSyncSummary.status === "warning"
+                                            ? "Achtung"
+                                            : "Fehler"
+                                      : "Noch kein Lauf"}
+                                  </div>
                                 </div>
-                              ) : null}
-                              {Array.isArray(resourceSyncSummary.log) && resourceSyncSummary.log.length > 0 ? (
-                                <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                                  <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
-                                    Sync-Debug
-                                  </p>
-                                  {resourceSyncSummary.log.slice(-5).map((entry, index) => (
-                                    <p key={`${entry.at ?? "log"}-${entry.step ?? "step"}-${resourceKey}-${index}`} style={{ marginTop: 0, marginBottom: 4, fontSize: 11, color: "#475569" }}>
-                                      {entry.at ? new Date(entry.at).toLocaleTimeString("de-DE") : "--:--:--"} · {entry.step ?? "step"} · {entry.message ?? ""}
-                                    </p>
-                                  ))}
+                                <div style={{ borderRadius: 10, background: "#fff", border: "1px solid #e2e8f0", padding: 10 }}>
+                                  <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>Letzter Sync</div>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>
+                                    {resourceSyncSummary?.finishedAt
+                                      ? new Date(resourceSyncSummary.finishedAt).toLocaleString("de-DE")
+                                      : "Noch keiner"}
+                                  </div>
                                 </div>
+                                <div style={{ borderRadius: 10, background: "#fff", border: "1px solid #e2e8f0", padding: 10 }}>
+                                  <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>Requests / Seiten</div>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>
+                                    {typeof resourceSyncSummary?.requestCount === "number" ? resourceSyncSummary.requestCount : 0}
+                                    {" / "}
+                                    {typeof resourceSyncSummary?.pagesFetched === "number" ? resourceSyncSummary.pagesFetched : 0}
+                                  </div>
+                                </div>
+                                <div style={{ borderRadius: 10, background: "#fff", border: "1px solid #e2e8f0", padding: 10 }}>
+                                  <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>Letzter Test</div>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: resourcePreviewSummary ? previewStatusColor : "#0f172a" }}>
+                                    {resourcePreviewSummary?.testedAt
+                                      ? new Date(resourcePreviewSummary.testedAt).toLocaleString("de-DE")
+                                      : "Noch keiner"}
+                                  </div>
+                                </div>
+                              </div>
+                              {resourceSyncSummary ? (
+                                <p style={{ marginTop: 10, marginBottom: 0, fontSize: 12, color: syncStatusColor }}>
+                                  {resourceSyncSummary.message}
+                                </p>
                               ) : null}
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+                                <button
+                                  style={btnStyle}
+                                  disabled={busy || !selectedPartnerId}
+                                  onClick={() =>
+                                    run(`${formatCrmResourceLabel(resourceKey)}-Settings speichern`, async () => {
+                                      const settings = applyCrmAdminDraftToSettings(integration, draft);
+                                      await api(`/api/admin/integrations/${integration.id}`, {
+                                        method: "PATCH",
+                                        body: JSON.stringify({ settings }),
+                                      });
+                                      await loadPartnerDetails(selectedPartnerId);
+                                    })
+                                  }
+                                >
+                                  Settings speichern
+                                </button>
+                                <button
+                                  style={btnGhostStyle}
+                                  disabled={busy || !integration.is_active || !selectedPartnerId || anotherSyncRunning}
+                                  onClick={() =>
+                                    run(`${formatCrmResourceLabel(resourceKey)}-Abruf testen`, async () => {
+                                      await api(`/api/admin/integrations/${integration.id}/preview-sync`, {
+                                        method: "POST",
+                                        body: JSON.stringify({ resource: resourceKey }),
+                                      });
+                                      await loadPartnerDetails(selectedPartnerId);
+                                    })
+                                  }
+                                >
+                                  Abruf testen
+                                </button>
+                                <button
+                                  style={btnGhostStyle}
+                                  disabled={busy || !integration.is_active || !selectedPartnerId || anotherSyncRunning || isRunningThisResource}
+                                  onClick={() =>
+                                    run(`${formatCrmResourceLabel(resourceKey)} Guarded-Sync starten`, async () => {
+                                      await api(`/api/admin/integrations/${integration.id}/sync`, {
+                                        method: "POST",
+                                        body: JSON.stringify({ resource: resourceKey, mode: "guarded" }),
+                                      });
+                                      await loadPartnerDetails(selectedPartnerId);
+                                    })
+                                  }
+                                >
+                                  {isRunningThisResource && resourceSyncSummary?.mode === "guarded" ? "Guarded-Sync läuft..." : "Guarded-Sync"}
+                                </button>
+                                <button
+                                  style={btnDangerStyle}
+                                  disabled={busy || !integration.is_active || !selectedPartnerId || anotherSyncRunning || isRunningThisResource}
+                                  onClick={() =>
+                                    run(`${formatCrmResourceLabel(resourceKey)} Vollsync starten`, async () => {
+                                      await api(`/api/admin/integrations/${integration.id}/sync`, {
+                                        method: "POST",
+                                        body: JSON.stringify({ resource: resourceKey, mode: "full" }),
+                                      });
+                                      await loadPartnerDetails(selectedPartnerId);
+                                    })
+                                  }
+                                >
+                                  Vollsync
+                                </button>
+                                {isRunningThisResource ? (
+                                  <button
+                                    style={btnGhostStyle}
+                                    disabled={busy || !selectedPartnerId}
+                                    onClick={() =>
+                                      run(`${formatCrmResourceLabel(resourceKey)}-Sync abbrechen`, async () => {
+                                        await api(`/api/admin/integrations/${integration.id}/sync?resource=${resourceKey}`, {
+                                          method: "DELETE",
+                                        });
+                                        await loadPartnerDetails(selectedPartnerId);
+                                      })
+                                    }
+                                  >
+                                    Synchronisierung abbrechen
+                                  </button>
+                                ) : null}
+                              </div>
+                              <p style={{ marginTop: 8, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                Vollsync läuft mit Safety-Limits und erlaubt nur dann Stale-Deaktivierung, wenn der Providerlauf nicht an einem Fetch-Limit abgeschnitten wurde.
+                              </p>
                             </div>
-                          ) : null}
+
+                            <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+                              <div style={sectionCardStyle}>
+                                <div style={sectionTitleStyle}>Automatik</div>
+                                <p style={sectionHintStyle}>
+                                  Betriebssteuerung für wiederkehrende Läufe. Diese Werte steuern Intervall, Modus und Laufzeit.
+                                </p>
+                                <div style={fieldGridStyle}>
+                                  {resourceKey === "offers" ? (
+                                    <>
+                                      <label>
+                                        Vollsync Timeout (Sek.)
+                                        <input
+                                          style={inputStyle}
+                                          value={draft.offersSyncMaxRuntimeSec}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, offersSyncMaxRuntimeSec: e.target.value },
+                                            }))
+                                          }
+                                          placeholder="z. B. 300"
+                                        />
+                                      </label>
+                                      <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={draft.offersAutoSyncEnabled}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, offersAutoSyncEnabled: e.target.checked },
+                                            }))
+                                          }
+                                        />
+                                        <span>Auto-Sync aktiv</span>
+                                      </label>
+                                      <label>
+                                        Auto-Sync Modus
+                                        <select
+                                          style={inputStyle}
+                                          value={draft.offersAutoSyncMode}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, offersAutoSyncMode: e.target.value as "guarded" | "full" },
+                                            }))
+                                          }
+                                        >
+                                          <option value="full">Vollsync</option>
+                                          <option value="guarded">Guarded</option>
+                                        </select>
+                                      </label>
+                                      <label>
+                                        Auto-Sync Intervall (Min.)
+                                        <input
+                                          style={inputStyle}
+                                          value={draft.offersAutoSyncIntervalMinutes}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, offersAutoSyncIntervalMinutes: e.target.value },
+                                            }))
+                                          }
+                                          placeholder="z. B. 60"
+                                        />
+                                      </label>
+                                      <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={draft.offersAutoSyncNightOnly}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, offersAutoSyncNightOnly: e.target.checked },
+                                            }))
+                                          }
+                                        />
+                                        <span>Nur nachts</span>
+                                      </label>
+                                    </>
+                                  ) : null}
+
+                                  {resourceKey === "references" ? (
+                                    <>
+                                      <label>
+                                        Vollsync Timeout (Sek.)
+                                        <input
+                                          style={inputStyle}
+                                          value={draft.referencesSyncMaxRuntimeSec}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, referencesSyncMaxRuntimeSec: e.target.value },
+                                            }))
+                                          }
+                                          placeholder="z. B. 300"
+                                        />
+                                      </label>
+                                      <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={draft.referencesAutoSyncEnabled}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, referencesAutoSyncEnabled: e.target.checked },
+                                            }))
+                                          }
+                                        />
+                                        <span>Auto-Sync aktiv</span>
+                                      </label>
+                                      <label>
+                                        Auto-Sync Modus
+                                        <select
+                                          style={inputStyle}
+                                          value={draft.referencesAutoSyncMode}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, referencesAutoSyncMode: e.target.value as "guarded" | "full" },
+                                            }))
+                                          }
+                                        >
+                                          <option value="full">Vollsync</option>
+                                          <option value="guarded">Guarded</option>
+                                        </select>
+                                      </label>
+                                      <label>
+                                        Auto-Sync Intervall (Min.)
+                                        <input
+                                          style={inputStyle}
+                                          value={draft.referencesAutoSyncIntervalMinutes}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, referencesAutoSyncIntervalMinutes: e.target.value },
+                                            }))
+                                          }
+                                          placeholder="z. B. 1440"
+                                        />
+                                      </label>
+                                      <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={draft.referencesAutoSyncNightOnly}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, referencesAutoSyncNightOnly: e.target.checked },
+                                            }))
+                                          }
+                                        />
+                                        <span>Nur nachts</span>
+                                      </label>
+                                    </>
+                                  ) : null}
+
+                                  {resourceKey === "requests" ? (
+                                    <>
+                                      <label>
+                                        Vollsync Timeout (Sek.)
+                                        <input
+                                          style={inputStyle}
+                                          value={draft.requestsSyncMaxRuntimeSec}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, requestsSyncMaxRuntimeSec: e.target.value },
+                                            }))
+                                          }
+                                          placeholder="z. B. 300"
+                                        />
+                                      </label>
+                                      <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={draft.requestsAutoSyncEnabled}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, requestsAutoSyncEnabled: e.target.checked },
+                                            }))
+                                          }
+                                        />
+                                        <span>Auto-Sync aktiv</span>
+                                      </label>
+                                      <label>
+                                        Auto-Sync Modus
+                                        <select
+                                          style={inputStyle}
+                                          value={draft.requestsAutoSyncMode}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, requestsAutoSyncMode: e.target.value as "guarded" | "full" },
+                                            }))
+                                          }
+                                        >
+                                          <option value="full">Vollsync</option>
+                                          <option value="guarded">Guarded</option>
+                                        </select>
+                                      </label>
+                                      <label>
+                                        Auto-Sync Intervall (Min.)
+                                        <input
+                                          style={inputStyle}
+                                          value={draft.requestsAutoSyncIntervalMinutes}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, requestsAutoSyncIntervalMinutes: e.target.value },
+                                            }))
+                                          }
+                                          placeholder="z. B. 1440"
+                                        />
+                                      </label>
+                                      <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={draft.requestsAutoSyncNightOnly}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, requestsAutoSyncNightOnly: e.target.checked },
+                                            }))
+                                          }
+                                        />
+                                        <span>Nur nachts</span>
+                                      </label>
+                                    </>
+                                  ) : null}
+                                </div>
+                              </div>
+
+                              <div style={sectionCardStyle}>
+                                <div style={sectionTitleStyle}>
+                                  {resourceKey === "requests" ? "Importregeln & Freshness" : "Importregeln"}
+                                </div>
+                                <p style={sectionHintStyle}>
+                                  Diese Felder bestimmen, welche Providerdaten übernommen werden und welche fachlichen Regeln für das Asset gelten.
+                                </p>
+                                <div style={fieldGridStyle}>
+                                  {resourceKey === "offers" ? (
+                                    <label>
+                                      Status-IDs für Angebote
+                                      <input
+                                        style={inputStyle}
+                                        value={draft.listingsStatusIds}
+                                        onChange={(e) =>
+                                          setCrmIntegrationDrafts((prev) => ({
+                                            ...prev,
+                                            [integration.id]: { ...draft, listingsStatusIds: e.target.value },
+                                          }))
+                                        }
+                                        placeholder="z. B. 274, 276"
+                                      />
+                                    </label>
+                                  ) : null}
+
+                                  {resourceKey === "references" ? (
+                                    <>
+                                      <label>
+                                        Referenz-Archivfilter
+                                        <select
+                                          style={inputStyle}
+                                          value={draft.referencesArchived}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, referencesArchived: e.target.value },
+                                            }))
+                                          }
+                                        >
+                                          <option value="">Provider-Default</option>
+                                          <option value="1">Nur archivierte</option>
+                                          <option value="-1">Aktive + archivierte</option>
+                                          <option value="0">Nur aktive</option>
+                                        </select>
+                                      </label>
+                                      <label>
+                                        Status-IDs für Referenzen
+                                        <input
+                                          style={inputStyle}
+                                          value={draft.referencesStatusIds}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, referencesStatusIds: e.target.value },
+                                            }))
+                                          }
+                                          placeholder="z. B. 274, 311"
+                                        />
+                                      </label>
+                                      <label>
+                                        Optionales Custom-Field
+                                        <input
+                                          style={inputStyle}
+                                          value={draft.referencesCustomFieldKey}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, referencesCustomFieldKey: e.target.value },
+                                            }))
+                                          }
+                                          placeholder="z. B. referenz_webseite"
+                                        />
+                                      </label>
+                                    </>
+                                  ) : null}
+
+                                  {resourceKey === "requests" ? (
+                                    <>
+                                      <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={draft.requestFreshnessEnabled}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, requestFreshnessEnabled: e.target.checked },
+                                            }))
+                                          }
+                                        />
+                                        <span>Freshness aktiv</span>
+                                      </label>
+                                      <label>
+                                        Freshness-Basis
+                                        <select
+                                          style={inputStyle}
+                                          value={draft.requestFreshnessBasis}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: {
+                                                ...draft,
+                                                requestFreshnessBasis: e.target.value as "source_updated_at" | "last_seen_at",
+                                              },
+                                            }))
+                                          }
+                                        >
+                                          <option value="source_updated_at">source_updated_at</option>
+                                          <option value="last_seen_at">last_seen_at</option>
+                                        </select>
+                                      </label>
+                                      <label>
+                                        Kauf max_age_days
+                                        <input
+                                          style={inputStyle}
+                                          value={draft.requestFreshnessBuyDays}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, requestFreshnessBuyDays: e.target.value },
+                                            }))
+                                          }
+                                          placeholder="z. B. 180"
+                                        />
+                                      </label>
+                                      <label>
+                                        Miete max_age_days
+                                        <input
+                                          style={inputStyle}
+                                          value={draft.requestFreshnessRentDays}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, requestFreshnessRentDays: e.target.value },
+                                            }))
+                                          }
+                                          placeholder="z. B. 90"
+                                        />
+                                      </label>
+                                      <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 22 }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={draft.requestFreshnessFallbackToLastSeen}
+                                          onChange={(e) =>
+                                            setCrmIntegrationDrafts((prev) => ({
+                                              ...prev,
+                                              [integration.id]: { ...draft, requestFreshnessFallbackToLastSeen: e.target.checked },
+                                            }))
+                                          }
+                                        />
+                                        <span>Fallback auf last_seen_at</span>
+                                      </label>
+                                    </>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={sectionCardStyle}>
+                              <div style={sectionTitleStyle}>Testmodus</div>
+                              <p style={sectionHintStyle}>
+                                Guarded-Werte steuern ausschließlich Test- und Kontrollläufe. Sie beeinflussen nicht den produktiven Vollsync.
+                              </p>
+                              <div style={fieldGridStyle}>
+                                {resourceKey === "offers" ? (
+                                  <label>
+                                    Guarded target_objects
+                                    <input
+                                      style={inputStyle}
+                                      value={draft.guardedUnitsTargetObjects}
+                                      onChange={(e) =>
+                                        setCrmIntegrationDrafts((prev) => ({
+                                          ...prev,
+                                          [integration.id]: { ...draft, guardedUnitsTargetObjects: e.target.value },
+                                        }))
+                                      }
+                                      placeholder="z. B. 100"
+                                    />
+                                  </label>
+                                ) : null}
+                                {resourceKey === "references" ? (
+                                  <label>
+                                    Guarded target_objects
+                                    <input
+                                      style={inputStyle}
+                                      value={draft.guardedReferencesTargetObjects}
+                                      onChange={(e) =>
+                                        setCrmIntegrationDrafts((prev) => ({
+                                          ...prev,
+                                          [integration.id]: { ...draft, guardedReferencesTargetObjects: e.target.value },
+                                        }))
+                                      }
+                                      placeholder="z. B. 100"
+                                    />
+                                  </label>
+                                ) : null}
+                                {resourceKey === "requests" ? (
+                                  <label>
+                                    Guarded target_objects
+                                    <input
+                                      style={inputStyle}
+                                      value={draft.guardedSavedQueriesTargetObjects}
+                                      onChange={(e) =>
+                                        setCrmIntegrationDrafts((prev) => ({
+                                          ...prev,
+                                          [integration.id]: { ...draft, guardedSavedQueriesTargetObjects: e.target.value },
+                                        }))
+                                      }
+                                      placeholder="z. B. 50"
+                                    />
+                                  </label>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <div style={sectionCardStyle}>
+                              <div style={sectionTitleStyle}>Verlauf & Debug</div>
+                              <p style={sectionHintStyle}>
+                                Hier stehen die letzten Tests, die letzten Sync-Ergebnisse und die technischen Hinweise für Support und Fehlersuche.
+                              </p>
+                              {resourcePreviewSummary ? (
+                                <div>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>
+                                    Letzter {formatCrmResourceLabel(resourceKey)}-Abruf-Test
+                                  </div>
+                                  <p style={{ marginTop: 6, marginBottom: 0, fontSize: 12, color: previewStatusColor }}>
+                                    {resourcePreviewSummary.message}
+                                  </p>
+                                  {resourcePreviewSummary.testedAt ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                      Zuletzt getestet: {new Date(resourcePreviewSummary.testedAt).toLocaleString("de-DE")}
+                                    </p>
+                                  ) : null}
+                                  {resourcePreviewSummary.traceId ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569", wordBreak: "break-all" }}>
+                                      Trace-ID: {resourcePreviewSummary.traceId}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <p style={{ marginTop: 0, marginBottom: 0, fontSize: 11, color: "#64748b" }}>
+                                  Noch kein Abruf-Test protokolliert.
+                                </p>
+                              )}
+
+                              {resourceSyncSummary ? (
+                                <div style={{ marginTop: 12 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>
+                                    Letzter {formatCrmResourceLabel(resourceKey)}-{formatCrmSyncModeLabel(resourceSyncSummary.mode)}
+                                  </div>
+                                  <p style={{ marginTop: 6, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                    {resourceSyncSummary.mode === "full"
+                                      ? "Vollsync: mit Stale-Deaktivierung, sofern der Fetch nicht an Safety-Limits abgeschnitten wurde."
+                                      : "Guarded-Modus: keine Stale-Deaktivierung."}
+                                  </p>
+                                  <p style={{ marginTop: 6, marginBottom: 0, fontSize: 12, color: syncStatusColor }}>
+                                    {resourceSyncSummary.message}
+                                  </p>
+                                  {resourceSyncSummary.step ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                      Aktueller Schritt: {resourceSyncSummary.step}
+                                      {resourceSyncSummary.cancelRequested ? " · Abbruch angefordert" : ""}
+                                    </p>
+                                  ) : null}
+                                  {resourceSyncSummary.heartbeatAt ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                      Letzter Heartbeat: {new Date(resourceSyncSummary.heartbeatAt).toLocaleString("de-DE")}
+                                    </p>
+                                  ) : null}
+                                  {(typeof resourceSyncSummary.requestCount === "number" || typeof resourceSyncSummary.pagesFetched === "number") ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569" }}>
+                                      Provider-Last: {typeof resourceSyncSummary.requestCount === "number" ? `${resourceSyncSummary.requestCount} Requests` : "0 Requests"}
+                                      {typeof resourceSyncSummary.pagesFetched === "number" ? ` · ${resourceSyncSummary.pagesFetched} Seiten` : ""}
+                                    </p>
+                                  ) : null}
+                                  {resourceSyncSummary.traceId ? (
+                                    <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: "#475569", wordBreak: "break-all" }}>
+                                      Trace-ID: {resourceSyncSummary.traceId}
+                                    </p>
+                                  ) : null}
+                                  {Array.isArray(resourceSyncSummary.result?.notes) && resourceSyncSummary.result.notes.length > 0 ? (
+                                    <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#fff", border: "1px solid #e2e8f0" }}>
+                                      <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
+                                        Sync-Notes
+                                      </p>
+                                      {resourceSyncSummary.result.notes.slice(0, 5).map((note, index) => (
+                                        <p key={`admin-sync-note-${integration.id}-${resourceKey}-${index}`} style={{ marginTop: 0, marginBottom: 4, fontSize: 11, color: "#475569" }}>
+                                          {note}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  ) : null}
+                                  {Array.isArray(resourceSyncSummary.log) && resourceSyncSummary.log.length > 0 ? (
+                                    <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "#fff", border: "1px solid #e2e8f0" }}>
+                                      <p style={{ marginTop: 0, marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#334155" }}>
+                                        Sync-Debug
+                                      </p>
+                                      {resourceSyncSummary.log.slice(-5).map((entry, index) => (
+                                        <p key={`${entry.at ?? "log"}-${entry.step ?? "step"}-${resourceKey}-${index}`} style={{ marginTop: 0, marginBottom: 4, fontSize: 11, color: "#475569" }}>
+                                          {entry.at ? new Date(entry.at).toLocaleTimeString("de-DE") : "--:--:--"} · {entry.step ?? "step"} · {entry.message ?? ""}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : (
+                                <p style={{ marginTop: 12, marginBottom: 0, fontSize: 11, color: "#64748b" }}>
+                                  Noch kein Sync-Verlauf protokolliert.
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
