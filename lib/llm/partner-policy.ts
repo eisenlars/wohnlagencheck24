@@ -18,7 +18,7 @@ type PartnerPolicyAdminLike = {
   from: (table: string) => {
     select: (columns: string) => {
       eq: (column: string, value: string) => {
-        maybeSingle: () => Promise<PartnerPolicyLookupResult>;
+        maybeSingle: () => PromiseLike<PartnerPolicyLookupResult>;
       };
     };
   };
@@ -39,15 +39,16 @@ function isMissingPartnerLlmPolicyColumns(error: unknown): boolean {
 }
 
 export async function loadPartnerLlmPolicy(
-  admin: PartnerPolicyAdminLike,
+  admin: unknown,
   partnerId: string,
 ): Promise<PartnerLlmPolicy> {
+  const adminClient = admin as PartnerPolicyAdminLike;
   const policySelect = [
     "llm_partner_managed_allowed",
     "llm_mode_default",
   ].join(", ");
 
-  const primary = await admin
+  const primary = await adminClient
     .from("partners")
     .select(policySelect)
     .eq("id", partnerId)

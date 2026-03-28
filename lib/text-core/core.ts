@@ -193,7 +193,7 @@ export function mapTrendCategoryToTemplateKey(category: string): TrendTemplateCa
   if (!allowed.has(category)) {
     throw new Error(`Unbekannte Kategorie: ${category}`);
   }
-  return category;
+  return category as TrendTemplateCategory;
 }
 
 export function classifyOver100Level(value: number) {
@@ -588,10 +588,12 @@ export function generateScoringTextbausteine(
   };
   const suffix = detectSuffix();
   const priceKey = (metric: string, score: string) => `quadratmeterpreis_${metric}_${asset}_lagescore${score}${suffix}`;
-  const fmtEur = (v: number | null) => {
+  const fmtEur = (v: unknown) => {
     if (v === null || v === undefined) return "";
     try {
-      const rounded = Math.round(v);
+      const numericValue = typeof v === "number" ? v : Number(v);
+      if (!Number.isFinite(numericValue)) return String(v);
+      const rounded = Math.round(numericValue);
       return `${rounded.toLocaleString("de-DE")} €`;
     } catch {
       return String(v);

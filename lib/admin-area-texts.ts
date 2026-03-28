@@ -52,20 +52,23 @@ export type AdminAreaTextI18nMetaViewRecord = AdminAreaTextI18nMetaRecord & {
   effective_source_value: string;
 };
 
-type SupabaseQueryResult = Promise<{ data?: unknown; error?: { message?: string } | null }>;
+type SupabaseQueryResultLike = PromiseLike<{ data?: unknown; error?: { message?: string } | null }>;
 
-type SupabaseQueryLike = SupabaseQueryResult & {
-  delete?: () => SupabaseQueryLike;
+type SupabaseQueryLike = SupabaseQueryResultLike & {
   eq: (column: string, value: unknown) => SupabaseQueryLike;
   in?: (column: string, values: unknown[]) => SupabaseQueryLike;
-  maybeSingle?: () => SupabaseQueryResult;
+  maybeSingle?: () => SupabaseQueryResultLike;
   order?: (column: string, options?: { ascending?: boolean }) => SupabaseQueryLike;
+};
+
+type SupabaseTableLike = {
+  delete?: () => SupabaseQueryLike;
   select: (columns: string) => SupabaseQueryLike;
-  upsert?: (values: unknown, options?: { onConflict?: string }) => SupabaseQueryResult;
+  upsert?: (values: unknown, options?: { onConflict?: string }) => SupabaseQueryResultLike;
 };
 
 export type SupabaseClientLike = {
-  from: (table: string) => SupabaseQueryLike;
+  from: (table: string) => unknown;
 };
 
 function asText(value: unknown): string {
@@ -103,8 +106,8 @@ export async function loadAdminAreaTextRows(args: {
   approvedOnly?: boolean;
 }): Promise<AdminAreaTextRecord[]> {
   try {
-    let query = args.supabaseClient
-      .from("admin_area_texts")
+    let query = (args.supabaseClient
+      .from("admin_area_texts") as SupabaseTableLike)
       .select(
         "scope_kind, scope_key, section_key, text_type, raw_content, optimized_content, status, source_snapshot_hash, source_last_updated, updated_by, last_updated",
       )
@@ -165,7 +168,7 @@ export async function upsertAdminAreaTextRows(args: {
     updated_by: row.updated_by ?? null,
     last_updated: nowIso,
   }));
-  const table = args.supabaseClient.from("admin_area_texts");
+  const table = args.supabaseClient.from("admin_area_texts") as SupabaseTableLike;
   if (typeof table.upsert !== "function") {
     throw new Error("admin_area_texts upsert is not available");
   }
@@ -185,7 +188,7 @@ export async function deleteAdminAreaTextRows(args: {
 }): Promise<void> {
   const keys = Array.from(new Set((args.keys ?? []).map((key) => asText(key)).filter(Boolean)));
   if (keys.length === 0) return;
-  const table = args.supabaseClient.from("admin_area_texts");
+  const table = args.supabaseClient.from("admin_area_texts") as SupabaseTableLike;
   if (typeof table.delete !== "function") {
     throw new Error("admin_area_texts delete is not available");
   }
@@ -216,8 +219,8 @@ export async function loadAdminAreaTextI18nEntries(args: {
   statuses?: AdminAreaTextI18nEntryStatus[];
 }): Promise<AdminAreaTextI18nEntryRecord[]> {
   try {
-    let query = args.supabaseClient
-      .from("admin_area_text_i18n_entries")
+    let query = (args.supabaseClient
+      .from("admin_area_text_i18n_entries") as SupabaseTableLike)
       .select("scope_kind, scope_key, section_key, locale, status, value_text, updated_at")
       .eq("scope_kind", args.scopeKind)
       .eq("scope_key", args.scopeKey)
@@ -270,7 +273,7 @@ export async function upsertAdminAreaTextI18nEntries(args: {
 }): Promise<void> {
   if (!Array.isArray(args.rows) || args.rows.length === 0) return;
   const nowIso = new Date().toISOString();
-  const table = args.supabaseClient.from("admin_area_text_i18n_entries");
+  const table = args.supabaseClient.from("admin_area_text_i18n_entries") as SupabaseTableLike;
   if (typeof table.upsert !== "function") {
     throw new Error("admin_area_text_i18n_entries upsert is not available");
   }
@@ -299,7 +302,7 @@ export async function deleteAdminAreaTextI18nEntries(args: {
 }): Promise<void> {
   const keys = Array.from(new Set((args.keys ?? []).map((key) => asText(key)).filter(Boolean)));
   if (keys.length === 0) return;
-  const table = args.supabaseClient.from("admin_area_text_i18n_entries");
+  const table = args.supabaseClient.from("admin_area_text_i18n_entries") as SupabaseTableLike;
   if (typeof table.delete !== "function") {
     throw new Error("admin_area_text_i18n_entries delete is not available");
   }
@@ -330,8 +333,8 @@ export async function loadAdminAreaTextI18nMeta(args: {
   keys?: string[];
 }): Promise<AdminAreaTextI18nMetaRecord[]> {
   try {
-    let query = args.supabaseClient
-      .from("admin_area_text_i18n_meta")
+    let query = (args.supabaseClient
+      .from("admin_area_text_i18n_meta") as SupabaseTableLike)
       .select("scope_kind, scope_key, section_key, locale, source_locale, source_snapshot_hash, source_updated_at, translation_origin, updated_at")
       .eq("scope_kind", args.scopeKind)
       .eq("scope_key", args.scopeKey)
@@ -370,7 +373,7 @@ export async function upsertAdminAreaTextI18nMeta(args: {
   rows: AdminAreaTextI18nMetaRecord[];
 }): Promise<void> {
   if (!Array.isArray(args.rows) || args.rows.length === 0) return;
-  const table = args.supabaseClient.from("admin_area_text_i18n_meta");
+  const table = args.supabaseClient.from("admin_area_text_i18n_meta") as SupabaseTableLike;
   if (typeof table.upsert !== "function") {
     throw new Error("admin_area_text_i18n_meta upsert is not available");
   }
@@ -401,7 +404,7 @@ export async function deleteAdminAreaTextI18nMeta(args: {
 }): Promise<void> {
   const keys = Array.from(new Set((args.keys ?? []).map((key) => asText(key)).filter(Boolean)));
   if (keys.length === 0) return;
-  const table = args.supabaseClient.from("admin_area_text_i18n_meta");
+  const table = args.supabaseClient.from("admin_area_text_i18n_meta") as SupabaseTableLike;
   if (typeof table.delete !== "function") {
     throw new Error("admin_area_text_i18n_meta delete is not available");
   }

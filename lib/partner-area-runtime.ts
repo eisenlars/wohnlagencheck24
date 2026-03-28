@@ -25,19 +25,22 @@ export type PartnerAreaGeneratedTextRecord = {
   updated_at: string | null;
 };
 
-type SupabaseQueryResult = Promise<{ data?: unknown; error?: { message?: string } | null }>;
+type SupabaseQueryResultLike = PromiseLike<{ data?: unknown; error?: { message?: string } | null }>;
 
-type SupabaseQueryLike = SupabaseQueryResult & {
-  delete?: () => SupabaseQueryLike;
+type SupabaseQueryLike = SupabaseQueryResultLike & {
   eq: (column: string, value: unknown) => SupabaseQueryLike;
-  maybeSingle?: () => SupabaseQueryResult;
+  maybeSingle?: () => SupabaseQueryResultLike;
   order?: (column: string, options?: { ascending?: boolean }) => SupabaseQueryLike;
+};
+
+type SupabaseTableLike = {
+  delete?: () => SupabaseQueryLike;
   select: (columns: string) => SupabaseQueryLike;
-  upsert?: (values: unknown, options?: { onConflict?: string }) => SupabaseQueryResult;
+  upsert?: (values: unknown, options?: { onConflict?: string }) => SupabaseQueryResultLike;
 };
 
 export type SupabaseClientLike = {
-  from: (table: string) => SupabaseQueryLike;
+  from: (table: string) => unknown;
 };
 
 type TextTree = Record<string, Record<string, string>>;
@@ -98,8 +101,8 @@ export async function loadPartnerAreaRuntimeState(args: {
   scope: PartnerAreaRuntimeScope;
 }): Promise<PartnerAreaRuntimeStateRecord | null> {
   try {
-    const query = args.supabaseClient
-      .from("partner_area_runtime_states")
+    const query = (args.supabaseClient
+      .from("partner_area_runtime_states") as SupabaseTableLike)
       .select("partner_id, area_id, scope, factors_snapshot, data_json, textgen_inputs_json, helpers_json, rebuilt_at, updated_at")
       .eq("partner_id", args.partnerId)
       .eq("area_id", args.areaId)
@@ -157,8 +160,8 @@ export async function loadPartnerAreaGeneratedTexts(args: {
   scope: PartnerAreaRuntimeScope;
 }): Promise<PartnerAreaGeneratedTextRecord[]> {
   try {
-    let query = args.supabaseClient
-      .from("partner_area_generated_texts")
+    let query = (args.supabaseClient
+      .from("partner_area_generated_texts") as SupabaseTableLike)
       .select("partner_id, area_id, scope, section_key, value_text, source_signature, updated_at")
       .eq("partner_id", args.partnerId)
       .eq("area_id", args.areaId)
@@ -207,7 +210,7 @@ export async function upsertPartnerAreaRuntimeState(args: {
     rebuilt_at: args.row.rebuilt_at ?? new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  const table = args.supabaseClient.from("partner_area_runtime_states");
+  const table = args.supabaseClient.from("partner_area_runtime_states") as SupabaseTableLike;
   if (typeof table.upsert !== "function") {
     throw new Error("partner_area_runtime_states upsert is not available");
   }
@@ -226,7 +229,7 @@ export async function replacePartnerAreaGeneratedTexts(args: {
   scope: PartnerAreaRuntimeScope;
   rows: PartnerAreaGeneratedTextRecord[];
 }): Promise<void> {
-  const table = args.supabaseClient.from("partner_area_generated_texts");
+  const table = args.supabaseClient.from("partner_area_generated_texts") as SupabaseTableLike;
   if (typeof table.delete !== "function" || typeof table.upsert !== "function") {
     throw new Error("partner_area_generated_texts write is not available");
   }
