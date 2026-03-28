@@ -29,7 +29,7 @@ export function useSessionViewState<T extends Record<string, unknown>>(
     ...initialState,
     ...(readSessionViewState<T>(key) ?? {}),
   }));
-  const [hydrated, setHydrated] = useState(() => typeof window !== 'undefined');
+  const hydrated = typeof window !== 'undefined';
 
   useEffect(() => {
     if (!hydrated) return;

@@ -60,7 +60,6 @@ import {
   workflowPromptTextareaStyle as textWorkflowPromptTextareaStyle,
   workflowSectionIntroStyle as sectionTabsIntroStyle,
   workflowSectionIntroTitleStyle as sectionTabsIntroTitleStyle,
-  workflowSelectBaseStyle as textWorkflowSelectBaseStyle,
   workflowTabButtonStyle as tabButtonStyle,
   workflowTabContainerStyle as tabContainerStyle,
   workflowTabIconEmojiStyle as tabIconEmojiStyle,
@@ -541,21 +540,21 @@ export default function TextEditorForm({
     textEditorInitialViewState,
   );
   const activeTab = String(textEditorViewState.activeTab ?? 'marktueberblick');
-  const setActiveTab = (nextTab: string) => {
+  const setActiveTab = useCallback((nextTab: string) => {
     setTextEditorViewState((prev) => ({ ...prev, activeTab: nextTab }));
-  };
+  }, [setTextEditorViewState]);
   const selectedScopeAreaId = String(textEditorViewState.selectedScopeAreaId ?? '');
-  const setSelectedScopeAreaId = (nextAreaId: string) => {
+  const setSelectedScopeAreaId = useCallback((nextAreaId: string) => {
     setTextEditorViewState((prev) => ({ ...prev, selectedScopeAreaId: nextAreaId }));
-  };
+  }, [setTextEditorViewState]);
   const activeBulkClass = (textEditorViewState.activeBulkClass ?? 'general') as GlobalClassKey;
-  const setActiveBulkClass = (nextClass: GlobalClassKey) => {
+  const setActiveBulkClass = useCallback((nextClass: GlobalClassKey) => {
     setTextEditorViewState((prev) => ({ ...prev, activeBulkClass: nextClass }));
-  };
+  }, [setTextEditorViewState]);
   const bulkScope = (textEditorViewState.bulkScope ?? 'kreis') as BulkScope;
-  const setBulkScope = (nextScope: BulkScope) => {
+  const setBulkScope = useCallback((nextScope: BulkScope) => {
     setTextEditorViewState((prev) => ({ ...prev, bulkScope: nextScope }));
-  };
+  }, [setTextEditorViewState]);
   const [loading, setLoading] = useState(true);
   const [scopeAreaItems, setScopeAreaItems] = useState<PartnerAreaConfig[]>([]);
   const [areaDataById, setAreaDataById] = useState<Record<string, TextAreaData>>({});
@@ -602,7 +601,7 @@ export default function TextEditorForm({
     [selectedAreaConfig],
   );
   const selectedAreaData = areaDataById[String(selectedAreaConfig?.area_id ?? '')] ?? null;
-  const dbTexts = selectedAreaData?.dbTexts ?? [];
+  const dbTexts = useMemo(() => selectedAreaData?.dbTexts ?? [], [selectedAreaData]);
   const hasPublishableChanges = useMemo(
     () => dbTexts.some((entry) => (
       Boolean(String(entry?.optimized_content ?? '').trim())
@@ -611,7 +610,7 @@ export default function TextEditorForm({
     [dbTexts],
   );
 
-  const loadAreaTextData = async (areaConfig: PartnerAreaConfig): Promise<TextAreaData> => {
+  const loadAreaTextData = useCallback(async (areaConfig: PartnerAreaConfig): Promise<TextAreaData> => {
     const areaId = String(areaConfig?.area_id ?? '').trim();
     const areaIsOrtslage = areaId.split('-').length > 3;
     const bundeslandSlug = String(areaConfig?.areas?.bundesland_slug || '');
@@ -663,16 +662,16 @@ export default function TextEditorForm({
       standardTexts: nextStandardTexts,
       dbTexts: Array.isArray(data) ? (data as TextEntry[]) : [],
     };
-  };
+  }, [isMarketing, supabase, tableName]);
 
-  const ensureAreaTextData = async (areaConfig: PartnerAreaConfig, options?: { force?: boolean }) => {
+  const ensureAreaTextData = useCallback(async (areaConfig: PartnerAreaConfig, options?: { force?: boolean }) => {
     const areaId = String(areaConfig?.area_id ?? '').trim();
     if (!areaId) return null;
     if (!options?.force && areaDataById[areaId]) return areaDataById[areaId];
     const nextData = await loadAreaTextData(areaConfig);
     setAreaDataById((prev) => ({ ...prev, [areaId]: nextData }));
     return nextData;
-  };
+  }, [areaDataById, loadAreaTextData]);
 
   useEffect(() => {
     let cancelled = false;
@@ -721,7 +720,7 @@ export default function TextEditorForm({
     if (scopeAreaItems.length === 0) return;
     if (scopeAreaItems.some((item) => item.area_id === selectedScopeAreaId)) return;
     setSelectedScopeAreaId(config.area_id);
-  }, [config?.area_id, scopeAreaItems, selectedScopeAreaId]);
+  }, [config?.area_id, scopeAreaItems, selectedScopeAreaId, setSelectedScopeAreaId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -755,7 +754,7 @@ export default function TextEditorForm({
     return () => {
       cancelled = true;
     };
-  }, [config, selectedAreaConfig, areaDataById]);
+  }, [areaDataById, config, ensureAreaTextData, selectedAreaConfig]);
 
   useEffect(() => {
     let cancelled = false;
@@ -818,7 +817,7 @@ export default function TextEditorForm({
     () => (isLocalSite ? GLOBAL_CLASS_ORDER.filter((classKey) => classKey !== 'profile') : GLOBAL_CLASS_ORDER),
     [isLocalSite],
   );
-  const resolveVisibleTabs = (areaIsOrtslage: boolean) => {
+  const resolveVisibleTabs = useCallback((areaIsOrtslage: boolean) => {
     const hiddenTabIds = new Set(['berater', 'makler', 'marktueberblick']);
     const shouldHideTabs = !isMarketing && areaIsOrtslage;
     let nextVisibleTabs = shouldHideTabs
@@ -835,11 +834,11 @@ export default function TextEditorForm({
       nextVisibleTabs = nextVisibleTabs.filter((tab) => tab.id !== 'immobilienmarkt_ueberblick');
     }
     return nextVisibleTabs;
-  };
-  const rootVisibleTabs = useMemo(() => resolveVisibleTabs(isOrtslage), [allowedTabIds, isLocalSite, isMarketing, isOrtslage, tabConfig]);
+  }, [allowedTabIds, isLocalSite, isMarketing, tabConfig]);
+  const rootVisibleTabs = useMemo(() => resolveVisibleTabs(isOrtslage), [isOrtslage, resolveVisibleTabs]);
   const visibleTabs = useMemo(
     () => resolveVisibleTabs(selectedAreaIsOrtslage),
-    [allowedTabIds, isLocalSite, isMarketing, selectedAreaIsOrtslage, tabConfig],
+    [resolveVisibleTabs, selectedAreaIsOrtslage],
   );
   const allowedSectionSet = useMemo(
     () => (Array.isArray(allowedSectionKeys) && allowedSectionKeys.length > 0 ? new Set(allowedSectionKeys) : null),
@@ -849,12 +848,12 @@ export default function TextEditorForm({
     if (visibleTabs.length === 0) return;
     const exists = visibleTabs.some((tab) => tab.id === activeTab);
     if (!exists) setActiveTab(visibleTabs[0].id);
-  }, [activeTab, visibleTabs]);
+  }, [activeTab, setActiveTab, visibleTabs]);
 
   useEffect(() => {
     if (visibleGlobalClassOrder.includes(activeBulkClass)) return;
     setActiveBulkClass(visibleGlobalClassOrder[0] ?? 'general');
-  }, [activeBulkClass, visibleGlobalClassOrder]);
+  }, [activeBulkClass, setActiveBulkClass, visibleGlobalClassOrder]);
 
   useEffect(() => {
     if (!initialTabId) return;
@@ -864,7 +863,7 @@ export default function TextEditorForm({
       setActiveTab(initialTabId);
       appliedInitialTabRef.current = initialTabId;
     }
-  }, [initialTabId, visibleTabs]);
+  }, [initialTabId, setActiveTab, visibleTabs]);
 
   useEffect(() => {
     if (!focusSectionKey) return;
@@ -909,7 +908,7 @@ export default function TextEditorForm({
     });
   };
 
-  const getRawTextFromDataset = (
+  const getRawTextFromDataset = useCallback((
     dataset: TextAreaData | null,
     areaIsOrtslage: boolean,
     key: string,
@@ -947,7 +946,7 @@ export default function TextEditorForm({
       if (typeof value === 'string' && value.length > 0) return value;
     }
     return '';
-  };
+  }, [isMarketing]);
 
   const saveText = async (key: string, content: string, type: string, sourceGroup?: string | null) => {
     setSaving(true);
@@ -1254,7 +1253,7 @@ export default function TextEditorForm({
   ) => {
     const dbEntry = dataset?.dbTexts.find((t) => t.section_key === sectionKey);
     return dbEntry?.optimized_content ?? getRawTextFromDataset(dataset, areaIsOrtslage, sectionKey, sectionGroup);
-  }, []);
+  }, [getRawTextFromDataset]);
 
   const isProfileAiEligible = (sectionKey: string): boolean => {
     const key = String(sectionKey ?? '').toLowerCase();
@@ -1353,7 +1352,7 @@ export default function TextEditorForm({
         estimatedCostUsd: number | null;
         estimatedCostEur: number | null;
       }>);
-  }, [areaDataById, bulkScope, collectBulkTasks, config?.area_id, getCurrentTextForDataset, isOrtslage, scopeAreaItems.length, selectedLlmOption, visibleGlobalClassOrder]);
+  }, [areaDataById, bulkScope, collectBulkTasks, config?.area_id, getCurrentTextForDataset, globalPrompts, isOrtslage, scopeAreaItems.length, selectedLlmOption, visibleGlobalClassOrder]);
 
   const runBulkByTextClass = async (classKey: GlobalClassKey) => {
     if (classBulkState) return;

@@ -226,10 +226,6 @@ function ensureAreaScope(scope: MarketExplanationStandardScope, areaId: string) 
   }
 }
 
-function resolveScopeKind(scope: MarketExplanationStandardScope): "bundesland" | "kreis" | "ortslage" {
-  return scope === "bundesland" ? "bundesland" : scope;
-}
-
 function buildStoragePath(scope: MarketExplanationStandardScope): string {
   if (scope === "kreis") return KREIS_STANDARD_TEXT_PATH;
   return BUNDESLAND_STANDARD_TEXT_PATH;
@@ -315,13 +311,6 @@ function buildEntries(definitions: MarketExplanationStandardTextDefinition[], tr
     value_text: findTextByKey(tree, definition.key),
     text_type: definition.type,
   }));
-}
-
-function withTreePayload(payload: StandardPayload | null, tree: TextTree): StandardPayload {
-  return {
-    ...(payload ?? {}),
-    text: tree,
-  };
 }
 
 function resolveReportTree(payload: ReportPayload | null): TextTree {

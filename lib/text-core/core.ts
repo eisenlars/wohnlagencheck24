@@ -1,7 +1,33 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any */
-// @ts-nocheck
-type AnyRecord = Record<string, any>;
+type AnyRecord = Record<string, unknown>;
 type Rng = () => number;
+
+export type TrendTemplateCategory =
+  | "gleich"
+  | "leicht_groesser"
+  | "groesser"
+  | "viel_groesser"
+  | "leicht_kleiner"
+  | "kleiner"
+  | "viel_kleiner";
+
+type PhraseEntry = AnyRecord & {
+  phrase?: unknown;
+  auxiliar?: unknown;
+};
+
+function asRecord(value: unknown): AnyRecord | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as AnyRecord
+    : null;
+}
+
+function asArray<T = unknown>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
+function asStringArray(value: unknown): string[] {
+  return asArray(value).map((entry) => String(entry ?? "")).filter((entry) => entry.length > 0);
+}
 
 export function createSeededRng(seed: string): Rng {
   let h = 2166136261;
@@ -154,7 +180,7 @@ export function determineGenericConnectorType(valueA: number, valueB: number, th
   return "neutral";
 }
 
-export function mapTrendCategoryToTemplateKey(category: string) {
+export function mapTrendCategoryToTemplateKey(category: string): TrendTemplateCategory {
   const allowed = new Set([
     "gleich",
     "leicht_groesser",
@@ -178,9 +204,14 @@ export function classifyOver100Level(value: number) {
   return "factor_3plus";
 }
 
-export function selectPhraseEntry(category: string, phraseJson: AnyRecord, strict = true, rng: Rng = Math.random) {
+export function selectPhraseEntry(
+  category: string,
+  phraseJson: AnyRecord,
+  strict = true,
+  rng: Rng = Math.random,
+): PhraseEntry {
   const rawOptions = phraseJson?.[category];
-  const options = Array.isArray(rawOptions) ? rawOptions : [];
+  const options = asArray<PhraseEntry>(rawOptions);
   if (!options.length) {
     // Backward-compatible fallback for legacy phrase blocks that only define
     // coarse buckets (gleich/groesser/kleiner).
@@ -193,7 +224,7 @@ export function selectPhraseEntry(category: string, phraseJson: AnyRecord, stric
     const fallbackCategory = coarseFallback[category];
     if (fallbackCategory) {
       const fallbackRaw = phraseJson?.[fallbackCategory];
-      const fallbackOptions = Array.isArray(fallbackRaw) ? fallbackRaw : [];
+      const fallbackOptions = asArray<PhraseEntry>(fallbackRaw);
       if (fallbackOptions.length) {
         return pickRandom(fallbackOptions, rng);
       }
@@ -211,14 +242,14 @@ export function generateVerbkonstrukt(
   renderContext: AnyRecord,
   connectorConfig?: AnyRecord,
   rng: Rng = Math.random,
-) {
+): [string, string | null, string | null] {
   if (!patterns || !patterns.length) return ["", null, null] as const;
   const rawPattern = pickRandom(patterns, rng);
   let pattern = "";
   let phrase = "";
 
-  if (typeof rawPattern === "object" && rawPattern !== null) {
-    const patternObj = rawPattern as AnyRecord;
+  const patternObj = asRecord(rawPattern);
+  if (patternObj) {
     if ("phrase" in patternObj || "auxiliar" in patternObj) {
       renderContext = { ...renderContext, ...patternObj };
       phrase = String(patternObj.phrase ?? "");
@@ -257,25 +288,15 @@ export function generateVerbkonstrukt(
     if (!connectorEntry || typeof connectorEntry !== "object") {
       connectorEntry = connectorConfig.neutral;
     }
-    const connectorRecord =
-      connectorEntry && typeof connectorEntry === "object"
-        ? (connectorEntry as Record<string, unknown>)
-        : null;
-    const noteRaw = connectorRecord?.note;
-    const noteOptions = Array.isArray(noteRaw) ? noteRaw : [];
-    const linkRaw = connectorRecord?.link;
-    const linkOptions = Array.isArray(linkRaw) ? linkRaw : [];
-    const neutralRaw = connectorConfig?.neutral;
-    const neutralRecord =
-      neutralRaw && typeof neutralRaw === "object"
-        ? (neutralRaw as Record<string, unknown>)
-        : null;
-    const neutralLinkRaw = neutralRecord?.link;
-    const neutralLinkOptions = Array.isArray(neutralLinkRaw) ? neutralLinkRaw : [];
+    const connectorRecord = asRecord(connectorEntry);
+    const noteOptions = asStringArray(connectorRecord?.note);
+    const linkOptions = asStringArray(connectorRecord?.link);
+    const neutralRecord = asRecord(connectorConfig?.neutral);
+    const neutralLinkOptions = asStringArray(neutralRecord?.link);
     const selectedLink = linkOptions.length
-      ? String(pickRandom(linkOptions, rng))
+      ? pickRandom(linkOptions, rng)
       : neutralLinkOptions.length
-        ? String(pickRandom(neutralLinkOptions, rng))
+        ? pickRandom(neutralLinkOptions, rng)
         : "Zudem";
     renderContext = {
       ...renderContext,
@@ -295,7 +316,7 @@ export function generateDynamicPlaceholders(
   quoteValues: AnyRecord = {},
   connectorConfig?: AnyRecord,
   rng: Rng = Math.random,
-) {
+): [AnyRecord, boolean] {
   const resultPlaceholders: AnyRecord = { ...inputData };
 
   const trendVerbkonstrukteRaw = textDefinition.trend_verbkonstrukte;
@@ -363,7 +384,7 @@ export function generateDynamicPlaceholders(
     }
 
     const templateCategory = mapTrendCategoryToTemplateKey(category);
-    const phraseEntry = selectPhraseEntry(templateCategory, phrasesBlockRecord, true, rng) as AnyRecord;
+    const phraseEntry = selectPhraseEntry(templateCategory, phrasesBlockRecord, true, rng);
     const renderedPhrase = fullyRenderTemplate(String(phraseEntry.phrase ?? ""), resultPlaceholders);
     resultPlaceholders[trendKey] = renderedPhrase;
 
@@ -402,19 +423,20 @@ export function generateDynamicPlaceholders(
     if (!Array.isArray(verbPatterns) || verbPatterns.length === 0) continue;
     const phraseKey = staticKey.replace("verbkonstrukt_", "phrases_");
     const phrasesRaw = staticVerbkonstrukte[phraseKey];
-    const phrasesList = Array.isArray(phrasesRaw) ? phrasesRaw : [];
-    let phraseEntry: AnyRecord = { phrase: "", auxiliar: "" };
-    if (Array.isArray(phrasesList) && phrasesList.length) {
+    const phrasesList = asArray<unknown>(phrasesRaw);
+    let phraseEntry: PhraseEntry = { phrase: "", auxiliar: "" };
+    if (phrasesList.length) {
       const pick = pickRandom(phrasesList, rng);
-      phraseEntry = typeof pick === "object" ? pick : { phrase: String(pick), auxiliar: "" };
+      phraseEntry = asRecord(pick) ?? { phrase: String(pick), auxiliar: "" };
     }
     phraseEntry = {
       phrase: fullyRenderTemplate(String(phraseEntry.phrase ?? ""), resultPlaceholders),
       auxiliar: String(phraseEntry.auxiliar ?? ""),
     };
     const chosen = pickRandom(verbPatterns, rng);
-    const template = typeof chosen === "object"
-      ? `${chosen.auxiliar ?? ""} ${chosen.phrase ?? ""}`.trim()
+    const chosenRecord = asRecord(chosen);
+    const template = chosenRecord
+      ? `${chosenRecord.auxiliar ?? ""} ${chosenRecord.phrase ?? ""}`.trim()
       : String(chosen);
     const merged = { ...resultPlaceholders, ...phraseEntry };
     const renderedOnce = fullyRenderTemplate(template, merged);
@@ -436,7 +458,7 @@ export function generateDynamicPlaceholders(
     let renderedAux = "";
     if (phrasesBlock && typeof phrasesBlock === "object") {
       const category = classifyOver100Level(value);
-      const phraseEntry = selectPhraseEntry(category, phrasesBlock as Record<string, unknown>, true, rng) as AnyRecord;
+      const phraseEntry = selectPhraseEntry(category, phrasesBlock as Record<string, unknown>, true, rng);
       renderedPhrase = fullyRenderTemplate(String(phraseEntry.phrase ?? ""), { ...resultPlaceholders, value }).trim();
       renderedAux = String(phraseEntry.auxiliar ?? "");
     } else {
@@ -457,7 +479,12 @@ export function generateDynamicPlaceholders(
   return [resultPlaceholders, hasVerbkonstrukt] as const;
 }
 
-export function renderFinalText(templates: AnyRecord, placeholders: AnyRecord, hasVerbkonstrukt: boolean, rng: Rng = Math.random) {
+export function renderFinalText(
+  templates: AnyRecord,
+  placeholders: AnyRecord,
+  hasVerbkonstrukt: boolean,
+  rng: Rng = Math.random,
+): [string, string, string] {
   const templateMode = hasVerbkonstrukt ? "mit_verbkonstrukt" : "ohne_verbkonstrukt";
   if (!templates || !templates[templateMode]) {
     throw new Error(`Template-Modus '${templateMode}' fehlt.`);
@@ -482,12 +509,12 @@ export function generateTextFromMultiblock(
   quoteValues?: AnyRecord,
   connectorConfig?: AnyRecord,
   rng: Rng = Math.random,
-) {
+): string {
   const blocks = textDefinition?.text_blocks;
   if (!blocks || !Array.isArray(blocks)) {
     throw new Error(`'text_blocks' fehlt oder ist keine Liste in Definition '${textLabel}'.`);
   }
-  const selected = pickRandom(blocks, rng);
+  const selected = asRecord(pickRandom(blocks, rng)) ?? {};
   return generateText(selected, inputData, trendValues, textLabel, quoteValues, connectorConfig, rng);
 }
 
@@ -499,7 +526,7 @@ export function generateText(
   quoteValues?: AnyRecord,
   connectorConfig?: AnyRecord,
   rng: Rng = Math.random,
-) {
+): string {
   const asset = textLabel.includes("_haus_") ? "haus" : "wohnung";
   let baseInput = inputData;
   if (textDefinition?.scoring_dynamic_subblocks_preisangaben || textDefinition?.scoring_dynamic_subblocks_lagekombination) {
@@ -518,29 +545,27 @@ export function generateText(
     rng,
   );
   const specialTemplateRaw = textDefinition?.special_cases_template;
-  const specialTemplate =
-    specialTemplateRaw && typeof specialTemplateRaw === "object"
-      ? (specialTemplateRaw as AnyRecord)
-      : null;
+  const specialTemplate = asRecord(specialTemplateRaw);
   if (specialTemplate) {
     const specialText = renderSpecialCasesTemplate(specialTemplate, baseInput, rng);
     if (specialText) return specialText;
   }
   const templatesRaw = textDefinition.templates;
-  const templates =
-    templatesRaw && typeof templatesRaw === "object"
-      ? (templatesRaw as AnyRecord)
-      : {};
+  const templates = asRecord(templatesRaw) ?? {};
   const [finalText] = renderFinalText(templates, placeholders, hasVerbkonstrukt, rng);
   return finalText;
 }
 
-export function renderSpecialCasesTemplate(specialTemplateBlock: AnyRecord, inputData: AnyRecord, rng: Rng = Math.random) {
+export function renderSpecialCasesTemplate(
+  specialTemplateBlock: AnyRecord,
+  inputData: AnyRecord,
+  rng: Rng = Math.random,
+): string | null {
   const availableKeys = Object.keys(inputData).filter((k) => k.startsWith("sondertext_") && inputData[k]);
   if (!availableKeys.length) return null;
   for (const key of availableKeys) inputData[key] = inputData[key];
   const templatesRaw = specialTemplateBlock?.templates;
-  const templates = Array.isArray(templatesRaw) ? templatesRaw : [];
+  const templates = asArray<unknown>(templatesRaw);
   if (!templates.length) return String(specialTemplateBlock?.fallback_text ?? "") || null;
   const chosen = pickRandom(templates, rng);
   const rendered = renderTemplate(String(chosen), inputData);
@@ -548,7 +573,12 @@ export function renderSpecialCasesTemplate(specialTemplateBlock: AnyRecord, inpu
   return rendered.trim() || fallbackText || null;
 }
 
-export function generateScoringTextbausteine(textDefinition: AnyRecord, inputData: AnyRecord, asset = "wohnung", rng: Rng = Math.random) {
+export function generateScoringTextbausteine(
+  textDefinition: AnyRecord,
+  inputData: AnyRecord,
+  asset = "wohnung",
+  rng: Rng = Math.random,
+): { text_wohnlagen_liste: string; text_lageverteilung: string } {
   const SCORES = ["01", "02", "03", "04", "05"];
   const detectSuffix = () => {
     const base = `quadratmeterpreis_avg_${asset}_lagescore01`;
@@ -598,7 +628,7 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
       ? (lageCfgRaw as Record<string, unknown>)
       : {};
 
-  const labelsByScore = preisCfg.label_by_score ?? {};
+  const labelsByScore = asRecord(preisCfg.label_by_score) ?? {};
   const regionName = String(inputData.region_name ?? "").trim();
 
   const normalizeText = (text: string) =>
@@ -651,15 +681,16 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
   };
 
   const buildFromSequencesFixed = () => {
-    const seqs = preisCfg.sequences_fixed ?? [];
+    const seqs = asArray<unknown>(preisCfg.sequences_fixed);
     if (!seqs.length) return null;
-    const seq = pickRandom(seqs, rng) as AnyRecord;
+    const seq = asRecord(pickRandom(seqs, rng)) ?? {};
     const out: string[] = [];
     const used = new Set<string>();
-    const steps = Array.isArray(seq.steps) ? (seq.steps as AnyRecord[]) : [];
-    for (const step of steps) {
-      let score = step.score ?? "any";
-      const tpl = step.template ?? "";
+    const steps = asArray<unknown>(seq.steps);
+    for (const stepRaw of steps) {
+      const step = asRecord(stepRaw) ?? {};
+      let score = String(step.score ?? "any");
+      const tpl = String(step.template ?? "");
       if (!tpl) continue;
       if (score === "any") {
         let candidates = availableScores().filter((s) => !used.has(s));
@@ -675,25 +706,25 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
   };
 
   const buildFromTemplatesByCase = () => {
-    const cfg = preisCfg.templates_by_case ?? {};
+    const cfg = asRecord(preisCfg.templates_by_case) ?? {};
     const avail = availableScores();
     if (!avail.length) return null;
     let caseKey = "list";
-    if (avail.length === 1 && cfg.single) caseKey = "single";
-    else if (avail.length === 2 && cfg.pair) caseKey = "pair";
-    else if (cfg.list || cfg.pair) {
-      const options = ["list", "pair"].filter((k) => cfg[k]);
+    if (avail.length === 1 && asArray(cfg.single).length) caseKey = "single";
+    else if (avail.length === 2 && asArray(cfg.pair).length) caseKey = "pair";
+    else if (asArray(cfg.list).length || asArray(cfg.pair).length) {
+      const options = ["list", "pair"].filter((k) => asArray(cfg[k]).length > 0);
       caseKey = pickRandom(options, rng) ?? "list";
     }
-    const caseBlocks = cfg[caseKey] ?? [];
+    const caseBlocks = asArray<unknown>(cfg[caseKey]);
     if (!caseBlocks.length) return null;
-    const block = pickRandom(caseBlocks, rng) as AnyRecord;
-    const templates = block.templates ?? [];
+    const block = asRecord(pickRandom(caseBlocks, rng)) ?? {};
+    const templates = asArray<unknown>(block.templates);
     if (!templates.length) return null;
     const tpl = pickRandom(templates, rng);
-    const slots = block.slots ?? {};
+    const slots = asRecord(block.slots) ?? {};
     const distinct = block.distinct_slots !== false;
-    const chosen: AnyRecord = {};
+    const chosen: Record<string, string> = {};
     if (distinct) {
       const picked = avail.length <= Object.keys(slots).length ? avail : (() => { const tmp = [...avail]; shuffleInPlace(tmp, rng); return tmp.slice(0, Object.keys(slots).length); })();
       if (picked.length < Object.keys(slots).length) return null;
@@ -708,10 +739,10 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
     }
     const ctx: AnyRecord = { region_name: inputData.region_name ?? "" };
     for (const [slot, score] of Object.entries(chosen)) {
-      const vAvg = inputData[priceKey("avg", score as string)];
-      const vMin = inputData[priceKey("min", score as string)];
-      const vMax = inputData[priceKey("max", score as string)];
-      ctx[`label_${slot}`] = labelsByScore[score as string] ?? "";
+      const vAvg = inputData[priceKey("avg", score)];
+      const vMin = inputData[priceKey("min", score)];
+      const vMax = inputData[priceKey("max", score)];
+      ctx[`label_${slot}`] = labelsByScore[score] ?? "";
       ctx[`preis_avg_${slot}`] = vAvg != null ? fmtEur(vAvg) : "";
       ctx[`preis_min_${slot}`] = vMin != null ? fmtEur(vMin) : "";
       ctx[`preis_max_${slot}`] = vMax != null ? fmtEur(vMax) : "";
@@ -725,20 +756,23 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
     const n = avail.length;
     if (!n) return [];
     const pickTotal = n === 1 ? 1 : n === 2 ? (rng() < 0.5 ? 1 : 2) : (rng() < 0.5 ? 2 : 3);
-    let scoresCfg = preisCfg.scores ?? {};
-    if (!Object.keys(scoresCfg).length && preisCfg.blocks) {
+    let scoresCfg = asRecord(preisCfg.scores) ?? {};
+    if (!Object.keys(scoresCfg).length && Array.isArray(preisCfg.blocks)) {
       scoresCfg = Object.fromEntries(avail.map((s) => [s, preisCfg.blocks]));
     }
     const candidates: Array<[string, string]> = [];
     for (const [score, blocks] of Object.entries(scoresCfg)) {
       const vAvg = inputData[priceKey("avg", score)];
       if (vAvg == null) continue;
-      const blockList = blocks as unknown[];
+      const blockList = asArray<unknown>(blocks);
       for (let bi = 0; bi < blockList.length; bi += 1) {
-        const blockDef = blockList[bi] as AnyRecord;
-        const label = blockDef?.attributes?.label ?? blockDef?.attributes?.label_by_score?.[score] ?? labelsByScore[score] ?? "";
-        for (let ti = 0; ti < (blockDef?.templates ?? []).length; ti += 1) {
-          const tpl = String(blockDef.templates[ti]);
+        const blockDef = asRecord(blockList[bi]) ?? {};
+        const attributes = asRecord(blockDef.attributes) ?? {};
+        const labelByScore = asRecord(attributes.label_by_score) ?? {};
+        const label = String(attributes.label ?? labelByScore[score] ?? labelsByScore[score] ?? "");
+        const templates = asArray<unknown>(blockDef.templates);
+        for (let ti = 0; ti < templates.length; ti += 1) {
+          const tpl = String(templates[ti] ?? "");
           const vMin = inputData[priceKey("min", score)];
           const vMax = inputData[priceKey("max", score)];
           if ((tpl.includes("{{ preis_min") || tpl.includes("{{ preis_max")) && (vMin == null || vMax == null)) continue;
@@ -775,12 +809,18 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
     return `${labels.slice(0, -1).join(", ")} und ${labels[labels.length - 1]}`;
   };
   const buildLageText = () => {
-    const labelsByScoreCfg = lageCfg.labels_by_score ?? {};
-    const order = lageCfg.order ?? SCORES;
-    const templates = lageCfg.templates ?? {};
-    const present = order.filter((s: string) => inputData[priceKey("avg", s)] != null);
+    const labelsByScoreCfg = asRecord(lageCfg.labels_by_score) ?? {};
+    const order = asStringArray(lageCfg.order);
+    const normalizedOrder = order.length > 0 ? order : SCORES;
+    const templates = asRecord(lageCfg.templates) ?? {};
+    const present = normalizedOrder.filter((s) => inputData[priceKey("avg", s)] != null);
     if (!present.length) return "";
-    const labels = present.map((s: string) => labelsByScoreCfg[s]?.label_pl).filter(Boolean);
+    const labels = present
+      .map((s) => {
+        const entry = asRecord(labelsByScoreCfg[s]);
+        return String(entry?.label_pl ?? "");
+      })
+      .filter(Boolean);
     if (!labels.length) return "";
     const ctx = {
       region_name: inputData.region_name ?? "",
@@ -790,17 +830,18 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
       first: labels[0],
       last: labels[labels.length - 1],
     };
-    if (labels.length >= 3 && templates.range && rng() < 0.4) {
-      const tpl = pickRandom(templates.range, rng);
+    const rangeTemplates = asArray<unknown>(templates.range);
+    if (labels.length >= 3 && rangeTemplates.length > 0 && rng() < 0.4) {
+      const tpl = pickRandom(rangeTemplates, rng);
       return ensureSentence(renderTemplate(String(tpl), ctx));
     }
-    let candidates: string[] = [];
-    if (labels.length === 1 && templates.single) candidates = templates.single;
-    else if (labels.length === 2 && templates.pair) candidates = templates.pair;
-    else if (labels.length === 3 && templates.list_3) candidates = templates.list_3;
-    else if (labels.length === 4 && templates.list_4) candidates = templates.list_4;
-    else if (labels.length >= 5 && templates.list_5) candidates = templates.list_5;
-    else candidates = templates.list ?? [];
+    let candidates: unknown[] = [];
+    if (labels.length === 1 && asArray(templates.single).length) candidates = asArray(templates.single);
+    else if (labels.length === 2 && asArray(templates.pair).length) candidates = asArray(templates.pair);
+    else if (labels.length === 3 && asArray(templates.list_3).length) candidates = asArray(templates.list_3);
+    else if (labels.length === 4 && asArray(templates.list_4).length) candidates = asArray(templates.list_4);
+    else if (labels.length >= 5 && asArray(templates.list_5).length) candidates = asArray(templates.list_5);
+    else candidates = asArray(templates.list);
     if (!candidates.length) return "";
     const tpl = pickRandom(candidates, rng);
     return ensureSentence(renderTemplate(String(tpl), ctx));
@@ -842,9 +883,14 @@ export function generateScoringTextbausteine(textDefinition: AnyRecord, inputDat
   };
 
   const buildLageFallback = () => {
-    const labelsByScoreCfg = lageCfg.labels_by_score ?? {};
+    const labelsByScoreCfg = asRecord(lageCfg.labels_by_score) ?? {};
     const present = SCORES.filter((s) => inputData[priceKey("avg", s)] != null);
-    const labels = present.map((s) => labelsByScoreCfg[s]?.label_pl ?? labelsByScore[s]).filter(Boolean);
+    const labels = present
+      .map((s) => {
+        const entry = asRecord(labelsByScoreCfg[s]);
+        return String(entry?.label_pl ?? labelsByScore[s] ?? "");
+      })
+      .filter(Boolean);
     if (!labels.length) {
       const fallbackRegion = regionName || "der Region";
       return ensureSentence(

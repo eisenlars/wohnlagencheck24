@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -2308,12 +2308,12 @@ export default function AdminClient() {
     () => portalCmsPages.find((page) => page.page_key === portalCmsPageKey) ?? portalCmsPages[0] ?? null,
     [portalCmsPageKey, portalCmsPages],
   );
-  const setPortalCmsPageKey = (pageKey: string) => {
+  const setPortalCmsPageKey = useCallback((pageKey: string) => {
     setPortalCmsViewState((prev) => ({ ...prev, pageKey }));
-  };
-  const setPortalCmsLocale = (locale: string) => {
+  }, [setPortalCmsViewState]);
+  const setPortalCmsLocale = useCallback((locale: string) => {
     setPortalCmsViewState((prev) => ({ ...prev, locale }));
-  };
+  }, [setPortalCmsViewState]);
   const activePortalLocales = useMemo(
     () => portalLocaleConfigs.filter((row) => row.is_active).sort((a, b) => a.locale.localeCompare(b.locale, "de")),
     [portalLocaleConfigs],
@@ -2418,17 +2418,38 @@ export default function AdminClient() {
     }
   }, [successModal.open, handoverConfirmModal.open, handoverStatusModal.open, areaDeleteConfirmModal.open, integrationDeleteConfirmModal.open, partnerPurgeModal.open]);
 
+  const loadPortalCmsEvent = useEffectEvent(async () => {
+    await loadPortalCms();
+  });
+  const loadMarketExplanationStandardTextsEvent = useEffectEvent(async (options?: {
+    scope?: MarketExplanationStandardScope;
+    bundeslandSlug?: string;
+    areaId?: string;
+    locale?: string;
+  }) => {
+    await loadMarketExplanationStandardTexts(options);
+  });
+  const loadMarketExplanationStaticTextsEvent = useEffectEvent(async () => {
+    await loadMarketExplanationStaticTexts();
+  });
+  const loadLlmGlobalDashboardEvent = useEffectEvent(async () => {
+    await loadLlmGlobalDashboard();
+  });
+  const loadAuditLogsEvent = useEffectEvent(async () => {
+    await loadAuditLogs();
+  });
+
   useEffect(() => {
     if (!portalCmsPages.some((page) => page.page_key === portalCmsPageKey) && portalCmsPages[0]) {
       setPortalCmsPageKey(portalCmsPages[0].page_key);
     }
-  }, [portalCmsPageKey, portalCmsPages]);
+  }, [portalCmsPageKey, portalCmsPages, setPortalCmsPageKey]);
 
   useEffect(() => {
     if (!portalLocaleConfigs.some((row) => row.locale === portalCmsLocale) && portalLocaleConfigs[0]?.locale) {
       setPortalCmsLocale(portalLocaleConfigs[0].locale);
     }
-  }, [portalCmsLocale, portalLocaleConfigs]);
+  }, [portalCmsLocale, portalLocaleConfigs, setPortalCmsLocale]);
 
   useEffect(() => {
     if (!selectedPortalCmsPage || !portalCmsLocale) return;
@@ -2541,22 +2562,22 @@ export default function AdminClient() {
       })
       : "");
     if (restoredActiveView === "llm_global") {
-      void loadLlmGlobalDashboard();
+      void loadLlmGlobalDashboardEvent();
     } else if (restoredActiveView === "billing_defaults") {
       void loadBillingDefaults();
     } else if (restoredActiveView === "language_admin") {
-      void loadPortalCms();
+      void loadPortalCmsEvent();
     } else if (restoredActiveView === "system_texts") {
-      void loadPortalCms();
+      void loadPortalCmsEvent();
     } else if (restoredActiveView === "market_texts") {
       void Promise.all([
-        loadMarketExplanationStandardTexts({
+        loadMarketExplanationStandardTextsEvent({
           scope: restoredMarketExplanationScope,
           bundeslandSlug: restoredMarketExplanationBundeslandSlug || undefined,
           areaId: restoredMarketExplanationAreaId || undefined,
           locale: restoredMarketExplanationLocale,
         }),
-        loadMarketExplanationStaticTexts(),
+        loadMarketExplanationStaticTextsEvent(),
       ]);
     } else if (restoredActiveView === "standard_text_refresh") {
       void Promise.all([
@@ -2564,7 +2585,7 @@ export default function AdminClient() {
         loadStandardTextSource(restoredStandardTextRefreshScope === "bundesland" ? "bundesland" : "kreis"),
       ]);
     } else if (restoredActiveView === "portal_cms") {
-      void loadPortalCms();
+      void loadPortalCmsEvent();
     }
     adminViewStateAppliedRef.current = true;
   }, [
@@ -2632,7 +2653,7 @@ export default function AdminClient() {
     if (marketExplanationMode !== "standard") return;
     if (marketExplanationStandardScope === "bundesland") {
       if (!marketExplanationStandardBundeslandSlug) return;
-      void loadMarketExplanationStandardTexts({
+      void loadMarketExplanationStandardTextsEvent({
         scope: "bundesland",
         bundeslandSlug: marketExplanationStandardBundeslandSlug,
         locale: marketExplanationStandardLocale,
@@ -2643,7 +2664,7 @@ export default function AdminClient() {
     const selectedIsKreis = isKreisAreaOption(marketExplanationStandardSelection);
     if (marketExplanationStandardScope === "kreis" && !selectedIsKreis) return;
     if (marketExplanationStandardScope === "ortslage" && selectedIsKreis) return;
-    void loadMarketExplanationStandardTexts({
+    void loadMarketExplanationStandardTextsEvent({
       scope: marketExplanationStandardScope,
       areaId: marketExplanationStandardSelection.id,
       locale: marketExplanationStandardLocale,
@@ -2653,7 +2674,7 @@ export default function AdminClient() {
     marketExplanationStandardBundeslandSlug,
     marketExplanationStandardLocale,
     marketExplanationStandardScope,
-    marketExplanationStandardSelection?.id,
+    marketExplanationStandardSelection,
   ]);
 
   useEffect(() => {
@@ -3050,18 +3071,6 @@ export default function AdminClient() {
       }),
     [displayAreaRows],
   );
-  const pendingReviewCount = useMemo(
-    () =>
-      reviewAreaOptions.filter((row) => {
-        const state = normalizeActivationStatus(
-          row.mapping.activation_status,
-          row.mapping.is_active,
-          Boolean(row.mapping.is_public_live),
-        );
-        return state === "ready_for_review";
-      }).length,
-    [reviewAreaOptions],
-  );
   const selectedPartnerWorkflowSignal = useMemo(
     () =>
       resolveWorkflowSignalTone(
@@ -3175,8 +3184,7 @@ export default function AdminClient() {
     () => partners.find((partner) => partner.is_system_default === true) ?? null,
     [partners],
   );
-  const adminWelcomeActions = useMemo<AdminWelcomeAction[]>(
-    () => [
+  const adminWelcomeActions: AdminWelcomeAction[] = [
       {
         key: "partners",
         icon: "partners",
@@ -3295,9 +3303,7 @@ export default function AdminClient() {
           }, { showSuccessModal: false });
         },
       },
-    ],
-    [partners.length, areaOverview.length, portalLocaleConfigs.length, portalPartner?.id, portalSystemTextDefinitions.length],
-  );
+    ];
   const hoveredAdminNavLabel = useMemo(() => {
     if (hoveredAdminNavId === "partners") return "Partnerverwaltung";
     if (hoveredAdminNavId === "areas") return "Gebiete";
@@ -4300,30 +4306,6 @@ export default function AdminClient() {
     }));
   }
 
-  async function translatePortalSystemTextLocaleWithAi(locale: string, keys?: PortalSystemTextKey[]) {
-    const data = await api<{
-      definitions?: PortalSystemTextDefinition[];
-      entries?: PortalSystemTextEntryRecord[];
-      metas?: PortalSystemTextI18nMetaViewRecord[];
-    }>("/api/admin/portal-system-texts", {
-      method: "POST",
-      body: JSON.stringify({
-        translate: {
-          target_locale: locale,
-          keys: keys && keys.length > 0 ? keys : undefined,
-        },
-      }),
-    });
-    setPortalSystemTextDefinitions(data.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS);
-    setPortalSystemTextEntries(data.entries ?? []);
-    setPortalSystemTextMetas(data.metas ?? []);
-    setPortalSystemTextDrafts(buildPortalSystemTextDraftMap({
-      locales: portalLocaleConfigs,
-      definitions: data.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS,
-      entries: data.entries ?? [],
-    }));
-  }
-
   function assertMarketExplanationStandardTarget() {
     if (marketExplanationStandardScope === "bundesland") {
       if (!marketExplanationStandardBundeslandSlug) {
@@ -4752,7 +4734,7 @@ export default function AdminClient() {
   useEffect(() => {
     if (activeView !== "audit" || auditLoadedOnce || auditLoading) return;
     void run("Audit-Log laden", async () => {
-      await loadAuditLogs();
+      await loadAuditLogsEvent();
     }, { showSuccessModal: false });
   }, [activeView, auditLoadedOnce, auditLoading]);
 
@@ -4853,12 +4835,6 @@ export default function AdminClient() {
 
       const total = Number(sync.summary?.total ?? 0);
       const applied = Number(sync.summary?.applied ?? 0);
-      const failed = Number(sync.summary?.failed ?? 0);
-      const failedItems = (sync.results ?? [])
-        .filter((r) => String(r.status ?? "") !== "applied")
-        .map((r) => `${String(r.provider ?? "").trim()}:${String(r.model ?? "").trim()}`)
-        .filter(Boolean)
-        .slice(0, 3);
 
       await loadLlmProviders();
 
@@ -12350,13 +12326,6 @@ const wrapStyle: React.CSSProperties = {
   flexDirection: "column",
 };
 
-const headerStyle: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: 10,
-};
-
 const dashboardHeaderStyle: React.CSSProperties = {
   minHeight: "72px",
   backgroundColor: "#fff",
@@ -12673,15 +12642,6 @@ const listPaneStyle: React.CSSProperties = {
   height: "calc(100vh - 155px)",
   maxHeight: "calc(100vh - 155px)",
   overflow: "hidden",
-};
-
-const sidebarSectionHeaderStyle: React.CSSProperties = {
-  padding: "24px 24px 16px",
-  borderBottom: "1px solid #f1f5f9",
-  fontSize: 14,
-  fontWeight: 800,
-  color: "#0f172a",
-  margin: 0,
 };
 
 const sidebarListStyle: React.CSSProperties = {

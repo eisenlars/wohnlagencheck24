@@ -14,9 +14,6 @@ export function resolveRoute(slugs: string[]): RouteModel {
   const isSection =
     typeof last === "string" && (SECTION_SLUGS as ReadonlyArray<string>).includes(last);
 
-  // Logging: besser nicht das ganze Array dumpen
-  console.log("[resolveRoute]", { fullSlugs, last, isSection, sectionSlugsCount: SECTION_SLUGS.length });
-
   if (isSection) {
     section = last as ReportSection;
     regionSlugs = fullSlugs.slice(0, -1);
@@ -27,8 +24,6 @@ export function resolveRoute(slugs: string[]): RouteModel {
     regionSlugs.length === 1 ? "bundesland" :
     regionSlugs.length === 2 ? "kreis" :
     "ort";
-
-  console.log("[resolveRoute.result]", { level, section, regionSlugs, fullSlugs });
 
   return { level, section, regionSlugs, fullSlugs };
 }

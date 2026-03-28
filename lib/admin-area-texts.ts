@@ -52,8 +52,20 @@ export type AdminAreaTextI18nMetaViewRecord = AdminAreaTextI18nMetaRecord & {
   effective_source_value: string;
 };
 
+type SupabaseQueryResult = Promise<{ data?: unknown; error?: { message?: string } | null }>;
+
+type SupabaseQueryLike = SupabaseQueryResult & {
+  delete?: () => SupabaseQueryLike;
+  eq: (column: string, value: unknown) => SupabaseQueryLike;
+  in?: (column: string, values: unknown[]) => SupabaseQueryLike;
+  maybeSingle?: () => SupabaseQueryResult;
+  order?: (column: string, options?: { ascending?: boolean }) => SupabaseQueryLike;
+  select: (columns: string) => SupabaseQueryLike;
+  upsert?: (values: unknown, options?: { onConflict?: string }) => SupabaseQueryResult;
+};
+
 export type SupabaseClientLike = {
-  from: (table: string) => any;
+  from: (table: string) => SupabaseQueryLike;
 };
 
 function asText(value: unknown): string {

@@ -377,18 +377,8 @@ async function loadActiveKreisSlugsForBundeslandLive(bundeslandSlug: string): Pr
 }
 
 export async function buildPageModel(route: RouteModel, options?: BuildPageModelOptions): Promise<PageModel | null> {
-  console.log("\n=== buildPageModel ===");
-  console.log("ROUTE", {
-    level: route.level,
-    section: route.section,
-    regionSlugs: route.regionSlugs,
-    fullSlugs: route.fullSlugs,
-    audience: options?.audience ?? "public",
-  });
-
   let report = await getReportBySlugs(route.regionSlugs);
   if (!report) {
-    console.log("REPORT: null (not found)");
     return null;
   }
 
@@ -595,20 +585,8 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     }
   }
 
-  console.log("REPORT META (raw)", report.meta);
   const regionaleZuordnung = asString(meta["regionale_zuordnung"]) ?? "";
-  console.log("REPORT META PICK", {
-    zuordnung: meta["regionale_zuordnung"],
-    amtlicher_name: meta["amtlicher_name"],
-    kreis_name: meta["kreis_name"],
-    kreis_schluessel: meta["kreis_schluessel"],
-    bundesland_name: meta["bundesland_name"],
-    aktualisierung: meta["aktualisierung"],
-  });
-
-  // optional: ein paar top-level data keys, damit man sofort sieht, ob "kreis-artig"
   const data = asRecord(report.data) ?? {};
-  console.log("REPORT DATA KEYS", Object.keys(data).slice(0, 40));
 
   const basePath = basePathFromRegionSlugs(route.regionSlugs, pathPrefix);
 

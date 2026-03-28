@@ -25,8 +25,19 @@ export type PartnerAreaGeneratedTextRecord = {
   updated_at: string | null;
 };
 
+type SupabaseQueryResult = Promise<{ data?: unknown; error?: { message?: string } | null }>;
+
+type SupabaseQueryLike = SupabaseQueryResult & {
+  delete?: () => SupabaseQueryLike;
+  eq: (column: string, value: unknown) => SupabaseQueryLike;
+  maybeSingle?: () => SupabaseQueryResult;
+  order?: (column: string, options?: { ascending?: boolean }) => SupabaseQueryLike;
+  select: (columns: string) => SupabaseQueryLike;
+  upsert?: (values: unknown, options?: { onConflict?: string }) => SupabaseQueryResult;
+};
+
 export type SupabaseClientLike = {
-  from: (table: string) => any;
+  from: (table: string) => SupabaseQueryLike;
 };
 
 type TextTree = Record<string, Record<string, string>>;

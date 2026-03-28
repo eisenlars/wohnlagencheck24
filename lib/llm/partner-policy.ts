@@ -1,14 +1,27 @@
 import { normalizeLlmRuntimeMode, type LlmRuntimeMode } from "@/lib/llm/mode";
 
-type QueryResult = {
-  data?: Record<string, unknown> | null;
-  error?: { message?: string } | null;
-};
-
 export type PartnerLlmPolicy = {
   llm_partner_managed_allowed: boolean;
   llm_mode_default: LlmRuntimeMode;
   source: "db" | "fallback";
+};
+
+type PartnerPolicyLookupResult = {
+  data?: {
+    llm_partner_managed_allowed?: unknown;
+    llm_mode_default?: unknown;
+  } | null;
+  error?: { message?: string } | null;
+};
+
+type PartnerPolicyAdminLike = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      eq: (column: string, value: string) => {
+        maybeSingle: () => Promise<PartnerPolicyLookupResult>;
+      };
+    };
+  };
 };
 
 function normBool(value: unknown, fallback: boolean): boolean {
@@ -26,7 +39,7 @@ function isMissingPartnerLlmPolicyColumns(error: unknown): boolean {
 }
 
 export async function loadPartnerLlmPolicy(
-  admin: any,
+  admin: PartnerPolicyAdminLike,
   partnerId: string,
 ): Promise<PartnerLlmPolicy> {
   const policySelect = [

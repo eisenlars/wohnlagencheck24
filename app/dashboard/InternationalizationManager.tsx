@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import NextImage from 'next/image';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 import { createClient } from '@/utils/supabase/client';
@@ -963,17 +963,17 @@ export default function InternationalizationManager({ config, availableLocales, 
     i18nInitialViewState,
   );
   const locale = String(i18nViewState.locale ?? (locales[0] ?? 'en'));
-  const setLocale = (nextLocale: string) => {
+  const setLocale = useCallback((nextLocale: string) => {
     setI18nViewState((prev) => ({ ...prev, locale: nextLocale }));
-  };
+  }, [setI18nViewState]);
   const channel = (i18nViewState.channel ?? 'portal') as I18nChannel;
-  const setChannel = (nextChannel: I18nChannel) => {
+  const setChannel = useCallback((nextChannel: I18nChannel) => {
     setI18nViewState((prev) => ({ ...prev, channel: nextChannel }));
-  };
+  }, [setI18nViewState]);
   const scope = (i18nViewState.scope ?? 'current_area') as I18nScope;
-  const setScope = (nextScope: I18nScope) => {
+  const setScope = useCallback((nextScope: I18nScope) => {
     setI18nViewState((prev) => ({ ...prev, scope: nextScope }));
-  };
+  }, [setI18nViewState]);
   const [rows, setRows] = useState<TranslationRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -985,37 +985,37 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [rowCustomPromptMap, setRowCustomPromptMap] = useState<Record<string, string>>({});
   const [scopeAreaItems, setScopeAreaItems] = useState<ScopeArea[]>([]);
   const activeTab = String(i18nViewState.activeTab ?? 'marktueberblick');
-  const setActiveTab = (nextTab: string) => {
+  const setActiveTab = useCallback((nextTab: string) => {
     setI18nViewState((prev) => ({ ...prev, activeTab: nextTab }));
-  };
+  }, [setI18nViewState]);
   const activeClass = (i18nViewState.activeClass ?? 'general') as DisplayTextClass;
-  const setActiveClass = (nextClass: DisplayTextClass) => {
+  const setActiveClass = useCallback((nextClass: DisplayTextClass) => {
     setI18nViewState((prev) => ({ ...prev, activeClass: nextClass }));
-  };
+  }, [setI18nViewState]);
   const activeDomain = (i18nViewState.activeDomain ?? 'immobilienmarkt') as I18nProductDomainId;
-  const setActiveDomain = (nextDomain: I18nProductDomainId) => {
+  const setActiveDomain = useCallback((nextDomain: I18nProductDomainId) => {
     setI18nViewState((prev) => ({ ...prev, activeDomain: nextDomain }));
-  };
+  }, [setI18nViewState]);
   const selectedScopeAreaId = String(i18nViewState.selectedScopeAreaId ?? '');
-  const setSelectedScopeAreaId = (nextAreaId: string) => {
+  const setSelectedScopeAreaId = useCallback((nextAreaId: string) => {
     setI18nViewState((prev) => ({ ...prev, selectedScopeAreaId: nextAreaId }));
-  };
+  }, [setI18nViewState]);
   const selectedBlogPostId = String(i18nViewState.selectedBlogPostId ?? '');
-  const setSelectedBlogPostId = (postId: string) => {
+  const setSelectedBlogPostId = useCallback((postId: string) => {
     setI18nViewState((prev) => ({ ...prev, selectedBlogPostId: postId }));
-  };
+  }, [setI18nViewState]);
   const selectedPropertyOfferId = String(i18nViewState.selectedPropertyOfferId ?? '');
-  const setSelectedPropertyOfferId = (offerId: string) => {
+  const setSelectedPropertyOfferId = useCallback((offerId: string) => {
     setI18nViewState((prev) => ({ ...prev, selectedPropertyOfferId: offerId }));
-  };
+  }, [setI18nViewState]);
   const selectedReferenceId = String(i18nViewState.selectedReferenceId ?? '');
-  const setSelectedReferenceId = (referenceId: string) => {
+  const setSelectedReferenceId = useCallback((referenceId: string) => {
     setI18nViewState((prev) => ({ ...prev, selectedReferenceId: referenceId }));
-  };
+  }, [setI18nViewState]);
   const selectedRequestId = String(i18nViewState.selectedRequestId ?? '');
-  const setSelectedRequestId = (requestId: string) => {
+  const setSelectedRequestId = useCallback((requestId: string) => {
     setI18nViewState((prev) => ({ ...prev, selectedRequestId: requestId }));
-  };
+  }, [setI18nViewState]);
   const [llmOptions, setLlmOptions] = useState<LlmOption[]>([]);
   const [selectedLlmOptionId, setSelectedLlmOptionId] = useState<string>('');
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
@@ -1114,12 +1114,12 @@ export default function InternationalizationManager({ config, availableLocales, 
   useEffect(() => {
     if (locales.includes(locale)) return;
     setLocale(locales[0] ?? 'en');
-  }, [locales, locale]);
+  }, [locales, locale, setLocale]);
 
   useEffect(() => {
     if (productDomains.some((domain) => domain.id === activeDomain)) return;
     setActiveDomain(productDomains[0]?.id ?? 'immobilienmarkt');
-  }, [activeDomain, productDomains]);
+  }, [activeDomain, productDomains, setActiveDomain]);
 
   useEffect(() => {
     if (blogItems.length === 0) {
@@ -1128,7 +1128,7 @@ export default function InternationalizationManager({ config, availableLocales, 
     }
     if (blogItems.some((item) => item.post_id === selectedBlogPostId)) return;
     setSelectedBlogPostId(blogItems[0]?.post_id ?? '');
-  }, [blogItems, selectedBlogPostId]);
+  }, [blogItems, selectedBlogPostId, setSelectedBlogPostId]);
 
   useEffect(() => {
     if (propertyItems.length === 0) {
@@ -1137,7 +1137,7 @@ export default function InternationalizationManager({ config, availableLocales, 
     }
     if (propertyItems.some((item) => item.offer_id === selectedPropertyOfferId)) return;
     setSelectedPropertyOfferId(propertyItems[0]?.offer_id ?? '');
-  }, [propertyItems, selectedPropertyOfferId]);
+  }, [propertyItems, selectedPropertyOfferId, setSelectedPropertyOfferId]);
 
   useEffect(() => {
     if (referenceItems.length === 0) {
@@ -1146,7 +1146,7 @@ export default function InternationalizationManager({ config, availableLocales, 
     }
     if (referenceItems.some((item) => item.reference_id === selectedReferenceId)) return;
     setSelectedReferenceId(referenceItems[0]?.reference_id ?? '');
-  }, [referenceItems, selectedReferenceId]);
+  }, [referenceItems, selectedReferenceId, setSelectedReferenceId]);
 
   useEffect(() => {
     if (requestItems.length === 0) {
@@ -1155,7 +1155,7 @@ export default function InternationalizationManager({ config, availableLocales, 
     }
     if (requestItems.some((item) => item.request_id === selectedRequestId)) return;
     setSelectedRequestId(requestItems[0]?.request_id ?? '');
-  }, [requestItems, selectedRequestId]);
+  }, [requestItems, selectedRequestId, setSelectedRequestId]);
 
   function isMissingBlogI18nTable(error: unknown): boolean {
     const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
@@ -2102,17 +2102,22 @@ export default function InternationalizationManager({ config, availableLocales, 
     return [current, ...children];
   }
 
-  function workflowPromptStorageKey(displayClass: DisplayTextClass): string {
-    return `${locale}:${displayClass}`;
-  }
+  const workflowPromptStorageKey = useCallback(
+    (displayClass: DisplayTextClass): string => `${locale}:${displayClass}`,
+    [locale],
+  );
 
-  function rowPromptStorageKey(row: TranslationRow): string {
-    return `${locale}:${row.area_id}:${row.section_key}`;
-  }
+  const rowPromptStorageKey = useCallback(
+    (row: TranslationRow): string => `${locale}:${row.area_id}:${row.section_key}`,
+    [locale],
+  );
 
-  function getWorkflowPrompt(displayClass: DisplayTextClass): string {
-    return workflowPromptDrafts[workflowPromptStorageKey(displayClass)] ?? getI18nStandardPrompt(displayClass, locale);
-  }
+  const getWorkflowPrompt = useCallback(
+    (displayClass: DisplayTextClass): string => (
+      workflowPromptDrafts[workflowPromptStorageKey(displayClass)] ?? getI18nStandardPrompt(displayClass, locale)
+    ),
+    [locale, workflowPromptDrafts, workflowPromptStorageKey],
+  );
 
   function getRowDisplayClass(row: TranslationRow): DisplayTextClass {
     const meta = resolveSectionMeta(row.section_key);
@@ -2319,24 +2324,24 @@ export default function InternationalizationManager({ config, availableLocales, 
   useEffect(() => {
     if (visibleWorkflowTabs.some((tab) => tab.id === activeTab)) return;
     setActiveTab(visibleWorkflowTabs[0]?.id ?? 'immobilienpreise');
-  }, [activeTab, visibleWorkflowTabs]);
+  }, [activeTab, setActiveTab, visibleWorkflowTabs]);
 
   useEffect(() => {
     if (workflowClasses.includes(activeClass)) return;
     setActiveClass(workflowClasses[0] ?? 'general');
-  }, [workflowClasses, activeClass]);
+  }, [activeClass, setActiveClass, workflowClasses]);
 
   useEffect(() => {
     if (isDistrict) return;
     if (scope !== 'kreis_ortslagen') return;
     setScope('current_area');
-  }, [isDistrict, scope]);
+  }, [isDistrict, scope, setScope]);
 
   useEffect(() => {
     if (scopeAreaItems.length === 0) return;
     if (scopeAreaItems.some((item) => item.area_id === selectedScopeAreaId)) return;
     setSelectedScopeAreaId(scopeAreaItems[0]?.area_id ?? '');
-  }, [scopeAreaItems, selectedScopeAreaId]);
+  }, [scopeAreaItems, selectedScopeAreaId, setSelectedScopeAreaId]);
 
   const classSummary = useMemo(() => {
     const summaryMap: Record<DisplayTextClass, {
@@ -2398,7 +2403,7 @@ export default function InternationalizationManager({ config, availableLocales, 
       });
     }
     return next;
-  }, [rows, pricingPreview, locale, workflowPromptDrafts]);
+  }, [getWorkflowPrompt, pricingPreview, rows]);
 
   const filteredRows = useMemo(() => {
     const withIndex = (rowsByTab.get(activeTab) ?? [])
