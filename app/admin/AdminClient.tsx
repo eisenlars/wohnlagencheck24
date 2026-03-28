@@ -453,6 +453,10 @@ function isKreisAreaOption(area: Pick<AreaOption, "parent_slug" | "bundesland_sl
   return String(area?.parent_slug ?? "") === String(area?.bundesland_slug ?? "");
 }
 
+function getKreisIdFromAreaId(areaId: string): string {
+  return String(areaId ?? "").split("-").slice(0, 3).join("-");
+}
+
 function formatAreaOptionLabel(area: AreaOption): string {
   const id = String(area.id ?? "").trim();
   const name = String(area.name ?? "").trim() || id;
@@ -2126,8 +2130,8 @@ export default function AdminClient() {
   const [marketExplanationStandardLocale, setMarketExplanationStandardLocale] = useState<string>("de");
   const [marketExplanationStandardBundeslaender, setMarketExplanationStandardBundeslaender] = useState<MarketExplanationStandardBundesland[]>([]);
   const [marketExplanationStandardBundeslandSlug, setMarketExplanationStandardBundeslandSlug] = useState<string>("");
-  const [marketExplanationStandardAreaQuery, setMarketExplanationStandardAreaQuery] = useState<string>("");
-  const [marketExplanationStandardAreaOptions, setMarketExplanationStandardAreaOptions] = useState<AreaOption[]>([]);
+  const [marketExplanationStandardKreisSelection, setMarketExplanationStandardKreisSelection] = useState<StandardTextRefreshSelection | null>(null);
+  const [marketExplanationStandardAreaSidebarItems, setMarketExplanationStandardAreaSidebarItems] = useState<StandardTextRefreshSelection[]>([]);
   const [marketExplanationStandardSelection, setMarketExplanationStandardSelection] = useState<StandardTextRefreshSelection | null>(null);
   const [marketExplanationStandardDefinitions, setMarketExplanationStandardDefinitions] = useState<MarketExplanationStandardTextDefinition[]>(MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS);
   const [marketExplanationStandardEntries, setMarketExplanationStandardEntries] = useState<MarketExplanationStandardEntry[]>([]);
@@ -2518,15 +2522,6 @@ export default function AdminClient() {
       parent_slug: restoredMarketExplanationAreaParentSlug || null,
       bundesland_slug: restoredMarketExplanationAreaBundeslandSlug || null,
     } : null);
-    setMarketExplanationStandardAreaQuery(restoredMarketExplanationAreaId
-      ? formatAreaOptionLabel({
-        id: restoredMarketExplanationAreaId,
-        name: restoredMarketExplanationAreaName || restoredMarketExplanationAreaId,
-        slug: restoredMarketExplanationAreaSlug || null,
-        parent_slug: restoredMarketExplanationAreaParentSlug || null,
-        bundesland_slug: restoredMarketExplanationAreaBundeslandSlug || null,
-      })
-      : "");
     setStandardTextRefreshScope(restoredStandardTextRefreshScope);
     setStandardTextRefreshBundeslandSlug(restoredStandardTextRefreshBundeslandSlug);
     setStandardTextRefreshSelection(restoredStandardTextRefreshAreaId ? {
@@ -2673,29 +2668,80 @@ export default function AdminClient() {
   }, [marketExplanationStandardLocale, portalLocaleConfigs]);
 
   useEffect(() => {
-    if (!marketExplanationStandardAreaQuery.trim()) {
-      setMarketExplanationStandardAreaOptions([]);
+    if (marketExplanationMode !== "standard") return;
+    if (marketExplanationStandardScope === "bundesland") return;
+    if (marketExplanationStandardSelection?.id) {
+      const selectedKreisId = getKreisIdFromAreaId(marketExplanationStandardSelection.id);
+      const matchedKreis = systemPartnerKreisOptions.find((item) => item.id === selectedKreisId);
+      if (matchedKreis) {
+        setMarketExplanationStandardKreisSelection((prev) => prev?.id === matchedKreis.id ? prev : matchedKreis);
+        return;
+      }
+    }
+    const fallback = systemPartnerKreisOptions[0] ?? null;
+    if (!fallback) return;
+    setMarketExplanationStandardKreisSelection((prev) => prev?.id === fallback.id ? prev : fallback);
+    if (!marketExplanationStandardSelection?.id && marketExplanationStandardScope === "kreis") {
+      setMarketExplanationStandardSelection(fallback);
+    }
+  }, [
+    marketExplanationMode,
+    marketExplanationStandardScope,
+    marketExplanationStandardSelection?.id,
+    systemPartnerKreisOptions,
+  ]);
+
+  useEffect(() => {
+    if (marketExplanationMode !== "standard") return;
+    if (marketExplanationStandardScope === "bundesland") return;
+    const kreisId = marketExplanationStandardKreisSelection?.id ?? "";
+    if (!kreisId) {
+      setMarketExplanationStandardAreaSidebarItems([]);
       return;
     }
-    if (
-      marketExplanationStandardSelection
-      && marketExplanationStandardAreaQuery.trim() === formatAreaOptionLabel(marketExplanationStandardSelection)
-    ) {
-      setMarketExplanationStandardAreaOptions([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
+    let cancelled = false;
+    void (async () => {
       try {
         const data = await api<{ areas: AreaOption[] }>(
-          `/api/admin/areas?q=${encodeURIComponent(marketExplanationStandardAreaQuery)}&limit=20`,
+          `/api/admin/areas?kreis_id=${encodeURIComponent(kreisId)}&limit=500`,
         );
-        setMarketExplanationStandardAreaOptions(data.areas ?? []);
+        if (cancelled) return;
+        const items = (data.areas ?? []).map((area) => ({
+          id: area.id,
+          name: area.name ?? area.id,
+          slug: area.slug ?? null,
+          parent_slug: area.parent_slug ?? null,
+          bundesland_slug: area.bundesland_slug ?? null,
+        }));
+        setMarketExplanationStandardAreaSidebarItems(items);
+        if (!marketExplanationStandardSelection?.id) {
+          if (marketExplanationStandardScope === "kreis") {
+            const firstKreis = items.find((item) => isKreisAreaOption(item)) ?? null;
+            if (firstKreis) setMarketExplanationStandardSelection(firstKreis);
+          }
+          return;
+        }
+        if (getKreisIdFromAreaId(marketExplanationStandardSelection.id) !== kreisId) {
+          if (marketExplanationStandardScope === "kreis") {
+            const firstKreis = items.find((item) => isKreisAreaOption(item)) ?? null;
+            setMarketExplanationStandardSelection(firstKreis);
+          } else {
+            setMarketExplanationStandardSelection(null);
+          }
+        }
       } catch {
-        setMarketExplanationStandardAreaOptions([]);
+        if (!cancelled) setMarketExplanationStandardAreaSidebarItems([]);
       }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [marketExplanationStandardAreaQuery, marketExplanationStandardSelection]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    marketExplanationMode,
+    marketExplanationStandardKreisSelection?.id,
+    marketExplanationStandardScope,
+    marketExplanationStandardSelection?.id,
+  ]);
 
   useEffect(() => {
     if (portalLocaleConfigs.length === 0) return;
@@ -2964,20 +3010,6 @@ export default function AdminClient() {
       .filter((row) => row.id);
     return rows.sort((a, b) => formatAreaOptionLabel(a).localeCompare(formatAreaOptionLabel(b), "de"));
   }, [systemPartner?.area_mappings]);
-  useEffect(() => {
-    if (marketExplanationMode !== "standard") return;
-    if (marketExplanationStandardScope !== "kreis") return;
-    if (marketExplanationStandardSelection?.id) return;
-    const fallback = systemPartnerKreisOptions[0] ?? null;
-    if (!fallback) return;
-    setMarketExplanationStandardSelection(fallback);
-    setMarketExplanationStandardAreaQuery(formatAreaOptionLabel(fallback));
-  }, [
-    marketExplanationMode,
-    marketExplanationStandardScope,
-    marketExplanationStandardSelection?.id,
-    systemPartnerKreisOptions,
-  ]);
   const selectedPartnerSummary = useMemo(() => {
     const states = displayAreaRows.map((row) =>
       normalizeActivationStatus(
@@ -8944,101 +8976,135 @@ export default function AdminClient() {
           ) : null}
 
           {marketExplanationMode === "standard" && marketExplanationStandardScope !== "bundesland" ? (
-            <div style={{ display: "grid", gap: 10, maxWidth: 760, marginTop: 14 }}>
-              {marketExplanationStandardScope === "kreis" && systemPartnerKreisOptions.length > 0 ? (
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {systemPartnerKreisOptions.slice(0, 8).map((area) => (
-                    <button
-                      key={area.id}
-                      type="button"
-                      style={marketExplanationBundeslandButtonStyle(marketExplanationStandardSelection?.id === area.id)}
-                      onClick={() => {
-                        setMarketExplanationStandardSelection(area);
-                        setMarketExplanationStandardAreaQuery(formatAreaOptionLabel(area));
-                        setMarketExplanationStandardAreaOptions([]);
-                      }}
-                    >
-                      {area.name ?? area.id}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-              <input
-                style={inputStyle}
-                value={marketExplanationStandardAreaQuery}
-                placeholder={marketExplanationStandardScope === "ortslage" ? "Ortslage suchen" : "Kreis oder Gebiet suchen"}
-                onChange={(event) => setMarketExplanationStandardAreaQuery(event.target.value)}
-              />
-              {marketExplanationStandardAreaOptions.length > 0 ? (
-                <div style={standardTextRefreshSearchResultsStyle}>
-                  {marketExplanationStandardAreaOptions.map((area) => {
-                    const active = marketExplanationStandardSelection?.id === area.id;
-                    const isKreis = isKreisAreaOption(area);
-                    return (
-                      <button
-                        key={area.id}
-                        type="button"
-                        style={standardTextRefreshSearchResultButtonStyle(active)}
-                        onClick={() => {
-                          setMarketExplanationStandardSelection({
-                            id: area.id,
-                            name: area.name ?? area.id,
-                            slug: area.slug ?? null,
-                            parent_slug: area.parent_slug ?? null,
-                            bundesland_slug: area.bundesland_slug ?? null,
-                          });
-                          setMarketExplanationStandardAreaOptions([]);
-                          setMarketExplanationStandardAreaQuery(formatAreaOptionLabel(area));
-                        }}
-                      >
-                        <span style={{ fontWeight: 700, color: "#0f172a" }}>{formatAreaOptionLabel(area)}</span>
-                        <span style={{ fontSize: 12, color: "#64748b" }}>
-                          {isKreis ? "Kreis" : "Ortslage"}{area.slug ? ` · ${area.slug}` : ""}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : null}
-              {marketExplanationStandardSelection ? (
-                <div style={standardTextRefreshSelectionCardStyle}>
-                  <div style={{ fontWeight: 700, color: "#0f172a" }}>{formatAreaOptionLabel(marketExplanationStandardSelection)}</div>
-                  <div style={{ fontSize: 12, color: "#64748b" }}>
-                    {isKreisAreaOption(marketExplanationStandardSelection) ? "Kreis" : "Ortslage"}
-                    {marketExplanationStandardSelection.slug ? ` · ${marketExplanationStandardSelection.slug}` : ""}
-                    {marketExplanationStandardSelection.bundesland_slug ? ` · ${marketExplanationStandardSelection.bundesland_slug}` : ""}
-                  </div>
-                </div>
-              ) : (
-                <div style={marketExplanationScopeHintStyle}>Noch kein Gebiet ausgewählt.</div>
-              )}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
+              {systemPartnerKreisOptions.map((area) => (
+                <button
+                  key={area.id}
+                  type="button"
+                  style={marketExplanationBundeslandButtonStyle(marketExplanationStandardKreisSelection?.id === area.id)}
+                  onClick={() => {
+                    setMarketExplanationStandardKreisSelection(area);
+                    if (marketExplanationStandardScope === "kreis") {
+                      setMarketExplanationStandardSelection(area);
+                    } else if (getKreisIdFromAreaId(marketExplanationStandardSelection?.id ?? "") !== area.id) {
+                      setMarketExplanationStandardSelection(null);
+                    }
+                  }}
+                >
+                  {area.name ?? area.id}
+                </button>
+              ))}
             </div>
           ) : null}
 
-          <div style={marketExplanationThemeTabBarStyle}>
-            {marketExplanationVisibleTabs.map((tab) => (
-              <button
-                key={tab.id}
-                style={marketExplanationThemeTabButtonStyle(marketExplanationTab === tab.label)}
-                onClick={() => setMarketExplanationTab(tab.label)}
-              >
-                <span style={marketExplanationThemeTabLabelStyle}>{tab.label}</span>
-                <span style={marketExplanationThemeTabCountStyle}>
-                  {marketExplanationMode === "standard"
-                    ? marketExplanationStandardDefinitions.filter((definition) => definition.tab === tab.id).length
-                    : marketExplanationStaticDefinitions.filter((definition) => definition.tab === tab.id).length}
-                </span>
-              </button>
-            ))}
-          </div>
-
           {marketExplanationMode === "standard" ? (
-            marketExplanationStandardScope !== "bundesland" && !marketExplanationStandardSelection?.id ? (
+            marketExplanationStandardScope !== "bundesland" && (
+              !marketExplanationStandardSelection?.id
+              || (marketExplanationStandardScope === "kreis" && !isKreisAreaOption(marketExplanationStandardSelection))
+              || (marketExplanationStandardScope === "ortslage" && isKreisAreaOption(marketExplanationStandardSelection))
+            ) ? (
               <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc", ...mutedStyle }}>
-                Bitte zuerst ein Gebiet auswählen, damit Basistext, Override und Übersetzungen geladen werden können.
+                {marketExplanationStandardScope === "ortslage"
+                  ? "Bitte links eine Ortslage auswählen, damit Basistext, Override und Übersetzungen geladen werden können."
+                  : "Bitte zuerst ein Gebiet auswählen, damit Basistext, Override und Übersetzungen geladen werden können."}
               </div>
             ) : (
-            <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+            <div
+              style={marketExplanationStandardScope !== "bundesland"
+                ? {
+                    marginTop: 14,
+                    display: "grid",
+                    gridTemplateColumns: "280px minmax(0, 1fr)",
+                    gap: 16,
+                    alignItems: "start",
+                  }
+                : {
+                    marginTop: 14,
+                    display: "grid",
+                    gap: 14,
+                  }}
+            >
+              {marketExplanationStandardScope !== "bundesland" ? (
+                <aside
+                  style={{
+                    border: "1px solid #dbe4ee",
+                    borderRadius: 10,
+                    background: "#f8fafc",
+                    padding: 10,
+                    position: "sticky",
+                    top: 16,
+                  }}
+                >
+                  <div style={{ display: "grid", gap: 8, maxHeight: "70vh", overflowY: "auto" }}>
+                    {marketExplanationStandardAreaSidebarItems.map((item) => {
+                      const active = marketExplanationStandardSelection?.id === item.id;
+                      const itemIsKreis = isKreisAreaOption(item);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          style={{
+                            textAlign: "left",
+                            border: active ? "1px solid #0f766e" : "1px solid #dbe4ee",
+                            background: active ? "#ecfeff" : "#fff",
+                            color: "#0f172a",
+                            borderRadius: 10,
+                            padding: "10px 12px",
+                            cursor: "pointer",
+                            display: "grid",
+                            gap: 4,
+                          }}
+                          onClick={() => {
+                            if (itemIsKreis) {
+                              setMarketExplanationStandardScope("kreis");
+                            } else {
+                              setMarketExplanationStandardScope("ortslage");
+                            }
+                            setMarketExplanationStandardSelection(item);
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                            <strong style={{ fontSize: 14 }}>{item.name ?? item.id}</strong>
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                letterSpacing: 0.3,
+                                textTransform: "uppercase",
+                                borderRadius: 999,
+                                padding: "3px 8px",
+                                background: itemIsKreis ? "#dbeafe" : "#f3e8ff",
+                                color: itemIsKreis ? "#1d4ed8" : "#7e22ce",
+                              }}
+                            >
+                              {itemIsKreis ? "Kreis" : "Ortslage"}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 12, color: "#64748b" }}>
+                            {item.id}
+                            {item.slug ? ` · ${item.slug}` : ""}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </aside>
+              ) : null}
+              <div style={{ display: "grid", gap: 14 }}>
+              <div style={marketExplanationThemeTabBarStyle}>
+                {marketExplanationVisibleTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    style={marketExplanationThemeTabButtonStyle(marketExplanationTab === tab.label)}
+                    onClick={() => setMarketExplanationTab(tab.label)}
+                  >
+                    <span style={marketExplanationThemeTabLabelStyle}>{tab.label}</span>
+                    <span style={marketExplanationThemeTabCountStyle}>
+                      {marketExplanationStandardDefinitions.filter((definition) => definition.tab === tab.id).length}
+                    </span>
+                  </button>
+                ))}
+              </div>
               {activeMarketExplanationStandardDefinitions.map((definition) => {
                 const entry = marketExplanationStandardEntryMap[definition.key] ?? null;
                 const draftValue = marketExplanationStandardDrafts[definition.key] ?? "";
@@ -9216,10 +9282,25 @@ export default function AdminClient() {
                   Für diesen Tab sind aktuell noch keine Standardtexte mit Text-Key hinterlegt.
                 </div>
               ) : null}
+              </div>
             </div>
             )
           ) : (
             <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+              <div style={marketExplanationThemeTabBarStyle}>
+                {marketExplanationVisibleTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    style={marketExplanationThemeTabButtonStyle(marketExplanationTab === tab.label)}
+                    onClick={() => setMarketExplanationTab(tab.label)}
+                  >
+                    <span style={marketExplanationThemeTabLabelStyle}>{tab.label}</span>
+                    <span style={marketExplanationThemeTabCountStyle}>
+                      {marketExplanationStaticDefinitions.filter((definition) => definition.tab === tab.id).length}
+                    </span>
+                  </button>
+                ))}
+              </div>
               {activeMarketExplanationStaticDefinitions.map((definition) => {
                 const draftKey = buildMarketExplanationStaticDraftKey(marketExplanationStaticLocale, definition.key);
                 const draft = marketExplanationStaticDrafts[draftKey] ?? {

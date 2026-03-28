@@ -17,6 +17,7 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const q = String(url.searchParams.get("q") ?? "").trim().toLowerCase();
+    const kreisId = String(url.searchParams.get("kreis_id") ?? "").trim();
     const limitRaw = Number(url.searchParams.get("limit") ?? 25);
     const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(Math.floor(limitRaw), 1), 100) : 25;
 
@@ -49,6 +50,23 @@ export async function GET(req: Request) {
       parent_slug?: string | null;
       bundesland_slug?: string | null;
     }>;
+
+    if (kreisId) {
+      const children = rows
+        .filter((row) => {
+          const id = String(row.id ?? "").trim();
+          return id === kreisId || id.startsWith(`${kreisId}-`);
+        })
+        .sort((a, b) => {
+          const aIsKreis = String(a.id ?? "").trim() === kreisId;
+          const bIsKreis = String(b.id ?? "").trim() === kreisId;
+          if (aIsKreis && !bIsKreis) return -1;
+          if (!aIsKreis && bIsKreis) return 1;
+          return String(a.name ?? "").localeCompare(String(b.name ?? ""), "de");
+        })
+        .slice(0, limit);
+      return NextResponse.json({ ok: true, areas: children });
+    }
 
     const normalized = q.toLowerCase();
     const looksLikeIdSearch = /^[0-9-]+$/.test(normalized);
