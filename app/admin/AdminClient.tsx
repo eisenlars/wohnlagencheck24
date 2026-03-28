@@ -2698,6 +2698,21 @@ export default function AdminClient() {
   }, [marketExplanationStandardAreaQuery, marketExplanationStandardSelection]);
 
   useEffect(() => {
+    if (marketExplanationMode !== "standard") return;
+    if (marketExplanationStandardScope !== "kreis") return;
+    if (marketExplanationStandardSelection?.id) return;
+    const fallback = systemPartnerKreisOptions[0] ?? null;
+    if (!fallback) return;
+    setMarketExplanationStandardSelection(fallback);
+    setMarketExplanationStandardAreaQuery(formatAreaOptionLabel(fallback));
+  }, [
+    marketExplanationMode,
+    marketExplanationStandardScope,
+    marketExplanationStandardSelection?.id,
+    systemPartnerKreisOptions,
+  ]);
+
+  useEffect(() => {
     if (portalLocaleConfigs.length === 0) return;
     if (!portalLocaleConfigs.some((row) => row.locale === marketExplanationStaticLocale)) {
       const fallbackLocale = portalLocaleConfigs.find((row) => row.is_active)?.locale ?? portalLocaleConfigs[0]?.locale ?? "de";
@@ -2946,6 +2961,24 @@ export default function AdminClient() {
       sourceCount: value.count,
     }));
   }, [areaMappings]);
+  const systemPartner = useMemo(
+    () => partners.find((partner) => partner.is_system_default) ?? null,
+    [partners],
+  );
+  const systemPartnerKreisOptions = useMemo<StandardTextRefreshSelection[]>(() => {
+    const mappings = systemPartner?.area_mappings ?? [];
+    const rows = mappings
+      .filter((mapping) => isKreisAreaOption(mapping.areas ?? null))
+      .map((mapping) => ({
+        id: String(mapping.area_id ?? "").trim(),
+        name: String(mapping.areas?.name ?? mapping.area_id ?? "").trim() || String(mapping.area_id ?? "").trim(),
+        slug: mapping.areas?.slug ?? null,
+        parent_slug: mapping.areas?.parent_slug ?? null,
+        bundesland_slug: mapping.areas?.bundesland_slug ?? null,
+      }))
+      .filter((row) => row.id);
+    return rows.sort((a, b) => formatAreaOptionLabel(a).localeCompare(formatAreaOptionLabel(b), "de"));
+  }, [systemPartner?.area_mappings]);
   const selectedPartnerSummary = useMemo(() => {
     const states = displayAreaRows.map((row) =>
       normalizeActivationStatus(
@@ -8913,6 +8946,24 @@ export default function AdminClient() {
 
           {marketExplanationMode === "standard" && marketExplanationStandardScope !== "bundesland" ? (
             <div style={{ display: "grid", gap: 10, maxWidth: 760, marginTop: 14 }}>
+              {marketExplanationStandardScope === "kreis" && systemPartnerKreisOptions.length > 0 ? (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {systemPartnerKreisOptions.slice(0, 8).map((area) => (
+                    <button
+                      key={area.id}
+                      type="button"
+                      style={marketExplanationBundeslandButtonStyle(marketExplanationStandardSelection?.id === area.id)}
+                      onClick={() => {
+                        setMarketExplanationStandardSelection(area);
+                        setMarketExplanationStandardAreaQuery(formatAreaOptionLabel(area));
+                        setMarketExplanationStandardAreaOptions([]);
+                      }}
+                    >
+                      {area.name ?? area.id}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <input
                 style={inputStyle}
                 value={marketExplanationStandardAreaQuery}
@@ -8983,6 +9034,11 @@ export default function AdminClient() {
           </div>
 
           {marketExplanationMode === "standard" ? (
+            marketExplanationStandardScope !== "bundesland" && !marketExplanationStandardSelection?.id ? (
+              <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc", ...mutedStyle }}>
+                Bitte zuerst ein Gebiet auswählen, damit Basistext, Override und Übersetzungen geladen werden können.
+              </div>
+            ) : (
             <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
               {activeMarketExplanationStandardDefinitions.map((definition) => {
                 const entry = marketExplanationStandardEntryMap[definition.key] ?? null;
@@ -9162,6 +9218,7 @@ export default function AdminClient() {
                 </div>
               ) : null}
             </div>
+            )
           ) : (
             <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
               {activeMarketExplanationStaticDefinitions.map((definition) => {
