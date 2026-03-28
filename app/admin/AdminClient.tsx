@@ -2698,21 +2698,6 @@ export default function AdminClient() {
   }, [marketExplanationStandardAreaQuery, marketExplanationStandardSelection]);
 
   useEffect(() => {
-    if (marketExplanationMode !== "standard") return;
-    if (marketExplanationStandardScope !== "kreis") return;
-    if (marketExplanationStandardSelection?.id) return;
-    const fallback = systemPartnerKreisOptions[0] ?? null;
-    if (!fallback) return;
-    setMarketExplanationStandardSelection(fallback);
-    setMarketExplanationStandardAreaQuery(formatAreaOptionLabel(fallback));
-  }, [
-    marketExplanationMode,
-    marketExplanationStandardScope,
-    marketExplanationStandardSelection?.id,
-    systemPartnerKreisOptions,
-  ]);
-
-  useEffect(() => {
     if (portalLocaleConfigs.length === 0) return;
     if (!portalLocaleConfigs.some((row) => row.locale === marketExplanationStaticLocale)) {
       const fallbackLocale = portalLocaleConfigs.find((row) => row.is_active)?.locale ?? portalLocaleConfigs[0]?.locale ?? "de";
@@ -2979,6 +2964,20 @@ export default function AdminClient() {
       .filter((row) => row.id);
     return rows.sort((a, b) => formatAreaOptionLabel(a).localeCompare(formatAreaOptionLabel(b), "de"));
   }, [systemPartner?.area_mappings]);
+  useEffect(() => {
+    if (marketExplanationMode !== "standard") return;
+    if (marketExplanationStandardScope !== "kreis") return;
+    if (marketExplanationStandardSelection?.id) return;
+    const fallback = systemPartnerKreisOptions[0] ?? null;
+    if (!fallback) return;
+    setMarketExplanationStandardSelection(fallback);
+    setMarketExplanationStandardAreaQuery(formatAreaOptionLabel(fallback));
+  }, [
+    marketExplanationMode,
+    marketExplanationStandardScope,
+    marketExplanationStandardSelection?.id,
+    systemPartnerKreisOptions,
+  ]);
   const selectedPartnerSummary = useMemo(() => {
     const states = displayAreaRows.map((row) =>
       normalizeActivationStatus(
