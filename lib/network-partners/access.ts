@@ -48,3 +48,23 @@ export async function assertNetworkPartnerOwnsContent(
     throw new Error("FORBIDDEN");
   }
 }
+
+export async function assertNetworkPartnerOwnsIntegration(
+  networkPartnerId: string,
+  integrationId: string,
+): Promise<void> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("network_partner_integrations")
+    .select("id, network_partner_id")
+    .eq("id", integrationId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message ?? "NETWORK_PARTNER_INTEGRATION_LOOKUP_FAILED");
+  if (!isRecord(data)) throw new Error("NOT_FOUND");
+
+  const ownerId = asNonEmpty(data.network_partner_id);
+  if (!ownerId || ownerId !== networkPartnerId) {
+    throw new Error("FORBIDDEN");
+  }
+}

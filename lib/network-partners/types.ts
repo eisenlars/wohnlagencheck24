@@ -1,3 +1,8 @@
+import type {
+  NetworkPartnerCrmProvider,
+  NetworkPartnerIntegrationKind,
+} from "@/lib/network-partners/sync/types";
+
 export type AdminRole = "admin_super" | "admin_ops" | "admin_billing";
 export type PortalPartnerRole = "partner_owner" | "partner_manager" | "partner_billing";
 export type NetworkPartnerRole = "network_owner" | "network_editor" | "network_billing";
@@ -162,6 +167,50 @@ export type NetworkPartnerUpdateInput = {
   website_url?: string | null;
   status?: NetworkPartnerStatus;
   managed_editing_enabled?: boolean;
+};
+
+export type NetworkPartnerIntegrationRecord = {
+  id: string;
+  portal_partner_id: string;
+  network_partner_id: string;
+  kind: NetworkPartnerIntegrationKind;
+  provider: string;
+  base_url: string | null;
+  auth_type: string | null;
+  auth_config: Record<string, unknown> | null;
+  detail_url_template: string | null;
+  is_active: boolean;
+  settings: Record<string, unknown> | null;
+  last_test_at: string | null;
+  last_preview_sync_at: string | null;
+  last_sync_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export type NetworkPartnerIntegrationCreateInput = {
+  portal_partner_id: string;
+  network_partner_id: string;
+  kind?: NetworkPartnerIntegrationKind;
+  provider: NetworkPartnerCrmProvider;
+  base_url?: string | null;
+  auth_type?: string | null;
+  auth_config?: Record<string, unknown> | null;
+  detail_url_template?: string | null;
+  is_active?: boolean;
+  settings?: Record<string, unknown> | null;
+};
+
+export type NetworkPartnerIntegrationUpdateInput = {
+  id: string;
+  network_partner_id: string;
+  provider?: NetworkPartnerCrmProvider;
+  base_url?: string | null;
+  auth_type?: string | null;
+  auth_config?: Record<string, unknown> | null;
+  detail_url_template?: string | null;
+  is_active?: boolean;
+  settings?: Record<string, unknown> | null;
 };
 
 export type NetworkCompanyProfileDetails = {
