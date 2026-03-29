@@ -632,6 +632,25 @@ export type NetworkPartnerWriteSyncResult = {
   };
 };
 
+export type NetworkPartnerIntegrationSyncRunKind = "test" | "preview" | "sync";
+export type NetworkPartnerIntegrationSyncRunStatus = "running" | "ok" | "warning" | "error";
+
+export type NetworkPartnerIntegrationSyncRunRecord = {
+  id: string;
+  integration_id: string;
+  portal_partner_id: string;
+  network_partner_id: string;
+  run_kind: NetworkPartnerIntegrationSyncRunKind;
+  run_mode: NetworkPartnerPreviewSyncMode;
+  status: NetworkPartnerIntegrationSyncRunStatus;
+  trace_id: string | null;
+  summary: Record<string, unknown> | null;
+  diagnostics: Record<string, unknown> | null;
+  started_at: string;
+  finished_at: string | null;
+  created_at: string;
+};
+
 export type PublicNetworkContentLocaleSource = "primary" | "translation";
 
 export type PublicNetworkContentItem = {

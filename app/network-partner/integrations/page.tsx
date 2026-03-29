@@ -7,9 +7,11 @@ import IntegrationList from '@/components/network-partners/self-service/Integrat
 import IntegrationPreviewPanel from '@/components/network-partners/self-service/IntegrationPreviewPanel';
 import IntegrationSecretsForm from '@/components/network-partners/self-service/IntegrationSecretsForm';
 import IntegrationSyncPanel from '@/components/network-partners/self-service/IntegrationSyncPanel';
+import SyncRunTable from '@/components/network-partners/self-service/SyncRunTable';
 import IntegrationTestPanel from '@/components/network-partners/self-service/IntegrationTestPanel';
 import NetworkPartnerShell from '@/components/network-partners/self-service/NetworkPartnerShell';
 import type {
+  NetworkPartnerIntegrationSyncRunRecord,
   NetworkPartnerPreviewSyncResult,
   NetworkPartnerRecord,
   NetworkPartnerRole,
@@ -45,6 +47,11 @@ type MePayload = {
 
 type IntegrationsPayload = {
   integrations?: IntegrationView[];
+  error?: string;
+};
+
+type RunsPayload = {
+  runs?: NetworkPartnerIntegrationSyncRunRecord[];
   error?: string;
 };
 
@@ -103,6 +110,7 @@ export default function NetworkPartnerIntegrationsPage() {
   const [testDiagnostics, setTestDiagnostics] = useState<TestPayload['diagnostics'] | null>(null);
   const [previewResult, setPreviewResult] = useState<NetworkPartnerPreviewSyncResult | null>(null);
   const [syncResult, setSyncResult] = useState<NetworkPartnerWriteSyncResult | null>(null);
+  const [runs, setRuns] = useState<NetworkPartnerIntegrationSyncRunRecord[]>([]);
   const [runningTest, setRunningTest] = useState(false);
   const [runningPreview, setRunningPreview] = useState(false);
   const [runningSync, setRunningSync] = useState(false);
@@ -165,6 +173,31 @@ export default function NetworkPartnerIntegrationsPage() {
     setIntegrations(nextIntegrations);
     setSelectedIntegrationId(findSelectedIntegration(nextIntegrations, nextSelectedId ?? selectedIntegrationId)?.id ?? null);
   }
+
+  useEffect(() => {
+    let active = true;
+    async function loadRuns() {
+      if (!selectedIntegration?.id) {
+        setRuns([]);
+        return;
+      }
+      const response = await fetch(
+        `/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`,
+        { method: 'GET', cache: 'no-store' },
+      );
+      const payload = (await response.json().catch(() => null)) as RunsPayload | null;
+      if (!active) return;
+      if (!response.ok) {
+        setRuns([]);
+        return;
+      }
+      setRuns(Array.isArray(payload?.runs) ? payload.runs : []);
+    }
+    void loadRuns();
+    return () => {
+      active = false;
+    };
+  }, [selectedIntegration?.id]);
 
   return (
     <NetworkPartnerShell
@@ -334,6 +367,11 @@ export default function NetworkPartnerIntegrationsPage() {
                       setTestResult(payload?.result ?? null);
                       setTestDiagnostics(payload?.diagnostics ?? null);
                       await reloadIntegrations(selectedIntegration.id);
+                      const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
+                      const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
+                      if (runsResponse.ok) {
+                        setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
+                      }
                       setMessage('Verbindungstest abgeschlossen.');
                     } finally {
                       setRunningTest(false);
@@ -364,6 +402,11 @@ export default function NetworkPartnerIntegrationsPage() {
                       }
                       setPreviewResult(payload?.result ?? null);
                       await reloadIntegrations(selectedIntegration.id);
+                      const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
+                      const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
+                      if (runsResponse.ok) {
+                        setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
+                      }
                       setMessage('Preview-Sync abgeschlossen.');
                     } finally {
                       setRunningPreview(false);
@@ -395,12 +438,25 @@ export default function NetworkPartnerIntegrationsPage() {
                     }
                     setSyncResult(payload?.result ?? null);
                     await reloadIntegrations(selectedIntegration.id);
+                    const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
+                    const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
+                    if (runsResponse.ok) {
+                      setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
+                    }
                     setMessage('Produktiver Sync abgeschlossen.');
                   } finally {
                     setRunningSync(false);
                   }
                 }}
               />
+            </article>
+
+            <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff', display: 'grid', gap: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Letzte Läufe</h3>
+              <p style={{ margin: 0, color: '#64748b' }}>
+                Persistente Historie für Test, Preview und produktive Syncs.
+              </p>
+              <SyncRunTable runs={runs} />
             </article>
           </section>
         ) : null}

@@ -5,6 +5,10 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { requireNetworkPartnerActorContext } from "@/lib/network-partners/auth";
 import { requireNetworkPartnerRole } from "@/lib/network-partners/roles";
 import { getIntegrationByIdForNetworkPartner } from "@/lib/network-partners/repositories/integrations";
+import {
+  createNetworkPartnerSyncRun,
+  finishNetworkPartnerSyncRun,
+} from "@/lib/network-partners/sync/sync-run-log";
 import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
 
@@ -153,6 +157,17 @@ export async function POST(
     const startedAtMs = Date.now();
     let requestCount = 0;
     let targetPath: string | null = null;
+    const run = await createNetworkPartnerSyncRun({
+      integrationId: integration.id,
+      portalPartnerId: integration.portal_partner_id,
+      networkPartnerId: actor.networkPartnerId,
+      runKind: "test",
+      runMode: "guarded",
+      traceId,
+      summary: {
+        provider: integration.provider,
+      },
+    });
 
     const finish = async (result: TestResultPayload, step: string) => {
       const finishedAt = new Date().toISOString();
@@ -173,6 +188,27 @@ export async function POST(
           status: result.status,
           message: result.message,
         }),
+      });
+
+      await finishNetworkPartnerSyncRun({
+        runId: run.id,
+        integrationId: integration.id,
+        networkPartnerId: actor.networkPartnerId,
+        status: result.status,
+        summary: {
+          provider: integration.provider,
+          step,
+          message: result.message,
+          http_status: result.http_status ?? null,
+        },
+        diagnostics: {
+          trace_id: traceId,
+          duration_ms: Date.now() - startedAtMs,
+          request_count: requestCount,
+          target_path: targetPath,
+          timeout_ms: TEST_TIMEOUT_MS,
+          provider_http_status: result.http_status ?? null,
+        },
       });
 
       return NextResponse.json({

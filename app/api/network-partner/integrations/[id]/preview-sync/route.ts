@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { requireNetworkPartnerActorContext } from "@/lib/network-partners/auth";
 import { requireNetworkPartnerRole } from "@/lib/network-partners/roles";
 import { runNetworkPartnerPreviewSync } from "@/lib/network-partners/sync/preview-sync";
+import { getIntegrationByIdForNetworkPartner } from "@/lib/network-partners/repositories/integrations";
+import {
+  createNetworkPartnerSyncRun,
+  finishNetworkPartnerSyncRun,
+} from "@/lib/network-partners/sync/sync-run-log";
 
 type PreviewSyncBody = {
   resource?: "offers" | "requests" | "all";
@@ -38,12 +43,44 @@ export async function POST(
     }
 
     const body = (await req.json().catch(() => ({}))) as PreviewSyncBody;
+    const integration = await getIntegrationByIdForNetworkPartner(integrationId, actor.networkPartnerId);
+    if (!integration) {
+      return NextResponse.json({ error: "Integration not found" }, { status: 404 });
+    }
+
+    const traceId = crypto.randomUUID();
+    const run = await createNetworkPartnerSyncRun({
+      integrationId,
+      portalPartnerId: integration.portal_partner_id,
+      networkPartnerId: actor.networkPartnerId,
+      runKind: "preview",
+      runMode: body.mode === "full" ? "full" : "guarded",
+      traceId,
+      summary: {
+        resource: body.resource ?? "all",
+      },
+    });
+
     const result = await runNetworkPartnerPreviewSync({
       integrationId,
       networkPartnerId: actor.networkPartnerId,
       resource: body.resource,
       mode: body.mode,
       sampleLimit: body.sample_limit,
+    });
+
+    await finishNetworkPartnerSyncRun({
+      runId: run.id,
+      integrationId,
+      networkPartnerId: actor.networkPartnerId,
+      status: "ok",
+      summary: {
+        resource: result.resource,
+        counts: result.counts,
+        booking_scope_count: result.booking_scope_count,
+        notes: result.notes,
+      },
+      diagnostics: result.diagnostics,
     });
 
     return NextResponse.json({ ok: true, result });
