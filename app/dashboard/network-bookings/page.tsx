@@ -35,6 +35,7 @@ type NetworkPartnerListPayload = {
 type InventoryPayload = {
   inventory?: PartnerAreaInventoryRecord[];
   placement_catalog?: PlacementCatalogRecord[];
+  error?: string;
 };
 
 type BootstrapPayload = {
