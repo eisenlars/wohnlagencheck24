@@ -1,12 +1,18 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import type {
+  AdminRole,
   ActorContext,
+  NetworkPartnerRole,
   PortalPartnerRole,
 } from "@/lib/network-partners/types";
 
 function asNonEmpty(value: unknown): string | null {
   const normalized = String(value ?? "").trim();
   return normalized.length > 0 ? normalized : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 export function isAdminActor(
@@ -40,6 +46,32 @@ export function requirePortalPartnerRole(
   return actor;
 }
 
+export function requireAdminRole(
+  actor: ActorContext | null,
+  allowed: AdminRole[] = ["admin_super", "admin_ops", "admin_billing"],
+): Extract<ActorContext, { kind: "admin" }> {
+  if (!isAdminActor(actor)) {
+    throw new Error("FORBIDDEN");
+  }
+  if (!allowed.includes(actor.role)) {
+    throw new Error("FORBIDDEN");
+  }
+  return actor;
+}
+
+export function requireNetworkPartnerRole(
+  actor: ActorContext | null,
+  allowed: NetworkPartnerRole[],
+): Extract<ActorContext, { kind: "network_partner" }> {
+  if (!isNetworkPartnerActor(actor)) {
+    throw new Error("FORBIDDEN");
+  }
+  if (!allowed.includes(actor.role)) {
+    throw new Error("FORBIDDEN");
+  }
+  return actor;
+}
+
 export async function assertPortalPartnerOwnsNetworkPartner(
   partnerId: string,
   networkPartnerId: string,
@@ -52,7 +84,7 @@ export async function assertPortalPartnerOwnsNetworkPartner(
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "NETWORK_PARTNER_LOOKUP_FAILED");
-  if (!data) throw new Error("NOT_FOUND");
+  if (!isRecord(data)) throw new Error("NOT_FOUND");
 
   const ownerPartnerId = asNonEmpty(data.portal_partner_id);
   if (!ownerPartnerId || ownerPartnerId !== partnerId) {

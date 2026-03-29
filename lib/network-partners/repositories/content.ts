@@ -6,6 +6,7 @@ import {
   markNetworkContentTranslationsStaleIfSourceChanged,
 } from "@/lib/network-partners/i18n";
 import { getBookingByIdForPortalPartner } from "@/lib/network-partners/repositories/bookings";
+import { getBookingByIdForNetworkPartner } from "@/lib/network-partners/repositories/bookings";
 import type {
   NetworkCompanyProfileDetails,
   NetworkContentCreateInput,
@@ -296,6 +297,48 @@ async function fetchContentRowsByPortalPartner(partnerId: string, id?: string) {
   return asRowArray(data);
 }
 
+async function fetchContentRowsByNetworkPartner(networkPartnerId: string, id?: string) {
+  const admin = createAdminClient();
+  let query = admin
+    .from("network_content_items")
+    .select([
+      "id",
+      "portal_partner_id",
+      "network_partner_id",
+      "booking_id",
+      "area_id",
+      "content_type",
+      "source_type",
+      "status",
+      "slug",
+      "title",
+      "summary",
+      "body_md",
+      "cta_label",
+      "cta_url",
+      "primary_locale",
+      "published_at",
+      "expires_at",
+      "created_at",
+      "updated_at",
+      "network_company_profiles(*)",
+      "network_property_offers(*)",
+      "network_property_requests(*)",
+    ].join(", "))
+    .eq("network_partner_id", networkPartnerId);
+
+  if (id) {
+    query = query.eq("id", id);
+    const { data, error } = await query.maybeSingle();
+    if (error) throw new Error(error.message ?? "NETWORK_CONTENT_LOOKUP_FAILED");
+    return isRecord(data) ? [data] : [];
+  }
+
+  const { data, error } = await query.order("updated_at", { ascending: false });
+  if (error) throw new Error(error.message ?? "NETWORK_CONTENT_LIST_FAILED");
+  return asRowArray(data);
+}
+
 export async function listContentByPortalPartner(
   partnerId: string,
 ): Promise<NetworkContentRecord[]> {
@@ -309,6 +352,24 @@ export async function getContentByIdForPortalPartner(
   partnerId: string,
 ): Promise<NetworkContentRecord | null> {
   const rows = await fetchContentRowsByPortalPartner(partnerId, id);
+  if (rows.length === 0) return null;
+  const reviewMap = await loadReviewsByContentIds([id]);
+  return mapContentRow(rows[0], reviewMap);
+}
+
+export async function listContentByNetworkPartner(
+  networkPartnerId: string,
+): Promise<NetworkContentRecord[]> {
+  const rows = await fetchContentRowsByNetworkPartner(networkPartnerId);
+  const reviewMap = await loadReviewsByContentIds(rows.map((row) => asText(row.id)).filter(Boolean));
+  return rows.map((row) => mapContentRow(row, reviewMap));
+}
+
+export async function getContentByIdForNetworkPartner(
+  id: string,
+  networkPartnerId: string,
+): Promise<NetworkContentRecord | null> {
+  const rows = await fetchContentRowsByNetworkPartner(networkPartnerId, id);
   if (rows.length === 0) return null;
   const reviewMap = await loadReviewsByContentIds([id]);
   return mapContentRow(rows[0], reviewMap);
@@ -366,6 +427,45 @@ export async function createContent(
   return created;
 }
 
+export async function createContentForNetworkPartner(input: {
+  network_partner_id: string;
+  booking_id: string;
+  slug: string;
+  title: string;
+  summary?: string | null;
+  body_md?: string | null;
+  cta_label?: string | null;
+  cta_url?: string | null;
+  primary_locale?: string;
+  company_profile?: Partial<NetworkCompanyProfileDetails> | null;
+  property_offer?: Partial<NetworkPropertyOfferDetails> | null;
+  property_request?: Partial<NetworkPropertyRequestDetails> | null;
+}): Promise<NetworkContentRecord> {
+  assertRequiredText(asText(input.network_partner_id), "network_partner_id");
+  assertRequiredText(asText(input.booking_id), "booking_id");
+  assertRequiredText(asText(input.slug), "slug");
+  assertRequiredText(asText(input.title), "title");
+
+  const booking = await getBookingByIdForNetworkPartner(input.booking_id, input.network_partner_id);
+  if (!booking) throw new Error("BOOKING_NOT_FOUND");
+  assertBookingAllowsContent(booking.status);
+
+  return createContent({
+    portal_partner_id: booking.portal_partner_id,
+    booking_id: booking.id,
+    slug: input.slug,
+    title: input.title,
+    summary: input.summary,
+    body_md: input.body_md,
+    cta_label: input.cta_label,
+    cta_url: input.cta_url,
+    primary_locale: input.primary_locale,
+    company_profile: input.company_profile,
+    property_offer: input.property_offer,
+    property_request: input.property_request,
+  });
+}
+
 export async function updateContent(
   input: NetworkContentUpdateInput,
 ): Promise<NetworkContentRecord> {
@@ -411,6 +511,39 @@ export async function updateContent(
     previousSourceHash,
   });
   return updated;
+}
+
+export async function updateContentForNetworkPartner(input: {
+  id: string;
+  network_partner_id: string;
+  slug?: string;
+  title?: string;
+  summary?: string | null;
+  body_md?: string | null;
+  cta_label?: string | null;
+  cta_url?: string | null;
+  primary_locale?: string;
+  company_profile?: Partial<NetworkCompanyProfileDetails> | null;
+  property_offer?: Partial<NetworkPropertyOfferDetails> | null;
+  property_request?: Partial<NetworkPropertyRequestDetails> | null;
+}): Promise<NetworkContentRecord> {
+  const current = await getContentByIdForNetworkPartner(input.id, input.network_partner_id);
+  if (!current) throw new Error("NOT_FOUND");
+
+  return updateContent({
+    id: input.id,
+    portal_partner_id: current.portal_partner_id,
+    slug: input.slug,
+    title: input.title,
+    summary: input.summary,
+    body_md: input.body_md,
+    cta_label: input.cta_label,
+    cta_url: input.cta_url,
+    primary_locale: input.primary_locale,
+    company_profile: input.company_profile,
+    property_offer: input.property_offer,
+    property_request: input.property_request,
+  });
 }
 
 export async function applyContentReviewAction(input: {
@@ -460,4 +593,22 @@ export async function applyContentReviewAction(input: {
   const updated = await getContentByIdForPortalPartner(input.id, input.portal_partner_id);
   if (!updated) throw new Error("NETWORK_CONTENT_REVIEW_ACTION_FAILED");
   return updated;
+}
+
+export async function submitContentForReviewByNetworkPartner(input: {
+  id: string;
+  network_partner_id: string;
+  reviewer_user_id: string;
+  review_note?: string | null;
+}): Promise<NetworkContentRecord> {
+  const current = await getContentByIdForNetworkPartner(input.id, input.network_partner_id);
+  if (!current) throw new Error("NOT_FOUND");
+
+  return applyContentReviewAction({
+    id: current.id,
+    portal_partner_id: current.portal_partner_id,
+    reviewer_user_id: input.reviewer_user_id,
+    action: "submit",
+    review_note: input.review_note,
+  });
 }

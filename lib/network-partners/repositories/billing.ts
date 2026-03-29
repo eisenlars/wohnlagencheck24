@@ -1,10 +1,12 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { listBookingsByPortalPartner } from "@/lib/network-partners/repositories/bookings";
+import { listBookingsByNetworkPartner } from "@/lib/network-partners/repositories/bookings";
 import { listNetworkPartnersByPortalPartner } from "@/lib/network-partners/repositories/network-partners";
 import type {
   NetworkBillingMonthSummary,
   NetworkBillingOverview,
   NetworkBillingProjectionRow,
+  NetworkPartnerBillingOverview,
   NetworkPartnerInvoiceLineRecord,
   NetworkPartnerInvoiceStatus,
   PortalPartnerSettlementLineRecord,
@@ -200,6 +202,67 @@ async function buildBookingProjection(partnerId: string): Promise<NetworkBilling
     });
 }
 
+async function listInvoiceLinesByNetworkPartner(networkPartnerId: string): Promise<{
+  available: boolean;
+  rows: NetworkPartnerInvoiceLineRecord[];
+}> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("network_partner_invoice_lines")
+    .select([
+      "id",
+      "booking_id",
+      "portal_partner_id",
+      "network_partner_id",
+      "period_start",
+      "period_end",
+      "gross_amount_eur",
+      "portal_fee_eur",
+      "partner_net_eur",
+      "status",
+      "created_at",
+      "network_partner_bookings(area_id, placement_code)",
+      "network_partners(company_name)",
+    ].join(", "))
+    .eq("network_partner_id", networkPartnerId)
+    .order("period_start", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    if (isMissingTable(error, "network_partner_invoice_lines")) {
+      return { available: false, rows: [] };
+    }
+    throw new Error(error.message ?? "NETWORK_PARTNER_INVOICE_LINES_LIST_FAILED");
+  }
+
+  return {
+    available: true,
+    rows: asRowArray(data).map((row) => mapInvoiceRow(row)),
+  };
+}
+
+async function buildBookingProjectionForNetworkPartner(
+  networkPartnerId: string,
+): Promise<NetworkBillingProjectionRow[]> {
+  const bookings = await listBookingsByNetworkPartner(networkPartnerId);
+
+  return bookings
+    .filter((booking) => booking.status !== "cancelled" && booking.status !== "expired")
+    .map((booking) => ({
+      booking_id: booking.id,
+      network_partner_id: booking.network_partner_id,
+      network_partner_name: null,
+      area_id: booking.area_id,
+      placement_code: booking.placement_code,
+      booking_status: booking.status,
+      monthly_price_eur: booking.monthly_price_eur,
+      portal_fee_eur: booking.portal_fee_eur,
+      partner_net_eur: Number((booking.monthly_price_eur - booking.portal_fee_eur).toFixed(2)),
+      billing_cycle_day: booking.billing_cycle_day,
+    }))
+    .sort((a, b) => a.area_id.localeCompare(b.area_id, "de"));
+}
+
 export async function loadNetworkBillingOverviewByPortalPartner(
   partnerId: string,
 ): Promise<NetworkBillingOverview> {
@@ -216,5 +279,20 @@ export async function loadNetworkBillingOverviewByPortalPartner(
     booking_projection: bookingProjection,
     invoice_table_available: invoiceResult.available,
     settlement_table_available: settlementResult.available,
+  };
+}
+
+export async function loadNetworkBillingOverviewByNetworkPartner(
+  networkPartnerId: string,
+): Promise<NetworkPartnerBillingOverview> {
+  const [invoiceResult, bookingProjection] = await Promise.all([
+    listInvoiceLinesByNetworkPartner(networkPartnerId),
+    buildBookingProjectionForNetworkPartner(networkPartnerId),
+  ]);
+
+  return {
+    invoice_lines: invoiceResult.rows,
+    booking_projection: bookingProjection,
+    invoice_table_available: invoiceResult.available,
   };
 }

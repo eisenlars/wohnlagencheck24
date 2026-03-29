@@ -182,6 +182,20 @@ export async function listBookingsByPortalPartner(
   return asRowArray(data).map((row) => mapBookingRow(row));
 }
 
+export async function listBookingsByNetworkPartner(
+  networkPartnerId: string,
+): Promise<NetworkPartnerBookingRecord[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("network_partner_bookings")
+    .select("id, portal_partner_id, network_partner_id, area_id, placement_code, status, starts_at, ends_at, monthly_price_eur, portal_fee_eur, billing_cycle_day, required_locales, ai_billing_mode, ai_monthly_budget_eur, notes, created_at, updated_at")
+    .eq("network_partner_id", networkPartnerId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message ?? "BOOKINGS_LIST_FAILED");
+  return asRowArray(data).map((row) => mapBookingRow(row));
+}
+
 export async function getBookingByIdForPortalPartner(
   id: string,
   partnerId: string,
@@ -192,6 +206,22 @@ export async function getBookingByIdForPortalPartner(
     .select("id, portal_partner_id, network_partner_id, area_id, placement_code, status, starts_at, ends_at, monthly_price_eur, portal_fee_eur, billing_cycle_day, required_locales, ai_billing_mode, ai_monthly_budget_eur, notes, created_at, updated_at")
     .eq("id", id)
     .eq("portal_partner_id", partnerId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message ?? "BOOKING_LOOKUP_FAILED");
+  return isRecord(data) ? mapBookingRow(data) : null;
+}
+
+export async function getBookingByIdForNetworkPartner(
+  id: string,
+  networkPartnerId: string,
+): Promise<NetworkPartnerBookingRecord | null> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("network_partner_bookings")
+    .select("id, portal_partner_id, network_partner_id, area_id, placement_code, status, starts_at, ends_at, monthly_price_eur, portal_fee_eur, billing_cycle_day, required_locales, ai_billing_mode, ai_monthly_budget_eur, notes, created_at, updated_at")
+    .eq("id", id)
+    .eq("network_partner_id", networkPartnerId)
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "BOOKING_LOOKUP_FAILED");

@@ -273,6 +273,17 @@ export type NetworkContentTranslationView = NetworkContentTranslationRecord & {
   is_stale: boolean;
 };
 
+export type NetworkContentMediaKind = "logo" | "hero" | "gallery" | "document";
+
+export type NetworkContentMediaRecord = {
+  id: string;
+  content_item_id: string;
+  kind: NetworkContentMediaKind;
+  url: string;
+  sort_order: number;
+  created_at: string;
+};
+
 export type NetworkPartnerInvoiceStatus = "open" | "paid" | "overdue" | "cancelled";
 export type PortalPartnerSettlementStatus = "pending" | "cleared" | "held";
 
@@ -332,4 +343,10 @@ export type NetworkBillingOverview = {
   booking_projection: NetworkBillingProjectionRow[];
   invoice_table_available: boolean;
   settlement_table_available: boolean;
+};
+
+export type NetworkPartnerBillingOverview = {
+  invoice_lines: NetworkPartnerInvoiceLineRecord[];
+  booking_projection: NetworkBillingProjectionRow[];
+  invoice_table_available: boolean;
 };
