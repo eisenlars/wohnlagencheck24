@@ -29,6 +29,11 @@ function asNumber(value: unknown): number {
   return 0;
 }
 
+function asRowArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object");
+}
+
 function isMissingTable(error: unknown, table: string): boolean {
   const message = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return message.includes(`public.${table}`) && message.includes("does not exist");
@@ -140,7 +145,7 @@ async function listInvoiceLinesByPortalPartner(partnerId: string): Promise<{
 
   return {
     available: true,
-    rows: (data ?? []).map((row) => mapInvoiceRow(row as Record<string, unknown>)),
+    rows: asRowArray(data).map((row) => mapInvoiceRow(row)),
   };
 }
 
@@ -164,7 +169,7 @@ async function listSettlementLinesByPortalPartner(partnerId: string): Promise<{
 
   return {
     available: true,
-    rows: (data ?? []).map((row) => mapSettlementRow(row as Record<string, unknown>)),
+    rows: asRowArray(data).map((row) => mapSettlementRow(row)),
   };
 }
 
