@@ -37,7 +37,8 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const featureParam = searchParams.get("feature");
-    const feature = featureParam ? asFeature(featureParam) : undefined;
+    const parsedFeature = featureParam ? asFeature(featureParam) : undefined;
+    const feature = parsedFeature ?? undefined;
     if (featureParam && !feature) {
       return NextResponse.json({ error: "Invalid feature" }, { status: 400 });
     }
