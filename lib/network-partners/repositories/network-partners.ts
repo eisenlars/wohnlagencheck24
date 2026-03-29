@@ -6,8 +6,6 @@ import type {
   NetworkPartnerUpdateInput,
 } from "@/lib/network-partners/types";
 
-type QueryError = { message?: string } | null;
-
 function asText(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -81,14 +79,6 @@ function assertRequiredText(value: string, field: string) {
   }
 }
 
-async function maybeSinglePartnerQuery(query: {
-  maybeSingle: () => Promise<{ data?: unknown; error?: QueryError }>;
-}) {
-  const { data, error } = await query.maybeSingle();
-  if (error) throw new Error(error.message ?? "NETWORK_PARTNER_QUERY_FAILED");
-  return isRecord(data) ? mapNetworkPartnerRow(data) : null;
-}
-
 export async function listNetworkPartnersByPortalPartner(
   partnerId: string,
 ): Promise<NetworkPartnerRecord[]> {
@@ -105,12 +95,14 @@ export async function listNetworkPartnersByPortalPartner(
 
 export async function getNetworkPartnerById(id: string): Promise<NetworkPartnerRecord | null> {
   const admin = createAdminClient();
-  return maybeSinglePartnerQuery(
-    admin
-      .from("network_partners")
-      .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
-      .eq("id", id),
-  );
+  const { data, error } = await admin
+    .from("network_partners")
+    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message ?? "NETWORK_PARTNER_QUERY_FAILED");
+  return isRecord(data) ? mapNetworkPartnerRow(data) : null;
 }
 
 export async function getNetworkPartnerByIdForPortalPartner(
@@ -118,13 +110,15 @@ export async function getNetworkPartnerByIdForPortalPartner(
   partnerId: string,
 ): Promise<NetworkPartnerRecord | null> {
   const admin = createAdminClient();
-  return maybeSinglePartnerQuery(
-    admin
-      .from("network_partners")
-      .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
-      .eq("id", id)
-      .eq("portal_partner_id", partnerId),
-  );
+  const { data, error } = await admin
+    .from("network_partners")
+    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
+    .eq("id", id)
+    .eq("portal_partner_id", partnerId)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message ?? "NETWORK_PARTNER_QUERY_FAILED");
+  return isRecord(data) ? mapNetworkPartnerRow(data) : null;
 }
 
 export async function createNetworkPartner(

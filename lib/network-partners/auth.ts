@@ -7,25 +7,25 @@ import type {
   PortalPartnerRole,
 } from "@/lib/network-partners/types";
 
-type SingleRowResponse = {
-  data?: Record<string, unknown> | null;
-  error?: { message?: string } | null;
-};
-
 function asNonEmpty(value: unknown): string | null {
   const normalized = String(value ?? "").trim();
   return normalized.length > 0 ? normalized : null;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 async function maybeLoadAdminRole(userId: string): Promise<AdminRole | null> {
   const admin = createAdminClient();
-  const res = await admin
+  const { data, error } = await admin
     .from("admin_users")
     .select("role")
     .eq("auth_user_id", userId)
-    .maybeSingle() as SingleRowResponse;
+    .maybeSingle();
 
-  const role = asNonEmpty(res.data?.role);
+  if (error) throw new Error(error.message ?? "ADMIN_ROLE_LOOKUP_FAILED");
+  const role = asNonEmpty(isRecord(data) ? data.role : null);
   if (role === "admin_super" || role === "admin_ops" || role === "admin_billing") {
     return role;
   }
@@ -36,14 +36,15 @@ async function maybeLoadPortalPartnerRole(
   userId: string,
 ): Promise<{ partnerId: string; role: PortalPartnerRole } | null> {
   const admin = createAdminClient();
-  const res = await admin
+  const { data, error } = await admin
     .from("partner_users")
     .select("partner_id, role")
     .eq("auth_user_id", userId)
-    .maybeSingle() as SingleRowResponse;
+    .maybeSingle();
 
-  const partnerId = asNonEmpty(res.data?.partner_id);
-  const role = asNonEmpty(res.data?.role);
+  if (error) throw new Error(error.message ?? "PARTNER_ROLE_LOOKUP_FAILED");
+  const partnerId = asNonEmpty(isRecord(data) ? data.partner_id : null);
+  const role = asNonEmpty(isRecord(data) ? data.role : null);
   if (
     partnerId
     && (role === "partner_owner" || role === "partner_manager" || role === "partner_billing")
@@ -57,14 +58,15 @@ async function maybeLoadNetworkPartnerRole(
   userId: string,
 ): Promise<{ networkPartnerId: string; role: NetworkPartnerRole } | null> {
   const admin = createAdminClient();
-  const res = await admin
+  const { data, error } = await admin
     .from("network_partner_users")
     .select("network_partner_id, role")
     .eq("auth_user_id", userId)
-    .maybeSingle() as SingleRowResponse;
+    .maybeSingle();
 
-  const networkPartnerId = asNonEmpty(res.data?.network_partner_id);
-  const role = asNonEmpty(res.data?.role);
+  if (error) throw new Error(error.message ?? "NETWORK_PARTNER_ROLE_LOOKUP_FAILED");
+  const networkPartnerId = asNonEmpty(isRecord(data) ? data.network_partner_id : null);
+  const role = asNonEmpty(isRecord(data) ? data.role : null);
   if (
     networkPartnerId
     && (role === "network_owner" || role === "network_editor" || role === "network_billing")
