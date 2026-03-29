@@ -544,6 +544,62 @@ export type PartnerAIEstimateResponse = {
   budget_check: PartnerAIBudgetCheckResult;
 };
 
+export type NetworkPartnerPreviewSyncResource = "offers" | "requests" | "all";
+export type NetworkPartnerPreviewSyncMode = "guarded" | "full";
+export type NetworkPartnerPreviewSyncItemStatus =
+  | "exact_match"
+  | "kreis_match"
+  | "unresolved_area"
+  | "not_booked"
+  | "unsupported_type"
+  | "invalid_record";
+
+export type NetworkPartnerPreviewSyncItem = {
+  source_resource: "offers" | "references" | "requests";
+  content_type: "property_offer" | "property_request" | null;
+  external_id: string;
+  title: string | null;
+  provider: string;
+  location_label: string | null;
+  status: NetworkPartnerPreviewSyncItemStatus;
+  area_id: string | null;
+  booking_id: string | null;
+  matched_area_name: string | null;
+  matched_area_slug: string | null;
+  reason: string | null;
+  normalized_payload: Record<string, unknown>;
+  source_payload: Record<string, unknown>;
+};
+
+export type NetworkPartnerPreviewSyncCounts = {
+  total: number;
+  exact_match: number;
+  kreis_match: number;
+  unresolved_area: number;
+  not_booked: number;
+  unsupported_type: number;
+  invalid_record: number;
+};
+
+export type NetworkPartnerPreviewSyncResult = {
+  integration_id: string;
+  network_partner_id: string;
+  provider: string;
+  resource: NetworkPartnerPreviewSyncResource;
+  mode: NetworkPartnerPreviewSyncMode;
+  booking_scope_count: number;
+  counts: NetworkPartnerPreviewSyncCounts;
+  items: NetworkPartnerPreviewSyncItem[];
+  notes: string[];
+  diagnostics: {
+    provider_request_count: number | null;
+    provider_pages_fetched: number | null;
+    sample_limit: number;
+    references_fetched: boolean;
+    requests_fetched: boolean;
+  };
+};
+
 export type PublicNetworkContentLocaleSource = "primary" | "translation";
 
 export type PublicNetworkContentItem = {
