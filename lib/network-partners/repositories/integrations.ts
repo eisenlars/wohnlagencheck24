@@ -3,10 +3,10 @@ import {
   isNetworkPartnerCrmProvider,
   isNetworkPartnerIntegrationKind,
   type NetworkPartnerCrmProvider,
+  type NetworkPartnerIntegrationKind,
 } from "@/lib/network-partners/sync/types";
 import type {
   NetworkPartnerIntegrationCreateInput,
-  NetworkPartnerIntegrationKind,
   NetworkPartnerIntegrationRecord,
   NetworkPartnerIntegrationUpdateInput,
 } from "@/lib/network-partners/types";
