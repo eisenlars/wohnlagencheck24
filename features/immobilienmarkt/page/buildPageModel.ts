@@ -40,6 +40,8 @@ import {
 } from "@/lib/area-visibility";
 import { loadPublicVisibleAreaIds, loadPublicVisiblePartnerContextForArea } from "@/lib/public-partner-mappings";
 import { resolveMandatoryMediaSrc } from "@/lib/mandatory-media";
+import { loadPublicNetworkContentForArea } from "@/lib/network-partners/public-content";
+import type { PublicNetworkContentCollection } from "@/lib/network-partners/types";
 import {
   applySystempartnerDefaultProfileToReportText,
   downloadSystempartnerDefaultProfile,
@@ -109,6 +111,8 @@ export type PageModel = {
   flags?: {
     isSystemDefaultPartner?: boolean;
   };
+
+  networkContent?: PublicNetworkContentCollection;
 };
 
 export type BuildPageModelOptions = {
@@ -621,6 +625,7 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
   let berater: PageModel["ctx"]["berater"] | undefined;
   let makler: PageModel["ctx"]["makler"] | undefined;
   let assets: PageModel["assets"] | undefined;
+  let networkContent: PageModel["networkContent"] | undefined;
 
   // Bundesland: "orte" = Kreise (für Navigation unten)
   if (route.level === "bundesland" && bundeslandSlug) {
@@ -852,6 +857,14 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     };
   }
 
+  if (audience === "public" && areaId && (route.level === "kreis" || route.level === "ort")) {
+    networkContent = await loadPublicNetworkContentForArea({
+      areaId,
+      locale,
+      routeLevel: route.level,
+    });
+  }
+
   // -------------------------
   // Kontakt (Portal vs Berater)
   // -------------------------
@@ -921,6 +934,7 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
 
     ctx: { bundeslandSlug, kreisSlug, ortSlug, orte, berater, makler },
     assets,
+    networkContent,
 
     kontakt,
     flags: {

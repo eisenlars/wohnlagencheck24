@@ -494,3 +494,36 @@ export type PartnerAIEstimateResponse = {
   estimate: PartnerAICostEstimate;
   budget_check: PartnerAIBudgetCheckResult;
 };
+
+export type PublicNetworkContentLocaleSource = "primary" | "translation";
+
+export type PublicNetworkContentItem = {
+  id: string;
+  booking_id: string;
+  area_id: string;
+  network_partner_id: string;
+  network_partner_name: string | null;
+  content_type: NetworkContentType;
+  slug: string;
+  title: string;
+  summary: string | null;
+  body_md: string | null;
+  cta_label: string | null;
+  cta_url: string | null;
+  locale: string;
+  locale_source: PublicNetworkContentLocaleSource;
+  primary_locale: string;
+  media: NetworkContentMediaRecord[];
+  company_profile: NetworkCompanyProfileDetails | null;
+  property_offer: NetworkPropertyOfferDetails | null;
+  property_request: NetworkPropertyRequestDetails | null;
+};
+
+export type PublicNetworkContentCollection = {
+  area_id: string;
+  locale: string;
+  items: PublicNetworkContentItem[];
+  company_profiles: PublicNetworkContentItem[];
+  property_offers: PublicNetworkContentItem[];
+  property_requests: PublicNetworkContentItem[];
+};

@@ -28,6 +28,9 @@ import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { resolveLeadGeneratorConfig } from "@/features/lead-generators/core/resolver";
 import { VALUATION_RANGE_FLOW } from "@/features/lead-generators/valuation/flow";
 import type { ValuationPriceContext } from "@/features/lead-generators/valuation/pricing";
+import { PublicCompanyProfilesSection } from "@/features/network-content/PublicCompanyProfilesSection";
+import { PublicPropertyOffersSection } from "@/features/network-content/PublicPropertyOffersSection";
+import { PublicPropertyRequestsSection } from "@/features/network-content/PublicPropertyRequestsSection";
 
 export const revalidate = 3600;
 
@@ -170,7 +173,7 @@ export default async function ImmobilienmarktHierarchiePage({ params, locale = n
   const entry = IMMOBILIENMARKT_REGISTRY[route.level]?.[pageModel.activeTabId];
   if (!entry) notFound();
 
-  const { report, tabs, tocItems, activeTabId, basePath, ctx, assets, parentBasePath } = pageModel;
+  const { report, tabs, tocItems, activeTabId, basePath, ctx, assets, parentBasePath, networkContent } = pageModel;
   const reportData = asRecord(report?.data) ?? {};
   const meta = asRecord(asArray(report.meta)[0] ?? report.meta) ?? {};
   const immobilienKaufpreisRow = asRecord(asArray(reportData["immobilien_kaufpreis"])[0]) ?? null;
@@ -268,6 +271,23 @@ export default async function ImmobilienmarktHierarchiePage({ params, locale = n
         ctx={ctx}
         assets={assets}
       />
+
+      {networkContent ? (
+        <>
+          <PublicCompanyProfilesSection
+            items={networkContent.company_profiles}
+            locale={normalizedLocale}
+          />
+          <PublicPropertyOffersSection
+            items={networkContent.property_offers}
+            locale={normalizedLocale}
+          />
+          <PublicPropertyRequestsSection
+            items={networkContent.property_requests}
+            locale={normalizedLocale}
+          />
+        </>
+      ) : null}
 
       {valuationConfig && valuationPriceContext ? (
         <section className="py-5 bg-dark text-white mt-5 overflow-hidden">
