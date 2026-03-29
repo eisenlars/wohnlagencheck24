@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { getAdminRoleForUser } from "@/lib/security/admin-auth";
+import { loadAdminRoleForUser } from "@/lib/security/admin-auth";
 import { sendAdminPartnerOnboardedEmail } from "@/lib/notifications/admin-review-email";
 
 type UserMeta = Record<string, unknown>;
@@ -24,16 +24,36 @@ export async function POST() {
       return NextResponse.json({ ok: false, error: "UNAUTHORIZED" }, { status: 401 });
     }
 
-    const role = getAdminRoleForUser(user.id);
+    const role = await loadAdminRoleForUser(user.id);
     if (role === "admin_super" || role === "admin_ops") {
       return NextResponse.json({ ok: true, activated: false, reason: "admin_user" });
     }
 
     const admin = createAdminClient();
+    const membershipResult = await admin
+      .from("partner_users")
+      .select("partner_id, is_primary, created_at")
+      .eq("auth_user_id", user.id)
+      .order("is_primary", { ascending: false })
+      .order("created_at", { ascending: true });
+
+    let partnerId =
+      Array.isArray(membershipResult.data) && membershipResult.data.length > 0
+        ? String(membershipResult.data[0]?.partner_id ?? "").trim()
+        : "";
+    if (!partnerId) {
+      const fallbackProfile = await admin
+        .from("partners")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+      partnerId = String((fallbackProfile.data as { id?: string | null } | null)?.id ?? "").trim();
+    }
+
     const { data: partnerProfile, error: partnerError } = await admin
       .from("partners")
       .select("id, company_name, contact_email, is_active")
-      .eq("id", user.id)
+      .eq("id", partnerId)
       .maybeSingle();
 
     if (partnerError || !partnerProfile) {
@@ -49,7 +69,7 @@ export async function POST() {
     const { error: activateError } = await admin
       .from("partners")
       .update({ is_active: true })
-      .eq("id", user.id);
+      .eq("id", partnerId);
 
     if (activateError) {
       return NextResponse.json({ ok: false, error: "ACTIVATE_FAILED" }, { status: 500 });
@@ -64,7 +84,7 @@ export async function POST() {
     });
 
     await sendAdminPartnerOnboardedEmail({
-      partnerId: user.id,
+      partnerId,
       partnerName: String((partnerProfile as { company_name?: string } | null)?.company_name ?? "").trim() || null,
       partnerEmail: String((partnerProfile as { contact_email?: string } | null)?.contact_email ?? "").trim().toLowerCase() || null,
       loggedInAtIso: new Date().toISOString(),

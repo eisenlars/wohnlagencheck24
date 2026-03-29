@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
-type SetupAudience = "partner" | "admin";
+type SetupAudience = "partner" | "admin" | "network_partner";
 type LinkKind = "invite" | "recovery" | "generic";
 
 type PasswordSetupClientProps = {
@@ -24,15 +24,22 @@ function readSearchParams(): URLSearchParams {
 
 function readAudience(defaultAudience: SetupAudience): SetupAudience {
   const search = readSearchParams();
-  return search.get("aud") === "admin" ? "admin" : defaultAudience;
+  const aud = String(search.get("aud") ?? "").trim().toLowerCase();
+  if (aud === "admin") return "admin";
+  if (aud === "network_partner") return "network_partner";
+  return defaultAudience;
 }
 
 function loginPathForAudience(aud: SetupAudience): string {
-  return aud === "admin" ? "/admin/login" : "/partner/login";
+  if (aud === "admin") return "/admin/login";
+  if (aud === "network_partner") return "/network-partner/login";
+  return "/partner/login";
 }
 
 function appPathForAudience(aud: SetupAudience): string {
-  return aud === "admin" ? "/admin" : "/dashboard";
+  if (aud === "admin") return "/admin";
+  if (aud === "network_partner") return "/network-partner";
+  return "/dashboard";
 }
 
 async function resolvePostSetupTarget(fallback: string): Promise<string> {
@@ -81,11 +88,11 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
         setHeadline("Passwort neu setzen");
         setLinkKind("recovery");
       } else if (type === "invite") {
-        setHeadline("Partnerkonto aktivieren");
+        setHeadline(defaultAudience === "network_partner" ? "Netzwerkpartner-Zugang aktivieren" : "Partnerkonto aktivieren");
         setLinkKind("invite");
       } else {
         setHeadline(title);
-        setLinkKind(defaultAudience === "partner" ? "invite" : "generic");
+        setLinkKind(defaultAudience === "partner" || defaultAudience === "network_partner" ? "invite" : "generic");
       }
       const otpToken = tokenHash || legacyToken;
       const invalidLinkMessage = type === "recovery"
