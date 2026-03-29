@@ -76,7 +76,21 @@ export async function runNetworkPartnerWriteSync(input: {
       continue;
     }
 
-    const bookingScope = bookingScopesById.get(item.booking_id);
+    const bookingId = item.booking_id;
+    if (!bookingId) {
+      skippedCount += 1;
+      lines.push({
+        external_id: item.external_id,
+        content_type: item.content_type,
+        booking_id: item.booking_id,
+        content_item_id: null,
+        status: "skipped",
+        reason: "booking_scope_missing",
+      });
+      continue;
+    }
+
+    const bookingScope = bookingScopesById.get(bookingId);
     if (!bookingScope) {
       skippedCount += 1;
       lines.push({
