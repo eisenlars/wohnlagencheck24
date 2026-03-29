@@ -37,6 +37,15 @@ function asFiniteNumberOrNull(value: unknown): number | null {
   return null;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function asRowArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord);
+}
+
 function normalizePrimaryLocale(value: unknown): string {
   const locale = asText(value).toLowerCase();
   return locale || "de";
@@ -279,12 +288,12 @@ async function fetchContentRowsByPortalPartner(partnerId: string, id?: string) {
     query = query.eq("id", id);
     const { data, error } = await query.maybeSingle();
     if (error) throw new Error(error.message ?? "NETWORK_CONTENT_LOOKUP_FAILED");
-    return data ? [data as Record<string, unknown>] : [];
+    return isRecord(data) ? [data] : [];
   }
 
   const { data, error } = await query.order("updated_at", { ascending: false });
   if (error) throw new Error(error.message ?? "NETWORK_CONTENT_LIST_FAILED");
-  return (data ?? []) as Record<string, unknown>[];
+  return asRowArray(data);
 }
 
 export async function listContentByPortalPartner(
