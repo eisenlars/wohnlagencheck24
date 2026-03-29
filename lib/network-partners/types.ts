@@ -350,3 +350,37 @@ export type NetworkPartnerBillingOverview = {
   booking_projection: NetworkBillingProjectionRow[];
   invoice_table_available: boolean;
 };
+
+export type NetworkBillingRunLineStatus = "created" | "skipped";
+export type NetworkBillingRunLineReason = "created" | "duplicate" | "not_billable";
+
+export type NetworkBillingRunLine = {
+  booking_id: string;
+  network_partner_id: string;
+  area_id: string;
+  placement_code: PlacementCode;
+  period_key: string;
+  status: NetworkBillingRunLineStatus;
+  reason: NetworkBillingRunLineReason;
+  invoice_line_id: string | null;
+  settlement_line_id: string | null;
+  gross_amount_eur: number;
+  portal_fee_eur: number;
+  partner_net_eur: number;
+};
+
+export type NetworkBillingRunResult = {
+  period_key: string;
+  period_start: string;
+  period_end: string;
+  checked_booking_count: number;
+  created_invoice_count: number;
+  skipped_duplicate_count: number;
+  skipped_not_billable_count: number;
+  lines: NetworkBillingRunLine[];
+};
+
+export type NetworkBillingRunResponse = {
+  ok: true;
+  result: NetworkBillingRunResult;
+};

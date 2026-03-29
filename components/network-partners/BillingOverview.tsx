@@ -3,6 +3,7 @@
 import type {
   NetworkBillingMonthSummary,
   NetworkBillingProjectionRow,
+  NetworkBillingRunResult,
   NetworkPartnerInvoiceLineRecord,
   PortalPartnerSettlementLineRecord,
 } from '@/lib/network-partners/types';
@@ -14,6 +15,7 @@ type BillingOverviewProps = {
   bookingProjection: NetworkBillingProjectionRow[];
   invoiceTableAvailable: boolean;
   settlementTableAvailable: boolean;
+  lastRunResult?: NetworkBillingRunResult | null;
 };
 
 function formatCurrency(value: number): string {
@@ -27,9 +29,36 @@ export default function BillingOverview({
   bookingProjection,
   invoiceTableAvailable,
   settlementTableAvailable,
+  lastRunResult,
 }: BillingOverviewProps) {
   return (
     <div style={{ display: 'grid', gap: 20 }}>
+      {lastRunResult ? (
+        <section style={{ display: 'grid', gap: 12 }}>
+          <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Letzter Abrechnungslauf</h3>
+          <div
+            style={{
+              display: 'grid',
+              gap: 12,
+              padding: 16,
+              borderRadius: 16,
+              border: '1px solid #cbd5e1',
+              background: '#f8fafc',
+            }}
+          >
+            <p style={{ margin: 0, color: '#0f172a', lineHeight: 1.6 }}>
+              Periode {lastRunResult.period_key} ({lastRunResult.period_start} bis {lastRunResult.period_end})
+            </p>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', color: '#334155', fontWeight: 600 }}>
+              <span>Geprueft: {lastRunResult.checked_booking_count}</span>
+              <span>Erstellt: {lastRunResult.created_invoice_count}</span>
+              <span>Dublette: {lastRunResult.skipped_duplicate_count}</span>
+              <span>Nicht abrechenbar: {lastRunResult.skipped_not_billable_count}</span>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <section style={{ display: 'grid', gap: 12 }}>
         <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Monatsübersicht</h3>
         {!invoiceTableAvailable ? (

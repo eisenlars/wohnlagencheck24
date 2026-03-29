@@ -1,4 +1,10 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import {
+  buildInvoiceAmounts,
+  isBookingBillableForPeriod,
+  resolveBillingPeriodBounds,
+  type BillingPeriodBounds,
+} from "@/lib/network-partners/billing-rules";
 import { listBookingsByPortalPartner } from "@/lib/network-partners/repositories/bookings";
 import { listBookingsByNetworkPartner } from "@/lib/network-partners/repositories/bookings";
 import { listNetworkPartnersByPortalPartner } from "@/lib/network-partners/repositories/network-partners";
@@ -6,9 +12,12 @@ import type {
   NetworkBillingMonthSummary,
   NetworkBillingOverview,
   NetworkBillingProjectionRow,
+  NetworkBillingRunLine,
+  NetworkBillingRunResult,
   NetworkPartnerBillingOverview,
   NetworkPartnerInvoiceLineRecord,
   NetworkPartnerInvoiceStatus,
+  NetworkPartnerBookingRecord,
   PortalPartnerSettlementLineRecord,
   PortalPartnerSettlementStatus,
 } from "@/lib/network-partners/types";
@@ -34,6 +43,10 @@ function asNumber(value: unknown): number {
 function asRowArray(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) return [];
   return value.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object");
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function isMissingTable(error: unknown, table: string): boolean {
@@ -151,6 +164,37 @@ async function listInvoiceLinesByPortalPartner(partnerId: string): Promise<{
   };
 }
 
+async function listInvoiceLinesByPortalPartnerForPeriod(
+  partnerId: string,
+  bounds: BillingPeriodBounds,
+): Promise<NetworkPartnerInvoiceLineRecord[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("network_partner_invoice_lines")
+    .select([
+      "id",
+      "booking_id",
+      "portal_partner_id",
+      "network_partner_id",
+      "period_start",
+      "period_end",
+      "gross_amount_eur",
+      "portal_fee_eur",
+      "partner_net_eur",
+      "status",
+      "created_at",
+      "network_partner_bookings(area_id, placement_code)",
+      "network_partners(company_name)",
+    ].join(", "))
+    .eq("portal_partner_id", partnerId)
+    .eq("period_start", bounds.periodStart)
+    .eq("period_end", bounds.periodEnd)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message ?? "NETWORK_PARTNER_INVOICE_LINES_PERIOD_LIST_FAILED");
+  return asRowArray(data).map((row) => mapInvoiceRow(row));
+}
+
 async function listSettlementLinesByPortalPartner(partnerId: string): Promise<{
   available: boolean;
   rows: PortalPartnerSettlementLineRecord[];
@@ -173,6 +217,69 @@ async function listSettlementLinesByPortalPartner(partnerId: string): Promise<{
     available: true,
     rows: asRowArray(data).map((row) => mapSettlementRow(row)),
   };
+}
+
+async function createInvoiceLineForBookingPeriod(
+  booking: NetworkPartnerBookingRecord,
+  bounds: BillingPeriodBounds,
+): Promise<NetworkPartnerInvoiceLineRecord> {
+  const admin = createAdminClient();
+  const amounts = buildInvoiceAmounts(booking);
+  const { data, error } = await admin
+    .from("network_partner_invoice_lines")
+    .insert({
+      booking_id: booking.id,
+      portal_partner_id: booking.portal_partner_id,
+      network_partner_id: booking.network_partner_id,
+      period_start: bounds.periodStart,
+      period_end: bounds.periodEnd,
+      gross_amount_eur: amounts.gross_amount_eur,
+      portal_fee_eur: amounts.portal_fee_eur,
+      partner_net_eur: amounts.partner_net_eur,
+      status: "open",
+    })
+    .select([
+      "id",
+      "booking_id",
+      "portal_partner_id",
+      "network_partner_id",
+      "period_start",
+      "period_end",
+      "gross_amount_eur",
+      "portal_fee_eur",
+      "partner_net_eur",
+      "status",
+      "created_at",
+      "network_partner_bookings(area_id, placement_code)",
+      "network_partners(company_name)",
+    ].join(", "))
+    .single();
+
+  if (error) throw new Error(error.message ?? "NETWORK_PARTNER_INVOICE_LINE_CREATE_FAILED");
+  if (!isRecord(data)) throw new Error("NETWORK_PARTNER_INVOICE_LINE_CREATE_FAILED");
+  return mapInvoiceRow(data);
+}
+
+async function createSettlementLineForInvoice(
+  invoiceLine: NetworkPartnerInvoiceLineRecord,
+): Promise<PortalPartnerSettlementLineRecord> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("portal_partner_settlement_lines")
+    .insert({
+      invoice_line_id: invoiceLine.id,
+      portal_partner_id: invoiceLine.portal_partner_id,
+      gross_amount_eur: invoiceLine.gross_amount_eur,
+      portal_fee_eur: invoiceLine.portal_fee_eur,
+      partner_net_eur: invoiceLine.partner_net_eur,
+      status: "pending",
+    })
+    .select("id, invoice_line_id, portal_partner_id, gross_amount_eur, portal_fee_eur, partner_net_eur, status, created_at")
+    .single();
+
+  if (error) throw new Error(error.message ?? "PORTAL_PARTNER_SETTLEMENT_LINE_CREATE_FAILED");
+  if (!isRecord(data)) throw new Error("PORTAL_PARTNER_SETTLEMENT_LINE_CREATE_FAILED");
+  return mapSettlementRow(data);
 }
 
 async function buildBookingProjection(partnerId: string): Promise<NetworkBillingProjectionRow[]> {
@@ -294,5 +401,96 @@ export async function loadNetworkBillingOverviewByNetworkPartner(
     invoice_lines: invoiceResult.rows,
     booking_projection: bookingProjection,
     invoice_table_available: invoiceResult.available,
+  };
+}
+
+export async function runBillingForPortalPartner(
+  partnerId: string,
+  periodKey: string,
+): Promise<NetworkBillingRunResult> {
+  const bounds = resolveBillingPeriodBounds(periodKey);
+  const [bookings, existingInvoiceLines] = await Promise.all([
+    listBookingsByPortalPartner(partnerId),
+    listInvoiceLinesByPortalPartnerForPeriod(partnerId, bounds),
+  ]);
+
+  const existingInvoiceLineByBookingId = new Map(
+    existingInvoiceLines.map((line) => [line.booking_id, line]),
+  );
+
+  const lines: NetworkBillingRunLine[] = [];
+  let createdInvoiceCount = 0;
+  let skippedDuplicateCount = 0;
+  let skippedNotBillableCount = 0;
+
+  for (const booking of bookings) {
+    const amounts = buildInvoiceAmounts(booking);
+
+    if (!isBookingBillableForPeriod(booking, bounds)) {
+      skippedNotBillableCount += 1;
+      lines.push({
+        booking_id: booking.id,
+        network_partner_id: booking.network_partner_id,
+        area_id: booking.area_id,
+        placement_code: booking.placement_code,
+        period_key: bounds.periodKey,
+        status: "skipped",
+        reason: "not_billable",
+        invoice_line_id: null,
+        settlement_line_id: null,
+        ...amounts,
+      });
+      continue;
+    }
+
+    const existingInvoiceLine = existingInvoiceLineByBookingId.get(booking.id);
+    if (existingInvoiceLine) {
+      skippedDuplicateCount += 1;
+      lines.push({
+        booking_id: booking.id,
+        network_partner_id: booking.network_partner_id,
+        area_id: booking.area_id,
+        placement_code: booking.placement_code,
+        period_key: bounds.periodKey,
+        status: "skipped",
+        reason: "duplicate",
+        invoice_line_id: existingInvoiceLine.id,
+        settlement_line_id: null,
+        gross_amount_eur: existingInvoiceLine.gross_amount_eur,
+        portal_fee_eur: existingInvoiceLine.portal_fee_eur,
+        partner_net_eur: existingInvoiceLine.partner_net_eur,
+      });
+      continue;
+    }
+
+    const invoiceLine = await createInvoiceLineForBookingPeriod(booking, bounds);
+    const settlementLine = await createSettlementLineForInvoice(invoiceLine);
+    createdInvoiceCount += 1;
+    existingInvoiceLineByBookingId.set(booking.id, invoiceLine);
+    lines.push({
+      booking_id: booking.id,
+      network_partner_id: booking.network_partner_id,
+      area_id: booking.area_id,
+      placement_code: booking.placement_code,
+      period_key: bounds.periodKey,
+      status: "created",
+      reason: "created",
+      invoice_line_id: invoiceLine.id,
+      settlement_line_id: settlementLine.id,
+      gross_amount_eur: invoiceLine.gross_amount_eur,
+      portal_fee_eur: invoiceLine.portal_fee_eur,
+      partner_net_eur: invoiceLine.partner_net_eur,
+    });
+  }
+
+  return {
+    period_key: bounds.periodKey,
+    period_start: bounds.periodStart,
+    period_end: bounds.periodEnd,
+    checked_booking_count: bookings.length,
+    created_invoice_count: createdInvoiceCount,
+    skipped_duplicate_count: skippedDuplicateCount,
+    skipped_not_billable_count: skippedNotBillableCount,
+    lines,
   };
 }
