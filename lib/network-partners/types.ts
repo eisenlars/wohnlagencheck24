@@ -384,3 +384,113 @@ export type NetworkBillingRunResponse = {
   ok: true;
   result: NetworkBillingRunResult;
 };
+
+export type PartnerAICreditLedgerStatus = "open" | "closed";
+export type PartnerAIUsageFeature = "content_optimize" | "content_translate" | "seo_meta_generate";
+export type PartnerAIUsageStatus = "ok" | "blocked" | "error";
+
+export type PartnerAICreditLedgerRecord = {
+  id: string;
+  partner_id: string;
+  period_key: string;
+  opening_balance_eur: number;
+  credits_added_eur: number;
+  credits_used_eur: number;
+  closing_balance_eur: number;
+  status: PartnerAICreditLedgerStatus;
+  updated_at: string;
+};
+
+export type PartnerAIUsageEventRecord = {
+  id: string;
+  partner_id: string;
+  area_id: string | null;
+  network_partner_id: string | null;
+  content_item_id: string | null;
+  feature: PartnerAIUsageFeature;
+  locale: string | null;
+  billing_mode: AIBillingMode;
+  prompt_tokens: number;
+  completion_tokens: number;
+  estimated_cost_eur: number;
+  credit_delta_eur: number;
+  status: PartnerAIUsageStatus;
+  created_at: string;
+};
+
+export type PartnerAIUsageEventCreateInput = {
+  partner_id: string;
+  area_id?: string | null;
+  network_partner_id?: string | null;
+  content_item_id?: string | null;
+  feature: PartnerAIUsageFeature;
+  locale?: string | null;
+  billing_mode: AIBillingMode;
+  prompt_tokens: number;
+  completion_tokens: number;
+  estimated_cost_eur: number;
+  credit_delta_eur: number;
+  status?: PartnerAIUsageStatus;
+};
+
+export type PartnerAIUsageEventFilters = {
+  period_key?: string;
+  network_partner_id?: string;
+  content_item_id?: string;
+  feature?: PartnerAIUsageFeature;
+  limit?: number;
+};
+
+export type PartnerAICostEstimateInput = {
+  feature: PartnerAIUsageFeature;
+  model?: string | null;
+  prompt_tokens: number;
+  completion_tokens: number;
+  prompt_price_per_1k_eur?: number;
+  completion_price_per_1k_eur?: number;
+};
+
+export type PartnerAICostEstimate = {
+  feature: PartnerAIUsageFeature;
+  model: string | null;
+  prompt_tokens: number;
+  completion_tokens: number;
+  prompt_price_per_1k_eur: number;
+  completion_price_per_1k_eur: number;
+  estimated_cost_eur: number;
+};
+
+export type PartnerAIBudgetCheckReason =
+  | "ok"
+  | "blocked"
+  | "missing_ledger"
+  | "exceeds_budget"
+  | "low_balance";
+
+export type PartnerAIBudgetCheckResult = {
+  ok: boolean;
+  warning: boolean;
+  reason: PartnerAIBudgetCheckReason;
+  billing_mode: AIBillingMode;
+  period_key: string;
+  estimated_cost_eur: number;
+  available_credit_eur: number | null;
+  remaining_after_run_eur: number | null;
+};
+
+export type PartnerAICreditsResponse = {
+  ok: true;
+  period_key: string;
+  ledger: PartnerAICreditLedgerRecord | null;
+};
+
+export type PartnerAIUsageResponse = {
+  ok: true;
+  usage_events: PartnerAIUsageEventRecord[];
+};
+
+export type PartnerAIEstimateResponse = {
+  ok: true;
+  estimate: PartnerAICostEstimate;
+  budget_check: PartnerAIBudgetCheckResult;
+};
