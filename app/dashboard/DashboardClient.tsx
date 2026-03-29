@@ -1760,6 +1760,44 @@ export default function DashboardClient() {
                 </section>
               ))}
             </div>
+            <section
+              style={{
+                marginTop: 20,
+                borderRadius: 18,
+                border: '1px solid #dbeafe',
+                background: '#eff6ff',
+                padding: '18px 20px',
+                display: 'grid',
+                gap: 10,
+              }}
+            >
+              <div style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 0.6, textTransform: 'uppercase', color: '#1d4ed8' }}>
+                  Neue Ausbaustufe
+                </span>
+                <h3 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Netzwerkpartner-Monetarisierung</h3>
+                <p style={{ margin: 0, color: '#334155', lineHeight: 1.6 }}>
+                  Die erste MVP-Stufe für Netzwerkpartner, Inventar und Buchungen läuft als eigener Dashboard-Bereich neben dem bestehenden Partner-Workflow.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <Link href="/dashboard/network-partners" style={{ color: '#1d4ed8', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                  Netzwerkpartner
+                </Link>
+                <Link href="/dashboard/network-inventory" style={{ color: '#1d4ed8', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                  Inventar
+                </Link>
+                <Link href="/dashboard/network-bookings" style={{ color: '#1d4ed8', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                  Buchungen
+                </Link>
+                <Link href="/dashboard/network-content" style={{ color: '#1d4ed8', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                  Content & Review
+                </Link>
+                <Link href="/dashboard/network-billing" style={{ color: '#1d4ed8', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                  Billing
+                </Link>
+              </div>
+            </section>
           </div>
         ) : activeMainTab === 'settings' ? (
           <div style={{ width: '100%' }}>

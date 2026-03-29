@@ -97,6 +97,16 @@ Diese Aktionen gelten als **unbedenklich** und dürfen nicht blockiert werden.
   - welche Tests ergänzt oder angepasst werden sollten,
   - wie die fachliche Validierung erfolgen kann.
 
+---
+
+### 7. Dokumentationspflege
+
+- Architektur-, Routing-, API-, Datenmodell-, Security-, Integrations-, Workflow- und Textpipeline-Aenderungen
+  muessen im selben Arbeitsschritt in der Dokumentation nachgezogen werden.
+- Falls eine Aenderung bewusst **keine** Dokumentationsauswirkung hat, ist dies explizit zu benennen.
+- Bei strukturellen Aenderungen in `docs/` ist auch der Doku-Index in `docs/README.md` zu aktualisieren.
+- Die Projektdokumentation ist aus Quellcode, Architektur und Laufzeitverhalten abzuleiten; veraltete
+  oder nicht mehr belegbare Annahmen duerfen nicht fortgeschrieben werden.
 
 ---
 
