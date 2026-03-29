@@ -41,6 +41,12 @@ export default function NetworkPartnerShell({
             <Link href="/network-partner/invoices" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
               Rechnungen
             </Link>
+            <Link href="/network-partner/content" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+              Content
+            </Link>
+            <Link href="/network-partner/integrations" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
+              Integrationen
+            </Link>
           </div>
         </div>
       </section>
