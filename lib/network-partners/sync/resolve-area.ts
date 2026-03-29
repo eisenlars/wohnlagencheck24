@@ -3,6 +3,7 @@ import type { PlacementCode } from "@/lib/network-partners/types";
 
 export type NetworkPartnerPreviewBookingScope = {
   booking_id: string;
+  portal_partner_id: string;
   area_id: string;
   placement_code: PlacementCode;
   area_name: string | null;

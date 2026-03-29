@@ -600,6 +600,38 @@ export type NetworkPartnerPreviewSyncResult = {
   };
 };
 
+export type NetworkPartnerWriteSyncLineStatus = "created" | "updated" | "skipped" | "error";
+
+export type NetworkPartnerWriteSyncLine = {
+  external_id: string;
+  content_type: "property_offer" | "property_request" | null;
+  booking_id: string | null;
+  content_item_id: string | null;
+  status: NetworkPartnerWriteSyncLineStatus;
+  reason: string | null;
+};
+
+export type NetworkPartnerWriteSyncResult = {
+  integration_id: string;
+  network_partner_id: string;
+  provider: string;
+  resource: NetworkPartnerPreviewSyncResource;
+  mode: NetworkPartnerPreviewSyncMode;
+  preview_counts: NetworkPartnerPreviewSyncCounts;
+  created_count: number;
+  updated_count: number;
+  skipped_count: number;
+  error_count: number;
+  lines: NetworkPartnerWriteSyncLine[];
+  notes: string[];
+  diagnostics: {
+    provider_request_count: number | null;
+    provider_pages_fetched: number | null;
+    references_fetched: boolean;
+    requests_fetched: boolean;
+  };
+};
+
 export type PublicNetworkContentLocaleSource = "primary" | "translation";
 
 export type PublicNetworkContentItem = {

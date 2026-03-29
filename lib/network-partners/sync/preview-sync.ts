@@ -46,7 +46,26 @@ function mapPreviewCounts(items: NetworkPartnerPreviewSyncItem[]) {
   };
 }
 
-async function loadBookingScopesForNetworkPartner(
+export type NetworkPartnerPreviewSyncSnapshot = {
+  integration_id: string;
+  network_partner_id: string;
+  provider: string;
+  resource: NetworkPartnerPreviewSyncResource;
+  mode: NetworkPartnerPreviewSyncMode;
+  booking_scope_count: number;
+  booking_scopes: NetworkPartnerPreviewBookingScope[];
+  counts: ReturnType<typeof mapPreviewCounts>;
+  items: NetworkPartnerPreviewSyncItem[];
+  notes: string[];
+  diagnostics: {
+    provider_request_count: number | null;
+    provider_pages_fetched: number | null;
+    references_fetched: boolean;
+    requests_fetched: boolean;
+  };
+};
+
+export async function loadBookingScopesForNetworkPartner(
   networkPartnerId: string,
 ): Promise<NetworkPartnerPreviewBookingScope[]> {
   const admin = createAdminClient();
@@ -54,6 +73,7 @@ async function loadBookingScopesForNetworkPartner(
     .from("network_partner_bookings")
     .select(`
       id,
+      portal_partner_id,
       area_id,
       placement_code,
       status,
@@ -76,12 +96,14 @@ async function loadBookingScopesForNetworkPartner(
       const record = row as Record<string, unknown>;
       const area = isRecord(record.areas) ? record.areas : null;
       const bookingId = asText(record.id);
+      const portalPartnerId = asText(record.portal_partner_id);
       const areaId = asText(record.area_id);
       const placementCode = asText(record.placement_code);
-      if (!bookingId || !areaId || !placementCode) return null;
+      if (!bookingId || !portalPartnerId || !areaId || !placementCode) return null;
 
       return {
         booking_id: bookingId,
+        portal_partner_id: portalPartnerId,
         area_id: areaId,
         placement_code: placementCode as NetworkPartnerPreviewBookingScope["placement_code"],
         area_name: asText(area?.name),
@@ -93,7 +115,7 @@ async function loadBookingScopesForNetworkPartner(
     .filter((row): row is NetworkPartnerPreviewBookingScope => Boolean(row));
 }
 
-function toProviderIntegration(input: {
+export function toProviderIntegration(input: {
   integrationId: string;
   networkPartnerId: string;
   integration: Awaited<ReturnType<typeof getIntegrationByIdForNetworkPartner>>;
@@ -117,7 +139,7 @@ function toProviderIntegration(input: {
   };
 }
 
-async function persistPreviewTimestamp(
+export async function persistPreviewTimestamp(
   integrationId: string,
   networkPartnerId: string,
   summary: Record<string, unknown>,
@@ -144,16 +166,14 @@ async function persistPreviewTimestamp(
     .eq("network_partner_id", networkPartnerId);
 }
 
-export async function runNetworkPartnerPreviewSync(input: {
+export async function buildNetworkPartnerPreviewSyncSnapshot(input: {
   integrationId: string;
   networkPartnerId: string;
   resource?: unknown;
   mode?: unknown;
-  sampleLimit?: number;
-}): Promise<NetworkPartnerPreviewSyncResult> {
+}): Promise<NetworkPartnerPreviewSyncSnapshot> {
   const resource = normalizePreviewResource(input.resource);
   const mode = normalizePreviewMode(input.mode);
-  const sampleLimit = Math.max(1, Math.min(Number(input.sampleLimit ?? 25) || 25, 100));
 
   const integration = await getIntegrationByIdForNetworkPartner(input.integrationId, input.networkPartnerId);
   if (!integration) {
@@ -192,30 +212,56 @@ export async function runNetworkPartnerPreviewSync(input: {
   }
 
   const counts = mapPreviewCounts(items);
-  const result: NetworkPartnerPreviewSyncResult = {
+  return {
     integration_id: integration.id,
     network_partner_id: integration.network_partner_id,
     provider: integration.provider,
     resource,
     mode,
     booking_scope_count: bookingScopes.length,
+    booking_scopes: bookingScopes,
     counts,
-    items: items.slice(0, sampleLimit),
+    items,
     notes: providerResult.notes ?? [],
     diagnostics: {
       provider_request_count: providerResult.diagnostics?.provider_request_count ?? null,
       provider_pages_fetched: providerResult.diagnostics?.provider_pages_fetched ?? null,
-      sample_limit: sampleLimit,
       references_fetched: providerResult.referencesFetched,
       requests_fetched: providerResult.requestsFetched,
     },
   };
+}
 
-  await persistPreviewTimestamp(integration.id, integration.network_partner_id, {
-    resource,
-    mode,
-    booking_scope_count: bookingScopes.length,
-    counts,
+export async function runNetworkPartnerPreviewSync(input: {
+  integrationId: string;
+  networkPartnerId: string;
+  resource?: unknown;
+  mode?: unknown;
+  sampleLimit?: number;
+}): Promise<NetworkPartnerPreviewSyncResult> {
+  const sampleLimit = Math.max(1, Math.min(Number(input.sampleLimit ?? 25) || 25, 100));
+  const snapshot = await buildNetworkPartnerPreviewSyncSnapshot(input);
+  const result: NetworkPartnerPreviewSyncResult = {
+    integration_id: snapshot.integration_id,
+    network_partner_id: snapshot.network_partner_id,
+    provider: snapshot.provider,
+    resource: snapshot.resource,
+    mode: snapshot.mode,
+    booking_scope_count: snapshot.booking_scope_count,
+    counts: snapshot.counts,
+    items: snapshot.items.slice(0, sampleLimit),
+    notes: snapshot.notes,
+    diagnostics: {
+      ...snapshot.diagnostics,
+      sample_limit: sampleLimit,
+    },
+  };
+
+  await persistPreviewTimestamp(snapshot.integration_id, snapshot.network_partner_id, {
+    resource: snapshot.resource,
+    mode: snapshot.mode,
+    booking_scope_count: snapshot.booking_scope_count,
+    counts: snapshot.counts,
     note_count: result.notes.length,
     previewed_at: new Date().toISOString(),
   });
