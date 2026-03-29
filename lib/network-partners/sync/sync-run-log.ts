@@ -124,7 +124,8 @@ export async function listNetworkPartnerSyncRuns(input: {
     .limit(limit);
 
   if (error) throw new Error(error.message ?? "SYNC_RUN_LIST_FAILED");
-  return (Array.isArray(data) ? data : [])
-    .filter((row): row is Record<string, unknown> => isRecord(row))
-    .map(mapRunRow);
+  return (Array.isArray(data) ? data : []).flatMap((row) => {
+    if (!isRecord(row)) return [];
+    return [mapRunRow(row)];
+  });
 }
