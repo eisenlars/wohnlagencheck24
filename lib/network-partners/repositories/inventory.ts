@@ -24,6 +24,15 @@ function asNumber(value: unknown): number {
   return 0;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function asRowArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord);
+}
+
 function normalizePlacementCode(value: unknown): PlacementCode {
   const code = asText(value);
   if (code === "property_offer" || code === "property_request") return code;
@@ -82,7 +91,7 @@ export async function listPlacementCatalog(): Promise<PlacementCatalogRecord[]> 
     .order("label", { ascending: true });
 
   if (error) throw new Error(error.message ?? "PLACEMENT_CATALOG_LIST_FAILED");
-  return (data ?? []).map((row) => mapPlacementCatalogRow(row as Record<string, unknown>));
+  return asRowArray(data).map((row) => mapPlacementCatalogRow(row));
 }
 
 export async function listInventoryByPartner(
@@ -96,7 +105,7 @@ export async function listInventoryByPartner(
     .order("area_id", { ascending: true });
 
   if (error) throw new Error(error.message ?? "INVENTORY_LIST_FAILED");
-  return (data ?? []).map((row) => mapInventoryRow(row as Record<string, unknown>));
+  return asRowArray(data).map((row) => mapInventoryRow(row));
 }
 
 export async function getInventoryEntryByIdForPartner(
@@ -112,7 +121,7 @@ export async function getInventoryEntryByIdForPartner(
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "INVENTORY_LOOKUP_FAILED");
-  return data ? mapInventoryRow(data as Record<string, unknown>) : null;
+  return isRecord(data) ? mapInventoryRow(data) : null;
 }
 
 export async function createInventoryEntry(
@@ -137,8 +146,8 @@ export async function createInventoryEntry(
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "INVENTORY_CREATE_FAILED");
-  if (!data) throw new Error("INVENTORY_CREATE_FAILED");
-  return mapInventoryRow(data as Record<string, unknown>);
+  if (!isRecord(data)) throw new Error("INVENTORY_CREATE_FAILED");
+  return mapInventoryRow(data);
 }
 
 export async function updateInventoryEntry(
@@ -166,8 +175,8 @@ export async function updateInventoryEntry(
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "INVENTORY_UPDATE_FAILED");
-  if (!data) throw new Error("NOT_FOUND");
-  return mapInventoryRow(data as Record<string, unknown>);
+  if (!isRecord(data)) throw new Error("NOT_FOUND");
+  return mapInventoryRow(data);
 }
 
 export async function hasActiveInventoryForAreaAndPlacement(

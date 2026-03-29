@@ -26,6 +26,15 @@ function asNumber(value: unknown): number {
   return 0;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function asRowArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord);
+}
+
 function normalizeStatus(value: unknown): BookingStatus {
   const status = asText(value);
   if (
@@ -170,7 +179,7 @@ export async function listBookingsByPortalPartner(
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message ?? "BOOKINGS_LIST_FAILED");
-  return (data ?? []).map((row) => mapBookingRow(row as Record<string, unknown>));
+  return asRowArray(data).map((row) => mapBookingRow(row));
 }
 
 export async function getBookingByIdForPortalPartner(
@@ -186,7 +195,7 @@ export async function getBookingByIdForPortalPartner(
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "BOOKING_LOOKUP_FAILED");
-  return data ? mapBookingRow(data as Record<string, unknown>) : null;
+  return isRecord(data) ? mapBookingRow(data) : null;
 }
 
 export async function createBooking(
@@ -230,8 +239,8 @@ export async function createBooking(
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "BOOKING_CREATE_FAILED");
-  if (!data) throw new Error("BOOKING_CREATE_FAILED");
-  return mapBookingRow(data as Record<string, unknown>);
+  if (!isRecord(data)) throw new Error("BOOKING_CREATE_FAILED");
+  return mapBookingRow(data);
 }
 
 export async function updateBooking(
@@ -285,6 +294,6 @@ export async function updateBooking(
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "BOOKING_UPDATE_FAILED");
-  if (!data) throw new Error("NOT_FOUND");
-  return mapBookingRow(data as Record<string, unknown>);
+  if (!isRecord(data)) throw new Error("NOT_FOUND");
+  return mapBookingRow(data);
 }

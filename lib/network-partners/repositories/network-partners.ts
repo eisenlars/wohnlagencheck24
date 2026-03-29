@@ -17,6 +17,15 @@ function asNullableText(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function asRowArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord);
+}
+
 function normalizeStatus(value: unknown): NetworkPartnerStatus {
   const status = asText(value);
   if (status === "paused" || status === "inactive") return status;
@@ -72,12 +81,12 @@ function assertRequiredText(value: string, field: string) {
   }
 }
 
-async function maybeSinglePartnerQuery(
-  query: Promise<{ data?: Record<string, unknown> | null; error?: QueryError }>,
-) {
-  const { data, error } = await query;
+async function maybeSinglePartnerQuery(query: {
+  maybeSingle: () => Promise<{ data?: unknown; error?: QueryError }>;
+}) {
+  const { data, error } = await query.maybeSingle();
   if (error) throw new Error(error.message ?? "NETWORK_PARTNER_QUERY_FAILED");
-  return data ? mapNetworkPartnerRow(data) : null;
+  return isRecord(data) ? mapNetworkPartnerRow(data) : null;
 }
 
 export async function listNetworkPartnersByPortalPartner(
@@ -91,7 +100,7 @@ export async function listNetworkPartnersByPortalPartner(
     .order("company_name", { ascending: true });
 
   if (error) throw new Error(error.message ?? "NETWORK_PARTNERS_LIST_FAILED");
-  return (data ?? []).map((row) => mapNetworkPartnerRow(row as Record<string, unknown>));
+  return asRowArray(data).map((row) => mapNetworkPartnerRow(row));
 }
 
 export async function getNetworkPartnerById(id: string): Promise<NetworkPartnerRecord | null> {
@@ -100,8 +109,7 @@ export async function getNetworkPartnerById(id: string): Promise<NetworkPartnerR
     admin
       .from("network_partners")
       .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
-      .eq("id", id)
-      .maybeSingle(),
+      .eq("id", id),
   );
 }
 
@@ -115,8 +123,7 @@ export async function getNetworkPartnerByIdForPortalPartner(
       .from("network_partners")
       .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
       .eq("id", id)
-      .eq("portal_partner_id", partnerId)
-      .maybeSingle(),
+      .eq("portal_partner_id", partnerId),
   );
 }
 
@@ -136,8 +143,8 @@ export async function createNetworkPartner(
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "NETWORK_PARTNER_CREATE_FAILED");
-  if (!data) throw new Error("NETWORK_PARTNER_CREATE_FAILED");
-  return mapNetworkPartnerRow(data as Record<string, unknown>);
+  if (!isRecord(data)) throw new Error("NETWORK_PARTNER_CREATE_FAILED");
+  return mapNetworkPartnerRow(data);
 }
 
 export async function updateNetworkPartner(
@@ -167,6 +174,6 @@ export async function updateNetworkPartner(
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "NETWORK_PARTNER_UPDATE_FAILED");
-  if (!data) throw new Error("NOT_FOUND");
-  return mapNetworkPartnerRow(data as Record<string, unknown>);
+  if (!isRecord(data)) throw new Error("NOT_FOUND");
+  return mapNetworkPartnerRow(data);
 }

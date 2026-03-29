@@ -176,8 +176,8 @@ async function loadReviewsByContentIds(contentIds: string[]): Promise<Map<string
   if (error) throw new Error(error.message ?? "NETWORK_CONTENT_REVIEWS_LIST_FAILED");
 
   const mapped = new Map<string, NetworkContentReviewRecord>();
-  for (const row of data ?? []) {
-    const record = mapReviewRow(row as Record<string, unknown>);
+  for (const row of asRowArray(data)) {
+    const record = mapReviewRow(row);
     if (!mapped.has(record.content_item_id)) {
       mapped.set(record.content_item_id, record);
     }
