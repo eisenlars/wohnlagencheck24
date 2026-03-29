@@ -31,13 +31,19 @@ export async function POST(
   req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
+  let runId: string | null = null;
+  let integrationId = "";
+  let networkPartnerId = "";
+  let traceId: string | null = null;
+
   try {
     const actor = requireNetworkPartnerRole(
       await requireNetworkPartnerActorContext(),
       ["network_owner", "network_editor"],
     );
+    networkPartnerId = actor.networkPartnerId;
     const params = await ctx.params;
-    const integrationId = asText(params.id);
+    integrationId = asText(params.id);
     if (!integrationId) {
       return NextResponse.json({ error: "Missing integration id" }, { status: 400 });
     }
@@ -48,7 +54,7 @@ export async function POST(
       return NextResponse.json({ error: "Integration not found" }, { status: 404 });
     }
 
-    const traceId = crypto.randomUUID();
+    traceId = crypto.randomUUID();
     const run = await createNetworkPartnerSyncRun({
       integrationId,
       portalPartnerId: integration.portal_partner_id,
@@ -60,6 +66,7 @@ export async function POST(
         resource: body.resource ?? "all",
       },
     });
+    runId = run.id;
 
     const result = await runNetworkPartnerPreviewSync({
       integrationId,
@@ -85,6 +92,23 @@ export async function POST(
 
     return NextResponse.json({ ok: true, result });
   } catch (error) {
+    if (runId && integrationId && networkPartnerId) {
+      try {
+        await finishNetworkPartnerSyncRun({
+          runId,
+          integrationId,
+          networkPartnerId,
+          status: "error",
+          summary: {
+            error: (error as Error).message || "Unexpected error",
+          },
+          diagnostics: {
+            trace_id: traceId,
+          },
+        });
+      } catch {}
+    }
+
     const mapped = mapPreviewError(error as Error);
     return NextResponse.json({ error: mapped.error }, { status: mapped.status });
   }
