@@ -6,7 +6,6 @@ import NetworkBookingsWorkspace from '@/components/network-partners/NetworkBooki
 import NetworkContentWorkspace from '@/components/network-partners/NetworkContentWorkspace';
 import NetworkBillingWorkspace from '@/components/network-partners/NetworkBillingWorkspace';
 import NetworkPartnerAccessPanel from '@/components/network-partners/NetworkPartnerAccessPanel';
-import NetworkPartnerRightsPanel from '@/components/network-partners/NetworkPartnerRightsPanel';
 import NetworkPartnerForm from '@/components/network-partners/NetworkPartnerForm';
 import type { NetworkPartnerRecord } from '@/lib/network-partners/types';
 import {
@@ -19,7 +18,7 @@ type NetworkPartnerListPayload = {
   error?: string;
 };
 
-export type NetworkPartnerDetailSection = 'profile' | 'rights' | 'bookings' | 'content' | 'billing';
+export type NetworkPartnerDetailSection = 'profile' | 'bookings' | 'content' | 'billing';
 
 type NetworkPartnerManagementWorkspaceProps = {
   initialSelectedPartnerId?: string | null;
@@ -157,10 +156,7 @@ export default function NetworkPartnerManagementWorkspace({
         <div style={{ display: 'grid', gap: 18, position: 'sticky', top: 18 }}>
           <section style={workflowPanelCardStyle}>
             <div style={workflowHeaderStyle}>
-              <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Partnerliste</h2>
-              <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-                Wähle einen Netzwerkpartner aus, um rechts direkt in dessen Arbeitsbereiche zu springen.
-              </p>
+              <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Partnerübersicht</h2>
             </div>
 
             <div style={{ display: 'grid', gap: 12 }}>
@@ -223,7 +219,7 @@ export default function NetworkPartnerManagementWorkspace({
                       </div>
                       <span style={{ color: '#475569', fontSize: 13 }}>{partner.contact_email}</span>
                       <span style={{ color: '#64748b', fontSize: 12 }}>
-                        {partner.managed_editing_enabled ? 'Managed Editing freigegeben' : 'Moderierter Zugriff'}
+                        {partner.managed_editing_enabled ? 'Direkte Mitbearbeitung durch Portal-Partner erlaubt' : 'Portal-Partner prüft und gibt Inhalte frei'}
                       </span>
                     </button>
                   );
@@ -305,8 +301,7 @@ export default function NetworkPartnerManagementWorkspace({
                   </div>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {([
-                      ['profile', 'Stammdaten & Zugang'],
-                      ['rights', 'Rechte'],
+                      ['profile', 'Profil'],
                       ['bookings', 'Buchungen'],
                       ['content', 'Content & Review'],
                       ['billing', 'Abrechnung'],
@@ -339,9 +334,9 @@ export default function NetworkPartnerManagementWorkspace({
                 <section style={workflowPanelCardStyle}>
                   <div style={{ display: 'grid', gap: 22 }}>
                     <div style={workflowHeaderStyle}>
-                      <h3 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Stammdaten</h3>
+                      <h3 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Profil</h3>
                       <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-                        Status, Kontakt- und Managed-Editing-Regeln werden direkt am Partner gepflegt.
+                        Status, Kontaktdaten und die Eingriffsrechte des Portal-Partners werden direkt am Profil gepflegt.
                       </p>
                     </div>
                     {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
@@ -349,6 +344,7 @@ export default function NetworkPartnerManagementWorkspace({
                     <NetworkPartnerForm
                       initialValues={selectedPartner}
                       submitLabel="Änderungen speichern"
+                      helperText="Wenn die direkte Mitbearbeitung erlaubt ist, kann der Portal-Partner Inhalte des Netzwerkpartners bei Bedarf selbst redaktionell anpassen. Ohne diese Freigabe bleibt der Portal-Partner in der moderierenden Rolle."
                       onSubmit={async (values) => {
                         setError(null);
                         setMessage(null);
@@ -379,12 +375,6 @@ export default function NetworkPartnerManagementWorkspace({
                       />
                     </div>
                   </div>
-                </section>
-              ) : null}
-
-              {detailSection === 'rights' ? (
-                <section style={workflowPanelCardStyle}>
-                  <NetworkPartnerRightsPanel networkPartnerId={selectedPartner.id} />
                 </section>
               ) : null}
 

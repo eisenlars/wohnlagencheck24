@@ -255,7 +255,9 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
       if (!res.ok) {
         throw new Error("Anfrage konnte nicht gesendet werden.");
       }
-      setRequestStatus("Der Admin ist informiert und schickt eine neue Einladung heraus.");
+      setRequestStatus(aud === "network_partner"
+        ? "Der Portal-Partner ist informiert und kann eine neue Einladung senden."
+        : "Der Admin ist informiert und schickt eine neue Einladung heraus.");
     } catch {
       setRequestStatus("Anfrage konnte nicht gesendet werden. Bitte erneut versuchen.");
     } finally {
@@ -355,7 +357,7 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
                 Neuen Link beantragen
               </button>
               {requestStatus ? (
-                <p style={{ margin: 0, fontSize: 14, color: requestStatus.toLowerCase().includes("admin ist informiert") ? "#166534" : "#b91c1c" }}>
+                <p style={{ margin: 0, fontSize: 14, color: requestStatus.toLowerCase().includes("ist informiert") ? "#166534" : "#b91c1c" }}>
                   {requestStatus}
                 </p>
               ) : null}

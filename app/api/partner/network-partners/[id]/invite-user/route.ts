@@ -64,9 +64,9 @@ export async function POST(
     let linkType: "invite" | "recovery" = "invite";
     let redirectTo = "";
     let actionLink = "";
+    const existingUsers = await listNetworkPartnerUsersByPortalPartner(networkPartnerId, actor.partnerId);
 
     if (providedAuthUserId) {
-      const existingUsers = await listNetworkPartnerUsersByPortalPartner(networkPartnerId, actor.partnerId);
       const existingUser = existingUsers.find((item) => item.auth_user_id === providedAuthUserId);
       if (!existingUser) {
         return NextResponse.json({ error: "Network partner user not found" }, { status: 404 });
@@ -96,6 +96,9 @@ export async function POST(
       redirectTo = delivery.redirectTo;
       actionLink = delivery.actionLink;
     } else {
+      if (existingUsers.length > 0) {
+        return NextResponse.json({ error: "Network partner access already exists" }, { status: 409 });
+      }
       if (!contactEmail) {
         return NextResponse.json({ error: "email is required" }, { status: 400 });
       }

@@ -50,7 +50,11 @@ function mapNetworkPartnerRow(row: Record<string, unknown>): NetworkPartnerRecor
 
 function mapNetworkPartnerUserRow(
   row: Record<string, unknown>,
-  email: string | null,
+  authInfo: {
+    email: string | null;
+    activation_pending: boolean;
+    last_sign_in_at: string | null;
+  },
 ): NetworkPartnerUserRecord {
   const role = asText(row.role);
   if (role !== "network_owner" && role !== "network_editor" && role !== "network_billing") {
@@ -63,9 +67,16 @@ function mapNetworkPartnerUserRow(
     auth_user_id: asText(row.auth_user_id),
     role,
     is_primary: row.is_primary === true,
-    email,
+    email: authInfo.email,
+    activation_pending: authInfo.activation_pending,
+    last_sign_in_at: authInfo.last_sign_in_at,
     created_at: asText(row.created_at),
   };
+}
+
+function isPendingActivation(value: unknown): boolean {
+  if (value === true) return true;
+  return String(value ?? "").trim().toLowerCase() === "true";
 }
 
 function normalizeCreatePayload(input: NetworkPartnerCreateInput): Record<string, unknown> {
@@ -216,14 +227,31 @@ export async function listNetworkPartnerUsersByPortalPartner(
 
   const authUsers = await Promise.all(rows.map(async (row) => {
     const authUserId = asText(row.auth_user_id);
-    if (!authUserId) return { authUserId, email: null };
+    if (!authUserId) {
+      return {
+        authUserId,
+        email: null,
+        activation_pending: false,
+        last_sign_in_at: null,
+      };
+    }
     const userResult = await admin.auth.admin.getUserById(authUserId);
-    const email = String(userResult.data.user?.email ?? "").trim().toLowerCase() || null;
-    return { authUserId, email };
+    const user = userResult.data.user;
+    const email = String(user?.email ?? "").trim().toLowerCase() || null;
+    return {
+      authUserId,
+      email,
+      activation_pending: isPendingActivation((user?.user_metadata as Record<string, unknown> | undefined)?.activation_pending),
+      last_sign_in_at: String(user?.last_sign_in_at ?? "").trim() || null,
+    };
   }));
-  const emailByAuthUserId = new Map(authUsers.map((item) => [item.authUserId, item.email] as const));
+  const authInfoByAuthUserId = new Map(authUsers.map((item) => [item.authUserId, item] as const));
 
-  return rows.map((row) => mapNetworkPartnerUserRow(row, emailByAuthUserId.get(asText(row.auth_user_id)) ?? null));
+  return rows.map((row) => mapNetworkPartnerUserRow(row, authInfoByAuthUserId.get(asText(row.auth_user_id)) ?? {
+    email: null,
+    activation_pending: false,
+    last_sign_in_at: null,
+  }));
 }
 
 export async function upsertNetworkPartnerUserForPortalPartner(input: {
@@ -270,7 +298,10 @@ export async function upsertNetworkPartnerUserForPortalPartner(input: {
   if (!isRecord(data)) throw new Error("NETWORK_PARTNER_USER_UPSERT_FAILED");
 
   const authUser = await admin.auth.admin.getUserById(input.auth_user_id);
-  const email = String(authUser.data.user?.email ?? "").trim().toLowerCase() || null;
-
-  return mapNetworkPartnerUserRow(data, email);
+  const user = authUser.data.user;
+  return mapNetworkPartnerUserRow(data, {
+    email: String(user?.email ?? "").trim().toLowerCase() || null,
+    activation_pending: isPendingActivation((user?.user_metadata as Record<string, unknown> | undefined)?.activation_pending),
+    last_sign_in_at: String(user?.last_sign_in_at ?? "").trim() || null,
+  });
 }

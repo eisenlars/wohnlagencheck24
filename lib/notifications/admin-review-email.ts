@@ -75,11 +75,13 @@ type SendPartnerAreaLiveEmailArgs = {
 
 type SendAdminInviteResendRequestEmailArgs = {
   email: string;
-  audience?: "partner" | "admin";
+  audience?: "partner" | "admin" | "network_partner";
   requestedAtIso?: string | null;
   partnerId?: string | null;
   partnerName?: string | null;
   partnerIsActive?: boolean | null;
+  networkPartnerId?: string | null;
+  networkPartnerName?: string | null;
   recipients?: string[] | null;
 };
 
@@ -364,7 +366,7 @@ function buildPartnerAreaLiveText(args: SendPartnerAreaLiveEmailArgs): string {
 }
 
 function buildAdminInviteResendRequestSubject(args: SendAdminInviteResendRequestEmailArgs): string {
-  const aud = args.audience === "admin" ? "Admin" : "Partner";
+  const aud = args.audience === "admin" ? "Admin" : args.audience === "network_partner" ? "Netzwerkpartner" : "Partner";
   return `Link-Anfrage (${aud}): ${args.email}`;
 }
 
@@ -372,12 +374,14 @@ function buildAdminInviteResendRequestText(args: SendAdminInviteResendRequestEma
   const requestedAt = args.requestedAtIso
     ? new Date(args.requestedAtIso).toLocaleString("de-DE")
     : new Date().toLocaleString("de-DE");
-  const aud = args.audience === "admin" ? "admin" : "partner";
+  const aud = args.audience === "admin" ? "admin" : args.audience === "network_partner" ? "network_partner" : "partner";
   const partnerId = String(args.partnerId ?? "").trim();
   const partnerName = String(args.partnerName ?? "").trim();
   const partnerIsActive = typeof args.partnerIsActive === "boolean"
     ? (args.partnerIsActive ? "ja" : "nein")
     : "unbekannt";
+  const networkPartnerId = String(args.networkPartnerId ?? "").trim();
+  const networkPartnerName = String(args.networkPartnerName ?? "").trim();
 
   return [
     "Es wurde ein neuer Zugangslink angefordert.",
@@ -386,10 +390,16 @@ function buildAdminInviteResendRequestText(args: SendAdminInviteResendRequestEma
     `E-Mail: ${args.email}`,
     `Partner: ${partnerName || "nicht gefunden"}`,
     `Partner ID: ${partnerId || "nicht gefunden"}`,
+    ...(aud === "network_partner" ? [
+      `Netzwerkpartner: ${networkPartnerName || "nicht gefunden"}`,
+      `Netzwerkpartner ID: ${networkPartnerId || "nicht gefunden"}`,
+    ] : []),
     `Partner bereits aktiviert: ${partnerIsActive}`,
     `Zeitpunkt: ${requestedAt}`,
     "",
-    "Bitte im Adminbereich den Einladungslink erneut versenden.",
+    aud === "network_partner"
+      ? "Bitte im Portalpartner-Bereich den Einladungslink des Netzwerkpartners erneut versenden."
+      : "Bitte im Adminbereich den Einladungslink erneut versenden.",
   ].join("\n");
 }
 

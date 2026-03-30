@@ -4,18 +4,20 @@ import {
   normalizePartnerInviteRequestEmail,
   notifyAdminAboutPartnerInviteRequest,
 } from "@/lib/auth/partner-invite-request";
+import { notifyPortalPartnerAboutNetworkPartnerInviteRequest } from "@/lib/auth/network-partner-invite-request";
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => ({}))) as { email?: string };
+    const body = (await req.json().catch(() => ({}))) as { email?: string; aud?: string };
     const email = normalizePartnerInviteRequestEmail(body.email);
+    const audience = String(body.aud ?? "").trim().toLowerCase();
 
     if (!email) {
       return NextResponse.json({ ok: false, error: "EMAIL_REQUIRED" }, { status: 400 });
     }
 
     const ip = extractClientIpFromHeaders(req.headers);
-    const limit = await checkRateLimitPersistent(`auth_access_link_legacy:partner:${ip}:${email}`, {
+    const limit = await checkRateLimitPersistent(`auth_access_link_legacy:${audience || "partner"}:${ip}:${email}`, {
       windowMs: 15 * 60 * 1000,
       max: 5,
     });
@@ -26,10 +28,17 @@ export async function POST(req: Request) {
       );
     }
 
-    await notifyAdminAboutPartnerInviteRequest({
-      email,
-      headers: req.headers,
-    });
+    if (audience === "network_partner") {
+      await notifyPortalPartnerAboutNetworkPartnerInviteRequest({
+        email,
+        headers: req.headers,
+      });
+    } else {
+      await notifyAdminAboutPartnerInviteRequest({
+        email,
+        headers: req.headers,
+      });
+    }
 
     return NextResponse.json({ ok: true });
   } catch {

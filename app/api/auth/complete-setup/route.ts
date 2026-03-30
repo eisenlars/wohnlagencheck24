@@ -30,6 +30,27 @@ export async function POST() {
     }
 
     const admin = createAdminClient();
+    const networkPartnerMemberships = await admin
+      .from("network_partner_users")
+      .select("network_partner_id")
+      .eq("auth_user_id", user.id)
+      .limit(1);
+
+    const pending = isPendingActivation((user.user_metadata as UserMeta | undefined) ?? null);
+    if (Array.isArray(networkPartnerMemberships.data) && networkPartnerMemberships.data.length > 0) {
+      if (!pending) {
+        return NextResponse.json({ ok: true, activated: false, reason: "not_pending" });
+      }
+      const nextMeta: UserMeta = {
+        ...((user.user_metadata as UserMeta | undefined) ?? {}),
+        activation_pending: false,
+      };
+      await admin.auth.admin.updateUserById(user.id, {
+        user_metadata: nextMeta,
+      });
+      return NextResponse.json({ ok: true, activated: true, audience: "network_partner" });
+    }
+
     const membershipResult = await admin
       .from("partner_users")
       .select("partner_id, is_primary, created_at")
@@ -61,7 +82,6 @@ export async function POST() {
     }
 
     const isActive = Boolean((partnerProfile as { is_active?: boolean } | null)?.is_active);
-    const pending = isPendingActivation((user.user_metadata as UserMeta | undefined) ?? null);
     if (!pending || isActive) {
       return NextResponse.json({ ok: true, activated: false, reason: pending ? "already_active" : "not_pending" });
     }

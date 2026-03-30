@@ -15,15 +15,24 @@ type UsersPayload = {
   error?: string;
 };
 
-const inputStyle: CSSProperties = {
-  width: '100%',
-  border: '1px solid #cbd5e1',
-  borderRadius: 10,
-  padding: '10px 12px',
-  fontSize: 14,
-  color: '#0f172a',
+const statusCardStyle: CSSProperties = {
+  display: 'grid',
+  gap: 10,
+  padding: 16,
+  borderRadius: 16,
+  border: '1px solid #e2e8f0',
   background: '#fff',
 };
+
+function formatStatus(user: NetworkPartnerUserRecord | null): { label: string; tone: string; background: string; border: string } {
+  if (!user) {
+    return { label: 'Kein Zugang angelegt', tone: '#92400e', background: '#fffbeb', border: '1px solid #fde68a' };
+  }
+  if (user.activation_pending) {
+    return { label: 'Einladung ausstehend', tone: '#92400e', background: '#fffbeb', border: '1px solid #fde68a' };
+  }
+  return { label: 'Zugang aktiviert', tone: '#166534', background: '#dcfce7', border: '1px solid #bbf7d0' };
+}
 
 export default function NetworkPartnerAccessPanel({
   networkPartnerId,
@@ -33,8 +42,6 @@ export default function NetworkPartnerAccessPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [email, setEmail] = useState(contactEmail ?? '');
-  const [submitting, setSubmitting] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
 
   async function loadUsers() {
@@ -53,7 +60,6 @@ export default function NetworkPartnerAccessPanel({
 
   useEffect(() => {
     let active = true;
-    setEmail(contactEmail ?? '');
     setLoading(true);
     setError(null);
     void (async () => {
@@ -77,147 +83,116 @@ export default function NetworkPartnerAccessPanel({
     };
   }, [contactEmail, networkPartnerId]);
 
+  const accessUser = users[0] ?? null;
+  const status = formatStatus(accessUser);
+
   return (
     <section style={{ display: 'grid', gap: 18 }}>
       <div style={{ display: 'grid', gap: 6 }}>
-        <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Zugang & Einladung</h2>
+        <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Zugangsstatus</h2>
         <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-          Hier wird der eigentliche Netzwerkpartner-Zugang erzeugt. Der Invite-Link fuehrt den Nutzer in den dedizierten Bereich unter <code>/network-partner</code>. Rollen werden separat im Tab <strong>Rechte</strong> gepflegt.
+          Jeder Netzwerkpartner arbeitet mit genau einem Zugang. Solange die Aktivierung noch nicht abgeschlossen ist, kann der Einladungslink von hier erneut versendet werden.
         </p>
       </div>
 
       {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
       {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
 
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          setSubmitting(true);
-          setError(null);
-          setMessage(null);
-          try {
-            const response = await fetch(`/api/partner/network-partners/${encodeURIComponent(networkPartnerId)}/invite-user`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email,
-              }),
-            });
-            const payload = (await response.json().catch(() => null)) as { error?: string; contact_email?: string } | null;
-            if (!response.ok) {
-              setError(String(payload?.error ?? 'Einladung konnte nicht versendet werden.'));
-              return;
-            }
-            setMessage(`Einladung wurde an ${String(payload?.contact_email ?? email)} versendet.`);
-            await loadUsers();
-          } finally {
-            setSubmitting(false);
-          }
-        }}
-        style={{ display: 'grid', gap: 14 }}
-      >
-        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-          <label style={{ display: 'grid', gap: 6, fontSize: 13, fontWeight: 600, color: '#334155' }}>
-            E-Mail
-            <input
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              style={inputStyle}
-              type="email"
-              required
-            />
-          </label>
-        </div>
+      <article style={statusCardStyle}>
+        {loading ? (
+          <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              <strong style={{ color: '#0f172a', fontSize: 16 }}>Login-Zugang</strong>
+              <span
+                style={{
+                  borderRadius: 999,
+                  padding: '6px 10px',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: status.tone,
+                  background: status.background,
+                  border: status.border,
+                }}
+              >
+                {status.label}
+              </span>
+            </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{
-            width: 'fit-content',
-            borderRadius: 10,
-            border: '1px solid #1d4ed8',
-            background: '#1d4ed8',
-            color: '#fff',
-            padding: '10px 14px',
-            fontWeight: 700,
-            cursor: submitting ? 'not-allowed' : 'pointer',
-            opacity: submitting ? 0.65 : 1,
-          }}
-        >
-          {submitting ? 'Versendet...' : 'Anlegen und Einladungslink versenden'}
-        </button>
-      </form>
+            <div style={{ display: 'grid', gap: 6, color: '#334155' }}>
+              <span><strong>E-Mail:</strong> {accessUser?.email ?? contactEmail ?? 'Nicht hinterlegt'}</span>
+              {accessUser?.created_at ? (
+                <span><strong>Angelegt:</strong> {new Date(accessUser.created_at).toLocaleString('de-DE')}</span>
+              ) : null}
+              {!accessUser?.activation_pending && accessUser?.last_sign_in_at ? (
+                <span><strong>Zuletzt angemeldet:</strong> {new Date(accessUser.last_sign_in_at).toLocaleString('de-DE')}</span>
+              ) : null}
+            </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
-              <th style={{ padding: '10px 12px' }}>E-Mail</th>
-              <th style={{ padding: '10px 12px' }}>Angelegt</th>
-              <th style={{ padding: '10px 12px' }}>Aktion</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={3} style={{ padding: '18px 12px', color: '#64748b' }}>Lädt...</td>
-              </tr>
-            ) : users.length === 0 ? (
-              <tr>
-                <td colSpan={3} style={{ padding: '18px 12px', color: '#64748b' }}>Noch keine Netzwerkpartner-Zugänge vorhanden.</td>
-              </tr>
-            ) : users.map((user) => (
-              <tr key={user.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '12px', color: '#334155' }}>{user.email ?? 'Unbekannt'}</td>
-                <td style={{ padding: '12px', color: '#64748b', fontSize: 12 }}>
-                  {new Date(user.created_at).toLocaleString('de-DE')}
-                </td>
-                <td style={{ padding: '12px' }}>
-                  <button
-                    type="button"
-                    disabled={resendingId === user.id}
-                    onClick={async () => {
-                      setResendingId(user.id);
-                      setError(null);
-                      setMessage(null);
-                      try {
-                        const response = await fetch(`/api/partner/network-partners/${encodeURIComponent(networkPartnerId)}/invite-user`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            auth_user_id: user.auth_user_id,
-                          }),
-                        });
-                        const payload = (await response.json().catch(() => null)) as { error?: string; contact_email?: string } | null;
-                        if (!response.ok) {
-                          setError(String(payload?.error ?? 'Einladung konnte nicht erneut versendet werden.'));
-                          return;
-                        }
-                        setMessage(`Einladung wurde erneut an ${String(payload?.contact_email ?? user.email ?? '')} versendet.`);
-                        await loadUsers();
-                      } finally {
-                        setResendingId(null);
-                      }
-                    }}
-                    style={{
-                      border: 'none',
-                      background: 'transparent',
-                      color: '#0f766e',
-                      fontWeight: 700,
-                      textDecoration: 'underline',
-                      textUnderlineOffset: 3,
-                      cursor: resendingId === user.id ? 'not-allowed' : 'pointer',
-                      opacity: resendingId === user.id ? 0.6 : 1,
-                    }}
-                  >
-                    {resendingId === user.id ? 'Versendet...' : 'Einladung erneut senden'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            {!accessUser ? (
+              <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>
+                Für diesen Partner wurde noch kein Login-Zugang erzeugt. Das sollte normalerweise bereits beim Anlegen passiert sein.
+              </p>
+            ) : accessUser.activation_pending ? (
+              <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>
+                Die Einladung wurde versendet, aber der Zugang wurde noch nicht aktiviert. Wenn der Link abgelaufen ist, kann hier ein neuer Link ausgelöst werden.
+              </p>
+            ) : (
+              <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>
+                Der Zugang ist aktiv. Wenn das Passwort vergessen wurde, läuft die Wiederherstellung direkt über den Login des Netzwerkpartners.
+              </p>
+            )}
+
+            {(!accessUser || accessUser.activation_pending) ? (
+              <button
+                type="button"
+                disabled={resendingId === (accessUser?.id ?? 'missing')}
+                onClick={async () => {
+                  setResendingId(accessUser?.id ?? 'missing');
+                  setError(null);
+                  setMessage(null);
+                  try {
+                    const response = await fetch(`/api/partner/network-partners/${encodeURIComponent(networkPartnerId)}/invite-user`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(accessUser?.auth_user_id
+                        ? { auth_user_id: accessUser.auth_user_id }
+                        : { email: contactEmail }),
+                    });
+                    const payload = (await response.json().catch(() => null)) as { error?: string; contact_email?: string } | null;
+                    if (!response.ok) {
+                      setError(String(payload?.error ?? 'Einladung konnte nicht erneut versendet werden.'));
+                      return;
+                    }
+                    setMessage(`${accessUser ? 'Einladung wurde erneut' : 'Einladung wurde'} an ${String(payload?.contact_email ?? accessUser?.email ?? contactEmail ?? '')} versendet.`);
+                    await loadUsers();
+                  } finally {
+                    setResendingId(null);
+                  }
+                }}
+                style={{
+                  width: 'fit-content',
+                  borderRadius: 10,
+                  border: '1px solid #1d4ed8',
+                  background: '#1d4ed8',
+                  color: '#fff',
+                  padding: '10px 14px',
+                  fontWeight: 700,
+                  cursor: resendingId === (accessUser?.id ?? 'missing') ? 'not-allowed' : 'pointer',
+                  opacity: resendingId === (accessUser?.id ?? 'missing') ? 0.65 : 1,
+                }}
+              >
+                {resendingId === (accessUser?.id ?? 'missing')
+                  ? 'Versendet...'
+                  : accessUser
+                    ? 'Einladung erneut senden'
+                    : 'Einladung senden'}
+              </button>
+            ) : null}
+          </>
+        )}
+      </article>
     </section>
   );
 }

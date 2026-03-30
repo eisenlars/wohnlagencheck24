@@ -67,6 +67,8 @@ export type NetworkPartnerUserRecord = {
   role: NetworkPartnerRole;
   is_primary: boolean;
   email: string | null;
+  activation_pending: boolean;
+  last_sign_in_at: string | null;
   created_at: string;
 };
 
