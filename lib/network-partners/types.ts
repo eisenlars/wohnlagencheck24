@@ -60,6 +60,16 @@ export type NetworkPartnerRecord = {
   updated_at: string;
 };
 
+export type NetworkPartnerUserRecord = {
+  id: string;
+  network_partner_id: string;
+  auth_user_id: string;
+  role: NetworkPartnerRole;
+  is_primary: boolean;
+  email: string | null;
+  created_at: string;
+};
+
 export type PlacementCatalogRecord = {
   code: PlacementCode;
   label: string;

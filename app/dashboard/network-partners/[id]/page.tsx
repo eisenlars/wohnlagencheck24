@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { use, useEffect, useState } from 'react';
 
+import NetworkPartnerAccessPanel from '@/components/network-partners/NetworkPartnerAccessPanel';
 import NetworkPartnerForm from '@/components/network-partners/NetworkPartnerForm';
 import type { NetworkPartnerRecord } from '@/lib/network-partners/types';
 import {
@@ -80,26 +81,34 @@ export default function NetworkPartnerDetailPage({ params }: NetworkPartnerDetai
         {loading ? (
           <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>
         ) : networkPartner ? (
-          <NetworkPartnerForm
-            initialValues={networkPartner}
-            submitLabel="Änderungen speichern"
-            onSubmit={async (values) => {
-              setError(null);
-              setMessage(null);
-              const response = await fetch(`/api/partner/network-partners/${encodeURIComponent(networkPartner.id)}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(values),
-              });
-              const payload = (await response.json().catch(() => null)) as NetworkPartnerDetailPayload | null;
-              if (!response.ok) {
-                setError(String(payload?.error ?? 'Netzwerkpartner konnte nicht aktualisiert werden.'));
-                return;
-              }
-              setNetworkPartner(payload?.network_partner ?? null);
-              setMessage('Änderungen wurden gespeichert.');
-            }}
-          />
+          <div style={{ display: 'grid', gap: 22 }}>
+            <NetworkPartnerForm
+              initialValues={networkPartner}
+              submitLabel="Änderungen speichern"
+              onSubmit={async (values) => {
+                setError(null);
+                setMessage(null);
+                const response = await fetch(`/api/partner/network-partners/${encodeURIComponent(networkPartner.id)}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(values),
+                });
+                const payload = (await response.json().catch(() => null)) as NetworkPartnerDetailPayload | null;
+                if (!response.ok) {
+                  setError(String(payload?.error ?? 'Netzwerkpartner konnte nicht aktualisiert werden.'));
+                  return;
+                }
+                setNetworkPartner(payload?.network_partner ?? null);
+                setMessage('Änderungen wurden gespeichert.');
+              }}
+            />
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 22 }}>
+              <NetworkPartnerAccessPanel
+                networkPartnerId={networkPartner.id}
+                contactEmail={networkPartner.contact_email}
+              />
+            </div>
+          </div>
         ) : null}
       </section>
     </main>

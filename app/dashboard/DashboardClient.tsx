@@ -18,8 +18,9 @@ import { MANDATORY_MEDIA_KEYS, getMandatoryMediaLabel, isMandatoryMediaKey } fro
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { readSessionViewState, writeSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import NetworkPartnerManagementWorkspace from '@/components/network-partners/NetworkPartnerManagementWorkspace';
 
-type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'referenzen' | 'gesuche' | 'blog' | 'international' | 'settings';
+type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'referenzen' | 'gesuche' | 'blog' | 'international' | 'settings' | 'network_partners';
 type WelcomeTool = {
   key: MainTab;
   title: string;
@@ -144,7 +145,7 @@ const DISTRICT_HEADER_SELECTOR_TABS = new Set<MainTab>([
 
 function isMainTab(value: unknown): value is MainTab {
   return typeof value === 'string'
-    && ['texts', 'factors', 'marketing', 'local_site', 'immobilien', 'referenzen', 'gesuche', 'blog', 'international', 'settings'].includes(value);
+    && ['texts', 'factors', 'marketing', 'local_site', 'immobilien', 'referenzen', 'gesuche', 'blog', 'international', 'settings', 'network_partners'].includes(value);
 }
 
 function isSettingsSection(value: unknown): value is SettingsSection {
@@ -520,6 +521,13 @@ export default function DashboardClient() {
           isRegionBased: false,
           showDistrictSelector: false,
         };
+      case 'network_partners':
+        return {
+          title: 'Netzwerkpartner Verwaltung',
+          description: 'Regionale Partner, Zugänge, Inventar, Buchungen und Anbindungen verwalten.',
+          isRegionBased: false,
+          showDistrictSelector: false,
+        };
       case 'immobilien':
       default:
         return {
@@ -729,9 +737,7 @@ export default function DashboardClient() {
       { id: 'forecast', label: 'Prognosemonitor (Bald verfügbar)', icon: 'forecast', disabled: true },
     ],
     [
-      { id: 'partner_ads', label: 'Partnerwerbung (Bald verfügbar)', icon: 'partner_ads', disabled: true },
-      { id: 'partner_immobilien', label: 'Partner-Immobilien (Bald verfügbar)', icon: 'partner_immobilien', disabled: true },
-      { id: 'partner_gesuche', label: 'Partner-Gesuche (Bald verfügbar)', icon: 'partner_gesuche', disabled: true },
+      { id: 'partner_ads', label: 'Netzwerkpartner Verwaltung', icon: 'partner_ads', tab: 'network_partners' },
     ],
   ];
 
@@ -1420,7 +1426,8 @@ export default function DashboardClient() {
                     key={item.id}
                     type="button"
                     onClick={() => {
-                      if (disabled || !item.tab) return;
+                      if (disabled) return;
+                      if (!item.tab) return;
                       handleToolSelect(item.tab);
                     }}
                     onMouseEnter={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
@@ -1449,6 +1456,7 @@ export default function DashboardClient() {
       {activeMainTab !== 'immobilien'
         && activeMainTab !== 'referenzen'
         && activeMainTab !== 'gesuche'
+        && activeMainTab !== 'network_partners'
         && activeMainTab !== 'settings'
         && activeMainTab !== 'texts'
         && activeMainTab !== 'international'
@@ -1760,44 +1768,6 @@ export default function DashboardClient() {
                 </section>
               ))}
             </div>
-            <section
-              style={{
-                marginTop: 20,
-                borderRadius: 18,
-                border: '1px solid #dbeafe',
-                background: '#eff6ff',
-                padding: '18px 20px',
-                display: 'grid',
-                gap: 10,
-              }}
-            >
-              <div style={{ display: 'grid', gap: 6 }}>
-                <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 0.6, textTransform: 'uppercase', color: '#1d4ed8' }}>
-                  Neue Ausbaustufe
-                </span>
-                <h3 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Netzwerkpartner-Monetarisierung</h3>
-                <p style={{ margin: 0, color: '#334155', lineHeight: 1.6 }}>
-                  Die erste MVP-Stufe für Netzwerkpartner, Inventar und Buchungen läuft als eigener Dashboard-Bereich neben dem bestehenden Partner-Workflow.
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <Link href="/dashboard/network-partners" style={{ color: '#1d4ed8', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
-                  Netzwerkpartner
-                </Link>
-                <Link href="/dashboard/network-inventory" style={{ color: '#1d4ed8', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
-                  Inventar
-                </Link>
-                <Link href="/dashboard/network-bookings" style={{ color: '#1d4ed8', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
-                  Buchungen
-                </Link>
-                <Link href="/dashboard/network-content" style={{ color: '#1d4ed8', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
-                  Content & Review
-                </Link>
-                <Link href="/dashboard/network-billing" style={{ color: '#1d4ed8', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
-                  Billing
-                </Link>
-              </div>
-            </section>
           </div>
         ) : activeMainTab === 'settings' ? (
           <div style={{ width: '100%' }}>
@@ -1808,6 +1778,16 @@ export default function DashboardClient() {
               </div>
             </header>
             <PartnerSettingsPanel section={settingsSection} onSectionChange={setSettingsSection} />
+          </div>
+        ) : activeMainTab === 'network_partners' ? (
+          <div style={{ width: '100%' }}>
+            <header style={settingsHeaderWrapStyle}>
+              <div style={{ marginBottom: '6px' }}>
+                <h1 style={mainTitleStyle}>{headerConfig.title}</h1>
+                <p style={headerDescriptionStyle}>{headerConfig.description}</p>
+              </div>
+            </header>
+            <NetworkPartnerManagementWorkspace />
           </div>
         ) : effectiveSelectedConfig ? (
           /* Hier entfernen wir das maxWidth: '1000px' damit die Formulare die Breite nutzen */
@@ -2896,25 +2876,10 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
       title: 'Regionale Partner',
       tools: [
         {
-          key: 'blog',
-          title: 'Partnerwerbung',
-          description: 'Bereich wird als Zusatzfeature vorbereitet.',
+          key: 'network_partners',
+          title: 'Netzwerkpartner Verwaltung',
+          description: 'Regionale Partner, Zugänge, Buchungen, Anbindungen und Abrechnung in einer operativen Arbeitsfläche verwalten.',
           icon: 'partner_ads',
-          comingSoon: true,
-        },
-        {
-          key: 'blog',
-          title: 'Partner-Immobilien',
-          description: 'Bereich wird als Zusatzfeature vorbereitet.',
-          icon: 'partner_immobilien',
-          comingSoon: true,
-        },
-        {
-          key: 'blog',
-          title: 'Partner-Gesuche',
-          description: 'Bereich wird als Zusatzfeature vorbereitet.',
-          icon: 'partner_gesuche',
-          comingSoon: true,
         },
       ],
     },

@@ -4,6 +4,8 @@ import type {
   NetworkPartnerRecord,
   NetworkPartnerStatus,
   NetworkPartnerUpdateInput,
+  NetworkPartnerUserRecord,
+  NetworkPartnerRole,
 } from "@/lib/network-partners/types";
 
 function asText(value: unknown): string {
@@ -43,6 +45,26 @@ function mapNetworkPartnerRow(row: Record<string, unknown>): NetworkPartnerRecor
     managed_editing_enabled: row.managed_editing_enabled === true,
     created_at: asText(row.created_at),
     updated_at: asText(row.updated_at),
+  };
+}
+
+function mapNetworkPartnerUserRow(
+  row: Record<string, unknown>,
+  email: string | null,
+): NetworkPartnerUserRecord {
+  const role = asText(row.role);
+  if (role !== "network_owner" && role !== "network_editor" && role !== "network_billing") {
+    throw new Error("INVALID_NETWORK_PARTNER_ROLE");
+  }
+
+  return {
+    id: asText(row.id),
+    network_partner_id: asText(row.network_partner_id),
+    auth_user_id: asText(row.auth_user_id),
+    role,
+    is_primary: row.is_primary === true,
+    email,
+    created_at: asText(row.created_at),
   };
 }
 
@@ -170,4 +192,85 @@ export async function updateNetworkPartner(
   if (error) throw new Error(error.message ?? "NETWORK_PARTNER_UPDATE_FAILED");
   if (!isRecord(data)) throw new Error("NOT_FOUND");
   return mapNetworkPartnerRow(data);
+}
+
+export async function listNetworkPartnerUsersByPortalPartner(
+  networkPartnerId: string,
+  portalPartnerId: string,
+): Promise<NetworkPartnerUserRecord[]> {
+  const networkPartner = await getNetworkPartnerByIdForPortalPartner(networkPartnerId, portalPartnerId);
+  if (!networkPartner) {
+    throw new Error("NOT_FOUND");
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("network_partner_users")
+    .select("id, network_partner_id, auth_user_id, role, is_primary, created_at")
+    .eq("network_partner_id", networkPartnerId)
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message ?? "NETWORK_PARTNER_USERS_LIST_FAILED");
+  const rows = asRowArray(data);
+
+  const authUsers = await Promise.all(rows.map(async (row) => {
+    const authUserId = asText(row.auth_user_id);
+    if (!authUserId) return { authUserId, email: null };
+    const userResult = await admin.auth.admin.getUserById(authUserId);
+    const email = String(userResult.data.user?.email ?? "").trim().toLowerCase() || null;
+    return { authUserId, email };
+  }));
+  const emailByAuthUserId = new Map(authUsers.map((item) => [item.authUserId, item.email] as const));
+
+  return rows.map((row) => mapNetworkPartnerUserRow(row, emailByAuthUserId.get(asText(row.auth_user_id)) ?? null));
+}
+
+export async function upsertNetworkPartnerUserForPortalPartner(input: {
+  portal_partner_id: string;
+  network_partner_id: string;
+  auth_user_id: string;
+  role: NetworkPartnerRole;
+  is_primary?: boolean;
+}): Promise<NetworkPartnerUserRecord> {
+  const networkPartner = await getNetworkPartnerByIdForPortalPartner(input.network_partner_id, input.portal_partner_id);
+  if (!networkPartner) {
+    throw new Error("NOT_FOUND");
+  }
+
+  const admin = createAdminClient();
+  const memberships = await listNetworkPartnerUsersByPortalPartner(input.network_partner_id, input.portal_partner_id);
+  const shouldBePrimary = input.is_primary === true || memberships.length === 0;
+
+  if (shouldBePrimary) {
+    const { error: clearError } = await admin
+      .from("network_partner_users")
+      .update({ is_primary: false })
+      .eq("network_partner_id", input.network_partner_id);
+
+    if (clearError) {
+      throw new Error(clearError.message ?? "NETWORK_PARTNER_USERS_CLEAR_PRIMARY_FAILED");
+    }
+  }
+
+  const { data, error } = await admin
+    .from("network_partner_users")
+    .upsert({
+      network_partner_id: input.network_partner_id,
+      auth_user_id: input.auth_user_id,
+      role: input.role,
+      is_primary: shouldBePrimary,
+    }, {
+      onConflict: "network_partner_id,auth_user_id",
+    })
+    .select("id, network_partner_id, auth_user_id, role, is_primary, created_at")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message ?? "NETWORK_PARTNER_USER_UPSERT_FAILED");
+  if (!isRecord(data)) throw new Error("NETWORK_PARTNER_USER_UPSERT_FAILED");
+
+  const authUser = await admin.auth.admin.getUserById(input.auth_user_id);
+  const email = String(authUser.data.user?.email ?? "").trim().toLowerCase() || null;
+
+  return mapNetworkPartnerUserRow(data, email);
 }
