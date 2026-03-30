@@ -15,6 +15,13 @@ CREATE TABLE public.admin_area_texts (
   last_updated timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT admin_area_texts_pkey PRIMARY KEY (scope_kind, scope_key, section_key)
 );
+CREATE TABLE public.admin_users (
+  auth_user_id uuid NOT NULL,
+  role text NOT NULL CHECK (role = ANY (ARRAY['admin_super'::text, 'admin_ops'::text, 'admin_billing'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT admin_users_pkey PRIMARY KEY (auth_user_id),
+  CONSTRAINT admin_users_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES auth.users(id)
+);
 CREATE TABLE public.areas (
   id text NOT NULL,
   name text NOT NULL,
@@ -100,6 +107,48 @@ CREATE TABLE public.data_value_settings (
   CONSTRAINT data_value_settings_pkey PRIMARY KEY (id),
   CONSTRAINT data_value_settings_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES public.partners(id),
   CONSTRAINT data_value_settings_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
+CREATE TABLE public.integration_sync_runs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  integration_id uuid NOT NULL,
+  partner_id uuid NOT NULL,
+  kind text NOT NULL,
+  provider text NOT NULL,
+  resource text NOT NULL,
+  mode text,
+  triggered_by text NOT NULL,
+  trigger_user_id uuid,
+  sync_job_id text,
+  trace_id text,
+  status text NOT NULL DEFAULT 'running'::text,
+  step text,
+  message text,
+  error text,
+  error_class text,
+  request_count integer,
+  pages_fetched integer,
+  listings_count integer,
+  offers_count integer,
+  references_count integer,
+  requests_count integer,
+  deactivated_listings integer,
+  deactivated_offers integer,
+  safety_limited boolean NOT NULL DEFAULT false,
+  log jsonb,
+  notes jsonb,
+  result_json jsonb,
+  metadata jsonb,
+  started_at timestamp with time zone NOT NULL DEFAULT now(),
+  heartbeat_at timestamp with time zone,
+  deadline_at timestamp with time zone,
+  cancel_requested boolean NOT NULL DEFAULT false,
+  finished_at timestamp with time zone,
+  duration_ms integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT integration_sync_runs_pkey PRIMARY KEY (id),
+  CONSTRAINT integration_sync_runs_integration_id_fkey FOREIGN KEY (integration_id) REFERENCES public.partner_integrations(id),
+  CONSTRAINT integration_sync_runs_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
 );
 CREATE TABLE public.llm_fx_monthly_rates (
   month_start date NOT NULL,
@@ -272,6 +321,244 @@ CREATE TABLE public.market_explanation_static_text_i18n_meta (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT market_explanation_static_text_i18n_meta_pkey PRIMARY KEY (key, locale)
 );
+CREATE TABLE public.network_company_profiles (
+  content_item_id uuid NOT NULL,
+  company_name text NOT NULL,
+  industry_type text,
+  service_region text,
+  address_json jsonb,
+  contact_json jsonb,
+  CONSTRAINT network_company_profiles_pkey PRIMARY KEY (content_item_id),
+  CONSTRAINT network_company_profiles_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.network_content_items(id)
+);
+CREATE TABLE public.network_content_i18n (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  content_item_id uuid NOT NULL,
+  locale text NOT NULL,
+  status text NOT NULL CHECK (status = ANY (ARRAY['machine_generated'::text, 'reviewed'::text, 'edited'::text, 'stale'::text])),
+  translated_title text,
+  translated_summary text,
+  translated_body_md text,
+  source_snapshot_hash text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT network_content_i18n_pkey PRIMARY KEY (id),
+  CONSTRAINT network_content_i18n_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.network_content_items(id)
+);
+CREATE TABLE public.network_content_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  portal_partner_id uuid NOT NULL,
+  network_partner_id uuid NOT NULL,
+  booking_id uuid NOT NULL,
+  area_id text NOT NULL,
+  content_type text NOT NULL CHECK (content_type = ANY (ARRAY['company_profile'::text, 'property_offer'::text, 'property_request'::text])),
+  source_type text NOT NULL DEFAULT 'manual'::text CHECK (source_type = ANY (ARRAY['manual'::text, 'api'::text])),
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'in_review'::text, 'approved'::text, 'live'::text, 'paused'::text, 'rejected'::text, 'expired'::text])),
+  slug text NOT NULL,
+  title text NOT NULL,
+  summary text,
+  body_md text,
+  cta_label text,
+  cta_url text,
+  primary_locale text NOT NULL DEFAULT 'de'::text,
+  published_at timestamp with time zone,
+  expires_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT network_content_items_pkey PRIMARY KEY (id),
+  CONSTRAINT network_content_items_portal_partner_id_fkey FOREIGN KEY (portal_partner_id) REFERENCES public.partners(id),
+  CONSTRAINT network_content_items_network_partner_id_fkey FOREIGN KEY (network_partner_id) REFERENCES public.network_partners(id),
+  CONSTRAINT network_content_items_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.network_partner_bookings(id),
+  CONSTRAINT network_content_items_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id)
+);
+CREATE TABLE public.network_content_media (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  content_item_id uuid NOT NULL,
+  kind text NOT NULL CHECK (kind = ANY (ARRAY['logo'::text, 'hero'::text, 'gallery'::text, 'document'::text])),
+  url text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT network_content_media_pkey PRIMARY KEY (id),
+  CONSTRAINT network_content_media_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.network_content_items(id)
+);
+CREATE TABLE public.network_content_reviews (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  content_item_id uuid NOT NULL,
+  review_status text NOT NULL DEFAULT 'pending'::text CHECK (review_status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+  reviewed_by_user_id uuid,
+  review_note text,
+  reviewed_at timestamp with time zone,
+  CONSTRAINT network_content_reviews_pkey PRIMARY KEY (id),
+  CONSTRAINT network_content_reviews_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.network_content_items(id),
+  CONSTRAINT network_content_reviews_reviewed_by_user_id_fkey FOREIGN KEY (reviewed_by_user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.network_partner_bookings (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  portal_partner_id uuid NOT NULL,
+  network_partner_id uuid NOT NULL,
+  area_id text NOT NULL,
+  placement_code text NOT NULL,
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'pending_review'::text, 'active'::text, 'paused'::text, 'cancelled'::text, 'expired'::text])),
+  starts_at date NOT NULL,
+  ends_at date,
+  monthly_price_eur numeric NOT NULL CHECK (monthly_price_eur >= 0::numeric),
+  portal_fee_eur numeric NOT NULL CHECK (portal_fee_eur >= 0::numeric),
+  billing_cycle_day integer NOT NULL CHECK (billing_cycle_day >= 1 AND billing_cycle_day <= 28),
+  required_locales jsonb NOT NULL DEFAULT '["de"]'::jsonb CHECK (jsonb_typeof(required_locales) = 'array'::text),
+  ai_billing_mode text NOT NULL DEFAULT 'included'::text CHECK (ai_billing_mode = ANY (ARRAY['included'::text, 'credit_based'::text, 'blocked'::text])),
+  ai_monthly_budget_eur numeric NOT NULL DEFAULT 0 CHECK (ai_monthly_budget_eur >= 0::numeric),
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT network_partner_bookings_pkey PRIMARY KEY (id),
+  CONSTRAINT network_partner_bookings_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id),
+  CONSTRAINT network_partner_bookings_placement_code_fkey FOREIGN KEY (placement_code) REFERENCES public.placement_catalog(code),
+  CONSTRAINT network_partner_bookings_portal_partner_id_fkey FOREIGN KEY (portal_partner_id) REFERENCES public.partners(id),
+  CONSTRAINT network_partner_bookings_network_partner_id_fkey FOREIGN KEY (network_partner_id) REFERENCES public.network_partners(id)
+);
+CREATE TABLE public.network_partner_integration_sync_runs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  integration_id uuid NOT NULL,
+  portal_partner_id uuid NOT NULL,
+  network_partner_id uuid NOT NULL,
+  run_kind text NOT NULL CHECK (run_kind = ANY (ARRAY['test'::text, 'preview'::text, 'sync'::text])),
+  run_mode text NOT NULL CHECK (run_mode = ANY (ARRAY['guarded'::text, 'full'::text])),
+  status text NOT NULL CHECK (status = ANY (ARRAY['running'::text, 'ok'::text, 'warning'::text, 'error'::text])),
+  trace_id text,
+  summary jsonb,
+  diagnostics jsonb,
+  started_at timestamp with time zone NOT NULL DEFAULT now(),
+  finished_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT network_partner_integration_sync_runs_pkey PRIMARY KEY (id),
+  CONSTRAINT network_partner_integration_sync_runs_portal_partner_id_fkey FOREIGN KEY (portal_partner_id) REFERENCES public.partners(id),
+  CONSTRAINT network_partner_integration_sync_runs_integration_id_fkey FOREIGN KEY (integration_id) REFERENCES public.network_partner_integrations(id),
+  CONSTRAINT network_partner_integration_sync_runs_network_partner_id_fkey FOREIGN KEY (network_partner_id) REFERENCES public.network_partners(id)
+);
+CREATE TABLE public.network_partner_integrations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  portal_partner_id uuid NOT NULL,
+  network_partner_id uuid NOT NULL,
+  kind text NOT NULL DEFAULT 'crm'::text CHECK (kind = 'crm'::text),
+  provider text NOT NULL CHECK (provider = ANY (ARRAY['propstack'::text, 'onoffice'::text])),
+  base_url text,
+  auth_type text,
+  auth_config jsonb,
+  detail_url_template text,
+  is_active boolean NOT NULL DEFAULT true,
+  settings jsonb,
+  last_test_at timestamp with time zone,
+  last_preview_sync_at timestamp with time zone,
+  last_sync_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT network_partner_integrations_pkey PRIMARY KEY (id),
+  CONSTRAINT network_partner_integrations_portal_partner_id_fkey FOREIGN KEY (portal_partner_id) REFERENCES public.partners(id),
+  CONSTRAINT network_partner_integrations_network_partner_id_fkey FOREIGN KEY (network_partner_id) REFERENCES public.network_partners(id)
+);
+CREATE TABLE public.network_partner_invoice_lines (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  booking_id uuid NOT NULL,
+  portal_partner_id uuid NOT NULL,
+  network_partner_id uuid NOT NULL,
+  period_start date NOT NULL,
+  period_end date NOT NULL,
+  gross_amount_eur numeric NOT NULL CHECK (gross_amount_eur >= 0::numeric),
+  portal_fee_eur numeric NOT NULL CHECK (portal_fee_eur >= 0::numeric),
+  partner_net_eur numeric NOT NULL CHECK (partner_net_eur >= 0::numeric),
+  status text NOT NULL DEFAULT 'open'::text CHECK (status = ANY (ARRAY['open'::text, 'paid'::text, 'overdue'::text, 'cancelled'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT network_partner_invoice_lines_pkey PRIMARY KEY (id),
+  CONSTRAINT network_partner_invoice_lines_booking_id_fkey FOREIGN KEY (booking_id) REFERENCES public.network_partner_bookings(id),
+  CONSTRAINT network_partner_invoice_lines_portal_partner_id_fkey FOREIGN KEY (portal_partner_id) REFERENCES public.partners(id),
+  CONSTRAINT network_partner_invoice_lines_network_partner_id_fkey FOREIGN KEY (network_partner_id) REFERENCES public.network_partners(id)
+);
+CREATE TABLE public.network_partner_users (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  network_partner_id uuid NOT NULL,
+  auth_user_id uuid NOT NULL,
+  role text NOT NULL CHECK (role = ANY (ARRAY['network_owner'::text, 'network_editor'::text, 'network_billing'::text])),
+  is_primary boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT network_partner_users_pkey PRIMARY KEY (id),
+  CONSTRAINT network_partner_users_network_partner_id_fkey FOREIGN KEY (network_partner_id) REFERENCES public.network_partners(id),
+  CONSTRAINT network_partner_users_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.network_partners (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  portal_partner_id uuid NOT NULL,
+  company_name text NOT NULL,
+  legal_name text,
+  contact_email text NOT NULL,
+  contact_phone text,
+  website_url text,
+  status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'paused'::text, 'inactive'::text])),
+  managed_editing_enabled boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT network_partners_pkey PRIMARY KEY (id),
+  CONSTRAINT network_partners_portal_partner_id_fkey FOREIGN KEY (portal_partner_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.network_property_offers (
+  content_item_id uuid NOT NULL,
+  external_id text,
+  marketing_type text,
+  property_type text,
+  location_label text,
+  price numeric,
+  living_area numeric,
+  plot_area numeric,
+  rooms numeric,
+  facts_json jsonb,
+  CONSTRAINT network_property_offers_pkey PRIMARY KEY (content_item_id),
+  CONSTRAINT network_property_offers_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.network_content_items(id)
+);
+CREATE TABLE public.network_property_requests (
+  content_item_id uuid NOT NULL,
+  external_id text,
+  request_type text,
+  search_region text,
+  budget_min numeric,
+  budget_max numeric,
+  area_min numeric,
+  area_max numeric,
+  facts_json jsonb,
+  CONSTRAINT network_property_requests_pkey PRIMARY KEY (content_item_id),
+  CONSTRAINT network_property_requests_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.network_content_items(id)
+);
+CREATE TABLE public.partner_ai_credit_ledgers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  period_key text NOT NULL,
+  opening_balance_eur numeric NOT NULL DEFAULT 0,
+  credits_added_eur numeric NOT NULL DEFAULT 0,
+  credits_used_eur numeric NOT NULL DEFAULT 0,
+  closing_balance_eur numeric NOT NULL DEFAULT 0,
+  status text NOT NULL DEFAULT 'open'::text CHECK (status = ANY (ARRAY['open'::text, 'closed'::text])),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_ai_credit_ledgers_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_ai_credit_ledgers_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+);
+CREATE TABLE public.partner_ai_usage_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  area_id text,
+  network_partner_id uuid,
+  content_item_id uuid,
+  feature text NOT NULL CHECK (feature = ANY (ARRAY['content_optimize'::text, 'content_translate'::text, 'seo_meta_generate'::text])),
+  locale text,
+  billing_mode text NOT NULL CHECK (billing_mode = ANY (ARRAY['included'::text, 'credit_based'::text, 'blocked'::text])),
+  prompt_tokens integer NOT NULL DEFAULT 0 CHECK (prompt_tokens >= 0),
+  completion_tokens integer NOT NULL DEFAULT 0 CHECK (completion_tokens >= 0),
+  estimated_cost_eur numeric NOT NULL DEFAULT 0 CHECK (estimated_cost_eur >= 0::numeric),
+  credit_delta_eur numeric NOT NULL DEFAULT 0 CHECK (credit_delta_eur >= 0::numeric),
+  status text NOT NULL DEFAULT 'ok'::text CHECK (status = ANY (ARRAY['ok'::text, 'blocked'::text, 'error'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_ai_usage_events_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_ai_usage_events_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_ai_usage_events_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id),
+  CONSTRAINT partner_ai_usage_events_network_partner_id_fkey FOREIGN KEY (network_partner_id) REFERENCES public.network_partners(id),
+  CONSTRAINT partner_ai_usage_events_content_item_id_fkey FOREIGN KEY (content_item_id) REFERENCES public.network_content_items(id)
+);
 CREATE TABLE public.partner_area_generated_texts (
   partner_id text NOT NULL,
   area_id text NOT NULL,
@@ -281,6 +568,20 @@ CREATE TABLE public.partner_area_generated_texts (
   source_signature text,
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT partner_area_generated_texts_pkey PRIMARY KEY (partner_id, area_id, scope, section_key)
+);
+CREATE TABLE public.partner_area_inventory (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  area_id text NOT NULL,
+  placement_code text NOT NULL,
+  slot_limit integer NOT NULL CHECK (slot_limit > 0),
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_area_inventory_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_area_inventory_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_area_inventory_area_id_fkey FOREIGN KEY (area_id) REFERENCES public.areas(id),
+  CONSTRAINT partner_area_inventory_placement_code_fkey FOREIGN KEY (placement_code) REFERENCES public.placement_catalog(code)
 );
 CREATE TABLE public.partner_area_map (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -384,48 +685,6 @@ CREATE TABLE public.partner_integrations (
   last_sync_at timestamp with time zone,
   CONSTRAINT partner_integrations_pkey PRIMARY KEY (id),
   CONSTRAINT partner_integrations_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
-);
-CREATE TABLE public.integration_sync_runs (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  integration_id uuid NOT NULL,
-  partner_id uuid NOT NULL,
-  kind text NOT NULL,
-  provider text NOT NULL,
-  resource text NOT NULL,
-  mode text,
-  triggered_by text NOT NULL,
-  trigger_user_id uuid,
-  sync_job_id text,
-  trace_id text,
-  status text NOT NULL DEFAULT 'running'::text,
-  step text,
-  message text,
-  error text,
-  error_class text,
-  request_count integer,
-  pages_fetched integer,
-  listings_count integer,
-  offers_count integer,
-  references_count integer,
-  requests_count integer,
-  deactivated_listings integer,
-  deactivated_offers integer,
-  safety_limited boolean NOT NULL DEFAULT false,
-  log jsonb,
-  notes jsonb,
-  result_json jsonb,
-  metadata jsonb,
-  started_at timestamp with time zone NOT NULL DEFAULT now(),
-  heartbeat_at timestamp with time zone,
-  deadline_at timestamp with time zone,
-  cancel_requested boolean NOT NULL DEFAULT false,
-  finished_at timestamp with time zone,
-  duration_ms integer,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT integration_sync_runs_pkey PRIMARY KEY (id),
-  CONSTRAINT integration_sync_runs_integration_id_fkey FOREIGN KEY (integration_id) REFERENCES public.partner_integrations(id),
-  CONSTRAINT integration_sync_runs_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
 );
 CREATE TABLE public.partner_listings (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -728,6 +987,17 @@ CREATE TABLE public.partner_texts_i18n (
   CONSTRAINT partner_texts_i18n_pkey PRIMARY KEY (id),
   CONSTRAINT partner_texts_i18n_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES auth.users(id)
 );
+CREATE TABLE public.partner_users (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  partner_id uuid NOT NULL,
+  auth_user_id uuid NOT NULL,
+  role text NOT NULL CHECK (role = ANY (ARRAY['partner_owner'::text, 'partner_manager'::text, 'partner_billing'::text])),
+  is_primary boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT partner_users_pkey PRIMARY KEY (id),
+  CONSTRAINT partner_users_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id),
+  CONSTRAINT partner_users_auth_user_id_fkey FOREIGN KEY (auth_user_id) REFERENCES auth.users(id)
+);
 CREATE TABLE public.partners (
   id uuid NOT NULL DEFAULT auth.uid(),
   company_name text NOT NULL,
@@ -741,6 +1011,15 @@ CREATE TABLE public.partners (
   llm_mode_default text NOT NULL DEFAULT 'central_managed'::text,
   is_system_default boolean NOT NULL DEFAULT false,
   CONSTRAINT partners_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.placement_catalog (
+  code text NOT NULL,
+  label text NOT NULL,
+  content_type text NOT NULL CHECK (content_type = ANY (ARRAY['company_profile'::text, 'property_offer'::text, 'property_request'::text])),
+  billing_mode text NOT NULL CHECK (billing_mode = 'monthly_fixed'::text),
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT placement_catalog_pkey PRIMARY KEY (code)
 );
 CREATE TABLE public.portal_content_entries (
   page_key text NOT NULL,
@@ -778,6 +1057,19 @@ CREATE TABLE public.portal_locale_config (
   currency_code text NOT NULL DEFAULT 'EUR'::text,
   billing_feature_code text,
   CONSTRAINT portal_locale_config_pkey PRIMARY KEY (locale)
+);
+CREATE TABLE public.portal_partner_settlement_lines (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  invoice_line_id uuid NOT NULL,
+  portal_partner_id uuid NOT NULL,
+  gross_amount_eur numeric NOT NULL CHECK (gross_amount_eur >= 0::numeric),
+  portal_fee_eur numeric NOT NULL CHECK (portal_fee_eur >= 0::numeric),
+  partner_net_eur numeric NOT NULL CHECK (partner_net_eur >= 0::numeric),
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'cleared'::text, 'held'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT portal_partner_settlement_lines_pkey PRIMARY KEY (id),
+  CONSTRAINT portal_partner_settlement_lines_invoice_line_id_fkey FOREIGN KEY (invoice_line_id) REFERENCES public.network_partner_invoice_lines(id),
+  CONSTRAINT portal_partner_settlement_lines_portal_partner_id_fkey FOREIGN KEY (portal_partner_id) REFERENCES public.partners(id)
 );
 CREATE TABLE public.portal_system_text_entries (
   key text NOT NULL,
@@ -935,9 +1227,3 @@ CREATE TABLE public.security_rate_limits (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT security_rate_limits_pkey PRIMARY KEY (key_hash)
 );
-CREATE INDEX integration_sync_runs_integration_started_idx
-  ON public.integration_sync_runs (integration_id, started_at DESC);
-CREATE INDEX integration_sync_runs_partner_started_idx
-  ON public.integration_sync_runs (partner_id, started_at DESC);
-CREATE INDEX integration_sync_runs_job_idx
-  ON public.integration_sync_runs (integration_id, sync_job_id);

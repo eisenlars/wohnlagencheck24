@@ -1695,6 +1695,23 @@ function getPortalLocaleBaseLanguage(locale: string): string {
   return normalizePortalLocaleCode(locale).split("-")[0] ?? "";
 }
 
+function buildMarketExplanationStandardRequestKey(args: {
+  scope: MarketExplanationStandardScope;
+  locale: string;
+  bundeslandSlug?: string;
+  areaId?: string;
+}): string {
+  const scope = args.scope === "bundesland" ? "bundesland" : "kreis";
+  const locale = String(args.locale ?? "de").trim().toLowerCase() || "de";
+  const bundeslandSlug = scope === "bundesland"
+    ? String(args.bundeslandSlug ?? "").trim().toLowerCase()
+    : "";
+  const areaId = scope === "bundesland"
+    ? ""
+    : String(args.areaId ?? "").trim();
+  return [scope, locale, bundeslandSlug, areaId].join("::");
+}
+
 function formatPortalEntryStatus(status: PortalContentEntryStatus): string {
   if (status === "internal") return "intern";
   if (status === "live") return "live";
@@ -1885,6 +1902,9 @@ export default function AdminClient() {
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [hoveredAdminNavId, setHoveredAdminNavId] = useState<string | null>(null);
   const [hoveredAdminNavTop, setHoveredAdminNavTop] = useState<number | null>(null);
+  const marketExplanationStandardLoadedKeyRef = useRef<string>("");
+  const marketExplanationStandardInFlightKeyRef = useRef<string | null>(null);
+  const marketExplanationStandardInFlightRef = useRef<Promise<void> | null>(null);
   const [busy, setBusy] = useState<boolean>(false);
   const [areaQuery, setAreaQuery] = useState<string>("");
   const [areaOptions, setAreaOptions] = useState<AreaOption[]>([]);
@@ -2421,6 +2441,7 @@ export default function AdminClient() {
     bundeslandSlug?: string;
     areaId?: string;
     locale?: string;
+    force?: boolean;
   }) => {
     await loadMarketExplanationStandardTexts(options);
   });
@@ -2654,6 +2675,7 @@ export default function AdminClient() {
   }, [marketExplanationStandardBundeslaender, standardTextRefreshBundeslandSlug]);
 
   useEffect(() => {
+    if (activeView !== "market_texts") return;
     if (marketExplanationMode !== "standard") return;
     if (marketExplanationStandardScope === "bundesland") {
       if (!marketExplanationStandardBundeslandSlug) return;
@@ -2674,11 +2696,12 @@ export default function AdminClient() {
       locale: marketExplanationStandardLocale,
     });
   }, [
+    activeView,
     marketExplanationMode,
     marketExplanationStandardBundeslandSlug,
     marketExplanationStandardLocale,
     marketExplanationStandardScope,
-    marketExplanationStandardSelection,
+    marketExplanationStandardSelection?.id,
   ]);
 
   useEffect(() => {
@@ -3827,52 +3850,87 @@ export default function AdminClient() {
     bundeslandSlug?: string;
     areaId?: string;
     locale?: string;
+    force?: boolean;
   }) {
     const scope = options?.scope ?? marketExplanationStandardScope;
     const locale = options?.locale ?? marketExplanationStandardLocale;
     const bundeslandSlug = options?.bundeslandSlug ?? marketExplanationStandardBundeslandSlug;
     const areaId = options?.areaId ?? marketExplanationStandardSelection?.id ?? "";
-    const params = new URLSearchParams();
-    params.set("level", scope);
-    if (scope === "bundesland") {
-      if (!bundeslandSlug) {
-        throw new Error("Bitte zuerst ein Bundesland auswählen.");
+    const requestKey = buildMarketExplanationStandardRequestKey({
+      scope,
+      locale,
+      bundeslandSlug,
+      areaId,
+    });
+
+    if (!options?.force) {
+      if (
+        marketExplanationStandardInFlightKeyRef.current === requestKey
+        && marketExplanationStandardInFlightRef.current
+      ) {
+        await marketExplanationStandardInFlightRef.current;
+        return;
       }
-      params.set("bundesland_slug", bundeslandSlug);
-    } else if (areaId) {
-      params.set("area_id", areaId);
+      if (marketExplanationStandardLoadedKeyRef.current === requestKey) {
+        return;
+      }
     }
-    params.set("locale", locale);
-    const data = await api<{
-      level?: MarketExplanationStandardScope;
-      locale?: string;
-      bundesland_slug?: string;
-      area_id?: string;
-      bundeslaender?: MarketExplanationStandardBundesland[];
-      definitions?: MarketExplanationStandardTextDefinition[];
-      entries?: MarketExplanationStandardEntry[];
-    }>(`/api/admin/market-explanation-standard-texts?${params.toString()}`);
-    const nextLevel = data.level ?? scope;
-    const nextBundeslaender = data.bundeslaender ?? [];
-    const nextBundeslandSlug = data.bundesland_slug ?? bundeslandSlug;
-    const nextLocale = data.locale ?? locale;
-    const nextDefinitions = data.definitions ?? getMarketExplanationStandardDefinitions(nextLevel);
-    const nextEntries = data.entries ?? [];
-    setMarketExplanationStandardScope(nextLevel);
-    setMarketExplanationStandardBundeslaender(nextBundeslaender);
-    setMarketExplanationStandardBundeslandSlug(nextBundeslandSlug);
-    setMarketExplanationStandardLocale(nextLocale);
-    setMarketExplanationStandardDefinitions(nextDefinitions);
-    setMarketExplanationStandardEntries(nextEntries);
-    setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
-      definitions: nextDefinitions,
-      entries: nextEntries,
-    }));
-    setMarketExplanationStandardStatusDrafts(buildMarketExplanationStandardStatusDraftMap({
-      locale: nextLocale,
-      definitions: nextDefinitions,
-      entries: nextEntries,
-    }));
+
+    const task = (async () => {
+      const params = new URLSearchParams();
+      params.set("level", scope);
+      if (scope === "bundesland") {
+        if (!bundeslandSlug) {
+          throw new Error("Bitte zuerst ein Bundesland auswählen.");
+        }
+        params.set("bundesland_slug", bundeslandSlug);
+      } else if (areaId) {
+        params.set("area_id", areaId);
+      }
+      params.set("locale", locale);
+      const data = await api<{
+        level?: MarketExplanationStandardScope;
+        locale?: string;
+        bundesland_slug?: string;
+        area_id?: string;
+        bundeslaender?: MarketExplanationStandardBundesland[];
+        definitions?: MarketExplanationStandardTextDefinition[];
+        entries?: MarketExplanationStandardEntry[];
+      }>(`/api/admin/market-explanation-standard-texts?${params.toString()}`);
+      const nextLevel = data.level ?? scope;
+      const nextBundeslaender = data.bundeslaender ?? [];
+      const nextBundeslandSlug = data.bundesland_slug ?? bundeslandSlug;
+      const nextLocale = data.locale ?? locale;
+      const nextDefinitions = data.definitions ?? getMarketExplanationStandardDefinitions(nextLevel);
+      const nextEntries = data.entries ?? [];
+      setMarketExplanationStandardScope(nextLevel);
+      setMarketExplanationStandardBundeslaender(nextBundeslaender);
+      setMarketExplanationStandardBundeslandSlug(nextBundeslandSlug);
+      setMarketExplanationStandardLocale(nextLocale);
+      setMarketExplanationStandardDefinitions(nextDefinitions);
+      setMarketExplanationStandardEntries(nextEntries);
+      setMarketExplanationStandardDrafts(buildMarketExplanationStandardDraftMap({
+        definitions: nextDefinitions,
+        entries: nextEntries,
+      }));
+      setMarketExplanationStandardStatusDrafts(buildMarketExplanationStandardStatusDraftMap({
+        locale: nextLocale,
+        definitions: nextDefinitions,
+        entries: nextEntries,
+      }));
+      marketExplanationStandardLoadedKeyRef.current = requestKey;
+    })();
+
+    marketExplanationStandardInFlightKeyRef.current = requestKey;
+    marketExplanationStandardInFlightRef.current = task;
+    try {
+      await task;
+    } finally {
+      if (marketExplanationStandardInFlightRef.current === task) {
+        marketExplanationStandardInFlightRef.current = null;
+        marketExplanationStandardInFlightKeyRef.current = null;
+      }
+    }
   }
 
   async function loadMarketExplanationStaticTexts() {
@@ -8091,7 +8149,7 @@ export default function AdminClient() {
                     disabled={busy}
                     onClick={() =>
                       run("Standardtexte neu laden", async () => {
-                        await loadMarketExplanationStandardTexts();
+                        await loadMarketExplanationStandardTexts({ force: true });
                       })
                     }
                   >
