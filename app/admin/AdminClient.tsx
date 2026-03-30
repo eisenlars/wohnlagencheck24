@@ -2130,8 +2130,6 @@ export default function AdminClient() {
   const [marketExplanationStandardLocale, setMarketExplanationStandardLocale] = useState<string>("de");
   const [marketExplanationStandardBundeslaender, setMarketExplanationStandardBundeslaender] = useState<MarketExplanationStandardBundesland[]>([]);
   const [marketExplanationStandardBundeslandSlug, setMarketExplanationStandardBundeslandSlug] = useState<string>("");
-  const [marketExplanationStandardKreisSelection, setMarketExplanationStandardKreisSelection] = useState<StandardTextRefreshSelection | null>(null);
-  const [marketExplanationStandardAreaSidebarItems, setMarketExplanationStandardAreaSidebarItems] = useState<StandardTextRefreshSelection[]>([]);
   const [marketExplanationStandardSelection, setMarketExplanationStandardSelection] = useState<StandardTextRefreshSelection | null>(null);
   const [marketExplanationStandardDefinitions, setMarketExplanationStandardDefinitions] = useState<MarketExplanationStandardTextDefinition[]>(MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS);
   const [marketExplanationStandardEntries, setMarketExplanationStandardEntries] = useState<MarketExplanationStandardEntry[]>([]);
@@ -2511,7 +2509,7 @@ export default function AdminClient() {
     if (!adminViewStateHydrated || adminViewStateAppliedRef.current) return;
     const restoredActiveView = adminViewState.activeView ?? "home";
     const restoredMarketExplanationMode = adminViewState.marketExplanationMode ?? "standard";
-    const restoredMarketExplanationScope = adminViewState.marketExplanationStandardScope ?? "kreis";
+    const restoredMarketExplanationScope = adminViewState.marketExplanationStandardScope === "bundesland" ? "bundesland" : "kreis";
     const restoredMarketExplanationLocale = String(adminViewState.marketExplanationStandardLocale ?? "de").trim().toLowerCase() || "de";
     const restoredMarketExplanationBundeslandSlug = String(adminViewState.marketExplanationStandardBundeslandSlug ?? "").trim().toLowerCase();
     const restoredMarketExplanationAreaId = String(adminViewState.marketExplanationStandardAreaId ?? "").trim();
@@ -2519,6 +2517,9 @@ export default function AdminClient() {
     const restoredMarketExplanationAreaSlug = String(adminViewState.marketExplanationStandardAreaSlug ?? "").trim();
     const restoredMarketExplanationAreaParentSlug = String(adminViewState.marketExplanationStandardAreaParentSlug ?? "").trim();
     const restoredMarketExplanationAreaBundeslandSlug = String(adminViewState.marketExplanationStandardAreaBundeslandSlug ?? "").trim();
+    const restoredMarketExplanationAreaIsKreis = restoredMarketExplanationAreaId
+      ? getKreisIdFromAreaId(restoredMarketExplanationAreaId) === restoredMarketExplanationAreaId
+      : false;
     const restoredStandardTextRefreshScope = adminViewState.standardTextRefreshScope ?? "bundesland";
     const restoredStandardTextRefreshBundeslandSlug = String(adminViewState.standardTextRefreshBundeslandSlug ?? "").trim().toLowerCase();
     const restoredStandardTextRefreshAreaId = String(adminViewState.standardTextRefreshAreaId ?? "").trim();
@@ -2536,13 +2537,17 @@ export default function AdminClient() {
     setMarketExplanationStandardScope(restoredMarketExplanationScope);
     setMarketExplanationStandardLocale(restoredMarketExplanationLocale);
     setMarketExplanationStandardBundeslandSlug(restoredMarketExplanationBundeslandSlug);
-    setMarketExplanationStandardSelection(restoredMarketExplanationAreaId ? {
-      id: restoredMarketExplanationAreaId,
-      name: restoredMarketExplanationAreaName || restoredMarketExplanationAreaId,
-      slug: restoredMarketExplanationAreaSlug || null,
-      parent_slug: restoredMarketExplanationAreaParentSlug || null,
-      bundesland_slug: restoredMarketExplanationAreaBundeslandSlug || null,
-    } : null);
+    setMarketExplanationStandardSelection(
+      restoredMarketExplanationScope === "kreis" && restoredMarketExplanationAreaId && restoredMarketExplanationAreaIsKreis
+        ? {
+            id: restoredMarketExplanationAreaId,
+            name: restoredMarketExplanationAreaName || restoredMarketExplanationAreaId,
+            slug: restoredMarketExplanationAreaSlug || null,
+            parent_slug: restoredMarketExplanationAreaParentSlug || null,
+            bundesland_slug: restoredMarketExplanationAreaBundeslandSlug || null,
+          }
+        : null,
+    );
     setStandardTextRefreshScope(restoredStandardTextRefreshScope);
     setStandardTextRefreshBundeslandSlug(restoredStandardTextRefreshBundeslandSlug);
     setStandardTextRefreshSelection(restoredStandardTextRefreshAreaId ? {
@@ -2574,7 +2579,9 @@ export default function AdminClient() {
         loadMarketExplanationStandardTextsEvent({
           scope: restoredMarketExplanationScope,
           bundeslandSlug: restoredMarketExplanationBundeslandSlug || undefined,
-          areaId: restoredMarketExplanationAreaId || undefined,
+          areaId: restoredMarketExplanationScope === "kreis" && restoredMarketExplanationAreaIsKreis
+            ? restoredMarketExplanationAreaId || undefined
+            : undefined,
           locale: restoredMarketExplanationLocale,
         }),
         loadMarketExplanationStaticTextsEvent(),
@@ -2689,58 +2696,6 @@ export default function AdminClient() {
   }, [marketExplanationStandardLocale, portalLocaleConfigs]);
 
   
-
-  useEffect(() => {
-    if (marketExplanationMode !== "standard") return;
-    if (marketExplanationStandardScope === "bundesland") return;
-    const kreisId = marketExplanationStandardKreisSelection?.id ?? "";
-    if (!kreisId) {
-      setMarketExplanationStandardAreaSidebarItems([]);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const data = await api<{ areas: AreaOption[] }>(
-          `/api/admin/areas?kreis_id=${encodeURIComponent(kreisId)}&limit=500`,
-        );
-        if (cancelled) return;
-        const items = (data.areas ?? []).map((area) => ({
-          id: area.id,
-          name: area.name ?? area.id,
-          slug: area.slug ?? null,
-          parent_slug: area.parent_slug ?? null,
-          bundesland_slug: area.bundesland_slug ?? null,
-        }));
-        setMarketExplanationStandardAreaSidebarItems(items);
-        if (!marketExplanationStandardSelection?.id) {
-          if (marketExplanationStandardScope === "kreis") {
-            const firstKreis = items.find((item) => isKreisAreaOption(item)) ?? null;
-            if (firstKreis) setMarketExplanationStandardSelection(firstKreis);
-          }
-          return;
-        }
-        if (getKreisIdFromAreaId(marketExplanationStandardSelection.id) !== kreisId) {
-          if (marketExplanationStandardScope === "kreis") {
-            const firstKreis = items.find((item) => isKreisAreaOption(item)) ?? null;
-            setMarketExplanationStandardSelection(firstKreis);
-          } else {
-            setMarketExplanationStandardSelection(null);
-          }
-        }
-      } catch {
-        if (!cancelled) setMarketExplanationStandardAreaSidebarItems([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    marketExplanationMode,
-    marketExplanationStandardKreisSelection?.id,
-    marketExplanationStandardScope,
-    marketExplanationStandardSelection?.id,
-  ]);
 
   useEffect(() => {
     if (portalLocaleConfigs.length === 0) return;
@@ -3013,25 +2968,35 @@ export default function AdminClient() {
   
   useEffect(() => {
     if (marketExplanationMode !== "standard") return;
-    if (marketExplanationStandardScope === "bundesland") return;
-    if (marketExplanationStandardSelection?.id) {
-      const selectedKreisId = getKreisIdFromAreaId(marketExplanationStandardSelection.id);
-      const matchedKreis = systemPartnerKreisOptions.find((item) => item.id === selectedKreisId);
-      if (matchedKreis) {
-        setMarketExplanationStandardKreisSelection((prev) => prev?.id === matchedKreis.id ? prev : matchedKreis);
-        return;
-      }
-    }
-    const fallback = systemPartnerKreisOptions[0] ?? null;
-    if (!fallback) return;
-    setMarketExplanationStandardKreisSelection((prev) => prev?.id === fallback.id ? prev : fallback);
-    if (!marketExplanationStandardSelection?.id && marketExplanationStandardScope === "kreis") {
-      setMarketExplanationStandardSelection(fallback);
+    if (marketExplanationStandardScope !== "ortslage") return;
+    setMarketExplanationStandardScope("kreis");
+    if (marketExplanationStandardSelection && !isKreisAreaOption(marketExplanationStandardSelection)) {
+      setMarketExplanationStandardSelection(null);
     }
   }, [
     marketExplanationMode,
     marketExplanationStandardScope,
-    marketExplanationStandardSelection?.id,
+    marketExplanationStandardSelection,
+  ]);
+
+  useEffect(() => {
+    if (marketExplanationMode !== "standard") return;
+    if (marketExplanationStandardScope !== "kreis") return;
+    const selectedAreaId = marketExplanationStandardSelection?.id ?? "";
+    const selectedKreisId = getKreisIdFromAreaId(selectedAreaId);
+    const hasValidKreisSelection = selectedAreaId
+      && isKreisAreaOption(marketExplanationStandardSelection)
+      && systemPartnerKreisOptions.some((item) => item.id === selectedAreaId);
+    if (hasValidKreisSelection) return;
+    const fallback = systemPartnerKreisOptions.find((item) => item.id === selectedKreisId)
+      ?? systemPartnerKreisOptions[0]
+      ?? null;
+    if (!fallback) return;
+    setMarketExplanationStandardSelection((prev) => prev?.id === fallback.id ? prev : fallback);
+  }, [
+    marketExplanationMode,
+    marketExplanationStandardScope,
+    marketExplanationStandardSelection,
     systemPartnerKreisOptions,
   ]);
   
@@ -8794,21 +8759,6 @@ export default function AdminClient() {
               Kreis
             </button>
             <button
-              style={marketExplanationScopeButtonStyle(marketExplanationStandardScope === "ortslage")}
-              disabled={busy}
-              onClick={() => {
-                setMarketExplanationStandardScope("ortslage");
-                if (marketExplanationStandardSelection && isKreisAreaOption(marketExplanationStandardSelection)) {
-                  setMarketExplanationStandardSelection(null);
-                }
-                void run("Ortslagen-Standardtexte laden", async () => {
-                  await loadMarketExplanationStandardTexts({ scope: "ortslage", locale: marketExplanationStandardLocale });
-                }, { showSuccessModal: false });
-              }}
-            >
-              Ortslage
-            </button>
-            <button
               style={marketExplanationScopeButtonStyle(marketExplanationStandardScope === "bundesland")}
               disabled={busy}
               onClick={() => {
@@ -8955,38 +8905,13 @@ export default function AdminClient() {
             </div>
           ) : null}
 
-          {marketExplanationMode === "standard" && marketExplanationStandardScope !== "bundesland" ? (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-              {systemPartnerKreisOptions.map((area) => (
-                <button
-                  key={area.id}
-                  type="button"
-                  style={marketExplanationBundeslandButtonStyle(marketExplanationStandardKreisSelection?.id === area.id)}
-                  onClick={() => {
-                    setMarketExplanationStandardKreisSelection(area);
-                    if (marketExplanationStandardScope === "kreis") {
-                      setMarketExplanationStandardSelection(area);
-                    } else if (getKreisIdFromAreaId(marketExplanationStandardSelection?.id ?? "") !== area.id) {
-                      setMarketExplanationStandardSelection(null);
-                    }
-                  }}
-                >
-                  {area.name ?? area.id}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
           {marketExplanationMode === "standard" ? (
             marketExplanationStandardScope !== "bundesland" && (
               !marketExplanationStandardSelection?.id
-              || (marketExplanationStandardScope === "kreis" && !isKreisAreaOption(marketExplanationStandardSelection))
-              || (marketExplanationStandardScope === "ortslage" && isKreisAreaOption(marketExplanationStandardSelection))
+              || !isKreisAreaOption(marketExplanationStandardSelection)
             ) ? (
               <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc", ...mutedStyle }}>
-                {marketExplanationStandardScope === "ortslage"
-                  ? "Bitte links eine Ortslage auswählen, damit Basistext, Override und Übersetzungen geladen werden können."
-                  : "Bitte zuerst ein Gebiet auswählen, damit Basistext, Override und Übersetzungen geladen werden können."}
+                Bitte links einen Kreis auswählen, damit Basistext, Override und Übersetzungen geladen werden können.
               </div>
             ) : (
             <div
@@ -9016,9 +8941,8 @@ export default function AdminClient() {
                   }}
                 >
                   <div style={{ display: "grid", gap: 8, maxHeight: "70vh", overflowY: "auto" }}>
-                    {marketExplanationStandardAreaSidebarItems.map((item) => {
+                    {systemPartnerKreisOptions.map((item) => {
                       const active = marketExplanationStandardSelection?.id === item.id;
-                      const itemIsKreis = isKreisAreaOption(item);
                       return (
                         <button
                           key={item.id}
@@ -9035,11 +8959,7 @@ export default function AdminClient() {
                             gap: 4,
                           }}
                           onClick={() => {
-                            if (itemIsKreis) {
-                              setMarketExplanationStandardScope("kreis");
-                            } else {
-                              setMarketExplanationStandardScope("ortslage");
-                            }
+                            setMarketExplanationStandardScope("kreis");
                             setMarketExplanationStandardSelection(item);
                           }}
                         >
@@ -9053,11 +8973,11 @@ export default function AdminClient() {
                                 textTransform: "uppercase",
                                 borderRadius: 999,
                                 padding: "3px 8px",
-                                background: itemIsKreis ? "#dbeafe" : "#f3e8ff",
-                                color: itemIsKreis ? "#1d4ed8" : "#7e22ce",
+                                background: "#dbeafe",
+                                color: "#1d4ed8",
                               }}
                             >
-                              {itemIsKreis ? "Kreis" : "Ortslage"}
+                              Kreis
                             </span>
                           </div>
                           <div style={{ fontSize: 12, color: "#64748b" }}>
