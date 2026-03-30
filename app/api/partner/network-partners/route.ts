@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 
+import { createAdminClient } from "@/utils/supabase/admin";
 import { requireNetworkPartnerActorContext } from "@/lib/network-partners/auth";
 import { requirePortalPartnerRole } from "@/lib/network-partners/roles";
 import {
+  formatNetworkPartnerAccessLinkError,
+  generateNetworkPartnerInviteForNewUser,
+  sendNetworkPartnerAccessLinkBySmtp,
+} from "@/lib/auth/network-partner-access-link";
+import {
   createNetworkPartner,
   listNetworkPartnersByPortalPartner,
+  upsertNetworkPartnerUserForPortalPartner,
 } from "@/lib/network-partners/repositories/network-partners";
 import type { NetworkPartnerStatus } from "@/lib/network-partners/types";
 
@@ -16,6 +23,7 @@ type NetworkPartnerBody = {
   website_url?: string | null;
   status?: NetworkPartnerStatus;
   managed_editing_enabled?: boolean;
+  send_invite?: boolean;
 };
 
 function normalizeRequiredText(value: unknown): string | null {
@@ -93,7 +101,50 @@ export async function POST(req: Request) {
       managed_editing_enabled: body.managed_editing_enabled === true,
     });
 
-    return NextResponse.json({ ok: true, network_partner: networkPartner }, { status: 201 });
+    if (body.send_invite === true) {
+      try {
+        const admin = createAdminClient();
+        const delivery = await generateNetworkPartnerInviteForNewUser({
+          admin,
+          headers: req.headers,
+          contactEmail,
+          companyName: networkPartner.company_name,
+          networkPartnerId: networkPartner.id,
+        });
+
+        await upsertNetworkPartnerUserForPortalPartner({
+          portal_partner_id: actor.partnerId,
+          network_partner_id: networkPartner.id,
+          auth_user_id: delivery.authUserId,
+          role: "network_owner",
+        });
+
+        await sendNetworkPartnerAccessLinkBySmtp({
+          partnerEmail: contactEmail,
+          companyName: networkPartner.company_name,
+          inviteLink: delivery.actionLink,
+        });
+
+        return NextResponse.json({
+          ok: true,
+          network_partner: networkPartner,
+          invite_sent: true,
+          contact_email: contactEmail,
+          link_type: delivery.linkType,
+          redirect_to: delivery.redirectTo,
+        }, { status: 201 });
+      } catch (error) {
+        const formatted = formatNetworkPartnerAccessLinkError(error);
+        return NextResponse.json({
+          ok: true,
+          network_partner: networkPartner,
+          invite_sent: false,
+          invite_error: formatted.message,
+        }, { status: 201 });
+      }
+    }
+
+    return NextResponse.json({ ok: true, network_partner: networkPartner, invite_sent: false }, { status: 201 });
   } catch (error) {
     const mapped = mapRepositoryError(error as Error);
     return NextResponse.json({ error: mapped.error }, { status: mapped.status });

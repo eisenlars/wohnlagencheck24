@@ -12,7 +12,6 @@ import type { NetworkPartnerRecord } from '@/lib/network-partners/types';
 import {
   workflowHeaderStyle,
   workflowPanelCardStyle,
-  workflowTopCardStyle,
 } from '@/app/dashboard/workflow-ui';
 
 type NetworkPartnerListPayload = {
@@ -48,7 +47,7 @@ export default function NetworkPartnerManagementWorkspace({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createMode, setCreateMode] = useState(false);
 
   const fetchNetworkPartners = useCallback(async () => {
     const response = await fetch('/api/partner/network-partners', { method: 'GET', cache: 'no-store' });
@@ -111,6 +110,7 @@ export default function NetworkPartnerManagementWorkspace({
   );
 
   function selectPartner(partnerId: string) {
+    setCreateMode(false);
     setSelectedPartnerId(partnerId);
     onSelectedPartnerIdChange?.(partnerId);
   }
@@ -122,17 +122,29 @@ export default function NetworkPartnerManagementWorkspace({
 
   return (
     <div style={{ width: '100%', display: 'grid', gap: 18 }}>
-      <section style={workflowTopCardStyle}>
-        <div style={{ display: 'grid', gap: 8 }}>
-          <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-            Regionale Partner
-          </span>
-          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>Netzwerkpartner Verwaltung</h1>
-          <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', maxWidth: 920, lineHeight: 1.6 }}>
-            Links verwaltest du dein Netzwerkpartner-Portfolio. Rechts arbeitest du pro Partner in dessen Stammdaten, Zugängen, Buchungen, Content und Abrechnung.
-          </p>
-        </div>
-      </section>
+      <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setMessage(null);
+            setCreateMode(true);
+            setSelectedPartnerId(null);
+            onSelectedPartnerIdChange?.(null);
+          }}
+          style={{
+            borderRadius: 999,
+            border: '1px solid #1d4ed8',
+            background: '#1d4ed8',
+            color: '#fff',
+            padding: '12px 18px',
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          Neuen Partner anlegen
+        </button>
+      </div>
 
       <section
         style={{
@@ -166,64 +178,6 @@ export default function NetworkPartnerManagementWorkspace({
                   background: '#fff',
                 }}
               />
-
-              <button
-                type="button"
-                onClick={() => setCreateOpen((current) => !current)}
-                style={{
-                  width: 'fit-content',
-                  borderRadius: 999,
-                  border: '1px solid #1d4ed8',
-                  background: createOpen ? '#1d4ed8' : '#eff6ff',
-                  color: createOpen ? '#fff' : '#1d4ed8',
-                  padding: '10px 14px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                {createOpen ? 'Anlage schließen' : 'Neuen Partner anlegen'}
-              </button>
-
-              {createOpen ? (
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: 12,
-                    padding: 14,
-                    borderRadius: 16,
-                    border: '1px solid #dbeafe',
-                    background: '#f8fbff',
-                  }}
-                >
-                  {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
-                  {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
-                  <NetworkPartnerForm
-                    submitLabel="Netzwerkpartner anlegen"
-                    onSubmit={async (values) => {
-                      setError(null);
-                      setMessage(null);
-                      const response = await fetch('/api/partner/network-partners', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(values),
-                      });
-                      const payload = (await response.json().catch(() => null)) as {
-                        error?: string;
-                        network_partner?: NetworkPartnerRecord;
-                      } | null;
-                      if (!response.ok) {
-                        setError(String(payload?.error ?? 'Netzwerkpartner konnte nicht angelegt werden.'));
-                        return;
-                      }
-                      const createdPartnerId = String(payload?.network_partner?.id ?? '').trim() || null;
-                      setMessage('Netzwerkpartner wurde angelegt.');
-                      setCreateOpen(false);
-                      changeDetailSection('profile');
-                      await loadNetworkPartners(createdPartnerId);
-                    }}
-                  />
-                </div>
-              ) : null}
 
               <div style={{ display: 'grid', gap: 10 }}>
                 {loading ? (
@@ -280,7 +234,66 @@ export default function NetworkPartnerManagementWorkspace({
         </div>
 
         <div style={{ display: 'grid', gap: 18 }}>
-          {selectedPartner ? (
+          {createMode ? (
+            <section style={workflowPanelCardStyle}>
+              <div style={{ display: 'grid', gap: 22 }}>
+                <div style={workflowHeaderStyle}>
+                  <h2 style={{ margin: 0, fontSize: 24, color: '#0f172a' }}>Neuen Netzwerkpartner anlegen</h2>
+                  <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
+                    Der Partnerdatensatz und der erste Zugang werden in einer Aktion angelegt. Danach wird der Einladungslink direkt an die Kontakt-E-Mail versendet.
+                  </p>
+                </div>
+                {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
+                {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
+                <NetworkPartnerForm
+                  submitLabel="Einladung senden und Partner anlegen"
+                  helperText="Falls der Einladungsversand scheitert, bleibt der Partner trotzdem angelegt und der Invite kann danach im Tab Zugang & Einladung erneut ausgelöst werden."
+                  onSubmit={async (values) => {
+                    setError(null);
+                    setMessage(null);
+                    const response = await fetch('/api/partner/network-partners', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        ...values,
+                        send_invite: true,
+                      }),
+                    });
+                    const payload = (await response.json().catch(() => null)) as {
+                      error?: string;
+                      network_partner?: NetworkPartnerRecord;
+                      invite_sent?: boolean;
+                      invite_error?: string;
+                    } | null;
+                    if (!response.ok) {
+                      setError(String(payload?.error ?? 'Netzwerkpartner konnte nicht angelegt werden.'));
+                      return;
+                    }
+                    const createdPartner = payload?.network_partner ?? null;
+                    const createdPartnerId = String(createdPartner?.id ?? '').trim() || null;
+                    if (createdPartner) {
+                      setNetworkPartners((current) => {
+                        const withoutCreated = current.filter((partner) => partner.id !== createdPartner.id);
+                        return [...withoutCreated, createdPartner].sort((a, b) => a.company_name.localeCompare(b.company_name, 'de'));
+                      });
+                    }
+                    if (payload?.invite_sent === false) {
+                      setMessage('Netzwerkpartner wurde angelegt. Der Einladungsversand ist fehlgeschlagen und kann jetzt im Tab Zugang & Einladung erneut ausgelöst werden.');
+                      setError(String(payload?.invite_error ?? 'Einladungsversand fehlgeschlagen.'));
+                    } else {
+                      setMessage('Netzwerkpartner wurde angelegt und die Einladung wurde versendet.');
+                    }
+                    setCreateMode(false);
+                    if (createdPartnerId) {
+                      selectPartner(createdPartnerId);
+                    }
+                    changeDetailSection('profile');
+                    await loadNetworkPartners(createdPartnerId);
+                  }}
+                />
+              </div>
+            </section>
+          ) : selectedPartner ? (
             <>
               <section style={workflowPanelCardStyle}>
                 <div style={{ ...workflowHeaderStyle, gap: 10 }}>
@@ -291,7 +304,7 @@ export default function NetworkPartnerManagementWorkspace({
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      {([
+                    {([
                       ['profile', 'Stammdaten & Zugang'],
                       ['rights', 'Rechte'],
                       ['bookings', 'Buchungen'],
@@ -401,7 +414,7 @@ export default function NetworkPartnerManagementWorkspace({
               <div style={workflowHeaderStyle}>
                 <h2 style={{ margin: 0, fontSize: 22, color: '#0f172a' }}>Noch kein Netzwerkpartner ausgewählt</h2>
                 <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-                  Wähle links einen vorhandenen Netzwerkpartner oder lege einen neuen an.
+                  Wähle links einen vorhandenen Netzwerkpartner oder starte oben mit <strong>Neuen Partner anlegen</strong>.
                 </p>
               </div>
             </section>

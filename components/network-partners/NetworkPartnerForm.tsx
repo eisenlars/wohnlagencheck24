@@ -19,6 +19,7 @@ type NetworkPartnerFormProps = {
   initialValues?: Partial<NetworkPartnerRecord>;
   submitLabel: string;
   onSubmit: (values: NetworkPartnerFormValues) => Promise<void>;
+  helperText?: string;
 };
 
 const inputStyle: CSSProperties = {
@@ -43,6 +44,7 @@ export default function NetworkPartnerForm({
   initialValues,
   submitLabel,
   onSubmit,
+  helperText,
 }: NetworkPartnerFormProps) {
   const [companyName, setCompanyName] = useState(initialValues?.company_name ?? '');
   const [legalName, setLegalName] = useState(initialValues?.legal_name ?? '');
@@ -131,6 +133,12 @@ export default function NetworkPartnerForm({
         />
         Portal-Partner darf Inhalte des Netzwerkpartners direkt bearbeiten
       </label>
+
+      {helperText ? (
+        <p style={{ margin: 0, color: '#64748b', fontSize: 13, lineHeight: 1.6 }}>
+          {helperText}
+        </p>
+      ) : null}
 
       <button
         type="submit"
