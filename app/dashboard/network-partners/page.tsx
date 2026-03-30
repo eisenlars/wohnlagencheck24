@@ -1,9 +1,5 @@
-import NetworkPartnerManagementWorkspace from '@/components/network-partners/NetworkPartnerManagementWorkspace';
+import DashboardClient from '@/app/dashboard/DashboardClient';
 
 export default function NetworkPartnersPage() {
-  return (
-    <main style={{ width: '100%', padding: '24px 20px 56px' }}>
-      <NetworkPartnerManagementWorkspace />
-    </main>
-  );
+  return <DashboardClient initialMainTab="network_partners" initialShowWelcome={false} initialNetworkPartnerSection="overview" />;
 }

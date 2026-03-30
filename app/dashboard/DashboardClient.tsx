@@ -18,6 +18,11 @@ import { MANDATORY_MEDIA_KEYS, getMandatoryMediaLabel, isMandatoryMediaKey } fro
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { readSessionViewState, writeSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import NetworkInventoryWorkspace from '@/components/network-partners/NetworkInventoryWorkspace';
+import NetworkBookingsWorkspace from '@/components/network-partners/NetworkBookingsWorkspace';
+import NetworkContentWorkspace from '@/components/network-partners/NetworkContentWorkspace';
+import NetworkBillingWorkspace from '@/components/network-partners/NetworkBillingWorkspace';
+import NetworkAIWorkspace from '@/components/network-partners/NetworkAIWorkspace';
 import NetworkPartnerManagementWorkspace from '@/components/network-partners/NetworkPartnerManagementWorkspace';
 
 type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'referenzen' | 'gesuche' | 'blog' | 'international' | 'settings' | 'network_partners';
@@ -74,6 +79,15 @@ type PersistedDashboardState = {
   selectedAreaId?: string;
   showWelcome?: boolean;
   settingsSection?: SettingsSection;
+  networkPartnerSection?: NetworkPartnerSection;
+};
+
+type NetworkPartnerSection = 'overview' | 'inventory' | 'bookings' | 'content' | 'billing' | 'ai';
+
+type DashboardClientProps = {
+  initialMainTab?: MainTab;
+  initialShowWelcome?: boolean;
+  initialNetworkPartnerSection?: NetworkPartnerSection;
 };
 
 type VisibilityMode = 'partner_wide' | 'strict_local';
@@ -151,6 +165,11 @@ function isMainTab(value: unknown): value is MainTab {
 function isSettingsSection(value: unknown): value is SettingsSection {
   return typeof value === 'string'
     && ['konto', 'profil', 'integrationen', 'kostenmonitor'].includes(value);
+}
+
+function isNetworkPartnerSection(value: unknown): value is NetworkPartnerSection {
+  return typeof value === 'string'
+    && ['overview', 'inventory', 'bookings', 'content', 'billing', 'ai'].includes(value);
 }
 
 function formatMandatoryLabel(key: string): string {
@@ -409,7 +428,11 @@ function renderUtilityIcon(icon: UtilityIconKey, size = 17) {
   }
 }
 
-export default function DashboardClient() {
+export default function DashboardClient({
+  initialMainTab,
+  initialShowWelcome,
+  initialNetworkPartnerSection,
+}: DashboardClientProps = {}) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const factorFormRef = useRef<FactorFormHandle | null>(null);
@@ -455,6 +478,7 @@ export default function DashboardClient() {
 
   // Werkzeug-Modus umschalten
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('factors');
+  const [networkPartnerSection, setNetworkPartnerSection] = useState<NetworkPartnerSection>(initialNetworkPartnerSection ?? 'overview');
 
   const headerConfig = useMemo(() => {
     switch (activeMainTab) {
@@ -570,10 +594,16 @@ export default function DashboardClient() {
           const hasActiveAreasLocal = mergedConfigs.some((cfg) => Boolean(cfg.is_active));
           const restoredTab = isMainTab(persisted?.activeMainTab) ? persisted?.activeMainTab : undefined;
           const restoredSettingsSection = isSettingsSection(persisted?.settingsSection) ? persisted.settingsSection : 'konto';
-          const nextTab: MainTab = (!hasActiveAreasLocal && restoredTab && restoredTab !== 'texts')
+          const restoredNetworkPartnerSection = isNetworkPartnerSection(persisted?.networkPartnerSection)
+            ? persisted.networkPartnerSection
+            : 'overview';
+          const computedTab: MainTab = (!hasActiveAreasLocal && restoredTab && restoredTab !== 'texts')
             ? 'texts'
             : (restoredTab ?? 'factors');
-          const nextShowWelcome = typeof persisted?.showWelcome === 'boolean' ? persisted.showWelcome : true;
+          const nextTab: MainTab = initialMainTab ?? computedTab;
+          const nextShowWelcome = typeof initialShowWelcome === 'boolean'
+            ? initialShowWelcome
+            : (typeof persisted?.showWelcome === 'boolean' ? persisted.showWelcome : true);
           const nextSelected = restoredArea ?? mergedConfigs[0];
           const bootstrapProgress = payload?.mandatory_progress;
           const bootstrapProgressAreaId = String(bootstrapProgress?.area_id ?? '').trim();
@@ -583,6 +613,7 @@ export default function DashboardClient() {
           setExpandedDistrict(nextSelected.area_id.split('-').slice(0, 3).join('-'));
           setActiveMainTab(nextTab);
           setSettingsSection(restoredSettingsSection);
+          setNetworkPartnerSection(initialNetworkPartnerSection ?? restoredNetworkPartnerSection);
           setShowWelcome(nextShowWelcome);
           if (bootstrapProgressAreaId && bootstrapProgressAreaId === nextSelected.area_id) {
             const completed = Number(bootstrapProgress?.completed ?? 0);
@@ -606,7 +637,7 @@ export default function DashboardClient() {
       });
     }
     void loadData();
-  }, [supabase]);
+  }, [supabase, initialMainTab, initialNetworkPartnerSection, initialShowWelcome]);
 
   const featuresByCode = useMemo(() => {
     const map = new Map<string, PartnerFeatureRow>();
@@ -761,6 +792,9 @@ export default function DashboardClient() {
   const handleToolSelect = (tab: MainTab) => {
     if (!canUseTool()) return;
     if (!isTabEnabled(tab)) return;
+    if (tab === 'network_partners') {
+      setNetworkPartnerSection('overview');
+    }
     setActiveMainTab(tab);
     setShowWelcome(false);
     setHoveredUtilityToolId(null);
@@ -870,9 +904,10 @@ export default function DashboardClient() {
       selectedAreaId: selectedConfig?.area_id,
       showWelcome,
       settingsSection,
+      networkPartnerSection,
     };
     writeSessionViewState(DASHBOARD_UI_STATE_KEY, payload);
-  }, [activeMainTab, selectedConfig?.area_id, settingsSection, showWelcome, loading]);
+  }, [activeMainTab, selectedConfig?.area_id, settingsSection, showWelcome, networkPartnerSection, loading]);
 
   const activeConfigs = configs.filter((c) => Boolean(c.is_active));
   const inactiveConfigs = configs.filter((c) => !Boolean(c.is_active));
@@ -1787,7 +1822,61 @@ export default function DashboardClient() {
                 <p style={headerDescriptionStyle}>{headerConfig.description}</p>
               </div>
             </header>
-            <NetworkPartnerManagementWorkspace />
+            <div style={{ display: 'grid', gap: 18 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  flexWrap: 'wrap',
+                  padding: '14px 16px',
+                  borderRadius: 18,
+                  border: '1px solid #dbeafe',
+                  background: '#eff6ff',
+                }}
+              >
+                {([
+                  ['overview', 'Übersicht', '/dashboard/network-partners'],
+                  ['inventory', 'Inventar', '/dashboard/network-inventory'],
+                  ['bookings', 'Buchungen', '/dashboard/network-bookings'],
+                  ['content', 'Content & Review', '/dashboard/network-content'],
+                  ['billing', 'Billing', '/dashboard/network-billing'],
+                  ['ai', 'KI', '/dashboard/network-ai'],
+                ] as const).map(([sectionKey, label, href]) => {
+                  const active = networkPartnerSection === sectionKey;
+                  return (
+                    <Link
+                      key={sectionKey}
+                      href={href}
+                      style={{
+                        borderRadius: 999,
+                        padding: '10px 14px',
+                        textDecoration: 'none',
+                        fontWeight: 700,
+                        color: active ? '#fff' : '#1d4ed8',
+                        background: active ? '#1d4ed8' : '#fff',
+                        border: active ? '1px solid #1d4ed8' : '1px solid #bfdbfe',
+                      }}
+                    >
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {networkPartnerSection === 'inventory' ? (
+                <NetworkInventoryWorkspace />
+              ) : networkPartnerSection === 'bookings' ? (
+                <NetworkBookingsWorkspace />
+              ) : networkPartnerSection === 'content' ? (
+                <NetworkContentWorkspace />
+              ) : networkPartnerSection === 'billing' ? (
+                <NetworkBillingWorkspace />
+              ) : networkPartnerSection === 'ai' ? (
+                <NetworkAIWorkspace />
+              ) : (
+                <NetworkPartnerManagementWorkspace />
+              )}
+            </div>
           </div>
         ) : effectiveSelectedConfig ? (
           /* Hier entfernen wir das maxWidth: '1000px' damit die Formulare die Breite nutzen */
