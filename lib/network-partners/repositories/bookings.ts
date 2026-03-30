@@ -170,13 +170,20 @@ export async function assertBookingInputIsConsistent(input: {
 
 export async function listBookingsByPortalPartner(
   partnerId: string,
+  networkPartnerId?: string,
 ): Promise<NetworkPartnerBookingRecord[]> {
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let query = admin
     .from("network_partner_bookings")
     .select("id, portal_partner_id, network_partner_id, area_id, placement_code, status, starts_at, ends_at, monthly_price_eur, portal_fee_eur, billing_cycle_day, required_locales, ai_billing_mode, ai_monthly_budget_eur, notes, created_at, updated_at")
     .eq("portal_partner_id", partnerId)
     .order("created_at", { ascending: false });
+
+  if (networkPartnerId) {
+    query = query.eq("network_partner_id", networkPartnerId);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message ?? "BOOKINGS_LIST_FAILED");
   return asRowArray(data).map((row) => mapBookingRow(row));

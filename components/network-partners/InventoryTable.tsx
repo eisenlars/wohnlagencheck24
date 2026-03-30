@@ -47,7 +47,7 @@ export default function InventoryTable({ inventory, areas, placements }: Invento
           {inventory.length === 0 ? (
             <tr>
               <td colSpan={4} style={{ padding: '18px 12px', color: '#64748b' }}>
-                Noch kein Inventar für Netzwerkpartner angelegt.
+                Noch keine Werbeformate für Netzwerkpartner angelegt.
               </td>
             </tr>
           ) : null}

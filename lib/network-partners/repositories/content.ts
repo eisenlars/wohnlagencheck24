@@ -255,7 +255,11 @@ async function upsertSubtypeDetails(args: {
   if (error) throw new Error(error.message ?? "NETWORK_PROPERTY_REQUEST_UPSERT_FAILED");
 }
 
-async function fetchContentRowsByPortalPartner(partnerId: string, id?: string) {
+async function fetchContentRowsByPortalPartner(
+  partnerId: string,
+  id?: string,
+  networkPartnerId?: string,
+) {
   const admin = createAdminClient();
   let query = admin
     .from("network_content_items")
@@ -284,6 +288,10 @@ async function fetchContentRowsByPortalPartner(partnerId: string, id?: string) {
       "network_property_requests(*)",
     ].join(", "))
     .eq("portal_partner_id", partnerId);
+
+  if (networkPartnerId) {
+    query = query.eq("network_partner_id", networkPartnerId);
+  }
 
   if (id) {
     query = query.eq("id", id);
@@ -341,8 +349,9 @@ async function fetchContentRowsByNetworkPartner(networkPartnerId: string, id?: s
 
 export async function listContentByPortalPartner(
   partnerId: string,
+  networkPartnerId?: string,
 ): Promise<NetworkContentRecord[]> {
-  const rows = await fetchContentRowsByPortalPartner(partnerId);
+  const rows = await fetchContentRowsByPortalPartner(partnerId, undefined, networkPartnerId);
   const reviewMap = await loadReviewsByContentIds(rows.map((row) => asText(row.id)).filter(Boolean));
   return rows.map((row) => mapContentRow(row, reviewMap));
 }

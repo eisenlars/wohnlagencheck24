@@ -372,7 +372,28 @@ async function buildBookingProjectionForNetworkPartner(
 
 export async function loadNetworkBillingOverviewByPortalPartner(
   partnerId: string,
+  networkPartnerId?: string,
 ): Promise<NetworkBillingOverview> {
+  if (networkPartnerId) {
+    const [invoiceResult, settlementResult, bookingProjection] = await Promise.all([
+      listInvoiceLinesByNetworkPartner(networkPartnerId),
+      listSettlementLinesByPortalPartner(partnerId),
+      buildBookingProjectionForNetworkPartner(networkPartnerId),
+    ]);
+
+    const invoiceIds = new Set(invoiceResult.rows.map((row) => row.id));
+    const settlementRows = settlementResult.rows.filter((row) => invoiceIds.has(row.invoice_line_id));
+
+    return {
+      invoice_lines: invoiceResult.rows,
+      settlement_lines: settlementRows,
+      month_summaries: buildMonthSummaries(invoiceResult.rows),
+      booking_projection: bookingProjection,
+      invoice_table_available: invoiceResult.available,
+      settlement_table_available: settlementResult.available,
+    };
+  }
+
   const [invoiceResult, settlementResult, bookingProjection] = await Promise.all([
     listInvoiceLinesByPortalPartner(partnerId),
     listSettlementLinesByPortalPartner(partnerId),

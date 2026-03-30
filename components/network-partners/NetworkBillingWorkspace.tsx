@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import BillingOverview from '@/components/network-partners/BillingOverview';
@@ -15,7 +14,15 @@ type BillingPayload = NetworkBillingOverview & {
   error?: string;
 };
 
-export default function NetworkBillingWorkspace() {
+type NetworkBillingWorkspaceProps = {
+  networkPartnerId?: string;
+  networkPartnerName?: string | null;
+};
+
+export default function NetworkBillingWorkspace({
+  networkPartnerId,
+  networkPartnerName,
+}: NetworkBillingWorkspaceProps) {
   const [overview, setOverview] = useState<NetworkBillingOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,14 +35,17 @@ export default function NetworkBillingWorkspace() {
   const [runError, setRunError] = useState<string | null>(null);
   const [lastRunResult, setLastRunResult] = useState<NetworkBillingRunResult | null>(null);
 
-  async function fetchOverview() {
-    const response = await fetch('/api/partner/network-billing/overview', {
+  const fetchOverview = useCallback(async () => {
+    const overviewUrl = networkPartnerId
+      ? `/api/partner/network-billing/overview?network_partner_id=${encodeURIComponent(networkPartnerId)}`
+      : '/api/partner/network-billing/overview';
+    const response = await fetch(overviewUrl, {
       method: 'GET',
       cache: 'no-store',
     });
     const payload = (await response.json().catch(() => null)) as BillingPayload | null;
     return { response, payload };
-  }
+  }, [networkPartnerId]);
 
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -43,7 +53,7 @@ export default function NetworkBillingWorkspace() {
     const { response, payload } = await fetchOverview();
     if (!response.ok) {
       setOverview(null);
-      setError(String(payload?.error ?? 'Billing-Übersicht konnte nicht geladen werden.'));
+      setError(String(payload?.error ?? 'Abrechnungsübersicht konnte nicht geladen werden.'));
       setLoading(false);
       return;
     }
@@ -56,7 +66,7 @@ export default function NetworkBillingWorkspace() {
       settlement_table_available: payload?.settlement_table_available === true,
     });
     setLoading(false);
-  }, []);
+  }, [fetchOverview]);
 
   useEffect(() => {
     let active = true;
@@ -122,7 +132,9 @@ export default function NetworkBillingWorkspace() {
           <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6 }}>
             Netzwerkpartner-Plattform
           </span>
-          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>Billing & Settlement</h1>
+          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>
+            {networkPartnerId ? `${networkPartnerName ?? 'Netzwerkpartner'}: Abrechnung` : 'Abrechnung'}
+          </h1>
           <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', maxWidth: 780, lineHeight: 1.6 }}>
             Diese Übersicht trennt Buchungsbasis, Rechnungszeilen und Settlement. KI-Kosten bleiben in Phase 1 bewusst außerhalb dieses Monitors.
           </p>
@@ -131,80 +143,72 @@ export default function NetworkBillingWorkspace() {
             <span>Portalfee: {formatCurrency(headlineTotals.monthlyFee)}</span>
             <span>Netto: {formatCurrency(headlineTotals.monthlyNet)}</span>
           </div>
-          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', color: '#fff', fontWeight: 700 }}>
-            <Link href="/dashboard/network-partners" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Übersicht
-            </Link>
-            <Link href="/dashboard/network-bookings" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Buchungen
-            </Link>
-            <Link href="/dashboard/network-content" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Content & Review
-            </Link>
-            <Link href="/dashboard/network-ai" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              KI
-            </Link>
-          </div>
         </div>
       </section>
 
       <section style={workflowPanelCardStyle}>
         <div style={workflowHeaderStyle}>
-          <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Abrechnungsmonitor</h2>
+          <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>
+            {networkPartnerId ? 'Partner-Abrechnung' : 'Abrechnungsmonitor'}
+          </h2>
           <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Der Monitor zeigt Buchungsbasis, echte Rechnungszeilen und Settlement. Ab Sprint 3 kann der Portal-Partner periodische Billing-Runs manuell auslösen.
+            {networkPartnerId
+              ? 'Die Sicht zeigt Buchungsbasis, Rechnungszeilen und Settlement fuer den ausgewaehlten Netzwerkpartner.'
+              : 'Der Monitor zeigt Buchungsbasis, echte Rechnungszeilen und Settlement. Ab Sprint 3 kann der Portal-Partner periodische Billing-Runs manuell auslösen.'}
           </p>
         </div>
-        <div
-          style={{
-            display: 'grid',
-            gap: 12,
-            padding: 16,
-            borderRadius: 16,
-            border: '1px solid #e2e8f0',
-            background: '#f8fafc',
-          }}
-        >
-          <div style={{ display: 'flex', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
-            <label style={{ display: 'grid', gap: 6, minWidth: 180 }}>
-              <span style={{ fontWeight: 700, color: '#0f172a' }}>Periode</span>
-              <input
-                value={runPeriodKey}
-                onChange={(event) => setRunPeriodKey(event.target.value)}
-                placeholder="YYYY-MM"
+        {!networkPartnerId ? (
+          <div
+            style={{
+              display: 'grid',
+              gap: 12,
+              padding: 16,
+              borderRadius: 16,
+              border: '1px solid #e2e8f0',
+              background: '#f8fafc',
+            }}
+          >
+            <div style={{ display: 'flex', gap: 12, alignItems: 'end', flexWrap: 'wrap' }}>
+              <label style={{ display: 'grid', gap: 6, minWidth: 180 }}>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>Periode</span>
+                <input
+                  value={runPeriodKey}
+                  onChange={(event) => setRunPeriodKey(event.target.value)}
+                  placeholder="YYYY-MM"
+                  style={{
+                    border: '1px solid #cbd5e1',
+                    borderRadius: 12,
+                    padding: '10px 12px',
+                    font: 'inherit',
+                    color: '#0f172a',
+                    background: '#fff',
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void handleRunBilling()}
+                disabled={runLoading}
                 style={{
-                  border: '1px solid #cbd5e1',
-                  borderRadius: 12,
-                  padding: '10px 12px',
+                  border: 'none',
+                  borderRadius: 999,
+                  padding: '11px 18px',
                   font: 'inherit',
-                  color: '#0f172a',
-                  background: '#fff',
+                  fontWeight: 700,
+                  color: '#fff',
+                  background: runLoading ? '#94a3b8' : '#0f172a',
+                  cursor: runLoading ? 'wait' : 'pointer',
                 }}
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => void handleRunBilling()}
-              disabled={runLoading}
-              style={{
-                border: 'none',
-                borderRadius: 999,
-                padding: '11px 18px',
-                font: 'inherit',
-                fontWeight: 700,
-                color: '#fff',
-                background: runLoading ? '#94a3b8' : '#0f172a',
-                cursor: runLoading ? 'wait' : 'pointer',
-              }}
-            >
-              {runLoading ? 'Laeuft...' : 'Abrechnungslauf starten'}
-            </button>
+              >
+                {runLoading ? 'Laeuft...' : 'Abrechnungslauf starten'}
+              </button>
+            </div>
+            <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
+              Format der Periode: <code>YYYY-MM</code>. Der Lauf erzeugt pro abrechenbarer Buchung maximal eine Rechnungszeile und eine Settlement-Zeile fuer die Periode.
+            </p>
+            {runError ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{runError}</p> : null}
           </div>
-          <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Format der Periode: <code>YYYY-MM</code>. Der Lauf erzeugt pro abrechenbarer Buchung maximal eine Rechnungszeile und eine Settlement-Zeile fuer die Periode.
-          </p>
-          {runError ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{runError}</p> : null}
-        </div>
+        ) : null}
         {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
         {loading ? (
           <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>

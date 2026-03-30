@@ -121,7 +121,7 @@ export default function InventoryForm({ areas, placements, onSubmit }: Inventory
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#334155', fontSize: 13, fontWeight: 600 }}>
         <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
-        Inventar sofort aktiv schalten
+        Werbeformat sofort aktiv schalten
       </label>
 
       <button
@@ -139,7 +139,7 @@ export default function InventoryForm({ areas, placements, onSubmit }: Inventory
           opacity: submitting ? 0.65 : 1,
         }}
       >
-        {submitting ? 'Speichert...' : 'Inventar anlegen'}
+        {submitting ? 'Speichert...' : 'Werbeformat anlegen'}
       </button>
     </form>
   );

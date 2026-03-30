@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import ContentForm from '@/components/network-partners/ContentForm';
 import ContentReviewPanel from '@/components/network-partners/ContentReviewPanel';
@@ -49,7 +48,15 @@ function mapAreaLabel(areaId: string, areaName?: string): string {
   return areaName ? `${areaId} ${areaName}` : areaId;
 }
 
-export default function NetworkContentWorkspace() {
+type NetworkContentWorkspaceProps = {
+  networkPartnerId?: string;
+  networkPartnerName?: string | null;
+};
+
+export default function NetworkContentWorkspace({
+  networkPartnerId,
+  networkPartnerName,
+}: NetworkContentWorkspaceProps) {
   const [contentItems, setContentItems] = useState<NetworkContentRecord[]>([]);
   const [bookings, setBookings] = useState<NetworkPartnerBookingRecord[]>([]);
   const [networkPartners, setNetworkPartners] = useState<NetworkPartnerRecord[]>([]);
@@ -59,10 +66,18 @@ export default function NetworkContentWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  async function fetchPageData() {
+  const fetchPageData = useCallback(async () => {
+    const contentUrl = networkPartnerId
+      ? `/api/partner/network-content?network_partner_id=${encodeURIComponent(networkPartnerId)}`
+      : '/api/partner/network-content';
     const [contentResponse, bookingsResponse, partnersResponse, bootstrapResponse] = await Promise.all([
-      fetch('/api/partner/network-content', { method: 'GET', cache: 'no-store' }),
-      fetch('/api/partner/network-bookings', { method: 'GET', cache: 'no-store' }),
+      fetch(contentUrl, { method: 'GET', cache: 'no-store' }),
+      fetch(
+        networkPartnerId
+          ? `/api/partner/network-bookings?network_partner_id=${encodeURIComponent(networkPartnerId)}`
+          : '/api/partner/network-bookings',
+        { method: 'GET', cache: 'no-store' },
+      ),
       fetch('/api/partner/network-partners', { method: 'GET', cache: 'no-store' }),
       fetch('/api/partner/dashboard/bootstrap', { method: 'GET', cache: 'no-store' }),
     ]);
@@ -80,7 +95,7 @@ export default function NetworkContentWorkspace() {
       partnersPayload,
       bootstrapPayload,
     };
-  }
+  }, [networkPartnerId]);
 
   async function applyPageData(preferredContentId?: string | null) {
     setLoading(true);
@@ -191,7 +206,7 @@ export default function NetworkContentWorkspace() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [fetchPageData]);
 
   const selectedContent = useMemo(
     () => contentItems.find((item) => item.id === selectedContentId) ?? null,
@@ -205,24 +220,12 @@ export default function NetworkContentWorkspace() {
           <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6 }}>
             Netzwerkpartner-Plattform
           </span>
-          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>Content & Review</h1>
+          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>
+            {networkPartnerId ? `${networkPartnerName ?? 'Netzwerkpartner'}: Content & Review` : 'Content & Review'}
+          </h1>
           <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', maxWidth: 780, lineHeight: 1.6 }}>
             Netzwerkpartner-Content wird hier an bestehende Buchungen gehängt, fachlich gepflegt und durch den Portal-Partner geprüft.
           </p>
-          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', color: '#fff', fontWeight: 700 }}>
-            <Link href="/dashboard/network-partners" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Übersicht
-            </Link>
-            <Link href="/dashboard/network-inventory" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Inventar
-            </Link>
-            <Link href="/dashboard/network-bookings" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Buchungen
-            </Link>
-            <Link href="/dashboard/network-billing" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Billing
-            </Link>
-          </div>
         </div>
       </section>
 

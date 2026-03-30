@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import BookingForm from '@/components/network-partners/BookingForm';
 import BookingTable from '@/components/network-partners/BookingTable';
@@ -49,7 +48,15 @@ function mapAreaLabel(areaId: string, areaName?: string): string {
   return areaName ? `${areaId} ${areaName}` : areaId;
 }
 
-export default function NetworkBookingsWorkspace() {
+type NetworkBookingsWorkspaceProps = {
+  networkPartnerId?: string;
+  networkPartnerName?: string | null;
+};
+
+export default function NetworkBookingsWorkspace({
+  networkPartnerId,
+  networkPartnerName,
+}: NetworkBookingsWorkspaceProps) {
   const [bookings, setBookings] = useState<NetworkPartnerBookingRecord[]>([]);
   const [networkPartners, setNetworkPartners] = useState<NetworkPartnerRecord[]>([]);
   const [inventory, setInventory] = useState<PartnerAreaInventoryRecord[]>([]);
@@ -59,9 +66,12 @@ export default function NetworkBookingsWorkspace() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  async function fetchPageData() {
+  const fetchPageData = useCallback(async () => {
+    const bookingsUrl = networkPartnerId
+      ? `/api/partner/network-bookings?network_partner_id=${encodeURIComponent(networkPartnerId)}`
+      : '/api/partner/network-bookings';
     const [bookingsResponse, partnersResponse, inventoryResponse, bootstrapResponse] = await Promise.all([
-      fetch('/api/partner/network-bookings', { method: 'GET', cache: 'no-store' }),
+      fetch(bookingsUrl, { method: 'GET', cache: 'no-store' }),
       fetch('/api/partner/network-partners', { method: 'GET', cache: 'no-store' }),
       fetch('/api/partner/network-inventory', { method: 'GET', cache: 'no-store' }),
       fetch('/api/partner/dashboard/bootstrap', { method: 'GET', cache: 'no-store' }),
@@ -80,7 +90,7 @@ export default function NetworkBookingsWorkspace() {
       inventoryPayload,
       bootstrapPayload,
     };
-  }
+  }, [networkPartnerId]);
 
   useEffect(() => {
     let active = true;
@@ -136,7 +146,13 @@ export default function NetworkBookingsWorkspace() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [fetchPageData]);
+
+  const selectableNetworkPartners = useMemo(() => {
+    if (!networkPartnerId) return networkPartners;
+    const filtered = networkPartners.filter((partner) => partner.id === networkPartnerId);
+    return filtered.length > 0 ? filtered : networkPartners;
+  }, [networkPartnerId, networkPartners]);
 
   const activeBookingCount = useMemo(
     () => bookings.filter((booking) => booking.status === 'active').length,
@@ -150,24 +166,14 @@ export default function NetworkBookingsWorkspace() {
           <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6 }}>
             Netzwerkpartner-Plattform
           </span>
-          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>Buchungen</h1>
+          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>
+            {networkPartnerId ? `${networkPartnerName ?? 'Netzwerkpartner'}: Buchungen` : 'Buchungen'}
+          </h1>
           <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', maxWidth: 760, lineHeight: 1.6 }}>
-            Buchungen verbinden Netzwerkpartner, Gebiete, Placements, Preis und KI-Nutzungsrahmen zu einem verkaufbaren Vertragspunkt.
+            Buchungen verbinden Netzwerkpartner, Gebiete, Werbeformate, Preis und KI-Nutzungsrahmen zu einem verkaufbaren Vertragspunkt.
           </p>
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', color: '#fff', fontWeight: 700 }}>
             <span>Aktive Buchungen: {activeBookingCount}</span>
-            <Link href="/dashboard/network-partners" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Übersicht
-            </Link>
-            <Link href="/dashboard/network-inventory" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Inventar
-            </Link>
-            <Link href="/dashboard/network-content" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Content & Review
-            </Link>
-            <Link href="/dashboard/network-billing" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Billing
-            </Link>
           </div>
         </div>
       </section>
@@ -176,13 +182,13 @@ export default function NetworkBookingsWorkspace() {
         <div style={workflowHeaderStyle}>
           <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Neue Buchung anlegen</h2>
           <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Das Formular nutzt nur aktives Inventar. Pflichtsprachen, Portalfee und KI-Modus werden bereits auf Buchungsebene festgeschrieben.
+            Das Formular nutzt nur aktive Werbeformate. Pflichtsprachen, Portalfee und KI-Modus werden bereits auf Buchungsebene festgeschrieben.
           </p>
         </div>
         {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
         {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
         <BookingForm
-          networkPartners={networkPartners}
+          networkPartners={selectableNetworkPartners}
           areas={areas}
           placements={placements}
           inventory={inventory}

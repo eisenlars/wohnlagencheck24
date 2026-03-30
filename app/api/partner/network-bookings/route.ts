@@ -108,13 +108,18 @@ function mapBookingError(error: Error) {
   return { status: 500, error: error.message || "Unexpected error" };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const actor = requirePortalPartnerRole(
       await requireNetworkPartnerActorContext(),
       ["partner_owner", "partner_manager", "partner_billing"],
     );
-    const bookings = await listBookingsByPortalPartner(actor.partnerId);
+    const requestUrl = new URL(request.url);
+    const networkPartnerId = asRequiredText(requestUrl.searchParams.get("network_partner_id"));
+    if (networkPartnerId) {
+      await assertPortalPartnerOwnsNetworkPartner(actor.partnerId, networkPartnerId);
+    }
+    const bookings = await listBookingsByPortalPartner(actor.partnerId, networkPartnerId ?? undefined);
     return NextResponse.json({ ok: true, bookings });
   } catch (error) {
     const mapped = mapBookingError(error as Error);

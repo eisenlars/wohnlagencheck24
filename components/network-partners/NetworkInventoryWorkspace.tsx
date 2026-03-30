@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import InventoryForm from '@/components/network-partners/InventoryForm';
@@ -64,7 +63,7 @@ export default function NetworkInventoryWorkspace() {
         setInventory([]);
         setPlacements([]);
         setAreas([]);
-        setError(String(inventoryPayload?.error ?? 'Inventar konnte nicht geladen werden.'));
+        setError(String(inventoryPayload?.error ?? 'Werbeformate konnten nicht geladen werden.'));
         setLoading(false);
         return;
       }
@@ -99,33 +98,21 @@ export default function NetworkInventoryWorkspace() {
           <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6 }}>
             Netzwerkpartner-Plattform
           </span>
-          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>Inventar pro Gebiet</h1>
+          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>Werbeformate pro Gebiet</h1>
           <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', maxWidth: 760, lineHeight: 1.6 }}>
-            Hier wird festgelegt, welche Placements in welchen Partnergebieten überhaupt verkauft werden dürfen.
+            Hier wird festgelegt, welche Werbeformate in welchen Partnergebieten überhaupt verkauft werden dürfen.
           </p>
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', color: '#fff', fontWeight: 700 }}>
-            <span>Gebiete mit Inventar: {activeAreaCount}</span>
-            <Link href="/dashboard/network-partners" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Übersicht
-            </Link>
-            <Link href="/dashboard/network-bookings" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Buchungen
-            </Link>
-            <Link href="/dashboard/network-content" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Content & Review
-            </Link>
-            <Link href="/dashboard/network-billing" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Billing
-            </Link>
+            <span>Gebiete mit Werbeformaten: {activeAreaCount}</span>
           </div>
         </div>
       </section>
 
       <section style={workflowPanelCardStyle}>
         <div style={workflowHeaderStyle}>
-          <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Inventar anlegen</h2>
+          <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Werbeformat anlegen</h2>
           <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Buchungen sind nur auf aktivem Inventar möglich. Die Platztypen kommen direkt aus dem zentralen Placement-Katalog.
+            Buchungen sind nur auf aktiven Werbeformaten möglich. Die Platztypen kommen direkt aus dem zentralen Placement-Katalog.
           </p>
         </div>
         {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
@@ -143,17 +130,17 @@ export default function NetworkInventoryWorkspace() {
             });
             const payload = (await response.json().catch(() => null)) as { error?: string } | null;
             if (!response.ok) {
-              setError(String(payload?.error ?? 'Inventar konnte nicht angelegt werden.'));
+              setError(String(payload?.error ?? 'Werbeformat konnte nicht angelegt werden.'));
               return;
             }
-            setMessage('Inventar wurde angelegt.');
+            setMessage('Werbeformat wurde angelegt.');
             setLoading(true);
             const { inventoryResponse, inventoryPayload, bootstrapPayload } = await fetchPageData();
             if (!inventoryResponse.ok) {
               setInventory([]);
               setPlacements([]);
               setAreas([]);
-              setError(String(inventoryPayload?.error ?? 'Inventar konnte nicht geladen werden.'));
+              setError(String(inventoryPayload?.error ?? 'Werbeformate konnten nicht geladen werden.'));
               setLoading(false);
               return;
             }
@@ -176,7 +163,7 @@ export default function NetworkInventoryWorkspace() {
 
       <section style={workflowPanelCardStyle}>
         <div style={workflowHeaderStyle}>
-          <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Aktuelles Inventar</h2>
+          <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Aktuelle Werbeformate</h2>
           <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
             Die Tabelle zeigt den aktuellen Verkaufsscope des Portal-Partners über alle zugeordneten Gebiete.
           </p>

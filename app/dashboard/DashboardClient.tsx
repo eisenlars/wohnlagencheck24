@@ -24,6 +24,7 @@ import NetworkContentWorkspace from '@/components/network-partners/NetworkConten
 import NetworkBillingWorkspace from '@/components/network-partners/NetworkBillingWorkspace';
 import NetworkAIWorkspace from '@/components/network-partners/NetworkAIWorkspace';
 import NetworkPartnerManagementWorkspace from '@/components/network-partners/NetworkPartnerManagementWorkspace';
+import type { NetworkPartnerDetailSection } from '@/components/network-partners/NetworkPartnerManagementWorkspace';
 
 type MainTab = 'texts' | 'factors' | 'marketing' | 'local_site' | 'immobilien' | 'referenzen' | 'gesuche' | 'blog' | 'international' | 'settings' | 'network_partners';
 type WelcomeTool = {
@@ -31,6 +32,7 @@ type WelcomeTool = {
   title: string;
   description: string;
   icon: UtilityIconKey;
+  networkPartnerSection?: NetworkPartnerSection;
   comingSoon?: boolean;
 };
 
@@ -80,6 +82,8 @@ type PersistedDashboardState = {
   showWelcome?: boolean;
   settingsSection?: SettingsSection;
   networkPartnerSection?: NetworkPartnerSection;
+  selectedNetworkPartnerId?: string;
+  networkPartnerDetailSection?: NetworkPartnerDetailSection;
 };
 
 type NetworkPartnerSection = 'overview' | 'inventory' | 'bookings' | 'content' | 'billing' | 'ai';
@@ -88,6 +92,8 @@ type DashboardClientProps = {
   initialMainTab?: MainTab;
   initialShowWelcome?: boolean;
   initialNetworkPartnerSection?: NetworkPartnerSection;
+  initialSelectedNetworkPartnerId?: string | null;
+  initialNetworkPartnerDetailSection?: NetworkPartnerDetailSection;
 };
 
 type VisibilityMode = 'partner_wide' | 'strict_local';
@@ -134,6 +140,7 @@ type UtilityToolButton = {
   label: string;
   icon: UtilityIconKey;
   tab?: MainTab;
+  networkPartnerSection?: NetworkPartnerSection;
   disabled?: boolean;
 };
 
@@ -170,6 +177,11 @@ function isSettingsSection(value: unknown): value is SettingsSection {
 function isNetworkPartnerSection(value: unknown): value is NetworkPartnerSection {
   return typeof value === 'string'
     && ['overview', 'inventory', 'bookings', 'content', 'billing', 'ai'].includes(value);
+}
+
+function isNetworkPartnerDetailSection(value: unknown): value is NetworkPartnerDetailSection {
+  return typeof value === 'string'
+    && ['profile', 'bookings', 'content', 'billing'].includes(value);
 }
 
 function formatMandatoryLabel(key: string): string {
@@ -432,6 +444,8 @@ export default function DashboardClient({
   initialMainTab,
   initialShowWelcome,
   initialNetworkPartnerSection,
+  initialSelectedNetworkPartnerId,
+  initialNetworkPartnerDetailSection,
 }: DashboardClientProps = {}) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
@@ -479,6 +493,8 @@ export default function DashboardClient({
   // Werkzeug-Modus umschalten
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('factors');
   const [networkPartnerSection, setNetworkPartnerSection] = useState<NetworkPartnerSection>(initialNetworkPartnerSection ?? 'overview');
+  const [selectedNetworkPartnerId, setSelectedNetworkPartnerId] = useState<string | null>(initialSelectedNetworkPartnerId ?? null);
+  const [networkPartnerDetailSection, setNetworkPartnerDetailSection] = useState<NetworkPartnerDetailSection>(initialNetworkPartnerDetailSection ?? 'profile');
 
   const headerConfig = useMemo(() => {
     switch (activeMainTab) {
@@ -546,9 +562,49 @@ export default function DashboardClient({
           showDistrictSelector: false,
         };
       case 'network_partners':
+        if (networkPartnerSection === 'inventory') {
+          return {
+            title: 'Werbeformate',
+            description: 'Werbeformate und Verkaufsscope pro Gebiet global für alle Netzwerkpartner steuern.',
+            isRegionBased: false,
+            showDistrictSelector: false,
+          };
+        }
+        if (networkPartnerSection === 'bookings') {
+          return {
+            title: 'Buchungen',
+            description: 'Alle Netzwerkpartner-Buchungen portalweit steuern und operativ überwachen.',
+            isRegionBased: false,
+            showDistrictSelector: false,
+          };
+        }
+        if (networkPartnerSection === 'content') {
+          return {
+            title: 'Content & Review',
+            description: 'Content-Fälle und Freigaben über alle Netzwerkpartner hinweg bearbeiten.',
+            isRegionBased: false,
+            showDistrictSelector: false,
+          };
+        }
+        if (networkPartnerSection === 'billing') {
+          return {
+            title: 'Abrechnung',
+            description: 'Rechnungsbasis, Settlement und Billing-Runs für das Netzwerkpartner-Geschäft überwachen.',
+            isRegionBased: false,
+            showDistrictSelector: false,
+          };
+        }
+        if (networkPartnerSection === 'ai') {
+          return {
+            title: 'KI-Nutzung',
+            description: 'Creditstand, Budgetlage und Usage über das Netzwerkpartner-Geschäft hinweg überwachen.',
+            isRegionBased: false,
+            showDistrictSelector: false,
+          };
+        }
         return {
           title: 'Netzwerkpartner Verwaltung',
-          description: 'Regionale Partner, Zugänge, Inventar, Buchungen und Anbindungen verwalten.',
+          description: 'Regionale Partner im Master-Detail-Modell mit Zugängen, Buchungen, Content und Abrechnung verwalten.',
           isRegionBased: false,
           showDistrictSelector: false,
         };
@@ -561,7 +617,7 @@ export default function DashboardClient({
           showDistrictSelector: true,
         };
     }
-  }, [activeMainTab]);
+  }, [activeMainTab, networkPartnerSection]);
 
   useEffect(() => {
     async function loadData() {
@@ -597,6 +653,10 @@ export default function DashboardClient({
           const restoredNetworkPartnerSection = isNetworkPartnerSection(persisted?.networkPartnerSection)
             ? persisted.networkPartnerSection
             : 'overview';
+          const restoredNetworkPartnerDetailSection = isNetworkPartnerDetailSection(persisted?.networkPartnerDetailSection)
+            ? persisted.networkPartnerDetailSection
+            : 'profile';
+          const restoredSelectedNetworkPartnerId = String(persisted?.selectedNetworkPartnerId ?? '').trim() || null;
           const computedTab: MainTab = (!hasActiveAreasLocal && restoredTab && restoredTab !== 'texts')
             ? 'texts'
             : (restoredTab ?? 'factors');
@@ -614,6 +674,8 @@ export default function DashboardClient({
           setActiveMainTab(nextTab);
           setSettingsSection(restoredSettingsSection);
           setNetworkPartnerSection(initialNetworkPartnerSection ?? restoredNetworkPartnerSection);
+          setSelectedNetworkPartnerId(initialSelectedNetworkPartnerId ?? restoredSelectedNetworkPartnerId);
+          setNetworkPartnerDetailSection(initialNetworkPartnerDetailSection ?? restoredNetworkPartnerDetailSection);
           setShowWelcome(nextShowWelcome);
           if (bootstrapProgressAreaId && bootstrapProgressAreaId === nextSelected.area_id) {
             const completed = Number(bootstrapProgress?.completed ?? 0);
@@ -637,7 +699,14 @@ export default function DashboardClient({
       });
     }
     void loadData();
-  }, [supabase, initialMainTab, initialNetworkPartnerSection, initialShowWelcome]);
+  }, [
+    supabase,
+    initialMainTab,
+    initialNetworkPartnerSection,
+    initialNetworkPartnerDetailSection,
+    initialSelectedNetworkPartnerId,
+    initialShowWelcome,
+  ]);
 
   const featuresByCode = useMemo(() => {
     const map = new Map<string, PartnerFeatureRow>();
@@ -768,7 +837,12 @@ export default function DashboardClient({
       { id: 'forecast', label: 'Prognosemonitor (Bald verfügbar)', icon: 'forecast', disabled: true },
     ],
     [
-      { id: 'partner_ads', label: 'Netzwerkpartner Verwaltung', icon: 'partner_ads', tab: 'network_partners' },
+      { id: 'partner_ads', label: 'Netzwerkpartner Verwaltung', icon: 'partner_ads', tab: 'network_partners', networkPartnerSection: 'overview' },
+      { id: 'partner_immobilien', label: 'Werbeformate', icon: 'partner_immobilien', tab: 'network_partners', networkPartnerSection: 'inventory' },
+      { id: 'partner_gesuche', label: 'Buchungen', icon: 'partner_gesuche', tab: 'network_partners', networkPartnerSection: 'bookings' },
+      { id: 'partner_content', label: 'Content & Review', icon: 'texts', tab: 'network_partners', networkPartnerSection: 'content' },
+      { id: 'partner_billing', label: 'Abrechnung', icon: 'marketing', tab: 'network_partners', networkPartnerSection: 'billing' },
+      { id: 'partner_ai', label: 'KI-Nutzung', icon: 'forecast', tab: 'network_partners', networkPartnerSection: 'ai' },
     ],
   ];
 
@@ -789,11 +863,11 @@ export default function DashboardClient({
     router.push('/partner/login');
   };
 
-  const handleToolSelect = (tab: MainTab) => {
+  const handleToolSelect = (tab: MainTab, nextNetworkPartnerSection?: NetworkPartnerSection) => {
     if (!canUseTool()) return;
     if (!isTabEnabled(tab)) return;
     if (tab === 'network_partners') {
-      setNetworkPartnerSection('overview');
+      setNetworkPartnerSection(nextNetworkPartnerSection ?? 'overview');
     }
     setActiveMainTab(tab);
     setShowWelcome(false);
@@ -905,9 +979,20 @@ export default function DashboardClient({
       showWelcome,
       settingsSection,
       networkPartnerSection,
+      selectedNetworkPartnerId,
+      networkPartnerDetailSection,
     };
     writeSessionViewState(DASHBOARD_UI_STATE_KEY, payload);
-  }, [activeMainTab, selectedConfig?.area_id, settingsSection, showWelcome, networkPartnerSection, loading]);
+  }, [
+    activeMainTab,
+    selectedConfig?.area_id,
+    settingsSection,
+    showWelcome,
+    networkPartnerSection,
+    selectedNetworkPartnerId,
+    networkPartnerDetailSection,
+    loading,
+  ]);
 
   const activeConfigs = configs.filter((c) => Boolean(c.is_active));
   const inactiveConfigs = configs.filter((c) => !Boolean(c.is_active));
@@ -1453,7 +1538,13 @@ export default function DashboardClient({
           {utilityToolGroups.map((group, groupIndex) => (
             <div key={`utility-group-${groupIndex}`} style={toolGroupStyle}>
               {group.map((item) => {
-                const active = item.tab ? activeMainTab === item.tab : false;
+                const active = item.tab
+                  ? (
+                    item.tab === 'network_partners'
+                      ? activeMainTab === 'network_partners' && networkPartnerSection === (item.networkPartnerSection ?? 'overview')
+                      : activeMainTab === item.tab
+                  )
+                  : false;
                 const hovered = hoveredUtilityToolId === item.id;
                 const disabled = Boolean(item.disabled);
                 return (
@@ -1463,7 +1554,7 @@ export default function DashboardClient({
                     onClick={() => {
                       if (disabled) return;
                       if (!item.tab) return;
-                      handleToolSelect(item.tab);
+                      handleToolSelect(item.tab, item.networkPartnerSection);
                     }}
                     onMouseEnter={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
                     onFocus={(event) => updateHoveredUtilityTool(item.id, event.currentTarget)}
@@ -1787,7 +1878,7 @@ export default function DashboardClient({
                     {group.tools.map((tool) => (
                       <button
                         key={`${tool.key}:${tool.title}`}
-                        onClick={() => handleToolSelect(tool.key)}
+                        onClick={() => handleToolSelect(tool.key, tool.networkPartnerSection)}
                         disabled={Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key)}
                         style={welcomeCardStyle(Boolean(tool.comingSoon) || !canUseTool() || !isTabEnabled(tool.key))}
                       >
@@ -1823,46 +1914,6 @@ export default function DashboardClient({
               </div>
             </header>
             <div style={{ display: 'grid', gap: 18 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 10,
-                  flexWrap: 'wrap',
-                  padding: '14px 16px',
-                  borderRadius: 18,
-                  border: '1px solid #dbeafe',
-                  background: '#eff6ff',
-                }}
-              >
-                {([
-                  ['overview', 'Übersicht', '/dashboard/network-partners'],
-                  ['inventory', 'Inventar', '/dashboard/network-inventory'],
-                  ['bookings', 'Buchungen', '/dashboard/network-bookings'],
-                  ['content', 'Content & Review', '/dashboard/network-content'],
-                  ['billing', 'Billing', '/dashboard/network-billing'],
-                  ['ai', 'KI', '/dashboard/network-ai'],
-                ] as const).map(([sectionKey, label, href]) => {
-                  const active = networkPartnerSection === sectionKey;
-                  return (
-                    <Link
-                      key={sectionKey}
-                      href={href}
-                      style={{
-                        borderRadius: 999,
-                        padding: '10px 14px',
-                        textDecoration: 'none',
-                        fontWeight: 700,
-                        color: active ? '#fff' : '#1d4ed8',
-                        background: active ? '#1d4ed8' : '#fff',
-                        border: active ? '1px solid #1d4ed8' : '1px solid #bfdbfe',
-                      }}
-                    >
-                      {label}
-                    </Link>
-                  );
-                })}
-              </div>
-
               {networkPartnerSection === 'inventory' ? (
                 <NetworkInventoryWorkspace />
               ) : networkPartnerSection === 'bookings' ? (
@@ -1874,7 +1925,12 @@ export default function DashboardClient({
               ) : networkPartnerSection === 'ai' ? (
                 <NetworkAIWorkspace />
               ) : (
-                <NetworkPartnerManagementWorkspace />
+                <NetworkPartnerManagementWorkspace
+                  initialSelectedPartnerId={selectedNetworkPartnerId}
+                  initialDetailSection={networkPartnerDetailSection}
+                  onSelectedPartnerIdChange={setSelectedNetworkPartnerId}
+                  onDetailSectionChange={setNetworkPartnerDetailSection}
+                />
               )}
             </div>
           </div>
@@ -2967,8 +3023,44 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
         {
           key: 'network_partners',
           title: 'Netzwerkpartner Verwaltung',
-          description: 'Regionale Partner, Zugänge, Buchungen, Anbindungen und Abrechnung in einer operativen Arbeitsfläche verwalten.',
+          description: 'Regionale Partner im Master-Detail-Arbeitsbereich mit Zugängen, Buchungen und Abrechnung verwalten.',
           icon: 'partner_ads',
+          networkPartnerSection: 'overview',
+        },
+        {
+          key: 'network_partners',
+          title: 'Werbeformate',
+          description: 'Verkaufbare Werbeformate global pro Gebiet steuern.',
+          icon: 'partner_immobilien',
+          networkPartnerSection: 'inventory',
+        },
+        {
+          key: 'network_partners',
+          title: 'Buchungen',
+          description: 'Alle Netzwerkpartner-Buchungen im Gesamtportfolio überwachen.',
+          icon: 'partner_gesuche',
+          networkPartnerSection: 'bookings',
+        },
+        {
+          key: 'network_partners',
+          title: 'Content & Review',
+          description: 'Netzwerkpartner-Content und Freigaben portalweit bearbeiten.',
+          icon: 'texts',
+          networkPartnerSection: 'content',
+        },
+        {
+          key: 'network_partners',
+          title: 'Abrechnung',
+          description: 'Rechnungsbasis, Settlement und Billing-Runs für das Netzwerkpartner-Geschäft prüfen.',
+          icon: 'marketing',
+          networkPartnerSection: 'billing',
+        },
+        {
+          key: 'network_partners',
+          title: 'KI-Nutzung',
+          description: 'Usage, Credits und Budgetlage über alle Netzwerkpartner hinweg überwachen.',
+          icon: 'forecast',
+          networkPartnerSection: 'ai',
         },
       ],
     },

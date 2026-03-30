@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { requireNetworkPartnerActorContext } from "@/lib/network-partners/auth";
-import { requirePortalPartnerRole } from "@/lib/network-partners/roles";
+import {
+  assertPortalPartnerOwnsNetworkPartner,
+  requirePortalPartnerRole,
+} from "@/lib/network-partners/roles";
 import {
   createContent,
   listContentByPortalPartner,
@@ -43,13 +46,18 @@ function mapContentError(error: Error) {
   return { status: 500, error: error.message || "Unexpected error" };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const actor = requirePortalPartnerRole(
       await requireNetworkPartnerActorContext(),
       ["partner_owner", "partner_manager"],
     );
-    const contentItems = await listContentByPortalPartner(actor.partnerId);
+    const { searchParams } = new URL(request.url);
+    const networkPartnerId = asRequiredText(searchParams.get("network_partner_id"));
+    if (networkPartnerId) {
+      await assertPortalPartnerOwnsNetworkPartner(actor.partnerId, networkPartnerId);
+    }
+    const contentItems = await listContentByPortalPartner(actor.partnerId, networkPartnerId ?? undefined);
     return NextResponse.json({ ok: true, content_items: contentItems });
   } catch (error) {
     const mapped = mapContentError(error as Error);

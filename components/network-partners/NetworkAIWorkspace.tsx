@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import AIBudgetWarnings from '@/components/network-partners/AIBudgetWarnings';
@@ -145,22 +144,13 @@ export default function NetworkAIWorkspace() {
           <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6 }}>
             Netzwerkpartner-Plattform
           </span>
-          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>KI-Governance</h1>
+          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>KI-Nutzung</h1>
           <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', maxWidth: 820, lineHeight: 1.6 }}>
             Dieser Monitor zeigt Creditstand, Usage-Events und Budgetlage für Portal-Partner. Er ist die operative Steuerzentrale vor der tieferen Einbindung in bestehende KI-Aktionspfade.
           </p>
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', color: '#fff', fontWeight: 700 }}>
             <span>Usage Kosten: {formatCurrency(usageTotals.cost)}</span>
             <span>Credit Delta: {formatCurrency(usageTotals.delta)}</span>
-            <Link href="/dashboard/network-content" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Content & Review
-            </Link>
-            <Link href="/dashboard/network-billing" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Billing
-            </Link>
-            <Link href="/dashboard/network-partners" style={{ color: '#fff', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-              Übersicht
-            </Link>
           </div>
         </div>
       </section>
