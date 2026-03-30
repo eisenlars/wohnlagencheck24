@@ -8911,85 +8911,18 @@ export default function AdminClient() {
               || !isKreisAreaOption(marketExplanationStandardSelection)
             ) ? (
               <div style={{ marginTop: 14, border: "1px solid #e2e8f0", borderRadius: 10, padding: 14, background: "#f8fafc", ...mutedStyle }}>
-                Bitte links einen Kreis auswählen, damit Basistext, Override und Übersetzungen geladen werden können.
+                {systemPartnerKreisOptions.length > 0
+                  ? "Defaultpartner-Texte werden geladen."
+                  : "Es ist aktuell kein Kreis dem Defaultpartner zugeordnet."}
               </div>
             ) : (
             <div
-              style={marketExplanationStandardScope !== "bundesland"
-                ? {
-                    marginTop: 14,
-                    display: "grid",
-                    gridTemplateColumns: "280px minmax(0, 1fr)",
-                    gap: 16,
-                    alignItems: "start",
-                  }
-                : {
-                    marginTop: 14,
-                    display: "grid",
-                    gap: 14,
-                  }}
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gap: 14,
+              }}
             >
-              {marketExplanationStandardScope !== "bundesland" ? (
-                <aside
-                  style={{
-                    border: "1px solid #dbe4ee",
-                    borderRadius: 10,
-                    background: "#f8fafc",
-                    padding: 10,
-                    position: "sticky",
-                    top: 16,
-                  }}
-                >
-                  <div style={{ display: "grid", gap: 8, maxHeight: "70vh", overflowY: "auto" }}>
-                    {systemPartnerKreisOptions.map((item) => {
-                      const active = marketExplanationStandardSelection?.id === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          style={{
-                            textAlign: "left",
-                            border: active ? "1px solid #0f766e" : "1px solid #dbe4ee",
-                            background: active ? "#ecfeff" : "#fff",
-                            color: "#0f172a",
-                            borderRadius: 10,
-                            padding: "10px 12px",
-                            cursor: "pointer",
-                            display: "grid",
-                            gap: 4,
-                          }}
-                          onClick={() => {
-                            setMarketExplanationStandardScope("kreis");
-                            setMarketExplanationStandardSelection(item);
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
-                            <strong style={{ fontSize: 14 }}>{item.name ?? item.id}</strong>
-                            <span
-                              style={{
-                                fontSize: 11,
-                                fontWeight: 700,
-                                letterSpacing: 0.3,
-                                textTransform: "uppercase",
-                                borderRadius: 999,
-                                padding: "3px 8px",
-                                background: "#dbeafe",
-                                color: "#1d4ed8",
-                              }}
-                            >
-                              Kreis
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 12, color: "#64748b" }}>
-                            {item.id}
-                            {item.slug ? ` · ${item.slug}` : ""}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </aside>
-              ) : null}
               <div style={{ display: "grid", gap: 14 }}>
               <div style={marketExplanationThemeTabBarStyle}>
                 {marketExplanationVisibleTabs.map((tab) => (
