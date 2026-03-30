@@ -181,7 +181,7 @@ function isNetworkPartnerSection(value: unknown): value is NetworkPartnerSection
 
 function isNetworkPartnerDetailSection(value: unknown): value is NetworkPartnerDetailSection {
   return typeof value === 'string'
-    && ['profile', 'bookings', 'content', 'billing'].includes(value);
+    && ['profile', 'rights', 'bookings', 'content', 'billing'].includes(value);
 }
 
 function formatMandatoryLabel(key: string): string {

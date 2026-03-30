@@ -6,6 +6,7 @@ import NetworkBookingsWorkspace from '@/components/network-partners/NetworkBooki
 import NetworkContentWorkspace from '@/components/network-partners/NetworkContentWorkspace';
 import NetworkBillingWorkspace from '@/components/network-partners/NetworkBillingWorkspace';
 import NetworkPartnerAccessPanel from '@/components/network-partners/NetworkPartnerAccessPanel';
+import NetworkPartnerRightsPanel from '@/components/network-partners/NetworkPartnerRightsPanel';
 import NetworkPartnerForm from '@/components/network-partners/NetworkPartnerForm';
 import type { NetworkPartnerRecord } from '@/lib/network-partners/types';
 import {
@@ -19,7 +20,7 @@ type NetworkPartnerListPayload = {
   error?: string;
 };
 
-export type NetworkPartnerDetailSection = 'profile' | 'bookings' | 'content' | 'billing';
+export type NetworkPartnerDetailSection = 'profile' | 'rights' | 'bookings' | 'content' | 'billing';
 
 type NetworkPartnerManagementWorkspaceProps = {
   initialSelectedPartnerId?: string | null;
@@ -290,8 +291,9 @@ export default function NetworkPartnerManagementWorkspace({
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    {([
+                      {([
                       ['profile', 'Stammdaten & Zugang'],
+                      ['rights', 'Rechte'],
                       ['bookings', 'Buchungen'],
                       ['content', 'Content & Review'],
                       ['billing', 'Abrechnung'],
@@ -364,6 +366,12 @@ export default function NetworkPartnerManagementWorkspace({
                       />
                     </div>
                   </div>
+                </section>
+              ) : null}
+
+              {detailSection === 'rights' ? (
+                <section style={workflowPanelCardStyle}>
+                  <NetworkPartnerRightsPanel networkPartnerId={selectedPartner.id} />
                 </section>
               ) : null}
 

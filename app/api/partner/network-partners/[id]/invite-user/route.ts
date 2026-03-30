@@ -51,7 +51,7 @@ export async function POST(
     }
 
     const body = (await req.json().catch(() => ({}))) as InviteBody;
-    const role = normalizeRole(body.role) ?? "network_owner";
+    const requestedRole = normalizeRole(body.role);
     const admin = createAdminClient();
     const networkPartner = await getNetworkPartnerByIdForPortalPartner(networkPartnerId, actor.partnerId);
     if (!networkPartner) {
@@ -81,8 +81,7 @@ export async function POST(
         portal_partner_id: actor.partnerId,
         network_partner_id: networkPartnerId,
         auth_user_id: providedAuthUserId,
-        role,
-        is_primary: body.is_primary === true,
+        role: requestedRole ?? existingUser.role,
       });
 
       const delivery = await generateNetworkPartnerAccessLinkForExistingUser({
@@ -117,8 +116,7 @@ export async function POST(
         portal_partner_id: actor.partnerId,
         network_partner_id: networkPartnerId,
         auth_user_id: authUserId,
-        role,
-        is_primary: body.is_primary === true,
+        role: requestedRole ?? "network_owner",
       });
     }
 
