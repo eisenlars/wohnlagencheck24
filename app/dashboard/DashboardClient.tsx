@@ -979,7 +979,7 @@ export default function DashboardClient({
       showWelcome,
       settingsSection,
       networkPartnerSection,
-      selectedNetworkPartnerId,
+      selectedNetworkPartnerId: selectedNetworkPartnerId ?? undefined,
       networkPartnerDetailSection,
     };
     writeSessionViewState(DASHBOARD_UI_STATE_KEY, payload);
