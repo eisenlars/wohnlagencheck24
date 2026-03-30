@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { NetworkPartnerRole, NetworkPartnerUserRecord } from '@/lib/network-partners/types';
 
