@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import ContentEditor from '@/components/network-partners/self-service/ContentEditor';
 import ContentList from '@/components/network-partners/self-service/ContentList';
 import NetworkPartnerShell from '@/components/network-partners/self-service/NetworkPartnerShell';
+import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import type {
   NetworkContentRecord,
   NetworkPartnerBookingRecord,
@@ -33,6 +34,8 @@ export default function NetworkPartnerContentPage() {
       fetch('/api/network-partner/content', { method: 'GET', cache: 'no-store' }),
       fetch('/api/network-partner/bookings', { method: 'GET', cache: 'no-store' }),
     ]);
+    if (redirectIfUnauthorizedResponse(contentResponse, 'network_partner')) return null;
+    if (redirectIfUnauthorizedResponse(bookingsResponse, 'network_partner')) return null;
     const contentPayload = (await contentResponse.json().catch(() => null)) as ContentPayload | null;
     const bookingsPayload = (await bookingsResponse.json().catch(() => null)) as BookingsPayload | null;
     return { contentResponse, bookingsResponse, contentPayload, bookingsPayload };
@@ -43,7 +46,9 @@ export default function NetworkPartnerContentPage() {
     async function load() {
       setLoading(true);
       setError(null);
-      const { contentResponse, bookingsResponse, contentPayload, bookingsPayload } = await refresh();
+      const result = await refresh();
+      if (!result) return;
+      const { contentResponse, bookingsResponse, contentPayload, bookingsPayload } = result;
       if (!active) return;
       if (!contentResponse.ok || !bookingsResponse.ok) {
         setContentItems([]);
@@ -94,7 +99,9 @@ export default function NetworkPartnerContentPage() {
                 return;
               }
               setMessage('Content wurde angelegt.');
-              const { contentResponse, bookingsResponse, contentPayload, bookingsPayload } = await refresh();
+              const result = await refresh();
+              if (!result) return;
+              const { contentResponse, bookingsResponse, contentPayload, bookingsPayload } = result;
               if (!contentResponse.ok || !bookingsResponse.ok) return;
               setContentItems(Array.isArray(contentPayload?.content_items) ? contentPayload.content_items : []);
               setBookings(Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : []);

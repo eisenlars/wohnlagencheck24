@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
+import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import FactorForm, { type FactorFormHandle } from './FactorForm';
 import TextEditorForm from './TextEditorForm';
 import OffersManager from './OffersManager';
@@ -628,6 +629,9 @@ export default function DashboardClient({
         : '/api/partner/dashboard/bootstrap';
 
       const res = await fetch(bootstrapUrl, { method: 'GET', cache: 'no-store' });
+      if (redirectIfUnauthorizedResponse(res, 'partner')) {
+        return;
+      }
       const payload = await res.json().catch(() => null) as DashboardBootstrapPayload | null;
       if (!res.ok) {
         throw new Error(String(payload && 'error' in payload ? (payload as { error?: unknown }).error ?? 'Dashboard konnte nicht geladen werden.' : 'Dashboard konnte nicht geladen werden.'));

@@ -7,6 +7,7 @@ import ContentEditor from '@/components/network-partners/self-service/ContentEdi
 import MediaManager from '@/components/network-partners/self-service/MediaManager';
 import NetworkPartnerShell from '@/components/network-partners/self-service/NetworkPartnerShell';
 import TranslationEditor from '@/components/network-partners/self-service/TranslationEditor';
+import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import type {
   NetworkContentRecord,
   NetworkPartnerBookingRecord,
@@ -47,6 +48,8 @@ export default function NetworkPartnerContentDetailPage({ params }: NetworkPartn
         fetch(`/api/network-partner/content/${encodeURIComponent(contentId)}`, { method: 'GET', cache: 'no-store' }),
         fetch('/api/network-partner/bookings', { method: 'GET', cache: 'no-store' }),
       ]);
+      if (redirectIfUnauthorizedResponse(contentResponse, 'network_partner')) return;
+      if (redirectIfUnauthorizedResponse(bookingsResponse, 'network_partner')) return;
       const contentPayload = (await contentResponse.json().catch(() => null)) as ContentPayload | null;
       const bookingsPayload = (await bookingsResponse.json().catch(() => null)) as BookingsPayload | null;
       if (!active) return;
@@ -97,6 +100,7 @@ export default function NetworkPartnerContentDetailPage({ params }: NetworkPartn
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(values),
                 });
+                if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
                 const payload = (await response.json().catch(() => null)) as { error?: string; content_item?: NetworkContentRecord } | null;
                 if (!response.ok) {
                   setError(String(payload?.error ?? 'Content konnte nicht gespeichert werden.'));
@@ -146,6 +150,7 @@ export default function NetworkPartnerContentDetailPage({ params }: NetworkPartn
                       review_note: reviewNote.trim() ? reviewNote.trim() : null,
                     }),
                   });
+                  if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
                   const payload = (await response.json().catch(() => null)) as { error?: string; content_item?: NetworkContentRecord } | null;
                   if (!response.ok) {
                     setError(String(payload?.error ?? 'Review-Einreichung konnte nicht ausgeführt werden.'));

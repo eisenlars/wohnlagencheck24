@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import type {
   NetworkContentMediaKind,
   NetworkContentMediaRecord,
@@ -32,6 +33,7 @@ export default function MediaManager({ contentItemId }: MediaManagerProps) {
       setLoading(true);
       setError(null);
       const response = await fetch(`/api/network-partner/content/${encodeURIComponent(contentItemId)}/media`, { method: 'GET', cache: 'no-store' });
+      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
       const payload = (await response.json().catch(() => null)) as MediaPayload | null;
       if (!active) return;
       if (!response.ok) {
@@ -92,6 +94,7 @@ export default function MediaManager({ contentItemId }: MediaManagerProps) {
                 sort_order: Number(sortOrder),
               }),
             });
+            if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
             const payload = (await response.json().catch(() => null)) as MediaPayload | null;
             if (!response.ok) {
               setError(String(payload?.error ?? 'Medium konnte nicht gespeichert werden.'));
@@ -142,6 +145,7 @@ export default function MediaManager({ contentItemId }: MediaManagerProps) {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ media_id: item.id }),
                           });
+                          if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
                           const payload = (await response.json().catch(() => null)) as MediaPayload | null;
                           if (!response.ok) {
                             setError(String(payload?.error ?? 'Medium konnte nicht gelöscht werden.'));

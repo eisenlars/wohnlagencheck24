@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import BookingList from '@/components/network-partners/self-service/BookingList';
 import NetworkPartnerShell from '@/components/network-partners/self-service/NetworkPartnerShell';
+import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import type { NetworkPartnerBookingRecord } from '@/lib/network-partners/types';
 
 type BookingsPayload = {
@@ -22,6 +23,7 @@ export default function NetworkPartnerBookingsPage() {
       setLoading(true);
       setError(null);
       const response = await fetch('/api/network-partner/bookings', { method: 'GET', cache: 'no-store' });
+      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
       const payload = (await response.json().catch(() => null)) as BookingsPayload | null;
       if (!active) return;
       if (!response.ok) {

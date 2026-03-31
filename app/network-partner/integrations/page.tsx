@@ -10,6 +10,7 @@ import IntegrationSyncPanel from '@/components/network-partners/self-service/Int
 import SyncRunTable from '@/components/network-partners/self-service/SyncRunTable';
 import IntegrationTestPanel from '@/components/network-partners/self-service/IntegrationTestPanel';
 import NetworkPartnerShell from '@/components/network-partners/self-service/NetworkPartnerShell';
+import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import type {
   NetworkPartnerIntegrationSyncRunRecord,
   NetworkPartnerPreviewSyncResult,
@@ -120,6 +121,8 @@ export default function NetworkPartnerIntegrationsPage() {
       fetch('/api/network-partner/me', { method: 'GET', cache: 'no-store' }),
       fetch('/api/network-partner/integrations', { method: 'GET', cache: 'no-store' }),
     ]);
+    if (redirectIfUnauthorizedResponse(meResponse, 'network_partner')) return null;
+    if (redirectIfUnauthorizedResponse(integrationsResponse, 'network_partner')) return null;
     const mePayload = (await meResponse.json().catch(() => null)) as MePayload | null;
     const integrationsPayload = (await integrationsResponse.json().catch(() => null)) as IntegrationsPayload | null;
     return { meResponse, integrationsResponse, mePayload, integrationsPayload };
@@ -130,7 +133,9 @@ export default function NetworkPartnerIntegrationsPage() {
     async function load() {
       setLoading(true);
       setError(null);
-      const { meResponse, integrationsResponse, mePayload, integrationsPayload } = await loadData();
+      const result = await loadData();
+      if (!result) return;
+      const { meResponse, integrationsResponse, mePayload, integrationsPayload } = result;
       if (!active) return;
       if (!meResponse.ok || !integrationsResponse.ok) {
         setNetworkPartner(null);
@@ -162,7 +167,9 @@ export default function NetworkPartnerIntegrationsPage() {
   const canManage = role === 'network_owner' || role === 'network_editor';
 
   async function reloadIntegrations(nextSelectedId?: string | null) {
-    const { meResponse, integrationsResponse, mePayload, integrationsPayload } = await loadData();
+    const result = await loadData();
+    if (!result) return;
+    const { meResponse, integrationsResponse, mePayload, integrationsPayload } = result;
     if (!meResponse.ok || !integrationsResponse.ok) {
       setError(String(mePayload?.error ?? integrationsPayload?.error ?? 'Integrationen konnten nicht geladen werden.'));
       return;
@@ -185,6 +192,7 @@ export default function NetworkPartnerIntegrationsPage() {
         `/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`,
         { method: 'GET', cache: 'no-store' },
       );
+      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
       const payload = (await response.json().catch(() => null)) as RunsPayload | null;
       if (!active) return;
       if (!response.ok) {
@@ -236,6 +244,7 @@ export default function NetworkPartnerIntegrationsPage() {
                   settings: values.settings,
                 }),
               });
+              if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
               const payload = (await response.json().catch(() => null)) as { integration?: IntegrationView; error?: string } | null;
               if (!response.ok) {
                 setError(String(payload?.error ?? 'Integration konnte nicht angelegt werden.'));
@@ -270,6 +279,7 @@ export default function NetworkPartnerIntegrationsPage() {
               const response = await fetch(`/api/network-partner/integrations/${encodeURIComponent(integrationId)}`, {
                 method: 'DELETE',
               });
+              if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
               const payload = (await response.json().catch(() => null)) as ActionErrorPayload;
               if (!response.ok) {
                 setError(String(payload?.error ?? 'Integration konnte nicht gelöscht werden.'));
@@ -309,6 +319,7 @@ export default function NetworkPartnerIntegrationsPage() {
                         settings: values.settings,
                       }),
                     });
+                    if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
                     const payload = (await response.json().catch(() => null)) as { error?: string } | null;
                     if (!response.ok) {
                       setError(String(payload?.error ?? 'Integration konnte nicht gespeichert werden.'));
@@ -332,6 +343,7 @@ export default function NetworkPartnerIntegrationsPage() {
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(values),
                     });
+                    if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
                     const payload = (await response.json().catch(() => null)) as ActionErrorPayload;
                     if (!response.ok) {
                       setError(String(payload?.error ?? 'Secrets konnten nicht gespeichert werden.'));
@@ -359,6 +371,7 @@ export default function NetworkPartnerIntegrationsPage() {
                       const response = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/test`, {
                         method: 'POST',
                       });
+                      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
                       const payload = (await response.json().catch(() => null)) as TestPayload | null;
                       if (!response.ok) {
                         setError(String(payload?.error ?? 'Verbindungstest fehlgeschlagen.'));
@@ -368,6 +381,7 @@ export default function NetworkPartnerIntegrationsPage() {
                       setTestDiagnostics(payload?.diagnostics ?? null);
                       await reloadIntegrations(selectedIntegration.id);
                       const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
+                      if (redirectIfUnauthorizedResponse(runsResponse, 'network_partner')) return;
                       const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
                       if (runsResponse.ok) {
                         setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
@@ -395,6 +409,7 @@ export default function NetworkPartnerIntegrationsPage() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(values),
                       });
+                      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
                       const payload = (await response.json().catch(() => null)) as PreviewPayload | null;
                       if (!response.ok) {
                         setError(String(payload?.error ?? 'Preview-Sync fehlgeschlagen.'));
@@ -403,6 +418,7 @@ export default function NetworkPartnerIntegrationsPage() {
                       setPreviewResult(payload?.result ?? null);
                       await reloadIntegrations(selectedIntegration.id);
                       const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
+                      if (redirectIfUnauthorizedResponse(runsResponse, 'network_partner')) return;
                       const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
                       if (runsResponse.ok) {
                         setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
@@ -431,6 +447,7 @@ export default function NetworkPartnerIntegrationsPage() {
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(values),
                     });
+                    if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
                     const payload = (await response.json().catch(() => null)) as SyncPayload | null;
                     if (!response.ok) {
                       setError(String(payload?.error ?? 'Sync fehlgeschlagen.'));
@@ -439,6 +456,7 @@ export default function NetworkPartnerIntegrationsPage() {
                     setSyncResult(payload?.result ?? null);
                     await reloadIntegrations(selectedIntegration.id);
                     const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
+                    if (redirectIfUnauthorizedResponse(runsResponse, 'network_partner')) return;
                     const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
                     if (runsResponse.ok) {
                       setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);

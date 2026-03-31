@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import InvoiceList from '@/components/network-partners/self-service/InvoiceList';
 import NetworkPartnerShell from '@/components/network-partners/self-service/NetworkPartnerShell';
+import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import type {
   NetworkBillingProjectionRow,
   NetworkPartnerInvoiceLineRecord,
@@ -29,6 +30,7 @@ export default function NetworkPartnerInvoicesPage() {
       setLoading(true);
       setError(null);
       const response = await fetch('/api/network-partner/invoices', { method: 'GET', cache: 'no-store' });
+      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
       const payload = (await response.json().catch(() => null)) as InvoicesPayload | null;
       if (!active) return;
       if (!response.ok) {

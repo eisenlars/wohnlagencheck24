@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import type {
   NetworkContentRecord,
   NetworkContentTranslationStatus,
@@ -48,6 +49,7 @@ export default function TranslationEditor({ contentItem }: TranslationEditorProp
         method: 'GET',
         cache: 'no-store',
       });
+      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
       const payload = (await response.json().catch(() => null)) as ContentTranslationsPayload | null;
       if (!active) return;
       if (!response.ok) {
@@ -159,6 +161,7 @@ export default function TranslationEditor({ contentItem }: TranslationEditorProp
                   status,
                 }),
               });
+              if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
               const payload = (await response.json().catch(() => null)) as ContentTranslationsPayload | null;
               if (!response.ok) {
                 setError(String(payload?.error ?? 'Übersetzung konnte nicht gespeichert werden.'));
@@ -192,6 +195,7 @@ export default function TranslationEditor({ contentItem }: TranslationEditorProp
                     locales: requiredLocales.filter((locale) => locale !== 'de'),
                   }),
                 });
+                if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
                 const payload = (await response.json().catch(() => null)) as ContentTranslationsPayload | null;
                 if (!response.ok) {
                   setError(String(payload?.error ?? 'Auto-Vorbelegung konnte nicht erzeugt werden.'));

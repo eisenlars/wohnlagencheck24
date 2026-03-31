@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import NetworkPartnerShell from '@/components/network-partners/self-service/NetworkPartnerShell';
+import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import type { NetworkPartnerRecord, NetworkPartnerRole } from '@/lib/network-partners/types';
 
 type MePayload = {
@@ -27,6 +28,7 @@ export default function NetworkPartnerHomePage() {
       setLoading(true);
       setError(null);
       const response = await fetch('/api/network-partner/me', { method: 'GET', cache: 'no-store' });
+      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
       const payload = (await response.json().catch(() => null)) as MePayload | null;
       if (!active) return;
       if (!response.ok) {
