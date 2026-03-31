@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { MainNav } from "@/components/main-nav";
 import { buildLocalizedHref } from "@/lib/public-locale-routing";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
@@ -17,9 +18,10 @@ type SiteHeaderProps = {
   showDesktopButtons?: boolean;
   text: PortalSystemTextMap;
   locale?: string | null;
+  publicLocales: Array<{ locale: string; label: string }>;
 };
 
-export function SiteHeader({ bundeslaender, showDesktopButtons = true, text, locale = null }: SiteHeaderProps) {
+export function SiteHeader({ bundeslaender, showDesktopButtons = true, text, locale = null, publicLocales }: SiteHeaderProps) {
   return (
     <header className="site-header site-header--default border-bottom bg-white text-dark sticky-top">
       <nav className="navbar navbar-light bg-white">
@@ -60,7 +62,8 @@ export function SiteHeader({ bundeslaender, showDesktopButtons = true, text, loc
             </span>
           </Link>
 
-          <div className="site-header-right d-flex justify-content-end" style={{ flex: 1 }}>
+          <div className="site-header-right d-flex align-items-center justify-content-end gap-2" style={{ flex: 1 }}>
+            <LanguageSwitcher locale={locale} items={publicLocales} />
             <button
               className="navbar-toggler"
               type="button"

@@ -12,7 +12,22 @@ type BundeslandNavItem = {
   name: string;
 };
 
-export function HeaderSwitch({ bundeslaender, text, locale = null }: { bundeslaender: BundeslandNavItem[]; text: PortalSystemTextMap; locale?: string | null }) {
+type PublicLocaleItem = {
+  locale: string;
+  label: string;
+};
+
+export function HeaderSwitch({
+  bundeslaender,
+  text,
+  locale = null,
+  publicLocales,
+}: {
+  bundeslaender: BundeslandNavItem[];
+  text: PortalSystemTextMap;
+  locale?: string | null;
+  publicLocales: PublicLocaleItem[];
+}) {
   const pathname = usePathname();
   if (pathname.startsWith("/dashboard")) return null;
   if (pathname.startsWith("/admin")) return null;
@@ -20,8 +35,8 @@ export function HeaderSwitch({ bundeslaender, text, locale = null }: { bundeslae
   const isHome = localeAwarePath === "/";
 
   return isHome ? (
-    <HomeHeader bundeslaender={bundeslaender} text={text} locale={locale} />
+    <HomeHeader bundeslaender={bundeslaender} text={text} locale={locale} publicLocales={publicLocales} />
   ) : (
-    <SiteHeader bundeslaender={bundeslaender} text={text} locale={locale} />
+    <SiteHeader bundeslaender={bundeslaender} text={text} locale={locale} publicLocales={publicLocales} />
   );
 }

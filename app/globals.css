@@ -994,6 +994,26 @@ h6 {
   padding: 0.2rem 0.45rem;
 }
 
+.language-switcher-toggle {
+  min-width: 64px;
+  border-width: 2px;
+  border-color: #486b7a;
+  color: #486b7a;
+  background: #fff;
+}
+
+.language-switcher-toggle:hover,
+.language-switcher-toggle:focus,
+.language-switcher-toggle:active {
+  border-color: #1d4f3c;
+  color: #1d4f3c;
+  background: #f8fafc;
+}
+
+.language-switcher-menu {
+  min-width: 180px;
+}
+
 @media (max-width: 575.98px) {
   .site-header--default .brand-icon {
     width: 32px;
@@ -1013,6 +1033,13 @@ h6 {
   .site-header--default .navbar-toggler {
     border-width: 3px;
     padding: 0.2rem 0.45rem;
+  }
+
+  .language-switcher-toggle {
+    min-width: 56px;
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
+    font-size: 0.75rem;
   }
 
   .site-header--default .berater-button {

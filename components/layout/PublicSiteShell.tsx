@@ -7,6 +7,7 @@ import { KontaktProvider } from "@/components/kontakt/contact-context";
 import { getBundeslaender } from "@/lib/data";
 import { isBundeslandVisible } from "@/lib/area-visibility";
 import { buildLocalizedHref } from "@/lib/public-locale-routing";
+import { loadPortalLocaleRegistry } from "@/lib/portal-locale-registry";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 
 export async function PublicSiteShell({
@@ -20,11 +21,18 @@ export async function PublicSiteShell({
 }) {
   const bundeslaenderRaw = await getBundeslaender();
   const text = await getPortalSystemTexts(locale);
+  const localeRegistry = await loadPortalLocaleRegistry();
   const bundeslaender = (
     await Promise.all(
       bundeslaenderRaw.map(async (bl) => ((await isBundeslandVisible(bl.slug)) ? bl : null)),
     )
   ).filter((value): value is NonNullable<typeof value> => Boolean(value));
+  const publicLocales = localeRegistry
+    .filter((row) => row.is_active === true && row.status === "live")
+    .map((row) => ({
+      locale: row.locale,
+      label: row.label_native || row.label_de || row.locale.toUpperCase(),
+    }));
 
   return (
     <KontaktProvider>
@@ -43,7 +51,7 @@ export async function PublicSiteShell({
             </div>
           </>
         ) : null}
-        <HeaderSwitch bundeslaender={bundeslaender} text={text} locale={locale} />
+        <HeaderSwitch bundeslaender={bundeslaender} text={text} locale={locale} publicLocales={publicLocales} />
 
         <main id="main-content" className="flex-grow-1 py-2 py-md-4" tabIndex={-1}>
           {children}

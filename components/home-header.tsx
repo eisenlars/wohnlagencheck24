@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { MainNav } from "@/components/main-nav";
 import { buildLocalizedHref } from "@/lib/public-locale-routing";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
@@ -12,7 +13,17 @@ type BundeslandNavItem = {
   name: string;
 };
 
-export function HomeHeader({ bundeslaender, text, locale = null }: { bundeslaender: BundeslandNavItem[]; text: PortalSystemTextMap; locale?: string | null }) {
+export function HomeHeader({
+  bundeslaender,
+  text,
+  locale = null,
+  publicLocales,
+}: {
+  bundeslaender: BundeslandNavItem[];
+  text: PortalSystemTextMap;
+  locale?: string | null;
+  publicLocales: Array<{ locale: string; label: string }>;
+}) {
   return (
     <header className="site-header site-header--home border-bottom bg-white text-dark sticky-top">
       <nav className="navbar navbar-light bg-white">
@@ -28,13 +39,15 @@ export function HomeHeader({ bundeslaender, text, locale = null }: { bundeslaend
             />
           </Link>
 
-          <div className="d-flex align-items-center ms-auto gap-4">
+          <div className="d-flex align-items-center ms-auto gap-3">
             <Link
               href="/immobilienbewertung"
               className="btn berater-button btn-sm rounded-pill px-3 fw-bold shadow-sm"
             >
               {text.price_check}
             </Link>
+
+            <LanguageSwitcher locale={locale} items={publicLocales} />
 
             <button
               className="navbar-toggler"
