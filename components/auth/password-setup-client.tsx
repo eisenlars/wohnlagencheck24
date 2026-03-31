@@ -221,6 +221,18 @@ export default function PasswordSetupClient({ title, defaultAudience = "partner"
       } catch {
         // Aktivierungsabschluss ist best-effort; Redirect-Logik greift anschließend serverseitig.
       }
+      if (aud === "network_partner") {
+        setStatus("Passwort erfolgreich gespeichert. Bitte melde dich jetzt mit deinem neuen Passwort an.");
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          // Best effort only; navigation below should still happen.
+        }
+        const target = `${loginPathForAudience(aud)}?message=${encodeURIComponent("Passwort erfolgreich gesetzt. Bitte jetzt anmelden.")}`;
+        setTimeout(() => router.push(target), 450);
+        return;
+      }
+
       setStatus("Passwort erfolgreich gespeichert. Du wirst jetzt sicher weitergeleitet.");
       const target = await resolvePostSetupTarget(fallbackAppPath);
       setTimeout(() => router.push(target), 450);
