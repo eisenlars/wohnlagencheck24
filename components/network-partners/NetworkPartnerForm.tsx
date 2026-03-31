@@ -20,6 +20,7 @@ type NetworkPartnerFormProps = {
   submitLabel: string;
   onSubmit: (values: NetworkPartnerFormValues) => Promise<void>;
   helperText?: string;
+  showManagedEditingField?: boolean;
 };
 
 const inputStyle: CSSProperties = {
@@ -45,6 +46,7 @@ export default function NetworkPartnerForm({
   submitLabel,
   onSubmit,
   helperText,
+  showManagedEditingField = true,
 }: NetworkPartnerFormProps) {
   const [companyName, setCompanyName] = useState(initialValues?.company_name ?? '');
   const [legalName, setLegalName] = useState(initialValues?.legal_name ?? '');
@@ -125,14 +127,16 @@ export default function NetworkPartnerForm({
         </label>
       </div>
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#334155', fontSize: 13, fontWeight: 600 }}>
-        <input
-          type="checkbox"
-          checked={managedEditingEnabled}
-          onChange={(event) => setManagedEditingEnabled(event.target.checked)}
-        />
-        Portal-Partner darf Inhalte des Netzwerkpartners direkt bearbeiten
-      </label>
+      {showManagedEditingField ? (
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#334155', fontSize: 13, fontWeight: 600 }}>
+          <input
+            type="checkbox"
+            checked={managedEditingEnabled}
+            onChange={(event) => setManagedEditingEnabled(event.target.checked)}
+          />
+          Portal-Partner darf Inhalte des Netzwerkpartners direkt bearbeiten
+        </label>
+      ) : null}
 
       {helperText ? (
         <p style={{ margin: 0, color: '#64748b', fontSize: 13, lineHeight: 1.6 }}>

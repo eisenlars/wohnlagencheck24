@@ -224,9 +224,6 @@ export default function NetworkPartnerManagementWorkspace({
                         </span>
                       </div>
                       <span style={{ color: '#475569', fontSize: 13 }}>{partner.contact_email}</span>
-                      <span style={{ color: '#64748b', fontSize: 12 }}>
-                        {partner.managed_editing_enabled ? 'Direkte Mitbearbeitung durch Portal-Partner erlaubt' : 'Portal-Partner prüft und gibt Inhalte frei'}
-                      </span>
                     </button>
                   );
                 })}
@@ -250,6 +247,7 @@ export default function NetworkPartnerManagementWorkspace({
                 <NetworkPartnerForm
                   submitLabel="Einladung senden und Partner anlegen"
                   helperText="Falls der Einladungsversand scheitert, bleibt der Partner trotzdem angelegt. Der konkrete Fehler wird danach direkt im Profil des neuen Partners angezeigt."
+                  showManagedEditingField={false}
                   onSubmit={async (values) => {
                     setError(null);
                     setMessage(null);

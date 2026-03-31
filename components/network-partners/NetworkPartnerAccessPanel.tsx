@@ -90,9 +90,6 @@ export default function NetworkPartnerAccessPanel({
     <section style={{ display: 'grid', gap: 18 }}>
       <div style={{ display: 'grid', gap: 6 }}>
         <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Zugangsstatus</h2>
-        <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-          Jeder Netzwerkpartner arbeitet mit genau einem Zugang. Solange die Aktivierung noch nicht abgeschlossen ist, kann der Einladungslink von hier erneut versendet werden.
-        </p>
       </div>
 
       {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
@@ -104,7 +101,7 @@ export default function NetworkPartnerAccessPanel({
         ) : (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              <strong style={{ color: '#0f172a', fontSize: 16 }}>Login-Zugang</strong>
+              <strong style={{ color: '#0f172a', fontSize: 16 }}>Login-Vorgang</strong>
               <span
                 style={{
                   borderRadius: 999,
@@ -136,7 +133,7 @@ export default function NetworkPartnerAccessPanel({
               </p>
             ) : accessUser.activation_pending ? (
               <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>
-                Die Einladung wurde versendet, aber der Zugang wurde noch nicht aktiviert. Wenn der Link abgelaufen ist, kann hier ein neuer Link ausgelöst werden.
+                Hinweis: Die Einladung wurde versendet, aber der Zugang wurde vom Partner noch nicht aktiviert. Wenn sein Link ablaufen sollte, kann hier ein neuer Link ausgelöst werden.
               </p>
             ) : (
               <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>
@@ -174,9 +171,9 @@ export default function NetworkPartnerAccessPanel({
                 style={{
                   width: 'fit-content',
                   borderRadius: 10,
-                  border: '1px solid #1d4ed8',
-                  background: '#1d4ed8',
-                  color: '#fff',
+                  border: '2px solid #0f766e',
+                  background: '#fff',
+                  color: '#0f766e',
                   padding: '10px 14px',
                   fontWeight: 700,
                   cursor: resendingId === (accessUser?.id ?? 'missing') ? 'not-allowed' : 'pointer',
