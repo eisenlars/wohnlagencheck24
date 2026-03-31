@@ -19,7 +19,6 @@ import { MANDATORY_MEDIA_KEYS, getMandatoryMediaLabel, isMandatoryMediaKey } fro
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { readSessionViewState, writeSessionViewState } from '@/lib/ui/session-view-state';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
-import NetworkInventoryWorkspace from '@/components/network-partners/NetworkInventoryWorkspace';
 import NetworkBookingsWorkspace from '@/components/network-partners/NetworkBookingsWorkspace';
 import NetworkContentWorkspace from '@/components/network-partners/NetworkContentWorkspace';
 import NetworkBillingWorkspace from '@/components/network-partners/NetworkBillingWorkspace';
@@ -87,7 +86,7 @@ type PersistedDashboardState = {
   networkPartnerDetailSection?: NetworkPartnerDetailSection;
 };
 
-type NetworkPartnerSection = 'overview' | 'inventory' | 'bookings' | 'content' | 'billing' | 'ai';
+type NetworkPartnerSection = 'overview' | 'bookings' | 'content' | 'billing' | 'ai';
 
 type DashboardClientProps = {
   initialMainTab?: MainTab;
@@ -177,7 +176,7 @@ function isSettingsSection(value: unknown): value is SettingsSection {
 
 function isNetworkPartnerSection(value: unknown): value is NetworkPartnerSection {
   return typeof value === 'string'
-    && ['overview', 'inventory', 'bookings', 'content', 'billing', 'ai'].includes(value);
+    && ['overview', 'bookings', 'content', 'billing', 'ai'].includes(value);
 }
 
 function isNetworkPartnerDetailSection(value: unknown): value is NetworkPartnerDetailSection {
@@ -563,14 +562,6 @@ export default function DashboardClient({
           showDistrictSelector: false,
         };
       case 'network_partners':
-        if (networkPartnerSection === 'inventory') {
-          return {
-            title: 'Werbeformate',
-            description: 'Werbeformate und Verkaufsscope pro Gebiet global für alle Netzwerkpartner steuern.',
-            isRegionBased: false,
-            showDistrictSelector: false,
-          };
-        }
         if (networkPartnerSection === 'bookings') {
           return {
             title: 'Buchungen',
@@ -842,7 +833,6 @@ export default function DashboardClient({
     ],
     [
       { id: 'partner_ads', label: 'Netzwerkpartner Verwaltung', icon: 'partner_ads', tab: 'network_partners', networkPartnerSection: 'overview' },
-      { id: 'partner_immobilien', label: 'Werbeformate', icon: 'partner_immobilien', tab: 'network_partners', networkPartnerSection: 'inventory' },
       { id: 'partner_gesuche', label: 'Buchungen', icon: 'partner_gesuche', tab: 'network_partners', networkPartnerSection: 'bookings' },
       { id: 'partner_content', label: 'Content & Review', icon: 'texts', tab: 'network_partners', networkPartnerSection: 'content' },
       { id: 'partner_billing', label: 'Abrechnung', icon: 'marketing', tab: 'network_partners', networkPartnerSection: 'billing' },
@@ -1918,9 +1908,7 @@ export default function DashboardClient({
               </div>
             </header>
             <div style={{ display: 'grid', gap: 18 }}>
-              {networkPartnerSection === 'inventory' ? (
-                <NetworkInventoryWorkspace />
-              ) : networkPartnerSection === 'bookings' ? (
+              {networkPartnerSection === 'bookings' ? (
                 <NetworkBookingsWorkspace />
               ) : networkPartnerSection === 'content' ? (
                 <NetworkContentWorkspace />
@@ -3030,13 +3018,6 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
           description: 'Regionale Partner im Master-Detail-Arbeitsbereich mit Zugängen, Buchungen und Abrechnung verwalten.',
           icon: 'partner_ads',
           networkPartnerSection: 'overview',
-        },
-        {
-          key: 'network_partners',
-          title: 'Werbeformate',
-          description: 'Verkaufbare Werbeformate global pro Gebiet steuern.',
-          icon: 'partner_immobilien',
-          networkPartnerSection: 'inventory',
         },
         {
           key: 'network_partners',

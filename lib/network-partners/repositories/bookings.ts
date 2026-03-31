@@ -6,7 +6,7 @@ import type {
   NetworkPartnerBookingRecord,
   NetworkPartnerBookingUpdateInput,
 } from "@/lib/network-partners/types";
-import { hasActiveInventoryForAreaAndPlacement } from "@/lib/network-partners/repositories/inventory";
+import { assertPlacementIsActive } from "@/lib/network-partners/repositories/inventory";
 
 function asText(value: unknown): string {
   return String(value ?? "").trim();
@@ -152,14 +152,7 @@ export async function assertBookingInputIsConsistent(input: {
   required_locales: string[];
 }): Promise<void> {
   await assertNetworkPartnerBelongsToPortalPartner(input.portal_partner_id, input.network_partner_id);
-  const hasInventory = await hasActiveInventoryForAreaAndPlacement(
-    input.portal_partner_id,
-    input.area_id,
-    input.placement_code,
-  );
-  if (!hasInventory) {
-    throw new Error("INVENTORY_NOT_AVAILABLE");
-  }
+  await assertPlacementIsActive(input.placement_code);
   assertValidAmount(input.monthly_price_eur, "monthly_price_eur");
   assertValidAmount(input.portal_fee_eur, "portal_fee_eur");
   if (input.portal_fee_eur > input.monthly_price_eur) {

@@ -44,7 +44,7 @@ export default function NetworkPartnerBookingsPage() {
   return (
     <NetworkPartnerShell
       title="Meine Buchungen"
-      description="Hier sieht der Netzwerkpartner nur die eigenen gebuchten Placements, Pflichtsprachen und kaufmännischen Rahmen."
+      description="Hier sieht der Netzwerkpartner die eigenen gebuchten Leistungen, Laufzeiten und kaufmännischen Rahmen."
     >
       {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
       {loading ? <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p> : <BookingList bookings={bookings} />}

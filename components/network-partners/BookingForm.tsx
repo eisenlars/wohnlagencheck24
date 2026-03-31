@@ -7,7 +7,6 @@ import type {
   AIBillingMode,
   BookingStatus,
   NetworkPartnerRecord,
-  PartnerAreaInventoryRecord,
   PlacementCatalogRecord,
   PlacementCode,
 } from '@/lib/network-partners/types';
@@ -37,7 +36,6 @@ type BookingFormProps = {
   networkPartners: NetworkPartnerRecord[];
   areas: AreaOption[];
   placements: PlacementCatalogRecord[];
-  inventory: PartnerAreaInventoryRecord[];
   onSubmit: (values: BookingFormValues) => Promise<void>;
 };
 
@@ -59,21 +57,41 @@ const labelStyle: CSSProperties = {
   color: '#334155',
 };
 
+const sectionStyle: CSSProperties = {
+  display: 'grid',
+  gap: 14,
+  padding: '16px 18px',
+  borderRadius: 16,
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+};
+
+function getBookingStatusLabel(status: BookingStatus): string {
+  if (status === 'pending_review') return 'In Prüfung';
+  if (status === 'active') return 'Aktiv';
+  if (status === 'paused') return 'Pausiert';
+  if (status === 'cancelled') return 'Beendet';
+  if (status === 'expired') return 'Abgelaufen';
+  return 'Entwurf';
+}
+
+function getAiBillingModeLabel(mode: AIBillingMode): string {
+  if (mode === 'credit_based') return 'Nutzungsabhängig';
+  if (mode === 'blocked') return 'Deaktiviert';
+  return 'Inklusive';
+}
+
 export default function BookingForm({
   networkPartners,
   areas,
   placements,
-  inventory,
   onSubmit,
 }: BookingFormProps) {
   const [networkPartnerId, setNetworkPartnerId] = useState(networkPartners[0]?.id ?? '');
   const [areaId, setAreaId] = useState(areas[0]?.id ?? '');
   const placementOptions = useMemo(
-    () => inventory
-      .filter((entry) => entry.area_id === areaId && entry.is_active)
-      .map((entry) => placements.find((placement) => placement.code === entry.placement_code))
-      .filter((entry): entry is PlacementCatalogRecord => Boolean(entry)),
-    [areaId, inventory, placements],
+    () => placements.filter((placement) => placement.is_active),
+    [placements],
   );
   const [placementCode, setPlacementCode] = useState<PlacementCode | ''>(placementOptions[0]?.code ?? '');
   const [status, setStatus] = useState<BookingStatus>('draft');
@@ -146,90 +164,131 @@ export default function BookingForm({
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 14 }}>
-      <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-        <label style={labelStyle}>
-          Netzwerkpartner
-          <select value={networkPartnerId} onChange={(event) => setNetworkPartnerId(event.target.value)} style={inputStyle} required>
-            {networkPartners.map((partner) => (
-              <option key={partner.id} value={partner.id}>
-                {partner.company_name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={labelStyle}>
-          Gebiet
-          <select value={areaId} onChange={(event) => setAreaId(event.target.value)} style={inputStyle} required>
-            {areas.map((area) => (
-              <option key={area.id} value={area.id}>
-                {area.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={labelStyle}>
-          Placement
-          <select
-            value={placementCode}
-            onChange={(event) => setPlacementCode(event.target.value as PlacementCode)}
-            style={inputStyle}
-            required
-          >
-            {placementOptions.map((placement) => (
-              <option key={placement.code} value={placement.code}>
-                {placement.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={labelStyle}>
-          Status
-          <select value={status} onChange={(event) => setStatus(event.target.value as BookingStatus)} style={inputStyle}>
-            <option value="draft">draft</option>
-            <option value="pending_review">pending_review</option>
-            <option value="active">active</option>
-            <option value="paused">paused</option>
-            <option value="cancelled">cancelled</option>
-            <option value="expired">expired</option>
-          </select>
-        </label>
-        <label style={labelStyle}>
-          Startdatum
-          <input type="date" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} style={inputStyle} required />
-        </label>
-        <label style={labelStyle}>
-          Enddatum
-          <input type="date" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} style={inputStyle} />
-        </label>
-        <label style={labelStyle}>
-          Monatspreis in EUR
-          <input type="number" min={0} step="0.01" value={monthlyPrice} onChange={(event) => setMonthlyPrice(event.target.value)} style={inputStyle} required />
-        </label>
-        <label style={labelStyle}>
-          Portalfee in EUR
-          <input type="number" min={0} step="0.01" value={portalFee} onChange={(event) => setPortalFee(event.target.value)} style={inputStyle} required />
-        </label>
-        <label style={labelStyle}>
-          Abrechnungstag
-          <input type="number" min={1} max={28} value={billingCycleDay} onChange={(event) => setBillingCycleDay(event.target.value)} style={inputStyle} required />
-        </label>
-        <label style={labelStyle}>
-          Pflichtsprachen
-          <input value={requiredLocales} onChange={(event) => setRequiredLocales(event.target.value)} style={inputStyle} required />
-        </label>
-        <label style={labelStyle}>
-          KI-Abrechnungsmodus
-          <select value={aiBillingMode} onChange={(event) => setAiBillingMode(event.target.value as AIBillingMode)} style={inputStyle}>
-            <option value="included">included</option>
-            <option value="credit_based">credit_based</option>
-            <option value="blocked">blocked</option>
-          </select>
-        </label>
-        <label style={labelStyle}>
-          KI-Monatsbudget in EUR
-          <input type="number" min={0} step="0.01" value={aiMonthlyBudget} onChange={(event) => setAiMonthlyBudget(event.target.value)} style={inputStyle} required />
-        </label>
-      </div>
+      <section style={sectionStyle}>
+        <div style={{ display: 'grid', gap: 4 }}>
+          <h3 style={{ margin: 0, fontSize: 17, color: '#0f172a' }}>1. Partner und Leistung</h3>
+          <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
+            Wähle den Netzwerkpartner, das Gebiet und die gebuchte Leistung.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          <label style={labelStyle}>
+            Netzwerkpartner
+            <select value={networkPartnerId} onChange={(event) => setNetworkPartnerId(event.target.value)} style={inputStyle} required>
+              {networkPartners.map((partner) => (
+                <option key={partner.id} value={partner.id}>
+                  {partner.company_name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={labelStyle}>
+            Gebiet
+            <select value={areaId} onChange={(event) => setAreaId(event.target.value)} style={inputStyle} required>
+              {areas.map((area) => (
+                <option key={area.id} value={area.id}>
+                  {area.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={labelStyle}>
+            Leistung
+            <select
+              value={placementCode}
+              onChange={(event) => setPlacementCode(event.target.value as PlacementCode)}
+              style={inputStyle}
+              required
+            >
+              {placementOptions.map((placement) => (
+                <option key={placement.code} value={placement.code}>
+                  {placement.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section style={sectionStyle}>
+        <div style={{ display: 'grid', gap: 4 }}>
+          <h3 style={{ margin: 0, fontSize: 17, color: '#0f172a' }}>2. Laufzeit und Status</h3>
+          <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
+            Lege fest, ab wann die Leistung läuft und in welchem Bearbeitungsstand sie startet.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          <label style={labelStyle}>
+            Status
+            <select value={status} onChange={(event) => setStatus(event.target.value as BookingStatus)} style={inputStyle}>
+              <option value="draft">{getBookingStatusLabel('draft')}</option>
+              <option value="pending_review">{getBookingStatusLabel('pending_review')}</option>
+              <option value="active">{getBookingStatusLabel('active')}</option>
+              <option value="paused">{getBookingStatusLabel('paused')}</option>
+              <option value="cancelled">{getBookingStatusLabel('cancelled')}</option>
+              <option value="expired">{getBookingStatusLabel('expired')}</option>
+            </select>
+          </label>
+          <label style={labelStyle}>
+            Startdatum
+            <input type="date" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} style={inputStyle} required />
+          </label>
+          <label style={labelStyle}>
+            Enddatum
+            <input type="date" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} style={inputStyle} />
+          </label>
+        </div>
+      </section>
+
+      <section style={sectionStyle}>
+        <div style={{ display: 'grid', gap: 4 }}>
+          <h3 style={{ margin: 0, fontSize: 17, color: '#0f172a' }}>3. Preise und Abrechnung</h3>
+          <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
+            Hier werden Preis, Portalanteil und der wiederkehrende Abrechnungstag festgelegt.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          <label style={labelStyle}>
+            Monatspreis in EUR
+            <input type="number" min={0} step="0.01" value={monthlyPrice} onChange={(event) => setMonthlyPrice(event.target.value)} style={inputStyle} required />
+          </label>
+          <label style={labelStyle}>
+            Portalfee in EUR
+            <input type="number" min={0} step="0.01" value={portalFee} onChange={(event) => setPortalFee(event.target.value)} style={inputStyle} required />
+          </label>
+          <label style={labelStyle}>
+            Abrechnungstag
+            <input type="number" min={1} max={28} value={billingCycleDay} onChange={(event) => setBillingCycleDay(event.target.value)} style={inputStyle} required />
+          </label>
+        </div>
+      </section>
+
+      <section style={sectionStyle}>
+        <div style={{ display: 'grid', gap: 4 }}>
+          <h3 style={{ margin: 0, fontSize: 17, color: '#0f172a' }}>4. Sprache und KI</h3>
+          <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
+            Bestimme Pflichtsprachen und ob die KI-Nutzung inklusive, nutzungsabhängig oder deaktiviert ist.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          <label style={labelStyle}>
+            Pflichtsprachen
+            <input value={requiredLocales} onChange={(event) => setRequiredLocales(event.target.value)} style={inputStyle} required />
+          </label>
+          <label style={labelStyle}>
+            KI-Nutzung
+            <select value={aiBillingMode} onChange={(event) => setAiBillingMode(event.target.value as AIBillingMode)} style={inputStyle}>
+              <option value="included">{getAiBillingModeLabel('included')}</option>
+              <option value="credit_based">{getAiBillingModeLabel('credit_based')}</option>
+              <option value="blocked">{getAiBillingModeLabel('blocked')}</option>
+            </select>
+          </label>
+          <label style={labelStyle}>
+            KI-Monatsbudget in EUR
+            <input type="number" min={0} step="0.01" value={aiMonthlyBudget} onChange={(event) => setAiMonthlyBudget(event.target.value)} style={inputStyle} required />
+          </label>
+        </div>
+      </section>
 
       <label style={labelStyle}>
         Notizen

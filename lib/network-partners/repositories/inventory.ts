@@ -82,6 +82,10 @@ async function ensurePlacementIsActive(code: PlacementCode): Promise<void> {
   }
 }
 
+export async function assertPlacementIsActive(code: PlacementCode): Promise<void> {
+  await ensurePlacementIsActive(code);
+}
+
 export async function listPlacementCatalog(): Promise<PlacementCatalogRecord[]> {
   const admin = createAdminClient();
   const { data, error } = await admin

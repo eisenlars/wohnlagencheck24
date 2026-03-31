@@ -11,6 +11,7 @@ import {
   createBooking,
   listBookingsByPortalPartner,
 } from "@/lib/network-partners/repositories/bookings";
+import { listPlacementCatalog } from "@/lib/network-partners/repositories/inventory";
 import type { AIBillingMode, BookingStatus, PlacementCode } from "@/lib/network-partners/types";
 
 type BookingBody = {
@@ -95,7 +96,7 @@ function mapBookingError(error: Error) {
   if (error.message === "UNAUTHORIZED") return { status: 401, error: "Unauthorized" };
   if (error.message === "FORBIDDEN") return { status: 403, error: "Forbidden" };
   if (error.message === "NETWORK_PARTNER_NOT_OWNED") return { status: 400, error: "network_partner_id does not belong to this portal partner" };
-  if (error.message === "INVENTORY_NOT_AVAILABLE") return { status: 400, error: "No active inventory available for area and placement" };
+  if (error.message === "INVALID_PLACEMENT_CODE") return { status: 400, error: "Die gewählte Leistung ist derzeit nicht verfügbar." };
   if (error.message === "PORTAL_FEE_EXCEEDS_MONTHLY_PRICE") return { status: 400, error: "portal_fee_eur cannot exceed monthly_price_eur" };
   if (error.message === "INVALID_REQUIRED_LOCALES") return { status: 400, error: "required_locales must not be empty" };
   if (error.message === "MISSING_DE_LOCALE") return { status: 400, error: "required_locales must include 'de'" };
@@ -119,8 +120,11 @@ export async function GET(request: Request) {
     if (networkPartnerId) {
       await assertPortalPartnerOwnsNetworkPartner(actor.partnerId, networkPartnerId);
     }
-    const bookings = await listBookingsByPortalPartner(actor.partnerId, networkPartnerId ?? undefined);
-    return NextResponse.json({ ok: true, bookings });
+    const [bookings, placementCatalog] = await Promise.all([
+      listBookingsByPortalPartner(actor.partnerId, networkPartnerId ?? undefined),
+      listPlacementCatalog(),
+    ]);
+    return NextResponse.json({ ok: true, bookings, placement_catalog: placementCatalog });
   } catch (error) {
     const mapped = mapBookingError(error as Error);
     return NextResponse.json({ error: mapped.error }, { status: mapped.status });

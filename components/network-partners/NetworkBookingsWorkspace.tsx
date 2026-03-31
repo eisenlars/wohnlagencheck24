@@ -7,7 +7,6 @@ import BookingTable from '@/components/network-partners/BookingTable';
 import type {
   NetworkPartnerBookingRecord,
   NetworkPartnerRecord,
-  PartnerAreaInventoryRecord,
   PlacementCatalogRecord,
 } from '@/lib/network-partners/types';
 import {
@@ -23,17 +22,12 @@ type AreaOption = {
 
 type BookingsPayload = {
   bookings?: NetworkPartnerBookingRecord[];
+  placement_catalog?: PlacementCatalogRecord[];
   error?: string;
 };
 
 type NetworkPartnerListPayload = {
   network_partners?: NetworkPartnerRecord[];
-  error?: string;
-};
-
-type InventoryPayload = {
-  inventory?: PartnerAreaInventoryRecord[];
-  placement_catalog?: PlacementCatalogRecord[];
   error?: string;
 };
 
@@ -59,7 +53,6 @@ export default function NetworkBookingsWorkspace({
 }: NetworkBookingsWorkspaceProps) {
   const [bookings, setBookings] = useState<NetworkPartnerBookingRecord[]>([]);
   const [networkPartners, setNetworkPartners] = useState<NetworkPartnerRecord[]>([]);
-  const [inventory, setInventory] = useState<PartnerAreaInventoryRecord[]>([]);
   const [placements, setPlacements] = useState<PlacementCatalogRecord[]>([]);
   const [areas, setAreas] = useState<AreaOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,24 +63,20 @@ export default function NetworkBookingsWorkspace({
     const bookingsUrl = networkPartnerId
       ? `/api/partner/network-bookings?network_partner_id=${encodeURIComponent(networkPartnerId)}`
       : '/api/partner/network-bookings';
-    const [bookingsResponse, partnersResponse, inventoryResponse, bootstrapResponse] = await Promise.all([
+    const [bookingsResponse, partnersResponse, bootstrapResponse] = await Promise.all([
       fetch(bookingsUrl, { method: 'GET', cache: 'no-store' }),
       fetch('/api/partner/network-partners', { method: 'GET', cache: 'no-store' }),
-      fetch('/api/partner/network-inventory', { method: 'GET', cache: 'no-store' }),
       fetch('/api/partner/dashboard/bootstrap', { method: 'GET', cache: 'no-store' }),
     ]);
 
     const bookingsPayload = (await bookingsResponse.json().catch(() => null)) as BookingsPayload | null;
     const partnersPayload = (await partnersResponse.json().catch(() => null)) as NetworkPartnerListPayload | null;
-    const inventoryPayload = (await inventoryResponse.json().catch(() => null)) as InventoryPayload | null;
     const bootstrapPayload = (await bootstrapResponse.json().catch(() => null)) as BootstrapPayload | null;
     return {
       bookingsResponse,
       partnersResponse,
-      inventoryResponse,
       bookingsPayload,
       partnersPayload,
-      inventoryPayload,
       bootstrapPayload,
     };
   }, [networkPartnerId]);
@@ -100,24 +89,20 @@ export default function NetworkBookingsWorkspace({
       const {
         bookingsResponse,
         partnersResponse,
-        inventoryResponse,
         bookingsPayload,
         partnersPayload,
-        inventoryPayload,
         bootstrapPayload,
       } = await fetchPageData();
       if (!active) return;
-      if (!bookingsResponse.ok || !partnersResponse.ok || !inventoryResponse.ok) {
+      if (!bookingsResponse.ok || !partnersResponse.ok) {
         setBookings([]);
         setNetworkPartners([]);
-        setInventory([]);
         setPlacements([]);
         setAreas([]);
         setError(
           String(
             bookingsPayload?.error
             ?? partnersPayload?.error
-            ?? inventoryPayload?.error
             ?? 'Buchungsdaten konnten nicht geladen werden.',
           ),
         );
@@ -137,8 +122,7 @@ export default function NetworkBookingsWorkspace({
 
       setBookings(Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : []);
       setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
-      setInventory(Array.isArray(inventoryPayload?.inventory) ? inventoryPayload.inventory : []);
-      setPlacements(Array.isArray(inventoryPayload?.placement_catalog) ? inventoryPayload.placement_catalog : []);
+      setPlacements(Array.isArray(bookingsPayload?.placement_catalog) ? bookingsPayload.placement_catalog : []);
       setAreas(nextAreas);
       setLoading(false);
     }
@@ -170,7 +154,7 @@ export default function NetworkBookingsWorkspace({
             {networkPartnerId ? `${networkPartnerName ?? 'Netzwerkpartner'}: Buchungen` : 'Buchungen'}
           </h1>
           <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', maxWidth: 760, lineHeight: 1.6 }}>
-            Buchungen verbinden Netzwerkpartner, Gebiete, Werbeformate, Preis und KI-Nutzungsrahmen zu einem verkaufbaren Vertragspunkt.
+            Hier werden Leistungen direkt für Netzwerkpartner gebucht, ohne zusätzlichen Freigabe-Zwischenschritt pro Gebiet.
           </p>
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', color: '#fff', fontWeight: 700 }}>
             <span>Aktive Buchungen: {activeBookingCount}</span>
@@ -182,7 +166,7 @@ export default function NetworkBookingsWorkspace({
         <div style={workflowHeaderStyle}>
           <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Neue Buchung anlegen</h2>
           <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Das Formular nutzt nur aktive Werbeformate. Pflichtsprachen, Portalfee und KI-Modus werden bereits auf Buchungsebene festgeschrieben.
+            Wähle Partner, Gebiet und Leistung. Preise, Laufzeit, Sprache und KI-Nutzung werden direkt in der Buchung festgelegt.
           </p>
         </div>
         {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
@@ -191,7 +175,6 @@ export default function NetworkBookingsWorkspace({
           networkPartners={selectableNetworkPartners}
           areas={areas}
           placements={placements}
-          inventory={inventory}
           onSubmit={async (values) => {
             setError(null);
             setMessage(null);
@@ -210,23 +193,19 @@ export default function NetworkBookingsWorkspace({
             const {
               bookingsResponse,
               partnersResponse,
-              inventoryResponse,
               bookingsPayload,
               partnersPayload,
-              inventoryPayload,
               bootstrapPayload,
             } = await fetchPageData();
-            if (!bookingsResponse.ok || !partnersResponse.ok || !inventoryResponse.ok) {
+            if (!bookingsResponse.ok || !partnersResponse.ok) {
               setBookings([]);
               setNetworkPartners([]);
-              setInventory([]);
               setPlacements([]);
               setAreas([]);
               setError(
                 String(
                   bookingsPayload?.error
                   ?? partnersPayload?.error
-                  ?? inventoryPayload?.error
                   ?? 'Buchungsdaten konnten nicht geladen werden.',
                 ),
               );
@@ -244,8 +223,7 @@ export default function NetworkBookingsWorkspace({
             ).values());
             setBookings(Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : []);
             setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
-            setInventory(Array.isArray(inventoryPayload?.inventory) ? inventoryPayload.inventory : []);
-            setPlacements(Array.isArray(inventoryPayload?.placement_catalog) ? inventoryPayload.placement_catalog : []);
+            setPlacements(Array.isArray(bookingsPayload?.placement_catalog) ? bookingsPayload.placement_catalog : []);
             setAreas(nextAreas);
             setLoading(false);
           }}
@@ -256,7 +234,7 @@ export default function NetworkBookingsWorkspace({
         <div style={workflowHeaderStyle}>
           <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Bestehende Buchungen</h2>
           <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Die Liste zeigt die aktuellen Vertragsparameter des MVP, noch ohne Rechnungs- und Settlement-Historie.
+            Die Liste zeigt alle gebuchten Leistungen im Netzwerkpartner-Geschäft, noch ohne Rechnungs- und Settlement-Historie.
           </p>
         </div>
         {loading ? (
