@@ -1,5 +1,6 @@
 // features/immobilienmarkt/sections/types.ts
 
+import type { MarketExplanationFaqMap } from "@/lib/market-explanation-faqs";
 import type { ComponentType } from "react";
 import type { MarketExplanationStaticTextMap } from "@/lib/market-explanation-static-text-definitions";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
@@ -67,6 +68,7 @@ export type SectionPropsBase = {
   parentBasePath?: string;
   texts: PortalSystemTextMap;
   marketExplanationTexts: MarketExplanationStaticTextMap;
+  marketExplanationFaqs: MarketExplanationFaqMap;
   ctx?: SectionCtx;
   assets?: SectionAssets;
 };

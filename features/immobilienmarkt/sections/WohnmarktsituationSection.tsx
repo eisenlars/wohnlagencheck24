@@ -16,7 +16,7 @@ import { StackedComboChart } from "@/components/StackedComboChart";
 import { FaqSection } from "@/components/FaqSection";
 import { KpiValue } from "@/components/KpiValue";
 import { ImageModal } from "@/components/ImageModal";
-import { formatMarketExplanationStaticText } from "@/lib/market-explanation-static-text-definitions";
+import { formatMarketExplanationFaqText } from "@/lib/market-explanation-faqs";
 
 import { formatMetric } from "@/utils/format";
 import { toNumberOrNull } from "@/utils/toNumberOrNull";
@@ -89,22 +89,10 @@ export function WohnmarktsituationSection(
           ? { label: "Wohnungsdefizit", image: "/images/wohnmarktsituation/wohnungsmarkt-defizit.svg" }
           : { label: "Gesunder Wohnungsmarkt", image: "/images/wohnmarktsituation/wohnungsmarkt-ausgeglichen.svg" };
 
-  const faqItems = [
-    {
-      q: formatMarketExplanationStaticText(
-        props.marketExplanationTexts.wohnmarktsituation_faq_statistische_daten_frage,
-        { regionName: vm.regionName },
-      ),
-      a: props.marketExplanationTexts.wohnmarktsituation_faq_statistische_daten_antwort,
-    },
-    {
-      q: formatMarketExplanationStaticText(
-        props.marketExplanationTexts.wohnmarktsituation_faq_standortfaktoren_frage,
-        { regionName: vm.regionName },
-      ),
-      a: props.marketExplanationTexts.wohnmarktsituation_faq_standortfaktoren_antwort,
-    },
-  ];
+  const faqItems = props.marketExplanationFaqs.wohnmarktsituation.map((item) => ({
+    q: formatMarketExplanationFaqText(item.question, { regionName: vm.regionName }),
+    a: formatMarketExplanationFaqText(item.answer, { regionName: vm.regionName }),
+  }));
   const einwohnerValue = parseSaldoValue(vm.kpis.einwohner);
   const einwohnerdichteValue = parseSaldoValue(vm.kpis.einwohnerdichte);
   const siedlungsdichteValue = parseSaldoValue(vm.kpis.siedlungsdichte);

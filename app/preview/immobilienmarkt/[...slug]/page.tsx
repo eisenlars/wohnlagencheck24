@@ -15,6 +15,7 @@ import {
   loadPreviewAccessForArea,
   loadPreviewAreaOptionsForPartner,
 } from "@/lib/public-partner-mappings";
+import { getMarketExplanationFaqs } from "@/lib/market-explanation-faqs";
 import { getMarketExplanationStaticTexts } from "@/lib/market-explanation-static-texts";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { createClient } from "@/utils/supabase/server";
@@ -111,9 +112,10 @@ export default async function ImmobilienmarktPreviewPage({ params }: PageProps) 
     ?? asString(meta["kreis_schluessel"])
     ?? ""
   ).trim();
-  const [texts, marketExplanationTexts] = await Promise.all([
+  const [texts, marketExplanationTexts, marketExplanationFaqs] = await Promise.all([
     getPortalSystemTexts("de"),
     getMarketExplanationStaticTexts("de"),
+    getMarketExplanationFaqs("de"),
   ]);
 
   const vm = entry.buildVM({
@@ -191,6 +193,7 @@ export default async function ImmobilienmarktPreviewPage({ params }: PageProps) 
         parentBasePath={parentBasePath}
         texts={texts}
         marketExplanationTexts={marketExplanationTexts}
+        marketExplanationFaqs={marketExplanationFaqs}
         ctx={ctx}
         assets={assets}
       />

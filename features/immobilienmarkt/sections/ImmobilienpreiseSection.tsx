@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { formatMarketExplanationFaqText } from "@/lib/market-explanation-faqs";
 
 
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
@@ -17,8 +18,6 @@ import type { BarSeries } from "@/components/VergleichBarChart";
 import { KpiValue } from "@/components/KpiValue";
 import { FaqSection } from "@/components/FaqSection";
 
-import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
-
 import type { ImmobilienpreiseVM } from "@/features/immobilienmarkt/selectors/shared/types/immobilienpreise";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
 import type { BarModel } from "@/utils/barModel";
@@ -32,6 +31,10 @@ export function ImmobilienpreiseSection(props: Props) {
     vm,
     activeTabId,
   } = props;
+  const faqItems = props.marketExplanationFaqs.immobilienpreise.map((item) => ({
+    q: formatMarketExplanationFaqText(item.question, { regionName: vm.regionName }),
+    a: formatMarketExplanationFaqText(item.answer, { regionName: vm.regionName }),
+  }));
   
   const isOrt = vm.level === "ort"; 
 
@@ -486,7 +489,7 @@ export function ImmobilienpreiseSection(props: Props) {
         {/* FAQ */}
         <section className="mb-0" id="faq-immobilienpreise">
           <h2 className="text-center mb-3">FAQ zu Immobilienpreisen</h2>
-          <FaqSection id="faq" title={`FAQ – Immobilienmarkt ${vm.regionName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
+          <FaqSection id="faq" title={`FAQ – Immobilienmarkt ${vm.regionName}`} items={faqItems} />
         </section>
 
         {/* Erfasste Wohnlagen */}

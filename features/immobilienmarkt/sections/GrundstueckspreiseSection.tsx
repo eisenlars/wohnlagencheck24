@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { formatMarketExplanationFaqText } from "@/lib/market-explanation-faqs";
 
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
@@ -14,7 +15,6 @@ import { FaqSection } from "@/components/FaqSection";
 
 import type { GrundstueckspreiseVM } from "@/features/immobilienmarkt/selectors/shared/types/grundstueckspreise";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
-import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
 type BeraterInfo = {
   name: string;
@@ -29,6 +29,10 @@ type Props = SectionPropsBase & {
 
 export function GrundstueckspreiseSection(props: Props) {
   const { vm, activeTabId } = props;
+  const faqItems = props.marketExplanationFaqs.grundstueckspreise.map((item) => ({
+    q: formatMarketExplanationFaqText(item.question, { regionName: vm.regionName }),
+    a: formatMarketExplanationFaqText(item.answer, { regionName: vm.regionName }),
+  }));
   const tabs = Array.isArray(props.tabs) ? props.tabs : [];
   const tocItems = Array.isArray(props.tocItems) ? props.tocItems : [];
 
@@ -264,7 +268,7 @@ export function GrundstueckspreiseSection(props: Props) {
         {/* FAQ */}
         <section className="mb-5" id="faq-grundstueckspreise">
           <h2 className="text-center mb-3">FAQ zu Grundstückspreisen</h2>
-          <FaqSection id="faq" title={`FAQ – Grundstueckspreise ${vm.regionName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
+          <FaqSection id="faq" title={`FAQ – Grundstueckspreise ${vm.regionName}`} items={faqItems} />
         </section>
 
         {/* Erfasste Wohnlagen */}

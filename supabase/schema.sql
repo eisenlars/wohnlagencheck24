@@ -15,6 +15,50 @@ CREATE TABLE public.admin_area_texts (
   last_updated timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT admin_area_texts_pkey PRIMARY KEY (scope_kind, scope_key, section_key)
 );
+CREATE TABLE public.admin_area_text_i18n_entries (
+  scope_kind text NOT NULL CHECK (scope_kind = ANY (ARRAY['bundesland'::text, 'kreis'::text, 'ortslage'::text])),
+  scope_key text NOT NULL,
+  section_key text NOT NULL,
+  locale text NOT NULL,
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'internal'::text, 'live'::text])),
+  value_text text NOT NULL DEFAULT ''::text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT admin_area_text_i18n_entries_pkey PRIMARY KEY (scope_kind, scope_key, section_key, locale)
+);
+CREATE TABLE public.admin_area_text_i18n_meta (
+  scope_kind text NOT NULL CHECK (scope_kind = ANY (ARRAY['bundesland'::text, 'kreis'::text, 'ortslage'::text])),
+  scope_key text NOT NULL,
+  section_key text NOT NULL,
+  locale text NOT NULL,
+  source_locale text NOT NULL DEFAULT 'de'::text,
+  source_snapshot_hash text,
+  source_updated_at timestamp with time zone,
+  translation_origin text NOT NULL DEFAULT 'manual'::text CHECK (translation_origin = ANY (ARRAY['manual'::text, 'ai'::text, 'sync_copy_all'::text, 'sync_fill_missing'::text])),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT admin_area_text_i18n_meta_pkey PRIMARY KEY (scope_kind, scope_key, section_key, locale)
+);
+CREATE TABLE public.market_explanation_faq_entries (
+  tab_id text NOT NULL CHECK (tab_id = ANY (ARRAY['uebersicht'::text, 'immobilienpreise'::text, 'mietpreise'::text, 'mietrendite'::text, 'wohnmarktsituation'::text, 'grundstueckspreise'::text, 'wohnlagencheck'::text, 'wirtschaft'::text])),
+  item_id text NOT NULL,
+  locale text NOT NULL,
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'internal'::text, 'live'::text])),
+  question text NOT NULL DEFAULT ''::text,
+  answer text NOT NULL DEFAULT ''::text,
+  sort_order integer NOT NULL DEFAULT 0,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT market_explanation_faq_entries_pkey PRIMARY KEY (tab_id, item_id, locale)
+);
+CREATE TABLE public.market_explanation_faq_i18n_meta (
+  tab_id text NOT NULL CHECK (tab_id = ANY (ARRAY['uebersicht'::text, 'immobilienpreise'::text, 'mietpreise'::text, 'mietrendite'::text, 'wohnmarktsituation'::text, 'grundstueckspreise'::text, 'wohnlagencheck'::text, 'wirtschaft'::text])),
+  item_id text NOT NULL,
+  locale text NOT NULL,
+  source_locale text NOT NULL DEFAULT 'de'::text,
+  source_snapshot_hash text,
+  source_updated_at timestamp with time zone,
+  translation_origin text NOT NULL DEFAULT 'manual'::text CHECK (translation_origin = ANY (ARRAY['manual'::text, 'ai'::text, 'sync_copy_all'::text, 'sync_fill_missing'::text])),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT market_explanation_faq_i18n_meta_pkey PRIMARY KEY (tab_id, item_id, locale)
+);
 CREATE TABLE public.admin_users (
   auth_user_id uuid NOT NULL,
   role text NOT NULL CHECK (role = ANY (ARRAY['admin_super'::text, 'admin_ops'::text, 'admin_billing'::text])),

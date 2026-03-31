@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatMarketExplanationFaqText } from "@/lib/market-explanation-faqs";
 
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
@@ -11,8 +12,6 @@ import { MatrixTable } from "@/components/MatrixTable";
 import { ZeitreiheChart } from "@/components/ZeitreiheChart";
 import { FaqSection } from "@/components/FaqSection";
 
-import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
-
 import type { MietrenditeVM } from "@/features/immobilienmarkt/selectors/shared/types/mietrendite";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
 
@@ -22,6 +21,10 @@ export function MietrenditeSection(
   },
 ) {
   const { vm, tocItems, tabs, activeTabId } = props;
+  const faqItems = props.marketExplanationFaqs.mietrendite.map((item) => ({
+    q: formatMarketExplanationFaqText(item.question, { regionName: vm.regionName }),
+    a: formatMarketExplanationFaqText(item.answer, { regionName: vm.regionName }),
+  }));
   const isOrt = vm.level === "ort";
 
   const orte = Array.isArray(props.ctx?.orte) ? props.ctx?.orte : [];
@@ -309,7 +312,7 @@ export function MietrenditeSection(
       {/* FAQ */}
       <section className="mb-5" id="faq-mietrendite">
         <h2 className="text-center mb-3">FAQ zur Mietrendite</h2>
-        <FaqSection id="faq" title={`FAQ – Mietrendite ${vm.regionName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
+        <FaqSection id="faq" title={`FAQ – Mietrendite ${vm.regionName}`} items={faqItems} />
       </section>
 
       {/* Erfasste Wohnlagen */}

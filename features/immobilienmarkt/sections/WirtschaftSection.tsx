@@ -1,6 +1,7 @@
 // features/immobilienmarkt/sections/WirtschaftSection.tsx
 
 import Link from "next/link";
+import { formatMarketExplanationFaqText } from "@/lib/market-explanation-faqs";
 
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
@@ -17,7 +18,6 @@ import { FaqSection } from "@/components/FaqSection";
 
 import type { WirtschaftVM } from "@/features/immobilienmarkt/selectors/shared/types/wirtschaft";
 import type { SectionPropsBase } from "@/features/immobilienmarkt/sections/types";
-import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
 const DEFAULT_ICON = "/icons/ws24_marktbericht_wirtschaft.svg";
 
@@ -27,6 +27,10 @@ export function WirtschaftSection(
   },
 ) {
   const { vm, tocItems, tabs, activeTabId } = props;
+  const faqItems = props.marketExplanationFaqs.wirtschaft.map((item) => ({
+    q: formatMarketExplanationFaqText(item.question, { regionName: vm.regionName }),
+    a: formatMarketExplanationFaqText(item.answer, { regionName: vm.regionName }),
+  }));
   const isOrt = vm.level === "ort";
 
   const bundeslandSlug = props.ctx?.bundeslandSlug ?? "";
@@ -740,7 +744,7 @@ export function WirtschaftSection(
       {/* FAQ */}
       <section className="mb-5" id="faq-wirtschaft">
         <h2 className="text-center mb-3">FAQ zu Wirtschaft und Arbeitsmarkt</h2>
-        <FaqSection id="faq" title={`FAQ – Wirtschaft ${vm.regionName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
+        <FaqSection id="faq" title={`FAQ – Wirtschaft ${vm.regionName}`} items={faqItems} />
       </section>
 
       {/* Erfasste Wohnlagen */}

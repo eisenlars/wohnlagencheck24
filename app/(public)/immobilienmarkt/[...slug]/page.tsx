@@ -23,6 +23,7 @@ import {
   loadSinglePublicVisiblePartnerIdForArea,
 } from "@/lib/public-partner-mappings";
 import { buildLocalizedHref, normalizePublicLocale } from "@/lib/public-locale-routing";
+import { getMarketExplanationFaqs } from "@/lib/market-explanation-faqs";
 import { getMarketExplanationStaticTexts } from "@/lib/market-explanation-static-texts";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
 import { resolveLeadGeneratorConfig } from "@/features/lead-generators/core/resolver";
@@ -183,9 +184,10 @@ export default async function ImmobilienmarktHierarchiePage({ params, locale = n
     ?? asString(meta["kreis_schluessel"])
     ?? ""
   ).trim();
-  const [texts, marketExplanationTexts] = await Promise.all([
+  const [texts, marketExplanationTexts, marketExplanationFaqs] = await Promise.all([
     getPortalSystemTexts(normalizedLocale),
     getMarketExplanationStaticTexts(normalizedLocale),
+    getMarketExplanationFaqs(normalizedLocale),
   ]);
   const slugPath = route.regionSlugs.join("/");
   const pagePath = buildLocalizedHref(
@@ -268,6 +270,7 @@ export default async function ImmobilienmarktHierarchiePage({ params, locale = n
         parentBasePath={parentBasePath}
         texts={texts}
         marketExplanationTexts={marketExplanationTexts}
+        marketExplanationFaqs={marketExplanationFaqs}
         ctx={ctx}
         assets={assets}
       />

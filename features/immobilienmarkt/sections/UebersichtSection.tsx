@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { formatMarketExplanationFaqText } from "@/lib/market-explanation-faqs";
 import { formatMarketExplanationStaticText } from "@/lib/market-explanation-static-text-definitions";
 import { buildWebAssetUrl } from "@/utils/assets";
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
@@ -24,7 +25,6 @@ import { OrtslagenUebersichtTable } from "@/components/OrtslagenUebersichtTable"
 import { PreisgrenzenRow } from "@/components/PreisgrenzenRow";
 import { FaqSection } from "@/components/FaqSection";
 import { NeedleRotateEnter } from "@/components/needle-rotate-enter";
-import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 
 type GaugeMode = "trend" | "saldo";
 
@@ -296,6 +296,10 @@ export function UebersichtSection(
       : "/immobilienmarkt";
   
   const isBundesland = vm.level === "bundesland";
+  const faqItems = props.marketExplanationFaqs.uebersicht.map((item) => ({
+    q: formatMarketExplanationFaqText(item.question, { regionName: vm.regionName }),
+    a: formatMarketExplanationFaqText(item.answer, { regionName: vm.regionName }),
+  }));
   const showSystempartnerNeutralMode = vm.isSystemDefaultPartner === true && !isBundesland;
   const bundeslandBerater = isBundesland ? (props.ctx?.berater ?? []) : [];
   const bundeslandMakler = isBundesland ? (props.ctx?.makler ?? []) : [];
@@ -1009,7 +1013,7 @@ export function UebersichtSection(
           <FaqSection
             id="faq-uebersicht"
             title={`FAQ – Immobilienmarkt ${vm.regionName}`}
-            items={FAQ_IMMOBILIENMARKT_ALLGEMEIN}
+            items={faqItems}
           />
         </section>
       ) : null}

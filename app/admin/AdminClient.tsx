@@ -13,6 +13,13 @@ import {
   type MarketExplanationStaticTextDefinition,
   type MarketExplanationStaticTextKey,
 } from "@/lib/market-explanation-static-text-definitions";
+import {
+  buildMarketExplanationFaqEffectiveGermanItems,
+  getMarketExplanationFaqDefaultItems,
+  type MarketExplanationFaqEntryRecord,
+  type MarketExplanationFaqEntryStatus,
+  type MarketExplanationFaqI18nMetaViewRecord,
+} from "@/lib/market-explanation-faqs";
 import type {
   MarketExplanationStaticTextEntryRecord,
   MarketExplanationStaticTextEntryStatus,
@@ -22,6 +29,7 @@ import {
   getMarketExplanationStandardDefinitions,
   MARKET_EXPLANATION_STANDARD_TEXT_DEFINITIONS,
   MARKET_EXPLANATION_STANDARD_TABS,
+  type MarketExplanationStandardTabId,
   type MarketExplanationStandardTextDefinition,
   type MarketExplanationStandardScope,
 } from "@/lib/market-explanation-standard-text-definitions";
@@ -117,6 +125,14 @@ type Integration = {
   is_active: boolean;
   settings?: Record<string, unknown> | null;
   last_sync_at?: string | null;
+};
+
+type MarketExplanationFaqDraftItem = {
+  item_id: string;
+  sort_order: number;
+  status: MarketExplanationFaqEntryStatus;
+  question: string;
+  answer: string;
 };
 
 type CrmResourceKey = "offers" | "references" | "requests";
@@ -1804,6 +1820,67 @@ function buildMarketExplanationStaticDraftMap(args: {
   }, {});
 }
 
+function buildMarketExplanationFaqDraftKey(locale: string, tabId: MarketExplanationStandardTabId): string {
+  return `${locale}::${tabId}`;
+}
+
+function createMarketExplanationFaqItemId(): string {
+  const randomId = globalThis.crypto?.randomUUID?.();
+  if (randomId) return randomId;
+  return `faq-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function buildMarketExplanationFaqDraftMap(args: {
+  locales: PortalLocaleConfigRecord[];
+  entries: MarketExplanationFaqEntryRecord[];
+}): Record<string, MarketExplanationFaqDraftItem[]> {
+  const locales = args.locales.length > 0 ? args.locales : [{ locale: "de" } as PortalLocaleConfigRecord];
+
+  return locales.reduce<Record<string, MarketExplanationFaqDraftItem[]>>((acc, localeRow) => {
+    const locale = String(localeRow.locale ?? "").trim().toLowerCase() || "de";
+    for (const tab of MARKET_EXPLANATION_STANDARD_TABS) {
+      const sourceItems = buildMarketExplanationFaqEffectiveGermanItems({
+        tabId: tab.id,
+        entries: args.entries,
+      });
+      const localizedRows = args.entries
+        .filter((entry) => entry.tab_id === tab.id && entry.locale === locale)
+        .sort((left, right) => left.sort_order - right.sort_order || left.item_id.localeCompare(right.item_id));
+      const localizedMap = new Map(localizedRows.map((entry) => [entry.item_id, entry] as const));
+
+      const rows: MarketExplanationFaqDraftItem[] = sourceItems.map((source, index) => {
+        const localized = localizedMap.get(source.item_id);
+        return {
+          item_id: source.item_id,
+          sort_order: source.sort_order ?? index,
+          status: localized?.status ?? (locale === "de" ? "live" : "draft"),
+          question: locale === "de" ? (localized?.question ?? source.question) : (localized?.question ?? ""),
+          answer: locale === "de" ? (localized?.answer ?? source.answer) : (localized?.answer ?? ""),
+        };
+      });
+
+      for (const localized of localizedRows) {
+        if (rows.some((row) => row.item_id === localized.item_id)) continue;
+        rows.push({
+          item_id: localized.item_id,
+          sort_order: localized.sort_order,
+          status: localized.status,
+          question: localized.question,
+          answer: localized.answer,
+        });
+      }
+
+      acc[buildMarketExplanationFaqDraftKey(locale, tab.id)] = rows
+        .sort((left, right) => left.sort_order - right.sort_order || left.item_id.localeCompare(right.item_id))
+        .map((row, index) => ({
+          ...row,
+          sort_order: index,
+        }));
+    }
+    return acc;
+  }, {});
+}
+
 function buildPortalSystemTextDraftMap(args: {
   locales: PortalLocaleConfigRecord[];
   definitions: PortalSystemTextDefinition[];
@@ -2160,6 +2237,9 @@ export default function AdminClient() {
     status: MarketExplanationStaticTextEntryStatus;
     value_text: string;
   }>>({});
+  const [marketExplanationFaqEntries, setMarketExplanationFaqEntries] = useState<MarketExplanationFaqEntryRecord[]>([]);
+  const [marketExplanationFaqMetas, setMarketExplanationFaqMetas] = useState<MarketExplanationFaqI18nMetaViewRecord[]>([]);
+  const [marketExplanationFaqDrafts, setMarketExplanationFaqDrafts] = useState<Record<string, MarketExplanationFaqDraftItem[]>>({});
   const [standardTextRefreshScope, setStandardTextRefreshScope] = useState<StandardTextRefreshScope>("bundesland");
   const [standardTextRefreshBundeslandSlug, setStandardTextRefreshBundeslandSlug] = useState<string>("");
   const [standardTextRefreshAreaQuery, setStandardTextRefreshAreaQuery] = useState<string>("");
@@ -2370,12 +2450,18 @@ export default function AdminClient() {
     [standardTextSourceDefinitions, standardTextSourceTab],
   );
   const marketExplanationVisibleTabs = useMemo(() => {
-    const sourceDefinitions = marketExplanationMode === "standard"
-      ? marketExplanationStandardDefinitions
-      : marketExplanationStaticDefinitions;
+    if (marketExplanationMode === "static") return MARKET_EXPLANATION_STANDARD_TABS;
+    const sourceDefinitions = marketExplanationStandardDefinitions;
     const allowed = new Set(sourceDefinitions.map((definition) => definition.tab));
     return MARKET_EXPLANATION_STANDARD_TABS.filter((tab) => allowed.has(tab.id));
-  }, [marketExplanationMode, marketExplanationStandardDefinitions, marketExplanationStaticDefinitions]);
+  }, [marketExplanationMode, marketExplanationStandardDefinitions]);
+  const activeMarketExplanationTabId = useMemo(
+    () =>
+      marketExplanationVisibleTabs.find((tab) => tab.label === marketExplanationTab)?.id
+      ?? marketExplanationVisibleTabs[0]?.id
+      ?? "uebersicht",
+    [marketExplanationTab, marketExplanationVisibleTabs],
+  );
   const marketExplanationStandardEntryMap = useMemo(
     () => buildMarketExplanationStandardEntryMap(marketExplanationStandardEntries),
     [marketExplanationStandardEntries],
@@ -2391,6 +2477,40 @@ export default function AdminClient() {
     }),
     [marketExplanationStaticDefinitions, marketExplanationTab],
   );
+  const marketExplanationFaqMetaMap = useMemo(
+    () => new Map(marketExplanationFaqMetas.map((meta) => [`${meta.locale}::${meta.tab_id}::${meta.item_id}`, meta] as const)),
+    [marketExplanationFaqMetas],
+  );
+  const activeMarketExplanationFaqDraftKey = useMemo(
+    () => buildMarketExplanationFaqDraftKey(marketExplanationStaticLocale, activeMarketExplanationTabId),
+    [activeMarketExplanationTabId, marketExplanationStaticLocale],
+  );
+  const activeMarketExplanationFaqDraftItems = useMemo(
+    () => marketExplanationFaqDrafts[activeMarketExplanationFaqDraftKey] ?? [],
+    [activeMarketExplanationFaqDraftKey, marketExplanationFaqDrafts],
+  );
+  const activeMarketExplanationFaqSourceItems = useMemo(
+    () => buildMarketExplanationFaqEffectiveGermanItems({
+      tabId: activeMarketExplanationTabId,
+      entries: marketExplanationFaqEntries,
+    }),
+    [activeMarketExplanationTabId, marketExplanationFaqEntries],
+  );
+  const updateActiveMarketExplanationFaqDraftItems = useCallback((
+    updater: (items: MarketExplanationFaqDraftItem[]) => MarketExplanationFaqDraftItem[],
+  ) => {
+    setMarketExplanationFaqDrafts((prev) => {
+      const current = prev[activeMarketExplanationFaqDraftKey] ?? [];
+      const next = updater(current.map((item) => ({ ...item }))).map((item, index) => ({
+        ...item,
+        sort_order: index,
+      }));
+      return {
+        ...prev,
+        [activeMarketExplanationFaqDraftKey]: next,
+      };
+    });
+  }, [activeMarketExplanationFaqDraftKey]);
   const portalContentMetaMap = useMemo(
     () => new Map(portalContentMetas.map((meta) => [`${meta.page_key}::${meta.section_key}::${meta.locale}`, meta] as const)),
     [portalContentMetas],
@@ -3934,23 +4054,36 @@ export default function AdminClient() {
   }
 
   async function loadMarketExplanationStaticTexts() {
-    const data = await api<{
-      locales?: PortalLocaleConfigRecord[];
-      definitions?: MarketExplanationStaticTextDefinition[];
-      entries?: MarketExplanationStaticTextEntryRecord[];
-      metas?: MarketExplanationStaticTextI18nMetaViewRecord[];
-    }>("/api/admin/market-explanation-static-texts");
-    const nextLocales = data.locales ?? [];
+    const [data, faqData] = await Promise.all([
+      api<{
+        locales?: PortalLocaleConfigRecord[];
+        definitions?: MarketExplanationStaticTextDefinition[];
+        entries?: MarketExplanationStaticTextEntryRecord[];
+        metas?: MarketExplanationStaticTextI18nMetaViewRecord[];
+      }>("/api/admin/market-explanation-static-texts"),
+      api<{
+        locales?: PortalLocaleConfigRecord[];
+        entries?: MarketExplanationFaqEntryRecord[];
+        metas?: MarketExplanationFaqI18nMetaViewRecord[];
+      }>("/api/admin/market-explanation-faqs"),
+    ]);
+    const nextLocales = data.locales?.length ? data.locales : (faqData.locales ?? []);
     const nextDefinitions = data.definitions ?? MARKET_EXPLANATION_STATIC_TEXT_DEFINITIONS;
     const nextEntries = data.entries ?? [];
     setPortalLocaleConfigs((prev) => (nextLocales.length > 0 ? nextLocales : prev));
     setMarketExplanationStaticDefinitions(nextDefinitions);
     setMarketExplanationStaticEntries(nextEntries);
     setMarketExplanationStaticMetas(data.metas ?? []);
+    setMarketExplanationFaqEntries(faqData.entries ?? []);
+    setMarketExplanationFaqMetas(faqData.metas ?? []);
     setMarketExplanationStaticDrafts(buildMarketExplanationStaticDraftMap({
       locales: nextLocales.length > 0 ? nextLocales : portalLocaleConfigs,
       definitions: nextDefinitions,
       entries: nextEntries,
+    }));
+    setMarketExplanationFaqDrafts(buildMarketExplanationFaqDraftMap({
+      locales: nextLocales.length > 0 ? nextLocales : portalLocaleConfigs,
+      entries: faqData.entries ?? [],
     }));
     const fallbackLocale = (nextLocales.length > 0 ? nextLocales : portalLocaleConfigs).find((row) => row.is_active)?.locale
       ?? (nextLocales.length > 0 ? nextLocales : portalLocaleConfigs)[0]?.locale
@@ -3958,6 +4091,22 @@ export default function AdminClient() {
     setMarketExplanationStaticLocale((prev) =>
       (nextLocales.length > 0 ? nextLocales : portalLocaleConfigs).some((row) => row.locale === prev) ? prev : fallbackLocale,
     );
+  }
+
+  function applyMarketExplanationFaqPayload(data: {
+    locales?: PortalLocaleConfigRecord[];
+    entries?: MarketExplanationFaqEntryRecord[];
+    metas?: MarketExplanationFaqI18nMetaViewRecord[];
+  }) {
+    const nextLocales = data.locales ?? portalLocaleConfigs;
+    const nextEntries = data.entries ?? [];
+    setPortalLocaleConfigs(nextLocales);
+    setMarketExplanationFaqEntries(nextEntries);
+    setMarketExplanationFaqMetas(data.metas ?? []);
+    setMarketExplanationFaqDrafts(buildMarketExplanationFaqDraftMap({
+      locales: nextLocales,
+      entries: nextEntries,
+    }));
   }
 
   async function loadMarketExplanationBundeslaender() {
@@ -4571,6 +4720,73 @@ export default function AdminClient() {
       definitions: nextDefinitions,
       entries: nextEntries,
     }));
+  }
+
+  async function saveMarketExplanationFaqLocale(tabId: MarketExplanationStandardTabId, locale: string) {
+    const rows = (marketExplanationFaqDrafts[buildMarketExplanationFaqDraftKey(locale, tabId)] ?? []).map((item, index) => ({
+      item_id: item.item_id,
+      sort_order: index,
+      status: item.status,
+      question: item.question,
+      answer: item.answer,
+    }));
+    const data = await api<{
+      locales?: PortalLocaleConfigRecord[];
+      entries?: MarketExplanationFaqEntryRecord[];
+      metas?: MarketExplanationFaqI18nMetaViewRecord[];
+    }>("/api/admin/market-explanation-faqs", {
+      method: "POST",
+      body: JSON.stringify({
+        locale,
+        tab_id: tabId,
+        entries: rows,
+      }),
+    });
+    applyMarketExplanationFaqPayload(data);
+  }
+
+  async function syncMarketExplanationFaqLocaleFromDe(
+    tabId: MarketExplanationStandardTabId,
+    locale: string,
+    mode: "copy_all" | "fill_missing",
+  ) {
+    const data = await api<{
+      locales?: PortalLocaleConfigRecord[];
+      entries?: MarketExplanationFaqEntryRecord[];
+      metas?: MarketExplanationFaqI18nMetaViewRecord[];
+    }>("/api/admin/market-explanation-faqs", {
+      method: "POST",
+      body: JSON.stringify({
+        sync: {
+          target_locale: locale,
+          tab_id: tabId,
+          mode,
+        },
+      }),
+    });
+    applyMarketExplanationFaqPayload(data);
+  }
+
+  async function translateMarketExplanationFaqLocaleWithAi(
+    tabId: MarketExplanationStandardTabId,
+    locale: string,
+    itemIds?: string[],
+  ) {
+    const data = await api<{
+      locales?: PortalLocaleConfigRecord[];
+      entries?: MarketExplanationFaqEntryRecord[];
+      metas?: MarketExplanationFaqI18nMetaViewRecord[];
+    }>("/api/admin/market-explanation-faqs", {
+      method: "POST",
+      body: JSON.stringify({
+        translate: {
+          target_locale: locale,
+          tab_id: tabId,
+          item_ids: itemIds && itemIds.length > 0 ? itemIds : undefined,
+        },
+      }),
+    });
+    applyMarketExplanationFaqPayload(data);
   }
 
   function buildPortalCmsPageDraftEntries(page: PortalContentPageDefinition, locale: string) {
@@ -8474,7 +8690,11 @@ export default function AdminClient() {
                   >
                     <span style={marketExplanationThemeTabLabelStyle}>{tab.label}</span>
                     <span style={marketExplanationThemeTabCountStyle}>
-                      {marketExplanationStaticDefinitions.filter((definition) => definition.tab === tab.id).length}
+                      {marketExplanationStaticDefinitions.filter((definition) => definition.tab === tab.id).length
+                        + buildMarketExplanationFaqEffectiveGermanItems({
+                          tabId: tab.id,
+                          entries: marketExplanationFaqEntries,
+                        }).length}
                     </span>
                   </button>
                 ))}
@@ -8583,6 +8803,272 @@ export default function AdminClient() {
                   Für diesen Tab sind aktuell noch keine statischen Erklärungstexte ohne Text-Key hinterlegt.
                 </div>
               ) : null}
+              <div style={{ border: "1px solid #dbe4ee", borderRadius: 10, padding: 12, background: "#f8fafc", display: "grid", gap: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "#0f172a" }}>FAQ</div>
+                    <div style={mutedStyle}>
+                      Dynamische Accordion-Inhalte für den Themen-Tab <strong>{marketExplanationTab}</strong>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {marketExplanationStaticLocale === "de" ? (
+                      <button
+                        style={btnGhostStyle}
+                        disabled={busy}
+                        onClick={() =>
+                          updateActiveMarketExplanationFaqDraftItems((items) => ([
+                            ...items,
+                            {
+                              item_id: createMarketExplanationFaqItemId(),
+                              sort_order: items.length,
+                              status: "live",
+                              question: "",
+                              answer: "",
+                            },
+                          ]))
+                        }
+                      >
+                        FAQ hinzufügen
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          style={btnSuccessGhostStyle}
+                          disabled={busy || activeMarketExplanationFaqSourceItems.length === 0}
+                          onClick={() =>
+                            run(`FAQ ${marketExplanationTab} aus DE ergänzen`, async () => {
+                              await syncMarketExplanationFaqLocaleFromDe(activeMarketExplanationTabId, marketExplanationStaticLocale, "fill_missing");
+                            })
+                          }
+                        >
+                          Aus DE ergänzen
+                        </button>
+                        <button
+                          style={btnSuccessGhostStyle}
+                          disabled={busy || activeMarketExplanationFaqSourceItems.length === 0}
+                          onClick={() =>
+                            run(`FAQ ${marketExplanationTab} komplett aus DE übernehmen`, async () => {
+                              await syncMarketExplanationFaqLocaleFromDe(activeMarketExplanationTabId, marketExplanationStaticLocale, "copy_all");
+                            })
+                          }
+                        >
+                          DE komplett übernehmen
+                        </button>
+                        <button
+                          style={btnGhostStyle}
+                          disabled={busy || activeMarketExplanationFaqSourceItems.length === 0}
+                          onClick={() =>
+                            run(`FAQ ${marketExplanationTab} per KI übersetzen`, async () => {
+                              await translateMarketExplanationFaqLocaleWithAi(
+                                activeMarketExplanationTabId,
+                                marketExplanationStaticLocale,
+                                activeMarketExplanationFaqSourceItems.map((item) => item.item_id),
+                              );
+                            })
+                          }
+                        >
+                          Tab per KI übersetzen
+                        </button>
+                      </>
+                    )}
+                    <button
+                      style={btnStyle}
+                      disabled={busy}
+                      onClick={() =>
+                        run(`FAQ ${marketExplanationTab} speichern`, async () => {
+                          await saveMarketExplanationFaqLocale(activeMarketExplanationTabId, marketExplanationStaticLocale);
+                        })
+                      }
+                    >
+                      FAQ speichern
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gap: 12 }}>
+                  {activeMarketExplanationFaqDraftItems.map((item, index) => {
+                    const sourceItem = activeMarketExplanationFaqSourceItems.find((entry) => entry.item_id === item.item_id)
+                      ?? getMarketExplanationFaqDefaultItems(activeMarketExplanationTabId, "de").find((entry) => entry.item_id === item.item_id)
+                      ?? null;
+                    const meta = marketExplanationFaqMetaMap.get(`${marketExplanationStaticLocale}::${activeMarketExplanationTabId}::${item.item_id}`) ?? null;
+                    const isTranslatedFaq = marketExplanationStaticLocale !== "de";
+                    return (
+                      <div key={`${activeMarketExplanationTabId}:${item.item_id}`} style={{ border: "1px solid #dbe4ee", borderRadius: 8, padding: 10, background: "#fff", display: "grid", gap: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                          <div>
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                              <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                                FAQ {index + 1}
+                              </div>
+                              <span style={{ ...mutedStyle, fontSize: 12 }}>
+                                <code>{item.item_id}</code>
+                              </span>
+                            </div>
+                            <div style={{ ...mutedStyle, fontSize: 12 }}>
+                              Status: <strong>{formatPortalEntryStatus(item.status as PortalContentEntryStatus)}</strong>
+                              {isTranslatedFaq && meta
+                                ? ` · ${formatPortalTranslationOrigin(meta.translation_origin)}${meta.translation_is_stale ? " · DE geändert" : ""}`
+                                : ""}
+                            </div>
+                          </div>
+                          <select
+                            style={{ ...inputStyle, maxWidth: 180 }}
+                            value={item.status}
+                            onChange={(event) => {
+                              const nextStatus = String(event.target.value) as MarketExplanationFaqEntryStatus;
+                              updateActiveMarketExplanationFaqDraftItems((items) => items.map((entry) =>
+                                entry.item_id === item.item_id
+                                  ? { ...entry, status: nextStatus }
+                                  : entry));
+                            }}
+                          >
+                            <option value="draft">entwurf</option>
+                            <option value="internal">intern</option>
+                            <option value="live">live</option>
+                          </select>
+                        </div>
+
+                        {isTranslatedFaq ? (
+                          <div style={{ borderRadius: 8, background: "#f8fafc", padding: 10, border: "1px solid #e2e8f0" }}>
+                            <div style={{ ...mutedStyle, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>DE-Quelle</div>
+                            <div style={{ display: "grid", gap: 8 }}>
+                              <div>
+                                <div style={{ ...mutedStyle, fontSize: 12, marginBottom: 4 }}>Frage</div>
+                                <div style={{ whiteSpace: "pre-wrap", color: "#334155", fontSize: 13 }}>
+                                  {sourceItem?.question || "Keine DE-Quelle vorhanden."}
+                                </div>
+                              </div>
+                              <div>
+                                <div style={{ ...mutedStyle, fontSize: 12, marginBottom: 4 }}>Antwort</div>
+                                <div style={{ whiteSpace: "pre-wrap", color: "#334155", fontSize: 13 }}>
+                                  {sourceItem?.answer || "Keine DE-Quelle vorhanden."}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <div style={{ display: "grid", gap: 8 }}>
+                          <textarea
+                            style={{ ...inputStyle, minHeight: 72, resize: "vertical" }}
+                            value={item.question}
+                            placeholder="Frage"
+                            onChange={(event) => {
+                              const nextValue = event.target.value;
+                              updateActiveMarketExplanationFaqDraftItems((items) => items.map((entry) =>
+                                entry.item_id === item.item_id
+                                  ? { ...entry, question: nextValue }
+                                  : entry));
+                            }}
+                          />
+                          <textarea
+                            style={{ ...inputStyle, minHeight: 120, resize: "vertical" }}
+                            value={item.answer}
+                            placeholder="Antwort"
+                            onChange={(event) => {
+                              const nextValue = event.target.value;
+                              updateActiveMarketExplanationFaqDraftItems((items) => items.map((entry) =>
+                                entry.item_id === item.item_id
+                                  ? { ...entry, answer: nextValue }
+                                  : entry));
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+                          {isTranslatedFaq ? (
+                            <>
+                              <button
+                                style={btnGhostStyle}
+                                disabled={busy}
+                                onClick={() =>
+                                  run(`FAQ ${index + 1} per KI übersetzen`, async () => {
+                                    await translateMarketExplanationFaqLocaleWithAi(
+                                      activeMarketExplanationTabId,
+                                      marketExplanationStaticLocale,
+                                      [item.item_id],
+                                    );
+                                  })
+                                }
+                              >
+                                Per KI übersetzen
+                              </button>
+                              <button
+                                style={btnGhostStyle}
+                                disabled={busy || !sourceItem}
+                                onClick={() =>
+                                  updateActiveMarketExplanationFaqDraftItems((items) => items.map((entry) =>
+                                    entry.item_id === item.item_id
+                                      ? {
+                                          ...entry,
+                                          status: entry.status === "live" ? "internal" : entry.status,
+                                          question: sourceItem?.question ?? "",
+                                          answer: sourceItem?.answer ?? "",
+                                        }
+                                      : entry))
+                                }
+                              >
+                                DE übernehmen
+                              </button>
+                              <button
+                                style={btnGhostStyle}
+                                disabled={busy}
+                                onClick={() =>
+                                  updateActiveMarketExplanationFaqDraftItems((items) => items.map((entry) =>
+                                    entry.item_id === item.item_id
+                                      ? { ...entry, status: "draft", question: "", answer: "" }
+                                      : entry))
+                                }
+                              >
+                                Auf DE zurücksetzen
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                style={btnGhostStyle}
+                                disabled={busy || index === 0}
+                                onClick={() =>
+                                  updateActiveMarketExplanationFaqDraftItems((items) => {
+                                    const next = [...items];
+                                    [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                                    return next;
+                                  })
+                                }
+                              >
+                                Nach oben
+                              </button>
+                              <button
+                                style={btnGhostStyle}
+                                disabled={busy || index === activeMarketExplanationFaqDraftItems.length - 1}
+                                onClick={() =>
+                                  updateActiveMarketExplanationFaqDraftItems((items) => {
+                                    const next = [...items];
+                                    [next[index], next[index + 1]] = [next[index + 1], next[index]];
+                                    return next;
+                                  })
+                                }
+                              >
+                                Nach unten
+                              </button>
+                              <button
+                                style={btnGhostStyle}
+                                disabled={busy}
+                                onClick={() =>
+                                  updateActiveMarketExplanationFaqDraftItems((items) => items.filter((entry) => entry.item_id !== item.item_id))
+                                }
+                              >
+                                Entfernen
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
         </div>

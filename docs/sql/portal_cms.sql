@@ -139,6 +139,34 @@ create table if not exists public.admin_area_text_i18n_meta (
   primary key (scope_kind, scope_key, section_key, locale)
 );
 
+create table if not exists public.market_explanation_faq_entries (
+  tab_id text not null
+    check (tab_id in ('uebersicht', 'immobilienpreise', 'mietpreise', 'mietrendite', 'wohnmarktsituation', 'grundstueckspreise', 'wohnlagencheck', 'wirtschaft')),
+  item_id text not null,
+  locale text not null,
+  status text not null default 'draft'
+    check (status in ('draft', 'internal', 'live')),
+  question text not null default '',
+  answer text not null default '',
+  sort_order integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (tab_id, item_id, locale)
+);
+
+create table if not exists public.market_explanation_faq_i18n_meta (
+  tab_id text not null
+    check (tab_id in ('uebersicht', 'immobilienpreise', 'mietpreise', 'mietrendite', 'wohnmarktsituation', 'grundstueckspreise', 'wohnlagencheck', 'wirtschaft')),
+  item_id text not null,
+  locale text not null,
+  source_locale text not null default 'de',
+  source_snapshot_hash text,
+  source_updated_at timestamptz,
+  translation_origin text not null default 'manual'
+    check (translation_origin in ('manual', 'ai', 'sync_copy_all', 'sync_fill_missing')),
+  updated_at timestamptz not null default now(),
+  primary key (tab_id, item_id, locale)
+);
+
 -- Partner-Runtime-Layer fuer Kreis/Ortslage
 -- Storage-Reports bleiben Base; partnerbezogene Rebuild-Ergebnisse liegen in der DB.
 create table if not exists public.partner_area_runtime_states (
@@ -227,6 +255,12 @@ comment on table public.admin_area_text_i18n_entries is
 
 comment on table public.admin_area_text_i18n_meta is
   'Quellbezug und Uebersetzungsstatus fuer mehrsprachige Admin-Gebietstexte.';
+
+comment on table public.market_explanation_faq_entries is
+  'Dynamische FAQ-Eintraege pro Markterklaerungs-Themen-Tab und Locale.';
+
+comment on table public.market_explanation_faq_i18n_meta is
+  'Quellbezug und Uebersetzungsstatus fuer dynamische Markterklaerungs-FAQ.';
 
 comment on table public.partner_area_runtime_states is
   'Partnerbezogene Runtime-Snapshots fuer faktorisierte Gebietsdaten, textgen_inputs und helper state. Storage-Reports bleiben damit Base.';

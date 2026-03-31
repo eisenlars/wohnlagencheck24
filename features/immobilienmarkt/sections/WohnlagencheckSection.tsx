@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { formatMarketExplanationFaqText } from "@/lib/market-explanation-faqs";
 
 import { TabNav } from "@/features/immobilienmarkt/shared/TabNav";
 import { HeroOverlayActions } from "@/features/immobilienmarkt/shared/HeroOverlayActions";
@@ -14,8 +15,6 @@ import { RadarChartSvg } from "@/components/RadarChartSvg";
 import { KpiValue } from "@/components/KpiValue";
 import { FaqSection } from "@/components/FaqSection";
 import { ImageModal } from "@/components/ImageModal";
-
-import { FAQ_IMMOBILIENMARKT_ALLGEMEIN } from "@/content/faqs";
 import { formatMetric } from "@/utils/format";
 
 import type { WohnlagencheckVM } from "@/features/immobilienmarkt/selectors/shared/types/wohnlagencheck";
@@ -27,6 +26,10 @@ export function WohnlagencheckSection(
   },
 ) {
   const { vm, tocItems, tabs, activeTabId } = props;
+  const faqItems = props.marketExplanationFaqs.wohnlagencheck.map((item) => ({
+    q: formatMarketExplanationFaqText(item.question, { regionName: vm.regionName }),
+    a: formatMarketExplanationFaqText(item.answer, { regionName: vm.regionName }),
+  }));
   const isOrt = vm.level === "ort";
 
   const orte = Array.isArray(props.ctx?.orte) ? props.ctx?.orte : [];
@@ -2393,10 +2396,10 @@ export function WohnlagencheckSection(
           </section>
         ) : null}
 
-        {/* FAQ */}
-        <section className="mb-5" id="faq-wohnlagencheck">
-          <FaqSection id="faq" title={`FAQ – Wohnlagencheck ${vm.regionName}`} items={FAQ_IMMOBILIENMARKT_ALLGEMEIN} />
-        </section>
+      {/* FAQ */}
+      <section className="mb-5" id="faq-wohnlagencheck">
+        <FaqSection id="faq" title={`FAQ – Wohnlagencheck ${vm.regionName}`} items={faqItems} />
+      </section>
 
         {/* Erfasste Wohnlagen */}
         {(vm.level === "kreis" || vm.level === "ort") ? (
