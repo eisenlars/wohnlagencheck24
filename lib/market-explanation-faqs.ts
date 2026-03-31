@@ -5,7 +5,6 @@ import {
   MARKET_EXPLANATION_STANDARD_TABS,
   type MarketExplanationStandardTabId,
 } from "@/lib/market-explanation-standard-text-definitions";
-import { normalizePublicLocale } from "@/lib/public-locale-routing";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 export type MarketExplanationFaqEntryStatus = "draft" | "internal" | "live";
@@ -143,9 +142,9 @@ export function getMarketExplanationFaqDefaultItems(
 export function getMarketExplanationFaqDefaultMap(
   locale?: string | null | undefined,
 ): MarketExplanationFaqMap {
-  const _normalized = normalizePublicLocale(locale);
+  void locale;
   return MARKET_EXPLANATION_STANDARD_TABS.reduce<MarketExplanationFaqMap>((acc, tab) => {
-    acc[tab.id] = getMarketExplanationFaqDefaultItems(tab.id, _normalized);
+    acc[tab.id] = getMarketExplanationFaqDefaultItems(tab.id);
     return acc;
   }, {} as MarketExplanationFaqMap);
 }
@@ -195,7 +194,7 @@ export function buildMarketExplanationFaqEffectiveGermanItems(args: {
       sort_order: entry.sort_order,
     }));
   }
-  return getMarketExplanationFaqDefaultItems(args.tabId, "de");
+  return getMarketExplanationFaqDefaultItems(args.tabId);
 }
 
 export async function loadMarketExplanationFaqI18nMeta(

@@ -8889,7 +8889,7 @@ export default function AdminClient() {
                 <div style={{ display: "grid", gap: 12 }}>
                   {activeMarketExplanationFaqDraftItems.map((item, index) => {
                     const sourceItem = activeMarketExplanationFaqSourceItems.find((entry) => entry.item_id === item.item_id)
-                      ?? getMarketExplanationFaqDefaultItems(activeMarketExplanationTabId, "de").find((entry) => entry.item_id === item.item_id)
+                      ?? getMarketExplanationFaqDefaultItems(activeMarketExplanationTabId).find((entry) => entry.item_id === item.item_id)
                       ?? null;
                     const meta = marketExplanationFaqMetaMap.get(`${marketExplanationStaticLocale}::${activeMarketExplanationTabId}::${item.item_id}`) ?? null;
                     const isTranslatedFaq = marketExplanationStaticLocale !== "de";

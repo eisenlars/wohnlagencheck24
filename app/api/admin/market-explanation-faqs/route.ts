@@ -144,7 +144,7 @@ async function loadEffectiveGermanFaqItems(
   if (error) throw error;
   const rows = (data ?? []).map((row) => mapFaqRow(row as Record<string, unknown>));
   if (rows.length > 0) return rows;
-  return getMarketExplanationFaqDefaultItems(tabId, "de").map((item) => ({
+  return getMarketExplanationFaqDefaultItems(tabId).map((item) => ({
     tab_id: tabId,
     item_id: item.item_id,
     locale: "de",
