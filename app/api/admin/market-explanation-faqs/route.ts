@@ -381,6 +381,7 @@ export async function POST(req: Request) {
       }
 
       const sourceItems = await loadEffectiveGermanFaqItems(admin, tabId);
+      const translationOrigin = mode === "copy_all" ? "sync_copy_all" : "sync_fill_missing";
       const { data: targetData, error: targetError } = await admin
         .from("market_explanation_faq_entries")
         .select("tab_id, item_id, locale, status, question, answer, sort_order, updated_at")
@@ -425,7 +426,7 @@ export async function POST(req: Request) {
             answer: item.answer,
           }),
           source_updated_at: item.updated_at ?? null,
-          translation_origin: mode,
+          translation_origin: translationOrigin,
         })));
       }
       const payload = await loadFaqPayload(admin);
