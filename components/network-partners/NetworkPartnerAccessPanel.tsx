@@ -88,10 +88,6 @@ export default function NetworkPartnerAccessPanel({
 
   return (
     <section style={{ display: 'grid', gap: 18 }}>
-      <div style={{ display: 'grid', gap: 6 }}>
-        <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Login-Status</h2>
-      </div>
-
       {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
       {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
 
@@ -100,6 +96,7 @@ export default function NetworkPartnerAccessPanel({
           <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>
         ) : (
           <>
+            <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Login-Status</h2>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
               <span
                 style={{
