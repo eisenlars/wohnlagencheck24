@@ -1854,8 +1854,8 @@ function buildMarketExplanationFaqDraftMap(args: {
           item_id: source.item_id,
           sort_order: source.sort_order ?? index,
           status: localized?.status ?? (locale === "de" ? "live" : "draft"),
-          question: locale === "de" ? (localized?.question ?? source.question) : (localized?.question ?? ""),
-          answer: locale === "de" ? (localized?.answer ?? source.answer) : (localized?.answer ?? ""),
+          question: localized?.question ?? source.question,
+          answer: localized?.answer ?? source.answer,
         };
       });
 
@@ -8910,6 +8910,7 @@ export default function AdminClient() {
                               {isTranslatedFaq && meta
                                 ? ` · ${formatPortalTranslationOrigin(meta.translation_origin)}${meta.translation_is_stale ? " · DE geändert" : ""}`
                                 : ""}
+                              {isTranslatedFaq && !meta ? " · DE-Vorlage im Feld" : ""}
                             </div>
                           </div>
                           <select
@@ -8928,26 +8929,6 @@ export default function AdminClient() {
                             <option value="live">live</option>
                           </select>
                         </div>
-
-                        {isTranslatedFaq ? (
-                          <div style={{ borderRadius: 8, background: "#f8fafc", padding: 10, border: "1px solid #e2e8f0" }}>
-                            <div style={{ ...mutedStyle, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>DE-Quelle</div>
-                            <div style={{ display: "grid", gap: 8 }}>
-                              <div>
-                                <div style={{ ...mutedStyle, fontSize: 12, marginBottom: 4 }}>Frage</div>
-                                <div style={{ whiteSpace: "pre-wrap", color: "#334155", fontSize: 13 }}>
-                                  {sourceItem?.question || "Keine DE-Quelle vorhanden."}
-                                </div>
-                              </div>
-                              <div>
-                                <div style={{ ...mutedStyle, fontSize: 12, marginBottom: 4 }}>Antwort</div>
-                                <div style={{ whiteSpace: "pre-wrap", color: "#334155", fontSize: 13 }}>
-                                  {sourceItem?.answer || "Keine DE-Quelle vorhanden."}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ) : null}
 
                         <div style={{ display: "grid", gap: 8 }}>
                           <textarea
@@ -9021,7 +9002,7 @@ export default function AdminClient() {
                                       : entry))
                                 }
                               >
-                                Auf DE zurücksetzen
+                                Felder leeren
                               </button>
                             </>
                           ) : (
