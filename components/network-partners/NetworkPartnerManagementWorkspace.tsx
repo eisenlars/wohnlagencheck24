@@ -56,9 +56,15 @@ export default function NetworkPartnerManagementWorkspace({
     };
   }, []);
 
-  const loadNetworkPartners = useCallback(async (preferredPartnerId?: string | null) => {
+  const loadNetworkPartners = useCallback(async (
+    preferredPartnerId?: string | null,
+    options?: { preserveStatusMessage?: boolean },
+  ) => {
     setLoading(true);
-    setError(null);
+    if (!options?.preserveStatusMessage) {
+      setError(null);
+      setMessage(null);
+    }
     const { response, payload } = await fetchNetworkPartners();
     if (!response.ok) {
       setNetworkPartners([]);
@@ -243,7 +249,7 @@ export default function NetworkPartnerManagementWorkspace({
                 {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
                 <NetworkPartnerForm
                   submitLabel="Einladung senden und Partner anlegen"
-                  helperText="Falls der Einladungsversand scheitert, bleibt der Partner trotzdem angelegt und der Invite kann danach im Tab Zugang & Einladung erneut ausgelöst werden."
+                  helperText="Falls der Einladungsversand scheitert, bleibt der Partner trotzdem angelegt. Der konkrete Fehler wird danach direkt im Profil des neuen Partners angezeigt."
                   onSubmit={async (values) => {
                     setError(null);
                     setMessage(null);
@@ -274,7 +280,7 @@ export default function NetworkPartnerManagementWorkspace({
                       });
                     }
                     if (payload?.invite_sent === false) {
-                      setMessage('Netzwerkpartner wurde angelegt. Der Einladungsversand ist fehlgeschlagen und kann jetzt im Tab Zugang & Einladung erneut ausgelöst werden.');
+                      setMessage('Netzwerkpartner wurde angelegt. Der Einladungsversand ist fehlgeschlagen.');
                       setError(String(payload?.invite_error ?? 'Einladungsversand fehlgeschlagen.'));
                     } else {
                       setMessage('Netzwerkpartner wurde angelegt und die Einladung wurde versendet.');
@@ -284,7 +290,7 @@ export default function NetworkPartnerManagementWorkspace({
                       selectPartner(createdPartnerId);
                     }
                     changeDetailSection('profile');
-                    await loadNetworkPartners(createdPartnerId);
+                    await loadNetworkPartners(createdPartnerId, { preserveStatusMessage: true });
                   }}
                 />
               </div>
