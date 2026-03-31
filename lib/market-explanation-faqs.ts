@@ -5,6 +5,7 @@ import {
   MARKET_EXPLANATION_STANDARD_TABS,
   type MarketExplanationStandardTabId,
 } from "@/lib/market-explanation-standard-text-definitions";
+import { normalizePublicLocale } from "@/lib/public-locale-routing";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 export type MarketExplanationFaqEntryStatus = "draft" | "internal" | "live";
