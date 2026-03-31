@@ -133,10 +133,10 @@ export default function NetworkBillingWorkspace({
             Netzwerkpartner-Plattform
           </span>
           <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>
-            {networkPartnerId ? `${networkPartnerName ?? 'Netzwerkpartner'}: Abrechnung` : 'Abrechnung'}
+            {networkPartnerId ? `${networkPartnerName ?? 'Netzwerkpartner'}: Partnererlöse` : 'Partnererlöse'}
           </h1>
           <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', maxWidth: 780, lineHeight: 1.6 }}>
-            Diese Übersicht trennt Buchungsbasis, Rechnungszeilen und Settlement. KI-Kosten bleiben in Phase 1 bewusst außerhalb dieses Monitors.
+            Diese Übersicht zeigt, welche Erlöse das Netzwerkpartner-Geschäft aktuell trägt und welches Potenzial bereits in gebuchten Leistungen steckt.
           </p>
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', color: '#fff', fontWeight: 700 }}>
             <span>Monatspreise: {formatCurrency(headlineTotals.monthlyGross)}</span>
@@ -149,12 +149,12 @@ export default function NetworkBillingWorkspace({
       <section style={workflowPanelCardStyle}>
         <div style={workflowHeaderStyle}>
           <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>
-            {networkPartnerId ? 'Partner-Abrechnung' : 'Abrechnungsmonitor'}
+            {networkPartnerId ? 'Erlöse dieses Partners' : 'Erlösübersicht'}
           </h2>
           <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
             {networkPartnerId
-              ? 'Die Sicht zeigt Buchungsbasis, Rechnungszeilen und Settlement fuer den ausgewaehlten Netzwerkpartner.'
-              : 'Der Monitor zeigt Buchungsbasis, echte Rechnungszeilen und Settlement. Ab Sprint 3 kann der Portal-Partner periodische Billing-Runs manuell auslösen.'}
+              ? 'Die Sicht zeigt, welche Erlöse und Abrechnungswerte der ausgewählte Netzwerkpartner aktuell zum Gesamtgeschäft beiträgt.'
+              : 'Die Übersicht zeigt gebuchte Erlöse, Abrechnungsbasis und Settlement über das gesamte Netzwerkpartner-Geschäft. So wird sichtbar, wo weiteres Ausbaupotenzial liegt.'}
           </p>
         </div>
         {!networkPartnerId ? (

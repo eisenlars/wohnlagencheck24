@@ -580,8 +580,8 @@ export default function DashboardClient({
         }
         if (networkPartnerSection === 'billing') {
           return {
-            title: 'Abrechnung',
-            description: 'Rechnungsbasis, Settlement und Billing-Runs für das Netzwerkpartner-Geschäft überwachen.',
+            title: 'Partnererlöse',
+            description: 'Erlöse, Potenziale und Abrechnungsbasis im Netzwerkpartner-Geschäft transparent verfolgen.',
             isRegionBased: false,
             showDistrictSelector: false,
           };
@@ -596,7 +596,7 @@ export default function DashboardClient({
         }
         return {
           title: 'Netzwerkpartner Verwaltung',
-          description: 'Regionale Partner im Master-Detail-Modell mit Zugängen, Buchungen, Content und Abrechnung verwalten.',
+          description: 'Regionale Partner im Master-Detail-Modell mit Zugängen, Buchungen, Content und Partnererlösen verwalten.',
           isRegionBased: false,
           showDistrictSelector: false,
         };
@@ -835,7 +835,7 @@ export default function DashboardClient({
       { id: 'partner_ads', label: 'Netzwerkpartner Verwaltung', icon: 'partner_ads', tab: 'network_partners', networkPartnerSection: 'overview' },
       { id: 'partner_gesuche', label: 'Buchungen', icon: 'partner_gesuche', tab: 'network_partners', networkPartnerSection: 'bookings' },
       { id: 'partner_content', label: 'Content & Review', icon: 'texts', tab: 'network_partners', networkPartnerSection: 'content' },
-      { id: 'partner_billing', label: 'Abrechnung', icon: 'marketing', tab: 'network_partners', networkPartnerSection: 'billing' },
+      { id: 'partner_billing', label: 'Partnererlöse', icon: 'marketing', tab: 'network_partners', networkPartnerSection: 'billing' },
       { id: 'partner_ai', label: 'KI-Nutzung', icon: 'forecast', tab: 'network_partners', networkPartnerSection: 'ai' },
     ],
   ];
@@ -3015,7 +3015,7 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
         {
           key: 'network_partners',
           title: 'Netzwerkpartner Verwaltung',
-          description: 'Regionale Partner im Master-Detail-Arbeitsbereich mit Zugängen, Buchungen und Abrechnung verwalten.',
+          description: 'Regionale Partner im Master-Detail-Arbeitsbereich mit Zugängen, Buchungen und Partnererlösen verwalten.',
           icon: 'partner_ads',
           networkPartnerSection: 'overview',
         },
@@ -3035,8 +3035,8 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
         },
         {
           key: 'network_partners',
-          title: 'Abrechnung',
-          description: 'Rechnungsbasis, Settlement und Billing-Runs für das Netzwerkpartner-Geschäft prüfen.',
+          title: 'Partnererlöse',
+          description: 'Erlöse, Potenziale und Abrechnungsbasis im Netzwerkpartner-Geschäft prüfen.',
           icon: 'marketing',
           networkPartnerSection: 'billing',
         },
