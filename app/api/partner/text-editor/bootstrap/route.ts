@@ -97,21 +97,20 @@ function normalizeAreaConfig(value: unknown): PartnerAreaConfig | null {
 
 function normalizeTextEntries(value: unknown): TextEntry[] {
   if (!Array.isArray(value)) return [];
-  return value
-    .map((row) => {
-      if (!row || typeof row !== "object") return null;
+  return value.reduce<TextEntry[]>((acc, row) => {
+      if (!row || typeof row !== "object") return acc;
       const rec = row as Record<string, unknown>;
       const sectionKey = typeof rec.section_key === "string" ? rec.section_key.trim() : "";
-      if (!sectionKey) return null;
-      return {
+      if (!sectionKey) return acc;
+      acc.push({
         section_key: sectionKey,
         optimized_content: typeof rec.optimized_content === "string" ? rec.optimized_content : null,
         status: typeof rec.status === "string" ? rec.status : null,
         text_type: typeof rec.text_type === "string" ? rec.text_type : null,
         last_updated: typeof rec.last_updated === "string" ? rec.last_updated : null,
-      } satisfies TextEntry;
-    })
-    .filter((row): row is TextEntry => row !== null);
+      } satisfies TextEntry);
+      return acc;
+    }, []);
 }
 
 async function requirePartnerUser(): Promise<string> {
