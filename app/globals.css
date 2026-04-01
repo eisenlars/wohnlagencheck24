@@ -989,9 +989,14 @@ h6 {
   margin: 0;
 }
 
-.site-header--home .navbar-toggler {
-  border: 3px solid #486b7a;
-  padding: 0.2rem 0.45rem;
+.site-header .navbar-toggler,
+.language-switcher-toggle {
+  min-height: 38px;
+}
+
+.site-header .navbar-toggler {
+  border: 2px solid #486b7a;
+  padding: 0.25rem 0.65rem;
 }
 
 .language-switcher-toggle {
@@ -1030,9 +1035,13 @@ h6 {
     display: none;
   }
 
-  .site-header--default .navbar-toggler {
-    border-width: 3px;
-    padding: 0.2rem 0.45rem;
+  .site-header .navbar-toggler,
+  .language-switcher-toggle {
+    min-height: 34px;
+  }
+
+  .site-header .navbar-toggler {
+    padding: 0.2rem 0.55rem;
   }
 
   .language-switcher-toggle {
