@@ -14,11 +14,18 @@ where n.nspname = 'public'
   and c.relname in (
     'partners',
     'partner_area_map',
+    'partner_area_runtime_states',
+    'partner_area_generated_texts',
     'report_texts',
     'partner_integrations',
+    'integration_sync_runs',
     'partner_marketing_texts',
     'partner_local_site_texts',
     'data_value_settings',
+    'admin_area_text_i18n_entries',
+    'admin_area_text_i18n_meta',
+    'market_explanation_faq_entries',
+    'market_explanation_faq_i18n_meta',
     'areas',
     'market_data',
     'security_audit_log',
@@ -39,11 +46,18 @@ where schemaname = 'public'
   and tablename in (
     'partners',
     'partner_area_map',
+    'partner_area_runtime_states',
+    'partner_area_generated_texts',
     'report_texts',
     'partner_integrations',
+    'integration_sync_runs',
     'partner_marketing_texts',
     'partner_local_site_texts',
     'data_value_settings',
+    'admin_area_text_i18n_entries',
+    'admin_area_text_i18n_meta',
+    'market_explanation_faq_entries',
+    'market_explanation_faq_i18n_meta',
     'areas',
     'market_data',
     'security_audit_log',
@@ -97,4 +111,3 @@ where table_schema = 'public'
     or (table_name = 'partner_area_map' and column_name in ('activation_status', 'mandatory_checked_at', 'mandatory_missing_keys', 'partner_submitted_at'))
   )
 order by table_name, column_name;
-
