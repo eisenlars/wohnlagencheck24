@@ -311,30 +311,29 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
 
   if (childAreasError) throw new Error(childAreasError.message);
 
-  const derivedOrtslagen: PartnerAreaConfig[] = (childAreas ?? [])
-    .map((area) => {
-      const areaId = String(area.id ?? "");
-      if (!areaId || mappedAreaIds.has(areaId)) return null;
-      const parentSlug = String(area.parent_slug ?? "");
-      const parentDistrict = districtBySlug.get(parentSlug);
-      if (!parentDistrict) return null;
-      return {
-        area_id: areaId,
-        is_active: true,
-        activation_status: parentDistrict.activation_status ?? "active",
-        is_public_live: Boolean(parentDistrict.is_public_live),
-        offer_visibility_mode: parentDistrict.offer_visibility_mode ?? "partner_wide",
-        request_visibility_mode: parentDistrict.request_visibility_mode ?? "partner_wide",
-        areas: {
-          id: areaId,
-          name: String(area.name ?? ""),
-          slug: String(area.slug ?? ""),
-          parent_slug: parentSlug,
-          bundesland_slug: String(area.bundesland_slug ?? ""),
-        },
-      } as PartnerAreaConfig;
-    })
-    .filter((entry): entry is PartnerAreaConfig => Boolean(entry));
+  const derivedOrtslagen: PartnerAreaConfig[] = (childAreas ?? []).reduce<PartnerAreaConfig[]>((acc, area) => {
+    const areaId = String(area.id ?? "");
+    if (!areaId || mappedAreaIds.has(areaId)) return acc;
+    const parentSlug = String(area.parent_slug ?? "");
+    const parentDistrict = districtBySlug.get(parentSlug);
+    if (!parentDistrict) return acc;
+    acc.push({
+      area_id: areaId,
+      is_active: true,
+      activation_status: parentDistrict.activation_status ?? "active",
+      is_public_live: Boolean(parentDistrict.is_public_live),
+      offer_visibility_mode: parentDistrict.offer_visibility_mode ?? "partner_wide",
+      request_visibility_mode: parentDistrict.request_visibility_mode ?? "partner_wide",
+      areas: {
+        id: areaId,
+        name: String(area.name ?? ""),
+        slug: String(area.slug ?? ""),
+        parent_slug: parentSlug,
+        bundesland_slug: String(area.bundesland_slug ?? ""),
+      },
+    } as PartnerAreaConfig);
+    return acc;
+  }, []);
 
   if (derivedOrtslagen.length === 0) return mergedConfigs;
   return [...mergedConfigs, ...derivedOrtslagen].sort((a, b) =>

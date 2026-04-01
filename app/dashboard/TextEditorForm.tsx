@@ -545,21 +545,20 @@ function normalizeTextTree(value: unknown): Record<string, Record<string, string
 
 function normalizeTextEntries(value: unknown): TextEntry[] {
   if (!Array.isArray(value)) return [];
-  return value
-    .map((entry) => {
-      if (!entry || typeof entry !== 'object') return null;
+  return value.reduce<TextEntry[]>((acc, entry) => {
+      if (!entry || typeof entry !== 'object') return acc;
       const rec = entry as Record<string, unknown>;
       const sectionKey = String(rec.section_key ?? '').trim();
-      if (!sectionKey) return null;
-      return {
+      if (!sectionKey) return acc;
+      acc.push({
         section_key: sectionKey,
         optimized_content: typeof rec.optimized_content === 'string' ? rec.optimized_content : null,
         status: typeof rec.status === 'string' ? rec.status : null,
         text_type: typeof rec.text_type === 'string' ? rec.text_type : null,
         last_updated: typeof rec.last_updated === 'string' ? rec.last_updated : null,
-      } satisfies TextEntry;
-    })
-    .filter((entry): entry is TextEntry => Boolean(entry));
+      } satisfies TextEntry);
+      return acc;
+    }, []);
 }
 
 function normalizeTextAreaData(value: unknown): TextAreaData {
@@ -579,16 +578,15 @@ function normalizeTextAreaData(value: unknown): TextAreaData {
 
 function normalizeScopeAreaItems(value: unknown, fallbackConfig: PartnerAreaConfig): PartnerAreaConfig[] {
   if (!Array.isArray(value)) return [fallbackConfig];
-  const items = value
-    .map((entry) => {
-      if (!entry || typeof entry !== 'object') return null;
+  const items = value.reduce<PartnerAreaConfig[]>((acc, entry) => {
+      if (!entry || typeof entry !== 'object') return acc;
       const rec = entry as Record<string, unknown>;
       const areaId = String(rec.area_id ?? '').trim();
-      if (!areaId) return null;
+      if (!areaId) return acc;
       const areaRec = (rec.areas && typeof rec.areas === 'object')
         ? (rec.areas as Record<string, unknown>)
         : {};
-      return {
+      acc.push({
         area_id: areaId,
         areas: {
           name: typeof areaRec.name === 'string' ? areaRec.name : undefined,
@@ -596,9 +594,9 @@ function normalizeScopeAreaItems(value: unknown, fallbackConfig: PartnerAreaConf
           parent_slug: typeof areaRec.parent_slug === 'string' ? areaRec.parent_slug : undefined,
           bundesland_slug: typeof areaRec.bundesland_slug === 'string' ? areaRec.bundesland_slug : undefined,
         },
-      } satisfies PartnerAreaConfig;
-    })
-    .filter((entry): entry is PartnerAreaConfig => Boolean(entry));
+      } satisfies PartnerAreaConfig);
+      return acc;
+    }, []);
   return items.length > 0 ? items : [fallbackConfig];
 }
 
@@ -789,13 +787,13 @@ export default function TextEditorForm({
           : [];
         const llmModeDefault = String(integrationsPayload?.llm_mode_default ?? '').trim().toLowerCase();
         const llmItems: LlmIntegrationOption[] = items
-          .map((entry) => {
+          .reduce<LlmIntegrationOption[]>((acc, entry) => {
             const id = String(entry?.id ?? '').trim();
-            if (!id) return null;
+            if (!id) return acc;
             const provider = String(entry?.provider ?? '').trim() || 'LLM';
             const model = String(entry?.model ?? '').trim() || 'Standardmodell';
             const source = String(entry?.source ?? '').toLowerCase() === 'global' ? 'global' : 'partner';
-            return {
+            acc.push({
               id,
               source,
               provider,
@@ -806,9 +804,9 @@ export default function TextEditorForm({
               outputCostEurPer1k: typeof entry?.output_cost_eur_per_1k === 'number' ? entry.output_cost_eur_per_1k : null,
               partnerIntegrationId: String(entry?.partner_integration_id ?? '').trim() || null,
               globalProviderId: String(entry?.global_provider_id ?? '').trim() || null,
-            } satisfies LlmIntegrationOption;
-          })
-          .filter((entry): entry is LlmIntegrationOption => Boolean(entry));
+            } satisfies LlmIntegrationOption);
+            return acc;
+          }, []);
         setLlmIntegrations(llmItems);
         setSelectedLlmIntegrationId((prev) => {
           if (prev && llmItems.some((item) => item.id === prev)) return prev;

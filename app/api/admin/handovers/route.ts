@@ -524,18 +524,17 @@ export async function POST(req: Request) {
 
     const applyLocaleEnablementModes = async () => {
       if (managedLocales.length === 0) return { enabled: 0, disabled: 0, skipped: 0 };
-      const featureRows = managedLocales
-        .map((locale) => {
-          const localeConfig = localeConfigByCode.get(locale);
-          const featureCode = String(localeConfig?.billing_feature_code ?? "").trim().toLowerCase();
-          if (!featureCode) return null;
-          return {
-            locale,
-            feature_code: featureCode,
-            mode: managedLocaleModes.get(locale) ?? "skip",
-          };
-        })
-        .filter((row): row is { locale: string; feature_code: string; mode: LocaleTransferMode } => Boolean(row));
+      const featureRows = managedLocales.reduce<Array<{ locale: string; feature_code: string; mode: LocaleTransferMode }>>((acc, locale) => {
+        const localeConfig = localeConfigByCode.get(locale);
+        const featureCode = String(localeConfig?.billing_feature_code ?? "").trim().toLowerCase();
+        if (!featureCode) return acc;
+        acc.push({
+          locale,
+          feature_code: featureCode,
+          mode: managedLocaleModes.get(locale) ?? "skip",
+        });
+        return acc;
+      }, []);
       if (featureRows.length === 0) return { enabled: 0, disabled: 0, skipped: managedLocales.length };
       const { data: existingRows, error: existingError } = await admin
         .from("partner_feature_overrides")
