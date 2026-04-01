@@ -163,8 +163,12 @@ async function loadPartnerAreaSummaries(
     const live = state === "live";
     const partnerAreas = groupedByPartner.get(partnerId) ?? new Map<string, { live: boolean; open: boolean }>();
     const current = partnerAreas.get(kreisId) ?? { live: false, open: false };
-    current.live = current.live || live;
-    current.open = current.open || !live;
+    if (live) {
+      current.live = true;
+      current.open = false;
+    } else if (!current.live) {
+      current.open = true;
+    }
     partnerAreas.set(kreisId, current);
     groupedByPartner.set(partnerId, partnerAreas);
   }

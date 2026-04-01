@@ -3413,10 +3413,11 @@ export default function AdminClient() {
     const data = await api<{ partners: Partner[] }>("/api/admin/partners?include_inactive=1");
     const nextPartners = data.partners ?? [];
     setPartners(nextPartners);
-    await Promise.all([
-      loadPartnerListRows(),
-      loadAreaOverviewList(),
-    ]);
+    if (navMode === "partners") {
+      await loadPartnerListRows();
+    } else {
+      await loadAreaOverviewList();
+    }
 
     const existingSelected = selectedPartnerId
       ? nextPartners.find((p) => p.id === selectedPartnerId)?.id ?? ""
@@ -4982,6 +4983,10 @@ export default function AdminClient() {
 
   useEffect(() => {
     const systemPartnerId = String(systemPartner?.id ?? "").trim();
+    if (activeView !== "market_texts" && activeView !== "standard_text_refresh") {
+      setSystemPartnerKreisOptions([]);
+      return;
+    }
     if (!systemPartnerId) {
       setSystemPartnerKreisOptions([]);
       return;
@@ -5003,7 +5008,7 @@ export default function AdminClient() {
     return () => {
       cancelled = true;
     };
-  }, [areaMappings, selectedPartner?.id, systemPartner?.id]);
+  }, [activeView, areaMappings, selectedPartner?.id, systemPartner?.id]);
 
   useEffect(() => {
     if (!selectedPartnerId || !reviewAreaId) {
