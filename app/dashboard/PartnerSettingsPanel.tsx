@@ -1792,6 +1792,7 @@ export default function PartnerSettingsPanel({
                                         message: res.result?.message ?? "Kein Ergebnis",
                                       },
                                     }));
+                                    await loadAll(integration.id);
                                   })
                                 }
                               >
