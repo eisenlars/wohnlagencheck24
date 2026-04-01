@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type CrmResourceKey = "offers" | "references" | "requests";
 
@@ -95,6 +95,11 @@ type IntegrationRecord = {
   id: string;
   provider: string;
   is_active: boolean;
+};
+
+type OnOfficeFieldOption = {
+  value: string;
+  label: string;
 };
 
 type AdminCrmIntegrationsPanelProps = {
@@ -200,6 +205,9 @@ function renderImportRules(
   provider: string,
   resourceKey: CrmResourceKey,
   draft: CrmIntegrationAdminDraft,
+  onOfficeEstateStatusOptions: OnOfficeFieldOption[],
+  onOfficeEstateStatusLoading: boolean,
+  onOfficeEstateStatusError: string | null,
   onChange: (nextDraft: CrmIntegrationAdminDraft) => void,
 ) {
   const onOffice = isOnOfficeProvider(provider);
@@ -232,6 +240,46 @@ function renderImportRules(
           <div style={helperTextStyle}>
             Referenzen werden aus <code>estate</code>-Datensätzen abgeleitet. Dafür nutzt Wohnlagencheck24 die in onOffice gepflegten Objektstatus-IDs für verkauft und vermietet.
           </div>
+          {onOfficeEstateStatusLoading ? (
+            <div style={helperTextStyle}>Statuswerte aus onOffice werden geladen.</div>
+          ) : null}
+          {onOfficeEstateStatusError ? (
+            <div style={helperTextErrorStyle}>{onOfficeEstateStatusError}</div>
+          ) : null}
+          {onOfficeEstateStatusOptions.length > 0 ? (
+            <>
+              <label style={labelStyle}>
+                verkauft
+                <select
+                  style={inputStyle}
+                  value={draft.onOfficeReferenceSoldStatusId}
+                  onChange={(event) => onChange(updateDraft(draft, { onOfficeReferenceSoldStatusId: event.target.value }))}
+                >
+                  <option value="">Bitte auswählen</option>
+                  {onOfficeEstateStatusOptions.map((option) => (
+                    <option key={`sold-${option.value}`} value={option.value}>
+                      {option.label} ({option.value})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={labelStyle}>
+                vermietet
+                <select
+                  style={inputStyle}
+                  value={draft.onOfficeReferenceRentedStatusId}
+                  onChange={(event) => onChange(updateDraft(draft, { onOfficeReferenceRentedStatusId: event.target.value }))}
+                >
+                  <option value="">Bitte auswählen</option>
+                  {onOfficeEstateStatusOptions.map((option) => (
+                    <option key={`rented-${option.value}`} value={option.value}>
+                      {option.label} ({option.value})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          ) : null}
           <label style={labelStyle}>
             Objektstatus-ID verkauft
             <input
@@ -543,12 +591,54 @@ export default function AdminCrmIntegrationsPanel({
   syncWarning,
 }: AdminCrmIntegrationsPanelProps) {
   const [detailModal, setDetailModal] = useState<DetailModalState>(null);
+  const [onOfficeEstateStatusOptions, setOnOfficeEstateStatusOptions] = useState<OnOfficeFieldOption[]>([]);
+  const [onOfficeEstateStatusError, setOnOfficeEstateStatusError] = useState<string | null>(null);
 
   const isRunningThisResource = syncSummary?.status === "running";
   const statusColor = getStatusColor(syncSummary);
   const previewStatusColor = getPreviewStatusColor(previewSummary);
   const fullSyncAvailable = syncSummary?.mode === "full";
   const sectionTitle = formatResourceLabelForProvider(integration.provider, activeResourceKey);
+  const onOfficeEstateStatusLoading =
+    isOnOfficeProvider(integration.provider)
+    && onOfficeEstateStatusOptions.length === 0
+    && onOfficeEstateStatusError === null;
+
+  useEffect(() => {
+    let active = true;
+    if (!isOnOfficeProvider(integration.provider)) {
+      return () => {
+        active = false;
+      };
+    }
+
+    void fetch(`/api/admin/integrations/${integration.id}/field-config`, {
+      cache: "no-store",
+    })
+      .then(async (res) => {
+        const payload = await res.json().catch(() => null) as {
+          error?: string;
+          estate_status_options?: OnOfficeFieldOption[];
+        } | null;
+        if (!res.ok) {
+          throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
+        }
+        if (!active) return;
+        setOnOfficeEstateStatusOptions(Array.isArray(payload?.estate_status_options) ? payload.estate_status_options : []);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setOnOfficeEstateStatusOptions([]);
+        setOnOfficeEstateStatusError(error instanceof Error ? error.message : "Statuswerte konnten nicht geladen werden.");
+      })
+      .finally(() => {
+        return undefined;
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [integration.id, integration.provider]);
 
   return (
     <div style={panelStyle}>
@@ -618,7 +708,15 @@ export default function AdminCrmIntegrationsPanel({
             <div style={settingsCardStyle}>
               <div style={settingsCardTitleStyle}>Importregeln</div>
               <div style={settingsFieldsStyle}>
-                {renderImportRules(integration.provider, activeResourceKey, draft, onDraftChange)}
+                {renderImportRules(
+                  integration.provider,
+                  activeResourceKey,
+                  draft,
+                  onOfficeEstateStatusOptions,
+                  onOfficeEstateStatusLoading,
+                  onOfficeEstateStatusError,
+                  onDraftChange,
+                )}
               </div>
             </div>
             <div style={settingsCardStyle}>
@@ -937,6 +1035,12 @@ const helperTextStyle: React.CSSProperties = {
   fontSize: 12,
   lineHeight: 1.5,
   color: "#475569",
+};
+
+const helperTextErrorStyle: React.CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: "#b91c1c",
 };
 
 const labelStyle: React.CSSProperties = {

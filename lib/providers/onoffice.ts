@@ -29,10 +29,17 @@ type OnOfficeResponse = {
 };
 
 const ACTION_READ = "urn:onoffice-de-ns:smart:2.5:smartml:action:read";
+const ACTION_GET = "urn:onoffice-de-ns:smart:2.5:smartml:action:get";
 const RESOURCE_ESTATE = "estate";
 const RESOURCE_SEARCH_CRITERIA = "searchcriteria";
+const RESOURCE_FIELDS = "fields";
 const HMAC_VERSION = 2;
 const PROVIDER_FETCH_TIMEOUT_MS = 12000;
+
+export type OnOfficeFieldOption = {
+  value: string;
+  label: string;
+};
 
 type OnOfficeResourceSettings = {
   sold_status_id: number;
@@ -71,6 +78,35 @@ function buildOnOfficeReadRequest(
       actions: [
         {
           actionid: ACTION_READ,
+          resourceid: "",
+          resourcetype: resourceType,
+          timestamp,
+          hmac,
+          hmac_version: HMAC_VERSION,
+          parameters,
+        },
+      ],
+    },
+  };
+}
+
+function buildOnOfficeGetRequest(
+  token: string,
+  secret: string,
+  resourceType: string,
+  parameters: Record<string, unknown>,
+) {
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const hmac = buildOnOfficeHmacV2(
+    { timestamp, token, resourceType, actionId: ACTION_GET },
+    secret,
+  );
+  return {
+    token,
+    request: {
+      actions: [
+        {
+          actionid: ACTION_GET,
           resourceid: "",
           resourcetype: resourceType,
           timestamp,
@@ -268,6 +304,68 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = PROV
   }
 }
 
+function getOnOfficeApiBaseUrl(integration: PartnerIntegration): string {
+  return integration.base_url?.trim() || "https://api.onoffice.de/api/stable/api.php";
+}
+
+function normalizeFieldOptionValue(input: unknown): string | null {
+  if (input === null || input === undefined) return null;
+  const value = String(input).trim();
+  return value.length > 0 ? value : null;
+}
+
+function normalizeFieldOptionLabel(input: unknown, fallback: string): string {
+  const value = String(input ?? "").trim();
+  return value.length > 0 ? value : fallback;
+}
+
+function extractPermittedValues(raw: unknown): OnOfficeFieldOption[] {
+  if (!raw) return [];
+
+  const pushOption = (
+    acc: OnOfficeFieldOption[],
+    seen: Set<string>,
+    valueRaw: unknown,
+    labelRaw: unknown,
+  ) => {
+    const value = normalizeFieldOptionValue(valueRaw);
+    if (!value || seen.has(value)) return;
+    seen.add(value);
+    acc.push({
+      value,
+      label: normalizeFieldOptionLabel(labelRaw, value),
+    });
+  };
+
+  const out: OnOfficeFieldOption[] = [];
+  const seen = new Set<string>();
+
+  if (Array.isArray(raw)) {
+    for (const entry of raw) {
+      if (entry && typeof entry === "object") {
+        const rec = entry as Record<string, unknown>;
+        pushOption(out, seen, rec.value ?? rec.id ?? rec.key, rec.label ?? rec.name ?? rec.text ?? rec.value);
+      } else {
+        pushOption(out, seen, entry, entry);
+      }
+    }
+    return out;
+  }
+
+  if (typeof raw === "object") {
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (value && typeof value === "object") {
+        const rec = value as Record<string, unknown>;
+        pushOption(out, seen, rec.value ?? rec.id ?? key, rec.label ?? rec.name ?? rec.text ?? key);
+      } else {
+        pushOption(out, seen, key, value);
+      }
+    }
+  }
+
+  return out;
+}
+
 function makeRawRowBase(
   partnerId: string,
   provider: "onoffice",
@@ -415,7 +513,7 @@ async function fetchOnOfficeResource(
   fields: string[],
   filter: Record<string, unknown>,
 ): Promise<OnOfficeRecord[]> {
-  const base = integration.base_url?.trim() || "https://api.onoffice.de/api/stable/api.php";
+  const base = getOnOfficeApiBaseUrl(integration);
   const allRecords: OnOfficeRecord[] = [];
   const listlimit = 50;
   let listoffset = 0;
@@ -448,6 +546,47 @@ async function fetchOnOfficeResource(
   }
 
   return allRecords;
+}
+
+export async function fetchOnOfficeEstateStatusOptions(
+  integration: PartnerIntegration,
+  token: string,
+  secret: string,
+): Promise<OnOfficeFieldOption[]> {
+  const base = getOnOfficeApiBaseUrl(integration);
+  const body = buildOnOfficeGetRequest(token, secret, RESOURCE_FIELDS, {
+    modules: ["estate"],
+    labels: true,
+  });
+
+  const res = await fetchWithTimeout(base, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`onOffice fields fetch failed (${res.status}): ${text}`);
+  }
+
+  const json = (await res.json()) as OnOfficeResponse;
+  const records = json?.response?.results?.[0]?.data?.records ?? [];
+  if (!Array.isArray(records)) return [];
+
+  for (const record of records) {
+    const elements = (record.elements ?? {}) as Record<string, unknown>;
+    const fieldName = String(elements.fieldname ?? elements.name ?? elements.field ?? record.type ?? "").trim().toLowerCase();
+    if (fieldName !== "objektstatus") continue;
+    return extractPermittedValues(
+      elements.permittedvalues
+      ?? elements.permitted_values
+      ?? elements.options
+      ?? elements.values,
+    );
+  }
+
+  return [];
 }
 
 export async function fetchOnOfficeEstates(
