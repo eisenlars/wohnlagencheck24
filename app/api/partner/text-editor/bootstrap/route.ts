@@ -111,7 +111,7 @@ function normalizeTextEntries(value: unknown): TextEntry[] {
         last_updated: typeof rec.last_updated === "string" ? rec.last_updated : null,
       } satisfies TextEntry;
     })
-    .filter((row): row is TextEntry => Boolean(row));
+    .filter((row): row is TextEntry => row !== null);
 }
 
 async function requirePartnerUser(): Promise<string> {
