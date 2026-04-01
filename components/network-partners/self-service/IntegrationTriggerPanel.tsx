@@ -47,6 +47,12 @@ export default function IntegrationTriggerPanel({
 }: IntegrationTriggerPanelProps) {
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const provider = config?.provider === 'onoffice' ? 'onoffice' : 'propstack';
+  const secretDisplayValue =
+    generatedSecret
+    || (config?.has_secret ? '••••••••••••••••••••••••' : '');
+  const secretPlaceholder = config?.has_secret
+    ? 'Sicherheitsschlüssel ist gespeichert und wird aus Sicherheitsgründen nicht erneut angezeigt.'
+    : 'Noch kein Schlüssel erzeugt';
 
   async function copyValue(label: string, value: string | null) {
     if (!value) return;
@@ -106,9 +112,9 @@ export default function IntegrationTriggerPanel({
           <strong style={{ color: '#334155' }}>2. Sicherheitsschlüssel erzeugen</strong>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
-              value={generatedSecret ?? ''}
+              value={secretDisplayValue}
               readOnly
-              placeholder={config?.has_secret ? 'Vorhanden. Für eine erneute Anzeige bitte neu erzeugen.' : 'Noch kein Schlüssel erzeugt'}
+              placeholder={secretPlaceholder}
               style={{ flex: '1 1 420px', border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#f8fafc' }}
             />
             <button
@@ -147,7 +153,7 @@ export default function IntegrationTriggerPanel({
             </button>
           </div>
           <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>
-            Trage diesen Schlüssel im CRM als Secret ein. Er wird nur direkt nach dem Erzeugen im Klartext angezeigt. Nach einer Neuerzeugung muss er im CRM ebenfalls aktualisiert werden.
+            Trage diesen Schlüssel im CRM als Secret ein. Er wird nur direkt nach dem Erzeugen im Klartext angezeigt. Wenn du ihn später erneut brauchst, musst du ihn neu erzeugen und danach auch im CRM aktualisieren.
           </p>
         </div>
 
