@@ -834,7 +834,6 @@ export default function DashboardClient({
     [
       { id: 'partner_ads', label: 'Netzwerkpartner Verwaltung', icon: 'partner_ads', tab: 'network_partners', networkPartnerSection: 'overview' },
       { id: 'partner_billing', label: 'Partnererlöse', icon: 'marketing', tab: 'network_partners', networkPartnerSection: 'billing' },
-      { id: 'partner_ai', label: 'KI-Nutzung', icon: 'forecast', tab: 'network_partners', networkPartnerSection: 'ai' },
     ],
   ];
 
@@ -3023,13 +3022,6 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
           description: 'Erlöse, Potenziale und Abrechnungsbasis im Netzwerkpartner-Geschäft prüfen.',
           icon: 'marketing',
           networkPartnerSection: 'billing',
-        },
-        {
-          key: 'network_partners',
-          title: 'KI-Nutzung',
-          description: 'Usage, Credits und Budgetlage über alle Netzwerkpartner hinweg überwachen.',
-          icon: 'forecast',
-          networkPartnerSection: 'ai',
         },
       ],
     },
