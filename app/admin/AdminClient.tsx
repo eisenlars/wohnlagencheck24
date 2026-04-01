@@ -93,7 +93,14 @@ type Partner = {
   is_system_default?: boolean;
   llm_partner_managed_allowed?: boolean;
   llm_mode_default?: string | null;
-  area_mappings?: AreaMapping[];
+  area_summary?: PartnerAreaSummary;
+};
+
+type PartnerAreaSummary = {
+  total_areas: number;
+  live_areas: number;
+  activation_open: number;
+  has_assignment: boolean;
 };
 
 type AreaMapping = {
@@ -398,37 +405,6 @@ const PORTAL_LOCALE_LANGUAGE_PRESETS: PortalLocaleLanguagePreset[] = [
   },
 ];
 
-function buildAreaOverviewRows(partnerList: Partner[]): AreaOverviewRow[] {
-  const rows = new Map<string, AreaOverviewRow>();
-  for (const partner of partnerList) {
-    for (const mapping of partner.area_mappings ?? []) {
-      const kreisId = String(mapping.area_id ?? "").split("-").slice(0, 3).join("-");
-      if (kreisId.split("-").length !== 3) continue;
-      const key = `${partner.id}:${kreisId}`;
-      if (rows.has(key)) continue;
-      rows.set(key, {
-        key,
-        kreisId,
-        kreisName: resolveAreaName(mapping, kreisId),
-        partnerId: partner.id,
-        partnerName: partner.company_name,
-        isActive: Boolean(mapping.is_active),
-        activationStatus: normalizeActivationStatus(
-          mapping.activation_status,
-          Boolean(mapping.is_active),
-          Boolean(mapping.is_public_live),
-        ),
-      });
-    }
-  }
-
-  return Array.from(rows.values()).sort((a, b) => {
-    const byKreis = a.kreisId.localeCompare(b.kreisId, "de");
-    if (byKreis !== 0) return byKreis;
-    return a.partnerName.localeCompare(b.partnerName, "de");
-  });
-}
-
 function resolveAreaRecord(
   area: AreaRelationLike | Array<AreaRelationLike | null | undefined> | null | undefined,
 ): AreaRelationLike | null {
@@ -478,6 +454,20 @@ function formatAreaOptionLabel(area: AreaOption): string {
   const id = String(area.id ?? "").trim();
   const name = String(area.name ?? "").trim() || id;
   return name === id ? id : `${name} (${id})`;
+}
+
+function buildKreisOptionsFromAreaMappings(mappings: AreaMapping[]): StandardTextRefreshSelection[] {
+  const rows = mappings
+    .filter((mapping) => isKreisAreaOption(mapping.areas ?? null))
+    .map((mapping) => ({
+      id: String(mapping.area_id ?? "").trim(),
+      name: String(mapping.areas?.name ?? mapping.area_id ?? "").trim() || String(mapping.area_id ?? "").trim(),
+      slug: mapping.areas?.slug ?? null,
+      parent_slug: mapping.areas?.parent_slug ?? null,
+      bundesland_slug: mapping.areas?.bundesland_slug ?? null,
+    }))
+    .filter((row) => row.id);
+  return rows.sort((a, b) => formatAreaOptionLabel(a).localeCompare(formatAreaOptionLabel(b), "de"));
 }
 
 function formatStandardTextRefreshReason(reason: string | undefined): string {
@@ -1966,6 +1956,10 @@ export default function AdminClient() {
   const supabase = useMemo(() => createClient(), []);
   const adminModeBarRef = useRef<HTMLElement | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [partnerListRows, setPartnerListRows] = useState<Partner[]>([]);
+  const [areaOverviewRows, setAreaOverviewRows] = useState<AreaOverviewRow[]>([]);
+  const [areaOverviewTotalCount, setAreaOverviewTotalCount] = useState(0);
+  const [systemPartnerKreisOptions, setSystemPartnerKreisOptions] = useState<StandardTextRefreshSelection[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [areaMappings, setAreaMappings] = useState<AreaMapping[]>([]);
@@ -2944,32 +2938,30 @@ export default function AdminClient() {
   const selectedPartnerLabel = selectedPartner
     ? `${formatPartnerName(selectedPartner)} (${selectedPartner.id})`
     : "Kein Partner ausgewählt";
-  const areaOverview = useMemo(() => buildAreaOverviewRows(partners), [partners]);
-
-  const partnerIdsWithAreaMapping = useMemo(() => {
-    const ids = new Set<string>();
-    for (const row of areaOverview) ids.add(row.partnerId);
-    return ids;
-  }, [areaOverview]);
 
   const partnerNeedsAssignment = useMemo(() => {
     const pending = new Set<string>();
     for (const p of partners) {
       if (!p.is_active) continue;
-      if (!partnerIdsWithAreaMapping.has(p.id)) pending.add(p.id);
+      if (!p.area_summary?.has_assignment) pending.add(p.id);
     }
     return pending;
-  }, [partners, partnerIdsWithAreaMapping]);
+  }, [partners]);
   const partnerWorkflowSignalById = useMemo(() => {
-    const byPartner = new Map<string, string[]>();
-    for (const row of areaOverview) {
-      const list = byPartner.get(row.partnerId) ?? [];
-      list.push(String(row.activationStatus ?? ""));
-      byPartner.set(row.partnerId, list);
-    }
     const result = new Map<string, WorkflowSignalTone>();
     for (const partner of partners) {
-      const states = byPartner.get(partner.id) ?? [];
+      const summary = partner.area_summary ?? {
+        total_areas: 0,
+        live_areas: 0,
+        activation_open: 0,
+        has_assignment: false,
+      };
+      const states = summary.total_areas > 0
+        ? [
+            ...(summary.live_areas > 0 ? Array(summary.live_areas).fill("live") : []),
+            ...(summary.activation_open > 0 ? Array(summary.activation_open).fill("open") : []),
+          ]
+        : [];
       result.set(
         partner.id,
         resolveWorkflowSignalTone(
@@ -2981,22 +2973,10 @@ export default function AdminClient() {
       );
     }
     return result;
-  }, [areaOverview, partners, partnerNeedsAssignment]);
+  }, [partners, partnerNeedsAssignment]);
   const filteredPartners = useMemo(() => {
-    const q = partnerFilter.trim().toLowerCase();
-    return partners
-      .filter((p) => {
-        if (onlyActiveList && !p.is_active) return false;
-        if (!q) return true;
-        const hay = [
-          p.company_name ?? "",
-          p.contact_email ?? "",
-          p.id ?? "",
-        ]
-          .join(" ")
-          .toLowerCase();
-        return hay.includes(q);
-      })
+    return partnerListRows
+      .slice()
       .sort((a, b) => {
         const aDefault = a.is_system_default ? 1 : 0;
         const bDefault = b.is_system_default ? 1 : 0;
@@ -3015,23 +2995,9 @@ export default function AdminClient() {
         if (aInactive !== bInactive) return bInactive - aInactive;
         return String(a.company_name ?? "").localeCompare(String(b.company_name ?? ""), "de");
       });
-  }, [partners, partnerFilter, onlyActiveList, partnerWorkflowSignalById]);
+  }, [partnerListRows, partnerWorkflowSignalById]);
 
-  const filteredAreaOverview = useMemo(() => {
-    const q = areaFilter.trim().toLowerCase();
-    return areaOverview.filter((row) => {
-      if (onlyActiveList && !row.isActive) return false;
-      if (!q) return true;
-      const hay = [
-        row.kreisName,
-        row.kreisId,
-        row.partnerName,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [areaOverview, areaFilter, onlyActiveList]);
+  const filteredAreaOverview = areaOverviewRows;
 
   const pendingAreaAssignmentCount = useMemo(() => partnerNeedsAssignment.size, [partnerNeedsAssignment]);
 
@@ -3090,21 +3056,6 @@ export default function AdminClient() {
     () => partners.find((partner) => partner.is_system_default) ?? null,
     [partners],
   );
-
-  const systemPartnerKreisOptions = useMemo<StandardTextRefreshSelection[]>(() => {
-    const mappings = systemPartner?.area_mappings ?? [];
-    const rows = mappings
-      .filter((mapping) => isKreisAreaOption(mapping.areas ?? null))
-      .map((mapping) => ({
-        id: String(mapping.area_id ?? "").trim(),
-        name: String(mapping.areas?.name ?? mapping.area_id ?? "").trim() || String(mapping.area_id ?? "").trim(),
-        slug: mapping.areas?.slug ?? null,
-        parent_slug: mapping.areas?.parent_slug ?? null,
-        bundesland_slug: mapping.areas?.bundesland_slug ?? null,
-      }))
-      .filter((row) => row.id);
-    return rows.sort((a, b) => formatAreaOptionLabel(a).localeCompare(formatAreaOptionLabel(b), "de"));
-  }, [systemPartner?.area_mappings]);
   
   useEffect(() => {
     if (marketExplanationMode !== "standard") return;
@@ -3310,7 +3261,7 @@ export default function AdminClient() {
         icon: "areas",
         title: "Gebiete",
         text: "Kreiszuordnungen, Übergaben und Aktivierungsstände gebietsbezogen prüfen.",
-        badge: areaOverview.length > 0 ? `${areaOverview.length} Zuordnungen` : null,
+        badge: areaOverviewTotalCount > 0 ? `${areaOverviewTotalCount} Zuordnungen` : null,
         onClick: () => {
           setNavMode("areas");
           setActiveView("partner_edit");
@@ -3430,24 +3381,54 @@ export default function AdminClient() {
     setHoveredAdminNavTop(nextTop);
   };
 
+  function buildPartnerListUrl(queryText = partnerFilter, onlyActive = onlyActiveList): string {
+    const params = new URLSearchParams({ include_inactive: "1" });
+    const normalizedQuery = queryText.trim();
+    if (onlyActive) params.set("only_active", "1");
+    if (normalizedQuery) params.set("q", normalizedQuery);
+    return `/api/admin/partners?${params.toString()}`;
+  }
+
+  function buildAreaOverviewUrl(queryText = areaFilter, onlyActive = onlyActiveList): string {
+    const params = new URLSearchParams();
+    const normalizedQuery = queryText.trim();
+    if (onlyActive) params.set("only_active", "1");
+    if (normalizedQuery) params.set("q", normalizedQuery);
+    const qs = params.toString();
+    return qs ? `/api/admin/partner-area-overview?${qs}` : "/api/admin/partner-area-overview";
+  }
+
+  async function loadPartnerListRows(queryText = partnerFilter, onlyActive = onlyActiveList) {
+    const data = await api<{ partners: Partner[] }>(buildPartnerListUrl(queryText, onlyActive));
+    setPartnerListRows(data.partners ?? []);
+  }
+
+  async function loadAreaOverviewList(queryText = areaFilter, onlyActive = onlyActiveList) {
+    const data = await api<{ areas: AreaOverviewRow[]; total_count?: number }>(buildAreaOverviewUrl(queryText, onlyActive));
+    setAreaOverviewRows(data.areas ?? []);
+    setAreaOverviewTotalCount(Number(data.total_count ?? data.areas?.length ?? 0));
+  }
+
   async function loadPartners(selectId?: string, options?: { refreshSelectedDetails?: boolean }) {
     const data = await api<{ partners: Partner[] }>("/api/admin/partners?include_inactive=1");
     const nextPartners = data.partners ?? [];
     setPartners(nextPartners);
+    await Promise.all([
+      loadPartnerListRows(),
+      loadAreaOverviewList(),
+    ]);
 
     const existingSelected = selectedPartnerId
       ? nextPartners.find((p) => p.id === selectedPartnerId)?.id ?? ""
       : "";
-    const requestedSelected = selectId
-      ? nextPartners.find((p) => p.id === selectId)?.id ?? ""
-      : "";
-    const nextId = requestedSelected || existingSelected;
+    const nextId = selectId || existingSelected;
     if (nextId) {
       setSelectedPartnerId(nextId);
       if (options?.refreshSelectedDetails !== false) {
         await loadPartnerDetails(nextId);
       }
-    } else {
+    } else if (!selectedPartnerId || (selectedPartnerId && !nextPartners.some((partner) => partner.id === selectedPartnerId))) {
+      setSelectedPartnerId("");
       setSelectedPartner(null);
       setAreaMappings([]);
       setIntegrations([]);
@@ -3458,14 +3439,6 @@ export default function AdminClient() {
     partnerId: string,
     mappingPatch: Partial<AreaMapping> & Pick<AreaMapping, "area_id" | "auth_user_id">,
   ) {
-    setPartners((prev) => prev.map((partner) => (
-      partner.id !== partnerId
-        ? partner
-        : {
-          ...partner,
-          area_mappings: upsertAreaMapping(partner.area_mappings ?? [], mappingPatch),
-        }
-    )));
     setAreaMappings((prev) => upsertAreaMapping(prev, mappingPatch));
     setReviewData((prev) => {
       if (!prev?.mapping || prev.mapping.area_id !== mappingPatch.area_id) return prev;
@@ -3564,6 +3537,7 @@ export default function AdminClient() {
       if (response.mapping) {
         applyLocalAreaMappingUpdate(selectedPartnerId, response.mapping);
       }
+      await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
       setReviewData(response);
       setReviewNoteDraft(String(response.mapping?.admin_review_note ?? ""));
       if ((action === "approve" || action === "changes_requested") && response?.notification?.partner?.sent === false) {
@@ -3612,6 +3586,7 @@ export default function AdminClient() {
       if (response.mapping) {
         applyLocalAreaMappingUpdate(selectedPartnerId, response.mapping);
       }
+      await loadPartners(selectedPartnerId, { refreshSelectedDetails: false });
       const feedbackHref = live ? buildLiveHrefFromArea(response.mapping?.areas ?? null, response.mapping?.area_id ?? areaId) : null;
       if (live && response?.notification?.partner?.sent === false && !selectedPartner?.is_system_default) {
         const reason = String(response?.notification?.partner?.reason ?? "unbekannt");
@@ -4968,6 +4943,19 @@ export default function AdminClient() {
   }, [adminViewState.activeView, adminViewState.selectedPartnerId, adminViewStateHydrated]);
 
   useEffect(() => {
+    if (!adminBootstrapRef.current) return;
+    const timer = window.setTimeout(() => {
+      if (navMode === "partners") {
+        void loadPartnerListRows();
+        return;
+      }
+      void loadAreaOverviewList();
+    }, 250);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navMode, partnerFilter, areaFilter, onlyActiveList]);
+
+  useEffect(() => {
     if (activeView !== "audit" || auditLoadedOnce || auditLoading) return;
     void run("Audit-Log laden", async () => {
       await loadAuditLogsEvent();
@@ -4991,6 +4979,31 @@ export default function AdminClient() {
     }, 300);
     return () => clearTimeout(timer);
   }, [areaQuery]);
+
+  useEffect(() => {
+    const systemPartnerId = String(systemPartner?.id ?? "").trim();
+    if (!systemPartnerId) {
+      setSystemPartnerKreisOptions([]);
+      return;
+    }
+    if (selectedPartner?.id === systemPartnerId && areaMappings.length > 0) {
+      setSystemPartnerKreisOptions(buildKreisOptionsFromAreaMappings(areaMappings));
+      return;
+    }
+    let cancelled = false;
+    void api<{ area_mappings: AreaMapping[] }>(`/api/admin/partners/${systemPartnerId}`)
+      .then((data) => {
+        if (cancelled) return;
+        setSystemPartnerKreisOptions(buildKreisOptionsFromAreaMappings(data.area_mappings ?? []));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSystemPartnerKreisOptions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [areaMappings, selectedPartner?.id, systemPartner?.id]);
 
   useEffect(() => {
     if (!selectedPartnerId || !reviewAreaId) {

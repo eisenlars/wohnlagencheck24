@@ -22,44 +22,12 @@ type CreatePartnerBody = {
   llm_mode_default?: string | null;
 };
 
-type PartnerAreaMappingRow = {
-  id: string;
-  auth_user_id: string;
-  area_id: string;
-  is_active: boolean;
-  is_public_live?: boolean | null;
-  activation_status?: string | null;
-  offer_visibility_mode?: string | null;
-  request_visibility_mode?: string | null;
-  partner_preview_signoff_at?: string | null;
-  areas?: {
-    name?: string | null;
-    slug?: string | null;
-    parent_slug?: string | null;
-    bundesland_slug?: string | null;
-  } | null;
+type PartnerAreaSummary = {
+  total_areas: number;
+  live_areas: number;
+  activation_open: number;
+  has_assignment: boolean;
 };
-
-function normalizeAreaRelation(
-  value: unknown,
-): Array<{
-  name: string | null;
-  slug: string | null;
-  parent_slug: string | null;
-  bundesland_slug: string | null;
-}> {
-  const source = Array.isArray(value)
-    ? value.find((item) => item && typeof item === "object")
-    : value;
-  if (!source || typeof source !== "object") return [];
-  const area = source as Record<string, unknown>;
-  return [{
-    name: typeof area.name === "string" ? area.name : null,
-    slug: typeof area.slug === "string" ? area.slug : null,
-    parent_slug: typeof area.parent_slug === "string" ? area.parent_slug : null,
-    bundesland_slug: typeof area.bundesland_slug === "string" ? area.bundesland_slug : null,
-  }];
-}
 
 function isMissingIsActiveColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
@@ -123,134 +91,98 @@ function isMissingAreaActivationStatusColumn(error: unknown): boolean {
   );
 }
 
-function isMissingAreaPreviewSignoffColumn(error: unknown): boolean {
-  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return msg.includes("partner_preview_signoff_at")
-    && msg.includes("partner_area_map")
-    && (msg.includes("does not exist") || msg.includes("schema cache"));
+function normalizeActivationStatus(value: unknown, isActive: boolean, isPublicLive = false): string {
+  if (isPublicLive) return "live";
+  const raw = String(value ?? "").trim().toLowerCase();
+  if (
+    raw === "assigned"
+    || raw === "in_progress"
+    || raw === "ready_for_review"
+    || raw === "in_review"
+    || raw === "changes_requested"
+    || raw === "approved_preview"
+    || raw === "live"
+    || raw === "active"
+  ) {
+    return raw;
+  }
+  if (isActive) return "approved_preview";
+  return "assigned";
 }
 
-function isMissingAreaVisibilityModeColumn(error: unknown): boolean {
-  const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
-  return (
-    msg.includes("partner_area_map.offer_visibility_mode")
-    || msg.includes("partner_area_map.request_visibility_mode")
-  ) && (msg.includes("does not exist") || msg.includes("schema cache"));
-}
-
-async function loadPartnerAreaMappings(
+async function loadPartnerAreaSummaries(
   admin: ReturnType<typeof createAdminClient>,
   partnerIds: string[],
-): Promise<Map<string, PartnerAreaMappingRow[]>> {
-  const byPartner = new Map<string, PartnerAreaMappingRow[]>();
+): Promise<Map<string, PartnerAreaSummary>> {
+  const byPartner = new Map<string, PartnerAreaSummary>();
   if (partnerIds.length === 0) return byPartner;
 
   let { data: mappings, error: mappingError } = await admin
     .from("partner_area_map")
-    .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, partner_preview_signoff_at, created_at, areas(name, slug, parent_slug, bundesland_slug)")
+    .select("auth_user_id, area_id, is_active, is_public_live, activation_status")
     .in("auth_user_id", partnerIds)
     .order("area_id", { ascending: true });
 
-  if (mappingError && (
-    isMissingAreaActivationStatusColumn(mappingError)
-    || isMissingAreaPreviewSignoffColumn(mappingError)
-    || isMissingAreaVisibilityModeColumn(mappingError)
-  )) {
-    type PartnerListAreaMappingFallbackRow = {
-      id: string | null;
-      auth_user_id: string | null;
-      area_id: string | null;
-      is_active: boolean | null;
-      is_public_live: boolean | null;
-      activation_status: string | null;
-      offer_visibility_mode: string | null;
-      request_visibility_mode: string | null;
-      partner_preview_signoff_at: string | null;
-      created_at: string | null;
-      areas: Array<{
-        name: string | null;
-        slug: string | null;
-        parent_slug: string | null;
-        bundesland_slug: string | null;
-      }>;
-    };
-    const missingActivationStatus = isMissingAreaActivationStatusColumn(mappingError);
-    const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(mappingError);
-    const missingVisibilityMode = isMissingAreaVisibilityModeColumn(mappingError);
-
-    if ((missingPreviewSignoff || missingVisibilityMode) && !missingActivationStatus) {
-      const fallback = await admin
-        .from("partner_area_map")
-        .select([
-          "id",
-          "auth_user_id",
-          "area_id",
-          "is_active",
-          "is_public_live",
-          "activation_status",
-          ...(!missingVisibilityMode ? ["offer_visibility_mode", "request_visibility_mode"] : []),
-          "created_at",
-          "areas(name, slug, parent_slug, bundesland_slug)",
-        ].join(", "))
-        .in("auth_user_id", partnerIds)
-        .order("area_id", { ascending: true });
-      mappings = (fallback.data ?? []).map((row) => {
-        const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-        const mappedRow: PartnerListAreaMappingFallbackRow = {
-          id: typeof baseRow.id === "string" ? baseRow.id : null,
-          auth_user_id: typeof baseRow.auth_user_id === "string" ? baseRow.auth_user_id : null,
-          area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
-          is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
-          is_public_live: typeof baseRow.is_public_live === "boolean" ? baseRow.is_public_live : null,
-          activation_status: typeof baseRow.activation_status === "string" ? baseRow.activation_status : null,
-          partner_preview_signoff_at: null,
-          offer_visibility_mode: missingVisibilityMode
-            ? "partner_wide"
-            : (baseRow as { offer_visibility_mode?: string | null }).offer_visibility_mode ?? "partner_wide",
-          request_visibility_mode: missingVisibilityMode
-            ? "partner_wide"
-            : (baseRow as { request_visibility_mode?: string | null }).request_visibility_mode ?? "partner_wide",
-          created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
-          areas: normalizeAreaRelation(baseRow.areas),
-        };
-        return mappedRow;
-      });
-      mappingError = fallback.error;
-    } else {
-      const fallback = await admin
-        .from("partner_area_map")
-        .select("id, auth_user_id, area_id, is_active, created_at, areas(name, slug, parent_slug, bundesland_slug)")
-        .in("auth_user_id", partnerIds)
-        .order("area_id", { ascending: true });
-      mappings = (fallback.data ?? []).map((row) => {
-        const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
-        const mappedRow: PartnerListAreaMappingFallbackRow = {
-          id: typeof baseRow.id === "string" ? baseRow.id : null,
-          auth_user_id: typeof baseRow.auth_user_id === "string" ? baseRow.auth_user_id : null,
-          area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
-          is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
-          activation_status: null,
-          is_public_live: null,
-          offer_visibility_mode: "partner_wide",
-          request_visibility_mode: "partner_wide",
-          partner_preview_signoff_at: null,
-          created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
-          areas: normalizeAreaRelation(baseRow.areas),
-        };
-        return mappedRow;
-      });
-      mappingError = fallback.error;
-    }
+  if (mappingError && isMissingAreaActivationStatusColumn(mappingError)) {
+    const fallback = await admin
+      .from("partner_area_map")
+      .select("auth_user_id, area_id, is_active")
+      .in("auth_user_id", partnerIds)
+      .order("area_id", { ascending: true });
+    mappings = (fallback.data ?? []).map((row) => {
+      const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+      return {
+        auth_user_id: typeof baseRow.auth_user_id === "string" ? baseRow.auth_user_id : "",
+        area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : "",
+        is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : false,
+        is_public_live: false,
+        activation_status: null,
+      };
+    });
+    mappingError = fallback.error;
   }
 
   if (mappingError) {
     throw new Error(mappingError.message);
   }
 
-  for (const row of (mappings ?? []) as PartnerAreaMappingRow[]) {
-    const list = byPartner.get(row.auth_user_id) ?? [];
-    list.push(row);
-    byPartner.set(row.auth_user_id, list);
+  const groupedByPartner = new Map<string, Map<string, { live: boolean; open: boolean }>>();
+  for (const row of (mappings ?? []) as Array<{
+    auth_user_id?: string | null;
+    area_id?: string | null;
+    is_active?: boolean | null;
+    is_public_live?: boolean | null;
+    activation_status?: string | null;
+  }>) {
+    const partnerId = String(row.auth_user_id ?? "").trim();
+    const areaId = String(row.area_id ?? "").trim();
+    if (!partnerId || !areaId) continue;
+    const kreisId = areaId.split("-").slice(0, 3).join("-");
+    if (kreisId.split("-").length !== 3) continue;
+    const state = normalizeActivationStatus(row.activation_status, Boolean(row.is_active), Boolean(row.is_public_live));
+    const live = state === "live";
+    const partnerAreas = groupedByPartner.get(partnerId) ?? new Map<string, { live: boolean; open: boolean }>();
+    const current = partnerAreas.get(kreisId) ?? { live: false, open: false };
+    current.live = current.live || live;
+    current.open = current.open || !live;
+    partnerAreas.set(kreisId, current);
+    groupedByPartner.set(partnerId, partnerAreas);
+  }
+
+  for (const partnerId of partnerIds) {
+    const groupedAreas = groupedByPartner.get(partnerId) ?? new Map<string, { live: boolean; open: boolean }>();
+    let liveAreas = 0;
+    let activationOpen = 0;
+    for (const areaState of groupedAreas.values()) {
+      if (areaState.live) liveAreas += 1;
+      if (areaState.open) activationOpen += 1;
+    }
+    byPartner.set(partnerId, {
+      total_areas: groupedAreas.size,
+      live_areas: liveAreas,
+      activation_open: activationOpen,
+      has_assignment: groupedAreas.size > 0,
+    });
   }
 
   return byPartner;
@@ -514,14 +446,23 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const includeInactive = url.searchParams.get("include_inactive") === "1";
+    const onlyActive = url.searchParams.get("only_active") === "1";
+    const q = String(url.searchParams.get("q") ?? "").trim();
     const admin = createAdminClient();
     let query = admin
       .from("partners")
       .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, is_system_default, llm_partner_managed_allowed, llm_mode_default, created_at")
       .order("company_name", { ascending: true });
 
-    if (!includeInactive) {
+    if (onlyActive || !includeInactive) {
       query = query.eq("is_active", true);
+    }
+    if (q) {
+      query = query.or([
+        `company_name.ilike.%${q}%`,
+        `contact_email.ilike.%${q}%`,
+        `id.ilike.%${q}%`,
+      ].join(", "));
     }
 
     let { data, error } = await query;
@@ -541,12 +482,23 @@ export async function GET(req: Request) {
         ...(!missingLlm ? ["llm_partner_managed_allowed", "llm_mode_default"] : []),
         "created_at",
       ].join(", ");
-      const fallback = await admin
+      let fallbackQuery = admin
         .from("partners")
         .select(fallbackSelect)
         .order("company_name", { ascending: true });
-      if (fallback.error) return NextResponse.json({ error: fallback.error.message }, { status: 500 });
-      data = (fallback.data ?? []).map((row) =>
+      if (!missingIsActive && (onlyActive || !includeInactive)) {
+        fallbackQuery = fallbackQuery.eq("is_active", true);
+      }
+      if (q) {
+        fallbackQuery = fallbackQuery.or([
+          `company_name.ilike.%${q}%`,
+          `contact_email.ilike.%${q}%`,
+          `id.ilike.%${q}%`,
+        ].join(", "));
+      }
+      const filteredFallback = await fallbackQuery;
+      if (filteredFallback.error) return NextResponse.json({ error: filteredFallback.error.message }, { status: 500 });
+      data = (filteredFallback.data ?? []).map((row) =>
         withPartnerFallback(row as unknown as Record<string, unknown>, !missingIsActive),
       ) as typeof data;
       error = null;
@@ -554,7 +506,7 @@ export async function GET(req: Request) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     const partners = data ?? [];
-    const areaMappingsByPartner = await loadPartnerAreaMappings(
+    const areaSummaryByPartner = await loadPartnerAreaSummaries(
       admin,
       partners.map((partner) => String(partner.id ?? "")).filter(Boolean),
     );
@@ -563,7 +515,12 @@ export async function GET(req: Request) {
       ok: true,
       partners: partners.map((partner) => ({
         ...partner,
-        area_mappings: areaMappingsByPartner.get(String(partner.id ?? "")) ?? [],
+        area_summary: areaSummaryByPartner.get(String(partner.id ?? "")) ?? {
+          total_areas: 0,
+          live_areas: 0,
+          activation_open: 0,
+          has_assignment: false,
+        },
       })),
     });
   } catch (error) {

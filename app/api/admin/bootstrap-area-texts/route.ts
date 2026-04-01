@@ -51,6 +51,63 @@ function dedupeAreas(rows: AreaRow[]): AreaRow[] {
   return out;
 }
 
+async function loadAreas(
+  admin: ReturnType<typeof createAdminClient>,
+  filters?: {
+    areaId?: string;
+    bundeslandSlug?: string;
+  },
+): Promise<AreaRow[]> {
+  let query = admin
+    .from("areas")
+    .select("id, slug, name, parent_slug, bundesland_slug")
+    .order("id", { ascending: true });
+
+  const areaId = normalize(filters?.areaId);
+  const bundeslandSlug = normalize(filters?.bundeslandSlug).toLowerCase();
+  if (areaId) {
+    query = query.eq("id", areaId);
+  } else if (bundeslandSlug) {
+    query = query.eq("bundesland_slug", bundeslandSlug);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return ((data ?? []) as Array<{
+    id?: string | null;
+    slug?: string | null;
+    name?: string | null;
+    parent_slug?: string | null;
+    bundesland_slug?: string | null;
+  }>)
+    .map((row) => ({
+      id: String(row.id ?? "").trim(),
+      slug: String(row.slug ?? "").trim(),
+      name: row.name ? String(row.name) : null,
+      parent_slug: row.parent_slug ? String(row.parent_slug) : null,
+      bundesland_slug: String(row.bundesland_slug ?? "").trim(),
+    }))
+    .filter((row) => row.id && row.slug && row.bundesland_slug);
+}
+
+async function runChunked<TInput, TOutput>(
+  items: TInput[],
+  chunkSize: number,
+  worker: (item: TInput) => Promise<TOutput>,
+): Promise<TOutput[]> {
+  const outputs: TOutput[] = [];
+  const effectiveChunkSize = Math.max(1, Math.floor(chunkSize));
+  for (let index = 0; index < items.length; index += effectiveChunkSize) {
+    const chunk = items.slice(index, index + effectiveChunkSize);
+    const chunkResults = await Promise.all(chunk.map(worker));
+    outputs.push(...chunkResults);
+  }
+  return outputs;
+}
+
 export async function POST(req: Request) {
   try {
     const tokenFromHeader = normalize(req.headers.get("x-area-bootstrap-token"));
@@ -90,29 +147,14 @@ export async function POST(req: Request) {
       : null;
 
     const admin = createAdminClient();
-    const { data: allAreasRaw, error: areasError } = await admin
-      .from("areas")
-      .select("id, slug, name, parent_slug, bundesland_slug")
-      .order("id", { ascending: true });
-    if (areasError) {
-      return NextResponse.json({ error: areasError.message }, { status: 500 });
-    }
-
-    const allAreas = ((allAreasRaw ?? []) as Array<{
-      id?: string | null;
-      slug?: string | null;
-      name?: string | null;
-      parent_slug?: string | null;
-      bundesland_slug?: string | null;
-    }>)
-      .map((row) => ({
-        id: String(row.id ?? "").trim(),
-        slug: String(row.slug ?? "").trim(),
-        name: row.name ? String(row.name) : null,
-        parent_slug: row.parent_slug ? String(row.parent_slug) : null,
-        bundesland_slug: String(row.bundesland_slug ?? "").trim(),
-      }))
-      .filter((row) => row.id && row.slug && row.bundesland_slug);
+    const needsAllAreas =
+      (!requestedAreaId && !requestedBundeslandSlug)
+      || (requestedAreaId && includeOrtslagen);
+    const allAreas = needsAllAreas
+      ? await loadAreas(admin)
+      : requestedBundeslandSlug
+        ? await loadAreas(admin, { bundeslandSlug: requestedBundeslandSlug })
+        : await loadAreas(admin, { areaId: requestedAreaId });
 
     if (allAreas.length === 0) {
       return NextResponse.json({ ok: true, actor: actorUserId, processed: 0, results: [] });
@@ -170,25 +212,25 @@ export async function POST(req: Request) {
         );
       }
 
-      for (const bundeslandSlug of targetBundeslaender) {
-        const result = await refreshBundeslandReportTextFromStandard({
+      const bundeslandResults = await runChunked(targetBundeslaender, 3, async (bundeslandSlug) =>
+        refreshBundeslandReportTextFromStandard({
           admin: admin as never,
           bundeslandSlug,
           standardPayload: bundeslandStandardPayload,
           dryRun,
-        });
-        results.push(result);
-      }
+        }),
+      );
+      results.push(...bundeslandResults);
 
-      for (const area of targetAreas) {
-        const result = await refreshAreaReportTextFromStandard({
+      const areaResults = await runChunked(targetAreas, 4, async (area) =>
+        refreshAreaReportTextFromStandard({
           admin: admin as never,
           area,
           standardPayload: areaStandardPayload,
           dryRun,
-        });
-        results.push(result);
-      }
+        }),
+      );
+      results.push(...areaResults);
     } else {
       const standardPayload = await fetchStandardPayload(admin as never, "area");
       if (!standardPayload) {
@@ -198,17 +240,17 @@ export async function POST(req: Request) {
         );
       }
 
-      for (const area of targetAreas) {
-        const result = await bootstrapAreaReportText({
+      const bootstrapResults = await runChunked(targetAreas, 4, async (area) =>
+        bootstrapAreaReportText({
           admin: admin as never,
           area,
           allAreas,
           standardPayload,
           force: mode === "all" ? true : force,
           dryRun,
-        });
-        results.push(result);
-      }
+        }),
+      );
+      results.push(...bootstrapResults);
     }
 
     const updated = results.filter((row) => row.status === "updated");

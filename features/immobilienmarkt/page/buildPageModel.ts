@@ -45,6 +45,7 @@ import type { PublicNetworkContentCollection } from "@/lib/network-partners/type
 import {
   applySystempartnerDefaultProfileToReportText,
   downloadSystempartnerDefaultProfile,
+  type SystempartnerDefaultProfile,
 } from "@/lib/systempartner-default-profile";
 
 export type PageModel = {
@@ -430,74 +431,109 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     ? (route.level === "ort" ? "ortslage" : "kreis")
     : null;
   const supabase = areaId ? (createAdminClient() as unknown as SupabaseClientLike) : null;
-  const scopedPartnerContext = areaId && supabase
-    ? await loadPublicVisiblePartnerContextForArea(supabase, areaId)
+  const partnerContextCache = new Map<string, Promise<{ partnerId: string | null; isSystemDefault: boolean }>>();
+  const loadPartnerContext = (lookupAreaId: string) => {
+    const normalizedAreaId = String(lookupAreaId ?? "").trim();
+    if (!normalizedAreaId || !supabase) {
+      return Promise.resolve({ partnerId: null, isSystemDefault: false });
+    }
+    const cached = partnerContextCache.get(normalizedAreaId);
+    if (cached) return cached;
+    const next = loadPublicVisiblePartnerContextForArea(supabase, normalizedAreaId);
+    partnerContextCache.set(normalizedAreaId, next);
+    return next;
+  };
+  let systempartnerProfilePromise: Promise<SystempartnerDefaultProfile> | null = null;
+  const loadSystempartnerProfile = () => {
+    if (!systempartnerProfilePromise) {
+      systempartnerProfilePromise = downloadSystempartnerDefaultProfile(createAdminClient());
+    }
+    return systempartnerProfilePromise;
+  };
+
+  const scopedPartnerContext = areaId
+    ? await loadPartnerContext(areaId)
     : { partnerId: null, isSystemDefault: false };
   const scopedPartnerId = scopedPartnerContext.partnerId;
   const isSystemDefaultPartner = scopedPartnerContext.isSystemDefault;
 
-  if ((route.level === "kreis" || route.level === "ort") && isSystemDefaultPartner && supabase) {
-    const profile = await downloadSystempartnerDefaultProfile(createAdminClient());
-    const nextText = applySystempartnerDefaultProfileToReportText(report["text"], profile);
+  const systempartnerProfileForAreaPromise =
+    (route.level === "kreis" || route.level === "ort") && isSystemDefaultPartner && supabase
+      ? loadSystempartnerProfile()
+      : Promise.resolve<SystempartnerDefaultProfile | null>(null);
+  const runtimeStatePromise = areaId && areaScope && supabase && scopedPartnerId
+    ? getPartnerAreaRuntimeState(supabase, scopedPartnerId, areaId, areaScope)
+    : Promise.resolve(null);
+  const adminOverridesPromise = areaId && areaScope && supabase && isSystemDefaultPartner
+    ? getApprovedAdminAreaTexts(supabase, areaScope, areaId)
+    : Promise.resolve([]);
+  const translatedAdminOverridesPromise = areaId && areaScope && supabase && isSystemDefaultPartner && locale !== "de"
+    ? getLiveAdminAreaTextTranslations(supabase, areaScope, areaId, locale)
+    : Promise.resolve([]);
+  const ortslageNameMapPromise = areaId && route.level === "kreis" && route.regionSlugs.length >= 2
+    ? getOrteForKreis(route.regionSlugs[0], route.regionSlugs[1]).then((orte) => Object.fromEntries(orte.map((o) => [o.slug, o.name])))
+    : Promise.resolve<Record<string, string> | undefined>(undefined);
+  const generatedTextsPromise = areaId && supabase && scopedPartnerId && areaScope
+    ? getPartnerAreaGeneratedTexts(supabase, scopedPartnerId, areaId, areaScope)
+    : Promise.resolve([]);
+  const reportOverridesPromise = areaId && supabase && scopedPartnerId
+    ? getApprovedReportTexts(supabase, areaId, scopedPartnerId)
+    : Promise.resolve([]);
+
+  const [
+    systempartnerProfileForArea,
+    runtimeState,
+    adminOverrides,
+    translatedAdminOverrides,
+    ortslageNameMap,
+    generatedTexts,
+    reportOverrides,
+  ] = await Promise.all([
+    systempartnerProfileForAreaPromise,
+    runtimeStatePromise,
+    adminOverridesPromise,
+    translatedAdminOverridesPromise,
+    ortslageNameMapPromise,
+    generatedTextsPromise,
+    reportOverridesPromise,
+  ]);
+
+  if (systempartnerProfileForArea) {
+    const nextText = applySystempartnerDefaultProfileToReportText(report["text"], systempartnerProfileForArea);
     report = withTextTree(report, toTextTree(nextText));
   }
   report = withMetaValue(report, "active_partner_is_system_default", isSystemDefaultPartner);
 
-  if (areaId && areaScope && supabase && scopedPartnerId) {
-    const runtimeState = await getPartnerAreaRuntimeState(supabase, scopedPartnerId, areaId, areaScope);
-    if (runtimeState) {
-      report = withPartnerRuntimeState(report, runtimeState, areaScope);
-    }
+  if (runtimeState && areaScope) {
+    report = withPartnerRuntimeState(report, runtimeState, areaScope);
   }
 
   if (areaId && areaScope && supabase && isSystemDefaultPartner) {
-    const adminOverrides = await getApprovedAdminAreaTexts(supabase, areaScope, areaId);
     if (adminOverrides.length > 0) {
       report = withTextTree(report, applyOverridesToTextTree(getTextTree(report), adminOverrides));
     }
-
-    if (locale !== "de") {
-      const translatedAdminOverrides = await getLiveAdminAreaTextTranslations(
-        supabase,
-        areaScope,
-        areaId,
-        locale,
-      );
-      if (translatedAdminOverrides.length > 0) {
-        report = withTextTree(report, applyOverridesToTextTree(getTextTree(report), translatedAdminOverrides));
-      }
+    if (translatedAdminOverrides.length > 0) {
+      report = withTextTree(report, applyOverridesToTextTree(getTextTree(report), translatedAdminOverrides));
     }
   }
 
   if (areaId) {
-    let ortslageNameMap: Record<string, string> | undefined = undefined;
-    if (route.level === "kreis" && route.regionSlugs.length >= 2) {
-      const [bundeslandSlug, kreisSlug] = route.regionSlugs;
-      const orte = await getOrteForKreis(bundeslandSlug, kreisSlug);
-      ortslageNameMap = Object.fromEntries(orte.map((o) => [o.slug, o.name]));
-    }
     report = applyDataDrivenTexts(report, areaId, ortslageNameMap);
 
-    if (supabase && scopedPartnerId && areaScope) {
-      const generatedTexts = await getPartnerAreaGeneratedTexts(supabase, scopedPartnerId, areaId, areaScope);
-      if (generatedTexts.length > 0) {
-        report = withTextTree(
-          report,
-          applyOverridesToTextTree(getTextTree(report), generatedTexts),
-        );
-      }
+    if (generatedTexts.length > 0) {
+      report = withTextTree(
+        report,
+        applyOverridesToTextTree(getTextTree(report), generatedTexts),
+      );
     }
   }
 
   // DB-Overrides: approved report_texts überschreiben JSON-Texte (if present)
   if (areaId && supabase) {
-    const overrides = scopedPartnerId
-      ? await getApprovedReportTexts(supabase, areaId, scopedPartnerId)
-      : [];
-    if (overrides.length > 0) {
+    if (reportOverrides.length > 0) {
       const mergedText = applyOverridesToTextTree(
         getTextTree(report),
-        overrides.map((entry) => ({
+        reportOverrides.map((entry) => ({
           section_key: entry.section_key,
           optimized_content: entry.optimized_content,
         })),
@@ -514,46 +550,50 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
         : null;
 
     if (kreisReport) {
-      const supabase = createAdminClient() as unknown as SupabaseClientLike;
       const kreisMeta = asRecord(asArray(kreisReport.meta)[0] ?? kreisReport.meta) ?? {};
       const kreisAreaId = asString(kreisMeta["kreis_schluessel"]) ?? "";
       if (kreisAreaId) {
-        const kreisPartnerContext = await loadPublicVisiblePartnerContextForArea(supabase, kreisAreaId);
-        if (kreisPartnerContext.isSystemDefault) {
-          const profile = await downloadSystempartnerDefaultProfile(createAdminClient());
-          const nextText = applySystempartnerDefaultProfileToReportText(kreisReport["text"], profile);
-          kreisReport = withTextTree(kreisReport, toTextTree(nextText));
+        const kreisPartnerContext = await loadPartnerContext(kreisAreaId);
+        const [
+          kreisSystempartnerProfile,
+          kreisAdminOverrides,
+          kreisTranslatedAdminOverrides,
+          kreisReportOverrides,
+        ] = await Promise.all([
+          kreisPartnerContext.isSystemDefault ? loadSystempartnerProfile() : Promise.resolve<SystempartnerDefaultProfile | null>(null),
+          kreisPartnerContext.isSystemDefault && supabase
+            ? getApprovedAdminAreaTexts(supabase, "kreis", kreisAreaId)
+            : Promise.resolve([]),
+          kreisPartnerContext.isSystemDefault && supabase && locale !== "de"
+            ? getLiveAdminAreaTextTranslations(supabase, "kreis", kreisAreaId, locale)
+            : Promise.resolve([]),
+          kreisPartnerContext.partnerId && supabase
+            ? getApprovedReportTexts(supabase, kreisAreaId, kreisPartnerContext.partnerId)
+            : Promise.resolve([]),
+        ]);
 
-          const kreisAdminOverrides = await getApprovedAdminAreaTexts(supabase, "kreis", kreisAreaId);
+        if (kreisPartnerContext.isSystemDefault) {
+          if (kreisSystempartnerProfile) {
+            const nextText = applySystempartnerDefaultProfileToReportText(kreisReport["text"], kreisSystempartnerProfile);
+            kreisReport = withTextTree(kreisReport, toTextTree(nextText));
+          }
           if (kreisAdminOverrides.length > 0) {
             kreisReport = withTextTree(
               kreisReport,
               applyOverridesToTextTree(getTextTree(kreisReport), kreisAdminOverrides),
             );
           }
-
-          if (locale !== "de") {
-            const kreisTranslatedAdminOverrides = await getLiveAdminAreaTextTranslations(
-              supabase,
-              "kreis",
-              kreisAreaId,
-              locale,
+          if (kreisTranslatedAdminOverrides.length > 0) {
+            kreisReport = withTextTree(
+              kreisReport,
+              applyOverridesToTextTree(getTextTree(kreisReport), kreisTranslatedAdminOverrides),
             );
-            if (kreisTranslatedAdminOverrides.length > 0) {
-              kreisReport = withTextTree(
-                kreisReport,
-                applyOverridesToTextTree(getTextTree(kreisReport), kreisTranslatedAdminOverrides),
-              );
-            }
           }
         }
-        const overrides = kreisPartnerContext.partnerId
-          ? await getApprovedReportTexts(supabase, kreisAreaId, kreisPartnerContext.partnerId)
-          : [];
-        if (overrides.length > 0) {
+        if (kreisReportOverrides.length > 0) {
           const mergedKreisText = applyOverridesToTextTree(
             getTextTree(kreisReport),
-            overrides.map((entry) => ({
+            kreisReportOverrides.map((entry) => ({
               section_key: entry.section_key,
               optimized_content: entry.optimized_content,
             })),
@@ -630,35 +670,28 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
   // Bundesland: "orte" = Kreise (für Navigation unten)
   if (route.level === "bundesland" && bundeslandSlug) {
     const admin = createAdminClient() as unknown as SupabaseClientLike;
-    const kreise = await getKreiseForBundesland(bundeslandSlug);
-    const activeKreisSlugs = await loadActiveKreisSlugsForBundeslandLive(bundeslandSlug);
+    const [kreise, activeKreisSlugs, adminOverrides, translatedOverrides] = await Promise.all([
+      getKreiseForBundesland(bundeslandSlug),
+      loadActiveKreisSlugsForBundeslandLive(bundeslandSlug),
+      getApprovedAdminAreaTexts(admin, "bundesland", bundeslandSlug),
+      locale !== "de"
+        ? getLiveAdminAreaTextTranslations(admin, "bundesland", bundeslandSlug, locale)
+        : Promise.resolve([]),
+    ]);
     const visibleKreise = kreise.filter((k) => activeKreisSlugs.has(k.slug));
-    orte = kreise.map((k) => ({
-      slug: k.slug,
-      name: k.name,
-    }));
     orte = visibleKreise.map((k) => ({
       slug: k.slug,
       name: k.name,
     }));
 
-    const adminOverrides = await getApprovedAdminAreaTexts(admin, "bundesland", bundeslandSlug);
     if (adminOverrides.length > 0) {
       const mergedBundeslandText = applyOverridesToTextTree(getTextTree(report), adminOverrides);
       report = withTextTree(report, mergedBundeslandText);
     }
 
-    if (locale !== "de") {
-      const translatedOverrides = await getLiveAdminAreaTextTranslations(
-        admin,
-        "bundesland",
-        bundeslandSlug,
-        locale,
-      );
-      if (translatedOverrides.length > 0) {
-        const translatedBundeslandText = applyOverridesToTextTree(getTextTree(report), translatedOverrides);
-        report = withTextTree(report, translatedBundeslandText);
-      }
+    if (translatedOverrides.length > 0) {
+      const translatedBundeslandText = applyOverridesToTextTree(getTextTree(report), translatedOverrides);
+      report = withTextTree(report, translatedBundeslandText);
     }
 
     const kreisTextRows = (
@@ -770,8 +803,63 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
 
   // Ort + Kreis: (Ort nutzt dieselben Kreis-Assets)
   if ((route.level === "kreis" || route.level === "ort") && bundeslandSlug && kreisSlug) {
-    const allOrte = await getOrteForKreis(bundeslandSlug, kreisSlug);
-    const activeOrtSlugs = await getActiveOrtSlugsForKreis(bundeslandSlug, kreisSlug);
+    const [
+      allOrte,
+      activeOrtSlugs,
+      immobilienpreisMapSvg,
+      immobilienpreisLegendHtml,
+      mietpreisMapSvg,
+      mietpreisLegendHtml,
+      grundstueckspreisMapSvg,
+      grundstueckspreisLegendHtml,
+      kaufpreisfaktorMapSvg,
+      kaufpreisfaktorLegendHtml,
+      wohnungssaldoMapSvg,
+      wohnungssaldoLegendHtml,
+      kaufkraftindexMapSvg,
+      kaufkraftindexLegendHtml,
+      flaechennutzungGewerbe,
+      flaechennutzungWohnbau,
+      wohnlagencheckMapSvgs,
+      wohnlagencheckLegendHtml,
+    ] = await Promise.all([
+      getOrteForKreis(bundeslandSlug, kreisSlug),
+      getActiveOrtSlugsForKreis(bundeslandSlug, kreisSlug),
+      getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug, pathPrefix),
+      getLegendHtml("immobilienpreis"),
+      getMietpreisMapSvg(bundeslandSlug, kreisSlug, pathPrefix),
+      getLegendHtml("mietpreis"),
+      getGrundstueckspreisMapSvg(bundeslandSlug, kreisSlug, pathPrefix),
+      getLegendHtml("grundstueckspreis"),
+      getKaufpreisfaktorMapSvg(bundeslandSlug, kreisSlug, pathPrefix),
+      getLegendHtml("kaufpreisfaktor"),
+      getWohnungssaldoMapSvg(bundeslandSlug, kreisSlug, pathPrefix),
+      getLegendHtml("wohnungssaldo"),
+      getKaufkraftindexMapSvg(bundeslandSlug, kreisSlug, pathPrefix),
+      getLegendHtml("kaufkraftindex"),
+      getFlaechennutzungGewerbeImageSrc(
+        bundeslandSlug,
+        kreisSlug,
+        route.level === "ort" ? ortSlug : undefined,
+      ),
+      getFlaechennutzungWohnbauImageSrc(
+        bundeslandSlug,
+        kreisSlug,
+        route.level === "ort" ? ortSlug : undefined,
+      ),
+      Promise.all(
+        ["mobilitaet", "bildung", "gesundheit", "naherholung", "nahversorgung", "kultur_freizeit"].map(async (theme) => [
+          theme,
+          await getWohnlagencheckMapSvg(bundeslandSlug, kreisSlug, theme, pathPrefix),
+        ] as const),
+      ).then((entries) => Object.fromEntries(entries)),
+      Promise.all(
+        ["mobilitaet", "bildung", "gesundheit", "naherholung", "nahversorgung", "kultur_freizeit"].map(async (theme) => [
+          theme,
+          await getLegendHtml(theme),
+        ] as const),
+      ).then((entries) => Object.fromEntries(entries)),
+    ]);
     orte = activeOrtSlugs.size > 0
       ? allOrte.filter((ort) => activeOrtSlugs.has(ort.slug))
       : allOrte;
@@ -779,60 +867,14 @@ export async function buildPageModel(route: RouteModel, options?: BuildPageModel
     const heroImageSrc = buildWebAssetUrl(
       `/images/immobilienmarkt/${bundeslandSlug}/${kreisSlug}/immobilienmarktbericht-${kreisSlug}.webp`,
     );
-    const immobilienpreisMapSvg = await getImmobilienpreisMapSvg(bundeslandSlug, kreisSlug, pathPrefix);
-    const immobilienpreisLegendHtml = await getLegendHtml("immobilienpreis");
-    const mietpreisMapSvg = await getMietpreisMapSvg(bundeslandSlug, kreisSlug, pathPrefix);
-    const mietpreisLegendHtml = await getLegendHtml("mietpreis");
-    const grundstueckspreisMapSvg = await getGrundstueckspreisMapSvg(
-      bundeslandSlug,
-      kreisSlug,
-      pathPrefix,
-    );
-    const grundstueckspreisLegendHtml = await getLegendHtml("grundstueckspreis");
-    const kaufpreisfaktorMapSvg = await getKaufpreisfaktorMapSvg(bundeslandSlug, kreisSlug, pathPrefix);
-    const kaufpreisfaktorLegendHtml = await getLegendHtml("kaufpreisfaktor");
-    const wohnungssaldoMapSvg = await getWohnungssaldoMapSvg(bundeslandSlug, kreisSlug, pathPrefix);
-    const wohnungssaldoLegendHtml = await getLegendHtml("wohnungssaldo");
-    const kaufkraftindexMapSvg = await getKaufkraftindexMapSvg(bundeslandSlug, kreisSlug, pathPrefix);
-    const kaufkraftindexLegendHtml = await getLegendHtml("kaufkraftindex");
     const {
       src: flaechennutzungGewerbeImageSrc,
       usesKreisFallback: flaechennutzungGewerbeUsesKreisFallback,
-    } = await getFlaechennutzungGewerbeImageSrc(
-      bundeslandSlug,
-      kreisSlug,
-      route.level === "ort" ? ortSlug : undefined,
-    );
+    } = flaechennutzungGewerbe;
     const {
       src: flaechennutzungWohnbauImageSrc,
       usesKreisFallback: flaechennutzungWohnbauUsesKreisFallback,
-    } = await getFlaechennutzungWohnbauImageSrc(
-      bundeslandSlug,
-      kreisSlug,
-      route.level === "ort" ? ortSlug : undefined,
-    );
-
-    const wohnlagenThemes = [
-      "mobilitaet",
-      "bildung",
-      "gesundheit",
-      "naherholung",
-      "nahversorgung",
-      "kultur_freizeit",
-    ];
-    const wohnlagencheckMapSvgs = Object.fromEntries(
-      await Promise.all(
-        wohnlagenThemes.map(async (theme) => [
-          theme,
-          await getWohnlagencheckMapSvg(bundeslandSlug, kreisSlug, theme, pathPrefix),
-        ]),
-      ),
-    );
-    const wohnlagencheckLegendHtml = Object.fromEntries(
-      await Promise.all(
-        wohnlagenThemes.map(async (theme) => [theme, await getLegendHtml(theme)]),
-      ),
-    );
+    } = flaechennutzungWohnbau;
 
     assets = {
       heroImageSrc,
