@@ -78,7 +78,7 @@ export async function syncIntegrationResources(
       throw new Error("onOffice token/secret fehlt");
     }
 
-    return syncOnOfficeResources(sanitizedIntegration, token, secret);
+    return syncOnOfficeResources(sanitizedIntegration, token, secret, options);
   }
 
   throw new Error(`Provider nicht unterstützt: ${integration.provider}`);

@@ -204,6 +204,8 @@ type CrmIntegrationAdminDraft = {
   referencesArchived: string;
   referencesStatusIds: string;
   referencesCustomFieldKey: string;
+  onOfficeReferenceSoldStatusId: string;
+  onOfficeReferenceRentedStatusId: string;
   guardedUnitsTargetObjects: string;
   guardedReferencesTargetObjects: string;
   guardedSavedQueriesTargetObjects: string;
@@ -1476,6 +1478,8 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     referencesArchived: asText(references.archived) ?? "",
     referencesStatusIds: formatCsvInput(references.status_ids),
     referencesCustomFieldKey: asText(references.custom_field_key) ?? "",
+    onOfficeReferenceSoldStatusId: asScalarInput(references.sold_status_id),
+    onOfficeReferenceRentedStatusId: asScalarInput(references.rented_status_id),
     guardedUnitsTargetObjects: readTargetObjects(units),
     guardedReferencesTargetObjects: readTargetObjects(refLimits),
     guardedSavedQueriesTargetObjects: readTargetObjects(savedQueries),
@@ -1529,17 +1533,37 @@ function applyCrmAdminDraftToSettings(
   if (listingStatusIds.length > 0) listings.status_ids = listingStatusIds;
   else delete listings.status_ids;
 
-  const archived = asText(draft.referencesArchived);
-  if (archived === "1" || archived === "0" || archived === "-1") references.archived = Number(archived);
-  else delete references.archived;
+  if (integration.provider === "onoffice") {
+    const soldStatusId = parseOptionalPositiveInteger(
+      draft.onOfficeReferenceSoldStatusId,
+      "onOffice Objektstatus-ID verkauft",
+    );
+    const rentedStatusId = parseOptionalPositiveInteger(
+      draft.onOfficeReferenceRentedStatusId,
+      "onOffice Objektstatus-ID vermietet",
+    );
+    if (soldStatusId !== null) references.sold_status_id = soldStatusId;
+    else delete references.sold_status_id;
+    if (rentedStatusId !== null) references.rented_status_id = rentedStatusId;
+    else delete references.rented_status_id;
+    delete references.archived;
+    delete references.status_ids;
+    delete references.custom_field_key;
+  } else {
+    const archived = asText(draft.referencesArchived);
+    if (archived === "1" || archived === "0" || archived === "-1") references.archived = Number(archived);
+    else delete references.archived;
 
-  const statusIds = parseCsvNumberList(draft.referencesStatusIds, "Status-IDs für Referenzen");
-  if (statusIds.length > 0) references.status_ids = statusIds;
-  else delete references.status_ids;
+    const statusIds = parseCsvNumberList(draft.referencesStatusIds, "Status-IDs für Referenzen");
+    if (statusIds.length > 0) references.status_ids = statusIds;
+    else delete references.status_ids;
 
-  const customFieldKey = asText(draft.referencesCustomFieldKey);
-  if (customFieldKey) references.custom_field_key = customFieldKey;
-  else delete references.custom_field_key;
+    const customFieldKey = asText(draft.referencesCustomFieldKey);
+    if (customFieldKey) references.custom_field_key = customFieldKey;
+    else delete references.custom_field_key;
+    delete references.sold_status_id;
+    delete references.rented_status_id;
+  }
 
   const unitsTargetObjects = parseOptionalPositiveInteger(draft.guardedUnitsTargetObjects, "Guarded Angebote target_objects");
   const referencesTargetObjects = parseOptionalPositiveInteger(draft.guardedReferencesTargetObjects, "Guarded Referenzen target_objects");
@@ -1964,6 +1988,8 @@ export default function AdminClient() {
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [areaMappings, setAreaMappings] = useState<AreaMapping[]>([]);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [integrationsLoadedForPartnerId, setIntegrationsLoadedForPartnerId] = useState<string>("");
+  const [billingLoadedForPartnerId, setBillingLoadedForPartnerId] = useState<string>("");
   const [crmIntegrationDrafts, setCrmIntegrationDrafts] = useState<Record<string, CrmIntegrationAdminDraft>>({});
   const [crmIntegrationTabs, setCrmIntegrationTabs] = useState<Record<string, CrmResourceKey>>({});
   const [expandedCrmIntegrationId, setExpandedCrmIntegrationId] = useState<string | null>(null);
@@ -3103,9 +3129,11 @@ export default function AdminClient() {
       totalAreas: displayAreaRows.length,
       liveAreas: states.filter((state) => state === "live").length,
       activationOpen: states.filter((state) => state !== "live").length,
-      activeIntegrationCount: integrations.filter((integration) => integration.is_active).length,
+      activeIntegrationCount: integrationsLoadedForPartnerId === selectedPartnerId
+        ? integrations.filter((integration) => integration.is_active).length
+        : null,
     };
-  }, [displayAreaRows, integrations]);
+  }, [displayAreaRows, integrations, integrationsLoadedForPartnerId, selectedPartnerId]);
 
   const selectedPartnerNeedsAreaAssignment = Boolean(selectedPartner?.is_active) && displayAreaRows.length === 0;
 
@@ -3381,12 +3409,38 @@ export default function AdminClient() {
     setHoveredAdminNavTop(nextTop);
   };
 
-  function buildPartnerListUrl(queryText = partnerFilter, onlyActive = onlyActiveList): string {
-    const params = new URLSearchParams({ include_inactive: "1" });
-    const normalizedQuery = queryText.trim();
-    if (onlyActive) params.set("only_active", "1");
-    if (normalizedQuery) params.set("q", normalizedQuery);
-    return `/api/admin/partners?${params.toString()}`;
+  function derivePartnerListRows(source: Partner[], queryText = partnerFilter, onlyActive = onlyActiveList): Partner[] {
+    const normalizedQuery = queryText.trim().toLowerCase();
+    return source.filter((partner) => {
+      if (onlyActive && !partner.is_active) return false;
+      if (!normalizedQuery) return true;
+      const haystack = [
+        String(partner.company_name ?? ""),
+        String(partner.contact_email ?? ""),
+        String(partner.id ?? ""),
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }
+
+  function resetSelectedPartnerAuxiliaryData() {
+    setIntegrations([]);
+    setIntegrationsLoadedForPartnerId("");
+    setCrmIntegrationDrafts({});
+    setCrmIntegrationTabs({});
+    setExpandedCrmIntegrationId(null);
+    setPartnerBillingRows([]);
+    setPartnerBillingTotals({ tokens: 0, cost_eur: 0 });
+    setPartnerFeatureBillingRows([]);
+    setPartnerLocaleBillingRows([]);
+    setBillingLoadedForPartnerId("");
+    setPartnerPortalBillingDraft({
+      portal_base_price_eur: "",
+      portal_ortslage_price_eur: "",
+      portal_export_ortslage_price_eur: "",
+    });
   }
 
   function buildAreaOverviewUrl(queryText = areaFilter, onlyActive = onlyActiveList): string {
@@ -3396,11 +3450,6 @@ export default function AdminClient() {
     if (normalizedQuery) params.set("q", normalizedQuery);
     const qs = params.toString();
     return qs ? `/api/admin/partner-area-overview?${qs}` : "/api/admin/partner-area-overview";
-  }
-
-  async function loadPartnerListRows(queryText = partnerFilter, onlyActive = onlyActiveList) {
-    const data = await api<{ partners: Partner[] }>(buildPartnerListUrl(queryText, onlyActive));
-    setPartnerListRows(data.partners ?? []);
   }
 
   async function loadAreaOverviewList(queryText = areaFilter, onlyActive = onlyActiveList) {
@@ -3414,7 +3463,7 @@ export default function AdminClient() {
     const nextPartners = data.partners ?? [];
     setPartners(nextPartners);
     if (navMode === "partners") {
-      await loadPartnerListRows();
+      setPartnerListRows(derivePartnerListRows(nextPartners));
     } else {
       await loadAreaOverviewList();
     }
@@ -3426,13 +3475,16 @@ export default function AdminClient() {
     if (nextId) {
       setSelectedPartnerId(nextId);
       if (options?.refreshSelectedDetails !== false) {
+        if (String(selectedPartner?.id ?? "") !== nextId) {
+          resetSelectedPartnerAuxiliaryData();
+        }
         await loadPartnerDetails(nextId);
       }
     } else if (!selectedPartnerId || (selectedPartnerId && !nextPartners.some((partner) => partner.id === selectedPartnerId))) {
       setSelectedPartnerId("");
       setSelectedPartner(null);
       setAreaMappings([]);
-      setIntegrations([]);
+      resetSelectedPartnerAuxiliaryData();
     }
   }
 
@@ -3452,13 +3504,9 @@ export default function AdminClient() {
 
   async function loadPartnerDetails(partnerId: string) {
     if (!partnerId) return;
-    const [partnerData, integrationsData] = await Promise.all([
-      api<{ partner: Partner; area_mappings: AreaMapping[] }>(`/api/admin/partners/${partnerId}`),
-      api<{ integrations: Integration[] }>(`/api/admin/partners/${partnerId}/integrations`),
-    ]);
+    const partnerData = await api<{ partner: Partner; area_mappings: AreaMapping[] }>(`/api/admin/partners/${partnerId}`);
     setSelectedPartner(partnerData.partner);
     setAreaMappings(partnerData.area_mappings ?? []);
-    setIntegrations(integrationsData.integrations ?? []);
     const reviewCandidate = (partnerData.area_mappings ?? []).find((mapping) => {
       const state = normalizeActivationStatus(
         mapping.activation_status,
@@ -3483,19 +3531,13 @@ export default function AdminClient() {
       is_active: Boolean(partnerData.partner.is_active),
       llm_partner_managed_allowed: Boolean(partnerData.partner.llm_partner_managed_allowed),
     });
-    setPartnerBillingRows([]);
-    setPartnerBillingTotals({ tokens: 0, cost_eur: 0 });
-    setPartnerFeatureBillingRows([]);
-    setPartnerPortalBillingDraft({
-      portal_base_price_eur: "",
-      portal_ortslage_price_eur: "",
-      portal_export_ortslage_price_eur: "",
-    });
-    try {
-      await loadPartnerBillingConfig(partnerId);
-    } catch {
-      setPartnerFeatureBillingRows([]);
-    }
+  }
+
+  async function loadPartnerIntegrations(partnerId: string) {
+    if (!partnerId) return;
+    const data = await api<{ integrations: Integration[] }>(`/api/admin/partners/${partnerId}/integrations`);
+    setIntegrations(data.integrations ?? []);
+    setIntegrationsLoadedForPartnerId(partnerId);
   }
 
   async function loadAreaReview(areaId: string) {
@@ -4897,6 +4939,7 @@ export default function AdminClient() {
       monthly_price_eur: Number(row.monthly_price_eur ?? 0),
       sort_order: Number(row.sort_order ?? 100),
     })));
+    setBillingLoadedForPartnerId(partnerId);
   }
 
   async function loadLlmGlobalDashboard() {
@@ -4947,14 +4990,14 @@ export default function AdminClient() {
     if (!adminBootstrapRef.current) return;
     const timer = window.setTimeout(() => {
       if (navMode === "partners") {
-        void loadPartnerListRows();
+        setPartnerListRows(derivePartnerListRows(partners));
         return;
       }
       void loadAreaOverviewList();
     }, 250);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navMode, partnerFilter, areaFilter, onlyActiveList]);
+  }, [navMode, partnerFilter, areaFilter, onlyActiveList, partners]);
 
   useEffect(() => {
     if (activeView !== "audit" || auditLoadedOnce || auditLoading) return;
@@ -5009,6 +5052,22 @@ export default function AdminClient() {
       cancelled = true;
     };
   }, [activeView, areaMappings, selectedPartner?.id, systemPartner?.id]);
+
+  useEffect(() => {
+    if (activeView !== "partner_edit" || !selectedPartnerId || !selectedPartner || selectedPartner.is_system_default) return;
+    if (partnerTab === "integrations" && integrationsLoadedForPartnerId !== selectedPartnerId) {
+      void loadPartnerIntegrations(selectedPartnerId).catch(() => {
+        setIntegrations([]);
+      });
+      return;
+    }
+    if (partnerTab === "billing" && billingLoadedForPartnerId !== selectedPartnerId) {
+      void loadPartnerBillingConfig(selectedPartnerId).catch(() => {
+        setPartnerFeatureBillingRows([]);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView, partnerTab, selectedPartnerId, selectedPartner?.id, selectedPartner?.is_system_default, integrationsLoadedForPartnerId, billingLoadedForPartnerId]);
 
   useEffect(() => {
     if (!selectedPartnerId || !reviewAreaId) {
@@ -5145,7 +5204,7 @@ export default function AdminClient() {
         contact_last_name: "",
         website_url: "",
       });
-      await loadPartners(createdId);
+      await loadPartners(createdId, { refreshSelectedDetails: false });
       setCreatedPartnerSuccess({
         mode: "created",
         id: createdId,
@@ -5206,7 +5265,7 @@ export default function AdminClient() {
       }>(`/api/admin/partners/${partnerId}/invite-user`, {
         method: "POST",
       });
-      await loadPartners(partnerId);
+      await loadPartners(partnerId, { refreshSelectedDetails: false });
       const linkType = String(response.link_type ?? "").trim().toLowerCase();
       const email = String(response.contact_email ?? "").trim();
       setStatus(
@@ -5231,6 +5290,9 @@ export default function AdminClient() {
       setReviewActionError(null);
       setReviewContentDismissed(false);
       setSelectedPartnerId(partnerId);
+      if (String(selectedPartner?.id ?? "") !== partnerId) {
+        resetSelectedPartnerAuxiliaryData();
+      }
       await loadPartnerDetails(partnerId);
       setActiveView(view);
       setPartnerTab("profile");
@@ -5644,7 +5706,7 @@ export default function AdminClient() {
                   void run("Integration löschen", async () => {
                     if (!selectedPartnerId || !payload.integrationId) return;
                     await api(`/api/admin/integrations/${payload.integrationId}`, { method: "DELETE" });
-                    await loadPartnerDetails(selectedPartnerId);
+                    await loadPartnerIntegrations(selectedPartnerId);
                   });
                 }}
               >
@@ -6404,7 +6466,7 @@ export default function AdminClient() {
             </div>
             <div style={{ ...adminPartnerSummaryCardStyle, background: "#ffffff" }}>
               <div style={adminPartnerSummaryLabelStyle}>Anbindungen aktiv</div>
-              <div style={adminPartnerSummaryValueStyle}>{selectedPartnerSummary.activeIntegrationCount}</div>
+              <div style={adminPartnerSummaryValueStyle}>{selectedPartnerSummary.activeIntegrationCount ?? "—"}</div>
             </div>
           </div>
         ) : null}
@@ -7582,7 +7644,7 @@ export default function AdminClient() {
                                 `/api/admin/integrations/${integration.id}/${integration.is_active ? "deactivate" : "reactivate"}`,
                                 { method: "POST" },
                               );
-                              await loadPartnerDetails(selectedPartnerId);
+                              await loadPartnerIntegrations(selectedPartnerId);
                             })
                           }
                         >
@@ -7632,7 +7694,7 @@ export default function AdminClient() {
                                   method: "PATCH",
                                   body: JSON.stringify({ settings }),
                                 });
-                                await loadPartnerDetails(selectedPartnerId);
+                                await loadPartnerIntegrations(selectedPartnerId);
                               })
                             }
                             onPreview={(integrationId, resource) =>
@@ -7641,7 +7703,7 @@ export default function AdminClient() {
                                   method: "POST",
                                   body: JSON.stringify({ resource }),
                                 });
-                                await loadPartnerDetails(selectedPartnerId);
+                                await loadPartnerIntegrations(selectedPartnerId);
                               })
                             }
                             onSync={(integrationId, resource, mode) =>
@@ -7650,7 +7712,7 @@ export default function AdminClient() {
                                   method: "POST",
                                   body: JSON.stringify({ resource, mode }),
                                 });
-                                await loadPartnerDetails(selectedPartnerId);
+                                await loadPartnerIntegrations(selectedPartnerId);
                               })
                             }
                             onCancelSync={(integrationId, resource) =>
@@ -7658,7 +7720,7 @@ export default function AdminClient() {
                                 await api(`/api/admin/integrations/${integrationId}/sync?resource=${resource}`, {
                                   method: "DELETE",
                                 });
-                                await loadPartnerDetails(selectedPartnerId);
+                                await loadPartnerIntegrations(selectedPartnerId);
                               })
                             }
                             busy={busy}

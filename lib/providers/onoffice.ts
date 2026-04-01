@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 
 import type {
+  CrmSyncResource,
   OfferDetailsSnapshot,
   OfferEnergySnapshot,
   MappedOffer,
@@ -406,155 +407,6 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeRecord): 
   );
 }
 
-function buildDummyReferences(partnerId: string, provider: "onoffice"): RawReference[] {
-  const now = toIsoNow();
-  const rows = [
-    {
-      external_id: "reference_dummy:onoffice:001",
-      title: "Erfolgreich verkauft in Leipzig Connewitz",
-      transaction_result: "verkauft",
-      city: "Leipzig",
-      district: "Connewitz",
-      object_type: "wohnung",
-      offer_type: "kauf",
-      rooms: 3,
-      area_sqm: 82,
-      image_url: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1200&q=80",
-      reference_text_seed: "Charmante Eigentumswohnung mit sehr schneller Vermarktungsdauer.",
-    },
-    {
-      external_id: "reference_dummy:onoffice:002",
-      title: "Erfolgreich vermietet in Dresden Neustadt",
-      transaction_result: "vermietet",
-      city: "Dresden",
-      district: "Neustadt",
-      object_type: "wohnung",
-      offer_type: "miete",
-      rooms: 2,
-      area_sqm: 58,
-      image_url: "https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=1200&q=80",
-      reference_text_seed: "Modernisierte Wohnung mit hoher Nachfrage und kurzer Leerstandszeit.",
-    },
-    {
-      external_id: "reference_dummy:onoffice:003",
-      title: "Erfolgreich verkauft in Hamburg Eimsbuettel",
-      transaction_result: "verkauft",
-      city: "Hamburg",
-      district: "Eimsbuettel",
-      object_type: "haus",
-      offer_type: "kauf",
-      rooms: 5,
-      area_sqm: 154,
-      image_url: "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=1200&q=80",
-      reference_text_seed: "Familienhaus mit sehr guter Resonanz im Bieterverfahren.",
-    },
-  ];
-
-  return rows.map((row) =>
-    makeRawRowBase(
-      partnerId,
-      provider,
-      row.external_id,
-      row.title,
-      now,
-      {
-        title: row.title,
-        transaction_result: row.transaction_result,
-        city: row.city,
-        district: row.district,
-        location_scope: "stadtteil",
-        location: `${row.city} ${row.district}`,
-        object_type: row.object_type,
-        offer_type: row.offer_type,
-        rooms: row.rooms,
-        area_sqm: row.area_sqm,
-        image_url: row.image_url,
-        reference_text_seed: row.reference_text_seed,
-        description: row.reference_text_seed,
-        source_mode: "dummy_seed",
-      },
-      {
-        provider,
-        source_mode: "dummy_seed",
-      },
-    ),
-  );
-}
-
-function buildDummyRequests(partnerId: string, provider: "onoffice"): RawRequest[] {
-  const now = toIsoNow();
-  const rows = [
-    {
-      external_id: "request_dummy:onoffice:001",
-      title: "Familie sucht 3-Zimmer-Wohnung in Dresden Pieschen, Neustadt oder Trachau",
-      request_type: "miete",
-      object_type: "wohnung",
-      min_rooms: 3,
-      max_price: 1450,
-      targets: [
-        { city: "Dresden", district: "Pieschen" },
-        { city: "Dresden", district: "Neustadt" },
-        { city: "Dresden", district: "Trachau" },
-      ],
-    },
-    {
-      external_id: "request_dummy:onoffice:002",
-      title: "Kapitalanleger sucht ETW in Leipzig Suedvorstadt oder Plagwitz",
-      request_type: "kauf",
-      object_type: "wohnung",
-      min_rooms: 2,
-      max_price: 340000,
-      targets: [
-        { city: "Leipzig", district: "Suedvorstadt" },
-        { city: "Leipzig", district: "Plagwitz" },
-      ],
-    },
-    {
-      external_id: "request_dummy:onoffice:003",
-      title: "Paar sucht Reihenhaus in Hamburg Rahlstedt oder Volksdorf",
-      request_type: "kauf",
-      object_type: "haus",
-      min_rooms: 4,
-      max_price: 760000,
-      targets: [
-        { city: "Hamburg", district: "Rahlstedt" },
-        { city: "Hamburg", district: "Volksdorf" },
-      ],
-    },
-  ];
-
-  return rows.map((row) => {
-    const regionTargets = row.targets
-      .map((target) => toRegionTarget(target.city, target.district))
-      .filter((target): target is RegionTarget => Boolean(target));
-    return makeRawRowBase(
-      partnerId,
-      provider,
-      row.external_id,
-      row.title,
-      now,
-      {
-        title: row.title,
-        request_type: row.request_type,
-        object_type: row.object_type,
-        min_rooms: row.min_rooms,
-        max_price: row.max_price,
-        region_targets: regionTargets.map((target) => ({
-          city: target.city,
-          district: target.district,
-          label: target.label,
-        })),
-        region_target_keys: regionTargets.map((target) => target.key),
-        source_mode: "dummy_seed",
-      },
-      {
-        provider,
-        source_mode: "dummy_seed",
-      },
-    );
-  });
-}
-
 async function fetchOnOfficeResource(
   integration: PartnerIntegration,
   token: string,
@@ -655,12 +507,23 @@ export async function fetchOnOfficeReferences(
     "hausnummer",
     "img",
   ];
-  return fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
-    objektstatus: [
-      { op: "=", val: settings.sold_status_id },
-      { op: "=", val: settings.rented_status_id },
-    ],
+  const soldRecords = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
+    objektstatus: [{ op: "=", val: settings.sold_status_id }],
   });
+  if (settings.rented_status_id === settings.sold_status_id) return soldRecords;
+
+  const rentedRecords = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
+    objektstatus: [{ op: "=", val: settings.rented_status_id }],
+  });
+
+  const merged = new Map<string, OnOfficeRecord>();
+  for (const record of [...soldRecords, ...rentedRecords]) {
+    const elements = (record.elements ?? {}) as Record<string, unknown>;
+    const id = String(elements["Id"] ?? record.id ?? "").trim();
+    if (!id) continue;
+    if (!merged.has(id)) merged.set(id, record);
+  }
+  return Array.from(merged.values());
 }
 
 export async function fetchOnOfficeSearchCriteria(
@@ -691,54 +554,48 @@ export async function syncOnOfficeResources(
   integration: PartnerIntegration,
   token: string,
   secret: string,
+  options?: { resource?: CrmSyncResource },
 ): Promise<ResourceSyncData & { offers: MappedOffer[] }> {
+  const resource = options?.resource ?? "all";
   const cfg = toSettings(integration.settings);
   const notes: string[] = [];
+  const shouldFetchOffers = resource === "all" || resource === "offers";
+  const shouldFetchReferences = resource === "all" || resource === "references";
+  const shouldFetchRequests = resource === "all" || resource === "requests";
 
-  const estates = await fetchOnOfficeEstates(integration, token, secret);
-  const offers = estates.map((record) => mapEstateToOffer(integration.partner_id, integration, record));
-  const listings = offers.map((offer) =>
-    makeRawRowBase(
-      offer.partner_id,
-      "onoffice",
-      offer.external_id,
-      offer.title,
-      offer.updated_at,
-      offer.raw,
-      offer.source_payload,
-    ),
-  );
-
+  let offers: MappedOffer[] = [];
+  let listings: RawListing[] = [];
   let references: RawReference[] = [];
   let requests: RawRequest[] = [];
-  let referencesFetched = false;
-  let requestsFetched = false;
+  let referencesFetched = !shouldFetchReferences;
+  let requestsFetched = !shouldFetchRequests;
 
-  try {
+  if (shouldFetchOffers) {
+    const estates = await fetchOnOfficeEstates(integration, token, secret);
+    offers = estates.map((record) => mapEstateToOffer(integration.partner_id, integration, record));
+    listings = offers.map((offer) =>
+      makeRawRowBase(
+        offer.partner_id,
+        "onoffice",
+        offer.external_id,
+        offer.title,
+        offer.updated_at,
+        offer.raw,
+        offer.source_payload,
+      ),
+    );
+  }
+
+  if (shouldFetchReferences) {
     const referenceRecords = await fetchOnOfficeReferences(integration, token, secret, cfg);
     references = referenceRecords.map((record) => mapEstateToReference(integration.partner_id, integration, record));
     referencesFetched = true;
-  } catch (error) {
-    notes.push(`onoffice references live fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
   }
 
-  try {
+  if (shouldFetchRequests) {
     const criteria = await fetchOnOfficeSearchCriteria(integration, token, secret);
     requests = criteria.map((record) => mapSearchCriteriaToRequest(integration.partner_id, record));
     requestsFetched = true;
-  } catch (error) {
-    notes.push(`onoffice searchcriteria live fetch failed: ${error instanceof Error ? error.message : "unknown"}`);
-  }
-
-  if (!references.length) {
-    references = buildDummyReferences(integration.partner_id, "onoffice");
-    referencesFetched = false;
-    notes.push("onoffice references fallback: realistic dummy seed");
-  }
-  if (!requests.length) {
-    requests = buildDummyRequests(integration.partner_id, "onoffice");
-    requestsFetched = false;
-    notes.push("onoffice requests fallback: realistic dummy seed");
   }
 
   return {

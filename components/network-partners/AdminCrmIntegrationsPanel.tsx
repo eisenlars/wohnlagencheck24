@@ -64,6 +64,8 @@ type CrmIntegrationAdminDraft = {
   referencesArchived: string;
   referencesStatusIds: string;
   referencesCustomFieldKey: string;
+  onOfficeReferenceSoldStatusId: string;
+  onOfficeReferenceRentedStatusId: string;
   guardedUnitsTargetObjects: string;
   guardedReferencesTargetObjects: string;
   guardedSavedQueriesTargetObjects: string;
@@ -122,6 +124,15 @@ function formatCrmResourceLabel(resource: CrmResourceKey): string {
   return "Gesuche";
 }
 
+function isOnOfficeProvider(provider: string): boolean {
+  return String(provider ?? "").trim().toLowerCase() === "onoffice";
+}
+
+function formatResourceLabelForProvider(provider: string, resource: CrmResourceKey): string {
+  if (resource === "offers" && isOnOfficeProvider(provider)) return "Objekte";
+  return formatCrmResourceLabel(resource);
+}
+
 function formatAdminDateTime(value: string | null | undefined): string {
   const iso = String(value ?? "").trim();
   if (!iso) return "Noch keiner";
@@ -160,16 +171,22 @@ function getPreviewStatusColor(summary: IntegrationPreviewSummary | null): strin
   return "#b91c1c";
 }
 
-function getResourceResultLabel(summary: IntegrationSyncSummary | null, resource: CrmResourceKey): string {
+function getResourceResultLabel(
+  summary: IntegrationSyncSummary | null,
+  resource: CrmResourceKey,
+  provider: string,
+): string {
   const result = summary?.result;
-  if (!result || summary?.mode !== "full") return "Noch kein Vollsync";
+  if (!result || summary?.mode !== "full") {
+    return `Noch kein Vollsync für ${formatResourceLabelForProvider(provider, resource)}`;
+  }
   const count =
     resource === "offers"
       ? result.offers_count
       : resource === "references"
         ? result.references_count
         : result.requests_count;
-  return `${count} ${formatCrmResourceLabel(resource)}`;
+  return `${count} ${formatResourceLabelForProvider(provider, resource)}`;
 }
 
 function updateDraft(
@@ -180,25 +197,63 @@ function updateDraft(
 }
 
 function renderImportRules(
+  provider: string,
   resourceKey: CrmResourceKey,
   draft: CrmIntegrationAdminDraft,
   onChange: (nextDraft: CrmIntegrationAdminDraft) => void,
 ) {
+  const onOffice = isOnOfficeProvider(provider);
+
   if (resourceKey === "offers") {
     return (
-      <label style={labelStyle}>
-        Status-IDs
-        <input
-          style={inputStyle}
-          value={draft.listingsStatusIds}
-          onChange={(event) => onChange(updateDraft(draft, { listingsStatusIds: event.target.value }))}
-          placeholder="z. B. 274, 276"
-        />
-      </label>
+      <>
+        {onOffice ? (
+          <div style={helperTextStyle}>
+            Quelle: <code>estate</code>. Optional kannst du den Objektabruf hier auf bestimmte onOffice-Status-IDs begrenzen.
+          </div>
+        ) : null}
+        <label style={labelStyle}>
+          {onOffice ? "Status-IDs für Objekte" : "Status-IDs"}
+          <input
+            style={inputStyle}
+            value={draft.listingsStatusIds}
+            onChange={(event) => onChange(updateDraft(draft, { listingsStatusIds: event.target.value }))}
+            placeholder={onOffice ? "z. B. 1, 2" : "z. B. 274, 276"}
+          />
+        </label>
+      </>
     );
   }
 
   if (resourceKey === "references") {
+    if (onOffice) {
+      return (
+        <>
+          <div style={helperTextStyle}>
+            Referenzen werden aus <code>estate</code>-Datensätzen abgeleitet. Dafür nutzt Wohnlagencheck24 die in onOffice gepflegten Objektstatus-IDs für verkauft und vermietet.
+          </div>
+          <label style={labelStyle}>
+            Objektstatus-ID verkauft
+            <input
+              style={inputStyle}
+              value={draft.onOfficeReferenceSoldStatusId}
+              onChange={(event) => onChange(updateDraft(draft, { onOfficeReferenceSoldStatusId: event.target.value }))}
+              placeholder="z. B. 5"
+            />
+          </label>
+          <label style={labelStyle}>
+            Objektstatus-ID vermietet
+            <input
+              style={inputStyle}
+              value={draft.onOfficeReferenceRentedStatusId}
+              onChange={(event) => onChange(updateDraft(draft, { onOfficeReferenceRentedStatusId: event.target.value }))}
+              placeholder="z. B. 6"
+            />
+          </label>
+        </>
+      );
+    }
+
     return (
       <>
         <label style={labelStyle}>
@@ -238,6 +293,11 @@ function renderImportRules(
 
   return (
     <>
+      {onOffice ? (
+        <div style={helperTextStyle}>
+          Quelle: <code>searchcriteria</code> mit <code>active = 1</code>. Die Freshness-Regel wirkt nach dem API-Abruf auf eure interne Gesuchssicht.
+        </div>
+      ) : null}
       <label style={{ ...checkboxLabelStyle, marginTop: 2 }}>
         <input
           type="checkbox"
@@ -288,14 +348,17 @@ function renderImportRules(
 }
 
 function renderTestMode(
+  provider: string,
   resourceKey: CrmResourceKey,
   draft: CrmIntegrationAdminDraft,
   onChange: (nextDraft: CrmIntegrationAdminDraft) => void,
 ) {
+  const resourceLabel = formatResourceLabelForProvider(provider, resourceKey);
+
   if (resourceKey === "offers") {
     return (
       <label style={labelStyle}>
-        Guarded target_objects
+        Guarded target_objects für {resourceLabel}
         <input
           style={inputStyle}
           value={draft.guardedUnitsTargetObjects}
@@ -309,7 +372,7 @@ function renderTestMode(
   if (resourceKey === "references") {
     return (
       <label style={labelStyle}>
-        Guarded target_objects
+        Guarded target_objects für {resourceLabel}
         <input
           style={inputStyle}
           value={draft.guardedReferencesTargetObjects}
@@ -322,7 +385,7 @@ function renderTestMode(
 
   return (
     <label style={labelStyle}>
-      Guarded target_objects
+      Guarded target_objects für {resourceLabel}
       <input
         style={inputStyle}
         value={draft.guardedSavedQueriesTargetObjects}
@@ -334,15 +397,18 @@ function renderTestMode(
 }
 
 function renderFullSyncSettings(
+  provider: string,
   resourceKey: CrmResourceKey,
   draft: CrmIntegrationAdminDraft,
   onChange: (nextDraft: CrmIntegrationAdminDraft) => void,
 ) {
+  const resourceLabel = formatResourceLabelForProvider(provider, resourceKey);
+
   if (resourceKey === "offers") {
     return (
       <>
         <label style={labelStyle}>
-          Vollsync Timeout (Sek.)
+          Vollsync Timeout für {resourceLabel} (Sek.)
           <input
             style={inputStyle}
             value={draft.offersSyncMaxRuntimeSec}
@@ -383,7 +449,7 @@ function renderFullSyncSettings(
     return (
       <>
         <label style={labelStyle}>
-          Vollsync Timeout (Sek.)
+          Vollsync Timeout für {resourceLabel} (Sek.)
           <input
             style={inputStyle}
             value={draft.referencesSyncMaxRuntimeSec}
@@ -423,7 +489,7 @@ function renderFullSyncSettings(
   return (
     <>
       <label style={labelStyle}>
-        Vollsync Timeout (Sek.)
+        Vollsync Timeout für {resourceLabel} (Sek.)
         <input
           style={inputStyle}
           value={draft.requestsSyncMaxRuntimeSec}
@@ -482,7 +548,7 @@ export default function AdminCrmIntegrationsPanel({
   const statusColor = getStatusColor(syncSummary);
   const previewStatusColor = getPreviewStatusColor(previewSummary);
   const fullSyncAvailable = syncSummary?.mode === "full";
-  const sectionTitle = formatCrmResourceLabel(activeResourceKey);
+  const sectionTitle = formatResourceLabelForProvider(integration.provider, activeResourceKey);
 
   return (
     <div style={panelStyle}>
@@ -499,7 +565,7 @@ export default function AdminCrmIntegrationsPanel({
                   onClick={() => onActiveResourceChange(resourceKey)}
                   style={resourceTabButtonStyle(active)}
                 >
-                  {formatCrmResourceLabel(resourceKey)}
+                  {formatResourceLabelForProvider(integration.provider, resourceKey)}
                 </button>
               );
             })}
@@ -531,7 +597,9 @@ export default function AdminCrmIntegrationsPanel({
             </div>
             <div style={statusCardStyle}>
               <div style={statusCardLabelStyle}>Sync-Ergebnis</div>
-              <div style={statusCardValueStyle}>{getResourceResultLabel(syncSummary, activeResourceKey)}</div>
+              <div style={statusCardValueStyle}>
+                {getResourceResultLabel(syncSummary, activeResourceKey, integration.provider)}
+              </div>
             </div>
           </div>
           {syncWarning ? (
@@ -550,19 +618,19 @@ export default function AdminCrmIntegrationsPanel({
             <div style={settingsCardStyle}>
               <div style={settingsCardTitleStyle}>Importregeln</div>
               <div style={settingsFieldsStyle}>
-                {renderImportRules(activeResourceKey, draft, onDraftChange)}
+                {renderImportRules(integration.provider, activeResourceKey, draft, onDraftChange)}
               </div>
             </div>
             <div style={settingsCardStyle}>
               <div style={settingsCardTitleStyle}>Testmodus</div>
               <div style={settingsFieldsStyle}>
-                {renderTestMode(activeResourceKey, draft, onDraftChange)}
+                {renderTestMode(integration.provider, activeResourceKey, draft, onDraftChange)}
               </div>
             </div>
             <div style={settingsCardStyle}>
               <div style={settingsCardTitleStyle}>Vollsynchronisation</div>
               <div style={settingsFieldsStyle}>
-                {renderFullSyncSettings(activeResourceKey, draft, onDraftChange)}
+                {renderFullSyncSettings(integration.provider, activeResourceKey, draft, onDraftChange)}
               </div>
             </div>
           </div>
@@ -670,7 +738,9 @@ export default function AdminCrmIntegrationsPanel({
               <p style={modalParagraphStyle}>
                 Vollsync: mit Stale-Deaktivierung, sofern der Fetch nicht an Safety-Limits abgeschnitten wurde.
               </p>
-              <p style={modalParagraphStyle}>{getResourceResultLabel(syncSummary, activeResourceKey)}</p>
+              <p style={modalParagraphStyle}>
+                {getResourceResultLabel(syncSummary, activeResourceKey, integration.provider)}
+              </p>
               {syncSummary.step ? (
                 <p style={modalParagraphStyle}>
                   Aktueller Schritt: {syncSummary.step}
@@ -861,6 +931,12 @@ const settingsCardTitleStyle: React.CSSProperties = {
 const settingsFieldsStyle: React.CSSProperties = {
   display: "grid",
   gap: 10,
+};
+
+const helperTextStyle: React.CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: "#475569",
 };
 
 const labelStyle: React.CSSProperties = {
