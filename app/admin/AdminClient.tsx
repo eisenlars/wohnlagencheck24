@@ -1958,9 +1958,53 @@ const PORTAL_CMS_VIEW_STATE_KEY = "admin_portal_cms_view_state_v1";
 const PORTAL_CMS_SCROLL_STATE_KEY = "admin_portal_cms_scroll_v1";
 const PORTAL_CMS_SOURCE_LOCALE = "de";
 const ADMIN_VIEW_STATE_KEY = "admin_view_state_v1";
+const DEBUG_TIMING_STORAGE_KEY = "debug_timing";
+
+function isDebugTimingEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(DEBUG_TIMING_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function withDebugTimingParam(input: RequestInfo | URL): RequestInfo | URL {
+  if (!isDebugTimingEnabled()) return input;
+  if (typeof input === "string") {
+    const url = new URL(input, window.location.origin);
+    url.searchParams.set("debug_timing", "1");
+    return `${url.pathname}${url.search}`;
+  }
+  if (input instanceof URL) {
+    const next = new URL(input.toString());
+    next.searchParams.set("debug_timing", "1");
+    return next;
+  }
+  return input;
+}
+
+function logDebugTiming(label: string, durationMs: number, payload: unknown) {
+  if (!isDebugTimingEnabled()) return;
+  const debugTimings = (
+    payload
+    && typeof payload === "object"
+    && "debug_timings" in payload
+    && typeof (payload as { debug_timings?: unknown }).debug_timings === "object"
+  )
+    ? ((payload as { debug_timings?: Record<string, unknown> }).debug_timings ?? {})
+    : {};
+  console.table([{
+    request: label,
+    client_total_ms: Number(durationMs.toFixed(2)),
+    ...debugTimings,
+  }]);
+}
 
 async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
-  const res = await fetch(input, {
+  const debugInput = withDebugTimingParam(input);
+  const startedAt = performance.now();
+  const res = await fetch(debugInput, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -1969,6 +2013,10 @@ async function api<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> 
     cache: "no-store",
   });
   const data = await readJsonSafe(res);
+  const label = typeof debugInput === "string"
+    ? debugInput
+    : (debugInput instanceof URL ? `${debugInput.pathname}${debugInput.search}` : "admin_api");
+  logDebugTiming(label, performance.now() - startedAt, data);
   if (!res.ok) {
     throw new Error(String(data?.error ?? `HTTP ${res.status}`));
   }

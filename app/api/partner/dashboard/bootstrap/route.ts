@@ -96,6 +96,10 @@ function asFiniteNumber(value: unknown): number {
   return 0;
 }
 
+function roundTiming(value: number): number {
+  return Number(value.toFixed(2));
+}
+
 function resolvePartnerFirstNameFromUser(user: unknown): string | null {
   const rec = (typeof user === "object" && user !== null) ? (user as Record<string, unknown>) : null;
   if (!rec) return null;
@@ -447,49 +451,74 @@ async function loadMandatoryProgress(
 
 export async function GET(req: Request) {
   try {
-    const { userId, user } = await requirePartnerUser(req);
-    const admin = createAdminClient();
+    const requestStartedAt = performance.now();
     const url = new URL(req.url);
+    const debugTiming = url.searchParams.get("debug_timing") === "1";
+    const timings: Record<string, number> = {};
+    const timed = async <T,>(key: string, fn: () => Promise<T>): Promise<T> => {
+      const startedAt = performance.now();
+      const result = await fn();
+      if (debugTiming) {
+        timings[key] = roundTiming(performance.now() - startedAt);
+      }
+      return result;
+    };
+    const withDebugTimings = <T extends Record<string, unknown>>(payload: T): T | (T & { debug_timings: Record<string, number> }) => {
+      if (!debugTiming) return payload;
+      return {
+        ...payload,
+        debug_timings: {
+          ...timings,
+          total_ms: roundTiming(performance.now() - requestStartedAt),
+        },
+      };
+    };
+
+    const { userId, user } = await requirePartnerUser(req);
+    if (debugTiming) {
+      timings.auth_ms = roundTiming(performance.now() - requestStartedAt);
+    }
+    const admin = createAdminClient();
     const mode = String(url.searchParams.get("mode") ?? "core").trim().toLowerCase();
     const requestedAreaId = String(url.searchParams.get("selected_area_id") ?? "").trim();
 
     if (mode === "locales") {
-      const localeAvailability = await loadPartnerLocaleAvailabilitySnapshot(userId);
-      return NextResponse.json({
+      const localeAvailability = await timed("locale_snapshot_ms", () => loadPartnerLocaleAvailabilitySnapshot(userId));
+      return NextResponse.json(withDebugTimings({
         ok: true,
         international_locale_configs: localeAvailability.locales,
         available_locales: localeAvailability.available_locales,
         partner_enabled_locales: localeAvailability.partner_enabled_locales,
         global_partner_locales: localeAvailability.global_partner_locales,
         global_public_locales: localeAvailability.global_public_locales,
-      });
+      }));
     }
 
     if (mode === "mandatory") {
       const mandatoryProgress = requestedAreaId
-        ? await loadMandatoryProgress(admin, userId, requestedAreaId)
+        ? await timed("mandatory_progress_ms", () => loadMandatoryProgress(admin, userId, requestedAreaId))
         : null;
-      return NextResponse.json({
+      return NextResponse.json(withDebugTimings({
         ok: true,
         requested_area_id: requestedAreaId || null,
         mandatory_progress: mandatoryProgress,
-      });
+      }));
     }
 
     const [configs, profileFirstName, partnerFeatures] = await Promise.all([
-      loadPartnerConfigs(admin, userId),
-      (async () => resolvePartnerFirstNameFromUser(user) ?? await loadPartnerFirstName(admin, userId))(),
-      loadPartnerFeatures(admin, userId),
+      timed("configs_ms", () => loadPartnerConfigs(admin, userId)),
+      timed("partner_first_name_ms", async () => resolvePartnerFirstNameFromUser(user) ?? await loadPartnerFirstName(admin, userId)),
+      timed("partner_features_ms", () => loadPartnerFeatures(admin, userId)),
     ]);
 
-    return NextResponse.json({
+    return NextResponse.json(withDebugTimings({
       ok: true,
       last_login: String(user.last_sign_in_at ?? "").trim() || null,
       partner_first_name: profileFirstName,
       partner_features: partnerFeatures,
       configs,
       requested_area_id: requestedAreaId || null,
-    });
+    }));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") {

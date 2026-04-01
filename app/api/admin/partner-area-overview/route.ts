@@ -77,10 +77,35 @@ function normalizeAreaNameRelation(value: unknown): AreaNameRelation {
     }));
 }
 
+function roundTiming(value: number): number {
+  return Number(value.toFixed(2));
+}
+
 export async function GET(req: Request) {
   try {
+    const requestStartedAt = performance.now();
+    const url = new URL(req.url);
+    const debugTiming = url.searchParams.get("debug_timing") === "1";
+    const timings: Record<string, number> = {};
+    const mark = (key: string, startedAt: number) => {
+      if (!debugTiming) return;
+      timings[key] = roundTiming(performance.now() - startedAt);
+    };
+    const withDebugTimings = <T extends Record<string, unknown>>(payload: T): T | (T & { debug_timings: Record<string, number> }) => {
+      if (!debugTiming) return payload;
+      return {
+        ...payload,
+        debug_timings: {
+          ...timings,
+          total_ms: roundTiming(performance.now() - requestStartedAt),
+        },
+      };
+    };
+
+    const authStartedAt = performance.now();
     const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
     const adminRate = await checkAdminApiRateLimit(req, adminUser.userId);
+    mark("auth_ms", authStartedAt);
     if (!adminRate.allowed) {
       return NextResponse.json(
         { error: "Too many requests" },
@@ -88,16 +113,18 @@ export async function GET(req: Request) {
       );
     }
 
-    const url = new URL(req.url);
     const q = String(url.searchParams.get("q") ?? "").trim().toLowerCase();
     const onlyActive = url.searchParams.get("only_active") === "1";
     const admin = createAdminClient();
 
+    const partnersQueryStartedAt = performance.now();
     const { data: partners, error: partnerError } = await admin
       .from("partners")
       .select("id, company_name");
+    mark("partners_query_ms", partnersQueryStartedAt);
     if (partnerError) return NextResponse.json({ error: partnerError.message }, { status: 500 });
 
+    const mappingsQueryStartedAt = performance.now();
     let { data: mappings, error: mappingError } = await admin
       .from("partner_area_map")
       .select("auth_user_id, area_id, is_active, is_public_live, activation_status, areas(name)")
@@ -121,9 +148,11 @@ export async function GET(req: Request) {
       });
       mappingError = fallback.error;
     }
+    mark("mappings_query_ms", mappingsQueryStartedAt);
 
     if (mappingError) return NextResponse.json({ error: mappingError.message }, { status: 500 });
 
+    const aggregateStartedAt = performance.now();
     const partnerNameById = new Map<string, string>();
     for (const row of partners ?? []) {
       const partnerId = String((row as { id?: unknown }).id ?? "").trim();
@@ -174,13 +203,14 @@ export async function GET(req: Request) {
       return a.partnerName.localeCompare(b.partnerName, "de");
     });
     const filteredRows = allRows.filter((row) => matchesFilter(row, q, onlyActive));
+    mark("aggregate_ms", aggregateStartedAt);
 
-    return NextResponse.json({
+    return NextResponse.json(withDebugTimings({
       ok: true,
       areas: filteredRows,
       total_count: allRows.length,
       filtered_count: filteredRows.length,
-    });
+    }));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") {

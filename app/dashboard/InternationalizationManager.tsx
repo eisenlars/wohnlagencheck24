@@ -118,6 +118,41 @@ type ScopeArea = {
   area_name: string;
 };
 
+const DEBUG_TIMING_STORAGE_KEY = 'debug_timing';
+
+function isDebugTimingEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(DEBUG_TIMING_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function withDebugTimingUrl(path: string): string {
+  if (!isDebugTimingEnabled() || typeof window === 'undefined') return path;
+  const url = new URL(path, window.location.origin);
+  url.searchParams.set('debug_timing', '1');
+  return `${url.pathname}${url.search}`;
+}
+
+function logDebugTiming(label: string, durationMs: number, payload: unknown) {
+  if (!isDebugTimingEnabled()) return;
+  const debugTimings = (
+    payload
+    && typeof payload === 'object'
+    && 'debug_timings' in payload
+    && typeof (payload as { debug_timings?: unknown }).debug_timings === 'object'
+  )
+    ? ((payload as { debug_timings?: Record<string, unknown> }).debug_timings ?? {})
+    : {};
+  console.table([{
+    request: label,
+    client_total_ms: Number(durationMs.toFixed(2)),
+    ...debugTimings,
+  }]);
+}
+
 type SectionKind = 'general' | 'data_driven' | 'individual' | 'marketing';
 type PersistedI18nViewState = {
   locale?: string;
@@ -2141,7 +2176,9 @@ export default function InternationalizationManager({ config, availableLocales, 
       if (keys.length > 0) params.set('section_keys', keys.join(','));
       if (options?.autoSync && options?.workflowClass) params.set('workflow_class', options.workflowClass);
       if (options?.autoSync && options?.promptTemplate) params.set('prompt_template', options.promptTemplate);
-      const res = await fetch(`/api/partner/i18n/texts?${params.toString()}`, { method: 'GET', cache: 'no-store' });
+      const requestUrl = withDebugTimingUrl(`/api/partner/i18n/texts?${params.toString()}`);
+      const startedAt = performance.now();
+      const res = await fetch(requestUrl, { method: 'GET', cache: 'no-store' });
       const payload = await res.json().catch(() => null) as {
         areas?: Array<{
           area_id?: string;
@@ -2160,7 +2197,9 @@ export default function InternationalizationManager({ config, availableLocales, 
           mock_mode?: boolean;
           pricing_preview?: PricingPreview | null;
         };
+        debug_timings?: Record<string, number>;
       } | null;
+      logDebugTiming(requestUrl, performance.now() - startedAt, payload);
       if (!res.ok) {
         throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
       }
@@ -2243,9 +2282,12 @@ export default function InternationalizationManager({ config, availableLocales, 
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/partner/llm/options', { method: 'GET', cache: 'no-store' });
+        const requestUrl = withDebugTimingUrl('/api/partner/llm/options');
+        const startedAt = performance.now();
+        const res = await fetch(requestUrl, { method: 'GET', cache: 'no-store' });
         if (!res.ok) return;
         const payload = await res.json().catch(() => null) as { options?: Array<Record<string, unknown>> } | null;
+        logDebugTiming(requestUrl, performance.now() - startedAt, payload);
         const nextOptions = Array.isArray(payload?.options)
           ? payload.options.map((item) => ({
             id: String(item.id ?? ''),

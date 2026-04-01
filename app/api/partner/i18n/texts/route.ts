@@ -255,6 +255,10 @@ function buildMockTranslation(locale: string, sourceText: string): string {
   return `[${tag} MOCK] ${text}`;
 }
 
+function roundTiming(value: number): number {
+  return Number(value.toFixed(2));
+}
+
 async function callOpenAiCompatible(args: {
   provider: string;
   model: string;
@@ -866,8 +870,33 @@ async function buildAreaPayload(args: {
 
 export async function GET(req: Request) {
   try {
-    const partnerId = await requirePartnerUser(req);
+    const requestStartedAt = performance.now();
     const url = new URL(req.url);
+    const debugTiming = url.searchParams.get("debug_timing") === "1";
+    const timings: Record<string, number> = {};
+    const timed = async <T,>(key: string, fn: () => Promise<T>): Promise<T> => {
+      const startedAt = performance.now();
+      const result = await fn();
+      if (debugTiming) {
+        timings[key] = roundTiming(performance.now() - startedAt);
+      }
+      return result;
+    };
+    const withDebugTimings = <T extends Record<string, unknown>>(payload: T): T | (T & { debug_timings: Record<string, number> }) => {
+      if (!debugTiming) return payload;
+      return {
+        ...payload,
+        debug_timings: {
+          ...timings,
+          total_ms: roundTiming(performance.now() - requestStartedAt),
+        },
+      };
+    };
+
+    const partnerId = await requirePartnerUser(req);
+    if (debugTiming) {
+      timings.auth_ms = roundTiming(performance.now() - requestStartedAt);
+    }
     const singleAreaId = asText(url.searchParams.get("area_id"));
     const requestedAreaIds = parseAreaIds(url.searchParams.get("area_ids"));
     const areaIds = requestedAreaIds.length > 0
@@ -887,40 +916,44 @@ export async function GET(req: Request) {
     }
 
     const admin = createAdminClient();
-    await requireInternationalFeatureEnabled(admin, partnerId);
+    await timed("feature_gate_ms", () => requireInternationalFeatureEnabled(admin, partnerId));
 
     const areaMetaById = channel === "marketing"
       ? new Map<string, AreaMetaRow>()
-      : await loadAreaMetaMany(admin, areaIds);
+      : await timed("area_meta_ms", () => loadAreaMetaMany(admin, areaIds));
     const rawSourceByArea = new Map<string, Map<string, SourceEntry>>();
     if (channel === "portal" || channel === "local_site") {
-      const rawSources = await Promise.all(areaIds.map(async (areaId) => (
+      const rawSources = await timed("raw_sources_ms", () => Promise.all(areaIds.map(async (areaId) => (
         [areaId, await loadRawSourceByMeta(admin, areaId, areaMetaById.get(areaId) ?? null)] as const
-      )));
+      ))));
       for (const [areaId, sourceMap] of rawSources) rawSourceByArea.set(areaId, sourceMap);
     }
 
-    const portalRows = channel === "portal" ? await loadPortalSourceRows(admin, partnerId, areaIds) : [];
-    const localRows = channel === "local_site" ? await loadLocalSiteSourceRows(admin, partnerId, areaIds) : { local: [], report: [] };
+    const portalRows = channel === "portal"
+      ? await timed("portal_source_rows_ms", () => loadPortalSourceRows(admin, partnerId, areaIds))
+      : [];
+    const localRows = channel === "local_site"
+      ? await timed("local_source_rows_ms", () => loadLocalSiteSourceRows(admin, partnerId, areaIds))
+      : { local: [], report: [] };
     const portalRowsByArea = groupRowsByArea(portalRows);
     const localOnlyRowsByArea = groupRowsByArea(localRows.local);
     const localReportRowsByArea = groupRowsByArea(localRows.report);
     const marketingSourceByArea = channel === "marketing"
-      ? await buildMarketingSourceMapsByArea(admin, partnerId, areaIds)
+      ? await timed("marketing_source_rows_ms", () => buildMarketingSourceMapsByArea(admin, partnerId, areaIds))
       : new Map<string, Map<string, SourceEntry>>();
 
-    const { data: translations, error: translationsError } = await admin
+    const { data: translations, error: translationsError } = await timed("translations_ms", () => admin
       .from("partner_texts_i18n")
       .select("area_id, section_key, translated_content, status, updated_at, source_snapshot_hash, source_last_updated")
       .eq("partner_id", partnerId)
       .in("area_id", areaIds)
       .eq("channel", channel)
-      .eq("target_locale", locale);
+      .eq("target_locale", locale));
     if (translationsError) throw translationsError;
     const translationsByArea = groupRowsByArea((translations ?? []) as TranslationRow[]);
-    const autoSyncContext = await buildAutoSyncContext(autoSyncEnabled);
+    const autoSyncContext = await timed("auto_sync_context_ms", () => buildAutoSyncContext(autoSyncEnabled));
 
-    const areas = await Promise.all(areaIds.map(async (areaId) => {
+    const areas = await timed("area_build_ms", () => Promise.all(areaIds.map(async (areaId) => {
       const sourceByKey = new Map<string, SourceEntry>();
       if (channel === "portal") {
         const rawByKey = rawSourceByArea.get(areaId) ?? new Map<string, SourceEntry>();
@@ -953,7 +986,7 @@ export async function GET(req: Request) {
         sourceByKey,
         translations: translationsByArea.get(areaId) ?? [],
       });
-    }));
+    })));
 
     const summary = {
       total_areas: areas.length,
@@ -968,7 +1001,7 @@ export async function GET(req: Request) {
     };
     const firstArea = areas[0] ?? null;
 
-    return NextResponse.json({
+    return NextResponse.json(withDebugTimings({
       ok: true,
       area_id: firstArea?.area_id ?? areaIds[0],
       area_ids: areaIds,
@@ -978,7 +1011,7 @@ export async function GET(req: Request) {
       areas,
       summary,
       info: "Automatische Aktualisierungen wurden anhand der Texttyp-Regeln berücksichtigt.",
-    });
+    }));
   } catch (error) {
     if (isMissingTable(error, "partner_texts_i18n")) {
       return NextResponse.json({ error: "Tabelle `partner_texts_i18n` fehlt. Bitte Migration ausführen." }, { status: 409 });

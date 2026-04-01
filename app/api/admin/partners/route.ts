@@ -82,6 +82,10 @@ function normalizeNullableString(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+function roundTiming(value: number): number {
+  return Number(value.toFixed(2));
+}
+
 function isMissingAreaActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return (
@@ -439,8 +443,29 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
+    const requestStartedAt = performance.now();
+    const url = new URL(req.url);
+    const debugTiming = url.searchParams.get("debug_timing") === "1";
+    const timings: Record<string, number> = {};
+    const mark = (key: string, startedAt: number) => {
+      if (!debugTiming) return;
+      timings[key] = roundTiming(performance.now() - startedAt);
+    };
+    const withDebugTimings = <T extends Record<string, unknown>>(payload: T): T | (T & { debug_timings: Record<string, number> }) => {
+      if (!debugTiming) return payload;
+      return {
+        ...payload,
+        debug_timings: {
+          ...timings,
+          total_ms: roundTiming(performance.now() - requestStartedAt),
+        },
+      };
+    };
+
+    const authStartedAt = performance.now();
     const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
     const adminRate = await checkAdminApiRateLimit(req, adminUser.userId);
+    mark("auth_ms", authStartedAt);
     if (!adminRate.allowed) {
       return NextResponse.json(
         { error: "Too many requests" },
@@ -448,7 +473,6 @@ export async function GET(req: Request) {
       );
     }
 
-    const url = new URL(req.url);
     const includeInactive = url.searchParams.get("include_inactive") === "1";
     const onlyActive = url.searchParams.get("only_active") === "1";
     const q = String(url.searchParams.get("q") ?? "").trim();
@@ -469,6 +493,7 @@ export async function GET(req: Request) {
       ].join(", "));
     }
 
+    const partnerQueryStartedAt = performance.now();
     let { data, error } = await query;
     if (error && (isMissingIsActiveColumn(error) || isMissingPartnerNameColumns(error) || isMissingPartnerLlmPolicyColumns(error) || isMissingPartnerSystemDefaultColumn(error))) {
       const missingIsActive = isMissingIsActiveColumn(error);
@@ -507,15 +532,19 @@ export async function GET(req: Request) {
       ) as typeof data;
       error = null;
     }
+    mark("partners_query_ms", partnerQueryStartedAt);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     const partners = data ?? [];
+    const areaSummaryStartedAt = performance.now();
     const areaSummaryByPartner = await loadPartnerAreaSummaries(
       admin,
       partners.map((partner) => String(partner.id ?? "")).filter(Boolean),
     );
+    mark("area_summary_ms", areaSummaryStartedAt);
 
-    return NextResponse.json({
+    const responseBuildStartedAt = performance.now();
+    const payload = {
       ok: true,
       partners: partners.map((partner) => ({
         ...partner,
@@ -526,7 +555,10 @@ export async function GET(req: Request) {
           has_assignment: false,
         },
       })),
-    });
+    };
+    mark("response_build_ms", responseBuildStartedAt);
+
+    return NextResponse.json(withDebugTimings(payload));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") {

@@ -113,6 +113,10 @@ function normalizeTextEntries(value: unknown): TextEntry[] {
     }, []);
 }
 
+function roundTiming(value: number): number {
+  return Number(value.toFixed(2));
+}
+
 async function requirePartnerUser(): Promise<string> {
   const supabase = createClient();
   const {
@@ -291,9 +295,34 @@ async function loadAreaData(
 
 export async function GET(req: Request) {
   try {
-    const userId = await requirePartnerUser();
-    const admin = createAdminClient();
+    const requestStartedAt = performance.now();
     const url = new URL(req.url);
+    const debugTiming = url.searchParams.get("debug_timing") === "1";
+    const timings: Record<string, number> = {};
+    const timed = async <T,>(key: string, fn: () => Promise<T>): Promise<T> => {
+      const startedAt = performance.now();
+      const result = await fn();
+      if (debugTiming) {
+        timings[key] = roundTiming(performance.now() - startedAt);
+      }
+      return result;
+    };
+    const withDebugTimings = <T extends Record<string, unknown>>(payload: T): T | (T & { debug_timings: Record<string, number> }) => {
+      if (!debugTiming) return payload;
+      return {
+        ...payload,
+        debug_timings: {
+          ...timings,
+          total_ms: roundTiming(performance.now() - requestStartedAt),
+        },
+      };
+    };
+
+    const userId = await requirePartnerUser();
+    if (debugTiming) {
+      timings.auth_ms = roundTiming(performance.now() - requestStartedAt);
+    }
+    const admin = createAdminClient();
     const areaId = String(url.searchParams.get("area_id") ?? "").trim();
     const rootAreaId = String(url.searchParams.get("root_area_id") ?? areaId).trim();
     const tableName = String(url.searchParams.get("table") ?? "report_texts").trim() as TableName;
@@ -305,23 +334,25 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unsupported table" }, { status: 400 });
     }
 
-    const rootConfig = await loadRootAreaConfig(admin, userId, rootAreaId);
+    const rootConfig = await timed("root_config_ms", () => loadRootAreaConfig(admin, userId, rootAreaId));
     if (!rootConfig) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const scopeItems = await loadScopeAreaItems(admin, rootConfig);
+    const scopeItems = await timed("scope_items_ms", () => loadScopeAreaItems(admin, rootConfig));
     const requestedConfig = scopeItems.find((item) => item.area_id === areaId) ?? null;
     if (!requestedConfig) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const [requestedData, rootData] = await Promise.all([
-      loadAreaData(admin, userId, tableName, requestedConfig),
-      areaId !== rootAreaId ? loadAreaData(admin, userId, tableName, rootConfig) : Promise.resolve(null),
+      timed("requested_data_ms", () => loadAreaData(admin, userId, tableName, requestedConfig)),
+      areaId !== rootAreaId
+        ? timed("root_data_ms", () => loadAreaData(admin, userId, tableName, rootConfig))
+        : Promise.resolve(null),
     ]);
 
-    return NextResponse.json({
+    return NextResponse.json(withDebugTimings({
       ok: true,
       table: tableName,
       area_id: areaId,
@@ -329,7 +360,7 @@ export async function GET(req: Request) {
       scope_items: scopeItems,
       requested_data: requestedData,
       root_data: rootData,
-    });
+    }));
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

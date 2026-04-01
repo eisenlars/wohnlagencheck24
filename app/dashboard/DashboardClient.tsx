@@ -117,6 +117,41 @@ type DashboardBootstrapPayload = {
   } | null;
 };
 
+const DEBUG_TIMING_STORAGE_KEY = 'debug_timing';
+
+function isDebugTimingEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(DEBUG_TIMING_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function withDebugTimingUrl(path: string): string {
+  if (!isDebugTimingEnabled() || typeof window === 'undefined') return path;
+  const url = new URL(path, window.location.origin);
+  url.searchParams.set('debug_timing', '1');
+  return `${url.pathname}${url.search}`;
+}
+
+function logDebugTiming(label: string, durationMs: number, payload: unknown) {
+  if (!isDebugTimingEnabled()) return;
+  const debugTimings = (
+    payload
+    && typeof payload === 'object'
+    && 'debug_timings' in payload
+    && typeof (payload as { debug_timings?: unknown }).debug_timings === 'object'
+  )
+    ? ((payload as { debug_timings?: Record<string, unknown> }).debug_timings ?? {})
+    : {};
+  console.table([{
+    request: label,
+    client_total_ms: Number(durationMs.toFixed(2)),
+    ...debugTimings,
+  }]);
+}
+
 function normalizeLocaleList(value: unknown): string[] {
   return Array.from(new Set(
     (Array.isArray(value) ? value : [])
@@ -623,11 +658,14 @@ export default function DashboardClient({
     let active = true;
 
     async function loadLocaleAvailability() {
-      const res = await fetch('/api/partner/dashboard/bootstrap?mode=locales', { method: 'GET', cache: 'no-store' });
+      const startedAt = performance.now();
+      const requestUrl = withDebugTimingUrl('/api/partner/dashboard/bootstrap?mode=locales');
+      const res = await fetch(requestUrl, { method: 'GET', cache: 'no-store' });
       if (redirectIfUnauthorizedResponse(res, 'partner')) {
         return;
       }
       const payload = await res.json().catch(() => null) as DashboardBootstrapPayload | null;
+      logDebugTiming(requestUrl, performance.now() - startedAt, payload);
       if (!res.ok || !active) return;
       setAvailableInternationalLocales(normalizeLocaleList(payload?.available_locales));
       setGlobalPartnerInternationalLocales(normalizeLocaleList(payload?.global_partner_locales));
@@ -636,13 +674,15 @@ export default function DashboardClient({
     async function loadData() {
       const persisted = readSessionViewState<PersistedDashboardState>(DASHBOARD_UI_STATE_KEY);
       const restoredAreaId = String(persisted?.selectedAreaId ?? '').trim();
-      const bootstrapUrl = '/api/partner/dashboard/bootstrap?mode=core';
+      const bootstrapUrl = withDebugTimingUrl('/api/partner/dashboard/bootstrap?mode=core');
 
+      const startedAt = performance.now();
       const res = await fetch(bootstrapUrl, { method: 'GET', cache: 'no-store' });
       if (redirectIfUnauthorizedResponse(res, 'partner')) {
         return;
       }
       const payload = await res.json().catch(() => null) as DashboardBootstrapPayload | null;
+      logDebugTiming(bootstrapUrl, performance.now() - startedAt, payload);
       if (!res.ok) {
         throw new Error(String(payload && 'error' in payload ? (payload as { error?: unknown }).error ?? 'Dashboard konnte nicht geladen werden.' : 'Dashboard konnte nicht geladen werden.'));
       }
@@ -935,11 +975,16 @@ export default function DashboardClient({
       };
 
       try {
-        const res = await fetch(
+        const requestUrl = withDebugTimingUrl(
           `/api/partner/areas/${encodeURIComponent(selectedConfig.area_id)}/mandatory-status`,
+        );
+        const startedAt = performance.now();
+        const res = await fetch(
+          requestUrl,
           { method: "GET", cache: "no-store" },
         );
         const payload = await res.json().catch(() => ({}));
+        logDebugTiming(requestUrl, performance.now() - startedAt, payload);
         if (!mounted || progressRequestRef.current !== requestId) return;
 
         if (!res.ok) {

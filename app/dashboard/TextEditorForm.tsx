@@ -484,6 +484,41 @@ type TextEditorBootstrapPayload = {
   root_data?: unknown;
 };
 
+const DEBUG_TIMING_STORAGE_KEY = 'debug_timing';
+
+function isDebugTimingEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(DEBUG_TIMING_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function withDebugTimingUrl(path: string): string {
+  if (!isDebugTimingEnabled() || typeof window === 'undefined') return path;
+  const url = new URL(path, window.location.origin);
+  url.searchParams.set('debug_timing', '1');
+  return `${url.pathname}${url.search}`;
+}
+
+function logDebugTiming(label: string, durationMs: number, payload: unknown) {
+  if (!isDebugTimingEnabled()) return;
+  const debugTimings = (
+    payload
+    && typeof payload === 'object'
+    && 'debug_timings' in payload
+    && typeof (payload as { debug_timings?: unknown }).debug_timings === 'object'
+  )
+    ? ((payload as { debug_timings?: Record<string, unknown> }).debug_timings ?? {})
+    : {};
+  console.table([{
+    request: label,
+    client_total_ms: Number(durationMs.toFixed(2)),
+    ...debugTimings,
+  }]);
+}
+
 const TEXT_EDITOR_VIEW_STATE_KEY_PREFIX = 'partner_text_editor_view_state_v1';
 
 const GLOBAL_CLASS_ORDER: GlobalClassKey[] = ['market_expert', 'data_driven', 'general', 'profile'];
@@ -706,11 +741,14 @@ export default function TextEditorForm({
       root_area_id: rootAreaId,
       table: tableName,
     });
-    const res = await fetch(`/api/partner/text-editor/bootstrap?${params.toString()}`, {
+    const requestUrl = withDebugTimingUrl(`/api/partner/text-editor/bootstrap?${params.toString()}`);
+    const startedAt = performance.now();
+    const res = await fetch(requestUrl, {
       method: 'GET',
       cache: 'no-store',
     });
     const payload = await res.json().catch(() => null) as TextEditorBootstrapPayload | null;
+    logDebugTiming(requestUrl, performance.now() - startedAt, payload);
     if (!res.ok) {
       throw new Error(String(payload && typeof payload === 'object' && 'error' in payload ? payload.error : 'Texteditor-Bootstrap fehlgeschlagen'));
     }
@@ -778,10 +816,13 @@ export default function TextEditorForm({
     let cancelled = false;
 
     async function loadLlmOptions() {
-      const integrationsRes = await fetch('/api/partner/llm/options');
+      const requestUrl = withDebugTimingUrl('/api/partner/llm/options');
+      const startedAt = performance.now();
+      const integrationsRes = await fetch(requestUrl);
       if (cancelled) return;
       if (integrationsRes.ok) {
         const integrationsPayload = await integrationsRes.json().catch(() => ({}));
+        logDebugTiming(requestUrl, performance.now() - startedAt, integrationsPayload);
         const items: LlmOptionApiRow[] = Array.isArray(integrationsPayload?.options)
           ? (integrationsPayload.options as LlmOptionApiRow[])
           : [];
@@ -819,6 +860,7 @@ export default function TextEditorForm({
           return llmItems[0]?.id ?? '';
         });
       } else {
+        logDebugTiming(requestUrl, performance.now() - startedAt, null);
         setLlmIntegrations([]);
         setSelectedLlmIntegrationId('');
       }
