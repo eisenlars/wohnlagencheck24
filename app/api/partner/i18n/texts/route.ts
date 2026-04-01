@@ -942,13 +942,18 @@ export async function GET(req: Request) {
       ? await timed("marketing_source_rows_ms", () => buildMarketingSourceMapsByArea(admin, partnerId, areaIds))
       : new Map<string, Map<string, SourceEntry>>();
 
-    const { data: translations, error: translationsError } = await timed("translations_ms", () => admin
+    const translationResult = await timed<{
+      data: TranslationRow[] | null;
+      error: unknown;
+    }>("translations_ms", () => admin
       .from("partner_texts_i18n")
       .select("area_id, section_key, translated_content, status, updated_at, source_snapshot_hash, source_last_updated")
       .eq("partner_id", partnerId)
       .in("area_id", areaIds)
       .eq("channel", channel)
       .eq("target_locale", locale));
+    const translations = translationResult.data;
+    const translationsError = translationResult.error;
     if (translationsError) throw translationsError;
     const translationsByArea = groupRowsByArea((translations ?? []) as TranslationRow[]);
     const autoSyncContext = await timed("auto_sync_context_ms", () => buildAutoSyncContext(autoSyncEnabled));
