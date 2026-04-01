@@ -85,7 +85,7 @@ export async function dispatchNormalizedTriggerEvent(
     const result = await runNetworkPartnerWriteSync({
       integrationId: event.integration_id,
       networkPartnerId: event.network_partner_id,
-      resource: event.suggested_resource === "ignored" ? "all" : event.suggested_resource,
+      resource: event.suggested_resource,
       mode: event.suggested_mode,
     });
 
