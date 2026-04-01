@@ -126,7 +126,10 @@ export async function POST(
 
     const { error: updateError } = await admin
       .from("partner_integrations")
-      .update({ auth_config: nextAuthConfig })
+      .update({
+        auth_config: nextAuthConfig,
+        is_active: integration.kind === "crm" ? true : undefined,
+      })
       .eq("id", integrationId)
       .eq("partner_id", userId);
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
