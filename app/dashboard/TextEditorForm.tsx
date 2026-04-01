@@ -476,6 +476,14 @@ type TextAreaData = {
   dbTexts: TextEntry[];
 };
 
+type TextEditorBootstrapPayload = {
+  area_id?: string | null;
+  root_area_id?: string | null;
+  scope_items?: unknown;
+  requested_data?: unknown;
+  root_data?: unknown;
+};
+
 const TEXT_EDITOR_VIEW_STATE_KEY_PREFIX = 'partner_text_editor_view_state_v1';
 
 const GLOBAL_CLASS_ORDER: GlobalClassKey[] = ['market_expert', 'data_driven', 'general', 'profile'];
@@ -511,6 +519,88 @@ const GLOBAL_CLASS_META: Record<GlobalClassKey, {
     defaultPrompt: 'Optimiere den Profiltext professionell, vertrauenswürdig und prägnant. Faktentreu bleiben.',
   },
 };
+
+function sanitizeTextNode(value: unknown): unknown {
+  if (typeof value === 'string') return value;
+  if (!value || typeof value !== 'object') return undefined;
+  const out: Record<string, unknown> = {};
+  Object.entries(value as Record<string, unknown>).forEach(([key, entryValue]) => {
+    const nextValue = sanitizeTextNode(entryValue);
+    if (typeof nextValue !== 'undefined') out[key] = nextValue;
+  });
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+function normalizeTextTree(value: unknown): Record<string, Record<string, string>> {
+  if (!value || typeof value !== 'object') return {};
+  const out: Record<string, unknown> = {};
+  Object.entries(value as Record<string, unknown>).forEach(([groupKey, groupValue]) => {
+    const normalizedGroup = sanitizeTextNode(groupValue);
+    if (normalizedGroup && typeof normalizedGroup === 'object') {
+      out[groupKey] = normalizedGroup;
+    }
+  });
+  return out as Record<string, Record<string, string>>;
+}
+
+function normalizeTextEntries(value: unknown): TextEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null;
+      const rec = entry as Record<string, unknown>;
+      const sectionKey = String(rec.section_key ?? '').trim();
+      if (!sectionKey) return null;
+      return {
+        section_key: sectionKey,
+        optimized_content: typeof rec.optimized_content === 'string' ? rec.optimized_content : null,
+        status: typeof rec.status === 'string' ? rec.status : null,
+        text_type: typeof rec.text_type === 'string' ? rec.text_type : null,
+        last_updated: typeof rec.last_updated === 'string' ? rec.last_updated : null,
+      } satisfies TextEntry;
+    })
+    .filter((entry): entry is TextEntry => Boolean(entry));
+}
+
+function normalizeTextAreaData(value: unknown): TextAreaData {
+  const rec = (value && typeof value === 'object') ? (value as Record<string, unknown>) : {};
+  const baseTexts = (rec.baseTexts && typeof rec.baseTexts === 'object')
+    ? (rec.baseTexts as Record<string, unknown>)
+    : {};
+  const standardTexts = (rec.standardTexts && typeof rec.standardTexts === 'object')
+    ? (rec.standardTexts as Record<string, unknown>)
+    : {};
+  return {
+    baseTexts: { text: normalizeTextTree(baseTexts.text) },
+    standardTexts: { text: normalizeTextTree(standardTexts.text) },
+    dbTexts: normalizeTextEntries(rec.dbTexts),
+  };
+}
+
+function normalizeScopeAreaItems(value: unknown, fallbackConfig: PartnerAreaConfig): PartnerAreaConfig[] {
+  if (!Array.isArray(value)) return [fallbackConfig];
+  const items = value
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null;
+      const rec = entry as Record<string, unknown>;
+      const areaId = String(rec.area_id ?? '').trim();
+      if (!areaId) return null;
+      const areaRec = (rec.areas && typeof rec.areas === 'object')
+        ? (rec.areas as Record<string, unknown>)
+        : {};
+      return {
+        area_id: areaId,
+        areas: {
+          name: typeof areaRec.name === 'string' ? areaRec.name : undefined,
+          slug: typeof areaRec.slug === 'string' ? areaRec.slug : undefined,
+          parent_slug: typeof areaRec.parent_slug === 'string' ? areaRec.parent_slug : undefined,
+          bundesland_slug: typeof areaRec.bundesland_slug === 'string' ? areaRec.bundesland_slug : undefined,
+        },
+      } satisfies PartnerAreaConfig;
+    })
+    .filter((entry): entry is PartnerAreaConfig => Boolean(entry));
+  return items.length > 0 ? items : [fallbackConfig];
+}
 
 export default function TextEditorForm({
     config,
@@ -612,108 +702,46 @@ export default function TextEditorForm({
 
   const loadAreaTextData = useCallback(async (areaConfig: PartnerAreaConfig): Promise<TextAreaData> => {
     const areaId = String(areaConfig?.area_id ?? '').trim();
-    const areaIsOrtslage = areaId.split('-').length > 3;
-    const bundeslandSlug = String(areaConfig?.areas?.bundesland_slug || '');
-    const kreisSlug = areaIsOrtslage ? String(areaConfig?.areas?.parent_slug || '') : String(areaConfig?.areas?.slug || '');
-    const ortSlug = areaIsOrtslage ? String(areaConfig?.areas?.slug || '') : '';
-    let nextBaseTexts: { text: Record<string, Record<string, string>> } = { text: {} };
-    let nextStandardTexts: { text: Record<string, Record<string, string>> } = { text: {} };
-
-    if (isMarketing) {
-      const marketingRes = await fetch(`/api/marketing-defaults?area_id=${encodeURIComponent(areaId)}`);
-      if (marketingRes.ok) {
-        const marketingJson = await marketingRes.json();
-        nextBaseTexts = { text: { marketing: marketingJson?.marketing ?? {} } as Record<string, Record<string, string>> };
-      } else {
-        nextBaseTexts = { text: { marketing: {} } as Record<string, Record<string, string>> };
-      }
-    } else {
-      const standardScope = areaIsOrtslage ? 'ortslage' : 'kreis';
-      const standardRes = await fetch(`/api/fetch-text-standards?scope=${standardScope}`);
-      if (standardRes.ok) {
-        const standardJson = await standardRes.json();
-        nextStandardTexts = { text: standardJson?.text ?? {} };
-      }
-
-      if (bundeslandSlug && kreisSlug) {
-        const res = await fetch('/api/fetch-json', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            bundesland: bundeslandSlug,
-            kreis: kreisSlug,
-            ortslage: ortSlug || null,
-          }),
-        });
-        const jsonTexts = await res.json();
-        nextBaseTexts = { text: jsonTexts };
-      }
+    const rootAreaId = String(config?.area_id ?? '').trim();
+    const params = new URLSearchParams({
+      area_id: areaId,
+      root_area_id: rootAreaId,
+      table: tableName,
+    });
+    const res = await fetch(`/api/partner/text-editor/bootstrap?${params.toString()}`, {
+      method: 'GET',
+      cache: 'no-store',
+    });
+    const payload = await res.json().catch(() => null) as TextEditorBootstrapPayload | null;
+    if (!res.ok) {
+      throw new Error(String(payload && typeof payload === 'object' && 'error' in payload ? payload.error : 'Texteditor-Bootstrap fehlgeschlagen'));
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data } = await supabase
-      .from(tableName)
-      .select('*')
-      .eq('area_id', areaId)
-      .eq('partner_id', user?.id);
+    const nextScopeItems = normalizeScopeAreaItems(payload?.scope_items, config);
+    const requestedAreaId = String(payload?.area_id ?? areaId).trim() || areaId;
+    const nextRequestedData = normalizeTextAreaData(payload?.requested_data);
+    const nextRootAreaId = String(payload?.root_area_id ?? rootAreaId).trim() || rootAreaId;
+    const nextRootData = payload?.root_data ? normalizeTextAreaData(payload.root_data) : null;
 
-    return {
-      baseTexts: nextBaseTexts,
-      standardTexts: nextStandardTexts,
-      dbTexts: Array.isArray(data) ? (data as TextEntry[]) : [],
-    };
-  }, [isMarketing, supabase, tableName]);
+    setScopeAreaItems(nextScopeItems);
+    setAreaDataById((prev) => {
+      const next = { ...prev, [requestedAreaId]: nextRequestedData };
+      if (nextRootData && nextRootAreaId) {
+        next[nextRootAreaId] = nextRootData;
+      }
+      return next;
+    });
+
+    return nextRequestedData;
+  }, [config, tableName]);
 
   const ensureAreaTextData = useCallback(async (areaConfig: PartnerAreaConfig, options?: { force?: boolean }) => {
     const areaId = String(areaConfig?.area_id ?? '').trim();
     if (!areaId) return null;
-    if (!options?.force && areaDataById[areaId]) return areaDataById[areaId];
+    if (!options?.force && areaDataById[areaId] && (scopeAreaItems.length > 0 || isOrtslage)) return areaDataById[areaId];
     const nextData = await loadAreaTextData(areaConfig);
-    setAreaDataById((prev) => ({ ...prev, [areaId]: nextData }));
     return nextData;
-  }, [areaDataById, loadAreaTextData]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadScopeAreaItems() {
-      if (!config?.area_id) return;
-      if (isOrtslage) {
-        if (!cancelled) setScopeAreaItems([config]);
-        return;
-      }
-      const bundeslandSlug = String(config?.areas?.bundesland_slug || '');
-      const kreisSlug = String(config?.areas?.slug || '');
-      if (!bundeslandSlug || !kreisSlug) {
-        if (!cancelled) setScopeAreaItems([config]);
-        return;
-      }
-      const { data } = await supabase
-        .from('areas')
-        .select('id, name, slug, parent_slug, bundesland_slug')
-        .eq('bundesland_slug', bundeslandSlug)
-        .eq('parent_slug', kreisSlug);
-      if (cancelled) return;
-      const nextItems: PartnerAreaConfig[] = [
-        config,
-        ...((data ?? []).map((row) => ({
-          area_id: String(row.id ?? '').trim(),
-          areas: {
-            name: String(row.name ?? '').trim(),
-            slug: String(row.slug ?? '').trim(),
-            parent_slug: String(row.parent_slug ?? '').trim(),
-            bundesland_slug: String(row.bundesland_slug ?? '').trim(),
-          },
-        })) as PartnerAreaConfig[]).filter((row) => row.area_id),
-      ];
-      setScopeAreaItems(nextItems);
-    }
-
-    void loadScopeAreaItems();
-    return () => {
-      cancelled = true;
-    };
-  }, [config, isOrtslage, supabase]);
+  }, [areaDataById, isOrtslage, loadAreaTextData, scopeAreaItems.length]);
 
   useEffect(() => {
     if (!config?.area_id) return;
@@ -738,14 +766,6 @@ export default function TextEditorForm({
           console.error('Fehler beim Laden der Bereichstexte:', error);
         } finally {
           if (!cancelled) setLoading(false);
-        }
-      }
-
-      if (String(config?.area_id ?? '') !== areaId) {
-        try {
-          await ensureAreaTextData(config);
-        } catch (error) {
-          console.error('Fehler beim Laden der globalen Bereichstexte:', error);
         }
       }
     }
