@@ -15,6 +15,8 @@ type IntegrationRecord = {
   has_api_key?: boolean;
   has_token?: boolean;
   has_secret?: boolean;
+  has_trigger_token?: boolean;
+  has_trigger_secret?: boolean;
 };
 
 type IntegrationListProps = {
@@ -53,6 +55,7 @@ export default function IntegrationList({
             <th style={{ padding: '10px 12px' }}>Letzter Test</th>
             <th style={{ padding: '10px 12px' }}>Letzte Preview</th>
             <th style={{ padding: '10px 12px' }}>Letzter Sync</th>
+            <th style={{ padding: '10px 12px' }}>Auto-Update</th>
             <th style={{ padding: '10px 12px' }}>Aktion</th>
           </tr>
         </thead>
@@ -86,6 +89,9 @@ export default function IntegrationList({
                 <td style={{ padding: '12px' }}>{formatDateTime(integration.last_test_at)}</td>
                 <td style={{ padding: '12px' }}>{formatDateTime(integration.last_preview_sync_at)}</td>
                 <td style={{ padding: '12px' }}>{formatDateTime(integration.last_sync_at)}</td>
+                <td style={{ padding: '12px', color: '#334155' }}>
+                  {integration.has_trigger_token && integration.has_trigger_secret ? 'eingerichtet' : 'offen'}
+                </td>
                 <td style={{ padding: '12px' }}>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <button
@@ -127,7 +133,7 @@ export default function IntegrationList({
           })}
           {integrations.length === 0 ? (
             <tr>
-              <td colSpan={9} style={{ padding: '18px 12px', color: '#64748b' }}>
+              <td colSpan={10} style={{ padding: '18px 12px', color: '#64748b' }}>
                 Noch keine CRM-Integrationen vorhanden.
               </td>
             </tr>

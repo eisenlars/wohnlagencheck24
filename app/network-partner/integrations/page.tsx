@@ -9,6 +9,7 @@ import IntegrationSecretsForm from '@/components/network-partners/self-service/I
 import IntegrationSyncPanel from '@/components/network-partners/self-service/IntegrationSyncPanel';
 import SyncRunTable from '@/components/network-partners/self-service/SyncRunTable';
 import IntegrationTestPanel from '@/components/network-partners/self-service/IntegrationTestPanel';
+import IntegrationTriggerPanel from '@/components/network-partners/self-service/IntegrationTriggerPanel';
 import NetworkPartnerShell from '@/components/network-partners/self-service/NetworkPartnerShell';
 import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import type {
@@ -34,6 +35,20 @@ type IntegrationView = {
   has_api_key?: boolean;
   has_token?: boolean;
   has_secret?: boolean;
+  has_trigger_token?: boolean;
+  has_trigger_secret?: boolean;
+};
+
+type TriggerConfig = {
+  provider: string;
+  token: string | null;
+  webhook_url: string | null;
+  has_secret: boolean;
+  is_configured: boolean;
+  last_received_at: string | null;
+  last_processed_at: string | null;
+  last_status: string | null;
+  events_today: number | null;
 };
 
 type MePayload = {
@@ -88,6 +103,13 @@ type SyncPayload = {
   error?: string;
 };
 
+type TriggerConfigPayload = {
+  ok?: boolean;
+  config?: TriggerConfig;
+  generated_secret?: string | null;
+  error?: string;
+};
+
 function findSelectedIntegration(
   integrations: IntegrationView[],
   selectedIntegrationId: string | null,
@@ -112,6 +134,9 @@ export default function NetworkPartnerIntegrationsPage() {
   const [previewResult, setPreviewResult] = useState<NetworkPartnerPreviewSyncResult | null>(null);
   const [syncResult, setSyncResult] = useState<NetworkPartnerWriteSyncResult | null>(null);
   const [runs, setRuns] = useState<NetworkPartnerIntegrationSyncRunRecord[]>([]);
+  const [triggerConfig, setTriggerConfig] = useState<TriggerConfig | null>(null);
+  const [triggerLoading, setTriggerLoading] = useState(false);
+  const [generatedTriggerSecret, setGeneratedTriggerSecret] = useState<string | null>(null);
   const [runningTest, setRunningTest] = useState(false);
   const [runningPreview, setRunningPreview] = useState(false);
   const [runningSync, setRunningSync] = useState(false);
@@ -142,6 +167,8 @@ export default function NetworkPartnerIntegrationsPage() {
         setRole(null);
         setIntegrations([]);
         setSelectedIntegrationId(null);
+        setTriggerConfig(null);
+        setGeneratedTriggerSecret(null);
         setError(String(mePayload?.error ?? integrationsPayload?.error ?? 'Integrationen konnten nicht geladen werden.'));
         setLoading(false);
         return;
@@ -202,6 +229,37 @@ export default function NetworkPartnerIntegrationsPage() {
       setRuns(Array.isArray(payload?.runs) ? payload.runs : []);
     }
     void loadRuns();
+    return () => {
+      active = false;
+    };
+  }, [selectedIntegration?.id]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadTriggerConfig() {
+      if (!selectedIntegration?.id) {
+        setTriggerConfig(null);
+        setGeneratedTriggerSecret(null);
+        setTriggerLoading(false);
+        return;
+      }
+      setTriggerLoading(true);
+      const response = await fetch(
+        `/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/trigger-config`,
+        { method: 'GET', cache: 'no-store' },
+      );
+      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
+      const payload = (await response.json().catch(() => null)) as TriggerConfigPayload | null;
+      if (!active) return;
+      if (!response.ok) {
+        setTriggerConfig(null);
+        setTriggerLoading(false);
+        return;
+      }
+      setTriggerConfig(payload?.config ?? null);
+      setTriggerLoading(false);
+    }
+    void loadTriggerConfig();
     return () => {
       active = false;
     };
@@ -271,6 +329,7 @@ export default function NetworkPartnerIntegrationsPage() {
               setTestDiagnostics(null);
               setPreviewResult(null);
               setSyncResult(null);
+              setGeneratedTriggerSecret(null);
             }}
             onDelete={async (integrationId) => {
               if (!canManage) return;
@@ -291,6 +350,7 @@ export default function NetworkPartnerIntegrationsPage() {
               setTestDiagnostics(null);
               setPreviewResult(null);
               setSyncResult(null);
+              setGeneratedTriggerSecret(null);
             }}
           />
         </section>
@@ -355,6 +415,38 @@ export default function NetworkPartnerIntegrationsPage() {
                 />
               </article>
             </div>
+
+            <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
+              <IntegrationTriggerPanel
+                config={triggerConfig}
+                generatedSecret={generatedTriggerSecret}
+                disabled={!canManage}
+                loading={triggerLoading}
+                onGenerate={async () => {
+                  setTriggerLoading(true);
+                  setError(null);
+                  setMessage(null);
+                  try {
+                    const response = await fetch(
+                      `/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/trigger-config`,
+                      { method: 'POST' },
+                    );
+                    if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
+                    const payload = (await response.json().catch(() => null)) as TriggerConfigPayload | null;
+                    if (!response.ok) {
+                      setError(String(payload?.error ?? 'Trigger-Konfiguration konnte nicht gespeichert werden.'));
+                      return;
+                    }
+                    setTriggerConfig(payload?.config ?? null);
+                    setGeneratedTriggerSecret(payload?.generated_secret ?? null);
+                    await reloadIntegrations(selectedIntegration.id);
+                    setMessage('Automatische Aktualisierung wurde aktualisiert.');
+                  } finally {
+                    setTriggerLoading(false);
+                  }
+                }}
+              />
+            </article>
 
             <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
               <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>

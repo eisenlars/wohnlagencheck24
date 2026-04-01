@@ -37,11 +37,23 @@ function asObject(value: unknown): Record<string, unknown> | null {
 
 function enrichStoredSecretFlags(row: Record<string, unknown>) {
   const auth = (row.auth_config ?? {}) as Record<string, unknown>;
+  const settings =
+    row.settings && typeof row.settings === "object" && !Array.isArray(row.settings)
+      ? (row.settings as Record<string, unknown>)
+      : {};
+  const trigger =
+    settings.trigger && typeof settings.trigger === "object" && !Array.isArray(settings.trigger)
+      ? (settings.trigger as Record<string, unknown>)
+      : {};
   return {
     ...row,
     has_api_key: Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim()),
     has_token: Boolean(String(auth.token ?? auth.token_encrypted ?? "").trim()),
     has_secret: Boolean(String(auth.secret ?? auth.secret_encrypted ?? "").trim()),
+    has_trigger_token: Boolean(String(trigger.token ?? settings.webhook_token ?? "").trim()),
+    has_trigger_secret: Boolean(
+      String(auth.webhook_secret ?? auth.webhook_secret_encrypted ?? "").trim(),
+    ),
   };
 }
 
