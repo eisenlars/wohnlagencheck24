@@ -157,23 +157,22 @@ async function loadScopeAreaItems(
     .order("id", { ascending: true });
 
   const children = Array.isArray(data)
-    ? data
-        .map((row) => {
-          if (!row || typeof row !== "object") return null;
-          const rec = row as Record<string, unknown>;
-          const areaId = typeof rec.id === "string" ? rec.id.trim() : "";
-          if (!areaId) return null;
-          return {
-            area_id: areaId,
-            areas: {
-              name: typeof rec.name === "string" ? rec.name : undefined,
-              slug: typeof rec.slug === "string" ? rec.slug : undefined,
-              parent_slug: typeof rec.parent_slug === "string" ? rec.parent_slug : undefined,
-              bundesland_slug: typeof rec.bundesland_slug === "string" ? rec.bundesland_slug : undefined,
-            },
-          } satisfies PartnerAreaConfig;
-        })
-        .filter((row): row is PartnerAreaConfig => Boolean(row))
+    ? data.reduce<PartnerAreaConfig[]>((acc, row) => {
+        if (!row || typeof row !== "object") return acc;
+        const rec = row as Record<string, unknown>;
+        const areaId = typeof rec.id === "string" ? rec.id.trim() : "";
+        if (!areaId) return acc;
+        acc.push({
+          area_id: areaId,
+          areas: {
+            name: typeof rec.name === "string" ? rec.name : undefined,
+            slug: typeof rec.slug === "string" ? rec.slug : undefined,
+            parent_slug: typeof rec.parent_slug === "string" ? rec.parent_slug : undefined,
+            bundesland_slug: typeof rec.bundesland_slug === "string" ? rec.bundesland_slug : undefined,
+          },
+        });
+        return acc;
+      }, [])
     : [];
 
   return [rootConfig, ...children];
