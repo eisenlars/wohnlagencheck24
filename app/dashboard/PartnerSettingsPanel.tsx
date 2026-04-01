@@ -676,7 +676,7 @@ export default function PartnerSettingsPanel({
   const [integrationDraft, setIntegrationDraft] = useState<IntegrationDraft>(buildDefaultDraft("crm"));
   const [advancedAuthOpen, setAdvancedAuthOpen] = useState(false);
   const [llmCustomModelMode, setLlmCustomModelMode] = useState(false);
-  const [integrationFlowTab, setIntegrationFlowTab] = useState<"basis" | "zugangstest">("basis");
+  const [integrationFlowTab, setIntegrationFlowTab] = useState<"basis" | "zugangstest" | "trigger">("basis");
   const [costMonitorTab, setCostMonitorTab] = useState<"tokenverbrauch" | "portalabo" | "features">("tokenverbrauch");
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
   const [isCreateMode, setIsCreateMode] = useState(false);
@@ -1285,6 +1285,13 @@ export default function PartnerSettingsPanel({
                 >
                   2. API-Key
                 </button>
+                <button
+                  type="button"
+                  style={integrationFlowTabButtonStyle(integrationFlowTab === "trigger")}
+                  onClick={() => setIntegrationFlowTab("trigger")}
+                >
+                  3. Automatische Aktualisierung
+                </button>
               </div>
 
               {integrationFlowTab === "basis" ? (
@@ -1658,9 +1665,6 @@ export default function PartnerSettingsPanel({
                     const lastTestMessage = asText(settings.last_test_message);
                     const relevantSecretFields = getRelevantSecretFields(integration);
                     const supportsSecrets = relevantSecretFields.length > 0;
-                    const triggerConfig = triggerConfigByIntegration[integration.id] ?? null;
-                    const generatedTriggerSecret = generatedTriggerSecretByIntegration[integration.id] ?? null;
-                    const triggerLoading = triggerLoadingByIntegration[integration.id] === true;
                     return (
                       <>
                         {supportsSecrets && isLocalSiteIntegration ? (
@@ -1826,38 +1830,6 @@ export default function PartnerSettingsPanel({
                             </>
                           ) : null}
                         </div>
-                        {isCrmIntegration ? (
-                          <div style={{ marginTop: 28, border: "1px solid #e2e8f0", borderRadius: 14, padding: 16, background: "#fff" }}>
-                            <IntegrationTriggerPanel
-                              config={triggerConfig}
-                              generatedSecret={generatedTriggerSecret}
-                              disabled={busy}
-                              loading={triggerLoading}
-                              onGenerate={async () => {
-                                setTriggerLoadingByIntegration((prev) => ({ ...prev, [integration.id]: true }));
-                                try {
-                                  const payload = await api<{ config?: TriggerConfig; generated_secret?: string | null }>(
-                                    `/api/partner/integrations/${integration.id}/trigger-config`,
-                                    { method: "POST" },
-                                  );
-                                  if (payload.config) {
-                                    setTriggerConfigByIntegration((prev) => ({
-                                      ...prev,
-                                      [integration.id]: payload.config as TriggerConfig,
-                                    }));
-                                  }
-                                  setGeneratedTriggerSecretByIntegration((prev) => ({
-                                    ...prev,
-                                    [integration.id]: String(payload.generated_secret ?? ""),
-                                  }));
-                                  await loadAll(integration.id);
-                                } finally {
-                                  setTriggerLoadingByIntegration((prev) => ({ ...prev, [integration.id]: false }));
-                                }
-                              }}
-                            />
-                          </div>
-                        ) : null}
                       </>
                     );
                   })()}
@@ -1866,6 +1838,51 @@ export default function PartnerSettingsPanel({
                 <p style={emptyHintStyle}>
                   Nach dem Anlegen kannst du hier Zugangsdaten speichern und die Verbindung testen.
                 </p>
+                )
+              ) : null}
+
+              {integrationFlowTab === "trigger" ? (
+                !isCreateMode && selectedIntegration ? (
+                  String(selectedIntegration.kind ?? "").toLowerCase() === "crm" ? (
+                    <div style={{ marginTop: 40 }}>
+                      <IntegrationTriggerPanel
+                        config={triggerConfigByIntegration[selectedIntegration.id] ?? null}
+                        generatedSecret={generatedTriggerSecretByIntegration[selectedIntegration.id] ?? null}
+                        disabled={busy}
+                        loading={triggerLoadingByIntegration[selectedIntegration.id] === true}
+                        onGenerate={async () => {
+                          setTriggerLoadingByIntegration((prev) => ({ ...prev, [selectedIntegration.id]: true }));
+                          try {
+                            const payload = await api<{ config?: TriggerConfig; generated_secret?: string | null }>(
+                              `/api/partner/integrations/${selectedIntegration.id}/trigger-config`,
+                              { method: "POST" },
+                            );
+                            if (payload.config) {
+                              setTriggerConfigByIntegration((prev) => ({
+                                ...prev,
+                                [selectedIntegration.id]: payload.config as TriggerConfig,
+                              }));
+                            }
+                            setGeneratedTriggerSecretByIntegration((prev) => ({
+                              ...prev,
+                              [selectedIntegration.id]: String(payload.generated_secret ?? ""),
+                            }));
+                            await loadAll(selectedIntegration.id);
+                          } finally {
+                            setTriggerLoadingByIntegration((prev) => ({ ...prev, [selectedIntegration.id]: false }));
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <p style={emptyHintStyle}>
+                      Automatische Aktualisierung steht aktuell nur für CRM-Anbindungen bereit.
+                    </p>
+                  )
+                ) : (
+                  <p style={emptyHintStyle}>
+                    Nach dem Anlegen der CRM-Anbindung kannst du hier die automatische Aktualisierung einrichten.
+                  </p>
                 )
               ) : null}
             </div>

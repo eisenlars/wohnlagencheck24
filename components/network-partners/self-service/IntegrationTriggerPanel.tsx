@@ -38,22 +38,6 @@ function formatStatusLabel(status: string | null): string {
   return status;
 }
 
-function getSetupSteps(provider: string) {
-  if (provider === 'onoffice') {
-    return [
-      'Im onOffice-Prozessmanager einen Webhook als POST auf die Webhook-Adresse anlegen.',
-      'Den Header `X-WC24-Trigger-Secret` mit dem angezeigten Sicherheitsschlüssel mitsenden.',
-      'Im Body mindestens `module`, `record_id` und `event` mitsenden.',
-    ];
-  }
-
-  return [
-    'In Propstack einen Webhook mit dieser Webhook-Adresse als Ziel anlegen.',
-    'Den angezeigten Sicherheitsschlüssel in Propstack als Secret Key hinterlegen.',
-    'Mindestens diese Events aktivieren: `property_created`, `property_updated`, `saved_query_created`, `saved_query_updated`, `saved_query_deleted`.',
-  ];
-}
-
 export default function IntegrationTriggerPanel({
   config,
   generatedSecret,
@@ -95,37 +79,31 @@ export default function IntegrationTriggerPanel({
       </div>
 
       <div style={{ display: 'grid', gap: 12 }}>
-        <div style={{ display: 'grid', gap: 6 }}>
-          <strong style={{ color: '#334155' }}>Webhook-Adresse</strong>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <input
-              value={config?.webhook_url ?? ''}
-              readOnly
-              placeholder="Wird nach dem Erzeugen des Schlüssels bereitgestellt"
-              style={{ flex: '1 1 420px', border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#f8fafc' }}
-            />
-            <button
-              type="button"
-              disabled={!config?.webhook_url}
-              onClick={() => void copyValue('Webhook-Adresse', config?.webhook_url ?? null)}
-              style={{
-                border: '1px solid #0f766e',
-                borderRadius: 10,
-                background: '#fff',
-                color: '#0f766e',
-                padding: '10px 14px',
-                fontWeight: 700,
-                cursor: config?.webhook_url ? 'pointer' : 'not-allowed',
-                opacity: config?.webhook_url ? 1 : 0.6,
-              }}
-            >
-              URL kopieren
-            </button>
-          </div>
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc', display: 'grid', gap: 8 }}>
+          <strong style={{ color: '#0f172a' }}>1. Webhook im CRM öffnen</strong>
+          {provider === 'onoffice' ? (
+            <>
+              <div style={{ color: '#334155' }}>
+                Öffne in onOffice den Prozessmanager und lege dort einen Webhook als `POST` für den gewünschten Vorgang an.
+              </div>
+              <div style={{ color: '#64748b', fontSize: 13 }}>
+                Übergib dabei mindestens `module`, `record_id` und `event`.
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ color: '#334155' }}>
+                Öffne in Propstack den Bereich <strong>Verwaltung &gt; API-Schlüssel &gt; Webhooks</strong> und lege dort einen neuen Webhook an.
+              </div>
+              <div style={{ color: '#64748b', fontSize: 13 }}>
+                Ziel ist, dass Propstack bei Änderungen automatisch ein Signal an Wohnlagencheck24 schickt.
+              </div>
+            </>
+          )}
         </div>
 
         <div style={{ display: 'grid', gap: 6 }}>
-          <strong style={{ color: '#334155' }}>Sicherheitsschlüssel</strong>
+          <strong style={{ color: '#334155' }}>2. Sicherheitsschlüssel erzeugen</strong>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
               value={generatedSecret ?? ''}
@@ -169,28 +147,73 @@ export default function IntegrationTriggerPanel({
             </button>
           </div>
           <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>
-            Der Sicherheitsschlüssel wird nur direkt nach dem Erzeugen im Klartext angezeigt. Nach einer Neuerzeugung muss er im CRM ebenfalls aktualisiert werden.
+            Trage diesen Schlüssel im CRM als Secret ein. Er wird nur direkt nach dem Erzeugen im Klartext angezeigt. Nach einer Neuerzeugung muss er im CRM ebenfalls aktualisiert werden.
           </p>
+        </div>
+
+        <div style={{ display: 'grid', gap: 6 }}>
+          <strong style={{ color: '#334155' }}>3. Webhook-Adresse hinterlegen</strong>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <input
+              value={config?.webhook_url ?? ''}
+              readOnly
+              placeholder="Wird nach dem Erzeugen des Schlüssels bereitgestellt"
+              style={{ flex: '1 1 420px', border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#f8fafc' }}
+            />
+            <button
+              type="button"
+              disabled={!config?.webhook_url}
+              onClick={() => void copyValue('Webhook-Adresse', config?.webhook_url ?? null)}
+              style={{
+                border: '1px solid #0f766e',
+                borderRadius: 10,
+                background: '#fff',
+                color: '#0f766e',
+                padding: '10px 14px',
+                fontWeight: 700,
+                cursor: config?.webhook_url ? 'pointer' : 'not-allowed',
+                opacity: config?.webhook_url ? 1 : 0.6,
+              }}
+            >
+              URL kopieren
+            </button>
+          </div>
+          <p style={{ margin: 0, color: '#64748b', fontSize: 13 }}>
+            Diese Adresse trägst du im CRM als Zieladresse des Webhooks ein.
+          </p>
+        </div>
+
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc', display: 'grid', gap: 8 }}>
+          <strong style={{ color: '#0f172a' }}>4. Ereignisse aktivieren</strong>
+          {provider === 'onoffice' ? (
+            <>
+              <div style={{ color: '#334155' }}>
+                Richte den Prozess so ein, dass bei Änderungen an Immobilien oder Suchprofilen ein `POST` an die Webhook-Adresse gesendet wird.
+              </div>
+              <div style={{ color: '#64748b', fontSize: 13 }}>
+                Für onOffice sollte zusätzlich der Header <code>X-WC24-Trigger-Secret</code> mit dem Sicherheitsschlüssel mitgesendet werden.
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ color: '#334155' }}>
+                Mindestens diese Events aktivieren: <code>property_created</code>, <code>property_updated</code>, <code>saved_query_created</code>, <code>saved_query_updated</code>, <code>saved_query_deleted</code>.
+              </div>
+              <div style={{ color: '#64748b', fontSize: 13 }}>
+                Damit werden neue oder geänderte Immobilien und Suchprofile automatisch an Wohnlagencheck24 gemeldet.
+              </div>
+            </>
+          )}
         </div>
       </div>
 
       {copyMessage ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{copyMessage}</p> : null}
 
-      <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc', display: 'grid', gap: 8 }}>
-        <strong style={{ color: '#0f172a' }}>
-          Einrichtung in {provider === 'onoffice' ? 'onOffice' : 'Propstack'}
-        </strong>
-        {getSetupSteps(provider).map((step, index) => (
-          <div key={index} style={{ color: '#334155' }}>
-            {index + 1}. {step}
-          </div>
-        ))}
-        {config?.last_processed_at ? (
-          <div style={{ color: '#64748b', fontSize: 13 }}>
-            Letzte erfolgreiche Verarbeitung: {formatDateTime(config.last_processed_at)}
-          </div>
-        ) : null}
-      </div>
+      {config?.last_processed_at ? (
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, background: '#f8fafc', color: '#64748b', fontSize: 13 }}>
+          Letzte erfolgreiche Verarbeitung: {formatDateTime(config.last_processed_at)}
+        </div>
+      ) : null}
     </div>
   );
 }
