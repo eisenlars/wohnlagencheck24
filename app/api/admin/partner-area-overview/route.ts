@@ -14,6 +14,8 @@ type AreaOverviewRow = {
   activationStatus: string;
 };
 
+type AreaNameRelation = Array<{ name: string | null }>;
+
 function isMissingAreaActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return (
@@ -66,6 +68,15 @@ function matchesFilter(row: AreaOverviewRow, query: string, onlyActive: boolean)
   return haystack.includes(query);
 }
 
+function normalizeAreaNameRelation(value: unknown): AreaNameRelation {
+  const source = Array.isArray(value) ? value : [value];
+  return source
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object")
+    .map((entry) => ({
+      name: typeof entry.name === "string" ? entry.name : null,
+    }));
+}
+
 export async function GET(req: Request) {
   try {
     const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
@@ -105,7 +116,7 @@ export async function GET(req: Request) {
           is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : false,
           is_public_live: false,
           activation_status: null,
-          areas: baseRow.areas,
+          areas: normalizeAreaNameRelation(baseRow.areas),
         };
       });
       mappingError = fallback.error;
