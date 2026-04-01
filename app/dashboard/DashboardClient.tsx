@@ -117,6 +117,14 @@ type DashboardBootstrapPayload = {
   } | null;
 };
 
+function normalizeLocaleList(value: unknown): string[] {
+  return Array.from(new Set(
+    (Array.isArray(value) ? value : [])
+      .map((item) => String(item ?? '').trim().toLowerCase())
+      .filter((item) => /^[a-z]{2}(?:-[a-z0-9]{2,8}){0,2}$/.test(item)),
+  ));
+}
+
 type UtilityIconKey =
   | 'factors'
   | 'texts'
@@ -612,12 +620,23 @@ export default function DashboardClient({
   }, [activeMainTab, networkPartnerSection]);
 
   useEffect(() => {
+    let active = true;
+
+    async function loadLocaleAvailability() {
+      const res = await fetch('/api/partner/dashboard/bootstrap?mode=locales', { method: 'GET', cache: 'no-store' });
+      if (redirectIfUnauthorizedResponse(res, 'partner')) {
+        return;
+      }
+      const payload = await res.json().catch(() => null) as DashboardBootstrapPayload | null;
+      if (!res.ok || !active) return;
+      setAvailableInternationalLocales(normalizeLocaleList(payload?.available_locales));
+      setGlobalPartnerInternationalLocales(normalizeLocaleList(payload?.global_partner_locales));
+    }
+
     async function loadData() {
       const persisted = readSessionViewState<PersistedDashboardState>(DASHBOARD_UI_STATE_KEY);
       const restoredAreaId = String(persisted?.selectedAreaId ?? '').trim();
-      const bootstrapUrl = restoredAreaId
-        ? `/api/partner/dashboard/bootstrap?selected_area_id=${encodeURIComponent(restoredAreaId)}`
-        : '/api/partner/dashboard/bootstrap';
+      const bootstrapUrl = '/api/partner/dashboard/bootstrap?mode=core';
 
       const res = await fetch(bootstrapUrl, { method: 'GET', cache: 'no-store' });
       if (redirectIfUnauthorizedResponse(res, 'partner')) {
@@ -630,16 +649,9 @@ export default function DashboardClient({
       const mergedConfigs: PartnerAreaConfig[] = Array.isArray(payload?.configs) ? payload.configs : [];
 
       queueMicrotask(() => {
-        const normalizeLocaleList = (value: unknown): string[] => Array.from(new Set(
-          (Array.isArray(value) ? value : [])
-            .map((item) => String(item ?? '').trim().toLowerCase())
-            .filter((item) => /^[a-z]{2}(?:-[a-z0-9]{2,8}){0,2}$/.test(item)),
-        ));
         setLastLogin(String(payload?.last_login ?? '').trim() || null);
         setPartnerFirstName(String(payload?.partner_first_name ?? '').trim() || null);
         setPartnerFeatures(Array.isArray(payload?.partner_features) ? payload.partner_features : []);
-        setAvailableInternationalLocales(normalizeLocaleList(payload?.available_locales));
-        setGlobalPartnerInternationalLocales(normalizeLocaleList(payload?.global_partner_locales));
         if (mergedConfigs.length > 0) {
           const restoredArea = restoredAreaId ? mergedConfigs.find((cfg) => cfg.area_id === restoredAreaId) : undefined;
           const hasActiveAreasLocal = mergedConfigs.some((cfg) => Boolean(cfg.is_active));
@@ -652,48 +664,39 @@ export default function DashboardClient({
             ? persisted.networkPartnerDetailSection
             : 'profile';
           const restoredSelectedNetworkPartnerId = String(persisted?.selectedNetworkPartnerId ?? '').trim() || null;
-          const computedTab: MainTab = (!hasActiveAreasLocal && restoredTab && restoredTab !== 'texts')
+          const preferredTab: MainTab = restoredTab ?? initialMainTab ?? 'factors';
+          const nextTab: MainTab = !hasActiveAreasLocal && preferredTab !== 'texts'
             ? 'texts'
-            : (restoredTab ?? 'factors');
-          const nextTab: MainTab = initialMainTab ?? computedTab;
-          const nextShowWelcome = typeof initialShowWelcome === 'boolean'
-            ? initialShowWelcome
-            : (typeof persisted?.showWelcome === 'boolean' ? persisted.showWelcome : true);
+            : preferredTab;
+          const nextShowWelcome = typeof persisted?.showWelcome === 'boolean'
+            ? persisted.showWelcome
+            : (typeof initialShowWelcome === 'boolean' ? initialShowWelcome : true);
           const nextSelected = restoredArea ?? mergedConfigs[0];
-          const bootstrapProgress = payload?.mandatory_progress;
-          const bootstrapProgressAreaId = String(bootstrapProgress?.area_id ?? '').trim();
 
           setConfigs(mergedConfigs);
           setSelectedConfig(nextSelected);
           setExpandedDistrict(nextSelected.area_id.split('-').slice(0, 3).join('-'));
           setActiveMainTab(nextTab);
           setSettingsSection(restoredSettingsSection);
-          setNetworkPartnerSection(initialNetworkPartnerSection ?? restoredNetworkPartnerSection);
-          setSelectedNetworkPartnerId(initialSelectedNetworkPartnerId ?? restoredSelectedNetworkPartnerId);
-          setNetworkPartnerDetailSection(initialNetworkPartnerDetailSection ?? restoredNetworkPartnerDetailSection);
+          setNetworkPartnerSection(restoredNetworkPartnerSection ?? initialNetworkPartnerSection ?? 'overview');
+          setSelectedNetworkPartnerId(restoredSelectedNetworkPartnerId ?? initialSelectedNetworkPartnerId ?? null);
+          setNetworkPartnerDetailSection(restoredNetworkPartnerDetailSection ?? initialNetworkPartnerDetailSection ?? 'profile');
           setShowWelcome(nextShowWelcome);
-          if (bootstrapProgressAreaId && bootstrapProgressAreaId === nextSelected.area_id) {
-            const completed = Number(bootstrapProgress?.completed ?? 0);
-            const total = Number(bootstrapProgress?.total ?? (INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length));
-            setMandatoryProgress({
-              completed: Number.isFinite(completed) ? completed : 0,
-              total: Number.isFinite(total) && total > 0 ? total : INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length,
-            });
-            setMandatoryProgressLoading(false);
-            lastMandatoryAreaIdRef.current = nextSelected.area_id;
-            bootstrappedMandatoryAreaIdRef.current = nextSelected.area_id;
-          } else {
-            setMandatoryProgressLoading(Boolean(nextSelected?.area_id));
-            bootstrappedMandatoryAreaIdRef.current = null;
-          }
+          setMandatoryProgressLoading(Boolean(nextSelected?.area_id));
+          bootstrappedMandatoryAreaIdRef.current = null;
         } else {
           setMandatoryProgress({ completed: 0, total: INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length });
           setMandatoryProgressLoading(false);
         }
         setLoading(false);
       });
+
+      void loadLocaleAvailability();
     }
     void loadData();
+    return () => {
+      active = false;
+    };
   }, [
     supabase,
     initialMainTab,

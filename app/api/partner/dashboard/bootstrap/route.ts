@@ -451,29 +451,45 @@ export async function GET(req: Request) {
     const { userId, user } = await requirePartnerUser(req);
     const admin = createAdminClient();
     const url = new URL(req.url);
+    const mode = String(url.searchParams.get("mode") ?? "core").trim().toLowerCase();
     const requestedAreaId = String(url.searchParams.get("selected_area_id") ?? "").trim();
 
-    const [configs, profileFirstName, partnerFeatures, mandatoryProgress] = await Promise.all([
+    if (mode === "locales") {
+      const localeAvailability = await loadPartnerLocaleAvailabilitySnapshot(userId);
+      return NextResponse.json({
+        ok: true,
+        international_locale_configs: localeAvailability.locales,
+        available_locales: localeAvailability.available_locales,
+        partner_enabled_locales: localeAvailability.partner_enabled_locales,
+        global_partner_locales: localeAvailability.global_partner_locales,
+        global_public_locales: localeAvailability.global_public_locales,
+      });
+    }
+
+    if (mode === "mandatory") {
+      const mandatoryProgress = requestedAreaId
+        ? await loadMandatoryProgress(admin, userId, requestedAreaId)
+        : null;
+      return NextResponse.json({
+        ok: true,
+        requested_area_id: requestedAreaId || null,
+        mandatory_progress: mandatoryProgress,
+      });
+    }
+
+    const [configs, profileFirstName, partnerFeatures] = await Promise.all([
       loadPartnerConfigs(admin, userId),
       (async () => resolvePartnerFirstNameFromUser(user) ?? await loadPartnerFirstName(admin, userId))(),
       loadPartnerFeatures(admin, userId),
-      requestedAreaId ? loadMandatoryProgress(admin, userId, requestedAreaId) : Promise.resolve(null),
     ]);
-    const localeAvailability = await loadPartnerLocaleAvailabilitySnapshot(userId);
 
     return NextResponse.json({
       ok: true,
       last_login: String(user.last_sign_in_at ?? "").trim() || null,
       partner_first_name: profileFirstName,
       partner_features: partnerFeatures,
-      international_locale_configs: localeAvailability.locales,
-      available_locales: localeAvailability.available_locales,
-      partner_enabled_locales: localeAvailability.partner_enabled_locales,
-      global_partner_locales: localeAvailability.global_partner_locales,
-      global_public_locales: localeAvailability.global_public_locales,
       configs,
       requested_area_id: requestedAreaId || null,
-      mandatory_progress: mandatoryProgress,
     });
   } catch (error) {
     if (error instanceof Error) {
