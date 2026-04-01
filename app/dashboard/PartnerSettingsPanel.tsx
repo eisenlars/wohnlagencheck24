@@ -1616,7 +1616,10 @@ export default function PartnerSettingsPanel({
                               integration_id: selectedIntegration?.id ?? undefined,
                               ...integrationDraft,
                               settings,
-                              is_active: selectedIntegration?.is_active ?? true,
+                              is_active:
+                                String(integrationDraft.kind ?? "").toLowerCase() === "crm"
+                                  ? true
+                                  : (selectedIntegration?.is_active ?? true),
                             }),
                           });
                           const savedId = response.integration?.id ?? selectedIntegration?.id ?? null;
