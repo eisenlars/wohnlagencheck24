@@ -1654,9 +1654,9 @@ export default function PartnerSettingsPanel({
                     const isLocalSiteIntegration = String(integration.kind ?? "").toLowerCase() === "local_site";
                     const isCrmIntegration = String(integration.kind ?? "").toLowerCase() === "crm";
                     const draft = secretDraft[integration.id] ?? {
-                      api_key: asText(integration.api_key),
-                      token: asText(isLocalSiteIntegration ? integration.local_site_api_key : integration.token),
-                      secret: asText(integration.secret),
+                      api_key: asText(integration.api_key) ?? "",
+                      token: asText(isLocalSiteIntegration ? integration.local_site_api_key : integration.token) ?? "",
+                      secret: asText(integration.secret) ?? "",
                     };
                     const visibility = secretVisibility[integration.id] ?? {};
                     const settings = (integration.settings ?? {}) as Record<string, unknown>;
@@ -1725,7 +1725,7 @@ export default function PartnerSettingsPanel({
                                     Das ist dein geheimer API-Key. Gib ihn nicht öffentlich weiter.
                                   </span>
                                 ) : null}
-                                {!isLocalSiteIntegration && !draft[field].trim() && hasStoredSecret(integration, field) ? (
+                                {!isLocalSiteIntegration && !String(draft[field] ?? "").trim() && hasStoredSecret(integration, field) ? (
                                   <span style={fieldHintStyle}>
                                     Bereits gespeichert. Aus Sicherheitsgründen wird der Wert hier nicht erneut angezeigt.
                                   </span>
