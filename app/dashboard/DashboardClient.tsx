@@ -833,8 +833,6 @@ export default function DashboardClient({
     ],
     [
       { id: 'partner_ads', label: 'Netzwerkpartner Verwaltung', icon: 'partner_ads', tab: 'network_partners', networkPartnerSection: 'overview' },
-      { id: 'partner_gesuche', label: 'Buchungen', icon: 'partner_gesuche', tab: 'network_partners', networkPartnerSection: 'bookings' },
-      { id: 'partner_content', label: 'Content & Review', icon: 'texts', tab: 'network_partners', networkPartnerSection: 'content' },
       { id: 'partner_billing', label: 'Partnererlöse', icon: 'marketing', tab: 'network_partners', networkPartnerSection: 'billing' },
       { id: 'partner_ai', label: 'KI-Nutzung', icon: 'forecast', tab: 'network_partners', networkPartnerSection: 'ai' },
     ],
@@ -3018,20 +3016,6 @@ function welcomeToolGroups(hasInternationalFeature: boolean): Array<{ title: str
           description: 'Regionale Partner im Master-Detail-Arbeitsbereich mit Zugängen, Buchungen und Partnererlösen verwalten.',
           icon: 'partner_ads',
           networkPartnerSection: 'overview',
-        },
-        {
-          key: 'network_partners',
-          title: 'Buchungen',
-          description: 'Alle Netzwerkpartner-Buchungen im Gesamtportfolio überwachen.',
-          icon: 'partner_gesuche',
-          networkPartnerSection: 'bookings',
-        },
-        {
-          key: 'network_partners',
-          title: 'Content & Review',
-          description: 'Netzwerkpartner-Content und Freigaben portalweit bearbeiten.',
-          icon: 'texts',
-          networkPartnerSection: 'content',
         },
         {
           key: 'network_partners',
