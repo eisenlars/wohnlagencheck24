@@ -95,7 +95,7 @@ create table if not exists public.market_explanation_static_text_i18n_meta (
 
 create table if not exists public.admin_area_texts (
   scope_kind text not null
-    check (scope_kind in ('bundesland', 'kreis', 'ortslage')),
+    check (scope_kind in ('bundesland')),
   scope_key text not null,
   section_key text not null,
   text_type text not null default 'general'
@@ -248,7 +248,7 @@ comment on table public.market_explanation_static_text_i18n_meta is
   'Quelle und Verwaltungsstatus fuer uebersetzte statische Markterklaerungstexte.';
 
 comment on table public.admin_area_texts is
-  'Admin-Overrides fuer portalverantwortete Gebietstexte auf Bundesland-, Kreis- und Ortslagenebene.';
+  'Admin-Overrides fuer portalverantwortete Gebietstexte auf Bundeslandebene.';
 
 comment on table public.admin_area_text_i18n_entries is
   'Mehrsprachige Admin-Overrides fuer portalverantwortete Gebietstexte auf Bundesland-, Kreis- und Ortslagenebene.';
