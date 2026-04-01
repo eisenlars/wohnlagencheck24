@@ -945,13 +945,19 @@ export async function GET(req: Request) {
     const translationResult = await timed<{
       data: TranslationRow[] | null;
       error: unknown;
-    }>("translations_ms", () => admin
-      .from("partner_texts_i18n")
-      .select("area_id, section_key, translated_content, status, updated_at, source_snapshot_hash, source_last_updated")
-      .eq("partner_id", partnerId)
-      .in("area_id", areaIds)
-      .eq("channel", channel)
-      .eq("target_locale", locale));
+    }>("translations_ms", async () => {
+      const result = await admin
+        .from("partner_texts_i18n")
+        .select("area_id, section_key, translated_content, status, updated_at, source_snapshot_hash, source_last_updated")
+        .eq("partner_id", partnerId)
+        .in("area_id", areaIds)
+        .eq("channel", channel)
+        .eq("target_locale", locale);
+      return {
+        data: (result.data ?? null) as TranslationRow[] | null,
+        error: result.error,
+      };
+    });
     const translations = translationResult.data;
     const translationsError = translationResult.error;
     if (translationsError) throw translationsError;
