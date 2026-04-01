@@ -682,6 +682,7 @@ export default function PartnerSettingsPanel({
   const [isCreateMode, setIsCreateMode] = useState(false);
   const selectedIntegrationIdRef = useRef<string | null>(null);
   const isCreateModeRef = useRef(false);
+  const bootstrapDoneRef = useRef(false);
   const [secretDraft, setSecretDraft] = useState<Record<string, SecretDraft>>({});
   const [secretVisibility, setSecretVisibility] = useState<SecretVisibilityState>({});
   const [testResult, setTestResult] = useState<Record<string, { status: "ok" | "warning" | "error"; message: string }>>({});
@@ -707,6 +708,8 @@ export default function PartnerSettingsPanel({
   }>({ has_usage: false, earliest_month: null, latest_month: null });
   const [portalAboRows, setPortalAboRows] = useState<PortalAboRow[]>([]);
   const [featureRows, setFeatureRows] = useState<PartnerFeatureRow[]>([]);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [integrationsLoaded, setIntegrationsLoaded] = useState(false);
   const providerOptions = useMemo(() => getProvidersForKind(integrationDraft.kind), [integrationDraft.kind]);
   const selectedProviderSpec = useMemo(
     () => getProviderSpec(integrationDraft.provider) ?? providerOptions[0] ?? null,
@@ -826,11 +829,8 @@ export default function PartnerSettingsPanel({
     isCreateModeRef.current = isCreateMode;
   }, [isCreateMode]);
 
-  const loadAll = useCallback(async (preferredIntegrationId?: string | null) => {
-    const [profileRes, integrationsRes] = await Promise.all([
-      api<{ profile: PartnerProfile }>("/api/partner/profile"),
-      api<{ integrations: PartnerIntegration[]; policy?: IntegrationPolicy }>("/api/partner/integrations"),
-    ]);
+  const loadProfile = useCallback(async () => {
+    const profileRes = await api<{ profile: PartnerProfile }>("/api/partner/profile");
     setProfile(profileRes.profile);
     setProfileDraft({
       company_name: profileRes.profile.company_name ?? "",
@@ -839,9 +839,15 @@ export default function PartnerSettingsPanel({
       contact_last_name: profileRes.profile.contact_last_name ?? "",
       website_url: profileRes.profile.website_url ?? "",
     });
+    setProfileLoaded(true);
+  }, []);
+
+  const loadIntegrations = useCallback(async (preferredIntegrationId?: string | null) => {
+    const integrationsRes = await api<{ integrations: PartnerIntegration[]; policy?: IntegrationPolicy }>("/api/partner/integrations");
     const nextIntegrations = integrationsRes.integrations ?? [];
     setIntegrationPolicy(integrationsRes.policy ?? { llm_partner_managed_allowed: true });
     setIntegrations(nextIntegrations);
+    setIntegrationsLoaded(true);
     if (isCreateModeRef.current && !preferredIntegrationId) return;
 
     const desiredId = preferredIntegrationId ?? selectedIntegrationIdRef.current;
@@ -973,17 +979,73 @@ export default function PartnerSettingsPanel({
   }
 
   useEffect(() => {
+    if (bootstrapDoneRef.current) return;
+    bootstrapDoneRef.current = true;
+    let active = true;
     (async () => {
       try {
-        await loadAll();
+        if (section === "profil") {
+          await loadProfile();
+        } else if (section === "integrationen" || section === "kostenmonitor") {
+          await loadIntegrations();
+        }
+        if (!active) return;
         setStatus("Einstellungen geladen.");
       } catch (error) {
+        if (!active) return;
         setStatus(error instanceof Error ? error.message : "Fehler beim Laden");
       } finally {
-        setInitialLoading(false);
+        if (active) setInitialLoading(false);
       }
     })();
-  }, [loadAll]);
+    return () => {
+      active = false;
+    };
+  }, [loadIntegrations, loadProfile, section]);
+
+  useEffect(() => {
+    if (initialLoading) return;
+    if (section !== "profil") return;
+    if (profileLoaded) return;
+    let active = true;
+    setBusy(true);
+    setStatus("Partnerprofil wird geladen...");
+    void loadProfile()
+      .then(() => {
+        if (active) setStatus("Partnerprofil geladen.");
+      })
+      .catch((error) => {
+        if (active) setStatus(error instanceof Error ? error.message : "Partnerprofil konnte nicht geladen werden.");
+      })
+      .finally(() => {
+        if (active) setBusy(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [initialLoading, loadProfile, profileLoaded, section]);
+
+  useEffect(() => {
+    if (initialLoading) return;
+    if (section !== "integrationen" && section !== "kostenmonitor") return;
+    if (integrationsLoaded) return;
+    let active = true;
+    setBusy(true);
+    setStatus(section === "integrationen" ? "Anbindungen werden geladen..." : "Monitor wird vorbereitet...");
+    void loadIntegrations()
+      .then(() => {
+        if (active) setStatus(section === "integrationen" ? "Anbindungen geladen." : "Monitor bereit.");
+      })
+      .catch((error) => {
+        if (active) setStatus(error instanceof Error ? error.message : "Anbindungen konnten nicht geladen werden.");
+      })
+      .finally(() => {
+        if (active) setBusy(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [initialLoading, integrationsLoaded, loadIntegrations, section]);
 
   useEffect(() => {
     if (section !== "kostenmonitor") return;
@@ -1159,7 +1221,7 @@ export default function PartnerSettingsPanel({
                     method: "PATCH",
                     body: JSON.stringify(profileDraft),
                   });
-                  await loadAll();
+                  await loadProfile();
                 })
               }
             >
@@ -1234,7 +1296,7 @@ export default function PartnerSettingsPanel({
                               is_active: !selectedIntegration.is_active,
                             }),
                           });
-                          await loadAll(selectedIntegration.id);
+                          await loadIntegrations(selectedIntegration.id);
                         })
                       }
                     >
@@ -1251,7 +1313,7 @@ export default function PartnerSettingsPanel({
                           await api(`/api/partner/integrations/${selectedIntegration.id}${params}`, {
                             method: "DELETE",
                           });
-                          await loadAll(null);
+                          await loadIntegrations(null);
                         });
                       }}
                     >
@@ -1623,7 +1685,7 @@ export default function PartnerSettingsPanel({
                             }),
                           });
                           const savedId = response.integration?.id ?? selectedIntegration?.id ?? null;
-                          await loadAll(savedId);
+                          await loadIntegrations(savedId);
                           setIsCreateMode(false);
                         })
                       }
@@ -1767,7 +1829,7 @@ export default function PartnerSettingsPanel({
                                         secret: payload.secret ?? draft.secret,
                                       },
                                     }));
-                                    await loadAll(integration.id);
+                                    await loadIntegrations(integration.id);
                                   })
                                 }
                               >
@@ -1792,7 +1854,7 @@ export default function PartnerSettingsPanel({
                                         message: res.result?.message ?? "Kein Ergebnis",
                                       },
                                     }));
-                                    await loadAll(integration.id);
+                                    await loadIntegrations(integration.id);
                                   })
                                 }
                               >
@@ -1871,7 +1933,7 @@ export default function PartnerSettingsPanel({
                               ...prev,
                               [selectedIntegration.id]: String(payload.generated_secret ?? ""),
                             }));
-                            await loadAll(selectedIntegration.id);
+                            await loadIntegrations(selectedIntegration.id);
                           } finally {
                             setTriggerLoadingByIntegration((prev) => ({ ...prev, [selectedIntegration.id]: false }));
                           }
