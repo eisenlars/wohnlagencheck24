@@ -96,6 +96,14 @@ function enrichReadableSecrets(row: Record<string, unknown>) {
 
 function enrichStoredSecretFlags(row: Record<string, unknown>) {
   const auth = (row.auth_config ?? {}) as Record<string, unknown>;
+  const settings =
+    row.settings && typeof row.settings === "object" && !Array.isArray(row.settings)
+      ? (row.settings as Record<string, unknown>)
+      : {};
+  const trigger =
+    settings.trigger && typeof settings.trigger === "object" && !Array.isArray(settings.trigger)
+      ? (settings.trigger as Record<string, unknown>)
+      : {};
   const hasApiKey = Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
   const hasToken = Boolean(String(auth.token ?? auth.token_encrypted ?? "").trim());
   const hasSecret = Boolean(String(auth.secret ?? auth.secret_encrypted ?? "").trim());
@@ -104,6 +112,10 @@ function enrichStoredSecretFlags(row: Record<string, unknown>) {
     has_api_key: hasApiKey,
     has_token: hasToken,
     has_secret: hasSecret,
+    has_trigger_token: Boolean(String(trigger.token ?? settings.webhook_token ?? "").trim()),
+    has_trigger_secret: Boolean(
+      String(auth.webhook_secret ?? auth.webhook_secret_encrypted ?? "").trim(),
+    ),
   };
 }
 
@@ -276,7 +288,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      integration: maskIntegrationForResponse(data),
+      integration: maskIntegrationForResponse(
+        enrichStoredSecretFlags(enrichReadableSecrets(data)),
+      ),
     });
   } catch (error) {
     if (error instanceof Error) {

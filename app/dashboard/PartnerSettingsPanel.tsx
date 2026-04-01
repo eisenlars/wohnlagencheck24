@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { getProviderSpec, getProvidersForKind } from "@/lib/integrations/providers";
 import FullscreenLoader from "@/components/ui/FullscreenLoader";
+import IntegrationTriggerPanel from "@/components/network-partners/self-service/IntegrationTriggerPanel";
 export type SettingsSection = "konto" | "profil" | "integrationen" | "kostenmonitor";
 
 type PartnerProfile = {
@@ -32,7 +33,21 @@ type PartnerIntegration = {
   has_api_key?: boolean;
   has_token?: boolean;
   has_secret?: boolean;
+  has_trigger_token?: boolean;
+  has_trigger_secret?: boolean;
   last_sync_at?: string | null;
+};
+
+type TriggerConfig = {
+  provider: string;
+  token: string | null;
+  webhook_url: string | null;
+  has_secret: boolean;
+  is_configured: boolean;
+  last_received_at: string | null;
+  last_processed_at: string | null;
+  last_status: string | null;
+  events_today: number | null;
 };
 
 type IntegrationPolicy = {
@@ -352,11 +367,15 @@ function formatProviderLabel(provider: string): string {
   return provider || "LLM";
 }
 
-function getIntegrationMetaText(integration: Pick<PartnerIntegration, "kind" | "is_active" | "auth_type">): string {
+function getIntegrationMetaText(
+  integration: Pick<PartnerIntegration, "kind" | "is_active" | "auth_type" | "has_trigger_token" | "has_trigger_secret">,
+): string {
   const auth = String(integration.auth_type ?? "").toLowerCase();
   const authLabel = auth ? AUTH_TYPE_LABELS[auth] ?? auth : "nicht gesetzt";
   const direction = String(integration.kind ?? "").toLowerCase() === "local_site" ? "Ausspielkanal" : "Datenquelle";
-  return `Typ: ${getKindLabel(integration.kind)} · Rolle: ${direction} · Authentifizierung: ${authLabel} · Status: ${integration.is_active ? "aktiv" : "inaktiv"}`;
+  const triggerStatus =
+    integration.has_trigger_token && integration.has_trigger_secret ? "eingerichtet" : "offen";
+  return `Typ: ${getKindLabel(integration.kind)} · Rolle: ${direction} · Authentifizierung: ${authLabel} · Auto-Update: ${triggerStatus} · Status: ${integration.is_active ? "aktiv" : "inaktiv"}`;
 }
 
 function getSecretFieldMeta(
@@ -666,6 +685,9 @@ export default function PartnerSettingsPanel({
   const [secretDraft, setSecretDraft] = useState<Record<string, SecretDraft>>({});
   const [secretVisibility, setSecretVisibility] = useState<SecretVisibilityState>({});
   const [testResult, setTestResult] = useState<Record<string, { status: "ok" | "warning" | "error"; message: string }>>({});
+  const [triggerConfigByIntegration, setTriggerConfigByIntegration] = useState<Record<string, TriggerConfig>>({});
+  const [generatedTriggerSecretByIntegration, setGeneratedTriggerSecretByIntegration] = useState<Record<string, string>>({});
+  const [triggerLoadingByIntegration, setTriggerLoadingByIntegration] = useState<Record<string, boolean>>({});
   const [integrationPolicy, setIntegrationPolicy] = useState<IntegrationPolicy>({ llm_partner_managed_allowed: true });
   const [llmUsageMonth, setLlmUsageMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [llmUsagePeriod, setLlmUsagePeriod] = useState<"timeline" | "year">("timeline");
@@ -701,6 +723,40 @@ export default function PartnerSettingsPanel({
     () => integrations.find((entry) => entry.id === selectedIntegrationId) ?? null,
     [integrations, selectedIntegrationId],
   );
+
+  useEffect(() => {
+    let active = true;
+    async function loadTriggerConfig() {
+      const integrationId = selectedIntegration?.id ?? null;
+      const kind = String(selectedIntegration?.kind ?? "").toLowerCase();
+      if (!integrationId || kind !== "crm") return;
+      setTriggerLoadingByIntegration((prev) => ({ ...prev, [integrationId]: true }));
+      try {
+        const payload = await api<{ config?: TriggerConfig }>(
+          `/api/partner/integrations/${integrationId}/trigger-config`,
+        );
+        if (!active) return;
+        if (payload.config) {
+          setTriggerConfigByIntegration((prev) => ({ ...prev, [integrationId]: payload.config as TriggerConfig }));
+        }
+      } catch {
+        if (!active) return;
+        setTriggerConfigByIntegration((prev) => {
+          const next = { ...prev };
+          delete next[integrationId];
+          return next;
+        });
+      } finally {
+        if (active) {
+          setTriggerLoadingByIntegration((prev) => ({ ...prev, [integrationId]: false }));
+        }
+      }
+    }
+    void loadTriggerConfig();
+    return () => {
+      active = false;
+    };
+  }, [selectedIntegration?.id, selectedIntegration?.kind]);
   const hasActivePartnerLlm = useMemo(
     () => integrations.some((entry) => String(entry.kind ?? "").toLowerCase() === "llm" && entry.is_active === true),
     [integrations],
@@ -884,6 +940,7 @@ export default function PartnerSettingsPanel({
     setLlmCustomModelMode(false);
     setIntegrationFlowTab("basis");
     setIntegrationDraft(buildDefaultDraft("crm"));
+    setGeneratedTriggerSecretByIntegration({});
   }
 
   function selectIntegration(integration: PartnerIntegration) {
@@ -895,6 +952,11 @@ export default function PartnerSettingsPanel({
     setLlmCustomModelMode(false);
     setIntegrationFlowTab("basis");
     setIntegrationDraft(buildDraftFromIntegration(integration));
+    setGeneratedTriggerSecretByIntegration((prev) => {
+      const next = { ...prev };
+      delete next[integration.id];
+      return next;
+    });
   }
 
   function updateIntegrationProvider(nextProvider: string) {
@@ -1596,6 +1658,9 @@ export default function PartnerSettingsPanel({
                     const lastTestMessage = asText(settings.last_test_message);
                     const relevantSecretFields = getRelevantSecretFields(integration);
                     const supportsSecrets = relevantSecretFields.length > 0;
+                    const triggerConfig = triggerConfigByIntegration[integration.id] ?? null;
+                    const generatedTriggerSecret = generatedTriggerSecretByIntegration[integration.id] ?? null;
+                    const triggerLoading = triggerLoadingByIntegration[integration.id] === true;
                     return (
                       <>
                         {supportsSecrets && isLocalSiteIntegration ? (
@@ -1761,6 +1826,38 @@ export default function PartnerSettingsPanel({
                             </>
                           ) : null}
                         </div>
+                        {isCrmIntegration ? (
+                          <div style={{ marginTop: 28, border: "1px solid #e2e8f0", borderRadius: 14, padding: 16, background: "#fff" }}>
+                            <IntegrationTriggerPanel
+                              config={triggerConfig}
+                              generatedSecret={generatedTriggerSecret}
+                              disabled={busy}
+                              loading={triggerLoading}
+                              onGenerate={async () => {
+                                setTriggerLoadingByIntegration((prev) => ({ ...prev, [integration.id]: true }));
+                                try {
+                                  const payload = await api<{ config?: TriggerConfig; generated_secret?: string | null }>(
+                                    `/api/partner/integrations/${integration.id}/trigger-config`,
+                                    { method: "POST" },
+                                  );
+                                  if (payload.config) {
+                                    setTriggerConfigByIntegration((prev) => ({
+                                      ...prev,
+                                      [integration.id]: payload.config as TriggerConfig,
+                                    }));
+                                  }
+                                  setGeneratedTriggerSecretByIntegration((prev) => ({
+                                    ...prev,
+                                    [integration.id]: String(payload.generated_secret ?? ""),
+                                  }));
+                                  await loadAll(integration.id);
+                                } finally {
+                                  setTriggerLoadingByIntegration((prev) => ({ ...prev, [integration.id]: false }));
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : null}
                       </>
                     );
                   })()}
