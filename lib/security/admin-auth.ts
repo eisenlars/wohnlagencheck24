@@ -8,6 +8,14 @@ type AdminUser = {
   role: AdminRole;
 };
 
+type CachedAdminRole = {
+  role: AdminRole | null;
+  expiresAt: number;
+};
+
+const ADMIN_ROLE_CACHE_TTL_MS = 60_000;
+const adminRoleCache = new Map<string, CachedAdminRole>();
+
 function parseCsv(value: string): string[] {
   return String(value ?? "")
     .split(",")
@@ -34,6 +42,17 @@ export async function loadAdminRoleForUser(userId: string): Promise<AdminRole | 
   const normalized = String(userId ?? "").trim();
   if (!normalized) return null;
 
+  const staticRole = getAdminRoleForUser(normalized);
+  if (staticRole) {
+    return staticRole;
+  }
+
+  const cached = adminRoleCache.get(normalized);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) {
+    return cached.role;
+  }
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("admin_users")
@@ -41,14 +60,20 @@ export async function loadAdminRoleForUser(userId: string): Promise<AdminRole | 
     .eq("auth_user_id", normalized)
     .maybeSingle();
 
+  let resolvedRole: AdminRole | null = null;
   if (!error && data && typeof data === "object" && !Array.isArray(data)) {
     const role = String((data as { role?: string | null }).role ?? "").trim();
     if (role === "admin_super" || role === "admin_ops" || role === "admin_billing") {
-      return role;
+      resolvedRole = role;
     }
   }
 
-  return getAdminRoleForUser(normalized);
+  adminRoleCache.set(normalized, {
+    role: resolvedRole,
+    expiresAt: now + ADMIN_ROLE_CACHE_TTL_MS,
+  });
+
+  return resolvedRole;
 }
 
 export async function requireAdmin(required: AdminRole[] = ["admin_super", "admin_ops"]): Promise<AdminUser> {
