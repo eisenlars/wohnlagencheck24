@@ -229,7 +229,7 @@ function renderImportRules(
         {onOffice ? (
           <>
             <div style={helperTextStyle}>
-              Quelle: <code>estate</code>. Der Erstabruf läuft grob über <code>status = 1</code> und <code>verkauft = 0</code>. Das erkannte Statusfeld dient hier als optionale Verfeinerung, wenn ihr aktive Vermarktungszustände gezielt eingrenzen wollt.
+              Quelle: <code>estate</code>. Der Erstabruf läuft grob über <code>status = 1</code>. Das erkannte Statusfeld dient hier als optionale Verfeinerung, wenn ihr aktive Vermarktungszustände gezielt eingrenzen wollt.
             </div>
             {onOfficeEstateStatusFieldKey ? (
               <div style={helperTextStyle}>

@@ -138,7 +138,7 @@ function toSettings(settings: Record<string, unknown> | null): OnOfficeResourceS
         .map((value) => String(value ?? "").trim())
         .filter(Boolean)
     : [];
-  const listingExcludeSold = listingsCfg.exclude_sold !== false;
+  const listingExcludeSold = listingsCfg.exclude_sold === true;
   return {
     listing_status_field_key: listingStatusFieldKey,
     listing_active_status_values: Array.from(new Set(listingActiveStatusValues)),
@@ -712,7 +712,10 @@ export async function fetchOnOfficeEstates(
     "freitext_ausstattung",
     "img",
   ];
-  const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {});
+  const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
+    status: [{ op: "=", val: 1 }],
+    ...(settings.listing_exclude_sold ? { verkauft: [{ op: "=", val: 0 }] } : {}),
+  });
   const allowedStatusValues = new Set(settings.listing_active_status_values);
   if (!settings.listing_status_field_key || allowedStatusValues.size === 0) return records;
   return records.filter((record) => {
