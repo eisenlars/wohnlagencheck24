@@ -7790,9 +7790,9 @@ export default function AdminClient() {
                               }))
                             }
                             onDraftChange={(nextDraft) =>
-                              setCrmIntegrationDrafts((prev) => ({
+                              setCrmIntegrationDrafts((prev): Record<string, CrmIntegrationAdminDraft> => ({
                                 ...prev,
-                                [integration.id]: nextDraft,
+                                [integration.id]: nextDraft as CrmIntegrationAdminDraft,
                               }))
                             }
                             onSaveSettings={(integrationId, nextDraft) =>
