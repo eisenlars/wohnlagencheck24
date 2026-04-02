@@ -646,22 +646,9 @@ export default function AdminCrmIntegrationsPanel({
         setOnOfficeEstateStatusFieldLabel(typeof payload?.estate_status_field_label === "string" ? payload.estate_status_field_label : null);
         setOnOfficeEstateStatusError(null);
         const detectedFieldKey = typeof payload?.estate_status_field_key === "string" ? payload.estate_status_field_key.trim() : "";
-        const detectedActiveValue =
-          (Array.isArray(payload?.estate_status_options) ? payload.estate_status_options : []).find((option) => {
-            const label = option.label.toLowerCase();
-            const value = option.value.toLowerCase();
-            return (label.includes("aktiv") || value.includes("aktiv"))
-              && !label.includes("inaktiv")
-              && !value.includes("inaktiv")
-              && !label.includes("archiv")
-              && !value.includes("archiv");
-          })?.value ?? "";
         const patch: Partial<CrmIntegrationAdminDraft> = {};
         if (!String(draft.onOfficeListingsFieldKey ?? "").trim() && detectedFieldKey) {
           patch.onOfficeListingsFieldKey = detectedFieldKey;
-        }
-        if (!String(draft.onOfficeListingsActiveStatusValues ?? "").trim() && detectedActiveValue) {
-          patch.onOfficeListingsActiveStatusValues = detectedActiveValue;
         }
         if (Object.keys(patch).length > 0) {
           onDraftChange(updateDraft(draft, patch));
