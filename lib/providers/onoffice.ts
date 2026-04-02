@@ -41,7 +41,15 @@ export type OnOfficeFieldOption = {
   label: string;
 };
 
+export type OnOfficeEstateStatusFieldConfig = {
+  field_key: string | null;
+  field_label: string | null;
+  options: OnOfficeFieldOption[];
+  has_reference_status_candidates: boolean;
+};
+
 type OnOfficeResourceSettings = {
+  status_field_key: string;
   sold_status_id: number;
   rented_status_id: number;
 };
@@ -122,9 +130,11 @@ function buildOnOfficeGetRequest(
 function toSettings(settings: Record<string, unknown> | null): OnOfficeResourceSettings {
   const resourceFilters = (settings?.resource_filters ?? {}) as Record<string, unknown>;
   const referencesCfg = (resourceFilters.references ?? {}) as Record<string, unknown>;
+  const statusFieldKey = String(referencesCfg.status_field_key ?? "objektstatus").trim() || "objektstatus";
   const soldRaw = Number(referencesCfg.sold_status_id ?? 5);
   const rentedRaw = Number(referencesCfg.rented_status_id ?? 6);
   return {
+    status_field_key: statusFieldKey,
     sold_status_id: Number.isFinite(soldRaw) ? soldRaw : 5,
     rented_status_id: Number.isFinite(rentedRaw) ? rentedRaw : 6,
   };
@@ -553,6 +563,21 @@ export async function fetchOnOfficeEstateStatusOptions(
   token: string,
   secret: string,
 ): Promise<OnOfficeFieldOption[]> {
+  const config = await fetchOnOfficeEstateStatusFieldConfig(integration, token, secret);
+  return config.options;
+}
+
+function hasReferenceStatusCandidates(options: OnOfficeFieldOption[]): boolean {
+  return options.some((option) =>
+    /(verkauf|verkauft|vermiet|sold|rented|rent)/i.test(`${option.value} ${option.label}`),
+  );
+}
+
+export async function fetchOnOfficeEstateStatusFieldConfig(
+  integration: PartnerIntegration,
+  token: string,
+  secret: string,
+): Promise<OnOfficeEstateStatusFieldConfig> {
   const base = getOnOfficeApiBaseUrl(integration);
   const body = buildOnOfficeGetRequest(token, secret, RESOURCE_FIELDS, {
     modules: ["estate"],
@@ -572,21 +597,64 @@ export async function fetchOnOfficeEstateStatusOptions(
 
   const json = (await res.json()) as OnOfficeResponse;
   const records = json?.response?.results?.[0]?.data?.records ?? [];
-  if (!Array.isArray(records)) return [];
-
-  for (const record of records) {
-    const elements = (record.elements ?? {}) as Record<string, unknown>;
-    const fieldName = String(elements.fieldname ?? elements.name ?? elements.field ?? record.type ?? "").trim().toLowerCase();
-    if (fieldName !== "objektstatus") continue;
-    return extractPermittedValues(
-      elements.permittedvalues
-      ?? elements.permitted_values
-      ?? elements.options
-      ?? elements.values,
-    );
+  if (!Array.isArray(records) || records.length === 0) {
+    return {
+      field_key: null,
+      field_label: null,
+      options: [],
+      has_reference_status_candidates: false,
+    };
   }
 
-  return [];
+  const moduleRecord = records.find((record) => String(record.id ?? "").trim().toLowerCase() === "estate") ?? records[0];
+  const moduleElements = (moduleRecord?.elements ?? {}) as Record<string, unknown>;
+  const candidates: Array<{ fieldKey: string; fieldLabel: string | null; options: OnOfficeFieldOption[]; priority: number }> = [];
+
+  for (const [fieldKey, value] of Object.entries(moduleElements)) {
+    if (!value || typeof value !== "object") continue;
+    const field = value as Record<string, unknown>;
+    const fieldType = String(field.type ?? "").trim().toLowerCase();
+    if (fieldType !== "singleselect") continue;
+
+    const fieldLabel = String(field.label ?? "").trim() || null;
+    const options = extractPermittedValues(
+      field.permittedvalues
+      ?? field.permitted_values
+      ?? field.options
+      ?? field.values,
+    );
+    if (options.length === 0) continue;
+
+    const normalizedKey = fieldKey.trim().toLowerCase();
+    const normalizedLabel = String(fieldLabel ?? "").trim().toLowerCase();
+    const priority =
+      normalizedKey === "objektstatus" ? 100
+        : normalizedKey === "status2" ? 90
+          : normalizedKey === "status" ? 80
+            : normalizedLabel === "status" ? 70
+              : normalizedKey.includes("status") || normalizedLabel.includes("status") ? 60
+                : 0;
+    if (priority === 0) continue;
+
+    candidates.push({ fieldKey, fieldLabel, options, priority });
+  }
+
+  const selected = candidates.sort((left, right) => right.priority - left.priority)[0];
+  if (!selected) {
+    return {
+      field_key: null,
+      field_label: null,
+      options: [],
+      has_reference_status_candidates: false,
+    };
+  }
+
+  return {
+    field_key: selected.fieldKey,
+    field_label: selected.fieldLabel,
+    options: selected.options,
+    has_reference_status_candidates: hasReferenceStatusCandidates(selected.options),
+  };
 }
 
 export async function fetchOnOfficeEstates(
@@ -647,12 +715,12 @@ export async function fetchOnOfficeReferences(
     "img",
   ];
   const soldRecords = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
-    objektstatus: [{ op: "=", val: settings.sold_status_id }],
+    [settings.status_field_key]: [{ op: "=", val: settings.sold_status_id }],
   });
   if (settings.rented_status_id === settings.sold_status_id) return soldRecords;
 
   const rentedRecords = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
-    objektstatus: [{ op: "=", val: settings.rented_status_id }],
+    [settings.status_field_key]: [{ op: "=", val: settings.rented_status_id }],
   });
 
   const merged = new Map<string, OnOfficeRecord>();

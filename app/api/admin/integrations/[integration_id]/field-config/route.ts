@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { checkAdminApiRateLimit } from "@/lib/security/rate-limit";
-import { fetchOnOfficeEstateStatusOptions } from "@/lib/providers/onoffice";
+import { fetchOnOfficeEstateStatusFieldConfig } from "@/lib/providers/onoffice";
 import type { PartnerIntegration } from "@/lib/providers/types";
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
 import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
@@ -73,11 +73,14 @@ export async function GET(
       settings: (data.settings ?? null) as Record<string, unknown> | null,
     };
 
-    const estateStatusOptions = await fetchOnOfficeEstateStatusOptions(integration, token, secret);
+    const estateStatusConfig = await fetchOnOfficeEstateStatusFieldConfig(integration, token, secret);
 
     return NextResponse.json({
       ok: true,
-      estate_status_options: estateStatusOptions,
+      estate_status_field_key: estateStatusConfig.field_key,
+      estate_status_field_label: estateStatusConfig.field_label,
+      estate_status_options: estateStatusConfig.options,
+      has_reference_status_candidates: estateStatusConfig.has_reference_status_candidates,
     });
   } catch (error) {
     if (error instanceof Error) {

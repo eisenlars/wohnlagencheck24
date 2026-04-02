@@ -64,6 +64,7 @@ type CrmIntegrationAdminDraft = {
   referencesArchived: string;
   referencesStatusIds: string;
   referencesCustomFieldKey: string;
+  onOfficeReferenceFieldKey: string;
   onOfficeReferenceSoldStatusId: string;
   onOfficeReferenceRentedStatusId: string;
   guardedUnitsTargetObjects: string;
@@ -100,6 +101,13 @@ type IntegrationRecord = {
 type OnOfficeFieldOption = {
   value: string;
   label: string;
+};
+
+type OnOfficeFieldConfigPayload = {
+  estate_status_field_key?: string | null;
+  estate_status_field_label?: string | null;
+  estate_status_options?: OnOfficeFieldOption[];
+  has_reference_status_candidates?: boolean;
 };
 
 type AdminCrmIntegrationsPanelProps = {
@@ -208,6 +216,9 @@ function renderImportRules(
   onOfficeEstateStatusOptions: OnOfficeFieldOption[],
   onOfficeEstateStatusLoading: boolean,
   onOfficeEstateStatusError: string | null,
+  onOfficeEstateStatusFieldKey: string | null,
+  onOfficeEstateStatusFieldLabel: string | null,
+  onOfficeHasReferenceStatusCandidates: boolean,
   onChange: (nextDraft: CrmIntegrationAdminDraft) => void,
 ) {
   const onOffice = isOnOfficeProvider(provider);
@@ -240,13 +251,38 @@ function renderImportRules(
           <div style={helperTextStyle}>
             Referenzen werden aus <code>estate</code>-Datensätzen abgeleitet. Dafür nutzt Wohnlagencheck24 die in onOffice gepflegten Objektstatus-IDs für verkauft und vermietet.
           </div>
+          {onOfficeEstateStatusFieldKey ? (
+            <div style={helperTextStyle}>
+              Erkanntes Statusfeld: <code>{onOfficeEstateStatusFieldKey}</code>
+              {onOfficeEstateStatusFieldLabel ? ` (${onOfficeEstateStatusFieldLabel})` : ""}
+            </div>
+          ) : null}
           {onOfficeEstateStatusLoading ? (
             <div style={helperTextStyle}>Statuswerte aus onOffice werden geladen.</div>
           ) : null}
           {onOfficeEstateStatusError ? (
             <div style={helperTextErrorStyle}>{onOfficeEstateStatusError}</div>
           ) : null}
-          {onOfficeEstateStatusOptions.length > 0 ? (
+          {!onOfficeEstateStatusLoading && !onOfficeEstateStatusError && onOfficeEstateStatusOptions.length === 0 ? (
+            <div style={helperTextErrorStyle}>
+              Es konnten keine statusbasierten Auswahlwerte aus onOffice gelesen werden. Bitte vorerst das Feld und die IDs manuell pflegen.
+            </div>
+          ) : null}
+          {onOfficeEstateStatusOptions.length > 0 && !onOfficeHasReferenceStatusCandidates ? (
+            <div style={helperTextErrorStyle}>
+              Der aktuelle onOffice-Status enthält keine eindeutigen Werte für verkauft oder vermietet. Bitte Referenzstatus vorerst manuell pflegen.
+            </div>
+          ) : null}
+          <label style={labelStyle}>
+            Statusfeld für Referenzen
+            <input
+              style={inputStyle}
+              value={draft.onOfficeReferenceFieldKey}
+              onChange={(event) => onChange(updateDraft(draft, { onOfficeReferenceFieldKey: event.target.value }))}
+              placeholder={onOfficeEstateStatusFieldKey ?? "z. B. status2"}
+            />
+          </label>
+          {onOfficeEstateStatusOptions.length > 0 && onOfficeHasReferenceStatusCandidates ? (
             <>
               <label style={labelStyle}>
                 verkauft
@@ -593,6 +629,9 @@ export default function AdminCrmIntegrationsPanel({
   const [detailModal, setDetailModal] = useState<DetailModalState>(null);
   const [onOfficeEstateStatusOptions, setOnOfficeEstateStatusOptions] = useState<OnOfficeFieldOption[]>([]);
   const [onOfficeEstateStatusError, setOnOfficeEstateStatusError] = useState<string | null>(null);
+  const [onOfficeEstateStatusFieldKey, setOnOfficeEstateStatusFieldKey] = useState<string | null>(null);
+  const [onOfficeEstateStatusFieldLabel, setOnOfficeEstateStatusFieldLabel] = useState<string | null>(null);
+  const [onOfficeHasReferenceStatusCandidates, setOnOfficeHasReferenceStatusCandidates] = useState(false);
 
   const isRunningThisResource = syncSummary?.status === "running";
   const statusColor = getStatusColor(syncSummary);
@@ -616,19 +655,26 @@ export default function AdminCrmIntegrationsPanel({
       cache: "no-store",
     })
       .then(async (res) => {
-        const payload = await res.json().catch(() => null) as {
-          error?: string;
-          estate_status_options?: OnOfficeFieldOption[];
-        } | null;
+        const payload = await res.json().catch(() => null) as ({ error?: string } & OnOfficeFieldConfigPayload) | null;
         if (!res.ok) {
           throw new Error(String(payload?.error ?? `HTTP ${res.status}`));
         }
         if (!active) return;
         setOnOfficeEstateStatusOptions(Array.isArray(payload?.estate_status_options) ? payload.estate_status_options : []);
+        setOnOfficeEstateStatusFieldKey(typeof payload?.estate_status_field_key === "string" ? payload.estate_status_field_key : null);
+        setOnOfficeEstateStatusFieldLabel(typeof payload?.estate_status_field_label === "string" ? payload.estate_status_field_label : null);
+        setOnOfficeHasReferenceStatusCandidates(payload?.has_reference_status_candidates === true);
+        setOnOfficeEstateStatusError(null);
+        if (!String(draft.onOfficeReferenceFieldKey ?? "").trim() && typeof payload?.estate_status_field_key === "string" && payload.estate_status_field_key.trim()) {
+          onDraftChange(updateDraft(draft, { onOfficeReferenceFieldKey: payload.estate_status_field_key }));
+        }
       })
       .catch((error: unknown) => {
         if (!active) return;
         setOnOfficeEstateStatusOptions([]);
+        setOnOfficeEstateStatusFieldKey(null);
+        setOnOfficeEstateStatusFieldLabel(null);
+        setOnOfficeHasReferenceStatusCandidates(false);
         setOnOfficeEstateStatusError(error instanceof Error ? error.message : "Statuswerte konnten nicht geladen werden.");
       })
       .finally(() => {
@@ -638,7 +684,7 @@ export default function AdminCrmIntegrationsPanel({
     return () => {
       active = false;
     };
-  }, [integration.id, integration.provider]);
+  }, [draft.onOfficeReferenceFieldKey, integration.id, integration.provider, onDraftChange]);
 
   return (
     <div style={panelStyle}>
@@ -715,6 +761,9 @@ export default function AdminCrmIntegrationsPanel({
                   onOfficeEstateStatusOptions,
                   onOfficeEstateStatusLoading,
                   onOfficeEstateStatusError,
+                  onOfficeEstateStatusFieldKey,
+                  onOfficeEstateStatusFieldLabel,
+                  onOfficeHasReferenceStatusCandidates,
                   onDraftChange,
                 )}
               </div>

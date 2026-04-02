@@ -204,6 +204,7 @@ type CrmIntegrationAdminDraft = {
   referencesArchived: string;
   referencesStatusIds: string;
   referencesCustomFieldKey: string;
+  onOfficeReferenceFieldKey: string;
   onOfficeReferenceSoldStatusId: string;
   onOfficeReferenceRentedStatusId: string;
   guardedUnitsTargetObjects: string;
@@ -1478,6 +1479,7 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     referencesArchived: asText(references.archived) ?? "",
     referencesStatusIds: formatCsvInput(references.status_ids),
     referencesCustomFieldKey: asText(references.custom_field_key) ?? "",
+    onOfficeReferenceFieldKey: asText(references.status_field_key) ?? "",
     onOfficeReferenceSoldStatusId: asScalarInput(references.sold_status_id),
     onOfficeReferenceRentedStatusId: asScalarInput(references.rented_status_id),
     guardedUnitsTargetObjects: readTargetObjects(units),
@@ -1534,6 +1536,7 @@ function applyCrmAdminDraftToSettings(
   else delete listings.status_ids;
 
   if (integration.provider === "onoffice") {
+    const statusFieldKey = asText(draft.onOfficeReferenceFieldKey);
     const soldStatusId = parseOptionalPositiveInteger(
       draft.onOfficeReferenceSoldStatusId,
       "onOffice Objektstatus-ID verkauft",
@@ -1542,6 +1545,8 @@ function applyCrmAdminDraftToSettings(
       draft.onOfficeReferenceRentedStatusId,
       "onOffice Objektstatus-ID vermietet",
     );
+    if (statusFieldKey) references.status_field_key = statusFieldKey;
+    else delete references.status_field_key;
     if (soldStatusId !== null) references.sold_status_id = soldStatusId;
     else delete references.sold_status_id;
     if (rentedStatusId !== null) references.rented_status_id = rentedStatusId;
