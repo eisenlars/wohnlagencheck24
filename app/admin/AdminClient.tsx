@@ -3574,11 +3574,15 @@ export default function AdminClient() {
   async function loadPartnerDetails(partnerId: string) {
     if (!partnerId) return;
     const partnerData = await api<{ partner: Partner; area_mappings: AreaMapping[] }>(`/api/admin/partners/${partnerId}`);
-    setSelectedPartner(partnerData.partner);
-    setAreaMappings(partnerData.area_mappings ?? []);
+    applySelectedPartnerBaseState(partnerData.partner, partnerData.area_mappings ?? []);
+  }
+
+  function applySelectedPartnerBaseState(partner: Partner | null, areaMappingsInput: AreaMapping[]) {
+    setSelectedPartner(partner);
+    setAreaMappings(areaMappingsInput);
     setAreaMappingsDetailedForPartnerId("");
     setAreaMappingsDetailLoading(false);
-    const reviewCandidate = (partnerData.area_mappings ?? []).find((mapping) => {
+    const reviewCandidate = areaMappingsInput.find((mapping) => {
       const state = normalizeActivationStatus(
         mapping.activation_status,
         Boolean(mapping.is_active),
@@ -3593,15 +3597,43 @@ export default function AdminClient() {
     setReviewAreaId(String(reviewCandidate?.area_id ?? ""));
     setReviewData(null);
     setReviewNoteDraft("");
+    if (!partner) return;
     setEditPartner({
-      company_name: partnerData.partner.company_name ?? "",
-      contact_email: partnerData.partner.contact_email ?? "",
-      contact_first_name: partnerData.partner.contact_first_name ?? "",
-      contact_last_name: partnerData.partner.contact_last_name ?? "",
-      website_url: partnerData.partner.website_url ?? "",
-      is_active: Boolean(partnerData.partner.is_active),
-      llm_partner_managed_allowed: Boolean(partnerData.partner.llm_partner_managed_allowed),
+      company_name: partner.company_name ?? "",
+      contact_email: partner.contact_email ?? "",
+      contact_first_name: partner.contact_first_name ?? "",
+      contact_last_name: partner.contact_last_name ?? "",
+      website_url: partner.website_url ?? "",
+      is_active: Boolean(partner.is_active),
+      llm_partner_managed_allowed: Boolean(partner.llm_partner_managed_allowed),
     });
+  }
+
+  async function loadPartnerBootstrap(selectId?: string) {
+    const params = new URLSearchParams();
+    params.set("include_inactive", "1");
+    if (selectId) params.set("selected_partner_id", selectId);
+    const data = await api<{
+      partners: Partner[];
+      selected_partner_id?: string | null;
+      selected_partner?: Partner | null;
+      selected_area_mappings?: AreaMapping[];
+    }>(`/api/admin/partners/bootstrap?${params.toString()}`);
+    const nextPartners = data.partners ?? [];
+    setPartners(nextPartners);
+    setPartnerListRows(derivePartnerListRows(nextPartners));
+    const nextSelectedId = String(data.selected_partner_id ?? "").trim();
+    if (nextSelectedId && data.selected_partner) {
+      setSelectedPartnerId(nextSelectedId);
+      applySelectedPartnerBaseState(data.selected_partner, data.selected_area_mappings ?? []);
+      return;
+    }
+    if (selectId) {
+      setSelectedPartnerId("");
+      setSelectedPartner(null);
+      setAreaMappings([]);
+      resetSelectedPartnerAuxiliaryData();
+    }
   }
 
   async function loadPartnerAreaMappingsDetails(partnerId: string) {
@@ -5054,10 +5086,11 @@ export default function AdminClient() {
         const shouldLoadSelectedPartner =
           Boolean(restoredPartnerId)
           && (restoredActiveView === "partner_edit" || restoredActiveView === "partner_purge");
-        await loadPartners(
-          shouldLoadSelectedPartner ? restoredPartnerId : undefined,
-          { refreshSelectedDetails: shouldLoadSelectedPartner },
-        );
+        if (shouldLoadSelectedPartner) {
+          await loadPartnerBootstrap(restoredPartnerId);
+        } else {
+          await loadPartners();
+        }
         if (restoredActiveView === "audit") {
           await loadAuditLogs();
         }
@@ -6146,11 +6179,21 @@ export default function AdminClient() {
                 return;
               }
               if (selectedPartnerId) {
-                await selectPartnerView(selectedPartnerId, "partner_edit");
+                await loadPartnerBootstrap(selectedPartnerId);
+                setPartnerTab("profile");
+                setIntegrationsAdminTab("overview");
+                setReviewActionError(null);
+                setReviewContentDismissed(false);
+                setActiveView("partner_edit");
                 return;
               }
               if (portalPartner?.id) {
-                await selectPartnerView(portalPartner.id, "partner_edit");
+                await loadPartnerBootstrap(portalPartner.id);
+                setPartnerTab("profile");
+                setIntegrationsAdminTab("overview");
+                setReviewActionError(null);
+                setReviewContentDismissed(false);
+                setActiveView("partner_edit");
                 return;
               }
               setActiveView("partner_edit");
