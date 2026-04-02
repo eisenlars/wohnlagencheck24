@@ -11,6 +11,20 @@ type PartnerAreaSummary = {
   has_assignment: boolean;
 };
 
+type PartnerRow = {
+  id: string;
+  company_name: string;
+  contact_email: string | null;
+  contact_first_name: string | null;
+  contact_last_name: string | null;
+  website_url: string | null;
+  is_active: boolean;
+  is_system_default: boolean;
+  llm_partner_managed_allowed: boolean;
+  llm_mode_default: string;
+  created_at: string | null;
+};
+
 function roundTiming(value: number): number {
   return Number(value.toFixed(2));
 }
@@ -68,6 +82,26 @@ function withPartnerFallback<T extends Record<string, unknown>>(row: T, includeI
     is_system_default: Boolean((row as { is_system_default?: unknown }).is_system_default),
     llm_partner_managed_allowed: Boolean((row as { llm_partner_managed_allowed?: unknown }).llm_partner_managed_allowed),
     llm_mode_default: String((row as { llm_mode_default?: unknown }).llm_mode_default ?? "central_managed"),
+  };
+}
+
+function normalizePartnerRow(value: unknown, includeIsActive: boolean): PartnerRow {
+  const row = withPartnerFallback(
+    (value && typeof value === "object" ? value : {}) as Record<string, unknown>,
+    includeIsActive,
+  );
+  return {
+    id: String(row.id ?? ""),
+    company_name: String(row.company_name ?? ""),
+    contact_email: row.contact_email == null ? null : String(row.contact_email),
+    contact_first_name: row.contact_first_name == null ? null : String(row.contact_first_name),
+    contact_last_name: row.contact_last_name == null ? null : String(row.contact_last_name),
+    website_url: row.website_url == null ? null : String(row.website_url),
+    is_active: Boolean(row.is_active),
+    is_system_default: Boolean(row.is_system_default),
+    llm_partner_managed_allowed: Boolean(row.llm_partner_managed_allowed),
+    llm_mode_default: String(row.llm_mode_default ?? "central_managed"),
+    created_at: row.created_at == null ? null : String(row.created_at),
   };
 }
 
@@ -260,10 +294,7 @@ export async function GET(req: Request) {
         ].join(", "));
       }
       const fallback = await fallbackQuery;
-      partnersData = (fallback.data ?? []).map((row) => withPartnerFallback(
-        row as unknown as Record<string, unknown>,
-        !missingIsActive,
-      ));
+      partnersData = (fallback.data ?? []).map((row) => normalizePartnerRow(row, !missingIsActive));
       partnersError = fallback.error;
     }
     mark("partners_query_ms", partnersQueryStartedAt);
