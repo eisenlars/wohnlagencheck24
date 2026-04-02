@@ -273,6 +273,8 @@ export async function GET(
     const requestStartedAt = performance.now();
     const url = new URL(req.url);
     const debugTiming = url.searchParams.get("debug_timing") === "1";
+    const includeAreaDetails = url.searchParams.get("include_area_details") === "1";
+    const skipPartner = url.searchParams.get("skip_partner") === "1";
     const timings: Record<string, number> = {};
     const mark = (key: string, startedAt: number) => {
       if (!debugTiming) return;
@@ -307,53 +309,71 @@ export async function GET(
     }
 
     const admin = createAdminClient();
-    const partnerQueryStartedAt = performance.now();
-    let { data: partner, error: partnerError } = await admin
-      .from("partners")
-      .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, is_system_default, llm_partner_managed_allowed, llm_mode_default, created_at")
-      .eq("id", partnerId)
-      .maybeSingle();
-
-    if (partnerError && (isMissingIsActiveColumn(partnerError) || isMissingPartnerNameColumns(partnerError) || isMissingPartnerLlmPolicyColumns(partnerError) || isMissingPartnerSystemDefaultColumn(partnerError))) {
-      const missingIsActive = isMissingIsActiveColumn(partnerError);
-      const missingNames = isMissingPartnerNameColumns(partnerError);
-      const missingLlm = isMissingPartnerLlmPolicyColumns(partnerError);
-      const missingSystemDefault = isMissingPartnerSystemDefaultColumn(partnerError);
-      const fallbackSelect = [
-        "id",
-        "company_name",
-        "contact_email",
-        ...(!missingNames ? ["contact_first_name", "contact_last_name"] : []),
-        "website_url",
-        ...(!missingIsActive ? ["is_active"] : []),
-        ...(!missingSystemDefault ? ["is_system_default"] : []),
-        ...(!missingLlm ? ["llm_partner_managed_allowed", "llm_mode_default"] : []),
-        "created_at",
-      ].join(", ");
-      const fallback = await admin
+    let partner: Record<string, unknown> | null = null;
+    if (!skipPartner) {
+      const partnerQueryStartedAt = performance.now();
+      let { data: partnerData, error: partnerError } = await admin
         .from("partners")
-        .select(fallbackSelect)
+        .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, is_system_default, llm_partner_managed_allowed, llm_mode_default, created_at")
         .eq("id", partnerId)
         .maybeSingle();
-      partner = fallback.data
-        ? (withPartnerFallback(
-            fallback.data as unknown as Record<string, unknown>,
-            !missingIsActive,
-          ) as typeof partner)
-        : null;
-      partnerError = fallback.error;
-    }
-    mark("partner_query_ms", partnerQueryStartedAt);
 
-    if (partnerError) return NextResponse.json({ error: partnerError.message }, { status: 500 });
-    if (!partner) return NextResponse.json({ error: "Partner not found" }, { status: 404 });
+      if (partnerError && (isMissingIsActiveColumn(partnerError) || isMissingPartnerNameColumns(partnerError) || isMissingPartnerLlmPolicyColumns(partnerError) || isMissingPartnerSystemDefaultColumn(partnerError))) {
+        const missingIsActive = isMissingIsActiveColumn(partnerError);
+        const missingNames = isMissingPartnerNameColumns(partnerError);
+        const missingLlm = isMissingPartnerLlmPolicyColumns(partnerError);
+        const missingSystemDefault = isMissingPartnerSystemDefaultColumn(partnerError);
+        const fallbackSelect = [
+          "id",
+          "company_name",
+          "contact_email",
+          ...(!missingNames ? ["contact_first_name", "contact_last_name"] : []),
+          "website_url",
+          ...(!missingIsActive ? ["is_active"] : []),
+          ...(!missingSystemDefault ? ["is_system_default"] : []),
+          ...(!missingLlm ? ["llm_partner_managed_allowed", "llm_mode_default"] : []),
+          "created_at",
+        ].join(", ");
+        const fallback = await admin
+          .from("partners")
+          .select(fallbackSelect)
+          .eq("id", partnerId)
+          .maybeSingle();
+        partnerData = fallback.data
+          ? (withPartnerFallback(
+              fallback.data as unknown as Record<string, unknown>,
+              !missingIsActive,
+            ) as typeof partnerData)
+          : null;
+        partnerError = fallback.error;
+      }
+      mark("partner_query_ms", partnerQueryStartedAt);
+
+      if (partnerError) return NextResponse.json({ error: partnerError.message }, { status: 500 });
+      if (!partnerData) return NextResponse.json({ error: "Partner not found" }, { status: 404 });
+      partner = partnerData as Record<string, unknown>;
+    }
 
     const mappingsQueryStartedAt = performance.now();
-    let { data: mappings, error: mappingError } = await admin
-      .from("partner_area_map")
-      .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, partner_preview_signoff_at, created_at, areas(name, slug, parent_slug, bundesland_slug)")
-      .eq("auth_user_id", partnerId)
-      .order("area_id", { ascending: true });
+    let mappings: unknown[] | null = null;
+    let mappingError: { message?: string } | null = null;
+    if (includeAreaDetails) {
+      const query = await admin
+        .from("partner_area_map")
+        .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, partner_preview_signoff_at, created_at, areas(name, slug, parent_slug, bundesland_slug)")
+        .eq("auth_user_id", partnerId)
+        .order("area_id", { ascending: true });
+      mappings = query.data;
+      mappingError = query.error;
+    } else {
+      const query = await admin
+        .from("partner_area_map")
+        .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status")
+        .eq("auth_user_id", partnerId)
+        .order("area_id", { ascending: true });
+      mappings = query.data;
+      mappingError = query.error;
+    }
 
     if (mappingError && (
       isMissingAreaActivationStatusColumn(mappingError)
@@ -382,7 +402,7 @@ export async function GET(
       const missingPreviewSignoff = isMissingAreaPreviewSignoffColumn(mappingError);
       const missingVisibilityMode = isMissingAreaVisibilityModeColumn(mappingError);
 
-      if ((missingPreviewSignoff || missingVisibilityMode) && !missingActivationStatus) {
+      if (includeAreaDetails && (missingPreviewSignoff || missingVisibilityMode) && !missingActivationStatus) {
         const fallback = await admin
           .from("partner_area_map")
           .select([
@@ -420,7 +440,7 @@ export async function GET(
           return mappedRow;
         });
         mappingError = fallback.error;
-      } else {
+      } else if (includeAreaDetails) {
         const fallback = await admin
           .from("partner_area_map")
           .select("id, auth_user_id, area_id, is_active, created_at, areas(name, slug, parent_slug, bundesland_slug)")
@@ -440,6 +460,30 @@ export async function GET(
             partner_preview_signoff_at: null,
             created_at: typeof baseRow.created_at === "string" ? baseRow.created_at : null,
             areas: normalizeAreaRelation(baseRow.areas),
+          };
+          return mappedRow;
+        });
+        mappingError = fallback.error;
+      } else {
+        const fallback = await admin
+          .from("partner_area_map")
+          .select("id, auth_user_id, area_id, is_active")
+          .eq("auth_user_id", partnerId)
+          .order("area_id", { ascending: true });
+        mappings = (fallback.data ?? []).map((row) => {
+          const baseRow = (row && typeof row === "object" ? row : {}) as Record<string, unknown>;
+          const mappedRow: PartnerDetailAreaMappingRow = {
+            id: typeof baseRow.id === "string" ? baseRow.id : null,
+            auth_user_id: typeof baseRow.auth_user_id === "string" ? baseRow.auth_user_id : null,
+            area_id: typeof baseRow.area_id === "string" ? baseRow.area_id : null,
+            is_active: typeof baseRow.is_active === "boolean" ? baseRow.is_active : null,
+            activation_status: null,
+            is_public_live: null,
+            offer_visibility_mode: null,
+            request_visibility_mode: null,
+            partner_preview_signoff_at: null,
+            created_at: null,
+            areas: [],
           };
           return mappedRow;
         });

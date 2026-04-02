@@ -204,6 +204,8 @@ type CrmIntegrationAdminDraft = {
   referencesArchived: string;
   referencesStatusIds: string;
   referencesCustomFieldKey: string;
+  onOfficeListingsFieldKey: string;
+  onOfficeListingsActiveStatusValues: string;
   onOfficeReferenceFieldKey: string;
   onOfficeReferenceSoldStatusId: string;
   onOfficeReferenceRentedStatusId: string;
@@ -1234,6 +1236,14 @@ function parseCsvNumberList(value: string, label: string): number[] {
   return numbers;
 }
 
+function parseCsvStringList(value: string): string[] {
+  const parts = String(value ?? "")
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return Array.from(new Set(parts));
+}
+
 function formatSyncResultMessage(result: CrmSyncResultPayload): string {
   if (result.skipped) {
     if (result.reason === "integration inactive") return "Die CRM-Anbindung ist derzeit deaktiviert.";
@@ -1479,6 +1489,8 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     referencesArchived: asText(references.archived) ?? "",
     referencesStatusIds: formatCsvInput(references.status_ids),
     referencesCustomFieldKey: asText(references.custom_field_key) ?? "",
+    onOfficeListingsFieldKey: asText(listings.status_field_key) ?? "",
+    onOfficeListingsActiveStatusValues: formatCsvInput(listings.active_status_values),
     onOfficeReferenceFieldKey: asText(references.status_field_key) ?? "",
     onOfficeReferenceSoldStatusId: asScalarInput(references.sold_status_id),
     onOfficeReferenceRentedStatusId: asScalarInput(references.rented_status_id),
@@ -1531,30 +1543,29 @@ function applyCrmAdminDraftToSettings(
   const referenceAutoSync = { ...asObject(referenceResource.auto_sync) };
   const requestAutoSync = { ...asObject(requestResource.auto_sync) };
 
-  const listingStatusIds = parseCsvNumberList(draft.listingsStatusIds, "Status-IDs für Angebote");
-  if (listingStatusIds.length > 0) listings.status_ids = listingStatusIds;
-  else delete listings.status_ids;
-
   if (integration.provider === "onoffice") {
-    const statusFieldKey = asText(draft.onOfficeReferenceFieldKey);
-    const soldStatusId = parseOptionalPositiveInteger(
-      draft.onOfficeReferenceSoldStatusId,
-      "onOffice Objektstatus-ID verkauft",
-    );
-    const rentedStatusId = parseOptionalPositiveInteger(
-      draft.onOfficeReferenceRentedStatusId,
-      "onOffice Objektstatus-ID vermietet",
-    );
-    if (statusFieldKey) references.status_field_key = statusFieldKey;
-    else delete references.status_field_key;
-    if (soldStatusId !== null) references.sold_status_id = soldStatusId;
-    else delete references.sold_status_id;
-    if (rentedStatusId !== null) references.rented_status_id = rentedStatusId;
-    else delete references.rented_status_id;
+    const listingStatusFieldKey = asText(draft.onOfficeListingsFieldKey);
+    const listingActiveStatusValues = parseCsvStringList(draft.onOfficeListingsActiveStatusValues);
+    if (listingStatusFieldKey) listings.status_field_key = listingStatusFieldKey;
+    else delete listings.status_field_key;
+    if (listingActiveStatusValues.length > 0) listings.active_status_values = listingActiveStatusValues;
+    else delete listings.active_status_values;
+    listings.exclude_sold = true;
+    delete listings.status_ids;
+    delete references.status_field_key;
+    delete references.sold_status_id;
+    delete references.rented_status_id;
     delete references.archived;
     delete references.status_ids;
     delete references.custom_field_key;
   } else {
+    const listingStatusIds = parseCsvNumberList(draft.listingsStatusIds, "Status-IDs für Angebote");
+    if (listingStatusIds.length > 0) listings.status_ids = listingStatusIds;
+    else delete listings.status_ids;
+    delete listings.status_field_key;
+    delete listings.active_status_values;
+    delete listings.exclude_sold;
+
     const archived = asText(draft.referencesArchived);
     if (archived === "1" || archived === "0" || archived === "-1") references.archived = Number(archived);
     else delete references.archived;
@@ -1568,6 +1579,7 @@ function applyCrmAdminDraftToSettings(
     else delete references.custom_field_key;
     delete references.sold_status_id;
     delete references.rented_status_id;
+    delete references.status_field_key;
   }
 
   const unitsTargetObjects = parseOptionalPositiveInteger(draft.guardedUnitsTargetObjects, "Guarded Angebote target_objects");
@@ -2040,6 +2052,8 @@ export default function AdminClient() {
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>("");
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [areaMappings, setAreaMappings] = useState<AreaMapping[]>([]);
+  const [areaMappingsDetailedForPartnerId, setAreaMappingsDetailedForPartnerId] = useState<string>("");
+  const [areaMappingsDetailLoading, setAreaMappingsDetailLoading] = useState(false);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [integrationsLoadedForPartnerId, setIntegrationsLoadedForPartnerId] = useState<string>("");
   const [billingLoadedForPartnerId, setBillingLoadedForPartnerId] = useState<string>("");
@@ -3479,6 +3493,8 @@ export default function AdminClient() {
   }
 
   function resetSelectedPartnerAuxiliaryData() {
+    setAreaMappingsDetailedForPartnerId("");
+    setAreaMappingsDetailLoading(false);
     setIntegrations([]);
     setIntegrationsLoadedForPartnerId("");
     setCrmIntegrationDrafts({});
@@ -3560,6 +3576,8 @@ export default function AdminClient() {
     const partnerData = await api<{ partner: Partner; area_mappings: AreaMapping[] }>(`/api/admin/partners/${partnerId}`);
     setSelectedPartner(partnerData.partner);
     setAreaMappings(partnerData.area_mappings ?? []);
+    setAreaMappingsDetailedForPartnerId("");
+    setAreaMappingsDetailLoading(false);
     const reviewCandidate = (partnerData.area_mappings ?? []).find((mapping) => {
       const state = normalizeActivationStatus(
         mapping.activation_status,
@@ -3584,6 +3602,18 @@ export default function AdminClient() {
       is_active: Boolean(partnerData.partner.is_active),
       llm_partner_managed_allowed: Boolean(partnerData.partner.llm_partner_managed_allowed),
     });
+  }
+
+  async function loadPartnerAreaMappingsDetails(partnerId: string) {
+    if (!partnerId) return;
+    setAreaMappingsDetailLoading(true);
+    try {
+      const data = await api<{ area_mappings: AreaMapping[] }>(`/api/admin/partners/${partnerId}?include_area_details=1&skip_partner=1`);
+      setAreaMappings(data.area_mappings ?? []);
+      setAreaMappingsDetailedForPartnerId(partnerId);
+    } finally {
+      setAreaMappingsDetailLoading(false);
+    }
   }
 
   async function loadPartnerIntegrations(partnerId: string) {
@@ -5092,7 +5122,7 @@ export default function AdminClient() {
       return;
     }
     let cancelled = false;
-    void api<{ area_mappings: AreaMapping[] }>(`/api/admin/partners/${systemPartnerId}`)
+    void api<{ area_mappings: AreaMapping[] }>(`/api/admin/partners/${systemPartnerId}?include_area_details=1&skip_partner=1`)
       .then((data) => {
         if (cancelled) return;
         setSystemPartnerKreisOptions(buildKreisOptionsFromAreaMappings(data.area_mappings ?? []));
@@ -5121,6 +5151,16 @@ export default function AdminClient() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView, partnerTab, selectedPartnerId, selectedPartner?.id, selectedPartner?.is_system_default, integrationsLoadedForPartnerId, billingLoadedForPartnerId]);
+
+  useEffect(() => {
+    if (activeView !== "partner_edit" || !selectedPartnerId) return;
+    if (partnerTab !== "areas" && partnerTab !== "review" && partnerTab !== "handover") return;
+    if (areaMappingsDetailedForPartnerId === selectedPartnerId || areaMappingsDetailLoading) return;
+    void loadPartnerAreaMappingsDetails(selectedPartnerId).catch((error) => {
+      setStatus(error instanceof Error ? error.message : "Gebietsdaten konnten nicht geladen werden.");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView, partnerTab, selectedPartnerId, areaMappingsDetailedForPartnerId, areaMappingsDetailLoading]);
 
   useEffect(() => {
     if (activeView !== "partner_edit" || partnerTab !== "review" || !selectedPartnerId || !reviewAreaId) {
@@ -6869,7 +6909,10 @@ export default function AdminClient() {
       {activeView === "partner_edit" && partnerTab === "areas" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Gebietszuordnung</h2>
-        {selectedPartner?.is_active !== true ? (
+        {areaMappingsDetailedForPartnerId !== selectedPartnerId && areaMappingsDetailLoading ? (
+          <div style={{ marginTop: 12, color: "#475569", fontSize: 14 }}>Gebietsdaten werden geladen...</div>
+        ) : selectedPartner?.is_active !== true ? (
+        
           <div
             style={{
               marginTop: 8,
@@ -7147,6 +7190,10 @@ export default function AdminClient() {
       {activeView === "partner_edit" && partnerTab === "review" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Freigabeprüfung</h2>
+        {areaMappingsDetailedForPartnerId !== selectedPartnerId && areaMappingsDetailLoading ? (
+          <div style={{ marginTop: 12, color: "#475569", fontSize: 14 }}>Gebietsdaten werden geladen...</div>
+        ) : (
+          <>
         {reviewAreaOptions.length > 0 ? (
           <p style={mutedStyle}>Pflichtangaben prüfen und Workflow-Status setzen.</p>
         ) : null}
@@ -7422,12 +7469,18 @@ export default function AdminClient() {
             Kein Gebiet mit Freigabestatus ausgewählt.
           </p>
         ) : null}
+          </>
+        )}
       </section>
       ) : null}
 
       {activeView === "partner_edit" && partnerTab === "handover" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Gebiet übergeben</h2>
+        {areaMappingsDetailedForPartnerId !== selectedPartnerId && areaMappingsDetailLoading ? (
+          <div style={{ marginTop: 12, color: "#475569", fontSize: 14 }}>Gebietsdaten werden geladen...</div>
+        ) : (
+          <>
         <p style={mutedStyle}>
           Gebiet vom aktuell ausgewählten Partner an einen anderen Partner übertragen.
         </p>
@@ -7581,6 +7634,8 @@ export default function AdminClient() {
             Übergabe ausführen
           </button>
         </div>
+          </>
+        )}
       </section>
       ) : null}
 
