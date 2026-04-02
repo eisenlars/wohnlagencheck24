@@ -360,10 +360,7 @@ export async function GET(req: Request) {
           .eq("id", selectedPartnerId)
           .maybeSingle();
         partnerData = fallback.data
-          ? withPartnerFallback(
-              fallback.data as unknown as Record<string, unknown>,
-              !missingIsActive,
-            )
+          ? normalizePartnerRow(fallback.data, !missingIsActive)
           : null;
         partnerError = fallback.error;
       }
