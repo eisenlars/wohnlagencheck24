@@ -3345,7 +3345,14 @@ export default function AdminClient() {
         onClick: () => {
           setNavMode("partners");
           if (portalPartner?.id) {
-            void selectPartnerView(portalPartner.id, "partner_edit");
+            void (async () => {
+              await loadPartnerBootstrap(portalPartner.id);
+              setPartnerTab("profile");
+              setIntegrationsAdminTab("overview");
+              setReviewActionError(null);
+              setReviewContentDismissed(false);
+              setActiveView("partner_edit");
+            })();
             return;
           }
           setActiveView("partner_edit");
@@ -6472,7 +6479,16 @@ export default function AdminClient() {
                     <button
                       key={row.key}
                       style={listLinkRowStyle(selectedPartnerId === row.partnerId)}
-                      onClick={() => selectPartnerView(row.partnerId, "partner_edit")}
+                      onClick={() => {
+                        void (async () => {
+                          await loadPartnerBootstrap(row.partnerId);
+                          setPartnerTab("profile");
+                          setIntegrationsAdminTab("overview");
+                          setReviewActionError(null);
+                          setReviewContentDismissed(false);
+                          setActiveView("partner_edit");
+                        })();
+                      }}
                     >
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{row.kreisName}</div>
                       <div style={{ fontSize: 11, color: "#64748b" }}>{row.kreisId}</div>
@@ -6587,7 +6603,14 @@ export default function AdminClient() {
             style={btnStyle}
             onClick={() => {
               if (!createdPartnerSuccess?.id) return;
-              void selectPartnerView(createdPartnerSuccess.id, "partner_edit");
+              void (async () => {
+                await loadPartnerBootstrap(createdPartnerSuccess.id);
+                setPartnerTab("profile");
+                setIntegrationsAdminTab("overview");
+                setReviewActionError(null);
+                setReviewContentDismissed(false);
+                setActiveView("partner_edit");
+              })();
             }}
           >
             Partnerdetails öffnen
