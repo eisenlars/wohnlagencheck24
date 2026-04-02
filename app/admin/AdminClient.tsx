@@ -5375,6 +5375,16 @@ export default function AdminClient() {
 
   async function selectPartnerView(partnerId: string, view: AdminView) {
     if (!partnerId) return;
+    const hasLoadedSelectedPartnerBase =
+      String(selectedPartner?.id ?? "") === partnerId && selectedPartnerId === partnerId;
+    if (hasLoadedSelectedPartnerBase && activeView === view) {
+      setPartnerTab("profile");
+      setIntegrationsAdminTab("overview");
+      setReviewActionError(null);
+      setReviewContentDismissed(false);
+      setActiveView(view);
+      return;
+    }
     setBusy(true);
     setStatus("Daten werden geladen...");
     try {
@@ -6115,6 +6125,14 @@ export default function AdminClient() {
             style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" && navMode === "partners")}
             onClick={async () => {
               setNavMode("partners");
+              if (selectedPartnerId && String(selectedPartner?.id ?? "") === selectedPartnerId) {
+                setPartnerTab("profile");
+                setIntegrationsAdminTab("overview");
+                setReviewActionError(null);
+                setReviewContentDismissed(false);
+                setActiveView("partner_edit");
+                return;
+              }
               if (selectedPartnerId) {
                 await selectPartnerView(selectedPartnerId, "partner_edit");
                 return;

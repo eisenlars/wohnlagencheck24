@@ -11,6 +11,8 @@ import {
 } from "@/lib/network-partners/sync/sync-run-log";
 import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
+import { buildOpenImmoRequestHeaders } from "@/lib/providers/openimmo";
+import { parseOpenImmoDocument } from "@/lib/openimmo/parse";
 
 type IntegrationStepLogEntry = {
   at: string;
@@ -310,6 +312,13 @@ export async function POST(
           },
           body: JSON.stringify(body),
         });
+      } else if (integration.provider === "openimmo") {
+        targetPath = "/openimmo-feed";
+        requestCount = 1;
+        res = await fetchWithTimeout(baseUrlCheck.url, {
+          method: "GET",
+          headers: buildOpenImmoRequestHeaders(integration),
+        });
       } else {
         return finish(
           { status: "error", message: `Provider nicht unterstützt: ${integration.provider}` },
@@ -329,6 +338,19 @@ export async function POST(
           http_status: res.status,
         },
         "provider_response",
+      );
+    }
+
+    if (integration.provider === "openimmo") {
+      const xml = await res.text().catch(() => "");
+      const parsed = parseOpenImmoDocument(xml);
+      return finish(
+        {
+          status: "ok",
+          message: `OpenImmo-Feed erfolgreich geladen (${parsed.listings.length} Angebote erkannt).`,
+          http_status: res.status,
+        },
+        "completed",
       );
     }
 

@@ -64,6 +64,8 @@ type CrmIntegrationAdminDraft = {
   referencesArchived: string;
   referencesStatusIds: string;
   referencesCustomFieldKey: string;
+  onOfficeListingsFieldKey: string;
+  onOfficeListingsActiveStatusValues: string;
   onOfficeReferenceFieldKey: string;
   onOfficeReferenceSoldStatusId: string;
   onOfficeReferenceRentedStatusId: string;
@@ -107,7 +109,6 @@ type OnOfficeFieldConfigPayload = {
   estate_status_field_key?: string | null;
   estate_status_field_label?: string | null;
   estate_status_options?: OnOfficeFieldOption[];
-  has_reference_status_candidates?: boolean;
 };
 
 type AdminCrmIntegrationsPanelProps = {
@@ -218,7 +219,6 @@ function renderImportRules(
   onOfficeEstateStatusError: string | null,
   onOfficeEstateStatusFieldKey: string | null,
   onOfficeEstateStatusFieldLabel: string | null,
-  onOfficeHasReferenceStatusCandidates: boolean,
   onChange: (nextDraft: CrmIntegrationAdminDraft) => void,
 ) {
   const onOffice = isOnOfficeProvider(provider);
@@ -227,19 +227,61 @@ function renderImportRules(
     return (
       <>
         {onOffice ? (
-          <div style={helperTextStyle}>
-            Quelle: <code>estate</code>. Optional kannst du den Objektabruf hier auf bestimmte onOffice-Status-IDs begrenzen.
-          </div>
+          <>
+            <div style={helperTextStyle}>
+              Quelle: <code>estate</code>. Aktive Objekte werden im aktuellen Mandanten über grob <code>status = 1</code>, das erkannte Statusfeld und <code>verkauft = 0</code> gefiltert.
+            </div>
+            {onOfficeEstateStatusFieldKey ? (
+              <div style={helperTextStyle}>
+                Erkanntes Statusfeld: <code>{onOfficeEstateStatusFieldKey}</code>
+                {onOfficeEstateStatusFieldLabel ? ` (${onOfficeEstateStatusFieldLabel})` : ""}
+              </div>
+            ) : null}
+            {onOfficeEstateStatusLoading ? (
+              <div style={helperTextStyle}>Statuswerte aus onOffice werden geladen.</div>
+            ) : null}
+            {onOfficeEstateStatusError ? (
+              <div style={helperTextErrorStyle}>{onOfficeEstateStatusError}</div>
+            ) : null}
+          </>
         ) : null}
-        <label style={labelStyle}>
-          {onOffice ? "Status-IDs für Objekte" : "Status-IDs"}
-          <input
-            style={inputStyle}
-            value={draft.listingsStatusIds}
-            onChange={(event) => onChange(updateDraft(draft, { listingsStatusIds: event.target.value }))}
-            placeholder={onOffice ? "z. B. 1, 2" : "z. B. 274, 276"}
-          />
-        </label>
+        {onOffice ? (
+          <>
+            <label style={labelStyle}>
+              Statusfeld für aktive Objekte
+              <input
+                style={inputStyle}
+                value={draft.onOfficeListingsFieldKey}
+                onChange={(event) => onChange(updateDraft(draft, { onOfficeListingsFieldKey: event.target.value }))}
+                placeholder={onOfficeEstateStatusFieldKey ?? "z. B. status2"}
+              />
+            </label>
+            <label style={labelStyle}>
+              Aktive Statuswerte
+              <input
+                style={inputStyle}
+                value={draft.onOfficeListingsActiveStatusValues}
+                onChange={(event) => onChange(updateDraft(draft, { onOfficeListingsActiveStatusValues: event.target.value }))}
+                placeholder="z. B. status2obj_aktiv"
+              />
+            </label>
+            {onOfficeEstateStatusOptions.length > 0 ? (
+              <div style={helperTextStyle}>
+                Verfügbare Werte: {onOfficeEstateStatusOptions.map((option) => `${option.label} (${option.value})`).join(", ")}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <label style={labelStyle}>
+            Status-IDs
+            <input
+              style={inputStyle}
+              value={draft.listingsStatusIds}
+              onChange={(event) => onChange(updateDraft(draft, { listingsStatusIds: event.target.value }))}
+              placeholder="z. B. 274, 276"
+            />
+          </label>
+        )}
       </>
     );
   }
@@ -249,91 +291,28 @@ function renderImportRules(
       return (
         <>
           <div style={helperTextStyle}>
-            Referenzen werden aus <code>estate</code>-Datensätzen abgeleitet. Dafür nutzt Wohnlagencheck24 die in onOffice gepflegten Objektstatus-IDs für verkauft und vermietet.
+            Referenzen werden aus <code>estate</code>-Datensätzen mit <code>verkauft = 1</code> abgeleitet. Die Einordnung als verkauft oder vermietet erfolgt über <code>vermarktungsart</code>.
           </div>
           {onOfficeEstateStatusFieldKey ? (
             <div style={helperTextStyle}>
-              Erkanntes Statusfeld: <code>{onOfficeEstateStatusFieldKey}</code>
+              Das erkannte Statusfeld <code>{onOfficeEstateStatusFieldKey}</code>
               {onOfficeEstateStatusFieldLabel ? ` (${onOfficeEstateStatusFieldLabel})` : ""}
+              {" "}bleibt für Objekte relevant, wird für Referenzen im aktuellen Mandanten aber nicht als Hauptkriterium genutzt.
             </div>
-          ) : null}
-          {onOfficeEstateStatusLoading ? (
-            <div style={helperTextStyle}>Statuswerte aus onOffice werden geladen.</div>
           ) : null}
           {onOfficeEstateStatusError ? (
             <div style={helperTextErrorStyle}>{onOfficeEstateStatusError}</div>
           ) : null}
           {!onOfficeEstateStatusLoading && !onOfficeEstateStatusError && onOfficeEstateStatusOptions.length === 0 ? (
             <div style={helperTextErrorStyle}>
-              Es konnten keine statusbasierten Auswahlwerte aus onOffice gelesen werden. Bitte vorerst das Feld und die IDs manuell pflegen.
+              Statuswerte konnten zwar nicht gelesen werden, Referenzen laufen hier aber trotzdem über den Verkaufs-Flag und nicht über manuelle Status-IDs.
             </div>
           ) : null}
-          {onOfficeEstateStatusOptions.length > 0 && !onOfficeHasReferenceStatusCandidates ? (
-            <div style={helperTextErrorStyle}>
-              Der aktuelle onOffice-Status enthält keine eindeutigen Werte für verkauft oder vermietet. Bitte Referenzstatus vorerst manuell pflegen.
-            </div>
-          ) : null}
-          <label style={labelStyle}>
-            Statusfeld für Referenzen
-            <input
-              style={inputStyle}
-              value={draft.onOfficeReferenceFieldKey}
-              onChange={(event) => onChange(updateDraft(draft, { onOfficeReferenceFieldKey: event.target.value }))}
-              placeholder={onOfficeEstateStatusFieldKey ?? "z. B. status2"}
-            />
-          </label>
-          {onOfficeEstateStatusOptions.length > 0 && onOfficeHasReferenceStatusCandidates ? (
-            <>
-              <label style={labelStyle}>
-                verkauft
-                <select
-                  style={inputStyle}
-                  value={draft.onOfficeReferenceSoldStatusId}
-                  onChange={(event) => onChange(updateDraft(draft, { onOfficeReferenceSoldStatusId: event.target.value }))}
-                >
-                  <option value="">Bitte auswählen</option>
-                  {onOfficeEstateStatusOptions.map((option) => (
-                    <option key={`sold-${option.value}`} value={option.value}>
-                      {option.label} ({option.value})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label style={labelStyle}>
-                vermietet
-                <select
-                  style={inputStyle}
-                  value={draft.onOfficeReferenceRentedStatusId}
-                  onChange={(event) => onChange(updateDraft(draft, { onOfficeReferenceRentedStatusId: event.target.value }))}
-                >
-                  <option value="">Bitte auswählen</option>
-                  {onOfficeEstateStatusOptions.map((option) => (
-                    <option key={`rented-${option.value}`} value={option.value}>
-                      {option.label} ({option.value})
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </>
-          ) : null}
-          <label style={labelStyle}>
-            Objektstatus-ID verkauft
-            <input
-              style={inputStyle}
-              value={draft.onOfficeReferenceSoldStatusId}
-              onChange={(event) => onChange(updateDraft(draft, { onOfficeReferenceSoldStatusId: event.target.value }))}
-              placeholder="z. B. 5"
-            />
-          </label>
-          <label style={labelStyle}>
-            Objektstatus-ID vermietet
-            <input
-              style={inputStyle}
-              value={draft.onOfficeReferenceRentedStatusId}
-              onChange={(event) => onChange(updateDraft(draft, { onOfficeReferenceRentedStatusId: event.target.value }))}
-              placeholder="z. B. 6"
-            />
-          </label>
+          <div style={helperTextStyle}>
+            Aktuelle Logik:
+            {" "}Kaufobjekt + <code>verkauft = 1</code> = verkauft.
+            {" "}Mietobjekt + <code>verkauft = 1</code> = vermietet.
+          </div>
         </>
       );
     }
@@ -631,7 +610,6 @@ export default function AdminCrmIntegrationsPanel({
   const [onOfficeEstateStatusError, setOnOfficeEstateStatusError] = useState<string | null>(null);
   const [onOfficeEstateStatusFieldKey, setOnOfficeEstateStatusFieldKey] = useState<string | null>(null);
   const [onOfficeEstateStatusFieldLabel, setOnOfficeEstateStatusFieldLabel] = useState<string | null>(null);
-  const [onOfficeHasReferenceStatusCandidates, setOnOfficeHasReferenceStatusCandidates] = useState(false);
 
   const isRunningThisResource = syncSummary?.status === "running";
   const statusColor = getStatusColor(syncSummary);
@@ -663,10 +641,27 @@ export default function AdminCrmIntegrationsPanel({
         setOnOfficeEstateStatusOptions(Array.isArray(payload?.estate_status_options) ? payload.estate_status_options : []);
         setOnOfficeEstateStatusFieldKey(typeof payload?.estate_status_field_key === "string" ? payload.estate_status_field_key : null);
         setOnOfficeEstateStatusFieldLabel(typeof payload?.estate_status_field_label === "string" ? payload.estate_status_field_label : null);
-        setOnOfficeHasReferenceStatusCandidates(payload?.has_reference_status_candidates === true);
         setOnOfficeEstateStatusError(null);
-        if (!String(draft.onOfficeReferenceFieldKey ?? "").trim() && typeof payload?.estate_status_field_key === "string" && payload.estate_status_field_key.trim()) {
-          onDraftChange(updateDraft(draft, { onOfficeReferenceFieldKey: payload.estate_status_field_key }));
+        const detectedFieldKey = typeof payload?.estate_status_field_key === "string" ? payload.estate_status_field_key.trim() : "";
+        const detectedActiveValue =
+          (Array.isArray(payload?.estate_status_options) ? payload.estate_status_options : []).find((option) => {
+            const label = option.label.toLowerCase();
+            const value = option.value.toLowerCase();
+            return (label.includes("aktiv") || value.includes("aktiv"))
+              && !label.includes("inaktiv")
+              && !value.includes("inaktiv")
+              && !label.includes("archiv")
+              && !value.includes("archiv");
+          })?.value ?? "";
+        const patch: Partial<CrmIntegrationAdminDraft> = {};
+        if (!String(draft.onOfficeListingsFieldKey ?? "").trim() && detectedFieldKey) {
+          patch.onOfficeListingsFieldKey = detectedFieldKey;
+        }
+        if (!String(draft.onOfficeListingsActiveStatusValues ?? "").trim() && detectedActiveValue) {
+          patch.onOfficeListingsActiveStatusValues = detectedActiveValue;
+        }
+        if (Object.keys(patch).length > 0) {
+          onDraftChange(updateDraft(draft, patch));
         }
       })
       .catch((error: unknown) => {
@@ -674,7 +669,6 @@ export default function AdminCrmIntegrationsPanel({
         setOnOfficeEstateStatusOptions([]);
         setOnOfficeEstateStatusFieldKey(null);
         setOnOfficeEstateStatusFieldLabel(null);
-        setOnOfficeHasReferenceStatusCandidates(false);
         setOnOfficeEstateStatusError(error instanceof Error ? error.message : "Statuswerte konnten nicht geladen werden.");
       })
       .finally(() => {
@@ -684,7 +678,7 @@ export default function AdminCrmIntegrationsPanel({
     return () => {
       active = false;
     };
-  }, [draft.onOfficeReferenceFieldKey, integration.id, integration.provider, onDraftChange]);
+  }, [draft, draft.onOfficeListingsActiveStatusValues, draft.onOfficeListingsFieldKey, integration.id, integration.provider, onDraftChange]);
 
   return (
     <div style={panelStyle}>
@@ -763,7 +757,6 @@ export default function AdminCrmIntegrationsPanel({
                   onOfficeEstateStatusError,
                   onOfficeEstateStatusFieldKey,
                   onOfficeEstateStatusFieldLabel,
-                  onOfficeHasReferenceStatusCandidates,
                   onDraftChange,
                 )}
               </div>

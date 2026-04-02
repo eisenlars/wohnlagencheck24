@@ -49,9 +49,9 @@ export type OnOfficeEstateStatusFieldConfig = {
 };
 
 type OnOfficeResourceSettings = {
-  status_field_key: string;
-  sold_status_id: number;
-  rented_status_id: number;
+  listing_status_field_key: string;
+  listing_active_status_values: string[];
+  listing_exclude_sold: boolean;
 };
 
 type RegionTarget = {
@@ -129,14 +129,21 @@ function buildOnOfficeGetRequest(
 
 function toSettings(settings: Record<string, unknown> | null): OnOfficeResourceSettings {
   const resourceFilters = (settings?.resource_filters ?? {}) as Record<string, unknown>;
+  const listingsCfg = (resourceFilters.listings ?? {}) as Record<string, unknown>;
   const referencesCfg = (resourceFilters.references ?? {}) as Record<string, unknown>;
-  const statusFieldKey = String(referencesCfg.status_field_key ?? "objektstatus").trim() || "objektstatus";
-  const soldRaw = Number(referencesCfg.sold_status_id ?? 5);
-  const rentedRaw = Number(referencesCfg.rented_status_id ?? 6);
+  const listingStatusFieldKey =
+    String(listingsCfg.status_field_key ?? referencesCfg.status_field_key ?? "status2").trim() || "status2";
+  const listingActiveStatusValues = Array.isArray(listingsCfg.active_status_values)
+    ? listingsCfg.active_status_values
+        .map((value) => String(value ?? "").trim())
+        .filter(Boolean)
+    : ["status2obj_aktiv"];
+  const listingExcludeSold = listingsCfg.exclude_sold !== false;
   return {
-    status_field_key: statusFieldKey,
-    sold_status_id: Number.isFinite(soldRaw) ? soldRaw : 5,
-    rented_status_id: Number.isFinite(rentedRaw) ? rentedRaw : 6,
+    listing_status_field_key: listingStatusFieldKey,
+    listing_active_status_values:
+      listingActiveStatusValues.length > 0 ? Array.from(new Set(listingActiveStatusValues)) : ["status2obj_aktiv"],
+    listing_exclude_sold: listingExcludeSold,
   };
 }
 
@@ -439,6 +446,11 @@ function mapEstateToOffer(
       gallery,
       lat: elements["breitengrad"] ?? null,
       lng: elements["laengengrad"] ?? null,
+      status: elements["status"] ?? null,
+      status2: elements["status2"] ?? null,
+      verkauft: elements["verkauft"] ?? null,
+      reserviert: elements["reserviert"] ?? null,
+      veroeffentlichen: elements["veroeffentlichen"] ?? null,
       objektstatus: elements["objektstatus"] ?? null,
     },
     source_payload: record as unknown as Record<string, unknown>,
@@ -471,6 +483,11 @@ function mapEstateToReference(
     reference_text_seed: `Das Objekt wurde erfolgreich ${saleType}.`,
     description: `Das Objekt wurde erfolgreich ${saleType}.`,
     image_url: gallery[0] ?? null,
+    status: elements["status"] ?? null,
+    status2: elements["status2"] ?? null,
+    verkauft: elements["verkauft"] ?? null,
+    reserviert: elements["reserviert"] ?? null,
+    veroeffentlichen: elements["veroeffentlichen"] ?? null,
     objektstatus: elements["objektstatus"] ?? null,
   };
   return makeRawRowBase(
@@ -661,6 +678,7 @@ export async function fetchOnOfficeEstates(
   integration: PartnerIntegration,
   token: string,
   secret: string,
+  settings: OnOfficeResourceSettings,
 ): Promise<OnOfficeRecord[]> {
   const fields = [
     "Id",
@@ -668,6 +686,11 @@ export async function fetchOnOfficeEstates(
     "objektnr_extern",
     "vermarktungsart",
     "objektart",
+    "status",
+    "status2",
+    "verkauft",
+    "reserviert",
+    "veroeffentlichen",
     "objektstatus",
     "kaufpreis",
     "kaltmiete",
@@ -685,8 +708,16 @@ export async function fetchOnOfficeEstates(
     "freitext_ausstattung",
     "img",
   ];
-  return fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
+  const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
     status: [{ op: "=", val: 1 }],
+    ...(settings.listing_exclude_sold ? { verkauft: [{ op: "=", val: 0 }] } : {}),
+  });
+  const allowedStatusValues = new Set(settings.listing_active_status_values);
+  if (!settings.listing_status_field_key || allowedStatusValues.size === 0) return records;
+  return records.filter((record) => {
+    const elements = (record.elements ?? {}) as Record<string, unknown>;
+    const fieldValue = String(elements[settings.listing_status_field_key] ?? "").trim();
+    return fieldValue.length > 0 && allowedStatusValues.has(fieldValue);
   });
 }
 
@@ -694,7 +725,6 @@ export async function fetchOnOfficeReferences(
   integration: PartnerIntegration,
   token: string,
   secret: string,
-  settings: OnOfficeResourceSettings,
 ): Promise<OnOfficeRecord[]> {
   const fields = [
     "Id",
@@ -702,6 +732,11 @@ export async function fetchOnOfficeReferences(
     "objektnr_extern",
     "vermarktungsart",
     "objektart",
+    "status",
+    "status2",
+    "verkauft",
+    "reserviert",
+    "veroeffentlichen",
     "objektstatus",
     "kaufpreis",
     "kaltmiete",
@@ -714,23 +749,9 @@ export async function fetchOnOfficeReferences(
     "hausnummer",
     "img",
   ];
-  const soldRecords = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
-    [settings.status_field_key]: [{ op: "=", val: settings.sold_status_id }],
+  return fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
+    verkauft: [{ op: "=", val: 1 }],
   });
-  if (settings.rented_status_id === settings.sold_status_id) return soldRecords;
-
-  const rentedRecords = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
-    [settings.status_field_key]: [{ op: "=", val: settings.rented_status_id }],
-  });
-
-  const merged = new Map<string, OnOfficeRecord>();
-  for (const record of [...soldRecords, ...rentedRecords]) {
-    const elements = (record.elements ?? {}) as Record<string, unknown>;
-    const id = String(elements["Id"] ?? record.id ?? "").trim();
-    if (!id) continue;
-    if (!merged.has(id)) merged.set(id, record);
-  }
-  return Array.from(merged.values());
 }
 
 export async function fetchOnOfficeSearchCriteria(
@@ -778,7 +799,7 @@ export async function syncOnOfficeResources(
   let requestsFetched = !shouldFetchRequests;
 
   if (shouldFetchOffers) {
-    const estates = await fetchOnOfficeEstates(integration, token, secret);
+    const estates = await fetchOnOfficeEstates(integration, token, secret, cfg);
     offers = estates.map((record) => mapEstateToOffer(integration.partner_id, integration, record));
     listings = offers.map((offer) =>
       makeRawRowBase(
@@ -794,7 +815,7 @@ export async function syncOnOfficeResources(
   }
 
   if (shouldFetchReferences) {
-    const referenceRecords = await fetchOnOfficeReferences(integration, token, secret, cfg);
+    const referenceRecords = await fetchOnOfficeReferences(integration, token, secret);
     references = referenceRecords.map((record) => mapEstateToReference(integration.partner_id, integration, record));
     referencesFetched = true;
   }

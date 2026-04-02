@@ -7,6 +7,8 @@ import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/secu
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
 import { loadPartnerLlmPolicy } from "@/lib/llm/partner-policy";
 import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
+import { buildOpenImmoRequestHeaders } from "@/lib/providers/openimmo";
+import { parseOpenImmoDocument } from "@/lib/openimmo/parse";
 
 type IntegrationRow = {
   id: string;
@@ -440,6 +442,31 @@ export async function POST(
           },
           body: JSON.stringify(body),
         });
+      } else if (integration.kind === "crm" && integration.provider === "openimmo") {
+        const targetCheck = await validateOutboundUrl(resolvedBaseUrl);
+        if (!targetCheck.ok) {
+          return finish(
+            { status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` },
+            "config_error",
+          );
+        }
+        targetPath = "/openimmo-feed";
+        requestCount = 1;
+        await patchIntegrationSettings(admin, integration, {
+          last_test_step: "provider_request_started",
+          last_test_request_count: requestCount,
+          last_test_target_path: targetPath,
+          last_test_log: appendIntegrationLog(asObject(integration.settings).last_test_log, {
+            at: new Date().toISOString(),
+            step: "provider_request_started",
+            status: "running",
+            message: "OpenImmo-Feedabruf gestartet.",
+          }),
+        });
+        res = await fetchWithTimeout(targetCheck.url, {
+          method: "GET",
+          headers: buildOpenImmoRequestHeaders(integration),
+        });
       } else if (integration.kind === "llm") {
         if (!apiKey) {
           return finish({ status: "error", message: "LLM API-Key fehlt (Secret api_key)." }, "config_error");
@@ -603,6 +630,19 @@ export async function POST(
           message: `Verbindung fehlgeschlagen: ${error instanceof Error ? error.message : "Unbekannter Fehler"}`,
         },
         "failed",
+      );
+    }
+
+    if (res.ok && integration.kind === "crm" && integration.provider === "openimmo") {
+      const xml = await res.text().catch(() => "");
+      const parsed = parseOpenImmoDocument(xml);
+      return finish(
+        {
+          status: "ok",
+          message: `OpenImmo-Feed erfolgreich geladen (${parsed.listings.length} Angebote erkannt).`,
+          http_status: res.status,
+        },
+        "completed",
       );
     }
 
