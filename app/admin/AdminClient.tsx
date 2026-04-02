@@ -5123,13 +5123,13 @@ export default function AdminClient() {
   }, [activeView, partnerTab, selectedPartnerId, selectedPartner?.id, selectedPartner?.is_system_default, integrationsLoadedForPartnerId, billingLoadedForPartnerId]);
 
   useEffect(() => {
-    if (!selectedPartnerId || !reviewAreaId) {
+    if (activeView !== "partner_edit" || partnerTab !== "review" || !selectedPartnerId || !reviewAreaId) {
       setReviewData(null);
       return;
     }
     void loadAreaReview(reviewAreaId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPartnerId, reviewAreaId]);
+  }, [activeView, partnerTab, selectedPartnerId, reviewAreaId]);
 
   useEffect(() => {
     if (!selectedPartner?.is_system_default) return;
@@ -5338,6 +5338,8 @@ export default function AdminClient() {
     setBusy(true);
     setStatus("Daten werden geladen...");
     try {
+      setPartnerTab("profile");
+      setIntegrationsAdminTab("overview");
       setReviewAreaId("");
       setReviewData(null);
       setReviewActionError(null);
@@ -5348,8 +5350,6 @@ export default function AdminClient() {
       }
       await loadPartnerDetails(partnerId);
       setActiveView(view);
-      setPartnerTab("profile");
-      setIntegrationsAdminTab("overview");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Partner konnte nicht geladen werden.");
     } finally {
