@@ -5409,6 +5409,18 @@ export default function AdminClient() {
 
   async function selectSidebarPartner(partnerId: string) {
     const nextView: AdminView = activeView === "partner_purge" ? "partner_purge" : "partner_edit";
+    if (
+      partnerId
+      && selectedPartnerId === partnerId
+      && String(selectedPartner?.id ?? "") === partnerId
+      && activeView === nextView
+    ) {
+      setPartnerTab("profile");
+      setIntegrationsAdminTab("overview");
+      setReviewActionError(null);
+      setReviewContentDismissed(false);
+      return;
+    }
     await selectPartnerView(partnerId, nextView);
   }
 
