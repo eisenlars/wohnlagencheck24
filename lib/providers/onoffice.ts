@@ -137,12 +137,11 @@ function toSettings(settings: Record<string, unknown> | null): OnOfficeResourceS
     ? listingsCfg.active_status_values
         .map((value) => String(value ?? "").trim())
         .filter(Boolean)
-    : ["status2obj_aktiv"];
+    : [];
   const listingExcludeSold = listingsCfg.exclude_sold !== false;
   return {
     listing_status_field_key: listingStatusFieldKey,
-    listing_active_status_values:
-      listingActiveStatusValues.length > 0 ? Array.from(new Set(listingActiveStatusValues)) : ["status2obj_aktiv"],
+    listing_active_status_values: Array.from(new Set(listingActiveStatusValues)),
     listing_exclude_sold: listingExcludeSold,
   };
 }
@@ -420,6 +419,7 @@ function mapEstateToOffer(
   const rent = toNumber(elements["warmmiete"]) ?? toNumber(elements["kaltmiete"]);
   const details = buildDetailsSnapshot(elements);
   const energy = buildEnergySnapshot(elements);
+  const sourceUpdatedAt = String(elements["geaendert_am"] ?? "").trim() || null;
 
   return {
     partner_id: partnerId,
@@ -436,7 +436,7 @@ function mapEstateToOffer(
     image_url: gallery[0] ?? null,
     detail_url: buildDetailUrl(integration.detail_url_template, elements),
     is_top: false,
-    updated_at: null,
+    updated_at: sourceUpdatedAt,
     raw: {
       exposee_id: elements["objektnr_extern"] ?? null,
       description: elements["freitext_lage"] ?? null,
@@ -446,6 +446,7 @@ function mapEstateToOffer(
       gallery,
       lat: elements["breitengrad"] ?? null,
       lng: elements["laengengrad"] ?? null,
+      geaendert_am: elements["geaendert_am"] ?? null,
       status: elements["status"] ?? null,
       status2: elements["status2"] ?? null,
       verkauft: elements["verkauft"] ?? null,
@@ -468,6 +469,7 @@ function mapEstateToReference(
   const saleType = normalizeOfferType(String(elements["vermarktungsart"] ?? "")) === "miete" ? "vermietet" : "verkauft";
   const locationLabel = city || "der Region";
   const referenceTitle = `Erfolgreich ${saleType} in ${locationLabel}`;
+  const sourceUpdatedAt = String(elements["geaendert_am"] ?? "").trim() || null;
   const normalizedPayload: Record<string, unknown> = {
     title: referenceTitle,
     source_title: String(elements["objekttitel"] ?? "") || null,
@@ -483,6 +485,7 @@ function mapEstateToReference(
     reference_text_seed: `Das Objekt wurde erfolgreich ${saleType}.`,
     description: `Das Objekt wurde erfolgreich ${saleType}.`,
     image_url: gallery[0] ?? null,
+    geaendert_am: elements["geaendert_am"] ?? null,
     status: elements["status"] ?? null,
     status2: elements["status2"] ?? null,
     verkauft: elements["verkauft"] ?? null,
@@ -495,7 +498,7 @@ function mapEstateToReference(
     "onoffice",
     `reference:${String(elements["Id"] ?? record.id ?? "")}`,
     referenceTitle,
-    null,
+    sourceUpdatedAt,
     normalizedPayload,
     record as unknown as Record<string, unknown>,
   );
@@ -682,6 +685,7 @@ export async function fetchOnOfficeEstates(
 ): Promise<OnOfficeRecord[]> {
   const fields = [
     "Id",
+    "geaendert_am",
     "objekttitel",
     "objektnr_extern",
     "vermarktungsart",
@@ -728,6 +732,7 @@ export async function fetchOnOfficeReferences(
 ): Promise<OnOfficeRecord[]> {
   const fields = [
     "Id",
+    "geaendert_am",
     "objekttitel",
     "objektnr_extern",
     "vermarktungsart",

@@ -229,7 +229,7 @@ function renderImportRules(
         {onOffice ? (
           <>
             <div style={helperTextStyle}>
-              Quelle: <code>estate</code>. Aktive Objekte werden im aktuellen Mandanten über grob <code>status = 1</code>, das erkannte Statusfeld und <code>verkauft = 0</code> gefiltert.
+              Quelle: <code>estate</code>. Der Erstabruf läuft grob über <code>status = 1</code> und <code>verkauft = 0</code>. Das erkannte Statusfeld dient hier als optionale Verfeinerung, wenn ihr aktive Vermarktungszustände gezielt eingrenzen wollt.
             </div>
             {onOfficeEstateStatusFieldKey ? (
               <div style={helperTextStyle}>
@@ -257,14 +257,17 @@ function renderImportRules(
               />
             </label>
             <label style={labelStyle}>
-              Aktive Statuswerte
+              Aktive Statuswerte (optional)
               <input
                 style={inputStyle}
                 value={draft.onOfficeListingsActiveStatusValues}
                 onChange={(event) => onChange(updateDraft(draft, { onOfficeListingsActiveStatusValues: event.target.value }))}
-                placeholder="z. B. status2obj_aktiv"
+                placeholder="z. B. aktive_vermarktung, reserviert"
               />
             </label>
+            <div style={helperTextStyle}>
+              Leer lassen, wenn der erste Abruf noch nicht über <code>status2</code> verengt werden soll. Danach nur die Werte eintragen, die ihr wirklich als aktive Portalobjekte behandeln wollt.
+            </div>
             {onOfficeEstateStatusOptions.length > 0 ? (
               <div style={helperTextStyle}>
                 Verfügbare Werte: {onOfficeEstateStatusOptions.map((option) => `${option.label} (${option.value})`).join(", ")}
