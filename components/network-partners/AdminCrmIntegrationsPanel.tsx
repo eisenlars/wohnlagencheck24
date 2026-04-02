@@ -645,11 +645,7 @@ export default function AdminCrmIntegrationsPanel({
         setOnOfficeEstateStatusFieldKey(typeof payload?.estate_status_field_key === "string" ? payload.estate_status_field_key : null);
         setOnOfficeEstateStatusFieldLabel(typeof payload?.estate_status_field_label === "string" ? payload.estate_status_field_label : null);
         setOnOfficeEstateStatusError(null);
-        const detectedFieldKey = typeof payload?.estate_status_field_key === "string" ? payload.estate_status_field_key.trim() : "";
         const patch: Partial<CrmIntegrationAdminDraft> = {};
-        if (!String(draft.onOfficeListingsFieldKey ?? "").trim() && detectedFieldKey) {
-          patch.onOfficeListingsFieldKey = detectedFieldKey;
-        }
         if (Object.keys(patch).length > 0) {
           onDraftChange(updateDraft(draft, patch));
         }

@@ -1550,7 +1550,7 @@ function applyCrmAdminDraftToSettings(
     else delete listings.status_field_key;
     if (listingActiveStatusValues.length > 0) listings.active_status_values = listingActiveStatusValues;
     else delete listings.active_status_values;
-    listings.exclude_sold = true;
+    delete listings.exclude_sold;
     delete listings.status_ids;
     delete references.status_field_key;
     delete references.sold_status_id;
@@ -2640,8 +2640,14 @@ export default function AdminClient() {
     }
   }, [successModal.open, handoverConfirmModal.open, handoverStatusModal.open, areaDeleteConfirmModal.open, integrationDeleteConfirmModal.open, partnerPurgeModal.open]);
 
+  const loadPortalLocalesEvent = useEffectEvent(async () => {
+    await loadPortalLocales();
+  });
+  const loadPortalSystemTextsEvent = useEffectEvent(async () => {
+    await loadPortalSystemTextsWorkspace();
+  });
   const loadPortalCmsEvent = useEffectEvent(async () => {
-    await loadPortalCms();
+    await loadPortalCmsWorkspace();
   });
   const loadMarketExplanationStandardTextsEvent = useEffectEvent(async (options?: {
     scope?: MarketExplanationStandardScope;
@@ -2796,9 +2802,9 @@ export default function AdminClient() {
     } else if (restoredActiveView === "billing_defaults") {
       void loadBillingDefaults();
     } else if (restoredActiveView === "language_admin") {
-      void loadPortalCmsEvent();
+      void loadPortalLocalesEvent();
     } else if (restoredActiveView === "system_texts") {
-      void loadPortalCmsEvent();
+      void loadPortalSystemTextsEvent();
     } else if (restoredActiveView === "market_texts") {
       void Promise.all([
         loadMarketExplanationStandardTextsEvent({
@@ -2844,6 +2850,8 @@ export default function AdminClient() {
     adminViewState.standardTextRefreshBundeslandSlug,
     adminViewState.standardTextRefreshScope,
     adminViewStateHydrated,
+    loadPortalLocalesEvent,
+    loadPortalSystemTextsEvent,
   ]);
 
   useEffect(() => {
