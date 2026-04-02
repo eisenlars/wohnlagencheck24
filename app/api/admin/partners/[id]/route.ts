@@ -96,6 +96,10 @@ function normalizeNullableString(value: unknown): string | null {
   return normalized.length > 0 ? normalized : null;
 }
 
+function roundTiming(value: number): number {
+  return Number(value.toFixed(2));
+}
+
 function withPartnerFallback<T extends Record<string, unknown>>(row: T, includeIsActive: boolean): T & {
   contact_first_name: null;
   contact_last_name: null;
@@ -266,8 +270,29 @@ export async function GET(
   ctx: { params: Promise<{ id: string }> },
 ) {
   try {
+    const requestStartedAt = performance.now();
+    const url = new URL(req.url);
+    const debugTiming = url.searchParams.get("debug_timing") === "1";
+    const timings: Record<string, number> = {};
+    const mark = (key: string, startedAt: number) => {
+      if (!debugTiming) return;
+      timings[key] = roundTiming(performance.now() - startedAt);
+    };
+    const withDebugTimings = <T extends Record<string, unknown>>(payload: T): T | (T & { debug_timings: Record<string, number> }) => {
+      if (!debugTiming) return payload;
+      return {
+        ...payload,
+        debug_timings: {
+          ...timings,
+          total_ms: roundTiming(performance.now() - requestStartedAt),
+        },
+      };
+    };
+
+    const authStartedAt = performance.now();
     const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
     const adminRate = await checkAdminApiRateLimit(req, adminUser.userId);
+    mark("auth_ms", authStartedAt);
     if (!adminRate.allowed) {
       return NextResponse.json(
         { error: "Too many requests" },
@@ -282,6 +307,7 @@ export async function GET(
     }
 
     const admin = createAdminClient();
+    const partnerQueryStartedAt = performance.now();
     let { data: partner, error: partnerError } = await admin
       .from("partners")
       .select("id, company_name, contact_email, contact_first_name, contact_last_name, website_url, is_active, is_system_default, llm_partner_managed_allowed, llm_mode_default, created_at")
@@ -317,10 +343,12 @@ export async function GET(
         : null;
       partnerError = fallback.error;
     }
+    mark("partner_query_ms", partnerQueryStartedAt);
 
     if (partnerError) return NextResponse.json({ error: partnerError.message }, { status: 500 });
     if (!partner) return NextResponse.json({ error: "Partner not found" }, { status: 404 });
 
+    const mappingsQueryStartedAt = performance.now();
     let { data: mappings, error: mappingError } = await admin
       .from("partner_area_map")
       .select("id, auth_user_id, area_id, is_active, is_public_live, activation_status, offer_visibility_mode, request_visibility_mode, partner_preview_signoff_at, created_at, areas(name, slug, parent_slug, bundesland_slug)")
@@ -418,14 +446,19 @@ export async function GET(
         mappingError = fallback.error;
       }
     }
+    mark("area_mappings_query_ms", mappingsQueryStartedAt);
 
     if (mappingError) return NextResponse.json({ error: mappingError.message }, { status: 500 });
 
-    return NextResponse.json({
+    const responseBuildStartedAt = performance.now();
+    const payload = {
       ok: true,
       partner,
       area_mappings: mappings ?? [],
-    });
+    };
+    mark("response_build_ms", responseBuildStartedAt);
+
+    return NextResponse.json(withDebugTimings(payload));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") {
