@@ -7797,7 +7797,10 @@ export default function AdminClient() {
                             }
                             onSaveSettings={(integrationId, nextDraft) =>
                               run(`${integration.provider} Einstellungen speichern`, async () => {
-                                const settings = applyCrmAdminDraftToSettings(integration, nextDraft);
+                                const settings = applyCrmAdminDraftToSettings(
+                                  integration,
+                                  nextDraft as CrmIntegrationAdminDraft,
+                                );
                                 await api(`/api/admin/integrations/${integrationId}`, {
                                   method: "PATCH",
                                   body: JSON.stringify({ settings }),
