@@ -2641,7 +2641,17 @@ export default function AdminClient() {
   }, [successModal.open, handoverConfirmModal.open, handoverStatusModal.open, areaDeleteConfirmModal.open, integrationDeleteConfirmModal.open, partnerPurgeModal.open]);
 
   const loadPortalLocalesEvent = useEffectEvent(async () => {
-    await loadPortalLocales();
+    const data = await api<{
+      locales?: PortalLocaleConfigRecord[];
+    }>("/api/admin/portal-locales");
+    const nextLocales = data.locales ?? [];
+    setPortalLocaleConfigs(nextLocales);
+    const fallbackLocale = nextLocales.find((row) => row.is_active)?.locale ?? nextLocales[0]?.locale ?? "de";
+    setPortalCmsViewState((prev) => ({
+      ...prev,
+      locale: nextLocales.some((row) => row.locale === prev.locale) ? prev.locale : fallbackLocale,
+    }));
+    setPortalSystemTextLocale((prev) => nextLocales.some((row) => row.locale === prev) ? prev : fallbackLocale);
   });
   const loadPortalSystemTextsEvent = useEffectEvent(async () => {
     await loadPortalSystemTextsWorkspace();
@@ -2850,8 +2860,6 @@ export default function AdminClient() {
     adminViewState.standardTextRefreshBundeslandSlug,
     adminViewState.standardTextRefreshScope,
     adminViewStateHydrated,
-    loadPortalLocalesEvent,
-    loadPortalSystemTextsEvent,
   ]);
 
   useEffect(() => {
@@ -3410,7 +3418,7 @@ export default function AdminClient() {
         onClick: () => {
           setActiveView("language_admin");
           void run("Sprachverwaltung laden", async () => {
-            await loadPortalCms();
+            await loadPortalLocales();
           }, { showSuccessModal: false });
         },
       },
@@ -3423,7 +3431,7 @@ export default function AdminClient() {
         onClick: () => {
           setActiveView("system_texts");
           void run("Systemtexte laden", async () => {
-            await loadPortalCms();
+            await loadPortalSystemTextsWorkspace();
           }, { showSuccessModal: false });
         },
       },
@@ -3465,7 +3473,7 @@ export default function AdminClient() {
         onClick: () => {
           setActiveView("portal_cms");
           void run("Portal-CMS laden", async () => {
-            await loadPortalCms();
+            await loadPortalCmsWorkspace();
           }, { showSuccessModal: false });
         },
       },
@@ -4068,26 +4076,35 @@ export default function AdminClient() {
     })));
   }
 
-  async function loadPortalCms() {
-    const [contentData, systemTextData] = await Promise.all([
+  async function loadPortalLocales() {
+    const data = await api<{
+      locales?: PortalLocaleConfigRecord[];
+    }>("/api/admin/portal-locales");
+    const nextLocales = data.locales ?? [];
+    setPortalLocaleConfigs(nextLocales);
+    const fallbackLocale = nextLocales.find((row) => row.is_active)?.locale ?? nextLocales[0]?.locale ?? "de";
+    setPortalCmsViewState((prev) => ({
+      ...prev,
+      locale: nextLocales.some((row) => row.locale === prev.locale) ? prev.locale : fallbackLocale,
+    }));
+    setPortalSystemTextLocale((prev) => nextLocales.some((row) => row.locale === prev) ? prev : fallbackLocale);
+  }
+
+  async function loadPortalSystemTextsWorkspace() {
+    const [localesData, systemTextData] = await Promise.all([
       api<{
         locales?: PortalLocaleConfigRecord[];
-        pages?: PortalContentPageDefinition[];
-        entries?: PortalContentEntryRecord[];
-        metas?: PortalContentI18nMetaViewRecord[];
-      }>("/api/admin/portal-content"),
+      }>("/api/admin/portal-locales"),
       api<{
         definitions?: PortalSystemTextDefinition[];
         entries?: PortalSystemTextEntryRecord[];
         metas?: PortalSystemTextI18nMetaViewRecord[];
       }>("/api/admin/portal-system-texts"),
     ]);
-    const nextLocales = contentData.locales ?? [];
+    const nextLocales = localesData.locales ?? [];
     const nextSystemDefinitions = systemTextData.definitions ?? PORTAL_SYSTEM_TEXT_DEFINITIONS;
     const nextSystemEntries = systemTextData.entries ?? [];
     setPortalLocaleConfigs(nextLocales);
-    setPortalContentEntries(contentData.entries ?? []);
-    setPortalContentMetas(contentData.metas ?? []);
     setPortalSystemTextDefinitions(nextSystemDefinitions);
     setPortalSystemTextEntries(nextSystemEntries);
     setPortalSystemTextMetas(systemTextData.metas ?? []);
@@ -4096,6 +4113,21 @@ export default function AdminClient() {
       definitions: nextSystemDefinitions,
       entries: nextSystemEntries,
     }));
+    const fallbackLocale = nextLocales.find((row) => row.is_active)?.locale ?? nextLocales[0]?.locale ?? "de";
+    setPortalSystemTextLocale((prev) => nextLocales.some((row) => row.locale === prev) ? prev : fallbackLocale);
+  }
+
+  async function loadPortalCmsWorkspace() {
+    const contentData = await api<{
+      locales?: PortalLocaleConfigRecord[];
+      pages?: PortalContentPageDefinition[];
+      entries?: PortalContentEntryRecord[];
+      metas?: PortalContentI18nMetaViewRecord[];
+    }>("/api/admin/portal-content");
+    const nextLocales = contentData.locales ?? [];
+    setPortalLocaleConfigs(nextLocales);
+    setPortalContentEntries(contentData.entries ?? []);
+    setPortalContentMetas(contentData.metas ?? []);
     const fallbackLocale = nextLocales.find((row) => row.is_active)?.locale ?? nextLocales[0]?.locale ?? "de";
     setPortalCmsViewState((prev) => {
       const nextLocale = nextLocales.some((row) => row.locale === prev.locale)
@@ -4110,7 +4142,6 @@ export default function AdminClient() {
         pageKey: nextPageKey,
       };
     });
-    setPortalSystemTextLocale((prev) => nextLocales.some((row) => row.locale === prev) ? prev : fallbackLocale);
   }
 
   async function loadMarketExplanationStandardTexts(options?: {
@@ -4560,10 +4591,10 @@ export default function AdminClient() {
     setPortalSystemTextLocale(locale);
     try {
       await initializePortalLocaleFromDe(locale);
-      await loadPortalCms();
+      await loadPortalLocales();
       resetNewPortalLocaleDraft();
     } catch (error) {
-      await loadPortalCms();
+      await loadPortalLocales();
       throw error;
     }
   }
@@ -4966,7 +4997,7 @@ export default function AdminClient() {
         target_entries: buildPortalCmsPageDraftEntries(selectedPortalCmsPage, portalCmsLocale),
       }),
     });
-    await loadPortalCms();
+    await loadPortalCmsWorkspace();
   }
 
   async function translatePortalCmsSectionFromDe(args: {
@@ -4999,7 +5030,7 @@ export default function AdminClient() {
         },
       }),
     });
-    await loadPortalCms();
+    await loadPortalCmsWorkspace();
   }
 
   async function translateSelectedPortalCmsPageMissingFromDe() {
@@ -5028,7 +5059,7 @@ export default function AdminClient() {
         }),
       });
     }
-    await loadPortalCms();
+    await loadPortalCmsWorkspace();
   }
 
   async function loadPartnerBillingConfig(partnerId: string) {
@@ -6296,7 +6327,7 @@ export default function AdminClient() {
             onClick={() => {
               setActiveView("language_admin");
               void run("Sprachverwaltung laden", async () => {
-                await loadPortalCms();
+                await loadPortalLocales();
               }, { showSuccessModal: false });
             }}
             title="Sprachverwaltung"
@@ -6318,7 +6349,7 @@ export default function AdminClient() {
             onClick={() => {
               setActiveView("system_texts");
               void run("Systemtexte laden", async () => {
-                await loadPortalCms();
+                await loadPortalSystemTextsWorkspace();
               }, { showSuccessModal: false });
             }}
             title="Systemtexte"
@@ -6390,7 +6421,7 @@ export default function AdminClient() {
             onClick={() => {
               setActiveView("portal_cms");
               void run("Portal-CMS laden", async () => {
-                await loadPortalCms();
+                await loadPortalCmsWorkspace();
               }, { showSuccessModal: false });
             }}
             title="Portal-CMS"
@@ -8435,7 +8466,7 @@ export default function AdminClient() {
               onClick={() =>
                 run("Portal-Locales speichern", async () => {
                   await savePortalLocaleConfigs(portalLocaleConfigs);
-                  await loadPortalCms();
+                  await loadPortalLocales();
                 })
               }
             >
@@ -10727,7 +10758,7 @@ export default function AdminClient() {
                     method: "POST",
                     body: JSON.stringify({ entries }),
                   });
-                  await loadPortalCms();
+                  await loadPortalCmsWorkspace();
                 })
               }
             >
