@@ -32,7 +32,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = PROV
 }
 
 export function buildOpenImmoRequestHeaders(
-  integration: Pick<PartnerIntegration, "auth_type" | "auth_config">,
+  integration: { auth_type?: string | null; auth_config?: Record<string, unknown> | null },
 ): HeadersInit {
   const headers: HeadersInit = {
     accept: "application/xml, text/xml, application/octet-stream;q=0.9, */*;q=0.8",
@@ -52,7 +52,12 @@ export function buildOpenImmoRequestHeaders(
 }
 
 export async function fetchOpenImmoFeedXml(
-  integration: Pick<PartnerIntegration, "base_url" | "settings" | "auth_type" | "auth_config">,
+  integration: {
+    base_url?: string | null;
+    settings?: Record<string, unknown> | null;
+    auth_type?: string | null;
+    auth_config?: Record<string, unknown> | null;
+  },
 ): Promise<string> {
   const feedUrl =
     asText(integration.base_url)
