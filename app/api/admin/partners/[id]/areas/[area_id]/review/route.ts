@@ -35,6 +35,10 @@ type MappingRow = {
   admin_review_note?: string | null;
 };
 
+function roundTiming(value: number): number {
+  return Number(value.toFixed(2));
+}
+
 function isMissingActivationStatusColumn(error: unknown): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return (
@@ -182,8 +186,29 @@ export async function GET(
   ctx: { params: Promise<{ id: string; area_id: string }> },
 ) {
   try {
+    const requestStartedAt = performance.now();
+    const url = new URL(req.url);
+    const debugTiming = url.searchParams.get("debug_timing") === "1";
+    const timings: Record<string, number> = {};
+    const mark = (key: string, startedAt: number) => {
+      if (!debugTiming) return;
+      timings[key] = roundTiming(performance.now() - startedAt);
+    };
+    const withDebugTimings = <T extends Record<string, unknown>>(payload: T): T | (T & { debug_timings: Record<string, number> }) => {
+      if (!debugTiming) return payload;
+      return {
+        ...payload,
+        debug_timings: {
+          ...timings,
+          total_ms: roundTiming(performance.now() - requestStartedAt),
+        },
+      };
+    };
+
+    const authStartedAt = performance.now();
     const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
     const adminRate = await checkAdminApiRateLimit(req, adminUser.userId);
+    mark("auth_ms", authStartedAt);
     if (!adminRate.allowed) {
       return NextResponse.json(
         { error: "Too many requests" },
@@ -199,19 +224,26 @@ export async function GET(
     }
 
     const admin = createAdminClient();
+    const mappingStartedAt = performance.now();
     const { data: mapping, error: mappingError } = await loadMapping(admin, partnerId, areaId);
+    mark("mapping_ms", mappingStartedAt);
     if (mappingError) return NextResponse.json({ error: mappingError.message }, { status: 500 });
     if (!mapping) return NextResponse.json({ error: "Mapping not found" }, { status: 404 });
 
+    const mandatoryStartedAt = performance.now();
     const mandatoryCheck = await checkPartnerAreaMandatoryTexts({
       admin,
       partnerId,
       areaId,
       requireApprovedMedia: false,
     });
+    mark("mandatory_ms", mandatoryStartedAt);
+    const fieldsStartedAt = performance.now();
     const fields = await fetchReviewFields(admin, partnerId, areaId);
+    mark("fields_ms", fieldsStartedAt);
 
-    return NextResponse.json({
+    const responseBuildStartedAt = performance.now();
+    const payload = {
       ok: true,
       mapping: {
         ...mapping,
@@ -223,7 +255,10 @@ export async function GET(
       },
       mandatory: mandatoryCheck,
       fields,
-    });
+    };
+    mark("response_build_ms", responseBuildStartedAt);
+
+    return NextResponse.json(withDebugTimings(payload));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -238,8 +273,29 @@ export async function PATCH(
   ctx: { params: Promise<{ id: string; area_id: string }> },
 ) {
   try {
+    const requestStartedAt = performance.now();
+    const url = new URL(req.url);
+    const debugTiming = url.searchParams.get("debug_timing") === "1";
+    const timings: Record<string, number> = {};
+    const mark = (key: string, startedAt: number) => {
+      if (!debugTiming) return;
+      timings[key] = roundTiming(performance.now() - startedAt);
+    };
+    const withDebugTimings = <T extends Record<string, unknown>>(payload: T): T | (T & { debug_timings: Record<string, number> }) => {
+      if (!debugTiming) return payload;
+      return {
+        ...payload,
+        debug_timings: {
+          ...timings,
+          total_ms: roundTiming(performance.now() - requestStartedAt),
+        },
+      };
+    };
+
+    const authStartedAt = performance.now();
     const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
     const adminRate = await checkAdminApiRateLimit(req, adminUser.userId);
+    mark("auth_ms", authStartedAt);
     if (!adminRate.allowed) {
       return NextResponse.json(
         { error: "Too many requests" },
@@ -261,11 +317,14 @@ export async function PATCH(
     }
 
     const admin = createAdminClient();
+    const mappingStartedAt = performance.now();
     const { data: mapping, error: mappingError } = await loadMapping(admin, partnerId, areaId);
+    mark("mapping_ms", mappingStartedAt);
     if (mappingError) return NextResponse.json({ error: mappingError.message }, { status: 500 });
     if (!mapping) return NextResponse.json({ error: "Mapping not found" }, { status: 404 });
 
     if (action === "approve") {
+      const conflictCheckStartedAt = performance.now();
       const { data: activeAssignedRows, error: activeAssignedError } = await admin
         .from("partner_area_map")
         .select("auth_user_id")
@@ -273,6 +332,7 @@ export async function PATCH(
         .eq("is_active", true)
         .neq("auth_user_id", partnerId)
         .limit(1);
+      mark("conflict_check_ms", conflictCheckStartedAt);
       if (activeAssignedError) {
         return NextResponse.json({ error: activeAssignedError.message }, { status: 500 });
       }
@@ -281,12 +341,14 @@ export async function PATCH(
       }
     }
 
+    const mandatoryStartedAt = performance.now();
     const mandatoryCheck = await checkPartnerAreaMandatoryTexts({
       admin,
       partnerId,
       areaId,
       requireApprovedMedia: false,
     });
+    mark("mandatory_ms", mandatoryStartedAt);
     if (action === "approve" && !mandatoryCheck.ok) {
       return NextResponse.json(
         {
@@ -308,6 +370,7 @@ export async function PATCH(
       ? { is_active: true, is_public_live: false, activation_status: "approved_preview", partner_preview_signoff_at: null, admin_review_note: null }
       : { is_active: false, is_public_live: false, activation_status: action, partner_preview_signoff_at: null, admin_review_note: reviewNote || null };
 
+    const updateStartedAt = performance.now();
     let { data: updated, error: updateError } = await admin
       .from("partner_area_map")
       .update(nextPatch)
@@ -361,10 +424,12 @@ export async function PATCH(
         updateError = fallback.error;
       }
     }
+    mark("update_ms", updateStartedAt);
 
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
     if (!updated) return NextResponse.json({ error: "Mapping not found" }, { status: 404 });
 
+    const auditStartedAt = performance.now();
     await writeSecurityAuditLog({
       actorUserId: adminUser.userId,
       actorRole: adminUser.role,
@@ -383,10 +448,12 @@ export async function PATCH(
       ip: extractClientIpFromHeaders(req.headers),
       userAgent: req.headers.get("user-agent"),
     });
+    mark("audit_ms", auditStartedAt);
 
     let partnerApprovalMailSent = false;
     let partnerApprovalMailReason: string | undefined;
     if (action === "approve" || action === "changes_requested") {
+      const mailStartedAt = performance.now();
       try {
         const [partnerRes, areaRes] = await Promise.all([
           admin
@@ -447,10 +514,14 @@ export async function PATCH(
         ip: extractClientIpFromHeaders(req.headers),
         userAgent: req.headers.get("user-agent"),
       });
+      mark("mail_and_audit_ms", mailStartedAt);
     }
 
+    const fieldsStartedAt = performance.now();
     const fields = await fetchReviewFields(admin, partnerId, areaId);
-    return NextResponse.json({
+    mark("fields_ms", fieldsStartedAt);
+    const responseBuildStartedAt = performance.now();
+    const payload = {
       ok: true,
       mapping: {
         ...updated,
@@ -471,7 +542,9 @@ export async function PATCH(
           },
         }
         : null,
-    });
+    };
+    mark("response_build_ms", responseBuildStartedAt);
+    return NextResponse.json(withDebugTimings(payload));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
