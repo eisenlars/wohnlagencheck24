@@ -6,7 +6,7 @@ import { writeSecurityAuditLog } from "@/lib/security/audit-log";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { checkPartnerAreaMandatoryTexts } from "@/lib/partner-area-mandatory";
 import { INDIVIDUAL_MANDATORY_KEYS } from "@/lib/text-key-registry";
-import { MANDATORY_MEDIA_KEYS } from "@/lib/mandatory-media";
+import { MANDATORY_MEDIA_KEYS, looksLikePlaceholderMediaUrl } from "@/lib/mandatory-media";
 import { sendPartnerAreaApprovedEmail, sendPartnerReviewChangesRequestedEmail } from "@/lib/notifications/admin-review-email";
 import { isMissingPublicLiveColumn } from "@/lib/public-partner-mappings";
 
@@ -22,6 +22,13 @@ type ReviewField = {
   content: string;
   status: "approved" | "draft";
   present: boolean;
+};
+
+type ReviewMandatoryOverview = {
+  ok: boolean;
+  status: number;
+  error: string | null;
+  missing: Array<{ key: string; reason: "missing" }>;
 };
 
 type MappingRow = {
@@ -181,6 +188,35 @@ async function fetchReviewFields(admin: ReturnType<typeof createAdminClient>, pa
   });
 }
 
+function buildMandatoryOverviewFromFields(fields: ReviewField[]): ReviewMandatoryOverview {
+  const missing = fields
+    .filter((field) => {
+      if (!field.present) return true;
+      if (!MANDATORY_MEDIA_KEYS.includes(field.key as (typeof MANDATORY_MEDIA_KEYS)[number])) return false;
+      return looksLikePlaceholderMediaUrl(field.content);
+    })
+    .map((field) => ({
+      key: field.key,
+      reason: "missing" as const,
+    }));
+
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      status: 409,
+      error: "Schnellpruefung: Pflichtangaben unvollstaendig.",
+      missing,
+    };
+  }
+
+  return {
+    ok: true,
+    status: 200,
+    error: null,
+    missing: [],
+  };
+}
+
 export async function GET(
   req: Request,
   ctx: { params: Promise<{ id: string; area_id: string }> },
@@ -230,17 +266,12 @@ export async function GET(
     if (mappingError) return NextResponse.json({ error: mappingError.message }, { status: 500 });
     if (!mapping) return NextResponse.json({ error: "Mapping not found" }, { status: 404 });
 
-    const mandatoryStartedAt = performance.now();
-    const mandatoryCheck = await checkPartnerAreaMandatoryTexts({
-      admin,
-      partnerId,
-      areaId,
-      requireApprovedMedia: false,
-    });
-    mark("mandatory_ms", mandatoryStartedAt);
     const fieldsStartedAt = performance.now();
     const fields = await fetchReviewFields(admin, partnerId, areaId);
     mark("fields_ms", fieldsStartedAt);
+    const mandatoryOverviewStartedAt = performance.now();
+    const mandatoryOverview = buildMandatoryOverviewFromFields(fields);
+    mark("mandatory_overview_ms", mandatoryOverviewStartedAt);
 
     const responseBuildStartedAt = performance.now();
     const payload = {
@@ -253,7 +284,7 @@ export async function GET(
           Boolean(mapping.is_public_live),
         ),
       },
-      mandatory: mandatoryCheck,
+      mandatory: mandatoryOverview,
       fields,
     };
     mark("response_build_ms", responseBuildStartedAt);
