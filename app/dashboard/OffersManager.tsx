@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
@@ -216,6 +216,67 @@ function parseBoolean(value: unknown): boolean | null {
   return null;
 }
 
+function normalizeOnOfficeFlag(value: unknown): '1' | '0' | null {
+  if (typeof value === 'number') {
+    if (value === 1) return '1';
+    if (value === 0) return '0';
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (normalized === '1') return '1';
+    if (normalized === '0') return '0';
+  }
+  return null;
+}
+
+function formatOnOfficeFlagLabel(value: unknown): string {
+  const normalized = normalizeOnOfficeFlag(value);
+  if (normalized === '1') return 'ja';
+  if (normalized === '0') return 'nein';
+  const text = asText(value);
+  return text ?? '—';
+}
+
+function classifyOnOfficeCandidate(raw: Record<string, unknown>): {
+  label: string;
+  tone: 'info' | 'success' | 'warning';
+  detail: string;
+} {
+  const sold = normalizeOnOfficeFlag(raw.verkauft);
+  const reserved = normalizeOnOfficeFlag(raw.reserviert);
+  const marketingType = asText(raw.vermarktungsart);
+
+  if (sold === '1') {
+    return {
+      label: marketingType === 'miete' ? 'Referenz-Kandidat: vermietet' : 'Referenz-Kandidat: verkauft',
+      tone: 'warning',
+      detail: 'onOffice meldet den Datensatz aktuell als abgeschlossen.',
+    };
+  }
+
+  if (sold === '0' && reserved === '1') {
+    return {
+      label: 'Angebot-Kandidat: reserviert',
+      tone: 'info',
+      detail: 'Der Datensatz ist noch offen, aber bereits als reserviert markiert.',
+    };
+  }
+
+  if (sold === '0') {
+    return {
+      label: 'Angebot-Kandidat: offen',
+      tone: 'success',
+      detail: 'Der Datensatz wirkt laut onOffice-Feldern wie ein aktives Angebot.',
+    };
+  }
+
+  return {
+    label: 'Kandidat prüfen',
+    tone: 'info',
+    detail: 'Die onOffice-Steuerfelder liefern aktuell keine eindeutige Einordnung.',
+  };
+}
+
 function getEffectiveOfferObjectType(offer: OfferRow | null | undefined): string {
   if (!offer) return '';
   const raw = offer.raw;
@@ -326,9 +387,61 @@ export default function OffersManager(props: Props) {
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
+  const [llmOptionsLoading, setLlmOptionsLoading] = useState(false);
+  const [llmOptionsLoaded, setLlmOptionsLoaded] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<WorkspaceTab>('texts');
+  const llmOptionsRequestRef = useRef<Promise<LlmIntegrationOption[]> | null>(null);
+
+  const ensureLlmOptions = useCallback(async (): Promise<LlmIntegrationOption[]> => {
+    if (llmOptionsLoaded) return llmOptions;
+    if (llmOptionsRequestRef.current) return llmOptionsRequestRef.current;
+    const request = (async () => {
+      setLlmOptionsLoading(true);
+      try {
+        const integrationsRes = await fetch('/api/partner/llm/options');
+        if (integrationsRes.ok) {
+          const payload = await integrationsRes.json().catch(() => ({}));
+          const items: LlmOptionApiRow[] = Array.isArray(payload?.options)
+            ? (payload.options as LlmOptionApiRow[])
+            : [];
+          const llmItems: LlmIntegrationOption[] = items
+            .map((entry) => {
+              const id = String(entry?.id ?? '').trim();
+              if (!id) return null;
+              const provider = String(entry?.provider ?? '').trim() || 'LLM';
+              const model = String(entry?.model ?? '').trim() || 'Standardmodell';
+              const source = String(entry?.source ?? '').trim().toLowerCase() === 'global' ? 'global' : 'partner';
+              return {
+                id,
+                label: String(entry?.label ?? '').trim() || `${formatProviderLabel(provider)} · ${model}${source === 'global' ? ' (Global)' : ' (Partner)'}`,
+              };
+            })
+            .filter((entry): entry is LlmIntegrationOption => Boolean(entry));
+          setLlmOptions(llmItems);
+          setSelectedLlmIntegrationId((prev) => {
+            if (prev && llmItems.some((item) => item.id === prev)) return prev;
+            return llmItems[0]?.id ?? '';
+          });
+          setLlmOptionsLoaded(true);
+          return llmItems;
+        }
+        setLlmOptions([]);
+        setSelectedLlmIntegrationId('');
+        setLlmOptionsLoaded(true);
+        return [];
+      } finally {
+        setLlmOptionsLoading(false);
+      }
+    })();
+    llmOptionsRequestRef.current = request;
+    try {
+      return await request;
+    } finally {
+      llmOptionsRequestRef.current = null;
+    }
+  }, [llmOptions, llmOptionsLoaded]);
 
   useEffect(() => {
     async function load() {
@@ -345,35 +458,6 @@ export default function OffersManager(props: Props) {
         .from('partner_property_overrides')
         .select('*')
         .eq('partner_id', user.id);
-
-      const integrationsRes = await fetch('/api/partner/llm/options');
-      if (integrationsRes.ok) {
-        const payload = await integrationsRes.json().catch(() => ({}));
-        const items: LlmOptionApiRow[] = Array.isArray(payload?.options)
-          ? (payload.options as LlmOptionApiRow[])
-          : [];
-        const llmItems: LlmIntegrationOption[] = items
-          .map((entry) => {
-            const id = String(entry?.id ?? '').trim();
-            if (!id) return null;
-            const provider = String(entry?.provider ?? '').trim() || 'LLM';
-            const model = String(entry?.model ?? '').trim() || 'Standardmodell';
-            const source = String(entry?.source ?? '').trim().toLowerCase() === 'global' ? 'global' : 'partner';
-            return {
-              id,
-              label: String(entry?.label ?? '').trim() || `${formatProviderLabel(provider)} · ${model}${source === 'global' ? ' (Global)' : ' (Partner)'}`,
-            };
-          })
-          .filter((entry): entry is LlmIntegrationOption => Boolean(entry));
-        setLlmOptions(llmItems);
-        setSelectedLlmIntegrationId((prev) => {
-          if (prev && llmItems.some((item) => item.id === prev)) return prev;
-          return llmItems[0]?.id ?? '';
-        });
-      } else {
-        setLlmOptions([]);
-        setSelectedLlmIntegrationId('');
-      }
 
       setOffers(offersData || []);
       setOverrides(overridesData || []);
@@ -468,6 +552,19 @@ export default function OffersManager(props: Props) {
     () => parseDocumentAssets(selectedRaw.documents),
     [selectedRaw],
   );
+  const onOfficeSnapshot = useMemo(() => {
+    if (selectedOffer?.source !== 'onoffice') return null;
+    return {
+      exposeeId: readTextValue(selectedRaw.exposee_id),
+      marketingType: readTextValue(selectedRaw.vermarktungsart) ?? selectedOffer.offer_type ?? null,
+      status: readTextValue(selectedRaw.status),
+      status2: readTextValue(selectedRaw.status2),
+      sold: selectedRaw.verkauft,
+      reserved: selectedRaw.reserviert,
+      publish: selectedRaw.veroeffentlichen,
+      candidate: classifyOnOfficeCandidate(selectedRaw),
+    };
+  }, [selectedOffer, selectedRaw]);
   const combinedDocumentAssets = useMemo(
     () => uniqDocumentsByUrl([
       ...documentFiles,
@@ -609,6 +706,8 @@ export default function OffersManager(props: Props) {
     const isListField = keyName === 'highlights' || keyName === 'image_alt_texts';
     setRewritingKey(keyName);
     try {
+      const availableOptions = llmOptions.length > 0 ? llmOptions : await ensureLlmOptions();
+      if (availableOptions.length === 0) return;
       const res = await fetch('/api/ai-rewrite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -618,7 +717,7 @@ export default function OffersManager(props: Props) {
           type: 'general',
           sectionLabel: label,
           customPrompt: customPrompt || undefined,
-          llm_integration_id: selectedLlmIntegrationId || llmOptions[0]?.id || undefined,
+          llm_integration_id: selectedLlmIntegrationId || availableOptions[0]?.id || undefined,
         }),
       });
       const data = await res.json();
@@ -998,30 +1097,79 @@ export default function OffersManager(props: Props) {
             ) : null}
 
             {selectedOffer ? (
-              <div style={offerSummaryTopCardStyle}>
-                <div style={offerSummaryHeaderStyle}>Objekt-Übersicht</div>
-                <div style={offerSummaryGridStyle}>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Objekt-ID</div>
-                    <div style={offerSummaryValueStyle}>{selectedOffer.id}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Titel</div>
-                    <div style={offerSummaryValueStyle}>{selectedOffer.title || 'Objekt'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Adresse</div>
-                    <div style={offerSummaryValueStyle}>{selectedOffer.address || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Objektart</div>
-                    <div style={offerSummaryValueStyle}>{getEffectiveOfferObjectType(selectedOffer) || '—'}</div>
-                  </div>
-                  <div>
-                    <div style={offerSummaryLabelStyle}>Angebotstyp</div>
-                    <div style={offerSummaryValueStyle}>{selectedOffer.offer_type || '—'}</div>
+              <div style={offerSummaryTopWrapStyle}>
+                <div style={offerSummaryTopCardStyle}>
+                  <div style={offerSummaryHeaderStyle}>Objekt-Übersicht</div>
+                  <div style={offerSummaryGridStyle}>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Objekt-ID</div>
+                      <div style={offerSummaryValueStyle}>{selectedOffer.id}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Titel</div>
+                      <div style={offerSummaryValueStyle}>{selectedOffer.title || 'Objekt'}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Adresse</div>
+                      <div style={offerSummaryValueStyle}>{selectedOffer.address || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Objektart</div>
+                      <div style={offerSummaryValueStyle}>{getEffectiveOfferObjectType(selectedOffer) || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Angebotstyp</div>
+                      <div style={offerSummaryValueStyle}>{selectedOffer.offer_type || '—'}</div>
+                    </div>
                   </div>
                 </div>
+                {onOfficeSnapshot ? (
+                  <div style={offerSummaryTopCardStyle}>
+                    <div style={offerSummaryHeaderRowStyle}>
+                      <div style={offerSummaryHeaderStyle}>CRM-Snapshot</div>
+                      <span style={crmCandidateBadgeStyle(onOfficeSnapshot.candidate.tone)}>
+                        {onOfficeSnapshot.candidate.label}
+                      </span>
+                    </div>
+                    <div style={mediaSectionHintStyle}>{onOfficeSnapshot.candidate.detail}</div>
+                    <div style={offerSummaryGridStyle}>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Quelle</div>
+                        <div style={offerSummaryValueStyle}>{selectedOffer.source || '—'}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Exposé / Extern</div>
+                        <div style={offerSummaryValueStyle}>
+                          {onOfficeSnapshot.exposeeId || selectedOffer.external_id || '—'}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Vermarktungsart</div>
+                        <div style={offerSummaryValueStyle}>{onOfficeSnapshot.marketingType || '—'}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>status</div>
+                        <div style={offerSummaryValueStyle}>{onOfficeSnapshot.status || '—'}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>status2</div>
+                        <div style={offerSummaryValueStyle}>{onOfficeSnapshot.status2 || '—'}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>verkauft</div>
+                        <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.sold)}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>reserviert</div>
+                        <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.reserved)}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>veröffentlichen</div>
+                        <div style={offerSummaryValueStyle}>{formatOnOfficeFlagLabel(onOfficeSnapshot.publish)}</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             <div style={workspaceTabsRowStyle}>
@@ -1775,7 +1923,12 @@ const offerSummaryCardStyle: React.CSSProperties = {
 
 const offerSummaryTopCardStyle: React.CSSProperties = {
   ...offerSummaryCardStyle,
-  marginBottom: '40px',
+  marginBottom: 0,
+};
+
+const offerSummaryTopWrapStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: '16px',
 };
 
 const offerSummaryHeaderStyle: React.CSSProperties = {
@@ -1784,6 +1937,15 @@ const offerSummaryHeaderStyle: React.CSSProperties = {
   letterSpacing: '0.08em',
   color: '#64748b',
   fontWeight: 700,
+  marginBottom: '10px',
+};
+
+const offerSummaryHeaderRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  flexWrap: 'wrap',
   marginBottom: '10px',
 };
 
@@ -1818,6 +1980,31 @@ const offerSummaryValueStyle: React.CSSProperties = {
   fontWeight: 600,
   lineHeight: 1.4,
 };
+
+const crmCandidateBadgeStyle = (tone: 'info' | 'success' | 'warning'): React.CSSProperties => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  borderRadius: '999px',
+  padding: '6px 10px',
+  fontSize: '11px',
+  lineHeight: 1.2,
+  fontWeight: 700,
+  border: tone === 'success'
+    ? '1px solid #86efac'
+    : tone === 'warning'
+      ? '1px solid #fcd34d'
+      : '1px solid #bfdbfe',
+  background: tone === 'success'
+    ? '#f0fdf4'
+    : tone === 'warning'
+      ? '#fffbeb'
+      : '#eff6ff',
+  color: tone === 'success'
+    ? '#166534'
+    : tone === 'warning'
+      ? '#92400e'
+      : '#1d4ed8',
+});
 
 const mediaCardStyle: React.CSSProperties = {
   backgroundColor: '#f8fafc',
