@@ -716,6 +716,8 @@ export async function fetchOnOfficeEstates(
     "strasse",
     "hausnummer",
     "baujahr",
+    "freitext_lage",
+    "freitext_ausstattung",
   ];
   const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
     status: [{ op: "=", val: 1 }],
