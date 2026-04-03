@@ -705,6 +705,8 @@ export default function TextEditorForm({
   });
   const [llmIntegrations, setLlmIntegrations] = useState<LlmIntegrationOption[]>([]);
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState<string>('');
+  const [llmOptionsLoading, setLlmOptionsLoading] = useState(false);
+  const [llmOptionsLoaded, setLlmOptionsLoaded] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
   const [publishStatus, setPublishStatus] = useState<string>('Bereit.');
   const [publishError, setPublishError] = useState<string | null>(null);
@@ -779,6 +781,76 @@ export default function TextEditorForm({
     return nextData;
   }, [areaDataById, isOrtslage, loadAreaTextData, scopeAreaItems.length]);
 
+  const llmOptionsRequestRef = useRef<Promise<LlmIntegrationOption[]> | null>(null);
+
+  const ensureLlmOptions = useCallback(async (): Promise<LlmIntegrationOption[]> => {
+    if (llmOptionsLoaded) return llmIntegrations;
+    if (llmOptionsRequestRef.current) return llmOptionsRequestRef.current;
+    const request = (async () => {
+      setLlmOptionsLoading(true);
+      const requestUrl = withDebugTimingUrl('/api/partner/llm/options');
+      const startedAt = performance.now();
+      try {
+        const integrationsRes = await fetch(requestUrl);
+        if (integrationsRes.ok) {
+          const integrationsPayload = await integrationsRes.json().catch(() => ({}));
+          logDebugTiming(requestUrl, performance.now() - startedAt, integrationsPayload);
+          const items: LlmOptionApiRow[] = Array.isArray(integrationsPayload?.options)
+            ? (integrationsPayload.options as LlmOptionApiRow[])
+            : [];
+          const llmModeDefault = String(integrationsPayload?.llm_mode_default ?? '').trim().toLowerCase();
+          const llmItems: LlmIntegrationOption[] = items
+            .reduce<LlmIntegrationOption[]>((acc, entry) => {
+              const id = String(entry?.id ?? '').trim();
+              if (!id) return acc;
+              const provider = String(entry?.provider ?? '').trim() || 'LLM';
+              const model = String(entry?.model ?? '').trim() || 'Standardmodell';
+              const source = String(entry?.source ?? '').toLowerCase() === 'global' ? 'global' : 'partner';
+              acc.push({
+                id,
+                source,
+                provider,
+                model,
+                inputCostUsdPer1k: typeof entry?.input_cost_usd_per_1k === 'number' ? entry.input_cost_usd_per_1k : null,
+                outputCostUsdPer1k: typeof entry?.output_cost_usd_per_1k === 'number' ? entry.output_cost_usd_per_1k : null,
+                inputCostEurPer1k: typeof entry?.input_cost_eur_per_1k === 'number' ? entry.input_cost_eur_per_1k : null,
+                outputCostEurPer1k: typeof entry?.output_cost_eur_per_1k === 'number' ? entry.output_cost_eur_per_1k : null,
+                partnerIntegrationId: String(entry?.partner_integration_id ?? '').trim() || null,
+                globalProviderId: String(entry?.global_provider_id ?? '').trim() || null,
+              } satisfies LlmIntegrationOption);
+              return acc;
+            }, []);
+          setLlmIntegrations(llmItems);
+          setSelectedLlmIntegrationId((prev) => {
+            if (prev && llmItems.some((item) => item.id === prev)) return prev;
+            if (llmModeDefault === 'central_managed') {
+              return llmItems.find((item) => item.source === 'global')?.id ?? llmItems[0]?.id ?? '';
+            }
+            if (llmModeDefault === 'partner_managed') {
+              return llmItems.find((item) => item.source === 'partner')?.id ?? llmItems[0]?.id ?? '';
+            }
+            return llmItems[0]?.id ?? '';
+          });
+          setLlmOptionsLoaded(true);
+          return llmItems;
+        }
+        logDebugTiming(requestUrl, performance.now() - startedAt, null);
+        setLlmIntegrations([]);
+        setSelectedLlmIntegrationId('');
+        setLlmOptionsLoaded(true);
+        return [];
+      } finally {
+        setLlmOptionsLoading(false);
+      }
+    })();
+    llmOptionsRequestRef.current = request;
+    try {
+      return await request;
+    } finally {
+      llmOptionsRequestRef.current = null;
+    }
+  }, [llmIntegrations, llmOptionsLoaded]);
+
   useEffect(() => {
     if (!config?.area_id) return;
     if (scopeAreaItems.length === 0) return;
@@ -811,66 +883,6 @@ export default function TextEditorForm({
       cancelled = true;
     };
   }, [areaDataById, config, ensureAreaTextData, selectedAreaConfig]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadLlmOptions() {
-      const requestUrl = withDebugTimingUrl('/api/partner/llm/options');
-      const startedAt = performance.now();
-      const integrationsRes = await fetch(requestUrl);
-      if (cancelled) return;
-      if (integrationsRes.ok) {
-        const integrationsPayload = await integrationsRes.json().catch(() => ({}));
-        logDebugTiming(requestUrl, performance.now() - startedAt, integrationsPayload);
-        const items: LlmOptionApiRow[] = Array.isArray(integrationsPayload?.options)
-          ? (integrationsPayload.options as LlmOptionApiRow[])
-          : [];
-        const llmModeDefault = String(integrationsPayload?.llm_mode_default ?? '').trim().toLowerCase();
-        const llmItems: LlmIntegrationOption[] = items
-          .reduce<LlmIntegrationOption[]>((acc, entry) => {
-            const id = String(entry?.id ?? '').trim();
-            if (!id) return acc;
-            const provider = String(entry?.provider ?? '').trim() || 'LLM';
-            const model = String(entry?.model ?? '').trim() || 'Standardmodell';
-            const source = String(entry?.source ?? '').toLowerCase() === 'global' ? 'global' : 'partner';
-            acc.push({
-              id,
-              source,
-              provider,
-              model,
-              inputCostUsdPer1k: typeof entry?.input_cost_usd_per_1k === 'number' ? entry.input_cost_usd_per_1k : null,
-              outputCostUsdPer1k: typeof entry?.output_cost_usd_per_1k === 'number' ? entry.output_cost_usd_per_1k : null,
-              inputCostEurPer1k: typeof entry?.input_cost_eur_per_1k === 'number' ? entry.input_cost_eur_per_1k : null,
-              outputCostEurPer1k: typeof entry?.output_cost_eur_per_1k === 'number' ? entry.output_cost_eur_per_1k : null,
-              partnerIntegrationId: String(entry?.partner_integration_id ?? '').trim() || null,
-              globalProviderId: String(entry?.global_provider_id ?? '').trim() || null,
-            } satisfies LlmIntegrationOption);
-            return acc;
-          }, []);
-        setLlmIntegrations(llmItems);
-        setSelectedLlmIntegrationId((prev) => {
-          if (prev && llmItems.some((item) => item.id === prev)) return prev;
-          if (llmModeDefault === 'central_managed') {
-            return llmItems.find((item) => item.source === 'global')?.id ?? llmItems[0]?.id ?? '';
-          }
-          if (llmModeDefault === 'partner_managed') {
-            return llmItems.find((item) => item.source === 'partner')?.id ?? llmItems[0]?.id ?? '';
-          }
-          return llmItems[0]?.id ?? '';
-        });
-      } else {
-        logDebugTiming(requestUrl, performance.now() - startedAt, null);
-        setLlmIntegrations([]);
-        setSelectedLlmIntegrationId('');
-      }
-    }
-
-    void loadLlmOptions();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const tabConfig = isMarketing ? MARKETING_TAB_CONFIG : TAB_CONFIG;
   const visibleGlobalClassOrder = useMemo(
@@ -1240,7 +1252,9 @@ export default function TextEditorForm({
     customPrompt?: string,
     areaConfigOverride?: PartnerAreaConfig,
   ) => {
-    const selectedOption = llmIntegrations.find((item) => item.id === (selectedLlmIntegrationId || llmIntegrations[0]?.id));
+    const availableOptions = llmIntegrations.length > 0 ? llmIntegrations : await ensureLlmOptions();
+    const selectedOption = availableOptions.find((item) => item.id === (selectedLlmIntegrationId || availableOptions[0]?.id));
+    if (!selectedOption) return null;
     const targetAreaConfig = areaConfigOverride ?? selectedAreaConfig ?? config;
     try {
       const res = await fetch('/api/ai-rewrite', {
@@ -1535,11 +1549,14 @@ export default function TextEditorForm({
                 <select
                   value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
                   onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                  onFocus={() => { void ensureLlmOptions(); }}
+                  onMouseDown={() => { void ensureLlmOptions(); }}
                   style={textWorkflowTopSelectStyle}
                   aria-label="KI-Modell auswählen"
-                  disabled={llmIntegrations.length === 0}
+                  disabled={llmOptionsLoading || (llmOptionsLoaded && llmIntegrations.length === 0)}
                 >
-                  {llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+                  {!llmOptionsLoaded || llmOptionsLoading ? <option value="">KI-Modelle laden...</option> : null}
+                  {llmOptionsLoaded && llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
                   {llmIntegrations.map((item) => (
                     <option key={item.id} value={item.id}>
                       {`${formatProviderLabel(item.provider)} · ${item.model}${item.source === 'global' ? ' (Global)' : ''}`}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
 
@@ -167,6 +167,56 @@ export default function CrmAssetManager(props: Props) {
   const [query, setQuery] = useState('');
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
+  const [llmOptionsLoading, setLlmOptionsLoading] = useState(false);
+  const [llmOptionsLoaded, setLlmOptionsLoaded] = useState(false);
+  const llmOptionsRequestRef = useRef<Promise<LlmIntegrationOption[]> | null>(null);
+
+  const ensureLlmOptions = useCallback(async (): Promise<LlmIntegrationOption[]> => {
+    if (llmOptionsLoaded) return llmOptions;
+    if (llmOptionsRequestRef.current) return llmOptionsRequestRef.current;
+    const request = (async () => {
+      setLlmOptionsLoading(true);
+      try {
+        const integrationsRes = await fetch('/api/partner/integrations');
+        if (integrationsRes.ok) {
+          const payload = await integrationsRes.json().catch(() => ({}));
+          const items: PartnerIntegrationRow[] = Array.isArray(payload?.integrations)
+            ? (payload.integrations as PartnerIntegrationRow[])
+            : [];
+          const llmItems: LlmIntegrationOption[] = items
+            .filter((entry) => String(entry?.kind ?? '').toLowerCase() === 'llm' && entry?.is_active === true)
+            .map((entry) => {
+              const settings = (entry?.settings ?? {}) as Record<string, unknown>;
+              const model = String(settings?.model ?? settings?.model_name ?? '').trim() || 'Standardmodell';
+              return {
+                id: String(entry?.id ?? ''),
+                label: `${formatProviderLabel(String(entry?.provider ?? ''))} · ${model}`,
+              };
+            })
+            .filter((entry) => entry.id.length > 0);
+          setLlmOptions(llmItems);
+          setSelectedLlmIntegrationId((prev) => {
+            if (prev && llmItems.some((item) => item.id === prev)) return prev;
+            return llmItems[0]?.id ?? '';
+          });
+          setLlmOptionsLoaded(true);
+          return llmItems;
+        }
+        setLlmOptions([]);
+        setSelectedLlmIntegrationId('');
+        setLlmOptionsLoaded(true);
+        return [];
+      } finally {
+        setLlmOptionsLoading(false);
+      }
+    })();
+    llmOptionsRequestRef.current = request;
+    try {
+      return await request;
+    } finally {
+      llmOptionsRequestRef.current = null;
+    }
+  }, [llmOptions, llmOptionsLoaded]);
 
   useEffect(() => {
     async function load() {
@@ -203,33 +253,6 @@ export default function CrmAssetManager(props: Props) {
         setStatus(`Overrides konnten nicht geladen werden (${overrideTable}): ${overrideError.message}`);
       } else {
         setStatus('Daten geladen.');
-      }
-
-      const integrationsRes = await fetch('/api/partner/integrations');
-      if (integrationsRes.ok) {
-        const payload = await integrationsRes.json().catch(() => ({}));
-        const items: PartnerIntegrationRow[] = Array.isArray(payload?.integrations)
-          ? (payload.integrations as PartnerIntegrationRow[])
-          : [];
-        const llmItems: LlmIntegrationOption[] = items
-          .filter((entry) => String(entry?.kind ?? '').toLowerCase() === 'llm' && entry?.is_active === true)
-          .map((entry) => {
-            const settings = (entry?.settings ?? {}) as Record<string, unknown>;
-            const model = String(settings?.model ?? settings?.model_name ?? '').trim() || 'Standardmodell';
-            return {
-              id: String(entry?.id ?? ''),
-              label: `${formatProviderLabel(String(entry?.provider ?? ''))} · ${model}`,
-            };
-          })
-          .filter((entry) => entry.id.length > 0);
-        setLlmOptions(llmItems);
-        setSelectedLlmIntegrationId((prev) => {
-          if (prev && llmItems.some((item) => item.id === prev)) return prev;
-          return llmItems[0]?.id ?? '';
-        });
-      } else {
-        setLlmOptions([]);
-        setSelectedLlmIntegrationId('');
       }
 
       const list = (rawData ?? []) as RawAssetRow[];
@@ -326,6 +349,11 @@ export default function CrmAssetManager(props: Props) {
     setRewritingKey(String(key));
     setStatus('KI-Optimierung läuft...');
     try {
+      const availableOptions = llmOptions.length > 0 ? llmOptions : await ensureLlmOptions();
+      if (availableOptions.length === 0) {
+        setStatus('Keine aktive LLM-Integration verfügbar.');
+        return;
+      }
       const res = await fetch('/api/ai-rewrite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -334,7 +362,7 @@ export default function CrmAssetManager(props: Props) {
           areaName: selectedRow.title || selectedRow.external_id,
           type: 'general',
           sectionLabel: label,
-          llm_integration_id: selectedLlmIntegrationId || llmOptions[0]?.id || undefined,
+          llm_integration_id: selectedLlmIntegrationId || availableOptions[0]?.id || undefined,
         }),
       });
       const data = await res.json();
@@ -559,10 +587,12 @@ export default function CrmAssetManager(props: Props) {
                   style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 10px' }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  {llmOptions.length > 0 ? (
+                  {llmOptions.length > 0 || !llmOptionsLoaded ? (
                     <select
-                      value={selectedLlmIntegrationId || llmOptions[0].id}
+                      value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
                       onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                      onFocus={() => { void ensureLlmOptions(); }}
+                      onMouseDown={() => { void ensureLlmOptions(); }}
                       style={{
                         minWidth: 220,
                         border: '1px solid #dbeafe',
@@ -574,7 +604,9 @@ export default function CrmAssetManager(props: Props) {
                         padding: '6px 10px',
                       }}
                       aria-label="KI-Modell auswählen"
+                      disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                     >
+                      {!llmOptionsLoaded || llmOptionsLoading ? <option value="">KI-Modelle laden...</option> : null}
                       {llmOptions.map((option) => (
                         <option key={option.id} value={option.id}>
                           {option.label}
@@ -589,7 +621,7 @@ export default function CrmAssetManager(props: Props) {
                   <button
                     type="button"
                     onClick={() => runAiRewrite(key, label)}
-                    disabled={rewritingKey === String(key) || llmOptions.length === 0}
+                    disabled={rewritingKey === String(key) || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                     style={{
                       border: '1px solid #94a3b8',
                       borderRadius: 8,

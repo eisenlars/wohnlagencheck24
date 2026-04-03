@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { buildWebAssetUrl } from '@/utils/assets';
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
@@ -89,6 +89,9 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
   const [error, setError] = useState<string | null>(null);
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
+  const [llmOptionsLoading, setLlmOptionsLoading] = useState(false);
+  const [llmOptionsLoaded, setLlmOptionsLoaded] = useState(false);
+  const llmOptionsRequestRef = useRef<Promise<LlmIntegrationOption[]> | null>(null);
 
   const areaName = config?.areas?.name || '';
   const bundeslandSlug = String(config?.areas?.bundesland_slug || '');
@@ -206,11 +209,19 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
     loadPosts();
   }, [areaId, supabase, saving]);
 
-  useEffect(() => {
-    async function loadLlmOptions() {
+  const ensureLlmOptions = useCallback(async (): Promise<LlmIntegrationOption[]> => {
+    if (llmOptionsLoaded) return llmOptions;
+    if (llmOptionsRequestRef.current) return llmOptionsRequestRef.current;
+    const request = (async () => {
+      setLlmOptionsLoading(true);
       try {
         const integrationsRes = await fetch('/api/partner/llm/options');
-        if (!integrationsRes.ok) throw new Error('LLM-Optionen konnten nicht geladen werden.');
+        if (!integrationsRes.ok) {
+          setLlmOptions([]);
+          setSelectedLlmIntegrationId('');
+          setLlmOptionsLoaded(true);
+          return [];
+        }
         const payload = await integrationsRes.json().catch(() => ({}));
         const items: LlmOptionApiRow[] = Array.isArray(payload?.options)
           ? (payload.options as LlmOptionApiRow[])
@@ -223,16 +234,16 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
             const provider = String(entry?.provider ?? '').trim() || 'LLM';
             const model = String(entry?.model ?? '').trim() || 'Standardmodell';
             const source = String(entry?.source ?? '').trim().toLowerCase() === 'global' ? 'global' : 'partner';
-          return {
-            id,
-            source,
-            provider,
-            model,
-            label: String(entry?.label ?? '').trim() || `${provider} · ${model}${source === 'global' ? ' (Global)' : ' (Partner)'}`,
-            partnerIntegrationId: String(entry?.partner_integration_id ?? '').trim() || null,
-            globalProviderId: String(entry?.global_provider_id ?? '').trim() || null,
-          } satisfies LlmIntegrationOption;
-        })
+            return {
+              id,
+              source,
+              provider,
+              model,
+              label: String(entry?.label ?? '').trim() || `${provider} · ${model}${source === 'global' ? ' (Global)' : ' (Partner)'}`,
+              partnerIntegrationId: String(entry?.partner_integration_id ?? '').trim() || null,
+              globalProviderId: String(entry?.global_provider_id ?? '').trim() || null,
+            } satisfies LlmIntegrationOption;
+          })
           .filter((entry): entry is LlmIntegrationOption => Boolean(entry));
         setLlmOptions(nextOptions);
         setSelectedLlmIntegrationId((prev) => {
@@ -245,20 +256,37 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
           }
           return nextOptions[0]?.id ?? '';
         });
+        setLlmOptionsLoaded(true);
+        return nextOptions;
       } catch (err) {
         console.error(err);
+        setLlmOptions([]);
+        setSelectedLlmIntegrationId('');
+        setLlmOptionsLoaded(true);
+        return [];
+      } finally {
+        setLlmOptionsLoading(false);
       }
+    })();
+    llmOptionsRequestRef.current = request;
+    try {
+      return await request;
+    } finally {
+      llmOptionsRequestRef.current = null;
     }
-
-    void loadLlmOptions();
-  }, []);
+  }, [llmOptions, llmOptionsLoaded]);
 
   const handleGenerate = async () => {
     if (!areaName || !hasAllSources) return;
     setGenerating(true);
     setError(null);
     try {
-      const selectedOption = llmOptions.find((item) => item.id === (selectedLlmIntegrationId || llmOptions[0]?.id)) ?? null;
+      const availableOptions = llmOptions.length > 0 ? llmOptions : await ensureLlmOptions();
+      const selectedOption = availableOptions.find((item) => item.id === (selectedLlmIntegrationId || availableOptions[0]?.id)) ?? null;
+      if (!selectedOption) {
+        setError('Keine aktive LLM-Integration verfügbar.');
+        return;
+      }
       const res = await fetch('/api/ai-blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -387,11 +415,14 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
             <select
               value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
               onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+              onFocus={() => { void ensureLlmOptions(); }}
+              onMouseDown={() => { void ensureLlmOptions(); }}
               style={workflowTopSelectStyle}
               aria-label="KI-Modell auswählen"
-              disabled={llmOptions.length === 0}
+              disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
             >
-              {llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
+              {!llmOptionsLoaded || llmOptionsLoading ? <option value="">KI-Modelle laden...</option> : null}
+              {llmOptionsLoaded && llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
               {llmOptions.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.label}
@@ -538,7 +569,7 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
                   type="button"
                   onClick={handleGenerate}
                   style={primaryButtonStyle}
-                  disabled={!hasAllSources || generating || llmOptions.length === 0}
+                  disabled={!hasAllSources || generating || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                 >
                   {generating ? '⏳ KI generiert Blog...' : '✨ Blog per KI generieren'}
                 </button>

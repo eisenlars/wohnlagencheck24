@@ -843,7 +843,7 @@ export default function OffersManager(props: Props) {
                 type="button"
                 style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
                 onClick={() => handleAiRewrite(key, value, label, customPrompt)}
-                disabled={isRewriting || llmOptions.length === 0}
+                disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
                 {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
               </button>
@@ -930,7 +930,7 @@ export default function OffersManager(props: Props) {
                 type="button"
                 style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
                 onClick={() => handleAiRewrite(key, value, label, customPrompt)}
-                disabled={isRewriting || llmOptions.length === 0}
+                disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
                 {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
               </button>
@@ -996,14 +996,18 @@ export default function OffersManager(props: Props) {
                 </span>
               </label>
               <div style={visibilityModelWrapStyle}>
-                {llmOptions.length > 0 ? (
+                {llmOptions.length > 0 || !llmOptionsLoaded ? (
                   <span style={visibilitySelectWrapStyle}>
                     <select
-                      value={selectedLlmIntegrationId || llmOptions[0].id}
+                      value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
                       onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
+                      onFocus={() => { void ensureLlmOptions(); }}
+                      onMouseDown={() => { void ensureLlmOptions(); }}
                       style={visibilityModelSelectStyle}
                       aria-label="KI-Modell auswählen"
+                      disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                     >
+                      {!llmOptionsLoaded || llmOptionsLoading ? <option value="">KI-Modelle laden...</option> : null}
                       {llmOptions.map((option) => (
                         <option key={option.id} value={option.id}>
                           {option.label}
