@@ -31,30 +31,20 @@ type NetworkPartnerListPayload = {
   error?: string;
 };
 
-type BootstrapPayload = {
-  configs?: Array<{
-    area_id?: string;
-    areas?: { name?: string };
-  }>;
-};
-
-function mapAreaLabel(areaId: string, areaName?: string): string {
-  return areaName ? `${areaId} ${areaName}` : areaId;
-}
-
 type NetworkBookingsWorkspaceProps = {
   networkPartnerId?: string;
   networkPartnerName?: string | null;
+  areas?: AreaOption[];
 };
 
 export default function NetworkBookingsWorkspace({
   networkPartnerId,
   networkPartnerName,
+  areas: providedAreas = [],
 }: NetworkBookingsWorkspaceProps) {
   const [bookings, setBookings] = useState<NetworkPartnerBookingRecord[]>([]);
   const [networkPartners, setNetworkPartners] = useState<NetworkPartnerRecord[]>([]);
   const [placements, setPlacements] = useState<PlacementCatalogRecord[]>([]);
-  const [areas, setAreas] = useState<AreaOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -63,21 +53,18 @@ export default function NetworkBookingsWorkspace({
     const bookingsUrl = networkPartnerId
       ? `/api/partner/network-bookings?network_partner_id=${encodeURIComponent(networkPartnerId)}`
       : '/api/partner/network-bookings';
-    const [bookingsResponse, partnersResponse, bootstrapResponse] = await Promise.all([
+    const [bookingsResponse, partnersResponse] = await Promise.all([
       fetch(bookingsUrl, { method: 'GET', cache: 'no-store' }),
       fetch('/api/partner/network-partners', { method: 'GET', cache: 'no-store' }),
-      fetch('/api/partner/dashboard/bootstrap', { method: 'GET', cache: 'no-store' }),
     ]);
 
     const bookingsPayload = (await bookingsResponse.json().catch(() => null)) as BookingsPayload | null;
     const partnersPayload = (await partnersResponse.json().catch(() => null)) as NetworkPartnerListPayload | null;
-    const bootstrapPayload = (await bootstrapResponse.json().catch(() => null)) as BootstrapPayload | null;
     return {
       bookingsResponse,
       partnersResponse,
       bookingsPayload,
       partnersPayload,
-      bootstrapPayload,
     };
   }, [networkPartnerId]);
 
@@ -91,14 +78,12 @@ export default function NetworkBookingsWorkspace({
         partnersResponse,
         bookingsPayload,
         partnersPayload,
-        bootstrapPayload,
       } = await fetchPageData();
       if (!active) return;
       if (!bookingsResponse.ok || !partnersResponse.ok) {
         setBookings([]);
         setNetworkPartners([]);
         setPlacements([]);
-        setAreas([]);
         setError(
           String(
             bookingsPayload?.error
@@ -110,20 +95,9 @@ export default function NetworkBookingsWorkspace({
         return;
       }
 
-      const nextAreas = Array.from(new Map(
-        (Array.isArray(bootstrapPayload?.configs) ? bootstrapPayload.configs : [])
-          .map((config) => {
-            const areaId = String(config.area_id ?? '').trim();
-            if (!areaId) return null;
-            return [areaId, { id: areaId, label: mapAreaLabel(areaId, config.areas?.name) }];
-          })
-          .filter((entry): entry is [string, AreaOption] => Boolean(entry)),
-      ).values());
-
       setBookings(Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : []);
       setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
       setPlacements(Array.isArray(bookingsPayload?.placement_catalog) ? bookingsPayload.placement_catalog : []);
-      setAreas(nextAreas);
       setLoading(false);
     }
     void load();
@@ -173,7 +147,7 @@ export default function NetworkBookingsWorkspace({
         {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
         <BookingForm
           networkPartners={selectableNetworkPartners}
-          areas={areas}
+          areas={providedAreas}
           placements={placements}
           onSubmit={async (values) => {
             setError(null);
@@ -195,13 +169,11 @@ export default function NetworkBookingsWorkspace({
               partnersResponse,
               bookingsPayload,
               partnersPayload,
-              bootstrapPayload,
             } = await fetchPageData();
             if (!bookingsResponse.ok || !partnersResponse.ok) {
               setBookings([]);
               setNetworkPartners([]);
               setPlacements([]);
-              setAreas([]);
               setError(
                 String(
                   bookingsPayload?.error
@@ -212,19 +184,9 @@ export default function NetworkBookingsWorkspace({
               setLoading(false);
               return;
             }
-            const nextAreas = Array.from(new Map(
-              (Array.isArray(bootstrapPayload?.configs) ? bootstrapPayload.configs : [])
-                .map((config) => {
-                  const areaId = String(config.area_id ?? '').trim();
-                  if (!areaId) return null;
-                  return [areaId, { id: areaId, label: mapAreaLabel(areaId, config.areas?.name) }];
-                })
-                .filter((entry): entry is [string, AreaOption] => Boolean(entry)),
-            ).values());
             setBookings(Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : []);
             setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
             setPlacements(Array.isArray(bookingsPayload?.placement_catalog) ? bookingsPayload.placement_catalog : []);
-            setAreas(nextAreas);
             setLoading(false);
           }}
         />
@@ -240,7 +202,7 @@ export default function NetworkBookingsWorkspace({
         {loading ? (
           <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>
         ) : (
-          <BookingTable bookings={bookings} networkPartners={networkPartners} areas={areas} placements={placements} />
+          <BookingTable bookings={bookings} networkPartners={networkPartners} areas={providedAreas} placements={placements} />
         )}
       </section>
     </div>

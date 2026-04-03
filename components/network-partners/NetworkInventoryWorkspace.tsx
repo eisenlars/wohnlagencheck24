@@ -22,34 +22,24 @@ type InventoryPayload = {
   error?: string;
 };
 
-type BootstrapPayload = {
-  configs?: Array<{
-    area_id?: string;
-    areas?: { name?: string };
-  }>;
+type NetworkInventoryWorkspaceProps = {
+  areas?: AreaOption[];
 };
 
-function mapAreaLabel(areaId: string, areaName?: string): string {
-  return areaName ? `${areaId} ${areaName}` : areaId;
-}
-
-export default function NetworkInventoryWorkspace() {
+export default function NetworkInventoryWorkspace({
+  areas: providedAreas = [],
+}: NetworkInventoryWorkspaceProps) {
   const [inventory, setInventory] = useState<PartnerAreaInventoryRecord[]>([]);
   const [placements, setPlacements] = useState<PlacementCatalogRecord[]>([]);
-  const [areas, setAreas] = useState<AreaOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   async function fetchPageData() {
-    const [inventoryResponse, bootstrapResponse] = await Promise.all([
-      fetch('/api/partner/network-inventory', { method: 'GET', cache: 'no-store' }),
-      fetch('/api/partner/dashboard/bootstrap', { method: 'GET', cache: 'no-store' }),
-    ]);
+    const inventoryResponse = await fetch('/api/partner/network-inventory', { method: 'GET', cache: 'no-store' });
 
     const inventoryPayload = (await inventoryResponse.json().catch(() => null)) as InventoryPayload | null;
-    const bootstrapPayload = (await bootstrapResponse.json().catch(() => null)) as BootstrapPayload | null;
-    return { inventoryResponse, inventoryPayload, bootstrapPayload };
+    return { inventoryResponse, inventoryPayload };
   }
 
   useEffect(() => {
@@ -57,30 +47,18 @@ export default function NetworkInventoryWorkspace() {
     async function load() {
       setLoading(true);
       setError(null);
-      const { inventoryResponse, inventoryPayload, bootstrapPayload } = await fetchPageData();
+      const { inventoryResponse, inventoryPayload } = await fetchPageData();
       if (!active) return;
       if (!inventoryResponse.ok) {
         setInventory([]);
         setPlacements([]);
-        setAreas([]);
         setError(String(inventoryPayload?.error ?? 'Werbeformate konnten nicht geladen werden.'));
         setLoading(false);
         return;
       }
 
-      const nextAreas = Array.from(new Map(
-        (Array.isArray(bootstrapPayload?.configs) ? bootstrapPayload.configs : [])
-          .map((config) => {
-            const areaId = String(config.area_id ?? '').trim();
-            if (!areaId) return null;
-            return [areaId, { id: areaId, label: mapAreaLabel(areaId, config.areas?.name) }];
-          })
-          .filter((entry): entry is [string, AreaOption] => Boolean(entry)),
-      ).values());
-
       setInventory(Array.isArray(inventoryPayload?.inventory) ? inventoryPayload.inventory : []);
       setPlacements(Array.isArray(inventoryPayload?.placement_catalog) ? inventoryPayload.placement_catalog : []);
-      setAreas(nextAreas);
       setLoading(false);
     }
     void load();
@@ -118,7 +96,7 @@ export default function NetworkInventoryWorkspace() {
         {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
         {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
         <InventoryForm
-          areas={areas}
+          areas={providedAreas}
           placements={placements}
           onSubmit={async (values) => {
             setError(null);
@@ -135,27 +113,16 @@ export default function NetworkInventoryWorkspace() {
             }
             setMessage('Werbeformat wurde angelegt.');
             setLoading(true);
-            const { inventoryResponse, inventoryPayload, bootstrapPayload } = await fetchPageData();
+            const { inventoryResponse, inventoryPayload } = await fetchPageData();
             if (!inventoryResponse.ok) {
               setInventory([]);
               setPlacements([]);
-              setAreas([]);
               setError(String(inventoryPayload?.error ?? 'Werbeformate konnten nicht geladen werden.'));
               setLoading(false);
               return;
             }
-            const nextAreas = Array.from(new Map(
-              (Array.isArray(bootstrapPayload?.configs) ? bootstrapPayload.configs : [])
-                .map((config) => {
-                  const areaId = String(config.area_id ?? '').trim();
-                  if (!areaId) return null;
-                  return [areaId, { id: areaId, label: mapAreaLabel(areaId, config.areas?.name) }];
-                })
-                .filter((entry): entry is [string, AreaOption] => Boolean(entry)),
-            ).values());
             setInventory(Array.isArray(inventoryPayload?.inventory) ? inventoryPayload.inventory : []);
             setPlacements(Array.isArray(inventoryPayload?.placement_catalog) ? inventoryPayload.placement_catalog : []);
-            setAreas(nextAreas);
             setLoading(false);
           }}
         />
@@ -171,7 +138,7 @@ export default function NetworkInventoryWorkspace() {
         {loading ? (
           <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>
         ) : (
-          <InventoryTable inventory={inventory} areas={areas} placements={placements} />
+          <InventoryTable inventory={inventory} areas={providedAreas} placements={placements} />
         )}
       </section>
     </div>

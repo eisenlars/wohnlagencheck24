@@ -37,30 +37,20 @@ type NetworkPartnerListPayload = {
   error?: string;
 };
 
-type BootstrapPayload = {
-  configs?: Array<{
-    area_id?: string;
-    areas?: { name?: string };
-  }>;
-};
-
-function mapAreaLabel(areaId: string, areaName?: string): string {
-  return areaName ? `${areaId} ${areaName}` : areaId;
-}
-
 type NetworkContentWorkspaceProps = {
   networkPartnerId?: string;
   networkPartnerName?: string | null;
+  areas?: AreaOption[];
 };
 
 export default function NetworkContentWorkspace({
   networkPartnerId,
   networkPartnerName,
+  areas: providedAreas = [],
 }: NetworkContentWorkspaceProps) {
   const [contentItems, setContentItems] = useState<NetworkContentRecord[]>([]);
   const [bookings, setBookings] = useState<NetworkPartnerBookingRecord[]>([]);
   const [networkPartners, setNetworkPartners] = useState<NetworkPartnerRecord[]>([]);
-  const [areas, setAreas] = useState<AreaOption[]>([]);
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +60,7 @@ export default function NetworkContentWorkspace({
     const contentUrl = networkPartnerId
       ? `/api/partner/network-content?network_partner_id=${encodeURIComponent(networkPartnerId)}`
       : '/api/partner/network-content';
-    const [contentResponse, bookingsResponse, partnersResponse, bootstrapResponse] = await Promise.all([
+    const [contentResponse, bookingsResponse, partnersResponse] = await Promise.all([
       fetch(contentUrl, { method: 'GET', cache: 'no-store' }),
       fetch(
         networkPartnerId
@@ -79,13 +69,11 @@ export default function NetworkContentWorkspace({
         { method: 'GET', cache: 'no-store' },
       ),
       fetch('/api/partner/network-partners', { method: 'GET', cache: 'no-store' }),
-      fetch('/api/partner/dashboard/bootstrap', { method: 'GET', cache: 'no-store' }),
     ]);
 
     const contentPayload = (await contentResponse.json().catch(() => null)) as ContentPayload | null;
     const bookingsPayload = (await bookingsResponse.json().catch(() => null)) as BookingsPayload | null;
     const partnersPayload = (await partnersResponse.json().catch(() => null)) as NetworkPartnerListPayload | null;
-    const bootstrapPayload = (await bootstrapResponse.json().catch(() => null)) as BootstrapPayload | null;
     return {
       contentResponse,
       bookingsResponse,
@@ -93,7 +81,6 @@ export default function NetworkContentWorkspace({
       contentPayload,
       bookingsPayload,
       partnersPayload,
-      bootstrapPayload,
     };
   }, [networkPartnerId]);
 
@@ -107,13 +94,11 @@ export default function NetworkContentWorkspace({
       contentPayload,
       bookingsPayload,
       partnersPayload,
-      bootstrapPayload,
     } = await fetchPageData();
     if (!contentResponse.ok || !bookingsResponse.ok || !partnersResponse.ok) {
       setContentItems([]);
       setBookings([]);
       setNetworkPartners([]);
-      setAreas([]);
       setError(
         String(
           contentPayload?.error
@@ -126,21 +111,10 @@ export default function NetworkContentWorkspace({
       return;
     }
 
-    const nextAreas = Array.from(new Map(
-      (Array.isArray(bootstrapPayload?.configs) ? bootstrapPayload.configs : [])
-        .map((config) => {
-          const areaId = String(config.area_id ?? '').trim();
-          if (!areaId) return null;
-          return [areaId, { id: areaId, label: mapAreaLabel(areaId, config.areas?.name) }];
-        })
-        .filter((entry): entry is [string, AreaOption] => Boolean(entry)),
-    ).values());
-
     const nextContent = Array.isArray(contentPayload?.content_items) ? contentPayload.content_items : [];
     setContentItems(nextContent);
     setBookings(Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : []);
     setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
-    setAreas(nextAreas);
     setSelectedContentId((current) => {
       const preferredId = preferredContentId ?? current;
       if (preferredId && nextContent.some((item) => item.id === preferredId)) return preferredId;
@@ -161,14 +135,12 @@ export default function NetworkContentWorkspace({
         contentPayload,
         bookingsPayload,
         partnersPayload,
-        bootstrapPayload,
       } = await fetchPageData();
       if (!active) return;
       if (!contentResponse.ok || !bookingsResponse.ok || !partnersResponse.ok) {
         setContentItems([]);
         setBookings([]);
         setNetworkPartners([]);
-        setAreas([]);
         setError(
           String(
             contentPayload?.error
@@ -181,21 +153,10 @@ export default function NetworkContentWorkspace({
         return;
       }
 
-      const nextAreas = Array.from(new Map(
-        (Array.isArray(bootstrapPayload?.configs) ? bootstrapPayload.configs : [])
-          .map((config) => {
-            const areaId = String(config.area_id ?? '').trim();
-            if (!areaId) return null;
-            return [areaId, { id: areaId, label: mapAreaLabel(areaId, config.areas?.name) }];
-          })
-          .filter((entry): entry is [string, AreaOption] => Boolean(entry)),
-      ).values());
-
       const nextContent = Array.isArray(contentPayload?.content_items) ? contentPayload.content_items : [];
       setContentItems(nextContent);
       setBookings(Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : []);
       setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
-      setAreas(nextAreas);
       setSelectedContentId((current) => {
         if (current && nextContent.some((item) => item.id === current)) return current;
         return nextContent[0]?.id ?? null;
@@ -346,7 +307,7 @@ export default function NetworkContentWorkspace({
             contentItems={contentItems}
             bookings={bookings}
             networkPartners={networkPartners}
-            areas={areas}
+            areas={providedAreas}
             selectedContentId={selectedContentId}
             onSelect={setSelectedContentId}
           />

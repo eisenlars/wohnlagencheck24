@@ -87,6 +87,10 @@ type PersistedDashboardState = {
 };
 
 type NetworkPartnerSection = 'overview' | 'bookings' | 'content' | 'billing' | 'ai';
+type NetworkAreaOption = {
+  id: string;
+  label: string;
+};
 
 type DashboardClientProps = {
   initialMainTab?: MainTab;
@@ -531,6 +535,7 @@ export default function DashboardClient({
   const [progressRefreshTick, setProgressRefreshTick] = useState(0);
   const progressRequestRef = useRef(0);
   const hasAnimatedMandatoryPercentRef = useRef(false);
+  const internationalLocalesLoadedRef = useRef(false);
   const utilityBarRef = useRef<HTMLElement | null>(null);
 
   // Werkzeug-Modus umschalten
@@ -655,22 +660,6 @@ export default function DashboardClient({
   }, [activeMainTab, networkPartnerSection]);
 
   useEffect(() => {
-    let active = true;
-
-    async function loadLocaleAvailability() {
-      const startedAt = performance.now();
-      const requestUrl = withDebugTimingUrl('/api/partner/dashboard/bootstrap?mode=locales');
-      const res = await fetch(requestUrl, { method: 'GET', cache: 'no-store' });
-      if (redirectIfUnauthorizedResponse(res, 'partner')) {
-        return;
-      }
-      const payload = await res.json().catch(() => null) as DashboardBootstrapPayload | null;
-      logDebugTiming(requestUrl, performance.now() - startedAt, payload);
-      if (!res.ok || !active) return;
-      setAvailableInternationalLocales(normalizeLocaleList(payload?.available_locales));
-      setGlobalPartnerInternationalLocales(normalizeLocaleList(payload?.global_partner_locales));
-    }
-
     async function loadData() {
       const persisted = readSessionViewState<PersistedDashboardState>(DASHBOARD_UI_STATE_KEY);
       const restoredAreaId = String(persisted?.selectedAreaId ?? '').trim();
@@ -730,13 +719,8 @@ export default function DashboardClient({
         }
         setLoading(false);
       });
-
-      void loadLocaleAvailability();
     }
     void loadData();
-    return () => {
-      active = false;
-    };
   }, [
     supabase,
     initialMainTab,
@@ -745,6 +729,31 @@ export default function DashboardClient({
     initialSelectedNetworkPartnerId,
     initialShowWelcome,
   ]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (activeMainTab !== 'international') return;
+    if (internationalLocalesLoadedRef.current) return;
+    let active = true;
+    async function loadLocaleAvailability() {
+      const startedAt = performance.now();
+      const requestUrl = withDebugTimingUrl('/api/partner/dashboard/bootstrap?mode=locales');
+      const res = await fetch(requestUrl, { method: 'GET', cache: 'no-store' });
+      if (redirectIfUnauthorizedResponse(res, 'partner')) {
+        return;
+      }
+      const payload = await res.json().catch(() => null) as DashboardBootstrapPayload | null;
+      logDebugTiming(requestUrl, performance.now() - startedAt, payload);
+      if (!res.ok || !active) return;
+      internationalLocalesLoadedRef.current = true;
+      setAvailableInternationalLocales(normalizeLocaleList(payload?.available_locales));
+      setGlobalPartnerInternationalLocales(normalizeLocaleList(payload?.global_partner_locales));
+    }
+    void loadLocaleAvailability();
+    return () => {
+      active = false;
+    };
+  }, [activeMainTab, loading]);
 
   const featuresByCode = useMemo(() => {
     const map = new Map<string, PartnerFeatureRow>();
@@ -761,8 +770,8 @@ export default function DashboardClient({
   );
 
   const hasInternationalEnabled = useMemo(
-    () => availableInternationalLocales.length > 0,
-    [availableInternationalLocales],
+    () => availableInternationalLocales.length > 0 || hasInternationalFeature,
+    [availableInternationalLocales.length, hasInternationalFeature],
   );
 
   const internationalLocales = useMemo(() => {
@@ -779,6 +788,21 @@ export default function DashboardClient({
     const unique = Array.from(new Set(locales));
     return unique.length > 0 ? unique : ['en'];
   }, [availableInternationalLocales, partnerFeatures]);
+
+  const networkAreaOptions = useMemo<NetworkAreaOption[]>(
+    () => configs
+      .map((config) => {
+        const areaId = String(config.area_id ?? '').trim();
+        if (!areaId) return null;
+        const areaName = String(config.areas?.name ?? '').trim();
+        return {
+          id: areaId,
+          label: areaName ? `${areaId} ${areaName}` : areaId,
+        };
+      })
+      .filter((entry): entry is NetworkAreaOption => Boolean(entry)),
+    [configs],
+  );
 
   const isTabEnabled = (tab: MainTab): boolean => {
     if (tab === 'international') return hasInternationalFeature ? hasInternationalEnabled : false;
@@ -1954,9 +1978,9 @@ export default function DashboardClient({
             </header>
             <div style={{ display: 'grid', gap: 18 }}>
               {networkPartnerSection === 'bookings' ? (
-                <NetworkBookingsWorkspace />
+                <NetworkBookingsWorkspace areas={networkAreaOptions} />
               ) : networkPartnerSection === 'content' ? (
-                <NetworkContentWorkspace />
+                <NetworkContentWorkspace areas={networkAreaOptions} />
               ) : networkPartnerSection === 'billing' ? (
                 <NetworkBillingWorkspace />
               ) : networkPartnerSection === 'ai' ? (
