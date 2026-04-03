@@ -2070,6 +2070,7 @@ export default function AdminClient() {
   const marketExplanationStandardInFlightKeyRef = useRef<string | null>(null);
   const marketExplanationStandardInFlightRef = useRef<Promise<void> | null>(null);
   const marketExplanationStaticLoadedRef = useRef(false);
+  const skipNextAreaOverviewReloadRef = useRef(false);
   const [busy, setBusy] = useState<boolean>(false);
   const [areaQuery, setAreaQuery] = useState<string>("");
   const [areaOptions, setAreaOptions] = useState<AreaOption[]>([]);
@@ -3368,19 +3369,9 @@ export default function AdminClient() {
         text: "Bestehende Partner öffnen, Profil- und Gebietsdaten prüfen und Detailbereiche aufrufen.",
         badge: partners.length > 0 ? `${partners.length} Partner` : null,
         onClick: () => {
-          setNavMode("partners");
-          if (portalPartner?.id) {
-            void (async () => {
-              await loadPartnerBootstrap(portalPartner.id);
-              setPartnerTab("profile");
-              setIntegrationsAdminTab("overview");
-              setReviewActionError(null);
-              setReviewContentDismissed(false);
-              setActiveView("partner_edit");
-            })();
-            return;
-          }
-          setActiveView("partner_edit");
+          void run("Partnerverwaltung laden", async () => {
+            await openPartnerWorkspace(portalPartner?.id);
+          }, { showSuccessModal: false });
         },
       },
       {
@@ -3390,8 +3381,9 @@ export default function AdminClient() {
         text: "Kreiszuordnungen, Übergaben und Aktivierungsstände gebietsbezogen prüfen.",
         badge: areaOverviewTotalCount > 0 ? `${areaOverviewTotalCount} Zuordnungen` : null,
         onClick: () => {
-          setNavMode("areas");
-          setActiveView("partner_edit");
+          void run("Gebietsübersicht laden", async () => {
+            await openAreaWorkspace();
+          }, { showSuccessModal: false });
         },
       },
       {
@@ -3558,6 +3550,37 @@ export default function AdminClient() {
     const data = await api<{ areas: AreaOverviewRow[]; total_count?: number }>(buildAreaOverviewUrl(queryText, onlyActive));
     setAreaOverviewRows(data.areas ?? []);
     setAreaOverviewTotalCount(Number(data.total_count ?? data.areas?.length ?? 0));
+  }
+
+  function resetPartnerWorkspaceUi() {
+    setPartnerTab("profile");
+    setIntegrationsAdminTab("overview");
+    setReviewActionError(null);
+    setReviewContentDismissed(false);
+  }
+
+  async function openPartnerWorkspace(targetPartnerId?: string) {
+    setNavMode("partners");
+    const normalizedTargetPartnerId = String(targetPartnerId ?? "").trim();
+    if (normalizedTargetPartnerId && String(selectedPartner?.id ?? "") === normalizedTargetPartnerId) {
+      resetPartnerWorkspaceUi();
+      setActiveView("partner_edit");
+      return;
+    }
+    if (normalizedTargetPartnerId) {
+      await loadPartnerBootstrap(normalizedTargetPartnerId);
+      resetPartnerWorkspaceUi();
+      setActiveView("partner_edit");
+      return;
+    }
+    setActiveView("partner_edit");
+  }
+
+  async function openAreaWorkspace() {
+    setNavMode("areas");
+    skipNextAreaOverviewReloadRef.current = true;
+    await loadAreaOverviewList();
+    setActiveView("partner_edit");
   }
 
   async function loadPartners(selectId?: string, options?: { refreshSelectedDetails?: boolean }) {
@@ -5165,6 +5188,10 @@ export default function AdminClient() {
         setPartnerListRows(derivePartnerListRows(partners));
         return;
       }
+      if (skipNextAreaOverviewReloadRef.current) {
+        skipNextAreaOverviewReloadRef.current = false;
+        return;
+      }
       void loadAreaOverviewList();
     }, 250);
     return () => window.clearTimeout(timer);
@@ -6225,34 +6252,9 @@ export default function AdminClient() {
           <button
             style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" && navMode === "partners")}
             onClick={async () => {
-              setNavMode("partners");
-              if (selectedPartnerId && String(selectedPartner?.id ?? "") === selectedPartnerId) {
-                setPartnerTab("profile");
-                setIntegrationsAdminTab("overview");
-                setReviewActionError(null);
-                setReviewContentDismissed(false);
-                setActiveView("partner_edit");
-                return;
-              }
-              if (selectedPartnerId) {
-                await loadPartnerBootstrap(selectedPartnerId);
-                setPartnerTab("profile");
-                setIntegrationsAdminTab("overview");
-                setReviewActionError(null);
-                setReviewContentDismissed(false);
-                setActiveView("partner_edit");
-                return;
-              }
-              if (portalPartner?.id) {
-                await loadPartnerBootstrap(portalPartner.id);
-                setPartnerTab("profile");
-                setIntegrationsAdminTab("overview");
-                setReviewActionError(null);
-                setReviewContentDismissed(false);
-                setActiveView("partner_edit");
-                return;
-              }
-              setActiveView("partner_edit");
+              await run("Partnerverwaltung laden", async () => {
+                await openPartnerWorkspace(selectedPartnerId || portalPartner?.id);
+              }, { showSuccessModal: false });
             }}
             title="Partner"
             onMouseEnter={(event) => updateHoveredAdminNav("partners", event.currentTarget)}
@@ -6271,8 +6273,9 @@ export default function AdminClient() {
           <button
             style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" && navMode === "areas")}
             onClick={() => {
-              setNavMode("areas");
-              setActiveView("partner_edit");
+              void run("Gebietsübersicht laden", async () => {
+                await openAreaWorkspace();
+              }, { showSuccessModal: false });
             }}
             title="Gebiete"
             onMouseEnter={(event) => updateHoveredAdminNav("areas", event.currentTarget)}
