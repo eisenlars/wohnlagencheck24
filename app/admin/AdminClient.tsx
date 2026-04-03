@@ -6845,7 +6845,7 @@ export default function AdminClient() {
             disabled={!selectedPartner}
             onChange={(e) => setEditPartner((v) => ({ ...v, is_active: e.target.checked }))}
           />
-          <span style={{ marginLeft: 8 }}>Partner aktiv</span>
+          <span style={{ marginLeft: 8 }}>Partnerkonto aktiv</span>
         </label>
         <div style={{ marginTop: 12 }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -7313,7 +7313,7 @@ export default function AdminClient() {
                 <span>{selectedPartner.id}</span>
               </div>
               <div style={rowStyle}>
-                <span style={{ fontWeight: 600, color: "#334155" }}>Status</span>
+                <span style={{ fontWeight: 600, color: "#334155" }}>Partnerkonto</span>
                 <span>{selectedPartner.is_active ? "aktiv" : "inaktiv"}</span>
               </div>
             </div>
