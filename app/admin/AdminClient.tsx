@@ -5048,28 +5048,27 @@ export default function AdminClient() {
     if (!selectedPortalCmsPage || !portalCmsLocale) return;
     storeSessionScroll(PORTAL_CMS_SCROLL_STATE_KEY);
     pendingPortalCmsScrollRestoreRef.current = true;
-    for (const section of selectedPortalCmsPage.sections) {
-      const draftKey = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
-      const draft = portalCmsDrafts[draftKey] ?? {
-        status: "draft" as PortalContentEntryStatus,
-        fields_json: buildPortalCmsEmptyFields(section),
-      };
-      await api("/api/admin/portal-content/ai", {
-        method: "POST",
-        body: JSON.stringify({
-          page_key: selectedPortalCmsPage.page_key,
-          section_key: section.section_key,
-          source_locale: PORTAL_CMS_SOURCE_LOCALE,
-          target_locale: portalCmsLocale,
-          apply_mode: "fill_missing",
-          target_entry: {
+    await api("/api/admin/portal-content/ai/page", {
+      method: "POST",
+      body: JSON.stringify({
+        page_key: selectedPortalCmsPage.page_key,
+        source_locale: PORTAL_CMS_SOURCE_LOCALE,
+        target_locale: portalCmsLocale,
+        apply_mode: "fill_missing",
+        target_entries: selectedPortalCmsPage.sections.map((section) => {
+          const draftKey = `${portalCmsLocale}::${selectedPortalCmsPage.page_key}::${section.section_key}`;
+          const draft = portalCmsDrafts[draftKey] ?? {
+            status: "draft" as PortalContentEntryStatus,
+            fields_json: buildPortalCmsEmptyFields(section),
+          };
+          return {
             section_key: section.section_key,
             status: draft.status,
             fields_json: draft.fields_json,
-          },
+          };
         }),
-      });
-    }
+      }),
+    });
     await loadPortalCmsWorkspace();
   }
 

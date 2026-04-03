@@ -66,6 +66,20 @@ type ChatCompletionResult = {
   rawUsage: Record<string, unknown> | null;
 };
 
+type PortalCmsSectionTranslationArgs = {
+  admin: AdminClient;
+  page: NonNullable<ReturnType<typeof getPortalCmsPage>>;
+  section: NonNullable<ReturnType<typeof getPortalCmsSection>>;
+  provider: PortalCmsAiProvider;
+  sourceLocale: string;
+  targetLocale: string;
+  fieldKey?: string;
+  applyMode: PortalCmsAiApplyMode;
+  sourceEntry: PortalContentEntryRecord;
+  targetEntry: PortalContentEntryRecord | undefined;
+  targetOverride?: PortalCmsDraftOverride | null;
+};
+
 function asText(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -612,6 +626,134 @@ async function translateFieldValue(args: {
   throw new Error(`Feldtyp ${args.field.type} wird fuer Portal-CMS-KI noch nicht unterstuetzt.`);
 }
 
+async function translatePortalCmsSectionWithContext(args: PortalCmsSectionTranslationArgs) {
+  const fieldKey = asText(args.fieldKey);
+  const selectedFields = fieldKey
+    ? args.section.fields.filter((field) => field.key === fieldKey)
+    : args.section.fields;
+  if (selectedFields.length === 0) {
+    throw new Error(`Unbekanntes Feld fuer ${args.page.page_key}/${args.section.section_key}: ${fieldKey}`);
+  }
+
+  const targetOverride = args.targetOverride ?? null;
+  const sourceFields = normalizePortalCmsFields(args.section, args.sourceEntry.fields_json);
+  const nextFields = normalizePortalCmsFields(args.section, targetOverride?.fields_json ?? args.targetEntry?.fields_json);
+
+  const translatedFieldKeys: string[] = [];
+  let usage = {
+    promptTokens: null as number | null,
+    completionTokens: null as number | null,
+    totalTokens: null as number | null,
+    rawUsage: null as Record<string, unknown> | null,
+    requestId: null as string | null,
+  };
+
+  try {
+    for (const field of selectedFields) {
+      const sourceValue = String(sourceFields[field.key] ?? "");
+      const targetValue = String(nextFields[field.key] ?? "");
+      if (isFieldValueEmpty(field, sourceValue)) continue;
+      if (args.applyMode === "fill_missing" && !isFieldValueEmpty(field, targetValue)) continue;
+
+      const translated = await translateFieldValue({
+        provider: args.provider,
+        field,
+        sourceValue,
+        targetLocale: args.targetLocale,
+        sectionLabel: args.section.label,
+      });
+      nextFields[field.key] = translated.content.trim();
+      translatedFieldKeys.push(field.key);
+      usage = {
+        promptTokens: sumOptional(usage.promptTokens, translated.promptTokens),
+        completionTokens: sumOptional(usage.completionTokens, translated.completionTokens),
+        totalTokens: sumOptional(usage.totalTokens, translated.totalTokens),
+        rawUsage: translated.rawUsage ?? usage.rawUsage,
+        requestId: translated.requestId ?? usage.requestId,
+      };
+    }
+
+    if (translatedFieldKeys.length === 0) {
+      return {
+        page_key: args.page.page_key,
+        section_key: args.section.section_key,
+        target_locale: args.targetLocale,
+        translated_field_keys: [],
+        translated_count: 0,
+      };
+    }
+
+    const { error } = await args.admin.from("portal_content_entries").upsert({
+      page_key: args.page.page_key,
+      section_key: args.section.section_key,
+      locale: args.targetLocale,
+      status: resolvePortalCmsAutomatedStatus(targetOverride?.status ?? args.targetEntry?.status ?? null),
+      fields_json: nextFields,
+      updated_at: new Date().toISOString(),
+    }, {
+      onConflict: "page_key,section_key,locale",
+    });
+    if (error) throw new Error(String(error.message ?? "Portal-CMS-KI-Uebersetzung konnte nicht gespeichert werden."));
+
+    await upsertPortalContentI18nMeta(args.admin, [{
+      page_key: args.page.page_key,
+      section_key: args.section.section_key,
+      locale: args.targetLocale,
+      source_locale: args.sourceLocale,
+      source_snapshot_hash: buildPortalCmsSourceSnapshotHash({
+        pageKey: args.page.page_key,
+        sectionKey: args.section.section_key,
+        fieldsJson: args.sourceEntry.fields_json,
+      }),
+      source_updated_at: args.sourceEntry.updated_at ?? null,
+      translation_origin: "ai",
+    }]);
+    await writePortalCmsAiUsageEvent({
+      provider: args.provider,
+      requestId: usage.requestId,
+      status: "ok",
+      usage,
+      context: {
+        pageKey: args.page.page_key,
+        sectionKey: args.section.section_key,
+        targetLocale: args.targetLocale,
+        sourceLocale: args.sourceLocale,
+        fieldKey: fieldKey || null,
+        applyMode: args.applyMode,
+      },
+    });
+
+    return {
+      page_key: args.page.page_key,
+      section_key: args.section.section_key,
+      target_locale: args.targetLocale,
+      translated_field_keys: translatedFieldKeys,
+      translated_count: translatedFieldKeys.length,
+    };
+  } catch (error) {
+    try {
+      await writePortalCmsAiUsageEvent({
+        provider: args.provider,
+        requestId: usage.requestId,
+        status: "error",
+        errorCode: "PORTAL_CMS_AI_FAILED",
+        usage,
+        context: {
+          pageKey: args.page.page_key,
+          sectionKey: args.section.section_key,
+          targetLocale: args.targetLocale,
+          sourceLocale: args.sourceLocale,
+          fieldKey: fieldKey || null,
+          applyMode: args.applyMode,
+        },
+      });
+    } catch {
+      // Der eigentliche Uebersetzungsfehler soll nicht von einem Logging-Problem verdeckt werden.
+    }
+    throw error;
+  }
+}
+
 export async function translatePortalCmsSectionFromSourceLocale(args: {
   admin?: AdminClient;
   pageKey: string;
@@ -636,13 +778,6 @@ export async function translatePortalCmsSectionFromSourceLocale(args: {
   if (!targetLocale) throw new Error("Ziel-Locale fehlt.");
   if (sourceLocale === targetLocale) throw new Error("Quell- und Ziel-Locale duerfen nicht identisch sein.");
 
-  const selectedFields = fieldKey
-    ? section.fields.filter((field) => field.key === fieldKey)
-    : section.fields;
-  if (selectedFields.length === 0) {
-    throw new Error(`Unbekanntes Feld fuer ${pageKey}/${sectionKey}: ${fieldKey}`);
-  }
-
   const provider = await selectPortalCmsAiProvider();
   await checkPortalCmsGlobalBudget(admin);
 
@@ -654,122 +789,86 @@ export async function translatePortalCmsSectionFromSourceLocale(args: {
   if (!sourceEntry) {
     throw new Error(`In ${sourceLocale} liegen fuer ${pageKey}/${sectionKey} keine CMS-Inhalte vor.`);
   }
-  const targetEntry = targetEntries.get(sectionKey);
-  const targetOverride = args.targetOverride ?? null;
-  const sourceFields = normalizePortalCmsFields(section, sourceEntry.fields_json);
-  const nextFields = normalizePortalCmsFields(section, targetOverride?.fields_json ?? targetEntry?.fields_json);
+  return translatePortalCmsSectionWithContext({
+    admin,
+    page,
+    section,
+    provider,
+    sourceLocale,
+    targetLocale,
+    fieldKey,
+    applyMode,
+    sourceEntry,
+    targetEntry: targetEntries.get(sectionKey),
+    targetOverride: args.targetOverride ?? null,
+  });
+}
 
-  const translatedFieldKeys: string[] = [];
-  let usage = {
-    promptTokens: null as number | null,
-    completionTokens: null as number | null,
-    totalTokens: null as number | null,
-    rawUsage: null as Record<string, unknown> | null,
-    requestId: null as string | null,
-  };
+export async function translatePortalCmsPageFromSourceLocale(args: {
+  admin?: AdminClient;
+  pageKey: string;
+  targetLocale: string;
+  sourceLocale?: string;
+  applyMode?: PortalCmsAiApplyMode;
+  targetOverrides?: PortalCmsDraftOverride[];
+}) {
+  const admin = args.admin ?? createAdminClient();
+  const pageKey = asText(args.pageKey);
+  const targetLocale = asText(args.targetLocale).toLowerCase();
+  const sourceLocale = asText(args.sourceLocale || "de").toLowerCase();
+  const applyMode = args.applyMode ?? "fill_missing";
 
-  try {
-    for (const field of selectedFields) {
-      const sourceValue = String(sourceFields[field.key] ?? "");
-      const targetValue = String(nextFields[field.key] ?? "");
-      if (isFieldValueEmpty(field, sourceValue)) continue;
-      if (applyMode === "fill_missing" && !isFieldValueEmpty(field, targetValue)) continue;
+  const page = getPortalCmsPage(pageKey);
+  if (!page) throw new Error(`Unbekannter Portal-CMS-Bereich: ${pageKey}`);
+  if (!targetLocale) throw new Error("Ziel-Locale fehlt.");
+  if (sourceLocale === targetLocale) throw new Error("Quell- und Ziel-Locale duerfen nicht identisch sein.");
 
-      const translated = await translateFieldValue({
-        provider,
-        field,
-        sourceValue,
-        targetLocale,
-        sectionLabel: section.label,
-      });
-      nextFields[field.key] = translated.content.trim();
-      translatedFieldKeys.push(field.key);
-      usage = {
-        promptTokens: sumOptional(usage.promptTokens, translated.promptTokens),
-        completionTokens: sumOptional(usage.completionTokens, translated.completionTokens),
-        totalTokens: sumOptional(usage.totalTokens, translated.totalTokens),
-        rawUsage: translated.rawUsage ?? usage.rawUsage,
-        requestId: translated.requestId ?? usage.requestId,
-      };
-    }
+  const provider = await selectPortalCmsAiProvider();
+  await checkPortalCmsGlobalBudget(admin);
 
-    if (translatedFieldKeys.length === 0) {
-      return {
-        page_key: page.page_key,
-        section_key: section.section_key,
-        target_locale: targetLocale,
-        translated_field_keys: [],
-        translated_count: 0,
-      };
-    }
+  const [sourceEntries, targetEntries] = await Promise.all([
+    loadPageEntries(admin, pageKey, sourceLocale),
+    loadPageEntries(admin, pageKey, targetLocale),
+  ]);
+  const targetOverrideMap = new Map(
+    (args.targetOverrides ?? [])
+      .map((entry) => [asText(entry.section_key), entry] as const)
+      .filter(([key]) => key.length > 0),
+  );
 
-    const { error } = await admin.from("portal_content_entries").upsert({
-      page_key: page.page_key,
-      section_key: section.section_key,
-      locale: targetLocale,
-      status: resolvePortalCmsAutomatedStatus(targetOverride?.status ?? targetEntry?.status ?? null),
-      fields_json: nextFields,
-      updated_at: new Date().toISOString(),
-    }, {
-      onConflict: "page_key,section_key,locale",
-    });
-    if (error) throw new Error(String(error.message ?? "Portal-CMS-KI-Uebersetzung konnte nicht gespeichert werden."));
+  const results: Array<{
+    page_key: string;
+    section_key: string;
+    target_locale: string;
+    translated_field_keys: string[];
+    translated_count: number;
+  }> = [];
 
-    await upsertPortalContentI18nMeta(admin, [{
-      page_key: page.page_key,
-      section_key: section.section_key,
-      locale: targetLocale,
-      source_locale: sourceLocale,
-      source_snapshot_hash: buildPortalCmsSourceSnapshotHash({
-        pageKey: page.page_key,
-        sectionKey: section.section_key,
-        fieldsJson: sourceEntry.fields_json,
-      }),
-      source_updated_at: sourceEntry.updated_at ?? null,
-      translation_origin: "ai",
-    }]);
-    await writePortalCmsAiUsageEvent({
+  for (const section of page.sections) {
+    const sourceEntry = sourceEntries.get(section.section_key);
+    if (!sourceEntry) continue;
+    const result = await translatePortalCmsSectionWithContext({
+      admin,
+      page,
+      section,
       provider,
-      requestId: usage.requestId,
-      status: "ok",
-      usage,
-      context: {
-        pageKey: page.page_key,
-        sectionKey: section.section_key,
-        targetLocale,
-        sourceLocale,
-        fieldKey: fieldKey || null,
-        applyMode,
-      },
+      sourceLocale,
+      targetLocale,
+      applyMode,
+      sourceEntry,
+      targetEntry: targetEntries.get(section.section_key),
+      targetOverride: targetOverrideMap.get(section.section_key) ?? null,
     });
-
-    return {
-      page_key: page.page_key,
-      section_key: section.section_key,
-      target_locale: targetLocale,
-      translated_field_keys: translatedFieldKeys,
-      translated_count: translatedFieldKeys.length,
-    };
-  } catch (error) {
-    try {
-      await writePortalCmsAiUsageEvent({
-        provider,
-        requestId: usage.requestId,
-        status: "error",
-        errorCode: "PORTAL_CMS_AI_FAILED",
-        usage,
-        context: {
-          pageKey: page.page_key,
-          sectionKey: section.section_key,
-          targetLocale,
-          sourceLocale,
-          fieldKey: fieldKey || null,
-          applyMode,
-        },
-      });
-    } catch {
-      // Der eigentliche Uebersetzungsfehler soll nicht von einem Logging-Problem verdeckt werden.
-    }
-    throw error;
+    results.push(result);
   }
+
+  return {
+    page_key: page.page_key,
+    source_locale: sourceLocale,
+    target_locale: targetLocale,
+    apply_mode: applyMode,
+    sections: results,
+    translated_sections: results.filter((row) => row.translated_count > 0).map((row) => row.section_key),
+    translated_section_count: results.filter((row) => row.translated_count > 0).length,
+  };
 }
