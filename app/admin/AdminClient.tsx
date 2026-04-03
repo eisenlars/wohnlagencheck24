@@ -993,6 +993,19 @@ function workflowSignalColor(tone: WorkflowSignalTone): string | null {
   return null;
 }
 
+function formatPartnerListStatus(partner: Partner): string {
+  if (!partner.is_active) return "inaktiv";
+  const summary = partner.area_summary ?? {
+    total_areas: 0,
+    live_areas: 0,
+    activation_open: 0,
+    has_assignment: false,
+  };
+  if (summary.live_areas > 0 && summary.activation_open > 0) return "teilaktiv";
+  if (summary.live_areas > 0) return "aktiv";
+  return "inaktiv";
+}
+
 function buildPreviewHrefFromArea(area: AreaMapping["areas"], areaId: string): string | null {
   const bundeslandSlug = String(area?.bundesland_slug ?? "").trim();
   const slug = String(area?.slug ?? "").trim();
@@ -6524,7 +6537,7 @@ export default function AdminClient() {
                         <span>{formatPartnerName(p)}</span>
                       </div>
                       <div style={{ fontSize: 12, color: "#64748b" }}>
-                        {p.is_active ? "aktiv" : "inaktiv"}
+                        {formatPartnerListStatus(p)}
                       </div>
                     </button>
                   ))
