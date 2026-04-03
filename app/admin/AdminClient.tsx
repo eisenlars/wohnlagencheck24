@@ -2069,6 +2069,7 @@ export default function AdminClient() {
   const marketExplanationStandardLoadedKeyRef = useRef<string>("");
   const marketExplanationStandardInFlightKeyRef = useRef<string | null>(null);
   const marketExplanationStandardInFlightRef = useRef<Promise<void> | null>(null);
+  const marketExplanationStaticLoadedRef = useRef(false);
   const [busy, setBusy] = useState<boolean>(false);
   const [areaQuery, setAreaQuery] = useState<string>("");
   const [areaOptions, setAreaOptions] = useState<AreaOption[]>([]);
@@ -2816,17 +2817,18 @@ export default function AdminClient() {
     } else if (restoredActiveView === "system_texts") {
       void loadPortalSystemTextsEvent();
     } else if (restoredActiveView === "market_texts") {
-      void Promise.all([
-        loadMarketExplanationStandardTextsEvent({
+      if (restoredMarketExplanationMode === "static") {
+        void loadMarketExplanationStaticTextsEvent();
+      } else {
+        void loadMarketExplanationStandardTextsEvent({
           scope: restoredMarketExplanationScope,
           bundeslandSlug: restoredMarketExplanationBundeslandSlug || undefined,
           areaId: restoredMarketExplanationScope === "kreis" && restoredMarketExplanationAreaIsKreis
             ? restoredMarketExplanationAreaId || undefined
             : undefined,
           locale: restoredMarketExplanationLocale,
-        }),
-        loadMarketExplanationStaticTextsEvent(),
-      ]);
+        });
+      }
     } else if (restoredActiveView === "standard_text_refresh") {
       void Promise.all([
         loadMarketExplanationBundeslaender(),
@@ -2926,6 +2928,13 @@ export default function AdminClient() {
     marketExplanationStandardScope,
     marketExplanationStandardSelection?.id,
   ]);
+
+  useEffect(() => {
+    if (activeView !== "market_texts") return;
+    if (marketExplanationMode !== "static") return;
+    if (marketExplanationStaticLoadedRef.current) return;
+    void loadMarketExplanationStaticTextsEvent();
+  }, [activeView, marketExplanationMode, loadMarketExplanationStaticTextsEvent]);
 
   useEffect(() => {
     if (portalLocaleConfigs.length === 0) return;
@@ -3443,10 +3452,11 @@ export default function AdminClient() {
         onClick: () => {
           setActiveView("market_texts");
           void run("Markterklärungstexte laden", async () => {
-            await Promise.all([
-              loadMarketExplanationStandardTexts(),
-              loadMarketExplanationStaticTexts(),
-            ]);
+            if (marketExplanationMode === "static") {
+              await loadMarketExplanationStaticTexts();
+              return;
+            }
+            await loadMarketExplanationStandardTexts();
           }, { showSuccessModal: false });
         },
       },
@@ -4264,6 +4274,7 @@ export default function AdminClient() {
       locales: nextLocales.length > 0 ? nextLocales : portalLocaleConfigs,
       entries: faqData.entries ?? [],
     }));
+    marketExplanationStaticLoadedRef.current = true;
     const fallbackLocale = (nextLocales.length > 0 ? nextLocales : portalLocaleConfigs).find((row) => row.is_active)?.locale
       ?? (nextLocales.length > 0 ? nextLocales : portalLocaleConfigs)[0]?.locale
       ?? "de";
@@ -6371,10 +6382,11 @@ export default function AdminClient() {
             onClick={() => {
               setActiveView("market_texts");
               void run("Markterklärungstexte laden", async () => {
-                await Promise.all([
-                  loadMarketExplanationStandardTexts(),
-                  loadMarketExplanationStaticTexts(),
-                ]);
+                if (marketExplanationMode === "static") {
+                  await loadMarketExplanationStaticTexts();
+                  return;
+                }
+                await loadMarketExplanationStandardTexts();
               }, { showSuccessModal: false });
             }}
             title="Markterklärungstexte"
