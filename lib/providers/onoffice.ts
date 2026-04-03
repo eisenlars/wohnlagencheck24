@@ -21,6 +21,10 @@ type OnOfficeRecord = {
 type OnOfficeResponse = {
   response?: {
     results?: Array<{
+      status?: {
+        errorcode?: number;
+        message?: string;
+      };
       data?: {
         records?: OnOfficeRecord[];
       };
@@ -568,6 +572,13 @@ async function fetchOnOfficeResource(
     }
 
     const json = (await res.json()) as OnOfficeResponse;
+    const actionStatus = json?.response?.results?.[0]?.status;
+    const actionErrorCode = Number(actionStatus?.errorcode ?? 0);
+    if (actionErrorCode !== 0) {
+      throw new Error(
+        `onOffice ${resourceId} action failed (${actionErrorCode}): ${String(actionStatus?.message ?? "Unbekannter Fehler")}`,
+      );
+    }
     const records = json?.response?.results?.[0]?.data?.records ?? [];
     if (!Array.isArray(records) || records.length === 0) break;
     allRecords.push(...records);
@@ -695,22 +706,10 @@ export async function fetchOnOfficeEstates(
     "verkauft",
     "reserviert",
     "veroeffentlichen",
-    "objektstatus",
-    "kaufpreis",
-    "kaltmiete",
-    "warmmiete",
-    "wohnflaeche",
-    "anzahl_zimmer",
     "plz",
     "ort",
     "strasse",
     "hausnummer",
-    "baujahr",
-    "energiepass_art",
-    "energieverbrauchkennwert",
-    "freitext_lage",
-    "freitext_ausstattung",
-    "img",
   ];
   const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
     status: [{ op: "=", val: 1 }],
