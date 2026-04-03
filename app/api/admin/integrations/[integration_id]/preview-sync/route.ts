@@ -58,6 +58,35 @@ function formatPreviewResourceLabel(resource: Exclude<CrmSyncResource, "all"> | 
   return "CRM";
 }
 
+function buildOnOfficePreviewDebug(
+  integration: PartnerIntegration,
+  resource: Exclude<CrmSyncResource, "all"> | "all",
+  result: Awaited<ReturnType<typeof syncIntegrationResources>>,
+) {
+  const settings = asObject(integration.settings);
+  const resourceFilters = asObject(settings.resource_filters);
+  const listings = asObject(resourceFilters.listings);
+  return {
+    provider: integration.provider,
+    resource,
+    settings_snapshot: {
+      listings: {
+        status_field_key: listings.status_field_key ?? null,
+        active_status_values: Array.isArray(listings.active_status_values) ? listings.active_status_values : [],
+        exclude_sold: listings.exclude_sold ?? null,
+      },
+    },
+    result_counts: {
+      offers: result.offers.length,
+      listings: result.listings.length,
+      references: result.references.length,
+      requests: result.requests.length,
+    },
+    diagnostics: result.diagnostics ?? null,
+    notes: result.notes ?? [],
+  };
+}
+
 function appendIntegrationLog(
   value: unknown,
   entry: IntegrationStepLogEntry,
@@ -418,6 +447,11 @@ export async function POST(
         PREVIEW_MAX_RUNTIME_MS,
         `CRM-Abrufbudget überschritten (max. ${PREVIEW_MAX_RUNTIME_MS}ms).`,
       );
+      if (String(integration.provider ?? "").toLowerCase() === "onoffice") {
+        await patchIntegrationSettings(admin, integration, resource, {
+          last_preview_debug: buildOnOfficePreviewDebug(integration, resource, result),
+        });
+      }
       return finish(
         "ok",
         `CRM-Abruf erfolgreich (${result.offers.length} Angebote).`,
@@ -432,6 +466,10 @@ export async function POST(
           references_fetched: result.referencesFetched,
           requests_fetched: result.requestsFetched,
           notes: result.notes ?? [],
+          debug:
+            String(integration.provider ?? "").toLowerCase() === "onoffice"
+              ? buildOnOfficePreviewDebug(integration, resource, result)
+              : null,
           offers_preview: result.offers.slice(0, 5).map((offer) => ({
             external_id: offer.external_id,
             title: offer.title,
