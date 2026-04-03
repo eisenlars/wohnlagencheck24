@@ -706,10 +706,16 @@ export async function fetchOnOfficeEstates(
     "verkauft",
     "reserviert",
     "veroeffentlichen",
+    "kaufpreis",
+    "kaltmiete",
+    "warmmiete",
+    "wohnflaeche",
+    "anzahl_zimmer",
     "plz",
     "ort",
     "strasse",
     "hausnummer",
+    "baujahr",
   ];
   const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
     status: [{ op: "=", val: 1 }],
