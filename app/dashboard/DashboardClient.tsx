@@ -954,6 +954,13 @@ export default function DashboardClient({
     const requestId = progressRequestRef.current + 1;
     progressRequestRef.current = requestId;
     async function loadMandatoryProgress() {
+      const shouldShowMandatoryProgress = showWelcome || activeMainTab === 'texts';
+      if (!shouldShowMandatoryProgress) {
+        if (mounted && progressRequestRef.current === requestId) {
+          setMandatoryProgressLoading(false);
+        }
+        return;
+      }
       const currentAreaId = String(selectedConfig?.area_id ?? '').trim() || null;
       const areaChanged = lastMandatoryAreaIdRef.current !== currentAreaId;
       if (currentAreaId) {
@@ -970,7 +977,7 @@ export default function DashboardClient({
         bootstrappedMandatoryAreaIdRef.current = null;
         return;
       }
-      if (mounted && progressRequestRef.current === requestId && (areaChanged || mandatoryProgressLoading)) {
+      if (mounted && progressRequestRef.current === requestId && areaChanged) {
         setMandatoryProgressLoading(true);
       }
       const loadFallbackProgress = async () => {
@@ -1032,7 +1039,7 @@ export default function DashboardClient({
     return () => {
       mounted = false;
     };
-  }, [mandatoryProgressLoading, progressRefreshTick, selectedConfig?.area_id, submitReviewMessage, supabase]);
+  }, [activeMainTab, progressRefreshTick, selectedConfig?.area_id, showWelcome, submitReviewMessage, supabase]);
 
   useEffect(() => {
     if (loading) return;
