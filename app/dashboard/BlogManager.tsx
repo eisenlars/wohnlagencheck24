@@ -65,12 +65,6 @@ type LlmOptionApiRow = {
   global_provider_id?: string | null;
 };
 
-const SOURCE_KEYS = [
-  'immobilienmarkt_individuell_01',
-  'immobilienmarkt_individuell_02',
-  'immobilienmarkt_zitat',
-] as const;
-
 export default function BlogManager({ config, onNavigateToTexts }: BlogManagerProps) {
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(true);
@@ -138,76 +132,47 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
   }, [areaId]);
 
   useEffect(() => {
-    async function loadSource() {
+    async function loadWorkspace() {
       if (!areaId) return;
       setLoading(true);
       setError(null);
-
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const res = await fetch('/api/fetch-json', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            bundesland: bundeslandSlug,
-            kreis: kreisSlug,
-            ortslage: null,
-          }),
+        const params = new URLSearchParams({
+          area_id: areaId,
+          bundesland_slug: bundeslandSlug,
+          kreis_slug: kreisSlug,
         });
-        const jsonTexts = await res.json();
-        const beraterName = String(jsonTexts?.berater?.berater_name || '').trim();
-        setAuthorName(beraterName);
-
-        const { data } = await supabase
-          .from('report_texts')
-          .select('section_key, optimized_content')
-          .eq('area_id', areaId)
-          .eq('partner_id', user.id)
-          .in('section_key', SOURCE_KEYS as unknown as string[]);
-
-        const byKey = new Map<string, string>();
-        for (const entry of data || []) {
-          const value = typeof entry.optimized_content === 'string' ? entry.optimized_content.trim() : '';
-          if (value) byKey.set(entry.section_key, value);
+        const res = await fetch(`/api/partner/blog/workspace?${params.toString()}`, {
+          method: 'GET',
+          cache: 'no-store',
+        });
+        const payload = await res.json().catch(() => null) as {
+          author_name?: string;
+          source?: BlogSource;
+          posts?: BlogPostRow[];
+          error?: string;
+        } | null;
+        if (!res.ok) {
+          setError(payload?.error || 'Blog-Daten konnten nicht geladen werden.');
+          return;
         }
-
+        setAuthorName(String(payload?.author_name ?? '').trim());
         setSource({
-          individual01: byKey.get('immobilienmarkt_individuell_01') ?? '',
-          individual02: byKey.get('immobilienmarkt_individuell_02') ?? '',
-          zitat: byKey.get('immobilienmarkt_zitat') ?? '',
+          individual01: String(payload?.source?.individual01 ?? ''),
+          individual02: String(payload?.source?.individual02 ?? ''),
+          zitat: String(payload?.source?.zitat ?? ''),
         });
+        setPosts(Array.isArray(payload?.posts) ? payload.posts : []);
       } catch (err) {
         console.error(err);
-        setError('Quelltexte konnten nicht geladen werden.');
+        setError('Blog-Daten konnten nicht geladen werden.');
       } finally {
         setLoading(false);
       }
     }
 
-    loadSource();
-  }, [areaId, bundeslandSlug, kreisSlug, supabase]);
-
-  useEffect(() => {
-    async function loadPosts() {
-      if (!areaId) return;
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data } = await supabase
-          .from('partner_blog_posts')
-          .select('id, headline, subline, body_md, status, created_at')
-          .eq('partner_id', user.id)
-          .eq('area_id', areaId)
-          .order('created_at', { ascending: false });
-        setPosts((data || []) as BlogPostRow[]);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    loadPosts();
-  }, [areaId, supabase, saving]);
+    loadWorkspace();
+  }, [areaId, bundeslandSlug, kreisSlug, saving]);
 
   const ensureLlmOptions = useCallback(async (): Promise<LlmIntegrationOption[]> => {
     if (llmOptionsLoaded) return llmOptions;

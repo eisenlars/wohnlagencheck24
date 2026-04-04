@@ -445,27 +445,32 @@ export default function OffersManager(props: Props) {
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      setLoading(true);
+      const res = await fetch('/api/partner/offers/workspace', {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      const payload = await res.json().catch(() => null) as {
+        offers?: OfferRow[];
+        overrides?: OverrideRow[];
+      } | null;
+      if (!res.ok) {
+        setOffers([]);
+        setOverrides([]);
+        setSelectedOfferId(null);
+        setLoading(false);
+        return;
+      }
 
-      const { data: offersData } = await supabase
-        .from('partner_property_offers')
-        .select('id, partner_id, source, external_id, offer_type, object_type, title, address, price, rent, area_sqm, rooms, image_url, raw, updated_at')
-        .eq('partner_id', user.id)
-        .order('updated_at', { ascending: false });
-
-      const { data: overridesData } = await supabase
-        .from('partner_property_overrides')
-        .select('*')
-        .eq('partner_id', user.id);
-
-      setOffers(offersData || []);
-      setOverrides(overridesData || []);
-      setSelectedOfferId(offersData?.[0]?.id ?? null);
+      const offersData = Array.isArray(payload?.offers) ? payload.offers : [];
+      const overridesData = Array.isArray(payload?.overrides) ? payload.overrides : [];
+      setOffers(offersData);
+      setOverrides(overridesData);
+      setSelectedOfferId(offersData[0]?.id ?? null);
       setLoading(false);
     }
     load();
-  }, [supabase]);
+  }, []);
 
   const availableObjectTypes = useMemo(() => {
     const types = new Set<string>();

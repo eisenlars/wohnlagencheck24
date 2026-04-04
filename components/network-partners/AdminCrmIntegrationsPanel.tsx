@@ -617,7 +617,8 @@ export default function AdminCrmIntegrationsPanel({
   const isRunningThisResource = syncSummary?.status === "running";
   const statusColor = getStatusColor(syncSummary);
   const previewStatusColor = getPreviewStatusColor(previewSummary);
-  const fullSyncAvailable = syncSummary?.mode === "full";
+  const hasSyncDetails = Boolean(syncSummary);
+  const syncModeLabel = syncSummary?.mode === "full" ? "Vollsync" : syncSummary?.mode === "guarded" ? "Guarded-Sync" : "Sync";
   const sectionTitle = formatResourceLabelForProvider(integration.provider, activeResourceKey);
   const onOfficeEstateStatusLoading =
     isOnOfficeProvider(integration.provider)
@@ -706,9 +707,9 @@ export default function AdminCrmIntegrationsPanel({
               </div>
             </div>
             <div style={statusCardStyle}>
-              <div style={statusCardLabelStyle}>Letzter Voll-Sync</div>
+              <div style={statusCardLabelStyle}>Letzter Sync</div>
               <div style={statusCardValueStyle}>
-                {fullSyncAvailable ? formatAdminDateTime(syncSummary?.finishedAt) : "Noch keiner"}
+                {syncSummary?.finishedAt ? formatAdminDateTime(syncSummary.finishedAt) : "Noch keiner"}
               </div>
             </div>
             <div style={statusCardStyle}>
@@ -826,11 +827,11 @@ export default function AdminCrmIntegrationsPanel({
             </button>
             <button
               type="button"
-              style={detailLinkStyle(Boolean(fullSyncAvailable))}
-              disabled={!fullSyncAvailable}
+              style={detailLinkStyle(hasSyncDetails)}
+              disabled={!hasSyncDetails}
               onClick={() => setDetailModal("sync")}
             >
-              Vollsync Details
+              Sync Details
             </button>
           </div>
         </section>
@@ -856,13 +857,17 @@ export default function AdminCrmIntegrationsPanel({
         </div>
       ) : null}
 
-      {detailModal === "sync" && fullSyncAvailable && syncSummary ? (
+      {detailModal === "sync" && syncSummary ? (
         <div role="dialog" aria-modal="true" style={modalOverlayStyle} onClick={() => setDetailModal(null)}>
           <div style={modalCardStyle} onClick={(event) => event.stopPropagation()}>
-            <div style={modalTitleStyle}>Letzter {sectionTitle}-Vollsync</div>
+            <div style={modalTitleStyle}>Letzter {sectionTitle}-{syncModeLabel}</div>
             <div style={modalBodyStyle}>
               <p style={modalParagraphStyle}>
-                Vollsync: mit Stale-Deaktivierung, sofern der Fetch nicht an Safety-Limits abgeschnitten wurde.
+                {syncSummary.mode === "full"
+                  ? "Vollsync: mit Stale-Deaktivierung, sofern der Fetch nicht an Safety-Limits abgeschnitten wurde."
+                  : syncSummary.mode === "guarded"
+                    ? "Guarded-Sync: sicherheitsbegrenzt, ohne Vollbereinigung des Gesamtbestands."
+                    : "Synchronisierungslauf der ausgewählten Ressource."}
               </p>
               <p style={modalParagraphStyle}>
                 {getResourceResultLabel(syncSummary, activeResourceKey, integration.provider)}

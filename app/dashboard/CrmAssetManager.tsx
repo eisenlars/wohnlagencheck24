@@ -222,47 +222,31 @@ export default function CrmAssetManager(props: Props) {
     async function load() {
       setLoading(true);
       setStatus('Lade Daten...');
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setStatus('Nicht angemeldet.');
+      const kind = rawTable === 'partner_references' ? 'references' : 'requests';
+      const res = await fetch(`/api/partner/crm-assets/workspace?kind=${kind}`, {
+        method: 'GET',
+        cache: 'no-store',
+      });
+      const payload = await res.json().catch(() => null) as {
+        rows?: RawAssetRow[];
+        overrides?: OverrideRow[];
+        error?: string;
+      } | null;
+      if (!res.ok) {
+        setStatus(payload?.error ? `Fehler beim Laden: ${payload.error}` : 'Fehler beim Laden.');
         setLoading(false);
         return;
       }
 
-      const { data: rawData, error: rawError } = await supabase
-        .from(rawTable)
-        .select('id, partner_id, provider, external_id, title, normalized_payload, source_payload, source_updated_at, last_seen_at, updated_at, is_active')
-        .eq('partner_id', user.id)
-        .eq('is_active', true)
-        .order('updated_at', { ascending: false });
-
-      if (rawError) {
-        setStatus(`Fehler beim Laden (${rawTable}): ${rawError.message}`);
-        setLoading(false);
-        return;
-      }
-
-      const { data: overrideData, error: overrideError } = await supabase
-        .from(overrideTable)
-        .select('*')
-        .eq('partner_id', user.id);
-
-      if (overrideError) {
-        setStatus(`Overrides konnten nicht geladen werden (${overrideTable}): ${overrideError.message}`);
-      } else {
-        setStatus('Daten geladen.');
-      }
-
-      const list = (rawData ?? []) as RawAssetRow[];
+      setStatus('Daten geladen.');
+      const list = Array.isArray(payload?.rows) ? payload.rows : [];
       setRows(list);
-      setOverrides(((overrideData ?? []) as OverrideRow[]) ?? []);
+      setOverrides(Array.isArray(payload?.overrides) ? payload.overrides : []);
       setSelectedId(list[0]?.id ?? null);
       setLoading(false);
     }
     load();
-  }, [rawTable, overrideTable, supabase]);
+  }, [rawTable]);
 
   const filteredRows = useMemo(() => {
     const term = query.trim().toLowerCase();
