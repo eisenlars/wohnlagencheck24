@@ -538,6 +538,18 @@ export default function DashboardClient({
   const internationalLocalesLoadedRef = useRef(false);
   const utilityBarRef = useRef<HTMLElement | null>(null);
 
+  const handleTextMandatoryProgressChange = useCallback((payload: { areaId: string; completed: number; total: number; percent?: number }) => {
+    if (activeMainTab !== 'texts') return;
+    if (!payload.areaId) return;
+    setMandatoryProgress({
+      completed: Number.isFinite(payload.completed) ? payload.completed : 0,
+      total: Number.isFinite(payload.total) && payload.total > 0
+        ? payload.total
+        : INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length,
+    });
+    setMandatoryProgressLoading(false);
+  }, [activeMainTab]);
+
   // Werkzeug-Modus umschalten
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('factors');
   const [networkPartnerSection, setNetworkPartnerSection] = useState<NetworkPartnerSection>(initialNetworkPartnerSection ?? 'overview');
@@ -927,6 +939,9 @@ export default function DashboardClient({
     if (tab === 'network_partners') {
       setNetworkPartnerSection(nextNetworkPartnerSection ?? 'overview');
     }
+    if (tab === 'texts') {
+      setMandatoryProgressLoading(true);
+    }
     setActiveMainTab(tab);
     setShowWelcome(false);
     setHoveredUtilityToolId(null);
@@ -954,7 +969,7 @@ export default function DashboardClient({
     const requestId = progressRequestRef.current + 1;
     progressRequestRef.current = requestId;
     async function loadMandatoryProgress() {
-      const shouldShowMandatoryProgress = showWelcome || activeMainTab === 'texts';
+      const shouldShowMandatoryProgress = showWelcome;
       if (!shouldShowMandatoryProgress) {
         if (mounted && progressRequestRef.current === requestId) {
           setMandatoryProgressLoading(false);
@@ -1039,7 +1054,7 @@ export default function DashboardClient({
     return () => {
       mounted = false;
     };
-  }, [activeMainTab, progressRefreshTick, selectedConfig?.area_id, showWelcome, submitReviewMessage, supabase]);
+  }, [progressRefreshTick, selectedConfig?.area_id, showWelcome, submitReviewMessage, supabase]);
 
   useEffect(() => {
     if (loading) return;
@@ -1120,6 +1135,7 @@ export default function DashboardClient({
     const target = resolveFocusTarget(sectionKey);
     setTextFocusTarget(target);
     setActivationEditorMode(true);
+    setMandatoryProgressLoading(true);
     setActiveMainTab('texts');
     setShowWelcome(false);
   }
@@ -2271,6 +2287,8 @@ export default function DashboardClient({
                   allowedSectionKeys={scopedContentAreaConfig.is_active ? undefined : Array.from(mandatoryAllowedKeys)}
                   onFocusHandled={() => setTextFocusTarget(null)}
                   onPersistSuccess={() => setProgressRefreshTick((prev) => prev + 1)}
+                  onMandatoryProgressChange={handleTextMandatoryProgressChange}
+                  onMandatoryProgressLoadingChange={setMandatoryProgressLoading}
                 />
               )
             ) : activeMainTab === 'marketing' && scopedContentAreaConfig ? (

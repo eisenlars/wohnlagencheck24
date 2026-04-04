@@ -461,6 +461,8 @@ type TextEditorFormProps = {
     allowedTabIds?: string[];
     allowedSectionKeys?: string[];
     onPersistSuccess?: () => void;
+    onMandatoryProgressChange?: (payload: { areaId: string; completed: number; total: number; percent?: number }) => void;
+    onMandatoryProgressLoadingChange?: (loading: boolean) => void;
 };
 
 type PersistedTextEditorViewState = {
@@ -482,6 +484,11 @@ type TextEditorBootstrapPayload = {
   scope_items?: unknown;
   requested_data?: unknown;
   root_data?: unknown;
+  mandatory_progress?: {
+    completed?: number | null;
+    total?: number | null;
+    percent?: number | null;
+  } | null;
 };
 
 const DEBUG_TIMING_STORAGE_KEY = 'debug_timing';
@@ -646,6 +653,8 @@ export default function TextEditorForm({
     allowedTabIds,
     allowedSectionKeys,
     onPersistSuccess,
+    onMandatoryProgressChange,
+    onMandatoryProgressLoadingChange,
 }: TextEditorFormProps) {
   const supabase = useMemo(() => createClient(), []);
   const appliedInitialTabRef = useRef<string | null>(null);
@@ -734,6 +743,34 @@ export default function TextEditorForm({
     )),
     [dbTexts],
   );
+  const mandatoryProgressByAreaRef = useRef<Record<string, { completed: number; total: number; percent?: number }>>({});
+
+  const emitMandatoryProgress = useCallback((areaId: string, progress: { completed: number; total: number; percent?: number }) => {
+    mandatoryProgressByAreaRef.current[areaId] = progress;
+    onMandatoryProgressChange?.({
+      areaId,
+      completed: progress.completed,
+      total: progress.total,
+      percent: progress.percent,
+    });
+  }, [onMandatoryProgressChange]);
+
+  const emitDerivedMandatoryProgress = useCallback((areaId: string, entries: TextEntry[]) => {
+    if (tableName !== 'report_texts') return;
+    const uniqueFilled = new Set<string>();
+    for (const entry of entries) {
+      const key = String(entry.section_key ?? '');
+      const isMandatoryText = INDIVIDUAL_MANDATORY_KEYS.includes(key as (typeof INDIVIDUAL_MANDATORY_KEYS)[number]);
+      const isMandatoryMedia = MANDATORY_MEDIA_KEYS.includes(key as (typeof MANDATORY_MEDIA_KEYS)[number]);
+      if (!isMandatoryText && !isMandatoryMedia) continue;
+      const value = String(entry.optimized_content ?? '').trim();
+      if (value) uniqueFilled.add(key);
+    }
+    const total = INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length;
+    const completed = uniqueFilled.size;
+    const percent = total > 0 ? Math.max(0, Math.min(100, Math.round((completed / total) * 100))) : 0;
+    emitMandatoryProgress(areaId, { completed, total, percent });
+  }, [emitMandatoryProgress, tableName]);
 
   const loadAreaTextData = useCallback(async (areaConfig: PartnerAreaConfig): Promise<TextAreaData> => {
     const areaId = String(areaConfig?.area_id ?? '').trim();
@@ -760,6 +797,13 @@ export default function TextEditorForm({
     const nextRequestedData = normalizeTextAreaData(payload?.requested_data);
     const nextRootAreaId = String(payload?.root_area_id ?? rootAreaId).trim() || rootAreaId;
     const nextRootData = payload?.root_data ? normalizeTextAreaData(payload.root_data) : null;
+    const nextMandatoryProgress = payload?.mandatory_progress && typeof payload.mandatory_progress === 'object'
+      ? {
+          completed: Number(payload.mandatory_progress.completed ?? 0),
+          total: Number(payload.mandatory_progress.total ?? (INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length)),
+          percent: Number(payload.mandatory_progress.percent ?? 0),
+        }
+      : null;
 
     setScopeAreaItems(nextScopeItems);
     setAreaDataById((prev) => {
@@ -769,9 +813,12 @@ export default function TextEditorForm({
       }
       return next;
     });
+    if (tableName === 'report_texts' && nextMandatoryProgress) {
+      emitMandatoryProgress(requestedAreaId, nextMandatoryProgress);
+    }
 
     return nextRequestedData;
-  }, [config, tableName]);
+  }, [config, emitMandatoryProgress, tableName]);
 
   const ensureAreaTextData = useCallback(async (areaConfig: PartnerAreaConfig, options?: { force?: boolean }) => {
     const areaId = String(areaConfig?.area_id ?? '').trim();
@@ -865,14 +912,17 @@ export default function TextEditorForm({
       if (!selectedAreaConfig?.area_id) return;
       const areaId = String(selectedAreaConfig.area_id);
       if (areaDataById[areaId]) {
+        onMandatoryProgressLoadingChange?.(false);
         setLoading(false);
       } else {
+        onMandatoryProgressLoadingChange?.(true);
         setLoading(true);
         try {
           await ensureAreaTextData(selectedAreaConfig);
         } catch (error) {
           console.error('Fehler beim Laden der Bereichstexte:', error);
         } finally {
+          onMandatoryProgressLoadingChange?.(false);
           if (!cancelled) setLoading(false);
         }
       }
@@ -882,7 +932,26 @@ export default function TextEditorForm({
     return () => {
       cancelled = true;
     };
-  }, [areaDataById, config, ensureAreaTextData, selectedAreaConfig]);
+  }, [areaDataById, config, ensureAreaTextData, onMandatoryProgressLoadingChange, selectedAreaConfig]);
+
+  useEffect(() => {
+    if (tableName !== 'report_texts') return;
+    const areaId = String(selectedAreaConfig?.area_id ?? '').trim();
+    if (!areaId) return;
+    const cached = mandatoryProgressByAreaRef.current[areaId];
+    if (cached) {
+      onMandatoryProgressChange?.({
+        areaId,
+        completed: cached.completed,
+        total: cached.total,
+        percent: cached.percent,
+      });
+      return;
+    }
+    if (selectedAreaData) {
+      emitDerivedMandatoryProgress(areaId, selectedAreaData.dbTexts ?? []);
+    }
+  }, [emitDerivedMandatoryProgress, onMandatoryProgressChange, selectedAreaConfig, selectedAreaData, tableName]);
 
   const tabConfig = isMarketing ? MARKETING_TAB_CONFIG : TAB_CONFIG;
   const visibleGlobalClassOrder = useMemo(
@@ -1037,10 +1106,13 @@ export default function TextEditorForm({
         last_updated: new Date().toISOString()
       }, { onConflict: 'partner_id,area_id,section_key' });
       if (!error) {
-        updateAreaDbTexts(areaId, (prev) => {
+        const nextEntries = (() => {
+          const prev = selectedAreaData?.dbTexts ?? [];
           const filtered = prev.filter(t => t.section_key !== key);
           return [...filtered, { section_key: key, optimized_content: content, status, text_type: type }];
-        });
+        })();
+        updateAreaDbTexts(areaId, () => nextEntries);
+        emitDerivedMandatoryProgress(areaId, nextEntries);
         onPersistSuccess?.();
       }
     }
@@ -1060,7 +1132,9 @@ export default function TextEditorForm({
         .eq('area_id', areaId)
         .eq('section_key', key);
       if (!error) {
-        updateAreaDbTexts(areaId, (prev) => prev.filter((entry) => entry.section_key !== key));
+        const nextEntries = (selectedAreaData?.dbTexts ?? []).filter((entry) => entry.section_key !== key);
+        updateAreaDbTexts(areaId, () => nextEntries);
+        emitDerivedMandatoryProgress(areaId, nextEntries);
         onPersistSuccess?.();
       }
     } finally {
@@ -1223,19 +1297,18 @@ export default function TextEditorForm({
       const url = String(payload?.url ?? '');
       if (!url) throw new Error('Upload erfolgreich, aber ohne URL.');
 
-      updateAreaDbTexts(areaId, (prev) => {
-        const filtered = prev.filter((entry) => entry.section_key !== assetKey);
-        return [
-          ...filtered,
-          {
-            section_key: assetKey,
-            optimized_content: url,
-            status: 'draft',
-            text_type: 'individual',
-            last_updated: new Date().toISOString(),
-          },
-        ];
-      });
+      const nextEntries = [
+        ...(selectedAreaData?.dbTexts ?? []).filter((entry) => entry.section_key !== assetKey),
+        {
+          section_key: assetKey,
+          optimized_content: url,
+          status: 'draft',
+          text_type: 'individual',
+          last_updated: new Date().toISOString(),
+        },
+      ];
+      updateAreaDbTexts(areaId, () => nextEntries);
+      emitDerivedMandatoryProgress(areaId, nextEntries);
       onPersistSuccess?.();
       setMediaState((prev) => ({ ...prev, [assetKey]: { uploading: false, error: null } }));
     } catch (error) {

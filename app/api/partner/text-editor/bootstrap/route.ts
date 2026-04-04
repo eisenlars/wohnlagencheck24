@@ -4,6 +4,9 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { resolveMarketingContextForArea } from "@/lib/areas/marketing-context";
 import { buildMarketingDefaults } from "@/lib/marketing-defaults";
+import { checkPartnerAreaMandatoryTexts } from "@/lib/partner-area-mandatory";
+import { INDIVIDUAL_MANDATORY_KEYS } from "@/lib/text-key-registry";
+import { MANDATORY_MEDIA_KEYS } from "@/lib/mandatory-media";
 
 export const runtime = "nodejs";
 
@@ -36,6 +39,12 @@ type TextAreaData = {
   baseTexts: { text: TextTree };
   standardTexts: { text: TextTree };
   dbTexts: TextEntry[];
+};
+
+type MandatoryProgressPayload = {
+  completed: number;
+  total: number;
+  percent: number;
 };
 
 const SUPABASE_PUBLIC_BASE_URL = process.env.SUPABASE_PUBLIC_BASE_URL ?? "";
@@ -293,6 +302,29 @@ async function loadAreaData(
   return { baseTexts, standardTexts, dbTexts };
 }
 
+async function loadMandatoryProgress(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  areaId: string,
+): Promise<MandatoryProgressPayload> {
+  const total = INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length;
+  const mandatoryCheck = await checkPartnerAreaMandatoryTexts({
+    admin,
+    partnerId: userId,
+    areaId,
+  });
+
+  if (!mandatoryCheck.ok && mandatoryCheck.status !== 409) {
+    return { completed: 0, total, percent: 0 };
+  }
+
+  const missing = mandatoryCheck.ok ? [] : (mandatoryCheck.missing ?? []);
+  const missingUnique = new Set(missing.map((item) => item.key).filter(Boolean));
+  const completed = Math.max(0, total - missingUnique.size);
+  const percent = total > 0 ? Math.max(0, Math.min(100, Math.round((completed / total) * 100))) : 0;
+  return { completed, total, percent };
+}
+
 export async function GET(req: Request) {
   try {
     const requestStartedAt = performance.now();
@@ -351,6 +383,9 @@ export async function GET(req: Request) {
         ? timed("root_data_ms", () => loadAreaData(admin, userId, tableName, rootConfig))
         : Promise.resolve(null),
     ]);
+    const mandatoryProgress = tableName === "report_texts"
+      ? await timed("mandatory_progress_ms", () => loadMandatoryProgress(admin, userId, areaId))
+      : null;
 
     return NextResponse.json(withDebugTimings({
       ok: true,
@@ -360,6 +395,7 @@ export async function GET(req: Request) {
       scope_items: scopeItems,
       requested_data: requestedData,
       root_data: rootData,
+      mandatory_progress: mandatoryProgress,
     }));
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
