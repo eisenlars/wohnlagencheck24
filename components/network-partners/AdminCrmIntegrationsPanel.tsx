@@ -210,6 +210,19 @@ function updateDraft(
   return { ...draft, ...patch };
 }
 
+function extractSyncNoteValue(notes: string[] | undefined, prefix: string): string | null {
+  if (!Array.isArray(notes)) return null;
+  const normalizedPrefix = prefix.trim().toLowerCase();
+  for (const note of notes) {
+    const text = String(note ?? "").trim();
+    if (!text) continue;
+    if (text.toLowerCase().startsWith(normalizedPrefix)) {
+      return text.slice(prefix.length).trim() || null;
+    }
+  }
+  return null;
+}
+
 function renderImportRules(
   provider: string,
   resourceKey: CrmResourceKey,
@@ -219,6 +232,7 @@ function renderImportRules(
   onOfficeEstateStatusError: string | null,
   onOfficeEstateStatusFieldKey: string | null,
   onOfficeEstateStatusFieldLabel: string | null,
+  onOfficeObservedStatusValues: string | null,
   onChange: (nextDraft: CrmIntegrationAdminDraft) => void,
 ) {
   const onOffice = isOnOfficeProvider(provider);
@@ -271,6 +285,11 @@ function renderImportRules(
             {onOfficeEstateStatusOptions.length > 0 ? (
               <div style={helperTextStyle}>
                 Verfügbare Werte: {onOfficeEstateStatusOptions.map((option) => `${option.label} (${option.value})`).join(", ")}
+              </div>
+            ) : null}
+            {onOfficeObservedStatusValues ? (
+              <div style={helperTextStyle}>
+                Zuletzt im echten Import gesehen: <code>{onOfficeObservedStatusValues}</code>
               </div>
             ) : null}
           </>
@@ -619,6 +638,10 @@ export default function AdminCrmIntegrationsPanel({
   const previewStatusColor = getPreviewStatusColor(previewSummary);
   const hasSyncDetails = Boolean(syncSummary);
   const syncModeLabel = syncSummary?.mode === "full" ? "Vollsync" : syncSummary?.mode === "guarded" ? "Guarded-Sync" : "Sync";
+  const onOfficeObservedStatusValues = extractSyncNoteValue(
+    syncSummary?.result?.notes,
+    "onOffice estate status2-Werte:",
+  );
   const sectionTitle = formatResourceLabelForProvider(integration.provider, activeResourceKey);
   const onOfficeEstateStatusLoading =
     isOnOfficeProvider(integration.provider)
@@ -744,6 +767,7 @@ export default function AdminCrmIntegrationsPanel({
                   onOfficeEstateStatusError,
                   onOfficeEstateStatusFieldKey,
                   onOfficeEstateStatusFieldLabel,
+                  onOfficeObservedStatusValues,
                   onDraftChange,
                 )}
               </div>
