@@ -45,6 +45,17 @@ export type OnOfficeFieldOption = {
   label: string;
 };
 
+type OnOfficeEstateFieldDefinition = {
+  key: string;
+  label: string | null;
+  type: string | null;
+  permittedValues: OnOfficeFieldOption[];
+};
+
+type OnOfficeEstateFieldCatalog = {
+  fields: OnOfficeEstateFieldDefinition[];
+};
+
 export type OnOfficeEstateStatusFieldConfig = {
   field_key: string | null;
   field_label: string | null;
@@ -386,6 +397,41 @@ function extractPermittedValues(raw: unknown): OnOfficeFieldOption[] {
   return out;
 }
 
+function extractOnOfficeModuleElements(records: OnOfficeRecord[], moduleId: string): Record<string, unknown> {
+  const moduleRecord = records.find((record) => String(record.id ?? "").trim().toLowerCase() === moduleId) ?? records[0];
+  return (moduleRecord?.elements ?? {}) as Record<string, unknown>;
+}
+
+function parseOnOfficeEstateFieldCatalog(moduleElements: Record<string, unknown>): OnOfficeEstateFieldCatalog {
+  const fields: OnOfficeEstateFieldDefinition[] = [];
+
+  for (const [fieldKey, value] of Object.entries(moduleElements)) {
+    if (!value || typeof value !== "object") continue;
+    const field = value as Record<string, unknown>;
+    fields.push({
+      key: fieldKey,
+      label: String(field.label ?? "").trim() || null,
+      type: String(field.type ?? "").trim().toLowerCase() || null,
+      permittedValues: extractPermittedValues(
+        field.permittedvalues
+        ?? field.permitted_values
+        ?? field.options
+        ?? field.values,
+      ),
+    });
+  }
+
+  return { fields };
+}
+
+function resolveOnOfficeEstateReadFields(
+  catalog: OnOfficeEstateFieldCatalog,
+  desiredFields: string[],
+): string[] {
+  const available = new Set(catalog.fields.map((field) => field.key.trim()).filter(Boolean));
+  return desiredFields.filter((field) => available.has(field));
+}
+
 function makeRawRowBase(
   partnerId: string,
   provider: "onoffice",
@@ -609,55 +655,14 @@ export async function fetchOnOfficeEstateStatusFieldConfig(
   token: string,
   secret: string,
 ): Promise<OnOfficeEstateStatusFieldConfig> {
-  const base = getOnOfficeApiBaseUrl(integration);
-  const body = buildOnOfficeGetRequest(token, secret, RESOURCE_FIELDS, {
-    modules: ["estate"],
-    labels: true,
-  });
-
-  const res = await fetchWithTimeout(base, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`onOffice fields fetch failed (${res.status}): ${text}`);
-  }
-
-  const json = (await res.json()) as OnOfficeResponse;
-  const records = json?.response?.results?.[0]?.data?.records ?? [];
-  if (!Array.isArray(records) || records.length === 0) {
-    return {
-      field_key: null,
-      field_label: null,
-      options: [],
-      has_reference_status_candidates: false,
-    };
-  }
-
-  const moduleRecord = records.find((record) => String(record.id ?? "").trim().toLowerCase() === "estate") ?? records[0];
-  const moduleElements = (moduleRecord?.elements ?? {}) as Record<string, unknown>;
+  const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
   const candidates: Array<{ fieldKey: string; fieldLabel: string | null; options: OnOfficeFieldOption[]; priority: number }> = [];
 
-  for (const [fieldKey, value] of Object.entries(moduleElements)) {
-    if (!value || typeof value !== "object") continue;
-    const field = value as Record<string, unknown>;
-    const fieldType = String(field.type ?? "").trim().toLowerCase();
-    if (fieldType !== "singleselect") continue;
+  for (const field of catalog.fields) {
+    if (field.type !== "singleselect") continue;
 
-    const fieldLabel = String(field.label ?? "").trim() || null;
-    const options = extractPermittedValues(
-      field.permittedvalues
-      ?? field.permitted_values
-      ?? field.options
-      ?? field.values,
-    );
-    if (options.length === 0) continue;
-
-    const normalizedKey = fieldKey.trim().toLowerCase();
-    const normalizedLabel = String(fieldLabel ?? "").trim().toLowerCase();
+    const normalizedKey = field.key.trim().toLowerCase();
+    const normalizedLabel = String(field.label ?? "").trim().toLowerCase();
     const priority =
       normalizedKey === "objektstatus" ? 100
         : normalizedKey === "status2" ? 90
@@ -665,9 +670,14 @@ export async function fetchOnOfficeEstateStatusFieldConfig(
             : normalizedLabel === "status" ? 70
               : normalizedKey.includes("status") || normalizedLabel.includes("status") ? 60
                 : 0;
-    if (priority === 0) continue;
+    if (priority === 0 || field.permittedValues.length === 0) continue;
 
-    candidates.push({ fieldKey, fieldLabel, options, priority });
+    candidates.push({
+      fieldKey: field.key,
+      fieldLabel: field.label,
+      options: field.permittedValues,
+      priority,
+    });
   }
 
   const selected = candidates.sort((left, right) => right.priority - left.priority)[0];
@@ -688,13 +698,45 @@ export async function fetchOnOfficeEstateStatusFieldConfig(
   };
 }
 
+async function fetchOnOfficeEstateFieldCatalog(
+  integration: PartnerIntegration,
+  token: string,
+  secret: string,
+): Promise<OnOfficeEstateFieldCatalog> {
+  const base = getOnOfficeApiBaseUrl(integration);
+  const body = buildOnOfficeGetRequest(token, secret, RESOURCE_FIELDS, {
+    modules: ["estate"],
+    labels: true,
+  });
+
+  const res = await fetchWithTimeout(base, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`onOffice fields fetch failed (${res.status}): ${text}`);
+  }
+
+  const json = (await res.json()) as OnOfficeResponse;
+  const records = json?.response?.results?.[0]?.data?.records ?? [];
+  if (!Array.isArray(records) || records.length === 0) {
+    return { fields: [] };
+  }
+
+  return parseOnOfficeEstateFieldCatalog(extractOnOfficeModuleElements(records, RESOURCE_ESTATE));
+}
+
 export async function fetchOnOfficeEstates(
   integration: PartnerIntegration,
   token: string,
   secret: string,
   settings: OnOfficeResourceSettings,
 ): Promise<OnOfficeRecord[]> {
-  const fields = [
+  const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
+  const fields = resolveOnOfficeEstateReadFields(catalog, [
     "Id",
     "geaendert_am",
     "objekttitel",
@@ -718,7 +760,7 @@ export async function fetchOnOfficeEstates(
     "baujahr",
     "freitext_lage",
     "freitext_ausstattung",
-  ];
+  ]);
   const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
     status: [{ op: "=", val: 1 }],
     ...(settings.listing_exclude_sold ? { verkauft: [{ op: "=", val: 0 }] } : {}),
@@ -753,7 +795,8 @@ export async function fetchOnOfficeReferences(
   token: string,
   secret: string,
 ): Promise<OnOfficeRecord[]> {
-  const fields = [
+  const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
+  const fields = resolveOnOfficeEstateReadFields(catalog, [
     "Id",
     "geaendert_am",
     "objekttitel",
@@ -776,7 +819,7 @@ export async function fetchOnOfficeReferences(
     "strasse",
     "hausnummer",
     "img",
-  ];
+  ]);
   return fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
     verkauft: [{ op: "=", val: 1 }],
   });
