@@ -538,6 +538,12 @@ export default function DashboardClient({
   const internationalLocalesLoadedRef = useRef(false);
   const utilityBarRef = useRef<HTMLElement | null>(null);
 
+  // Werkzeug-Modus umschalten
+  const [activeMainTab, setActiveMainTab] = useState<MainTab>('factors');
+  const [networkPartnerSection, setNetworkPartnerSection] = useState<NetworkPartnerSection>(initialNetworkPartnerSection ?? 'overview');
+  const [selectedNetworkPartnerId, setSelectedNetworkPartnerId] = useState<string | null>(initialSelectedNetworkPartnerId ?? null);
+  const [networkPartnerDetailSection, setNetworkPartnerDetailSection] = useState<NetworkPartnerDetailSection>(initialNetworkPartnerDetailSection ?? 'profile');
+
   const handleTextMandatoryProgressChange = useCallback((payload: { areaId: string; completed: number; total: number; percent?: number }) => {
     if (activeMainTab !== 'texts') return;
     if (!payload.areaId) return;
@@ -549,12 +555,6 @@ export default function DashboardClient({
     });
     setMandatoryProgressLoading(false);
   }, [activeMainTab]);
-
-  // Werkzeug-Modus umschalten
-  const [activeMainTab, setActiveMainTab] = useState<MainTab>('factors');
-  const [networkPartnerSection, setNetworkPartnerSection] = useState<NetworkPartnerSection>(initialNetworkPartnerSection ?? 'overview');
-  const [selectedNetworkPartnerId, setSelectedNetworkPartnerId] = useState<string | null>(initialSelectedNetworkPartnerId ?? null);
-  const [networkPartnerDetailSection, setNetworkPartnerDetailSection] = useState<NetworkPartnerDetailSection>(initialNetworkPartnerDetailSection ?? 'profile');
 
   const headerConfig = useMemo(() => {
     switch (activeMainTab) {
