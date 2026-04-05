@@ -432,6 +432,18 @@ function resolveOnOfficeEstateReadFields(
   return desiredFields.filter((field) => available.has(field));
 }
 
+function mergeOnOfficeEstateReadFields(
+  fixedFields: string[],
+  optionalFields: string[],
+  catalog: OnOfficeEstateFieldCatalog,
+): string[] {
+  const out = new Set<string>(fixedFields);
+  for (const field of resolveOnOfficeEstateReadFields(catalog, optionalFields)) {
+    out.add(field);
+  }
+  return Array.from(out);
+}
+
 function makeRawRowBase(
   partnerId: string,
   provider: "onoffice",
@@ -736,7 +748,7 @@ export async function fetchOnOfficeEstates(
   settings: OnOfficeResourceSettings,
 ): Promise<OnOfficeRecord[]> {
   const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
-  const fields = resolveOnOfficeEstateReadFields(catalog, [
+  const fields = mergeOnOfficeEstateReadFields([
     "Id",
     "geaendert_am",
     "objekttitel",
@@ -758,9 +770,10 @@ export async function fetchOnOfficeEstates(
     "strasse",
     "hausnummer",
     "baujahr",
+  ], [
     "freitext_lage",
     "freitext_ausstattung",
-  ]);
+  ], catalog);
   const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
     status: [{ op: "=", val: 1 }],
     ...(settings.listing_exclude_sold ? { verkauft: [{ op: "=", val: 0 }] } : {}),
@@ -796,7 +809,7 @@ export async function fetchOnOfficeReferences(
   secret: string,
 ): Promise<OnOfficeRecord[]> {
   const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
-  const fields = resolveOnOfficeEstateReadFields(catalog, [
+  const fields = mergeOnOfficeEstateReadFields([
     "Id",
     "geaendert_am",
     "objekttitel",
@@ -818,8 +831,9 @@ export async function fetchOnOfficeReferences(
     "ort",
     "strasse",
     "hausnummer",
+  ], [
     "img",
-  ]);
+  ], catalog);
   return fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
     verkauft: [{ op: "=", val: 1 }],
   });
