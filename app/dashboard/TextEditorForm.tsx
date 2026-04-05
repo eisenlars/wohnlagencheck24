@@ -14,6 +14,7 @@ import {
 } from '@/lib/text-display-class';
 import { estimateTokensFromText } from '@/lib/i18n-cost-estimate';
 import {
+  MANDATORY_MEDIA_KEYS,
   MANDATORY_MEDIA_SPECS,
   type MandatoryMediaKey,
 } from '@/lib/mandatory-media';
