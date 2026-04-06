@@ -900,6 +900,11 @@ export default function TextEditorForm({
   }, [llmIntegrations, llmOptionsLoaded]);
 
   useEffect(() => {
+    if (!showTopLlmCard) return;
+    void ensureLlmOptions();
+  }, [ensureLlmOptions, showTopLlmCard]);
+
+  useEffect(() => {
     if (!config?.area_id) return;
     if (scopeAreaItems.length === 0) return;
     if (scopeAreaItems.some((item) => item.area_id === selectedScopeAreaId)) return;
@@ -1623,13 +1628,11 @@ export default function TextEditorForm({
                 <select
                   value={selectedLlmIntegrationId || llmIntegrations[0]?.id || ''}
                   onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                  onFocus={() => { void ensureLlmOptions(); }}
-                  onMouseDown={() => { void ensureLlmOptions(); }}
                   style={textWorkflowTopSelectStyle}
                   aria-label="KI-Modell auswählen"
                   disabled={llmOptionsLoading || (llmOptionsLoaded && llmIntegrations.length === 0)}
                 >
-                  {!llmOptionsLoaded || llmOptionsLoading ? <option value="">KI-Modelle laden...</option> : null}
+                  {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
                   {llmOptionsLoaded && llmIntegrations.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
                   {llmIntegrations.map((item) => (
                     <option key={item.id} value={item.id}>

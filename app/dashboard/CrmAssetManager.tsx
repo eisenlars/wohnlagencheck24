@@ -240,6 +240,10 @@ export default function CrmAssetManager(props: Props) {
   }, [llmOptions, llmOptionsLoaded]);
 
   useEffect(() => {
+    void ensureLlmOptions();
+  }, [ensureLlmOptions]);
+
+  useEffect(() => {
     async function load() {
       setLoading(true);
       setStatus('Lade Daten...');
@@ -598,8 +602,6 @@ export default function CrmAssetManager(props: Props) {
                     <select
                       value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
                       onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                      onFocus={() => { void ensureLlmOptions(); }}
-                      onMouseDown={() => { void ensureLlmOptions(); }}
                       style={{
                         minWidth: 220,
                         border: '1px solid #dbeafe',
@@ -613,7 +615,7 @@ export default function CrmAssetManager(props: Props) {
                       aria-label="KI-Modell auswählen"
                       disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
                     >
-                      {!llmOptionsLoaded || llmOptionsLoading ? <option value="">KI-Modelle laden...</option> : null}
+                      {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
                       {llmOptions.map((option) => (
                         <option key={option.id} value={option.id}>
                           {option.label}

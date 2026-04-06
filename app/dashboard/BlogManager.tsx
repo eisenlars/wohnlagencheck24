@@ -241,6 +241,10 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
     }
   }, [llmOptions, llmOptionsLoaded]);
 
+  useEffect(() => {
+    void ensureLlmOptions();
+  }, [ensureLlmOptions]);
+
   const handleGenerate = async () => {
     if (!areaName || !hasAllSources) return;
     setGenerating(true);
@@ -380,13 +384,11 @@ export default function BlogManager({ config, onNavigateToTexts }: BlogManagerPr
             <select
               value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
               onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-              onFocus={() => { void ensureLlmOptions(); }}
-              onMouseDown={() => { void ensureLlmOptions(); }}
               style={workflowTopSelectStyle}
               aria-label="KI-Modell auswählen"
               disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
             >
-              {!llmOptionsLoaded || llmOptionsLoading ? <option value="">KI-Modelle laden...</option> : null}
+              {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
               {llmOptionsLoaded && llmOptions.length === 0 ? <option value="">Kein LLM verfügbar</option> : null}
               {llmOptions.map((item) => (
                 <option key={item.id} value={item.id}>
