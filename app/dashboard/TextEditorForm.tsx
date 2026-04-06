@@ -900,11 +900,6 @@ export default function TextEditorForm({
   }, [llmIntegrations, llmOptionsLoaded]);
 
   useEffect(() => {
-    if (!showTopLlmCard) return;
-    void ensureLlmOptions();
-  }, [ensureLlmOptions, showTopLlmCard]);
-
-  useEffect(() => {
     if (!config?.area_id) return;
     if (scopeAreaItems.length === 0) return;
     if (scopeAreaItems.some((item) => item.area_id === selectedScopeAreaId)) return;
@@ -1600,6 +1595,13 @@ export default function TextEditorForm({
     return `${value.toFixed(value < 1 ? 4 : 2)} ${currency}`;
   }
 
+  const showTopLlmCard = !lockedToMandatory;
+
+  useEffect(() => {
+    if (!showTopLlmCard) return;
+    void ensureLlmOptions();
+  }, [ensureLlmOptions, showTopLlmCard]);
+
   if (loading) {
     return <FullscreenLoader show label="Sektionen werden geladen..." />;
   }
@@ -1613,7 +1615,6 @@ export default function TextEditorForm({
     return resolveDisplayTextClass(section.key, section.type) === activeBulkClass;
   });
   const isBulkRewriting = Boolean(classBulkState);
-  const showTopLlmCard = !lockedToMandatory;
   const showGlobalClassActions = !isMarketing && !lockedToMandatory;
   const showScopeAreaSidebar = !lockedToMandatory && !isOrtslage && scopeAreaItems.length > 1;
 
