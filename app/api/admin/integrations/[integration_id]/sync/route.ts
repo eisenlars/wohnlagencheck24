@@ -418,6 +418,7 @@ async function finalizeSyncSuccess(
 ) {
   const admin = createAdminClient();
   const now = new Date().toISOString();
+  const { debug_payload, ...persistedResult } = result;
   const status = await patchSyncSettings(
     admin,
     integrationId,
@@ -438,7 +439,8 @@ async function finalizeSyncSuccess(
       sync_error_class: null,
       sync_request_count: result.provider_request_count ?? null,
       sync_pages_fetched: result.provider_pages_fetched ?? null,
-      sync_result: result,
+      sync_result: persistedResult,
+      sync_debug_payload: debug_payload ?? null,
       sync_timeout_ms: null,
     },
     {
@@ -488,6 +490,7 @@ async function finalizeSyncError(
       sync_error: message,
       sync_error_class: errorClass ?? classifySyncError(message),
       sync_result: null,
+      sync_debug_payload: null,
       sync_timeout_ms: null,
     },
     {
@@ -537,6 +540,7 @@ async function expireStaleRunningSync(
       sync_error: message,
       sync_error_class: "stale_run",
       sync_result: null,
+      sync_debug_payload: null,
     },
     {
       expectedJobId: jobId ?? undefined,
@@ -700,6 +704,7 @@ export async function POST(
         sync_request_count: null,
         sync_pages_fetched: null,
         sync_result: null,
+        sync_debug_payload: null,
         sync_timeout_ms: syncTimeoutMs,
         sync_heartbeat_at: now,
         sync_deadline_at: deadlineAt,
@@ -894,6 +899,7 @@ export async function DELETE(
           sync_error: "CRM-Synchronisierung manuell zurückgesetzt.",
           sync_error_class: "manual_reset",
           sync_result: null,
+          sync_debug_payload: null,
         },
         {
           expectedJobId: jobId ?? undefined,

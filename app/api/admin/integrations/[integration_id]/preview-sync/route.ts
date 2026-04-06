@@ -87,6 +87,31 @@ function buildOnOfficePreviewDebug(
   };
 }
 
+function buildPreviewPayload(
+  integration: PartnerIntegration,
+  resource: Exclude<CrmSyncResource, "all"> | "all",
+  traceId: string,
+  result: Awaited<ReturnType<typeof syncIntegrationResources>>,
+) {
+  return {
+    provider: integration.provider,
+    partner_id: integration.partner_id,
+    integration_id: integration.id,
+    resource,
+    mode: "guarded",
+    trace_id: traceId,
+    generated_at: new Date().toISOString(),
+    offers: result.offers,
+    listings: result.listings,
+    references: result.references,
+    requests: result.requests,
+    references_fetched: result.referencesFetched,
+    requests_fetched: result.requestsFetched,
+    diagnostics: result.diagnostics ?? null,
+    notes: result.notes ?? [],
+  };
+}
+
 function appendIntegrationLog(
   value: unknown,
   entry: IntegrationStepLogEntry,
@@ -286,6 +311,7 @@ export async function POST(
       last_preview_max_runtime_ms: PREVIEW_MAX_RUNTIME_MS,
       last_preview_max_requests: PREVIEW_MAX_REQUESTS,
       last_preview_max_pages: PREVIEW_MAX_PAGES,
+      last_preview_payload: null,
       last_preview_log: appendIntegrationLog(readPreviewRuntime(asObject(integration.settings), resource).last_preview_log, {
         at: new Date(startedAtMs).toISOString(),
         step: "started",
@@ -344,10 +370,12 @@ export async function POST(
         );
         requestCount = result.diagnostics?.provider_request_count ?? 0;
         pagesFetched = result.diagnostics?.provider_pages_fetched ?? 0;
+        const previewPayload = buildPreviewPayload(integration, resource, traceId, result);
         await patchIntegrationSettings(admin, integration, resource, {
           last_preview_step: "provider_request_finished",
           last_preview_request_count: requestCount,
           last_preview_pages_fetched: pagesFetched,
+          last_preview_payload: previewPayload,
           last_preview_log: appendIntegrationLog(readPreviewRuntime(asObject(integration.settings), resource).last_preview_log, {
             at: new Date().toISOString(),
             step: "provider_request_finished",
@@ -447,9 +475,15 @@ export async function POST(
         PREVIEW_MAX_RUNTIME_MS,
         `CRM-Abrufbudget überschritten (max. ${PREVIEW_MAX_RUNTIME_MS}ms).`,
       );
+      const previewPayload = buildPreviewPayload(integration, resource, traceId, result);
       if (String(integration.provider ?? "").toLowerCase() === "onoffice") {
         await patchIntegrationSettings(admin, integration, resource, {
           last_preview_debug: buildOnOfficePreviewDebug(integration, resource, result),
+          last_preview_payload: previewPayload,
+        });
+      } else {
+        await patchIntegrationSettings(admin, integration, resource, {
+          last_preview_payload: previewPayload,
         });
       }
       return finish(

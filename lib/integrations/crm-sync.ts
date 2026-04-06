@@ -49,6 +49,7 @@ export type CrmSyncResult = {
   skipped: boolean;
   reason?: string;
   notes?: string[];
+  debug_payload?: Record<string, unknown>;
 };
 
 function asObject(value: unknown): Record<string, unknown> {
@@ -745,5 +746,20 @@ export async function runCrmIntegrationSync(
     provider_breakdown: diagnostics?.provider_breakdown,
     skipped: false,
     notes: mergedNotes.length ? mergedNotes : undefined,
+    debug_payload: {
+      partner_id: integration.partner_id,
+      provider: integration.provider,
+      resource,
+      mode,
+      generated_at: lastSyncAt,
+      offers,
+      listings,
+      references,
+      requests,
+      references_fetched: referencesFetched,
+      requests_fetched: requestsFetched,
+      diagnostics: diagnostics ?? null,
+      notes: mergedNotes,
+    },
   };
 }

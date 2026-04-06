@@ -223,6 +223,18 @@ function extractSyncNoteValue(notes: string[] | undefined, prefix: string): stri
   return null;
 }
 
+function buildDebugPayloadDownloadUrl(
+  integrationId: string,
+  resource: CrmResourceKey,
+  kind: "preview" | "sync",
+): string {
+  const params = new URLSearchParams({
+    resource,
+    kind,
+  });
+  return `/api/admin/integrations/${integrationId}/debug-payload?${params.toString()}`;
+}
+
 function renderImportRules(
   provider: string,
   resourceKey: CrmResourceKey,
@@ -637,6 +649,8 @@ export default function AdminCrmIntegrationsPanel({
   const statusColor = getStatusColor(syncSummary);
   const previewStatusColor = getPreviewStatusColor(previewSummary);
   const hasSyncDetails = Boolean(syncSummary);
+  const hasPreviewPayload = Boolean(previewSummary);
+  const hasSyncPayload = Boolean(syncSummary);
   const syncModeLabel = syncSummary?.mode === "full" ? "Vollsync" : syncSummary?.mode === "guarded" ? "Guarded-Sync" : "Sync";
   const onOfficeObservedStatusValues = extractSyncNoteValue(
     syncSummary?.result?.notes,
@@ -873,6 +887,13 @@ export default function AdminCrmIntegrationsPanel({
               ) : null}
             </div>
             <div style={modalFooterStyle}>
+              <a
+                href={buildDebugPayloadDownloadUrl(integration.id, activeResourceKey, "preview")}
+                style={btnGhostLinkStyle(hasPreviewPayload)}
+                aria-disabled={!hasPreviewPayload}
+              >
+                JSON herunterladen
+              </a>
               <button type="button" style={btnGhostStyle} onClick={() => setDetailModal(null)}>
                 Schließen
               </button>
@@ -936,6 +957,13 @@ export default function AdminCrmIntegrationsPanel({
               ) : null}
             </div>
             <div style={modalFooterStyle}>
+              <a
+                href={buildDebugPayloadDownloadUrl(integration.id, activeResourceKey, "sync")}
+                style={btnGhostLinkStyle(hasSyncPayload)}
+                aria-disabled={!hasSyncPayload}
+              >
+                JSON herunterladen
+              </a>
               <button type="button" style={btnGhostStyle} onClick={() => setDetailModal(null)}>
                 Schließen
               </button>
@@ -1164,6 +1192,16 @@ const btnGhostStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
+const btnGhostLinkStyle = (enabled: boolean): React.CSSProperties => ({
+  ...btnGhostStyle,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textDecoration: "none",
+  pointerEvents: enabled ? "auto" : "none",
+  opacity: enabled ? 1 : 0.55,
+});
+
 const btnDangerStyle: React.CSSProperties = {
   border: "1px solid #ef4444",
   background: "#fff5f5",
@@ -1234,4 +1272,5 @@ const modalSectionTitleStyle: React.CSSProperties = {
 const modalFooterStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "flex-end",
+  gap: 8,
 };
