@@ -139,7 +139,11 @@ async function requirePartnerUser(req: Request) {
   return { userId: user.id, user };
 }
 
-async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, userId: string): Promise<PartnerAreaConfig[]> {
+async function loadPartnerConfigs(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  options?: { includeChildren?: boolean },
+): Promise<PartnerAreaConfig[]> {
   const normalizeAreas = (value: unknown): PartnerArea[] => {
     const mapArea = (item: unknown): PartnerArea => {
       const area = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
@@ -273,6 +277,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
 
   if (error) throw new Error(error.message);
 
+  const includeChildren = options?.includeChildren === true;
   let mergedConfigs = rawRows.map((row) => normalizeConfigRow(row));
   if (mergedConfigs.length === 0) return mergedConfigs;
 
@@ -284,7 +289,7 @@ async function loadPartnerConfigs(admin: ReturnType<typeof createAdminClient>, u
     .map((cfg) => String(cfg.areas?.slug ?? "").trim())
     .filter((slug) => slug.length > 0);
 
-  if (activeDistrictSlugs.length === 0) return mergedConfigs;
+  if (activeDistrictSlugs.length === 0 || !includeChildren) return mergedConfigs;
 
   const districtBySlug = new Map(
     activeDistricts.map((cfg) => [String(cfg.areas?.slug ?? ""), cfg] as const),
@@ -505,8 +510,10 @@ export async function GET(req: Request) {
       }));
     }
 
+    const includeChildren = url.searchParams.get("include_children") === "1";
+
     const [configs, profileFirstName, partnerFeatures] = await Promise.all([
-      timed("configs_ms", () => loadPartnerConfigs(admin, userId)),
+      timed("configs_ms", () => loadPartnerConfigs(admin, userId, { includeChildren })),
       timed("partner_first_name_ms", async () => resolvePartnerFirstNameFromUser(user) ?? await loadPartnerFirstName(admin, userId)),
       timed("partner_features_ms", () => loadPartnerFeatures(admin, userId)),
     ]);

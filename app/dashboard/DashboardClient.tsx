@@ -164,6 +164,28 @@ function normalizeLocaleList(value: unknown): string[] {
   ));
 }
 
+function isOrtslageAreaId(areaId: string): boolean {
+  return String(areaId ?? '').trim().split('-').length > 3;
+}
+
+function mergePartnerAreaConfigs(
+  currentConfigs: PartnerAreaConfig[],
+  nextConfigs: PartnerAreaConfig[],
+): PartnerAreaConfig[] {
+  const merged = new Map<string, PartnerAreaConfig>();
+  for (const config of currentConfigs) {
+    const areaId = String(config?.area_id ?? '').trim();
+    if (areaId) merged.set(areaId, config);
+  }
+  for (const config of nextConfigs) {
+    const areaId = String(config?.area_id ?? '').trim();
+    if (areaId) merged.set(areaId, config);
+  }
+  return Array.from(merged.values()).sort((a, b) =>
+    String(a.area_id ?? '').localeCompare(String(b.area_id ?? ''), 'de'),
+  );
+}
+
 type UtilityIconKey =
   | 'factors'
   | 'texts'
@@ -536,6 +558,8 @@ export default function DashboardClient({
   const progressRequestRef = useRef(0);
   const hasAnimatedMandatoryPercentRef = useRef(false);
   const internationalLocalesLoadedRef = useRef(false);
+  const detailedConfigsLoadedRef = useRef(false);
+  const detailedConfigsLoadingRef = useRef(false);
   const utilityBarRef = useRef<HTMLElement | null>(null);
 
   // Werkzeug-Modus umschalten
@@ -555,6 +579,34 @@ export default function DashboardClient({
     });
     setMandatoryProgressLoading(false);
   }, [activeMainTab]);
+
+  const ensureDetailedConfigs = useCallback(async () => {
+    if (loading) return;
+    if (detailedConfigsLoadedRef.current || detailedConfigsLoadingRef.current) return;
+    detailedConfigsLoadingRef.current = true;
+    try {
+      const requestUrl = withDebugTimingUrl('/api/partner/dashboard/bootstrap?mode=core&include_children=1');
+      const startedAt = performance.now();
+      const res = await fetch(requestUrl, { method: 'GET', cache: 'no-store' });
+      if (redirectIfUnauthorizedResponse(res, 'partner')) {
+        return;
+      }
+      const payload = await res.json().catch(() => null) as DashboardBootstrapPayload | null;
+      logDebugTiming(requestUrl, performance.now() - startedAt, payload);
+      if (!res.ok) return;
+      const nextConfigs = Array.isArray(payload?.configs) ? payload.configs : [];
+      if (nextConfigs.length === 0) return;
+      detailedConfigsLoadedRef.current = nextConfigs.some((config) => isOrtslageAreaId(String(config.area_id ?? '')));
+      setConfigs((prev) => mergePartnerAreaConfigs(prev, nextConfigs));
+      setSelectedConfig((prev) => (
+        prev
+          ? (nextConfigs.find((config) => config.area_id === prev.area_id) ?? prev)
+          : prev
+      ));
+    } finally {
+      detailedConfigsLoadingRef.current = false;
+    }
+  }, [loading]);
 
   const headerConfig = useMemo(() => {
     switch (activeMainTab) {
@@ -675,7 +727,17 @@ export default function DashboardClient({
     async function loadData() {
       const persisted = readSessionViewState<PersistedDashboardState>(DASHBOARD_UI_STATE_KEY);
       const restoredAreaId = String(persisted?.selectedAreaId ?? '').trim();
-      const bootstrapUrl = withDebugTimingUrl('/api/partner/dashboard/bootstrap?mode=core');
+      const restoredTab = isMainTab(persisted?.activeMainTab) ? persisted?.activeMainTab : undefined;
+      const preferredTab: MainTab = restoredTab ?? initialMainTab ?? 'factors';
+      const nextShowWelcome = typeof persisted?.showWelcome === 'boolean'
+        ? persisted.showWelcome
+        : (typeof initialShowWelcome === 'boolean' ? initialShowWelcome : true);
+      const includeChildrenOnBootstrap = isOrtslageAreaId(restoredAreaId)
+        || (!nextShowWelcome && preferredTab === 'factors');
+      const bootstrapPath = includeChildrenOnBootstrap
+        ? '/api/partner/dashboard/bootstrap?mode=core&include_children=1'
+        : '/api/partner/dashboard/bootstrap?mode=core';
+      const bootstrapUrl = withDebugTimingUrl(bootstrapPath);
 
       const startedAt = performance.now();
       const res = await fetch(bootstrapUrl, { method: 'GET', cache: 'no-store' });
@@ -696,7 +758,6 @@ export default function DashboardClient({
         if (mergedConfigs.length > 0) {
           const restoredArea = restoredAreaId ? mergedConfigs.find((cfg) => cfg.area_id === restoredAreaId) : undefined;
           const hasActiveAreasLocal = mergedConfigs.some((cfg) => Boolean(cfg.is_active));
-          const restoredTab = isMainTab(persisted?.activeMainTab) ? persisted?.activeMainTab : undefined;
           const restoredSettingsSection = isSettingsSection(persisted?.settingsSection) ? persisted.settingsSection : 'konto';
           const restoredNetworkPartnerSection = isNetworkPartnerSection(persisted?.networkPartnerSection)
             ? persisted.networkPartnerSection
@@ -705,15 +766,14 @@ export default function DashboardClient({
             ? persisted.networkPartnerDetailSection
             : 'profile';
           const restoredSelectedNetworkPartnerId = String(persisted?.selectedNetworkPartnerId ?? '').trim() || null;
-          const preferredTab: MainTab = restoredTab ?? initialMainTab ?? 'factors';
           const nextTab: MainTab = !hasActiveAreasLocal && preferredTab !== 'texts'
             ? 'texts'
             : preferredTab;
-          const nextShowWelcome = typeof persisted?.showWelcome === 'boolean'
-            ? persisted.showWelcome
-            : (typeof initialShowWelcome === 'boolean' ? initialShowWelcome : true);
           const nextSelected = restoredArea ?? mergedConfigs[0];
 
+          detailedConfigsLoadedRef.current = includeChildrenOnBootstrap
+            || mergedConfigs.some((cfg) => isOrtslageAreaId(String(cfg.area_id ?? '')));
+          detailedConfigsLoadingRef.current = false;
           setConfigs(mergedConfigs);
           setSelectedConfig(nextSelected);
           setExpandedDistrict(nextSelected.area_id.split('-').slice(0, 3).join('-'));
@@ -726,6 +786,8 @@ export default function DashboardClient({
           setMandatoryProgressLoading(Boolean(nextSelected?.area_id));
           bootstrappedMandatoryAreaIdRef.current = null;
         } else {
+          detailedConfigsLoadedRef.current = false;
+          detailedConfigsLoadingRef.current = false;
           setMandatoryProgress({ completed: 0, total: INDIVIDUAL_MANDATORY_KEYS.length + MANDATORY_MEDIA_KEYS.length });
           setMandatoryProgressLoading(false);
         }
@@ -741,6 +803,13 @@ export default function DashboardClient({
     initialSelectedNetworkPartnerId,
     initialShowWelcome,
   ]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (activeMainTab !== 'factors' && activeMainTab !== 'network_partners') return;
+    if (showWelcome) return;
+    void ensureDetailedConfigs();
+  }, [activeMainTab, ensureDetailedConfigs, loading, showWelcome]);
 
   useEffect(() => {
     if (loading) return;
