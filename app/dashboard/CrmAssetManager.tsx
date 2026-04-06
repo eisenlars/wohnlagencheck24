@@ -52,15 +52,22 @@ type RegionTarget = {
 
 type LlmIntegrationOption = {
   id: string;
+  source: 'partner' | 'global';
+  provider: string;
+  model: string;
   label: string;
+  partnerIntegrationId: string | null;
+  globalProviderId: string | null;
 };
 
-type PartnerIntegrationRow = {
+type LlmOptionApiRow = {
   id?: string;
-  kind?: string;
+  source?: string | null;
   provider?: string;
-  is_active?: boolean;
-  settings?: Record<string, unknown> | null;
+  model?: string | null;
+  label?: string | null;
+  partner_integration_id?: string | null;
+  global_provider_id?: string | null;
 };
 
 function formatProviderLabel(provider: string): string {
@@ -177,26 +184,40 @@ export default function CrmAssetManager(props: Props) {
     const request = (async () => {
       setLlmOptionsLoading(true);
       try {
-        const integrationsRes = await fetch('/api/partner/integrations');
+        const integrationsRes = await fetch('/api/partner/llm/options');
         if (integrationsRes.ok) {
           const payload = await integrationsRes.json().catch(() => ({}));
-          const items: PartnerIntegrationRow[] = Array.isArray(payload?.integrations)
-            ? (payload.integrations as PartnerIntegrationRow[])
+          const llmModeDefault = String(payload?.llm_mode_default ?? '').trim().toLowerCase();
+          const items: LlmOptionApiRow[] = Array.isArray(payload?.options)
+            ? (payload.options as LlmOptionApiRow[])
             : [];
           const llmItems: LlmIntegrationOption[] = items
-            .filter((entry) => String(entry?.kind ?? '').toLowerCase() === 'llm' && entry?.is_active === true)
             .map((entry) => {
-              const settings = (entry?.settings ?? {}) as Record<string, unknown>;
-              const model = String(settings?.model ?? settings?.model_name ?? '').trim() || 'Standardmodell';
+              const id = String(entry?.id ?? '').trim();
+              if (!id) return null;
+              const provider = String(entry?.provider ?? '').trim() || 'LLM';
+              const model = String(entry?.model ?? '').trim() || 'Standardmodell';
+              const source = String(entry?.source ?? '').trim().toLowerCase() === 'global' ? 'global' : 'partner';
               return {
-                id: String(entry?.id ?? ''),
-                label: `${formatProviderLabel(String(entry?.provider ?? ''))} · ${model}`,
-              };
+                id,
+                source,
+                provider,
+                model,
+                label: String(entry?.label ?? '').trim() || `${formatProviderLabel(provider)} · ${model}${source === 'global' ? ' (Global)' : ' (Partner)'}`,
+                partnerIntegrationId: String(entry?.partner_integration_id ?? '').trim() || null,
+                globalProviderId: String(entry?.global_provider_id ?? '').trim() || null,
+              } satisfies LlmIntegrationOption;
             })
-            .filter((entry) => entry.id.length > 0);
+            .filter((entry): entry is LlmIntegrationOption => Boolean(entry));
           setLlmOptions(llmItems);
           setSelectedLlmIntegrationId((prev) => {
             if (prev && llmItems.some((item) => item.id === prev)) return prev;
+            if (llmModeDefault === 'central_managed') {
+              return llmItems.find((item) => item.source === 'global')?.id ?? llmItems[0]?.id ?? '';
+            }
+            if (llmModeDefault === 'partner_managed') {
+              return llmItems.find((item) => item.source === 'partner')?.id ?? llmItems[0]?.id ?? '';
+            }
             return llmItems[0]?.id ?? '';
           });
           setLlmOptionsLoaded(true);
@@ -338,6 +359,7 @@ export default function CrmAssetManager(props: Props) {
         setStatus('Keine aktive LLM-Integration verfügbar.');
         return;
       }
+      const selectedOption = availableOptions.find((entry) => entry.id === selectedLlmIntegrationId) ?? availableOptions[0] ?? null;
       const res = await fetch('/api/ai-rewrite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -346,13 +368,14 @@ export default function CrmAssetManager(props: Props) {
           areaName: selectedRow.title || selectedRow.external_id,
           type: 'general',
           sectionLabel: label,
-          llm_integration_id: selectedLlmIntegrationId || availableOptions[0]?.id || undefined,
+          llm_integration_id: selectedOption?.partnerIntegrationId || undefined,
+          llm_global_provider_id: selectedOption?.globalProviderId || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 403) {
-          setStatus('KI-Optimierung nicht erlaubt: bitte aktive Partner-LLM-Integration hinterlegen.');
+          setStatus('KI-Optimierung nicht erlaubt: bitte ein freigegebenes KI-Modell auswählen.');
         } else {
           setStatus(String(data?.error ?? 'KI-Optimierung fehlgeschlagen.'));
         }

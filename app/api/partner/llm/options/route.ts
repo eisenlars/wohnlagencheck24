@@ -40,6 +40,10 @@ function isMissingTable(error: unknown, table: string): boolean {
   return msg.includes(`public.${table}`) && msg.includes("does not exist");
 }
 
+function roundTiming(value: number): number {
+  return Number(value.toFixed(2));
+}
+
 async function requirePartnerUser(req: Request): Promise<string> {
   const supabase = createClient();
   const {
@@ -58,11 +62,36 @@ async function requirePartnerUser(req: Request): Promise<string> {
 
 export async function GET(req: Request) {
   try {
-    const userId = await requirePartnerUser(req);
+    const requestStartedAt = performance.now();
+    const url = new URL(req.url);
+    const debugTiming = url.searchParams.get("debug_timing") === "1";
+    const timings: Record<string, number> = {};
+    const timed = async <T,>(key: string, fn: () => Promise<T>): Promise<T> => {
+      const startedAt = performance.now();
+      const result = await fn();
+      if (debugTiming) {
+        timings[key] = roundTiming(performance.now() - startedAt);
+      }
+      return result;
+    };
+    const withDebugTimings = <T extends Record<string, unknown>>(payload: T): T | (T & { debug_timings: Record<string, number> }) => {
+      if (!debugTiming) return payload;
+      return {
+        ...payload,
+        debug_timings: {
+          ...timings,
+          total_ms: roundTiming(performance.now() - requestStartedAt),
+        },
+      };
+    };
+
+    const userId = await timed("auth_ms", () => requirePartnerUser(req));
     const admin = createAdminClient();
 
-    const policy = await loadPartnerLlmPolicy(admin, userId);
-    const globalConfig = await loadGlobalLlmConfig();
+    const [policy, globalConfig] = await Promise.all([
+      timed("policy_ms", () => loadPartnerLlmPolicy(admin, userId)),
+      timed("global_config_ms", () => loadGlobalLlmConfig()),
+    ]);
 
     const options: Array<{
       id: string;
@@ -82,13 +111,13 @@ export async function GET(req: Request) {
     }> = [];
 
     if (policy.llm_partner_managed_allowed) {
-      const { data: partnerRows, error: partnerError } = await admin
+      const { data: partnerRows, error: partnerError } = await timed("partner_integrations_ms", () => admin
         .from("partner_integrations")
         .select("id, kind, provider, is_active, settings")
         .eq("partner_id", userId)
         .eq("kind", "llm")
         .eq("is_active", true)
-        .order("id", { ascending: true });
+        .order("id", { ascending: true }));
       if (partnerError && !isMissingTable(partnerError, "partner_integrations")) {
         return NextResponse.json({ error: partnerError.message }, { status: 500 });
       }
@@ -117,8 +146,13 @@ export async function GET(req: Request) {
       }
     }
 
+    let fxRateUsdToEur: number | null = null;
     if (globalConfig.config.central_enabled) {
-      const { models: globalRows } = await listFlattenedLlmProviderModels({ admin, activeOnly: true });
+      const { models: globalRows, fxRateUsdToEur: nextFxRate } = await timed(
+        "global_models_ms",
+        () => listFlattenedLlmProviderModels({ admin, activeOnly: true }),
+      );
+      fxRateUsdToEur = nextFxRate;
       for (const row of globalRows) {
         const providerId = asText(row.id);
         if (!providerId) continue;
@@ -144,12 +178,20 @@ export async function GET(req: Request) {
       }
     }
 
-    return NextResponse.json({
+    return NextResponse.json(withDebugTimings({
       ok: true,
       policy,
       llm_mode_default: policy.llm_mode_default,
+      pricing_context: {
+        currency: "EUR",
+        fx_rate_usd_to_eur: fxRateUsdToEur,
+        central_enabled: globalConfig.config.central_enabled,
+        monthly_token_budget: globalConfig.config.monthly_token_budget,
+        monthly_cost_budget_eur: globalConfig.config.monthly_cost_budget_eur,
+        credit_unit_label: "EUR",
+      },
       options,
-    });
+    }));
   } catch (error) {
     if (error instanceof Error) {
       if (error.message === "UNAUTHORIZED") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
