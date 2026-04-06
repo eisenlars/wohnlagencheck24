@@ -111,13 +111,20 @@ export async function GET(req: Request) {
     }> = [];
 
     if (policy.llm_partner_managed_allowed) {
-      const { data: partnerRows, error: partnerError } = await timed("partner_integrations_ms", () => admin
+      const partnerIntegrationsResponse = await timed("partner_integrations_ms", () => admin
         .from("partner_integrations")
         .select("id, kind, provider, is_active, settings")
         .eq("partner_id", userId)
         .eq("kind", "llm")
         .eq("is_active", true)
         .order("id", { ascending: true }));
+      const {
+        data: partnerRows,
+        error: partnerError,
+      } = partnerIntegrationsResponse as {
+        data: PartnerIntegrationRow[] | null;
+        error: { message?: string } | null;
+      };
       if (partnerError && !isMissingTable(partnerError, "partner_integrations")) {
         return NextResponse.json({ error: partnerError.message }, { status: 500 });
       }
