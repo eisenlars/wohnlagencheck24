@@ -444,6 +444,19 @@ function mergeOnOfficeEstateReadFields(
   return Array.from(out);
 }
 
+function normalizeOnOfficeFlag(value: unknown): "1" | "0" | null {
+  if (typeof value === "number") {
+    if (value === 1) return "1";
+    if (value === 0) return "0";
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim();
+    if (normalized === "1") return "1";
+    if (normalized === "0") return "0";
+  }
+  return null;
+}
+
 function makeRawRowBase(
   partnerId: string,
   provider: "onoffice",
@@ -776,14 +789,22 @@ export async function fetchOnOfficeEstates(
   ], catalog);
   const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
     status: [{ op: "=", val: 1 }],
-    ...(settings.listing_exclude_sold ? { verkauft: [{ op: "=", val: 0 }] } : {}),
   });
   const allowedStatusValues = new Set(settings.listing_active_status_values);
-  if (!settings.listing_status_field_key || allowedStatusValues.size === 0) return records;
   return records.filter((record) => {
     const elements = (record.elements ?? {}) as Record<string, unknown>;
+    const soldFlag = normalizeOnOfficeFlag(elements["verkauft"]);
     const fieldValue = String(elements[settings.listing_status_field_key] ?? "").trim();
-    return fieldValue.length > 0 && allowedStatusValues.has(fieldValue);
+
+    if (settings.listing_status_field_key && allowedStatusValues.size > 0) {
+      return fieldValue.length > 0 && allowedStatusValues.has(fieldValue);
+    }
+
+    if (settings.listing_exclude_sold) {
+      return soldFlag !== "1";
+    }
+
+    return soldFlag !== "1";
   });
 }
 
