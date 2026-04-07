@@ -410,7 +410,7 @@ function renderImportRules(
     <>
       {onOffice ? (
         <div style={helperTextStyle}>
-          Quelle: <code>searchcriteria</code> mit <code>active = 1</code>. Die Freshness-Regel wirkt nach dem API-Abruf auf eure interne Gesuchssicht.
+          Quelle: <code>searchcriterias</code> mit <code>mode=filter</code> und <code>status = 1</code>. Die verfuegbaren Gesuchsfelder kommen aus <code>searchCriteriaFields</code>; die Freshness-Regel wirkt danach auf eure interne Gesuchssicht.
         </div>
       ) : null}
       <label style={{ ...checkboxLabelStyle, marginTop: 2 }}>

@@ -4,6 +4,7 @@ Technische Referenz fuer die aktuelle onOffice-Integration.
 
 Ziel:
 - nachvollziehbar machen, welche `estate`-Felder wir lesen
+- nachvollziehbar machen, wie `searchcriterias` fuer Gesuche gelesen werden
 - zeigen, wie `source_payload`, `normalized_payload` und `offer.raw` zusammenhaengen
 - spaetere Erweiterungen gegen einen dokumentierten Stand abgleichen
 
@@ -28,6 +29,11 @@ Beispiel:
 ```
 
 Massgeblich fuer die API ist immer der Feldschluessel, nicht das UI-Label.
+
+Fuer Gesuche gilt derselbe Grundsatz:
+- Feld-Discovery ueber `searchCriteriaFields`
+- echter Datensatzabruf ueber `searchcriterias`
+- Mapping immer gegen Discovery plus echten Payload pruefen
 
 ## Payload-Ebenen
 
@@ -265,6 +271,81 @@ Beispiel:
   }
 }
 ```
+
+### Gesuche
+
+Gesuche werden nicht ueber `estate`, sondern ueber den dokumentierten Gesuchspfad gelesen:
+- Discovery: `searchCriteriaFields`
+- Payload: `searchcriterias` mit `mode=filter` und `status = 1`
+
+Warum:
+- `searchCriteriaFields` liefert die im Mandanten aktivierten Gesuchsfelder
+- `searchcriterias` zeigt die reale Datenform inklusive `_meta`, Range-Werten und befuellten Feldern
+
+Typischer `source_payload` fuer ein Gesuch:
+
+```json
+{
+  "id": 4711,
+  "bezeichnung": "Kaufgesuch Innenstadt",
+  "vermarktungsart": "kauf",
+  "objektart": "wohnung",
+  "range_kaufpreis": [250000, 450000],
+  "range_wohnflaeche": [70, 120],
+  "regionaler_zusatz": "Muenchen Maxvorstadt",
+  "_meta": {
+    "status": "1",
+    "editdate": "2026-04-07 08:15:00",
+    "publicnote": "Suche zentrale Lage"
+  }
+}
+```
+
+Aktuell normalisiert in `partner_requests.normalized_payload`:
+
+```json
+{
+  "title": "Kaufgesuch Innenstadt",
+  "request_type": "kauf",
+  "object_type": "wohnung",
+  "object_subtype": null,
+  "marketing_type": "kauf",
+  "min_rooms": null,
+  "max_rooms": null,
+  "min_purchase_price": 250000,
+  "max_purchase_price": 450000,
+  "min_rent": null,
+  "max_rent": null,
+  "max_price": 450000,
+  "min_area_sqm": 70,
+  "max_area_sqm": 120,
+  "region": "Muenchen Maxvorstadt",
+  "region_targets": [
+    {
+      "city": "Muenchen",
+      "district": "Maxvorstadt",
+      "label": "Muenchen Maxvorstadt"
+    }
+  ],
+  "range_center": {
+    "land": null,
+    "plz": null,
+    "ort": null,
+    "strasse": null,
+    "hausnummer": null
+  },
+  "parentaddress": null,
+  "characteristic": null,
+  "publicnote": "Suche zentrale Lage",
+  "status": "1",
+  "active": "1"
+}
+```
+
+Wichtig:
+- Range-Felder koennen je nach onOffice-Antwort als `range_<feld>` oder in `range`/`Range` auftauchen
+- fuer Erweiterungen deshalb immer zuerst den kompletten Debug-Payload des letzten Gesuchslaufs gegenpruefen
+- Discovery allein reicht bei Gesuchen nicht, weil `_meta` und reale Range-Werte erst im echten Payload sichtbar werden
 
 ## Aktuelle technische Abbildung
 

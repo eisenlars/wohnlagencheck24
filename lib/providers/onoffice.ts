@@ -36,7 +36,8 @@ type OnOfficeResponse = {
 const ACTION_READ = "urn:onoffice-de-ns:smart:2.5:smartml:action:read";
 const ACTION_GET = "urn:onoffice-de-ns:smart:2.5:smartml:action:get";
 const RESOURCE_ESTATE = "estate";
-const RESOURCE_SEARCH_CRITERIA = "searchcriteria";
+const RESOURCE_SEARCH_CRITERIAS = "searchcriterias";
+const RESOURCE_SEARCH_CRITERIA_FIELDS = "searchCriteriaFields";
 const RESOURCE_FIELDS = "fields";
 const HMAC_VERSION = 2;
 const PROVIDER_FETCH_TIMEOUT_MS = 12000;
@@ -55,6 +56,24 @@ type OnOfficeEstateFieldDefinition = {
 
 type OnOfficeEstateFieldCatalog = {
   fields: OnOfficeEstateFieldDefinition[];
+};
+
+type OnOfficeSearchCriteriaRecord = Record<string, unknown> & {
+  id?: number | string;
+  _meta?: Record<string, unknown>;
+};
+
+type OnOfficeSearchCriteriaFieldDefinition = {
+  key: string;
+  label: string | null;
+  type: string | null;
+  rangeField: boolean;
+  permittedValues: OnOfficeFieldOption[];
+  category: string | null;
+};
+
+type OnOfficeSearchCriteriaFieldCatalog = {
+  fields: OnOfficeSearchCriteriaFieldDefinition[];
 };
 
 export type OnOfficeEstateStatusFieldConfig = {
@@ -560,6 +579,32 @@ function parseOnOfficeEstateFieldCatalog(moduleElements: Record<string, unknown>
   return { fields };
 }
 
+function parseOnOfficeSearchCriteriaFieldCatalog(records: OnOfficeRecord[]): OnOfficeSearchCriteriaFieldCatalog {
+  const fields: OnOfficeSearchCriteriaFieldDefinition[] = [];
+
+  for (const record of records) {
+    const elements = asObject(record.elements);
+    const category = String(elements.name ?? "").trim() || null;
+    const categoryFields = Array.isArray(elements.fields) ? elements.fields : [];
+    for (const entry of categoryFields) {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+      const field = entry as Record<string, unknown>;
+      const key = String(field.id ?? "").trim();
+      if (!key) continue;
+      fields.push({
+        key,
+        label: String(field.name ?? "").trim() || null,
+        type: String(field.type ?? "").trim().toLowerCase() || null,
+        rangeField: String(field.rangefield ?? "").trim().toLowerCase() === "true",
+        permittedValues: extractPermittedValues(field.values ?? field.permittedvalues),
+        category,
+      });
+    }
+  }
+
+  return { fields };
+}
+
 function resolveOnOfficeEstateReadFields(
   catalog: OnOfficeEstateFieldCatalog,
   desiredFields: string[],
@@ -794,32 +839,156 @@ function mapEstateToReference(
   );
 }
 
-function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeRecord): RawRequest {
-  const elements = (record.elements ?? {}) as Record<string, unknown>;
-  const requestType = String(elements["vermarktungsart"] ?? elements["request_type"] ?? "").toLowerCase();
-  const targets = parseRegionTargetsFromHint(elements["regionaler_zusatz"], elements["ort"] as string | null | undefined);
+function readSearchCriteriaMeta(record: OnOfficeSearchCriteriaRecord): Record<string, unknown> {
+  return asObject(record._meta);
+}
+
+function readSearchCriteriaRangeValue(
+  record: OnOfficeSearchCriteriaRecord,
+  key: string,
+): unknown {
+  const direct = record[key];
+  if (direct !== undefined) return direct;
+
+  const rangeRecord = asObject(record.range);
+  if (rangeRecord[key] !== undefined) return rangeRecord[key];
+
+  const rangeUpperRecord = asObject(record.Range);
+  if (rangeUpperRecord[key] !== undefined) return rangeUpperRecord[key];
+
+  return undefined;
+}
+
+function readSearchCriteriaRangeBounds(
+  record: OnOfficeSearchCriteriaRecord,
+  key: string,
+): { min: number | null; max: number | null } {
+  const rangeValue = readSearchCriteriaRangeValue(record, `range_${key}`);
+  if (Array.isArray(rangeValue)) {
+    return {
+      min: toNumber(rangeValue[0]),
+      max: toNumber(rangeValue[1]),
+    };
+  }
+
+  return {
+    min: toNumber(record[`${key}__von`] ?? record[`${key}_von`] ?? record[`${key}_ab`]),
+    max: toNumber(record[`${key}__bis`] ?? record[`${key}_bis`]),
+  };
+}
+
+function summarizeSearchCriteriaObservedValues(
+  records: OnOfficeSearchCriteriaRecord[],
+  getter: (record: OnOfficeSearchCriteriaRecord) => unknown,
+  limit = 10,
+): string {
+  const values = Array.from(
+    new Set(
+      records
+        .flatMap((record) => {
+          const raw = getter(record);
+          if (Array.isArray(raw)) {
+            const compact = raw.map((value) => String(value ?? "").trim()).filter(Boolean);
+            return compact.length > 0 ? [compact.join("..")] : [];
+          }
+          const value = String(raw ?? "").trim();
+          return value ? [value] : [];
+        }),
+    ),
+  );
+  if (values.length === 0) return "keine";
+  return values.slice(0, limit).join(", ");
+}
+
+function summarizeSearchCriteriaDistribution(
+  records: OnOfficeSearchCriteriaRecord[],
+  getter: (record: OnOfficeSearchCriteriaRecord) => unknown,
+  limit = 10,
+): string {
+  const counts = new Map<string, number>();
+  let emptyCount = 0;
+
+  for (const record of records) {
+    const raw = getter(record);
+    const value = Array.isArray(raw)
+      ? raw.map((entry) => String(entry ?? "").trim()).filter(Boolean).join("..")
+      : String(raw ?? "").trim();
+    if (!value) {
+      emptyCount += 1;
+      continue;
+    }
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  const parts = Array.from(counts.entries())
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .slice(0, limit)
+    .map(([value, count]) => `${value}=${count}`);
+
+  if (emptyCount > 0) parts.push(`leer=${emptyCount}`);
+  return parts.length > 0 ? parts.join(", ") : "keine";
+}
+
+function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCriteriaRecord): RawRequest {
+  const meta = readSearchCriteriaMeta(record);
+  const requestTypeRaw = String(record.vermarktungsart ?? record.request_type ?? meta.characteristic ?? "").toLowerCase();
+  const requestType = requestTypeRaw.includes("miete") ? "miete" : "kauf";
+  const roomRange = readSearchCriteriaRangeBounds(record, "anzahl_zimmer");
+  const purchasePriceRange = readSearchCriteriaRangeBounds(record, "kaufpreis");
+  const rentRange = readSearchCriteriaRangeBounds(record, "miete");
+  const livingAreaRange = readSearchCriteriaRangeBounds(record, "wohnflaeche");
+  const regionHint =
+    String(record.regionaler_zusatz ?? readSearchCriteriaRangeValue(record, "regionaler_zusatz") ?? "").trim()
+    || String(meta.publicnote ?? "").trim();
+  const fallbackCity = String(readSearchCriteriaRangeValue(record, "ort") ?? record.ort ?? "").trim() || null;
+  const targets = parseRegionTargetsFromHint(regionHint, fallbackCity);
+  const title =
+    String(record.bezeichnung ?? record.titel ?? meta.publicnote ?? "").trim()
+    || `${requestType === "miete" ? "Miet" : "Kauf"}gesuch`;
+  const sourceUpdatedAt =
+    String(meta.editdate ?? meta.creationdate ?? "").trim()
+    || null;
   const normalizedPayload: Record<string, unknown> = {
-    title: String(elements["bezeichnung"] ?? elements["titel"] ?? "") || null,
-    request_type: requestType.includes("miete") ? "miete" : "kauf",
-    object_type: String(elements["objektart"] ?? "").toLowerCase() || null,
-    min_rooms: toNumber(elements["anzahl_zimmer_ab"]),
-    max_price: toNumber(elements["range_kaufpreis_bis"] ?? elements["range_miete_bis"]),
-    region: String(elements["regionaler_zusatz"] ?? "") || null,
+    title,
+    request_type: requestType,
+    object_type: String(record.objektart ?? "").toLowerCase() || null,
+    object_subtype: String(record.objekttyp ?? "").toLowerCase() || null,
+    marketing_type: String(record.vermarktungsart ?? "") || null,
+    min_rooms: roomRange.min,
+    max_rooms: roomRange.max,
+    min_purchase_price: purchasePriceRange.min,
+    max_purchase_price: purchasePriceRange.max,
+    min_rent: rentRange.min,
+    max_rent: rentRange.max,
+    max_price: requestType === "miete" ? rentRange.max : purchasePriceRange.max,
+    min_area_sqm: livingAreaRange.min,
+    max_area_sqm: livingAreaRange.max,
+    region: regionHint || null,
     region_targets: targets.map((target) => ({
       city: target.city,
       district: target.district,
       label: target.label,
     })),
     region_target_keys: targets.map((target) => target.key),
-    parentaddress: elements["parentaddress"] ?? null,
-    active: elements["active"] ?? null,
+    range_center: {
+      land: readSearchCriteriaRangeValue(record, "land") ?? null,
+      plz: readSearchCriteriaRangeValue(record, "plz") ?? null,
+      ort: readSearchCriteriaRangeValue(record, "ort") ?? null,
+      strasse: readSearchCriteriaRangeValue(record, "strasse") ?? null,
+      hausnummer: readSearchCriteriaRangeValue(record, "hausnummer") ?? null,
+    },
+    parentaddress: record.parentaddress ?? meta.internaladdressid ?? null,
+    characteristic: meta.characteristic ?? null,
+    publicnote: meta.publicnote ?? null,
+    status: meta.status ?? record.status ?? null,
+    active: meta.status ?? record.active ?? null,
   };
   return makeRawRowBase(
     partnerId,
     "onoffice",
-    `request:${String(record.id ?? elements["id"] ?? "")}`,
-    normalizedPayload.title as string | null,
-    null,
+    `request:${String(record.id ?? meta.id ?? "")}`,
+    title,
+    sourceUpdatedAt,
     normalizedPayload,
     record as unknown as Record<string, unknown>,
   );
@@ -872,6 +1041,60 @@ async function fetchOnOfficeResource(
       );
     }
     const records = json?.response?.results?.[0]?.data?.records ?? [];
+    if (!Array.isArray(records) || records.length === 0) break;
+    pagesFetched += 1;
+    allRecords.push(...records);
+    if (records.length < listlimit) break;
+    listoffset += listlimit;
+  }
+
+  return {
+    records: allRecords,
+    requestCount,
+    pagesFetched,
+  };
+}
+
+async function fetchOnOfficeGetRecords<T extends Record<string, unknown>>(
+  integration: PartnerIntegration,
+  token: string,
+  secret: string,
+  resourceType: string,
+  buildParameters: (listoffset: number, listlimit: number) => Record<string, unknown>,
+  options?: {
+    listlimit?: number;
+  },
+): Promise<{ records: T[]; requestCount: number; pagesFetched: number }> {
+  const base = getOnOfficeApiBaseUrl(integration);
+  const allRecords: T[] = [];
+  const listlimit = Math.min(500, Math.max(1, Math.floor(options?.listlimit ?? 500)));
+  let listoffset = 0;
+  let requestCount = 0;
+  let pagesFetched = 0;
+
+  while (true) {
+    const body = buildOnOfficeGetRequest(token, secret, resourceType, buildParameters(listoffset, listlimit));
+    const res = await fetchWithTimeout(base, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    requestCount += 1;
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`onOffice ${resourceType} fetch failed (${res.status}): ${text}`);
+    }
+
+    const json = (await res.json()) as OnOfficeResponse;
+    const actionStatus = json?.response?.results?.[0]?.status;
+    const actionErrorCode = Number(actionStatus?.errorcode ?? 0);
+    if (actionErrorCode !== 0) {
+      throw new Error(
+        `onOffice ${resourceType} action failed (${actionErrorCode}): ${String(actionStatus?.message ?? "Unbekannter Fehler")}`,
+      );
+    }
+    const records = (json?.response?.results?.[0]?.data?.records ?? []) as T[];
     if (!Array.isArray(records) || records.length === 0) break;
     pagesFetched += 1;
     allRecords.push(...records);
@@ -978,6 +1201,43 @@ async function fetchOnOfficeEstateFieldCatalog(
   }
 
   return parseOnOfficeEstateFieldCatalog(extractOnOfficeModuleElements(records, RESOURCE_ESTATE));
+}
+
+async function fetchOnOfficeSearchCriteriaFieldCatalog(
+  integration: PartnerIntegration,
+  token: string,
+  secret: string,
+): Promise<OnOfficeSearchCriteriaFieldCatalog> {
+  const base = getOnOfficeApiBaseUrl(integration);
+  const body = buildOnOfficeGetRequest(token, secret, RESOURCE_SEARCH_CRITERIA_FIELDS, {
+    language: "DEU",
+    additionalTranslations: true,
+  });
+
+  const res = await fetchWithTimeout(base, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`onOffice searchCriteriaFields fetch failed (${res.status}): ${text}`);
+  }
+
+  const json = (await res.json()) as OnOfficeResponse;
+  const actionStatus = json?.response?.results?.[0]?.status;
+  const actionErrorCode = Number(actionStatus?.errorcode ?? 0);
+  if (actionErrorCode !== 0) {
+    throw new Error(
+      `onOffice searchCriteriaFields action failed (${actionErrorCode}): ${String(actionStatus?.message ?? "Unbekannter Fehler")}`,
+    );
+  }
+  const records = (json?.response?.results?.[0]?.data?.records ?? []) as OnOfficeRecord[];
+  if (!Array.isArray(records) || records.length === 0) {
+    return { fields: [] };
+  }
+  return parseOnOfficeSearchCriteriaFieldCatalog(records);
 }
 
 export async function fetchOnOfficeEstates(
@@ -1213,25 +1473,35 @@ export async function fetchOnOfficeSearchCriteria(
   integration: PartnerIntegration,
   token: string,
   secret: string,
-): Promise<OnOfficeRecord[]> {
-  const fields = [
-    "id",
-    "bezeichnung",
-    "titel",
-    "active",
-    "parentaddress",
-    "objektart",
-    "vermarktungsart",
-    "request_type",
-    "anzahl_zimmer_ab",
-    "range_kaufpreis_bis",
-    "range_miete_bis",
-    "regionaler_zusatz",
-  ];
-  const response = await fetchOnOfficeResource(integration, token, secret, RESOURCE_SEARCH_CRITERIA, fields, {
-    active: [{ op: "=", val: 1 }],
-  });
-  return response.records;
+): Promise<{
+  records: OnOfficeSearchCriteriaRecord[];
+  requestCount: number;
+  pagesFetched: number;
+  fieldCatalog: OnOfficeSearchCriteriaFieldCatalog;
+}> {
+  const fieldCatalog = await fetchOnOfficeSearchCriteriaFieldCatalog(integration, token, secret);
+  const response = await fetchOnOfficeGetRecords<OnOfficeSearchCriteriaRecord>(
+    integration,
+    token,
+    secret,
+    RESOURCE_SEARCH_CRITERIAS,
+    (listoffset, listlimit) => ({
+      mode: "filter",
+      filter: {
+        status: [{ op: "=", val: "1" }],
+      },
+      sortby: "internaladdressid",
+      sortorder: "ASC",
+      listlimit,
+      listoffset,
+    }),
+  );
+  return {
+    records: response.records,
+    requestCount: response.requestCount,
+    pagesFetched: response.pagesFetched,
+    fieldCatalog,
+  };
 }
 
 export async function syncOnOfficeResources(
@@ -1316,7 +1586,20 @@ export async function syncOnOfficeResources(
   }
 
   if (shouldFetchRequests) {
-    const criteria = await fetchOnOfficeSearchCriteria(integration, token, secret);
+    const criteriaResult = await fetchOnOfficeSearchCriteria(integration, token, secret);
+    const criteria = criteriaResult.records;
+    providerRequestCount += criteriaResult.requestCount;
+    providerPagesFetched += criteriaResult.pagesFetched;
+    notes.push(`onOffice request diagnostic: ${criteria.length} Datensaetze nach Gesuchsfilter geladen.`);
+    notes.push(`onOffice request paging: requests=${criteriaResult.requestCount}, pages=${criteriaResult.pagesFetched}`);
+    notes.push(`onOffice request field catalog: ${criteriaResult.fieldCatalog.fields.length} Felder ueber searchCriteriaFields erkannt.`);
+    notes.push(`onOffice request status-Werte: ${summarizeSearchCriteriaObservedValues(criteria, (record) => readSearchCriteriaMeta(record).status)}`);
+    notes.push(`onOffice request status-Verteilung: ${summarizeSearchCriteriaDistribution(criteria, (record) => readSearchCriteriaMeta(record).status)}`);
+    notes.push(`onOffice request vermarktungsart-Werte: ${summarizeSearchCriteriaObservedValues(criteria, (record) => record.vermarktungsart ?? record.request_type)}`);
+    notes.push(`onOffice request vermarktungsart-Verteilung: ${summarizeSearchCriteriaDistribution(criteria, (record) => record.vermarktungsart ?? record.request_type)}`);
+    notes.push(`onOffice request objektart-Werte: ${summarizeSearchCriteriaObservedValues(criteria, (record) => record.objektart)}`);
+    notes.push(`onOffice request objektart-Verteilung: ${summarizeSearchCriteriaDistribution(criteria, (record) => record.objektart)}`);
+    notes.push(`onOffice request region-Hinweise: ${summarizeSearchCriteriaObservedValues(criteria, (record) => record.regionaler_zusatz ?? readSearchCriteriaMeta(record).publicnote)}`);
     requests = criteria.map((record) => mapSearchCriteriaToRequest(integration.partner_id, record));
     requestsFetched = true;
   }
