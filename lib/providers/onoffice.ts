@@ -1076,6 +1076,19 @@ export async function syncOnOfficeResources(
 
   if (shouldFetchReferences) {
     const referenceRecords = await fetchOnOfficeReferences(integration, token, secret);
+    notes.push(`onOffice reference diagnostic: ${referenceRecords.length} Datensätze nach Referenzfilter geladen.`);
+    notes.push(`onOffice reference status-Werte: ${summarizeEstateFieldValues(referenceRecords, "status")}`);
+    notes.push(`onOffice reference status-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "status")}`);
+    notes.push(`onOffice reference status2-Werte: ${summarizeEstateFieldValues(referenceRecords, "status2")}`);
+    notes.push(`onOffice reference status2-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "status2")}`);
+    notes.push(`onOffice reference verkauft-Werte: ${summarizeEstateFieldValues(referenceRecords, "verkauft")}`);
+    notes.push(`onOffice reference verkauft-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "verkauft")}`);
+    notes.push(`onOffice reference vermarktungsart-Werte: ${summarizeEstateFieldValues(referenceRecords, "vermarktungsart")}`);
+    notes.push(`onOffice reference vermarktungsart-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "vermarktungsart")}`);
+    notes.push(`onOffice reference vermietet-Werte: ${summarizeEstateFieldValues(referenceRecords, "vermietet")}`);
+    notes.push(`onOffice reference vermietet-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "vermietet")}`);
+    notes.push(`onOffice reference veroeffentlichen-Werte: ${summarizeEstateFieldValues(referenceRecords, "veroeffentlichen")}`);
+    notes.push(`onOffice reference veroeffentlichen-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "veroeffentlichen")}`);
     references = referenceRecords.map((record) => mapEstateToReference(integration.partner_id, integration, record));
     referencesFetched = true;
   }
