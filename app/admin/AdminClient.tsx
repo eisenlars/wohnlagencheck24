@@ -894,6 +894,48 @@ type LlmUsageStatusRow = {
   cost_eur: number;
 };
 
+type AdminAiUsageAggregateRow = {
+  events: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost_eur: number;
+  estimated_credits: number;
+};
+
+type AdminAiUsagePartnerRow = AdminAiUsageAggregateRow & {
+  partner_id: string;
+  billing_scope: string;
+};
+
+type AdminAiUsageFeatureRow = AdminAiUsageAggregateRow & {
+  feature: string;
+};
+
+type AdminAiUsageModelRow = AdminAiUsageAggregateRow & {
+  provider: string;
+  model: string;
+};
+
+type AdminAiUsageScopeRow = AdminAiUsageAggregateRow & {
+  billing_scope: string;
+};
+
+type AdminAiUsageEventRow = {
+  created_at: string | null;
+  partner_id: string;
+  route_name: string;
+  feature: string;
+  billing_scope: string;
+  billing_mode: string;
+  provider: string;
+  model: string;
+  total_tokens: number;
+  estimated_cost_eur: number;
+  estimated_credits: number;
+  status: string;
+};
+
 type BillingGlobalDefaults = {
   portal_base_price_eur: number;
   portal_ortslage_price_eur: number;
@@ -1991,7 +2033,7 @@ type PersistedAdminViewState = {
   selectedPartnerId?: string;
   partnerTab?: PartnerPanelTab;
   integrationsAdminTab?: "overview" | "llm_partner";
-  llmGlobalTab?: "create" | "overview" | "pricing" | "usage";
+  llmGlobalTab?: "create" | "overview" | "pricing" | "usage" | "billing";
   marketExplanationMode?: "standard" | "static";
   marketExplanationStandardScope?: MarketExplanationStandardScope;
   marketExplanationStandardLocale?: string;
@@ -2181,7 +2223,7 @@ export default function AdminClient() {
   const [activeView, setActiveView] = useState<AdminView>("home");
   const [partnerTab, setPartnerTab] = useState<PartnerPanelTab>("profile");
   const [integrationsAdminTab, setIntegrationsAdminTab] = useState<"overview" | "llm_partner">("overview");
-  const [llmGlobalTab, setLlmGlobalTab] = useState<"create" | "overview" | "pricing" | "usage">("create");
+  const [llmGlobalTab, setLlmGlobalTab] = useState<"create" | "overview" | "pricing" | "usage" | "billing">("create");
   const [navMode, setNavMode] = useState<AdminNavMode>("partners");
   const [partnerFilter, setPartnerFilter] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
@@ -2310,6 +2352,20 @@ export default function AdminClient() {
   const [llmUsageItems, setLlmUsageItems] = useState<LlmUsageItemRow[]>([]);
   const [llmUsageStatusRows, setLlmUsageStatusRows] = useState<LlmUsageStatusRow[]>([]);
   const [llmUsageMonth, setLlmUsageMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [adminAiUsageTotals, setAdminAiUsageTotals] = useState<AdminAiUsageAggregateRow>({
+    events: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0,
+    cost_eur: 0,
+    estimated_credits: 0,
+  });
+  const [adminAiUsageByPartner, setAdminAiUsageByPartner] = useState<AdminAiUsagePartnerRow[]>([]);
+  const [adminAiUsageByFeature, setAdminAiUsageByFeature] = useState<AdminAiUsageFeatureRow[]>([]);
+  const [adminAiUsageByModel, setAdminAiUsageByModel] = useState<AdminAiUsageModelRow[]>([]);
+  const [adminAiUsageByScope, setAdminAiUsageByScope] = useState<AdminAiUsageScopeRow[]>([]);
+  const [adminAiUsageEvents, setAdminAiUsageEvents] = useState<AdminAiUsageEventRow[]>([]);
+  const [adminAiUsageMonth, setAdminAiUsageMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [partnerBillingRows, setPartnerBillingRows] = useState<LlmUsageItemRow[]>([]);
   const [partnerBillingTotals, setPartnerBillingTotals] = useState<{ tokens: number; cost_eur: number }>({ tokens: 0, cost_eur: 0 });
   const [partnerBillingMonth, setPartnerBillingMonth] = useState<string>(new Date().toISOString().slice(0, 7));
@@ -4099,6 +4155,30 @@ export default function AdminClient() {
       tokens: Number(data.totals?.tokens ?? 0),
       cost_eur: Number(data.totals?.cost_eur ?? 0),
     });
+  }
+
+  async function loadAdminAiUsage(month = adminAiUsageMonth) {
+    const data = await api<{
+      totals?: Partial<AdminAiUsageAggregateRow>;
+      by_partner?: AdminAiUsagePartnerRow[];
+      by_feature?: AdminAiUsageFeatureRow[];
+      by_model?: AdminAiUsageModelRow[];
+      by_scope?: AdminAiUsageScopeRow[];
+      recent_events?: AdminAiUsageEventRow[];
+    }>(`/api/admin/ai-usage?month=${encodeURIComponent(`${month}-01`)}`);
+    setAdminAiUsageTotals({
+      events: Number(data.totals?.events ?? 0),
+      prompt_tokens: Number(data.totals?.prompt_tokens ?? 0),
+      completion_tokens: Number(data.totals?.completion_tokens ?? 0),
+      total_tokens: Number(data.totals?.total_tokens ?? 0),
+      cost_eur: Number(data.totals?.cost_eur ?? 0),
+      estimated_credits: Number(data.totals?.estimated_credits ?? 0),
+    });
+    setAdminAiUsageByPartner(data.by_partner ?? []);
+    setAdminAiUsageByFeature(data.by_feature ?? []);
+    setAdminAiUsageByModel(data.by_model ?? []);
+    setAdminAiUsageByScope(data.by_scope ?? []);
+    setAdminAiUsageEvents(data.recent_events ?? []);
   }
 
   async function loadPartnerBilling(partnerId: string, month = partnerBillingMonth) {
@@ -11157,6 +11237,9 @@ export default function AdminClient() {
           <button style={partnerTabButtonStyle(llmGlobalTab === "usage")} onClick={() => setLlmGlobalTab("usage")}>
             Partnerverbrauch Übersicht
           </button>
+          <button style={partnerTabButtonStyle(llmGlobalTab === "billing")} onClick={() => setLlmGlobalTab("billing")}>
+            Billing
+          </button>
         </div>
 
         {llmGlobalTab === "create" ? (
@@ -12238,6 +12321,183 @@ export default function AdminClient() {
                     <td style={tdStyle}>{row.model}</td>
                     <td style={tdStyle}>{row.tokens}</td>
                     <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : null}
+
+        {llmGlobalTab === "billing" ? (
+          <>
+            <div style={{ ...rowStyle, marginTop: 14 }}>
+              <input
+                type="month"
+                style={inputStyle}
+                value={adminAiUsageMonth}
+                onChange={(e) => setAdminAiUsageMonth(e.target.value)}
+              />
+              <button
+                style={btnStyle}
+                onClick={() =>
+                  run("AI-Billing laden", async () => {
+                    await loadAdminAiUsage(adminAiUsageMonth);
+                  })
+                }
+              >
+                Aktualisieren
+              </button>
+            </div>
+            <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
+              Events <strong>{adminAiUsageTotals.events}</strong>
+              {" · "}Prompt <strong>{adminAiUsageTotals.prompt_tokens}</strong>
+              {" · "}Completion <strong>{adminAiUsageTotals.completion_tokens}</strong>
+              {" · "}Gesamt <strong>{adminAiUsageTotals.total_tokens}</strong>
+              {" · "}EUR <strong>{adminAiUsageTotals.cost_eur.toFixed(6)}</strong>
+              {" · "}Credits <strong>{adminAiUsageTotals.estimated_credits.toFixed(4)}</strong>
+            </div>
+
+            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+              Aufschlüsselung nach Billing-Scope
+            </div>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Scope</th>
+                  <th style={thStyle}>Events</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>EUR</th>
+                  <th style={thStyle}>Credits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminAiUsageByScope.map((row) => (
+                  <tr key={`scope:${row.billing_scope}`}>
+                    <td style={tdStyle}>{row.billing_scope}</td>
+                    <td style={tdStyle}>{row.events}</td>
+                    <td style={tdStyle}>{row.total_tokens}</td>
+                    <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+              Aufschlüsselung nach Partner
+            </div>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Partner-ID</th>
+                  <th style={thStyle}>Scope</th>
+                  <th style={thStyle}>Events</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>EUR</th>
+                  <th style={thStyle}>Credits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminAiUsageByPartner.map((row) => (
+                  <tr key={`partner:${row.partner_id}:${row.billing_scope}`}>
+                    <td style={tdStyle}>{row.partner_id}</td>
+                    <td style={tdStyle}>{row.billing_scope}</td>
+                    <td style={tdStyle}>{row.events}</td>
+                    <td style={tdStyle}>{row.total_tokens}</td>
+                    <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+              Aufschlüsselung nach Feature
+            </div>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Feature</th>
+                  <th style={thStyle}>Events</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>EUR</th>
+                  <th style={thStyle}>Credits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminAiUsageByFeature.map((row) => (
+                  <tr key={`feature:${row.feature}`}>
+                    <td style={tdStyle}>{row.feature}</td>
+                    <td style={tdStyle}>{row.events}</td>
+                    <td style={tdStyle}>{row.total_tokens}</td>
+                    <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+              Aufschlüsselung nach Modell
+            </div>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Provider</th>
+                  <th style={thStyle}>Modell</th>
+                  <th style={thStyle}>Events</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>EUR</th>
+                  <th style={thStyle}>Credits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminAiUsageByModel.map((row) => (
+                  <tr key={`model:${row.provider}:${row.model}`}>
+                    <td style={tdStyle}>{row.provider}</td>
+                    <td style={tdStyle}>{row.model}</td>
+                    <td style={tdStyle}>{row.events}</td>
+                    <td style={tdStyle}>{row.total_tokens}</td>
+                    <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+              Letzte Events
+            </div>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Zeit</th>
+                  <th style={thStyle}>Partner-ID</th>
+                  <th style={thStyle}>Route</th>
+                  <th style={thStyle}>Feature</th>
+                  <th style={thStyle}>Scope</th>
+                  <th style={thStyle}>Mode</th>
+                  <th style={thStyle}>Modell</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>EUR</th>
+                  <th style={thStyle}>Credits</th>
+                  <th style={thStyle}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminAiUsageEvents.map((row, idx) => (
+                  <tr key={`event:${row.created_at ?? "na"}:${idx}`}>
+                    <td style={tdStyle}>{row.created_at ?? "k. A."}</td>
+                    <td style={tdStyle}>{row.partner_id}</td>
+                    <td style={tdStyle}>{row.route_name}</td>
+                    <td style={tdStyle}>{row.feature}</td>
+                    <td style={tdStyle}>{row.billing_scope}</td>
+                    <td style={tdStyle}>{row.billing_mode}</td>
+                    <td style={tdStyle}>{row.provider} / {row.model}</td>
+                    <td style={tdStyle}>{row.total_tokens}</td>
+                    <td style={tdStyle}>{row.estimated_cost_eur.toFixed(6)}</td>
+                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                    <td style={tdStyle}>{row.status}</td>
                   </tr>
                 ))}
               </tbody>
