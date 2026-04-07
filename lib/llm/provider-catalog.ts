@@ -41,6 +41,20 @@ type FxRow = {
   rate?: number | null;
 };
 
+const PROVIDER_CATALOG_CACHE_TTL_MS = 60 * 1000;
+
+type CacheEntry<T> = {
+  expiresAt: number;
+  value: T;
+};
+
+const flattenedModelsCache = new Map<string, CacheEntry<{
+  models: FlattenedLlmProviderModel[];
+  fxRateUsdToEur: number | null;
+  source: "db" | "fallback";
+}>>();
+const usdToEurRateCache = new Map<string, CacheEntry<number | null>>();
+
 export type LlmProviderAccountRecord = {
   id: string;
   provider: string;
@@ -126,12 +140,34 @@ function currentMonthStartIso(): string {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0)).toISOString().slice(0, 10);
 }
 
+function getCachedValue<T>(map: Map<string, CacheEntry<T>>, key: string): T | undefined {
+  const entry = map.get(key);
+  if (!entry) return undefined;
+  if (entry.expiresAt <= Date.now()) {
+    map.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function setCachedValue<T>(map: Map<string, CacheEntry<T>>, key: string, value: T): T {
+  map.set(key, {
+    value,
+    expiresAt: Date.now() + PROVIDER_CATALOG_CACHE_TTL_MS,
+  });
+  return value;
+}
+
 export function isMissingTable(error: unknown, table: string): boolean {
   const msg = String((error as { message?: string } | null)?.message ?? "").toLowerCase();
   return msg.includes(`public.${table}`) && msg.includes("does not exist");
 }
 
 export async function loadUsdToEurRate(admin: AdminClient, monthStart = currentMonthStartIso()): Promise<number | null> {
+  const cached = getCachedValue(usdToEurRateCache, monthStart);
+  if (cached !== undefined) {
+    return cached;
+  }
   const { data, error } = await admin
     .from("llm_fx_monthly_rates")
     .select("rate")
@@ -140,10 +176,12 @@ export async function loadUsdToEurRate(admin: AdminClient, monthStart = currentM
     .eq("month_start", monthStart)
     .maybeSingle();
   if (error) {
-    if (isMissingTable(error, "llm_fx_monthly_rates")) return null;
+    if (isMissingTable(error, "llm_fx_monthly_rates")) {
+      return setCachedValue(usdToEurRateCache, monthStart, null);
+    }
     throw new Error(String(error.message ?? "USD/EUR FX lookup failed"));
   }
-  return asFiniteNumber((data as FxRow | null)?.rate);
+  return setCachedValue(usdToEurRateCache, monthStart, asFiniteNumber((data as FxRow | null)?.rate));
 }
 
 function normalizeAccount(row: ProviderAccountRow): LlmProviderAccountRecord {
@@ -202,6 +240,9 @@ export async function listFlattenedLlmProviderModels(args?: {
   activeOnly?: boolean;
 }): Promise<{ models: FlattenedLlmProviderModel[]; fxRateUsdToEur: number | null; source: "db" | "fallback" }> {
   const admin = args?.admin ?? createAdminClient();
+  const cacheKey = args?.activeOnly === false ? "all" : "active";
+  const cached = getCachedValue(flattenedModelsCache, cacheKey);
+  if (cached !== undefined) return cached;
   let query = admin
     .from("llm_provider_models")
     .select(`
@@ -244,7 +285,7 @@ export async function listFlattenedLlmProviderModels(args?: {
   const { data, error } = await query;
   if (error) {
     if (isMissingTable(error, "llm_provider_models") || isMissingTable(error, "llm_provider_accounts")) {
-      return { models: [], fxRateUsdToEur: null, source: "fallback" };
+      return setCachedValue(flattenedModelsCache, cacheKey, { models: [], fxRateUsdToEur: null, source: "fallback" });
     }
     throw new Error(String(error.message ?? "LLM provider models lookup failed"));
   }
@@ -278,5 +319,5 @@ export async function listFlattenedLlmProviderModels(args?: {
     };
   }).filter((row) => row.provider_account_active || args?.activeOnly === false);
 
-  return { models, fxRateUsdToEur, source: "db" };
+  return setCachedValue(flattenedModelsCache, cacheKey, { models, fxRateUsdToEur, source: "db" });
 }

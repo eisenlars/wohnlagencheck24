@@ -1,6 +1,16 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { isMissingTable, listFlattenedLlmProviderModels } from "@/lib/llm/provider-catalog";
 
+const GLOBAL_LLM_CACHE_TTL_MS = 60 * 1000;
+
+type CacheEntry<T> = {
+  expiresAt: number;
+  value: T;
+};
+
+let globalConfigCache: CacheEntry<{ config: GlobalLlmConfig; source: "db" | "fallback" }> | null = null;
+let activeProvidersCache: CacheEntry<{ providers: GlobalLlmProvider[]; source: "db" | "fallback" }> | null = null;
+
 export type GlobalLlmConfig = {
   central_enabled: boolean;
   monthly_token_budget: number | null;
@@ -67,7 +77,22 @@ function asFiniteNumber(value: unknown): number | null {
   return null;
 }
 
+function getCachedValue<T>(entry: CacheEntry<T> | null): T | null {
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) return null;
+  return entry.value;
+}
+
+function setCachedValue<T>(value: T): CacheEntry<T> {
+  return {
+    value,
+    expiresAt: Date.now() + GLOBAL_LLM_CACHE_TTL_MS,
+  };
+}
+
 export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; source: "db" | "fallback" }> {
+  const cached = getCachedValue(globalConfigCache);
+  if (cached) return cached;
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("llm_global_config")
@@ -76,7 +101,7 @@ export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; 
     .maybeSingle();
 
   if (!error && data) {
-    return {
+    const next = {
       source: "db",
       config: {
         central_enabled: data.central_enabled !== false,
@@ -84,10 +109,12 @@ export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; 
         monthly_cost_budget_eur: asFiniteNumber(data.monthly_cost_budget_eur),
       },
     };
+    globalConfigCache = setCachedValue(next);
+    return next;
   }
 
   if (error && isMissingTable(error, "llm_global_config")) {
-    return {
+    const next = {
       source: "fallback",
       config: {
         central_enabled: true,
@@ -95,10 +122,12 @@ export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; 
         monthly_cost_budget_eur: null,
       },
     };
+    globalConfigCache = setCachedValue(next);
+    return next;
   }
 
   if (error) throw new Error(String(error.message ?? "Global LLM config lookup failed"));
-  return {
+  const next = {
     source: "db",
     config: {
       central_enabled: true,
@@ -106,13 +135,17 @@ export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; 
       monthly_cost_budget_eur: null,
     },
   };
+  globalConfigCache = setCachedValue(next);
+  return next;
 }
 
 export async function loadActiveGlobalLlmProviders(): Promise<{ providers: GlobalLlmProvider[]; source: "db" | "fallback" }> {
+  const cached = getCachedValue(activeProvidersCache);
+  if (cached) return cached;
   const admin = createAdminClient();
   const next = await listFlattenedLlmProviderModels({ admin, activeOnly: true });
   if (next.source === "db" && next.models.length > 0) {
-    return {
+    const result = {
       source: "db",
       providers: next.models
         .filter((row) =>
@@ -142,6 +175,8 @@ export async function loadActiveGlobalLlmProviders(): Promise<{ providers: Globa
           fx_rate_usd_to_eur: row.fx_rate_usd_to_eur,
         })),
     };
+    activeProvidersCache = setCachedValue(result);
+    return result;
   }
 
   const { data, error } = await admin
@@ -152,12 +187,14 @@ export async function loadActiveGlobalLlmProviders(): Promise<{ providers: Globa
 
   if (error) {
     if (isMissingTable(error, "llm_global_providers")) {
-      return { source: "fallback", providers: [] };
+      const result = { source: "fallback", providers: [] };
+      activeProvidersCache = setCachedValue(result);
+      return result;
     }
     throw new Error(String(error.message ?? "Global LLM providers lookup failed"));
   }
 
-  return {
+  const result = {
     source: "db",
     providers: (data ?? []).map((row) => ({
       id: String(row.id ?? ""),
@@ -185,6 +222,8 @@ export async function loadActiveGlobalLlmProviders(): Promise<{ providers: Globa
       && row.output_cost_eur_per_1k > 0,
     ),
   };
+  activeProvidersCache = setCachedValue(result);
+  return result;
 }
 
 function monthRangeUtc(d = new Date()) {
