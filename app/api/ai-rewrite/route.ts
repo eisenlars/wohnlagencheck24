@@ -10,6 +10,13 @@ import { normalizeLlmRuntimeMode } from '@/lib/llm/mode';
 import { loadPartnerLlmPolicy } from '@/lib/llm/partner-policy';
 import { readSecretFromAuthConfig } from '@/lib/security/secret-crypto';
 import {
+  CREDIT_CURRENCY,
+  CREDITS_PER_EUR,
+  buildPortalPartnerIncludedBillingContext,
+  eurToCredits,
+} from '@/lib/ai-billing/credits';
+import type { AiUsageFeature } from '@/lib/ai-billing/types';
+import {
   checkGlobalAndPartnerBudget,
   estimateCostEur,
   estimateCostUsd,
@@ -269,6 +276,26 @@ function buildPrompt(args: { text: string; areaName: string; type?: string; sect
         `Optimiere den folgenden Text für bessere Lesbarkeit und SEO. ` +
         `Keine neuen Fakten hinzufügen.\n\nKontext: ${areaName}\n\nOriginal:\n${text}`,
   };
+}
+
+function resolveRewriteUsageFeature(args: {
+  targetLocale: string | null;
+  type: string | null;
+  sectionLabel?: string | null;
+}): AiUsageFeature {
+  if (args.targetLocale) return 'content_translate';
+  const normalizedType = String(args.type ?? '').trim().toLowerCase();
+  const normalizedLabel = String(args.sectionLabel ?? '').trim().toLowerCase();
+  if (
+    normalizedType === 'marketing'
+    || normalizedLabel.includes('seo')
+    || normalizedLabel.includes('title')
+    || normalizedLabel.includes('description')
+    || normalizedLabel.includes('keyword')
+  ) {
+    return 'seo_meta_generate';
+  }
+  return 'content_optimize';
 }
 
 type OpenAiCallResult = {
@@ -680,6 +707,10 @@ export async function POST(req: Request) {
     }
 
     try {
+      const billingContext = buildPortalPartnerIncludedBillingContext(
+        user.id,
+        resolveRewriteUsageFeature({ targetLocale, type, sectionLabel }),
+      );
       await writeLlmUsageEvent({
         partner_id: user.id,
         route_name: 'ai-rewrite',
@@ -696,6 +727,16 @@ export async function POST(req: Request) {
         output_cost_usd_per_1k_snapshot: usageGlobalProvider?.output_cost_usd_per_1k ?? null,
         estimated_cost_usd: usageEstimatedCostUsd,
         estimated_cost_eur: usageEstimatedCostEur,
+        billing_scope: billingContext.billing_scope,
+        billing_mode: billingContext.billing_mode,
+        billing_owner_partner_id: billingContext.billing_owner_partner_id,
+        billing_subject_partner_id: billingContext.billing_subject_partner_id,
+        network_partner_id: billingContext.network_partner_id,
+        feature: billingContext.feature,
+        estimated_credit_delta: eurToCredits(usageEstimatedCostEur),
+        billed_credit_delta: null,
+        credit_rate_snapshot: CREDITS_PER_EUR,
+        credit_currency_snapshot: CREDIT_CURRENCY,
         status: usageErrorCode ? 'error' : 'ok',
         error_code: usageErrorCode ?? null,
       });

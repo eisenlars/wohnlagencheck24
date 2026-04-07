@@ -7,6 +7,12 @@ import { normalizeLlmRuntimeMode } from '@/lib/llm/mode';
 import { loadPartnerLlmPolicy } from '@/lib/llm/partner-policy';
 import { readSecretFromAuthConfig } from '@/lib/security/secret-crypto';
 import {
+  CREDIT_CURRENCY,
+  CREDITS_PER_EUR,
+  buildPortalPartnerIncludedBillingContext,
+  eurToCredits,
+} from '@/lib/ai-billing/credits';
+import {
   checkGlobalAndPartnerBudget,
   estimateCostEur,
   estimateCostUsd,
@@ -462,6 +468,7 @@ export async function POST(req: Request) {
 
     if (!raw) {
       try {
+        const billingContext = buildPortalPartnerIncludedBillingContext(user.id, 'blog_generate');
         await writeLlmUsageEvent({
           partner_id: user.id,
           route_name: 'ai-blog',
@@ -478,6 +485,16 @@ export async function POST(req: Request) {
           output_cost_usd_per_1k_snapshot: usageGlobalProvider?.output_cost_usd_per_1k ?? null,
           estimated_cost_usd: usageEstimatedCostUsd,
           estimated_cost_eur: usageEstimatedCostEur,
+          billing_scope: billingContext.billing_scope,
+          billing_mode: billingContext.billing_mode,
+          billing_owner_partner_id: billingContext.billing_owner_partner_id,
+          billing_subject_partner_id: billingContext.billing_subject_partner_id,
+          network_partner_id: billingContext.network_partner_id,
+          feature: billingContext.feature,
+          estimated_credit_delta: eurToCredits(usageEstimatedCostEur),
+          billed_credit_delta: null,
+          credit_rate_snapshot: CREDITS_PER_EUR,
+          credit_currency_snapshot: CREDIT_CURRENCY,
           status: 'error',
           error_code: usageErrorCode ?? 'FALLBACK_USED',
         });
@@ -488,6 +505,7 @@ export async function POST(req: Request) {
     }
 
     try {
+      const billingContext = buildPortalPartnerIncludedBillingContext(user.id, 'blog_generate');
       await writeLlmUsageEvent({
         partner_id: user.id,
         route_name: 'ai-blog',
@@ -504,6 +522,16 @@ export async function POST(req: Request) {
         output_cost_usd_per_1k_snapshot: usageGlobalProvider?.output_cost_usd_per_1k ?? null,
         estimated_cost_usd: usageEstimatedCostUsd,
         estimated_cost_eur: usageEstimatedCostEur,
+        billing_scope: billingContext.billing_scope,
+        billing_mode: billingContext.billing_mode,
+        billing_owner_partner_id: billingContext.billing_owner_partner_id,
+        billing_subject_partner_id: billingContext.billing_subject_partner_id,
+        network_partner_id: billingContext.network_partner_id,
+        feature: billingContext.feature,
+        estimated_credit_delta: eurToCredits(usageEstimatedCostEur),
+        billed_credit_delta: null,
+        credit_rate_snapshot: CREDITS_PER_EUR,
+        credit_currency_snapshot: CREDIT_CURRENCY,
         status: 'ok',
         error_code: null,
       });

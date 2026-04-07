@@ -5,6 +5,12 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { getI18nStandardPrompt } from "@/lib/i18n-prompts";
 import { buildMarketingDefaults } from "@/lib/marketing-defaults";
 import { resolveMarketingContextForArea } from "@/lib/areas/marketing-context";
+import {
+  CREDIT_CURRENCY,
+  CREDITS_PER_EUR,
+  buildPortalPartnerIncludedBillingContext,
+  eurToCredits,
+} from "@/lib/ai-billing/credits";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
 import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
@@ -865,6 +871,7 @@ async function buildAreaPayload(args: {
             inputCostUsdPer1k: provider?.input_cost_usd_per_1k ?? null,
             outputCostUsdPer1k: provider?.output_cost_usd_per_1k ?? null,
           });
+          const billingContext = buildPortalPartnerIncludedBillingContext(partnerId, "i18n_auto_sync");
           await writeLlmUsageEvent({
             partner_id: partnerId,
             route_name: "partner-i18n-auto-sync",
@@ -881,12 +888,23 @@ async function buildAreaPayload(args: {
             output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
             estimated_cost_usd: estimatedUsd,
             estimated_cost_eur: estimated,
+            billing_scope: billingContext.billing_scope,
+            billing_mode: billingContext.billing_mode,
+            billing_owner_partner_id: billingContext.billing_owner_partner_id,
+            billing_subject_partner_id: billingContext.billing_subject_partner_id,
+            network_partner_id: billingContext.network_partner_id,
+            feature: billingContext.feature,
+            estimated_credit_delta: eurToCredits(estimated),
+            billed_credit_delta: null,
+            credit_rate_snapshot: CREDITS_PER_EUR,
+            credit_currency_snapshot: CREDIT_CURRENCY,
             status: "ok",
             error_code: null,
           });
           autoSynced += 1;
         } catch {
           autoSyncFailed += 1;
+          const billingContext = buildPortalPartnerIncludedBillingContext(partnerId, "i18n_auto_sync");
           await writeLlmUsageEvent({
             partner_id: partnerId,
             route_name: "partner-i18n-auto-sync",
@@ -903,6 +921,16 @@ async function buildAreaPayload(args: {
             output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (autoSyncContext.provider?.output_cost_usd_per_1k ?? null),
             estimated_cost_usd: null,
             estimated_cost_eur: null,
+            billing_scope: billingContext.billing_scope,
+            billing_mode: billingContext.billing_mode,
+            billing_owner_partner_id: billingContext.billing_owner_partner_id,
+            billing_subject_partner_id: billingContext.billing_subject_partner_id,
+            network_partner_id: billingContext.network_partner_id,
+            feature: billingContext.feature,
+            estimated_credit_delta: null,
+            billed_credit_delta: null,
+            credit_rate_snapshot: CREDITS_PER_EUR,
+            credit_currency_snapshot: CREDIT_CURRENCY,
             status: "error",
             error_code: "AUTO_SYNC_FAILED",
           });

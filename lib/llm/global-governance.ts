@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { isMissingTable, listFlattenedLlmProviderModels } from "@/lib/llm/provider-catalog";
+import type { AiBillingMode, AiBillingScope, AiUsageFeature } from "@/lib/ai-billing/types";
 
 const GLOBAL_LLM_CACHE_TTL_MS = 60 * 1000;
 
@@ -65,6 +66,16 @@ type LlmUsageInsert = {
   cache_read_tokens?: number | null;
   cache_write_tokens?: number | null;
   reasoning_tokens?: number | null;
+  billing_scope?: AiBillingScope | null;
+  billing_mode?: AiBillingMode | null;
+  billing_owner_partner_id?: string | null;
+  billing_subject_partner_id?: string | null;
+  network_partner_id?: string | null;
+  feature?: AiUsageFeature | null;
+  estimated_credit_delta?: number | null;
+  billed_credit_delta?: number | null;
+  credit_rate_snapshot?: number | null;
+  credit_currency_snapshot?: string | null;
   status: "ok" | "error";
   error_code: string | null;
   request_id?: string | null;
@@ -365,6 +376,16 @@ export async function writeLlmUsageEvent(row: LlmUsageInsert): Promise<void> {
       cache_read_tokens: row.cache_read_tokens ?? null,
       cache_write_tokens: row.cache_write_tokens ?? null,
       reasoning_tokens: row.reasoning_tokens ?? null,
+      billing_scope: row.billing_scope ?? null,
+      billing_mode: row.billing_mode ?? null,
+      billing_owner_partner_id: row.billing_owner_partner_id ?? null,
+      billing_subject_partner_id: row.billing_subject_partner_id ?? null,
+      network_partner_id: row.network_partner_id ?? null,
+      feature: row.feature ?? null,
+      estimated_credit_delta: row.estimated_credit_delta ?? null,
+      billed_credit_delta: row.billed_credit_delta ?? null,
+      credit_rate_snapshot: row.credit_rate_snapshot ?? null,
+      credit_currency_snapshot: row.credit_currency_snapshot ?? null,
       status: row.status,
       error_code: row.error_code,
       request_id: row.request_id ?? null,
