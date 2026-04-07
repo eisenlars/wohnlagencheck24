@@ -9,6 +9,7 @@ import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/secu
 import { validateOutboundUrl } from "@/lib/security/outbound-url";
 import { readSecretFromAuthConfig } from "@/lib/security/secret-crypto";
 import { loadActiveGlobalLlmProviders, loadGlobalLlmConfig, estimateCostEur, estimateCostUsd, writeLlmUsageEvent } from "@/lib/llm/global-governance";
+import { loadUsdToEurRate } from "@/lib/llm/provider-catalog";
 import type { DisplayTextClass } from "@/lib/text-display-class";
 
 type TextSourceRow = {
@@ -403,6 +404,16 @@ type AreaMetaRow = {
   bundesland_slug?: string | null;
 };
 
+type PricingPreviewModelRow = {
+  model?: string | null;
+  input_cost_usd_per_1k?: number | null;
+  output_cost_usd_per_1k?: number | null;
+  account?: {
+    provider?: string | null;
+    is_active?: boolean | null;
+  } | null;
+};
+
 function flattenRawTextObject(rawText: unknown): Map<string, string> {
   const out = new Map<string, string>();
   if (!rawText || typeof rawText !== "object") return out;
@@ -651,6 +662,84 @@ async function buildAutoSyncContext(autoSyncEnabled: boolean): Promise<AutoSyncC
     apiKey,
     providerSupported,
   };
+}
+
+async function buildPricingPreviewContext(
+  admin: ReturnType<typeof createAdminClient>,
+): Promise<AutoSyncContext> {
+  try {
+    const { data, error } = await admin
+      .from("llm_provider_models")
+      .select(`
+        model,
+        input_cost_usd_per_1k,
+        output_cost_usd_per_1k,
+        account:llm_provider_accounts!inner(
+          provider,
+          is_active
+        )
+      `)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true })
+      .limit(8);
+
+    if (error) {
+      if (
+        isMissingTable(error, "llm_provider_models")
+        || isMissingTable(error, "llm_provider_accounts")
+      ) {
+        return {
+          pricingPreview: null,
+          provider: null,
+          apiKey: null,
+          providerSupported: false,
+        };
+      }
+      throw error;
+    }
+
+    const candidate = ((data ?? []) as PricingPreviewModelRow[]).find((row) => {
+      const accountActive = row.account?.is_active !== false;
+      return (
+        accountActive
+        && asText(row.account?.provider)
+        && asText(row.model)
+        && asFiniteNumber(row.input_cost_usd_per_1k) !== null
+        && asFiniteNumber(row.output_cost_usd_per_1k) !== null
+      );
+    });
+
+    if (!candidate) {
+      return {
+        pricingPreview: null,
+        provider: null,
+        apiKey: null,
+        providerSupported: false,
+      };
+    }
+
+    const fxRateUsdToEur = await loadUsdToEurRate(admin).catch(() => null);
+    return {
+      pricingPreview: {
+        provider: asText(candidate.account?.provider) || null,
+        model: asText(candidate.model) || null,
+        input_cost_usd_per_1k: asFiniteNumber(candidate.input_cost_usd_per_1k),
+        output_cost_usd_per_1k: asFiniteNumber(candidate.output_cost_usd_per_1k),
+        fx_rate_usd_to_eur: fxRateUsdToEur,
+      },
+      provider: null,
+      apiKey: null,
+      providerSupported: false,
+    };
+  } catch {
+    return {
+      pricingPreview: null,
+      provider: null,
+      apiKey: null,
+      providerSupported: false,
+    };
+  }
 }
 
 async function buildAreaPayload(args: {
@@ -962,7 +1051,10 @@ export async function GET(req: Request) {
     const translationsError = translationResult.error;
     if (translationsError) throw translationsError;
     const translationsByArea = groupRowsByArea((translations ?? []) as TranslationRow[]);
-    const autoSyncContext = await timed("auto_sync_context_ms", () => buildAutoSyncContext(autoSyncEnabled));
+    const autoSyncContext = await timed(
+      "auto_sync_context_ms",
+      () => autoSyncEnabled ? buildAutoSyncContext(true) : buildPricingPreviewContext(admin),
+    );
 
     const areas = await timed("area_build_ms", () => Promise.all(areaIds.map(async (areaId) => {
       const sourceByKey = new Map<string, SourceEntry>();
