@@ -2347,7 +2347,6 @@ export default function AdminClient() {
   });
   const [llmAccounts, setLlmAccounts] = useState<LlmProviderAccount[]>([]);
   const [llmProviders, setLlmProviders] = useState<LlmGlobalProvider[]>([]);
-  const [llmUsageRows, setLlmUsageRows] = useState<LlmUsagePartnerRow[]>([]);
   const [llmUsageTotals, setLlmUsageTotals] = useState<{ tokens: number; cost_eur: number }>({ tokens: 0, cost_eur: 0 });
   const [llmUsageItems, setLlmUsageItems] = useState<LlmUsageItemRow[]>([]);
   const [llmUsageStatusRows, setLlmUsageStatusRows] = useState<LlmUsageStatusRow[]>([]);
@@ -2870,7 +2869,7 @@ export default function AdminClient() {
     setSelectedPartnerId(String(adminViewState.selectedPartnerId ?? ""));
     setPartnerTab(adminViewState.partnerTab ?? "profile");
     setIntegrationsAdminTab(adminViewState.integrationsAdminTab ?? "overview");
-    setLlmGlobalTab(adminViewState.llmGlobalTab ?? "create");
+    setLlmGlobalTab(adminViewState.llmGlobalTab === "billing" ? "usage" : (adminViewState.llmGlobalTab ?? "create"));
     setMarketExplanationMode(restoredMarketExplanationMode);
     setMarketExplanationStandardScope(restoredMarketExplanationScope);
     setMarketExplanationStandardLocale(restoredMarketExplanationLocale);
@@ -4148,7 +4147,6 @@ export default function AdminClient() {
     const data = await api<{ by_partner?: LlmUsagePartnerRow[]; by_item?: LlmUsageItemRow[]; by_status?: LlmUsageStatusRow[]; totals?: { tokens?: number; cost_eur?: number } }>(
       `/api/admin/llm/usage?month=${encodeURIComponent(`${month}-01`)}&status=all`,
     );
-    setLlmUsageRows(data.by_partner ?? []);
     setLlmUsageItems(data.by_item ?? []);
     setLlmUsageStatusRows(data.by_status ?? []);
     setLlmUsageTotals({
@@ -5261,6 +5259,7 @@ export default function AdminClient() {
       loadLlmAccounts(),
       loadLlmProviders(),
       loadLlmUsage(),
+      loadAdminAiUsage(),
     ]);
   }
 
@@ -11235,10 +11234,7 @@ export default function AdminClient() {
             LLM Übersicht
           </button>
           <button style={partnerTabButtonStyle(llmGlobalTab === "usage")} onClick={() => setLlmGlobalTab("usage")}>
-            Partnerverbrauch Übersicht
-          </button>
-          <button style={partnerTabButtonStyle(llmGlobalTab === "billing")} onClick={() => setLlmGlobalTab("billing")}>
-            Billing
+            KI-Verbrauch
           </button>
         </div>
 
@@ -12246,107 +12242,27 @@ export default function AdminClient() {
                 type="month"
                 style={inputStyle}
                 value={llmUsageMonth}
-                onChange={(e) => setLlmUsageMonth(e.target.value)}
+                onChange={(e) => {
+                  setLlmUsageMonth(e.target.value);
+                  setAdminAiUsageMonth(e.target.value);
+                }}
               />
               <button
                 style={btnStyle}
                 onClick={() =>
-                  run("LLM-Monitoring laden", async () => {
-                    await loadLlmUsage(llmUsageMonth);
+                  run("KI-Verbrauch laden", async () => {
+                    await Promise.all([
+                      loadLlmUsage(llmUsageMonth),
+                      loadAdminAiUsage(llmUsageMonth),
+                    ]);
                   })
                 }
               >
                 Aktualisieren
               </button>
             </div>
-            <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
-              Gesamt Tokens: <strong>{llmUsageTotals.tokens}</strong> · Gesamt Kosten (EUR): <strong>{llmUsageTotals.cost_eur.toFixed(4)}</strong>
-            </div>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Events</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>Kosten EUR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {llmUsageStatusRows.map((row) => (
-                  <tr key={`status:${row.status}`}>
-                    <td style={tdStyle}>{row.status}</td>
-                    <td style={tdStyle}>{row.entries}</td>
-                    <td style={tdStyle}>{row.tokens}</td>
-                    <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Partner-ID</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>Kosten EUR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {llmUsageRows.map((row) => (
-                  <tr key={row.partner_id}>
-                    <td style={tdStyle}>{row.partner_id}</td>
-                    <td style={tdStyle}>{row.tokens}</td>
-                    <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
             <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
-              Aufschlüsselung nach Route/Provider/Modell
-            </div>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Route</th>
-                  <th style={thStyle}>Provider</th>
-                  <th style={thStyle}>Modell</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>Kosten EUR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {llmUsageItems.map((row) => (
-                  <tr key={`${row.route_name}:${row.provider}:${row.model}`}>
-                    <td style={tdStyle}>{row.route_name}</td>
-                    <td style={tdStyle}>{row.provider}</td>
-                    <td style={tdStyle}>{row.model}</td>
-                    <td style={tdStyle}>{row.tokens}</td>
-                    <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        ) : null}
-
-        {llmGlobalTab === "billing" ? (
-          <>
-            <div style={{ ...rowStyle, marginTop: 14 }}>
-              <input
-                type="month"
-                style={inputStyle}
-                value={adminAiUsageMonth}
-                onChange={(e) => setAdminAiUsageMonth(e.target.value)}
-              />
-              <button
-                style={btnStyle}
-                onClick={() =>
-                  run("AI-Billing laden", async () => {
-                    await loadAdminAiUsage(adminAiUsageMonth);
-                  })
-                }
-              >
-                Aktualisieren
-              </button>
+              Billing- und Credit-Übersicht
             </div>
             <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
               Events <strong>{adminAiUsageTotals.events}</strong>
@@ -12355,10 +12271,6 @@ export default function AdminClient() {
               {" · "}Gesamt <strong>{adminAiUsageTotals.total_tokens}</strong>
               {" · "}EUR <strong>{adminAiUsageTotals.cost_eur.toFixed(6)}</strong>
               {" · "}Credits <strong>{adminAiUsageTotals.estimated_credits.toFixed(4)}</strong>
-            </div>
-
-            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
-              Aufschlüsselung nach Billing-Scope
             </div>
             <table style={tableStyle}>
               <thead>
@@ -12382,10 +12294,6 @@ export default function AdminClient() {
                 ))}
               </tbody>
             </table>
-
-            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
-              Aufschlüsselung nach Partner
-            </div>
             <table style={tableStyle}>
               <thead>
                 <tr>
@@ -12410,10 +12318,6 @@ export default function AdminClient() {
                 ))}
               </tbody>
             </table>
-
-            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
-              Aufschlüsselung nach Feature
-            </div>
             <table style={tableStyle}>
               <thead>
                 <tr>
@@ -12436,10 +12340,6 @@ export default function AdminClient() {
                 ))}
               </tbody>
             </table>
-
-            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
-              Aufschlüsselung nach Modell
-            </div>
             <table style={tableStyle}>
               <thead>
                 <tr>
@@ -12498,6 +12398,55 @@ export default function AdminClient() {
                     <td style={tdStyle}>{row.estimated_cost_eur.toFixed(6)}</td>
                     <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
                     <td style={tdStyle}>{row.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div style={{ ...rowStyle, marginTop: 14 }}>
+              <div style={{ fontSize: 12, color: "#334155", fontWeight: 700 }}>Technisches Monitoring</div>
+            </div>
+            <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
+              Gesamt Tokens: <strong>{llmUsageTotals.tokens}</strong> · Gesamt Kosten (EUR): <strong>{llmUsageTotals.cost_eur.toFixed(4)}</strong>
+            </div>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Status</th>
+                  <th style={thStyle}>Events</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>Kosten EUR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {llmUsageStatusRows.map((row) => (
+                  <tr key={`status:${row.status}`}>
+                    <td style={tdStyle}>{row.status}</td>
+                    <td style={tdStyle}>{row.entries}</td>
+                    <td style={tdStyle}>{row.tokens}</td>
+                    <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Route</th>
+                  <th style={thStyle}>Provider</th>
+                  <th style={thStyle}>Modell</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>Kosten EUR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {llmUsageItems.map((row) => (
+                  <tr key={`${row.route_name}:${row.provider}:${row.model}`}>
+                    <td style={tdStyle}>{row.route_name}</td>
+                    <td style={tdStyle}>{row.provider}</td>
+                    <td style={tdStyle}>{row.model}</td>
+                    <td style={tdStyle}>{row.tokens}</td>
+                    <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
                   </tr>
                 ))}
               </tbody>
