@@ -276,21 +276,36 @@ function normalizeEnergyValueKind(certificateType: string | null | undefined): "
 }
 
 function buildEnergySnapshot(elements: Record<string, unknown>): OfferEnergySnapshot {
-  const certificateType = String(elements["energiepass_art"] ?? "").trim() || null;
-  const value = toNumber(elements["energieverbrauchkennwert"]);
-  const constructionYear = toNumber(elements["baujahr"]);
+  const certificateType = String(elements["energieausweistyp"] ?? elements["energiepass_art"] ?? "").trim() || null;
+  const consumptionValue = toNumber(elements["energieverbrauchskennwert"] ?? elements["energieverbrauchkennwert"]);
+  const demandValue = toNumber(elements["endenergiebedarf"]);
+  const valueKind = normalizeEnergyValueKind(certificateType);
+  const value = valueKind === "bedarf"
+    ? (demandValue ?? consumptionValue)
+    : valueKind === "verbrauch"
+      ? (consumptionValue ?? demandValue)
+      : (demandValue ?? consumptionValue);
+  const constructionYear = toNumber(elements["energieausweisBaujahr"]) ?? toNumber(elements["baujahr"]);
+  const certificateAvailability =
+    certificateType === "ohne Energieausweis"
+      ? "ohne energieausweis"
+      : certificateType === "es besteht keine Pflicht!"
+        ? "keine pflicht"
+        : certificateType
+          ? "vorhanden"
+          : null;
   return {
     certificate_type: certificateType,
     value,
-    value_kind: normalizeEnergyValueKind(certificateType),
+    value_kind: valueKind,
     construction_year: constructionYear,
-    heating_energy_source: null,
-    efficiency_class: null,
-    certificate_availability: null,
-    certificate_start_date: null,
-    certificate_end_date: null,
-    warm_water_included: null,
-    demand: value,
+    heating_energy_source: String(elements["energietraeger"] ?? "").trim() || null,
+    efficiency_class: String(elements["energyClass"] ?? "").trim() || null,
+    certificate_availability: certificateAvailability,
+    certificate_start_date: String(elements["energiepassAusstelldatum"] ?? "").trim() || null,
+    certificate_end_date: String(elements["energieausweis_gueltig_bis"] ?? "").trim() || null,
+    warm_water_included: normalizeOnOfficeBoolean(elements["warmwasserEnthalten"]),
+    demand: demandValue,
     year: constructionYear,
   };
 }
@@ -298,18 +313,18 @@ function buildEnergySnapshot(elements: Record<string, unknown>): OfferEnergySnap
 function buildDetailsSnapshot(elements: Record<string, unknown>): OfferDetailsSnapshot {
   return {
     living_area_sqm: toNumber(elements["wohnflaeche"]),
-    usable_area_sqm: null,
+    usable_area_sqm: toNumber(elements["nutzflaeche"]),
     plot_area_sqm: null,
     rooms: toNumber(elements["anzahl_zimmer"]),
-    bedrooms: null,
-    bathrooms: null,
+    bedrooms: toNumber(elements["anzahl_schlafzimmer"]),
+    bathrooms: toNumber(elements["anzahl_badezimmer"]),
     floor: null,
     construction_year: toNumber(elements["baujahr"]),
-    condition: null,
+    condition: String(elements["zustand"] ?? "").trim() || null,
     availability: null,
     parking: null,
-    balcony: null,
-    terrace: null,
+    balcony: normalizeOnOfficeBoolean(elements["balkon"]),
+    terrace: normalizeOnOfficeBoolean(elements["terrasse"]),
     garden: null,
     elevator: null,
     address_hidden: null,
@@ -457,6 +472,20 @@ function normalizeOnOfficeFlag(value: unknown): "1" | "0" | null {
   return null;
 }
 
+function normalizeOnOfficeBoolean(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "1" || normalized === "j" || normalized === "ja" || normalized === "true") return true;
+    if (normalized === "0" || normalized === "n" || normalized === "nein" || normalized === "false") return false;
+  }
+  return null;
+}
+
 function makeRawRowBase(
   partnerId: string,
   provider: "onoffice",
@@ -495,6 +524,46 @@ function mapEstateToOffer(
   const details = buildDetailsSnapshot(elements);
   const energy = buildEnergySnapshot(elements);
   const sourceUpdatedAt = String(elements["geaendert_am"] ?? "").trim() || null;
+  const detailsExtra = {
+    separate_wc_count: toNumber(elements["anzahl_sep_wc"]),
+    balcony_count: toNumber(elements["anzahl_balkone"]),
+    terrace_count: toNumber(elements["anzahl_terrassen"]),
+  };
+  const pricing = {
+    currency: elements["waehrung"] ?? null,
+    purchase_price: toNumber(elements["kaufpreis"]),
+    cold_rent: toNumber(elements["kaltmiete"]),
+    warm_rent: toNumber(elements["warmmiete"]),
+    additional_costs: toNumber(elements["nebenkosten"]),
+    heating_costs: toNumber(elements["heizkosten"]),
+    heating_costs_in_additional_costs: elements["heizkosten_in_nebenkosten"] ?? null,
+    deposit: elements["kaution"] ?? null,
+    vat_on_commission: elements["zzgl_mehrwertsteuer"] ?? null,
+    external_commission: elements["aussen_courtage"] ?? null,
+    internal_commission: elements["innen_courtage"] ?? null,
+  };
+  const equipment = {
+    internet_access_type: elements["internetAccessType"] ?? null,
+    fuel_type: elements["befeuerung"] ?? null,
+    heating_type: elements["heizungsart"] ?? null,
+    floors_total: toNumber(elements["etagen_zahl"]),
+    elevator: elements["fahrstuhl"] ?? null,
+    cable_sat_tv: normalizeOnOfficeBoolean(elements["kabel_sat_tv"]),
+    parking: elements["multiParkingLot"] ?? null,
+    balcony: normalizeOnOfficeBoolean(elements["balkon"]),
+    terrace: normalizeOnOfficeBoolean(elements["terrasse"]),
+  };
+  const marketing = {
+    publish: normalizeOnOfficeBoolean(elements["veroeffentlichen"]),
+    property_of_the_week: normalizeOnOfficeBoolean(elements["objekt_der_woche"]),
+    free_commission: normalizeOnOfficeBoolean(elements["courtage_frei"]),
+    property_of_the_day: normalizeOnOfficeBoolean(elements["objekt_des_tages"]),
+  };
+  const energyMeta = {
+    certificate_year: elements["energiepassJahrgang"] ?? null,
+    issue_date: elements["energiepassAusstelldatum"] ?? null,
+    valid_until: elements["energieausweis_gueltig_bis"] ?? null,
+  };
 
   return {
     partner_id: partnerId,
@@ -514,10 +583,18 @@ function mapEstateToOffer(
     updated_at: sourceUpdatedAt,
     raw: {
       exposee_id: elements["objektnr_extern"] ?? null,
-      description: elements["freitext_lage"] ?? null,
-      features_note: elements["freitext_ausstattung"] ?? null,
+      description: elements["objektbeschreibung"] ?? elements["freitext_lage"] ?? null,
+      long_description: elements["objektbeschreibung"] ?? null,
+      location: elements["lage"] ?? elements["freitext_lage"] ?? null,
+      features_note: elements["ausstatt_beschr"] ?? elements["freitext_ausstattung"] ?? null,
+      misc_note: elements["sonstige_angaben"] ?? null,
       details,
+      details_extra: detailsExtra,
       energy,
+      energy_meta: energyMeta,
+      pricing,
+      equipment,
+      marketing,
       gallery,
       lat: elements["breitengrad"] ?? null,
       lng: elements["laengengrad"] ?? null,
@@ -528,6 +605,7 @@ function mapEstateToOffer(
       reserviert: elements["reserviert"] ?? null,
       veroeffentlichen: elements["veroeffentlichen"] ?? null,
       objektstatus: elements["objektstatus"] ?? null,
+      vermietet: elements["vermietet"] ?? null,
     },
     source_payload: record as unknown as Record<string, unknown>,
   };
@@ -776,6 +854,14 @@ export async function fetchOnOfficeEstates(
     "kaufpreis",
     "kaltmiete",
     "warmmiete",
+    "waehrung",
+    "aussen_courtage",
+    "innen_courtage",
+    "heizkosten_in_nebenkosten",
+    "nebenkosten",
+    "kaution",
+    "zzgl_mehrwertsteuer",
+    "heizkosten",
     "wohnflaeche",
     "anzahl_zimmer",
     "plz",
@@ -783,9 +869,41 @@ export async function fetchOnOfficeEstates(
     "strasse",
     "hausnummer",
     "baujahr",
+    "vermietet",
   ], [
-    "freitext_lage",
-    "freitext_ausstattung",
+    "objektbeschreibung",
+    "ausstatt_beschr",
+    "lage",
+    "sonstige_angaben",
+    "energieausweistyp",
+    "endenergiebedarf",
+    "energieverbrauchskennwert",
+    "energieausweis_gueltig_bis",
+    "energieausweisBaujahr",
+    "energietraeger",
+    "energyClass",
+    "warmwasserEnthalten",
+    "energiepassJahrgang",
+    "energiepassAusstelldatum",
+    "nutzflaeche",
+    "anzahl_schlafzimmer",
+    "anzahl_badezimmer",
+    "anzahl_sep_wc",
+    "anzahl_balkone",
+    "anzahl_terrassen",
+    "zustand",
+    "internetAccessType",
+    "befeuerung",
+    "heizungsart",
+    "etagen_zahl",
+    "fahrstuhl",
+    "kabel_sat_tv",
+    "multiParkingLot",
+    "balkon",
+    "terrasse",
+    "objekt_der_woche",
+    "courtage_frei",
+    "objekt_des_tages",
   ], catalog);
   const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
     status: [{ op: "=", val: 1 }],
