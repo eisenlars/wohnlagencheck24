@@ -206,6 +206,7 @@ type CrmIntegrationAdminDraft = {
   referencesCustomFieldKey: string;
   onOfficeListingsFieldKey: string;
   onOfficeListingsActiveStatusValues: string;
+  onOfficeListingsReservedTarget: "offers" | "references";
   onOfficeReferenceFieldKey: string;
   onOfficeReferenceSoldStatusId: string;
   onOfficeReferenceRentedStatusId: string;
@@ -1504,6 +1505,7 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     referencesCustomFieldKey: asText(references.custom_field_key) ?? "",
     onOfficeListingsFieldKey: asText(listings.status_field_key) ?? "",
     onOfficeListingsActiveStatusValues: formatCsvInput(listings.active_status_values),
+    onOfficeListingsReservedTarget: asText(listings.reserved_target) === "references" ? "references" : "offers",
     onOfficeReferenceFieldKey: asText(references.status_field_key) ?? "",
     onOfficeReferenceSoldStatusId: asScalarInput(references.sold_status_id),
     onOfficeReferenceRentedStatusId: asScalarInput(references.rented_status_id),
@@ -1559,10 +1561,12 @@ function applyCrmAdminDraftToSettings(
   if (integration.provider === "onoffice") {
     const listingStatusFieldKey = asText(draft.onOfficeListingsFieldKey);
     const listingActiveStatusValues = parseCsvStringList(draft.onOfficeListingsActiveStatusValues);
+    const listingReservedTarget = draft.onOfficeListingsReservedTarget === "references" ? "references" : "offers";
     if (listingStatusFieldKey) listings.status_field_key = listingStatusFieldKey;
     else delete listings.status_field_key;
     if (listingActiveStatusValues.length > 0) listings.active_status_values = listingActiveStatusValues;
     else delete listings.active_status_values;
+    listings.reserved_target = listingReservedTarget;
     delete listings.exclude_sold;
     delete listings.status_ids;
     delete references.status_field_key;

@@ -2153,10 +2153,23 @@ h6 {
   border-color: #111;
 }
 
+.angebote-pill--reserved {
+  background: #9a3412;
+  color: #fff7ed;
+  border-color: #9a3412;
+}
+
 .angebote-pill--floating {
   position: absolute;
   top: 0.75rem;
   left: 0.75rem;
+  z-index: 2;
+}
+
+.angebote-pill--floating-right {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
   z-index: 2;
 }
 

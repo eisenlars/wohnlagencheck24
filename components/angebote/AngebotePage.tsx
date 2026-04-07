@@ -238,6 +238,11 @@ export function AngebotePage(props: AngebotePageProps) {
                 <div className="angebote-top-placeholder">{texts.no_image_available}</div>
               )}
               <span className="angebote-image-label">{texts.top_property}</span>
+              {activeTopOffer.statusBadge ? (
+                <span className="angebote-pill angebote-pill--reserved angebote-pill--floating-right">
+                  {activeTopOffer.statusBadge}
+                </span>
+              ) : null}
               <div className="angebote-media-overlay" aria-hidden="true" />
             </div>
             <div className="angebote-top-body">
@@ -385,6 +390,11 @@ export function AngebotePage(props: AngebotePageProps) {
                     {offer.isTop ? (
                       <span className="angebote-pill angebote-pill--dark angebote-pill--floating">
                         Top
+                      </span>
+                    ) : null}
+                    {offer.statusBadge ? (
+                      <span className="angebote-pill angebote-pill--reserved angebote-pill--floating-right">
+                        {offer.statusBadge}
                       </span>
                     ) : null}
                   </div>

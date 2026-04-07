@@ -12,6 +12,7 @@ export type RegionalReference = {
   city: string | null;
   district: string | null;
   updatedAt: string | null;
+  statusBadge: string | null;
 };
 
 function asText(value: unknown): string {
@@ -59,12 +60,36 @@ export async function getRandomReferencesForKreis(args: {
   if (refError) return [];
 
   const baseRows = (refRows ?? []) as Array<Record<string, unknown>>;
+  const referenceIds = Array.from(
+    new Set(
+      baseRows
+        .map((row) => String(row.reference_id ?? row.id ?? ""))
+        .filter(Boolean),
+    ),
+  );
+  const normalizedByReferenceId = new Map<string, Record<string, unknown> | null>();
+  if (referenceIds.length > 0) {
+    const { data: normalizedRows, error: normalizedError } = await supabase
+      .from("partner_references")
+      .select("id, normalized_payload")
+      .in("id", referenceIds);
+    if (!normalizedError) {
+      for (const row of (normalizedRows ?? []) as Array<Record<string, unknown>>) {
+        normalizedByReferenceId.set(
+          String(row.id ?? ""),
+          (row.normalized_payload as Record<string, unknown> | null) ?? null,
+        );
+      }
+    }
+  }
   const seen = new Set<string>();
   const mapped: RegionalReference[] = [];
   for (const row of baseRows) {
     const referenceId = String(row.reference_id ?? row.id ?? "");
     if (!referenceId || seen.has(referenceId)) continue;
     seen.add(referenceId);
+    const normalizedPayload = normalizedByReferenceId.get(referenceId) ?? null;
+    const transactionResult = asText(normalizedPayload?.transaction_result);
     mapped.push({
       id: referenceId,
       partnerId: String(row.partner_id ?? ""),
@@ -76,6 +101,7 @@ export async function getRandomReferencesForKreis(args: {
       city: asText(row.city) || null,
       district: asText(row.district) || null,
       updatedAt: asText(row.source_updated_at) || null,
+      statusBadge: transactionResult === "reserviert" ? "Reserviert" : null,
     });
   }
 

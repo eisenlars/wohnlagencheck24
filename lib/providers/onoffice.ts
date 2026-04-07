@@ -67,6 +67,7 @@ type OnOfficeResourceSettings = {
   listing_status_field_key: string;
   listing_active_status_values: string[];
   listing_exclude_sold: boolean;
+  listing_reserved_target: "offers" | "references";
 };
 
 type RegionTarget = {
@@ -154,11 +155,27 @@ function toSettings(settings: Record<string, unknown> | null): OnOfficeResourceS
         .filter(Boolean)
     : [];
   const listingExcludeSold = listingsCfg.exclude_sold === true;
+  const listingReservedTarget =
+    String(listingsCfg.reserved_target ?? "").trim().toLowerCase() === "references"
+      ? "references"
+      : "offers";
   return {
     listing_status_field_key: listingStatusFieldKey,
     listing_active_status_values: Array.from(new Set(listingActiveStatusValues)),
     listing_exclude_sold: listingExcludeSold,
+    listing_reserved_target: listingReservedTarget,
   };
+}
+
+function readOnOfficeStatusValue(
+  elements: Record<string, unknown>,
+  fieldKey: string,
+): string {
+  return String(elements[fieldKey] ?? elements["status2"] ?? "").trim();
+}
+
+function isReservedOnOfficeStatus(value: string): boolean {
+  return value.trim().toLowerCase() === "reserviert";
 }
 
 function normalizeOfferType(value?: string | null): "kauf" | "miete" {
@@ -615,13 +632,23 @@ function mapEstateToReference(
   partnerId: string,
   integration: PartnerIntegration,
   record: OnOfficeRecord,
+  settings: OnOfficeResourceSettings,
 ): RawReference {
   const elements = (record.elements ?? {}) as Record<string, unknown>;
   const gallery = extractImages(elements);
   const city = String(elements["ort"] ?? "").trim();
-  const saleType = normalizeOfferType(String(elements["vermarktungsart"] ?? "")) === "miete" ? "vermietet" : "verkauft";
+  const statusValue = readOnOfficeStatusValue(elements, settings.listing_status_field_key);
+  const saleType =
+    isReservedOnOfficeStatus(statusValue)
+      ? "reserviert"
+      : normalizeOfferType(String(elements["vermarktungsart"] ?? "")) === "miete"
+        ? "vermietet"
+        : "verkauft";
   const locationLabel = city || "der Region";
-  const referenceTitle = `Erfolgreich ${saleType} in ${locationLabel}`;
+  const referenceTitle =
+    saleType === "reserviert"
+      ? `Reserviert in ${locationLabel}`
+      : `Erfolgreich ${saleType} in ${locationLabel}`;
   const sourceUpdatedAt = String(elements["geaendert_am"] ?? "").trim() || null;
   const normalizedPayload: Record<string, unknown> = {
     title: referenceTitle,
@@ -635,8 +662,14 @@ function mapEstateToReference(
     object_type: normalizeObjectType(String(elements["objektart"] ?? "")),
     area_sqm: toNumber(elements["wohnflaeche"]),
     rooms: toNumber(elements["anzahl_zimmer"]),
-    reference_text_seed: `Das Objekt wurde erfolgreich ${saleType}.`,
-    description: `Das Objekt wurde erfolgreich ${saleType}.`,
+    reference_text_seed:
+      saleType === "reserviert"
+        ? "Das Objekt ist aktuell reserviert."
+        : `Das Objekt wurde erfolgreich ${saleType}.`,
+    description:
+      saleType === "reserviert"
+        ? "Das Objekt ist aktuell reserviert."
+        : `Das Objekt wurde erfolgreich ${saleType}.`,
     image_url: gallery[0] ?? null,
     geaendert_am: elements["geaendert_am"] ?? null,
     status: elements["status"] ?? null,
@@ -912,10 +945,13 @@ export async function fetchOnOfficeEstates(
   return records.filter((record) => {
     const elements = (record.elements ?? {}) as Record<string, unknown>;
     const soldFlag = normalizeOnOfficeFlag(elements["verkauft"]);
-    const fieldValue = String(elements[settings.listing_status_field_key] ?? "").trim();
+    const fieldValue = readOnOfficeStatusValue(elements, settings.listing_status_field_key);
+    if (isReservedOnOfficeStatus(fieldValue)) {
+      return settings.listing_reserved_target === "offers";
+    }
 
     if (settings.listing_status_field_key && allowedStatusValues.size > 0) {
-      return fieldValue.length > 0 && allowedStatusValues.has(fieldValue);
+      return fieldValue.length > 0 && allowedStatusValues.has(fieldValue) && soldFlag !== "1";
     }
 
     if (settings.listing_exclude_sold) {
@@ -972,6 +1008,7 @@ export async function fetchOnOfficeReferences(
   integration: PartnerIntegration,
   token: string,
   secret: string,
+  settings: OnOfficeResourceSettings,
 ): Promise<OnOfficeRecord[]> {
   const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
   const fields = mergeOnOfficeEstateReadFields([
@@ -998,8 +1035,24 @@ export async function fetchOnOfficeReferences(
   ], [
     "img",
   ], catalog);
-  return fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
-    verkauft: [{ op: "=", val: 1 }],
+  const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
+    status: [{ op: "=", val: 1 }],
+  });
+  const allowedStatusValues = new Set(settings.listing_active_status_values);
+  return records.filter((record) => {
+    const elements = (record.elements ?? {}) as Record<string, unknown>;
+    const soldFlag = normalizeOnOfficeFlag(elements["verkauft"]);
+    const fieldValue = readOnOfficeStatusValue(elements, settings.listing_status_field_key);
+
+    if (isReservedOnOfficeStatus(fieldValue)) {
+      return settings.listing_reserved_target === "references";
+    }
+
+    if (fieldValue.length > 0 && allowedStatusValues.has(fieldValue)) {
+      return false;
+    }
+
+    return soldFlag === "1";
   });
 }
 
@@ -1075,7 +1128,7 @@ export async function syncOnOfficeResources(
   }
 
   if (shouldFetchReferences) {
-    const referenceRecords = await fetchOnOfficeReferences(integration, token, secret);
+    const referenceRecords = await fetchOnOfficeReferences(integration, token, secret, cfg);
     notes.push(`onOffice reference diagnostic: ${referenceRecords.length} Datensätze nach Referenzfilter geladen.`);
     notes.push(`onOffice reference status-Werte: ${summarizeEstateFieldValues(referenceRecords, "status")}`);
     notes.push(`onOffice reference status-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "status")}`);
@@ -1083,13 +1136,15 @@ export async function syncOnOfficeResources(
     notes.push(`onOffice reference status2-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "status2")}`);
     notes.push(`onOffice reference verkauft-Werte: ${summarizeEstateFieldValues(referenceRecords, "verkauft")}`);
     notes.push(`onOffice reference verkauft-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "verkauft")}`);
+    notes.push(`onOffice reference reserviert-Werte: ${summarizeEstateFieldValues(referenceRecords, "reserviert")}`);
+    notes.push(`onOffice reference reserviert-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "reserviert")}`);
     notes.push(`onOffice reference vermarktungsart-Werte: ${summarizeEstateFieldValues(referenceRecords, "vermarktungsart")}`);
     notes.push(`onOffice reference vermarktungsart-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "vermarktungsart")}`);
     notes.push(`onOffice reference vermietet-Werte: ${summarizeEstateFieldValues(referenceRecords, "vermietet")}`);
     notes.push(`onOffice reference vermietet-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "vermietet")}`);
     notes.push(`onOffice reference veroeffentlichen-Werte: ${summarizeEstateFieldValues(referenceRecords, "veroeffentlichen")}`);
     notes.push(`onOffice reference veroeffentlichen-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "veroeffentlichen")}`);
-    references = referenceRecords.map((record) => mapEstateToReference(integration.partner_id, integration, record));
+    references = referenceRecords.map((record) => mapEstateToReference(integration.partner_id, integration, record, cfg));
     referencesFetched = true;
   }
 

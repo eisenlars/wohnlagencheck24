@@ -37,6 +37,7 @@ export type Offer = {
   targetAudience?: string | null;
   highlights?: string[] | null;
   imageAltTexts?: string[] | null;
+  statusBadge?: string | null;
 };
 
 export type OfferOverrides = {
@@ -115,7 +116,18 @@ type PublicOfferProjectionRow = {
   offer_id?: string | null;
 };
 
-function mapProjectionRowToOffer(row: PublicOfferProjectionRow, fallbackMode: OfferMode): Offer {
+function readOfferStatusBadge(raw: Record<string, unknown> | null | undefined): string | null {
+  if (!raw) return null;
+  const status2 = String(raw["status2"] ?? "").trim().toLowerCase();
+  if (status2 === "reserviert") return "Reserviert";
+  return null;
+}
+
+function mapProjectionRowToOffer(
+  row: PublicOfferProjectionRow,
+  fallbackMode: OfferMode,
+  raw?: Record<string, unknown> | null,
+): Offer {
   return {
     id: String(row.offer_id ?? row.id ?? ""),
     partnerId: String(row.partner_id ?? ""),
@@ -134,7 +146,8 @@ function mapProjectionRowToOffer(row: PublicOfferProjectionRow, fallbackMode: Of
     updatedAt: row.source_updated_at ?? null,
     externalId: row.external_id ?? null,
     source: row.source ?? null,
-    raw: null,
+    raw: raw ?? null,
+    statusBadge: readOfferStatusBadge(raw),
   };
 }
 
@@ -239,9 +252,9 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     return { offers: [], topOffers: [], areaId, total: 0, totalWithTop: 0, sourceTotal: 0, page, pageSize };
   }
 
-  const offers = ((data ?? []) as PublicOfferProjectionRow[]).map((row) =>
-    mapProjectionRowToOffer(row, args.mode),
-  );
+  const allProjectionRows = [
+    ...((data ?? []) as PublicOfferProjectionRow[]),
+  ];
 
   const { data: topData, error: topError } = await supabase
     .from("public_offer_entries")
@@ -257,8 +270,46 @@ export async function getOffers(args: GetOffersArgs): Promise<{
     console.warn("public_offer_entries top fetch failed:", topError.message);
   }
 
+  allProjectionRows.push(...((topData ?? []) as PublicOfferProjectionRow[]));
+  const offerIds = Array.from(
+    new Set(
+      allProjectionRows
+        .map((row) => String(row.offer_id ?? row.id ?? ""))
+        .filter(Boolean),
+    ),
+  );
+  const rawByOfferId = new Map<string, Record<string, unknown> | null>();
+  if (offerIds.length > 0) {
+    const { data: rawRows, error: rawError } = await supabase
+      .from("partner_property_offers")
+      .select("id, raw")
+      .in("id", offerIds);
+    if (rawError) {
+      console.warn("partner_property_offers raw lookup failed:", rawError.message);
+    } else {
+      for (const row of (rawRows ?? []) as Array<Record<string, unknown>>) {
+        rawByOfferId.set(
+          String(row["id"] ?? ""),
+          (row["raw"] as Record<string, unknown> | null) ?? null,
+        );
+      }
+    }
+  }
+
+  const offers = ((data ?? []) as PublicOfferProjectionRow[]).map((row) =>
+    mapProjectionRowToOffer(
+      row,
+      args.mode,
+      rawByOfferId.get(String(row.offer_id ?? row.id ?? "")) ?? null,
+    ),
+  );
+
   const topOffers = ((topData ?? []) as PublicOfferProjectionRow[]).map((row) =>
-    mapProjectionRowToOffer(row, args.mode),
+    mapProjectionRowToOffer(
+      row,
+      args.mode,
+      rawByOfferId.get(String(row.offer_id ?? row.id ?? "")) ?? null,
+    ),
   );
 
   const { count: topCount, error: topCountError } = await supabase
@@ -412,6 +463,7 @@ export async function getOfferById(offerId: string): Promise<Offer | null> {
     targetAudience: publicRecord?.target_audience ?? null,
     highlights: toStringArray(publicRecord?.highlights) ?? null,
     imageAltTexts: toStringArray(publicRecord?.image_alt_texts) ?? null,
+    statusBadge: readOfferStatusBadge((record["raw"] as Record<string, unknown> | null) ?? null),
   };
 }
 

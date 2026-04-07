@@ -66,6 +66,7 @@ type CrmIntegrationAdminDraft = {
   referencesCustomFieldKey: string;
   onOfficeListingsFieldKey: string;
   onOfficeListingsActiveStatusValues: string;
+  onOfficeListingsReservedTarget: "offers" | "references";
   onOfficeReferenceFieldKey: string;
   onOfficeReferenceSoldStatusId: string;
   onOfficeReferenceRentedStatusId: string;
@@ -291,8 +292,20 @@ function renderImportRules(
                 placeholder="z. B. aktive_vermarktung, reserviert"
               />
             </label>
+            <label style={labelStyle}>
+              Reserviert anzeigen bei
+              <select
+                style={inputStyle}
+                value={draft.onOfficeListingsReservedTarget}
+                onChange={(event) => onChange(updateDraft(draft, { onOfficeListingsReservedTarget: event.target.value as "offers" | "references" }))}
+              >
+                <option value="offers">Angeboten</option>
+                <option value="references">Referenzen</option>
+              </select>
+            </label>
             <div style={helperTextStyle}>
               Leer lassen, wenn der erste Abruf noch nicht über <code>status2</code> verengt werden soll. Danach nur die Werte eintragen, die ihr wirklich als aktive Portalobjekte behandeln wollt.
+              {" "}Der Status <code>reserviert</code> wird separat behandelt und je nach Auswahl bei Angeboten oder Referenzen mit Banner gezeigt.
             </div>
             {onOfficeEstateStatusOptions.length > 0 ? (
               <div style={helperTextStyle}>
@@ -346,6 +359,7 @@ function renderImportRules(
             Aktuelle Logik:
             {" "}Kaufobjekt + <code>verkauft = 1</code> = verkauft.
             {" "}Mietobjekt + <code>verkauft = 1</code> = vermietet.
+            {" "}Wenn <code>status2 = reserviert</code> im Partner-Setup auf Referenzen geroutet ist, wird dieser Sonderfall ebenfalls dort angezeigt.
           </div>
         </>
       );

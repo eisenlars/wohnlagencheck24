@@ -42,6 +42,26 @@ export function ReferenceSlideshow(props: ReferenceSlideshowProps) {
               style={{ objectFit: "cover" }}
             />
           ) : null}
+          {active.statusBadge ? (
+            <span
+              style={{
+                position: "absolute",
+                top: 12,
+                right: 12,
+                zIndex: 2,
+                borderRadius: 999,
+                padding: "6px 10px",
+                background: "#9a3412",
+                color: "#fff7ed",
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {active.statusBadge}
+            </span>
+          ) : null}
         </div>
         <div>
           <h3 style={{ marginTop: 0 }}>{active.title}</h3>
