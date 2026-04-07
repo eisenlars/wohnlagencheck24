@@ -11,6 +11,9 @@ type CacheEntry<T> = {
 let globalConfigCache: CacheEntry<{ config: GlobalLlmConfig; source: "db" | "fallback" }> | null = null;
 let activeProvidersCache: CacheEntry<{ providers: GlobalLlmProvider[]; source: "db" | "fallback" }> | null = null;
 
+type GlobalConfigResult = { config: GlobalLlmConfig; source: "db" | "fallback" };
+type GlobalProvidersResult = { providers: GlobalLlmProvider[]; source: "db" | "fallback" };
+
 export type GlobalLlmConfig = {
   central_enabled: boolean;
   monthly_token_budget: number | null;
@@ -90,7 +93,7 @@ function setCachedValue<T>(value: T): CacheEntry<T> {
   };
 }
 
-export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; source: "db" | "fallback" }> {
+export async function loadGlobalLlmConfig(): Promise<GlobalConfigResult> {
   const cached = getCachedValue(globalConfigCache);
   if (cached) return cached;
   const admin = createAdminClient();
@@ -101,7 +104,7 @@ export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; 
     .maybeSingle();
 
   if (!error && data) {
-    const next = {
+    const next: GlobalConfigResult = {
       source: "db",
       config: {
         central_enabled: data.central_enabled !== false,
@@ -114,7 +117,7 @@ export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; 
   }
 
   if (error && isMissingTable(error, "llm_global_config")) {
-    const next = {
+    const next: GlobalConfigResult = {
       source: "fallback",
       config: {
         central_enabled: true,
@@ -127,7 +130,7 @@ export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; 
   }
 
   if (error) throw new Error(String(error.message ?? "Global LLM config lookup failed"));
-  const next = {
+  const next: GlobalConfigResult = {
     source: "db",
     config: {
       central_enabled: true,
@@ -139,13 +142,13 @@ export async function loadGlobalLlmConfig(): Promise<{ config: GlobalLlmConfig; 
   return next;
 }
 
-export async function loadActiveGlobalLlmProviders(): Promise<{ providers: GlobalLlmProvider[]; source: "db" | "fallback" }> {
+export async function loadActiveGlobalLlmProviders(): Promise<GlobalProvidersResult> {
   const cached = getCachedValue(activeProvidersCache);
   if (cached) return cached;
   const admin = createAdminClient();
   const next = await listFlattenedLlmProviderModels({ admin, activeOnly: true });
   if (next.source === "db" && next.models.length > 0) {
-    const result = {
+    const result: GlobalProvidersResult = {
       source: "db",
       providers: next.models
         .filter((row) =>
@@ -187,14 +190,14 @@ export async function loadActiveGlobalLlmProviders(): Promise<{ providers: Globa
 
   if (error) {
     if (isMissingTable(error, "llm_global_providers")) {
-      const result = { source: "fallback", providers: [] };
+      const result: GlobalProvidersResult = { source: "fallback", providers: [] };
       activeProvidersCache = setCachedValue(result);
       return result;
     }
     throw new Error(String(error.message ?? "Global LLM providers lookup failed"));
   }
 
-  const result = {
+  const result: GlobalProvidersResult = {
     source: "db",
     providers: (data ?? []).map((row) => ({
       id: String(row.id ?? ""),
