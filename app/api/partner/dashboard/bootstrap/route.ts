@@ -486,6 +486,7 @@ export async function GET(req: Request) {
     const admin = createAdminClient();
     const mode = String(url.searchParams.get("mode") ?? "core").trim().toLowerCase();
     const requestedAreaId = String(url.searchParams.get("selected_area_id") ?? "").trim();
+    const includeLocales = url.searchParams.get("include_locales") === "1";
 
     if (mode === "locales") {
       const localeAvailability = await timed("locale_snapshot_ms", () => loadPartnerLocaleAvailabilitySnapshot(userId));
@@ -518,11 +519,20 @@ export async function GET(req: Request) {
       timed("partner_features_ms", () => loadPartnerFeatures(admin, userId)),
     ]);
 
+    const localeAvailability = includeLocales
+      ? await timed("locale_snapshot_ms", () => loadPartnerLocaleAvailabilitySnapshot(userId))
+      : null;
+
     return NextResponse.json(withDebugTimings({
       ok: true,
       last_login: String(user.last_sign_in_at ?? "").trim() || null,
       partner_first_name: profileFirstName,
       partner_features: partnerFeatures,
+      international_locale_configs: localeAvailability?.locales ?? undefined,
+      available_locales: localeAvailability?.available_locales ?? undefined,
+      partner_enabled_locales: localeAvailability?.partner_enabled_locales ?? undefined,
+      global_partner_locales: localeAvailability?.global_partner_locales ?? undefined,
+      global_public_locales: localeAvailability?.global_public_locales ?? undefined,
       configs,
       requested_area_id: requestedAreaId || null,
     }));

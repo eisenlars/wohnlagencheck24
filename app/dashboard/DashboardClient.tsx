@@ -734,9 +734,11 @@ export default function DashboardClient({
         : (typeof initialShowWelcome === 'boolean' ? initialShowWelcome : true);
       const includeChildrenOnBootstrap = isOrtslageAreaId(restoredAreaId)
         || (!nextShowWelcome && preferredTab === 'factors');
-      const bootstrapPath = includeChildrenOnBootstrap
-        ? '/api/partner/dashboard/bootstrap?mode=core&include_children=1'
-        : '/api/partner/dashboard/bootstrap?mode=core';
+      const includeLocalesOnBootstrap = preferredTab === 'international';
+      const bootstrapParams = new URLSearchParams({ mode: 'core' });
+      if (includeChildrenOnBootstrap) bootstrapParams.set('include_children', '1');
+      if (includeLocalesOnBootstrap) bootstrapParams.set('include_locales', '1');
+      const bootstrapPath = `/api/partner/dashboard/bootstrap?${bootstrapParams.toString()}`;
       const bootstrapUrl = withDebugTimingUrl(bootstrapPath);
 
       const startedAt = performance.now();
@@ -755,6 +757,13 @@ export default function DashboardClient({
         setLastLogin(String(payload?.last_login ?? '').trim() || null);
         setPartnerFirstName(String(payload?.partner_first_name ?? '').trim() || null);
         setPartnerFeatures(Array.isArray(payload?.partner_features) ? payload.partner_features : []);
+        if (includeLocalesOnBootstrap) {
+          internationalLocalesLoadedRef.current = true;
+          setAvailableInternationalLocales(normalizeLocaleList(payload?.available_locales));
+          setGlobalPartnerInternationalLocales(normalizeLocaleList(payload?.global_partner_locales));
+        } else {
+          internationalLocalesLoadedRef.current = false;
+        }
         if (mergedConfigs.length > 0) {
           const restoredArea = restoredAreaId ? mergedConfigs.find((cfg) => cfg.area_id === restoredAreaId) : undefined;
           const hasActiveAreasLocal = mergedConfigs.some((cfg) => Boolean(cfg.is_active));
