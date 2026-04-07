@@ -10,6 +10,7 @@ import {
   CREDIT_CURRENCY,
   CREDITS_PER_EUR,
   buildPortalPartnerIncludedBillingContext,
+  estimateEurFromUsd,
   eurToCredits,
 } from '@/lib/ai-billing/credits';
 import {
@@ -20,6 +21,7 @@ import {
   loadGlobalLlmConfig,
   writeLlmUsageEvent,
 } from '@/lib/llm/global-governance';
+import { loadUsdToEurRate } from '@/lib/llm/provider-catalog';
 
 type LlmConfig = {
   provider: string;
@@ -268,6 +270,7 @@ export async function POST(req: Request) {
     let usageErrorCode: string | null = null;
     let usageGlobalProvider: (Awaited<ReturnType<typeof loadActiveGlobalLlmProviders>>['providers'][number]) | null = null;
     let usageEstimatedCostUsd: number | null = null;
+    let usageFxRateUsdToEur: number | null = null;
 
     const admin = createAdminClient();
     const partnerPolicy = await loadPartnerLlmPolicy(admin, user.id);
@@ -376,12 +379,13 @@ export async function POST(req: Request) {
               inputCostUsdPer1k: selectedGlobalProvider.input_cost_usd_per_1k,
               outputCostUsdPer1k: selectedGlobalProvider.output_cost_usd_per_1k,
             });
+            usageFxRateUsdToEur = selectedGlobalProvider.fx_rate_usd_to_eur ?? await loadUsdToEurRate(admin).catch(() => null);
             usageEstimatedCostEur = estimateCostEur({
               promptTokens: result.promptTokens,
               completionTokens: result.completionTokens,
               inputCostEurPer1k: selectedGlobalProvider.input_cost_eur_per_1k,
               outputCostEurPer1k: selectedGlobalProvider.output_cost_eur_per_1k,
-            });
+            }) ?? estimateEurFromUsd(usageEstimatedCostUsd, usageFxRateUsdToEur);
           }
         }
       }
@@ -424,12 +428,13 @@ export async function POST(req: Request) {
               inputCostUsdPer1k: p.input_cost_usd_per_1k,
               outputCostUsdPer1k: p.output_cost_usd_per_1k,
             });
+            usageFxRateUsdToEur = p.fx_rate_usd_to_eur ?? await loadUsdToEurRate(admin).catch(() => null);
             usageEstimatedCostEur = estimateCostEur({
               promptTokens: result.promptTokens,
               completionTokens: result.completionTokens,
               inputCostEurPer1k: p.input_cost_eur_per_1k,
               outputCostEurPer1k: p.output_cost_eur_per_1k,
-            });
+            }) ?? estimateEurFromUsd(usageEstimatedCostUsd, usageFxRateUsdToEur);
             break;
           }
           usageErrorCode = result.errorCode;
@@ -480,7 +485,7 @@ export async function POST(req: Request) {
           total_tokens: usageTotalTokens,
           provider_account_id: usageGlobalProvider?.provider_account_id ?? null,
           provider_model_id: usageGlobalProvider?.provider_model_id ?? null,
-          fx_rate_usd_to_eur: usageGlobalProvider?.fx_rate_usd_to_eur ?? null,
+          fx_rate_usd_to_eur: usageFxRateUsdToEur,
           input_cost_usd_per_1k_snapshot: usageGlobalProvider?.input_cost_usd_per_1k ?? null,
           output_cost_usd_per_1k_snapshot: usageGlobalProvider?.output_cost_usd_per_1k ?? null,
           estimated_cost_usd: usageEstimatedCostUsd,
@@ -517,7 +522,7 @@ export async function POST(req: Request) {
         total_tokens: usageTotalTokens,
         provider_account_id: usageGlobalProvider?.provider_account_id ?? null,
         provider_model_id: usageGlobalProvider?.provider_model_id ?? null,
-        fx_rate_usd_to_eur: usageGlobalProvider?.fx_rate_usd_to_eur ?? null,
+        fx_rate_usd_to_eur: usageFxRateUsdToEur,
         input_cost_usd_per_1k_snapshot: usageGlobalProvider?.input_cost_usd_per_1k ?? null,
         output_cost_usd_per_1k_snapshot: usageGlobalProvider?.output_cost_usd_per_1k ?? null,
         estimated_cost_usd: usageEstimatedCostUsd,

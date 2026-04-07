@@ -17,6 +17,12 @@ export function creditsToEur(credits: number | null): number | null {
   return roundCreditValue(credits / CREDITS_PER_EUR);
 }
 
+export function estimateEurFromUsd(usd: number | null, fxRateUsdToEur: number | null): number | null {
+  if (usd === null || !Number.isFinite(usd)) return null;
+  if (fxRateUsdToEur === null || !Number.isFinite(fxRateUsdToEur) || fxRateUsdToEur <= 0) return null;
+  return roundCreditValue(usd * fxRateUsdToEur);
+}
+
 export function buildPortalPartnerIncludedBillingContext(
   partnerId: string,
   feature: AiUsageFeature,

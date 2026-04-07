@@ -9,6 +9,7 @@ import {
   CREDIT_CURRENCY,
   CREDITS_PER_EUR,
   buildPortalPartnerIncludedBillingContext,
+  estimateEurFromUsd,
   eurToCredits,
 } from "@/lib/ai-billing/credits";
 import { checkRateLimitPersistent, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
@@ -859,18 +860,19 @@ async function buildAreaPayload(args: {
             source_last_updated: upsertRow.source_last_updated,
           });
 
-          const estimated = estimateCostEur({
-            promptTokens: result.promptTokens,
-            completionTokens: result.completionTokens,
-            inputCostEurPer1k: provider?.input_cost_eur_per_1k ?? null,
-            outputCostEurPer1k: provider?.output_cost_eur_per_1k ?? null,
-          });
           const estimatedUsd = estimateCostUsd({
             promptTokens: result.promptTokens,
             completionTokens: result.completionTokens,
             inputCostUsdPer1k: provider?.input_cost_usd_per_1k ?? null,
             outputCostUsdPer1k: provider?.output_cost_usd_per_1k ?? null,
           });
+          const fxRateUsdToEur = provider?.fx_rate_usd_to_eur ?? await loadUsdToEurRate(admin).catch(() => null);
+          const estimated = estimateCostEur({
+            promptTokens: result.promptTokens,
+            completionTokens: result.completionTokens,
+            inputCostEurPer1k: provider?.input_cost_eur_per_1k ?? null,
+            outputCostEurPer1k: provider?.output_cost_eur_per_1k ?? null,
+          }) ?? estimateEurFromUsd(estimatedUsd, fxRateUsdToEur);
           const billingContext = buildPortalPartnerIncludedBillingContext(partnerId, "i18n_auto_sync");
           await writeLlmUsageEvent({
             partner_id: partnerId,
@@ -883,7 +885,7 @@ async function buildAreaPayload(args: {
             total_tokens: result.totalTokens,
             provider_account_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_account_id ?? null),
             provider_model_id: I18N_MOCK_TRANSLATION ? null : (provider?.provider_model_id ?? null),
-            fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : (provider?.fx_rate_usd_to_eur ?? null),
+            fx_rate_usd_to_eur: I18N_MOCK_TRANSLATION ? null : fxRateUsdToEur,
             input_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.input_cost_usd_per_1k ?? null),
             output_cost_usd_per_1k_snapshot: I18N_MOCK_TRANSLATION ? null : (provider?.output_cost_usd_per_1k ?? null),
             estimated_cost_usd: estimatedUsd,
