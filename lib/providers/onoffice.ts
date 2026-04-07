@@ -942,6 +942,32 @@ function summarizeEstateFieldValues(
   return values.slice(0, limit).join(", ");
 }
 
+function summarizeEstateFieldDistribution(
+  records: OnOfficeRecord[],
+  fieldKey: string,
+  limit = 10,
+): string {
+  const counts = new Map<string, number>();
+  let emptyCount = 0;
+
+  for (const record of records) {
+    const value = String(((record.elements ?? {}) as Record<string, unknown>)[fieldKey] ?? "").trim();
+    if (!value) {
+      emptyCount += 1;
+      continue;
+    }
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  const parts = Array.from(counts.entries())
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .slice(0, limit)
+    .map(([value, count]) => `${value}=${count}`);
+
+  if (emptyCount > 0) parts.push(`leer=${emptyCount}`);
+  return parts.length > 0 ? parts.join(", ") : "keine";
+}
+
 export async function fetchOnOfficeReferences(
   integration: PartnerIntegration,
   token: string,
@@ -1024,12 +1050,17 @@ export async function syncOnOfficeResources(
 
   if (shouldFetchOffers) {
     const estates = await fetchOnOfficeEstates(integration, token, secret, cfg);
-    notes.push(`onOffice estate diagnostic: ${estates.length} Datensätze ungefiltert geladen.`);
+    notes.push(`onOffice estate diagnostic: ${estates.length} Datensätze nach Angebotsfilter geladen.`);
     notes.push(`onOffice estate status-Werte: ${summarizeEstateFieldValues(estates, "status")}`);
+    notes.push(`onOffice estate status-Verteilung: ${summarizeEstateFieldDistribution(estates, "status")}`);
     notes.push(`onOffice estate ${cfg.listing_status_field_key}-Werte: ${summarizeEstateFieldValues(estates, cfg.listing_status_field_key)}`);
+    notes.push(`onOffice estate ${cfg.listing_status_field_key}-Verteilung: ${summarizeEstateFieldDistribution(estates, cfg.listing_status_field_key)}`);
     notes.push(`onOffice estate verkauft-Werte: ${summarizeEstateFieldValues(estates, "verkauft")}`);
+    notes.push(`onOffice estate verkauft-Verteilung: ${summarizeEstateFieldDistribution(estates, "verkauft")}`);
     notes.push(`onOffice estate reserviert-Werte: ${summarizeEstateFieldValues(estates, "reserviert")}`);
+    notes.push(`onOffice estate reserviert-Verteilung: ${summarizeEstateFieldDistribution(estates, "reserviert")}`);
     notes.push(`onOffice estate veroeffentlichen-Werte: ${summarizeEstateFieldValues(estates, "veroeffentlichen")}`);
+    notes.push(`onOffice estate veroeffentlichen-Verteilung: ${summarizeEstateFieldDistribution(estates, "veroeffentlichen")}`);
     offers = estates.map((record) => mapEstateToOffer(integration.partner_id, integration, record));
     listings = offers.map((offer) =>
       makeRawRowBase(
