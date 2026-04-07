@@ -67,9 +67,13 @@ type CrmIntegrationAdminDraft = {
   onOfficeListingsFieldKey: string;
   onOfficeListingsActiveStatusValues: string;
   onOfficeListingsReservedTarget: "offers" | "references";
+  onOfficeListingsAutomationMode: "full_sync" | "delta_polling";
+  onOfficeListingsDeltaOverlapMinutes: string;
   onOfficeReferenceFieldKey: string;
   onOfficeReferenceSoldStatusId: string;
   onOfficeReferenceRentedStatusId: string;
+  onOfficeReferencesAutomationMode: "full_sync" | "delta_polling";
+  onOfficeReferencesDeltaOverlapMinutes: string;
   guardedUnitsTargetObjects: string;
   guardedReferencesTargetObjects: string;
   guardedSavedQueriesTargetObjects: string;
@@ -544,6 +548,33 @@ function renderFullSyncSettings(
             placeholder="z. B. 60"
           />
         </label>
+        {isOnOfficeProvider(provider) ? (
+          <>
+            <label style={labelStyle}>
+              Automatisierungsmodus
+              <select
+                style={inputStyle}
+                value={draft.onOfficeListingsAutomationMode}
+                onChange={(event) => onChange(updateDraft(draft, { onOfficeListingsAutomationMode: event.target.value as "full_sync" | "delta_polling" }))}
+              >
+                <option value="full_sync">Initial voll, danach manuell</option>
+                <option value="delta_polling">Initial voll, danach Delta über geaendert_am</option>
+              </select>
+            </label>
+            <label style={labelStyle}>
+              Delta Sicherheits-Overlap (Min.)
+              <input
+                style={inputStyle}
+                value={draft.onOfficeListingsDeltaOverlapMinutes}
+                onChange={(event) => onChange(updateDraft(draft, { onOfficeListingsDeltaOverlapMinutes: event.target.value }))}
+                placeholder="z. B. 2"
+              />
+            </label>
+            <div style={helperTextStyle}>
+              Bei <code>delta_polling</code> nutzt der Auto-Sync nach einem erfolgreichen Erstabgleich den Zeitstempel <code>geaendert_am</code> mit kleinem Rücksprung statt dauernder Vollabrufe.
+            </div>
+          </>
+        ) : null}
         <label style={checkboxLabelStyle}>
           <input
             type="checkbox"
@@ -585,6 +616,33 @@ function renderFullSyncSettings(
             placeholder="z. B. 1440"
           />
         </label>
+        {isOnOfficeProvider(provider) ? (
+          <>
+            <label style={labelStyle}>
+              Automatisierungsmodus
+              <select
+                style={inputStyle}
+                value={draft.onOfficeReferencesAutomationMode}
+                onChange={(event) => onChange(updateDraft(draft, { onOfficeReferencesAutomationMode: event.target.value as "full_sync" | "delta_polling" }))}
+              >
+                <option value="full_sync">Initial voll, danach manuell</option>
+                <option value="delta_polling">Initial voll, danach Delta über geaendert_am</option>
+              </select>
+            </label>
+            <label style={labelStyle}>
+              Delta Sicherheits-Overlap (Min.)
+              <input
+                style={inputStyle}
+                value={draft.onOfficeReferencesDeltaOverlapMinutes}
+                onChange={(event) => onChange(updateDraft(draft, { onOfficeReferencesDeltaOverlapMinutes: event.target.value }))}
+                placeholder="z. B. 2"
+              />
+            </label>
+            <div style={helperTextStyle}>
+              Für Referenzen wird derselbe Delta-Mechanismus auf <code>estate</code> angewendet. Der Auto-Lauf prüft dann nur seit dem letzten erfolgreichen Referenz-Sync geänderte Datensätze.
+            </div>
+          </>
+        ) : null}
         <label style={checkboxLabelStyle}>
           <input
             type="checkbox"

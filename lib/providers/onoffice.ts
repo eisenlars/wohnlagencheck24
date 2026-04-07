@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 
 import type {
   CrmSyncResource,
+  CrmSyncTrigger,
   OfferDetailsSnapshot,
   OfferEnergySnapshot,
   MappedOffer,
@@ -68,6 +69,22 @@ type OnOfficeResourceSettings = {
   listing_active_status_values: string[];
   listing_exclude_sold: boolean;
   listing_reserved_target: "offers" | "references";
+  listing_automation_mode: "full_sync" | "delta_polling";
+  listing_delta_overlap_minutes: number;
+  reference_automation_mode: "full_sync" | "delta_polling";
+  reference_delta_overlap_minutes: number;
+};
+
+type OnOfficeResourceFetchResult = {
+  records: OnOfficeRecord[];
+  requestCount: number;
+  pagesFetched: number;
+};
+
+type OnOfficeDeltaWindow = {
+  sinceIso: string;
+  sinceFilterValue: string;
+  overlapMinutes: number;
 };
 
 type RegionTarget = {
@@ -159,12 +176,99 @@ function toSettings(settings: Record<string, unknown> | null): OnOfficeResourceS
     String(listingsCfg.reserved_target ?? "").trim().toLowerCase() === "references"
       ? "references"
       : "offers";
+  const listingAutomationMode =
+    String(listingsCfg.automation_mode ?? "").trim().toLowerCase() === "delta_polling"
+      ? "delta_polling"
+      : "full_sync";
+  const listingDeltaOverlapMinutes = Math.max(
+    1,
+    Number.isFinite(Number(listingsCfg.delta_overlap_minutes))
+      ? Math.floor(Number(listingsCfg.delta_overlap_minutes))
+      : 2,
+  );
+  const referenceAutomationMode =
+    String(referencesCfg.automation_mode ?? "").trim().toLowerCase() === "delta_polling"
+      ? "delta_polling"
+      : "full_sync";
+  const referenceDeltaOverlapMinutes = Math.max(
+    1,
+    Number.isFinite(Number(referencesCfg.delta_overlap_minutes))
+      ? Math.floor(Number(referencesCfg.delta_overlap_minutes))
+      : 2,
+  );
   return {
     listing_status_field_key: listingStatusFieldKey,
     listing_active_status_values: Array.from(new Set(listingActiveStatusValues)),
     listing_exclude_sold: listingExcludeSold,
     listing_reserved_target: listingReservedTarget,
+    listing_automation_mode: listingAutomationMode,
+    listing_delta_overlap_minutes: listingDeltaOverlapMinutes,
+    reference_automation_mode: referenceAutomationMode,
+    reference_delta_overlap_minutes: referenceDeltaOverlapMinutes,
   };
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function readOnOfficeResourceRuntime(
+  settings: Record<string, unknown> | null,
+  resource: "offers" | "references",
+): Record<string, unknown> {
+  const root = asObject(settings);
+  const runtimes = asObject(root.sync_resources);
+  return asObject(runtimes[resource]);
+}
+
+function formatOnOfficeDateTime(input: Date): string {
+  const formatter = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  return formatter.format(input).replace("T", " ");
+}
+
+function resolveOnOfficeDeltaWindow(
+  integration: PartnerIntegration,
+  resource: "offers" | "references",
+  automationMode: "full_sync" | "delta_polling",
+  overlapMinutes: number,
+  triggeredBy: CrmSyncTrigger,
+): OnOfficeDeltaWindow | null {
+  if (triggeredBy !== "auto_scheduler" || automationMode !== "delta_polling") return null;
+  const runtime = readOnOfficeResourceRuntime(integration.settings, resource);
+  const lastSuccessAt = String(runtime.onoffice_delta_last_success_at ?? "").trim();
+  if (!lastSuccessAt) return null;
+  const parsed = Date.parse(lastSuccessAt);
+  if (!Number.isFinite(parsed)) return null;
+  const sinceDate = new Date(parsed - overlapMinutes * 60_000);
+  return {
+    sinceIso: sinceDate.toISOString(),
+    sinceFilterValue: formatOnOfficeDateTime(sinceDate),
+    overlapMinutes,
+  };
+}
+
+function formatOnOfficeDeltaNote(
+  scope: "estate" | "reference",
+  deltaWindow: OnOfficeDeltaWindow | null,
+  automationMode: "full_sync" | "delta_polling",
+  triggeredBy: CrmSyncTrigger,
+): string {
+  if (deltaWindow) {
+    return `onOffice ${scope} delta: geaendert_am > ${deltaWindow.sinceFilterValue} (Overlap ${deltaWindow.overlapMinutes} Min.)`;
+  }
+  if (triggeredBy === "auto_scheduler" && automationMode === "delta_polling") {
+    return `onOffice ${scope} delta: kein letzter Erfolgstimestamp vorhanden, initialer Vollabruf für diesen Lauf`;
+  }
+  return `onOffice ${scope} delta: Delta-Polling für diesen Lauf nicht aktiv`;
 }
 
 function readOnOfficeStatusValue(
@@ -728,11 +832,16 @@ async function fetchOnOfficeResource(
   resourceId: string,
   fields: string[],
   filter: Record<string, unknown>,
-): Promise<OnOfficeRecord[]> {
+  options?: {
+    listlimit?: number;
+  },
+): Promise<OnOfficeResourceFetchResult> {
   const base = getOnOfficeApiBaseUrl(integration);
   const allRecords: OnOfficeRecord[] = [];
-  const listlimit = 50;
+  const listlimit = Math.min(500, Math.max(1, Math.floor(options?.listlimit ?? 500)));
   let listoffset = 0;
+  let requestCount = 0;
+  let pagesFetched = 0;
 
   while (true) {
     const body = buildOnOfficeReadRequest(token, secret, resourceId, {
@@ -747,6 +856,7 @@ async function fetchOnOfficeResource(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    requestCount += 1;
 
     if (!res.ok) {
       const text = await res.text();
@@ -763,12 +873,17 @@ async function fetchOnOfficeResource(
     }
     const records = json?.response?.results?.[0]?.data?.records ?? [];
     if (!Array.isArray(records) || records.length === 0) break;
+    pagesFetched += 1;
     allRecords.push(...records);
     if (records.length < listlimit) break;
     listoffset += listlimit;
   }
 
-  return allRecords;
+  return {
+    records: allRecords,
+    requestCount,
+    pagesFetched,
+  };
 }
 
 export async function fetchOnOfficeEstateStatusOptions(
@@ -870,7 +985,10 @@ export async function fetchOnOfficeEstates(
   token: string,
   secret: string,
   settings: OnOfficeResourceSettings,
-): Promise<OnOfficeRecord[]> {
+  options?: {
+    triggeredBy?: CrmSyncTrigger;
+  },
+): Promise<OnOfficeResourceFetchResult & { deltaWindow: OnOfficeDeltaWindow | null }> {
   const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
   const fields = mergeOnOfficeEstateReadFields([
     "Id",
@@ -938,11 +1056,22 @@ export async function fetchOnOfficeEstates(
     "courtage_frei",
     "objekt_des_tages",
   ], catalog);
-  const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
+  const deltaWindow = resolveOnOfficeDeltaWindow(
+    integration,
+    "offers",
+    settings.listing_automation_mode,
+    settings.listing_delta_overlap_minutes,
+    options?.triggeredBy ?? "admin_manual",
+  );
+  const filter: Record<string, unknown> = {
     status: [{ op: "=", val: 1 }],
-  });
+  };
+  if (deltaWindow) {
+    filter.geaendert_am = [{ op: ">", val: deltaWindow.sinceFilterValue }];
+  }
+  const response = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, filter);
   const allowedStatusValues = new Set(settings.listing_active_status_values);
-  return records.filter((record) => {
+  const records = response.records.filter((record) => {
     const elements = (record.elements ?? {}) as Record<string, unknown>;
     const soldFlag = normalizeOnOfficeFlag(elements["verkauft"]);
     const fieldValue = readOnOfficeStatusValue(elements, settings.listing_status_field_key);
@@ -960,6 +1089,11 @@ export async function fetchOnOfficeEstates(
 
     return soldFlag !== "1";
   });
+  return {
+    ...response,
+    records,
+    deltaWindow,
+  };
 }
 
 function summarizeEstateFieldValues(
@@ -1009,7 +1143,10 @@ export async function fetchOnOfficeReferences(
   token: string,
   secret: string,
   settings: OnOfficeResourceSettings,
-): Promise<OnOfficeRecord[]> {
+  options?: {
+    triggeredBy?: CrmSyncTrigger;
+  },
+): Promise<OnOfficeResourceFetchResult & { deltaWindow: OnOfficeDeltaWindow | null }> {
   const catalog = await fetchOnOfficeEstateFieldCatalog(integration, token, secret);
   const fields = mergeOnOfficeEstateReadFields([
     "Id",
@@ -1035,11 +1172,22 @@ export async function fetchOnOfficeReferences(
   ], [
     "img",
   ], catalog);
-  const records = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, {
+  const deltaWindow = resolveOnOfficeDeltaWindow(
+    integration,
+    "references",
+    settings.reference_automation_mode,
+    settings.reference_delta_overlap_minutes,
+    options?.triggeredBy ?? "admin_manual",
+  );
+  const filter: Record<string, unknown> = {
     status: [{ op: "=", val: 1 }],
-  });
+  };
+  if (deltaWindow) {
+    filter.geaendert_am = [{ op: ">", val: deltaWindow.sinceFilterValue }];
+  }
+  const response = await fetchOnOfficeResource(integration, token, secret, RESOURCE_ESTATE, fields, filter);
   const allowedStatusValues = new Set(settings.listing_active_status_values);
-  return records.filter((record) => {
+  const records = response.records.filter((record) => {
     const elements = (record.elements ?? {}) as Record<string, unknown>;
     const soldFlag = normalizeOnOfficeFlag(elements["verkauft"]);
     const fieldValue = readOnOfficeStatusValue(elements, settings.listing_status_field_key);
@@ -1054,6 +1202,11 @@ export async function fetchOnOfficeReferences(
 
     return soldFlag === "1";
   });
+  return {
+    ...response,
+    records,
+    deltaWindow,
+  };
 }
 
 export async function fetchOnOfficeSearchCriteria(
@@ -1075,18 +1228,20 @@ export async function fetchOnOfficeSearchCriteria(
     "range_miete_bis",
     "regionaler_zusatz",
   ];
-  return fetchOnOfficeResource(integration, token, secret, RESOURCE_SEARCH_CRITERIA, fields, {
+  const response = await fetchOnOfficeResource(integration, token, secret, RESOURCE_SEARCH_CRITERIA, fields, {
     active: [{ op: "=", val: 1 }],
   });
+  return response.records;
 }
 
 export async function syncOnOfficeResources(
   integration: PartnerIntegration,
   token: string,
   secret: string,
-  options?: { resource?: CrmSyncResource },
+  options?: { resource?: CrmSyncResource; mode?: "guarded" | "full"; triggeredBy?: CrmSyncTrigger },
 ): Promise<ResourceSyncData & { offers: MappedOffer[] }> {
   const resource = options?.resource ?? "all";
+  const triggeredBy = options?.triggeredBy ?? "admin_manual";
   const cfg = toSettings(integration.settings);
   const notes: string[] = [];
   const shouldFetchOffers = resource === "all" || resource === "offers";
@@ -1099,10 +1254,17 @@ export async function syncOnOfficeResources(
   let requests: RawRequest[] = [];
   let referencesFetched = !shouldFetchReferences;
   let requestsFetched = !shouldFetchRequests;
+  let providerRequestCount = 0;
+  let providerPagesFetched = 0;
 
   if (shouldFetchOffers) {
-    const estates = await fetchOnOfficeEstates(integration, token, secret, cfg);
+    const estateResult = await fetchOnOfficeEstates(integration, token, secret, cfg, { triggeredBy });
+    const estates = estateResult.records;
+    providerRequestCount += estateResult.requestCount;
+    providerPagesFetched += estateResult.pagesFetched;
     notes.push(`onOffice estate diagnostic: ${estates.length} Datensätze nach Angebotsfilter geladen.`);
+    notes.push(formatOnOfficeDeltaNote("estate", estateResult.deltaWindow, cfg.listing_automation_mode, triggeredBy));
+    notes.push(`onOffice estate paging: requests=${estateResult.requestCount}, pages=${estateResult.pagesFetched}`);
     notes.push(`onOffice estate status-Werte: ${summarizeEstateFieldValues(estates, "status")}`);
     notes.push(`onOffice estate status-Verteilung: ${summarizeEstateFieldDistribution(estates, "status")}`);
     notes.push(`onOffice estate ${cfg.listing_status_field_key}-Werte: ${summarizeEstateFieldValues(estates, cfg.listing_status_field_key)}`);
@@ -1128,8 +1290,13 @@ export async function syncOnOfficeResources(
   }
 
   if (shouldFetchReferences) {
-    const referenceRecords = await fetchOnOfficeReferences(integration, token, secret, cfg);
+    const referenceResult = await fetchOnOfficeReferences(integration, token, secret, cfg, { triggeredBy });
+    const referenceRecords = referenceResult.records;
+    providerRequestCount += referenceResult.requestCount;
+    providerPagesFetched += referenceResult.pagesFetched;
     notes.push(`onOffice reference diagnostic: ${referenceRecords.length} Datensätze nach Referenzfilter geladen.`);
+    notes.push(formatOnOfficeDeltaNote("reference", referenceResult.deltaWindow, cfg.reference_automation_mode, triggeredBy));
+    notes.push(`onOffice reference paging: requests=${referenceResult.requestCount}, pages=${referenceResult.pagesFetched}`);
     notes.push(`onOffice reference status-Werte: ${summarizeEstateFieldValues(referenceRecords, "status")}`);
     notes.push(`onOffice reference status-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "status")}`);
     notes.push(`onOffice reference status2-Werte: ${summarizeEstateFieldValues(referenceRecords, "status2")}`);
@@ -1162,6 +1329,12 @@ export async function syncOnOfficeResources(
     referencesFetched,
     requestsFetched,
     notes,
+    diagnostics: {
+      provider_request_count: providerRequestCount,
+      provider_pages_fetched: providerPagesFetched,
+      resource,
+      mode: options?.mode,
+    },
   };
 }
 

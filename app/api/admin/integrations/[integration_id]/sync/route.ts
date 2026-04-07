@@ -419,6 +419,10 @@ async function finalizeSyncSuccess(
   const admin = createAdminClient();
   const now = new Date().toISOString();
   const { debug_payload, ...persistedResult } = result;
+  const onOfficeDeltaSuccessPatch =
+    result.provider === "onoffice" && (resource === "offers" || resource === "references")
+      ? { onoffice_delta_last_success_at: now }
+      : {};
   const status = await patchSyncSettings(
     admin,
     integrationId,
@@ -442,6 +446,7 @@ async function finalizeSyncSuccess(
       sync_result: persistedResult,
       sync_debug_payload: debug_payload ?? null,
       sync_timeout_ms: null,
+      ...onOfficeDeltaSuccessPatch,
     },
     {
       expectedJobId: jobId,
@@ -772,6 +777,7 @@ export async function POST(
         runCrmIntegrationSync(admin, freshIntegration, {
           resource,
           mode,
+          triggeredBy: "admin_manual",
         }, {
           onProgress: async (step, message) => {
             await ensureSyncCanContinue(admin, integrationId, jobId);

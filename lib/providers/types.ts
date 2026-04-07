@@ -2,6 +2,7 @@ export type ProviderKey = "propstack" | "onoffice" | "openimmo";
 
 export type CrmSyncResource = "offers" | "references" | "requests" | "all";
 export type CrmSyncMode = "guarded" | "full";
+export type CrmSyncTrigger = "admin_manual" | "auto_scheduler";
 
 export type PartnerIntegration = {
   id: string;

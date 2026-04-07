@@ -11,6 +11,7 @@ import type {
   CanonicalRequest,
   CrmSyncMode,
   CrmSyncResource,
+  CrmSyncTrigger,
   MappedOffer,
   PartnerIntegration,
   RawListing,
@@ -28,6 +29,7 @@ type CrmSyncHooks = {
 export type CrmSyncScope = {
   resource?: CrmSyncResource;
   mode?: CrmSyncMode;
+  triggeredBy?: CrmSyncTrigger;
 };
 
 const FETCH_RESOURCES_HEARTBEAT_MS = 5_000;
@@ -496,7 +498,8 @@ export async function runCrmIntegrationSync(
 ): Promise<CrmSyncResult> {
   const resource = scope?.resource ?? "all";
   const mode = scope?.mode ?? "full";
-  const providerOptions: IntegrationSyncOptions = { resource, mode };
+  const triggeredBy = scope?.triggeredBy ?? "admin_manual";
+  const providerOptions: IntegrationSyncOptions = { resource, mode, triggeredBy };
 
   if (integration.kind !== "crm") {
     return {

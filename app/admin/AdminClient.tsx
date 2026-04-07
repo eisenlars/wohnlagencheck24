@@ -207,9 +207,13 @@ type CrmIntegrationAdminDraft = {
   onOfficeListingsFieldKey: string;
   onOfficeListingsActiveStatusValues: string;
   onOfficeListingsReservedTarget: "offers" | "references";
+  onOfficeListingsAutomationMode: "full_sync" | "delta_polling";
+  onOfficeListingsDeltaOverlapMinutes: string;
   onOfficeReferenceFieldKey: string;
   onOfficeReferenceSoldStatusId: string;
   onOfficeReferenceRentedStatusId: string;
+  onOfficeReferencesAutomationMode: "full_sync" | "delta_polling";
+  onOfficeReferencesDeltaOverlapMinutes: string;
   guardedUnitsTargetObjects: string;
   guardedReferencesTargetObjects: string;
   guardedSavedQueriesTargetObjects: string;
@@ -1506,9 +1510,13 @@ function buildCrmIntegrationAdminDraft(integration: Integration): CrmIntegration
     onOfficeListingsFieldKey: asText(listings.status_field_key) ?? "",
     onOfficeListingsActiveStatusValues: formatCsvInput(listings.active_status_values),
     onOfficeListingsReservedTarget: asText(listings.reserved_target) === "references" ? "references" : "offers",
+    onOfficeListingsAutomationMode: asText(listings.automation_mode) === "delta_polling" ? "delta_polling" : "full_sync",
+    onOfficeListingsDeltaOverlapMinutes: asScalarInput(listings.delta_overlap_minutes),
     onOfficeReferenceFieldKey: asText(references.status_field_key) ?? "",
     onOfficeReferenceSoldStatusId: asScalarInput(references.sold_status_id),
     onOfficeReferenceRentedStatusId: asScalarInput(references.rented_status_id),
+    onOfficeReferencesAutomationMode: asText(references.automation_mode) === "delta_polling" ? "delta_polling" : "full_sync",
+    onOfficeReferencesDeltaOverlapMinutes: asScalarInput(references.delta_overlap_minutes),
     guardedUnitsTargetObjects: readTargetObjects(units),
     guardedReferencesTargetObjects: readTargetObjects(refLimits),
     guardedSavedQueriesTargetObjects: readTargetObjects(savedQueries),
@@ -1562,11 +1570,25 @@ function applyCrmAdminDraftToSettings(
     const listingStatusFieldKey = asText(draft.onOfficeListingsFieldKey);
     const listingActiveStatusValues = parseCsvStringList(draft.onOfficeListingsActiveStatusValues);
     const listingReservedTarget = draft.onOfficeListingsReservedTarget === "references" ? "references" : "offers";
+    const listingsDeltaOverlapMinutes = parseOptionalPositiveInteger(
+      draft.onOfficeListingsDeltaOverlapMinutes,
+      "onOffice Delta Overlap Angebote (Min.)",
+    );
+    const referencesDeltaOverlapMinutes = parseOptionalPositiveInteger(
+      draft.onOfficeReferencesDeltaOverlapMinutes,
+      "onOffice Delta Overlap Referenzen (Min.)",
+    );
     if (listingStatusFieldKey) listings.status_field_key = listingStatusFieldKey;
     else delete listings.status_field_key;
     if (listingActiveStatusValues.length > 0) listings.active_status_values = listingActiveStatusValues;
     else delete listings.active_status_values;
     listings.reserved_target = listingReservedTarget;
+    listings.automation_mode = draft.onOfficeListingsAutomationMode === "delta_polling" ? "delta_polling" : "full_sync";
+    if (listingsDeltaOverlapMinutes !== null) listings.delta_overlap_minutes = listingsDeltaOverlapMinutes;
+    else delete listings.delta_overlap_minutes;
+    references.automation_mode = draft.onOfficeReferencesAutomationMode === "delta_polling" ? "delta_polling" : "full_sync";
+    if (referencesDeltaOverlapMinutes !== null) references.delta_overlap_minutes = referencesDeltaOverlapMinutes;
+    else delete references.delta_overlap_minutes;
     delete listings.exclude_sold;
     delete listings.status_ids;
     delete references.status_field_key;

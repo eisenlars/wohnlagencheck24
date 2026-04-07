@@ -272,6 +272,10 @@ async function finalizeSyncSuccess(
 ) {
   const now = new Date().toISOString();
   const message = formatSuccessMessage(result);
+  const onOfficeDeltaSuccessPatch =
+    result.provider === "onoffice" && (resource === "offers" || resource === "references")
+      ? { onoffice_delta_last_success_at: now }
+      : {};
   await patchSyncSettings(
     admin,
     integrationId,
@@ -295,6 +299,7 @@ async function finalizeSyncSuccess(
       sync_result: result,
       sync_timeout_ms: null,
       last_sync_at: now,
+      ...onOfficeDeltaSuccessPatch,
     },
     {
       expectedJobId: jobId,
@@ -549,7 +554,7 @@ export async function dispatchPartnerTriggerEvent(
       runCrmIntegrationSync(
         admin,
         freshIntegration,
-        { resource, mode: event.suggested_mode },
+        { resource, mode: event.suggested_mode, triggeredBy: "auto_scheduler" },
         {
           onProgress: async (step, message) => {
             await ensureSyncCanContinue(admin, event.integration_id, jobId);

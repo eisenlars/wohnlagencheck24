@@ -1,6 +1,7 @@
 import type {
   CrmSyncMode,
   CrmSyncResource,
+  CrmSyncTrigger,
   PartnerIntegration,
   MappedOffer,
   RawListing,
@@ -28,6 +29,7 @@ export type IntegrationSyncResult = {
 export type IntegrationSyncOptions = {
   resource?: CrmSyncResource;
   mode?: CrmSyncMode;
+  triggeredBy?: CrmSyncTrigger;
 };
 
 export async function syncIntegrationResources(
