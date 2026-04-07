@@ -986,7 +986,6 @@ export async function fetchOnOfficeReferences(
     "verkauft",
     "reserviert",
     "veroeffentlichen",
-    "objektstatus",
     "kaufpreis",
     "kaltmiete",
     "warmmiete",
