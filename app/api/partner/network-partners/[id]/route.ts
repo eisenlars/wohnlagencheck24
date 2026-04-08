@@ -140,7 +140,7 @@ export async function PATCH(
       patch.managed_editing_enabled = body.managed_editing_enabled === true;
     }
     if (body.llm_partner_managed_allowed !== undefined) {
-      patch.llm_partner_managed_allowed = body.llm_partner_managed_allowed !== false;
+      patch.llm_partner_managed_allowed = body.llm_partner_managed_allowed === true;
     }
 
     const networkPartner = await updateNetworkPartner(patch);

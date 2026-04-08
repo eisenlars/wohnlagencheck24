@@ -1263,6 +1263,21 @@ function formatNetworkPartnerStatusLabel(status: NetworkPartnerAdminRecord["stat
   return "Inaktiv";
 }
 
+function formatIntegrationKindLabel(kind: string): string {
+  const normalized = String(kind ?? "").trim().toLowerCase();
+  if (normalized === "crm") return "CRM";
+  if (normalized === "llm") return "LLM";
+  if (normalized === "local_site") return "Local Site";
+  if (!normalized) return "Anbindung";
+  return normalized;
+}
+
+function getIntegrationLastTestLabel(integration: Pick<Integration, "settings" | "last_test_at">): string {
+  const settings = (integration.settings ?? {}) as Record<string, unknown>;
+  const testedAt = String(settings.last_test_finished_at ?? settings.last_tested_at ?? integration.last_test_at ?? "").trim();
+  return testedAt ? formatAdminDateTime(testedAt) : "Noch keiner";
+}
+
 function getMaskedAuthSummary(integration: Pick<Integration, "auth_config">): string {
   const auth = (integration.auth_config ?? {}) as Record<string, unknown>;
   const hasApiKey = Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
@@ -1274,22 +1289,6 @@ function getMaskedAuthSummary(integration: Pick<Integration, "auth_config">): st
   if (hasSecret) parts.push("se*****");
   if (parts.length === 0) return "Keine hinterlegt";
   return parts.join(" · ");
-}
-
-function getIntegrationHealthSummary(
-  integration: Pick<Integration, "settings" | "last_test_at" | "last_preview_sync_at" | "last_sync_at">,
-): string {
-  const settings = (integration.settings ?? {}) as Record<string, unknown>;
-  const testedAt = String(settings.last_test_finished_at ?? settings.last_tested_at ?? integration.last_test_at ?? "").trim();
-  const testStatus = String(settings.last_test_status ?? "").trim();
-  const previewAt = String(integration.last_preview_sync_at ?? "").trim();
-  const syncAt = String(integration.last_sync_at ?? "").trim();
-  const chunks: string[] = [];
-  if (testStatus) chunks.push(`Test: ${testStatus}`);
-  if (testedAt) chunks.push(`Zuletzt getestet: ${new Date(testedAt).toLocaleString("de-DE")}`);
-  if (previewAt) chunks.push(`Letzter Preview-Sync: ${new Date(previewAt).toLocaleString("de-DE")}`);
-  if (syncAt) chunks.push(`Letzter Sync: ${new Date(syncAt).toLocaleString("de-DE")}`);
-  return chunks.length > 0 ? chunks.join(" | ") : "Kein Test-/Sync-Status";
 }
 
 function formatMandatoryKeyLabel(key: string): string {
@@ -2204,7 +2203,7 @@ type PersistedAdminViewState = {
   navMode?: AdminNavMode;
   selectedPartnerId?: string;
   partnerTab?: PartnerPanelTab;
-  integrationsAdminTab?: "overview" | "llm_partner";
+  integrationsAdminTab?: "overview";
   llmGlobalTab?: "create" | "overview" | "pricing" | "usage" | "billing";
   billingDefaultsTab?: BillingDefaultsWorkspaceTab;
   billingOverviewTab?: BillingOverviewWorkspaceTab;
@@ -2402,7 +2401,7 @@ export default function AdminClient() {
   const [reviewContentDismissed, setReviewContentDismissed] = useState(false);
   const [activeView, setActiveView] = useState<AdminView>("home");
   const [partnerTab, setPartnerTab] = useState<PartnerPanelTab>("profile");
-  const [integrationsAdminTab, setIntegrationsAdminTab] = useState<"overview" | "llm_partner">("overview");
+  const [integrationsAdminTab, setIntegrationsAdminTab] = useState<"overview">("overview");
   const [llmGlobalTab, setLlmGlobalTab] = useState<"create" | "overview" | "pricing">("create");
   const [navMode, setNavMode] = useState<AdminNavMode>("partners");
   const [partnerFilter, setPartnerFilter] = useState("");
@@ -3141,7 +3140,7 @@ export default function AdminClient() {
     setNavMode(adminViewState.navMode ?? "partners");
     setSelectedPartnerId(String(adminViewState.selectedPartnerId ?? ""));
     setPartnerTab(adminViewState.partnerTab ?? "profile");
-    setIntegrationsAdminTab(adminViewState.integrationsAdminTab ?? "overview");
+    setIntegrationsAdminTab("overview");
     setLlmGlobalTab(
       adminViewState.llmGlobalTab === "create" || adminViewState.llmGlobalTab === "pricing" || adminViewState.llmGlobalTab === "overview"
         ? adminViewState.llmGlobalTab
@@ -5961,7 +5960,7 @@ export default function AdminClient() {
     const nextDrafts: Record<string, CrmIntegrationAdminDraft> = {};
     const nextLlmDrafts: Record<string, boolean> = {};
     for (const networkPartner of networkPartnerAdminRows) {
-      nextLlmDrafts[networkPartner.id] = networkPartner.llm_partner_managed_allowed !== false;
+      nextLlmDrafts[networkPartner.id] = Boolean(networkPartner.llm_partner_managed_allowed);
       for (const integration of networkPartner.integrations ?? []) {
         if (String(integration.kind ?? "").toLowerCase() !== "crm") continue;
         nextDrafts[integration.id] = buildCrmIntegrationAdminDraft(integration);
@@ -8490,205 +8489,214 @@ export default function AdminClient() {
       {activeView === "partner_edit" && partnerTab === "integrations" && Boolean(selectedPartner) ? (
       <section style={cardStyle}>
         <h2 style={h2Style}>Anbindungen</h2>
-        <div style={partnerTabBarStyle}>
-          <button
-            style={partnerTabButtonStyle(integrationsAdminTab === "overview")}
-            onClick={() => setIntegrationsAdminTab("overview")}
-          >
-            Übersicht
-          </button>
-          <button
-            style={partnerTabButtonStyle(integrationsAdminTab === "llm_partner")}
-            onClick={() => setIntegrationsAdminTab("llm_partner")}
-          >
-            Partner LLM-Anbindung
-          </button>
-        </div>
-
-        {integrationsAdminTab === "llm_partner" ? (
-          <div style={{ marginTop: 14, marginBottom: 14, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
-            <label style={{ display: "block", marginBottom: 8 }}>
-              <input
-                type="checkbox"
-                checked={editPartner.llm_partner_managed_allowed}
-                disabled={!selectedPartner}
-                onChange={(e) => setEditPartner((v) => ({ ...v, llm_partner_managed_allowed: e.target.checked }))}
-              />
-              <span style={{ marginLeft: 8 }}>Partner-eigene LLM-Anbindungen erlauben</span>
-            </label>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <button
-                style={btnStyle}
-                disabled={busy || !selectedPartner}
-                onClick={() =>
-                  run("LLM-Freigabe speichern", async () => {
-                    if (!selectedPartnerId) return;
-                    await api(`/api/admin/partners/${selectedPartnerId}`, {
-                      method: "PATCH",
-                      body: JSON.stringify({
-                        llm_partner_managed_allowed: editPartner.llm_partner_managed_allowed,
-                      }),
-                    });
-                    await loadPartners(selectedPartnerId);
-                  })
-                }
-              >
-                Freigabe speichern
-              </button>
-              <span style={{ fontSize: 12, color: "#475569" }}>
-                Ohne Freigabe sieht der Partner den LLM-Anbindungstyp im Dashboard nicht.
-              </span>
+        <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
+          <div style={{ display: "grid", gap: 4 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Portalpartner-Anbindungen</div>
+            <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
+              Jede Anbindung ist aufklappbar. CRM-Details, Tests und Synchronisationspfade liegen im Detailbereich der jeweiligen Zeile.
             </div>
           </div>
-        ) : null}
-
-        {integrationsAdminTab === "overview" ? (
-        <>
         <table style={tableStyle}>
           <thead>
             <tr>
-              <th style={thStyle}>Kind</th>
+              <th style={{ ...thStyle, width: 52 }} aria-label="Details" />
+              <th style={thStyle}>Anbindung</th>
               <th style={thStyle}>Provider</th>
               <th style={thStyle}>Status</th>
-              <th style={thStyle}>Zugang (maskiert)</th>
-              <th style={thStyle}>Sync/Test</th>
+              <th style={thStyle}>Zugang</th>
+              <th style={thStyle}>Letzter Test</th>
               <th style={thStyle}>Aktion</th>
             </tr>
           </thead>
           <tbody>
-            {integrations.map((integration) => {
-              const isCrmIntegration = String(integration.kind ?? "").toLowerCase() === "crm";
-              const draft = crmIntegrationDrafts[integration.id] ?? buildCrmIntegrationAdminDraft(integration);
-              const activeResourceKey: CrmResourceKey = ["offers", "references", "requests"].includes(crmIntegrationTabs[integration.id] ?? "offers")
+            {[
+              {
+                id: "portal-llm-policy",
+                rowType: "llm_policy" as const,
+              },
+              ...integrations.map((integration) => ({
+                id: integration.id,
+                rowType: "integration" as const,
+                integration,
+              })),
+            ].map((row) => {
+              const integration = row.rowType === "integration" ? row.integration : null;
+              const isCrmIntegration = String(integration?.kind ?? "").toLowerCase() === "crm";
+              const draft = integration ? (crmIntegrationDrafts[integration.id] ?? buildCrmIntegrationAdminDraft(integration)) : null;
+              const activeResourceKey: CrmResourceKey = integration && ["offers", "references", "requests"].includes(crmIntegrationTabs[integration.id] ?? "offers")
                 ? (crmIntegrationTabs[integration.id] ?? "offers") as CrmResourceKey
                 : "offers";
-              const globalSyncSummary = isCrmIntegration ? readSyncSummaryFromIntegration(integration, "all") : null;
-              const resourceSyncSummary = isCrmIntegration ? readSyncSummaryFromIntegration(integration, activeResourceKey) : null;
-              const resourcePreviewSummary = isCrmIntegration ? readPreviewSummaryFromIntegration(integration, activeResourceKey) : null;
-              const syncWarning = isCrmIntegration ? buildCrmSyncWarning(resourceSyncSummary) : null;
-              const isExpanded = expandedCrmIntegrationId === integration.id;
+              const globalSyncSummary = integration && isCrmIntegration ? readSyncSummaryFromIntegration(integration, "all") : null;
+              const resourceSyncSummary = integration && isCrmIntegration ? readSyncSummaryFromIntegration(integration, activeResourceKey) : null;
+              const resourcePreviewSummary = integration && isCrmIntegration ? readPreviewSummaryFromIntegration(integration, activeResourceKey) : null;
+              const syncWarning = integration && isCrmIntegration ? buildCrmSyncWarning(resourceSyncSummary) : null;
+              const isExpanded = expandedCrmIntegrationId === row.id;
               const isRunningThisResource = resourceSyncSummary?.status === "running";
               const anotherSyncRunning = globalSyncSummary?.status === "running" && !isRunningThisResource;
+              const llmAllowed = Boolean(editPartner.llm_partner_managed_allowed);
 
               return (
-                <Fragment key={integration.id}>
+                <Fragment key={row.id}>
                   <tr>
-                    <td style={tdStyle}>{integration.kind}</td>
-                    <td style={tdStyle}>{integration.provider}</td>
-                    <td style={tdStyle}>{integration.is_active ? "aktiv" : "inaktiv"}</td>
-                    <td style={tdStyle}>{getMaskedAuthSummary(integration)}</td>
                     <td style={tdStyle}>
-                      <span style={{ fontSize: 12, color: "#334155" }}>{getIntegrationHealthSummary(integration)}</span>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedCrmIntegrationId((prev) => prev === row.id ? null : row.id)}
+                        style={{
+                          border: "1px solid #cbd5e1",
+                          background: "#fff",
+                          borderRadius: 8,
+                          width: 30,
+                          height: 30,
+                          cursor: "pointer",
+                          color: "#334155",
+                          fontWeight: 700,
+                        }}
+                        aria-label={isExpanded ? "Details schließen" : "Details öffnen"}
+                      >
+                        {isExpanded ? "▾" : "▸"}
+                      </button>
                     </td>
+                    <td style={tdStyle}>{row.rowType === "llm_policy" ? "LLM" : formatIntegrationKindLabel(integration?.kind ?? "")}</td>
+                    <td style={tdStyle}>{row.rowType === "llm_policy" ? "Partner-eigen" : integration?.provider}</td>
+                    <td style={tdStyle}>{row.rowType === "llm_policy" ? (llmAllowed ? "aktiv" : "deaktiviert") : (integration?.is_active ? "aktiv" : "deaktiviert")}</td>
+                    <td style={tdStyle}>{row.rowType === "llm_policy" ? "—" : getMaskedAuthSummary(integration!)}</td>
+                    <td style={tdStyle}>{row.rowType === "llm_policy" ? "Nicht relevant" : getIntegrationLastTestLabel(integration!)}</td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {isCrmIntegration ? (
+                        {row.rowType === "llm_policy" ? (
                           <button
-                            style={btnStyle}
-                            disabled={busy}
-                            onClick={() => setExpandedCrmIntegrationId((prev) => prev === integration.id ? null : integration.id)}
+                            style={llmAllowed ? btnGhostStyle : btnStyle}
+                            disabled={busy || !selectedPartner}
+                            onClick={() =>
+                              run(llmAllowed ? "LLM deaktivieren" : "LLM aktivieren", async () => {
+                                if (!selectedPartnerId) return;
+                                const nextAllowed = !llmAllowed;
+                                setEditPartner((current) => ({ ...current, llm_partner_managed_allowed: nextAllowed }));
+                                await api(`/api/admin/partners/${selectedPartnerId}`, {
+                                  method: "PATCH",
+                                  body: JSON.stringify({
+                                    llm_partner_managed_allowed: nextAllowed,
+                                  }),
+                                });
+                                await loadPartners(selectedPartnerId);
+                              })
+                            }
                           >
-                            {isExpanded ? "Schließen" : "Sync"}
+                            {llmAllowed ? "Deaktivieren" : "Aktivieren"}
                           </button>
-                        ) : null}
-                        <button
-                          style={btnGhostStyle}
-                          disabled={busy}
-                          onClick={() =>
-                            run("Integration Status ändern", async () => {
-                              await api(
-                                `/api/admin/integrations/${integration.id}/${integration.is_active ? "deactivate" : "reactivate"}`,
-                                { method: "POST" },
-                              );
-                              await loadPartnerIntegrations(selectedPartnerId);
-                            })
-                          }
-                        >
-                          {integration.is_active ? "Deaktivieren" : "Aktivieren"}
-                        </button>
-                        <button
-                          style={btnDangerStyle}
-                          disabled={busy}
-                          onClick={() => {
-                            setIntegrationDeleteConfirmModal({
-                              open: true,
-                              integrationId: integration.id,
-                              provider: integration.provider,
-                              kind: integration.kind,
-                              scope: "partner",
-                            });
-                          }}
-                        >
-                          Löschen
-                        </button>
+                        ) : (
+                          <>
+                            <button
+                              style={integration?.is_active ? btnGhostStyle : btnStyle}
+                              disabled={busy}
+                              onClick={() =>
+                                run("Integration Status ändern", async () => {
+                                  await api(
+                                    `/api/admin/integrations/${integration!.id}/${integration!.is_active ? "deactivate" : "reactivate"}`,
+                                    { method: "POST" },
+                                  );
+                                  await loadPartnerIntegrations(selectedPartnerId);
+                                })
+                              }
+                            >
+                              {integration?.is_active ? "Deaktivieren" : "Aktivieren"}
+                            </button>
+                            <button
+                              style={btnDangerStyle}
+                              disabled={busy}
+                              onClick={() => {
+                                setIntegrationDeleteConfirmModal({
+                                  open: true,
+                                  integrationId: integration!.id,
+                                  provider: integration!.provider,
+                                  kind: integration!.kind,
+                                  scope: "partner",
+                                });
+                              }}
+                            >
+                              Löschen
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
-                  {isCrmIntegration && isExpanded ? (
+                  {isExpanded ? (
                     <tr>
-                      <td style={{ ...tdStyle, paddingTop: 0, paddingBottom: 14 }} colSpan={6}>
+                      <td style={{ ...tdStyle, paddingTop: 0, paddingBottom: 14 }} colSpan={7}>
                         <div style={{ marginTop: 14 }}>
-                          <AdminCrmIntegrationsPanel
-                            integration={integration}
-                            draft={draft}
-                            activeResourceKey={activeResourceKey}
-                            onActiveResourceChange={(resource) =>
-                              setCrmIntegrationTabs((prev) => ({
-                                ...prev,
-                                [integration.id]: resource,
-                              }))
-                            }
-                            onDraftChange={(nextDraft) =>
-                              setCrmIntegrationDrafts((prev): Record<string, CrmIntegrationAdminDraft> => ({
-                                ...prev,
-                                [integration.id]: nextDraft as CrmIntegrationAdminDraft,
-                              }))
-                            }
-                            onSaveSettings={(integrationId, nextDraft) =>
-                              run(`${integration.provider} Einstellungen speichern`, async () => {
-                                const settings = applyCrmAdminDraftToSettings(
-                                  integration,
-                                  nextDraft as CrmIntegrationAdminDraft,
-                                );
-                                await api(`/api/admin/integrations/${integrationId}`, {
-                                  method: "PATCH",
-                                  body: JSON.stringify({ settings }),
-                                });
-                                await loadPartnerIntegrations(selectedPartnerId);
-                              })
-                            }
-                            onPreview={(integrationId, resource) =>
-                              run(`${formatCrmResourceLabel(resource)}-Abruf testen`, async () => {
-                                await api(`/api/admin/integrations/${integrationId}/preview-sync`, {
-                                  method: "POST",
-                                  body: JSON.stringify({ resource }),
-                                });
-                                await loadPartnerIntegrations(selectedPartnerId);
-                              })
-                            }
-                            onSync={(integrationId, resource, mode) =>
-                              run(`${formatCrmResourceLabel(resource)} ${mode === "full" ? "Vollsync" : "Guarded-Sync"} starten`, async () => {
-                                await api(`/api/admin/integrations/${integrationId}/sync`, {
-                                  method: "POST",
-                                  body: JSON.stringify({ resource, mode }),
-                                });
-                                await loadPartnerIntegrations(selectedPartnerId);
-                              })
-                            }
-                            onCancelSync={(integrationId, resource) =>
-                              run(`${formatCrmResourceLabel(resource)}-Sync abbrechen`, async () => {
-                                await api(`/api/admin/integrations/${integrationId}/sync?resource=${resource}`, {
-                                  method: "DELETE",
-                                });
-                                await loadPartnerIntegrations(selectedPartnerId);
-                              })
-                            }
-                            busy={busy}
-                            syncSummary={resourceSyncSummary}
-                            previewSummary={resourcePreviewSummary}
-                            anotherSyncRunning={Boolean(anotherSyncRunning)}
-                            syncWarning={syncWarning}
-                          />
+                          {row.rowType === "llm_policy" ? (
+                            <div style={{ padding: 14, border: "1px solid #e2e8f0", borderRadius: 10, background: "#f8fafc", color: "#334155", lineHeight: 1.6 }}>
+                              Diese Anbindungsart steuert, ob der Portalpartner eigene LLM-Anbindungen nutzen darf. Weitere Detailkonfigurationen koennen hier spaeter ergänzt werden.
+                            </div>
+                          ) : isCrmIntegration && integration && draft ? (
+                            <AdminCrmIntegrationsPanel
+                              integration={integration}
+                              draft={draft}
+                              activeResourceKey={activeResourceKey}
+                              onActiveResourceChange={(resource) =>
+                                setCrmIntegrationTabs((prev) => ({
+                                  ...prev,
+                                  [integration.id]: resource,
+                                }))
+                              }
+                              onDraftChange={(nextDraft) =>
+                                setCrmIntegrationDrafts((prev): Record<string, CrmIntegrationAdminDraft> => ({
+                                  ...prev,
+                                  [integration.id]: nextDraft as CrmIntegrationAdminDraft,
+                                }))
+                              }
+                              onSaveSettings={(integrationId, nextDraft) =>
+                                run(`${integration.provider} Einstellungen speichern`, async () => {
+                                  const settings = applyCrmAdminDraftToSettings(
+                                    integration,
+                                    nextDraft as CrmIntegrationAdminDraft,
+                                  );
+                                  await api(`/api/admin/integrations/${integrationId}`, {
+                                    method: "PATCH",
+                                    body: JSON.stringify({ settings }),
+                                  });
+                                  await loadPartnerIntegrations(selectedPartnerId);
+                                })
+                              }
+                              onPreview={(integrationId, resource) =>
+                                run(`${formatCrmResourceLabel(resource)}-Abruf testen`, async () => {
+                                  await api(`/api/admin/integrations/${integrationId}/preview-sync`, {
+                                    method: "POST",
+                                    body: JSON.stringify({ resource }),
+                                  });
+                                  await loadPartnerIntegrations(selectedPartnerId);
+                                })
+                              }
+                              onSync={(integrationId, resource, mode) =>
+                                run(`${formatCrmResourceLabel(resource)} ${mode === "full" ? "Vollsync" : "Guarded-Sync"} starten`, async () => {
+                                  await api(`/api/admin/integrations/${integrationId}/sync`, {
+                                    method: "POST",
+                                    body: JSON.stringify({ resource, mode }),
+                                  });
+                                  await loadPartnerIntegrations(selectedPartnerId);
+                                })
+                              }
+                              onCancelSync={(integrationId, resource) =>
+                                run(`${formatCrmResourceLabel(resource)}-Sync abbrechen`, async () => {
+                                  await api(`/api/admin/integrations/${integrationId}/sync?resource=${resource}`, {
+                                    method: "DELETE",
+                                  });
+                                  await loadPartnerIntegrations(selectedPartnerId);
+                                })
+                              }
+                              busy={busy}
+                              syncSummary={resourceSyncSummary}
+                              previewSummary={resourcePreviewSummary}
+                              anotherSyncRunning={Boolean(anotherSyncRunning)}
+                              syncWarning={syncWarning}
+                            />
+                          ) : (
+                            <div style={{ padding: 14, border: "1px solid #e2e8f0", borderRadius: 10, background: "#f8fafc", color: "#334155", lineHeight: 1.6 }}>
+                              Fuer diese Anbindungsart sind hier aktuell noch keine Detailinhalte hinterlegt. Dieser Bereich ist bewusst bereits aufklappbar vorbereitet.
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -8698,6 +8706,7 @@ export default function AdminClient() {
             })}
           </tbody>
         </table>
+        </div>
 
         <div style={{ marginTop: 24, display: "grid", gap: 14 }}>
           <div style={{ display: "grid", gap: 4 }}>
@@ -8733,194 +8742,213 @@ export default function AdminClient() {
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 12, color: "#334155" }}>
-                      <span>LLM {networkPartner.llm_partner_managed_allowed ? "erlaubt" : "gesperrt"}</span>
                       <span>{(networkPartner.integrations ?? []).length} CRM-Anbindungen</span>
                     </div>
                   </div>
                 </summary>
 
                 <div style={{ padding: 16, display: "grid", gap: 14 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 700, color: "#0f172a" }}>
-                      <input
-                        type="checkbox"
-                        checked={networkPartnerLlmDrafts[networkPartner.id] ?? networkPartner.llm_partner_managed_allowed}
-                        onChange={(event) =>
-                          setNetworkPartnerLlmDrafts((current) => ({
-                            ...current,
-                            [networkPartner.id]: event.target.checked,
-                          }))
-                        }
-                      />
-                      Partner-eigene LLM-Anbindungen erlauben
-                    </label>
-                    <button
-                      style={btnStyle}
-                      disabled={busy || !selectedPartnerId}
-                      onClick={() =>
-                        run("Netzwerkpartner-LLM-Freigabe speichern", async () => {
-                          if (!selectedPartnerId) return;
-                          await api(`/api/admin/partners/${selectedPartnerId}/network-partners/${networkPartner.id}`, {
-                            method: "PATCH",
-                            body: JSON.stringify({
-                              llm_partner_managed_allowed: networkPartnerLlmDrafts[networkPartner.id] ?? networkPartner.llm_partner_managed_allowed,
-                            }),
-                          });
-                          await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
-                        })
-                      }
-                    >
-                      Freigabe speichern
-                    </button>
-                  </div>
-
-                  {(networkPartner.integrations ?? []).length === 0 ? (
-                    <div style={{ fontSize: 13, color: "#64748b" }}>
-                      Für diesen Netzwerkpartner sind aktuell keine CRM-Anbindungen hinterlegt.
-                    </div>
-                  ) : (
-                    <table style={tableStyle}>
+                  <table style={tableStyle}>
                       <thead>
                         <tr>
-                          <th style={thStyle}>Kind</th>
+                          <th style={{ ...thStyle, width: 52 }} aria-label="Details" />
+                          <th style={thStyle}>Anbindung</th>
                           <th style={thStyle}>Provider</th>
                           <th style={thStyle}>Status</th>
-                          <th style={thStyle}>Zugang (maskiert)</th>
-                          <th style={thStyle}>Sync/Test</th>
+                          <th style={thStyle}>Zugang</th>
+                          <th style={thStyle}>Letzter Test</th>
                           <th style={thStyle}>Aktion</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {(networkPartner.integrations ?? []).map((integration) => {
-                          const isCrmIntegration = String(integration.kind ?? "").toLowerCase() === "crm";
-                          const draft = networkCrmIntegrationDrafts[integration.id] ?? buildCrmIntegrationAdminDraft(integration);
-                          const activeResourceKey: CrmResourceKey = ["offers", "references", "requests"].includes(networkCrmIntegrationTabs[integration.id] ?? "offers")
+                        {[
+                          {
+                            id: `network-llm-policy:${networkPartner.id}`,
+                            rowType: "llm_policy" as const,
+                          },
+                          ...(networkPartner.integrations ?? []).map((integration) => ({
+                            id: integration.id,
+                            rowType: "integration" as const,
+                            integration,
+                          })),
+                        ].map((row) => {
+                          const integration = row.rowType === "integration" ? row.integration : null;
+                          const isCrmIntegration = String(integration?.kind ?? "").toLowerCase() === "crm";
+                          const draft = integration ? (networkCrmIntegrationDrafts[integration.id] ?? buildCrmIntegrationAdminDraft(integration)) : null;
+                          const activeResourceKey: CrmResourceKey = integration && ["offers", "references", "requests"].includes(networkCrmIntegrationTabs[integration.id] ?? "offers")
                             ? (networkCrmIntegrationTabs[integration.id] ?? "offers") as CrmResourceKey
                             : "offers";
-                          const globalSyncSummary = isCrmIntegration ? readSyncSummaryFromIntegration(integration, "all") : null;
-                          const resourceSyncSummary = isCrmIntegration ? readSyncSummaryFromIntegration(integration, activeResourceKey) : null;
-                          const resourcePreviewSummary = isCrmIntegration ? readPreviewSummaryFromIntegration(integration, activeResourceKey) : null;
-                          const syncWarning = isCrmIntegration ? buildCrmSyncWarning(resourceSyncSummary) : null;
-                          const isExpanded = expandedNetworkCrmIntegrationId === integration.id;
+                          const globalSyncSummary = integration && isCrmIntegration ? readSyncSummaryFromIntegration(integration, "all") : null;
+                          const resourceSyncSummary = integration && isCrmIntegration ? readSyncSummaryFromIntegration(integration, activeResourceKey) : null;
+                          const resourcePreviewSummary = integration && isCrmIntegration ? readPreviewSummaryFromIntegration(integration, activeResourceKey) : null;
+                          const syncWarning = integration && isCrmIntegration ? buildCrmSyncWarning(resourceSyncSummary) : null;
+                          const isExpanded = expandedNetworkCrmIntegrationId === row.id;
                           const isRunningThisResource = resourceSyncSummary?.status === "running";
                           const anotherSyncRunning = globalSyncSummary?.status === "running" && !isRunningThisResource;
+                          const llmAllowed = Boolean(networkPartnerLlmDrafts[networkPartner.id] ?? networkPartner.llm_partner_managed_allowed);
 
                           return (
-                            <Fragment key={`network-integration:${integration.id}`}>
+                            <Fragment key={row.id}>
                               <tr>
-                                <td style={tdStyle}>{integration.kind}</td>
-                                <td style={tdStyle}>{integration.provider}</td>
-                                <td style={tdStyle}>{integration.is_active ? "aktiv" : "inaktiv"}</td>
-                                <td style={tdStyle}>{getMaskedAuthSummary(integration)}</td>
                                 <td style={tdStyle}>
-                                  <span style={{ fontSize: 12, color: "#334155" }}>{getIntegrationHealthSummary(integration)}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedNetworkCrmIntegrationId((prev) => prev === row.id ? null : row.id)}
+                                    style={{
+                                      border: "1px solid #cbd5e1",
+                                      background: "#fff",
+                                      borderRadius: 8,
+                                      width: 30,
+                                      height: 30,
+                                      cursor: "pointer",
+                                      color: "#334155",
+                                      fontWeight: 700,
+                                    }}
+                                    aria-label={isExpanded ? "Details schließen" : "Details öffnen"}
+                                  >
+                                    {isExpanded ? "▾" : "▸"}
+                                  </button>
                                 </td>
+                                <td style={tdStyle}>{row.rowType === "llm_policy" ? "LLM" : formatIntegrationKindLabel(integration?.kind ?? "")}</td>
+                                <td style={tdStyle}>{row.rowType === "llm_policy" ? "Partner-eigen" : integration?.provider}</td>
+                                <td style={tdStyle}>{row.rowType === "llm_policy" ? (llmAllowed ? "aktiv" : "deaktiviert") : (integration?.is_active ? "aktiv" : "deaktiviert")}</td>
+                                <td style={tdStyle}>{row.rowType === "llm_policy" ? "—" : getMaskedAuthSummary(integration!)}</td>
+                                <td style={tdStyle}>{row.rowType === "llm_policy" ? "Nicht relevant" : getIntegrationLastTestLabel(integration!)}</td>
                                 <td style={tdStyle}>
                                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                    {isCrmIntegration ? (
+                                    {row.rowType === "llm_policy" ? (
                                       <button
-                                        style={btnStyle}
-                                        disabled={busy}
-                                        onClick={() => setExpandedNetworkCrmIntegrationId((prev) => prev === integration.id ? null : integration.id)}
+                                        style={llmAllowed ? btnGhostStyle : btnStyle}
+                                        disabled={busy || !selectedPartnerId}
+                                        onClick={() =>
+                                          run(llmAllowed ? "LLM deaktivieren" : "LLM aktivieren", async () => {
+                                            if (!selectedPartnerId) return;
+                                            const nextAllowed = !llmAllowed;
+                                            setNetworkPartnerLlmDrafts((current) => ({
+                                              ...current,
+                                              [networkPartner.id]: nextAllowed,
+                                            }));
+                                            await api(`/api/admin/partners/${selectedPartnerId}/network-partners/${networkPartner.id}`, {
+                                              method: "PATCH",
+                                              body: JSON.stringify({
+                                                llm_partner_managed_allowed: nextAllowed,
+                                              }),
+                                            });
+                                            await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                          })
+                                        }
                                       >
-                                        {isExpanded ? "Schließen" : "Sync"}
+                                        {llmAllowed ? "Deaktivieren" : "Aktivieren"}
                                       </button>
-                                    ) : null}
-                                    <button
-                                      style={btnGhostStyle}
-                                      disabled={busy}
-                                      onClick={() =>
-                                        run("Integration Status ändern", async () => {
-                                          await api(`/api/admin/network-integrations/${integration.id}`, {
-                                            method: "PATCH",
-                                            body: JSON.stringify({ is_active: !integration.is_active }),
-                                          });
-                                          await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
-                                        })
-                                      }
-                                    >
-                                      {integration.is_active ? "Deaktivieren" : "Aktivieren"}
-                                    </button>
-                                    <button
-                                      style={btnDangerStyle}
-                                      disabled={busy}
-                                      onClick={() => {
-                                        setIntegrationDeleteConfirmModal({
-                                          open: true,
-                                          integrationId: integration.id,
-                                          provider: integration.provider,
-                                          kind: integration.kind,
-                                          scope: "network_partner",
-                                        });
-                                      }}
-                                    >
-                                      Löschen
-                                    </button>
+                                    ) : (
+                                      <>
+                                        <button
+                                          style={integration?.is_active ? btnGhostStyle : btnStyle}
+                                          disabled={busy}
+                                          onClick={() =>
+                                            run("Integration Status ändern", async () => {
+                                              await api(`/api/admin/network-integrations/${integration!.id}`, {
+                                                method: "PATCH",
+                                                body: JSON.stringify({ is_active: !integration!.is_active }),
+                                              });
+                                              await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                            })
+                                          }
+                                        >
+                                          {integration?.is_active ? "Deaktivieren" : "Aktivieren"}
+                                        </button>
+                                        <button
+                                          style={btnDangerStyle}
+                                          disabled={busy}
+                                          onClick={() => {
+                                            setIntegrationDeleteConfirmModal({
+                                              open: true,
+                                              integrationId: integration!.id,
+                                              provider: integration!.provider,
+                                              kind: integration!.kind,
+                                              scope: "network_partner",
+                                            });
+                                          }}
+                                        >
+                                          Löschen
+                                        </button>
+                                      </>
+                                    )}
                                   </div>
                                 </td>
                               </tr>
-                              {isCrmIntegration && isExpanded ? (
+                              {isExpanded ? (
                                 <tr>
-                                  <td style={{ ...tdStyle, paddingTop: 0, paddingBottom: 14 }} colSpan={6}>
+                                  <td style={{ ...tdStyle, paddingTop: 0, paddingBottom: 14 }} colSpan={7}>
                                     <div style={{ marginTop: 14 }}>
-                                      <AdminCrmIntegrationsPanel
-                                        integration={integration}
-                                        draft={draft}
-                                        activeResourceKey={activeResourceKey}
-                                        onActiveResourceChange={(resource) =>
-                                          setNetworkCrmIntegrationTabs((prev) => ({
-                                            ...prev,
-                                            [integration.id]: resource,
-                                          }))
-                                        }
-                                        onDraftChange={(nextDraft) =>
-                                          setNetworkCrmIntegrationDrafts((prev): Record<string, CrmIntegrationAdminDraft> => ({
-                                            ...prev,
-                                            [integration.id]: nextDraft as CrmIntegrationAdminDraft,
-                                          }))
-                                        }
-                                        onSaveSettings={(integrationId, nextDraft) =>
-                                          run(`${integration.provider} Einstellungen speichern`, async () => {
-                                            const settings = applyCrmAdminDraftToSettings(
-                                              integration,
-                                              nextDraft as CrmIntegrationAdminDraft,
-                                            );
-                                            await api(`/api/admin/network-integrations/${integrationId}`, {
-                                              method: "PATCH",
-                                              body: JSON.stringify({ settings }),
-                                            });
-                                            await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
-                                          })
-                                        }
-                                        onPreview={(integrationId, resource) =>
-                                          run(`${formatCrmResourceLabel(resource)}-Abruf testen`, async () => {
-                                            await api(`/api/admin/network-integrations/${integrationId}/preview-sync`, {
-                                              method: "POST",
-                                              body: JSON.stringify({ resource }),
-                                            });
-                                            await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
-                                          })
-                                        }
-                                        onSync={(integrationId, resource, mode) =>
-                                          run(`${formatCrmResourceLabel(resource)} ${mode === "full" ? "Vollsync" : "Guarded-Sync"} starten`, async () => {
-                                            await api(`/api/admin/network-integrations/${integrationId}/sync`, {
-                                              method: "POST",
-                                              body: JSON.stringify({ resource, mode }),
-                                            });
-                                            await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
-                                          })
-                                        }
-                                        onCancelSync={() =>
-                                          run("Sync-Abbruch", async () => {
-                                            throw new Error("Sync-Abbruch ist für Netzwerkpartner aktuell noch nicht implementiert.");
-                                          })
-                                        }
-                                        busy={busy}
-                                        syncSummary={resourceSyncSummary}
-                                        previewSummary={resourcePreviewSummary}
-                                        anotherSyncRunning={Boolean(anotherSyncRunning)}
-                                        syncWarning={syncWarning}
-                                      />
+                                      {row.rowType === "llm_policy" ? (
+                                        <div style={{ padding: 14, border: "1px solid #e2e8f0", borderRadius: 10, background: "#f8fafc", color: "#334155", lineHeight: 1.6 }}>
+                                          Diese Anbindungsart steuert, ob der Netzwerkpartner eigene LLM-Anbindungen nutzen darf. Weitere Detailkonfigurationen koennen hier spaeter ergänzt werden.
+                                        </div>
+                                      ) : isCrmIntegration && integration && draft ? (
+                                        <AdminCrmIntegrationsPanel
+                                          integration={integration}
+                                          draft={draft}
+                                          activeResourceKey={activeResourceKey}
+                                          onActiveResourceChange={(resource) =>
+                                            setNetworkCrmIntegrationTabs((prev) => ({
+                                              ...prev,
+                                              [integration.id]: resource,
+                                            }))
+                                          }
+                                          onDraftChange={(nextDraft) =>
+                                            setNetworkCrmIntegrationDrafts((prev): Record<string, CrmIntegrationAdminDraft> => ({
+                                              ...prev,
+                                              [integration.id]: nextDraft as CrmIntegrationAdminDraft,
+                                            }))
+                                          }
+                                          onSaveSettings={(integrationId, nextDraft) =>
+                                            run(`${integration.provider} Einstellungen speichern`, async () => {
+                                              const settings = applyCrmAdminDraftToSettings(
+                                                integration,
+                                                nextDraft as CrmIntegrationAdminDraft,
+                                              );
+                                              await api(`/api/admin/network-integrations/${integrationId}`, {
+                                                method: "PATCH",
+                                                body: JSON.stringify({ settings }),
+                                              });
+                                              await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                            })
+                                          }
+                                          onPreview={(integrationId, resource) =>
+                                            run(`${formatCrmResourceLabel(resource)}-Abruf testen`, async () => {
+                                              await api(`/api/admin/network-integrations/${integrationId}/preview-sync`, {
+                                                method: "POST",
+                                                body: JSON.stringify({ resource }),
+                                              });
+                                              await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                            })
+                                          }
+                                          onSync={(integrationId, resource, mode) =>
+                                            run(`${formatCrmResourceLabel(resource)} ${mode === "full" ? "Vollsync" : "Guarded-Sync"} starten`, async () => {
+                                              await api(`/api/admin/network-integrations/${integrationId}/sync`, {
+                                                method: "POST",
+                                                body: JSON.stringify({ resource, mode }),
+                                              });
+                                              await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                            })
+                                          }
+                                          onCancelSync={() =>
+                                            run("Sync-Abbruch", async () => {
+                                              throw new Error("Sync-Abbruch ist für Netzwerkpartner aktuell noch nicht implementiert.");
+                                            })
+                                          }
+                                          busy={busy}
+                                          syncSummary={resourceSyncSummary}
+                                          previewSummary={resourcePreviewSummary}
+                                          anotherSyncRunning={Boolean(anotherSyncRunning)}
+                                          syncWarning={syncWarning}
+                                        />
+                                      ) : (
+                                        <div style={{ padding: 14, border: "1px solid #e2e8f0", borderRadius: 10, background: "#f8fafc", color: "#334155", lineHeight: 1.6 }}>
+                                          Fuer diese Anbindungsart sind hier aktuell noch keine Detailinhalte hinterlegt. Dieser Bereich ist bewusst bereits aufklappbar vorbereitet.
+                                        </div>
+                                      )}
                                     </div>
                                   </td>
                                 </tr>
@@ -8930,14 +8958,11 @@ export default function AdminClient() {
                         })}
                       </tbody>
                     </table>
-                  )}
                 </div>
               </details>
             ))
           )}
         </div>
-        </>
-        ) : null}
       </section>
       ) : null}
 

@@ -43,7 +43,7 @@ function mapNetworkPartnerRow(row: Record<string, unknown>): NetworkPartnerRecor
     website_url: asNullableText(row.website_url),
     status: normalizeStatus(row.status),
     managed_editing_enabled: row.managed_editing_enabled === true,
-    llm_partner_managed_allowed: row.llm_partner_managed_allowed !== false,
+    llm_partner_managed_allowed: row.llm_partner_managed_allowed === true,
     created_at: asText(row.created_at),
     updated_at: asText(row.updated_at),
   };
@@ -90,7 +90,7 @@ function normalizeCreatePayload(input: NetworkPartnerCreateInput): Record<string
     website_url: asNullableText(input.website_url),
     status: input.status ?? "active",
     managed_editing_enabled: input.managed_editing_enabled === true,
-    llm_partner_managed_allowed: input.llm_partner_managed_allowed !== false,
+    llm_partner_managed_allowed: input.llm_partner_managed_allowed === true,
   };
 }
 
@@ -106,7 +106,7 @@ function normalizeUpdatePayload(input: NetworkPartnerUpdateInput): Record<string
     patch.managed_editing_enabled = input.managed_editing_enabled === true;
   }
   if (input.llm_partner_managed_allowed !== undefined) {
-    patch.llm_partner_managed_allowed = input.llm_partner_managed_allowed !== false;
+    patch.llm_partner_managed_allowed = input.llm_partner_managed_allowed === true;
   }
   return patch;
 }

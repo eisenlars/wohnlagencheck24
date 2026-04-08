@@ -45,7 +45,7 @@ export async function PATCH(
     const networkPartner = await updateNetworkPartner({
       id: networkPartnerId,
       portal_partner_id: partnerId,
-      llm_partner_managed_allowed: body.llm_partner_managed_allowed !== false,
+      llm_partner_managed_allowed: body.llm_partner_managed_allowed === true,
     });
 
     return NextResponse.json({ ok: true, network_partner: networkPartner });
