@@ -43,6 +43,7 @@ function mapNetworkPartnerRow(row: Record<string, unknown>): NetworkPartnerRecor
     website_url: asNullableText(row.website_url),
     status: normalizeStatus(row.status),
     managed_editing_enabled: row.managed_editing_enabled === true,
+    llm_partner_managed_allowed: row.llm_partner_managed_allowed !== false,
     created_at: asText(row.created_at),
     updated_at: asText(row.updated_at),
   };
@@ -89,6 +90,7 @@ function normalizeCreatePayload(input: NetworkPartnerCreateInput): Record<string
     website_url: asNullableText(input.website_url),
     status: input.status ?? "active",
     managed_editing_enabled: input.managed_editing_enabled === true,
+    llm_partner_managed_allowed: input.llm_partner_managed_allowed !== false,
   };
 }
 
@@ -102,6 +104,9 @@ function normalizeUpdatePayload(input: NetworkPartnerUpdateInput): Record<string
   if (input.status !== undefined) patch.status = input.status;
   if (input.managed_editing_enabled !== undefined) {
     patch.managed_editing_enabled = input.managed_editing_enabled === true;
+  }
+  if (input.llm_partner_managed_allowed !== undefined) {
+    patch.llm_partner_managed_allowed = input.llm_partner_managed_allowed !== false;
   }
   return patch;
 }
@@ -118,7 +123,7 @@ export async function listNetworkPartnersByPortalPartner(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("network_partners")
-    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
+    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, llm_partner_managed_allowed, created_at, updated_at")
     .eq("portal_partner_id", partnerId)
     .order("company_name", { ascending: true });
 
@@ -130,7 +135,7 @@ export async function getNetworkPartnerById(id: string): Promise<NetworkPartnerR
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("network_partners")
-    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
+    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, llm_partner_managed_allowed, created_at, updated_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -145,7 +150,7 @@ export async function getNetworkPartnerByIdForPortalPartner(
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("network_partners")
-    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
+    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, llm_partner_managed_allowed, created_at, updated_at")
     .eq("id", id)
     .eq("portal_partner_id", partnerId)
     .maybeSingle();
@@ -166,7 +171,7 @@ export async function createNetworkPartner(
   const { data, error } = await admin
     .from("network_partners")
     .insert(payload)
-    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
+    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, llm_partner_managed_allowed, created_at, updated_at")
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "NETWORK_PARTNER_CREATE_FAILED");
@@ -197,7 +202,7 @@ export async function updateNetworkPartner(
     .update(patch)
     .eq("id", input.id)
     .eq("portal_partner_id", input.portal_partner_id)
-    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, created_at, updated_at")
+    .select("id, portal_partner_id, company_name, legal_name, contact_email, contact_phone, website_url, status, managed_editing_enabled, llm_partner_managed_allowed, created_at, updated_at")
     .maybeSingle();
 
   if (error) throw new Error(error.message ?? "NETWORK_PARTNER_UPDATE_FAILED");

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import NetworkBookingsWorkspace from '@/components/network-partners/NetworkBookingsWorkspace';
 import NetworkContentWorkspace from '@/components/network-partners/NetworkContentWorkspace';
 import NetworkBillingWorkspace from '@/components/network-partners/NetworkBillingWorkspace';
+import NetworkPartnerIntegrationsWorkspace from '@/components/network-partners/NetworkPartnerIntegrationsWorkspace';
 import NetworkPartnerAccessPanel from '@/components/network-partners/NetworkPartnerAccessPanel';
 import NetworkPartnerForm from '@/components/network-partners/NetworkPartnerForm';
 import type { NetworkPartnerRecord } from '@/lib/network-partners/types';
@@ -18,7 +19,7 @@ type NetworkPartnerListPayload = {
   error?: string;
 };
 
-export type NetworkPartnerDetailSection = 'profile' | 'bookings' | 'content' | 'billing';
+export type NetworkPartnerDetailSection = 'profile' | 'integrations' | 'bookings' | 'content' | 'billing';
 
 type NetworkPartnerManagementWorkspaceProps = {
   initialSelectedPartnerId?: string | null;
@@ -306,6 +307,7 @@ export default function NetworkPartnerManagementWorkspace({
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {([
                       ['profile', 'Profil'],
+                      ['integrations', 'Anbindungen'],
                       ['bookings', 'Buchungen'],
                       ['content', 'Content & Review'],
                       ['billing', 'Abrechnung'],
@@ -386,6 +388,17 @@ export default function NetworkPartnerManagementWorkspace({
                 <NetworkBookingsWorkspace
                   networkPartnerId={selectedPartner.id}
                   networkPartnerName={selectedPartner.company_name}
+                />
+              ) : null}
+
+              {detailSection === 'integrations' ? (
+                <NetworkPartnerIntegrationsWorkspace
+                  partner={selectedPartner}
+                  onPartnerUpdated={(updatedPartner) => {
+                    setNetworkPartners((current) => current.map((partner) => (
+                      partner.id === updatedPartner.id ? updatedPartner : partner
+                    )));
+                  }}
                 />
               ) : null}
 

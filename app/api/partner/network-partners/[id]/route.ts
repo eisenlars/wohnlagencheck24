@@ -19,6 +19,7 @@ type NetworkPartnerPatchBody = {
   website_url?: string | null;
   status?: NetworkPartnerStatus;
   managed_editing_enabled?: boolean;
+  llm_partner_managed_allowed?: boolean;
 };
 
 function normalizeOptionalText(value: unknown): string | null {
@@ -105,6 +106,7 @@ export async function PATCH(
       website_url?: string | null;
       status?: NetworkPartnerStatus;
       managed_editing_enabled?: boolean;
+      llm_partner_managed_allowed?: boolean;
     } = {
       id: networkPartnerId,
       portal_partner_id: actor.partnerId,
@@ -136,6 +138,9 @@ export async function PATCH(
     }
     if (body.managed_editing_enabled !== undefined) {
       patch.managed_editing_enabled = body.managed_editing_enabled === true;
+    }
+    if (body.llm_partner_managed_allowed !== undefined) {
+      patch.llm_partner_managed_allowed = body.llm_partner_managed_allowed !== false;
     }
 
     const networkPartner = await updateNetworkPartner(patch);

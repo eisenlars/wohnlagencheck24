@@ -695,6 +695,92 @@ function renderFullSyncSettings(
   );
 }
 
+function renderPartialSyncSettings(
+  provider: string,
+  resourceKey: CrmResourceKey,
+  draft: CrmIntegrationAdminDraft,
+  onChange: (nextDraft: CrmIntegrationAdminDraft) => void,
+) {
+  if (isOnOfficeProvider(provider)) {
+    if (resourceKey === "offers") {
+      return (
+        <>
+          <label style={labelStyle}>
+            Automatisierungsmodus
+            <select
+              style={inputStyle}
+              value={draft.onOfficeListingsAutomationMode}
+              onChange={(event) => onChange(updateDraft(draft, { onOfficeListingsAutomationMode: event.target.value as "full_sync" | "delta_polling" }))}
+            >
+              <option value="full_sync">Initial voll, danach manuell</option>
+              <option value="delta_polling">Initial voll, danach Delta über geaendert_am</option>
+            </select>
+          </label>
+          <label style={labelStyle}>
+            Delta Sicherheits-Overlap (Min.)
+            <input
+              style={inputStyle}
+              value={draft.onOfficeListingsDeltaOverlapMinutes}
+              onChange={(event) => onChange(updateDraft(draft, { onOfficeListingsDeltaOverlapMinutes: event.target.value }))}
+              placeholder="z. B. 2"
+            />
+          </label>
+          <div style={helperTextStyle}>
+            Bei <code>delta_polling</code> nutzt der Auto-Sync nach einem erfolgreichen Erstabgleich den Zeitstempel <code>geaendert_am</code> mit kleinem Rücksprung statt dauernder Vollabrufe.
+          </div>
+        </>
+      );
+    }
+
+    if (resourceKey === "references") {
+      return (
+        <>
+          <label style={labelStyle}>
+            Automatisierungsmodus
+            <select
+              style={inputStyle}
+              value={draft.onOfficeReferencesAutomationMode}
+              onChange={(event) => onChange(updateDraft(draft, { onOfficeReferencesAutomationMode: event.target.value as "full_sync" | "delta_polling" }))}
+            >
+              <option value="full_sync">Initial voll, danach manuell</option>
+              <option value="delta_polling">Initial voll, danach Delta über geaendert_am</option>
+            </select>
+          </label>
+          <label style={labelStyle}>
+            Delta Sicherheits-Overlap (Min.)
+            <input
+              style={inputStyle}
+              value={draft.onOfficeReferencesDeltaOverlapMinutes}
+              onChange={(event) => onChange(updateDraft(draft, { onOfficeReferencesDeltaOverlapMinutes: event.target.value }))}
+              placeholder="z. B. 2"
+            />
+          </label>
+          <div style={helperTextStyle}>
+            Für Referenzen wird derselbe Delta-Mechanismus auf <code>estate</code> angewendet. Der Auto-Lauf prüft dann nur seit dem letzten erfolgreichen Referenz-Sync geänderte Datensätze.
+          </div>
+        </>
+      );
+    }
+
+    return (
+      <div style={helperTextStyle}>
+        Für diese Ressource ist aktuell keine separate Teil-Synchronisation konfiguriert.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div style={helperTextStyle}>
+        Propstack setzt für Teil-Synchronisation auf eingehende Trigger statt Delta-Polling.
+      </div>
+      <div style={helperTextStyle}>
+        Relevante Webhook-/Trigger-Secrets werden separat gepflegt und vom CRM bei Änderungen aufgerufen.
+      </div>
+    </>
+  );
+}
+
 export default function AdminCrmIntegrationsPanel({
   integration,
   draft,
@@ -859,7 +945,7 @@ export default function AdminCrmIntegrationsPanel({
               </div>
             </div>
             <div style={settingsCardStyle}>
-              <div style={settingsCardTitleStyle}>Testmodus</div>
+              <div style={settingsCardTitleStyle}>Abgesicherter Testmodus</div>
               <div style={settingsFieldsStyle}>
                 {renderTestMode(integration.provider, activeResourceKey, draft, onDraftChange)}
               </div>
@@ -868,6 +954,12 @@ export default function AdminCrmIntegrationsPanel({
               <div style={settingsCardTitleStyle}>Vollsynchronisation</div>
               <div style={settingsFieldsStyle}>
                 {renderFullSyncSettings(integration.provider, activeResourceKey, draft, onDraftChange)}
+              </div>
+            </div>
+            <div style={settingsCardStyle}>
+              <div style={settingsCardTitleStyle}>Teilsynchronisation</div>
+              <div style={settingsFieldsStyle}>
+                {renderPartialSyncSettings(integration.provider, activeResourceKey, draft, onDraftChange)}
               </div>
             </div>
           </div>

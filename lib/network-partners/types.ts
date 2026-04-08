@@ -56,6 +56,7 @@ export type NetworkPartnerRecord = {
   website_url: string | null;
   status: NetworkPartnerStatus;
   managed_editing_enabled: boolean;
+  llm_partner_managed_allowed: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -167,6 +168,7 @@ export type NetworkPartnerCreateInput = {
   website_url?: string | null;
   status?: NetworkPartnerStatus;
   managed_editing_enabled?: boolean;
+  llm_partner_managed_allowed?: boolean;
 };
 
 export type NetworkPartnerUpdateInput = {
@@ -179,6 +181,7 @@ export type NetworkPartnerUpdateInput = {
   website_url?: string | null;
   status?: NetworkPartnerStatus;
   managed_editing_enabled?: boolean;
+  llm_partner_managed_allowed?: boolean;
 };
 
 export type NetworkPartnerIntegrationRecord = {

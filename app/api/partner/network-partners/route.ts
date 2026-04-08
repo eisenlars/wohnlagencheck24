@@ -23,6 +23,7 @@ type NetworkPartnerBody = {
   website_url?: string | null;
   status?: NetworkPartnerStatus;
   managed_editing_enabled?: boolean;
+  llm_partner_managed_allowed?: boolean;
   send_invite?: boolean;
 };
 
@@ -99,6 +100,7 @@ export async function POST(req: Request) {
       website_url: normalizeOptionalText(body.website_url),
       status,
       managed_editing_enabled: body.managed_editing_enabled === true,
+      llm_partner_managed_allowed: body.llm_partner_managed_allowed !== false,
     });
 
     if (body.send_invite === true) {

@@ -537,6 +537,7 @@ CREATE TABLE public.network_partners (
   website_url text,
   status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'paused'::text, 'inactive'::text])),
   managed_editing_enabled boolean NOT NULL DEFAULT false,
+  llm_partner_managed_allowed boolean NOT NULL DEFAULT true,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT network_partners_pkey PRIMARY KEY (id),
