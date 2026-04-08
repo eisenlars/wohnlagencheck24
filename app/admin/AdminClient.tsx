@@ -8456,11 +8456,11 @@ export default function AdminClient() {
             </div>
           </div>
         </div>
-        <div style={{ ...rowStyle, marginTop: 16, gap: 8, flexWrap: "wrap" }}>
-          <button style={partnerTabButtonStyle(partnerBillingWorkspaceTab === "portal_abo")} onClick={() => setPartnerBillingWorkspaceTab("portal_abo")}>Portalabo</button>
-          <button style={partnerTabButtonStyle(partnerBillingWorkspaceTab === "internationality")} onClick={() => setPartnerBillingWorkspaceTab("internationality")}>Internationalität</button>
-          <button style={partnerTabButtonStyle(partnerBillingWorkspaceTab === "features")} onClick={() => setPartnerBillingWorkspaceTab("features")}>Features</button>
-          <button style={partnerTabButtonStyle(partnerBillingWorkspaceTab === "ai")} onClick={() => setPartnerBillingWorkspaceTab("ai")}>KI-Abrechnung</button>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8, marginTop: 16 }}>
+          <button style={{ ...partnerTabButtonStyle(partnerBillingWorkspaceTab === "portal_abo"), width: "100%", justifyContent: "center", paddingInline: 10 }} onClick={() => setPartnerBillingWorkspaceTab("portal_abo")}>Portalabo</button>
+          <button style={{ ...partnerTabButtonStyle(partnerBillingWorkspaceTab === "internationality"), width: "100%", justifyContent: "center", paddingInline: 10 }} onClick={() => setPartnerBillingWorkspaceTab("internationality")}>Internationalität</button>
+          <button style={{ ...partnerTabButtonStyle(partnerBillingWorkspaceTab === "features"), width: "100%", justifyContent: "center", paddingInline: 10 }} onClick={() => setPartnerBillingWorkspaceTab("features")}>Features</button>
+          <button style={{ ...partnerTabButtonStyle(partnerBillingWorkspaceTab === "ai"), width: "100%", justifyContent: "center", paddingInline: 10 }} onClick={() => setPartnerBillingWorkspaceTab("ai")}>KI-Abrechnung</button>
         </div>
         {partnerBillingWorkspaceTab === "portal_abo" ? (
         <>
