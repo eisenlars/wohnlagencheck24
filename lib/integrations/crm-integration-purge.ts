@@ -21,7 +21,7 @@ type DeleteQuery = {
 
 export type CrmIntegrationPurgeResult = {
   deletedCounts: {
-    partner_listings: number;
+    crm_raw_offers: number;
     partner_property_offers: number;
     partner_property_offer_i18n: number;
     partner_property_overrides: number;
@@ -119,9 +119,9 @@ export async function purgeCrmIntegrationData(args: {
   const requestIds = requestRows.map((row) => String(row.id ?? "").trim()).filter(Boolean);
 
   const deletedCounts = {
-    partner_listings: await countRowsSafe(
+    crm_raw_offers: await countRowsSafe(
       admin,
-      "partner_listings",
+      "crm_raw_offers",
       (query) => query.eq("partner_id", partnerId).eq("provider", provider),
     ),
     partner_property_offers: offerIds.length,
@@ -197,7 +197,7 @@ export async function purgeCrmIntegrationData(args: {
 
   await deleteRowsSafe(
     admin,
-    "partner_listings",
+    "crm_raw_offers",
     (query) => query.eq("partner_id", partnerId).eq("provider", provider),
   );
 

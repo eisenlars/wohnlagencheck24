@@ -57,7 +57,7 @@ Typisch:
 
 ### `normalized_payload`
 
-Der interne, vereinheitlichte Rohzustand in `partner_listings`.
+Der interne, vereinheitlichte Rohzustand in `crm_raw_offers`.
 
 Bei onOffice ist `normalized_payload` aktuell in weiten Teilen identisch zu `offer.raw`.
 Es ist also bereits eine portalnahe Struktur und kein blosses 1:1-Abbild von `source_payload`.
@@ -350,7 +350,7 @@ Wichtig:
 ## Aktuelle technische Abbildung
 
 - `source_payload` bleibt der originale API-Record
-- `normalized_payload` bei `partner_listings` wird aus `offer.raw` aufgebaut
+- `normalized_payload` bei `crm_raw_offers` wird aus `offer.raw` aufgebaut
 - `offer.raw` ist die wichtigste interne Debug- und Projektionssicht
 
 ## Offene Punkte fuer spaeter

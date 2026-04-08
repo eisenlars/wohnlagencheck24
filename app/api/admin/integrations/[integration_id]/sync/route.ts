@@ -213,7 +213,7 @@ function formatSuccessMessage(result: CrmSyncResult): string {
   ];
   const extras: string[] = [];
   if (result.deactivated_offers > 0) extras.push(`${result.deactivated_offers} Angebote deaktiviert`);
-  if (result.deactivated_listings > 0) extras.push(`${result.deactivated_listings} Rohobjekte deaktiviert`);
+  if (result.deactivated_raw_offers > 0) extras.push(`${result.deactivated_raw_offers} Rohangebote deaktiviert`);
   return `${parts.join(" · ")} synchronisiert${extras.length ? ` · ${extras.join(" · ")}` : ""}`;
 }
 

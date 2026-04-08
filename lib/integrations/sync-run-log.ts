@@ -56,11 +56,11 @@ type UpdateRunInput = {
   durationMs?: number | null;
   requestCount?: number | null;
   pagesFetched?: number | null;
-  listingsCount?: number | null;
+  rawOffersCount?: number | null;
   offersCount?: number | null;
   referencesCount?: number | null;
   requestsCount?: number | null;
-  deactivatedListings?: number | null;
+  deactivatedRawOffers?: number | null;
   deactivatedOffers?: number | null;
   safetyLimited?: boolean;
   log?: SyncRunLogEntry[] | null;
@@ -163,11 +163,11 @@ export async function updateIntegrationSyncRun(
       duration_ms: input.durationMs,
       request_count: input.requestCount,
       pages_fetched: input.pagesFetched,
-      listings_count: input.listingsCount,
+      raw_offers_count: input.rawOffersCount,
       offers_count: input.offersCount,
       references_count: input.referencesCount,
       requests_count: input.requestsCount,
-      deactivated_listings: input.deactivatedListings,
+      deactivated_raw_offers: input.deactivatedRawOffers,
       deactivated_offers: input.deactivatedOffers,
       safety_limited: input.safetyLimited,
       log: input.log,
@@ -213,11 +213,11 @@ export async function markIntegrationSyncRunSuccess(
     durationMs: options.durationMs,
     requestCount: result.provider_request_count ?? null,
     pagesFetched: result.provider_pages_fetched ?? null,
-    listingsCount: result.listings_count,
+    rawOffersCount: result.raw_offers_count,
     offersCount: result.offers_count,
     referencesCount: result.references_count,
     requestsCount: result.requests_count,
-    deactivatedListings: result.deactivated_listings,
+    deactivatedRawOffers: result.deactivated_raw_offers,
     deactivatedOffers: result.deactivated_offers,
     safetyLimited: hasSafetyLimit(result),
     log: options.log ?? null,

@@ -10,7 +10,7 @@ const PARTNER_PURGE_TABLES: Array<{ table: string; column: string }> = [
   { table: "partner_texts_i18n", column: "partner_id" },
   { table: "partner_local_site_texts", column: "partner_id" },
   { table: "partner_marketing_texts", column: "partner_id" },
-  { table: "partner_listings", column: "partner_id" },
+  { table: "crm_raw_offers", column: "partner_id" },
   { table: "partner_property_offer_i18n", column: "partner_id" },
   { table: "partner_property_overrides", column: "partner_id" },
   { table: "partner_property_offers", column: "partner_id" },

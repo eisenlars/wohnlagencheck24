@@ -145,11 +145,11 @@ type MarketExplanationFaqDraftItem = {
 type CrmResourceKey = "offers" | "references" | "requests";
 
 type CrmSyncResultPayload = {
-  listings_count: number;
+  raw_offers_count: number;
   references_count: number;
   requests_count: number;
   offers_count: number;
-  deactivated_listings: number;
+  deactivated_raw_offers: number;
   deactivated_offers: number;
   skipped: boolean;
   reason?: string;
@@ -1318,7 +1318,7 @@ function formatSyncResultMessage(result: CrmSyncResultPayload): string {
   ];
   const extras: string[] = [];
   if (result.deactivated_offers > 0) extras.push(`${result.deactivated_offers} Angebote deaktiviert`);
-  if (result.deactivated_listings > 0) extras.push(`${result.deactivated_listings} Rohobjekte deaktiviert`);
+  if (result.deactivated_raw_offers > 0) extras.push(`${result.deactivated_raw_offers} Rohangebote deaktiviert`);
   if (result.notes?.length) extras.push(result.notes[0] ?? "");
   return `${parts.join(" · ")} synchronisiert${extras.length ? ` · ${extras.join(" · ")}` : ""}`;
 }

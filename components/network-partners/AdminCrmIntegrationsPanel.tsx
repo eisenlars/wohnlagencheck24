@@ -12,11 +12,11 @@ type SyncLogPayload = {
 };
 
 type CrmSyncResultPayload = {
-  listings_count: number;
+  raw_offers_count: number;
   references_count: number;
   requests_count: number;
   offers_count: number;
-  deactivated_listings: number;
+  deactivated_raw_offers: number;
   deactivated_offers: number;
   skipped: boolean;
   reason?: string;

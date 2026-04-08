@@ -78,7 +78,7 @@ function buildOnOfficePreviewDebug(
     },
     result_counts: {
       offers: result.offers.length,
-      listings: result.listings.length,
+      raw_offers: result.listings.length,
       references: result.references.length,
       requests: result.requests.length,
     },
@@ -384,7 +384,7 @@ export async function POST(
             provider: integration.provider,
             diagnostic_mode: "propstack_guarded_sync",
             offers_count: result.offers.length,
-            listings_count: result.listings.length,
+            raw_offers_count: result.listings.length,
             references_count: result.references.length,
             requests_count: result.requests.length,
             references_fetched: result.referencesFetched,
@@ -399,7 +399,7 @@ export async function POST(
               object_type: offer.object_type,
               address: offer.address,
             })),
-            listings_preview: result.listings.slice(0, 5).map((listing) => ({
+            raw_offers_preview: result.listings.slice(0, 5).map((listing) => ({
               external_id: listing.external_id,
               title: listing.title,
               source_updated_at: listing.source_updated_at,
@@ -485,7 +485,7 @@ export async function POST(
           skipped: false,
           provider: integration.provider,
           offers_count: result.offers.length,
-          listings_count: result.listings.length,
+          raw_offers_count: result.listings.length,
           references_count: result.references.length,
           requests_count: result.requests.length,
           references_fetched: result.referencesFetched,
@@ -502,7 +502,7 @@ export async function POST(
             object_type: offer.object_type,
             address: offer.address,
           })),
-          listings_preview: result.listings.slice(0, 5).map((listing) => ({
+          raw_offers_preview: result.listings.slice(0, 5).map((listing) => ({
             external_id: listing.external_id,
             title: listing.title,
             source_updated_at: listing.source_updated_at,

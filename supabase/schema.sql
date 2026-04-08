@@ -171,11 +171,11 @@ CREATE TABLE public.integration_sync_runs (
   error_class text,
   request_count integer,
   pages_fetched integer,
-  listings_count integer,
+  raw_offers_count integer,
   offers_count integer,
   references_count integer,
   requests_count integer,
-  deactivated_listings integer,
+  deactivated_raw_offers integer,
   deactivated_offers integer,
   safety_limited boolean NOT NULL DEFAULT false,
   log jsonb,
@@ -730,7 +730,7 @@ CREATE TABLE public.partner_integrations (
   CONSTRAINT partner_integrations_pkey PRIMARY KEY (id),
   CONSTRAINT partner_integrations_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
 );
-CREATE TABLE public.partner_listings (
+CREATE TABLE public.crm_raw_offers (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   partner_id uuid NOT NULL,
   provider text NOT NULL,
@@ -745,8 +745,8 @@ CREATE TABLE public.partner_listings (
   last_seen_at timestamp with time zone NOT NULL DEFAULT now(),
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT partner_listings_pkey PRIMARY KEY (id),
-  CONSTRAINT partner_listings_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
+  CONSTRAINT crm_raw_offers_pkey PRIMARY KEY (id),
+  CONSTRAINT crm_raw_offers_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id)
 );
 CREATE TABLE public.partner_local_site_texts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

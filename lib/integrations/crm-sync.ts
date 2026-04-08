@@ -43,11 +43,11 @@ export type CrmSyncResult = {
   provider: string;
   resource: CrmSyncResource;
   mode: CrmSyncMode;
-  listings_count: number;
+  raw_offers_count: number;
   references_count: number;
   requests_count: number;
   offers_count: number;
-  deactivated_listings: number;
+  deactivated_raw_offers: number;
   deactivated_offers: number;
   provider_request_count?: number;
   provider_pages_fetched?: number;
@@ -193,7 +193,7 @@ async function withProgressKeepalive<T>(
 async function deactivateMissingByExternalId(
   supabase: AdminClient,
   table:
-    | "partner_listings"
+    | "crm_raw_offers"
     | "crm_raw_references"
     | "crm_raw_requests"
     | "partner_references"
@@ -261,7 +261,7 @@ async function deactivateMissingByExternalId(
 
 async function upsertRawResource(
   supabase: AdminClient,
-  table: "partner_listings" | "crm_raw_references" | "crm_raw_requests",
+  table: "crm_raw_offers" | "crm_raw_references" | "crm_raw_requests",
   rows: Array<Record<string, unknown>>,
 ): Promise<void> {
   if (!rows.length) return;
@@ -426,7 +426,7 @@ async function upsertOffers(
 
 async function syncRawResourceLayer(
   supabase: AdminClient,
-  table: "partner_listings" | "crm_raw_references" | "crm_raw_requests",
+  table: "crm_raw_offers" | "crm_raw_references" | "crm_raw_requests",
   partnerId: string,
   provider: string,
   rows: Array<Record<string, unknown>>,
@@ -511,11 +511,11 @@ export async function runCrmIntegrationSync(
       provider: integration.provider,
       resource,
       mode,
-      listings_count: 0,
+      raw_offers_count: 0,
       references_count: 0,
       requests_count: 0,
       offers_count: 0,
-      deactivated_listings: 0,
+      deactivated_raw_offers: 0,
       deactivated_offers: 0,
       skipped: true,
       reason: "unsupported kind",
@@ -528,11 +528,11 @@ export async function runCrmIntegrationSync(
       provider: integration.provider,
       resource,
       mode,
-      listings_count: 0,
+      raw_offers_count: 0,
       references_count: 0,
       requests_count: 0,
       offers_count: 0,
-      deactivated_listings: 0,
+      deactivated_raw_offers: 0,
       deactivated_offers: 0,
       skipped: true,
       reason: "integration inactive",
@@ -552,11 +552,11 @@ export async function runCrmIntegrationSync(
       provider: integration.provider,
       resource,
       mode,
-      listings_count: 0,
+      raw_offers_count: 0,
       references_count: 0,
       requests_count: 0,
       offers_count: 0,
-      deactivated_listings: 0,
+      deactivated_raw_offers: 0,
       deactivated_offers: 0,
       skipped: true,
       reason: "all capabilities disabled",
@@ -578,7 +578,7 @@ export async function runCrmIntegrationSync(
   await hooks?.assertCanContinue?.();
   await hooks?.onProgress?.(
     "resources_fetched",
-    `CRM-Daten geladen: Angebote=${offers.length}, Rohobjekte=${listings.length}, Referenzen=${references.length}, Gesuche=${requests.length}.`,
+    `CRM-Daten geladen: Angebote=${offers.length}, Rohangebote=${listings.length}, Referenzen=${references.length}, Gesuche=${requests.length}.`,
   );
   const partialSyncMode = diagnostics?.partial_sync_mode === true;
   const allowDeactivate = mode === "full" && diagnostics?.stale_deactivation_allowed !== false;
@@ -594,25 +594,25 @@ export async function runCrmIntegrationSync(
     mergedNotes.push("requests capability enabled, but live request data unavailable");
   }
 
-  let listingsCount = 0;
-  let deactivatedListings = 0;
+  let rawOffersCount = 0;
+  let deactivatedRawOffers = 0;
   if (syncListings) {
     const dedupedListings = dedupeRawRows(listings);
     if (dedupedListings.removed > 0) {
-      mergedNotes.push(`listings dedupe: ${dedupedListings.removed} Duplikate vor dem Upsert entfernt`);
+      mergedNotes.push(`raw_offers dedupe: ${dedupedListings.removed} Duplikate vor dem Upsert entfernt`);
     }
     await hooks?.assertCanContinue?.();
-    await hooks?.onProgress?.("upsert_listings", "Rohobjekte werden gespeichert.");
+    await hooks?.onProgress?.("upsert_raw_offers", "Rohangebote werden gespeichert.");
     const layer = await syncRawResourceLayer(
       supabase,
-      "partner_listings",
+      "crm_raw_offers",
       integration.partner_id,
       integration.provider,
       dedupedListings.rows as unknown as Array<Record<string, unknown>>,
       { allowDeactivate },
     );
-    listingsCount = layer.count;
-    deactivatedListings = layer.deactivated;
+    rawOffersCount = layer.count;
+    deactivatedRawOffers = layer.deactivated;
   }
 
   let referencesCount = 0;
@@ -742,11 +742,11 @@ export async function runCrmIntegrationSync(
     provider: integration.provider,
     resource,
     mode,
-    listings_count: listingsCount,
+    raw_offers_count: rawOffersCount,
     references_count: referencesCount,
     requests_count: requestsCount,
     offers_count: syncListings ? offers.length : 0,
-    deactivated_listings: deactivatedListings,
+    deactivated_raw_offers: deactivatedRawOffers,
     deactivated_offers: deactivatedOffers,
     provider_request_count: diagnostics?.provider_request_count,
     provider_pages_fetched: diagnostics?.provider_pages_fetched,
