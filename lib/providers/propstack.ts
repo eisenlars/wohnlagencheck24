@@ -59,6 +59,10 @@ type PropstackUnit = {
   long_description_note?: string | { label?: unknown; value?: unknown } | null;
   location_note?: string | { label?: unknown; value?: unknown } | null;
   furnishing_note?: string | { label?: unknown; value?: unknown } | null;
+  other_note?: string | { label?: unknown; value?: unknown } | null;
+  courtage?: string | { label?: unknown; value?: unknown } | null;
+  courtage_note?: string | { label?: unknown; value?: unknown } | null;
+  internal_brokerage?: string | { label?: unknown; value?: unknown } | null;
   street?: string | null;
   house_number?: string | null;
   zip_code?: string | null;
@@ -77,6 +81,14 @@ type PropstackUnit = {
   base_rent?: number | string | { label?: unknown; value?: unknown } | null;
   purchase_price?: number | string | { label?: unknown; value?: unknown } | null;
   rent_net?: number | string | { label?: unknown; value?: unknown } | null;
+  total_rent?: number | string | { label?: unknown; value?: unknown } | null;
+  service_charge?: number | string | { label?: unknown; value?: unknown } | null;
+  heating_costs?: number | string | { label?: unknown; value?: unknown } | null;
+  maintenance_reserve?: number | string | { label?: unknown; value?: unknown } | null;
+  other_costs?: number | string | { label?: unknown; value?: unknown } | null;
+  parking_space_price?: number | string | { label?: unknown; value?: unknown } | null;
+  rent_subsidy?: number | string | { label?: unknown; value?: unknown } | null;
+  sold_price?: number | string | { label?: unknown; value?: unknown } | null;
   living_space?: number | string | { label?: unknown; value?: unknown } | null;
   number_of_rooms?: number | string | { label?: unknown; value?: unknown } | null;
   energy_certificate_type?: string | null;
@@ -89,21 +101,43 @@ type PropstackUnit = {
   energy_certificate_end_date?: string | { label?: unknown; value?: unknown } | null;
   energy_consumption_contains_warm_water?: boolean | { label?: unknown; value?: unknown } | null;
   heating_type?: string | { label?: unknown; value?: unknown } | null;
+  firing_types?: string | string[] | { label?: unknown; value?: unknown } | null;
   construction_year?: number | string | { label?: unknown; value?: unknown } | null;
   usable_floor_space?: number | string | { label?: unknown; value?: unknown } | null;
   plot_area?: number | string | { label?: unknown; value?: unknown } | null;
   property_space_value?: number | string | { label?: unknown; value?: unknown } | null;
+  total_floor_space?: number | string | { label?: unknown; value?: unknown } | null;
+  industrial_area?: number | string | { label?: unknown; value?: unknown } | null;
+  balcony_space?: number | string | { label?: unknown; value?: unknown } | null;
+  garden_space?: number | string | { label?: unknown; value?: unknown } | null;
   floor?: number | string | { label?: unknown; value?: unknown } | null;
+  number_of_floors?: number | string | { label?: unknown; value?: unknown } | null;
   condition?: string | { label?: unknown; value?: unknown } | null;
+  interior_quality?: string | { label?: unknown; value?: unknown } | null;
   free_from?: string | { label?: unknown; value?: unknown } | null;
   number_of_bed_rooms?: number | string | { label?: unknown; value?: unknown } | null;
   number_of_bath_rooms?: number | string | { label?: unknown; value?: unknown } | null;
+  number_of_balconies?: number | string | { label?: unknown; value?: unknown } | null;
+  number_of_terraces?: number | string | { label?: unknown; value?: unknown } | null;
+  number_of_apartments?: number | string | { label?: unknown; value?: unknown } | null;
+  number_of_commercials?: number | string | { label?: unknown; value?: unknown } | null;
   parking_space_type?: string | { label?: unknown; value?: unknown } | null;
   parking_space_types?: string[] | { label?: unknown; value?: unknown } | null;
   balcony?: boolean | { label?: unknown; value?: unknown } | null;
   terrace?: boolean | { label?: unknown; value?: unknown } | null;
   garden?: boolean | { label?: unknown; value?: unknown } | null;
   lift?: boolean | { label?: unknown; value?: unknown } | null;
+  cellar?: boolean | { label?: unknown; value?: unknown } | null;
+  rented?: boolean | { label?: unknown; value?: unknown } | null;
+  barrier_free?: boolean | { label?: unknown; value?: unknown } | null;
+  guest_toilet?: boolean | { label?: unknown; value?: unknown } | null;
+  built_in_kitchen?: boolean | { label?: unknown; value?: unknown } | null;
+  monument?: boolean | { label?: unknown; value?: unknown } | null;
+  winter_garden?: boolean | { label?: unknown; value?: unknown } | null;
+  chimney?: boolean | { label?: unknown; value?: unknown } | null;
+  alarm_system?: boolean | { label?: unknown; value?: unknown } | null;
+  bathroom?: string[] | string | { label?: unknown; value?: unknown } | null;
+  flooring_type?: string[] | string | { label?: unknown; value?: unknown } | null;
   custom_fields?: Record<string, unknown> | null;
   updated_at?: string | null;
   images?: PropstackImage[] | null;
@@ -114,6 +148,9 @@ type PropstackUnit = {
   archived?: boolean | null;
   recommended_use_types?: unknown[] | null;
   public_expose_url?: string | null;
+  relationships?: Array<Record<string, unknown>> | null;
+  folders?: Array<Record<string, unknown>> | null;
+  links?: Array<Record<string, unknown>> | null;
 };
 
 type PropstackPropertyStatus = {
@@ -625,6 +662,18 @@ function asBoolean(value: unknown): boolean | null {
   return null;
 }
 
+function normalizePropstackTextArray(value: unknown): string[] | null {
+  if (Array.isArray(value)) {
+    const normalized = value
+      .map((entry) => normalizePropstackText(entry))
+      .filter((entry): entry is string => Boolean(entry));
+    return normalized.length ? normalized : null;
+  }
+
+  const single = normalizePropstackText(value);
+  return single ? [single] : null;
+}
+
 function inferPropstackMediaKind(
   title: string | null,
   url: string | null,
@@ -739,12 +788,16 @@ function buildEnergySnapshot(unit: PropstackUnit): OfferEnergySnapshot {
   const value = normalizePropstackNumber(unit.energy_efficiency_value)
     ?? normalizePropstackNumber(unit.energy_consumption_value);
   const constructionYear = normalizePropstackNumber(unit.construction_year);
+  const heatingEnergySource = firstString([
+    ...(normalizePropstackTextArray(unit.firing_types) ?? []),
+    normalizePropstackTitle(unit.heating_type),
+  ]);
   return {
     certificate_type: certificateType,
     value,
     value_kind: normalizeEnergyValueKind(certificateType),
     construction_year: constructionYear,
-    heating_energy_source: normalizePropstackTitle(unit.heating_type),
+    heating_energy_source: heatingEnergySource,
     efficiency_class: normalizePropstackTitle(unit.energy_efficiency_class),
     certificate_availability: normalizePropstackTitle(unit.energy_certificate_availability),
     certificate_start_date: normalizePropstackTitle(unit.energy_certificate_start_date),
@@ -774,6 +827,66 @@ function buildDetailsSnapshot(unit: PropstackUnit): OfferDetailsSnapshot {
     garden: asBoolean(unit.garden),
     elevator: asBoolean(unit.lift),
     address_hidden: unit.hide_address ?? null,
+  };
+}
+
+function buildPricingSnapshot(unit: PropstackUnit): Record<string, unknown> {
+  return {
+    purchase_price: normalizePropstackNumber(unit.price) ?? normalizePropstackNumber(unit.purchase_price),
+    base_rent: normalizePropstackNumber(unit.base_rent) ?? normalizePropstackNumber(unit.rent_net),
+    total_rent: normalizePropstackNumber(unit.total_rent),
+    service_charge: normalizePropstackNumber(unit.service_charge),
+    heating_costs: normalizePropstackNumber(unit.heating_costs),
+    maintenance_reserve: normalizePropstackNumber(unit.maintenance_reserve),
+    other_costs: normalizePropstackNumber(unit.other_costs),
+    parking_space_price: normalizePropstackNumber(unit.parking_space_price),
+    rent_subsidy: normalizePropstackNumber(unit.rent_subsidy),
+    sold_price: normalizePropstackNumber(unit.sold_price),
+    courtage: normalizePropstackText(unit.courtage),
+    courtage_note: normalizePropstackText(unit.courtage_note),
+    internal_brokerage: normalizePropstackText(unit.internal_brokerage),
+  };
+}
+
+function buildDetailsExtraSnapshot(unit: PropstackUnit): Record<string, unknown> {
+  return {
+    total_area_sqm: normalizePropstackNumber(unit.total_floor_space),
+    industrial_area_sqm: normalizePropstackNumber(unit.industrial_area),
+    balcony_area_sqm: normalizePropstackNumber(unit.balcony_space),
+    garden_area_sqm: normalizePropstackNumber(unit.garden_space),
+    floors_total: normalizePropstackNumber(unit.number_of_floors),
+    balconies_count: normalizePropstackNumber(unit.number_of_balconies),
+    terraces_count: normalizePropstackNumber(unit.number_of_terraces),
+    apartments_count: normalizePropstackNumber(unit.number_of_apartments),
+    commercials_count: normalizePropstackNumber(unit.number_of_commercials),
+  };
+}
+
+function buildEquipmentSnapshot(unit: PropstackUnit): Record<string, unknown> {
+  return {
+    interior_quality: normalizePropstackTitle(unit.interior_quality),
+    heating_type: normalizePropstackTitle(unit.heating_type),
+    heating_energy_source: normalizePropstackTextArray(unit.firing_types),
+    parking_types: normalizePropstackTextArray(unit.parking_space_types),
+    flooring_types: normalizePropstackTextArray(unit.flooring_type),
+    bathroom_features: normalizePropstackTextArray(unit.bathroom),
+    cellar: asBoolean(unit.cellar),
+    rented: asBoolean(unit.rented),
+    barrier_free: asBoolean(unit.barrier_free),
+    guest_toilet: asBoolean(unit.guest_toilet),
+    built_in_kitchen: asBoolean(unit.built_in_kitchen),
+    monument: asBoolean(unit.monument),
+    winter_garden: asBoolean(unit.winter_garden),
+    chimney: asBoolean(unit.chimney),
+    alarm_system: asBoolean(unit.alarm_system),
+  };
+}
+
+function buildRelatedSnapshot(unit: PropstackUnit): Record<string, unknown> {
+  return {
+    links: Array.isArray(unit.links) ? unit.links : [],
+    relationships: Array.isArray(unit.relationships) ? unit.relationships : [],
+    folders: Array.isArray(unit.folders) ? unit.folders : [],
   };
 }
 
@@ -1053,6 +1166,10 @@ function buildNormalizedListingPayload(
   const documents = normalizeDocuments(unit.documents);
   const energy = buildEnergySnapshot(unit);
   const details = buildDetailsSnapshot(unit);
+  const pricing = buildPricingSnapshot(unit);
+  const detailsExtra = buildDetailsExtraSnapshot(unit);
+  const equipment = buildEquipmentSnapshot(unit);
+  const related = buildRelatedSnapshot(unit);
   const address = buildAddress(unit);
   const district = buildDistrict(unit);
   const status = getEffectivePropstackStatus(unit);
@@ -1100,8 +1217,12 @@ function buildNormalizedListingPayload(
     long_description: normalizePropstackText(unit.long_description_note),
     location: normalizePropstackText(unit.location_note),
     features_note: normalizePropstackText(unit.furnishing_note),
+    other_note: normalizePropstackText(unit.other_note),
     details,
+    details_extra: detailsExtra,
     energy,
+    pricing,
+    equipment,
     gallery,
     gallery_urls: gallery,
     gallery_assets: galleryAssets,
@@ -1109,6 +1230,14 @@ function buildNormalizedListingPayload(
     lat: unit.lat ?? null,
     lng: unit.lng ?? null,
     custom_fields: unit.custom_fields ?? null,
+    related,
+    notes: {
+      description: normalizePropstackText(unit.description_note),
+      long_description: normalizePropstackText(unit.long_description_note),
+      location: normalizePropstackText(unit.location_note),
+      features: normalizePropstackText(unit.furnishing_note),
+      other: normalizePropstackText(unit.other_note),
+    },
     status: normalizePropstackStatusName(status),
     status_id: normalizePropstackStatusId(status),
     status_raw: status ?? null,
