@@ -1938,7 +1938,7 @@ export default function InternationalizationManager({ config, availableLocales, 
         const payload = (request.normalized_payload ?? {}) as Record<string, unknown>;
         const override = overrideByKey.get(`${source}::${externalId}`);
         const translation = translationByRequestId.get(requestId);
-        const description = getPayloadText(payload, ['long_description', 'description', 'title']);
+        const description = getPayloadText(payload, ['description', 'long_description', 'title']);
         const regionLabel = getRegionTargetLabels(payload).join(', ') || getPayloadText(payload, ['region', 'location_text', 'location']);
         const features = getPayloadText(payload, ['features_text', 'features_note']);
         const highlights = toStringArray(payload.highlights);

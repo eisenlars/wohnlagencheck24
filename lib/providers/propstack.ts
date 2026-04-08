@@ -1383,8 +1383,10 @@ function mapSearchProfileRequest(
   const city = firstString([profile.city, cities[0]]);
   const region = firstString([profile.region, regions[0]]);
   const title = buildSearchProfileTitle(profile, requestType, classification, targets);
+  const description = String(profile.note ?? "").trim() || null;
   const normalizedPayload: Record<string, unknown> = {
     title,
+    description,
     request_type: requestType,
     usage_type: classification.usageType,
     object_type: classification.objectType,
@@ -1419,6 +1421,8 @@ function mapSearchProfileRequest(
     status: profile.status ?? null,
     active: profile.active ?? null,
     note: profile.note ?? null,
+    title_source: "title_or_fallback",
+    description_source: description ? "note" : null,
     lat: asNumber(profile.lat),
     lng: asNumber(profile.lng),
     radius_m: asNumber(profile.radius),

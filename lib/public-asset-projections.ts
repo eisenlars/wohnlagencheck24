@@ -1023,6 +1023,10 @@ export async function rebuildPublicRequestEntriesForPartner(
     const objectType = asNullableText(payload["object_type"]);
     const minRooms = asNumberOrNull(payload["min_rooms"]);
     const maxPrice = asNumberOrNull(payload["max_price"]);
+    const description =
+      asNullableText(payload["description"])
+      ?? asNullableText(payload["long_description"])
+      ?? asNullableText(payload["short_description"]);
     const regionTargets = parseRegionTargets(payload);
     const regionTargetKeys = parseRegionTargetKeys(payload);
 
@@ -1054,8 +1058,8 @@ export async function rebuildPublicRequestEntriesForPartner(
         seo_title: asNullableText(override?.seo_title),
         seo_description: asNullableText(override?.seo_description),
         seo_h1: asNullableText(override?.seo_h1),
-        short_description: asNullableText(override?.short_description),
-        long_description: asNullableText(override?.long_description),
+        short_description: asNullableText(override?.short_description) ?? description,
+        long_description: asNullableText(override?.long_description) ?? description,
         location_text: asNullableText(override?.location_text),
         features_text: asNullableText(override?.features_text),
         highlights: asArrayJson(override?.highlights),

@@ -1010,14 +1010,22 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCri
     || String(meta.publicnote ?? "").trim();
   const fallbackCity = centerOrt;
   const targets = parseRegionTargetsFromHint(regionHint, fallbackCity);
+  const description =
+    String(
+      readSearchCriteriaFieldValue(record, "beschreibung")
+      ?? readSearchCriteriaFieldValue(record, "comment")
+      ?? "",
+    ).trim()
+    || null;
   const title =
-    String(readSearchCriteriaFieldValue(record, "bezeichnung") ?? readSearchCriteriaFieldValue(record, "titel") ?? meta.publicnote ?? "").trim()
+    String(meta.publicnote ?? "").trim()
     || `${requestType === "miete" ? "Miet" : "Kauf"}gesuch`;
   const sourceUpdatedAt =
     String(meta.editdate ?? meta.creationdate ?? "").trim()
     || null;
   const normalizedPayload: Record<string, unknown> = {
     title,
+    description,
     request_type: requestType,
     object_type: requestObjectType ? normalizeObjectType(requestObjectType) : null,
     object_subtype: requestObjectSubtype ? requestObjectSubtype.toLowerCase() : null,
@@ -1069,6 +1077,8 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCri
     parentaddress: readSearchCriteriaFieldValue(record, "parentaddress") ?? meta.internaladdressid ?? null,
     characteristic: meta.characteristic ?? null,
     publicnote: meta.publicnote ?? null,
+    title_source: meta.publicnote ? "publicnote" : "fallback",
+    description_source: description ? (readSearchCriteriaFieldValue(record, "beschreibung") != null ? "beschreibung" : "comment") : null,
     status: meta.status ?? readSearchCriteriaSingleValue(record, "status"),
     active: meta.status === "1",
   };
