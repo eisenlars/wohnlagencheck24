@@ -872,6 +872,18 @@ function readSearchCriteriaSingleValue(
   return value || null;
 }
 
+function readSearchCriteriaStringArray(
+  record: OnOfficeSearchCriteriaRecord,
+  key: string,
+): string[] {
+  const raw = readSearchCriteriaFieldValue(record, key);
+  if (Array.isArray(raw)) {
+    return raw.map((value) => String(value ?? "").trim()).filter(Boolean);
+  }
+  const single = String(raw ?? "").trim();
+  return single ? [single] : [];
+}
+
 function readSearchCriteriaRangeValue(
   record: OnOfficeSearchCriteriaRecord,
   key: string,
@@ -969,16 +981,25 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCri
   const meta = readSearchCriteriaMeta(record);
   const requestMarketingType = readSearchCriteriaSingleValue(record, "vermarktungsart");
   const requestObjectType = readSearchCriteriaSingleValue(record, "objektart");
-  const requestObjectSubtype = readSearchCriteriaSingleValue(record, "objekttyp");
+  const requestObjectSubtypes = readSearchCriteriaStringArray(record, "objekttyp");
+  const requestObjectSubtype = requestObjectSubtypes[0] ?? null;
   const requestTypeRaw = String(requestMarketingType ?? readSearchCriteriaSingleValue(record, "request_type") ?? "").toLowerCase();
   const requestType = requestTypeRaw.includes("miete") ? "miete" : "kauf";
   const roomRange = readSearchCriteriaRangeBounds(record, "anzahl_zimmer");
   const purchasePriceRange = readSearchCriteriaRangeBounds(record, "kaufpreis");
   const rentRange = readSearchCriteriaRangeBounds(record, "kaltmiete");
   const livingAreaRange = readSearchCriteriaRangeBounds(record, "wohnflaeche");
+  const usableAreaRange = readSearchCriteriaRangeBounds(record, "nutzflaeche");
+  const plotAreaRange = readSearchCriteriaRangeBounds(record, "grundstuecksflaeche");
+  const totalAreaRange = readSearchCriteriaRangeBounds(record, "gesamtflaeche");
+  const rentableAreaRange = readSearchCriteriaRangeBounds(record, "vermietbare_flaeche");
+  const commercialAreaRange = readSearchCriteriaRangeBounds(record, "gewerbeflaeche");
+  const unitsRange = readSearchCriteriaRangeBounds(record, "anzahl_wohneinheiten");
   const centerOrt = String(readSearchCriteriaRangeValue(record, "range_ort") ?? readSearchCriteriaRangeValue(record, "ort") ?? "").trim() || null;
   const centerPlz = String(readSearchCriteriaRangeValue(record, "range_plz") ?? readSearchCriteriaRangeValue(record, "plz") ?? "").trim() || null;
   const centerLand = String(readSearchCriteriaRangeValue(record, "range_land") ?? readSearchCriteriaRangeValue(record, "land") ?? "").trim() || null;
+  const centerLat = toNumber(readSearchCriteriaRangeValue(record, "range_breitengrad"));
+  const centerLng = toNumber(readSearchCriteriaRangeValue(record, "range_laengengrad"));
   const radiusKm = toNumber(readSearchCriteriaRangeValue(record, "range"));
   const regionHint =
     [
@@ -1000,16 +1021,33 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCri
     request_type: requestType,
     object_type: requestObjectType ? normalizeObjectType(requestObjectType) : null,
     object_subtype: requestObjectSubtype ? requestObjectSubtype.toLowerCase() : null,
+    object_subtypes: requestObjectSubtypes.map((value) => value.toLowerCase()),
+    object_type_detail: requestObjectSubtype ? requestObjectSubtype.toLowerCase() : null,
     marketing_type: requestMarketingType ?? requestType,
     min_rooms: roomRange.min,
     max_rooms: roomRange.max,
+    min_price: requestType === "miete" ? rentRange.min : purchasePriceRange.min,
     min_purchase_price: purchasePriceRange.min,
     max_purchase_price: purchasePriceRange.max,
     min_rent: rentRange.min,
     max_rent: rentRange.max,
     max_price: requestType === "miete" ? rentRange.max : purchasePriceRange.max,
+    min_living_area_sqm: livingAreaRange.min,
+    max_living_area_sqm: livingAreaRange.max,
     min_area_sqm: livingAreaRange.min,
     max_area_sqm: livingAreaRange.max,
+    min_usable_area_sqm: usableAreaRange.min,
+    max_usable_area_sqm: usableAreaRange.max,
+    min_plot_area_sqm: plotAreaRange.min,
+    max_plot_area_sqm: plotAreaRange.max,
+    min_total_area_sqm: totalAreaRange.min,
+    max_total_area_sqm: totalAreaRange.max,
+    min_rentable_area_sqm: rentableAreaRange.min,
+    max_rentable_area_sqm: rentableAreaRange.max,
+    min_commercial_area_sqm: commercialAreaRange.min,
+    max_commercial_area_sqm: commercialAreaRange.max,
+    min_units: unitsRange.min,
+    max_units: unitsRange.max,
     region: regionHint || null,
     region_targets: targets.map((target) => ({
       city: target.city,
@@ -1017,6 +1055,7 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCri
       label: target.label,
     })),
     region_target_keys: targets.map((target) => target.key),
+    search_criteria_keys: Array.isArray(meta.kocriterias) ? meta.kocriterias : [],
     range_center: {
       land: centerLand,
       plz: centerPlz,
@@ -1025,6 +1064,8 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCri
       hausnummer: String(readSearchCriteriaRangeValue(record, "range_hausnummer") ?? readSearchCriteriaRangeValue(record, "hausnummer") ?? "").trim() || null,
     },
     radius_km: radiusKm,
+    lat: centerLat,
+    lng: centerLng,
     parentaddress: readSearchCriteriaFieldValue(record, "parentaddress") ?? meta.internaladdressid ?? null,
     characteristic: meta.characteristic ?? null,
     publicnote: meta.publicnote ?? null,
