@@ -840,13 +840,49 @@ function mapEstateToReference(
 }
 
 function readSearchCriteriaMeta(record: OnOfficeSearchCriteriaRecord): Record<string, unknown> {
+  const elements = asObject(record.elements);
+  const meta = asObject(elements._meta);
+  if (Object.keys(meta).length > 0) return meta;
   return asObject(record._meta);
+}
+
+function readSearchCriteriaElements(record: OnOfficeSearchCriteriaRecord): Record<string, unknown> {
+  return asObject(record.elements);
+}
+
+function readSearchCriteriaFieldValue(
+  record: OnOfficeSearchCriteriaRecord,
+  key: string,
+): unknown {
+  const elements = readSearchCriteriaElements(record);
+  if (elements[key] !== undefined) return elements[key];
+  return record[key];
+}
+
+function readSearchCriteriaSingleValue(
+  record: OnOfficeSearchCriteriaRecord,
+  key: string,
+): string | null {
+  const raw = readSearchCriteriaFieldValue(record, key);
+  if (Array.isArray(raw)) {
+    const first = raw.map((value) => String(value ?? "").trim()).find(Boolean);
+    return first ?? null;
+  }
+  const value = String(raw ?? "").trim();
+  return value || null;
 }
 
 function readSearchCriteriaRangeValue(
   record: OnOfficeSearchCriteriaRecord,
   key: string,
 ): unknown {
+  const elements = readSearchCriteriaElements(record);
+  const directElement = elements[key];
+  if (directElement !== undefined) return directElement;
+
+  const umkreisRecord = asObject(elements["Umkreis"]);
+  if (umkreisRecord[key] !== undefined) return umkreisRecord[key];
+
   const direct = record[key];
   if (direct !== undefined) return direct;
 
@@ -931,19 +967,30 @@ function summarizeSearchCriteriaDistribution(
 
 function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCriteriaRecord): RawRequest {
   const meta = readSearchCriteriaMeta(record);
-  const requestTypeRaw = String(record.vermarktungsart ?? record.request_type ?? meta.characteristic ?? "").toLowerCase();
+  const requestMarketingType = readSearchCriteriaSingleValue(record, "vermarktungsart");
+  const requestObjectType = readSearchCriteriaSingleValue(record, "objektart");
+  const requestObjectSubtype = readSearchCriteriaSingleValue(record, "objekttyp");
+  const requestTypeRaw = String(requestMarketingType ?? readSearchCriteriaSingleValue(record, "request_type") ?? "").toLowerCase();
   const requestType = requestTypeRaw.includes("miete") ? "miete" : "kauf";
   const roomRange = readSearchCriteriaRangeBounds(record, "anzahl_zimmer");
   const purchasePriceRange = readSearchCriteriaRangeBounds(record, "kaufpreis");
-  const rentRange = readSearchCriteriaRangeBounds(record, "miete");
+  const rentRange = readSearchCriteriaRangeBounds(record, "kaltmiete");
   const livingAreaRange = readSearchCriteriaRangeBounds(record, "wohnflaeche");
+  const centerOrt = String(readSearchCriteriaRangeValue(record, "range_ort") ?? readSearchCriteriaRangeValue(record, "ort") ?? "").trim() || null;
+  const centerPlz = String(readSearchCriteriaRangeValue(record, "range_plz") ?? readSearchCriteriaRangeValue(record, "plz") ?? "").trim() || null;
+  const centerLand = String(readSearchCriteriaRangeValue(record, "range_land") ?? readSearchCriteriaRangeValue(record, "land") ?? "").trim() || null;
+  const radiusKm = toNumber(readSearchCriteriaRangeValue(record, "range"));
   const regionHint =
-    String(record.regionaler_zusatz ?? readSearchCriteriaRangeValue(record, "regionaler_zusatz") ?? "").trim()
+    [
+      String(readSearchCriteriaFieldValue(record, "regionaler_zusatz") ?? "").trim(),
+      centerOrt ? `Umkreis ${radiusKm ?? 0} km um ${centerOrt}` : "",
+      centerPlz,
+    ].filter(Boolean).join(", ")
     || String(meta.publicnote ?? "").trim();
-  const fallbackCity = String(readSearchCriteriaRangeValue(record, "ort") ?? record.ort ?? "").trim() || null;
+  const fallbackCity = centerOrt;
   const targets = parseRegionTargetsFromHint(regionHint, fallbackCity);
   const title =
-    String(record.bezeichnung ?? record.titel ?? meta.publicnote ?? "").trim()
+    String(readSearchCriteriaFieldValue(record, "bezeichnung") ?? readSearchCriteriaFieldValue(record, "titel") ?? meta.publicnote ?? "").trim()
     || `${requestType === "miete" ? "Miet" : "Kauf"}gesuch`;
   const sourceUpdatedAt =
     String(meta.editdate ?? meta.creationdate ?? "").trim()
@@ -951,9 +998,9 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCri
   const normalizedPayload: Record<string, unknown> = {
     title,
     request_type: requestType,
-    object_type: String(record.objektart ?? "").toLowerCase() || null,
-    object_subtype: String(record.objekttyp ?? "").toLowerCase() || null,
-    marketing_type: String(record.vermarktungsart ?? "") || null,
+    object_type: requestObjectType ? normalizeObjectType(requestObjectType) : null,
+    object_subtype: requestObjectSubtype ? requestObjectSubtype.toLowerCase() : null,
+    marketing_type: requestMarketingType ?? requestType,
     min_rooms: roomRange.min,
     max_rooms: roomRange.max,
     min_purchase_price: purchasePriceRange.min,
@@ -971,17 +1018,18 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCri
     })),
     region_target_keys: targets.map((target) => target.key),
     range_center: {
-      land: readSearchCriteriaRangeValue(record, "land") ?? null,
-      plz: readSearchCriteriaRangeValue(record, "plz") ?? null,
-      ort: readSearchCriteriaRangeValue(record, "ort") ?? null,
-      strasse: readSearchCriteriaRangeValue(record, "strasse") ?? null,
-      hausnummer: readSearchCriteriaRangeValue(record, "hausnummer") ?? null,
+      land: centerLand,
+      plz: centerPlz,
+      ort: centerOrt,
+      strasse: String(readSearchCriteriaRangeValue(record, "range_strasse") ?? readSearchCriteriaRangeValue(record, "strasse") ?? "").trim() || null,
+      hausnummer: String(readSearchCriteriaRangeValue(record, "range_hausnummer") ?? readSearchCriteriaRangeValue(record, "hausnummer") ?? "").trim() || null,
     },
-    parentaddress: record.parentaddress ?? meta.internaladdressid ?? null,
+    radius_km: radiusKm,
+    parentaddress: readSearchCriteriaFieldValue(record, "parentaddress") ?? meta.internaladdressid ?? null,
     characteristic: meta.characteristic ?? null,
     publicnote: meta.publicnote ?? null,
-    status: meta.status ?? record.status ?? null,
-    active: meta.status ?? record.active ?? null,
+    status: meta.status ?? readSearchCriteriaSingleValue(record, "status"),
+    active: meta.status === "1",
   };
   return makeRawRowBase(
     partnerId,
@@ -1595,11 +1643,11 @@ export async function syncOnOfficeResources(
     notes.push(`onOffice request field catalog: ${criteriaResult.fieldCatalog.fields.length} Felder ueber searchCriteriaFields erkannt.`);
     notes.push(`onOffice request status-Werte: ${summarizeSearchCriteriaObservedValues(criteria, (record) => readSearchCriteriaMeta(record).status)}`);
     notes.push(`onOffice request status-Verteilung: ${summarizeSearchCriteriaDistribution(criteria, (record) => readSearchCriteriaMeta(record).status)}`);
-    notes.push(`onOffice request vermarktungsart-Werte: ${summarizeSearchCriteriaObservedValues(criteria, (record) => record.vermarktungsart ?? record.request_type)}`);
-    notes.push(`onOffice request vermarktungsart-Verteilung: ${summarizeSearchCriteriaDistribution(criteria, (record) => record.vermarktungsart ?? record.request_type)}`);
-    notes.push(`onOffice request objektart-Werte: ${summarizeSearchCriteriaObservedValues(criteria, (record) => record.objektart)}`);
-    notes.push(`onOffice request objektart-Verteilung: ${summarizeSearchCriteriaDistribution(criteria, (record) => record.objektart)}`);
-    notes.push(`onOffice request region-Hinweise: ${summarizeSearchCriteriaObservedValues(criteria, (record) => record.regionaler_zusatz ?? readSearchCriteriaMeta(record).publicnote)}`);
+    notes.push(`onOffice request vermarktungsart-Werte: ${summarizeSearchCriteriaObservedValues(criteria, (record) => readSearchCriteriaFieldValue(record, "vermarktungsart") ?? readSearchCriteriaFieldValue(record, "request_type"))}`);
+    notes.push(`onOffice request vermarktungsart-Verteilung: ${summarizeSearchCriteriaDistribution(criteria, (record) => readSearchCriteriaFieldValue(record, "vermarktungsart") ?? readSearchCriteriaFieldValue(record, "request_type"))}`);
+    notes.push(`onOffice request objektart-Werte: ${summarizeSearchCriteriaObservedValues(criteria, (record) => readSearchCriteriaFieldValue(record, "objektart"))}`);
+    notes.push(`onOffice request objektart-Verteilung: ${summarizeSearchCriteriaDistribution(criteria, (record) => readSearchCriteriaFieldValue(record, "objektart"))}`);
+    notes.push(`onOffice request region-Hinweise: ${summarizeSearchCriteriaObservedValues(criteria, (record) => readSearchCriteriaFieldValue(record, "regionaler_zusatz") ?? readSearchCriteriaRangeValue(record, "range_ort") ?? readSearchCriteriaMeta(record).publicnote)}`);
     requests = criteria.map((record) => mapSearchCriteriaToRequest(integration.partner_id, record));
     requestsFetched = true;
   }
