@@ -65,15 +65,15 @@ function buildOnOfficePreviewDebug(
 ) {
   const settings = asObject(integration.settings);
   const resourceFilters = asObject(settings.resource_filters);
-  const listings = asObject(resourceFilters.listings);
+  const offers = asObject(resourceFilters.listings);
   return {
     provider: integration.provider,
     resource,
     settings_snapshot: {
-      listings: {
-        status_field_key: listings.status_field_key ?? null,
-        active_status_values: Array.isArray(listings.active_status_values) ? listings.active_status_values : [],
-        exclude_sold: listings.exclude_sold ?? null,
+      offers: {
+        status_field_key: offers.status_field_key ?? null,
+        active_status_values: Array.isArray(offers.active_status_values) ? offers.active_status_values : [],
+        exclude_sold: offers.exclude_sold ?? null,
       },
     },
     result_counts: {
@@ -101,6 +101,55 @@ function buildPreviewPayload(
     result,
     { trace_id: traceId },
   );
+}
+
+function buildResourcePreview(
+  resource: Exclude<CrmSyncResource, "all"> | "all",
+  result: Awaited<ReturnType<typeof syncIntegrationResources>>,
+) {
+  const preview: Record<string, unknown> = {};
+
+  if (resource === "all" || resource === "offers") {
+    preview.offers_count = result.offers.length;
+    preview.raw_offers_count = result.listings.length;
+    preview.offers_preview = result.offers.slice(0, 5).map((offer) => ({
+      external_id: offer.external_id,
+      title: offer.title,
+      offer_type: offer.offer_type,
+      object_type: offer.object_type,
+      address: offer.address,
+    }));
+    preview.raw_offers_preview = result.listings.slice(0, 5).map((rawOffer) => ({
+      external_id: rawOffer.external_id,
+      title: rawOffer.title,
+      source_updated_at: rawOffer.source_updated_at,
+      status: rawOffer.status,
+    }));
+  }
+
+  if (resource === "all" || resource === "references") {
+    preview.references_count = result.references.length;
+    preview.references_fetched = result.referencesFetched;
+    preview.references_preview = result.references.slice(0, 5).map((reference) => ({
+      external_id: reference.external_id,
+      title: reference.title,
+      source_updated_at: reference.source_updated_at,
+      status: reference.status,
+    }));
+  }
+
+  if (resource === "all" || resource === "requests") {
+    preview.requests_count = result.requests.length;
+    preview.requests_fetched = result.requestsFetched;
+    preview.requests_preview = result.requests.slice(0, 5).map((request) => ({
+      external_id: request.external_id,
+      title: request.title,
+      source_updated_at: request.source_updated_at,
+      status: request.status,
+    }));
+  }
+
+  return preview;
 }
 
 function appendIntegrationLog(
@@ -383,40 +432,10 @@ export async function POST(
             skipped: false,
             provider: integration.provider,
             diagnostic_mode: "propstack_guarded_sync",
-            offers_count: result.offers.length,
-            raw_offers_count: result.listings.length,
-            references_count: result.references.length,
-            requests_count: result.requests.length,
-            references_fetched: result.referencesFetched,
-            requests_fetched: result.requestsFetched,
             notes: result.notes ?? [],
             provider_breakdown: result.diagnostics?.provider_breakdown ?? null,
             guarded_limits: result.diagnostics?.guarded_limits ?? null,
-            offers_preview: result.offers.slice(0, 5).map((offer) => ({
-              external_id: offer.external_id,
-              title: offer.title,
-              offer_type: offer.offer_type,
-              object_type: offer.object_type,
-              address: offer.address,
-            })),
-            raw_offers_preview: result.listings.slice(0, 5).map((listing) => ({
-              external_id: listing.external_id,
-              title: listing.title,
-              source_updated_at: listing.source_updated_at,
-              status: listing.status,
-            })),
-            references_preview: result.references.slice(0, 5).map((reference) => ({
-              external_id: reference.external_id,
-              title: reference.title,
-              source_updated_at: reference.source_updated_at,
-              status: reference.status,
-            })),
-            requests_preview: result.requests.slice(0, 5).map((request) => ({
-              external_id: request.external_id,
-              title: request.title,
-              source_updated_at: request.source_updated_at,
-              status: request.status,
-            })),
+            ...buildResourcePreview(resource, result),
           },
           200,
           {
@@ -484,30 +503,12 @@ export async function POST(
         {
           skipped: false,
           provider: integration.provider,
-          offers_count: result.offers.length,
-          raw_offers_count: result.listings.length,
-          references_count: result.references.length,
-          requests_count: result.requests.length,
-          references_fetched: result.referencesFetched,
-          requests_fetched: result.requestsFetched,
           notes: result.notes ?? [],
           debug:
             String(integration.provider ?? "").toLowerCase() === "onoffice"
               ? buildOnOfficePreviewDebug(integration, resource, result)
               : null,
-          offers_preview: result.offers.slice(0, 5).map((offer) => ({
-            external_id: offer.external_id,
-            title: offer.title,
-            offer_type: offer.offer_type,
-            object_type: offer.object_type,
-            address: offer.address,
-          })),
-          raw_offers_preview: result.listings.slice(0, 5).map((listing) => ({
-            external_id: listing.external_id,
-            title: listing.title,
-            source_updated_at: listing.source_updated_at,
-            status: listing.status,
-          })),
+          ...buildResourcePreview(resource, result),
         },
         200,
         {

@@ -40,6 +40,13 @@ type DebugPayloadResourceBlock = {
   fetched: boolean;
 };
 
+function shouldIncludeResource(
+  requestedResource: CrmSyncResource,
+  candidate: Exclude<CrmSyncResource, "all">,
+): boolean {
+  return requestedResource === "all" || requestedResource === candidate;
+}
+
 function asJsonObjectArray(rows: Array<Record<string, unknown>>): JsonObject[] {
   return rows.map((row) => row as JsonObject);
 }
@@ -75,6 +82,34 @@ export function buildStructuredDebugPayload(
   }));
   const referenceSourceRecords = result.references.map((reference) => reference.source_payload);
   const requestSourceRecords = result.requests.map((request) => request.source_payload);
+  const resources: Record<string, DebugPayloadResourceBlock> = {};
+
+  if (shouldIncludeResource(resource, "offers")) {
+    resources.offers = {
+      source_records: asJsonObjectArray(offerSourceRecords),
+      raw_rows: asJsonObjectArray(result.listings),
+      canonical_rows: asJsonObjectArray(offerCanonicalRows),
+      fetched: true,
+    };
+  }
+
+  if (shouldIncludeResource(resource, "references")) {
+    resources.references = {
+      source_records: asJsonObjectArray(referenceSourceRecords),
+      raw_rows: asJsonObjectArray(result.references),
+      canonical_rows: asJsonObjectArray(result.references),
+      fetched: result.referencesFetched,
+    };
+  }
+
+  if (shouldIncludeResource(resource, "requests")) {
+    resources.requests = {
+      source_records: asJsonObjectArray(requestSourceRecords),
+      raw_rows: asJsonObjectArray(result.requests),
+      canonical_rows: asJsonObjectArray(result.requests),
+      fetched: result.requestsFetched,
+    };
+  }
 
   return {
     provider: integration.provider,
@@ -84,32 +119,7 @@ export function buildStructuredDebugPayload(
     mode,
     trace_id: extra?.trace_id ?? null,
     generated_at: generatedAt,
-    resources: {
-      offers: {
-        source_records: asJsonObjectArray(offerSourceRecords),
-        raw_rows: asJsonObjectArray(result.listings),
-        canonical_rows: asJsonObjectArray(offerCanonicalRows),
-        fetched: true,
-      } satisfies DebugPayloadResourceBlock,
-      references: {
-        source_records: asJsonObjectArray(referenceSourceRecords),
-        raw_rows: asJsonObjectArray(result.references),
-        canonical_rows: asJsonObjectArray(result.references),
-        fetched: result.referencesFetched,
-      } satisfies DebugPayloadResourceBlock,
-      requests: {
-        source_records: asJsonObjectArray(requestSourceRecords),
-        raw_rows: asJsonObjectArray(result.requests),
-        canonical_rows: asJsonObjectArray(result.requests),
-        fetched: result.requestsFetched,
-      } satisfies DebugPayloadResourceBlock,
-    },
-    offers: result.offers,
-    listings: result.listings,
-    references: result.references,
-    requests: result.requests,
-    references_fetched: result.referencesFetched,
-    requests_fetched: result.requestsFetched,
+    resources,
     diagnostics: result.diagnostics ?? null,
     notes: result.notes ?? [],
   };
