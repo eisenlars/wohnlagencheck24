@@ -574,11 +574,13 @@ type PartnerPurgeCheckPayload = {
   affected_counts?: Record<string, number>;
 };
 
-type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "language_admin" | "system_texts" | "market_texts" | "standard_text_refresh" | "portal_cms";
+type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "billing_overview" | "language_admin" | "system_texts" | "market_texts" | "standard_text_refresh" | "portal_cms";
 type AdminNavMode = "partners" | "areas";
 type PartnerPanelTab = "profile" | "systempartner_default" | "areas" | "review" | "handover" | "integrations" | "billing";
 type PartnerBillingWorkspaceTab = "portal_abo" | "internationality" | "features" | "ai";
-type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "language" | "texts" | "market_texts" | "refresh" | "cms" | "purge" | "audit" | "logout";
+type BillingDefaultsWorkspaceTab = "portal_abo" | "internationality" | "features";
+type BillingOverviewWorkspaceTab = "portal_partners" | "network_partners" | "ai";
+type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "billing_overview" | "language" | "texts" | "market_texts" | "refresh" | "cms" | "purge" | "audit" | "logout";
 type WorkflowSignalTone = "none" | "red" | "orange" | "green";
 type StandardTextRefreshScope = "bundesland" | "kreis" | "kreis_ortslagen" | "ortslage";
 
@@ -737,6 +739,17 @@ function renderAdminNavIcon(icon: AdminNavIconKey, size = 17) {
         <svg {...baseProps}>
           <path d="M12 3v18" />
           <path d="M16 7.5c0-1.9-1.8-3.5-4-3.5s-4 1.6-4 3.5 1.8 3.5 4 3.5 4 1.6 4 3.5-1.8 3.5-4 3.5-4-1.6-4-3.5" />
+        </svg>
+      );
+    case "billing_overview":
+      return (
+        <svg {...baseProps}>
+          <rect x="4" y="5" width="16" height="14" rx="2" />
+          <path d="M8 9h8" />
+          <path d="M8 13h5" />
+          <path d="M15 13h1" />
+          <path d="M15 16h1" />
+          <path d="M8 16h4" />
         </svg>
       );
     case "language":
@@ -1025,6 +1038,43 @@ type PartnerFeatureSummary = {
     label: string;
     monthly_price_eur: number;
   }>;
+};
+
+type BillingOverviewTotals = {
+  portal_abo_eur: number;
+  locales_eur: number;
+  features_eur: number;
+  recurring_total_eur: number;
+  ai_portal_partner_eur: number;
+  ai_network_partner_eur: number;
+  ai_total_eur: number;
+  ai_portal_partner_credits: number;
+  ai_network_partner_credits: number;
+  ai_total_credits: number;
+  ai_portal_partner_tokens: number;
+  ai_network_partner_tokens: number;
+  ai_total_tokens: number;
+  grand_total_eur: number;
+};
+
+type BillingOverviewPartnerRow = {
+  partner_id: string;
+  company_name: string;
+  is_active: boolean;
+  portal_abo_eur: number;
+  locales_eur: number;
+  features_eur: number;
+  recurring_total_eur: number;
+  ai_self_eur: number;
+  ai_network_eur: number;
+  ai_total_eur: number;
+  ai_self_credits: number;
+  ai_network_credits: number;
+  ai_total_credits: number;
+  ai_self_tokens: number;
+  ai_network_tokens: number;
+  ai_total_tokens: number;
+  grand_total_eur: number;
 };
 
 type BillingFeature = {
@@ -2119,6 +2169,8 @@ type PersistedAdminViewState = {
   partnerTab?: PartnerPanelTab;
   integrationsAdminTab?: "overview" | "llm_partner";
   llmGlobalTab?: "create" | "overview" | "pricing" | "usage" | "billing";
+  billingDefaultsTab?: BillingDefaultsWorkspaceTab;
+  billingOverviewTab?: BillingOverviewWorkspaceTab;
   marketExplanationMode?: "standard" | "static";
   marketExplanationStandardScope?: MarketExplanationStandardScope;
   marketExplanationStandardLocale?: string;
@@ -2308,7 +2360,7 @@ export default function AdminClient() {
   const [activeView, setActiveView] = useState<AdminView>("home");
   const [partnerTab, setPartnerTab] = useState<PartnerPanelTab>("profile");
   const [integrationsAdminTab, setIntegrationsAdminTab] = useState<"overview" | "llm_partner">("overview");
-  const [llmGlobalTab, setLlmGlobalTab] = useState<"create" | "overview" | "pricing" | "usage" | "billing">("create");
+  const [llmGlobalTab, setLlmGlobalTab] = useState<"create" | "overview" | "pricing">("create");
   const [navMode, setNavMode] = useState<AdminNavMode>("partners");
   const [partnerFilter, setPartnerFilter] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
@@ -2444,12 +2496,12 @@ export default function AdminClient() {
     cost_eur: 0,
     estimated_credits: 0,
   });
-  const [adminAiUsageByPartner, setAdminAiUsageByPartner] = useState<AdminAiUsagePartnerRow[]>([]);
+  const [, setAdminAiUsageByPartner] = useState<AdminAiUsagePartnerRow[]>([]);
   const [adminAiUsageByPortalPartner, setAdminAiUsageByPortalPartner] = useState<AdminAiUsagePortalPartnerRow[]>([]);
   const [adminAiUsageByNetworkPartner, setAdminAiUsageByNetworkPartner] = useState<AdminAiUsageNetworkPartnerRow[]>([]);
   const [adminAiUsageByFeature, setAdminAiUsageByFeature] = useState<AdminAiUsageFeatureRow[]>([]);
   const [adminAiUsageByModel, setAdminAiUsageByModel] = useState<AdminAiUsageModelRow[]>([]);
-  const [adminAiUsageByScope, setAdminAiUsageByScope] = useState<AdminAiUsageScopeRow[]>([]);
+  const [, setAdminAiUsageByScope] = useState<AdminAiUsageScopeRow[]>([]);
   const [adminAiUsageEvents, setAdminAiUsageEvents] = useState<AdminAiUsageEventRow[]>([]);
   const [adminAiUsageMonth, setAdminAiUsageMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [partnerBillingRows, setPartnerBillingRows] = useState<LlmUsageItemRow[]>([]);
@@ -2494,6 +2546,25 @@ export default function AdminClient() {
   });
   const [billingFeatureCatalog, setBillingFeatureCatalog] = useState<BillingFeature[]>([]);
   const [billingLocaleFeatureRows, setBillingLocaleFeatureRows] = useState<BillingLocaleFeature[]>([]);
+  const [billingDefaultsWorkspaceTab, setBillingDefaultsWorkspaceTab] = useState<BillingDefaultsWorkspaceTab>("portal_abo");
+  const [billingOverviewWorkspaceTab, setBillingOverviewWorkspaceTab] = useState<BillingOverviewWorkspaceTab>("portal_partners");
+  const [billingOverviewTotals, setBillingOverviewTotals] = useState<BillingOverviewTotals>({
+    portal_abo_eur: 0,
+    locales_eur: 0,
+    features_eur: 0,
+    recurring_total_eur: 0,
+    ai_portal_partner_eur: 0,
+    ai_network_partner_eur: 0,
+    ai_total_eur: 0,
+    ai_portal_partner_credits: 0,
+    ai_network_partner_credits: 0,
+    ai_total_credits: 0,
+    ai_portal_partner_tokens: 0,
+    ai_network_partner_tokens: 0,
+    ai_total_tokens: 0,
+    grand_total_eur: 0,
+  });
+  const [billingOverviewByPartner, setBillingOverviewByPartner] = useState<BillingOverviewPartnerRow[]>([]);
   const [newBillingFeature, setNewBillingFeature] = useState({
     code: "",
     label: "",
@@ -2619,6 +2690,8 @@ export default function AdminClient() {
     partnerTab: "profile",
     integrationsAdminTab: "overview",
     llmGlobalTab: "create",
+    billingDefaultsTab: "portal_abo",
+    billingOverviewTab: "portal_partners",
     marketExplanationMode: "standard",
     marketExplanationStandardScope: "kreis",
     marketExplanationStandardLocale: "de",
@@ -2916,6 +2989,13 @@ export default function AdminClient() {
   const loadLlmGlobalDashboardEvent = useEffectEvent(async () => {
     await loadLlmGlobalDashboard();
   });
+  const loadBillingOverviewWorkspaceEvent = useEffectEvent(async () => {
+    await Promise.all([
+      loadBillingOverview(),
+      loadLlmUsage(),
+      loadAdminAiUsage(),
+    ]);
+  });
   const loadAuditLogsEvent = useEffectEvent(async () => {
     await loadAuditLogs();
   });
@@ -2990,7 +3070,9 @@ export default function AdminClient() {
 
   useEffect(() => {
     if (!adminViewStateHydrated || adminViewStateAppliedRef.current) return;
-    const restoredActiveView = adminViewState.activeView ?? "home";
+    const wantsLegacyLlmUsage = adminViewState.activeView === "llm_global"
+      && (adminViewState.llmGlobalTab === "usage" || adminViewState.llmGlobalTab === "billing");
+    const restoredActiveView = wantsLegacyLlmUsage ? "billing_overview" : (adminViewState.activeView ?? "home");
     const restoredMarketExplanationMode = adminViewState.marketExplanationMode ?? "standard";
     const restoredMarketExplanationScope = adminViewState.marketExplanationStandardScope === "bundesland" ? "bundesland" : "kreis";
     const restoredMarketExplanationLocale = String(adminViewState.marketExplanationStandardLocale ?? "de").trim().toLowerCase() || "de";
@@ -3015,7 +3097,17 @@ export default function AdminClient() {
     setSelectedPartnerId(String(adminViewState.selectedPartnerId ?? ""));
     setPartnerTab(adminViewState.partnerTab ?? "profile");
     setIntegrationsAdminTab(adminViewState.integrationsAdminTab ?? "overview");
-    setLlmGlobalTab(adminViewState.llmGlobalTab === "billing" ? "usage" : (adminViewState.llmGlobalTab ?? "create"));
+    setLlmGlobalTab(
+      adminViewState.llmGlobalTab === "create" || adminViewState.llmGlobalTab === "pricing" || adminViewState.llmGlobalTab === "overview"
+        ? adminViewState.llmGlobalTab
+        : "overview",
+    );
+    setBillingDefaultsWorkspaceTab(adminViewState.billingDefaultsTab ?? "portal_abo");
+    setBillingOverviewWorkspaceTab(
+      wantsLegacyLlmUsage
+        ? "ai"
+        : (adminViewState.billingOverviewTab ?? "portal_partners"),
+    );
     setMarketExplanationMode(restoredMarketExplanationMode);
     setMarketExplanationStandardScope(restoredMarketExplanationScope);
     setMarketExplanationStandardLocale(restoredMarketExplanationLocale);
@@ -3053,6 +3145,8 @@ export default function AdminClient() {
       void loadLlmGlobalDashboardEvent();
     } else if (restoredActiveView === "billing_defaults") {
       void loadBillingDefaults();
+    } else if (restoredActiveView === "billing_overview") {
+      void loadBillingOverviewWorkspaceEvent();
     } else if (restoredActiveView === "language_admin") {
       void loadPortalLocalesEvent();
     } else if (restoredActiveView === "system_texts") {
@@ -3081,6 +3175,8 @@ export default function AdminClient() {
     adminViewStateAppliedRef.current = true;
   }, [
     adminViewState.activeView,
+    adminViewState.billingDefaultsTab,
+    adminViewState.billingOverviewTab,
     adminViewState.integrationsAdminTab,
     adminViewState.llmGlobalTab,
     adminViewState.navMode,
@@ -3255,6 +3351,8 @@ export default function AdminClient() {
       partnerTab,
       integrationsAdminTab,
       llmGlobalTab,
+      billingDefaultsTab: billingDefaultsWorkspaceTab,
+      billingOverviewTab: billingOverviewWorkspaceTab,
       marketExplanationMode,
       marketExplanationStandardScope,
       marketExplanationStandardLocale,
@@ -3275,6 +3373,8 @@ export default function AdminClient() {
   }, [
     activeView,
     adminViewStateHydrated,
+    billingDefaultsWorkspaceTab,
+    billingOverviewWorkspaceTab,
     integrationsAdminTab,
     llmGlobalTab,
     marketExplanationMode,
@@ -3641,12 +3741,28 @@ export default function AdminClient() {
       {
         key: "billing",
         icon: "billing",
-        title: "Leistungsabrechnung",
-        text: "Billing-Standards und Berechnungsgrundlagen für Portal und Partner pflegen.",
+        title: "Leistungsverwaltung",
+        text: "Portalabo-, Sprach- und Feature-Standards mit ihren Defaultpreisen zentral pflegen.",
         onClick: () => {
           setActiveView("billing_defaults");
-          void run("Billing-Standards laden", async () => {
+          void run("Leistungsverwaltung laden", async () => {
             await loadBillingDefaults();
+          });
+        },
+      },
+      {
+        key: "billing_overview",
+        icon: "billing_overview",
+        title: "Gesamtabrechnung",
+        text: "Einnahmen, KI-Verbrauch und Netzwerkpartner rollup-weit kaufmännisch zusammenführen.",
+        onClick: () => {
+          setActiveView("billing_overview");
+          void run("Gesamtabrechnung laden", async () => {
+            await Promise.all([
+              loadBillingOverview(),
+              loadLlmUsage(),
+              loadAdminAiUsage(),
+            ]);
           });
         },
       },
@@ -3724,7 +3840,8 @@ export default function AdminClient() {
     if (hoveredAdminNavId === "partners") return "Partnerverwaltung";
     if (hoveredAdminNavId === "areas") return "Gebiete";
     if (hoveredAdminNavId === "llm") return "LLM-Verwaltung";
-    if (hoveredAdminNavId === "billing") return "Leistungsabrechnung";
+    if (hoveredAdminNavId === "billing") return "Leistungsverwaltung";
+    if (hoveredAdminNavId === "billing_overview") return "Gesamtabrechnung";
     if (hoveredAdminNavId === "language") return "Sprachverwaltung";
     if (hoveredAdminNavId === "texts") return "Systemtexte";
     if (hoveredAdminNavId === "market_texts") return "Markterklärungstexte";
@@ -3732,6 +3849,46 @@ export default function AdminClient() {
     if (hoveredAdminNavId === "cms") return "Portal-CMS";
     return null;
   }, [hoveredAdminNavId]);
+
+  const billingOverviewNetworkGroups = useMemo(() => {
+    const byPortalPartner = new Map<string, {
+      portal_partner_id: string;
+      portal_partner_name: string;
+      items: AdminAiUsageNetworkPartnerRow[];
+      total_events: number;
+      total_tokens: number;
+      total_cost_eur: number;
+      total_credits: number;
+    }>();
+
+    for (const row of adminAiUsageByNetworkPartner) {
+      const portalPartnerName = partners.find((entry) => entry.id === row.portal_partner_id)?.company_name ?? row.portal_partner_id;
+      const current = byPortalPartner.get(row.portal_partner_id) ?? {
+        portal_partner_id: row.portal_partner_id,
+        portal_partner_name: portalPartnerName,
+        items: [],
+        total_events: 0,
+        total_tokens: 0,
+        total_cost_eur: 0,
+        total_credits: 0,
+      };
+      current.items.push(row);
+      current.total_events += row.events;
+      current.total_tokens += row.total_tokens;
+      current.total_cost_eur += row.cost_eur;
+      current.total_credits += row.estimated_credits;
+      byPortalPartner.set(row.portal_partner_id, current);
+    }
+
+    return Array.from(byPortalPartner.values())
+      .map((group) => ({
+        ...group,
+        total_cost_eur: Number(group.total_cost_eur.toFixed(6)),
+        total_credits: Number(group.total_credits.toFixed(4)),
+        items: group.items.slice().sort((a, b) => b.cost_eur - a.cost_eur),
+      }))
+      .sort((a, b) => b.total_cost_eur - a.total_cost_eur);
+  }, [adminAiUsageByNetworkPartner, partners]);
 
   const updateHoveredAdminNav = (navId: string, element: HTMLElement) => {
     const asideRect = adminModeBarRef.current?.getBoundingClientRect();
@@ -4424,6 +4581,30 @@ export default function AdminClient() {
       default_monthly_price_eur: Number(row.default_monthly_price_eur ?? 0),
       sort_order: Number(row.sort_order ?? 100),
     })));
+  }
+
+  async function loadBillingOverview(month = adminAiUsageMonth) {
+    const data = await api<{
+      totals?: Partial<BillingOverviewTotals>;
+      by_partner?: BillingOverviewPartnerRow[];
+    }>(`/api/admin/billing/overview?month=${encodeURIComponent(`${month}-01`)}`);
+    setBillingOverviewTotals({
+      portal_abo_eur: Number(data.totals?.portal_abo_eur ?? 0),
+      locales_eur: Number(data.totals?.locales_eur ?? 0),
+      features_eur: Number(data.totals?.features_eur ?? 0),
+      recurring_total_eur: Number(data.totals?.recurring_total_eur ?? 0),
+      ai_portal_partner_eur: Number(data.totals?.ai_portal_partner_eur ?? 0),
+      ai_network_partner_eur: Number(data.totals?.ai_network_partner_eur ?? 0),
+      ai_total_eur: Number(data.totals?.ai_total_eur ?? 0),
+      ai_portal_partner_credits: Number(data.totals?.ai_portal_partner_credits ?? 0),
+      ai_network_partner_credits: Number(data.totals?.ai_network_partner_credits ?? 0),
+      ai_total_credits: Number(data.totals?.ai_total_credits ?? 0),
+      ai_portal_partner_tokens: Number(data.totals?.ai_portal_partner_tokens ?? 0),
+      ai_network_partner_tokens: Number(data.totals?.ai_network_partner_tokens ?? 0),
+      ai_total_tokens: Number(data.totals?.ai_total_tokens ?? 0),
+      grand_total_eur: Number(data.totals?.grand_total_eur ?? 0),
+    });
+    setBillingOverviewByPartner(data.by_partner ?? []);
   }
 
   async function loadPortalLocales() {
@@ -5488,8 +5669,6 @@ export default function AdminClient() {
       loadLlmGlobalConfig(),
       loadLlmAccounts(),
       loadLlmProviders(),
-      loadLlmUsage(),
-      loadAdminAiUsage(),
     ]);
   }
 
@@ -6640,10 +6819,10 @@ export default function AdminClient() {
           </div>
         </main>
       ) : (
-      <div
+          <div
         style={{
           ...adminLayoutStyle,
-          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults" || activeView === "language_admin" || activeView === "system_texts" || activeView === "market_texts" || activeView === "standard_text_refresh" || activeView === "portal_cms")
+          gridTemplateColumns: (activeView === "llm_global" || activeView === "billing_defaults" || activeView === "billing_overview" || activeView === "language_admin" || activeView === "system_texts" || activeView === "market_texts" || activeView === "standard_text_refresh" || activeView === "portal_cms")
             ? "50px minmax(0, 1fr)"
             : adminLayoutStyle.gridTemplateColumns,
         }}
@@ -6657,7 +6836,7 @@ export default function AdminClient() {
           }}
         >
           <button
-            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" && navMode === "partners")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "billing_overview" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" && navMode === "partners")}
             onClick={async () => {
               await run("Partnerverwaltung laden", async () => {
                 await openPartnerWorkspace(selectedPartnerId || portalPartner?.id);
@@ -6678,7 +6857,7 @@ export default function AdminClient() {
             {renderAdminNavIcon("partners")}
           </button>
           <button
-            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" && navMode === "areas")}
+            style={modeButtonStyle(activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "billing_overview" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" && navMode === "areas")}
             onClick={() => {
               void run("Gebietsübersicht laden", async () => {
                 await openAreaWorkspace();
@@ -6724,11 +6903,11 @@ export default function AdminClient() {
             style={modeButtonStyle(activeView === "billing_defaults")}
             onClick={() => {
               setActiveView("billing_defaults");
-              void run("Billing-Standards laden", async () => {
+              void run("Leistungsverwaltung laden", async () => {
                 await loadBillingDefaults();
               });
             }}
-            title="Billing-Standards"
+            title="Leistungsverwaltung"
             onMouseEnter={(event) => updateHoveredAdminNav("billing", event.currentTarget)}
             onFocus={(event) => updateHoveredAdminNav("billing", event.currentTarget)}
             onMouseLeave={() => {
@@ -6741,6 +6920,32 @@ export default function AdminClient() {
             }}
           >
             {renderAdminNavIcon("billing")}
+          </button>
+          <button
+            style={modeButtonStyle(activeView === "billing_overview")}
+            onClick={() => {
+              setActiveView("billing_overview");
+              void run("Gesamtabrechnung laden", async () => {
+                await Promise.all([
+                  loadBillingOverview(),
+                  loadLlmUsage(),
+                  loadAdminAiUsage(),
+                ]);
+              });
+            }}
+            title="Gesamtabrechnung"
+            onMouseEnter={(event) => updateHoveredAdminNav("billing_overview", event.currentTarget)}
+            onFocus={(event) => updateHoveredAdminNav("billing_overview", event.currentTarget)}
+            onMouseLeave={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+            onBlur={() => {
+              setHoveredAdminNavId(null);
+              setHoveredAdminNavTop(null);
+            }}
+          >
+            {renderAdminNavIcon("billing_overview")}
           </button>
           <button
             style={modeButtonStyle(activeView === "language_admin")}
@@ -6867,7 +7072,7 @@ export default function AdminClient() {
           ) : null}
         </aside>
 
-        {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" ? (
+        {activeView !== "llm_global" && activeView !== "billing_defaults" && activeView !== "billing_overview" && activeView !== "language_admin" && activeView !== "system_texts" && activeView !== "market_texts" && activeView !== "standard_text_refresh" && activeView !== "portal_cms" ? (
           <aside style={listPaneStyle}>
             <div style={sidebarControlWrapStyle}>
               <input
@@ -11645,11 +11850,23 @@ export default function AdminClient() {
 
       {activeView === "billing_defaults" ? (
       <section style={workspaceSectionStyle}>
-        <h1 style={workspaceTitleStyle}>Billing-Standards</h1>
+        <h1 style={workspaceTitleStyle}>Leistungsverwaltung</h1>
         <p style={mutedStyle}>
-          Globale Standarddefinition für Portalabo und Feature-Katalog.
+          Defaultpreise und Portalleistungsdefinitionen fuer Portalabo, Internationalitaet und Features.
         </p>
+        <div style={partnerTabBarStyle}>
+          <button style={partnerTabButtonStyle(billingDefaultsWorkspaceTab === "portal_abo")} onClick={() => setBillingDefaultsWorkspaceTab("portal_abo")}>
+            Portalabo
+          </button>
+          <button style={partnerTabButtonStyle(billingDefaultsWorkspaceTab === "internationality")} onClick={() => setBillingDefaultsWorkspaceTab("internationality")}>
+            Internationalität
+          </button>
+          <button style={partnerTabButtonStyle(billingDefaultsWorkspaceTab === "features")} onClick={() => setBillingDefaultsWorkspaceTab("features")}>
+            Features
+          </button>
+        </div>
 
+        {billingDefaultsWorkspaceTab === "portal_abo" ? (
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Portalabo Standard</div>
           <div style={grid3Style}>
@@ -11707,7 +11924,9 @@ export default function AdminClient() {
             </button>
           </div>
         </div>
+        ) : null}
 
+        {billingDefaultsWorkspaceTab === "internationality" ? (
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Internationale Sprachen</div>
           <table style={tableStyle}>
@@ -11811,7 +12030,9 @@ export default function AdminClient() {
             </button>
           </div>
         </div>
+        ) : null}
 
+        {billingDefaultsWorkspaceTab === "features" ? (
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Sonstige Features</div>
           <table style={tableStyle}>
@@ -11959,6 +12180,390 @@ export default function AdminClient() {
             </div>
           </div>
         </div>
+        ) : null}
+      </section>
+      ) : null}
+
+      {activeView === "billing_overview" ? (
+      <section style={workspaceSectionStyle}>
+        <h1 style={workspaceTitleStyle}>Gesamtabrechnung</h1>
+        <p style={mutedStyle}>
+          Kaufmännische Gesamtsicht über Portalpartner, zugehörige Netzwerkpartner und den aktuellen KI-Gesamtverbrauch.
+        </p>
+
+        <div style={{ ...rowStyle, marginTop: 14 }}>
+          <input
+            type="month"
+            style={inputStyle}
+            value={adminAiUsageMonth}
+            onChange={(e) => {
+              setAdminAiUsageMonth(e.target.value);
+              setLlmUsageMonth(e.target.value);
+            }}
+          />
+          <button
+            style={btnStyle}
+            onClick={() =>
+              run("Gesamtabrechnung aktualisieren", async () => {
+                await Promise.all([
+                  loadBillingOverview(adminAiUsageMonth),
+                  loadAdminAiUsage(adminAiUsageMonth),
+                  loadLlmUsage(adminAiUsageMonth),
+                ]);
+              })
+            }
+          >
+            Aktualisieren
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12, marginTop: 14 }}>
+          <div style={{ ...cardStyle, margin: 0 }}>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>Portalabo</div>
+            <div style={{ marginTop: 8, fontSize: 24, fontWeight: 800, color: "#0f172a" }}>{billingOverviewTotals.portal_abo_eur.toFixed(2)} EUR</div>
+            <div style={{ marginTop: 6, fontSize: 12, color: "#475569" }}>laufende Portalabo-Einnahmen aller Portalpartner</div>
+          </div>
+          <div style={{ ...cardStyle, margin: 0 }}>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>Internationalität</div>
+            <div style={{ marginTop: 8, fontSize: 24, fontWeight: 800, color: "#0f172a" }}>{billingOverviewTotals.locales_eur.toFixed(2)} EUR</div>
+            <div style={{ marginTop: 6, fontSize: 12, color: "#475569" }}>gebuchte Sprachen aller Portalpartner</div>
+          </div>
+          <div style={{ ...cardStyle, margin: 0 }}>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>Features</div>
+            <div style={{ marginTop: 8, fontSize: 24, fontWeight: 800, color: "#0f172a" }}>{billingOverviewTotals.features_eur.toFixed(2)} EUR</div>
+            <div style={{ marginTop: 6, fontSize: 12, color: "#475569" }}>gebuchte Zusatzleistungen aller Portalpartner</div>
+          </div>
+          <div style={{ ...cardStyle, margin: 0 }}>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>KI-Abrechnung</div>
+            <div style={{ marginTop: 8, fontSize: 24, fontWeight: 800, color: "#0f172a" }}>{billingOverviewTotals.ai_total_eur.toFixed(6)} EUR</div>
+            <div style={{ marginTop: 6, fontSize: 12, color: "#475569" }}>
+              Portalpartner {billingOverviewTotals.ai_portal_partner_eur.toFixed(6)} EUR · Netzwerkpartner {billingOverviewTotals.ai_network_partner_eur.toFixed(6)} EUR
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 10, fontSize: 13, color: "#334155", fontWeight: 700 }}>
+          Gesamtsumme aktuell: <strong>{billingOverviewTotals.grand_total_eur.toFixed(6)} EUR</strong>
+          {" · "}wiederkehrende Leistungen <strong>{billingOverviewTotals.recurring_total_eur.toFixed(2)} EUR</strong>
+          {" · "}KI <strong>{billingOverviewTotals.ai_total_eur.toFixed(6)} EUR</strong>
+        </div>
+
+        <div style={partnerTabBarStyle}>
+          <button style={partnerTabButtonStyle(billingOverviewWorkspaceTab === "portal_partners")} onClick={() => setBillingOverviewWorkspaceTab("portal_partners")}>
+            Portalpartner
+          </button>
+          <button style={partnerTabButtonStyle(billingOverviewWorkspaceTab === "network_partners")} onClick={() => setBillingOverviewWorkspaceTab("network_partners")}>
+            Netzwerkpartner
+          </button>
+          <button style={partnerTabButtonStyle(billingOverviewWorkspaceTab === "ai")} onClick={() => setBillingOverviewWorkspaceTab("ai")}>
+            KI-Abrechnung
+          </button>
+        </div>
+
+        {billingOverviewWorkspaceTab === "portal_partners" ? (
+          <>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Portalpartner</th>
+                  <th style={thStyle}>Status</th>
+                  <th style={thStyle}>Portalabo</th>
+                  <th style={thStyle}>Internationalität</th>
+                  <th style={thStyle}>Features</th>
+                  <th style={thStyle}>Leistungen gesamt</th>
+                  <th style={thStyle}>KI Portalpartner</th>
+                  <th style={thStyle}>KI Netzwerkpartner</th>
+                  <th style={thStyle}>KI gesamt</th>
+                  <th style={thStyle}>Gesamt</th>
+                  <th style={thStyle}>Aktion</th>
+                </tr>
+              </thead>
+              <tbody>
+                {billingOverviewByPartner.map((row) => (
+                  <tr key={`billing-overview:${row.partner_id}`}>
+                    <td style={tdStyle}>
+                      <div style={{ fontWeight: 700 }}>{row.company_name}</div>
+                      <div style={{ fontSize: 12, color: "#64748b" }}>{row.partner_id}</div>
+                    </td>
+                    <td style={tdStyle}>{row.is_active ? "aktiv" : "inaktiv"}</td>
+                    <td style={tdStyle}>{row.portal_abo_eur.toFixed(2)} EUR</td>
+                    <td style={tdStyle}>{row.locales_eur.toFixed(2)} EUR</td>
+                    <td style={tdStyle}>{row.features_eur.toFixed(2)} EUR</td>
+                    <td style={tdStyle}>{row.recurring_total_eur.toFixed(2)} EUR</td>
+                    <td style={tdStyle}>{row.ai_self_eur.toFixed(6)} EUR</td>
+                    <td style={tdStyle}>{row.ai_network_eur.toFixed(6)} EUR</td>
+                    <td style={tdStyle}>{row.ai_total_eur.toFixed(6)} EUR</td>
+                    <td style={tdStyle}><strong>{row.grand_total_eur.toFixed(6)} EUR</strong></td>
+                    <td style={tdStyle}>
+                      <button
+                        type="button"
+                        style={btnGhostStyle}
+                        onClick={() => {
+                          void run("Partner öffnen", async () => {
+                            await openPartnerWorkspace(row.partner_id);
+                          }, { showSuccessModal: false });
+                        }}
+                      >
+                        Partner öffnen
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : null}
+
+        {billingOverviewWorkspaceTab === "network_partners" ? (
+          <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+            {billingOverviewNetworkGroups.map((group) => (
+              <details key={`network-group:${group.portal_partner_id}`} style={{ ...cardStyle, margin: 0 }}>
+                <summary style={{ cursor: "pointer", fontWeight: 800, color: "#0f172a" }}>
+                  {group.portal_partner_name}
+                  <span style={{ marginLeft: 10, fontWeight: 500, color: "#475569" }}>
+                    {group.items.length} Netzwerkpartner · {group.total_cost_eur.toFixed(6)} EUR · {group.total_credits.toFixed(4)} Credits
+                  </span>
+                </summary>
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ marginBottom: 10 }}>
+                    <button
+                      type="button"
+                      style={btnGhostStyle}
+                      onClick={() => {
+                        void run("Portalpartner öffnen", async () => {
+                          await openPartnerWorkspace(group.portal_partner_id);
+                        }, { showSuccessModal: false });
+                      }}
+                    >
+                      Zugehörigen Portalpartner öffnen
+                    </button>
+                  </div>
+                  <table style={tableStyle}>
+                    <thead>
+                      <tr>
+                        <th style={thStyle}>Netzwerkpartner</th>
+                        <th style={thStyle}>Events</th>
+                        <th style={thStyle}>Tokens</th>
+                        <th style={thStyle}>EUR</th>
+                        <th style={thStyle}>Credits</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {group.items.map((row) => (
+                        <tr key={`network:${row.network_partner_id}`}>
+                          <td style={tdStyle}>{row.network_partner_name}</td>
+                          <td style={tdStyle}>{row.events}</td>
+                          <td style={tdStyle}>{row.total_tokens}</td>
+                          <td style={tdStyle}>{row.cost_eur.toFixed(6)} EUR</td>
+                          <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            ))}
+          </div>
+        ) : null}
+
+        {billingOverviewWorkspaceTab === "ai" ? (
+          <>
+            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+              KI-Gesamtübersicht
+            </div>
+            <div style={{ marginTop: 8, fontSize: 12, color: "#334155" }}>
+              Events <strong>{adminAiUsageTotals.events}</strong>
+              {" · "}Prompt <strong>{adminAiUsageTotals.prompt_tokens}</strong>
+              {" · "}Completion <strong>{adminAiUsageTotals.completion_tokens}</strong>
+              {" · "}Gesamt <strong>{adminAiUsageTotals.total_tokens}</strong>
+              {" · "}EUR <strong>{adminAiUsageTotals.cost_eur.toFixed(6)}</strong>
+              {" · "}Credits <strong>{adminAiUsageTotals.estimated_credits.toFixed(4)}</strong>
+            </div>
+
+            <details open style={{ ...cardStyle, marginTop: 12 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 800, color: "#0f172a" }}>Portalpartner Gesamt</summary>
+              <table style={{ ...tableStyle, marginTop: 12 }}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Portalpartner</th>
+                    <th style={thStyle}>Eigennutzung EUR</th>
+                    <th style={thStyle}>Netzwerk EUR</th>
+                    <th style={thStyle}>Gesamt EUR</th>
+                    <th style={thStyle}>Gesamt Credits</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminAiUsageByPortalPartner.map((row) => (
+                    <tr key={`ai-portal:${row.partner_id}`}>
+                      <td style={tdStyle}>{partners.find((entry) => entry.id === row.partner_id)?.company_name ?? row.partner_id}</td>
+                      <td style={tdStyle}>{row.self_cost_eur.toFixed(6)}</td>
+                      <td style={tdStyle}>{row.network_cost_eur.toFixed(6)}</td>
+                      <td style={tdStyle}>{row.total_cost_eur.toFixed(6)}</td>
+                      <td style={tdStyle}>{row.total_estimated_credits.toFixed(4)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+
+            <details style={{ ...cardStyle, marginTop: 12 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 800, color: "#0f172a" }}>Netzwerkpartner</summary>
+              <table style={{ ...tableStyle, marginTop: 12 }}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Portalpartner</th>
+                    <th style={thStyle}>Netzwerkpartner</th>
+                    <th style={thStyle}>Events</th>
+                    <th style={thStyle}>Tokens</th>
+                    <th style={thStyle}>EUR</th>
+                    <th style={thStyle}>Credits</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminAiUsageByNetworkPartner.map((row) => (
+                    <tr key={`ai-network:${row.network_partner_id}`}>
+                      <td style={tdStyle}>{partners.find((entry) => entry.id === row.portal_partner_id)?.company_name ?? row.portal_partner_id}</td>
+                      <td style={tdStyle}>{row.network_partner_name}</td>
+                      <td style={tdStyle}>{row.events}</td>
+                      <td style={tdStyle}>{row.total_tokens}</td>
+                      <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                      <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+
+            <details style={{ ...cardStyle, marginTop: 12 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 800, color: "#0f172a" }}>Features, Modelle und letzte Events</summary>
+              <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Feature</th>
+                      <th style={thStyle}>Events</th>
+                      <th style={thStyle}>Tokens</th>
+                      <th style={thStyle}>EUR</th>
+                      <th style={thStyle}>Credits</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminAiUsageByFeature.map((row) => (
+                      <tr key={`ai-feature:${row.feature}`}>
+                        <td style={tdStyle}>{row.feature}</td>
+                        <td style={tdStyle}>{row.events}</td>
+                        <td style={tdStyle}>{row.total_tokens}</td>
+                        <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                        <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Provider</th>
+                      <th style={thStyle}>Modell</th>
+                      <th style={thStyle}>Events</th>
+                      <th style={thStyle}>Tokens</th>
+                      <th style={thStyle}>EUR</th>
+                      <th style={thStyle}>Credits</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminAiUsageByModel.map((row) => (
+                      <tr key={`ai-model:${row.provider}:${row.model}`}>
+                        <td style={tdStyle}>{row.provider}</td>
+                        <td style={tdStyle}>{row.model}</td>
+                        <td style={tdStyle}>{row.events}</td>
+                        <td style={tdStyle}>{row.total_tokens}</td>
+                        <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                        <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      <th style={thStyle}>Zeit</th>
+                      <th style={thStyle}>Partner-ID</th>
+                      <th style={thStyle}>Netzwerkpartner</th>
+                      <th style={thStyle}>Route</th>
+                      <th style={thStyle}>Feature</th>
+                      <th style={thStyle}>Modell</th>
+                      <th style={thStyle}>EUR</th>
+                      <th style={thStyle}>Credits</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adminAiUsageEvents.map((row, idx) => (
+                      <tr key={`ai-event:${row.created_at ?? "na"}:${idx}`}>
+                        <td style={tdStyle}>{row.created_at ?? "k. A."}</td>
+                        <td style={tdStyle}>{row.partner_id}</td>
+                        <td style={tdStyle}>{row.network_partner_name ?? row.network_partner_id ?? "—"}</td>
+                        <td style={tdStyle}>{row.route_name}</td>
+                        <td style={tdStyle}>{row.feature}</td>
+                        <td style={tdStyle}>{row.provider} / {row.model}</td>
+                        <td style={tdStyle}>{row.estimated_cost_eur.toFixed(6)}</td>
+                        <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <details style={{ ...cardStyle, marginTop: 12 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 800, color: "#0f172a" }}>Technisches Monitoring</summary>
+              <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
+                Gesamt Tokens: <strong>{llmUsageTotals.tokens}</strong> · Gesamt Kosten (EUR): <strong>{llmUsageTotals.cost_eur.toFixed(4)}</strong>
+              </div>
+              <table style={{ ...tableStyle, marginTop: 12 }}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Status</th>
+                    <th style={thStyle}>Events</th>
+                    <th style={thStyle}>Tokens</th>
+                    <th style={thStyle}>Kosten EUR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {llmUsageStatusRows.map((row) => (
+                    <tr key={`status:${row.status}`}>
+                      <td style={tdStyle}>{row.status}</td>
+                      <td style={tdStyle}>{row.entries}</td>
+                      <td style={tdStyle}>{row.tokens}</td>
+                      <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <table style={{ ...tableStyle, marginTop: 12 }}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Route</th>
+                    <th style={thStyle}>Provider</th>
+                    <th style={thStyle}>Modell</th>
+                    <th style={thStyle}>Tokens</th>
+                    <th style={thStyle}>Kosten EUR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {llmUsageItems.map((row) => (
+                    <tr key={`${row.route_name}:${row.provider}:${row.model}`}>
+                      <td style={tdStyle}>{row.route_name}</td>
+                      <td style={tdStyle}>{row.provider}</td>
+                      <td style={tdStyle}>{row.model}</td>
+                      <td style={tdStyle}>{row.tokens}</td>
+                      <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          </>
+        ) : null}
       </section>
       ) : null}
 
@@ -11974,9 +12579,6 @@ export default function AdminClient() {
           </button>
           <button style={partnerTabButtonStyle(llmGlobalTab === "overview")} onClick={() => setLlmGlobalTab("overview")}>
             LLM Übersicht
-          </button>
-          <button style={partnerTabButtonStyle(llmGlobalTab === "usage")} onClick={() => setLlmGlobalTab("usage")}>
-            KI-Verbrauch
           </button>
         </div>
 
@@ -12977,286 +13579,6 @@ export default function AdminClient() {
           </>
         ) : null}
 
-        {llmGlobalTab === "usage" ? (
-          <>
-            <div style={{ ...rowStyle, marginTop: 14 }}>
-              <input
-                type="month"
-                style={inputStyle}
-                value={llmUsageMonth}
-                onChange={(e) => {
-                  setLlmUsageMonth(e.target.value);
-                  setAdminAiUsageMonth(e.target.value);
-                }}
-              />
-              <button
-                style={btnStyle}
-                onClick={() =>
-                  run("KI-Verbrauch laden", async () => {
-                    await Promise.all([
-                      loadLlmUsage(llmUsageMonth),
-                      loadAdminAiUsage(llmUsageMonth),
-                    ]);
-                  })
-                }
-              >
-                Aktualisieren
-              </button>
-            </div>
-            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
-              Billing- und Credit-Übersicht
-            </div>
-            <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
-              Events <strong>{adminAiUsageTotals.events}</strong>
-              {" · "}Prompt <strong>{adminAiUsageTotals.prompt_tokens}</strong>
-              {" · "}Completion <strong>{adminAiUsageTotals.completion_tokens}</strong>
-              {" · "}Gesamt <strong>{adminAiUsageTotals.total_tokens}</strong>
-              {" · "}EUR <strong>{adminAiUsageTotals.cost_eur.toFixed(6)}</strong>
-              {" · "}Credits <strong>{adminAiUsageTotals.estimated_credits.toFixed(4)}</strong>
-            </div>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Portalpartner</th>
-                  <th style={thStyle}>Eigennutzung Events</th>
-                  <th style={thStyle}>Eigennutzung Tokens</th>
-                  <th style={thStyle}>Eigennutzung EUR</th>
-                  <th style={thStyle}>Eigennutzung Credits</th>
-                  <th style={thStyle}>Netzwerk Events</th>
-                  <th style={thStyle}>Netzwerk Tokens</th>
-                  <th style={thStyle}>Netzwerk EUR</th>
-                  <th style={thStyle}>Netzwerk Credits</th>
-                  <th style={thStyle}>Gesamt Tokens</th>
-                  <th style={thStyle}>Gesamt EUR</th>
-                  <th style={thStyle}>Gesamt Credits</th>
-                </tr>
-              </thead>
-              <tbody>
-                {adminAiUsageByPortalPartner.map((row) => (
-                  <tr key={`portal-partner:${row.partner_id}`}>
-                    <td style={tdStyle}>{partners.find((entry) => entry.id === row.partner_id)?.company_name ?? row.partner_id}</td>
-                    <td style={tdStyle}>{row.self_events}</td>
-                    <td style={tdStyle}>{row.self_total_tokens}</td>
-                    <td style={tdStyle}>{row.self_cost_eur.toFixed(6)}</td>
-                    <td style={tdStyle}>{row.self_estimated_credits.toFixed(4)}</td>
-                    <td style={tdStyle}>{row.network_events}</td>
-                    <td style={tdStyle}>{row.network_total_tokens}</td>
-                    <td style={tdStyle}>{row.network_cost_eur.toFixed(6)}</td>
-                    <td style={tdStyle}>{row.network_estimated_credits.toFixed(4)}</td>
-                    <td style={tdStyle}>{row.total_total_tokens}</td>
-                    <td style={tdStyle}>{row.total_cost_eur.toFixed(6)}</td>
-                    <td style={tdStyle}>{row.total_estimated_credits.toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Portalpartner</th>
-                  <th style={thStyle}>Netzwerkpartner</th>
-                  <th style={thStyle}>Events</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>EUR</th>
-                  <th style={thStyle}>Credits</th>
-                </tr>
-              </thead>
-              <tbody>
-                {adminAiUsageByNetworkPartner.map((row) => (
-                  <tr key={`network-partner:${row.network_partner_id}`}>
-                    <td style={tdStyle}>{partners.find((entry) => entry.id === row.portal_partner_id)?.company_name ?? row.portal_partner_id}</td>
-                    <td style={tdStyle}>{row.network_partner_name}</td>
-                    <td style={tdStyle}>{row.events}</td>
-                    <td style={tdStyle}>{row.total_tokens}</td>
-                    <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
-                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Scope</th>
-                  <th style={thStyle}>Events</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>EUR</th>
-                  <th style={thStyle}>Credits</th>
-                </tr>
-              </thead>
-              <tbody>
-                {adminAiUsageByScope.map((row) => (
-                  <tr key={`scope:${row.billing_scope}`}>
-                    <td style={tdStyle}>{row.billing_scope}</td>
-                    <td style={tdStyle}>{row.events}</td>
-                    <td style={tdStyle}>{row.total_tokens}</td>
-                    <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
-                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Partner-ID</th>
-                  <th style={thStyle}>Scope</th>
-                  <th style={thStyle}>Events</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>EUR</th>
-                  <th style={thStyle}>Credits</th>
-                </tr>
-              </thead>
-              <tbody>
-                {adminAiUsageByPartner.map((row) => (
-                  <tr key={`partner:${row.partner_id}:${row.billing_scope}`}>
-                    <td style={tdStyle}>{row.partner_id}</td>
-                    <td style={tdStyle}>{row.billing_scope}</td>
-                    <td style={tdStyle}>{row.events}</td>
-                    <td style={tdStyle}>{row.total_tokens}</td>
-                    <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
-                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Feature</th>
-                  <th style={thStyle}>Events</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>EUR</th>
-                  <th style={thStyle}>Credits</th>
-                </tr>
-              </thead>
-              <tbody>
-                {adminAiUsageByFeature.map((row) => (
-                  <tr key={`feature:${row.feature}`}>
-                    <td style={tdStyle}>{row.feature}</td>
-                    <td style={tdStyle}>{row.events}</td>
-                    <td style={tdStyle}>{row.total_tokens}</td>
-                    <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
-                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Provider</th>
-                  <th style={thStyle}>Modell</th>
-                  <th style={thStyle}>Events</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>EUR</th>
-                  <th style={thStyle}>Credits</th>
-                </tr>
-              </thead>
-              <tbody>
-                {adminAiUsageByModel.map((row) => (
-                  <tr key={`model:${row.provider}:${row.model}`}>
-                    <td style={tdStyle}>{row.provider}</td>
-                    <td style={tdStyle}>{row.model}</td>
-                    <td style={tdStyle}>{row.events}</td>
-                    <td style={tdStyle}>{row.total_tokens}</td>
-                    <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
-                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
-              Letzte Events
-            </div>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Zeit</th>
-                  <th style={thStyle}>Partner-ID</th>
-                  <th style={thStyle}>Netzwerkpartner</th>
-                  <th style={thStyle}>Route</th>
-                  <th style={thStyle}>Feature</th>
-                  <th style={thStyle}>Scope</th>
-                  <th style={thStyle}>Mode</th>
-                  <th style={thStyle}>Modell</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>EUR</th>
-                  <th style={thStyle}>Credits</th>
-                  <th style={thStyle}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {adminAiUsageEvents.map((row, idx) => (
-                  <tr key={`event:${row.created_at ?? "na"}:${idx}`}>
-                    <td style={tdStyle}>{row.created_at ?? "k. A."}</td>
-                    <td style={tdStyle}>{row.partner_id}</td>
-                    <td style={tdStyle}>{row.network_partner_name ?? row.network_partner_id ?? "—"}</td>
-                    <td style={tdStyle}>{row.route_name}</td>
-                    <td style={tdStyle}>{row.feature}</td>
-                    <td style={tdStyle}>{row.billing_scope}</td>
-                    <td style={tdStyle}>{row.billing_mode}</td>
-                    <td style={tdStyle}>{row.provider} / {row.model}</td>
-                    <td style={tdStyle}>{row.total_tokens}</td>
-                    <td style={tdStyle}>{row.estimated_cost_eur.toFixed(6)}</td>
-                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
-                    <td style={tdStyle}>{row.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div style={{ ...rowStyle, marginTop: 14 }}>
-              <div style={{ fontSize: 12, color: "#334155", fontWeight: 700 }}>Technisches Monitoring</div>
-            </div>
-            <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
-              Gesamt Tokens: <strong>{llmUsageTotals.tokens}</strong> · Gesamt Kosten (EUR): <strong>{llmUsageTotals.cost_eur.toFixed(4)}</strong>
-            </div>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Events</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>Kosten EUR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {llmUsageStatusRows.map((row) => (
-                  <tr key={`status:${row.status}`}>
-                    <td style={tdStyle}>{row.status}</td>
-                    <td style={tdStyle}>{row.entries}</td>
-                    <td style={tdStyle}>{row.tokens}</td>
-                    <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>Route</th>
-                  <th style={thStyle}>Provider</th>
-                  <th style={thStyle}>Modell</th>
-                  <th style={thStyle}>Tokens</th>
-                  <th style={thStyle}>Kosten EUR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {llmUsageItems.map((row) => (
-                  <tr key={`${row.route_name}:${row.provider}:${row.model}`}>
-                    <td style={tdStyle}>{row.route_name}</td>
-                    <td style={tdStyle}>{row.provider}</td>
-                    <td style={tdStyle}>{row.model}</td>
-                    <td style={tdStyle}>{row.tokens}</td>
-                    <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        ) : null}
       </section>
       ) : null}
 
