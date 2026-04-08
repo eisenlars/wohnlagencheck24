@@ -9,6 +9,8 @@ export type RegionalRequest = {
   provider: string;
   externalId: string;
   title: string;
+  description: string | null;
+  locationText: string | null;
   requestType: RequestMode;
   objectType: string | null;
   minRooms: number | null;
@@ -130,7 +132,7 @@ async function fetchProjectedRequests(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("public_request_entries")
-    .select("request_id, partner_id, provider, external_id, title, request_type, object_type, min_rooms, max_price, region_targets, region_target_keys, source_updated_at")
+    .select("request_id, partner_id, provider, external_id, title, short_description, long_description, location_text, request_type, object_type, min_rooms, max_price, region_targets, region_target_keys, source_updated_at")
     .in("visible_area_id", areaIds)
     .eq("locale", locale)
     .order("source_updated_at", { ascending: false })
@@ -159,6 +161,8 @@ function mapRowsToRegionalRequests(
       provider: String(record.provider ?? ""),
       externalId: String(record.external_id ?? ""),
       title: String(record.title ?? ""),
+      description: String(record.short_description ?? record.long_description ?? "").trim() || null,
+      locationText: String(record.location_text ?? "").trim() || null,
       requestType,
       objectType: payload.object_type ? String(payload.object_type) : null,
       minRooms: toFiniteNumber(payload.min_rooms),

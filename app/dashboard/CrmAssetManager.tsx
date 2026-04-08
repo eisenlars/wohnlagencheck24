@@ -131,7 +131,7 @@ function getRegionTargetLabels(payload: Record<string, unknown>): string[] {
 function buildDefaultForm(row: RawAssetRow, rawTable: Props['rawTable'], override?: OverrideRow | null): OverrideRow {
   const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
   const title = asText(row.title);
-  const description = getPayloadText(payload, ['long_description', 'description', 'title']);
+  const description = getPayloadText(payload, ['description', 'short_description', 'long_description', 'title']);
   const regionTargets = getRegionTargetLabels(payload);
   const regionTargetsText = regionTargets.join(', ');
   const location = rawTable === 'partner_requests'
@@ -279,7 +279,8 @@ export default function CrmAssetManager(props: Props) {
     return rows.filter((row) => {
       const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
       const regions = getRegionTargetLabels(payload).join(' ');
-      const hay = `${row.title ?? ''} ${row.external_id} ${row.provider} ${regions}`.toLowerCase();
+      const description = getPayloadText(payload, ['description', 'short_description', 'long_description', 'title']);
+      const hay = `${row.title ?? ''} ${row.external_id} ${row.provider} ${regions} ${description}`.toLowerCase();
       return hay.includes(term);
     });
   }, [rows, query]);
@@ -417,7 +418,7 @@ export default function CrmAssetManager(props: Props) {
       ? (asText(selectedPayload.transaction_result) || '—')
       : (asText(selectedPayload.offer_type) || '—');
   const selectedRooms = asNumber(selectedPayload.rooms) ?? asNumber(selectedPayload.min_rooms);
-  const selectedArea = asNumber(selectedPayload.area_sqm);
+  const selectedArea = asNumber(selectedPayload.area_sqm) ?? asNumber(selectedPayload.min_area_sqm) ?? asNumber(selectedPayload.min_living_area_sqm);
   const selectedBudget = asNumber(selectedPayload.max_price) ?? asNumber(selectedPayload.price) ?? asNumber(selectedPayload.rent);
   const selectedLocation = isRequestTable
     ? (getRegionTargetLabels(selectedPayload).join(', ') || asText(selectedPayload.region) || '—')
@@ -434,6 +435,9 @@ export default function CrmAssetManager(props: Props) {
   const selectedUpdatedAt = selectedRow?.source_updated_at ?? selectedRow?.updated_at ?? null;
   const referenceDescription = isReferenceTable
     ? getPayloadText(selectedPayload, ['description', 'reference_text_seed'])
+    : '';
+  const requestDescription = isRequestTable
+    ? getPayloadText(selectedPayload, ['description', 'short_description', 'long_description', 'title'])
     : '';
 
   if (loading) return <FullscreenLoader show label={`${title} werden geladen...`} />;
@@ -481,6 +485,11 @@ export default function CrmAssetManager(props: Props) {
                       asText(((row.normalized_payload ?? {}) as Record<string, unknown>).object_type) || '—'
                     }`}
               </span>
+              {isRequestTable ? (
+                <span style={{ color: '#475569', fontSize: 11 }}>
+                  {getPayloadText(((row.normalized_payload ?? {}) as Record<string, unknown>), ['description', 'short_description', 'long_description']).slice(0, 120) || 'Keine Beschreibung'}
+                </span>
+              ) : null}
             </button>
           ))}
           {!filteredRows.length ? <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>{emptyHint}</p> : null}
@@ -550,6 +559,14 @@ export default function CrmAssetManager(props: Props) {
                 <div style={{ fontSize: 11, fontWeight: 600, color: '#334155', marginBottom: 4 }}>Zielregionen</div>
                 <div style={{ fontSize: 12, color: '#0f172a' }}>
                   {getRegionTargetLabels((selectedRow.normalized_payload ?? {}) as Record<string, unknown>).join(', ') || '—'}
+                </div>
+              </div>
+            ) : null}
+            {isRequestTable ? (
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 10px', background: '#f8fafc' }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: '#334155', marginBottom: 4 }}>Gesuchsbeschreibung</div>
+                <div style={{ fontSize: 12, color: '#0f172a' }}>
+                  {requestDescription || 'Keine Beschreibung im normalisierten Payload vorhanden.'}
                 </div>
               </div>
             ) : null}

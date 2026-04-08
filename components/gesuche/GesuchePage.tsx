@@ -51,6 +51,12 @@ export function GesuchePage(props: GesuchePageProps) {
     currencyCode: formatProfile.currencyCode,
     fractionDigits: 0,
   });
+  const truncateText = (value: string | null, maxLength = 220) => {
+    const text = String(value ?? '').trim();
+    if (!text) return null;
+    if (text.length <= maxLength) return text;
+    return `${text.slice(0, maxLength - 1).trimEnd()}…`;
+  };
 
   return (
     <div className="container text-dark">
@@ -117,9 +123,15 @@ export function GesuchePage(props: GesuchePageProps) {
                 <p className="angebote-address mb-2">
                   {request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified}
                 </p>
+                {request.description ? (
+                  <p className="mb-3" style={{ color: '#334155' }}>
+                    {truncateText(request.description)}
+                  </p>
+                ) : null}
                 <div className="angebote-card-facts">
                   <span>{request.requestType === "miete" ? texts.rent_request : texts.purchase_request}</span>
-                  <span>{request.minRooms ?? "—"} {texts.rooms_min}</span>
+                  {request.minRooms !== null ? <span>{request.minRooms} {texts.rooms_min}</span> : null}
+                  {request.locationText ? <span>{request.locationText}</span> : null}
                 </div>
               </div>
             </article>
