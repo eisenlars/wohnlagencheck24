@@ -5,7 +5,11 @@ import {
   rebuildPublicReferenceEntriesForPartner,
   rebuildPublicRequestEntriesForPartner,
 } from "@/lib/public-asset-projections";
-import { syncIntegrationResources, type IntegrationSyncOptions } from "@/lib/providers";
+import {
+  buildStructuredDebugPayload,
+  syncIntegrationResources,
+  type IntegrationSyncOptions,
+} from "@/lib/providers";
 import type {
   CanonicalReference,
   CanonicalRequest,
@@ -749,20 +753,21 @@ export async function runCrmIntegrationSync(
     provider_breakdown: diagnostics?.provider_breakdown,
     skipped: false,
     notes: mergedNotes.length ? mergedNotes : undefined,
-    debug_payload: {
-      partner_id: integration.partner_id,
-      provider: integration.provider,
+    debug_payload: buildStructuredDebugPayload(
+      integration,
       resource,
       mode,
-      generated_at: lastSyncAt,
-      offers,
-      listings,
-      references,
-      requests,
-      references_fetched: referencesFetched,
-      requests_fetched: requestsFetched,
-      diagnostics: diagnostics ?? null,
-      notes: mergedNotes,
-    },
+      lastSyncAt,
+      {
+        offers,
+        listings,
+        references,
+        requests,
+        referencesFetched,
+        requestsFetched,
+        notes: mergedNotes,
+        diagnostics,
+      },
+    ),
   };
 }

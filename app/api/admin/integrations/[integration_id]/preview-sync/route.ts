@@ -5,7 +5,7 @@ import { normalizeCrmSyncSelection } from "@/lib/integrations/settings";
 import { requireAdmin } from "@/lib/security/admin-auth";
 import { checkAdminApiRateLimit, extractClientIpFromHeaders } from "@/lib/security/rate-limit";
 import { writeSecurityAuditLog } from "@/lib/security/audit-log";
-import { syncIntegrationResources } from "@/lib/providers";
+import { buildStructuredDebugPayload, syncIntegrationResources } from "@/lib/providers";
 import type { CrmSyncResource, PartnerIntegration } from "@/lib/providers/types";
 
 type IntegrationStepLogEntry = {
@@ -93,23 +93,14 @@ function buildPreviewPayload(
   traceId: string,
   result: Awaited<ReturnType<typeof syncIntegrationResources>>,
 ) {
-  return {
-    provider: integration.provider,
-    partner_id: integration.partner_id,
-    integration_id: integration.id,
+  return buildStructuredDebugPayload(
+    integration,
     resource,
-    mode: "guarded",
-    trace_id: traceId,
-    generated_at: new Date().toISOString(),
-    offers: result.offers,
-    listings: result.listings,
-    references: result.references,
-    requests: result.requests,
-    references_fetched: result.referencesFetched,
-    requests_fetched: result.requestsFetched,
-    diagnostics: result.diagnostics ?? null,
-    notes: result.notes ?? [],
-  };
+    "guarded",
+    new Date().toISOString(),
+    result,
+    { trace_id: traceId },
+  );
 }
 
 function appendIntegrationLog(
