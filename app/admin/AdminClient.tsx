@@ -8558,7 +8558,11 @@ export default function AdminClient() {
                       </button>
                     </td>
                     <td style={tdStyle}>{row.rowType === "llm_policy" ? "LLM" : formatIntegrationKindLabel(integration?.kind ?? "")}</td>
-                    <td style={tdStyle}>{row.rowType === "llm_policy" ? "Partner-eigen" : integration?.provider}</td>
+                    <td style={tdStyle}>
+                      {row.rowType === "llm_policy"
+                        ? (llmAllowed ? "Eigene LLMs" : "wohnlagencheck24 LLM")
+                        : integration?.provider}
+                    </td>
                     <td style={tdStyle}>{row.rowType === "llm_policy" ? (llmAllowed ? "aktiv" : "deaktiviert") : (integration?.is_active ? "aktiv" : "deaktiviert")}</td>
                     <td style={tdStyle}>{row.rowType === "llm_policy" ? "—" : getMaskedAuthSummary(integration!)}</td>
                     <td style={tdStyle}>{row.rowType === "llm_policy" ? "Nicht relevant" : getIntegrationLastTestLabel(integration!)}</td>
@@ -8628,7 +8632,7 @@ export default function AdminClient() {
                         <div style={{ marginTop: 14 }}>
                           {row.rowType === "llm_policy" ? (
                             <div style={{ padding: 14, border: "1px solid #e2e8f0", borderRadius: 10, background: "#f8fafc", color: "#334155", lineHeight: 1.6 }}>
-                              Diese Anbindungsart steuert, ob der Portalpartner eigene LLM-Anbindungen nutzen darf. Weitere Detailkonfigurationen koennen hier spaeter ergänzt werden.
+                              Diese Anbindungsart steuert, ob der Portalpartner eigene LLM-Anbindungen nutzen darf. Wenn die Freigabe deaktiviert ist, arbeitet der Partner über das wohnlagencheck24 LLM.
                             </div>
                           ) : isCrmIntegration && integration && draft ? (
                             <AdminCrmIntegrationsPanel
@@ -8711,9 +8715,6 @@ export default function AdminClient() {
         <div style={{ marginTop: 24, display: "grid", gap: 14 }}>
           <div style={{ display: "grid", gap: 4 }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Netzwerkpartner-Anbindungen</div>
-            <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
-              Die LLM-Freigabe und CRM-Steuerung der Netzwerkpartner wird zentral vom Admin verwaltet und nicht mehr im Portalpartner-Dashboard gepflegt.
-            </div>
           </div>
 
           {networkPartnerAdminRows.length === 0 ? (
@@ -8810,7 +8811,7 @@ export default function AdminClient() {
                                   </button>
                                 </td>
                                 <td style={tdStyle}>{row.rowType === "llm_policy" ? "LLM" : formatIntegrationKindLabel(integration?.kind ?? "")}</td>
-                                <td style={tdStyle}>{row.rowType === "llm_policy" ? "Partner-eigen" : integration?.provider}</td>
+                                <td style={tdStyle}>{row.rowType === "llm_policy" ? "Eigene LLMs" : integration?.provider}</td>
                                 <td style={tdStyle}>{row.rowType === "llm_policy" ? (llmAllowed ? "aktiv" : "deaktiviert") : (integration?.is_active ? "aktiv" : "deaktiviert")}</td>
                                 <td style={tdStyle}>{row.rowType === "llm_policy" ? "—" : getMaskedAuthSummary(integration!)}</td>
                                 <td style={tdStyle}>{row.rowType === "llm_policy" ? "Nicht relevant" : getIntegrationLastTestLabel(integration!)}</td>
@@ -8883,7 +8884,7 @@ export default function AdminClient() {
                                     <div style={{ marginTop: 14 }}>
                                       {row.rowType === "llm_policy" ? (
                                         <div style={{ padding: 14, border: "1px solid #e2e8f0", borderRadius: 10, background: "#f8fafc", color: "#334155", lineHeight: 1.6 }}>
-                                          Diese Anbindungsart steuert, ob der Netzwerkpartner eigene LLM-Anbindungen nutzen darf. Weitere Detailkonfigurationen koennen hier spaeter ergänzt werden.
+                                          Diese Anbindungsart steuert, ob der Netzwerkpartner eigene LLM-Anbindungen nutzen darf. Die Einrichtung der eigenen Keys sollte spaeter im Netzwerkpartner-Dashboard erfolgen.
                                         </div>
                                       ) : isCrmIntegration && integration && draft ? (
                                         <AdminCrmIntegrationsPanel
