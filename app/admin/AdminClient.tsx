@@ -123,6 +123,8 @@ type AreaMapping = {
 type Integration = {
   id: string;
   partner_id: string;
+  portal_partner_id?: string | null;
+  network_partner_id?: string | null;
   kind: string;
   provider: string;
   base_url?: string | null;
@@ -131,7 +133,32 @@ type Integration = {
   detail_url_template?: string | null;
   is_active: boolean;
   settings?: Record<string, unknown> | null;
+  last_test_at?: string | null;
+  last_preview_sync_at?: string | null;
   last_sync_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  has_api_key?: boolean;
+  has_token?: boolean;
+  has_secret?: boolean;
+  has_trigger_token?: boolean;
+  has_trigger_secret?: boolean;
+};
+
+type NetworkPartnerAdminRecord = {
+  id: string;
+  portal_partner_id: string;
+  company_name: string;
+  legal_name?: string | null;
+  contact_email: string;
+  contact_phone?: string | null;
+  website_url?: string | null;
+  status: "active" | "paused" | "inactive";
+  managed_editing_enabled: boolean;
+  llm_partner_managed_allowed: boolean;
+  created_at: string;
+  updated_at: string;
+  integrations?: Integration[];
 };
 
 type MarketExplanationFaqDraftItem = {
@@ -1230,6 +1257,12 @@ function formatAdminDateTime(value: string | null | undefined): string {
   return parsed.toLocaleString("de-DE");
 }
 
+function formatNetworkPartnerStatusLabel(status: NetworkPartnerAdminRecord["status"]): string {
+  if (status === "active") return "Aktiv";
+  if (status === "paused") return "Pausiert";
+  return "Inaktiv";
+}
+
 function getMaskedAuthSummary(integration: Pick<Integration, "auth_config">): string {
   const auth = (integration.auth_config ?? {}) as Record<string, unknown>;
   const hasApiKey = Boolean(String(auth.api_key ?? auth.api_key_encrypted ?? "").trim());
@@ -1243,14 +1276,18 @@ function getMaskedAuthSummary(integration: Pick<Integration, "auth_config">): st
   return parts.join(" · ");
 }
 
-function getIntegrationHealthSummary(integration: Pick<Integration, "settings" | "last_sync_at">): string {
+function getIntegrationHealthSummary(
+  integration: Pick<Integration, "settings" | "last_test_at" | "last_preview_sync_at" | "last_sync_at">,
+): string {
   const settings = (integration.settings ?? {}) as Record<string, unknown>;
-  const testedAt = String(settings.last_tested_at ?? "").trim();
+  const testedAt = String(settings.last_test_finished_at ?? settings.last_tested_at ?? integration.last_test_at ?? "").trim();
   const testStatus = String(settings.last_test_status ?? "").trim();
+  const previewAt = String(integration.last_preview_sync_at ?? "").trim();
   const syncAt = String(integration.last_sync_at ?? "").trim();
   const chunks: string[] = [];
   if (testStatus) chunks.push(`Test: ${testStatus}`);
   if (testedAt) chunks.push(`Zuletzt getestet: ${new Date(testedAt).toLocaleString("de-DE")}`);
+  if (previewAt) chunks.push(`Letzter Preview-Sync: ${new Date(previewAt).toLocaleString("de-DE")}`);
   if (syncAt) chunks.push(`Letzter Sync: ${new Date(syncAt).toLocaleString("de-DE")}`);
   return chunks.length > 0 ? chunks.join(" | ") : "Kein Test-/Sync-Status";
 }
@@ -2274,10 +2311,16 @@ export default function AdminClient() {
   const [areaMappingsDetailLoading, setAreaMappingsDetailLoading] = useState(false);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [integrationsLoadedForPartnerId, setIntegrationsLoadedForPartnerId] = useState<string>("");
+  const [networkPartnerAdminRows, setNetworkPartnerAdminRows] = useState<NetworkPartnerAdminRecord[]>([]);
+  const [networkPartnerAdminLoadedForPartnerId, setNetworkPartnerAdminLoadedForPartnerId] = useState<string>("");
   const [billingLoadedForPartnerId, setBillingLoadedForPartnerId] = useState<string>("");
   const [crmIntegrationDrafts, setCrmIntegrationDrafts] = useState<Record<string, CrmIntegrationAdminDraft>>({});
   const [crmIntegrationTabs, setCrmIntegrationTabs] = useState<Record<string, CrmResourceKey>>({});
   const [expandedCrmIntegrationId, setExpandedCrmIntegrationId] = useState<string | null>(null);
+  const [networkCrmIntegrationDrafts, setNetworkCrmIntegrationDrafts] = useState<Record<string, CrmIntegrationAdminDraft>>({});
+  const [networkCrmIntegrationTabs, setNetworkCrmIntegrationTabs] = useState<Record<string, CrmResourceKey>>({});
+  const [expandedNetworkCrmIntegrationId, setExpandedNetworkCrmIntegrationId] = useState<string | null>(null);
+  const [networkPartnerLlmDrafts, setNetworkPartnerLlmDrafts] = useState<Record<string, boolean>>({});
   const [status, setStatus] = useState<string>("Lade Admin-Daten...");
   const [adminDisplayName, setAdminDisplayName] = useState<string>("Admin");
   const [lastLogin, setLastLogin] = useState<string>("");
@@ -2424,11 +2467,13 @@ export default function AdminClient() {
     integrationId: string;
     provider: string;
     kind: string;
+    scope: "partner" | "network_partner";
   }>({
     open: false,
     integrationId: "",
     provider: "",
     kind: "",
+    scope: "partner",
   });
   const [partnerPurgeModal, setPartnerPurgeModal] = useState<{
     open: boolean;
@@ -3919,9 +3964,15 @@ export default function AdminClient() {
     setAreaMappingsDetailLoading(false);
     setIntegrations([]);
     setIntegrationsLoadedForPartnerId("");
+    setNetworkPartnerAdminRows([]);
+    setNetworkPartnerAdminLoadedForPartnerId("");
     setCrmIntegrationDrafts({});
     setCrmIntegrationTabs({});
     setExpandedCrmIntegrationId(null);
+    setNetworkCrmIntegrationDrafts({});
+    setNetworkCrmIntegrationTabs({});
+    setExpandedNetworkCrmIntegrationId(null);
+    setNetworkPartnerLlmDrafts({});
     setPartnerBillingRows([]);
     setPartnerBillingTotals({ tokens: 0, cost_eur: 0 });
     setPartnerFeatureBillingRows([]);
@@ -4106,6 +4157,13 @@ export default function AdminClient() {
     const data = await api<{ integrations: Integration[] }>(`/api/admin/partners/${partnerId}/integrations`);
     setIntegrations(data.integrations ?? []);
     setIntegrationsLoadedForPartnerId(partnerId);
+  }
+
+  async function loadPartnerNetworkPartnerIntegrations(partnerId: string) {
+    if (!partnerId) return;
+    const data = await api<{ network_partners: NetworkPartnerAdminRecord[] }>(`/api/admin/partners/${partnerId}/network-partners`);
+    setNetworkPartnerAdminRows(data.network_partners ?? []);
+    setNetworkPartnerAdminLoadedForPartnerId(partnerId);
   }
 
   async function loadAreaReview(areaId: string) {
@@ -5781,10 +5839,21 @@ export default function AdminClient() {
 
   useEffect(() => {
     if (activeView !== "partner_edit" || !selectedPartnerId || !selectedPartner || selectedPartner.is_system_default) return;
-    if (partnerTab === "integrations" && integrationsLoadedForPartnerId !== selectedPartnerId) {
-      void loadPartnerIntegrations(selectedPartnerId).catch(() => {
-        setIntegrations([]);
-      });
+    if (partnerTab === "integrations") {
+      const tasks: Promise<void>[] = [];
+      if (integrationsLoadedForPartnerId !== selectedPartnerId) {
+        tasks.push(loadPartnerIntegrations(selectedPartnerId).catch(() => {
+          setIntegrations([]);
+        }));
+      }
+      if (networkPartnerAdminLoadedForPartnerId !== selectedPartnerId) {
+        tasks.push(loadPartnerNetworkPartnerIntegrations(selectedPartnerId).catch(() => {
+          setNetworkPartnerAdminRows([]);
+        }));
+      }
+      if (tasks.length > 0) {
+        void Promise.all(tasks);
+      }
       return;
     }
     if (partnerTab === "billing" && billingLoadedForPartnerId !== selectedPartnerId) {
@@ -5852,7 +5921,7 @@ export default function AdminClient() {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeView, partnerTab, selectedPartnerId, selectedPartner?.id, selectedPartner?.is_system_default, integrationsLoadedForPartnerId, billingLoadedForPartnerId, partnerBillingMonth]);
+  }, [activeView, partnerTab, selectedPartnerId, selectedPartner?.id, selectedPartner?.is_system_default, integrationsLoadedForPartnerId, networkPartnerAdminLoadedForPartnerId, billingLoadedForPartnerId, partnerBillingMonth]);
 
   useEffect(() => {
     if (activeView !== "partner_edit" || !selectedPartnerId) return;
@@ -5861,7 +5930,6 @@ export default function AdminClient() {
     void loadPartnerAreaMappingsDetails(selectedPartnerId).catch((error) => {
       setStatus(error instanceof Error ? error.message : "Gebietsdaten konnten nicht geladen werden.");
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView, partnerTab, selectedPartnerId, areaMappingsDetailedForPartnerId, areaMappingsDetailLoading]);
 
   useEffect(() => {
@@ -5888,6 +5956,20 @@ export default function AdminClient() {
     }
     setCrmIntegrationDrafts(nextDrafts);
   }, [integrations]);
+
+  useEffect(() => {
+    const nextDrafts: Record<string, CrmIntegrationAdminDraft> = {};
+    const nextLlmDrafts: Record<string, boolean> = {};
+    for (const networkPartner of networkPartnerAdminRows) {
+      nextLlmDrafts[networkPartner.id] = networkPartner.llm_partner_managed_allowed !== false;
+      for (const integration of networkPartner.integrations ?? []) {
+        if (String(integration.kind ?? "").toLowerCase() !== "crm") continue;
+        nextDrafts[integration.id] = buildCrmIntegrationAdminDraft(integration);
+      }
+    }
+    setNetworkCrmIntegrationDrafts(nextDrafts);
+    setNetworkPartnerLlmDrafts(nextLlmDrafts);
+  }, [networkPartnerAdminRows]);
 
   function closeSuccessModal() {
     setSuccessModal((v) => ({ ...v, open: false }));
@@ -6522,8 +6604,13 @@ export default function AdminClient() {
                   setIntegrationDeleteConfirmModal((v) => ({ ...v, open: false }));
                   void run("Integration löschen", async () => {
                     if (!selectedPartnerId || !payload.integrationId) return;
-                    await api(`/api/admin/integrations/${payload.integrationId}`, { method: "DELETE" });
-                    await loadPartnerIntegrations(selectedPartnerId);
+                    if (payload.scope === "network_partner") {
+                      await api(`/api/admin/network-integrations/${payload.integrationId}`, { method: "DELETE" });
+                      await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                    } else {
+                      await api(`/api/admin/integrations/${payload.integrationId}`, { method: "DELETE" });
+                      await loadPartnerIntegrations(selectedPartnerId);
+                    }
                   });
                 }}
               >
@@ -8528,6 +8615,7 @@ export default function AdminClient() {
                               integrationId: integration.id,
                               provider: integration.provider,
                               kind: integration.kind,
+                              scope: "partner",
                             });
                           }}
                         >
@@ -8610,6 +8698,244 @@ export default function AdminClient() {
             })}
           </tbody>
         </table>
+
+        <div style={{ marginTop: 24, display: "grid", gap: 14 }}>
+          <div style={{ display: "grid", gap: 4 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Netzwerkpartner-Anbindungen</div>
+            <div style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>
+              Die LLM-Freigabe und CRM-Steuerung der Netzwerkpartner wird zentral vom Admin verwaltet und nicht mehr im Portalpartner-Dashboard gepflegt.
+            </div>
+          </div>
+
+          {networkPartnerAdminRows.length === 0 ? (
+            <div style={{ ...mutedStyle, marginTop: 0 }}>Für diesen Portalpartner sind noch keine Netzwerkpartner hinterlegt.</div>
+          ) : (
+            networkPartnerAdminRows.map((networkPartner) => (
+              <details
+                key={`network-partner-integrations:${networkPartner.id}`}
+                style={{ border: "1px solid #e2e8f0", borderRadius: 12, background: "#fff", overflow: "hidden" }}
+              >
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    listStyle: "none",
+                    padding: "14px 16px",
+                    display: "grid",
+                    gap: 8,
+                    background: "#f8fafc",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                    <div style={{ display: "grid", gap: 4 }}>
+                      <div style={{ fontWeight: 700, color: "#0f172a" }}>{networkPartner.company_name}</div>
+                      <div style={{ fontSize: 12, color: "#64748b" }}>
+                        {networkPartner.contact_email} · {formatNetworkPartnerStatusLabel(networkPartner.status)}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 12, color: "#334155" }}>
+                      <span>LLM {networkPartner.llm_partner_managed_allowed ? "erlaubt" : "gesperrt"}</span>
+                      <span>{(networkPartner.integrations ?? []).length} CRM-Anbindungen</span>
+                    </div>
+                  </div>
+                </summary>
+
+                <div style={{ padding: 16, display: "grid", gap: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 700, color: "#0f172a" }}>
+                      <input
+                        type="checkbox"
+                        checked={networkPartnerLlmDrafts[networkPartner.id] ?? networkPartner.llm_partner_managed_allowed}
+                        onChange={(event) =>
+                          setNetworkPartnerLlmDrafts((current) => ({
+                            ...current,
+                            [networkPartner.id]: event.target.checked,
+                          }))
+                        }
+                      />
+                      Partner-eigene LLM-Anbindungen erlauben
+                    </label>
+                    <button
+                      style={btnStyle}
+                      disabled={busy || !selectedPartnerId}
+                      onClick={() =>
+                        run("Netzwerkpartner-LLM-Freigabe speichern", async () => {
+                          if (!selectedPartnerId) return;
+                          await api(`/api/admin/partners/${selectedPartnerId}/network-partners/${networkPartner.id}`, {
+                            method: "PATCH",
+                            body: JSON.stringify({
+                              llm_partner_managed_allowed: networkPartnerLlmDrafts[networkPartner.id] ?? networkPartner.llm_partner_managed_allowed,
+                            }),
+                          });
+                          await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                        })
+                      }
+                    >
+                      Freigabe speichern
+                    </button>
+                  </div>
+
+                  {(networkPartner.integrations ?? []).length === 0 ? (
+                    <div style={{ fontSize: 13, color: "#64748b" }}>
+                      Für diesen Netzwerkpartner sind aktuell keine CRM-Anbindungen hinterlegt.
+                    </div>
+                  ) : (
+                    <table style={tableStyle}>
+                      <thead>
+                        <tr>
+                          <th style={thStyle}>Kind</th>
+                          <th style={thStyle}>Provider</th>
+                          <th style={thStyle}>Status</th>
+                          <th style={thStyle}>Zugang (maskiert)</th>
+                          <th style={thStyle}>Sync/Test</th>
+                          <th style={thStyle}>Aktion</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(networkPartner.integrations ?? []).map((integration) => {
+                          const isCrmIntegration = String(integration.kind ?? "").toLowerCase() === "crm";
+                          const draft = networkCrmIntegrationDrafts[integration.id] ?? buildCrmIntegrationAdminDraft(integration);
+                          const activeResourceKey: CrmResourceKey = ["offers", "references", "requests"].includes(networkCrmIntegrationTabs[integration.id] ?? "offers")
+                            ? (networkCrmIntegrationTabs[integration.id] ?? "offers") as CrmResourceKey
+                            : "offers";
+                          const globalSyncSummary = isCrmIntegration ? readSyncSummaryFromIntegration(integration, "all") : null;
+                          const resourceSyncSummary = isCrmIntegration ? readSyncSummaryFromIntegration(integration, activeResourceKey) : null;
+                          const resourcePreviewSummary = isCrmIntegration ? readPreviewSummaryFromIntegration(integration, activeResourceKey) : null;
+                          const syncWarning = isCrmIntegration ? buildCrmSyncWarning(resourceSyncSummary) : null;
+                          const isExpanded = expandedNetworkCrmIntegrationId === integration.id;
+                          const isRunningThisResource = resourceSyncSummary?.status === "running";
+                          const anotherSyncRunning = globalSyncSummary?.status === "running" && !isRunningThisResource;
+
+                          return (
+                            <Fragment key={`network-integration:${integration.id}`}>
+                              <tr>
+                                <td style={tdStyle}>{integration.kind}</td>
+                                <td style={tdStyle}>{integration.provider}</td>
+                                <td style={tdStyle}>{integration.is_active ? "aktiv" : "inaktiv"}</td>
+                                <td style={tdStyle}>{getMaskedAuthSummary(integration)}</td>
+                                <td style={tdStyle}>
+                                  <span style={{ fontSize: 12, color: "#334155" }}>{getIntegrationHealthSummary(integration)}</span>
+                                </td>
+                                <td style={tdStyle}>
+                                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                    {isCrmIntegration ? (
+                                      <button
+                                        style={btnStyle}
+                                        disabled={busy}
+                                        onClick={() => setExpandedNetworkCrmIntegrationId((prev) => prev === integration.id ? null : integration.id)}
+                                      >
+                                        {isExpanded ? "Schließen" : "Sync"}
+                                      </button>
+                                    ) : null}
+                                    <button
+                                      style={btnGhostStyle}
+                                      disabled={busy}
+                                      onClick={() =>
+                                        run("Integration Status ändern", async () => {
+                                          await api(`/api/admin/network-integrations/${integration.id}`, {
+                                            method: "PATCH",
+                                            body: JSON.stringify({ is_active: !integration.is_active }),
+                                          });
+                                          await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                        })
+                                      }
+                                    >
+                                      {integration.is_active ? "Deaktivieren" : "Aktivieren"}
+                                    </button>
+                                    <button
+                                      style={btnDangerStyle}
+                                      disabled={busy}
+                                      onClick={() => {
+                                        setIntegrationDeleteConfirmModal({
+                                          open: true,
+                                          integrationId: integration.id,
+                                          provider: integration.provider,
+                                          kind: integration.kind,
+                                          scope: "network_partner",
+                                        });
+                                      }}
+                                    >
+                                      Löschen
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {isCrmIntegration && isExpanded ? (
+                                <tr>
+                                  <td style={{ ...tdStyle, paddingTop: 0, paddingBottom: 14 }} colSpan={6}>
+                                    <div style={{ marginTop: 14 }}>
+                                      <AdminCrmIntegrationsPanel
+                                        integration={integration}
+                                        draft={draft}
+                                        activeResourceKey={activeResourceKey}
+                                        onActiveResourceChange={(resource) =>
+                                          setNetworkCrmIntegrationTabs((prev) => ({
+                                            ...prev,
+                                            [integration.id]: resource,
+                                          }))
+                                        }
+                                        onDraftChange={(nextDraft) =>
+                                          setNetworkCrmIntegrationDrafts((prev): Record<string, CrmIntegrationAdminDraft> => ({
+                                            ...prev,
+                                            [integration.id]: nextDraft as CrmIntegrationAdminDraft,
+                                          }))
+                                        }
+                                        onSaveSettings={(integrationId, nextDraft) =>
+                                          run(`${integration.provider} Einstellungen speichern`, async () => {
+                                            const settings = applyCrmAdminDraftToSettings(
+                                              integration,
+                                              nextDraft as CrmIntegrationAdminDraft,
+                                            );
+                                            await api(`/api/admin/network-integrations/${integrationId}`, {
+                                              method: "PATCH",
+                                              body: JSON.stringify({ settings }),
+                                            });
+                                            await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                          })
+                                        }
+                                        onPreview={(integrationId, resource) =>
+                                          run(`${formatCrmResourceLabel(resource)}-Abruf testen`, async () => {
+                                            await api(`/api/admin/network-integrations/${integrationId}/preview-sync`, {
+                                              method: "POST",
+                                              body: JSON.stringify({ resource }),
+                                            });
+                                            await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                          })
+                                        }
+                                        onSync={(integrationId, resource, mode) =>
+                                          run(`${formatCrmResourceLabel(resource)} ${mode === "full" ? "Vollsync" : "Guarded-Sync"} starten`, async () => {
+                                            await api(`/api/admin/network-integrations/${integrationId}/sync`, {
+                                              method: "POST",
+                                              body: JSON.stringify({ resource, mode }),
+                                            });
+                                            await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                          })
+                                        }
+                                        onCancelSync={() =>
+                                          run("Sync-Abbruch", async () => {
+                                            throw new Error("Sync-Abbruch ist für Netzwerkpartner aktuell noch nicht implementiert.");
+                                          })
+                                        }
+                                        busy={busy}
+                                        syncSummary={resourceSyncSummary}
+                                        previewSummary={resourcePreviewSummary}
+                                        anotherSyncRunning={Boolean(anotherSyncRunning)}
+                                        syncWarning={syncWarning}
+                                      />
+                                    </div>
+                                  </td>
+                                </tr>
+                              ) : null}
+                            </Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </details>
+            ))
+          )}
+        </div>
         </>
         ) : null}
       </section>

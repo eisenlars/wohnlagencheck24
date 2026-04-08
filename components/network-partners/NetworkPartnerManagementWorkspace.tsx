@@ -5,10 +5,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import NetworkBookingsWorkspace from '@/components/network-partners/NetworkBookingsWorkspace';
 import NetworkContentWorkspace from '@/components/network-partners/NetworkContentWorkspace';
 import NetworkBillingWorkspace from '@/components/network-partners/NetworkBillingWorkspace';
-import NetworkPartnerIntegrationsWorkspace from '@/components/network-partners/NetworkPartnerIntegrationsWorkspace';
 import NetworkPartnerAccessPanel from '@/components/network-partners/NetworkPartnerAccessPanel';
 import NetworkPartnerForm from '@/components/network-partners/NetworkPartnerForm';
-import type { NetworkPartnerRecord } from '@/lib/network-partners/types';
+import type {
+  NetworkContentRecord,
+  NetworkPartnerBookingRecord,
+  NetworkPartnerRecord,
+} from '@/lib/network-partners/types';
 import {
   workflowHeaderStyle,
   workflowPanelCardStyle,
@@ -19,13 +22,29 @@ type NetworkPartnerListPayload = {
   error?: string;
 };
 
-export type NetworkPartnerDetailSection = 'profile' | 'integrations' | 'bookings' | 'content' | 'billing';
+type BookingListPayload = {
+  bookings?: NetworkPartnerBookingRecord[];
+  error?: string;
+};
+
+type ContentListPayload = {
+  content_items?: NetworkContentRecord[];
+  error?: string;
+};
+
+export type NetworkPartnerDetailSection = 'profile' | 'bookings' | 'content' | 'billing';
+
+type AreaOption = {
+  id: string;
+  label: string;
+};
 
 type NetworkPartnerManagementWorkspaceProps = {
   initialSelectedPartnerId?: string | null;
   initialDetailSection?: NetworkPartnerDetailSection;
   onSelectedPartnerIdChange?: (partnerId: string | null) => void;
   onDetailSectionChange?: (section: NetworkPartnerDetailSection) => void;
+  areas?: AreaOption[];
 };
 
 function formatStatusLabel(status: NetworkPartnerRecord['status']): string {
@@ -34,13 +53,30 @@ function formatStatusLabel(status: NetworkPartnerRecord['status']): string {
   return 'Inaktiv';
 }
 
+function summarizePartnerMetrics(
+  partnerId: string,
+  bookings: NetworkPartnerBookingRecord[],
+  contentItems: NetworkContentRecord[],
+) {
+  const partnerBookings = bookings.filter((booking) => booking.network_partner_id === partnerId);
+  const partnerContent = contentItems.filter((item) => item.network_partner_id === partnerId);
+  return {
+    activeBookings: partnerBookings.filter((booking) => booking.status === 'active').length,
+    totalBookings: partnerBookings.length,
+    openContent: partnerContent.filter((item) => item.status !== 'live').length,
+  };
+}
+
 export default function NetworkPartnerManagementWorkspace({
   initialSelectedPartnerId,
   initialDetailSection = 'profile',
   onSelectedPartnerIdChange,
   onDetailSectionChange,
+  areas = [],
 }: NetworkPartnerManagementWorkspaceProps) {
   const [networkPartners, setNetworkPartners] = useState<NetworkPartnerRecord[]>([]);
+  const [bookings, setBookings] = useState<NetworkPartnerBookingRecord[]>([]);
+  const [contentItems, setContentItems] = useState<NetworkContentRecord[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(initialSelectedPartnerId ?? null);
   const [detailSection, setDetailSection] = useState<NetworkPartnerDetailSection>(initialDetailSection);
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,11 +85,19 @@ export default function NetworkPartnerManagementWorkspace({
   const [message, setMessage] = useState<string | null>(null);
   const [createMode, setCreateMode] = useState(false);
 
-  const fetchNetworkPartners = useCallback(async () => {
-    const response = await fetch('/api/partner/network-partners', { method: 'GET', cache: 'no-store' });
+  const fetchWorkspaceData = useCallback(async () => {
+    const [partnersResponse, bookingsResponse, contentResponse] = await Promise.all([
+      fetch('/api/partner/network-partners', { method: 'GET', cache: 'no-store' }),
+      fetch('/api/partner/network-bookings', { method: 'GET', cache: 'no-store' }),
+      fetch('/api/partner/network-content', { method: 'GET', cache: 'no-store' }),
+    ]);
     return {
-      response,
-      payload: (await response.json().catch(() => null)) as NetworkPartnerListPayload | null,
+      partnersResponse,
+      bookingsResponse,
+      contentResponse,
+      partnersPayload: (await partnersResponse.json().catch(() => null)) as NetworkPartnerListPayload | null,
+      bookingsPayload: (await bookingsResponse.json().catch(() => null)) as BookingListPayload | null,
+      contentPayload: (await contentResponse.json().catch(() => null)) as ContentListPayload | null,
     };
   }, []);
 
@@ -66,16 +110,27 @@ export default function NetworkPartnerManagementWorkspace({
       setError(null);
       setMessage(null);
     }
-    const { response, payload } = await fetchNetworkPartners();
-    if (!response.ok) {
+    const {
+      partnersResponse,
+      bookingsResponse,
+      contentResponse,
+      partnersPayload,
+      bookingsPayload,
+      contentPayload,
+    } = await fetchWorkspaceData();
+    if (!partnersResponse.ok) {
       setNetworkPartners([]);
-      setError(String(payload?.error ?? 'Netzwerkpartner konnten nicht geladen werden.'));
+      setBookings([]);
+      setContentItems([]);
+      setError(String(partnersPayload?.error ?? 'Netzwerkpartner konnten nicht geladen werden.'));
       setLoading(false);
       return;
     }
 
-    const partners = Array.isArray(payload?.network_partners) ? payload.network_partners : [];
+    const partners = Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : [];
     setNetworkPartners(partners);
+    setBookings(Array.isArray(bookingsPayload?.bookings) && bookingsResponse.ok ? bookingsPayload.bookings : []);
+    setContentItems(Array.isArray(contentPayload?.content_items) && contentResponse.ok ? contentPayload.content_items : []);
     setSelectedPartnerId((current) => {
       const requested = String(preferredPartnerId ?? initialSelectedPartnerId ?? current ?? '').trim();
       const selected = requested && partners.some((partner) => partner.id === requested)
@@ -85,7 +140,7 @@ export default function NetworkPartnerManagementWorkspace({
       return selected;
     });
     setLoading(false);
-  }, [fetchNetworkPartners, initialSelectedPartnerId, onSelectedPartnerIdChange]);
+  }, [fetchWorkspaceData, initialSelectedPartnerId, onSelectedPartnerIdChange]);
 
   useEffect(() => {
     void loadNetworkPartners(initialSelectedPartnerId ?? undefined);
@@ -113,6 +168,14 @@ export default function NetworkPartnerManagementWorkspace({
   const selectedPartner = useMemo(
     () => networkPartners.find((partner) => partner.id === selectedPartnerId) ?? null,
     [networkPartners, selectedPartnerId],
+  );
+
+  const partnerMetrics = useMemo(
+    () => new Map(networkPartners.map((partner) => [
+      partner.id,
+      summarizePartnerMetrics(partner.id, bookings, contentItems),
+    ])),
+    [bookings, contentItems, networkPartners],
   );
 
   function selectPartner(partnerId: string) {
@@ -224,7 +287,14 @@ export default function NetworkPartnerManagementWorkspace({
                           {formatStatusLabel(partner.status)}
                         </span>
                       </div>
-                      <span style={{ color: '#475569', fontSize: 13 }}>{partner.contact_email}</span>
+                      <span style={{ color: '#475569', fontSize: 13 }}>
+                        {partner.legal_name?.trim() || 'Keine verantwortliche Person gepflegt'}
+                      </span>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', color: '#64748b', fontSize: 12 }}>
+                        <span>{partner.contact_email}</span>
+                        <span>Aktive Buchungen: {partnerMetrics.get(partner.id)?.activeBookings ?? 0}</span>
+                        <span>Content offen: {partnerMetrics.get(partner.id)?.openContent ?? 0}</span>
+                      </div>
                     </button>
                   );
                 })}
@@ -247,8 +317,7 @@ export default function NetworkPartnerManagementWorkspace({
                 {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
                 <NetworkPartnerForm
                   submitLabel="Einladung senden und Partner anlegen"
-                  helperText="Falls der Einladungsversand scheitert, bleibt der Partner trotzdem angelegt. Der konkrete Fehler wird danach direkt im Profil des neuen Partners angezeigt."
-                  showManagedEditingField={false}
+                  helperText="Falls der Einladungsversand scheitert, bleibt der Partner trotzdem angelegt. Der Fehler wird danach direkt im Profil angezeigt."
                   onSubmit={async (values) => {
                     setError(null);
                     setMessage(null);
@@ -301,13 +370,12 @@ export default function NetworkPartnerManagementWorkspace({
                   <div style={{ display: 'grid', gap: 4 }}>
                     <h2 style={{ margin: 0, fontSize: 24, color: '#0f172a' }}>{selectedPartner.company_name}</h2>
                     <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-                      Rechte Arbeitsbereiche für den ausgewählten Netzwerkpartner.
+                      Stammdaten, Zugang und operative Arbeitsbereiche des ausgewählten Netzwerkpartners.
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {([
                       ['profile', 'Profil'],
-                      ['integrations', 'Anbindungen'],
                       ['bookings', 'Buchungen'],
                       ['content', 'Content & Review'],
                       ['billing', 'Abrechnung'],
@@ -342,7 +410,7 @@ export default function NetworkPartnerManagementWorkspace({
                     <div style={workflowHeaderStyle}>
                       <h3 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Profil</h3>
                       <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-                        Status, Kontaktdaten und die Eingriffsrechte des Portal-Partners werden direkt am Profil gepflegt.
+                        Unternehmensname, verantwortliche Person, Kontakt und Status werden hier zentral gepflegt.
                       </p>
                     </div>
                     {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
@@ -350,7 +418,6 @@ export default function NetworkPartnerManagementWorkspace({
                     <NetworkPartnerForm
                       initialValues={selectedPartner}
                       submitLabel="Änderungen speichern"
-                      helperText="Wenn die direkte Mitbearbeitung erlaubt ist, kann der Portal-Partner Inhalte des Netzwerkpartners bei Bedarf selbst redaktionell anpassen. Ohne diese Freigabe bleibt der Portal-Partner in der moderierenden Rolle."
                       onSubmit={async (values) => {
                         setError(null);
                         setMessage(null);
@@ -375,6 +442,12 @@ export default function NetworkPartnerManagementWorkspace({
                       }}
                     />
                     <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: 22 }}>
+                      <div style={{ display: 'grid', gap: 6, marginBottom: 18 }}>
+                        <h3 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Zugang & Einladung</h3>
+                        <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
+                          Hier wird sichtbar, ob der Login bereits aktiviert wurde oder ob eine Einladung erneut versendet werden muss.
+                        </p>
+                      </div>
                       <NetworkPartnerAccessPanel
                         networkPartnerId={selectedPartner.id}
                         contactEmail={selectedPartner.contact_email}
@@ -388,17 +461,7 @@ export default function NetworkPartnerManagementWorkspace({
                 <NetworkBookingsWorkspace
                   networkPartnerId={selectedPartner.id}
                   networkPartnerName={selectedPartner.company_name}
-                />
-              ) : null}
-
-              {detailSection === 'integrations' ? (
-                <NetworkPartnerIntegrationsWorkspace
-                  partner={selectedPartner}
-                  onPartnerUpdated={(updatedPartner) => {
-                    setNetworkPartners((current) => current.map((partner) => (
-                      partner.id === updatedPartner.id ? updatedPartner : partner
-                    )));
-                  }}
+                  areas={areas}
                 />
               ) : null}
 
@@ -406,6 +469,7 @@ export default function NetworkPartnerManagementWorkspace({
                 <NetworkContentWorkspace
                   networkPartnerId={selectedPartner.id}
                   networkPartnerName={selectedPartner.company_name}
+                  areas={areas}
                 />
               ) : null}
 
