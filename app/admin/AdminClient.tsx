@@ -5415,8 +5415,28 @@ export default function AdminClient() {
         setPartnerFeatureBillingRows([]);
       });
     }
+    if (partnerTab === "billing") {
+      void Promise.all([
+        loadPartnerBilling(selectedPartnerId),
+        loadPartnerAiUsage(selectedPartnerId),
+      ]).catch(() => {
+        setPartnerBillingRows([]);
+        setPartnerBillingTotals({ tokens: 0, cost_eur: 0 });
+        setPartnerAiUsageTotals({
+          events: 0,
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+          cost_eur: 0,
+          estimated_credits: 0,
+        });
+        setPartnerAiUsageByFeature([]);
+        setPartnerAiUsageByModel([]);
+        setPartnerAiUsageEvents([]);
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeView, partnerTab, selectedPartnerId, selectedPartner?.id, selectedPartner?.is_system_default, integrationsLoadedForPartnerId, billingLoadedForPartnerId]);
+  }, [activeView, partnerTab, selectedPartnerId, selectedPartner?.id, selectedPartner?.is_system_default, integrationsLoadedForPartnerId, billingLoadedForPartnerId, partnerBillingMonth]);
 
   useEffect(() => {
     if (activeView !== "partner_edit" || !selectedPartnerId) return;
