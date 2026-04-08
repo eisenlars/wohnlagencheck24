@@ -2368,6 +2368,17 @@ export default function AdminClient() {
   const [partnerBillingRows, setPartnerBillingRows] = useState<LlmUsageItemRow[]>([]);
   const [partnerBillingTotals, setPartnerBillingTotals] = useState<{ tokens: number; cost_eur: number }>({ tokens: 0, cost_eur: 0 });
   const [partnerBillingMonth, setPartnerBillingMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [partnerAiUsageTotals, setPartnerAiUsageTotals] = useState<AdminAiUsageAggregateRow>({
+    events: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0,
+    cost_eur: 0,
+    estimated_credits: 0,
+  });
+  const [partnerAiUsageByFeature, setPartnerAiUsageByFeature] = useState<AdminAiUsageFeatureRow[]>([]);
+  const [partnerAiUsageByModel, setPartnerAiUsageByModel] = useState<AdminAiUsageModelRow[]>([]);
+  const [partnerAiUsageEvents, setPartnerAiUsageEvents] = useState<AdminAiUsageEventRow[]>([]);
   const [billingDefaultsDraft, setBillingDefaultsDraft] = useState({
     portal_base_price_eur: "50.00",
     portal_ortslage_price_eur: "1.00",
@@ -4189,6 +4200,27 @@ export default function AdminClient() {
       tokens: Number(data.totals?.tokens ?? 0),
       cost_eur: Number(data.totals?.cost_eur ?? 0),
     });
+  }
+
+  async function loadPartnerAiUsage(partnerId: string, month = partnerBillingMonth) {
+    if (!partnerId) return;
+    const data = await api<{
+      totals?: Partial<AdminAiUsageAggregateRow>;
+      by_feature?: AdminAiUsageFeatureRow[];
+      by_model?: AdminAiUsageModelRow[];
+      recent_events?: AdminAiUsageEventRow[];
+    }>(`/api/admin/ai-usage?partner_id=${encodeURIComponent(partnerId)}&month=${encodeURIComponent(`${month}-01`)}`);
+    setPartnerAiUsageTotals({
+      events: Number(data.totals?.events ?? 0),
+      prompt_tokens: Number(data.totals?.prompt_tokens ?? 0),
+      completion_tokens: Number(data.totals?.completion_tokens ?? 0),
+      total_tokens: Number(data.totals?.total_tokens ?? 0),
+      cost_eur: Number(data.totals?.cost_eur ?? 0),
+      estimated_credits: Number(data.totals?.estimated_credits ?? 0),
+    });
+    setPartnerAiUsageByFeature(data.by_feature ?? []);
+    setPartnerAiUsageByModel(data.by_model ?? []);
+    setPartnerAiUsageEvents(data.recent_events ?? []);
   }
 
   async function loadBillingDefaults() {
@@ -8382,7 +8414,10 @@ export default function AdminClient() {
             onClick={() =>
               run("Partner-Abrechnung laden", async () => {
                 if (!selectedPartnerId) return;
-                await loadPartnerBilling(selectedPartnerId, partnerBillingMonth);
+                await Promise.all([
+                  loadPartnerBilling(selectedPartnerId, partnerBillingMonth),
+                  loadPartnerAiUsage(selectedPartnerId, partnerBillingMonth),
+                ]);
               })
             }
           >
@@ -8412,6 +8447,116 @@ export default function AdminClient() {
                 <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
               </tr>
             ))}
+          </tbody>
+        </table>
+        <div style={{ marginTop: 14, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+          KI-Billing-Übersicht
+        </div>
+        <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
+          Events <strong>{partnerAiUsageTotals.events}</strong>
+          {" · "}Prompt <strong>{partnerAiUsageTotals.prompt_tokens}</strong>
+          {" · "}Completion <strong>{partnerAiUsageTotals.completion_tokens}</strong>
+          {" · "}Gesamt <strong>{partnerAiUsageTotals.total_tokens}</strong>
+          {" · "}EUR <strong>{partnerAiUsageTotals.cost_eur.toFixed(6)}</strong>
+          {" · "}Credits <strong>{partnerAiUsageTotals.estimated_credits.toFixed(4)}</strong>
+        </div>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Feature</th>
+              <th style={thStyle}>Events</th>
+              <th style={thStyle}>Tokens</th>
+              <th style={thStyle}>EUR</th>
+              <th style={thStyle}>Credits</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerAiUsageByFeature.length === 0 ? (
+              <tr>
+                <td style={tdStyle} colSpan={5}>Noch keine Billing-Events im gewählten Monat.</td>
+              </tr>
+            ) : (
+              partnerAiUsageByFeature.map((row) => (
+                <tr key={`partner-feature:${row.feature}`}>
+                  <td style={tdStyle}>{row.feature}</td>
+                  <td style={tdStyle}>{row.events}</td>
+                  <td style={tdStyle}>{row.total_tokens}</td>
+                  <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                  <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Provider</th>
+              <th style={thStyle}>Modell</th>
+              <th style={thStyle}>Events</th>
+              <th style={thStyle}>Tokens</th>
+              <th style={thStyle}>EUR</th>
+              <th style={thStyle}>Credits</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerAiUsageByModel.length === 0 ? (
+              <tr>
+                <td style={tdStyle} colSpan={6}>Noch keine modellbezogenen Billing-Daten im gewählten Monat.</td>
+              </tr>
+            ) : (
+              partnerAiUsageByModel.map((row) => (
+                <tr key={`partner-model:${row.provider}:${row.model}`}>
+                  <td style={tdStyle}>{row.provider}</td>
+                  <td style={tdStyle}>{row.model}</td>
+                  <td style={tdStyle}>{row.events}</td>
+                  <td style={tdStyle}>{row.total_tokens}</td>
+                  <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                  <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+          Letzte KI-Events
+        </div>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Zeit</th>
+              <th style={thStyle}>Route</th>
+              <th style={thStyle}>Feature</th>
+              <th style={thStyle}>Scope</th>
+              <th style={thStyle}>Mode</th>
+              <th style={thStyle}>Modell</th>
+              <th style={thStyle}>Tokens</th>
+              <th style={thStyle}>EUR</th>
+              <th style={thStyle}>Credits</th>
+              <th style={thStyle}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerAiUsageEvents.length === 0 ? (
+              <tr>
+                <td style={tdStyle} colSpan={10}>Noch keine KI-Events im gewählten Monat.</td>
+              </tr>
+            ) : (
+              partnerAiUsageEvents.slice(0, 20).map((row, idx) => (
+                <tr key={`partner-event:${row.created_at ?? "na"}:${idx}`}>
+                  <td style={tdStyle}>{row.created_at ?? "k. A."}</td>
+                  <td style={tdStyle}>{row.route_name}</td>
+                  <td style={tdStyle}>{row.feature}</td>
+                  <td style={tdStyle}>{row.billing_scope}</td>
+                  <td style={tdStyle}>{row.billing_mode}</td>
+                  <td style={tdStyle}>{row.provider} / {row.model}</td>
+                  <td style={tdStyle}>{row.total_tokens}</td>
+                  <td style={tdStyle}>{row.estimated_cost_eur.toFixed(6)}</td>
+                  <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                  <td style={tdStyle}>{row.status}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </section>
