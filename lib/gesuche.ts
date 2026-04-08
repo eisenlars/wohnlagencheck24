@@ -279,6 +279,8 @@ export async function getRegionalRequestsForOrtslage(
       provider: String(record.provider ?? ""),
       externalId: String(record.external_id ?? ""),
       title: String(record.title ?? ""),
+      description: String(record.short_description ?? record.long_description ?? "").trim() || null,
+      locationText: String(record.location_text ?? "").trim() || null,
       requestType,
       objectType: payload.object_type ? String(payload.object_type) : null,
       minRooms: toFiniteNumber(payload.min_rooms),
