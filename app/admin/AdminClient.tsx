@@ -908,6 +908,32 @@ type AdminAiUsagePartnerRow = AdminAiUsageAggregateRow & {
   billing_scope: string;
 };
 
+type AdminAiUsagePortalPartnerRow = {
+  partner_id: string;
+  self_events: number;
+  self_total_tokens: number;
+  self_cost_eur: number;
+  self_estimated_credits: number;
+  network_events: number;
+  network_total_tokens: number;
+  network_cost_eur: number;
+  network_estimated_credits: number;
+  total_events: number;
+  total_total_tokens: number;
+  total_cost_eur: number;
+  total_estimated_credits: number;
+};
+
+type AdminAiUsageNetworkPartnerRow = {
+  portal_partner_id: string;
+  network_partner_id: string;
+  network_partner_name: string;
+  events: number;
+  total_tokens: number;
+  cost_eur: number;
+  estimated_credits: number;
+};
+
 type AdminAiUsageFeatureRow = AdminAiUsageAggregateRow & {
   feature: string;
 };
@@ -924,6 +950,8 @@ type AdminAiUsageScopeRow = AdminAiUsageAggregateRow & {
 type AdminAiUsageEventRow = {
   created_at: string | null;
   partner_id: string;
+  network_partner_id?: string | null;
+  network_partner_name?: string | null;
   route_name: string;
   feature: string;
   billing_scope: string;
@@ -2360,6 +2388,8 @@ export default function AdminClient() {
     estimated_credits: 0,
   });
   const [adminAiUsageByPartner, setAdminAiUsageByPartner] = useState<AdminAiUsagePartnerRow[]>([]);
+  const [adminAiUsageByPortalPartner, setAdminAiUsageByPortalPartner] = useState<AdminAiUsagePortalPartnerRow[]>([]);
+  const [adminAiUsageByNetworkPartner, setAdminAiUsageByNetworkPartner] = useState<AdminAiUsageNetworkPartnerRow[]>([]);
   const [adminAiUsageByFeature, setAdminAiUsageByFeature] = useState<AdminAiUsageFeatureRow[]>([]);
   const [adminAiUsageByModel, setAdminAiUsageByModel] = useState<AdminAiUsageModelRow[]>([]);
   const [adminAiUsageByScope, setAdminAiUsageByScope] = useState<AdminAiUsageScopeRow[]>([]);
@@ -2376,8 +2406,25 @@ export default function AdminClient() {
     cost_eur: 0,
     estimated_credits: 0,
   });
+  const [partnerAiUsageSelfTotals, setPartnerAiUsageSelfTotals] = useState<AdminAiUsageAggregateRow>({
+    events: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0,
+    cost_eur: 0,
+    estimated_credits: 0,
+  });
+  const [partnerAiUsageNetworkTotals, setPartnerAiUsageNetworkTotals] = useState<AdminAiUsageAggregateRow>({
+    events: 0,
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0,
+    cost_eur: 0,
+    estimated_credits: 0,
+  });
   const [partnerAiUsageByFeature, setPartnerAiUsageByFeature] = useState<AdminAiUsageFeatureRow[]>([]);
   const [partnerAiUsageByModel, setPartnerAiUsageByModel] = useState<AdminAiUsageModelRow[]>([]);
+  const [partnerAiUsageByNetworkPartner, setPartnerAiUsageByNetworkPartner] = useState<AdminAiUsageNetworkPartnerRow[]>([]);
   const [partnerAiUsageEvents, setPartnerAiUsageEvents] = useState<AdminAiUsageEventRow[]>([]);
   const [billingDefaultsDraft, setBillingDefaultsDraft] = useState({
     portal_base_price_eur: "50.00",
@@ -4170,6 +4217,8 @@ export default function AdminClient() {
     const data = await api<{
       totals?: Partial<AdminAiUsageAggregateRow>;
       by_partner?: AdminAiUsagePartnerRow[];
+      by_portal_partner?: AdminAiUsagePortalPartnerRow[];
+      by_network_partner?: AdminAiUsageNetworkPartnerRow[];
       by_feature?: AdminAiUsageFeatureRow[];
       by_model?: AdminAiUsageModelRow[];
       by_scope?: AdminAiUsageScopeRow[];
@@ -4184,6 +4233,8 @@ export default function AdminClient() {
       estimated_credits: Number(data.totals?.estimated_credits ?? 0),
     });
     setAdminAiUsageByPartner(data.by_partner ?? []);
+    setAdminAiUsageByPortalPartner(data.by_portal_partner ?? []);
+    setAdminAiUsageByNetworkPartner(data.by_network_partner ?? []);
     setAdminAiUsageByFeature(data.by_feature ?? []);
     setAdminAiUsageByModel(data.by_model ?? []);
     setAdminAiUsageByScope(data.by_scope ?? []);
@@ -4206,6 +4257,9 @@ export default function AdminClient() {
     if (!partnerId) return;
     const data = await api<{
       totals?: Partial<AdminAiUsageAggregateRow>;
+      partner_self_totals?: Partial<AdminAiUsageAggregateRow>;
+      network_totals?: Partial<AdminAiUsageAggregateRow>;
+      by_network_partner?: AdminAiUsageNetworkPartnerRow[];
       by_feature?: AdminAiUsageFeatureRow[];
       by_model?: AdminAiUsageModelRow[];
       recent_events?: AdminAiUsageEventRow[];
@@ -4218,8 +4272,25 @@ export default function AdminClient() {
       cost_eur: Number(data.totals?.cost_eur ?? 0),
       estimated_credits: Number(data.totals?.estimated_credits ?? 0),
     });
+    setPartnerAiUsageSelfTotals({
+      events: Number(data.partner_self_totals?.events ?? 0),
+      prompt_tokens: Number(data.partner_self_totals?.prompt_tokens ?? 0),
+      completion_tokens: Number(data.partner_self_totals?.completion_tokens ?? 0),
+      total_tokens: Number(data.partner_self_totals?.total_tokens ?? 0),
+      cost_eur: Number(data.partner_self_totals?.cost_eur ?? 0),
+      estimated_credits: Number(data.partner_self_totals?.estimated_credits ?? 0),
+    });
+    setPartnerAiUsageNetworkTotals({
+      events: Number(data.network_totals?.events ?? 0),
+      prompt_tokens: Number(data.network_totals?.prompt_tokens ?? 0),
+      completion_tokens: Number(data.network_totals?.completion_tokens ?? 0),
+      total_tokens: Number(data.network_totals?.total_tokens ?? 0),
+      cost_eur: Number(data.network_totals?.cost_eur ?? 0),
+      estimated_credits: Number(data.network_totals?.estimated_credits ?? 0),
+    });
     setPartnerAiUsageByFeature(data.by_feature ?? []);
     setPartnerAiUsageByModel(data.by_model ?? []);
+    setPartnerAiUsageByNetworkPartner(data.by_network_partner ?? []);
     setPartnerAiUsageEvents(data.recent_events ?? []);
   }
 
@@ -5430,8 +5501,25 @@ export default function AdminClient() {
           cost_eur: 0,
           estimated_credits: 0,
         });
+        setPartnerAiUsageSelfTotals({
+          events: 0,
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+          cost_eur: 0,
+          estimated_credits: 0,
+        });
+        setPartnerAiUsageNetworkTotals({
+          events: 0,
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+          cost_eur: 0,
+          estimated_credits: 0,
+        });
         setPartnerAiUsageByFeature([]);
         setPartnerAiUsageByModel([]);
+        setPartnerAiUsageByNetworkPartner([]);
         setPartnerAiUsageEvents([]);
       });
     }
@@ -8480,6 +8568,16 @@ export default function AdminClient() {
           {" · "}EUR <strong>{partnerAiUsageTotals.cost_eur.toFixed(6)}</strong>
           {" · "}Credits <strong>{partnerAiUsageTotals.estimated_credits.toFixed(4)}</strong>
         </div>
+        <div style={{ marginTop: 8, fontSize: 12, color: "#334155" }}>
+          Eigennutzung: Tokens <strong>{partnerAiUsageSelfTotals.total_tokens}</strong>
+          {" · "}EUR <strong>{partnerAiUsageSelfTotals.cost_eur.toFixed(6)}</strong>
+          {" · "}Credits <strong>{partnerAiUsageSelfTotals.estimated_credits.toFixed(4)}</strong>
+        </div>
+        <div style={{ marginTop: 4, fontSize: 12, color: "#334155" }}>
+          Netzwerkpartner: Tokens <strong>{partnerAiUsageNetworkTotals.total_tokens}</strong>
+          {" · "}EUR <strong>{partnerAiUsageNetworkTotals.cost_eur.toFixed(6)}</strong>
+          {" · "}Credits <strong>{partnerAiUsageNetworkTotals.estimated_credits.toFixed(4)}</strong>
+        </div>
         <table style={tableStyle}>
           <thead>
             <tr>
@@ -8499,6 +8597,37 @@ export default function AdminClient() {
               partnerAiUsageByFeature.map((row) => (
                 <tr key={`partner-feature:${row.feature}`}>
                   <td style={tdStyle}>{row.feature}</td>
+                  <td style={tdStyle}>{row.events}</td>
+                  <td style={tdStyle}>{row.total_tokens}</td>
+                  <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                  <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+          Netzwerkpartner unter diesem Portalpartner
+        </div>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Netzwerkpartner</th>
+              <th style={thStyle}>Events</th>
+              <th style={thStyle}>Tokens</th>
+              <th style={thStyle}>EUR</th>
+              <th style={thStyle}>Credits</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerAiUsageByNetworkPartner.length === 0 ? (
+              <tr>
+                <td style={tdStyle} colSpan={5}>Noch kein Netzwerkpartner-Verbrauch im gewählten Monat.</td>
+              </tr>
+            ) : (
+              partnerAiUsageByNetworkPartner.map((row) => (
+                <tr key={`partner-network:${row.network_partner_id}`}>
+                  <td style={tdStyle}>{row.network_partner_name}</td>
                   <td style={tdStyle}>{row.events}</td>
                   <td style={tdStyle}>{row.total_tokens}</td>
                   <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
@@ -8545,6 +8674,7 @@ export default function AdminClient() {
           <thead>
             <tr>
               <th style={thStyle}>Zeit</th>
+              <th style={thStyle}>Netzwerkpartner</th>
               <th style={thStyle}>Route</th>
               <th style={thStyle}>Feature</th>
               <th style={thStyle}>Scope</th>
@@ -8559,12 +8689,13 @@ export default function AdminClient() {
           <tbody>
             {partnerAiUsageEvents.length === 0 ? (
               <tr>
-                <td style={tdStyle} colSpan={10}>Noch keine KI-Events im gewählten Monat.</td>
+                <td style={tdStyle} colSpan={11}>Noch keine KI-Events im gewählten Monat.</td>
               </tr>
             ) : (
               partnerAiUsageEvents.slice(0, 20).map((row, idx) => (
                 <tr key={`partner-event:${row.created_at ?? "na"}:${idx}`}>
                   <td style={tdStyle}>{row.created_at ?? "k. A."}</td>
+                  <td style={tdStyle}>{row.network_partner_name ?? row.network_partner_id ?? "—"}</td>
                   <td style={tdStyle}>{row.route_name}</td>
                   <td style={tdStyle}>{row.feature}</td>
                   <td style={tdStyle}>{row.billing_scope}</td>
@@ -12440,6 +12571,66 @@ export default function AdminClient() {
             <table style={tableStyle}>
               <thead>
                 <tr>
+                  <th style={thStyle}>Portalpartner</th>
+                  <th style={thStyle}>Eigennutzung Events</th>
+                  <th style={thStyle}>Eigennutzung Tokens</th>
+                  <th style={thStyle}>Eigennutzung EUR</th>
+                  <th style={thStyle}>Eigennutzung Credits</th>
+                  <th style={thStyle}>Netzwerk Events</th>
+                  <th style={thStyle}>Netzwerk Tokens</th>
+                  <th style={thStyle}>Netzwerk EUR</th>
+                  <th style={thStyle}>Netzwerk Credits</th>
+                  <th style={thStyle}>Gesamt Tokens</th>
+                  <th style={thStyle}>Gesamt EUR</th>
+                  <th style={thStyle}>Gesamt Credits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminAiUsageByPortalPartner.map((row) => (
+                  <tr key={`portal-partner:${row.partner_id}`}>
+                    <td style={tdStyle}>{partners.find((entry) => entry.id === row.partner_id)?.company_name ?? row.partner_id}</td>
+                    <td style={tdStyle}>{row.self_events}</td>
+                    <td style={tdStyle}>{row.self_total_tokens}</td>
+                    <td style={tdStyle}>{row.self_cost_eur.toFixed(6)}</td>
+                    <td style={tdStyle}>{row.self_estimated_credits.toFixed(4)}</td>
+                    <td style={tdStyle}>{row.network_events}</td>
+                    <td style={tdStyle}>{row.network_total_tokens}</td>
+                    <td style={tdStyle}>{row.network_cost_eur.toFixed(6)}</td>
+                    <td style={tdStyle}>{row.network_estimated_credits.toFixed(4)}</td>
+                    <td style={tdStyle}>{row.total_total_tokens}</td>
+                    <td style={tdStyle}>{row.total_cost_eur.toFixed(6)}</td>
+                    <td style={tdStyle}>{row.total_estimated_credits.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>Portalpartner</th>
+                  <th style={thStyle}>Netzwerkpartner</th>
+                  <th style={thStyle}>Events</th>
+                  <th style={thStyle}>Tokens</th>
+                  <th style={thStyle}>EUR</th>
+                  <th style={thStyle}>Credits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminAiUsageByNetworkPartner.map((row) => (
+                  <tr key={`network-partner:${row.network_partner_id}`}>
+                    <td style={tdStyle}>{partners.find((entry) => entry.id === row.portal_partner_id)?.company_name ?? row.portal_partner_id}</td>
+                    <td style={tdStyle}>{row.network_partner_name}</td>
+                    <td style={tdStyle}>{row.events}</td>
+                    <td style={tdStyle}>{row.total_tokens}</td>
+                    <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <table style={tableStyle}>
+              <thead>
+                <tr>
                   <th style={thStyle}>Scope</th>
                   <th style={thStyle}>Events</th>
                   <th style={thStyle}>Tokens</th>
@@ -12538,6 +12729,7 @@ export default function AdminClient() {
                 <tr>
                   <th style={thStyle}>Zeit</th>
                   <th style={thStyle}>Partner-ID</th>
+                  <th style={thStyle}>Netzwerkpartner</th>
                   <th style={thStyle}>Route</th>
                   <th style={thStyle}>Feature</th>
                   <th style={thStyle}>Scope</th>
@@ -12554,6 +12746,7 @@ export default function AdminClient() {
                   <tr key={`event:${row.created_at ?? "na"}:${idx}`}>
                     <td style={tdStyle}>{row.created_at ?? "k. A."}</td>
                     <td style={tdStyle}>{row.partner_id}</td>
+                    <td style={tdStyle}>{row.network_partner_name ?? row.network_partner_id ?? "—"}</td>
                     <td style={tdStyle}>{row.route_name}</td>
                     <td style={tdStyle}>{row.feature}</td>
                     <td style={tdStyle}>{row.billing_scope}</td>
