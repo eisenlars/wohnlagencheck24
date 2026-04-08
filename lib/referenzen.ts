@@ -11,12 +11,34 @@ export type RegionalReference = {
   imageUrl: string | null;
   city: string | null;
   district: string | null;
+  locationText: string | null;
+  transactionResult: string | null;
+  objectType: string | null;
+  areaSqm: number | null;
+  rooms: number | null;
   updatedAt: string | null;
   statusBadge: string | null;
 };
 
 function asText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function formatTransactionBadge(value: string): string | null {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "reserviert") return "Reserviert";
+  if (normalized === "verkauft") return "Verkauft";
+  if (normalized === "vermietet") return "Vermietet";
+  return null;
 }
 
 function shuffle<T>(items: T[]): T[] {
@@ -52,7 +74,7 @@ export async function getRandomReferencesForKreis(args: {
 
   const { data: refRows, error: refError } = await supabase
     .from("public_reference_entries")
-    .select("reference_id, partner_id, provider, external_id, title, description, image_url, city, district, source_updated_at")
+    .select("reference_id, partner_id, provider, external_id, title, description, image_url, city, district, location_text, source_updated_at")
     .in("visible_area_id", areaIds)
     .eq("locale", normalizedLocale)
     .order("source_updated_at", { ascending: false })
@@ -90,6 +112,14 @@ export async function getRandomReferencesForKreis(args: {
     seen.add(referenceId);
     const normalizedPayload = normalizedByReferenceId.get(referenceId) ?? null;
     const transactionResult = asText(normalizedPayload?.transaction_result);
+    const objectType = asText(normalizedPayload?.object_type);
+    const areaSqm = asNumber(normalizedPayload?.area_sqm);
+    const rooms = asNumber(normalizedPayload?.rooms);
+    const locationText =
+      asText(row.location_text) ||
+      asText(normalizedPayload?.location) ||
+      [asText(row.city), asText(row.district)].filter(Boolean).join(" ") ||
+      null;
     mapped.push({
       id: referenceId,
       partnerId: String(row.partner_id ?? ""),
@@ -100,8 +130,13 @@ export async function getRandomReferencesForKreis(args: {
       imageUrl: asText(row.image_url) || null,
       city: asText(row.city) || null,
       district: asText(row.district) || null,
+      locationText,
+      transactionResult: transactionResult || null,
+      objectType: objectType || null,
+      areaSqm,
+      rooms,
       updatedAt: asText(row.source_updated_at) || null,
-      statusBadge: transactionResult === "reserviert" ? "Reserviert" : null,
+      statusBadge: formatTransactionBadge(transactionResult),
     });
   }
 

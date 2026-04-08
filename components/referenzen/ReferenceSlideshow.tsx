@@ -12,7 +12,7 @@ export function ReferenceSlideshow(props: ReferenceSlideshowProps) {
   const { items } = props;
   const [index, setIndex] = useState(0);
 
-  const safeItems = useMemo(() => items.filter((item) => item.imageUrl || item.title), [items]);
+  const safeItems = useMemo(() => items.filter((item) => item.imageUrl || item.title || item.description), [items]);
 
   useEffect(() => {
     if (safeItems.length <= 1) return;
@@ -24,6 +24,12 @@ export function ReferenceSlideshow(props: ReferenceSlideshowProps) {
 
   if (safeItems.length === 0) return null;
   const active = safeItems[index] ?? safeItems[0];
+  const facts = [
+    active.transactionResult ? active.transactionResult.charAt(0).toUpperCase() + active.transactionResult.slice(1) : null,
+    active.objectType,
+    active.rooms != null ? `${active.rooms} Zi.` : null,
+    active.areaSqm != null ? `${active.areaSqm} m²` : null,
+  ].filter(Boolean);
 
   return (
     <section style={{ background: "#fff", borderRadius: 20, padding: 24, boxShadow: "0 10px 20px rgba(15, 23, 42, 0.06)" }}>
@@ -65,9 +71,14 @@ export function ReferenceSlideshow(props: ReferenceSlideshowProps) {
         </div>
         <div>
           <h3 style={{ marginTop: 0 }}>{active.title}</h3>
+          {facts.length > 0 ? (
+            <p style={{ color: "#0f172a", fontSize: 13, fontWeight: 600, marginTop: 0, marginBottom: 10 }}>
+              {facts.join(" · ")}
+            </p>
+          ) : null}
           <p style={{ color: "#334155" }}>{active.description || "Erfolgreich vermittelte Immobilie aus der Region."}</p>
           <p style={{ color: "#64748b", fontSize: 13, marginBottom: 14 }}>
-            {[active.city, active.district].filter(Boolean).join(" ") || "Region"}
+            {active.locationText || [active.city, active.district].filter(Boolean).join(" ") || "Region"}
           </p>
           {safeItems.length > 1 ? (
             <div style={{ display: "flex", gap: 8 }}>
