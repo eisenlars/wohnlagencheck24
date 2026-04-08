@@ -577,6 +577,7 @@ type PartnerPurgeCheckPayload = {
 type AdminView = "home" | "new_partner" | "new_partner_success" | "partner_edit" | "partner_integrations" | "partner_purge" | "audit" | "llm_global" | "billing_defaults" | "language_admin" | "system_texts" | "market_texts" | "standard_text_refresh" | "portal_cms";
 type AdminNavMode = "partners" | "areas";
 type PartnerPanelTab = "profile" | "systempartner_default" | "areas" | "review" | "handover" | "integrations" | "billing";
+type PartnerBillingWorkspaceTab = "portal_abo" | "internationality" | "features" | "ai";
 type AdminNavIconKey = "partners" | "areas" | "llm" | "billing" | "language" | "texts" | "market_texts" | "refresh" | "cms" | "purge" | "audit" | "logout";
 type WorkflowSignalTone = "none" | "red" | "orange" | "green";
 type StandardTextRefreshScope = "bundesland" | "kreis" | "kreis_ortslagen" | "ortslage";
@@ -934,6 +935,19 @@ type AdminAiUsageNetworkPartnerRow = {
   estimated_credits: number;
 };
 
+type AdminAiUsageNetworkPartnerFeatureRow = AdminAiUsageAggregateRow & {
+  network_partner_id: string;
+  network_partner_name: string;
+  feature: string;
+};
+
+type AdminAiUsageNetworkPartnerModelRow = AdminAiUsageAggregateRow & {
+  network_partner_id: string;
+  network_partner_name: string;
+  provider: string;
+  model: string;
+};
+
 type AdminAiUsageFeatureRow = AdminAiUsageAggregateRow & {
   feature: string;
 };
@@ -968,6 +982,49 @@ type BillingGlobalDefaults = {
   portal_base_price_eur: number;
   portal_ortslage_price_eur: number;
   portal_export_ortslage_price_eur: number;
+};
+
+type PartnerPortalAboRow = {
+  key: string;
+  kreis_name: string;
+  kreis_id: string;
+  base_price_eur: number;
+  ortslage_price_eur: number;
+  ortslagen_count: number;
+  ortslagen_total_price_eur: number;
+  export_ortslagen_count: number;
+  export_ortslagen_total_price_eur: number;
+  total_price_eur: number;
+};
+
+type PartnerPortalAboSummary = {
+  kreise_count: number;
+  base_total_price_eur: number;
+  ortslagen_count: number;
+  ortslagen_total_price_eur: number;
+  export_ortslagen_count: number;
+  export_ortslagen_total_price_eur: number;
+  total_price_eur: number;
+};
+
+type PartnerLocaleSummary = {
+  booked_count: number;
+  total_price_eur: number;
+  booked_locales: Array<{
+    locale: string;
+    label: string;
+    monthly_price_eur: number;
+  }>;
+};
+
+type PartnerFeatureSummary = {
+  booked_count: number;
+  total_price_eur: number;
+  booked_features: Array<{
+    code: string;
+    label: string;
+    monthly_price_eur: number;
+  }>;
 };
 
 type BillingFeature = {
@@ -2423,8 +2480,12 @@ export default function AdminClient() {
     estimated_credits: 0,
   });
   const [partnerAiUsageByFeature, setPartnerAiUsageByFeature] = useState<AdminAiUsageFeatureRow[]>([]);
+  const [partnerAiUsageSelfByFeature, setPartnerAiUsageSelfByFeature] = useState<AdminAiUsageFeatureRow[]>([]);
   const [partnerAiUsageByModel, setPartnerAiUsageByModel] = useState<AdminAiUsageModelRow[]>([]);
+  const [partnerAiUsageSelfByModel, setPartnerAiUsageSelfByModel] = useState<AdminAiUsageModelRow[]>([]);
   const [partnerAiUsageByNetworkPartner, setPartnerAiUsageByNetworkPartner] = useState<AdminAiUsageNetworkPartnerRow[]>([]);
+  const [partnerAiUsageByNetworkPartnerFeature, setPartnerAiUsageByNetworkPartnerFeature] = useState<AdminAiUsageNetworkPartnerFeatureRow[]>([]);
+  const [partnerAiUsageByNetworkPartnerModel, setPartnerAiUsageByNetworkPartnerModel] = useState<AdminAiUsageNetworkPartnerModelRow[]>([]);
   const [partnerAiUsageEvents, setPartnerAiUsageEvents] = useState<AdminAiUsageEventRow[]>([]);
   const [billingDefaultsDraft, setBillingDefaultsDraft] = useState({
     portal_base_price_eur: "50.00",
@@ -2448,6 +2509,33 @@ export default function AdminClient() {
     portal_ortslage_price_eur: "",
     portal_export_ortslage_price_eur: "",
   });
+  const [partnerPortalEffectivePricing, setPartnerPortalEffectivePricing] = useState<BillingGlobalDefaults>({
+    portal_base_price_eur: 50,
+    portal_ortslage_price_eur: 1,
+    portal_export_ortslage_price_eur: 1,
+  });
+  const [partnerBillingWorkspaceTab, setPartnerBillingWorkspaceTab] = useState<PartnerBillingWorkspaceTab>("portal_abo");
+  const [partnerPortalAboRows, setPartnerPortalAboRows] = useState<PartnerPortalAboRow[]>([]);
+  const [partnerPortalAboSummary, setPartnerPortalAboSummary] = useState<PartnerPortalAboSummary>({
+    kreise_count: 0,
+    base_total_price_eur: 0,
+    ortslagen_count: 0,
+    ortslagen_total_price_eur: 0,
+    export_ortslagen_count: 0,
+    export_ortslagen_total_price_eur: 0,
+    total_price_eur: 0,
+  });
+  const [partnerLocaleSummary, setPartnerLocaleSummary] = useState<PartnerLocaleSummary>({
+    booked_count: 0,
+    total_price_eur: 0,
+    booked_locales: [],
+  });
+  const [partnerFeatureSummary, setPartnerFeatureSummary] = useState<PartnerFeatureSummary>({
+    booked_count: 0,
+    total_price_eur: 0,
+    booked_features: [],
+  });
+  const [partnerAiAccordionOpenIds, setPartnerAiAccordionOpenIds] = useState<Record<string, boolean>>({});
   const [partnerFeatureBillingRows, setPartnerFeatureBillingRows] = useState<PartnerBillingFeature[]>([]);
   const [partnerLocaleBillingRows, setPartnerLocaleBillingRows] = useState<PartnerLocaleBillingFeature[]>([]);
   const portalCmsPages = useMemo<PortalContentPageDefinition[]>(() => getPortalCmsPages(), []);
@@ -4255,11 +4343,16 @@ export default function AdminClient() {
 
   async function loadPartnerAiUsage(partnerId: string, month = partnerBillingMonth) {
     if (!partnerId) return;
+    setPartnerAiAccordionOpenIds({});
     const data = await api<{
       totals?: Partial<AdminAiUsageAggregateRow>;
       partner_self_totals?: Partial<AdminAiUsageAggregateRow>;
       network_totals?: Partial<AdminAiUsageAggregateRow>;
       by_network_partner?: AdminAiUsageNetworkPartnerRow[];
+      self_by_feature?: AdminAiUsageFeatureRow[];
+      self_by_model?: AdminAiUsageModelRow[];
+      by_network_partner_feature?: AdminAiUsageNetworkPartnerFeatureRow[];
+      by_network_partner_model?: AdminAiUsageNetworkPartnerModelRow[];
       by_feature?: AdminAiUsageFeatureRow[];
       by_model?: AdminAiUsageModelRow[];
       recent_events?: AdminAiUsageEventRow[];
@@ -4289,8 +4382,12 @@ export default function AdminClient() {
       estimated_credits: Number(data.network_totals?.estimated_credits ?? 0),
     });
     setPartnerAiUsageByFeature(data.by_feature ?? []);
+    setPartnerAiUsageSelfByFeature(data.self_by_feature ?? []);
     setPartnerAiUsageByModel(data.by_model ?? []);
+    setPartnerAiUsageSelfByModel(data.self_by_model ?? []);
     setPartnerAiUsageByNetworkPartner(data.by_network_partner ?? []);
+    setPartnerAiUsageByNetworkPartnerFeature(data.by_network_partner_feature ?? []);
+    setPartnerAiUsageByNetworkPartnerModel(data.by_network_partner_model ?? []);
     setPartnerAiUsageEvents(data.recent_events ?? []);
   }
 
@@ -5319,13 +5416,18 @@ export default function AdminClient() {
     if (!partnerId) return;
     const data = await api<{
       portal?: {
+        effective?: Partial<BillingGlobalDefaults>;
         overrides?: {
           portal_base_price_eur?: number | null;
           portal_ortslage_price_eur?: number | null;
           portal_export_ortslage_price_eur?: number | null;
         };
+        rows?: PartnerPortalAboRow[];
+        summary?: Partial<PartnerPortalAboSummary>;
       };
+      feature_summary?: Partial<PartnerFeatureSummary>;
       features?: PartnerBillingFeature[];
+      locale_summary?: Partial<PartnerLocaleSummary>;
       locale_features?: PartnerLocaleBillingFeature[];
     }>(`/api/admin/partners/${partnerId}/billing`);
     const overrides = data.portal?.overrides ?? {};
@@ -5334,6 +5436,21 @@ export default function AdminClient() {
       portal_ortslage_price_eur: overrides.portal_ortslage_price_eur === null || overrides.portal_ortslage_price_eur === undefined ? "" : String(overrides.portal_ortslage_price_eur),
       portal_export_ortslage_price_eur: overrides.portal_export_ortslage_price_eur === null || overrides.portal_export_ortslage_price_eur === undefined ? "" : String(overrides.portal_export_ortslage_price_eur),
     });
+    setPartnerPortalEffectivePricing({
+      portal_base_price_eur: Number(data.portal?.effective?.portal_base_price_eur ?? 50),
+      portal_ortslage_price_eur: Number(data.portal?.effective?.portal_ortslage_price_eur ?? 1),
+      portal_export_ortslage_price_eur: Number(data.portal?.effective?.portal_export_ortslage_price_eur ?? 1),
+    });
+    setPartnerPortalAboRows(data.portal?.rows ?? []);
+    setPartnerPortalAboSummary({
+      kreise_count: Number(data.portal?.summary?.kreise_count ?? 0),
+      base_total_price_eur: Number(data.portal?.summary?.base_total_price_eur ?? 0),
+      ortslagen_count: Number(data.portal?.summary?.ortslagen_count ?? 0),
+      ortslagen_total_price_eur: Number(data.portal?.summary?.ortslagen_total_price_eur ?? 0),
+      export_ortslagen_count: Number(data.portal?.summary?.export_ortslagen_count ?? 0),
+      export_ortslagen_total_price_eur: Number(data.portal?.summary?.export_ortslagen_total_price_eur ?? 0),
+      total_price_eur: Number(data.portal?.summary?.total_price_eur ?? 0),
+    });
     setPartnerFeatureBillingRows((data.features ?? []).map((row) => ({
       ...row,
       enabled: row.enabled === true,
@@ -5341,6 +5458,11 @@ export default function AdminClient() {
       default_enabled: row.default_enabled === true,
       default_monthly_price_eur: Number(row.default_monthly_price_eur ?? 0),
     })));
+    setPartnerFeatureSummary({
+      booked_count: Number(data.feature_summary?.booked_count ?? 0),
+      total_price_eur: Number(data.feature_summary?.total_price_eur ?? 0),
+      booked_features: Array.isArray(data.feature_summary?.booked_features) ? data.feature_summary.booked_features : [],
+    });
     setPartnerLocaleBillingRows((data.locale_features ?? []).map((row) => ({
       ...row,
       feature_exists: row.feature_exists === true,
@@ -5353,6 +5475,11 @@ export default function AdminClient() {
       monthly_price_eur: Number(row.monthly_price_eur ?? 0),
       sort_order: Number(row.sort_order ?? 100),
     })));
+    setPartnerLocaleSummary({
+      booked_count: Number(data.locale_summary?.booked_count ?? 0),
+      total_price_eur: Number(data.locale_summary?.total_price_eur ?? 0),
+      booked_locales: Array.isArray(data.locale_summary?.booked_locales) ? data.locale_summary.booked_locales : [],
+    });
     setBillingLoadedForPartnerId(partnerId);
   }
 
@@ -5483,7 +5610,25 @@ export default function AdminClient() {
     }
     if (partnerTab === "billing" && billingLoadedForPartnerId !== selectedPartnerId) {
       void loadPartnerBillingConfig(selectedPartnerId).catch(() => {
+        setPartnerPortalEffectivePricing({
+          portal_base_price_eur: 50,
+          portal_ortslage_price_eur: 1,
+          portal_export_ortslage_price_eur: 1,
+        });
+        setPartnerPortalAboRows([]);
+        setPartnerPortalAboSummary({
+          kreise_count: 0,
+          base_total_price_eur: 0,
+          ortslagen_count: 0,
+          ortslagen_total_price_eur: 0,
+          export_ortslagen_count: 0,
+          export_ortslagen_total_price_eur: 0,
+          total_price_eur: 0,
+        });
+        setPartnerLocaleSummary({ booked_count: 0, total_price_eur: 0, booked_locales: [] });
+        setPartnerFeatureSummary({ booked_count: 0, total_price_eur: 0, booked_features: [] });
         setPartnerFeatureBillingRows([]);
+        setPartnerLocaleBillingRows([]);
       });
     }
     if (partnerTab === "billing") {
@@ -5518,8 +5663,12 @@ export default function AdminClient() {
           estimated_credits: 0,
         });
         setPartnerAiUsageByFeature([]);
+        setPartnerAiUsageSelfByFeature([]);
         setPartnerAiUsageByModel([]);
+        setPartnerAiUsageSelfByModel([]);
         setPartnerAiUsageByNetworkPartner([]);
+        setPartnerAiUsageByNetworkPartnerFeature([]);
+        setPartnerAiUsageByNetworkPartnerModel([]);
         setPartnerAiUsageEvents([]);
       });
     }
@@ -8267,6 +8416,89 @@ export default function AdminClient() {
         <p style={mutedStyle}>
           Portalabo/Feature-Freischaltungen und partnerbezogene Abrechnungseinstellungen.
         </p>
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(4, minmax(0, 1fr))", marginTop: 14 }}>
+          <div style={{ border: "1px solid #dbeafe", borderRadius: 10, padding: 14, background: "#eff6ff" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1d4ed8", marginBottom: 8 }}>1. Portalabo</div>
+            <div style={{ fontSize: 13, color: "#0f172a", lineHeight: 1.5 }}>
+              Grundpreis <strong>{partnerPortalEffectivePricing.portal_base_price_eur.toFixed(2)} EUR</strong>
+              <br />
+              Ortslagen <strong>{partnerPortalAboSummary.ortslagen_count}</strong> x <strong>{partnerPortalEffectivePricing.portal_ortslage_price_eur.toFixed(2)} EUR</strong> = <strong>{partnerPortalAboSummary.ortslagen_total_price_eur.toFixed(2)} EUR</strong>
+              <br />
+              Export-Ortslagen <strong>{partnerPortalAboSummary.export_ortslagen_count}</strong> x <strong>{partnerPortalEffectivePricing.portal_export_ortslage_price_eur.toFixed(2)} EUR</strong> = <strong>{partnerPortalAboSummary.export_ortslagen_total_price_eur.toFixed(2)} EUR</strong>
+              <br />
+              Gesamt <strong>{partnerPortalAboSummary.total_price_eur.toFixed(2)} EUR</strong>
+            </div>
+          </div>
+          <div style={{ border: "1px solid #dcfce7", borderRadius: 10, padding: 14, background: "#f0fdf4" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#15803d", marginBottom: 8 }}>2. Internationalität</div>
+            <div style={{ fontSize: 13, color: "#0f172a", lineHeight: 1.5 }}>
+              Gebuchte Sprachen <strong>{partnerLocaleSummary.booked_count}</strong>
+              <br />
+              Gesamtpreis <strong>{partnerLocaleSummary.total_price_eur.toFixed(2)} EUR</strong>
+            </div>
+          </div>
+          <div style={{ border: "1px solid #fde68a", borderRadius: 10, padding: 14, background: "#fffbeb" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#b45309", marginBottom: 8 }}>3. Features</div>
+            <div style={{ fontSize: 13, color: "#0f172a", lineHeight: 1.5 }}>
+              Gebuchte Features <strong>{partnerFeatureSummary.booked_count}</strong>
+              <br />
+              Gesamtpreis <strong>{partnerFeatureSummary.total_price_eur.toFixed(2)} EUR</strong>
+            </div>
+          </div>
+          <div style={{ border: "1px solid #e9d5ff", borderRadius: 10, padding: 14, background: "#faf5ff" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#7c3aed", marginBottom: 8 }}>4. KI-Abrechnung</div>
+            <div style={{ fontSize: 13, color: "#0f172a", lineHeight: 1.5 }}>
+              Portalpartner <strong>{partnerAiUsageSelfTotals.cost_eur.toFixed(6)} EUR</strong>
+              <br />
+              Netzwerkpartner <strong>{partnerAiUsageNetworkTotals.cost_eur.toFixed(6)} EUR</strong>
+              <br />
+              Gesamt <strong>{partnerAiUsageTotals.cost_eur.toFixed(6)} EUR</strong>
+            </div>
+          </div>
+        </div>
+        <div style={{ ...rowStyle, marginTop: 16, gap: 8, flexWrap: "wrap" }}>
+          <button style={partnerTabButtonStyle(partnerBillingWorkspaceTab === "portal_abo")} onClick={() => setPartnerBillingWorkspaceTab("portal_abo")}>Portalabo</button>
+          <button style={partnerTabButtonStyle(partnerBillingWorkspaceTab === "internationality")} onClick={() => setPartnerBillingWorkspaceTab("internationality")}>Internationalität</button>
+          <button style={partnerTabButtonStyle(partnerBillingWorkspaceTab === "features")} onClick={() => setPartnerBillingWorkspaceTab("features")}>Features</button>
+          <button style={partnerTabButtonStyle(partnerBillingWorkspaceTab === "ai")} onClick={() => setPartnerBillingWorkspaceTab("ai")}>KI-Abrechnung</button>
+        </div>
+        {partnerBillingWorkspaceTab === "portal_abo" ? (
+        <>
+        <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+          Detailabrechnung je Kreis
+        </div>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Kreis</th>
+              <th style={thStyle}>Grundpreis</th>
+              <th style={thStyle}>Ortslagen</th>
+              <th style={thStyle}>Ortslagenpreis</th>
+              <th style={thStyle}>Export-Ortslagen</th>
+              <th style={thStyle}>Exportpreis</th>
+              <th style={thStyle}>Gesamt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerPortalAboRows.length === 0 ? (
+              <tr>
+                <td style={tdStyle} colSpan={7}>Noch keine aktive Kreisabrechnung vorhanden.</td>
+              </tr>
+            ) : (
+              partnerPortalAboRows.map((row) => (
+                <tr key={`portal-abo:${row.key}`}>
+                  <td style={tdStyle}>{row.kreis_name}</td>
+                  <td style={tdStyle}>{row.base_price_eur.toFixed(2)} EUR</td>
+                  <td style={tdStyle}>{row.ortslagen_count}</td>
+                  <td style={tdStyle}>{row.ortslagen_total_price_eur.toFixed(2)} EUR</td>
+                  <td style={tdStyle}>{row.export_ortslagen_count}</td>
+                  <td style={tdStyle}>{row.export_ortslagen_total_price_eur.toFixed(2)} EUR</td>
+                  <td style={tdStyle}>{row.total_price_eur.toFixed(2)} EUR</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#f8fafc" }}>
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Portalabo Override (Partner)</div>
           <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
@@ -8330,9 +8562,20 @@ export default function AdminClient() {
             </button>
           </div>
         </div>
+        </>
+        ) : null}
 
+        {partnerBillingWorkspaceTab === "internationality" ? (
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Internationale Sprachen</div>
+          <div style={{ marginBottom: 10, fontSize: 12, color: "#334155" }}>
+            Gebucht <strong>{partnerLocaleSummary.booked_count}</strong> · Gesamt <strong>{partnerLocaleSummary.total_price_eur.toFixed(2)} EUR</strong>
+          </div>
+          {partnerLocaleSummary.booked_locales.length > 0 ? (
+            <div style={{ marginBottom: 10, fontSize: 12, color: "#475569" }}>
+              {partnerLocaleSummary.booked_locales.map((row) => `${row.label} (${row.monthly_price_eur.toFixed(2)} EUR)`).join(" · ")}
+            </div>
+          ) : null}
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -8433,9 +8676,19 @@ export default function AdminClient() {
             </button>
           </div>
         </div>
+        ) : null}
 
+        {partnerBillingWorkspaceTab === "features" ? (
         <div style={{ marginTop: 12, padding: 12, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff" }}>
           <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 8 }}>Sonstige Features (Partner-Override)</div>
+          <div style={{ marginBottom: 10, fontSize: 12, color: "#334155" }}>
+            Gebucht <strong>{partnerFeatureSummary.booked_count}</strong> · Gesamt <strong>{partnerFeatureSummary.total_price_eur.toFixed(2)} EUR</strong>
+          </div>
+          {partnerFeatureSummary.booked_features.length > 0 ? (
+            <div style={{ marginBottom: 10, fontSize: 12, color: "#475569" }}>
+              {partnerFeatureSummary.booked_features.map((row) => `${row.label} (${row.monthly_price_eur.toFixed(2)} EUR)`).join(" · ")}
+            </div>
+          ) : null}
           <table style={tableStyle}>
             <thead>
               <tr>
@@ -8506,7 +8759,10 @@ export default function AdminClient() {
             </button>
           </div>
         </div>
+        ) : null}
 
+        {partnerBillingWorkspaceTab === "ai" ? (
+        <>
         <p style={{ ...mutedStyle, marginTop: 14 }}>
           Token- und Kostenverbrauch aus zentraler LLM-Nutzung.
         </p>
@@ -8533,51 +8789,49 @@ export default function AdminClient() {
           </button>
         </div>
         <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
-          Gesamt Tokens: <strong>{partnerBillingTotals.tokens}</strong> · Gesamt Kosten (EUR): <strong>{partnerBillingTotals.cost_eur.toFixed(4)}</strong>
+          Portalpartner <strong>{partnerAiUsageSelfTotals.cost_eur.toFixed(6)} EUR</strong>
+          {" · "}Netzwerkpartner <strong>{partnerAiUsageNetworkTotals.cost_eur.toFixed(6)} EUR</strong>
+          {" · "}Gesamt <strong>{partnerAiUsageTotals.cost_eur.toFixed(6)} EUR</strong>
+          {" · "}Credits gesamt <strong>{partnerAiUsageTotals.estimated_credits.toFixed(4)}</strong>
+        </div>
+
+        <div style={{ marginTop: 14, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+          KI-Abrechnung Gesamt
         </div>
         <table style={tableStyle}>
           <thead>
             <tr>
-              <th style={thStyle}>Route</th>
-              <th style={thStyle}>Provider</th>
-              <th style={thStyle}>Modell</th>
+              <th style={thStyle}>Bereich</th>
+              <th style={thStyle}>Events</th>
               <th style={thStyle}>Tokens</th>
-              <th style={thStyle}>Kosten EUR</th>
+              <th style={thStyle}>EUR</th>
+              <th style={thStyle}>Credits</th>
             </tr>
           </thead>
           <tbody>
-            {partnerBillingRows.map((row) => (
-              <tr key={`${row.route_name}:${row.provider}:${row.model}`}>
-                <td style={tdStyle}>{row.route_name}</td>
-                <td style={tdStyle}>{row.provider}</td>
-                <td style={tdStyle}>{row.model}</td>
-                <td style={tdStyle}>{row.tokens}</td>
-                <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
-              </tr>
-            ))}
+            <tr>
+              <td style={tdStyle}>Portalpartner</td>
+              <td style={tdStyle}>{partnerAiUsageSelfTotals.events}</td>
+              <td style={tdStyle}>{partnerAiUsageSelfTotals.total_tokens}</td>
+              <td style={tdStyle}>{partnerAiUsageSelfTotals.cost_eur.toFixed(6)}</td>
+              <td style={tdStyle}>{partnerAiUsageSelfTotals.estimated_credits.toFixed(4)}</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}>Netzwerkpartner</td>
+              <td style={tdStyle}>{partnerAiUsageNetworkTotals.events}</td>
+              <td style={tdStyle}>{partnerAiUsageNetworkTotals.total_tokens}</td>
+              <td style={tdStyle}>{partnerAiUsageNetworkTotals.cost_eur.toFixed(6)}</td>
+              <td style={tdStyle}>{partnerAiUsageNetworkTotals.estimated_credits.toFixed(4)}</td>
+            </tr>
+            <tr>
+              <td style={tdStyle}><strong>Gesamt</strong></td>
+              <td style={tdStyle}><strong>{partnerAiUsageTotals.events}</strong></td>
+              <td style={tdStyle}><strong>{partnerAiUsageTotals.total_tokens}</strong></td>
+              <td style={tdStyle}><strong>{partnerAiUsageTotals.cost_eur.toFixed(6)}</strong></td>
+              <td style={tdStyle}><strong>{partnerAiUsageTotals.estimated_credits.toFixed(4)}</strong></td>
+            </tr>
           </tbody>
         </table>
-        <div style={{ marginTop: 14, fontSize: 12, color: "#334155", fontWeight: 700 }}>
-          KI-Billing-Übersicht
-        </div>
-        <div style={{ marginTop: 10, fontSize: 12, color: "#334155" }}>
-          Events <strong>{partnerAiUsageTotals.events}</strong>
-          {" · "}Prompt <strong>{partnerAiUsageTotals.prompt_tokens}</strong>
-          {" · "}Completion <strong>{partnerAiUsageTotals.completion_tokens}</strong>
-          {" · "}Gesamt <strong>{partnerAiUsageTotals.total_tokens}</strong>
-          {" · "}EUR <strong>{partnerAiUsageTotals.cost_eur.toFixed(6)}</strong>
-          {" · "}Credits <strong>{partnerAiUsageTotals.estimated_credits.toFixed(4)}</strong>
-        </div>
-        <div style={{ marginTop: 8, fontSize: 12, color: "#334155" }}>
-          Eigennutzung: Tokens <strong>{partnerAiUsageSelfTotals.total_tokens}</strong>
-          {" · "}EUR <strong>{partnerAiUsageSelfTotals.cost_eur.toFixed(6)}</strong>
-          {" · "}Credits <strong>{partnerAiUsageSelfTotals.estimated_credits.toFixed(4)}</strong>
-        </div>
-        <div style={{ marginTop: 4, fontSize: 12, color: "#334155" }}>
-          Netzwerkpartner: Tokens <strong>{partnerAiUsageNetworkTotals.total_tokens}</strong>
-          {" · "}EUR <strong>{partnerAiUsageNetworkTotals.cost_eur.toFixed(6)}</strong>
-          {" · "}Credits <strong>{partnerAiUsageNetworkTotals.estimated_credits.toFixed(4)}</strong>
-        </div>
         <table style={tableStyle}>
           <thead>
             <tr>
@@ -8591,43 +8845,12 @@ export default function AdminClient() {
           <tbody>
             {partnerAiUsageByFeature.length === 0 ? (
               <tr>
-                <td style={tdStyle} colSpan={5}>Noch keine Billing-Events im gewählten Monat.</td>
+                <td style={tdStyle} colSpan={5}>Noch keine Gesamt-Billing-Events im gewählten Monat.</td>
               </tr>
             ) : (
               partnerAiUsageByFeature.map((row) => (
-                <tr key={`partner-feature:${row.feature}`}>
+                <tr key={`all-feature:${row.feature}`}>
                   <td style={tdStyle}>{row.feature}</td>
-                  <td style={tdStyle}>{row.events}</td>
-                  <td style={tdStyle}>{row.total_tokens}</td>
-                  <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
-                  <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-        <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
-          Netzwerkpartner unter diesem Portalpartner
-        </div>
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={thStyle}>Netzwerkpartner</th>
-              <th style={thStyle}>Events</th>
-              <th style={thStyle}>Tokens</th>
-              <th style={thStyle}>EUR</th>
-              <th style={thStyle}>Credits</th>
-            </tr>
-          </thead>
-          <tbody>
-            {partnerAiUsageByNetworkPartner.length === 0 ? (
-              <tr>
-                <td style={tdStyle} colSpan={5}>Noch kein Netzwerkpartner-Verbrauch im gewählten Monat.</td>
-              </tr>
-            ) : (
-              partnerAiUsageByNetworkPartner.map((row) => (
-                <tr key={`partner-network:${row.network_partner_id}`}>
-                  <td style={tdStyle}>{row.network_partner_name}</td>
                   <td style={tdStyle}>{row.events}</td>
                   <td style={tdStyle}>{row.total_tokens}</td>
                   <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
@@ -8651,11 +8874,79 @@ export default function AdminClient() {
           <tbody>
             {partnerAiUsageByModel.length === 0 ? (
               <tr>
-                <td style={tdStyle} colSpan={6}>Noch keine modellbezogenen Billing-Daten im gewählten Monat.</td>
+                <td style={tdStyle} colSpan={6}>Noch keine Gesamt-Modell-Daten im gewählten Monat.</td>
               </tr>
             ) : (
               partnerAiUsageByModel.map((row) => (
-                <tr key={`partner-model:${row.provider}:${row.model}`}>
+                <tr key={`all-model:${row.provider}:${row.model}`}>
+                  <td style={tdStyle}>{row.provider}</td>
+                  <td style={tdStyle}>{row.model}</td>
+                  <td style={tdStyle}>{row.events}</td>
+                  <td style={tdStyle}>{row.total_tokens}</td>
+                  <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                  <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        <div style={{ marginTop: 14, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+          KI-Abrechnung Portalpartner
+        </div>
+        <div style={{ marginTop: 8, fontSize: 12, color: "#334155" }}>
+          Events <strong>{partnerAiUsageSelfTotals.events}</strong>
+          {" · "}Tokens <strong>{partnerAiUsageSelfTotals.total_tokens}</strong>
+          {" · "}EUR <strong>{partnerAiUsageSelfTotals.cost_eur.toFixed(6)}</strong>
+          {" · "}Credits <strong>{partnerAiUsageSelfTotals.estimated_credits.toFixed(4)}</strong>
+        </div>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Feature</th>
+              <th style={thStyle}>Events</th>
+              <th style={thStyle}>Tokens</th>
+              <th style={thStyle}>EUR</th>
+              <th style={thStyle}>Credits</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerAiUsageSelfByFeature.length === 0 ? (
+              <tr>
+                <td style={tdStyle} colSpan={5}>Noch keine Portalpartner-KI-Events im gewählten Monat.</td>
+              </tr>
+            ) : (
+              partnerAiUsageSelfByFeature.map((row) => (
+                <tr key={`self-feature:${row.feature}`}>
+                  <td style={tdStyle}>{row.feature}</td>
+                  <td style={tdStyle}>{row.events}</td>
+                  <td style={tdStyle}>{row.total_tokens}</td>
+                  <td style={tdStyle}>{row.cost_eur.toFixed(6)}</td>
+                  <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <th style={thStyle}>Provider</th>
+              <th style={thStyle}>Modell</th>
+              <th style={thStyle}>Events</th>
+              <th style={thStyle}>Tokens</th>
+              <th style={thStyle}>EUR</th>
+              <th style={thStyle}>Credits</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerAiUsageSelfByModel.length === 0 ? (
+              <tr>
+                <td style={tdStyle} colSpan={6}>Noch keine modellbezogenen Portalpartner-Daten im gewählten Monat.</td>
+              </tr>
+            ) : (
+              partnerAiUsageSelfByModel.map((row) => (
+                <tr key={`self-model:${row.provider}:${row.model}`}>
                   <td style={tdStyle}>{row.provider}</td>
                   <td style={tdStyle}>{row.model}</td>
                   <td style={tdStyle}>{row.events}</td>
@@ -8668,17 +8959,45 @@ export default function AdminClient() {
           </tbody>
         </table>
         <div style={{ marginTop: 12, fontSize: 12, color: "#334155", fontWeight: 700 }}>
-          Letzte KI-Events
+          Technisches Monitoring Portalpartner
+        </div>
+        <div style={{ marginTop: 8, fontSize: 12, color: "#334155" }}>
+          Gesamt Tokens: <strong>{partnerBillingTotals.tokens}</strong> · Gesamt Kosten (EUR): <strong>{partnerBillingTotals.cost_eur.toFixed(4)}</strong>
         </div>
         <table style={tableStyle}>
           <thead>
             <tr>
+              <th style={thStyle}>Route</th>
+              <th style={thStyle}>Provider</th>
+              <th style={thStyle}>Modell</th>
+              <th style={thStyle}>Tokens</th>
+              <th style={thStyle}>Kosten EUR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerBillingRows.length === 0 ? (
+              <tr>
+                <td style={tdStyle} colSpan={5}>Noch keine technischen Portalpartner-Verbrauchsdaten im gewählten Monat.</td>
+              </tr>
+            ) : (
+              partnerBillingRows.map((row) => (
+                <tr key={`${row.route_name}:${row.provider}:${row.model}`}>
+                  <td style={tdStyle}>{row.route_name}</td>
+                  <td style={tdStyle}>{row.provider}</td>
+                  <td style={tdStyle}>{row.model}</td>
+                  <td style={tdStyle}>{row.tokens}</td>
+                  <td style={tdStyle}>{Number(row.cost_eur ?? 0).toFixed(4)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+        <table style={tableStyle}>
+          <thead>
+            <tr>
               <th style={thStyle}>Zeit</th>
-              <th style={thStyle}>Netzwerkpartner</th>
               <th style={thStyle}>Route</th>
               <th style={thStyle}>Feature</th>
-              <th style={thStyle}>Scope</th>
-              <th style={thStyle}>Mode</th>
               <th style={thStyle}>Modell</th>
               <th style={thStyle}>Tokens</th>
               <th style={thStyle}>EUR</th>
@@ -8687,29 +9006,156 @@ export default function AdminClient() {
             </tr>
           </thead>
           <tbody>
-            {partnerAiUsageEvents.length === 0 ? (
+            {partnerAiUsageEvents.filter((row) => !row.network_partner_id).length === 0 ? (
               <tr>
-                <td style={tdStyle} colSpan={11}>Noch keine KI-Events im gewählten Monat.</td>
+                <td style={tdStyle} colSpan={8}>Noch keine Portalpartner-Events im gewählten Monat.</td>
               </tr>
             ) : (
-              partnerAiUsageEvents.slice(0, 20).map((row, idx) => (
-                <tr key={`partner-event:${row.created_at ?? "na"}:${idx}`}>
-                  <td style={tdStyle}>{row.created_at ?? "k. A."}</td>
-                  <td style={tdStyle}>{row.network_partner_name ?? row.network_partner_id ?? "—"}</td>
-                  <td style={tdStyle}>{row.route_name}</td>
-                  <td style={tdStyle}>{row.feature}</td>
-                  <td style={tdStyle}>{row.billing_scope}</td>
-                  <td style={tdStyle}>{row.billing_mode}</td>
-                  <td style={tdStyle}>{row.provider} / {row.model}</td>
-                  <td style={tdStyle}>{row.total_tokens}</td>
-                  <td style={tdStyle}>{row.estimated_cost_eur.toFixed(6)}</td>
-                  <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
-                  <td style={tdStyle}>{row.status}</td>
-                </tr>
-              ))
+              partnerAiUsageEvents
+                .filter((row) => !row.network_partner_id)
+                .slice(0, 20)
+                .map((row, idx) => (
+                  <tr key={`self-event:${row.created_at ?? "na"}:${idx}`}>
+                    <td style={tdStyle}>{row.created_at ?? "k. A."}</td>
+                    <td style={tdStyle}>{row.route_name}</td>
+                    <td style={tdStyle}>{row.feature}</td>
+                    <td style={tdStyle}>{row.provider} / {row.model}</td>
+                    <td style={tdStyle}>{row.total_tokens}</td>
+                    <td style={tdStyle}>{row.estimated_cost_eur.toFixed(6)}</td>
+                    <td style={tdStyle}>{row.estimated_credits.toFixed(4)}</td>
+                    <td style={tdStyle}>{row.status}</td>
+                  </tr>
+                ))
             )}
           </tbody>
         </table>
+
+        <div style={{ marginTop: 14, fontSize: 12, color: "#334155", fontWeight: 700 }}>
+          KI-Abrechnung zugehöriger Netzwerkpartner
+        </div>
+        {partnerAiUsageByNetworkPartner.length === 0 ? (
+          <div style={{ marginTop: 10, fontSize: 12, color: "#64748b" }}>
+            Noch kein Netzwerkpartner-Verbrauch im gewählten Monat.
+          </div>
+        ) : (
+          partnerAiUsageByNetworkPartner.map((row) => {
+            const isOpen = partnerAiAccordionOpenIds[row.network_partner_id] === true;
+            const featureRows = partnerAiUsageByNetworkPartnerFeature.filter((entry) => entry.network_partner_id === row.network_partner_id);
+            const modelRows = partnerAiUsageByNetworkPartnerModel.filter((entry) => entry.network_partner_id === row.network_partner_id);
+            const eventRows = partnerAiUsageEvents.filter((entry) => entry.network_partner_id === row.network_partner_id);
+            return (
+              <div key={`network-accordion:${row.network_partner_id}`} style={{ marginTop: 12, border: "1px solid #e2e8f0", borderRadius: 10, background: "#fff" }}>
+                <button
+                  style={{ ...btnGhostStyle, width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 14px", borderRadius: 10 }}
+                  onClick={() => setPartnerAiAccordionOpenIds((prev) => ({ ...prev, [row.network_partner_id]: !isOpen }))}
+                >
+                  <span style={{ fontWeight: 700, color: "#0f172a" }}>{row.network_partner_name}</span>
+                  <span style={{ fontSize: 12, color: "#334155" }}>
+                    Events {row.events} · Tokens {row.total_tokens} · EUR {row.cost_eur.toFixed(6)} · Credits {row.estimated_credits.toFixed(4)}
+                  </span>
+                </button>
+                {isOpen ? (
+                  <div style={{ padding: 14, borderTop: "1px solid #e2e8f0" }}>
+                    <table style={tableStyle}>
+                      <thead>
+                        <tr>
+                          <th style={thStyle}>Feature</th>
+                          <th style={thStyle}>Events</th>
+                          <th style={thStyle}>Tokens</th>
+                          <th style={thStyle}>EUR</th>
+                          <th style={thStyle}>Credits</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {featureRows.length === 0 ? (
+                          <tr>
+                            <td style={tdStyle} colSpan={5}>Keine Feature-Daten für diesen Netzwerkpartner.</td>
+                          </tr>
+                        ) : (
+                          featureRows.map((featureRow) => (
+                            <tr key={`network-feature:${featureRow.network_partner_id}:${featureRow.feature}`}>
+                              <td style={tdStyle}>{featureRow.feature}</td>
+                              <td style={tdStyle}>{featureRow.events}</td>
+                              <td style={tdStyle}>{featureRow.total_tokens}</td>
+                              <td style={tdStyle}>{featureRow.cost_eur.toFixed(6)}</td>
+                              <td style={tdStyle}>{featureRow.estimated_credits.toFixed(4)}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                    <table style={tableStyle}>
+                      <thead>
+                        <tr>
+                          <th style={thStyle}>Provider</th>
+                          <th style={thStyle}>Modell</th>
+                          <th style={thStyle}>Events</th>
+                          <th style={thStyle}>Tokens</th>
+                          <th style={thStyle}>EUR</th>
+                          <th style={thStyle}>Credits</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {modelRows.length === 0 ? (
+                          <tr>
+                            <td style={tdStyle} colSpan={6}>Keine Modell-Daten für diesen Netzwerkpartner.</td>
+                          </tr>
+                        ) : (
+                          modelRows.map((modelRow) => (
+                            <tr key={`network-model:${modelRow.network_partner_id}:${modelRow.provider}:${modelRow.model}`}>
+                              <td style={tdStyle}>{modelRow.provider}</td>
+                              <td style={tdStyle}>{modelRow.model}</td>
+                              <td style={tdStyle}>{modelRow.events}</td>
+                              <td style={tdStyle}>{modelRow.total_tokens}</td>
+                              <td style={tdStyle}>{modelRow.cost_eur.toFixed(6)}</td>
+                              <td style={tdStyle}>{modelRow.estimated_credits.toFixed(4)}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                    <table style={tableStyle}>
+                      <thead>
+                        <tr>
+                          <th style={thStyle}>Zeit</th>
+                          <th style={thStyle}>Route</th>
+                          <th style={thStyle}>Feature</th>
+                          <th style={thStyle}>Modell</th>
+                          <th style={thStyle}>Tokens</th>
+                          <th style={thStyle}>EUR</th>
+                          <th style={thStyle}>Credits</th>
+                          <th style={thStyle}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {eventRows.length === 0 ? (
+                          <tr>
+                            <td style={tdStyle} colSpan={8}>Keine Events für diesen Netzwerkpartner.</td>
+                          </tr>
+                        ) : (
+                          eventRows.slice(0, 20).map((eventRow, idx) => (
+                            <tr key={`network-event:${eventRow.network_partner_id}:${eventRow.created_at ?? "na"}:${idx}`}>
+                              <td style={tdStyle}>{eventRow.created_at ?? "k. A."}</td>
+                              <td style={tdStyle}>{eventRow.route_name}</td>
+                              <td style={tdStyle}>{eventRow.feature}</td>
+                              <td style={tdStyle}>{eventRow.provider} / {eventRow.model}</td>
+                              <td style={tdStyle}>{eventRow.total_tokens}</td>
+                              <td style={tdStyle}>{eventRow.estimated_cost_eur.toFixed(6)}</td>
+                              <td style={tdStyle}>{eventRow.estimated_credits.toFixed(4)}</td>
+                              <td style={tdStyle}>{eventRow.status}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })
+        )}
+        </>
+        ) : null}
       </section>
       ) : null}
 

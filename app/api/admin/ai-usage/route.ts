@@ -180,6 +180,8 @@ export async function GET(req: Request) {
     const byFeature = new Map<string, AggregateRow & { feature: string }>();
     const byModel = new Map<string, AggregateRow & { provider: string; model: string }>();
     const byScope = new Map<string, AggregateRow & { billing_scope: string }>();
+    const selfByFeature = new Map<string, AggregateRow & { feature: string }>();
+    const selfByModel = new Map<string, AggregateRow & { provider: string; model: string }>();
     const byPortalPartner = new Map<string, {
       partner_id: string;
       self_events: number;
@@ -200,6 +202,29 @@ export async function GET(req: Request) {
       network_partner_id: string;
       network_partner_name: string;
       events: number;
+      total_tokens: number;
+      cost_eur: number;
+      estimated_credits: number;
+    }>();
+    const byNetworkPartnerFeature = new Map<string, {
+      network_partner_id: string;
+      network_partner_name: string;
+      feature: string;
+      events: number;
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+      cost_eur: number;
+      estimated_credits: number;
+    }>();
+    const byNetworkPartnerModel = new Map<string, {
+      network_partner_id: string;
+      network_partner_name: string;
+      provider: string;
+      model: string;
+      events: number;
+      prompt_tokens: number;
+      completion_tokens: number;
       total_tokens: number;
       cost_eur: number;
       estimated_credits: number;
@@ -288,6 +313,27 @@ export async function GET(req: Request) {
         networkAgg.cost_eur += costEur;
         networkAgg.estimated_credits += estimatedCredits;
         byNetworkPartner.set(networkPartnerId, networkAgg);
+
+        const networkFeatureKey = `${networkPartnerId}::${feature}`;
+        const networkFeatureAgg = byNetworkPartnerFeature.get(networkFeatureKey) ?? {
+          network_partner_id: networkPartnerId,
+          network_partner_name: String(networkMeta?.company_name ?? networkPartnerId).trim() || networkPartnerId,
+          feature,
+          ...createAggregate(),
+        };
+        applyUsage(networkFeatureAgg, row);
+        byNetworkPartnerFeature.set(networkFeatureKey, networkFeatureAgg);
+
+        const networkModelKey = `${networkPartnerId}::${provider}::${model}`;
+        const networkModelAgg = byNetworkPartnerModel.get(networkModelKey) ?? {
+          network_partner_id: networkPartnerId,
+          network_partner_name: String(networkMeta?.company_name ?? networkPartnerId).trim() || networkPartnerId,
+          provider,
+          model,
+          ...createAggregate(),
+        };
+        applyUsage(networkModelAgg, row);
+        byNetworkPartnerModel.set(networkModelKey, networkModelAgg);
       }
 
       if (partnerId) {
@@ -295,6 +341,14 @@ export async function GET(req: Request) {
           applyUsage(networkTotals, row);
         } else if (pid === partnerId) {
           applyUsage(partnerSelfTotals, row);
+          const selfFeatureAgg = selfByFeature.get(feature) ?? { feature, ...createAggregate() };
+          applyUsage(selfFeatureAgg, row);
+          selfByFeature.set(feature, selfFeatureAgg);
+
+          const selfModelKey = `${provider}::${model}`;
+          const selfModelAgg = selfByModel.get(selfModelKey) ?? { provider, model, ...createAggregate() };
+          applyUsage(selfModelAgg, row);
+          selfByModel.set(selfModelKey, selfModelAgg);
         }
       }
     }
@@ -346,6 +400,10 @@ export async function GET(req: Request) {
           estimated_credits: Number(row.estimated_credits.toFixed(4)),
         }))
         .sort((a, b) => b.total_tokens - a.total_tokens),
+      self_by_feature: Array.from(selfByFeature.values()).map(finalizeAggregate).sort((a, b) => b.total_tokens - a.total_tokens),
+      self_by_model: Array.from(selfByModel.values()).map(finalizeAggregate).sort((a, b) => b.total_tokens - a.total_tokens),
+      by_network_partner_feature: Array.from(byNetworkPartnerFeature.values()).map(finalizeAggregate).sort((a, b) => b.total_tokens - a.total_tokens),
+      by_network_partner_model: Array.from(byNetworkPartnerModel.values()).map(finalizeAggregate).sort((a, b) => b.total_tokens - a.total_tokens),
       by_feature: Array.from(byFeature.values()).map(finalizeAggregate).sort((a, b) => b.total_tokens - a.total_tokens),
       by_model: Array.from(byModel.values()).map(finalizeAggregate).sort((a, b) => b.total_tokens - a.total_tokens),
       by_scope: Array.from(byScope.values()).map(finalizeAggregate).sort((a, b) => b.total_tokens - a.total_tokens),

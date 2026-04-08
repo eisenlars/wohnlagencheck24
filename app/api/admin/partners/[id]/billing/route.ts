@@ -6,6 +6,33 @@ import { requireAdmin } from "@/lib/security/admin-auth";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { checkAdminApiRateLimit } from "@/lib/security/rate-limit";
 
+type AreaRow = {
+  id?: string | null;
+  name?: string | null;
+  slug?: string | null;
+  parent_slug?: string | null;
+  bundesland_slug?: string | null;
+};
+
+type PartnerAreaMapRow = {
+  area_id?: string | null;
+  is_active?: boolean | null;
+  areas?: AreaRow[] | AreaRow | null;
+};
+
+type PortalAboRow = {
+  key: string;
+  kreis_name: string;
+  kreis_id: string;
+  base_price_eur: number;
+  ortslage_price_eur: number;
+  ortslagen_count: number;
+  ortslagen_total_price_eur: number;
+  export_ortslagen_count: number;
+  export_ortslagen_total_price_eur: number;
+  total_price_eur: number;
+};
+
 type FeatureOverrideInput = {
   code?: string;
   is_enabled?: boolean | null;
@@ -45,8 +72,29 @@ function asText(value: unknown): string | null {
   return v.length > 0 ? v : null;
 }
 
+function isDistrictArea(areaId: string): boolean {
+  return areaId.split("-").length <= 3;
+}
+
+function normalizeAreaRelation(
+  value: unknown,
+): AreaRow | null {
+  const source = Array.isArray(value)
+    ? value.find((item) => item && typeof item === "object")
+    : value;
+  if (!source || typeof source !== "object") return null;
+  const area = source as Record<string, unknown>;
+  return {
+    id: asText(area.id),
+    name: asText(area.name),
+    slug: asText(area.slug),
+    parent_slug: asText(area.parent_slug),
+    bundesland_slug: asText(area.bundesland_slug),
+  };
+}
+
 async function loadPartnerBilling(admin: ReturnType<typeof createAdminClient>, partnerId: string) {
-  const [globalRes, portalRes, catalogRes, overridesRes, locales] = await Promise.all([
+  const [globalRes, portalRes, catalogRes, overridesRes, locales, partnerAreaMapRes] = await Promise.all([
     admin
       .from("billing_global_defaults")
       .select("id, portal_base_price_eur, portal_ortslage_price_eur, portal_export_ortslage_price_eur, updated_at")
@@ -67,12 +115,19 @@ async function loadPartnerBilling(admin: ReturnType<typeof createAdminClient>, p
       .select("partner_id, feature_code, is_enabled, monthly_price_eur, updated_at")
       .eq("partner_id", partnerId),
     loadPortalLocaleRegistry(),
+    admin
+      .from("partner_area_map")
+      .select("area_id, is_active, areas(id, name, slug, parent_slug, bundesland_slug)")
+      .eq("auth_user_id", partnerId)
+      .eq("is_active", true)
+      .order("area_id", { ascending: true }),
   ]);
 
   if (globalRes.error) throw globalRes.error;
   if (portalRes.error) throw portalRes.error;
   if (catalogRes.error) throw catalogRes.error;
   if (overridesRes.error) throw overridesRes.error;
+  if (partnerAreaMapRes.error) throw partnerAreaMapRes.error;
 
   const defaults = globalRes.data ?? {
     id: 1,
@@ -116,6 +171,92 @@ async function loadPartnerBilling(admin: ReturnType<typeof createAdminClient>, p
     };
   });
 
+  const effectiveBasePrice = Number((portalOverrides.portal_base_price_eur ?? defaults.portal_base_price_eur ?? 50));
+  const effectiveOrtslagePrice = Number((portalOverrides.portal_ortslage_price_eur ?? defaults.portal_ortslage_price_eur ?? 1));
+  const effectiveExportPrice = Number((portalOverrides.portal_export_ortslage_price_eur ?? defaults.portal_export_ortslage_price_eur ?? 1));
+
+  const activeMappings = (partnerAreaMapRes.data ?? []) as PartnerAreaMapRow[];
+  const districtRows = activeMappings
+    .map((entry) => ({
+      area_id: String(entry.area_id ?? "").trim(),
+      area: normalizeAreaRelation(entry.areas),
+    }))
+    .filter((entry) => entry.area_id.length > 0 && isDistrictArea(entry.area_id));
+  const districtSlugs = districtRows
+    .map((entry) => String(entry.area?.slug ?? "").trim())
+    .filter((slug) => slug.length > 0);
+  const ortslageCountByDistrict = new Map<string, number>();
+  if (districtSlugs.length > 0) {
+    const { data: childAreas, error: childAreasError } = await admin
+      .from("areas")
+      .select("id, parent_slug")
+      .in("parent_slug", districtSlugs);
+    if (childAreasError) throw childAreasError;
+    for (const row of (childAreas ?? []) as Array<{ parent_slug?: string | null }>) {
+      const parentSlug = String(row.parent_slug ?? "").trim();
+      if (!parentSlug) continue;
+      ortslageCountByDistrict.set(parentSlug, (ortslageCountByDistrict.get(parentSlug) ?? 0) + 1);
+    }
+  }
+
+  const portalRows: PortalAboRow[] = districtRows.map((entry) => {
+    const districtSlug = String(entry.area?.slug ?? "").trim();
+    const districtName = String(entry.area?.name ?? entry.area_id).trim() || entry.area_id;
+    const ortslagenCount = ortslageCountByDistrict.get(districtSlug) ?? 0;
+    const exportCount = ortslagenCount;
+    const ortslagenTotal = Number((ortslagenCount * effectiveOrtslagePrice).toFixed(2));
+    const exportTotal = Number((exportCount * effectiveExportPrice).toFixed(2));
+    const total = Number((effectiveBasePrice + ortslagenTotal + exportTotal).toFixed(2));
+    return {
+      key: entry.area_id,
+      kreis_name: districtName,
+      kreis_id: entry.area_id,
+      base_price_eur: effectiveBasePrice,
+      ortslage_price_eur: effectiveOrtslagePrice,
+      ortslagen_count: ortslagenCount,
+      ortslagen_total_price_eur: ortslagenTotal,
+      export_ortslagen_count: exportCount,
+      export_ortslagen_total_price_eur: exportTotal,
+      total_price_eur: total,
+    };
+  }).sort((a, b) => a.kreis_name.localeCompare(b.kreis_name, "de"));
+
+  const portalSummary = {
+    kreise_count: portalRows.length,
+    base_total_price_eur: Number((portalRows.reduce((sum, row) => sum + row.base_price_eur, 0)).toFixed(2)),
+    ortslagen_count: portalRows.reduce((sum, row) => sum + row.ortslagen_count, 0),
+    ortslagen_total_price_eur: Number((portalRows.reduce((sum, row) => sum + row.ortslagen_total_price_eur, 0)).toFixed(2)),
+    export_ortslagen_count: portalRows.reduce((sum, row) => sum + row.export_ortslagen_count, 0),
+    export_ortslagen_total_price_eur: Number((portalRows.reduce((sum, row) => sum + row.export_ortslagen_total_price_eur, 0)).toFixed(2)),
+    total_price_eur: Number((portalRows.reduce((sum, row) => sum + row.total_price_eur, 0)).toFixed(2)),
+  };
+
+  const localeFeatures = buildPartnerLocaleBillingFeatureRows({
+    locales,
+    catalogFeatures: catalogRes.data ?? [],
+    partnerOverrides: overridesRes.data ?? [],
+  });
+  const enabledLocaleRows = localeFeatures.filter((row) => row.enabled);
+  const localeSummary = {
+    booked_count: enabledLocaleRows.length,
+    total_price_eur: Number((enabledLocaleRows.reduce((sum, row) => sum + Number(row.monthly_price_eur ?? 0), 0)).toFixed(2)),
+    booked_locales: enabledLocaleRows.map((row) => ({
+      locale: row.locale,
+      label: row.label_de || row.label_native || row.locale,
+      monthly_price_eur: Number(Number(row.monthly_price_eur ?? 0).toFixed(2)),
+    })),
+  };
+  const enabledFeatureRows = features.filter((row) => row.enabled);
+  const featureSummary = {
+    booked_count: enabledFeatureRows.length,
+    total_price_eur: Number((enabledFeatureRows.reduce((sum, row) => sum + Number(row.monthly_price_eur ?? 0), 0)).toFixed(2)),
+    booked_features: enabledFeatureRows.map((row) => ({
+      code: row.code,
+      label: row.label,
+      monthly_price_eur: Number(Number(row.monthly_price_eur ?? 0).toFixed(2)),
+    })),
+  };
+
   return {
     portal: {
       defaults,
@@ -125,13 +266,13 @@ async function loadPartnerBilling(admin: ReturnType<typeof createAdminClient>, p
         portal_ortslage_price_eur: Number((portalOverrides.portal_ortslage_price_eur ?? defaults.portal_ortslage_price_eur ?? 1)),
         portal_export_ortslage_price_eur: Number((portalOverrides.portal_export_ortslage_price_eur ?? defaults.portal_export_ortslage_price_eur ?? 1)),
       },
+      rows: portalRows,
+      summary: portalSummary,
     },
     features,
-    locale_features: buildPartnerLocaleBillingFeatureRows({
-      locales,
-      catalogFeatures: catalogRes.data ?? [],
-      partnerOverrides: overridesRes.data ?? [],
-    }),
+    feature_summary: featureSummary,
+    locale_features: localeFeatures,
+    locale_summary: localeSummary,
   };
 }
 
