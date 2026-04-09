@@ -1805,7 +1805,7 @@ function readPreviewSummaryFromIntegration(
       fallbackResource === "offers" || fallbackResource === "references" || fallbackResource === "requests" || fallbackResource === "all"
         ? fallbackResource
         : resource,
-    message: message ?? fallbackMessage || "Kein CRM-Abruf-Test protokolliert.",
+    message: message ?? (fallbackMessage || "Kein CRM-Abruf-Test protokolliert."),
     testedAt: testedAt ?? integration.last_preview_sync_at,
     traceId: asText(runtime.last_preview_trace_id),
   };
