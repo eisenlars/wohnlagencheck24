@@ -7,6 +7,36 @@ import type {
 import { buildNetworkPartnerPreviewSyncSnapshot } from "@/lib/network-partners/sync/preview-sync";
 import { upsertImportedPreviewItem } from "@/lib/network-partners/sync/upsert-content";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizeScopedResource(value: unknown): "offers" | "requests" | "all" {
+  const resource = String(value ?? "").trim().toLowerCase();
+  if (resource === "offers" || resource === "requests") return resource;
+  return "all";
+}
+
+function withScopedSyncPayload(
+  settings: Record<string, unknown>,
+  resource: "offers" | "requests" | "all",
+  payload: Record<string, unknown>,
+) {
+  if (resource === "all") return settings;
+  const scopedRoot = isRecord(settings.sync_resources) ? settings.sync_resources : {};
+  const scopedEntry = isRecord(scopedRoot[resource]) ? scopedRoot[resource] : {};
+  return {
+    ...settings,
+    sync_resources: {
+      ...scopedRoot,
+      [resource]: {
+        ...scopedEntry,
+        sync_debug_payload: payload,
+      },
+    },
+  };
+}
+
 function isWritablePreviewItem(
   item: NetworkPartnerPreviewSyncItem,
 ): item is NetworkPartnerPreviewSyncItem & { content_type: "property_offer" | "property_request" } {
@@ -20,7 +50,9 @@ function isWritablePreviewItem(
 async function persistSyncTimestamp(
   integrationId: string,
   networkPartnerId: string,
+  resource: "offers" | "requests" | "all",
   summary: Record<string, unknown>,
+  payload: Record<string, unknown>,
 ) {
   const admin = createAdminClient();
   const { data } = await admin
@@ -31,18 +63,24 @@ async function persistSyncTimestamp(
     .maybeSingle();
 
   const prevSettings =
-    data && typeof data === "object" && !Array.isArray(data) && typeof (data as Record<string, unknown>).settings === "object"
+    data && typeof data === "object" && !Array.isArray(data) && isRecord((data as Record<string, unknown>).settings)
       ? ((data as Record<string, unknown>).settings as Record<string, unknown>)
       : {};
+  const nextSettings = withScopedSyncPayload(
+    {
+      ...prevSettings,
+      last_sync_summary: summary,
+      sync_debug_payload: payload,
+    },
+    resource,
+    payload,
+  );
 
   await admin
     .from("network_partner_integrations")
     .update({
       last_sync_at: new Date().toISOString(),
-      settings: {
-        ...prevSettings,
-        last_sync_summary: summary,
-      },
+      settings: nextSettings,
     })
     .eq("id", integrationId)
     .eq("network_partner_id", networkPartnerId);
@@ -149,16 +187,42 @@ export async function runNetworkPartnerWriteSync(input: {
     diagnostics: snapshot.diagnostics,
   };
 
-  await persistSyncTimestamp(snapshot.integration_id, snapshot.network_partner_id, {
+  const payload = {
+    generated_at: new Date().toISOString(),
+    kind: "sync",
+    integration_id: snapshot.integration_id,
+    network_partner_id: snapshot.network_partner_id,
+    provider: snapshot.provider,
     resource: snapshot.resource,
     mode: snapshot.mode,
+    booking_scope_count: snapshot.booking_scope_count,
+    booking_scopes: snapshot.booking_scopes,
     preview_counts: snapshot.counts,
     created_count: createdCount,
     updated_count: updatedCount,
     skipped_count: skippedCount,
     error_count: errorCount,
-    synced_at: new Date().toISOString(),
-  });
+    lines,
+    notes: snapshot.notes,
+    diagnostics: snapshot.diagnostics,
+  };
+
+  await persistSyncTimestamp(
+    snapshot.integration_id,
+    snapshot.network_partner_id,
+    normalizeScopedResource(snapshot.resource),
+    {
+      resource: snapshot.resource,
+      mode: snapshot.mode,
+      preview_counts: snapshot.counts,
+      created_count: createdCount,
+      updated_count: updatedCount,
+      skipped_count: skippedCount,
+      error_count: errorCount,
+      synced_at: payload.generated_at,
+    },
+    payload,
+  );
 
   return result;
 }

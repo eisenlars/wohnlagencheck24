@@ -24,6 +24,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function withScopedPreviewPayload(
+  settings: Record<string, unknown>,
+  resource: NetworkPartnerPreviewSyncResource,
+  payload: Record<string, unknown>,
+) {
+  if (resource === "all") return settings;
+  const scopedRoot = isRecord(settings.preview_resources) ? settings.preview_resources : {};
+  const scopedEntry = isRecord(scopedRoot[resource]) ? scopedRoot[resource] : {};
+  return {
+    ...settings,
+    preview_resources: {
+      ...scopedRoot,
+      [resource]: {
+        ...scopedEntry,
+        last_preview_payload: payload,
+      },
+    },
+  };
+}
+
 function normalizePreviewResource(value: unknown): NetworkPartnerPreviewSyncResource {
   const resource = String(value ?? "").trim().toLowerCase();
   if (resource === "offers" || resource === "requests") return resource;
@@ -142,7 +162,9 @@ export function toProviderIntegration(input: {
 export async function persistPreviewTimestamp(
   integrationId: string,
   networkPartnerId: string,
+  resource: NetworkPartnerPreviewSyncResource,
   summary: Record<string, unknown>,
+  payload: Record<string, unknown>,
 ) {
   const admin = createAdminClient();
   const { data } = await admin
@@ -153,14 +175,20 @@ export async function persistPreviewTimestamp(
     .maybeSingle();
 
   const prevSettings = isRecord(data) && isRecord(data.settings) ? data.settings : {};
+  const nextSettings = withScopedPreviewPayload(
+    {
+      ...prevSettings,
+      last_preview_sync_summary: summary,
+      last_preview_payload: payload,
+    },
+    resource,
+    payload,
+  );
   await admin
     .from("network_partner_integrations")
     .update({
       last_preview_sync_at: new Date().toISOString(),
-      settings: {
-        ...prevSettings,
-        last_preview_sync_summary: summary,
-      },
+      settings: nextSettings,
     })
     .eq("id", integrationId)
     .eq("network_partner_id", networkPartnerId);
@@ -257,14 +285,36 @@ export async function runNetworkPartnerPreviewSync(input: {
     },
   };
 
-  await persistPreviewTimestamp(snapshot.integration_id, snapshot.network_partner_id, {
+  const payload = {
+    generated_at: new Date().toISOString(),
+    kind: "preview",
+    integration_id: snapshot.integration_id,
+    network_partner_id: snapshot.network_partner_id,
+    provider: snapshot.provider,
     resource: snapshot.resource,
     mode: snapshot.mode,
     booking_scope_count: snapshot.booking_scope_count,
+    booking_scopes: snapshot.booking_scopes,
     counts: snapshot.counts,
-    note_count: result.notes.length,
-    previewed_at: new Date().toISOString(),
-  });
+    items: snapshot.items,
+    notes: snapshot.notes,
+    diagnostics: snapshot.diagnostics,
+  };
+
+  await persistPreviewTimestamp(
+    snapshot.integration_id,
+    snapshot.network_partner_id,
+    snapshot.resource,
+    {
+      resource: snapshot.resource,
+      mode: snapshot.mode,
+      booking_scope_count: snapshot.booking_scope_count,
+      counts: snapshot.counts,
+      note_count: result.notes.length,
+      previewed_at: payload.generated_at,
+    },
+    payload,
+  );
 
   return result;
 }
