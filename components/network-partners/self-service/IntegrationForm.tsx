@@ -255,35 +255,7 @@ export default function IntegrationForm({
         ) : null}
       </div>
 
-      {values.kind === 'crm' ? (
-        <div style={{ display: 'grid', gap: 10 }}>
-          <strong style={{ color: '#334155' }}>Ressourcen</strong>
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-            {(['offers', 'requests', 'references'] as const).map((resource) => (
-              <label key={resource} style={{ display: 'flex', gap: 8, alignItems: 'center', color: '#334155' }}>
-                <input
-                  type="checkbox"
-                  checked={readResourceEnabled(values.settings, resource)}
-                  disabled={disabled || submitting}
-                  onChange={(event) =>
-                    setValues((current) => ({
-                      ...current,
-                      settings: {
-                        ...current.settings,
-                        resources: {
-                          ...((current.settings.resources as Record<string, unknown>) ?? {}),
-                          [resource]: { enabled: event.target.checked },
-                        },
-                      },
-                    }))
-                  }
-                />
-                {resource}
-              </label>
-            ))}
-          </div>
-        </div>
-      ) : (
+      {values.kind === 'crm' ? null : (
         <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <label style={{ display: 'grid', gap: 6 }}>
             <span style={{ fontWeight: 700, color: '#334155' }}>Modell</span>
