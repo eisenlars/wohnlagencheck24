@@ -98,6 +98,7 @@ function mapBookingError(error: Error) {
   if (error.message === "NETWORK_PARTNER_NOT_OWNED") return { status: 400, error: "network_partner_id does not belong to this portal partner" };
   if (error.message === "INVALID_PLACEMENT_CODE") return { status: 400, error: "Die gewählte Leistung ist derzeit nicht verfügbar." };
   if (error.message === "PORTAL_FEE_EXCEEDS_MONTHLY_PRICE") return { status: 400, error: "portal_fee_eur cannot exceed monthly_price_eur" };
+  if (error.message === "MONTHLY_PRICE_BELOW_PORTAL_FEE") return { status: 400, error: "Der Preis muss mindestens 10 EUR betragen." };
   if (error.message === "INVALID_REQUIRED_LOCALES") return { status: 400, error: "required_locales must not be empty" };
   if (error.message === "MISSING_DE_LOCALE") return { status: 400, error: "required_locales must include 'de'" };
   if (error.message === "INVALID_MONTHLY_PRICE_EUR") return { status: 400, error: "monthly_price_eur must be >= 0" };
@@ -142,14 +143,14 @@ export async function POST(req: Request) {
     const networkPartnerId = asRequiredText(body.network_partner_id);
     const areaId = asRequiredText(body.area_id);
     const placementCode = asPlacementCode(body.placement_code);
-    const status = body.status !== undefined ? asStatus(body.status) : "draft";
+    const status = body.status !== undefined ? asStatus(body.status) : "active";
     const startsAt = asRequiredText(body.starts_at);
     const monthlyPrice = asNumber(body.monthly_price_eur);
-    const portalFee = asNumber(body.portal_fee_eur);
-    const billingCycleDay = asNumber(body.billing_cycle_day);
+    const portalFee = asNumber(body.portal_fee_eur ?? 10);
+    const billingCycleDay = asNumber(body.billing_cycle_day ?? 1);
     const aiBillingMode = body.ai_billing_mode !== undefined ? asAIBillingMode(body.ai_billing_mode) : "included";
     const aiMonthlyBudget = asNumber(body.ai_monthly_budget_eur ?? 0);
-    const requiredLocales = asLocales(body.required_locales);
+    const requiredLocales = asLocales(body.required_locales ?? ["de"]);
 
     if (!networkPartnerId) {
       return NextResponse.json({ error: "network_partner_id is required" }, { status: 400 });
@@ -163,17 +164,14 @@ export async function POST(req: Request) {
     if (!status) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
-    if (!startsAt) {
-      return NextResponse.json({ error: "starts_at is required" }, { status: 400 });
-    }
     if (monthlyPrice === null) {
       return NextResponse.json({ error: "monthly_price_eur is required" }, { status: 400 });
     }
     if (portalFee === null) {
-      return NextResponse.json({ error: "portal_fee_eur is required" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid portal_fee_eur" }, { status: 400 });
     }
     if (billingCycleDay === null) {
-      return NextResponse.json({ error: "billing_cycle_day is required" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid billing_cycle_day" }, { status: 400 });
     }
     if (!aiBillingMode) {
       return NextResponse.json({ error: "Invalid ai_billing_mode" }, { status: 400 });
@@ -200,7 +198,7 @@ export async function POST(req: Request) {
       area_id: areaId,
       placement_code: placementCode,
       status,
-      starts_at: startsAt,
+      starts_at: startsAt ?? undefined,
       ends_at: asNullableText(body.ends_at),
       monthly_price_eur: monthlyPrice,
       portal_fee_eur: portalFee,

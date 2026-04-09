@@ -4,8 +4,8 @@ import type { CSSProperties, FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 
 import type {
-  AIBillingMode,
   BookingStatus,
+  NetworkPartnerBookingRecord,
   NetworkPartnerRecord,
   PlacementCatalogRecord,
   PlacementCode,
@@ -21,14 +21,7 @@ type BookingFormValues = {
   area_id: string;
   placement_code: PlacementCode;
   status: BookingStatus;
-  starts_at: string;
-  ends_at: string | null;
   monthly_price_eur: number;
-  portal_fee_eur: number;
-  billing_cycle_day: number;
-  required_locales: string[];
-  ai_billing_mode: AIBillingMode;
-  ai_monthly_budget_eur: number;
   notes: string | null;
 };
 
@@ -37,6 +30,9 @@ type BookingFormProps = {
   areas: AreaOption[];
   placements: PlacementCatalogRecord[];
   onSubmit: (values: BookingFormValues) => Promise<void>;
+  initialValue?: NetworkPartnerBookingRecord | null;
+  submitLabel?: string;
+  onCancel?: () => void;
 };
 
 const inputStyle: CSSProperties = {
@@ -57,28 +53,36 @@ const labelStyle: CSSProperties = {
   color: '#334155',
 };
 
-const sectionStyle: CSSProperties = {
-  display: 'grid',
-  gap: 14,
-  padding: '16px 18px',
-  borderRadius: 16,
-  border: '1px solid #e2e8f0',
-  background: '#f8fafc',
-};
-
-function getBookingStatusLabel(status: BookingStatus): string {
-  if (status === 'pending_review') return 'In Prüfung';
-  if (status === 'active') return 'Aktiv';
-  if (status === 'paused') return 'Pausiert';
-  if (status === 'cancelled') return 'Beendet';
-  if (status === 'expired') return 'Abgelaufen';
-  return 'Entwurf';
+function resolveEditableStatusOptions(currentStatus: BookingStatus | null): Array<{ value: BookingStatus; label: string }> {
+  if (!currentStatus) {
+    return [
+      { value: 'active', label: 'Aktiv' },
+      { value: 'paused', label: 'Inaktiv' },
+    ];
+  }
+  if (currentStatus === 'active' || currentStatus === 'paused') {
+    return [
+      { value: 'active', label: 'Aktiv' },
+      { value: 'paused', label: 'Inaktiv' },
+    ];
+  }
+  if (currentStatus === 'cancelled' || currentStatus === 'expired') {
+    return [
+      { value: currentStatus, label: currentStatus === 'cancelled' ? 'Beendet' : 'Abgelaufen' },
+    ];
+  }
+  return [
+    { value: 'draft', label: 'Entwurf' },
+    { value: 'active', label: 'Aktiv' },
+  ];
 }
 
-function getAiBillingModeLabel(mode: AIBillingMode): string {
-  if (mode === 'credit_based') return 'Nutzungsabhängig';
-  if (mode === 'blocked') return 'Deaktiviert';
-  return 'Inklusive';
+function formatPlacementLabel(placements: PlacementCatalogRecord[], code: PlacementCode): string {
+  return placements.find((placement) => placement.code === code)?.label ?? code;
+}
+
+function formatAreaLabel(areas: AreaOption[], areaId: string): string {
+  return areas.find((area) => area.id === areaId)?.label ?? areaId;
 }
 
 export default function BookingForm({
@@ -86,47 +90,48 @@ export default function BookingForm({
   areas,
   placements,
   onSubmit,
+  initialValue = null,
+  submitLabel,
+  onCancel,
 }: BookingFormProps) {
-  const [networkPartnerId, setNetworkPartnerId] = useState(networkPartners[0]?.id ?? '');
-  const [areaId, setAreaId] = useState(areas[0]?.id ?? '');
   const placementOptions = useMemo(
     () => placements.filter((placement) => placement.is_active),
     [placements],
   );
-  const [placementCode, setPlacementCode] = useState<PlacementCode | ''>(placementOptions[0]?.code ?? '');
-  const [status, setStatus] = useState<BookingStatus>('draft');
-  const [startsAt, setStartsAt] = useState('');
-  const [endsAt, setEndsAt] = useState('');
-  const [monthlyPrice, setMonthlyPrice] = useState('');
-  const [portalFee, setPortalFee] = useState('');
-  const [billingCycleDay, setBillingCycleDay] = useState('1');
-  const [requiredLocales, setRequiredLocales] = useState('de');
-  const [aiBillingMode, setAiBillingMode] = useState<AIBillingMode>('included');
-  const [aiMonthlyBudget, setAiMonthlyBudget] = useState('0');
-  const [notes, setNotes] = useState('');
+  const isEditing = Boolean(initialValue?.id);
+  const statusOptions = useMemo(
+    () => resolveEditableStatusOptions(initialValue?.status ?? null),
+    [initialValue?.status],
+  );
+
+  const [networkPartnerId, setNetworkPartnerId] = useState(initialValue?.network_partner_id ?? networkPartners[0]?.id ?? '');
+  const [areaId, setAreaId] = useState(initialValue?.area_id ?? areas[0]?.id ?? '');
+  const [placementCode, setPlacementCode] = useState<PlacementCode | ''>(initialValue?.placement_code ?? placementOptions[0]?.code ?? '');
+  const [status, setStatus] = useState<BookingStatus>(initialValue?.status ?? 'active');
+  const [monthlyPrice, setMonthlyPrice] = useState(initialValue?.monthly_price_eur?.toString() ?? '10');
+  const [notes, setNotes] = useState(initialValue?.notes ?? '');
   const [submitting, setSubmitting] = useState(false);
+  const fixedPortalFee = 10;
+  const parsedMonthlyPrice = Number(monthlyPrice);
+  const monthlyPriceValue = Number.isFinite(parsedMonthlyPrice) ? parsedMonthlyPrice : 0;
+  const partnerNetRevenue = Math.max(0, monthlyPriceValue - fixedPortalFee);
+  const showPartnerSelect = !isEditing && networkPartners.length > 1;
+  const selectedNetworkPartner = networkPartners.find((partner) => partner.id === networkPartnerId) ?? networkPartners[0] ?? null;
 
   useEffect(() => {
-    if (!networkPartnerId && networkPartners[0]?.id) {
-      setNetworkPartnerId(networkPartners[0].id);
-    }
-  }, [networkPartnerId, networkPartners]);
-
-  useEffect(() => {
-    if (!areaId && areas[0]?.id) {
-      setAreaId(areas[0].id);
-    }
-  }, [areaId, areas]);
-
-  useEffect(() => {
-    const availableCodes = new Set(placementOptions.map((entry) => entry.code));
-    if (placementCode && availableCodes.has(placementCode)) return;
-    setPlacementCode(placementOptions[0]?.code ?? '');
-  }, [placementCode, placementOptions]);
+    setNetworkPartnerId(initialValue?.network_partner_id ?? networkPartners[0]?.id ?? '');
+    setAreaId(initialValue?.area_id ?? areas[0]?.id ?? '');
+    setPlacementCode(initialValue?.placement_code ?? placementOptions[0]?.code ?? '');
+    setStatus(initialValue?.status ?? 'active');
+    setMonthlyPrice(initialValue?.monthly_price_eur?.toString() ?? '10');
+    setNotes(initialValue?.notes ?? '');
+  }, [areas, initialValue, networkPartners, placementOptions]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!networkPartnerId || !areaId || !placementCode) return;
+    const nextMonthlyPrice = Number(monthlyPrice);
+    if (!Number.isFinite(nextMonthlyPrice) || nextMonthlyPrice < fixedPortalFee) return;
     setSubmitting(true);
     try {
       await onSubmit({
@@ -134,64 +139,63 @@ export default function BookingForm({
         area_id: areaId,
         placement_code: placementCode,
         status,
-        starts_at: startsAt,
-        ends_at: endsAt.trim() ? endsAt.trim() : null,
-        monthly_price_eur: Number(monthlyPrice),
-        portal_fee_eur: Number(portalFee),
-        billing_cycle_day: Number(billingCycleDay),
-        required_locales: requiredLocales
-          .split(',')
-          .map((value) => value.trim().toLowerCase())
-          .filter(Boolean),
-        ai_billing_mode: aiBillingMode,
-        ai_monthly_budget_eur: Number(aiMonthlyBudget),
+        monthly_price_eur: nextMonthlyPrice,
         notes: notes.trim() ? notes.trim() : null,
       });
-      setStatus('draft');
-      setStartsAt('');
-      setEndsAt('');
-      setMonthlyPrice('');
-      setPortalFee('');
-      setBillingCycleDay('1');
-      setRequiredLocales('de');
-      setAiBillingMode('included');
-      setAiMonthlyBudget('0');
-      setNotes('');
+      if (!isEditing) {
+        setStatus('active');
+        setMonthlyPrice('10');
+        setNotes('');
+      }
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 14 }}>
-      <section style={sectionStyle}>
-        <div style={{ display: 'grid', gap: 4 }}>
-          <h3 style={{ margin: 0, fontSize: 17, color: '#0f172a' }}>1. Partner und Leistung</h3>
-          <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Wähle den Netzwerkpartner, das Gebiet und die gebuchte Leistung.
-          </p>
+    <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 16 }}>
+      <div style={{ display: 'grid', gap: 4 }}>
+        <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>
+          {isEditing ? 'Buchung bearbeiten' : 'Neue Buchung anlegen'}
+        </h3>
+        <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
+          {isEditing
+            ? 'Leistung und Gebiet bleiben bei bestehenden Buchungen stabil. Status, Preis und Notizen lassen sich direkt anpassen.'
+            : 'Die Buchung gilt immer nur für einen Kreis. Soll ein Netzwerkpartner in weiteren Kreisen erscheinen, legst du dafür separate Buchungen an.'}
+        </p>
+      </div>
+
+      {isEditing ? (
+        <div style={{ display: 'grid', gap: 12, padding: 14, borderRadius: 14, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'grid', gap: 6, color: '#334155', fontSize: 14 }}>
+            <span><strong>Leistung:</strong> {formatPlacementLabel(placements, initialValue.placement_code)}</span>
+            <span><strong>Gebiet:</strong> {formatAreaLabel(areas, initialValue.area_id)}</span>
+            <span>
+              <strong>Netzwerkpartner:</strong> {networkPartners.find((partner) => partner.id === initialValue.network_partner_id)?.company_name ?? initialValue.network_partner_id}
+            </span>
+          </div>
         </div>
+      ) : (
         <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-          <label style={labelStyle}>
-            Netzwerkpartner
-            <select value={networkPartnerId} onChange={(event) => setNetworkPartnerId(event.target.value)} style={inputStyle} required>
-              {networkPartners.map((partner) => (
-                <option key={partner.id} value={partner.id}>
-                  {partner.company_name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label style={labelStyle}>
-            Gebiet
-            <select value={areaId} onChange={(event) => setAreaId(event.target.value)} style={inputStyle} required>
-              {areas.map((area) => (
-                <option key={area.id} value={area.id}>
-                  {area.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          {showPartnerSelect ? (
+            <label style={labelStyle}>
+              Netzwerkpartner
+              <select value={networkPartnerId} onChange={(event) => setNetworkPartnerId(event.target.value)} style={inputStyle} required>
+                {networkPartners.map((partner) => (
+                  <option key={partner.id} value={partner.id}>
+                    {partner.company_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : selectedNetworkPartner ? (
+            <div style={{ ...labelStyle, alignContent: 'start' }}>
+              Netzwerkpartner
+              <div style={{ ...inputStyle, background: '#f8fafc', color: '#334155' }}>
+                {selectedNetworkPartner.company_name}
+              </div>
+            </div>
+          ) : null}
           <label style={labelStyle}>
             Leistung
             <select
@@ -207,111 +211,110 @@ export default function BookingForm({
               ))}
             </select>
           </label>
-        </div>
-      </section>
-
-      <section style={sectionStyle}>
-        <div style={{ display: 'grid', gap: 4 }}>
-          <h3 style={{ margin: 0, fontSize: 17, color: '#0f172a' }}>2. Laufzeit und Status</h3>
-          <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Lege fest, ab wann die Leistung läuft und in welchem Bearbeitungsstand sie startet.
-          </p>
-        </div>
-        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <label style={labelStyle}>
-            Status
-            <select value={status} onChange={(event) => setStatus(event.target.value as BookingStatus)} style={inputStyle}>
-              <option value="draft">{getBookingStatusLabel('draft')}</option>
-              <option value="pending_review">{getBookingStatusLabel('pending_review')}</option>
-              <option value="active">{getBookingStatusLabel('active')}</option>
-              <option value="paused">{getBookingStatusLabel('paused')}</option>
-              <option value="cancelled">{getBookingStatusLabel('cancelled')}</option>
-              <option value="expired">{getBookingStatusLabel('expired')}</option>
+            Gebiet
+            <select value={areaId} onChange={(event) => setAreaId(event.target.value)} style={inputStyle} required>
+              {areas.map((area) => (
+                <option key={area.id} value={area.id}>
+                  {area.label}
+                </option>
+              ))}
             </select>
           </label>
-          <label style={labelStyle}>
-            Startdatum
-            <input type="date" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} style={inputStyle} required />
-          </label>
-          <label style={labelStyle}>
-            Enddatum
-            <input type="date" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} style={inputStyle} />
-          </label>
         </div>
-      </section>
+      )}
 
-      <section style={sectionStyle}>
-        <div style={{ display: 'grid', gap: 4 }}>
-          <h3 style={{ margin: 0, fontSize: 17, color: '#0f172a' }}>3. Preise und Abrechnung</h3>
-          <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Hier werden Preis, Portalanteil und der wiederkehrende Abrechnungstag festgelegt.
-          </p>
-        </div>
-        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-          <label style={labelStyle}>
-            Monatspreis in EUR
-            <input type="number" min={0} step="0.01" value={monthlyPrice} onChange={(event) => setMonthlyPrice(event.target.value)} style={inputStyle} required />
-          </label>
-          <label style={labelStyle}>
-            Portalfee in EUR
-            <input type="number" min={0} step="0.01" value={portalFee} onChange={(event) => setPortalFee(event.target.value)} style={inputStyle} required />
-          </label>
-          <label style={labelStyle}>
-            Abrechnungstag
-            <input type="number" min={1} max={28} value={billingCycleDay} onChange={(event) => setBillingCycleDay(event.target.value)} style={inputStyle} required />
-          </label>
-        </div>
-      </section>
+      <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+        <label style={labelStyle}>
+          Status
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value as BookingStatus)}
+            style={inputStyle}
+            disabled={statusOptions.length === 1 && (status === 'cancelled' || status === 'expired')}
+          >
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={labelStyle}>
+          Preis
+          <input
+            type="number"
+            min={fixedPortalFee}
+            step="0.01"
+            value={monthlyPrice}
+            onChange={(event) => setMonthlyPrice(event.target.value)}
+            style={inputStyle}
+            required
+          />
+        </label>
+      </div>
 
-      <section style={sectionStyle}>
-        <div style={{ display: 'grid', gap: 4 }}>
-          <h3 style={{ margin: 0, fontSize: 17, color: '#0f172a' }}>4. Sprache und KI</h3>
-          <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Bestimme Pflichtsprachen und ob die KI-Nutzung inklusive, nutzungsabhängig oder deaktiviert ist.
-          </p>
-        </div>
-        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-          <label style={labelStyle}>
-            Pflichtsprachen
-            <input value={requiredLocales} onChange={(event) => setRequiredLocales(event.target.value)} style={inputStyle} required />
-          </label>
-          <label style={labelStyle}>
-            KI-Nutzung
-            <select value={aiBillingMode} onChange={(event) => setAiBillingMode(event.target.value as AIBillingMode)} style={inputStyle}>
-              <option value="included">{getAiBillingModeLabel('included')}</option>
-              <option value="credit_based">{getAiBillingModeLabel('credit_based')}</option>
-              <option value="blocked">{getAiBillingModeLabel('blocked')}</option>
-            </select>
-          </label>
-          <label style={labelStyle}>
-            KI-Monatsbudget in EUR
-            <input type="number" min={0} step="0.01" value={aiMonthlyBudget} onChange={(event) => setAiMonthlyBudget(event.target.value)} style={inputStyle} required />
-          </label>
-        </div>
-      </section>
+      <div style={{ borderRadius: 14, border: '1px solid #dbeafe', background: '#eff6ff', padding: '14px 16px', color: '#1e3a8a', display: 'grid', gap: 6 }}>
+        <strong style={{ fontSize: 14 }}>Beispielrechnung</strong>
+        <span style={{ fontSize: 14 }}>
+          Preis {monthlyPriceValue.toFixed(2)} EUR minus Portalgebühr {fixedPortalFee.toFixed(2)} EUR ergibt
+          {" "}
+          <strong>{partnerNetRevenue.toFixed(2)} EUR</strong>
+          {" "}
+          Erlös für diese Buchung.
+        </span>
+        <span style={{ fontSize: 13, color: '#475569' }}>
+          Der Preis muss mindestens {fixedPortalFee.toFixed(2)} EUR betragen.
+        </span>
+      </div>
 
       <label style={labelStyle}>
-        Notizen
-        <textarea value={notes} onChange={(event) => setNotes(event.target.value)} style={{ ...inputStyle, minHeight: 96 }} />
+        Notiz
+        <textarea
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+          style={{ ...inputStyle, minHeight: 110 }}
+          placeholder="Interne Notiz zur Buchung"
+        />
       </label>
 
-      <button
-        type="submit"
-        disabled={submitting || networkPartners.length === 0 || areas.length === 0 || placementOptions.length === 0}
-        style={{
-          width: 'fit-content',
-          borderRadius: 10,
-          border: '1px solid #0f766e',
-          background: '#0f766e',
-          color: '#fff',
-          padding: '10px 14px',
-          fontWeight: 700,
-          cursor: submitting ? 'not-allowed' : 'pointer',
-          opacity: submitting ? 0.65 : 1,
-        }}
-      >
-        {submitting ? 'Speichert...' : 'Buchung anlegen'}
-      </button>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <button
+          type="submit"
+          disabled={submitting || networkPartners.length === 0 || areas.length === 0 || placementOptions.length === 0 || monthlyPriceValue < fixedPortalFee}
+          style={{
+            width: 'fit-content',
+            borderRadius: 10,
+            border: '1px solid #0f766e',
+            background: '#0f766e',
+            color: '#fff',
+            padding: '10px 14px',
+            fontWeight: 700,
+            cursor: submitting ? 'not-allowed' : 'pointer',
+            opacity: submitting ? 0.65 : 1,
+          }}
+        >
+          {submitting ? 'Speichert...' : (submitLabel ?? (isEditing ? 'Buchung speichern' : 'Buchung anlegen'))}
+        </button>
+        {isEditing && onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              width: 'fit-content',
+              borderRadius: 10,
+              border: '1px solid #cbd5e1',
+              background: '#fff',
+              color: '#334155',
+              padding: '10px 14px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Neue Buchung
+          </button>
+        ) : null}
+      </div>
     </form>
   );
 }

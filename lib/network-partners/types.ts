@@ -129,13 +129,13 @@ export type NetworkPartnerBookingCreateInput = {
   area_id: string;
   placement_code: PlacementCode;
   status?: BookingStatus;
-  starts_at: string;
+  starts_at?: string;
   ends_at?: string | null;
   monthly_price_eur: number;
-  portal_fee_eur: number;
-  billing_cycle_day: number;
-  required_locales: string[];
-  ai_billing_mode: AIBillingMode;
+  portal_fee_eur?: number;
+  billing_cycle_day?: number;
+  required_locales?: string[];
+  ai_billing_mode?: AIBillingMode;
   ai_monthly_budget_eur?: number;
   notes?: string | null;
 };

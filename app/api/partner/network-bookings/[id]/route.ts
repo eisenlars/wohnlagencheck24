@@ -76,6 +76,7 @@ function mapBookingError(error: Error) {
   if (error.message === "FORBIDDEN") return { status: 403, error: "Forbidden" };
   if (error.message === "NOT_FOUND") return { status: 404, error: "Booking not found" };
   if (error.message === "PORTAL_FEE_EXCEEDS_MONTHLY_PRICE") return { status: 400, error: "portal_fee_eur cannot exceed monthly_price_eur" };
+  if (error.message === "MONTHLY_PRICE_BELOW_PORTAL_FEE") return { status: 400, error: "Der Preis muss mindestens 10 EUR betragen." };
   if (error.message === "INVALID_REQUIRED_LOCALES") return { status: 400, error: "required_locales must not be empty" };
   if (error.message === "MISSING_DE_LOCALE") return { status: 400, error: "required_locales must include 'de'" };
   if (error.message === "INVALID_MONTHLY_PRICE_EUR") return { status: 400, error: "monthly_price_eur must be >= 0" };

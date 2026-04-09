@@ -8,6 +8,11 @@ import type {
 } from "@/lib/network-partners/types";
 import { assertPlacementIsActive } from "@/lib/network-partners/repositories/inventory";
 
+const DEFAULT_PORTAL_FEE_EUR = 10;
+const DEFAULT_BILLING_CYCLE_DAY = 1;
+const DEFAULT_REQUIRED_LOCALES = ["de"] as const;
+const DEFAULT_AI_BILLING_MODE: AIBillingMode = "included";
+
 function asText(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -102,6 +107,10 @@ function assertAllowedBookingTransition(current: BookingStatus, next: BookingSta
   }
 }
 
+function defaultStartsAt(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function mapBookingRow(row: Record<string, unknown>): NetworkPartnerBookingRecord {
   return {
     id: asText(row.id),
@@ -155,6 +164,9 @@ export async function assertBookingInputIsConsistent(input: {
   await assertPlacementIsActive(input.placement_code);
   assertValidAmount(input.monthly_price_eur, "monthly_price_eur");
   assertValidAmount(input.portal_fee_eur, "portal_fee_eur");
+  if (input.monthly_price_eur < DEFAULT_PORTAL_FEE_EUR) {
+    throw new Error("MONTHLY_PRICE_BELOW_PORTAL_FEE");
+  }
   if (input.portal_fee_eur > input.monthly_price_eur) {
     throw new Error("PORTAL_FEE_EXCEEDS_MONTHLY_PRICE");
   }
@@ -231,17 +243,20 @@ export async function getBookingByIdForNetworkPartner(
 export async function createBooking(
   input: NetworkPartnerBookingCreateInput,
 ): Promise<NetworkPartnerBookingRecord> {
-  const requiredLocales = normalizeRequiredLocales(input.required_locales);
+  const requiredLocales = normalizeRequiredLocales(input.required_locales ?? [...DEFAULT_REQUIRED_LOCALES]);
+  const monthlyPrice = input.monthly_price_eur;
+  const portalFee = input.portal_fee_eur ?? DEFAULT_PORTAL_FEE_EUR;
+  const billingCycleDay = input.billing_cycle_day ?? DEFAULT_BILLING_CYCLE_DAY;
   await assertBookingInputIsConsistent({
     portal_partner_id: input.portal_partner_id,
     network_partner_id: input.network_partner_id,
     area_id: input.area_id,
     placement_code: input.placement_code,
-    monthly_price_eur: input.monthly_price_eur,
-    portal_fee_eur: input.portal_fee_eur,
+    monthly_price_eur: monthlyPrice,
+    portal_fee_eur: portalFee,
     required_locales: requiredLocales,
   });
-  assertBillingCycleDay(input.billing_cycle_day);
+  assertBillingCycleDay(billingCycleDay);
   assertValidAmount(input.ai_monthly_budget_eur ?? 0, "ai_monthly_budget_eur");
 
   const admin = createAdminClient();
@@ -251,13 +266,13 @@ export async function createBooking(
     area_id: input.area_id,
     placement_code: input.placement_code,
     status: input.status ?? "draft",
-    starts_at: input.starts_at,
+    starts_at: input.starts_at ?? defaultStartsAt(),
     ends_at: asNullableText(input.ends_at),
-    monthly_price_eur: input.monthly_price_eur,
-    portal_fee_eur: input.portal_fee_eur,
-    billing_cycle_day: input.billing_cycle_day,
+    monthly_price_eur: monthlyPrice,
+    portal_fee_eur: portalFee,
+    billing_cycle_day: billingCycleDay,
     required_locales: requiredLocales,
-    ai_billing_mode: input.ai_billing_mode,
+    ai_billing_mode: input.ai_billing_mode ?? DEFAULT_AI_BILLING_MODE,
     ai_monthly_budget_eur: input.ai_monthly_budget_eur ?? 0,
     notes: asNullableText(input.notes),
   };
@@ -290,6 +305,9 @@ export async function updateBooking(
 
   assertValidAmount(nextMonthlyPrice, "monthly_price_eur");
   assertValidAmount(nextPortalFee, "portal_fee_eur");
+  if (nextMonthlyPrice < DEFAULT_PORTAL_FEE_EUR) {
+    throw new Error("MONTHLY_PRICE_BELOW_PORTAL_FEE");
+  }
   if (nextPortalFee > nextMonthlyPrice) {
     throw new Error("PORTAL_FEE_EXCEEDS_MONTHLY_PRICE");
   }

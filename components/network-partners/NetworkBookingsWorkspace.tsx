@@ -45,6 +45,8 @@ export default function NetworkBookingsWorkspace({
   const [bookings, setBookings] = useState<NetworkPartnerBookingRecord[]>([]);
   const [networkPartners, setNetworkPartners] = useState<NetworkPartnerRecord[]>([]);
   const [placements, setPlacements] = useState<PlacementCatalogRecord[]>([]);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [createMode, setCreateMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -95,9 +97,15 @@ export default function NetworkBookingsWorkspace({
         return;
       }
 
-      setBookings(Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : []);
+      const nextBookings = Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : [];
+      setBookings(nextBookings);
       setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
       setPlacements(Array.isArray(bookingsPayload?.placement_catalog) ? bookingsPayload.placement_catalog : []);
+      setCreateMode(nextBookings.length === 0);
+      setSelectedBookingId((current) => {
+        if (current && nextBookings.some((booking) => booking.id === current)) return current;
+        return nextBookings[0]?.id ?? null;
+      });
       setLoading(false);
     }
     void load();
@@ -117,6 +125,47 @@ export default function NetworkBookingsWorkspace({
     [bookings],
   );
 
+  const selectedBooking = useMemo(
+    () => bookings.find((booking) => booking.id === selectedBookingId) ?? null,
+    [bookings, selectedBookingId],
+  );
+
+  async function refreshBookings(preferredBookingId?: string | null) {
+    setLoading(true);
+    const {
+      bookingsResponse,
+      partnersResponse,
+      bookingsPayload,
+      partnersPayload,
+    } = await fetchPageData();
+    if (!bookingsResponse.ok || !partnersResponse.ok) {
+      setBookings([]);
+      setNetworkPartners([]);
+      setPlacements([]);
+      setError(
+        String(
+          bookingsPayload?.error
+          ?? partnersPayload?.error
+          ?? 'Buchungsdaten konnten nicht geladen werden.',
+        ),
+      );
+      setLoading(false);
+      return;
+    }
+
+    const nextBookings = Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : [];
+    setBookings(nextBookings);
+    setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
+    setPlacements(Array.isArray(bookingsPayload?.placement_catalog) ? bookingsPayload.placement_catalog : []);
+    setCreateMode(nextBookings.length === 0);
+    setSelectedBookingId(() => {
+      const preferred = String(preferredBookingId ?? '').trim();
+      if (preferred && nextBookings.some((booking) => booking.id === preferred)) return preferred;
+      return nextBookings[0]?.id ?? null;
+    });
+    setLoading(false);
+  }
+
   return (
     <div style={{ width: '100%', display: 'grid', gap: 18 }}>
       <section style={workflowTopCardStyle}>
@@ -128,7 +177,7 @@ export default function NetworkBookingsWorkspace({
             {networkPartnerId ? `${networkPartnerName ?? 'Netzwerkpartner'}: Buchungen` : 'Buchungen'}
           </h1>
           <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', maxWidth: 760, lineHeight: 1.6 }}>
-            Hier werden Leistungen direkt für Netzwerkpartner gebucht, ohne zusätzlichen Freigabe-Zwischenschritt pro Gebiet.
+            Hier werden Leistungen pro Kreis direkt für Netzwerkpartner gebucht. Soll ein Netzwerkpartner in mehreren Kreisen erscheinen, wird für jeden Kreis eine eigene Buchung angelegt.
           </p>
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', color: '#fff', fontWeight: 700 }}>
             <span>Aktive Buchungen: {activeBookingCount}</span>
@@ -138,72 +187,125 @@ export default function NetworkBookingsWorkspace({
 
       <section style={workflowPanelCardStyle}>
         <div style={workflowHeaderStyle}>
-          <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Neue Buchung anlegen</h2>
+          <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Buchungen verwalten</h2>
           <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Wähle Partner, Gebiet und Leistung. Preise, Laufzeit, Sprache und KI-Nutzung werden direkt in der Buchung festgelegt.
+            Links liegt die Arbeitsliste der bestehenden Buchungen. Rechts wird die ausgewählte Buchung bearbeitet oder über den Button eine neue Buchung angelegt.
           </p>
         </div>
         {message ? <p style={{ margin: 0, color: '#166534', fontWeight: 600 }}>{message}</p> : null}
         {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
-        <BookingForm
-          networkPartners={selectableNetworkPartners}
-          areas={providedAreas}
-          placements={placements}
-          onSubmit={async (values) => {
-            setError(null);
-            setMessage(null);
-            const response = await fetch('/api/partner/network-bookings', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(values),
-            });
-            const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-            if (!response.ok) {
-              setError(String(payload?.error ?? 'Buchung konnte nicht angelegt werden.'));
-              return;
-            }
-            setMessage('Buchung wurde angelegt.');
-            setLoading(true);
-            const {
-              bookingsResponse,
-              partnersResponse,
-              bookingsPayload,
-              partnersPayload,
-            } = await fetchPageData();
-            if (!bookingsResponse.ok || !partnersResponse.ok) {
-              setBookings([]);
-              setNetworkPartners([]);
-              setPlacements([]);
-              setError(
-                String(
-                  bookingsPayload?.error
-                  ?? partnersPayload?.error
-                  ?? 'Buchungsdaten konnten nicht geladen werden.',
-                ),
-              );
-              setLoading(false);
-              return;
-            }
-            setBookings(Array.isArray(bookingsPayload?.bookings) ? bookingsPayload.bookings : []);
-            setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
-            setPlacements(Array.isArray(bookingsPayload?.placement_catalog) ? bookingsPayload.placement_catalog : []);
-            setLoading(false);
-          }}
-        />
-      </section>
-
-      <section style={workflowPanelCardStyle}>
-        <div style={workflowHeaderStyle}>
-          <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>Bestehende Buchungen</h2>
-          <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>
-            Die Liste zeigt alle gebuchten Leistungen im Netzwerkpartner-Geschäft, noch ohne Rechnungs- und Settlement-Historie.
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setCreateMode(true);
+              setSelectedBookingId(null);
+              setMessage(null);
+              setError(null);
+            }}
+            style={{
+              borderRadius: 999,
+              border: '1px solid #0f766e',
+              background: '#0f766e',
+              color: '#fff',
+              padding: '11px 16px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Neue Buchung anlegen
+          </button>
         </div>
-        {loading ? (
-          <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>
-        ) : (
-          <BookingTable bookings={bookings} networkPartners={networkPartners} areas={providedAreas} placements={placements} />
-        )}
+
+        <div
+          style={{
+            display: 'grid',
+            gap: 18,
+            gridTemplateColumns: '320px minmax(0, 1fr)',
+            alignItems: 'start',
+          }}
+        >
+          <section style={{ display: 'grid', gap: 12 }}>
+            <div style={{ display: 'grid', gap: 4 }}>
+              <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Bestehende Buchungen</h3>
+              <p style={{ margin: 0, color: '#64748b', lineHeight: 1.6 }}>
+                Die Liste zeigt den operativen Stand je Leistung und Gebiet.
+              </p>
+            </div>
+            {loading ? (
+              <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>
+            ) : (
+              <BookingTable
+                bookings={bookings}
+                networkPartners={networkPartners}
+                areas={providedAreas}
+                placements={placements}
+                selectedBookingId={selectedBookingId}
+                onSelect={(bookingId) => {
+                  setCreateMode(false);
+                  setSelectedBookingId(bookingId);
+                  setMessage(null);
+                  setError(null);
+                }}
+              />
+            )}
+          </section>
+
+          <section style={{ display: 'grid', gap: 12 }}>
+            <BookingForm
+              networkPartners={selectableNetworkPartners}
+              areas={providedAreas}
+              placements={placements}
+              initialValue={createMode ? null : selectedBooking}
+              submitLabel={createMode ? 'Buchung anlegen' : 'Buchung speichern'}
+              onCancel={createMode ? undefined : () => {
+                setCreateMode(true);
+                setSelectedBookingId(null);
+                setMessage(null);
+                setError(null);
+              }}
+              onSubmit={async (values) => {
+                setError(null);
+                setMessage(null);
+                if (createMode || !selectedBooking) {
+                  const response = await fetch('/api/partner/network-bookings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      ...values,
+                    }),
+                  });
+                  const payload = (await response.json().catch(() => null)) as { error?: string; booking?: NetworkPartnerBookingRecord } | null;
+                  if (!response.ok) {
+                    setError(String(payload?.error ?? 'Buchung konnte nicht angelegt werden.'));
+                    return;
+                  }
+                  setMessage('Buchung wurde angelegt.');
+                  setCreateMode(false);
+                  await refreshBookings(payload?.booking?.id ?? null);
+                  return;
+                }
+
+                const response = await fetch(`/api/partner/network-bookings/${encodeURIComponent(selectedBooking.id)}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    status: values.status,
+                    monthly_price_eur: values.monthly_price_eur,
+                    notes: values.notes,
+                  }),
+                });
+                const payload = (await response.json().catch(() => null)) as { error?: string; booking?: NetworkPartnerBookingRecord } | null;
+                if (!response.ok) {
+                  setError(String(payload?.error ?? 'Buchung konnte nicht gespeichert werden.'));
+                  return;
+                }
+                setMessage('Buchung wurde aktualisiert.');
+                await refreshBookings(payload?.booking?.id ?? selectedBooking.id);
+              }}
+            />
+          </section>
+        </div>
       </section>
     </div>
   );
