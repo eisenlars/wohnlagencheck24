@@ -4,20 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import IntegrationForm from '@/components/network-partners/self-service/IntegrationForm';
 import IntegrationList from '@/components/network-partners/self-service/IntegrationList';
-import IntegrationPreviewPanel from '@/components/network-partners/self-service/IntegrationPreviewPanel';
 import IntegrationSecretsForm from '@/components/network-partners/self-service/IntegrationSecretsForm';
-import IntegrationSyncPanel from '@/components/network-partners/self-service/IntegrationSyncPanel';
 import SyncRunTable from '@/components/network-partners/self-service/SyncRunTable';
-import IntegrationTestPanel from '@/components/network-partners/self-service/IntegrationTestPanel';
-import IntegrationTriggerPanel from '@/components/network-partners/self-service/IntegrationTriggerPanel';
 import NetworkPartnerShell from '@/components/network-partners/self-service/NetworkPartnerShell';
 import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
 import type {
   NetworkPartnerIntegrationSyncRunRecord,
-  NetworkPartnerPreviewSyncResult,
   NetworkPartnerRecord,
   NetworkPartnerRole,
-  NetworkPartnerWriteSyncResult,
 } from '@/lib/network-partners/types';
 
 type IntegrationView = {
@@ -38,18 +32,6 @@ type IntegrationView = {
   has_secret?: boolean;
   has_trigger_token?: boolean;
   has_trigger_secret?: boolean;
-};
-
-type TriggerConfig = {
-  provider: string;
-  token: string | null;
-  webhook_url: string | null;
-  has_secret: boolean;
-  is_configured: boolean;
-  last_received_at: string | null;
-  last_processed_at: string | null;
-  last_status: string | null;
-  events_today: number | null;
 };
 
 type MePayload = {
@@ -77,42 +59,7 @@ type RunsPayload = {
 
 type ActionErrorPayload = { error?: string } | null;
 
-type TestPayload = {
-  ok?: boolean;
-  result?: {
-    status: 'ok' | 'warning' | 'error';
-    message: string;
-    http_status?: number;
-  };
-  diagnostics?: {
-    trace_id?: string;
-    duration_ms?: number;
-    request_count?: number;
-    target_path?: string | null;
-    timeout_ms?: number;
-    provider_http_status?: number | null;
-  };
-  error?: string;
-};
-
-type PreviewPayload = {
-  ok?: boolean;
-  result?: NetworkPartnerPreviewSyncResult;
-  error?: string;
-};
-
-type SyncPayload = {
-  ok?: boolean;
-  result?: NetworkPartnerWriteSyncResult;
-  error?: string;
-};
-
-type TriggerConfigPayload = {
-  ok?: boolean;
-  config?: TriggerConfig;
-  generated_secret?: string | null;
-  error?: string;
-};
+type IntegrationFlowTab = 'basis' | 'zugang' | 'admin';
 
 function findSelectedIntegration(
   integrations: IntegrationView[],
@@ -133,18 +80,9 @@ export default function NetworkPartnerIntegrationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<TestPayload['result'] | null>(null);
-  const [testDiagnostics, setTestDiagnostics] = useState<TestPayload['diagnostics'] | null>(null);
-  const [previewResult, setPreviewResult] = useState<NetworkPartnerPreviewSyncResult | null>(null);
-  const [syncResult, setSyncResult] = useState<NetworkPartnerWriteSyncResult | null>(null);
   const [runs, setRuns] = useState<NetworkPartnerIntegrationSyncRunRecord[]>([]);
-  const [triggerConfig, setTriggerConfig] = useState<TriggerConfig | null>(null);
-  const [triggerLoading, setTriggerLoading] = useState(false);
-  const [generatedTriggerSecret, setGeneratedTriggerSecret] = useState<string | null>(null);
-  const [runningTest, setRunningTest] = useState(false);
-  const [runningPreview, setRunningPreview] = useState(false);
-  const [runningSync, setRunningSync] = useState(false);
   const [llmAllowed, setLlmAllowed] = useState(false);
+  const [integrationFlowTab, setIntegrationFlowTab] = useState<IntegrationFlowTab>('basis');
 
   const loadData = useCallback(async () => {
     const [meResponse, integrationsResponse] = await Promise.all([
@@ -172,8 +110,6 @@ export default function NetworkPartnerIntegrationsPage() {
         setRole(null);
         setIntegrations([]);
         setSelectedIntegrationId(null);
-        setTriggerConfig(null);
-        setGeneratedTriggerSecret(null);
         setError(String(mePayload?.error ?? integrationsPayload?.error ?? 'Integrationen konnten nicht geladen werden.'));
         setLoading(false);
         return;
@@ -241,42 +177,11 @@ export default function NetworkPartnerIntegrationsPage() {
     };
   }, [selectedIntegration?.id]);
 
-  useEffect(() => {
-    let active = true;
-    async function loadTriggerConfig() {
-      if (!selectedIntegration?.id || selectedIntegration.kind !== 'crm') {
-        setTriggerConfig(null);
-        setGeneratedTriggerSecret(null);
-        setTriggerLoading(false);
-        return;
-      }
-      setTriggerLoading(true);
-      const response = await fetch(
-        `/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/trigger-config`,
-        { method: 'GET', cache: 'no-store' },
-      );
-      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
-      const payload = (await response.json().catch(() => null)) as TriggerConfigPayload | null;
-      if (!active) return;
-      if (!response.ok) {
-        setTriggerConfig(null);
-        setTriggerLoading(false);
-        return;
-      }
-      setTriggerConfig(payload?.config ?? null);
-      setTriggerLoading(false);
-    }
-    void loadTriggerConfig();
-    return () => {
-      active = false;
-    };
-  }, [selectedIntegration?.id, selectedIntegration?.kind]);
-
   return (
     <NetworkPartnerShell
       activeSection="integrations"
       title="Anbindungen"
-      description="Hier pflegt der Netzwerkpartner eigene CRM- und LLM-Anbindungen. CRM nutzt Test, Preview und Sync, LLM konzentriert sich auf Provider, Secrets und Verbindungstest."
+      description="Hier pflegt der Netzwerkpartner eigene CRM- und LLM-Anbindungen. Die operative Prüfung und Synchronisation erfolgt danach zentral im Admin."
     >
       {networkPartner ? (
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', color: '#334155' }}>
@@ -289,6 +194,15 @@ export default function NetworkPartnerIntegrationsPage() {
       {loading ? <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p> : null}
 
       <div style={{ display: 'grid', gap: 18 }}>
+        <section style={{ border: '1px solid #dbeafe', borderRadius: 16, background: '#eff6ff', padding: 18, display: 'grid', gap: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+            Anbindung in 3 Schritten
+          </div>
+          <div style={{ color: '#0f172a', fontSize: 15, lineHeight: 1.7 }}>
+            1. Provider und Basisdaten speichern. 2. Zugangsdaten hinterlegen. 3. Der Admin prüft die Verbindung und startet Preview bzw. produktiven Sync.
+          </div>
+        </section>
+
         <section style={{ display: 'grid', gap: 12 }}>
           <IntegrationForm
             title="Neue Integration anlegen"
@@ -319,6 +233,7 @@ export default function NetworkPartnerIntegrationsPage() {
               }
               const nextSelectedId = payload?.integration?.id ?? null;
               await reloadIntegrations(nextSelectedId);
+              setIntegrationFlowTab('zugang');
               setMessage('Integration wurde angelegt.');
             }}
           />
@@ -332,13 +247,9 @@ export default function NetworkPartnerIntegrationsPage() {
             selectedIntegrationId={selectedIntegrationId}
             onSelect={(integrationId) => {
               setSelectedIntegrationId(integrationId);
+              setIntegrationFlowTab('basis');
               setMessage(null);
               setError(null);
-              setTestResult(null);
-              setTestDiagnostics(null);
-              setPreviewResult(null);
-              setSyncResult(null);
-              setGeneratedTriggerSecret(null);
             }}
             onDelete={async (integrationId) => {
               if (!canManage) return;
@@ -355,22 +266,41 @@ export default function NetworkPartnerIntegrationsPage() {
               }
               await reloadIntegrations(integrationId === selectedIntegrationId ? null : selectedIntegrationId);
               setMessage('Integration wurde gelöscht.');
-              setTestResult(null);
-              setTestDiagnostics(null);
-              setPreviewResult(null);
-              setSyncResult(null);
-              setGeneratedTriggerSecret(null);
             }}
           />
         </section>
 
         {selectedIntegration ? (
           <section style={{ display: 'grid', gap: 18 }}>
-            <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-              <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setIntegrationFlowTab('basis')}
+                style={flowTabStyle(integrationFlowTab === 'basis')}
+              >
+                1. Basisdaten
+              </button>
+              <button
+                type="button"
+                onClick={() => setIntegrationFlowTab('zugang')}
+                style={flowTabStyle(integrationFlowTab === 'zugang')}
+              >
+                2. Zugangsdaten
+              </button>
+              <button
+                type="button"
+                onClick={() => setIntegrationFlowTab('admin')}
+                style={flowTabStyle(integrationFlowTab === 'admin')}
+              >
+                3. Admin-Freigabe & Status
+              </button>
+            </div>
+
+            {integrationFlowTab === 'basis' ? (
+              <article style={flowCardStyle}>
                 <IntegrationForm
                   title="Integration bearbeiten"
-                  submitLabel="Integration speichern"
+                  submitLabel="Basisdaten speichern"
                   disabled={!canManage}
                   initialValue={selectedIntegration}
                   llmAllowed={llmAllowed}
@@ -397,12 +327,15 @@ export default function NetworkPartnerIntegrationsPage() {
                       return;
                     }
                     await reloadIntegrations(selectedIntegration.id);
-                    setMessage('Integration wurde aktualisiert.');
+                    setIntegrationFlowTab('zugang');
+                    setMessage('Basisdaten wurden gespeichert. Hinterlege jetzt die Zugangsdaten.');
                   }}
                 />
               </article>
+            ) : null}
 
-              <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
+            {integrationFlowTab === 'zugang' ? (
+              <article style={flowCardStyle}>
                 <IntegrationSecretsForm
                   integration={selectedIntegration}
                   disabled={!canManage}
@@ -421,177 +354,101 @@ export default function NetworkPartnerIntegrationsPage() {
                       return;
                     }
                     await reloadIntegrations(selectedIntegration.id);
-                    setMessage('Secrets wurden gespeichert.');
-                  }}
-                />
-              </article>
-            </div>
-
-            {selectedIntegration.kind === 'crm' ? (
-              <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-                <IntegrationTriggerPanel
-                  config={triggerConfig}
-                  generatedSecret={generatedTriggerSecret}
-                  disabled={!canManage}
-                  loading={triggerLoading}
-                  onGenerate={async () => {
-                    setTriggerLoading(true);
-                    setError(null);
-                    setMessage(null);
-                    try {
-                      const response = await fetch(
-                        `/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/trigger-config`,
-                        { method: 'POST' },
-                      );
-                      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
-                      const payload = (await response.json().catch(() => null)) as TriggerConfigPayload | null;
-                      if (!response.ok) {
-                        setError(String(payload?.error ?? 'Trigger-Konfiguration konnte nicht gespeichert werden.'));
-                        return;
-                      }
-                      setTriggerConfig(payload?.config ?? null);
-                      setGeneratedTriggerSecret(payload?.generated_secret ?? null);
-                      await reloadIntegrations(selectedIntegration.id);
-                      setMessage('Automatische Aktualisierung wurde aktualisiert.');
-                    } finally {
-                      setTriggerLoading(false);
-                    }
+                    setIntegrationFlowTab('admin');
+                    setMessage('Zugangsdaten wurden gespeichert. Der Admin kann die Verbindung jetzt testen und synchronisieren.');
                   }}
                 />
               </article>
             ) : null}
 
-            <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-              <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-                <IntegrationTestPanel
-                  disabled={!canManage}
-                  running={runningTest}
-                  result={testResult ?? null}
-                  diagnostics={testDiagnostics ?? null}
-                  onRun={async () => {
-                    setRunningTest(true);
-                    setError(null);
-                    setMessage(null);
-                    try {
-                      const response = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/test`, {
-                        method: 'POST',
-                      });
-                      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
-                      const payload = (await response.json().catch(() => null)) as TestPayload | null;
-                      if (!response.ok) {
-                        setError(String(payload?.error ?? 'Verbindungstest fehlgeschlagen.'));
-                        return;
-                      }
-                      setTestResult(payload?.result ?? null);
-                      setTestDiagnostics(payload?.diagnostics ?? null);
-                      await reloadIntegrations(selectedIntegration.id);
-                      const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
-                      if (redirectIfUnauthorizedResponse(runsResponse, 'network_partner')) return;
-                      const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
-                      if (runsResponse.ok) {
-                        setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
-                      }
-                      setMessage('Verbindungstest abgeschlossen.');
-                    } finally {
-                      setRunningTest(false);
-                    }
-                  }}
-                />
-              </article>
-
-              {selectedIntegration.kind === 'crm' ? (
-                <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-                  <IntegrationPreviewPanel
-                    disabled={!canManage}
-                    running={runningPreview}
-                    result={previewResult}
-                    onRun={async (values) => {
-                      setRunningPreview(true);
-                      setError(null);
-                      setMessage(null);
-                      try {
-                        const response = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/preview-sync`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify(values),
-                        });
-                        if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
-                        const payload = (await response.json().catch(() => null)) as PreviewPayload | null;
-                        if (!response.ok) {
-                          setError(String(payload?.error ?? 'Preview-Sync fehlgeschlagen.'));
-                          return;
-                        }
-                        setPreviewResult(payload?.result ?? null);
-                        await reloadIntegrations(selectedIntegration.id);
-                        const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
-                        if (redirectIfUnauthorizedResponse(runsResponse, 'network_partner')) return;
-                        const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
-                        if (runsResponse.ok) {
-                          setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
-                        }
-                        setMessage('Preview-Sync abgeschlossen.');
-                      } finally {
-                        setRunningPreview(false);
-                      }
-                    }}
-                  />
+            {integrationFlowTab === 'admin' ? (
+              <div style={{ display: 'grid', gap: 18 }}>
+                <article style={flowCardStyle}>
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Admin-Freigabe & Status</h3>
+                    <p style={{ margin: 0, color: '#475569', lineHeight: 1.7 }}>
+                      Verbindungstest, Preview und produktiver Sync werden für diese Anbindung zentral im Admin ausgelöst. Du pflegst hier nur Provider, Basisdaten und Zugangsdaten.
+                    </p>
+                    <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+                      <div style={statusCardStyle}>
+                        <div style={statusLabelStyle}>Letzter Verbindungstest</div>
+                        <div style={statusValueStyle}>{formatDateTime(selectedIntegration.last_test_at)}</div>
+                      </div>
+                      <div style={statusCardStyle}>
+                        <div style={statusLabelStyle}>Letzter Preview-Sync</div>
+                        <div style={statusValueStyle}>{formatDateTime(selectedIntegration.last_preview_sync_at)}</div>
+                      </div>
+                      <div style={statusCardStyle}>
+                        <div style={statusLabelStyle}>Letzter produktiver Sync</div>
+                        <div style={statusValueStyle}>{formatDateTime(selectedIntegration.last_sync_at)}</div>
+                      </div>
+                    </div>
+                  </div>
                 </article>
-              ) : (
-                <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#f8fafc', color: '#475569', lineHeight: 1.6 }}>
-                  LLM-Anbindungen benötigen keinen Preview-Sync. Hier stehen nur Provider, Secrets und Verbindungstest im Fokus.
-                </article>
-              )}
-            </div>
 
-            {selectedIntegration.kind === 'crm' ? (
-              <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-                <IntegrationSyncPanel
-                  disabled={!canManage}
-                  running={runningSync}
-                  result={syncResult}
-                  onRun={async (values) => {
-                    setRunningSync(true);
-                    setError(null);
-                    setMessage(null);
-                    try {
-                      const response = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/sync`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(values),
-                      });
-                      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
-                      const payload = (await response.json().catch(() => null)) as SyncPayload | null;
-                      if (!response.ok) {
-                        setError(String(payload?.error ?? 'Sync fehlgeschlagen.'));
-                        return;
-                      }
-                      setSyncResult(payload?.result ?? null);
-                      await reloadIntegrations(selectedIntegration.id);
-                      const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
-                      if (redirectIfUnauthorizedResponse(runsResponse, 'network_partner')) return;
-                      const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
-                      if (runsResponse.ok) {
-                        setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
-                      }
-                      setMessage('Produktiver Sync abgeschlossen.');
-                    } finally {
-                      setRunningSync(false);
-                    }
-                  }}
-                />
-              </article>
+                <article style={flowCardStyle}>
+                  <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Letzte Läufe</h3>
+                  <p style={{ margin: 0, color: '#64748b' }}>
+                    Persistente Historie der vom Admin ausgelösten Tests, Previews und Syncs.
+                  </p>
+                  <SyncRunTable runs={runs} />
+                </article>
+              </div>
             ) : null}
-
-            <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff', display: 'grid', gap: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Letzte Läufe</h3>
-              <p style={{ margin: 0, color: '#64748b' }}>
-                Persistente Historie für Test, Preview und produktive Syncs.
-              </p>
-              <SyncRunTable runs={runs} />
-            </article>
           </section>
         ) : null}
       </div>
     </NetworkPartnerShell>
   );
 }
+
+function formatDateTime(value: string | null): string {
+  if (!value) return 'Noch keiner';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString('de-DE');
+}
+
+const flowCardStyle: React.CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: 14,
+  padding: 16,
+  background: '#fff',
+  display: 'grid',
+  gap: 14,
+};
+
+const flowTabStyle = (active: boolean): React.CSSProperties => ({
+  border: active ? '1px solid #1d4ed8' : '1px solid #cbd5e1',
+  borderRadius: 999,
+  background: active ? '#dbeafe' : '#fff',
+  color: active ? '#1d4ed8' : '#334155',
+  padding: '10px 14px',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+});
+
+const statusCardStyle: React.CSSProperties = {
+  border: '1px solid #dbeafe',
+  borderRadius: 12,
+  background: '#f8fbff',
+  padding: 14,
+  minHeight: 88,
+  display: 'grid',
+  gap: 6,
+};
+
+const statusLabelStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  color: '#64748b',
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
+};
+
+const statusValueStyle: React.CSSProperties = {
+  color: '#0f172a',
+  fontSize: 14,
+  fontWeight: 700,
+  lineHeight: 1.5,
+};

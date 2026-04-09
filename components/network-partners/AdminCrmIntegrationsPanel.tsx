@@ -103,6 +103,7 @@ type IntegrationRecord = {
   id: string;
   provider: string;
   is_active: boolean;
+  last_test_at?: string | null;
 };
 
 type OnOfficeFieldOption = {
@@ -123,6 +124,7 @@ type AdminCrmIntegrationsPanelProps = {
   onActiveResourceChange: (resource: CrmResourceKey) => void;
   onDraftChange: (nextDraft: CrmIntegrationAdminDraft) => void;
   onSaveSettings: (integrationId: string, draft: CrmIntegrationAdminDraft) => void;
+  onTest?: (integrationId: string) => void;
   onPreview: (integrationId: string, resource: CrmResourceKey) => void;
   onSync: (integrationId: string, resource: CrmResourceKey, mode: "guarded" | "full") => void;
   onCancelSync: (integrationId: string, resource: CrmResourceKey) => void;
@@ -788,6 +790,7 @@ export default function AdminCrmIntegrationsPanel({
   onActiveResourceChange,
   onDraftChange,
   onSaveSettings,
+  onTest,
   onPreview,
   onSync,
   onCancelSync,
@@ -896,9 +899,9 @@ export default function AdminCrmIntegrationsPanel({
               <div style={{ ...statusCardValueStyle, color: statusColor }}>{getStatusLabel(syncSummary)}</div>
             </div>
             <div style={statusCardStyle}>
-              <div style={statusCardLabelStyle}>Letzter Test</div>
-              <div style={{ ...statusCardValueStyle, color: previewStatusColor }}>
-                {formatAdminDateTime(previewSummary?.testedAt)}
+              <div style={statusCardLabelStyle}>Letzter Verbindungstest</div>
+              <div style={statusCardValueStyle}>
+                {formatAdminDateTime(integration.last_test_at)}
               </div>
             </div>
             <div style={statusCardStyle}>
@@ -983,6 +986,16 @@ export default function AdminCrmIntegrationsPanel({
             </div>
           ) : null}
           <div style={actionRowStyle}>
+            {onTest ? (
+              <button
+                type="button"
+                style={btnGhostStyle}
+                disabled={busy || !integration.is_active || anotherSyncRunning}
+                onClick={() => onTest(integration.id)}
+              >
+                Verbindung testen
+              </button>
+            ) : null}
             <button
               type="button"
               style={btnGhostStyle}

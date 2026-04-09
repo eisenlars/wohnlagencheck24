@@ -8884,7 +8884,7 @@ export default function AdminClient() {
                                     <div style={{ marginTop: 14 }}>
                                       {row.rowType === "llm_policy" ? (
                                         <div style={{ padding: 14, border: "1px solid #e2e8f0", borderRadius: 10, background: "#f8fafc", color: "#334155", lineHeight: 1.6 }}>
-                                          Diese Anbindungsart steuert, ob der Netzwerkpartner eigene LLM-Anbindungen nutzen darf. Die Einrichtung der eigenen Keys sollte spaeter im Netzwerkpartner-Dashboard erfolgen.
+                                          Diese Anbindungsart steuert, ob der Netzwerkpartner eigene LLM-Anbindungen nutzen darf. Provider und Zugangsdaten pflegt der Netzwerkpartner selbst, Verbindungstest und operative Nutzung bleiben zentral im Admin.
                                         </div>
                                       ) : isCrmIntegration && integration && draft ? (
                                         <AdminCrmIntegrationsPanel
@@ -8912,6 +8912,14 @@ export default function AdminClient() {
                                               await api(`/api/admin/network-integrations/${integrationId}`, {
                                                 method: "PATCH",
                                                 body: JSON.stringify({ settings }),
+                                              });
+                                              await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                            })
+                                          }
+                                          onTest={(integrationId) =>
+                                            run(`${integration.provider} Verbindung testen`, async () => {
+                                              await api(`/api/admin/network-integrations/${integrationId}/test`, {
+                                                method: "POST",
                                               });
                                               await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
                                             })
