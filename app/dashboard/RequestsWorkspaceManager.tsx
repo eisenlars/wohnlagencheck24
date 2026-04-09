@@ -513,7 +513,6 @@ export default function RequestsWorkspaceManager(props: Props) {
               <input
                 value={value}
                 onChange={(event) => updateField(key, event.target.value)}
-                onBlur={() => void saveOverride()}
                 style={inputStyle}
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
@@ -521,7 +520,6 @@ export default function RequestsWorkspaceManager(props: Props) {
               <textarea
                 value={value}
                 onChange={(event) => updateField(key, event.target.value)}
-                onBlur={() => void saveOverride()}
                 style={textareaStyle}
                 placeholder={options?.placeholder ?? 'Inhalt bearbeiten...'}
               />
