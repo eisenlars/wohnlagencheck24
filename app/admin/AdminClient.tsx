@@ -218,6 +218,18 @@ type IntegrationPreviewSummary = {
   traceId?: string | null;
 };
 
+type IntegrationConnectionTestSummary = {
+  status: "ok" | "warning" | "error";
+  message: string;
+  testedAt?: string | null;
+  traceId?: string | null;
+  targetPath?: string | null;
+  requestCount?: number | null;
+  timeoutMs?: number | null;
+  step?: string | null;
+  log?: SyncLogPayload[];
+};
+
 type CrmSyncWarningBox = {
   title: string;
   cause: string;
@@ -1649,6 +1661,8 @@ function readSyncSummaryFromIntegration(
 ): IntegrationSyncSummary | null {
   const settings = asObject(integration.settings);
   const runtime = readCrmRuntime(settings, resource);
+  const fallbackSummary = asObject(settings.last_sync_summary);
+  const fallbackResource = asText(fallbackSummary.resource);
   const state = String(runtime.sync_state ?? "").trim().toLowerCase();
   const lastSyncAt = asText(integration.last_sync_at);
   const hasRuntimeData =
@@ -1657,8 +1671,15 @@ function readSyncSummaryFromIntegration(
     || Boolean(asText(runtime.sync_started_at))
     || Boolean(asText(runtime.sync_finished_at))
     || Array.isArray(runtime.sync_log);
-  if (resource !== "all" && !hasRuntimeData) return null;
-  if (resource === "all" && !state && !lastSyncAt) return null;
+  const hasFallbackData =
+    (resource === "all" || fallbackResource === resource || fallbackResource === "all")
+    || Boolean(asText(fallbackSummary.mode))
+    || typeof fallbackSummary.created_count === "number"
+    || typeof fallbackSummary.updated_count === "number"
+    || typeof fallbackSummary.skipped_count === "number"
+    || typeof fallbackSummary.error_count === "number";
+  if (resource !== "all" && !hasRuntimeData && !hasFallbackData) return null;
+  if (resource === "all" && !state && !lastSyncAt && !hasFallbackData) return null;
 
   const result = (runtime.sync_result ?? null) as CrmSyncResultPayload | null;
   const rawMessage = String(runtime.sync_message ?? "").trim();
@@ -1674,7 +1695,40 @@ function readSyncSummaryFromIntegration(
     ? formatSyncResultMessage(result)
     : state === "running"
       ? "CRM-Synchronisierung läuft..."
-      : "CRM-Synchronisierung";
+      : hasFallbackData
+        ? [
+            typeof fallbackSummary.created_count === "number" ? `${fallbackSummary.created_count} erstellt` : null,
+            typeof fallbackSummary.updated_count === "number" ? `${fallbackSummary.updated_count} aktualisiert` : null,
+            typeof fallbackSummary.skipped_count === "number" ? `${fallbackSummary.skipped_count} übersprungen` : null,
+            typeof fallbackSummary.error_count === "number" && fallbackSummary.error_count > 0 ? `${fallbackSummary.error_count} Fehler` : null,
+          ].filter(Boolean).join(" · ") || "CRM-Synchronisierung"
+        : "CRM-Synchronisierung";
+  const fallbackPreviewCounts = asObject(fallbackSummary.preview_counts);
+  const derivedResult =
+    result
+    ?? (hasFallbackData
+      ? {
+          raw_offers_count: 0,
+          references_count:
+            fallbackResource === "references"
+              ? asNumber(fallbackPreviewCounts.total) ?? 0
+              : 0,
+          requests_count:
+            fallbackResource === "requests"
+              ? asNumber(fallbackPreviewCounts.total) ?? 0
+              : 0,
+          offers_count:
+            fallbackResource === "offers"
+              ? asNumber(fallbackPreviewCounts.total) ?? 0
+              : 0,
+          deactivated_raw_offers: 0,
+          deactivated_offers: 0,
+          skipped: false,
+          notes: Array.isArray(fallbackSummary.notes)
+            ? fallbackSummary.notes.filter((item): item is string => typeof item === "string")
+            : undefined,
+        } satisfies CrmSyncResultPayload
+      : null);
   const message =
     staleRunningMessage
     || (isHistoricalOperatorNotice ? "" : rawMessage)
@@ -1686,27 +1740,34 @@ function readSyncSummaryFromIntegration(
         ? "warning"
         : state === "running"
         ? "running"
+        : hasFallbackData
+          ? ((asNumber(fallbackSummary.error_count) ?? 0) > 0 ? "warning" : "ok")
         : state === "success"
           ? "ok"
           : state === "error"
           ? "error"
             : "warning",
     resource,
-    mode: runtime.sync_mode === "full" || runtime.sync_mode === "guarded" ? runtime.sync_mode : null,
+    mode:
+      runtime.sync_mode === "full" || runtime.sync_mode === "guarded"
+        ? runtime.sync_mode
+        : fallbackSummary.mode === "full" || fallbackSummary.mode === "guarded"
+          ? fallbackSummary.mode
+          : null,
     message,
     startedAt: asText(runtime.sync_started_at),
-    finishedAt: asText(runtime.sync_finished_at),
+    finishedAt: asText(runtime.sync_finished_at) ?? lastSyncAt,
     lastSyncAt,
     errorClass: isHistoricalOperatorNotice ? null : errorClass,
-    requestCount: typeof runtime.sync_request_count === "number" ? runtime.sync_request_count : null,
-    pagesFetched: typeof runtime.sync_pages_fetched === "number" ? runtime.sync_pages_fetched : null,
+    requestCount: asNumber(runtime.sync_request_count) ?? asNumber(asObject(fallbackSummary.diagnostics).provider_request_count),
+    pagesFetched: asNumber(runtime.sync_pages_fetched) ?? asNumber(asObject(fallbackSummary.diagnostics).provider_pages_fetched),
     traceId: asText(runtime.sync_trace_id),
     step: asText(runtime.sync_step),
     heartbeatAt: asText(runtime.sync_heartbeat_at),
     deadlineAt: asText(runtime.sync_deadline_at),
     cancelRequested: runtime.sync_cancel_requested === true,
     log: Array.isArray(runtime.sync_log) ? (runtime.sync_log as SyncLogPayload[]) : [],
-    result,
+    result: derivedResult,
   };
 }
 
@@ -1716,20 +1777,62 @@ function readPreviewSummaryFromIntegration(
 ): IntegrationPreviewSummary | null {
   const settings = asObject(integration.settings);
   const runtime = readCrmPreviewRuntime(settings, resource);
+  const fallbackSummary = asObject(settings.last_preview_sync_summary);
   const status = String(runtime.last_preview_status ?? "").trim().toLowerCase();
   const message = asText(runtime.last_preview_message);
   const testedAt = asText(runtime.last_preview_finished_at) ?? asText(runtime.last_previewed_at);
-  if (resource !== "all" && !status && !message && !testedAt) return null;
-  if (!status && !message && !testedAt) return null;
+  const fallbackResource = asText(fallbackSummary.resource);
+  const fallbackCounts = asObject(fallbackSummary.counts);
+  const fallbackDiagnostics = asObject(fallbackSummary.diagnostics);
+  const hasFallbackData =
+    (resource === "all" || fallbackResource === resource || fallbackResource === "all")
+    || typeof fallbackCounts.total === "number"
+    || Array.isArray(fallbackSummary.notes)
+    || Boolean(integration.last_preview_sync_at);
+  if (resource !== "all" && !status && !message && !testedAt && !hasFallbackData) return null;
+  if (!status && !message && !testedAt && !hasFallbackData) return null;
+  const fallbackMessage = [
+    typeof fallbackCounts.total === "number" ? `${fallbackCounts.total} Elemente im Abruf-Test` : null,
+    typeof fallbackDiagnostics.provider_request_count === "number" ? `${fallbackDiagnostics.provider_request_count} Requests` : null,
+    Array.isArray(fallbackSummary.notes) && typeof fallbackSummary.notes[0] === "string" ? fallbackSummary.notes[0] : null,
+  ].filter(Boolean).join(" · ");
   return {
     status:
       status === "ok" || status === "warning" || status === "error"
         ? (status as IntegrationPreviewSummary["status"])
-        : "warning",
-    resource,
-    message: message ?? "Kein CRM-Abruf-Test protokolliert.",
-    testedAt,
+        : "ok",
+    resource:
+      fallbackResource === "offers" || fallbackResource === "references" || fallbackResource === "requests" || fallbackResource === "all"
+        ? fallbackResource
+        : resource,
+    message: message ?? fallbackMessage || "Kein CRM-Abruf-Test protokolliert.",
+    testedAt: testedAt ?? integration.last_preview_sync_at,
     traceId: asText(runtime.last_preview_trace_id),
+  };
+}
+
+function readConnectionTestSummaryFromIntegration(
+  integration: Integration,
+): IntegrationConnectionTestSummary | null {
+  const settings = asObject(integration.settings);
+  const testedAt = asText(settings.last_test_finished_at) ?? asText(settings.last_tested_at) ?? asText(integration.last_test_at);
+  const message = asText(settings.last_test_message);
+  const status = asText(settings.last_test_status);
+  const log = Array.isArray(settings.last_test_log) ? (settings.last_test_log as SyncLogPayload[]) : [];
+  if (!testedAt && !message && log.length === 0) return null;
+  return {
+    status:
+      status === "ok" || status === "warning" || status === "error"
+        ? (status as IntegrationConnectionTestSummary["status"])
+        : "warning",
+    message: message ?? "Kein Verbindungstest protokolliert.",
+    testedAt,
+    traceId: asText(settings.last_test_trace_id),
+    targetPath: asText(settings.last_test_target_path),
+    requestCount: asNumber(settings.last_test_request_count),
+    timeoutMs: asNumber(settings.last_test_timeout_ms),
+    step: asText(settings.last_test_step),
+    log,
   };
 }
 
@@ -8585,6 +8688,7 @@ export default function AdminClient() {
               const globalSyncSummary = integration && isCrmIntegration ? readSyncSummaryFromIntegration(integration, "all") : null;
               const resourceSyncSummary = integration && isCrmIntegration ? readSyncSummaryFromIntegration(integration, activeResourceKey) : null;
               const resourcePreviewSummary = integration && isCrmIntegration ? readPreviewSummaryFromIntegration(integration, activeResourceKey) : null;
+              const connectionTestSummary = integration && isCrmIntegration ? readConnectionTestSummaryFromIntegration(integration) : null;
               const syncWarning = integration && isCrmIntegration ? buildCrmSyncWarning(resourceSyncSummary) : null;
               const isExpanded = expandedCrmIntegrationId === row.id;
               const isRunningThisResource = resourceSyncSummary?.status === "running";
@@ -8747,6 +8851,7 @@ export default function AdminClient() {
                                 })
                               }
                               busy={busy}
+                              connectionTestSummary={connectionTestSummary}
                               syncSummary={resourceSyncSummary}
                               previewSummary={resourcePreviewSummary}
                               anotherSyncRunning={Boolean(anotherSyncRunning)}
@@ -8838,6 +8943,7 @@ export default function AdminClient() {
                           const globalSyncSummary = integration && isCrmIntegration ? readSyncSummaryFromIntegration(integration, "all") : null;
                           const resourceSyncSummary = integration && isCrmIntegration ? readSyncSummaryFromIntegration(integration, activeResourceKey) : null;
                           const resourcePreviewSummary = integration && isCrmIntegration ? readPreviewSummaryFromIntegration(integration, activeResourceKey) : null;
+                          const connectionTestSummary = integration && isCrmIntegration ? readConnectionTestSummaryFromIntegration(integration) : null;
                           const syncWarning = integration && isCrmIntegration ? buildCrmSyncWarning(resourceSyncSummary) : null;
                           const isExpanded = expandedNetworkCrmIntegrationId === row.id;
                           const isRunningThisResource = resourceSyncSummary?.status === "running";
@@ -9027,6 +9133,7 @@ export default function AdminClient() {
                                           }
                                           busy={busy}
                                           actionError={networkIntegrationActionErrors[integration.id] ?? null}
+                                          connectionTestSummary={connectionTestSummary}
                                           syncSummary={resourceSyncSummary}
                                           previewSummary={resourcePreviewSummary}
                                           anotherSyncRunning={Boolean(anotherSyncRunning)}

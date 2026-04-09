@@ -51,6 +51,18 @@ type IntegrationPreviewSummary = {
   traceId?: string | null;
 };
 
+type IntegrationConnectionTestSummary = {
+  status: "ok" | "warning" | "error";
+  message: string;
+  testedAt?: string | null;
+  traceId?: string | null;
+  targetPath?: string | null;
+  requestCount?: number | null;
+  timeoutMs?: number | null;
+  step?: string | null;
+  log?: SyncLogPayload[];
+};
+
 type CrmSyncWarningBox = {
   title: string;
   cause: string;
@@ -130,13 +142,14 @@ type AdminCrmIntegrationsPanelProps = {
   onCancelSync: (integrationId: string, resource: CrmResourceKey) => void;
   busy: boolean;
   actionError?: string | null;
+  connectionTestSummary?: IntegrationConnectionTestSummary | null;
   syncSummary: IntegrationSyncSummary | null;
   previewSummary: IntegrationPreviewSummary | null;
   anotherSyncRunning: boolean;
   syncWarning: CrmSyncWarningBox | null;
 };
 
-type DetailModalState = "preview" | "sync" | null;
+type DetailModalState = "connection" | "preview" | "sync" | null;
 
 const resourceKeys: CrmResourceKey[] = ["offers", "references", "requests"];
 
@@ -797,6 +810,7 @@ export default function AdminCrmIntegrationsPanel({
   onCancelSync,
   busy,
   actionError = null,
+  connectionTestSummary = null,
   syncSummary,
   previewSummary,
   anotherSyncRunning,
@@ -1053,11 +1067,19 @@ export default function AdminCrmIntegrationsPanel({
           <div style={detailLinkRowStyle}>
             <button
               type="button"
+              style={detailLinkStyle(Boolean(connectionTestSummary))}
+              disabled={!connectionTestSummary}
+              onClick={() => setDetailModal("connection")}
+            >
+              Verbindungstest Details
+            </button>
+            <button
+              type="button"
               style={detailLinkStyle(Boolean(previewSummary))}
               disabled={!previewSummary}
               onClick={() => setDetailModal("preview")}
             >
-              Test Details
+              Abruf-Test Details
             </button>
             <button
               type="button"
@@ -1070,6 +1092,48 @@ export default function AdminCrmIntegrationsPanel({
           </div>
         </section>
       </div>
+
+      {detailModal === "connection" && connectionTestSummary ? (
+        <div role="dialog" aria-modal="true" style={modalOverlayStyle} onClick={() => setDetailModal(null)}>
+          <div style={modalCardStyle} onClick={(event) => event.stopPropagation()}>
+            <div style={modalTitleStyle}>Letzter Verbindungstest</div>
+            <div style={modalBodyStyle}>
+              <p style={modalParagraphStyle}>{connectionTestSummary.message}</p>
+              <p style={modalParagraphStyle}>Zuletzt getestet: {formatAdminDateTime(connectionTestSummary.testedAt)}</p>
+              {connectionTestSummary.step ? (
+                <p style={modalParagraphStyle}>Letzter Schritt: {connectionTestSummary.step}</p>
+              ) : null}
+              {connectionTestSummary.targetPath ? (
+                <p style={{ ...modalParagraphStyle, wordBreak: "break-all" }}>Zielpfad: {connectionTestSummary.targetPath}</p>
+              ) : null}
+              {typeof connectionTestSummary.requestCount === "number" ? (
+                <p style={modalParagraphStyle}>Requests: {connectionTestSummary.requestCount}</p>
+              ) : null}
+              {typeof connectionTestSummary.timeoutMs === "number" ? (
+                <p style={modalParagraphStyle}>Timeout: {connectionTestSummary.timeoutMs} ms</p>
+              ) : null}
+              {connectionTestSummary.traceId ? (
+                <p style={{ ...modalParagraphStyle, wordBreak: "break-all" }}>Trace-ID: {connectionTestSummary.traceId}</p>
+              ) : null}
+              {Array.isArray(connectionTestSummary.log) && connectionTestSummary.log.length > 0 ? (
+                <div style={modalSectionStyle}>
+                  <div style={modalSectionTitleStyle}>Test-Log</div>
+                  {connectionTestSummary.log.slice(-8).map((entry, index) => (
+                    <p key={`${entry.at ?? "test"}-${entry.step ?? "step"}-${index}`} style={modalParagraphStyle}>
+                      {entry.at ? new Date(entry.at).toLocaleTimeString("de-DE") : "--:--:--"} · {entry.step ?? "step"} · {entry.message ?? ""}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div style={modalFooterStyle}>
+              <button type="button" style={btnGhostStyle} onClick={() => setDetailModal(null)}>
+                Schließen
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {detailModal === "preview" && previewSummary ? (
         <div role="dialog" aria-modal="true" style={modalOverlayStyle} onClick={() => setDetailModal(null)}>
