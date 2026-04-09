@@ -1597,6 +1597,43 @@ function readCrmPreviewRuntime(settings: Record<string, unknown>, resource: "all
   return asObject(runtimes[resource]);
 }
 
+function asIsoMs(value: unknown): number | null {
+  const text = asText(value);
+  if (!text) return null;
+  const parsed = new Date(text).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getCrmSyncTimeoutMs(settings: Record<string, unknown>): number {
+  const raw = asNumber(settings.sync_timeout_ms);
+  if (raw === null) return 300_000;
+  return Math.min(300_000, Math.max(15_000, raw));
+}
+
+function getStaleRunningMessage(settings: Record<string, unknown>): string | null {
+  const state = String(settings.sync_state ?? "").trim().toLowerCase();
+  if (state !== "running") return null;
+
+  const now = Date.now();
+  const timeoutMs = getCrmSyncTimeoutMs(settings);
+  const staleHeartbeatMs = 20_000;
+  const staleGraceMs = 15_000;
+  const deadlineAt = asIsoMs(settings.sync_deadline_at);
+  const heartbeatAt = asIsoMs(settings.sync_heartbeat_at);
+  const startedAt = asIsoMs(settings.sync_started_at);
+
+  if (deadlineAt && deadlineAt < now) {
+    return "CRM-Synchronisierung wegen Zeitlimit automatisch beendet.";
+  }
+  if (heartbeatAt && heartbeatAt < now - staleHeartbeatMs) {
+    return "CRM-Synchronisierung wegen fehlendem Heartbeat automatisch beendet.";
+  }
+  if (startedAt && startedAt < now - (timeoutMs + staleGraceMs)) {
+    return "CRM-Synchronisierung wegen veraltetem Lauf automatisch beendet.";
+  }
+  return null;
+}
+
 function readSyncSummaryFromIntegration(
   integration: Integration,
   resource: "all" | CrmResourceKey = "all",
@@ -1617,19 +1654,28 @@ function readSyncSummaryFromIntegration(
   const result = (runtime.sync_result ?? null) as CrmSyncResultPayload | null;
   const rawMessage = String(runtime.sync_message ?? "").trim();
   const errorClass = asText(runtime.sync_error_class);
+  const staleRunningMessage = getStaleRunningMessage(runtime);
   const isLegacyOperatorMessage =
     state !== "running"
     && (rawMessage.toLowerCase().includes("manuell zurückgesetzt") || rawMessage.toLowerCase().includes("manuell abgebrochen"));
   const isHistoricalOperatorNotice =
     (state === "idle" && (errorClass === "manual_reset" || errorClass === "cancelled"))
     || isLegacyOperatorMessage;
+  const fallbackMessage = result
+    ? formatSyncResultMessage(result)
+    : state === "running"
+      ? "CRM-Synchronisierung läuft..."
+      : "CRM-Synchronisierung";
   const message =
-    (isHistoricalOperatorNotice ? "" : rawMessage)
-    || (result ? formatSyncResultMessage(result) : state === "running" ? "CRM-Synchronisierung läuft..." : "CRM-Synchronisierung");
+    staleRunningMessage
+    || (isHistoricalOperatorNotice ? "" : rawMessage)
+    || fallbackMessage;
 
   return {
     status:
-      state === "running"
+      staleRunningMessage
+        ? "warning"
+        : state === "running"
         ? "running"
         : state === "success"
           ? "ok"
