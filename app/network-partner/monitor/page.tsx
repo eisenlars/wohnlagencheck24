@@ -74,7 +74,7 @@ export default function NetworkPartnerMonitorPage() {
   }, [periodKey]);
 
   const totals = useMemo(() => {
-    const invoiceTotal = invoiceLines.reduce((sum, line) => sum + Number(line.amount_eur ?? 0), 0);
+    const invoiceTotal = invoiceLines.reduce((sum, line) => sum + Number(line.gross_amount_eur ?? 0), 0);
     const projectionTotal = bookingProjection.reduce((sum, row) => sum + Number(row.monthly_price_eur ?? 0), 0);
     const aiTotal = usageEvents.reduce((sum, event) => sum + Number(event.estimated_cost_eur ?? 0), 0);
     return {
