@@ -8797,6 +8797,7 @@ export default function AdminClient() {
                           ) : isCrmIntegration && integration && draft ? (
                             <AdminCrmIntegrationsPanel
                               integration={integration}
+                              scope="partner"
                               draft={draft}
                               activeResourceKey={activeResourceKey}
                               onActiveResourceChange={(resource) =>
@@ -9051,6 +9052,7 @@ export default function AdminClient() {
                                       ) : isCrmIntegration && integration && draft ? (
                                         <AdminCrmIntegrationsPanel
                                           integration={integration}
+                                          scope="network_partner"
                                           draft={draft}
                                           activeResourceKey={activeResourceKey}
                                           onActiveResourceChange={(resource) =>

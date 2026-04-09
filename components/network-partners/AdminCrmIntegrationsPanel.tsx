@@ -131,6 +131,7 @@ type OnOfficeFieldConfigPayload = {
 
 type AdminCrmIntegrationsPanelProps = {
   integration: IntegrationRecord;
+  scope?: "partner" | "network_partner";
   draft: CrmIntegrationAdminDraft;
   activeResourceKey: CrmResourceKey;
   onActiveResourceChange: (resource: CrmResourceKey) => void;
@@ -245,6 +246,7 @@ function extractSyncNoteValue(notes: string[] | undefined, prefix: string): stri
 }
 
 function buildDebugPayloadDownloadUrl(
+  scope: "partner" | "network_partner",
   integrationId: string,
   resource: CrmResourceKey,
   kind: "preview" | "sync",
@@ -253,7 +255,11 @@ function buildDebugPayloadDownloadUrl(
     resource,
     kind,
   });
-  return `/api/admin/integrations/${integrationId}/debug-payload?${params.toString()}`;
+  const basePath =
+    scope === "network_partner"
+      ? `/api/admin/network-integrations/${integrationId}/debug-payload`
+      : `/api/admin/integrations/${integrationId}/debug-payload`;
+  return `${basePath}?${params.toString()}`;
 }
 
 function renderImportRules(
@@ -799,6 +805,7 @@ function renderPartialSyncSettings(
 
 export default function AdminCrmIntegrationsPanel({
   integration,
+  scope = "partner",
   draft,
   activeResourceKey,
   onActiveResourceChange,
@@ -1148,7 +1155,7 @@ export default function AdminCrmIntegrationsPanel({
             </div>
             <div style={modalFooterStyle}>
               <a
-                href={buildDebugPayloadDownloadUrl(integration.id, activeResourceKey, "preview")}
+                href={buildDebugPayloadDownloadUrl(scope, integration.id, activeResourceKey, "preview")}
                 style={btnGhostLinkStyle(hasPreviewPayload)}
                 aria-disabled={!hasPreviewPayload}
               >
@@ -1218,7 +1225,7 @@ export default function AdminCrmIntegrationsPanel({
             </div>
             <div style={modalFooterStyle}>
               <a
-                href={buildDebugPayloadDownloadUrl(integration.id, activeResourceKey, "sync")}
+                href={buildDebugPayloadDownloadUrl(scope, integration.id, activeResourceKey, "sync")}
                 style={btnGhostLinkStyle(hasSyncPayload)}
                 aria-disabled={!hasSyncPayload}
               >
