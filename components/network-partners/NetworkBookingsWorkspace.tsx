@@ -120,6 +120,33 @@ export default function NetworkBookingsWorkspace({
     return filtered.length > 0 ? filtered : networkPartners;
   }, [networkPartnerId, networkPartners]);
 
+  const bookingAreas = useMemo(() => {
+    const districtMap = new Map<string, string>();
+    for (const area of providedAreas) {
+      const areaId = String(area.id ?? '').trim();
+      const label = String(area.label ?? '').trim();
+      const districtId = areaId.split('-').slice(0, 3).join('-');
+      if (districtId && !districtMap.has(districtId)) {
+        districtMap.set(districtId, label);
+      }
+    }
+
+    return providedAreas.map((area) => {
+      const areaId = String(area.id ?? '').trim();
+      const label = String(area.label ?? '').trim();
+      const parts = areaId.split('-');
+      if (parts.length <= 3) {
+        return { id: areaId, label };
+      }
+      const districtId = parts.slice(0, 3).join('-');
+      const districtLabel = districtMap.get(districtId) ?? districtId;
+      return {
+        id: areaId,
+        label: `${districtLabel} -> ${label}`,
+      };
+    });
+  }, [providedAreas]);
+
   const activeBookingCount = useMemo(
     () => bookings.filter((booking) => booking.status === 'active').length,
     [bookings],
@@ -254,10 +281,11 @@ export default function NetworkBookingsWorkspace({
           <section style={{ display: 'grid', gap: 12 }}>
             <BookingForm
               networkPartners={selectableNetworkPartners}
-              areas={providedAreas}
+              areas={bookingAreas}
               placements={placements}
               initialValue={createMode ? null : selectedBooking}
               submitLabel={createMode ? 'Buchung anlegen' : 'Buchung speichern'}
+              isPartnerDetailContext={Boolean(networkPartnerId)}
               onCancel={createMode ? undefined : () => {
                 setCreateMode(true);
                 setSelectedBookingId(null);

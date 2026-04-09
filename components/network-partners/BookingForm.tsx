@@ -33,6 +33,7 @@ type BookingFormProps = {
   initialValue?: NetworkPartnerBookingRecord | null;
   submitLabel?: string;
   onCancel?: () => void;
+  isPartnerDetailContext?: boolean;
 };
 
 const inputStyle: CSSProperties = {
@@ -93,6 +94,7 @@ export default function BookingForm({
   initialValue = null,
   submitLabel,
   onCancel,
+  isPartnerDetailContext = false,
 }: BookingFormProps) {
   const placementOptions = useMemo(
     () => placements.filter((placement) => placement.is_active),
@@ -115,7 +117,7 @@ export default function BookingForm({
   const parsedMonthlyPrice = Number(monthlyPrice);
   const monthlyPriceValue = Number.isFinite(parsedMonthlyPrice) ? parsedMonthlyPrice : 0;
   const partnerNetRevenue = Math.max(0, monthlyPriceValue - fixedPortalFee);
-  const showPartnerSelect = !isEditing && networkPartners.length > 1;
+  const showPartnerSelect = !isEditing && !isPartnerDetailContext && networkPartners.length > 1;
   const selectedNetworkPartner = networkPartners.find((partner) => partner.id === networkPartnerId) ?? networkPartners[0] ?? null;
   const editingBooking = isEditing ? initialValue : null;
 

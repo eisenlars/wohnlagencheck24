@@ -97,6 +97,7 @@ function mapBookingError(error: Error) {
   if (error.message === "FORBIDDEN") return { status: 403, error: "Forbidden" };
   if (error.message === "NETWORK_PARTNER_NOT_OWNED") return { status: 400, error: "network_partner_id does not belong to this portal partner" };
   if (error.message === "INVALID_PLACEMENT_CODE") return { status: 400, error: "Die gewählte Leistung ist derzeit nicht verfügbar." };
+  if (error.message === "DUPLICATE_DISTRICT_BOOKING") return { status: 400, error: "Für diesen Netzwerkpartner existiert für diese Leistung im gewählten Kreis bereits eine Buchung." };
   if (error.message === "PORTAL_FEE_EXCEEDS_MONTHLY_PRICE") return { status: 400, error: "portal_fee_eur cannot exceed monthly_price_eur" };
   if (error.message === "MONTHLY_PRICE_BELOW_PORTAL_FEE") return { status: 400, error: "Der Preis muss mindestens 10 EUR betragen." };
   if (error.message === "INVALID_REQUIRED_LOCALES") return { status: 400, error: "required_locales must not be empty" };

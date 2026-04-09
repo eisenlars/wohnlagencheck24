@@ -13,6 +13,13 @@ const DEFAULT_BILLING_CYCLE_DAY = 1;
 const DEFAULT_REQUIRED_LOCALES = ["de"] as const;
 const DEFAULT_AI_BILLING_MODE: AIBillingMode = "included";
 
+function toDistrictAreaId(areaId: string): string {
+  const normalized = asText(areaId);
+  if (!normalized) return "";
+  const parts = normalized.split("-");
+  return parts.slice(0, Math.min(3, parts.length)).join("-");
+}
+
 function asText(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -151,6 +158,37 @@ async function assertNetworkPartnerBelongsToPortalPartner(
   if (!data) throw new Error("NETWORK_PARTNER_NOT_OWNED");
 }
 
+async function assertNoDuplicateDistrictBooking(input: {
+  portal_partner_id: string;
+  network_partner_id: string;
+  area_id: string;
+  placement_code: NetworkPartnerBookingRecord["placement_code"];
+  exclude_booking_id?: string;
+}) {
+  const districtAreaId = toDistrictAreaId(input.area_id);
+  if (!districtAreaId) return;
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("network_partner_bookings")
+    .select("id, area_id, status")
+    .eq("portal_partner_id", input.portal_partner_id)
+    .eq("network_partner_id", input.network_partner_id)
+    .eq("placement_code", input.placement_code)
+    .in("status", ["draft", "pending_review", "active", "paused"]);
+
+  if (error) throw new Error(error.message ?? "BOOKING_DUPLICATE_CHECK_FAILED");
+  const rows = asRowArray(data);
+  const duplicate = rows.find((row) => {
+    const bookingId = asText(row.id);
+    if (input.exclude_booking_id && bookingId === input.exclude_booking_id) return false;
+    return toDistrictAreaId(asText(row.area_id)) === districtAreaId;
+  });
+  if (duplicate) {
+    throw new Error("DUPLICATE_DISTRICT_BOOKING");
+  }
+}
+
 export async function assertBookingInputIsConsistent(input: {
   portal_partner_id: string;
   network_partner_id: string;
@@ -159,8 +197,16 @@ export async function assertBookingInputIsConsistent(input: {
   monthly_price_eur: number;
   portal_fee_eur: number;
   required_locales: string[];
+  exclude_booking_id?: string;
 }): Promise<void> {
   await assertNetworkPartnerBelongsToPortalPartner(input.portal_partner_id, input.network_partner_id);
+  await assertNoDuplicateDistrictBooking({
+    portal_partner_id: input.portal_partner_id,
+    network_partner_id: input.network_partner_id,
+    area_id: input.area_id,
+    placement_code: input.placement_code,
+    exclude_booking_id: input.exclude_booking_id,
+  });
   await assertPlacementIsActive(input.placement_code);
   assertValidAmount(input.monthly_price_eur, "monthly_price_eur");
   assertValidAmount(input.portal_fee_eur, "portal_fee_eur");
@@ -302,6 +348,14 @@ export async function updateBooking(
   const nextLocales = input.required_locales !== undefined
     ? normalizeRequiredLocales(input.required_locales)
     : current.required_locales;
+
+  await assertNoDuplicateDistrictBooking({
+    portal_partner_id: input.portal_partner_id,
+    network_partner_id: current.network_partner_id,
+    area_id: current.area_id,
+    placement_code: current.placement_code,
+    exclude_booking_id: current.id,
+  });
 
   assertValidAmount(nextMonthlyPrice, "monthly_price_eur");
   assertValidAmount(nextPortalFee, "portal_fee_eur");
