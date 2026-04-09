@@ -448,43 +448,38 @@ export default function RequestsWorkspaceManager(props: Props) {
     updateField(key, rawValue);
   }
 
-  function getStandardPromptText(label: string, areaName: string) {
+  function getStandardPromptText(label: string, areaName: string, factsContext: string, noteContext: string) {
     const lowerLabel = String(label || '').toLowerCase();
+    const promptContext = [
+      `Kontext: ${areaName}.`,
+      `Harte Suchkriterien: ${factsContext || 'Keine strukturierten Kriterien verfügbar.'}`,
+      `Weiche Informationen aus CRM-Notiz/Bemerkung: ${noteContext || 'Keine CRM-Notiz vorhanden.'}`,
+    ].join(' ');
     if (lowerLabel.includes('gesuch-titel') || lowerLabel.includes('h1')) {
-      return `Formuliere einen prägnanten, sachlichen Gesuch-Titel für ${areaName}. Maximal 60 Zeichen, keine Clickbait-Formulierungen, keine erfundenen Fakten, keine Übertreibungen.`;
+      return `Erstelle einen prägnanten Gesuch-Titel aus den strukturierten Suchkriterien und der CRM-Notiz. Nutze vorrangig Vermarktungsart, Objektart und Zielregion. Integriere weiche Anforderungen aus der Notiz nur, wenn sie konkret und relevant sind. Kein Clickbait, keine Maklerfloskeln, keine erfundenen Fakten, maximal 60 Zeichen. ${promptContext}`;
     }
     if (lowerLabel.includes('seo-titel')) {
-      return `Schreibe einen SEO-Titel für ein Immobiliengesuch in ${areaName}. Maximal 60 Zeichen, klar lesbar, ohne Keyword-Stapelung und ohne erfundene Fakten.`;
+      return `Schreibe einen SEO-Titel für ein Immobiliengesuch auf Basis der harten Suchkriterien und der CRM-Notiz. Nutze die wichtigsten Kriterien klar lesbar, ohne Keyword-Stapelung, ohne Übertreibung und ohne neue Fakten. Maximal 60 Zeichen. ${promptContext}`;
     }
     if (lowerLabel.includes('seo-description')) {
-      return `Schreibe eine SEO-Description für ein Immobiliengesuch in ${areaName}. 140 bis 160 Zeichen, sachlich, kompakt und ohne neue Fakten.`;
+      return `Schreibe eine SEO-Description für ein Immobiliengesuch aus zwei Quellen: 1. harte Suchkriterien wie Vermarktungsart, Objektart, Region, Budget, Zimmer, Fläche, Radius; 2. weiche Informationen aus der CRM-Notiz. Verbinde beides zu einem klaren, glaubwürdigen Snippet. 140 bis 160 Zeichen, keine Maklerfloskeln, keine erfundenen Fakten. ${promptContext}`;
     }
-    if (lowerLabel.includes('teaser') || lowerLabel.includes('kurzbeschreibung')) {
-      return `Formuliere einen kurzen Teaser zum Gesuch in ${areaName}. 1 bis 2 Sätze, sachlich, glaubwürdig und ohne Übertreibung.`;
+    if (lowerLabel.includes('beschreibung')) {
+      return `Formuliere eine hochwertige Gesuchsbeschreibung aus zwei Quellen: 1. harte Suchkriterien wie Vermarktungsart, Objektart, Region, Budget, Zimmer, Fläche und Radius; 2. weiche Informationen aus der CRM-Notiz. Verbinde beides zu einem klaren, sachlichen Fließtext. Keine neuen Fakten erfinden, keine Wiederholungen, keine Maklerfloskeln. Wenn die Notiz leer oder unbrauchbar ist, arbeite nur mit den harten Kriterien. ${promptContext}`;
     }
-    if (lowerLabel.includes('langbeschreibung')) {
-      return `Optimiere die Gesuchs-Beschreibung für bessere Lesbarkeit und Struktur. Sachlicher Stil, keine neuen Fakten, keine unnötigen Wiederholungen. Kontext: ${areaName}.`;
-    }
-    if (lowerLabel.includes('lage')) {
-      return `Formuliere den Lage-Text für ein Immobiliengesuch in ${areaName} klar und informativ. Fokus auf Zielregion, Umfeld und regionale Einordnung. Keine erfundenen Fakten.`;
-    }
-    if (lowerLabel.includes('ausstatt')) {
-      return `Formuliere den Zusatztext für ein Immobiliengesuch klar und sachlich. Nur aus den vorhandenen Gesuchsdaten ableitbare Aussagen verwenden.`;
-    }
-    if (lowerLabel.includes('highlights')) {
-      return `Schreibe maximal 6 Highlights, jeweils 1 Zeile. Kurz, konkret, belegbar, keine Wiederholungen und keine vagen Werbeformulierungen.`;
-    }
-    if (lowerLabel.includes('alt-texte') || lowerLabel.includes('alttexte')) {
-      return `Erstelle kurze, sachliche Alt-Texte, jeweils 1 Zeile pro Bild. Beschreibe das Motiv konkret, ohne erfundene Details und ohne Keyword-Stuffing.`;
-    }
-    return `Optimiere den Text für bessere Lesbarkeit, fachliche Klarheit und saubere Suchmaschinen-/Antwortsystem-Nutzung. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
+    return `Optimiere den Text für bessere Lesbarkeit, fachliche Klarheit und saubere Suchmaschinen-/Antwortsystem-Nutzung. Nutze harte Suchkriterien und die CRM-Notiz, ohne neue Fakten hinzuzufügen. ${promptContext}`;
   }
 
   const renderTextField = (
     label: string,
     key: keyof OverrideRow,
     rawValue: string,
-    options?: { multiline?: boolean; placeholder?: string },
+    options?: {
+      multiline?: boolean;
+      placeholder?: string;
+      showSourcePreview?: boolean;
+      resetLabel?: string;
+    },
   ) => {
     if (!form) return null;
     const keyName = String(key);
@@ -493,7 +488,13 @@ export default function RequestsWorkspaceManager(props: Props) {
     const isRewriting = rewritingKey === keyName;
     const showPrompt = Boolean(promptOpenMap[keyName]);
     const customPrompt = customPromptMap[keyName] ?? '';
-    const standardPrompt = getStandardPromptText(label, selectedRow?.title || selectedRow?.external_id || 'Gesuch');
+    const showSourcePreview = options?.showSourcePreview ?? true;
+    const standardPrompt = getStandardPromptText(
+      label,
+      selectedRow?.title || selectedRow?.external_id || 'Gesuch',
+      selectedFactsPromptText,
+      selectedNote,
+    );
     return (
       <div style={fieldCardStyle}>
         <div style={fieldHeaderStyle}>
@@ -501,11 +502,11 @@ export default function RequestsWorkspaceManager(props: Props) {
           <div style={fieldHeaderActionsStyle}>
             {isCustomized ? <span style={customizedBadgeStyle}>✓ Individuell angepasst</span> : null}
             <button type="button" onClick={() => resetField(key, rawValue)} style={resetButtonStyle(isCustomized)}>
-              Original nutzen
+              {options?.resetLabel ?? 'Original nutzen'}
             </button>
           </div>
         </div>
-        <div style={editorGridStyle}>
+        <div style={showSourcePreview ? editorGridStyle : editorSingleColumnStyle}>
           <div style={textareaWrapperStyle}>
             {options?.multiline === false ? (
               <input
@@ -557,10 +558,12 @@ export default function RequestsWorkspaceManager(props: Props) {
               </div>
             ) : null}
           </div>
-          <div style={previewBoxStyle}>
-            <div style={previewHeaderStyle}>CRM‑ORIGINAL (SYSTEM)</div>
-            <div style={previewContentStyle}>{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
-          </div>
+          {showSourcePreview ? (
+            <div style={previewBoxStyle}>
+              <div style={previewHeaderStyle}>CRM‑ORIGINAL (SYSTEM)</div>
+              <div style={previewContentStyle}>{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -579,6 +582,28 @@ export default function RequestsWorkspaceManager(props: Props) {
   const selectedRadius = asNumber(selectedPayload.radius_km);
   const selectedSubtypes = getPayloadList(selectedPayload, 'object_subtypes');
   const selectedDescription = getPayloadText(selectedPayload, ['description', 'short_description', 'long_description', 'title']);
+  const selectedNote = getPayloadText(selectedPayload, ['publicnote', 'note', 'description']);
+  const selectedBudgetLabel = formatEuro(selectedBudget);
+  const selectedRoomsLabel =
+    selectedRoomsMin != null || selectedRoomsMax != null
+      ? `${selectedRoomsMin ?? '—'} bis ${selectedRoomsMax ?? '—'}`
+      : '—';
+  const selectedAreaLabel =
+    selectedAreaMin != null || selectedAreaMax != null
+      ? `${selectedAreaMin ?? '—'} bis ${selectedAreaMax ?? '—'} m²`
+      : '—';
+  const selectedRadiusLabel = selectedRadius != null ? `${selectedRadius} km` : '—';
+  const selectedSubtypeLabel = getPayloadText(selectedPayload, ['object_subtype']) || selectedSubtypes.join(', ') || '—';
+  const selectedFactsPromptText = [
+    `Vermarktung: ${selectedMarketing}`,
+    `Objektart: ${selectedType}`,
+    `Objekt-Untertyp: ${selectedSubtypeLabel}`,
+    `Budget: ${selectedBudgetLabel}`,
+    `Fläche: ${selectedAreaLabel}`,
+    `Zimmer: ${selectedRoomsLabel}`,
+    `Radius: ${selectedRadiusLabel}`,
+    `Zielregionen: ${selectedLocation}`,
+  ].join(' | ');
 
   if (loading) return <FullscreenLoader show label="Gesuche werden geladen..." />;
 
@@ -686,54 +711,59 @@ export default function RequestsWorkspaceManager(props: Props) {
             <>
               <div style={offerSummaryTopWrapStyle}>
                 <div style={offerSummaryTopCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>Gesuch-Übersicht</div>
+                  <div style={offerSummaryHeaderStyle}>Übertragene Felder</div>
                   <div style={offerSummaryGridStyle}>
                     <div>
                       <div style={offerSummaryLabelStyle}>Gesuch-ID</div>
                       <div style={offerSummaryValueStyle}>{selectedRow.id}</div>
                     </div>
                     <div>
-                      <div style={offerSummaryLabelStyle}>Titel</div>
-                      <div style={offerSummaryValueStyle}>{selectedRow.title || 'Gesuch'}</div>
-                    </div>
-                    <div>
                       <div style={offerSummaryLabelStyle}>Quelle</div>
                       <div style={offerSummaryValueStyle}>{selectedRow.provider} · {selectedRow.external_id}</div>
                     </div>
                     <div>
-                      <div style={offerSummaryLabelStyle}>Gesuchstyp</div>
-                      <div style={offerSummaryValueStyle}>{selectedMode}</div>
+                      <div style={offerSummaryLabelStyle}>Aktualisiert</div>
+                      <div style={offerSummaryValueStyle}>{formatDateLabel(selectedUpdatedAt)}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Vermarktung</div>
+                      <div style={offerSummaryValueStyle}>{selectedMarketing}</div>
                     </div>
                     <div>
                       <div style={offerSummaryLabelStyle}>Objektart</div>
                       <div style={offerSummaryValueStyle}>{selectedType}</div>
                     </div>
                     <div>
-                      <div style={offerSummaryLabelStyle}>Vermarktung</div>
-                      <div style={offerSummaryValueStyle}>{selectedMarketing}</div>
+                      <div style={offerSummaryLabelStyle}>Objekt-Untertyp</div>
+                      <div style={offerSummaryValueStyle}>{selectedSubtypeLabel}</div>
                     </div>
-                  </div>
-                </div>
-                <div style={offerSummaryTopCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>CRM-Snapshot</div>
-                  <div style={mediaSectionHintStyle}>Die sichtbaren Suchkriterien stammen ausschließlich aus dem normalisierten Gesuchs-Payload.</div>
-                  <div style={offerSummaryGridStyle}>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Budget</div>
+                      <div style={offerSummaryValueStyle}>{selectedBudgetLabel}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Fläche</div>
+                      <div style={offerSummaryValueStyle}>{selectedAreaLabel}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Zimmer</div>
+                      <div style={offerSummaryValueStyle}>{selectedRoomsLabel}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Radius</div>
+                      <div style={offerSummaryValueStyle}>{selectedRadiusLabel}</div>
+                    </div>
                     <div>
                       <div style={offerSummaryLabelStyle}>Zielregionen</div>
                       <div style={offerSummaryValueStyle}>{selectedLocation}</div>
                     </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Radius</div>
-                      <div style={offerSummaryValueStyle}>{selectedRadius != null ? `${selectedRadius} km` : '—'}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Budget</div>
-                      <div style={offerSummaryValueStyle}>{formatEuro(selectedBudget)}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Aktualisiert</div>
-                      <div style={offerSummaryValueStyle}>{formatDateLabel(selectedUpdatedAt)}</div>
-                    </div>
+                  </div>
+                </div>
+                <div style={offerSummaryTopCardStyle}>
+                  <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
+                  <div style={mediaSectionHintStyle}>Weiche Anforderungen und Hinweise aus Bemerkung/Notiz des CRM.</div>
+                  <div style={noteCardBodyStyle}>
+                    {selectedNote || 'Keine CRM-Notiz vorhanden.'}
                   </div>
                 </div>
               </div>
@@ -753,8 +783,16 @@ export default function RequestsWorkspaceManager(props: Props) {
               {activeTab === 'texts' ? (
                 <>
                   <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
-                    {renderTextField('Gesuch-Titel', 'seo_h1', selectedRow.title ?? '', { multiline: false })}
-                    {renderTextField('Beschreibung', 'long_description', selectedDescription, { multiline: true })}
+                    {renderTextField('Gesuch-Titel', 'seo_h1', selectedRow.title ?? '', {
+                      multiline: false,
+                      showSourcePreview: false,
+                      resetLabel: 'Standardwert nutzen',
+                    })}
+                    {renderTextField('Beschreibung', 'long_description', selectedDescription, {
+                      multiline: true,
+                      showSourcePreview: false,
+                      resetLabel: 'Standardwert nutzen',
+                    })}
                   </div>
 
                   <div style={contentPreviewGridStyle}>
@@ -782,8 +820,16 @@ export default function RequestsWorkspaceManager(props: Props) {
                   </div>
 
                   <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
-                    {renderTextField('SEO‑Titel', 'seo_title', selectedRow.title ?? '', { multiline: false })}
-                    {renderTextField('SEO‑Description', 'seo_description', selectedDescription, { multiline: true })}
+                    {renderTextField('SEO‑Titel', 'seo_title', selectedRow.title ?? '', {
+                      multiline: false,
+                      showSourcePreview: false,
+                      resetLabel: 'Standardwert nutzen',
+                    })}
+                    {renderTextField('SEO‑Description', 'seo_description', selectedDescription, {
+                      multiline: true,
+                      showSourcePreview: false,
+                      resetLabel: 'Standardwert nutzen',
+                    })}
                   </div>
 
                   <div style={previewCardStyle}>
@@ -1077,6 +1123,11 @@ const editorGridStyle: CSSProperties = {
   gap: '18px',
 };
 
+const editorSingleColumnStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
+};
+
 const textareaWrapperStyle: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
@@ -1320,4 +1371,11 @@ const mediaSectionHintStyle: CSSProperties = {
   color: '#64748b',
   lineHeight: 1.5,
   marginBottom: '12px',
+};
+
+const noteCardBodyStyle: CSSProperties = {
+  color: '#334155',
+  fontSize: '13px',
+  lineHeight: 1.6,
+  whiteSpace: 'pre-wrap',
 };
