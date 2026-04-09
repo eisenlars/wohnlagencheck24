@@ -2319,6 +2319,7 @@ export default function AdminClient() {
   const [networkCrmIntegrationDrafts, setNetworkCrmIntegrationDrafts] = useState<Record<string, CrmIntegrationAdminDraft>>({});
   const [networkCrmIntegrationTabs, setNetworkCrmIntegrationTabs] = useState<Record<string, CrmResourceKey>>({});
   const [expandedNetworkCrmIntegrationId, setExpandedNetworkCrmIntegrationId] = useState<string | null>(null);
+  const [networkIntegrationActionErrors, setNetworkIntegrationActionErrors] = useState<Record<string, string | null>>({});
   const [networkPartnerLlmDrafts, setNetworkPartnerLlmDrafts] = useState<Record<string, boolean>>({});
   const [status, setStatus] = useState<string>("Lade Admin-Daten...");
   const [adminDisplayName, setAdminDisplayName] = useState<string>("Admin");
@@ -8905,6 +8906,7 @@ export default function AdminClient() {
                                           }
                                           onSaveSettings={(integrationId, nextDraft) =>
                                             run(`${integration.provider} Einstellungen speichern`, async () => {
+                                              setNetworkIntegrationActionErrors((current) => ({ ...current, [integrationId]: null }));
                                               const settings = applyCrmAdminDraftToSettings(
                                                 integration,
                                                 nextDraft as CrmIntegrationAdminDraft,
@@ -8918,28 +8920,49 @@ export default function AdminClient() {
                                           }
                                           onTest={(integrationId) =>
                                             run(`${integration.provider} Verbindung testen`, async () => {
-                                              await api(`/api/admin/network-integrations/${integrationId}/test`, {
-                                                method: "POST",
-                                              });
-                                              await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                              setNetworkIntegrationActionErrors((current) => ({ ...current, [integrationId]: null }));
+                                              try {
+                                                await api(`/api/admin/network-integrations/${integrationId}/test`, {
+                                                  method: "POST",
+                                                });
+                                                await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                              } catch (error) {
+                                                const message = error instanceof Error ? error.message : "Verbindungstest fehlgeschlagen.";
+                                                setNetworkIntegrationActionErrors((current) => ({ ...current, [integrationId]: message }));
+                                                throw error;
+                                              }
                                             })
                                           }
                                           onPreview={(integrationId, resource) =>
                                             run(`${formatCrmResourceLabel(resource)}-Abruf testen`, async () => {
-                                              await api(`/api/admin/network-integrations/${integrationId}/preview-sync`, {
-                                                method: "POST",
-                                                body: JSON.stringify({ resource }),
-                                              });
-                                              await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                              setNetworkIntegrationActionErrors((current) => ({ ...current, [integrationId]: null }));
+                                              try {
+                                                await api(`/api/admin/network-integrations/${integrationId}/preview-sync`, {
+                                                  method: "POST",
+                                                  body: JSON.stringify({ resource }),
+                                                });
+                                                await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                              } catch (error) {
+                                                const message = error instanceof Error ? error.message : "Preview-Sync fehlgeschlagen.";
+                                                setNetworkIntegrationActionErrors((current) => ({ ...current, [integrationId]: message }));
+                                                throw error;
+                                              }
                                             })
                                           }
                                           onSync={(integrationId, resource, mode) =>
                                             run(`${formatCrmResourceLabel(resource)} ${mode === "full" ? "Vollsync" : "Guarded-Sync"} starten`, async () => {
-                                              await api(`/api/admin/network-integrations/${integrationId}/sync`, {
-                                                method: "POST",
-                                                body: JSON.stringify({ resource, mode }),
-                                              });
-                                              await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                              setNetworkIntegrationActionErrors((current) => ({ ...current, [integrationId]: null }));
+                                              try {
+                                                await api(`/api/admin/network-integrations/${integrationId}/sync`, {
+                                                  method: "POST",
+                                                  body: JSON.stringify({ resource, mode }),
+                                                });
+                                                await loadPartnerNetworkPartnerIntegrations(selectedPartnerId);
+                                              } catch (error) {
+                                                const message = error instanceof Error ? error.message : "Sync fehlgeschlagen.";
+                                                setNetworkIntegrationActionErrors((current) => ({ ...current, [integrationId]: message }));
+                                                throw error;
+                                              }
                                             })
                                           }
                                           onCancelSync={() =>
@@ -8948,6 +8971,7 @@ export default function AdminClient() {
                                             })
                                           }
                                           busy={busy}
+                                          actionError={networkIntegrationActionErrors[integration.id] ?? null}
                                           syncSummary={resourceSyncSummary}
                                           previewSummary={resourcePreviewSummary}
                                           anotherSyncRunning={Boolean(anotherSyncRunning)}

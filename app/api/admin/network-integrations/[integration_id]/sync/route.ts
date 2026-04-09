@@ -24,7 +24,7 @@ export async function POST(
   let traceId: string | null = null;
 
   try {
-    const adminUser = await requireAdmin(["admin_super", "admin_ops"]);
+    const adminUser = await requireAdmin(["admin_super", "admin_ops", "admin_billing"]);
     const adminRate = await checkAdminApiRateLimit(req, adminUser.userId);
     if (!adminRate.allowed) {
       return NextResponse.json(

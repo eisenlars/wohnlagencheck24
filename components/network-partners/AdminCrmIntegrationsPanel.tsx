@@ -129,6 +129,7 @@ type AdminCrmIntegrationsPanelProps = {
   onSync: (integrationId: string, resource: CrmResourceKey, mode: "guarded" | "full") => void;
   onCancelSync: (integrationId: string, resource: CrmResourceKey) => void;
   busy: boolean;
+  actionError?: string | null;
   syncSummary: IntegrationSyncSummary | null;
   previewSummary: IntegrationPreviewSummary | null;
   anotherSyncRunning: boolean;
@@ -795,6 +796,7 @@ export default function AdminCrmIntegrationsPanel({
   onSync,
   onCancelSync,
   busy,
+  actionError = null,
   syncSummary,
   previewSummary,
   anotherSyncRunning,
@@ -818,6 +820,13 @@ export default function AdminCrmIntegrationsPanel({
     "onOffice estate status2-Werte:",
   );
   const sectionTitle = formatResourceLabelForProvider(integration.provider, activeResourceKey);
+  const actionHint = !integration.is_active
+    ? "Die Integration ist derzeit deaktiviert. Aktiviere sie zuerst in der Übersichtszeile."
+    : anotherSyncRunning
+      ? "Es läuft bereits ein anderer Sync für diese Anbindung."
+      : busy
+        ? "Eine Admin-Aktion wird gerade ausgeführt."
+        : null;
   const onOfficeEstateStatusLoading =
     isOnOfficeProvider(integration.provider)
     && onOfficeEstateStatusOptions.length === 0
@@ -1031,6 +1040,16 @@ export default function AdminCrmIntegrationsPanel({
               </button>
             ) : null}
           </div>
+          {actionHint ? (
+            <div style={{ marginTop: 10, fontSize: 12, color: "#64748b" }}>
+              {actionHint}
+            </div>
+          ) : null}
+          {actionError ? (
+            <div style={{ marginTop: 10, fontSize: 12, fontWeight: 700, color: "#b91c1c" }}>
+              {actionError}
+            </div>
+          ) : null}
           <div style={detailLinkRowStyle}>
             <button
               type="button"
