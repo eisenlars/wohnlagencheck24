@@ -172,6 +172,8 @@ export default function CrmAssetManager(props: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<OverrideRow | null>(null);
   const [query, setQuery] = useState('');
+  const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
+  const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
   const [llmOptionsLoading, setLlmOptionsLoading] = useState(false);
@@ -352,7 +354,7 @@ export default function CrmAssetManager(props: Props) {
     setSaving(false);
   }
 
-  async function runAiRewrite(key: keyof OverrideRow, label: string) {
+  async function runAiRewrite(key: keyof OverrideRow, label: string, customPrompt?: string) {
     if (!form || !selectedRow) return;
     const currentText = String(form[key] ?? '');
     if (!currentText.trim()) return;
@@ -373,6 +375,7 @@ export default function CrmAssetManager(props: Props) {
           areaName: selectedRow.title || selectedRow.external_id,
           type: 'general',
           sectionLabel: label,
+          customPrompt: customPrompt || undefined,
           llm_integration_id: selectedOption?.partnerIntegrationId || undefined,
           llm_global_provider_id: selectedOption?.globalProviderId || undefined,
         }),
@@ -410,6 +413,29 @@ export default function CrmAssetManager(props: Props) {
     display: 'grid',
     gap: 10,
   };
+
+  function getStandardPromptText(label: string, areaName: string) {
+    const lowerLabel = String(label || '').toLowerCase();
+    if (lowerLabel.includes('seo title') || lowerLabel.includes('seo-title')) {
+      return `Schreibe einen SEO-Titel für ein Immobiliengesuch in ${areaName}. Maximal 60 Zeichen, klar lesbar, ohne Keyword-Stapelung und ohne erfundene Fakten.`;
+    }
+    if (lowerLabel.includes('seo description') || lowerLabel.includes('seo-description')) {
+      return `Schreibe eine SEO-Description für ein Immobiliengesuch in ${areaName}. 140 bis 160 Zeichen, sachlich, kompakt und ohne neue Fakten.`;
+    }
+    if (lowerLabel.includes('kurzbeschreibung')) {
+      return `Formuliere einen kurzen Teaser zum Gesuch in ${areaName}. 1 bis 2 Sätze, sachlich, glaubwürdig und ohne Übertreibung.`;
+    }
+    if (lowerLabel.includes('langbeschreibung')) {
+      return `Optimiere die Gesuchs-Beschreibung für bessere Lesbarkeit und Struktur. Sachlicher Stil, keine neuen Fakten, keine unnötigen Wiederholungen. Kontext: ${areaName}.`;
+    }
+    if (lowerLabel.includes('lagetext')) {
+      return `Formuliere den Lage-Text für ein Immobiliengesuch in ${areaName} klar und informativ. Fokus auf Zielregion, Umfeld und regionale Einordnung. Keine erfundenen Fakten.`;
+    }
+    if (lowerLabel.includes('ausstattung')) {
+      return `Formuliere den Ausstattungs- oder Zusatztext für ein Immobiliengesuch klar und sachlich. Nur aus den vorhandenen Gesuchsdaten ableitbare Aussagen verwenden.`;
+    }
+    return `Optimiere den Text für bessere Lesbarkeit, fachliche Klarheit und saubere Suchmaschinen-/Antwortsystem-Nutzung. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
+  }
 
   const selectedType = asText(selectedPayload.object_type) || '—';
   const selectedMode = isRequestTable
@@ -606,78 +632,73 @@ export default function CrmAssetManager(props: Props) {
                 ['features_text', 'Ausstattung'],
               ] as Array<[keyof OverrideRow, string]>
             ).map(([key, label]) => (
-              <label key={String(key)} style={{ display: 'grid', gap: 4 }}>
-                <span style={{ fontSize: 11, color: '#334155', fontWeight: 600 }}>{label}</span>
-                <textarea
-                  value={String(form[key] ?? '')}
-                  onChange={(e) => setForm((prev) => (prev ? { ...prev, [key]: e.target.value } : prev))}
-                  rows={3}
-                  style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 10px' }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                  {llmOptions.length > 0 || !llmOptionsLoaded ? (
-                    <select
-                      value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
-                      onChange={(e) => setSelectedLlmIntegrationId(e.target.value)}
-                      style={{
-                        minWidth: 220,
-                        border: '1px solid #dbeafe',
-                        borderRadius: 8,
-                        background: '#fff',
-                        color: '#0f172a',
-                        fontSize: 12,
-                        fontWeight: 600,
-                        padding: '6px 10px',
-                      }}
-                      aria-label="KI-Modell auswählen"
-                      disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-                    >
-                      {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
-                      {llmOptions.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span style={{ fontSize: 12, color: '#64748b', alignSelf: 'center' }}>
-                      Keine aktive LLM-Integration
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => runAiRewrite(key, label)}
-                    disabled={rewritingKey === String(key) || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-                    style={{
-                      border: '1px solid #94a3b8',
-                      borderRadius: 8,
-                      padding: '6px 10px',
-                      background: '#fff',
-                      color: '#0f172a',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {rewritingKey === String(key) ? 'KI läuft...' : 'Mit KI optimieren'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const defaultForm = buildDefaultForm(selectedRow, rawTable, null);
-                      setForm((prev) => (prev ? { ...prev, [key]: defaultForm[key] } : prev));
-                    }}
-                    style={{
-                      border: '1px solid #cbd5e1',
-                      borderRadius: 8,
-                      padding: '6px 10px',
-                      background: '#f8fafc',
-                      color: '#334155',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Original nutzen
-                  </button>
-                </div>
-              </label>
+              (() => {
+                const keyName = String(key);
+                const showPrompt = Boolean(promptOpenMap[keyName]);
+                const customPrompt = customPromptMap[keyName] ?? '';
+                const standardPrompt = getStandardPromptText(label, selectedRow.title || selectedRow.external_id);
+                const isRewriting = rewritingKey === keyName;
+                return (
+                  <label key={keyName} style={{ display: 'grid', gap: 4 }}>
+                    <span style={{ fontSize: 11, color: '#334155', fontWeight: 600 }}>{label}</span>
+                    <textarea
+                      value={String(form[key] ?? '')}
+                      onChange={(e) => setForm((prev) => (prev ? { ...prev, [key]: e.target.value } : prev))}
+                      rows={3}
+                      style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 10px' }}
+                    />
+                    <div style={aiActionsRowStyle}>
+                      <button
+                        type="button"
+                        onClick={() => runAiRewrite(key, label, customPrompt)}
+                        disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
+                        style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
+                      >
+                        {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
+                        style={promptToggleStyle}
+                      >
+                        {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const defaultForm = buildDefaultForm(selectedRow, rawTable, null);
+                          setForm((prev) => (prev ? { ...prev, [key]: defaultForm[key] } : prev));
+                        }}
+                        style={{
+                          border: '1px solid #cbd5e1',
+                          borderRadius: 8,
+                          padding: '6px 10px',
+                          background: '#f8fafc',
+                          color: '#334155',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Original nutzen
+                      </button>
+                    </div>
+                    {showPrompt ? (
+                      <div style={promptPanelStyle}>
+                        <div style={promptLabelStyle}>Standard-Prompt</div>
+                        <div style={promptContentStyle}>{standardPrompt}</div>
+                        <label style={promptInputLabelStyle}>
+                          Eigener Prompt (optional)
+                          <textarea
+                            value={customPrompt}
+                            onChange={(e) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: e.target.value }))}
+                            style={promptInputStyle}
+                            placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
+                          />
+                        </label>
+                      </div>
+                    ) : null}
+                  </label>
+                );
+              })()
             ))}
 
             <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
@@ -704,3 +725,83 @@ export default function CrmAssetManager(props: Props) {
     </div>
   );
 }
+
+const aiActionsRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  flexWrap: 'wrap',
+};
+
+const aiButtonStyle: React.CSSProperties = {
+  alignSelf: 'flex-start',
+  padding: '9px 16px',
+  backgroundColor: 'rgba(72, 107, 122, 0.12)',
+  color: 'rgb(72, 107, 122)',
+  border: '1px solid rgb(72, 107, 122)',
+  borderRadius: '8px',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const aiButtonLoadingStyle: React.CSSProperties = {
+  ...aiButtonStyle,
+  opacity: 0.7,
+  cursor: 'not-allowed',
+};
+
+const promptToggleStyle: React.CSSProperties = {
+  alignSelf: 'flex-start',
+  backgroundColor: '#ffffff',
+  border: '1px solid rgb(72, 107, 122)',
+  color: 'rgb(72, 107, 122)',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  padding: '9px 16px',
+  borderRadius: '8px',
+};
+
+const promptPanelStyle: React.CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: '10px',
+  padding: '12px',
+  backgroundColor: '#f8fafc',
+};
+
+const promptLabelStyle: React.CSSProperties = {
+  fontSize: '10px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: '#94a3b8',
+  fontWeight: 700,
+  marginBottom: '6px',
+};
+
+const promptContentStyle: React.CSSProperties = {
+  fontSize: '12px',
+  color: '#475569',
+  marginBottom: '10px',
+  lineHeight: 1.5,
+};
+
+const promptInputLabelStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '6px',
+  fontSize: '11px',
+  fontWeight: 600,
+  color: '#1e293b',
+};
+
+const promptInputStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: '80px',
+  padding: '10px',
+  borderRadius: '8px',
+  border: '1px solid #e2e8f0',
+  fontSize: '12px',
+  lineHeight: 1.4,
+  fontFamily: 'inherit',
+};
