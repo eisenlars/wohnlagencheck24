@@ -285,7 +285,6 @@ export default function NetworkBookingsWorkspace({
               placements={placements}
               initialValue={createMode ? null : selectedBooking}
               submitLabel={createMode ? 'Buchung anlegen' : 'Buchung speichern'}
-              isPartnerDetailContext={Boolean(networkPartnerId)}
               onCancel={createMode ? undefined : () => {
                 setCreateMode(true);
                 setSelectedBookingId(null);
