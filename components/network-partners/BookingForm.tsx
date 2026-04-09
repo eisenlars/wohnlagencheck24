@@ -33,7 +33,6 @@ type BookingFormProps = {
   initialValue?: NetworkPartnerBookingRecord | null;
   submitLabel?: string;
   onCancel?: () => void;
-  isPartnerDetailContext?: boolean;
 };
 
 const inputStyle: CSSProperties = {
@@ -86,6 +85,12 @@ function formatAreaLabel(areas: AreaOption[], areaId: string): string {
   return areas.find((area) => area.id === areaId)?.label ?? areaId;
 }
 
+function toDistrictAreaId(areaId: string): string {
+  const normalized = String(areaId ?? '').trim();
+  if (!normalized) return '';
+  return normalized.split('-').slice(0, 3).join('-');
+}
+
 export default function BookingForm({
   networkPartners,
   areas,
@@ -94,7 +99,6 @@ export default function BookingForm({
   initialValue = null,
   submitLabel,
   onCancel,
-  isPartnerDetailContext = false,
 }: BookingFormProps) {
   const placementOptions = useMemo(
     () => placements.filter((placement) => placement.is_active),
@@ -117,13 +121,25 @@ export default function BookingForm({
   const parsedMonthlyPrice = Number(monthlyPrice);
   const monthlyPriceValue = Number.isFinite(parsedMonthlyPrice) ? parsedMonthlyPrice : 0;
   const partnerNetRevenue = Math.max(0, monthlyPriceValue - fixedPortalFee);
-  const showPartnerSelect = !isEditing && !isPartnerDetailContext && networkPartners.length > 1;
-  const selectedNetworkPartner = networkPartners.find((partner) => partner.id === networkPartnerId) ?? networkPartners[0] ?? null;
   const editingBooking = isEditing ? initialValue : null;
+  const districtOptions = useMemo(
+    () => areas.filter((area) => area.id.split('-').length <= 3),
+    [areas],
+  );
+  const initialDistrictAreaId = useMemo(() => {
+    const baseAreaId = initialValue?.area_id ?? areas[0]?.id ?? '';
+    return toDistrictAreaId(baseAreaId);
+  }, [areas, initialValue?.area_id]);
+  const [districtAreaId, setDistrictAreaId] = useState(initialDistrictAreaId);
+  const localityOptions = useMemo(
+    () => areas.filter((area) => toDistrictAreaId(area.id) === districtAreaId && area.id.split('-').length > 3),
+    [areas, districtAreaId],
+  );
 
   useEffect(() => {
     setNetworkPartnerId(initialValue?.network_partner_id ?? networkPartners[0]?.id ?? '');
     setAreaId(initialValue?.area_id ?? areas[0]?.id ?? '');
+    setDistrictAreaId(toDistrictAreaId(initialValue?.area_id ?? areas[0]?.id ?? ''));
     setPlacementCode(initialValue?.placement_code ?? placementOptions[0]?.code ?? '');
     setStatus(initialValue?.status ?? 'active');
     setMonthlyPrice(initialValue?.monthly_price_eur?.toString() ?? '10');
@@ -132,14 +148,14 @@ export default function BookingForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!networkPartnerId || !areaId || !placementCode) return;
+    if (!networkPartnerId || !districtAreaId || !placementCode) return;
     const nextMonthlyPrice = Number(monthlyPrice);
     if (!Number.isFinite(nextMonthlyPrice) || nextMonthlyPrice < fixedPortalFee) return;
     setSubmitting(true);
     try {
       await onSubmit({
         network_partner_id: networkPartnerId,
-        area_id: areaId,
+        area_id: districtAreaId,
         placement_code: placementCode,
         status,
         monthly_price_eur: nextMonthlyPrice,
@@ -149,6 +165,8 @@ export default function BookingForm({
         setStatus('active');
         setMonthlyPrice('10');
         setNotes('');
+        setAreaId('');
+        setDistrictAreaId(districtOptions[0]?.id ?? '');
       }
     } finally {
       setSubmitting(false);
@@ -180,25 +198,6 @@ export default function BookingForm({
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-          {showPartnerSelect ? (
-            <label style={labelStyle}>
-              Netzwerkpartner
-              <select value={networkPartnerId} onChange={(event) => setNetworkPartnerId(event.target.value)} style={inputStyle} required>
-                {networkPartners.map((partner) => (
-                  <option key={partner.id} value={partner.id}>
-                    {partner.company_name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : selectedNetworkPartner ? (
-            <div style={{ ...labelStyle, alignContent: 'start' }}>
-              Netzwerkpartner
-              <div style={{ ...inputStyle, background: '#f8fafc', color: '#334155' }}>
-                {selectedNetworkPartner.company_name}
-              </div>
-            </div>
-          ) : null}
           <label style={labelStyle}>
             Leistung
             <select
@@ -215,9 +214,33 @@ export default function BookingForm({
             </select>
           </label>
           <label style={labelStyle}>
-            Gebiet
-            <select value={areaId} onChange={(event) => setAreaId(event.target.value)} style={inputStyle} required>
-              {areas.map((area) => (
+            Kreis
+            <select
+              value={districtAreaId}
+              onChange={(event) => {
+                const nextDistrict = event.target.value;
+                setDistrictAreaId(nextDistrict);
+                setAreaId('');
+              }}
+              style={inputStyle}
+              required
+            >
+              {districtOptions.map((area) => (
+                <option key={area.id} value={area.id}>
+                  {area.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={labelStyle}>
+            Ortslage
+            <select
+              value={areaId}
+              onChange={(event) => setAreaId(event.target.value)}
+              style={inputStyle}
+            >
+              <option value="">Alle Ortslagen im Kreis</option>
+              {localityOptions.map((area) => (
                 <option key={area.id} value={area.id}>
                   {area.label}
                 </option>
