@@ -241,9 +241,6 @@ const textareaWrapperStyle: CSSProperties = { display: 'grid', gap: 10 };
 const textareaStyle: CSSProperties = { minHeight: 150, border: '1px solid #cbd5e1', borderRadius: 12, padding: '12px 14px', fontSize: 14, lineHeight: 1.55, resize: 'vertical' };
 const inputStyle: CSSProperties = { border: '1px solid #cbd5e1', borderRadius: 12, padding: '12px 14px', fontSize: 14 };
 const aiActionsRowStyle: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' };
-const aiButtonStyle: CSSProperties = { border: '1px solid #0f766e', borderRadius: 999, padding: '8px 12px', background: '#ecfeff', color: '#0f172a', cursor: 'pointer', fontSize: 12, fontWeight: 700 };
-const aiButtonLoadingStyle: CSSProperties = { ...aiButtonStyle, opacity: 0.7, cursor: 'wait' };
-const selectStyle: CSSProperties = { minWidth: 230, border: '1px solid #dbeafe', borderRadius: 10, background: '#fff', color: '#0f172a', fontSize: 12, fontWeight: 600, padding: '8px 10px' };
 const previewBoxStyle: CSSProperties = { border: '1px solid #e2e8f0', borderRadius: 12, background: '#f8fafc', padding: 12, display: 'grid', gap: 8 };
 const previewHeaderStyle: CSSProperties = { fontSize: 11, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase' };
 const previewContentStyle: CSSProperties = { fontSize: 13, color: '#0f172a', lineHeight: 1.6, whiteSpace: 'pre-wrap' };
@@ -309,6 +306,8 @@ export default function ReferencesWorkspaceManager() {
   const [query, setQuery] = useState('');
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
+  const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
   const [selectedLlmIntegrationId, setSelectedLlmIntegrationId] = useState('');
   const [llmOptionsLoading, setLlmOptionsLoading] = useState(false);
@@ -490,7 +489,7 @@ export default function ReferencesWorkspaceManager() {
     setSaving(false);
   }
 
-  async function runAiRewrite(key: keyof OverrideRow, label: string) {
+  async function runAiRewrite(key: keyof OverrideRow, label: string, customPrompt?: string) {
     if (!form || !selectedRow) return;
     const currentText = String(form[key] ?? '');
     if (!currentText.trim()) return;
@@ -511,6 +510,7 @@ export default function ReferencesWorkspaceManager() {
           areaName: selectedRow.title || selectedRow.external_id,
           type: 'general',
           sectionLabel: label,
+          customPrompt: customPrompt || undefined,
           llm_integration_id: selectedOption?.partnerIntegrationId || undefined,
           llm_global_provider_id: selectedOption?.globalProviderId || undefined,
         }),
@@ -548,6 +548,38 @@ export default function ReferencesWorkspaceManager() {
     updateField(key, rawValue);
   }
 
+  function getStandardPromptText(label: string, areaName: string) {
+    const lowerLabel = String(label || '').toLowerCase();
+    if (lowerLabel.includes('referenz-titel') || lowerLabel.includes('h1')) {
+      return `Formuliere einen prägnanten, sachlichen Referenz-Titel für ${areaName}. Maximal 60 Zeichen, keine Clickbait-Formulierungen, keine erfundenen Fakten, keine Übertreibungen.`;
+    }
+    if (lowerLabel.includes('seo-titel')) {
+      return `Schreibe einen SEO-Titel für eine Immobilienreferenz in ${areaName}. Maximal 60 Zeichen, klar lesbar, ohne Keyword-Stapelung und ohne erfundene Fakten.`;
+    }
+    if (lowerLabel.includes('seo-description')) {
+      return `Schreibe eine SEO-Description für eine Immobilienreferenz in ${areaName}. 140 bis 160 Zeichen, sachlich, kompakt und ohne neue Fakten.`;
+    }
+    if (lowerLabel.includes('teaser')) {
+      return `Formuliere einen kurzen Teaser zur Referenz in ${areaName}. 1 bis 2 Sätze, sachlich, glaubwürdig und ohne Übertreibung.`;
+    }
+    if (lowerLabel.includes('langtext')) {
+      return `Optimiere den Referenz-Langtext für bessere Lesbarkeit und Struktur. Sachlicher Stil, keine neuen Fakten, keine unnötigen Wiederholungen. Kontext: ${areaName}.`;
+    }
+    if (lowerLabel.includes('lage')) {
+      return `Formuliere den Lage-Text für eine Referenz in ${areaName} klar und informativ. Fokus auf Ort, Umfeld und regionale Einordnung. Keine erfundenen Fakten.`;
+    }
+    if (lowerLabel.includes('ausstatt')) {
+      return `Formuliere den Ausstattungs- oder Zusatztext für eine Referenz klar und sachlich. Nur aus den vorhandenen Referenzdaten ableitbare Aussagen verwenden.`;
+    }
+    if (lowerLabel.includes('highlights')) {
+      return `Schreibe maximal 6 Highlights, jeweils 1 Zeile. Kurz, konkret, belegbar, keine Wiederholungen und keine vagen Werbeformulierungen.`;
+    }
+    if (lowerLabel.includes('alt-texte') || lowerLabel.includes('alttexte')) {
+      return `Erstelle kurze, sachliche Alt-Texte, jeweils 1 Zeile pro Bild. Beschreibe das Motiv konkret, ohne erfundene Details und ohne Keyword-Stuffing.`;
+    }
+    return `Optimiere den Text für bessere Lesbarkeit, fachliche Klarheit und saubere Suchmaschinen-/Antwortsystem-Nutzung. Keine neuen Fakten hinzufügen. Kontext: ${areaName}.`;
+  }
+
   const renderTextField = (
     label: string,
     key: keyof OverrideRow,
@@ -559,6 +591,9 @@ export default function ReferencesWorkspaceManager() {
     const value = String(form[key] ?? '');
     const isCustomized = value.trim() !== rawValue.trim();
     const isRewriting = rewritingKey === keyName;
+    const showPrompt = Boolean(promptOpenMap[keyName]);
+    const customPrompt = customPromptMap[keyName] ?? '';
+    const standardPrompt = getStandardPromptText(label, selectedRow?.title || selectedRow?.external_id || 'Referenz');
     return (
       <div style={fieldCardStyle}>
         <div style={fieldHeaderStyle}>
@@ -588,31 +623,37 @@ export default function ReferencesWorkspaceManager() {
               />
             )}
             <div style={aiActionsRowStyle}>
-              {llmOptions.length > 0 || !llmOptionsLoaded ? (
-                <select
-                  value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
-                  onChange={(event) => setSelectedLlmIntegrationId(event.target.value)}
-                  style={selectStyle}
-                  aria-label="KI-Modell auswählen"
-                  disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-                >
-                  {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
-                  {llmOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
               <button
                 type="button"
                 style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
-                onClick={() => void runAiRewrite(key, label)}
+                onClick={() => void runAiRewrite(key, label, customPrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
-                {isRewriting ? 'KI läuft...' : 'Mit KI optimieren'}
+                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
+                style={promptToggleStyle}
+              >
+                {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
+            {showPrompt ? (
+              <div style={promptPanelStyle}>
+                <div style={promptLabelStyle}>Standard-Prompt</div>
+                <div style={promptContentStyle}>{standardPrompt}</div>
+                <label style={promptInputLabelStyle}>
+                  Eigener Prompt (optional)
+                  <textarea
+                    value={customPrompt}
+                    onChange={(event) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: event.target.value }))}
+                    style={promptInputStyle}
+                    placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
+                  />
+                </label>
+              </div>
+            ) : null}
           </div>
           <div style={previewBoxStyle}>
             <div style={previewHeaderStyle}>CRM-Original</div>
@@ -636,6 +677,9 @@ export default function ReferencesWorkspaceManager() {
     const rawValueText = rawValue.join('\n');
     const isCustomized = value.trim() !== rawValueText.trim();
     const isRewriting = rewritingKey === keyName;
+    const showPrompt = Boolean(promptOpenMap[keyName]);
+    const customPrompt = customPromptMap[keyName] ?? '';
+    const standardPrompt = getStandardPromptText(label, selectedRow?.title || selectedRow?.external_id || 'Referenz');
     return (
       <div style={fieldCardStyle}>
         <div style={fieldHeaderStyle}>
@@ -656,31 +700,37 @@ export default function ReferencesWorkspaceManager() {
               placeholder={placeholder}
             />
             <div style={aiActionsRowStyle}>
-              {llmOptions.length > 0 || !llmOptionsLoaded ? (
-                <select
-                  value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
-                  onChange={(event) => setSelectedLlmIntegrationId(event.target.value)}
-                  style={selectStyle}
-                  aria-label="KI-Modell auswählen"
-                  disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-                >
-                  {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
-                  {llmOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              ) : null}
               <button
                 type="button"
                 style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
-                onClick={() => void runAiRewrite(key, label)}
+                onClick={() => void runAiRewrite(key, label, customPrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
-                {isRewriting ? 'KI läuft...' : 'Mit KI optimieren'}
+                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
+                style={promptToggleStyle}
+              >
+                {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
               </button>
             </div>
+            {showPrompt ? (
+              <div style={promptPanelStyle}>
+                <div style={promptLabelStyle}>Standard-Prompt</div>
+                <div style={promptContentStyle}>{standardPrompt}</div>
+                <label style={promptInputLabelStyle}>
+                  Eigener Prompt (optional)
+                  <textarea
+                    value={customPrompt}
+                    onChange={(event) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: event.target.value }))}
+                    style={promptInputStyle}
+                    placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
+                  />
+                </label>
+              </div>
+            ) : null}
           </div>
           <div style={previewBoxStyle}>
             <div style={previewHeaderStyle}>CRM-Original</div>
@@ -712,6 +762,41 @@ export default function ReferencesWorkspaceManager() {
 
   return (
     <div style={shellStyle}>
+      <section style={visibilityShellStyle}>
+        <div style={visibilityCardStyle}>
+          <div style={visibilityControlsRowStyle}>
+            <div style={visibilityLabelStyle}>
+              <div style={visibilityInfoTitleStyle}>KI-Arbeitsmodus für Referenzen</div>
+              <div style={visibilityInfoTextStyle}>
+                Wählen Sie das Modell zentral für den gesamten Referenz-Arbeitsbereich. Alle KI-Aktionen in den Tabs nutzen diese Auswahl.
+              </div>
+            </div>
+            <div style={visibilityModelWrapStyle}>
+              {llmOptions.length > 0 || !llmOptionsLoaded ? (
+                <span style={visibilitySelectWrapStyle}>
+                  <select
+                    value={selectedLlmIntegrationId || llmOptions[0]?.id || ''}
+                    onChange={(event) => setSelectedLlmIntegrationId(event.target.value)}
+                    style={visibilityModelSelectStyle}
+                    aria-label="KI-Modell auswählen"
+                    disabled={llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
+                  >
+                    {!llmOptionsLoaded || llmOptionsLoading ? <option value="">Modelle werden geladen...</option> : null}
+                    {llmOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <span style={visibilitySelectChevronStyle} aria-hidden="true">▾</span>
+                </span>
+              ) : (
+                <span style={aiMissingHintStyle}>Keine aktive LLM-Integration</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
       <div style={workspaceStyle}>
         <section style={panelStyle}>
           <h3 style={panelTitleStyle}>Referenzen</h3>
@@ -1038,3 +1123,169 @@ export default function ReferencesWorkspaceManager() {
     </div>
   );
 }
+
+const visibilityShellStyle: CSSProperties = {
+  width: '100%',
+  padding: '0 0 0',
+  marginBottom: 0,
+};
+
+const visibilityCardStyle: CSSProperties = {
+  border: '1px solid #99f6b4',
+  borderRadius: '12px',
+  background: 'rgb(72, 107, 122)',
+  padding: '14px 16px',
+  display: 'grid',
+  gap: '12px',
+  marginBottom: '8px',
+};
+
+const visibilityControlsRowStyle: CSSProperties = {
+  display: 'flex',
+  gap: '12px',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  width: '100%',
+};
+
+const visibilityLabelStyle: CSSProperties = {
+  display: 'block',
+  flex: '1 1 420px',
+};
+
+const visibilityInfoTitleStyle: CSSProperties = {
+  color: '#f8fafc',
+  fontSize: '13px',
+  fontWeight: 700,
+  marginBottom: '4px',
+};
+
+const visibilityInfoTextStyle: CSSProperties = {
+  color: 'rgba(248, 250, 252, 0.88)',
+  fontSize: '12px',
+  lineHeight: 1.45,
+};
+
+const visibilityModelWrapStyle: CSSProperties = {
+  flex: '0 1 320px',
+  marginLeft: 'auto',
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
+};
+
+const visibilitySelectWrapStyle: CSSProperties = {
+  position: 'relative',
+  display: 'inline-block',
+};
+
+const visibilitySelectStyle: CSSProperties = {
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  MozAppearance: 'none',
+  minHeight: '40px',
+  borderRadius: '10px',
+  border: '1px solid rgba(255, 255, 255, 0.35)',
+  background: '#ffffff',
+  color: '#0f172a',
+  padding: '0 40px 0 12px',
+  fontSize: '13px',
+  fontWeight: 600,
+  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+  minWidth: '420px',
+};
+
+const visibilityModelSelectStyle: CSSProperties = {
+  ...visibilitySelectStyle,
+  minWidth: '320px',
+  maxWidth: '100%',
+};
+
+const visibilitySelectChevronStyle: CSSProperties = {
+  position: 'absolute',
+  right: '14px',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  fontSize: '14px',
+  lineHeight: 1,
+  color: '#475569',
+  pointerEvents: 'none',
+};
+
+const aiButtonStyle: CSSProperties = {
+  alignSelf: 'flex-start',
+  padding: '9px 16px',
+  backgroundColor: 'rgba(72, 107, 122, 0.12)',
+  color: 'rgb(72, 107, 122)',
+  border: '1px solid rgb(72, 107, 122)',
+  borderRadius: '8px',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const aiButtonLoadingStyle: CSSProperties = {
+  ...aiButtonStyle,
+  opacity: 0.7,
+  cursor: 'not-allowed',
+};
+
+const aiMissingHintStyle: CSSProperties = {
+  fontSize: '12px',
+  color: '#e2e8f0',
+};
+
+const promptToggleStyle: CSSProperties = {
+  alignSelf: 'flex-start',
+  backgroundColor: '#ffffff',
+  border: '1px solid rgb(72, 107, 122)',
+  color: 'rgb(72, 107, 122)',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  padding: '9px 16px',
+  borderRadius: '8px',
+};
+
+const promptPanelStyle: CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: '10px',
+  padding: '12px',
+  backgroundColor: '#f8fafc',
+};
+
+const promptLabelStyle: CSSProperties = {
+  fontSize: '10px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: '#94a3b8',
+  fontWeight: 700,
+  marginBottom: '6px',
+};
+
+const promptContentStyle: CSSProperties = {
+  fontSize: '12px',
+  color: '#475569',
+  marginBottom: '10px',
+  lineHeight: 1.5,
+};
+
+const promptInputLabelStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '6px',
+  fontSize: '11px',
+  fontWeight: 600,
+  color: '#1e293b',
+};
+
+const promptInputStyle: CSSProperties = {
+  width: '100%',
+  minHeight: '80px',
+  padding: '10px',
+  borderRadius: '8px',
+  border: '1px solid #e2e8f0',
+  fontSize: '12px',
+  lineHeight: 1.4,
+  fontFamily: 'inherit',
+};
