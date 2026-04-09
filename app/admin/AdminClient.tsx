@@ -1291,6 +1291,15 @@ function getMaskedAuthSummary(integration: Pick<Integration, "auth_config">): st
   return parts.join(" · ");
 }
 
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 function formatMandatoryKeyLabel(key: string): string {
   if (!key) return key;
   if (isMandatoryMediaKey(key)) return getMandatoryMediaLabel(key);
