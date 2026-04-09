@@ -5,18 +5,24 @@ import { ImmobiliengesucheKreisPageContent } from "@/app/(public)/immobilienmark
 
 type PageProps = {
   params: Promise<{ locale: string; bundesland: string; kreis: string }>;
+  searchParams?: Promise<{ page?: string }>;
 };
 
 export default async function LocalizedImmobiliengesucheKreisPage({
   params,
+  searchParams,
 }: PageProps) {
   const resolvedParams = await params;
+  const rawPage = await (await searchParams)?.page;
+  const parsedPage = rawPage ? Number(rawPage) : 1;
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
   const locale = parsePublicLocale(resolvedParams.locale);
   if (!locale) notFound();
 
   return ImmobiliengesucheKreisPageContent({
     bundesland: resolvedParams.bundesland,
     kreis: resolvedParams.kreis,
+    page,
     locale,
   });
 }

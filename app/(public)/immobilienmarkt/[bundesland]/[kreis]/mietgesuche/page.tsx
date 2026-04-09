@@ -9,12 +9,15 @@ import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
 
 type PageParams = { bundesland: string; kreis: string };
-type PageProps = { params: Promise<PageParams> };
-type ContentProps = { bundesland: string; kreis: string; locale?: string };
+type PageProps = { params: Promise<PageParams>; searchParams?: Promise<{ page?: string }> };
+type ContentProps = { bundesland: string; kreis: string; page?: number; locale?: string };
+
+const PAGE_SIZE = 12;
 
 export async function MietgesucheKreisPageContent({
   bundesland,
   kreis,
+  page = 1,
   locale = "de",
 }: ContentProps) {
   const normalizedLocale = normalizePublicLocale(locale);
@@ -22,10 +25,12 @@ export async function MietgesucheKreisPageContent({
   const formatProfile = await loadPortalFormatProfile(normalizedLocale);
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
-  const { requests, sourceCount } = await getRegionalRequestsForKreis({
+  const { requests, sourceCount, total } = await getRegionalRequestsForKreis({
     bundeslandSlug: bundesland,
     kreisSlug: kreis,
     mode: "miete",
+    page,
+    pageSize: PAGE_SIZE,
     locale: normalizedLocale,
   });
 
@@ -36,8 +41,9 @@ export async function MietgesucheKreisPageContent({
   const rawBasePath = `/immobilienmarkt/${bundesland}/${kreis}`;
   const germanListPath = `${rawBasePath}/mietgesuche`;
   const basePath = localizeHref(rawBasePath);
+  const listPath = `${basePath}/mietgesuche`;
   const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.kreis, { id: "mietgesuche", label: texts.rent_requests }];
-  const availabilityNotice = normalizedLocale !== "de" && requests.length === 0 && sourceCount > 0
+  const availabilityNotice = normalizedLocale !== "de" && total === 0 && sourceCount > 0
     ? {
         title: texts.requests_unavailable_title,
         body: texts.requests_unavailable_body,
@@ -51,6 +57,12 @@ export async function MietgesucheKreisPageContent({
       heading={`${texts.rent_requests} ${kreisName}`}
       requests={requests}
       mode="miete"
+      pagination={{
+        page: Math.max(page, 1),
+        pageSize: PAGE_SIZE,
+        total,
+        basePath: listPath,
+      }}
       tabs={tabs}
       activeTabId="mietgesuche"
       basePath={basePath}
@@ -64,7 +76,10 @@ export async function MietgesucheKreisPageContent({
   );
 }
 
-export default async function MietgesucheKreisPage({ params }: PageProps) {
+export default async function MietgesucheKreisPage({ params, searchParams }: PageProps) {
   const { bundesland, kreis } = await params;
-  return MietgesucheKreisPageContent({ bundesland, kreis, locale: "de" });
+  const rawPage = await (await searchParams)?.page;
+  const parsedPage = rawPage ? Number(rawPage) : 1;
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  return MietgesucheKreisPageContent({ bundesland, kreis, page, locale: "de" });
 }

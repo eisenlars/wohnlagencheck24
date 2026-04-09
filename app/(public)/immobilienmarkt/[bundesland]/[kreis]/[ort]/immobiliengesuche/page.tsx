@@ -9,13 +9,16 @@ import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
 
 type PageParams = { bundesland: string; kreis: string; ort: string };
-type PageProps = { params: Promise<PageParams> };
-type ContentProps = { bundesland: string; kreis: string; ort: string; locale?: string };
+type PageProps = { params: Promise<PageParams>; searchParams?: Promise<{ page?: string }> };
+type ContentProps = { bundesland: string; kreis: string; ort: string; page?: number; locale?: string };
+
+const PAGE_SIZE = 12;
 
 export async function ImmobiliengesucheOrtPageContent({
   bundesland,
   kreis,
   ort,
+  page = 1,
   locale = "de",
 }: ContentProps) {
   const normalizedLocale = normalizePublicLocale(locale);
@@ -24,11 +27,13 @@ export async function ImmobiliengesucheOrtPageContent({
   const localizeHref = (path: string) =>
     normalizedLocale === "de" ? path : buildLocalizedHref(normalizedLocale, path);
 
-  const { requests, sourceCount } = await getRegionalRequestsForOrtslage({
+  const { requests, sourceCount, total } = await getRegionalRequestsForOrtslage({
     bundeslandSlug: bundesland,
     kreisSlug: kreis,
     ortSlug: ort,
     mode: "kauf",
+    page,
+    pageSize: PAGE_SIZE,
     locale: normalizedLocale,
   });
 
@@ -45,8 +50,9 @@ export async function ImmobiliengesucheOrtPageContent({
   const rawParentBasePath = `/immobilienmarkt/${bundesland}/${kreis}`;
   const germanListPath = `${rawBasePath}/immobiliengesuche`;
   const basePath = localizeHref(rawBasePath);
+  const listPath = `${basePath}/immobiliengesuche`;
   const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.ort, { id: "immobiliengesuche", label: texts.buy_requests }];
-  const availabilityNotice = normalizedLocale !== "de" && requests.length === 0 && sourceCount > 0
+  const availabilityNotice = normalizedLocale !== "de" && total === 0 && sourceCount > 0
     ? {
         title: texts.requests_unavailable_title,
         body: texts.requests_unavailable_body,
@@ -60,6 +66,12 @@ export async function ImmobiliengesucheOrtPageContent({
       heading={`${texts.buy_requests} ${ortName}`}
       requests={requests}
       mode="kauf"
+      pagination={{
+        page: Math.max(page, 1),
+        pageSize: PAGE_SIZE,
+        total,
+        basePath: listPath,
+      }}
       tabs={tabs}
       activeTabId="immobiliengesuche"
       basePath={basePath}
@@ -74,7 +86,10 @@ export async function ImmobiliengesucheOrtPageContent({
   );
 }
 
-export default async function ImmobiliengesucheOrtPage({ params }: PageProps) {
+export default async function ImmobiliengesucheOrtPage({ params, searchParams }: PageProps) {
   const { bundesland, kreis, ort } = await params;
-  return ImmobiliengesucheOrtPageContent({ bundesland, kreis, ort, locale: "de" });
+  const rawPage = await (await searchParams)?.page;
+  const parsedPage = rawPage ? Number(rawPage) : 1;
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  return ImmobiliengesucheOrtPageContent({ bundesland, kreis, ort, page, locale: "de" });
 }

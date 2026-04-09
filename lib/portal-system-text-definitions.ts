@@ -42,12 +42,14 @@ export type PortalSystemTextMap = {
   page_navigation: string;
   previous_page: string;
   next_page: string;
+  updated_label: string;
   no_matching_requests_available: string;
   region_not_specified: string;
   rent_request: string;
   purchase_request: string;
   rooms_min: string;
   object_generic: string;
+  offer_property_to_request: string;
   offers_unavailable_title: string;
   offers_unavailable_body: string;
   requests_unavailable_title: string;
@@ -132,12 +134,14 @@ export const PORTAL_SYSTEM_TEXT_DEFAULTS: Record<string, PortalSystemTextMap> = 
     page_navigation: "Seiten-Navigation",
     previous_page: "Vorherige Seite",
     next_page: "Nächste Seite",
+    updated_label: "Aktualisiert",
     no_matching_requests_available: "Aktuell sind keine passenden Gesuche für diese Ortslage verfügbar.",
     region_not_specified: "Region nicht hinterlegt",
     rent_request: "Mietgesuch",
     purchase_request: "Kaufgesuch",
     rooms_min: "Zimmer min.",
     object_generic: "Objekt",
+    offer_property_to_request: "Objekt anbieten",
     offers_unavailable_title: "Angebote noch nicht in dieser Sprache verfügbar",
     offers_unavailable_body: "Für diese Angebote liegen aktuell noch keine freigegebenen Übersetzungen in der gewählten Sprache vor.",
     requests_unavailable_title: "Gesuche noch nicht in dieser Sprache verfügbar",
@@ -212,12 +216,14 @@ export const PORTAL_SYSTEM_TEXT_DEFAULTS: Record<string, PortalSystemTextMap> = 
     page_navigation: "Page navigation",
     previous_page: "Previous page",
     next_page: "Next page",
+    updated_label: "Updated",
     no_matching_requests_available: "There are currently no matching requests available for this area.",
     region_not_specified: "Region not specified",
     rent_request: "Rental request",
     purchase_request: "Buy request",
     rooms_min: "Rooms min.",
     object_generic: "Property",
+    offer_property_to_request: "Offer property",
     offers_unavailable_title: "Offers not yet available in this language",
     offers_unavailable_body: "There are currently no approved translations for these offers in the selected language.",
     requests_unavailable_title: "Requests not yet available in this language",

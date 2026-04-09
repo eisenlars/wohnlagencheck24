@@ -13,8 +13,13 @@ export type RegionalRequest = {
   locationText: string | null;
   requestType: RequestMode;
   objectType: string | null;
+  objectSubtype: string | null;
   minRooms: number | null;
+  maxRooms: number | null;
+  minAreaSqm: number | null;
+  maxAreaSqm: number | null;
   maxPrice: number | null;
+  radiusKm: number | null;
   regionTargets: Array<{ city: string; district: string | null; label: string }>;
   updatedAt: string | null;
 };
@@ -22,6 +27,9 @@ export type RegionalRequest = {
 export type RegionalRequestResult = {
   requests: RegionalRequest[];
   sourceCount: number;
+  total: number;
+  page: number;
+  pageSize: number;
 };
 
 type GetRegionalRequestsArgs = {
@@ -29,6 +37,8 @@ type GetRegionalRequestsArgs = {
   kreisSlug: string;
   ortSlug: string;
   mode: RequestMode;
+  page?: number;
+  pageSize?: number;
   limit?: number;
   locale?: string;
 };
@@ -37,6 +47,8 @@ type GetKreisRequestsArgs = {
   bundeslandSlug: string;
   kreisSlug: string;
   mode: RequestMode;
+  page?: number;
+  pageSize?: number;
   limit?: number;
   locale?: string;
 };
@@ -165,8 +177,13 @@ function mapRowsToRegionalRequests(
       locationText: String(record.location_text ?? "").trim() || null,
       requestType,
       objectType: payload.object_type ? String(payload.object_type) : null,
+      objectSubtype: payload.object_subtype ? String(payload.object_subtype) : null,
       minRooms: toFiniteNumber(payload.min_rooms),
+      maxRooms: toFiniteNumber(payload.max_rooms),
+      minAreaSqm: toFiniteNumber(payload.min_area_sqm) ?? toFiniteNumber(payload.min_living_area_sqm),
+      maxAreaSqm: toFiniteNumber(payload.max_area_sqm) ?? toFiniteNumber(payload.max_living_area_sqm),
       maxPrice: toFiniteNumber(payload.max_price),
+      radiusKm: toFiniteNumber(payload.radius_km),
       regionTargets: targets,
       updatedAt: record.source_updated_at ? String(record.source_updated_at) : null,
     });
@@ -179,19 +196,27 @@ export async function getRegionalRequestsForKreis(
 ): Promise<RegionalRequestResult> {
   const normalizedLocale = normalizePublicLocale(args.locale);
   const scope = await resolveKreisAreaScope(args.bundeslandSlug, args.kreisSlug);
-  if (scope.areaIds.length === 0) return { requests: [], sourceCount: 0 };
+  const pageSize = Math.max(1, Math.min(args.pageSize ?? 12, 48));
+  const page = Math.max(1, args.page ?? 1);
+  if (scope.areaIds.length === 0) return { requests: [], sourceCount: 0, total: 0, page, pageSize };
   const rows = await fetchProjectedRequests(
     scope.areaIds,
     normalizedLocale,
-    Math.max(1, Math.min(args.limit ?? 80, 240)),
+    Math.max(1, Math.min(args.limit ?? 240, 240)),
   );
   const sourceRows = normalizedLocale === "de"
     ? rows
-    : await fetchProjectedRequests(scope.areaIds, "de", Math.max(1, Math.min(args.limit ?? 80, 240)));
+    : await fetchProjectedRequests(scope.areaIds, "de", Math.max(1, Math.min(args.limit ?? 240, 240)));
   const sourceRequests = mapRowsToRegionalRequests(sourceRows, args.mode);
+  const mappedRequests = mapRowsToRegionalRequests(rows, args.mode);
+  const start = (page - 1) * pageSize;
+  const pagedRequests = mappedRequests.slice(start, start + pageSize);
   return {
-    requests: mapRowsToRegionalRequests(rows, args.mode),
+    requests: pagedRequests,
     sourceCount: sourceRequests.length,
+    total: mappedRequests.length,
+    page,
+    pageSize,
   };
 }
 
@@ -199,6 +224,8 @@ export async function getRegionalRequestsForOrtslage(
   args: GetRegionalRequestsArgs,
 ): Promise<RegionalRequestResult> {
   const supabase = createClient();
+  const pageSize = Math.max(1, Math.min(args.pageSize ?? 12, 48));
+  const page = Math.max(1, args.page ?? 1);
 
   const { data: ortArea, error: ortError } = await supabase
     .from("areas")
@@ -209,19 +236,19 @@ export async function getRegionalRequestsForOrtslage(
     .limit(1)
     .maybeSingle();
 
-  if (ortError || !ortArea) return { requests: [], sourceCount: 0 };
+  if (ortError || !ortArea) return { requests: [], sourceCount: 0, total: 0, page, pageSize };
 
   const normalizedLocale = normalizePublicLocale(args.locale);
   const scope = await resolveKreisAreaScope(args.bundeslandSlug, args.kreisSlug);
-  if (scope.areaIds.length === 0) return { requests: [], sourceCount: 0 };
+  if (scope.areaIds.length === 0) return { requests: [], sourceCount: 0, total: 0, page, pageSize };
   const rows = await fetchProjectedRequests(
     scope.areaIds,
     normalizedLocale,
-    Math.max(1, Math.min(args.limit ?? 60, 240)),
+    Math.max(1, Math.min(args.limit ?? 240, 240)),
   );
   const sourceRows = normalizedLocale === "de"
     ? rows
-    : await fetchProjectedRequests(scope.areaIds, "de", Math.max(1, Math.min(args.limit ?? 60, 240)));
+    : await fetchProjectedRequests(scope.areaIds, "de", Math.max(1, Math.min(args.limit ?? 240, 240)));
 
   const cityName = String((scope.kreisName ?? "")).trim() || "Leipzig";
   const districtName = String((ortArea.name ?? "")).trim();
@@ -283,12 +310,23 @@ export async function getRegionalRequestsForOrtslage(
       locationText: String(record.location_text ?? "").trim() || null,
       requestType,
       objectType: payload.object_type ? String(payload.object_type) : null,
+      objectSubtype: payload.object_subtype ? String(payload.object_subtype) : null,
       minRooms: toFiniteNumber(payload.min_rooms),
+      maxRooms: toFiniteNumber(payload.max_rooms),
+      minAreaSqm: toFiniteNumber(payload.min_area_sqm) ?? toFiniteNumber(payload.min_living_area_sqm),
+      maxAreaSqm: toFiniteNumber(payload.max_area_sqm) ?? toFiniteNumber(payload.max_living_area_sqm),
       maxPrice: toFiniteNumber(payload.max_price),
+      radiusKm: toFiniteNumber(payload.radius_km),
       regionTargets: targets,
       updatedAt: record.source_updated_at ? String(record.source_updated_at) : null,
     });
   }
-
-  return { requests: out, sourceCount };
+  const start = (page - 1) * pageSize;
+  return {
+    requests: out.slice(start, start + pageSize),
+    sourceCount,
+    total: out.length,
+    page,
+    pageSize,
+  };
 }
