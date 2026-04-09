@@ -52,8 +52,9 @@ export default function NetworkPartnerHomePage() {
 
   return (
     <NetworkPartnerShell
+      activeSection="home"
       title="Netzwerkpartner-Bereich"
-      description="Dieser Bereich ist der getrennte Self-Service für regionale Netzwerkpartner. Buchungen, Rechnungen und später Content laufen hier im eigenen Scope."
+      description="Dieser Bereich ist der getrennte Self-Service für regionale Netzwerkpartner. Anbindungen, Content, Buchungen, Rechnungen und Kostenmonitor laufen hier im eigenen Scope."
     >
       {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
       {loading ? (

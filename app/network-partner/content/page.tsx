@@ -69,6 +69,7 @@ export default function NetworkPartnerContentPage() {
 
   return (
     <NetworkPartnerShell
+      activeSection="content"
       title="Mein Content"
       description="Der Netzwerkpartner pflegt hier den eigenen Content innerhalb der gebuchten Placements. Freigabe und Live-Schaltung bleiben im Portal-Partner-Review."
     >

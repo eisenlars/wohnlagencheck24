@@ -4,6 +4,7 @@ import type { NetworkPartnerRole } from '@/lib/network-partners/types';
 
 type IntegrationRecord = {
   id: string;
+  kind: 'crm' | 'llm';
   provider: string;
   base_url: string | null;
   auth_type: string | null;
@@ -47,6 +48,7 @@ export default function IntegrationList({
       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1040 }}>
         <thead>
           <tr style={{ textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>
+            <th style={{ padding: '10px 12px' }}>Anbindung</th>
             <th style={{ padding: '10px 12px' }}>Provider</th>
             <th style={{ padding: '10px 12px' }}>Basis-URL</th>
             <th style={{ padding: '10px 12px' }}>Auth</th>
@@ -70,6 +72,7 @@ export default function IntegrationList({
                   background: isSelected ? '#f0fdfa' : '#fff',
                 }}
               >
+                <td style={{ padding: '12px' }}>{integration.kind.toUpperCase()}</td>
                 <td style={{ padding: '12px' }}>
                   <div style={{ display: 'grid', gap: 4 }}>
                     <strong style={{ color: '#0f172a' }}>{integration.provider}</strong>
@@ -90,7 +93,9 @@ export default function IntegrationList({
                 <td style={{ padding: '12px' }}>{formatDateTime(integration.last_preview_sync_at)}</td>
                 <td style={{ padding: '12px' }}>{formatDateTime(integration.last_sync_at)}</td>
                 <td style={{ padding: '12px', color: '#334155' }}>
-                  {integration.has_trigger_token && integration.has_trigger_secret ? 'eingerichtet' : 'offen'}
+                  {integration.kind === 'crm'
+                    ? (integration.has_trigger_token && integration.has_trigger_secret ? 'eingerichtet' : 'offen')
+                    : '—'}
                 </td>
                 <td style={{ padding: '12px' }}>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -133,8 +138,8 @@ export default function IntegrationList({
           })}
           {integrations.length === 0 ? (
             <tr>
-              <td colSpan={10} style={{ padding: '18px 12px', color: '#64748b' }}>
-                Noch keine CRM-Integrationen vorhanden.
+              <td colSpan={11} style={{ padding: '18px 12px', color: '#64748b' }}>
+                Noch keine Integrationen vorhanden.
               </td>
             </tr>
           ) : null}

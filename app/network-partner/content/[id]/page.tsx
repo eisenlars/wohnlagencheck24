@@ -72,6 +72,7 @@ export default function NetworkPartnerContentDetailPage({ params }: NetworkPartn
 
   return (
     <NetworkPartnerShell
+      activeSection="content"
       title="Content bearbeiten"
       description="Der Netzwerkpartner pflegt hier den eigenen Inhalt, ergänzt Übersetzungen und reicht den Datensatz in den Review ein."
     >

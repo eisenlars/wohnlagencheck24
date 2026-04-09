@@ -54,6 +54,7 @@ export default function NetworkPartnerInvoicesPage() {
 
   return (
     <NetworkPartnerShell
+      activeSection="invoices"
       title="Meine Rechnungen"
       description="Der Netzwerkpartner sieht hier die eigenen Rechnungszeilen. Solange noch keine Faktura geschrieben wird, dient die Buchungsbasis als operative Vorschau."
     >

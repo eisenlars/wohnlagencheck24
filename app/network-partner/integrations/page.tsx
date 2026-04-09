@@ -22,6 +22,7 @@ import type {
 
 type IntegrationView = {
   id: string;
+  kind: 'crm' | 'llm';
   provider: string;
   base_url: string | null;
   auth_type: string | null;
@@ -62,6 +63,9 @@ type MePayload = {
 };
 
 type IntegrationsPayload = {
+  policy?: {
+    llm_partner_managed_allowed?: boolean;
+  };
   integrations?: IntegrationView[];
   error?: string;
 };
@@ -140,6 +144,7 @@ export default function NetworkPartnerIntegrationsPage() {
   const [runningTest, setRunningTest] = useState(false);
   const [runningPreview, setRunningPreview] = useState(false);
   const [runningSync, setRunningSync] = useState(false);
+  const [llmAllowed, setLlmAllowed] = useState(false);
 
   const loadData = useCallback(async () => {
     const [meResponse, integrationsResponse] = await Promise.all([
@@ -177,6 +182,7 @@ export default function NetworkPartnerIntegrationsPage() {
       const nextIntegrations = Array.isArray(integrationsPayload?.integrations) ? integrationsPayload.integrations : [];
       setNetworkPartner(mePayload?.network_partner ?? null);
       setRole(mePayload?.actor?.role ?? null);
+      setLlmAllowed(integrationsPayload?.policy?.llm_partner_managed_allowed === true);
       setIntegrations(nextIntegrations);
       setSelectedIntegrationId((current) => findSelectedIntegration(nextIntegrations, current)?.id ?? null);
       setLoading(false);
@@ -204,6 +210,7 @@ export default function NetworkPartnerIntegrationsPage() {
     const nextIntegrations = Array.isArray(integrationsPayload?.integrations) ? integrationsPayload.integrations : [];
     setNetworkPartner(mePayload?.network_partner ?? null);
     setRole(mePayload?.actor?.role ?? null);
+    setLlmAllowed(integrationsPayload?.policy?.llm_partner_managed_allowed === true);
     setIntegrations(nextIntegrations);
     setSelectedIntegrationId(findSelectedIntegration(nextIntegrations, nextSelectedId ?? selectedIntegrationId)?.id ?? null);
   }
@@ -237,7 +244,7 @@ export default function NetworkPartnerIntegrationsPage() {
   useEffect(() => {
     let active = true;
     async function loadTriggerConfig() {
-      if (!selectedIntegration?.id) {
+      if (!selectedIntegration?.id || selectedIntegration.kind !== 'crm') {
         setTriggerConfig(null);
         setGeneratedTriggerSecret(null);
         setTriggerLoading(false);
@@ -263,12 +270,13 @@ export default function NetworkPartnerIntegrationsPage() {
     return () => {
       active = false;
     };
-  }, [selectedIntegration?.id]);
+  }, [selectedIntegration?.id, selectedIntegration?.kind]);
 
   return (
     <NetworkPartnerShell
-      title="CRM-Integrationen"
-      description="Hier pflegt der Netzwerkpartner eigene CRM-Verbindungen, testet den Providerzugriff und steuert Preview- sowie produktive Sync-Läufe in die Netzwerkpartner-Domäne."
+      activeSection="integrations"
+      title="Anbindungen"
+      description="Hier pflegt der Netzwerkpartner eigene CRM- und LLM-Anbindungen. CRM nutzt Test, Preview und Sync, LLM konzentriert sich auf Provider, Secrets und Verbindungstest."
     >
       {networkPartner ? (
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', color: '#334155' }}>
@@ -286,6 +294,7 @@ export default function NetworkPartnerIntegrationsPage() {
             title="Neue Integration anlegen"
             submitLabel="Integration anlegen"
             disabled={!canManage}
+            llmAllowed={llmAllowed}
             onSubmit={async (values) => {
               setError(null);
               setMessage(null);
@@ -293,7 +302,7 @@ export default function NetworkPartnerIntegrationsPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  kind: 'crm',
+                  kind: values.kind,
                   provider: values.provider,
                   base_url: values.base_url,
                   auth_type: values.auth_type,
@@ -364,6 +373,7 @@ export default function NetworkPartnerIntegrationsPage() {
                   submitLabel="Integration speichern"
                   disabled={!canManage}
                   initialValue={selectedIntegration}
+                  llmAllowed={llmAllowed}
                   onSubmit={async (values) => {
                     setError(null);
                     setMessage(null);
@@ -371,6 +381,7 @@ export default function NetworkPartnerIntegrationsPage() {
                       method: 'PATCH',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
+                        kind: values.kind,
                         provider: values.provider,
                         base_url: values.base_url,
                         auth_type: values.auth_type,
@@ -416,37 +427,39 @@ export default function NetworkPartnerIntegrationsPage() {
               </article>
             </div>
 
-            <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-              <IntegrationTriggerPanel
-                config={triggerConfig}
-                generatedSecret={generatedTriggerSecret}
-                disabled={!canManage}
-                loading={triggerLoading}
-                onGenerate={async () => {
-                  setTriggerLoading(true);
-                  setError(null);
-                  setMessage(null);
-                  try {
-                    const response = await fetch(
-                      `/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/trigger-config`,
-                      { method: 'POST' },
-                    );
-                    if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
-                    const payload = (await response.json().catch(() => null)) as TriggerConfigPayload | null;
-                    if (!response.ok) {
-                      setError(String(payload?.error ?? 'Trigger-Konfiguration konnte nicht gespeichert werden.'));
-                      return;
+            {selectedIntegration.kind === 'crm' ? (
+              <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
+                <IntegrationTriggerPanel
+                  config={triggerConfig}
+                  generatedSecret={generatedTriggerSecret}
+                  disabled={!canManage}
+                  loading={triggerLoading}
+                  onGenerate={async () => {
+                    setTriggerLoading(true);
+                    setError(null);
+                    setMessage(null);
+                    try {
+                      const response = await fetch(
+                        `/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/trigger-config`,
+                        { method: 'POST' },
+                      );
+                      if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
+                      const payload = (await response.json().catch(() => null)) as TriggerConfigPayload | null;
+                      if (!response.ok) {
+                        setError(String(payload?.error ?? 'Trigger-Konfiguration konnte nicht gespeichert werden.'));
+                        return;
+                      }
+                      setTriggerConfig(payload?.config ?? null);
+                      setGeneratedTriggerSecret(payload?.generated_secret ?? null);
+                      await reloadIntegrations(selectedIntegration.id);
+                      setMessage('Automatische Aktualisierung wurde aktualisiert.');
+                    } finally {
+                      setTriggerLoading(false);
                     }
-                    setTriggerConfig(payload?.config ?? null);
-                    setGeneratedTriggerSecret(payload?.generated_secret ?? null);
-                    await reloadIntegrations(selectedIntegration.id);
-                    setMessage('Automatische Aktualisierung wurde aktualisiert.');
-                  } finally {
-                    setTriggerLoading(false);
-                  }
-                }}
-              />
-            </article>
+                  }}
+                />
+              </article>
+            ) : null}
 
             <div style={{ display: 'grid', gap: 18, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
               <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
@@ -486,28 +499,73 @@ export default function NetworkPartnerIntegrationsPage() {
                 />
               </article>
 
+              {selectedIntegration.kind === 'crm' ? (
+                <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
+                  <IntegrationPreviewPanel
+                    disabled={!canManage}
+                    running={runningPreview}
+                    result={previewResult}
+                    onRun={async (values) => {
+                      setRunningPreview(true);
+                      setError(null);
+                      setMessage(null);
+                      try {
+                        const response = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/preview-sync`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(values),
+                        });
+                        if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
+                        const payload = (await response.json().catch(() => null)) as PreviewPayload | null;
+                        if (!response.ok) {
+                          setError(String(payload?.error ?? 'Preview-Sync fehlgeschlagen.'));
+                          return;
+                        }
+                        setPreviewResult(payload?.result ?? null);
+                        await reloadIntegrations(selectedIntegration.id);
+                        const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
+                        if (redirectIfUnauthorizedResponse(runsResponse, 'network_partner')) return;
+                        const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
+                        if (runsResponse.ok) {
+                          setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
+                        }
+                        setMessage('Preview-Sync abgeschlossen.');
+                      } finally {
+                        setRunningPreview(false);
+                      }
+                    }}
+                  />
+                </article>
+              ) : (
+                <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#f8fafc', color: '#475569', lineHeight: 1.6 }}>
+                  LLM-Anbindungen benötigen keinen Preview-Sync. Hier stehen nur Provider, Secrets und Verbindungstest im Fokus.
+                </article>
+              )}
+            </div>
+
+            {selectedIntegration.kind === 'crm' ? (
               <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-                <IntegrationPreviewPanel
+                <IntegrationSyncPanel
                   disabled={!canManage}
-                  running={runningPreview}
-                  result={previewResult}
+                  running={runningSync}
+                  result={syncResult}
                   onRun={async (values) => {
-                    setRunningPreview(true);
+                    setRunningSync(true);
                     setError(null);
                     setMessage(null);
                     try {
-                      const response = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/preview-sync`, {
+                      const response = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/sync`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(values),
                       });
                       if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
-                      const payload = (await response.json().catch(() => null)) as PreviewPayload | null;
+                      const payload = (await response.json().catch(() => null)) as SyncPayload | null;
                       if (!response.ok) {
-                        setError(String(payload?.error ?? 'Preview-Sync fehlgeschlagen.'));
+                        setError(String(payload?.error ?? 'Sync fehlgeschlagen.'));
                         return;
                       }
-                      setPreviewResult(payload?.result ?? null);
+                      setSyncResult(payload?.result ?? null);
                       await reloadIntegrations(selectedIntegration.id);
                       const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
                       if (redirectIfUnauthorizedResponse(runsResponse, 'network_partner')) return;
@@ -515,51 +573,14 @@ export default function NetworkPartnerIntegrationsPage() {
                       if (runsResponse.ok) {
                         setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
                       }
-                      setMessage('Preview-Sync abgeschlossen.');
+                      setMessage('Produktiver Sync abgeschlossen.');
                     } finally {
-                      setRunningPreview(false);
+                      setRunningSync(false);
                     }
                   }}
                 />
               </article>
-            </div>
-
-            <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-              <IntegrationSyncPanel
-                disabled={!canManage}
-                running={runningSync}
-                result={syncResult}
-                onRun={async (values) => {
-                  setRunningSync(true);
-                  setError(null);
-                  setMessage(null);
-                  try {
-                    const response = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/sync`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(values),
-                    });
-                    if (redirectIfUnauthorizedResponse(response, 'network_partner')) return;
-                    const payload = (await response.json().catch(() => null)) as SyncPayload | null;
-                    if (!response.ok) {
-                      setError(String(payload?.error ?? 'Sync fehlgeschlagen.'));
-                      return;
-                    }
-                    setSyncResult(payload?.result ?? null);
-                    await reloadIntegrations(selectedIntegration.id);
-                    const runsResponse = await fetch(`/api/network-partner/integrations/${encodeURIComponent(selectedIntegration.id)}/runs?limit=12`, { method: 'GET', cache: 'no-store' });
-                    if (redirectIfUnauthorizedResponse(runsResponse, 'network_partner')) return;
-                    const runsPayload = (await runsResponse.json().catch(() => null)) as RunsPayload | null;
-                    if (runsResponse.ok) {
-                      setRuns(Array.isArray(runsPayload?.runs) ? runsPayload.runs : []);
-                    }
-                    setMessage('Produktiver Sync abgeschlossen.');
-                  } finally {
-                    setRunningSync(false);
-                  }
-                }}
-              />
-            </article>
+            ) : null}
 
             <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff', display: 'grid', gap: 12 }}>
               <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Letzte Läufe</h3>

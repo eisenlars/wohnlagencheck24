@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+
+import { getProviderSpec, getProvidersForKind } from '@/lib/integrations/providers';
 
 type IntegrationRecord = {
   id: string;
+  kind: 'crm' | 'llm';
   provider: string;
   base_url: string | null;
   auth_type: string | null;
@@ -12,19 +15,14 @@ type IntegrationRecord = {
   settings: Record<string, unknown> | null;
 };
 
-type IntegrationFormValues = {
-  provider: 'propstack' | 'onoffice';
+export type IntegrationFormValues = {
+  kind: 'crm' | 'llm';
+  provider: string;
   base_url: string;
   auth_type: string;
   detail_url_template: string;
   is_active: boolean;
-  settings: {
-    resources: {
-      offers: { enabled: boolean };
-      requests: { enabled: boolean };
-      references: { enabled: boolean };
-    };
-  };
+  settings: Record<string, unknown>;
 };
 
 type IntegrationFormProps = {
@@ -32,38 +30,108 @@ type IntegrationFormProps = {
   submitLabel: string;
   disabled?: boolean;
   initialValue?: IntegrationRecord | null;
+  llmAllowed?: boolean;
   onSubmit: (values: IntegrationFormValues) => Promise<void>;
 };
 
-function readEnabled(settings: Record<string, unknown> | null | undefined, key: 'offers' | 'requests' | 'references') {
-  const resources =
-    settings && typeof settings === 'object' && !Array.isArray(settings) && settings.resources && typeof settings.resources === 'object'
-      ? (settings.resources as Record<string, unknown>)
-      : null;
-  const resource =
-    resources && resources[key] && typeof resources[key] === 'object' && !Array.isArray(resources[key])
-      ? (resources[key] as Record<string, unknown>)
-      : null;
-  return typeof resource?.enabled === 'boolean' ? resource.enabled : key !== 'references';
+function defaultProvider(kind: 'crm' | 'llm'): string {
+  const providers = getProvidersForKind(kind).filter((spec) =>
+    kind === 'crm'
+      ? ['propstack', 'onoffice', 'openimmo'].includes(spec.id)
+      : ['openai', 'anthropic', 'azure_openai', 'google_gemini', 'mistral', 'generic_llm'].includes(spec.id),
+  );
+  return providers[0]?.id ?? '';
 }
 
-function toInitialValues(initialValue?: IntegrationRecord | null): IntegrationFormValues {
-  const provider = initialValue?.provider === 'onoffice' ? 'onoffice' : 'propstack';
-  const authType = initialValue?.auth_type?.trim() || (provider === 'onoffice' ? 'basic' : 'api_key');
+function defaultValuesFor(kind: 'crm' | 'llm', provider: string): IntegrationFormValues {
+  const spec = getProviderSpec(provider);
+  const authType = spec?.defaultAuthType ?? spec?.authTypes[0] ?? '';
+  if (kind === 'llm') {
+    return {
+      kind,
+      provider,
+      base_url:
+        provider === 'anthropic'
+          ? 'https://api.anthropic.com/v1'
+          : provider === 'mistral'
+            ? 'https://api.mistral.ai/v1'
+            : provider === 'google_gemini'
+              ? 'https://generativelanguage.googleapis.com/v1beta'
+              : provider === 'azure_openai'
+                ? 'https://example-resource.openai.azure.com'
+                : 'https://api.openai.com/v1',
+      auth_type: authType,
+      detail_url_template: '',
+      is_active: true,
+      settings: {
+        model:
+          provider === 'anthropic'
+            ? 'claude-opus-4-1-20250805'
+            : provider === 'mistral'
+              ? 'mistral-small-latest'
+              : provider === 'google_gemini'
+                ? 'gemini-2.5-pro'
+                : provider === 'azure_openai'
+                  ? 'gpt-4o-prod'
+                  : 'gpt-5.2',
+        api_version: provider === 'azure_openai' ? '2024-10-21' : '',
+        temperature: 0.4,
+        max_tokens: 800,
+      },
+    };
+  }
+
   return {
+    kind,
     provider,
-    base_url: initialValue?.base_url ?? '',
+    base_url:
+      provider === 'onoffice'
+        ? 'https://api.onoffice.de/api/stable/api.php'
+        : provider === 'openimmo'
+          ? ''
+          : 'https://api.propstack.de/v1',
     auth_type: authType,
-    detail_url_template: initialValue?.detail_url_template ?? '',
-    is_active: initialValue?.is_active ?? true,
+    detail_url_template: 'https://crm.example.de/object/{id}',
+    is_active: true,
     settings: {
       resources: {
-        offers: { enabled: readEnabled(initialValue?.settings, 'offers') },
-        requests: { enabled: readEnabled(initialValue?.settings, 'requests') },
-        references: { enabled: readEnabled(initialValue?.settings, 'references') },
+        offers: { enabled: true },
+        requests: { enabled: true },
+        references: { enabled: true },
       },
     },
   };
+}
+
+function toInitialValues(initialValue?: IntegrationRecord | null): IntegrationFormValues {
+  if (!initialValue) {
+    return defaultValuesFor('crm', defaultProvider('crm'));
+  }
+  const defaults = defaultValuesFor(initialValue.kind, initialValue.provider);
+  return {
+    kind: initialValue.kind,
+    provider: initialValue.provider,
+    base_url: initialValue.base_url ?? defaults.base_url,
+    auth_type: initialValue.auth_type ?? defaults.auth_type,
+    detail_url_template: initialValue.detail_url_template ?? defaults.detail_url_template,
+    is_active: initialValue.is_active ?? true,
+    settings: {
+      ...defaults.settings,
+      ...(initialValue.settings ?? {}),
+    },
+  };
+}
+
+function readResourceEnabled(settings: Record<string, unknown>, key: 'offers' | 'requests' | 'references') {
+  const resources =
+    settings.resources && typeof settings.resources === 'object' && !Array.isArray(settings.resources)
+      ? (settings.resources as Record<string, unknown>)
+      : {};
+  const resource =
+    resources[key] && typeof resources[key] === 'object' && !Array.isArray(resources[key])
+      ? (resources[key] as Record<string, unknown>)
+      : {};
+  return typeof resource.enabled === 'boolean' ? resource.enabled : key !== 'references';
 }
 
 export default function IntegrationForm({
@@ -71,6 +139,7 @@ export default function IntegrationForm({
   submitLabel,
   disabled = false,
   initialValue = null,
+  llmAllowed = true,
   onSubmit,
 }: IntegrationFormProps) {
   const [values, setValues] = useState<IntegrationFormValues>(() => toInitialValues(initialValue));
@@ -80,6 +149,17 @@ export default function IntegrationForm({
     setValues(toInitialValues(initialValue));
   }, [initialValue]);
 
+  const providerOptions = useMemo(() => {
+    const base = getProvidersForKind(values.kind).filter((spec) =>
+      values.kind === 'crm'
+        ? ['propstack', 'onoffice', 'openimmo'].includes(spec.id)
+        : ['openai', 'anthropic', 'azure_openai', 'google_gemini', 'mistral', 'generic_llm'].includes(spec.id),
+    );
+    return values.kind === 'llm' && !llmAllowed ? [] : base;
+  }, [llmAllowed, values.kind]);
+
+  const providerSpec = getProviderSpec(values.provider);
+
   return (
     <form
       onSubmit={async (event) => {
@@ -87,7 +167,7 @@ export default function IntegrationForm({
         setSubmitting(true);
         try {
           await onSubmit(values);
-          if (!initialValue) setValues(toInitialValues(null));
+          if (!initialValue) setValues(defaultValuesFor('crm', defaultProvider('crm')));
         } finally {
           setSubmitting(false);
         }
@@ -97,27 +177,46 @@ export default function IntegrationForm({
       <div style={{ display: 'grid', gap: 4 }}>
         <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>{title}</h3>
         <p style={{ margin: 0, color: '#64748b' }}>
-          Provider, Basis-URL und die aktivierten Ressourcen werden hier gepflegt. Secrets laufen separat.
+          Netzwerkpartner pflegen hier eigene CRM- oder LLM-Anbindungen. Secrets und Verbindungstests laufen separat.
         </p>
       </div>
 
       <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
         <label style={{ display: 'grid', gap: 6 }}>
+          <span style={{ fontWeight: 700, color: '#334155' }}>Anbindungsart</span>
+          <select
+            value={values.kind}
+            disabled={disabled || submitting || Boolean(initialValue)}
+            onChange={(event) => {
+              const nextKind = event.target.value === 'llm' ? 'llm' : 'crm';
+              const nextProvider = defaultProvider(nextKind);
+              setValues(defaultValuesFor(nextKind, nextProvider));
+            }}
+            style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
+          >
+            <option value="crm">CRM</option>
+            <option value="llm" disabled={!llmAllowed}>LLM</option>
+          </select>
+        </label>
+
+        <label style={{ display: 'grid', gap: 6 }}>
           <span style={{ fontWeight: 700, color: '#334155' }}>Provider</span>
           <select
             value={values.provider}
-            disabled={disabled || submitting || Boolean(initialValue)}
-            onChange={(event) =>
+            disabled={disabled || submitting || Boolean(initialValue) || (values.kind === 'llm' && !llmAllowed)}
+            onChange={(event) => {
+              const nextProvider = event.target.value;
+              const nextDefaults = defaultValuesFor(values.kind, nextProvider);
               setValues((current) => ({
-                ...current,
-                provider: event.target.value === 'onoffice' ? 'onoffice' : 'propstack',
-                auth_type: event.target.value === 'onoffice' ? 'basic' : 'api_key',
-              }))
-            }
+                ...nextDefaults,
+                is_active: current.is_active,
+              }));
+            }}
             style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
           >
-            <option value="propstack">Propstack</option>
-            <option value="onoffice">onOffice</option>
+            {providerOptions.map((option) => (
+              <option key={option.id} value={option.id}>{option.label}</option>
+            ))}
           </select>
         </label>
 
@@ -137,63 +236,131 @@ export default function IntegrationForm({
             value={values.base_url}
             disabled={disabled || submitting}
             onChange={(event) => setValues((current) => ({ ...current, base_url: event.target.value }))}
-            placeholder={values.provider === 'onoffice' ? 'https://api.onoffice.de/api/stable/api.php' : 'https://api.propstack.de/v1'}
+            placeholder={providerSpec?.requiresBaseUrl ? 'https://api.example.tld' : 'Optional'}
             style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
           />
         </label>
 
-        <label style={{ display: 'grid', gap: 6, gridColumn: '1 / -1' }}>
-          <span style={{ fontWeight: 700, color: '#334155' }}>Detail-URL-Template</span>
-          <input
-            value={values.detail_url_template}
-            disabled={disabled || submitting}
-            onChange={(event) => setValues((current) => ({ ...current, detail_url_template: event.target.value }))}
-            placeholder="https://crm.example.de/object/{id}"
-            style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
-          />
-        </label>
+        {values.kind === 'crm' ? (
+          <label style={{ display: 'grid', gap: 6, gridColumn: '1 / -1' }}>
+            <span style={{ fontWeight: 700, color: '#334155' }}>Detail-URL-Template</span>
+            <input
+              value={values.detail_url_template}
+              disabled={disabled || submitting}
+              onChange={(event) => setValues((current) => ({ ...current, detail_url_template: event.target.value }))}
+              placeholder="https://crm.example.de/object/{id}"
+              style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
+            />
+          </label>
+        ) : null}
       </div>
 
-      <div style={{ display: 'grid', gap: 10 }}>
-        <strong style={{ color: '#334155' }}>Ressourcen</strong>
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-          {(['offers', 'requests', 'references'] as const).map((resource) => (
-            <label key={resource} style={{ display: 'flex', gap: 8, alignItems: 'center', color: '#334155' }}>
-              <input
-                type="checkbox"
-                checked={values.settings.resources[resource].enabled}
-                disabled={disabled || submitting}
-                onChange={(event) =>
-                  setValues((current) => ({
-                    ...current,
-                    settings: {
-                      resources: {
-                        ...current.settings.resources,
-                        [resource]: { enabled: event.target.checked },
+      {values.kind === 'crm' ? (
+        <div style={{ display: 'grid', gap: 10 }}>
+          <strong style={{ color: '#334155' }}>Ressourcen</strong>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {(['offers', 'requests', 'references'] as const).map((resource) => (
+              <label key={resource} style={{ display: 'flex', gap: 8, alignItems: 'center', color: '#334155' }}>
+                <input
+                  type="checkbox"
+                  checked={readResourceEnabled(values.settings, resource)}
+                  disabled={disabled || submitting}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      settings: {
+                        ...current.settings,
+                        resources: {
+                          ...((current.settings.resources as Record<string, unknown>) ?? {}),
+                          [resource]: { enabled: event.target.checked },
+                        },
                       },
-                    },
-                  }))
-                }
-              />
-              {resource}
-            </label>
-          ))}
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center', color: '#334155' }}>
+                    }))
+                  }
+                />
+                {resource}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontWeight: 700, color: '#334155' }}>Modell</span>
             <input
-              type="checkbox"
-              checked={values.is_active}
+              value={String(values.settings.model ?? '')}
               disabled={disabled || submitting}
-              onChange={(event) => setValues((current) => ({ ...current, is_active: event.target.checked }))}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  settings: { ...current.settings, model: event.target.value },
+                }))
+              }
+              style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
             />
-            Integration aktiv
+          </label>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontWeight: 700, color: '#334155' }}>API-Version</span>
+            <input
+              value={String(values.settings.api_version ?? '')}
+              disabled={disabled || submitting}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  settings: { ...current.settings, api_version: event.target.value },
+                }))
+              }
+              placeholder={values.provider === 'azure_openai' ? '2024-10-21' : 'Optional'}
+              style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
+            />
+          </label>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontWeight: 700, color: '#334155' }}>Temperatur</span>
+            <input
+              value={String(values.settings.temperature ?? '')}
+              disabled={disabled || submitting}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  settings: { ...current.settings, temperature: event.target.value },
+                }))
+              }
+              style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
+            />
+          </label>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontWeight: 700, color: '#334155' }}>Max Tokens</span>
+            <input
+              value={String(values.settings.max_tokens ?? '')}
+              disabled={disabled || submitting}
+              onChange={(event) =>
+                setValues((current) => ({
+                  ...current,
+                  settings: { ...current.settings, max_tokens: event.target.value },
+                }))
+              }
+              style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
+            />
           </label>
         </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', color: '#334155' }}>
+          <input
+            type="checkbox"
+            checked={values.is_active}
+            disabled={disabled || submitting}
+            onChange={(event) => setValues((current) => ({ ...current, is_active: event.target.checked }))}
+          />
+          Integration aktiv
+        </label>
       </div>
 
       <div>
         <button
           type="submit"
-          disabled={disabled || submitting}
+          disabled={disabled || submitting || (values.kind === 'llm' && !llmAllowed)}
           style={{
             border: '1px solid #0f766e',
             borderRadius: 10,

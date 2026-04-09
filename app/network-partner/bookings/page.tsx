@@ -43,6 +43,7 @@ export default function NetworkPartnerBookingsPage() {
 
   return (
     <NetworkPartnerShell
+      activeSection="bookings"
       title="Meine Buchungen"
       description="Hier sieht der Netzwerkpartner die eigenen gebuchten Leistungen, Laufzeiten und kaufmännischen Rahmen."
     >

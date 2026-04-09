@@ -1,11 +1,7 @@
-import type {
-  NetworkPartnerCrmProvider,
-  NetworkPartnerIntegrationKind,
-} from "@/lib/network-partners/sync/types";
-
 export type AdminRole = "admin_super" | "admin_ops" | "admin_billing";
 export type PortalPartnerRole = "partner_owner" | "partner_manager" | "partner_billing";
 export type NetworkPartnerRole = "network_owner" | "network_editor" | "network_billing";
+export type NetworkPartnerIntegrationKind = "crm" | "llm";
 
 export type ActorContext =
   | { kind: "admin"; userId: string; role: AdminRole }
@@ -207,7 +203,7 @@ export type NetworkPartnerIntegrationCreateInput = {
   portal_partner_id: string;
   network_partner_id: string;
   kind?: NetworkPartnerIntegrationKind;
-  provider: NetworkPartnerCrmProvider;
+  provider: string;
   base_url?: string | null;
   auth_type?: string | null;
   auth_config?: Record<string, unknown> | null;
@@ -219,7 +215,7 @@ export type NetworkPartnerIntegrationCreateInput = {
 export type NetworkPartnerIntegrationUpdateInput = {
   id: string;
   network_partner_id: string;
-  provider?: NetworkPartnerCrmProvider;
+  provider?: string;
   base_url?: string | null;
   auth_type?: string | null;
   auth_config?: Record<string, unknown> | null;

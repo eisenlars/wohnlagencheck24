@@ -5,6 +5,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { requireNetworkPartnerActorContext } from "@/lib/network-partners/auth";
 import { requireNetworkPartnerRole } from "@/lib/network-partners/roles";
 import { getIntegrationByIdForNetworkPartner } from "@/lib/network-partners/repositories/integrations";
+import { getNetworkPartnerById } from "@/lib/network-partners/repositories/network-partners";
 import {
   createNetworkPartnerSyncRun,
   finishNetworkPartnerSyncRun,
@@ -38,6 +39,15 @@ function asText(value: unknown): string | null {
 function asObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
+}
+
+function asFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 function appendIntegrationLog(
@@ -154,6 +164,13 @@ export async function POST(
     if (!integration) {
       return NextResponse.json({ error: "Integration not found" }, { status: 404 });
     }
+    const networkPartner = await getNetworkPartnerById(actor.networkPartnerId);
+    if (!networkPartner) {
+      return NextResponse.json({ error: "Network partner not found" }, { status: 404 });
+    }
+    if (integration.kind === "llm" && !networkPartner.llm_partner_managed_allowed) {
+      return NextResponse.json({ error: "LLM-Anbindungen sind für diesen Netzwerkpartner nicht freigeschaltet." }, { status: 403 });
+    }
 
     const traceId = crypto.randomUUID();
     const startedAtMs = Date.now();
@@ -248,23 +265,29 @@ export async function POST(
       return finish({ status: "warning", message: "Integration ist deaktiviert." }, "completed");
     }
 
-    const resolvedBaseUrl = asText(integration.base_url);
+    const authConfig = integration.auth_config ?? {};
+    const defaultLlmBaseUrlByProvider: Record<string, string> = {
+      openai: "https://api.openai.com/v1",
+      azure_openai: "https://api.openai.com/v1",
+      mistral: "https://api.mistral.ai/v1",
+      generic_llm: "https://api.openai.com/v1",
+      anthropic: "https://api.anthropic.com/v1",
+      google_gemini: "https://generativelanguage.googleapis.com/v1beta",
+    };
+    const llmSettings = asObject(integration.settings);
+    const apiKey = readSecretFromAuthConfig(authConfig, "api_key");
+    const model = asText(llmSettings.model) ?? asText(llmSettings.model_name);
+    const resolvedBaseUrl =
+      asText(integration.base_url)
+      ?? asText(llmSettings.base_url)
+      ?? (integration.kind === "llm" ? defaultLlmBaseUrlByProvider[integration.provider] ?? null : null);
     if (!resolvedBaseUrl) {
       return finish({ status: "error", message: "Keine base_url konfiguriert." }, "config_error");
     }
 
-    const baseUrlCheck = await validateOutboundUrl(resolvedBaseUrl);
-    if (!baseUrlCheck.ok) {
-      return finish(
-        { status: "error", message: `Base URL blockiert (${baseUrlCheck.reason}).` },
-        "config_error",
-      );
-    }
-
-    const authConfig = integration.auth_config ?? {};
     let res: Response;
     try {
-      if (integration.provider === "propstack") {
+      if (integration.kind === "crm" && integration.provider === "propstack") {
         const apiKey = readSecretFromAuthConfig(authConfig, "api_key");
         if (!apiKey) {
           return finish(
@@ -291,7 +314,7 @@ export async function POST(
             "x-api-key": apiKey,
           },
         });
-      } else if (integration.provider === "onoffice") {
+      } else if (integration.kind === "crm" && integration.provider === "onoffice") {
         const token = readSecretFromAuthConfig(authConfig, "token");
         const secret = readSecretFromAuthConfig(authConfig, "secret");
         if (!token || !secret) {
@@ -301,10 +324,18 @@ export async function POST(
           );
         }
 
+        const targetCheck = await validateOutboundUrl(resolvedBaseUrl);
+        if (!targetCheck.ok) {
+          return finish(
+            { status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` },
+            "config_error",
+          );
+        }
+
         targetPath = "/onoffice/estate/read";
         requestCount = 1;
         const body = buildOnOfficeReadRequest(token, secret);
-        res = await fetchWithTimeout(baseUrlCheck.url, {
+        res = await fetchWithTimeout(targetCheck.url, {
           method: "POST",
           headers: {
             accept: "application/json, text/plain, */*",
@@ -312,13 +343,125 @@ export async function POST(
           },
           body: JSON.stringify(body),
         });
-      } else if (integration.provider === "openimmo") {
+      } else if (integration.kind === "crm" && integration.provider === "openimmo") {
+        const targetCheck = await validateOutboundUrl(resolvedBaseUrl);
+        if (!targetCheck.ok) {
+          return finish(
+            { status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` },
+            "config_error",
+          );
+        }
+
         targetPath = "/openimmo-feed";
         requestCount = 1;
-        res = await fetchWithTimeout(baseUrlCheck.url, {
+        res = await fetchWithTimeout(targetCheck.url, {
           method: "GET",
           headers: buildOpenImmoRequestHeaders(integration),
         });
+      } else if (integration.kind === "llm") {
+        if (!apiKey) {
+          return finish({ status: "error", message: "LLM API-Key fehlt (Secret api_key)." }, "config_error");
+        }
+        if (!model) {
+          return finish({ status: "error", message: "LLM Modell fehlt (settings.model)." }, "config_error");
+        }
+        if (!resolvedBaseUrl) {
+          return finish({ status: "error", message: "Keine base_url konfiguriert." }, "config_error");
+        }
+
+        const markLlmRequestStarted = async () => {
+          await patchIntegrationTestState(integration.id, actor.networkPartnerId, {
+            last_test_step: "provider_request_started",
+            last_test_request_count: requestCount,
+            last_test_target_path: targetPath,
+            last_test_log: appendIntegrationLog(integration.settings?.last_test_log, {
+              at: new Date().toISOString(),
+              step: "provider_request_started",
+              status: "running",
+              message: "LLM-Minimalabruf gestartet.",
+            }),
+          });
+        };
+
+        if (integration.provider === "google_gemini") {
+          const url = `${resolvedBaseUrl.replace(/\/+$/, "")}/models`;
+          const targetCheck = await validateOutboundUrl(url);
+          if (!targetCheck.ok) {
+            return finish({ status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` }, "config_error");
+          }
+          targetPath = "/models";
+          requestCount = 1;
+          await markLlmRequestStarted();
+          res = await fetchWithTimeout(url, {
+            method: "GET",
+            headers: {
+              accept: "application/json, text/plain, */*",
+              "x-goog-api-key": apiKey,
+            },
+          });
+        } else if (integration.provider === "anthropic") {
+          const url = `${resolvedBaseUrl.replace(/\/+$/, "")}/messages`;
+          const targetCheck = await validateOutboundUrl(url);
+          if (!targetCheck.ok) {
+            return finish({ status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` }, "config_error");
+          }
+          targetPath = "/messages";
+          requestCount = 1;
+          await markLlmRequestStarted();
+          res = await fetchWithTimeout(url, {
+            method: "POST",
+            headers: {
+              accept: "application/json, text/plain, */*",
+              "content-type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
+            },
+            body: JSON.stringify({
+              model,
+              max_tokens: Math.max(1, Math.floor(asFiniteNumber(llmSettings.max_tokens) ?? 64)),
+              messages: [{ role: "user", content: "ping" }],
+            }),
+          });
+        } else if (integration.provider === "azure_openai") {
+          const apiVersion = asText(llmSettings.api_version) ?? "2024-10-21";
+          const url = `${resolvedBaseUrl.replace(/\/+$/, "")}/openai/deployments/${encodeURIComponent(model)}/chat/completions?api-version=${encodeURIComponent(apiVersion)}`;
+          const targetCheck = await validateOutboundUrl(url);
+          if (!targetCheck.ok) {
+            return finish({ status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` }, "config_error");
+          }
+          targetPath = `/openai/deployments/${encodeURIComponent(model)}/chat/completions`;
+          requestCount = 1;
+          await markLlmRequestStarted();
+          res = await fetchWithTimeout(url, {
+            method: "POST",
+            headers: {
+              accept: "application/json, text/plain, */*",
+              "content-type": "application/json",
+              "api-key": apiKey,
+            },
+            body: JSON.stringify({
+              messages: [{ role: "user", content: "ping" }],
+              max_tokens: Math.max(1, Math.floor(asFiniteNumber(llmSettings.max_tokens) ?? 16)),
+              temperature: asFiniteNumber(llmSettings.temperature) ?? 0,
+            }),
+          });
+        } else {
+          const url = `${resolvedBaseUrl.replace(/\/+$/, "")}/models`;
+          const targetCheck = await validateOutboundUrl(url);
+          if (!targetCheck.ok) {
+            return finish({ status: "error", message: `Ziel-URL blockiert (${targetCheck.reason}).` }, "config_error");
+          }
+          targetPath = "/models";
+          requestCount = 1;
+          await markLlmRequestStarted();
+          res = await fetchWithTimeout(url, {
+            method: "GET",
+            headers: {
+              accept: "application/json, text/plain, */*",
+              authorization: `Bearer ${apiKey}`,
+            },
+          });
+        }
       } else {
         return finish(
           { status: "error", message: `Provider nicht unterstützt: ${integration.provider}` },

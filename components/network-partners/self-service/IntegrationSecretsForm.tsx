@@ -5,6 +5,7 @@ import { useState } from 'react';
 type IntegrationRecord = {
   id: string;
   provider: string;
+  auth_type?: string | null;
   has_api_key?: boolean;
   has_token?: boolean;
   has_secret?: boolean;
@@ -59,7 +60,7 @@ export default function IntegrationSecretsForm({
         <span>secret: {integration.has_secret ? 'vorhanden' : 'fehlt'}</span>
       </div>
 
-      {integration.provider === 'propstack' ? (
+      {integration.auth_type === 'api_key' ? (
         <label style={{ display: 'grid', gap: 6 }}>
           <span style={{ fontWeight: 700, color: '#334155' }}>API-Key</span>
           <input
@@ -70,7 +71,7 @@ export default function IntegrationSecretsForm({
             style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
           />
         </label>
-      ) : (
+      ) : integration.auth_type === 'basic' ? (
         <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
           <label style={{ display: 'grid', gap: 6 }}>
             <span style={{ fontWeight: 700, color: '#334155' }}>Token</span>
@@ -93,6 +94,23 @@ export default function IntegrationSecretsForm({
             />
           </label>
         </div>
+      ) : (
+        <label style={{ display: 'grid', gap: 6 }}>
+          <span style={{ fontWeight: 700, color: '#334155' }}>{integration.auth_type === 'token' ? 'Token' : 'API-Key / Token'}</span>
+          <input
+            type="password"
+            value={integration.auth_type === 'token' ? token : apiKey}
+            disabled={disabled || submitting}
+            onChange={(event) => {
+              if (integration.auth_type === 'token') {
+                setToken(event.target.value);
+                return;
+              }
+              setApiKey(event.target.value);
+            }}
+            style={{ border: '1px solid #cbd5e1', borderRadius: 10, padding: '10px 12px', background: '#fff' }}
+          />
+        </label>
       )}
 
       <div>

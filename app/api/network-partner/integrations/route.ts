@@ -10,6 +10,7 @@ import { getNetworkPartnerById } from "@/lib/network-partners/repositories/netwo
 import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
 import { validateIntegrationConfig } from "@/lib/integrations/providers";
 import { normalizeCrmIntegrationSettings } from "@/lib/integrations/settings";
+import { normalizeLlmRuntimeMode } from "@/lib/llm/mode";
 
 type IntegrationBody = {
   kind?: string;
@@ -33,6 +34,46 @@ function asNullableText(value: unknown): string | null {
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
+}
+
+function asFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function normalizeSettings(kind: string, provider: string, settings: Record<string, unknown> | null | undefined) {
+  if (!settings || typeof settings !== "object") return null;
+  if (kind === "crm") {
+    const normalized = normalizeCrmIntegrationSettings(settings);
+    return normalized.ok ? normalized.value : normalized;
+  }
+  if (kind !== "llm") return settings;
+
+  const model = asNullableText(settings.model) ?? asNullableText(settings.model_name);
+  const baseUrl = asNullableText(settings.base_url);
+  const apiVersion = asNullableText(settings.api_version);
+  const temperature = asFiniteNumber(settings.temperature);
+  const maxTokens = asFiniteNumber(settings.max_tokens);
+  const llmMode = normalizeLlmRuntimeMode(settings.llm_mode);
+  const normalizedProvider = asText(provider).toLowerCase();
+
+  if (!model) {
+    return { error: "Für LLM-Integrationen ist settings.model erforderlich." } as const;
+  }
+  if (normalizedProvider === "azure_openai" && !apiVersion) {
+    return { error: "Für Azure OpenAI ist settings.api_version erforderlich." } as const;
+  }
+
+  const out: Record<string, unknown> = { llm_mode: llmMode, model };
+  if (baseUrl) out.base_url = baseUrl;
+  if (apiVersion) out.api_version = apiVersion;
+  if (temperature !== null) out.temperature = temperature;
+  if (maxTokens !== null) out.max_tokens = Math.max(1, Math.floor(maxTokens));
+  return out;
 }
 
 function enrichStoredSecretFlags(row: Record<string, unknown>) {
@@ -62,8 +103,8 @@ function mapIntegrationError(error: Error) {
   if (error.message === "FORBIDDEN") return { status: 403, error: "Forbidden" };
   if (error.message === "INVALID_PORTAL_PARTNER_ID") return { status: 400, error: "portal_partner_id is required" };
   if (error.message === "INVALID_NETWORK_PARTNER_ID") return { status: 400, error: "network_partner_id is required" };
-  if (error.message === "INVALID_PROVIDER") return { status: 400, error: "Unsupported CRM provider" };
-  if (error.message === "INVALID_KIND") return { status: 400, error: "Only CRM integrations are supported" };
+  if (error.message === "INVALID_PROVIDER") return { status: 400, error: "Unsupported integration provider" };
+  if (error.message === "INVALID_KIND") return { status: 400, error: "Only CRM and LLM integrations are supported" };
   return { status: 500, error: error.message || "Unexpected error" };
 }
 
@@ -75,11 +116,15 @@ export async function GET() {
     );
 
     const integrations = await listIntegrationsByNetworkPartner(actor.networkPartnerId);
+    const networkPartner = await getNetworkPartnerById(actor.networkPartnerId);
     return NextResponse.json({
       ok: true,
-      integrations: integrations.map((integration) =>
-        maskIntegrationForResponse(enrichStoredSecretFlags(integration)),
-      ),
+      policy: {
+        llm_partner_managed_allowed: Boolean(networkPartner?.llm_partner_managed_allowed),
+      },
+      integrations: integrations
+        .filter((integration) => integration.kind !== "llm" || networkPartner?.llm_partner_managed_allowed)
+        .map((integration) => maskIntegrationForResponse(enrichStoredSecretFlags(integration))),
     });
   } catch (error) {
     const mapped = mapIntegrationError(error as Error);
@@ -96,8 +141,8 @@ export async function POST(req: Request) {
     const body = (await req.json()) as IntegrationBody;
 
     const kind = asText(body.kind || "crm").toLowerCase();
-    if (kind !== "crm") {
-      return NextResponse.json({ error: "Only CRM integrations are supported" }, { status: 400 });
+    if (kind !== "crm" && kind !== "llm") {
+      return NextResponse.json({ error: "Only CRM and LLM integrations are supported" }, { status: 400 });
     }
 
     const provider = asText(body.provider).toLowerCase();
@@ -115,8 +160,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    const normalizedSettings = normalizeCrmIntegrationSettings(asObject(body.settings));
-    if (!normalizedSettings.ok) {
+    const normalizedSettings = normalizeSettings(kind, validation.provider, asObject(body.settings));
+    if (normalizedSettings && "error" in normalizedSettings) {
       return NextResponse.json({ error: normalizedSettings.error }, { status: 400 });
     }
 
@@ -124,17 +169,20 @@ export async function POST(req: Request) {
     if (!networkPartner) {
       return NextResponse.json({ error: "Network partner not found" }, { status: 404 });
     }
+    if (kind === "llm" && !networkPartner.llm_partner_managed_allowed) {
+      return NextResponse.json({ error: "LLM-Anbindungen sind für diesen Netzwerkpartner nicht freigeschaltet." }, { status: 403 });
+    }
 
     const integration = await createIntegrationForNetworkPartner({
       portal_partner_id: networkPartner.portal_partner_id,
       network_partner_id: actor.networkPartnerId,
-      kind: "crm",
-      provider: validation.provider as "propstack" | "onoffice",
+      kind: kind as "crm" | "llm",
+      provider: validation.provider,
       base_url: validation.baseUrl,
       auth_type: validation.authType,
       detail_url_template: asNullableText(body.detail_url_template),
       is_active: body.is_active !== false,
-      settings: normalizedSettings.value,
+      settings: normalizedSettings,
     });
 
     return NextResponse.json(

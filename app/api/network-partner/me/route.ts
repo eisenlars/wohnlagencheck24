@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireNetworkPartnerActorContext } from "@/lib/network-partners/auth";
 import { requireNetworkPartnerRole } from "@/lib/network-partners/roles";
 import { getNetworkPartnerById } from "@/lib/network-partners/repositories/network-partners";
+import { createClient } from "@/utils/supabase/server";
 
 function mapRepositoryError(error: Error) {
   if (error.message === "UNAUTHORIZED") return { status: 401, error: "Unauthorized" };
@@ -13,6 +14,10 @@ function mapRepositoryError(error: Error) {
 
 export async function GET() {
   try {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const actor = requireNetworkPartnerRole(
       await requireNetworkPartnerActorContext(),
       ["network_owner", "network_editor", "network_billing"],
@@ -30,6 +35,7 @@ export async function GET() {
         user_id: actor.userId,
         network_partner_id: actor.networkPartnerId,
       },
+      last_login: user?.last_sign_in_at ?? null,
       network_partner: networkPartner,
     });
   } catch (error) {

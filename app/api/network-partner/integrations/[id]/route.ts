@@ -10,6 +10,8 @@ import {
 import { maskIntegrationForResponse } from "@/lib/security/integration-mask";
 import { validateIntegrationConfig } from "@/lib/integrations/providers";
 import { normalizeCrmIntegrationSettings } from "@/lib/integrations/settings";
+import { normalizeLlmRuntimeMode } from "@/lib/llm/mode";
+import { getNetworkPartnerById } from "@/lib/network-partners/repositories/network-partners";
 
 type IntegrationPatchBody = {
   provider?: string;
@@ -32,6 +34,46 @@ function asNullableText(value: unknown): string | null {
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
+}
+
+function asFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function normalizeSettings(kind: string, provider: string, settings: Record<string, unknown> | null | undefined) {
+  if (!settings || typeof settings !== "object") return null;
+  if (kind === "crm") {
+    const normalized = normalizeCrmIntegrationSettings(settings);
+    return normalized.ok ? normalized.value : normalized;
+  }
+  if (kind !== "llm") return settings;
+
+  const model = asNullableText(settings.model) ?? asNullableText(settings.model_name);
+  const baseUrl = asNullableText(settings.base_url);
+  const apiVersion = asNullableText(settings.api_version);
+  const temperature = asFiniteNumber(settings.temperature);
+  const maxTokens = asFiniteNumber(settings.max_tokens);
+  const llmMode = normalizeLlmRuntimeMode(settings.llm_mode);
+  const normalizedProvider = asText(provider).toLowerCase();
+
+  if (!model) {
+    return { error: "Für LLM-Integrationen ist settings.model erforderlich." } as const;
+  }
+  if (normalizedProvider === "azure_openai" && !apiVersion) {
+    return { error: "Für Azure OpenAI ist settings.api_version erforderlich." } as const;
+  }
+
+  const out: Record<string, unknown> = { llm_mode: llmMode, model };
+  if (baseUrl) out.base_url = baseUrl;
+  if (apiVersion) out.api_version = apiVersion;
+  if (temperature !== null) out.temperature = temperature;
+  if (maxTokens !== null) out.max_tokens = Math.max(1, Math.floor(maxTokens));
+  return out;
 }
 
 function enrichStoredSecretFlags(row: Record<string, unknown>) {
@@ -60,8 +102,8 @@ function mapIntegrationError(error: Error) {
   if (error.message === "UNAUTHORIZED") return { status: 401, error: "Unauthorized" };
   if (error.message === "FORBIDDEN") return { status: 403, error: "Forbidden" };
   if (error.message === "NOT_FOUND") return { status: 404, error: "Integration not found" };
-  if (error.message === "INVALID_PROVIDER") return { status: 400, error: "Unsupported CRM provider" };
-  if (error.message === "INVALID_KIND") return { status: 400, error: "Only CRM integrations are supported" };
+  if (error.message === "INVALID_PROVIDER") return { status: 400, error: "Unsupported integration provider" };
+  if (error.message === "INVALID_KIND") return { status: 400, error: "Only CRM and LLM integrations are supported" };
   if (error.message === "NO_UPDATE_FIELDS") return { status: 400, error: "No update fields provided" };
   return { status: 500, error: error.message || "Unexpected error" };
 }
@@ -115,11 +157,18 @@ export async function PATCH(
     if (!current) {
       return NextResponse.json({ error: "Integration not found" }, { status: 404 });
     }
+    const networkPartner = await getNetworkPartnerById(actor.networkPartnerId);
+    if (!networkPartner) {
+      return NextResponse.json({ error: "Network partner not found" }, { status: 404 });
+    }
+    if (current.kind === "llm" && !networkPartner.llm_partner_managed_allowed) {
+      return NextResponse.json({ error: "LLM-Anbindungen sind für diesen Netzwerkpartner nicht freigeschaltet." }, { status: 403 });
+    }
 
     const body = (await req.json()) as IntegrationPatchBody;
     const provider = body.provider !== undefined ? asText(body.provider).toLowerCase() : current.provider;
     const validation = validateIntegrationConfig({
-      kind: "crm",
+      kind: current.kind,
       provider,
       authType: body.auth_type ?? current.auth_type,
       baseUrl: body.base_url ?? current.base_url,
@@ -130,22 +179,22 @@ export async function PATCH(
 
     const normalizedSettings =
       body.settings !== undefined
-        ? normalizeCrmIntegrationSettings(asObject(body.settings))
-        : { ok: true as const, value: undefined };
-    if (!normalizedSettings.ok) {
+        ? normalizeSettings(current.kind, validation.provider, asObject(body.settings))
+        : undefined;
+    if (normalizedSettings && "error" in normalizedSettings) {
       return NextResponse.json({ error: normalizedSettings.error }, { status: 400 });
     }
 
     const integration = await updateIntegrationForNetworkPartner({
       id: integrationId,
       network_partner_id: actor.networkPartnerId,
-      provider: validation.provider as "propstack" | "onoffice",
+      provider: validation.provider,
       base_url: body.base_url !== undefined ? validation.baseUrl : undefined,
       auth_type: body.auth_type !== undefined ? validation.authType : undefined,
       detail_url_template:
         body.detail_url_template !== undefined ? asNullableText(body.detail_url_template) : undefined,
       is_active: body.is_active,
-      settings: normalizedSettings.value,
+      settings: normalizedSettings,
     });
 
     return NextResponse.json({

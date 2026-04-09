@@ -1,12 +1,7 @@
 import { createAdminClient } from "@/utils/supabase/admin";
-import {
-  isNetworkPartnerCrmProvider,
-  isNetworkPartnerIntegrationKind,
-  type NetworkPartnerCrmProvider,
-  type NetworkPartnerIntegrationKind,
-} from "@/lib/network-partners/sync/types";
 import type {
   NetworkPartnerIntegrationCreateInput,
+  NetworkPartnerIntegrationKind,
   NetworkPartnerIntegrationRecord,
   NetworkPartnerIntegrationUpdateInput,
 } from "@/lib/network-partners/types";
@@ -35,15 +30,15 @@ function asJsonObject(value: unknown): Record<string, unknown> | null {
 
 function normalizeKind(value: unknown): NetworkPartnerIntegrationKind {
   const kind = asText(value).toLowerCase();
-  if (!isNetworkPartnerIntegrationKind(kind)) {
+  if (kind !== "crm" && kind !== "llm") {
     throw new Error("INVALID_KIND");
   }
   return kind;
 }
 
-function normalizeProvider(value: unknown): NetworkPartnerCrmProvider {
+function normalizeProvider(value: unknown): string {
   const provider = asText(value).toLowerCase();
-  if (!isNetworkPartnerCrmProvider(provider)) {
+  if (!provider) {
     throw new Error("INVALID_PROVIDER");
   }
   return provider;
