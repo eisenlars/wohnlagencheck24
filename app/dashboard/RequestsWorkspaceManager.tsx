@@ -76,7 +76,7 @@ type LlmOptionApiRow = {
   global_provider_id?: string | null;
 };
 
-type WorkspaceTab = 'texts' | 'criteria';
+type WorkspaceTab = 'texts' | 'seo' | 'criteria';
 
 type RegionTarget = {
   city?: string;
@@ -351,11 +351,13 @@ export default function RequestsWorkspaceManager(props: Props) {
     const normalizedDescription = String(
       payload.long_description ?? payload.short_description ?? payload.seo_description ?? '',
     ).trim();
+    const normalizedSeoTitle = String(payload.seo_title ?? '').trim() || normalizedTitle;
+    const normalizedSeoDescription = String(payload.seo_description ?? '').trim() || normalizedDescription;
     const upsertPayload = {
       ...payload,
-      seo_title: normalizedTitle,
+      seo_title: normalizedSeoTitle,
       seo_h1: normalizedTitle,
-      seo_description: normalizedDescription,
+      seo_description: normalizedSeoDescription,
       short_description: normalizedDescription,
       long_description: normalizedDescription,
       highlights: payload.highlights ?? [],
@@ -740,6 +742,9 @@ export default function RequestsWorkspaceManager(props: Props) {
                 <button type="button" onClick={() => setActiveTab('texts')} style={workspaceTabStyle(activeTab === 'texts')}>
                   Texte
                 </button>
+                <button type="button" onClick={() => setActiveTab('seo')} style={workspaceTabStyle(activeTab === 'seo')}>
+                  SEO / GEO
+                </button>
                 <button type="button" onClick={() => setActiveTab('criteria')} style={workspaceTabStyle(activeTab === 'criteria')}>
                   Suchkriterien
                 </button>
@@ -765,6 +770,39 @@ export default function RequestsWorkspaceManager(props: Props) {
 
                   <button onClick={() => void saveOverride()} disabled={saving} style={primaryButtonStyle}>
                     {saving ? 'Speichern...' : 'Texte speichern'}
+                  </button>
+                </>
+              ) : null}
+
+              {activeTab === 'seo' ? (
+                <>
+                  <div style={offerSummaryCardStyle}>
+                    <div style={offerSummaryHeaderStyle}>Snippet</div>
+                    <div style={mediaSectionHintStyle}>Suchmaschinen-Snippet und Antwortbausteine für das Gesuch.</div>
+                  </div>
+
+                  <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
+                    {renderTextField('SEO‑Titel', 'seo_title', selectedRow.title ?? '', { multiline: false })}
+                    {renderTextField('SEO‑Description', 'seo_description', selectedDescription, { multiline: true })}
+                  </div>
+
+                  <div style={previewCardStyle}>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                      SEO‑Vorschau
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: '16px', marginTop: '6px' }}>
+                      {form.seo_title || form.seo_h1 || selectedRow.title || 'SEO‑Titel'}
+                    </div>
+                    <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
+                      {form.seo_description || form.long_description || 'SEO‑Description'}
+                    </div>
+                    <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
+                      /immobiliengesuche/{form.external_id}_&lt;titel&gt;
+                    </div>
+                  </div>
+
+                  <button onClick={() => void saveOverride()} disabled={saving} style={primaryButtonStyle}>
+                    {saving ? 'Speichern...' : 'SEO / GEO speichern'}
                   </button>
                 </>
               ) : null}
@@ -1147,6 +1185,14 @@ const primaryButtonStyle: CSSProperties = {
   color: '#fff',
   fontWeight: 600,
   cursor: 'pointer',
+};
+
+const previewCardStyle: CSSProperties = {
+  backgroundColor: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: '12px',
+  padding: '12px',
+  marginBottom: '16px',
 };
 
 const previewBoxStyle: CSSProperties = {
