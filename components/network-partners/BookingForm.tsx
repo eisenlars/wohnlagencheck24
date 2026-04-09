@@ -117,6 +117,7 @@ export default function BookingForm({
   const partnerNetRevenue = Math.max(0, monthlyPriceValue - fixedPortalFee);
   const showPartnerSelect = !isEditing && networkPartners.length > 1;
   const selectedNetworkPartner = networkPartners.find((partner) => partner.id === networkPartnerId) ?? networkPartners[0] ?? null;
+  const editingBooking = isEditing ? initialValue : null;
 
   useEffect(() => {
     setNetworkPartnerId(initialValue?.network_partner_id ?? networkPartners[0]?.id ?? '');
@@ -165,13 +166,13 @@ export default function BookingForm({
         </p>
       </div>
 
-      {isEditing ? (
+      {editingBooking ? (
         <div style={{ display: 'grid', gap: 12, padding: 14, borderRadius: 14, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'grid', gap: 6, color: '#334155', fontSize: 14 }}>
-            <span><strong>Leistung:</strong> {formatPlacementLabel(placements, initialValue.placement_code)}</span>
-            <span><strong>Gebiet:</strong> {formatAreaLabel(areas, initialValue.area_id)}</span>
+            <span><strong>Leistung:</strong> {formatPlacementLabel(placements, editingBooking.placement_code)}</span>
+            <span><strong>Gebiet:</strong> {formatAreaLabel(areas, editingBooking.area_id)}</span>
             <span>
-              <strong>Netzwerkpartner:</strong> {networkPartners.find((partner) => partner.id === initialValue.network_partner_id)?.company_name ?? initialValue.network_partner_id}
+              <strong>Netzwerkpartner:</strong> {networkPartners.find((partner) => partner.id === editingBooking.network_partner_id)?.company_name ?? editingBooking.network_partner_id}
             </span>
           </div>
         </div>
