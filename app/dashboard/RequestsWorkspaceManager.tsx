@@ -158,24 +158,15 @@ function getRegionTargetLabels(payload: Record<string, unknown>): string[] {
 }
 
 function buildDefaultForm(row: RawRequestRow, override?: OverrideRow | null): OverrideRow {
-  const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
-  const title = asText(row.title);
-  const description = getPayloadText(payload, ['description', 'short_description', 'long_description', 'title']);
-  const effectiveTitle = override?.seo_h1 ?? override?.seo_title ?? title;
-  const effectiveDescription =
-    override?.long_description
-    ?? override?.short_description
-    ?? override?.seo_description
-    ?? description;
   return {
     partner_id: row.partner_id,
     source: row.provider,
     external_id: row.external_id,
-    seo_title: effectiveTitle,
-    seo_description: effectiveDescription,
-    seo_h1: effectiveTitle,
-    short_description: effectiveDescription,
-    long_description: effectiveDescription,
+    seo_title: override?.seo_title ?? '',
+    seo_description: override?.seo_description ?? '',
+    seo_h1: override?.seo_h1 ?? '',
+    short_description: override?.short_description ?? '',
+    long_description: override?.long_description ?? '',
     location_text: override?.location_text ?? null,
     features_text: override?.features_text ?? null,
     highlights: override?.highlights ?? [],
@@ -391,8 +382,10 @@ export default function RequestsWorkspaceManager(props: Props) {
 
   async function runAiRewrite(key: keyof OverrideRow, label: string, promptOverride?: string) {
     if (!form || !selectedRow) return;
-    const currentText = String(form[key] ?? '');
-    if (!currentText.trim()) return;
+    const currentText = String(form[key] ?? '').trim();
+    const generationSeed =
+      currentText ||
+      '[Kein bestehender Text vorhanden. Bitte den Inhalt ausschließlich aus Suchkriterien, CRM-Notiz und Promptkontext neu erzeugen.]';
     setRewritingKey(String(key));
     setStatus('KI-Optimierung läuft...');
     try {
@@ -406,7 +399,7 @@ export default function RequestsWorkspaceManager(props: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: currentText,
+          text: generationSeed,
           areaName: selectedRow.title || selectedRow.external_id,
           type: 'general',
           sectionLabel: label,
@@ -444,10 +437,6 @@ export default function RequestsWorkspaceManager(props: Props) {
     setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   }
 
-  function resetField(key: keyof OverrideRow, rawValue: string | string[]) {
-    updateField(key, rawValue);
-  }
-
   function getStandardPromptText(label: string, areaName: string, factsContext: string, noteContext: string) {
     const lowerLabel = String(label || '').toLowerCase();
     const promptContext = [
@@ -473,22 +462,17 @@ export default function RequestsWorkspaceManager(props: Props) {
   const renderTextField = (
     label: string,
     key: keyof OverrideRow,
-    rawValue: string,
     options?: {
       multiline?: boolean;
       placeholder?: string;
-      showSourcePreview?: boolean;
-      resetLabel?: string;
     },
   ) => {
     if (!form) return null;
     const keyName = String(key);
     const value = String(form[key] ?? '');
-    const isCustomized = value.trim() !== rawValue.trim();
     const isRewriting = rewritingKey === keyName;
     const showPrompt = Boolean(promptOpenMap[keyName]);
     const customPrompt = customPromptMap[keyName] ?? '';
-    const showSourcePreview = options?.showSourcePreview ?? true;
     const standardPrompt = getStandardPromptText(
       label,
       selectedRow?.title || selectedRow?.external_id || 'Gesuch',
@@ -500,14 +484,8 @@ export default function RequestsWorkspaceManager(props: Props) {
       <div style={fieldCardStyle}>
         <div style={fieldHeaderStyle}>
           <h4 style={{ margin: 0, fontSize: '14px', color: '#1e293b' }}>{label}</h4>
-          <div style={fieldHeaderActionsStyle}>
-            {isCustomized ? <span style={customizedBadgeStyle}>✓ Individuell angepasst</span> : null}
-            <button type="button" onClick={() => resetField(key, rawValue)} style={resetButtonStyle(isCustomized)}>
-              {options?.resetLabel ?? 'Original nutzen'}
-            </button>
-          </div>
         </div>
-        <div style={showSourcePreview ? editorGridStyle : editorSingleColumnStyle}>
+        <div style={editorSingleColumnStyle}>
           <div style={textareaWrapperStyle}>
             {options?.multiline === false ? (
               <input
@@ -557,12 +535,6 @@ export default function RequestsWorkspaceManager(props: Props) {
               </div>
             ) : null}
           </div>
-          {showSourcePreview ? (
-            <div style={previewBoxStyle}>
-              <div style={previewHeaderStyle}>CRM‑ORIGINAL (SYSTEM)</div>
-              <div style={previewContentStyle}>{rawValue || 'Keine CRM-Vorlage vorhanden.'}</div>
-            </div>
-          ) : null}
         </div>
       </div>
     );
@@ -580,7 +552,6 @@ export default function RequestsWorkspaceManager(props: Props) {
   const selectedUpdatedAt = selectedRow?.source_updated_at ?? selectedRow?.updated_at ?? null;
   const selectedRadius = asNumber(selectedPayload.radius_km);
   const selectedSubtypes = getPayloadList(selectedPayload, 'object_subtypes');
-  const selectedDescription = getPayloadText(selectedPayload, ['description', 'short_description', 'long_description', 'title']);
   const selectedNote = getPayloadText(selectedPayload, ['publicnote', 'note', 'description']);
   const selectedBudgetLabel = formatEuro(selectedBudget);
   const selectedRoomsLabel =
@@ -782,15 +753,13 @@ export default function RequestsWorkspaceManager(props: Props) {
               {activeTab === 'texts' ? (
                 <>
                   <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
-                    {renderTextField('Gesuch-Titel', 'seo_h1', selectedRow.title ?? '', {
+                    {renderTextField('Gesuch-Titel', 'seo_h1', {
                       multiline: false,
-                      showSourcePreview: false,
-                      resetLabel: 'Standardwert nutzen',
+                      placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
                     })}
-                    {renderTextField('Beschreibung', 'long_description', selectedDescription, {
+                    {renderTextField('Beschreibung', 'long_description', {
                       multiline: true,
-                      showSourcePreview: false,
-                      resetLabel: 'Standardwert nutzen',
+                      placeholder: 'Beschreibung wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
                     })}
                   </div>
 
@@ -819,15 +788,13 @@ export default function RequestsWorkspaceManager(props: Props) {
                   </div>
 
                   <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
-                    {renderTextField('SEO‑Titel', 'seo_title', selectedRow.title ?? '', {
+                    {renderTextField('SEO‑Titel', 'seo_title', {
                       multiline: false,
-                      showSourcePreview: false,
-                      resetLabel: 'Standardwert nutzen',
+                      placeholder: 'SEO-Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
                     })}
-                    {renderTextField('SEO‑Description', 'seo_description', selectedDescription, {
+                    {renderTextField('SEO‑Description', 'seo_description', {
                       multiline: true,
-                      showSourcePreview: false,
-                      resetLabel: 'Standardwert nutzen',
+                      placeholder: 'SEO-Description wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
                     })}
                   </div>
 
@@ -1094,34 +1061,6 @@ const fieldHeaderStyle: CSSProperties = {
   marginBottom: '10px',
 };
 
-const fieldHeaderActionsStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-};
-
-const customizedBadgeStyle: CSSProperties = {
-  color: '#10b981',
-  fontSize: '11px',
-  fontWeight: '700',
-};
-
-const resetButtonStyle = (hasOverride: boolean): CSSProperties => ({
-  backgroundColor: hasOverride ? '#f1f5f9' : '#ecfdf3',
-  color: hasOverride ? '#475569' : '#15803d',
-  border: hasOverride ? '1px solid #e2e8f0' : '1px solid #bbf7d0',
-  padding: '4px 8px',
-  borderRadius: '6px',
-  fontSize: '10px',
-  cursor: 'pointer',
-});
-
-const editorGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 2fr) minmax(260px, 1fr)',
-  gap: '18px',
-};
-
 const editorSingleColumnStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr)',
@@ -1243,31 +1182,6 @@ const previewCardStyle: CSSProperties = {
   borderRadius: '12px',
   padding: '12px',
   marginBottom: '16px',
-};
-
-const previewBoxStyle: CSSProperties = {
-  backgroundColor: '#f8fafc',
-  borderRadius: '10px',
-  border: '1px solid #e2e8f0',
-  height: 'fit-content',
-};
-
-const previewHeaderStyle: CSSProperties = {
-  padding: '8px 12px',
-  fontSize: '9px',
-  fontWeight: 800,
-  color: '#94a3b8',
-  borderBottom: '1px solid #e2e8f0',
-  letterSpacing: '0.05em',
-};
-
-const previewContentStyle: CSSProperties = {
-  padding: '12px',
-  fontSize: '12.5px',
-  color: '#64748b',
-  lineHeight: 1.5,
-  fontStyle: 'italic',
-  whiteSpace: 'pre-wrap',
 };
 
 const contentPreviewGridStyle: CSSProperties = {
