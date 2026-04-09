@@ -1,24 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 import NetworkPartnerShell from '@/components/network-partners/self-service/NetworkPartnerShell';
 import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
-import type { NetworkPartnerRecord, NetworkPartnerRole } from '@/lib/network-partners/types';
+import type { NetworkPartnerRecord } from '@/lib/network-partners/types';
 
 type MePayload = {
-  actor?: {
-    role?: NetworkPartnerRole;
-    network_partner_id?: string;
-    user_id?: string;
-  };
   network_partner?: NetworkPartnerRecord;
   error?: string;
 };
 
 export default function NetworkPartnerHomePage() {
   const [networkPartner, setNetworkPartner] = useState<NetworkPartnerRecord | null>(null);
-  const [role, setRole] = useState<NetworkPartnerRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,13 +28,11 @@ export default function NetworkPartnerHomePage() {
       if (!active) return;
       if (!response.ok) {
         setNetworkPartner(null);
-        setRole(null);
         setError(String(payload?.error ?? 'Netzwerkpartner-Kontext konnte nicht geladen werden.'));
         setLoading(false);
         return;
       }
       setNetworkPartner(payload?.network_partner ?? null);
-      setRole(payload?.actor?.role ?? null);
       setLoading(false);
     }
     void load();
@@ -48,35 +41,28 @@ export default function NetworkPartnerHomePage() {
     };
   }, []);
 
-  const statusLabel = useMemo(() => networkPartner?.status ?? '—', [networkPartner]);
-
   return (
     <NetworkPartnerShell
       activeSection="home"
-      title="Netzwerkpartner-Bereich"
-      description="Dieser Bereich ist der getrennte Self-Service für regionale Netzwerkpartner. Anbindungen, Content, Buchungen, Rechnungen und Kostenmonitor laufen hier im eigenen Scope."
+      hidePrimaryNav
+      title={networkPartner?.company_name ? `Willkommen ${networkPartner.company_name}` : 'Willkommen'}
+      description="Hier verwaltest du deine Buchungen und Inhalte."
     >
       {error ? <p style={{ margin: 0, color: '#b91c1c', fontWeight: 600 }}>{error}</p> : null}
       {loading ? (
         <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>
       ) : networkPartner ? (
-        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-          <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-            <strong style={{ display: 'block', color: '#0f172a', marginBottom: 6 }}>Unternehmen</strong>
-            <div style={{ color: '#334155' }}>{networkPartner.company_name}</div>
-          </article>
-          <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-            <strong style={{ display: 'block', color: '#0f172a', marginBottom: 6 }}>Rolle</strong>
-            <div style={{ color: '#334155' }}>{role ?? '—'}</div>
-          </article>
-          <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-            <strong style={{ display: 'block', color: '#0f172a', marginBottom: 6 }}>Status</strong>
-            <div style={{ color: '#334155' }}>{statusLabel}</div>
-          </article>
-          <article style={{ border: '1px solid #e2e8f0', borderRadius: 14, padding: 16, background: '#fff' }}>
-            <strong style={{ display: 'block', color: '#0f172a', marginBottom: 6 }}>Managed Editing</strong>
-            <div style={{ color: '#334155' }}>{networkPartner.managed_editing_enabled ? 'Aktiv' : 'Aus'}</div>
-          </article>
+        <div style={welcomeWrapStyle}>
+          <div style={welcomeCardStyle}>
+            <div style={welcomeGridStyle}>
+              {HOME_ACTIONS.map((action) => (
+                <Link key={action.href} href={action.href} style={welcomeActionStyle}>
+                  <div style={welcomeActionTitleStyle}>{action.title}</div>
+                  <div style={welcomeActionTextStyle}>{action.description}</div>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       ) : (
         <p style={{ margin: 0, color: '#64748b' }}>Kein Netzwerkpartner-Kontext gefunden.</p>
@@ -84,3 +70,79 @@ export default function NetworkPartnerHomePage() {
     </NetworkPartnerShell>
   );
 }
+
+const HOME_ACTIONS = [
+  {
+    href: '/network-partner/integrations',
+    title: 'Anbindungen',
+    description: 'CRM- und LLM-Anbindungen konfigurieren, testen und laufend pflegen.',
+  },
+  {
+    href: '/network-partner/bookings',
+    title: 'Buchungen',
+    description: 'Aktive Leistungen, Laufzeiten und regionale Platzierungen im Blick behalten.',
+  },
+  {
+    href: '/network-partner/content',
+    title: 'Content',
+    description: 'Inhalte bearbeiten, Freigabestände prüfen und Veröffentlichungen vorbereiten.',
+  },
+  {
+    href: '/network-partner/invoices',
+    title: 'Rechnungen',
+    description: 'Abgerechnete Positionen und Perioden übersichtlich nachverfolgen.',
+  },
+  {
+    href: '/network-partner/monitor',
+    title: 'Monitor',
+    description: 'Kosten, KI-Nutzung und kaufmännische Kennzahlen zentral überwachen.',
+  },
+];
+
+const welcomeWrapStyle: React.CSSProperties = {
+  minHeight: '52vh',
+  display: 'grid',
+  placeItems: 'center',
+  padding: '20px 0 8px',
+};
+
+const welcomeCardStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: 980,
+  border: '1px solid #dbeafe',
+  borderRadius: 24,
+  background: 'linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)',
+  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.08)',
+  padding: 28,
+};
+
+const welcomeGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 16,
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+};
+
+const welcomeActionStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 10,
+  minHeight: 150,
+  padding: 20,
+  borderRadius: 18,
+  border: '1px solid #dbeafe',
+  background: '#eff6ff',
+  textDecoration: 'none',
+  alignContent: 'start',
+};
+
+const welcomeActionTitleStyle: React.CSSProperties = {
+  color: '#0f172a',
+  fontSize: 18,
+  fontWeight: 800,
+  lineHeight: 1.2,
+};
+
+const welcomeActionTextStyle: React.CSSProperties = {
+  color: '#475569',
+  fontSize: 14,
+  lineHeight: 1.55,
+};

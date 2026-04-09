@@ -24,6 +24,7 @@ type NetworkPartnerShellProps = {
   title: string;
   description: string;
   activeSection: ShellSection;
+  hidePrimaryNav?: boolean;
   children: ReactNode;
 };
 
@@ -149,6 +150,7 @@ export default function NetworkPartnerShell({
   title,
   description,
   activeSection,
+  hidePrimaryNav = false,
   children,
 }: NetworkPartnerShellProps) {
   const router = useRouter();
@@ -189,9 +191,9 @@ export default function NetworkPartnerShell({
   return (
     <div style={shellPageStyle}>
       <header style={dashboardHeaderStyle}>
-        <Link href="/network-partner" style={brandHeaderStyle} title="Zur Netzwerkpartner-Startseite">
+        <Link href="/network-partner" style={brandHeaderStyle} title="Zur Willkommensseite">
           <Image
-            alt="Wohnlagencheck24"
+            alt="Immobilienmarkt & Standortprofile"
             width={48}
             height={48}
             src="/logo/wohnlagencheck24.svg"
@@ -202,7 +204,7 @@ export default function NetworkPartnerShell({
             <span style={brandTitleStyle}>
               Wohnlagencheck<span style={{ color: '#ffe000' }}>24</span>
             </span>
-            <small style={brandSublineStyle}>NETZWERKPARTNER-DASHBOARD</small>
+            <small style={brandSublineStyle}>DATA-DRIVEN. EXPERT-LED.</small>
           </span>
         </Link>
 
@@ -245,57 +247,27 @@ export default function NetworkPartnerShell({
       </header>
 
       <div style={shellBodyStyle}>
-        <aside style={utilityBarStyle}>
-          <div style={toolIconsGroupStyle}>
-            {PRIMARY_NAV.map((item) => {
-              const active = item.key === activeSection;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => navigateTo(item.href)}
-                  style={toolIconButtonStyle(active)}
-                  aria-label={item.label}
-                  title={item.label}
-                >
-                  {item.icon}
-                </button>
-              );
-            })}
-          </div>
-        </aside>
-
-        <aside style={sidebarStyle}>
-          <div style={sidebarHeaderStyle}>
-            <h2 style={{ fontSize: 14, fontWeight: 800, margin: 0 }}>Netzwerkpartner</h2>
-            <p style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, textTransform: 'uppercase' }}>
-              Self-Service-Dashboard
-            </p>
-          </div>
-
-          <div style={{ flex: 1, overflowY: 'auto', padding: 15, display: 'grid', gap: 10 }}>
-            {PRIMARY_NAV.map((item) => {
-              const active = item.key === activeSection;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => navigateTo(item.href)}
-                  style={sidebarButtonStyle(active)}
-                >
-                  <span style={{ display: 'inline-flex', alignItems: 'center' }}>{item.icon}</span>
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div style={sidebarMetaCardStyle}>
-            <div style={sidebarMetaTitleStyle}>{networkPartner?.company_name ?? 'Netzwerkpartner'}</div>
-            <div style={sidebarMetaTextStyle}>Rolle: {role ?? '—'}</div>
-            <div style={sidebarMetaTextStyle}>Status: {networkPartner?.status ?? '—'}</div>
-          </div>
-        </aside>
+        {hidePrimaryNav ? null : (
+          <aside style={utilityBarStyle}>
+            <div style={toolIconsGroupStyle}>
+              {PRIMARY_NAV.map((item) => {
+                const active = item.key === activeSection;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => navigateTo(item.href)}
+                    style={toolIconButtonStyle(active)}
+                    aria-label={item.label}
+                    title={item.label}
+                  >
+                    {item.icon}
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+        )}
 
         <main style={contentStageStyle}>
           <section style={contentHeaderStyle}>
@@ -306,21 +278,26 @@ export default function NetworkPartnerShell({
                 {description}
               </p>
             </div>
+            <div style={contentMetaRowStyle}>
+              <span style={contentMetaBadgeStyle}>{networkPartner?.company_name ?? 'Netzwerkpartner'}</span>
+              <span style={contentMetaTextStyle}>Rolle: {role ?? '—'}</span>
+              <span style={contentMetaTextStyle}>Status: {networkPartner?.status ?? '—'}</span>
+            </div>
           </section>
 
           <section style={contentPanelStyle}>
             {children}
           </section>
-
-          <footer style={dashboardFooterStyle}>
-            <span style={dashboardFooterCopyStyle}>© {new Date().getFullYear()} Wohnlagencheck24</span>
-            <div style={dashboardFooterLinksStyle}>
-              <Link href="/impressum" style={dashboardFooterLinkStyle}>Impressum</Link>
-              <Link href="/datenschutz" style={dashboardFooterLinkStyle}>Datenschutz</Link>
-            </div>
-          </footer>
         </main>
       </div>
+
+      <footer style={dashboardFooterStyle}>
+        <span style={dashboardFooterCopyStyle}>© {new Date().getFullYear()} Wohnlagencheck24</span>
+        <div style={dashboardFooterLinksStyle}>
+          <Link href="/impressum" style={dashboardFooterLinkStyle}>Impressum</Link>
+          <Link href="/datenschutz" style={dashboardFooterLinkStyle}>Datenschutz</Link>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -497,66 +474,19 @@ const toolIconButtonStyle = (active: boolean): React.CSSProperties => ({
   justifyContent: 'center',
 });
 
-const sidebarStyle: React.CSSProperties = {
-  width: '260px',
-  backgroundColor: '#fff',
-  borderRight: '1px solid #e2e8f0',
-  display: 'flex',
-  flexDirection: 'column',
-};
-
-const sidebarHeaderStyle: React.CSSProperties = {
-  padding: '24px',
-  borderBottom: '1px solid #f1f5f9',
-};
-
-const sidebarButtonStyle = (active: boolean): React.CSSProperties => ({
-  width: '100%',
-  padding: '10px 12px',
-  border: `1px solid ${active ? '#cbd5e1' : '#dbeafe'}`,
-  borderRadius: '8px',
-  backgroundColor: active ? '#f8fafc' : '#eff6ff',
-  color: active ? '#1e293b' : '#475569',
-  fontWeight: active ? '700' : '600',
-  fontSize: '14px',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px',
-});
-
-const sidebarMetaCardStyle: React.CSSProperties = {
-  margin: '0 15px 15px',
-  padding: '14px 14px 16px',
-  borderRadius: '12px',
-  border: '1px solid #e2e8f0',
-  background: '#f8fafc',
-  display: 'grid',
-  gap: 6,
-};
-
-const sidebarMetaTitleStyle: React.CSSProperties = {
-  fontWeight: 800,
-  color: '#0f172a',
-  fontSize: 14,
-};
-
-const sidebarMetaTextStyle: React.CSSProperties = {
-  color: '#475569',
-  fontSize: 12,
-};
-
 const contentStageStyle: React.CSSProperties = {
   flex: 1,
   minWidth: 0,
   display: 'grid',
-  gridTemplateRows: 'auto 1fr auto',
+  gridTemplateRows: 'auto 1fr',
   overflow: 'auto',
   background: '#f8fafc',
 };
 
 const contentHeaderStyle: React.CSSProperties = {
   padding: '24px 24px 0',
+  display: 'grid',
+  gap: 14,
 };
 
 const contentLabelStyle: React.CSSProperties = {
@@ -565,6 +495,30 @@ const contentLabelStyle: React.CSSProperties = {
   fontWeight: 800,
   textTransform: 'uppercase',
   letterSpacing: 0.8,
+};
+
+const contentMetaRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  flexWrap: 'wrap',
+};
+
+const contentMetaBadgeStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '8px 12px',
+  borderRadius: 999,
+  background: '#e0f2fe',
+  color: '#0c4a6e',
+  fontSize: 12,
+  fontWeight: 800,
+};
+
+const contentMetaTextStyle: React.CSSProperties = {
+  color: '#475569',
+  fontSize: 13,
+  fontWeight: 600,
 };
 
 const contentPanelStyle: React.CSSProperties = {
@@ -584,8 +538,8 @@ const dashboardFooterStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '12px',
   flexWrap: 'wrap',
-  padding: '18px 24px 22px',
-  borderTop: '1px solid #e2e8f0',
+  padding: '18px 24px 22px 74px',
+  borderTop: '1px solid #dbe4ee',
   background: '#fff',
 };
 
