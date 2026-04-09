@@ -76,7 +76,7 @@ type LlmOptionApiRow = {
   global_provider_id?: string | null;
 };
 
-type WorkspaceTab = 'texts' | 'seo' | 'criteria';
+type WorkspaceTab = 'texts' | 'criteria';
 
 type RegionTarget = {
   city?: string;
@@ -161,22 +161,24 @@ function buildDefaultForm(row: RawRequestRow, override?: OverrideRow | null): Ov
   const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
   const title = asText(row.title);
   const description = getPayloadText(payload, ['description', 'short_description', 'long_description', 'title']);
-  const regions = getRegionTargetLabels(payload).join(', ');
-  const location = regions || getPayloadText(payload, ['location_text', 'region', 'location']);
-  const features = getPayloadText(payload, ['features_text']);
-  const highlights = getPayloadList(payload, 'highlights');
+  const effectiveTitle = override?.seo_h1 ?? override?.seo_title ?? title;
+  const effectiveDescription =
+    override?.long_description
+    ?? override?.short_description
+    ?? override?.seo_description
+    ?? description;
   return {
     partner_id: row.partner_id,
     source: row.provider,
     external_id: row.external_id,
-    seo_title: override?.seo_title ?? title,
-    seo_description: override?.seo_description ?? description,
-    seo_h1: override?.seo_h1 ?? title,
-    short_description: override?.short_description ?? description,
-    long_description: override?.long_description ?? description,
-    location_text: override?.location_text ?? location,
-    features_text: override?.features_text ?? features,
-    highlights: override?.highlights ?? highlights,
+    seo_title: effectiveTitle,
+    seo_description: effectiveDescription,
+    seo_h1: effectiveTitle,
+    short_description: effectiveDescription,
+    long_description: effectiveDescription,
+    location_text: override?.location_text ?? null,
+    features_text: override?.features_text ?? null,
+    highlights: override?.highlights ?? [],
     image_alt_texts: override?.image_alt_texts ?? [],
     status: override?.status ?? 'draft',
   };
@@ -345,8 +347,17 @@ export default function RequestsWorkspaceManager(props: Props) {
     if (!payload) return;
     setSaving(true);
     setStatus('Speichere Gesuch-Overrides...');
+    const normalizedTitle = String(payload.seo_h1 ?? payload.seo_title ?? '').trim();
+    const normalizedDescription = String(
+      payload.long_description ?? payload.short_description ?? payload.seo_description ?? '',
+    ).trim();
     const upsertPayload = {
       ...payload,
+      seo_title: normalizedTitle,
+      seo_h1: normalizedTitle,
+      seo_description: normalizedDescription,
+      short_description: normalizedDescription,
+      long_description: normalizedDescription,
       highlights: payload.highlights ?? [],
       image_alt_texts: payload.image_alt_texts ?? [],
       last_updated: new Date().toISOString(),
@@ -553,83 +564,6 @@ export default function RequestsWorkspaceManager(props: Props) {
     );
   };
 
-  const renderListField = (
-    label: string,
-    key: keyof OverrideRow,
-    rawValue: string[],
-    placeholder: string,
-  ) => {
-    if (!form) return null;
-    const keyName = String(key);
-    const value = Array.isArray(form[key]) ? (form[key] as string[]).join('\n') : '';
-    const rawValueText = rawValue.join('\n');
-    const isCustomized = value.trim() !== rawValueText.trim();
-    const isRewriting = rewritingKey === keyName;
-    const showPrompt = Boolean(promptOpenMap[keyName]);
-    const customPrompt = customPromptMap[keyName] ?? '';
-    const standardPrompt = getStandardPromptText(label, selectedRow?.title || selectedRow?.external_id || 'Gesuch');
-    return (
-      <div style={fieldCardStyle}>
-        <div style={fieldHeaderStyle}>
-          <h4 style={{ margin: 0, fontSize: '14px', color: '#1e293b' }}>{label}</h4>
-          <div style={fieldHeaderActionsStyle}>
-            {isCustomized ? <span style={customizedBadgeStyle}>✓ Individuell angepasst</span> : null}
-            <button type="button" onClick={() => resetField(key, rawValue)} style={resetButtonStyle(isCustomized)}>
-              Original nutzen
-            </button>
-          </div>
-        </div>
-        <div style={editorGridStyle}>
-          <div style={textareaWrapperStyle}>
-            <textarea
-              value={value}
-              onChange={(event) => updateField(key, event.target.value.split('\n').filter(Boolean))}
-              onBlur={() => void saveOverride()}
-              style={textareaStyle}
-              placeholder={placeholder}
-            />
-            <div style={aiActionsRowStyle}>
-              <button
-                type="button"
-                style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
-                onClick={() => void runAiRewrite(key, label, customPrompt)}
-                disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
-              >
-                {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setPromptOpenMap((prev) => ({ ...prev, [keyName]: !prev[keyName] }))}
-                style={promptToggleStyle}
-              >
-                {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-              </button>
-            </div>
-            {showPrompt ? (
-              <div style={promptPanelStyle}>
-                <div style={promptLabelStyle}>Standard-Prompt</div>
-                <div style={promptContentStyle}>{standardPrompt}</div>
-                <label style={promptInputLabelStyle}>
-                  Eigener Prompt (optional)
-                  <textarea
-                    value={customPrompt}
-                    onChange={(event) => setCustomPromptMap((prev) => ({ ...prev, [keyName]: event.target.value }))}
-                    style={promptInputStyle}
-                    placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
-                  />
-                </label>
-              </div>
-            ) : null}
-          </div>
-          <div style={previewBoxStyle}>
-            <div style={previewHeaderStyle}>CRM‑ORIGINAL (SYSTEM)</div>
-            <div style={previewContentStyle}>{rawValueText || 'Keine CRM-Vorlage vorhanden.'}</div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const selectedType = getPayloadText(selectedPayload, ['object_type']) || '—';
   const selectedMode = getPayloadText(selectedPayload, ['request_type']) || '—';
   const selectedMarketing = getPayloadText(selectedPayload, ['marketing_type']) || '—';
@@ -643,8 +577,6 @@ export default function RequestsWorkspaceManager(props: Props) {
   const selectedRadius = asNumber(selectedPayload.radius_km);
   const selectedSubtypes = getPayloadList(selectedPayload, 'object_subtypes');
   const selectedDescription = getPayloadText(selectedPayload, ['description', 'short_description', 'long_description', 'title']);
-  const rawLocation = selectedLocation === '—' ? '' : selectedLocation;
-  const rawHighlights = getPayloadList(selectedPayload, 'highlights');
 
   if (loading) return <FullscreenLoader show label="Gesuche werden geladen..." />;
 
@@ -808,9 +740,6 @@ export default function RequestsWorkspaceManager(props: Props) {
                 <button type="button" onClick={() => setActiveTab('texts')} style={workspaceTabStyle(activeTab === 'texts')}>
                   Texte
                 </button>
-                <button type="button" onClick={() => setActiveTab('seo')} style={workspaceTabStyle(activeTab === 'seo')}>
-                  SEO / GEO
-                </button>
                 <button type="button" onClick={() => setActiveTab('criteria')} style={workspaceTabStyle(activeTab === 'criteria')}>
                   Suchkriterien
                 </button>
@@ -820,10 +749,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                 <>
                   <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
                     {renderTextField('Gesuch-Titel', 'seo_h1', selectedRow.title ?? '', { multiline: false })}
-                    {renderTextField('Teaser', 'short_description', selectedDescription, { multiline: true })}
-                    {renderTextField('Langbeschreibung', 'long_description', selectedDescription, { multiline: true })}
-                    {renderTextField('Lage‑Text', 'location_text', rawLocation, { multiline: true })}
-                    {renderTextField('Zusatz‑Text', 'features_text', getPayloadText(selectedPayload, ['features_text']), { multiline: true })}
+                    {renderTextField('Beschreibung', 'long_description', selectedDescription, { multiline: true })}
                   </div>
 
                   <div style={contentPreviewGridStyle}>
@@ -832,55 +758,13 @@ export default function RequestsWorkspaceManager(props: Props) {
                       <div style={contentPreviewBodyStyle}>{form.seo_h1 || 'Kein Gesuch-Titel gepflegt.'}</div>
                     </div>
                     <div style={contentPreviewCardStyle}>
-                      <div style={contentPreviewLabelStyle}>Teaser</div>
-                      <div style={contentPreviewBodyStyle}>{form.short_description || 'Kein Teaser gepflegt.'}</div>
-                    </div>
-                    <div style={contentPreviewCardStyle}>
-                      <div style={contentPreviewLabelStyle}>Langbeschreibung</div>
-                      <div style={contentPreviewBodyStyle}>{form.long_description || 'Keine Langbeschreibung gepflegt.'}</div>
-                    </div>
-                    <div style={contentPreviewCardStyle}>
-                      <div style={contentPreviewLabelStyle}>Lage</div>
-                      <div style={contentPreviewBodyStyle}>{form.location_text || 'Kein Lage-Text gepflegt.'}</div>
+                      <div style={contentPreviewLabelStyle}>Beschreibung</div>
+                      <div style={contentPreviewBodyStyle}>{form.long_description || 'Keine Beschreibung gepflegt.'}</div>
                     </div>
                   </div>
 
                   <button onClick={() => void saveOverride()} disabled={saving} style={primaryButtonStyle}>
                     {saving ? 'Speichern...' : 'Texte speichern'}
-                  </button>
-                </>
-              ) : null}
-
-              {activeTab === 'seo' ? (
-                <>
-                  <div style={offerSummaryCardStyle}>
-                    <div style={offerSummaryHeaderStyle}>Snippet</div>
-                    <div style={mediaSectionHintStyle}>Suchmaschinen-Snippet und Antwortbausteine für das Gesuch.</div>
-                  </div>
-                  <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
-                    {renderTextField('SEO‑Titel', 'seo_title', selectedRow.title ?? '', { multiline: false })}
-                    {renderTextField('SEO‑Description', 'seo_description', selectedDescription, { multiline: true })}
-                    {renderListField('Highlights (eine Zeile = ein Punkt)', 'highlights', rawHighlights, 'Ein Punkt pro Zeile')}
-                    {renderListField('Alt‑Texte (eine Zeile = ein Bild)', 'image_alt_texts', [], 'Ein Bildtitel pro Zeile')}
-                  </div>
-
-                  <div style={previewCardStyle}>
-                    <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
-                      SEO‑Vorschau
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: '16px', marginTop: '6px' }}>
-                      {form.seo_title || form.seo_h1 || selectedRow.title || 'SEO‑Titel'}
-                    </div>
-                    <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
-                      {form.seo_description || form.short_description || form.long_description || 'SEO‑Description'}
-                    </div>
-                    <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
-                      /immobiliengesuche/{form.external_id}_&lt;titel&gt;
-                    </div>
-                  </div>
-
-                  <button onClick={() => void saveOverride()} disabled={saving} style={primaryButtonStyle}>
-                    {saving ? 'Speichern...' : 'SEO / GEO speichern'}
                   </button>
                 </>
               ) : null}
@@ -1263,14 +1147,6 @@ const primaryButtonStyle: CSSProperties = {
   color: '#fff',
   fontWeight: 600,
   cursor: 'pointer',
-};
-
-const previewCardStyle: CSSProperties = {
-  backgroundColor: '#f8fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: '12px',
-  padding: '12px',
-  marginBottom: '16px',
 };
 
 const previewBoxStyle: CSSProperties = {
