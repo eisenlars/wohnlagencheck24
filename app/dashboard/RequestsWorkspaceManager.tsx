@@ -389,7 +389,7 @@ export default function RequestsWorkspaceManager(props: Props) {
     setSaving(false);
   }
 
-  async function runAiRewrite(key: keyof OverrideRow, label: string, customPrompt?: string) {
+  async function runAiRewrite(key: keyof OverrideRow, label: string, promptOverride?: string) {
     if (!form || !selectedRow) return;
     const currentText = String(form[key] ?? '');
     if (!currentText.trim()) return;
@@ -410,7 +410,7 @@ export default function RequestsWorkspaceManager(props: Props) {
           areaName: selectedRow.title || selectedRow.external_id,
           type: 'general',
           sectionLabel: label,
-          customPrompt: customPrompt || undefined,
+          customPrompt: promptOverride || undefined,
           llm_integration_id: selectedOption?.partnerIntegrationId || undefined,
           llm_global_provider_id: selectedOption?.globalProviderId || undefined,
         }),
@@ -495,6 +495,7 @@ export default function RequestsWorkspaceManager(props: Props) {
       selectedFactsPromptText,
       selectedNote,
     );
+    const effectivePrompt = customPrompt.trim() || standardPrompt;
     return (
       <div style={fieldCardStyle}>
         <div style={fieldHeaderStyle}>
@@ -529,7 +530,7 @@ export default function RequestsWorkspaceManager(props: Props) {
               <button
                 type="button"
                 style={isRewriting ? aiButtonLoadingStyle : aiButtonStyle}
-                onClick={() => void runAiRewrite(key, label, customPrompt)}
+                onClick={() => void runAiRewrite(key, label, effectivePrompt)}
                 disabled={isRewriting || llmOptionsLoading || (llmOptionsLoaded && llmOptions.length === 0)}
               >
                 {isRewriting ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
