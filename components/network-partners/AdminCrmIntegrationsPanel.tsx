@@ -305,6 +305,14 @@ function formatAreaDebugAreas(areaDebug: NonNullable<NonNullable<CrmSyncResultPa
     .join(", ");
 }
 
+function readDebugField(line: NonNullable<CrmSyncResultPayload["lines"]>[number], key: string): string | null {
+  const normalizedPayload = (line as { normalized_payload?: Record<string, unknown> | null }).normalized_payload;
+  if (!normalizedPayload || typeof normalizedPayload !== "object") return null;
+  const value = normalizedPayload[key];
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : null;
+}
+
 function buildDebugPayloadDownloadUrl(
   scope: "partner" | "network_partner",
   integrationId: string,
@@ -1281,6 +1289,9 @@ export default function AdminCrmIntegrationsPanel({
                   {areaDebugLines.map((line, index) => {
                     const areaDebug = line.area_debug;
                     if (!areaDebug) return null;
+                    const sourceTitle = readDebugField(line, "source_title") ?? readDebugField(line, "title");
+                    const exposeeId = readDebugField(line, "exposee_id");
+                    const address = readDebugField(line, "address");
                     const candidates = Array.isArray(areaDebug.candidate_names) && areaDebug.candidate_names.length > 0
                       ? areaDebug.candidate_names.slice(0, 6).join(", ")
                       : "Keine Kandidaten";
@@ -1306,6 +1317,15 @@ export default function AdminCrmIntegrationsPanel({
                         <p style={modalParagraphStyle}>
                           <strong>Objekt {line.external_id ?? "ohne ID"}</strong> · {line.reason ?? line.status ?? "ohne Ergebnis"}
                         </p>
+                        {sourceTitle ? (
+                          <p style={modalParagraphStyle}><strong>Titel:</strong> {sourceTitle}</p>
+                        ) : null}
+                        {exposeeId ? (
+                          <p style={modalParagraphStyle}><strong>Exposee-ID:</strong> {exposeeId}</p>
+                        ) : null}
+                        {address ? (
+                          <p style={modalParagraphStyle}><strong>Adresse:</strong> {address}</p>
+                        ) : null}
                         <p style={modalParagraphStyle}><strong>Signale:</strong> {formatAreaDebugInputSignals(areaDebug)}</p>
                         <p style={modalParagraphStyle}><strong>Kandidaten:</strong> {candidates}</p>
                         <p style={modalParagraphStyle}><strong>Gefundene Areas:</strong> {formatAreaDebugAreas(areaDebug)}</p>
