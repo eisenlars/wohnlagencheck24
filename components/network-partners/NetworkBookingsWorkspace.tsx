@@ -26,6 +26,11 @@ type BookingsPayload = {
   error?: string;
 };
 
+type BookingAreasPayload = {
+  areas?: AreaOption[];
+  error?: string;
+};
+
 type NetworkPartnerListPayload = {
   network_partners?: NetworkPartnerRecord[];
   error?: string;
@@ -45,6 +50,7 @@ export default function NetworkBookingsWorkspace({
   const [bookings, setBookings] = useState<NetworkPartnerBookingRecord[]>([]);
   const [networkPartners, setNetworkPartners] = useState<NetworkPartnerRecord[]>([]);
   const [placements, setPlacements] = useState<PlacementCatalogRecord[]>([]);
+  const [areas, setAreas] = useState<AreaOption[]>(providedAreas);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [createMode, setCreateMode] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -55,18 +61,22 @@ export default function NetworkBookingsWorkspace({
     const bookingsUrl = networkPartnerId
       ? `/api/partner/network-bookings?network_partner_id=${encodeURIComponent(networkPartnerId)}`
       : '/api/partner/network-bookings';
-    const [bookingsResponse, partnersResponse] = await Promise.all([
+    const [bookingsResponse, partnersResponse, areasResponse] = await Promise.all([
       fetch(bookingsUrl, { method: 'GET', cache: 'no-store' }),
       fetch('/api/partner/network-partners', { method: 'GET', cache: 'no-store' }),
+      fetch('/api/partner/network-bookings/areas', { method: 'GET', cache: 'no-store' }),
     ]);
 
     const bookingsPayload = (await bookingsResponse.json().catch(() => null)) as BookingsPayload | null;
     const partnersPayload = (await partnersResponse.json().catch(() => null)) as NetworkPartnerListPayload | null;
+    const areasPayload = (await areasResponse.json().catch(() => null)) as BookingAreasPayload | null;
     return {
       bookingsResponse,
       partnersResponse,
+      areasResponse,
       bookingsPayload,
       partnersPayload,
+      areasPayload,
     };
   }, [networkPartnerId]);
 
@@ -78,18 +88,22 @@ export default function NetworkBookingsWorkspace({
       const {
         bookingsResponse,
         partnersResponse,
+        areasResponse,
         bookingsPayload,
         partnersPayload,
+        areasPayload,
       } = await fetchPageData();
       if (!active) return;
-      if (!bookingsResponse.ok || !partnersResponse.ok) {
+      if (!bookingsResponse.ok || !partnersResponse.ok || !areasResponse.ok) {
         setBookings([]);
         setNetworkPartners([]);
         setPlacements([]);
+        setAreas(providedAreas);
         setError(
           String(
             bookingsPayload?.error
             ?? partnersPayload?.error
+            ?? areasPayload?.error
             ?? 'Buchungsdaten konnten nicht geladen werden.',
           ),
         );
@@ -101,6 +115,7 @@ export default function NetworkBookingsWorkspace({
       setBookings(nextBookings);
       setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
       setPlacements(Array.isArray(bookingsPayload?.placement_catalog) ? bookingsPayload.placement_catalog : []);
+      setAreas(Array.isArray(areasPayload?.areas) && areasPayload.areas.length > 0 ? areasPayload.areas : providedAreas);
       setCreateMode(nextBookings.length === 0);
       setSelectedBookingId((current) => {
         if (current && nextBookings.some((booking) => booking.id === current)) return current;
@@ -123,7 +138,7 @@ export default function NetworkBookingsWorkspace({
   const bookingAreas = useMemo(() => {
     const districtMap = new Map<string, string>();
     const localityRows: AreaOption[] = [];
-    for (const area of providedAreas) {
+    for (const area of areas) {
       const areaId = String(area.id ?? '').trim();
       const label = String(area.label ?? '').trim();
       if (!areaId) continue;
@@ -166,7 +181,7 @@ export default function NetworkBookingsWorkspace({
       return [...districtRows, ...normalizedLocalityRows];
     }
 
-    for (const area of providedAreas) {
+    for (const area of areas) {
       const areaId = String(area.id ?? '').trim();
       const label = String(area.label ?? '').trim();
       const districtId = areaId.split('-').slice(0, 3).join('-');
@@ -175,7 +190,7 @@ export default function NetworkBookingsWorkspace({
       }
     }
 
-    return providedAreas.map((area) => {
+    return areas.map((area) => {
       const areaId = String(area.id ?? '').trim();
       const label = String(area.label ?? '').trim();
       const parts = areaId.split('-');
@@ -189,7 +204,7 @@ export default function NetworkBookingsWorkspace({
         label: `${districtLabel} -> ${label}`,
       };
     });
-  }, [providedAreas]);
+  }, [areas]);
 
   const activeBookingCount = useMemo(
     () => bookings.filter((booking) => booking.status === 'active').length,
@@ -206,17 +221,21 @@ export default function NetworkBookingsWorkspace({
     const {
       bookingsResponse,
       partnersResponse,
+      areasResponse,
       bookingsPayload,
       partnersPayload,
+      areasPayload,
     } = await fetchPageData();
-    if (!bookingsResponse.ok || !partnersResponse.ok) {
+    if (!bookingsResponse.ok || !partnersResponse.ok || !areasResponse.ok) {
       setBookings([]);
       setNetworkPartners([]);
       setPlacements([]);
+      setAreas(providedAreas);
       setError(
         String(
           bookingsPayload?.error
           ?? partnersPayload?.error
+          ?? areasPayload?.error
           ?? 'Buchungsdaten konnten nicht geladen werden.',
         ),
       );
@@ -228,6 +247,7 @@ export default function NetworkBookingsWorkspace({
     setBookings(nextBookings);
     setNetworkPartners(Array.isArray(partnersPayload?.network_partners) ? partnersPayload.network_partners : []);
     setPlacements(Array.isArray(bookingsPayload?.placement_catalog) ? bookingsPayload.placement_catalog : []);
+    setAreas(Array.isArray(areasPayload?.areas) && areasPayload.areas.length > 0 ? areasPayload.areas : providedAreas);
     setCreateMode(nextBookings.length === 0);
     setSelectedBookingId(() => {
       const preferred = String(preferredBookingId ?? '').trim();
@@ -309,7 +329,7 @@ export default function NetworkBookingsWorkspace({
               <BookingTable
                 bookings={bookings}
                 networkPartners={networkPartners}
-                areas={providedAreas}
+                areas={areas}
                 placements={placements}
                 selectedBookingId={selectedBookingId}
                 onSelect={(bookingId) => {
