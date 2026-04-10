@@ -56,17 +56,22 @@ function mergePostalLookups(
 }
 
 function uniqueTargets(targets: ReportPostalLookupTarget[]): ReportPostalLookupTarget[] {
+  type PostalTargetEntry = readonly [
+    `${string}/${string}`,
+    { readonly bundeslandSlug: string; readonly kreisSlug: string },
+  ];
+
+  const entries = targets
+    .map((target) => {
+      const bundeslandSlug = asText(target.bundeslandSlug);
+      const kreisSlug = asText(target.kreisSlug);
+      if (!bundeslandSlug || !kreisSlug) return null;
+      return [`${bundeslandSlug}/${kreisSlug}`, { bundeslandSlug, kreisSlug }] as const;
+    })
+    .filter((entry): entry is PostalTargetEntry => entry !== null);
+
   return Array.from(
-    new Map(
-      targets
-        .map((target) => {
-          const bundeslandSlug = asText(target.bundeslandSlug);
-          const kreisSlug = asText(target.kreisSlug);
-          if (!bundeslandSlug || !kreisSlug) return null;
-          return [`${bundeslandSlug}/${kreisSlug}`, { bundeslandSlug, kreisSlug }] as const;
-        })
-        .filter((entry): entry is readonly [string, ReportPostalLookupTarget] => Boolean(entry)),
-    ).values(),
+    new Map(entries).values(),
   );
 }
 
