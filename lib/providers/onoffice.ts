@@ -323,6 +323,33 @@ function buildAddress(elements: Record<string, unknown>): string | null {
   return parts.length > 0 ? parts.join(" ") : null;
 }
 
+function normalizeLocationText(value: unknown): string | null {
+  const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  return text.length > 0 ? text : null;
+}
+
+function splitOnOfficeCityDistrict(value: unknown): { city: string | null; district: string | null } {
+  const raw = normalizeLocationText(value);
+  if (!raw) return { city: null, district: null };
+  const parts = raw.split(/\s*\/\s*/).map((entry) => entry.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    return {
+      city: parts[0] || null,
+      district: parts.slice(1).join(" / ") || null,
+    };
+  }
+  return { city: raw, district: null };
+}
+
+function normalizeOnOfficeAreaHint(value: unknown): string | null {
+  const text = normalizeLocationText(value);
+  if (!text) return null;
+  if (text.length > 80) return null;
+  if (/[.!?;:]/.test(text)) return null;
+  if (/\bbitte beachten\b/i.test(text)) return null;
+  return text;
+}
+
 function toNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === "") return null;
   const n = Number(String(value).replace(",", "."));
@@ -687,14 +714,16 @@ function mapEstateToOffer(
   const gallery = extractImages(elements);
   const address = buildAddress(elements);
   const zipCode = String(elements["plz"] ?? "").trim() || null;
-  const city = String(elements["ort"] ?? "").trim() || null;
-  const region =
-    String(elements["lage"] ?? elements["freitext_lage"] ?? "").trim()
-    || null;
+  const parsedLocation = splitOnOfficeCityDistrict(elements["ort"]);
+  const city = parsedLocation.city;
+  const district = parsedLocation.district;
+  const region = normalizeOnOfficeAreaHint(elements["lage"]);
   const locationLabel =
-    city && region && !region.toLowerCase().includes(city.toLowerCase())
-      ? `${city} ${region}`
-      : city ?? region ?? null;
+    district
+      ? `${city ?? ""} ${district}`.trim() || district
+      : city && region && !region.toLowerCase().includes(city.toLowerCase())
+        ? `${city} ${region}`
+        : city ?? region ?? null;
   const rent = toNumber(elements["warmmiete"]) ?? toNumber(elements["kaltmiete"]);
   const details = buildDetailsSnapshot(elements);
   const energy = buildEnergySnapshot(elements);
@@ -761,13 +790,13 @@ function mapEstateToOffer(
       source_title: String(elements["objekttitel"] ?? "") || null,
       zip_code: zipCode,
       city,
-      district: null,
+      district,
       region,
       country: null,
       description: elements["objektbeschreibung"] ?? elements["freitext_lage"] ?? null,
       long_description: elements["objektbeschreibung"] ?? null,
-      location: locationLabel ?? elements["lage"] ?? elements["freitext_lage"] ?? null,
-      location_scope: city ? "stadt" : "region",
+      location: locationLabel,
+      location_scope: district ? "stadtteil" : city ? "stadt" : "region",
       features_note: elements["ausstatt_beschr"] ?? elements["freitext_ausstattung"] ?? null,
       misc_note: elements["sonstige_angaben"] ?? null,
       details,
