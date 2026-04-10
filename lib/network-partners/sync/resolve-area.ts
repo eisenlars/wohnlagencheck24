@@ -150,6 +150,11 @@ function buildAreaDebug(args: {
 function extractBookingDistrictTargets(
   bookingScopes: NetworkPartnerPreviewBookingScope[],
 ): ReportPostalLookupTarget[] {
+  type DistrictTargetEntry = readonly [
+    `${string}/${string}`,
+    { readonly bundeslandSlug: string; readonly kreisSlug: string },
+  ];
+
   const entries = bookingScopes
     .map((scope) => {
       const bundeslandSlug = asText(scope.bundesland_slug);
@@ -160,7 +165,7 @@ function extractBookingDistrictTargets(
       if (!bundeslandSlug || !districtSlug) return null;
       return [`${bundeslandSlug}/${districtSlug}`, { bundeslandSlug, kreisSlug: districtSlug }] as const;
     })
-    .filter((entry): entry is readonly [string, ReportPostalLookupTarget] => Boolean(entry));
+    .filter((entry): entry is DistrictTargetEntry => entry !== null);
 
   return Array.from(
     new Map(entries).values(),

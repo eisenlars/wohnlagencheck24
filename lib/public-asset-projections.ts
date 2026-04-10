@@ -700,6 +700,11 @@ export async function rebuildPublicOfferEntriesForPartner(
   ]);
   const visibleAreaIds = visibleAreaConfigs.map((row) => asText(row.area_id)).filter(Boolean);
   const offerMatchAreaIdsByVisibleAreaId = buildOfferMatchAreaIdsByVisibleAreaId(visibleAreaConfigs, offerAreaCandidates);
+  type PostalLookupEntry = readonly [
+    `${string}/${string}`,
+    { readonly bundeslandSlug: string; readonly kreisSlug: string },
+  ];
+
   const postalLookupEntries = offerAreaCandidates
     .filter((candidate) => asText(candidate.id).split("-").length <= 3)
     .map((candidate) => {
@@ -708,9 +713,7 @@ export async function rebuildPublicOfferEntriesForPartner(
       if (!bundeslandSlug || !kreisSlug) return null;
       return [`${bundeslandSlug}/${kreisSlug}`, { bundeslandSlug, kreisSlug }] as const;
     })
-    .filter(
-      (entry): entry is readonly [string, { bundeslandSlug: string; kreisSlug: string }] => Boolean(entry),
-    );
+    .filter((entry): entry is PostalLookupEntry => entry !== null);
   const postalLookupTargets = Array.from(
     new Map(postalLookupEntries).values(),
   );
