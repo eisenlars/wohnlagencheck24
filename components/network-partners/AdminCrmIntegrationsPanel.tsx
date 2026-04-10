@@ -146,9 +146,28 @@ type CrmIntegrationAdminDraft = {
 
 type IntegrationRecord = {
   id: string;
+  partner_id?: string;
   provider: string;
   is_active: boolean;
   last_test_at?: string | null;
+};
+
+type PartnerOfferAreaDebugRow = {
+  offer_id: string;
+  area_id: string;
+  area_name: string;
+  is_primary: boolean;
+  match_source: string;
+  match_confidence: string;
+  score: number | null;
+  matched_zip_code: string;
+  matched_city: string;
+  matched_region: string;
+  updated_at: string;
+  title: string;
+  address: string;
+  external_id: string;
+  source: string;
 };
 
 type OnOfficeFieldOption = {
@@ -902,6 +921,9 @@ export default function AdminCrmIntegrationsPanel({
   syncWarning,
 }: AdminCrmIntegrationsPanelProps) {
   const [detailModal, setDetailModal] = useState<DetailModalState>(null);
+  const [partnerOfferAreaDebugRows, setPartnerOfferAreaDebugRows] = useState<PartnerOfferAreaDebugRow[]>([]);
+  const [partnerOfferAreaDebugLoading, setPartnerOfferAreaDebugLoading] = useState(false);
+  const [partnerOfferAreaDebugError, setPartnerOfferAreaDebugError] = useState<string | null>(null);
   const [onOfficeEstateStatusOptions, setOnOfficeEstateStatusOptions] = useState<OnOfficeFieldOption[]>([]);
   const [onOfficeEstateStatusError, setOnOfficeEstateStatusError] = useState<string | null>(null);
   const [onOfficeEstateStatusFieldKey, setOnOfficeEstateStatusFieldKey] = useState<string | null>(null);
@@ -933,6 +955,51 @@ export default function AdminCrmIntegrationsPanel({
     isOnOfficeProvider(integration.provider)
     && onOfficeEstateStatusOptions.length === 0
     && onOfficeEstateStatusError === null;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPartnerOfferAreaDebug() {
+      if (
+        detailModal !== "sync"
+        || scope !== "partner"
+        || activeResourceKey !== "offers"
+        || !integration.partner_id
+      ) {
+        if (active) {
+          setPartnerOfferAreaDebugRows([]);
+          setPartnerOfferAreaDebugError(null);
+          setPartnerOfferAreaDebugLoading(false);
+        }
+        return;
+      }
+
+      setPartnerOfferAreaDebugLoading(true);
+      setPartnerOfferAreaDebugError(null);
+      try {
+        const res = await fetch(`/api/admin/partners/${encodeURIComponent(integration.partner_id)}/offer-area-debug`, {
+          cache: "no-store",
+        });
+        const payload = await res.json().catch(() => ({})) as { rows?: PartnerOfferAreaDebugRow[]; error?: string };
+        if (!res.ok) throw new Error(payload.error || "Offer area debug loading failed");
+        if (active) {
+          setPartnerOfferAreaDebugRows(Array.isArray(payload.rows) ? payload.rows : []);
+        }
+      } catch (error) {
+        if (active) {
+          setPartnerOfferAreaDebugRows([]);
+          setPartnerOfferAreaDebugError(error instanceof Error ? error.message : "Offer area debug loading failed");
+        }
+      } finally {
+        if (active) setPartnerOfferAreaDebugLoading(false);
+      }
+    }
+
+    void loadPartnerOfferAreaDebug();
+    return () => {
+      active = false;
+    };
+  }, [detailModal, scope, activeResourceKey, integration.partner_id]);
 
   useEffect(() => {
     let active = true;
@@ -1290,6 +1357,51 @@ export default function AdminCrmIntegrationsPanel({
                   {syncSummary.result.notes.slice(0, 8).map((note, index) => (
                     <p key={`sync-note-${activeResourceKey}-${index}`} style={modalParagraphStyle}>{note}</p>
                   ))}
+                </div>
+              ) : null}
+
+              {scope === "partner" && activeResourceKey === "offers" ? (
+                <div style={modalSectionStyle}>
+                  <div style={modalSectionTitleStyle}>Ausspielungs-Debug</div>
+                  {partnerOfferAreaDebugLoading ? (
+                    <p style={modalParagraphStyle}>Matchdaten werden geladen...</p>
+                  ) : partnerOfferAreaDebugError ? (
+                    <p style={modalParagraphStyle}>{partnerOfferAreaDebugError}</p>
+                  ) : partnerOfferAreaDebugRows.length === 0 ? (
+                    <p style={modalParagraphStyle}>Noch keine Matchdaten fuer Angebote vorhanden.</p>
+                  ) : (
+                    partnerOfferAreaDebugRows.map((row, index) => (
+                      <div
+                        key={`partner-offer-debug-${row.offer_id || index}-${row.area_id || "area"}-${index}`}
+                        style={{
+                          display: "grid",
+                          gap: 6,
+                          padding: 10,
+                          borderRadius: 10,
+                          border: "1px solid #e2e8f0",
+                          background: "#f8fafc",
+                        }}
+                      >
+                        <p style={modalParagraphStyle}>
+                          <strong>{row.title || `Objekt ${row.external_id || row.offer_id}`}</strong>
+                        </p>
+                        {row.address ? (
+                          <p style={modalParagraphStyle}><strong>Adresse:</strong> {row.address}</p>
+                        ) : null}
+                        <p style={modalParagraphStyle}><strong>Zielgebiet:</strong> {row.area_name || row.area_id || "—"}</p>
+                        <p style={modalParagraphStyle}><strong>Match-Quelle:</strong> {row.match_source || "—"}</p>
+                        <p style={modalParagraphStyle}><strong>Confidence:</strong> {row.match_confidence || "—"}</p>
+                        <p style={modalParagraphStyle}><strong>Score:</strong> {typeof row.score === "number" ? row.score : "—"}</p>
+                        <p style={modalParagraphStyle}>
+                          <strong>Signale:</strong> {joinNonEmpty([
+                            row.matched_zip_code ? `PLZ ${row.matched_zip_code}` : null,
+                            row.matched_city ? `Ort ${row.matched_city}` : null,
+                            row.matched_region ? `Region ${row.matched_region}` : null,
+                          ]) ?? "—"}
+                        </p>
+                      </div>
+                    ))
+                  )}
                 </div>
               ) : null}
 
