@@ -181,6 +181,37 @@ type CrmSyncResultPayload = {
   skipped: boolean;
   reason?: string;
   notes?: string[];
+  lines?: Array<{
+    external_id?: string | null;
+    status?: "created" | "updated" | "skipped" | "error" | null;
+    reason?: string | null;
+    area_debug?: {
+      input_signals?: {
+        zip_code?: string | null;
+        city?: string | null;
+        district?: string | null;
+        region?: string | null;
+        location?: string | null;
+      } | null;
+      candidate_names?: string[];
+      candidate_slugs?: string[];
+      candidate_areas?: Array<{
+        id?: string | null;
+        name?: string | null;
+        slug?: string | null;
+        parent_slug?: string | null;
+        bundesland_slug?: string | null;
+      }>;
+      matched_scope?: {
+        booking_id?: string | null;
+        area_id?: string | null;
+        area_name?: string | null;
+        area_slug?: string | null;
+        match_kind?: "exact_match" | "kreis_match" | null;
+      } | null;
+      final_reason?: string | null;
+    } | null;
+  }>;
 };
 
 type SyncLogPayload = {
@@ -1704,6 +1735,9 @@ function readSyncSummaryFromIntegration(
           ].filter(Boolean).join(" · ") || "CRM-Synchronisierung"
         : "CRM-Synchronisierung";
   const fallbackPreviewCounts = asObject(fallbackSummary.preview_counts);
+  const fallbackLines = Array.isArray(fallbackSummary.lines)
+    ? fallbackSummary.lines.filter((entry): entry is NonNullable<CrmSyncResultPayload["lines"]>[number] => Boolean(entry) && typeof entry === "object")
+    : undefined;
   const derivedResult =
     result
     ?? (hasFallbackData
@@ -1727,6 +1761,7 @@ function readSyncSummaryFromIntegration(
           notes: Array.isArray(fallbackSummary.notes)
             ? fallbackSummary.notes.filter((item): item is string => typeof item === "string")
             : undefined,
+          lines: fallbackLines,
         } satisfies CrmSyncResultPayload
       : null);
   const message =

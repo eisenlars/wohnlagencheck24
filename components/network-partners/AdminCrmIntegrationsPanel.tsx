@@ -21,6 +21,37 @@ type CrmSyncResultPayload = {
   skipped: boolean;
   reason?: string;
   notes?: string[];
+  lines?: Array<{
+    external_id?: string | null;
+    status?: "created" | "updated" | "skipped" | "error" | null;
+    reason?: string | null;
+    area_debug?: {
+      input_signals?: {
+        zip_code?: string | null;
+        city?: string | null;
+        district?: string | null;
+        region?: string | null;
+        location?: string | null;
+      } | null;
+      candidate_names?: string[];
+      candidate_slugs?: string[];
+      candidate_areas?: Array<{
+        id?: string | null;
+        name?: string | null;
+        slug?: string | null;
+        parent_slug?: string | null;
+        bundesland_slug?: string | null;
+      }>;
+      matched_scope?: {
+        booking_id?: string | null;
+        area_id?: string | null;
+        area_name?: string | null;
+        area_slug?: string | null;
+        match_kind?: "exact_match" | "kreis_match" | null;
+      } | null;
+      final_reason?: string | null;
+    } | null;
+  }>;
 };
 
 type IntegrationSyncSummary = {
@@ -243,6 +274,35 @@ function extractSyncNoteValue(notes: string[] | undefined, prefix: string): stri
     }
   }
   return null;
+}
+
+function joinNonEmpty(values: Array<string | null | undefined>, separator = " · "): string | null {
+  const filtered = values.map((value) => String(value ?? "").trim()).filter(Boolean);
+  return filtered.length > 0 ? filtered.join(separator) : null;
+}
+
+function formatAreaDebugInputSignals(areaDebug: NonNullable<NonNullable<CrmSyncResultPayload["lines"]>[number]["area_debug"]>): string {
+  return (
+    joinNonEmpty([
+      areaDebug.input_signals?.zip_code ? `PLZ ${areaDebug.input_signals.zip_code}` : null,
+      areaDebug.input_signals?.city ? `Ort ${areaDebug.input_signals.city}` : null,
+      areaDebug.input_signals?.district ? `Ortsteil ${areaDebug.input_signals.district}` : null,
+      areaDebug.input_signals?.region ? `Region ${areaDebug.input_signals.region}` : null,
+      areaDebug.input_signals?.location ? `Location ${areaDebug.input_signals.location}` : null,
+    ])
+    ?? "Keine Eingangssignale"
+  );
+}
+
+function formatAreaDebugAreas(areaDebug: NonNullable<NonNullable<CrmSyncResultPayload["lines"]>[number]["area_debug"]>): string {
+  if (!Array.isArray(areaDebug.candidate_areas) || areaDebug.candidate_areas.length === 0) {
+    return "Keine Areas gefunden";
+  }
+  return areaDebug.candidate_areas
+    .slice(0, 5)
+    .map((area) => joinNonEmpty([area.name ?? null, area.slug ? `(${area.slug})` : null], " "))
+    .filter(Boolean)
+    .join(", ");
 }
 
 function buildDebugPayloadDownloadUrl(
@@ -835,6 +895,9 @@ export default function AdminCrmIntegrationsPanel({
   const hasSyncDetails = Boolean(syncSummary);
   const hasPreviewPayload = Boolean(previewSummary);
   const hasSyncPayload = Boolean(syncSummary);
+  const areaDebugLines = Array.isArray(syncSummary?.result?.lines)
+    ? syncSummary.result.lines.filter((line) => Boolean(line?.area_debug)).slice(0, 5)
+    : [];
   const syncModeLabel = syncSummary?.mode === "full" ? "Vollsync" : syncSummary?.mode === "guarded" ? "Guarded-Sync" : "Sync";
   const onOfficeObservedStatusValues = extractSyncNoteValue(
     syncSummary?.result?.notes,
@@ -1209,6 +1272,48 @@ export default function AdminCrmIntegrationsPanel({
                   {syncSummary.result.notes.slice(0, 8).map((note, index) => (
                     <p key={`sync-note-${activeResourceKey}-${index}`} style={modalParagraphStyle}>{note}</p>
                   ))}
+                </div>
+              ) : null}
+
+              {syncSummary.mode === "guarded" && areaDebugLines.length > 0 ? (
+                <div style={modalSectionStyle}>
+                  <div style={modalSectionTitleStyle}>Resolver-Debug</div>
+                  {areaDebugLines.map((line, index) => {
+                    const areaDebug = line.area_debug;
+                    if (!areaDebug) return null;
+                    const candidates = Array.isArray(areaDebug.candidate_names) && areaDebug.candidate_names.length > 0
+                      ? areaDebug.candidate_names.slice(0, 6).join(", ")
+                      : "Keine Kandidaten";
+                    const matchedScope = areaDebug.matched_scope?.match_kind
+                      ? joinNonEmpty([
+                          areaDebug.matched_scope.match_kind,
+                          areaDebug.matched_scope.area_name,
+                          areaDebug.matched_scope.area_slug ? `(${areaDebug.matched_scope.area_slug})` : null,
+                        ], " ")
+                      : "Kein Match";
+                    return (
+                      <div
+                        key={`area-debug-${line.external_id ?? "row"}-${index}`}
+                        style={{
+                          display: "grid",
+                          gap: 6,
+                          padding: 10,
+                          borderRadius: 10,
+                          border: "1px solid #e2e8f0",
+                          background: "#f8fafc",
+                        }}
+                      >
+                        <p style={modalParagraphStyle}>
+                          <strong>Objekt {line.external_id ?? "ohne ID"}</strong> · {line.reason ?? line.status ?? "ohne Ergebnis"}
+                        </p>
+                        <p style={modalParagraphStyle}><strong>Signale:</strong> {formatAreaDebugInputSignals(areaDebug)}</p>
+                        <p style={modalParagraphStyle}><strong>Kandidaten:</strong> {candidates}</p>
+                        <p style={modalParagraphStyle}><strong>Gefundene Areas:</strong> {formatAreaDebugAreas(areaDebug)}</p>
+                        <p style={modalParagraphStyle}><strong>Match:</strong> {matchedScope}</p>
+                        <p style={modalParagraphStyle}><strong>Resolver-Grund:</strong> {areaDebug.final_reason ?? "—"}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
 
