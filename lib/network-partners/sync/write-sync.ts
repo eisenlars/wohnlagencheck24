@@ -224,6 +224,8 @@ export async function runNetworkPartnerWriteSync(input: {
       updated_count: updatedCount,
       skipped_count: skippedCount,
       error_count: errorCount,
+      lines,
+      notes: snapshot.notes,
       synced_at: payload.generated_at,
     },
     payload,
