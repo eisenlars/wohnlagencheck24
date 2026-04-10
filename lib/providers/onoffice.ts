@@ -686,6 +686,15 @@ function mapEstateToOffer(
   const elements = (record.elements ?? {}) as Record<string, unknown>;
   const gallery = extractImages(elements);
   const address = buildAddress(elements);
+  const zipCode = String(elements["plz"] ?? "").trim() || null;
+  const city = String(elements["ort"] ?? "").trim() || null;
+  const region =
+    String(elements["lage"] ?? elements["freitext_lage"] ?? "").trim()
+    || null;
+  const locationLabel =
+    city && region && !region.toLowerCase().includes(city.toLowerCase())
+      ? `${city} ${region}`
+      : city ?? region ?? null;
   const rent = toNumber(elements["warmmiete"]) ?? toNumber(elements["kaltmiete"]);
   const details = buildDetailsSnapshot(elements);
   const energy = buildEnergySnapshot(elements);
@@ -749,9 +758,16 @@ function mapEstateToOffer(
     updated_at: sourceUpdatedAt,
     raw: {
       exposee_id: elements["objektnr_extern"] ?? null,
+      source_title: String(elements["objekttitel"] ?? "") || null,
+      zip_code: zipCode,
+      city,
+      district: null,
+      region,
+      country: null,
       description: elements["objektbeschreibung"] ?? elements["freitext_lage"] ?? null,
       long_description: elements["objektbeschreibung"] ?? null,
-      location: elements["lage"] ?? elements["freitext_lage"] ?? null,
+      location: locationLabel ?? elements["lage"] ?? elements["freitext_lage"] ?? null,
+      location_scope: city ? "stadt" : "region",
       features_note: elements["ausstatt_beschr"] ?? elements["freitext_ausstattung"] ?? null,
       misc_note: elements["sonstige_angaben"] ?? null,
       details,

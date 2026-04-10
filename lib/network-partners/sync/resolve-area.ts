@@ -34,8 +34,10 @@ type AreaCandidate = {
 type ResolveAreaInput = {
   placementCode: PlacementCode;
   bookingScopes: NetworkPartnerPreviewBookingScope[];
+  zipCode?: string | null;
   city?: string | null;
   district?: string | null;
+  region?: string | null;
   location?: string | null;
   regionTargets?: Array<{ city?: string | null; district?: string | null; label?: string | null }>;
 };
@@ -80,8 +82,10 @@ function extractCandidateNames(input: ResolveAreaInput): string[] {
   ]);
 
   return uniqueStrings([
+    input.zipCode,
     input.city,
     input.district,
+    input.region,
     input.location,
     (() => {
       const city = asText(input.city);

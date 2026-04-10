@@ -101,6 +101,7 @@ export async function mapOfferListingToPreviewItem(
     sourcePayload: asObject(listing.source_payload),
     locationLabel:
       asText(normalized.location)
+      ?? asText(normalized.region)
       ?? [asText(normalized.city), asText(normalized.district)].filter(Boolean).join(" ")
       ?? null,
   });
@@ -112,8 +113,10 @@ export async function mapOfferListingToPreviewItem(
   const resolution = await resolveAreaForNetworkPartnerPreview({
     placementCode: "property_offer",
     bookingScopes,
+    zipCode: asText(normalized.zip_code),
     city: asText(normalized.city),
     district: asText(normalized.district),
+    region: asText(normalized.region),
     location: asText(normalized.location),
   });
 
