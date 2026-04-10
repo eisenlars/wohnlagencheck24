@@ -4,6 +4,10 @@ import {
   rankOfferAreaMatches,
   type OfferAreaCandidate,
 } from "@/lib/offer-area-matching";
+import {
+  loadReportPostalLookupForDistricts,
+  normalizePostalCode,
+} from "@/lib/report-postal-lookup";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -696,6 +700,20 @@ export async function rebuildPublicOfferEntriesForPartner(
   ]);
   const visibleAreaIds = visibleAreaConfigs.map((row) => asText(row.area_id)).filter(Boolean);
   const offerMatchAreaIdsByVisibleAreaId = buildOfferMatchAreaIdsByVisibleAreaId(visibleAreaConfigs, offerAreaCandidates);
+  const postalLookupTargets = Array.from(
+    new Map(
+      offerAreaCandidates
+        .filter((candidate) => asText(candidate.id).split("-").length <= 3)
+        .map((candidate) => {
+          const bundeslandSlug = asText(candidate.bundeslandSlug);
+          const kreisSlug = asText(candidate.slug);
+          if (!bundeslandSlug || !kreisSlug) return null;
+          return [`${bundeslandSlug}/${kreisSlug}`, { bundeslandSlug, kreisSlug }] as const;
+        })
+        .filter((entry): entry is readonly [string, { bundeslandSlug: string; kreisSlug: string }] => Boolean(entry)),
+    ).values(),
+  );
+  const postalLookupByZipCode = await loadReportPostalLookupForDistricts(postalLookupTargets);
   if (visibleAreaIds.length === 0) {
     await reconcileOfferAreaTargets({ admin, partnerId, rows: [] });
     return reconcileProjectionRows({
@@ -786,8 +804,11 @@ export async function rebuildPublicOfferEntriesForPartner(
     const matchedZipCode = asNullableText(raw.zip_code);
     const matchedCity = asNullableText(raw.city);
     const matchedRegion = asNullableText(raw.region);
+    const postalMatchedAreaIds = new Set(
+      (postalLookupByZipCode.get(normalizePostalCode(geoSignals.zipCode) ?? "") ?? []).map((entry) => entry.areaId),
+    );
     const rankedMatches = filterOfferAreaMatches(
-      rankOfferAreaMatches(geoSignals, offerAreaCandidates),
+      rankOfferAreaMatches(geoSignals, offerAreaCandidates, postalMatchedAreaIds),
     );
     const matchedAreaIds = new Set(rankedMatches.map((match) => match.areaId));
 

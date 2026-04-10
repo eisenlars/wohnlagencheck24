@@ -15,6 +15,7 @@ export interface ReportMeta {
   slug?: string;
   name?: string;
   plz?: string;
+  plz_liste?: string[];
   regionalschluessel?: string;
   aktualisierung?: string;
   regionale_zuordnung?: string;
@@ -32,6 +33,25 @@ export interface Report<TData = unknown> {
   meta: ReportMeta;
   data: TData;
   [key: string]: unknown;
+}
+
+function asPostalText(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.replace(/\s+/g, "").trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+export function readReportPostalCodes(
+  meta: Pick<ReportMeta, "plz" | "plz_liste"> | Record<string, unknown> | null | undefined,
+): string[] {
+  const source = (meta ?? {}) as Record<string, unknown>;
+  const postalList = Array.isArray(source.plz_liste) ? source.plz_liste : [];
+  const values = [
+    ...postalList.map((value) => asPostalText(value)),
+    asPostalText(source.plz),
+  ].filter((value): value is string => Boolean(value));
+
+  return Array.from(new Set(values));
 }
 
 export type ReportsIndex = {

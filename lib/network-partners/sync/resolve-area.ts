@@ -1,5 +1,11 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import type { NetworkPartnerAreaDebug, PlacementCode } from "@/lib/network-partners/types";
+import {
+  loadReportPostalLookupForDistricts,
+  normalizePostalCode,
+  type ReportPostalLookupEntry,
+  type ReportPostalLookupTarget,
+} from "@/lib/report-postal-lookup";
 
 export type NetworkPartnerPreviewBookingScope = {
   booking_id: string;
@@ -141,15 +147,62 @@ function buildAreaDebug(args: {
   };
 }
 
-async function loadAreaCandidatesBySignals(input: ResolveAreaInput): Promise<AreaCandidate[]> {
+function extractBookingDistrictTargets(
+  bookingScopes: NetworkPartnerPreviewBookingScope[],
+): ReportPostalLookupTarget[] {
+  return Array.from(
+    new Map(
+      bookingScopes
+        .map((scope) => {
+          const bundeslandSlug = asText(scope.bundesland_slug);
+          const districtSlug =
+            scope.area_id.split("-").length <= 3
+              ? asText(scope.area_slug)
+              : asText(scope.parent_slug);
+          if (!bundeslandSlug || !districtSlug) return null;
+          return [`${bundeslandSlug}/${districtSlug}`, { bundeslandSlug, kreisSlug: districtSlug }] as const;
+        })
+        .filter((entry): entry is readonly [string, ReportPostalLookupTarget] => Boolean(entry)),
+    ).values(),
+  );
+}
+
+function postalEntryToAreaCandidate(entry: ReportPostalLookupEntry): AreaCandidate {
+  return {
+    id: entry.areaId,
+    name: entry.areaName,
+    slug: entry.areaSlug,
+    parent_slug: entry.parentSlug,
+    bundesland_slug: entry.bundeslandSlug,
+  };
+}
+
+async function loadAreaCandidatesBySignals(
+  input: ResolveAreaInput,
+  bookingScopes: NetworkPartnerPreviewBookingScope[],
+): Promise<AreaCandidate[]> {
   const candidateNames = extractCandidateNames(input);
   const candidateSlugs = extractCandidateSlugs(input);
-  const cacheKey = JSON.stringify({ candidateNames, candidateSlugs });
+  const bookingDistrictTargets = extractBookingDistrictTargets(bookingScopes);
+  const postalCode = normalizePostalCode(input.zipCode);
+  const cacheKey = JSON.stringify({
+    candidateNames,
+    candidateSlugs,
+    bookingDistrictTargets,
+    postalCode,
+  });
   const cached = areaCandidateCache.get(cacheKey);
   if (cached) return cached;
 
   const admin = createAdminClient();
   const rows = new Map<string, AreaCandidate>();
+
+  if (postalCode && bookingDistrictTargets.length > 0) {
+    const postalLookup = await loadReportPostalLookupForDistricts(bookingDistrictTargets);
+    for (const entry of postalLookup.get(postalCode) ?? []) {
+      rows.set(entry.areaId, postalEntryToAreaCandidate(entry));
+    }
+  }
 
   if (candidateSlugs.length > 0) {
     const { data, error } = await admin
@@ -222,7 +275,7 @@ export async function resolveAreaForNetworkPartnerPreview(
     };
   }
 
-  const candidateAreas = await loadAreaCandidatesBySignals(input);
+  const candidateAreas = await loadAreaCandidatesBySignals(input, bookingScopes);
   if (candidateAreas.length === 0) {
     return {
       status: "unresolved_area",

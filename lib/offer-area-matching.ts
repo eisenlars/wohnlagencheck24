@@ -21,6 +21,7 @@ export type OfferAreaMatch = {
   score: number;
   confidence: "high" | "medium" | "low";
   source:
+    | "postal_lookup"
     | "lat_lng_ready"
     | "zip_city"
     | "city_region"
@@ -85,10 +86,16 @@ export function extractOfferGeoSignals(
 export function rankOfferAreaMatches(
   signals: OfferGeoSignals,
   candidates: OfferAreaCandidate[],
+  postalMatchedAreaIds?: Iterable<string>,
 ): OfferAreaMatch[] {
   const city = normalizeText(signals.city);
   const region = normalizeText(signals.region);
   const zipCode = normalizeText(signals.zipCode);
+  const postalAreaIds = new Set(
+    Array.from(postalMatchedAreaIds ?? [])
+      .map((value) => asText(value))
+      .filter((value): value is string => Boolean(value)),
+  );
 
   const ranked = candidates
     .map((candidate) => {
@@ -102,6 +109,11 @@ export function rankOfferAreaMatches(
 
       let score = 0;
       let source: OfferAreaMatch["source"] | null = null;
+
+      if (postalAreaIds.has(areaId)) {
+        score = Math.max(score, areaId.split("-").length > 3 ? 99 : 97);
+        source = "postal_lookup";
+      }
 
       if (isTruthyNumberPair(signals.lat, signals.lng)) {
         score = 15;
