@@ -85,6 +85,8 @@ export type RequestImageMatchResult = {
 };
 
 const catalog = catalogData as RequestImageCatalog;
+const DEFAULT_REQUEST_IMAGE_URL = "/images/requests/default_request.jpg";
+const DEFAULT_REQUEST_IMAGE_ALT = "Symbolbild für Immobiliengesuch";
 
 const POSITIVE_SIGNAL_GROUPS = {
   investor: ["investor", "kapitalanlage", "rendite", "anlage", "mfh", "mehrfamilienhaus", "wohn und geschaeftshaus"],
@@ -314,9 +316,31 @@ export function matchRequestImage(input: RequestImageMatchInput): RequestImageMa
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
+  const primary = candidates[0]
+    ? {
+        ...candidates[0],
+        imageUrl: candidates[0].imageUrl ?? DEFAULT_REQUEST_IMAGE_URL,
+        alt: candidates[0].imageUrl ? candidates[0].alt : DEFAULT_REQUEST_IMAGE_ALT,
+      }
+    : {
+        catalogId: "default_request",
+        title: "Standardmotiv Gesuch",
+        imageUrl: DEFAULT_REQUEST_IMAGE_URL,
+        thumbnailUrl: DEFAULT_REQUEST_IMAGE_URL,
+        alt: DEFAULT_REQUEST_IMAGE_ALT,
+        score: 0,
+        assetStatus: "ready" as const,
+        lastPrompt: "",
+        promptVersion: "fallback",
+        generationNotes: "Automatisches Fallback ohne katalogbasiertes Motiv.",
+        tags: {
+          ...profile,
+        },
+      };
+
   return {
     profile,
-    primary: candidates[0] ?? null,
+    primary,
     candidates,
   };
 }
