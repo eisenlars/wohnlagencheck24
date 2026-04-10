@@ -85,6 +85,13 @@ function formatAreaLabel(areas: AreaOption[], areaId: string): string {
   return areas.find((area) => area.id === areaId)?.label ?? areaId;
 }
 
+function formatLocalitySelectLabel(label: string): string {
+  const normalized = String(label ?? '').trim();
+  if (!normalized) return '';
+  const parts = normalized.split('->').map((part) => part.trim()).filter(Boolean);
+  return parts[parts.length - 1] ?? normalized;
+}
+
 function toDistrictAreaId(areaId: string): string {
   const normalized = String(areaId ?? '').trim();
   if (!normalized) return '';
@@ -242,7 +249,7 @@ export default function BookingForm({
               <option value="">Alle Ortslagen im Kreis</option>
               {localityOptions.map((area) => (
                 <option key={area.id} value={area.id}>
-                  {area.label}
+                  {formatLocalitySelectLabel(area.label)}
                 </option>
               ))}
             </select>
