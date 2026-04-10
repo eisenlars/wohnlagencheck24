@@ -7,6 +7,7 @@ import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
 import { formatMetric } from "@/utils/format";
+import { RequestOfferLeadButton } from "./RequestOfferLeadButton";
 
 type GesuchePageProps = {
   heading: string;
@@ -100,6 +101,7 @@ export function GesuchePage(props: GesuchePageProps) {
     ? Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
     : 1;
   const headingCount = pagination?.total ?? requests.length;
+  const currentListPath = mode === "kauf" ? kaufPath : mietePath;
 
   return (
     <div className="container text-dark">
@@ -149,46 +151,61 @@ export function GesuchePage(props: GesuchePageProps) {
           )}
         </div>
       ) : (
-        <div className="angebote-grid">
-          {requests.map((request) => (
-            <article className="angebote-card" key={request.id}>
-              <div className="angebote-card-body">
-                <div className="angebote-card-meta" style={{ alignItems: "flex-start", gap: 12 }}>
-                  <span className="angebote-pill">{formatObjectType(request)}</span>
-                  <span style={{ marginLeft: "auto", textAlign: "right", color: "#475569", fontSize: "0.8rem", lineHeight: 1.35 }}>
-                    <span style={{ display: "block", fontWeight: 600 }}>{texts.updated_label}</span>
-                    <span>{formatUpdatedAt(request.updatedAt) ?? "—"}</span>
-                  </span>
-                </div>
-                <h2 className="h6 mb-2">{request.title}</h2>
-                {request.description ? (
-                  <p className="mb-3" style={{ color: '#334155' }}>
-                    {truncateText(request.description)}
-                  </p>
-                ) : null}
-                <div className="angebote-card-facts" style={{ marginBottom: 16 }}>
-                  {request.maxPrice !== null ? (
-                    <span>
-                      {formatMoney(request.maxPrice)}
-                      {mode === "miete" ? <span className="angebote-price-suffix">{texts.per_month}</span> : null}
+        <section className="angebote-list mb-5">
+          <div className="angebote-grid">
+            {requests.map((request) => (
+              <article className="angebote-card" key={request.id}>
+                <div className="angebote-card-body">
+                  <div className="angebote-card-meta" style={{ alignItems: "flex-start", gap: 12 }}>
+                    <span className="angebote-pill">{formatObjectType(request)}</span>
+                    <span style={{ marginLeft: "auto", textAlign: "right", color: "#475569", fontSize: "0.8rem", lineHeight: 1.35 }}>
+                      <span style={{ display: "block", fontWeight: 600 }}>{texts.updated_label}</span>
+                      <span>{formatUpdatedAt(request.updatedAt) ?? "—"}</span>
                     </span>
+                  </div>
+                  <h2 className="h6 mb-2">{request.title}</h2>
+                  {request.description ? (
+                    <p className="mb-3" style={{ color: '#334155' }}>
+                      {truncateText(request.description)}
+                    </p>
                   ) : null}
-                  {formatAreaRange(request.minAreaSqm, request.maxAreaSqm) ? (
-                    <span>{formatAreaRange(request.minAreaSqm, request.maxAreaSqm)}</span>
-                  ) : null}
-                  {formatRoomRange(request.minRooms, request.maxRooms) ? (
-                    <span>{formatRoomRange(request.minRooms, request.maxRooms)}</span>
-                  ) : null}
-                  {request.radiusKm !== null ? <span>{`${request.radiusKm} km`}</span> : null}
-                  <span>{request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified}</span>
+                  <div className="angebote-card-facts" style={{ marginBottom: 16 }}>
+                    {request.maxPrice !== null ? (
+                      <span>
+                        {formatMoney(request.maxPrice)}
+                        {mode === "miete" ? <span className="angebote-price-suffix">{texts.per_month}</span> : null}
+                      </span>
+                    ) : null}
+                    {formatAreaRange(request.minAreaSqm, request.maxAreaSqm) ? (
+                      <span>{formatAreaRange(request.minAreaSqm, request.maxAreaSqm)}</span>
+                    ) : null}
+                    {formatRoomRange(request.minRooms, request.maxRooms) ? (
+                      <span>{formatRoomRange(request.minRooms, request.maxRooms)}</span>
+                    ) : null}
+                    {request.radiusKm !== null ? <span>{`${request.radiusKm} km`}</span> : null}
+                    <span>{request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified}</span>
+                  </div>
+                  <RequestOfferLeadButton
+                    label={texts.offer_property_to_request}
+                    locale={normalizedLocale}
+                    pagePath={currentListPath}
+                    regionLabel={names?.regionName ?? heading}
+                    request={{
+                      id: request.id,
+                      title: request.title,
+                      objectType: request.objectType,
+                    }}
+                    context={{
+                      bundeslandSlug: ctx?.bundeslandSlug,
+                      kreisSlug: ctx?.kreisSlug,
+                      ortSlug: ctx?.ortSlug,
+                    }}
+                  />
                 </div>
-                <Link className="btn btn-outline-dark btn-sm angebote-card-cta" href={`${basePath}#kontakt`}>
-                  {texts.offer_property_to_request}
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
 
       {pagination && totalPages > 1 ? (
