@@ -133,7 +133,7 @@ function hasPhrase(haystack: string, needle: string): boolean {
   return haystack.includes(normalizedNeedle);
 }
 
-function countMatches(haystack: string, needles: string[]): number {
+function countMatches(haystack: string, needles: readonly string[]): number {
   return needles.reduce((count, needle) => count + (hasPhrase(haystack, needle) ? 1 : 0), 0);
 }
 
