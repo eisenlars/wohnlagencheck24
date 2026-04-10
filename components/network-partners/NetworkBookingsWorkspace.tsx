@@ -122,6 +122,50 @@ export default function NetworkBookingsWorkspace({
 
   const bookingAreas = useMemo(() => {
     const districtMap = new Map<string, string>();
+    const localityRows: AreaOption[] = [];
+    for (const area of providedAreas) {
+      const areaId = String(area.id ?? '').trim();
+      const label = String(area.label ?? '').trim();
+      if (!areaId) continue;
+      const districtId = areaId.split('-').slice(0, 3).join('-');
+      if (areaId.split('-').length <= 3) {
+        if (districtId && !districtMap.has(districtId)) {
+          districtMap.set(districtId, label || districtId);
+        }
+        continue;
+      }
+      if (districtId && !districtMap.has(districtId)) {
+        districtMap.set(districtId, districtId);
+      }
+      localityRows.push({
+        id: areaId,
+        label: label || areaId,
+      });
+    }
+
+    const districtRows: AreaOption[] = Array.from(districtMap.entries())
+      .sort((a, b) => a[1].localeCompare(b[1], 'de'))
+      .map(([id, label]) => ({ id, label }));
+
+    const normalizedLocalityRows = localityRows
+      .map((area) => {
+        const areaId = String(area.id ?? '').trim();
+        const label = String(area.label ?? '').trim();
+        const districtId = areaId.split('-').slice(0, 3).join('-');
+        const districtLabel = districtMap.get(districtId) ?? districtId;
+        return {
+          id: areaId,
+          label: districtLabel && label !== districtLabel
+            ? `${districtLabel} -> ${label}`
+            : (label || areaId),
+        };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label, 'de'));
+
+    if (districtRows.length > 0) {
+      return [...districtRows, ...normalizedLocalityRows];
+    }
+
     for (const area of providedAreas) {
       const areaId = String(area.id ?? '').trim();
       const label = String(area.label ?? '').trim();
