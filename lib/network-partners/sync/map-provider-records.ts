@@ -121,7 +121,10 @@ export async function mapOfferListingToPreviewItem(
     location: asText(normalized.location),
   });
 
-  return finalizePreviewItem(base, resolution.status, resolution);
+  return finalizePreviewItem(base, resolution.status, {
+    ...resolution,
+    area_debug: resolution.debug,
+  });
 }
 
 export async function mapRequestRowToPreviewItem(
@@ -157,7 +160,10 @@ export async function mapRequestRowToPreviewItem(
     regionTargets: asRegionTargets(normalized.region_targets),
   });
 
-  return finalizePreviewItem(base, resolution.status, resolution);
+  return finalizePreviewItem(base, resolution.status, {
+    ...resolution,
+    area_debug: resolution.debug,
+  });
 }
 
 export function mapReferenceRowToPreviewItem(reference: RawReference): NetworkPartnerPreviewSyncItem {
