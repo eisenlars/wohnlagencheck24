@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
@@ -155,6 +156,25 @@ export function GesuchePage(props: GesuchePageProps) {
           <div className="angebote-grid">
             {requests.map((request) => (
               <article className="angebote-card" key={request.id}>
+                {request.imageUrl ? (
+                  <div
+                    style={{
+                      position: "relative",
+                      aspectRatio: "16 / 10",
+                      overflow: "hidden",
+                      borderBottom: "1px solid #e2e8f0",
+                      background: "#e2e8f0",
+                    }}
+                  >
+                    <Image
+                      src={request.imageUrl}
+                      alt={request.imageAlt ?? request.imageTitle ?? request.title}
+                      fill
+                      sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 33vw"
+                      style={{ objectFit: "cover" }}
+                    />
+                  </div>
+                ) : null}
                 <div className="angebote-card-body">
                   <div className="angebote-card-meta" style={{ alignItems: "flex-start", gap: 12 }}>
                     <span className="angebote-pill">{formatObjectType(request)}</span>

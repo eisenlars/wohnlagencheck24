@@ -1,0 +1,308 @@
+{
+  "meta": {
+    "version": 1,
+    "locale": "de",
+    "description": "Startkatalog fuer Gesuche-Motivmatching",
+    "updated_at": "2026-04-10T00:00:00Z"
+  },
+  "tag_taxonomy": {
+    "persona": [
+      "single",
+      "paar",
+      "seniorenpaar",
+      "familie_1_kind",
+      "familie_2_kinder",
+      "familie_3plus",
+      "investor"
+    ],
+    "environment": [
+      "urban",
+      "suburban",
+      "laendlich",
+      "gruen",
+      "innenstadt",
+      "stadtrand",
+      "dorf"
+    ],
+    "object_focus": [
+      "wohnung",
+      "haus",
+      "reihenhaus",
+      "mehrfamilienhaus",
+      "anlage"
+    ],
+    "style": [
+      "modern",
+      "klassisch",
+      "hochwertig",
+      "bodenstaendig",
+      "editorial"
+    ],
+    "mood": [
+      "ruhig",
+      "familiaer",
+      "wertig",
+      "serioes",
+      "entspannt"
+    ],
+    "life_phase": [
+      "erste_wohnung",
+      "familiengruendung",
+      "downsizing",
+      "altersgerecht",
+      "kapitalanlage"
+    ]
+  },
+  "items": [
+    {
+      "id": "seniorenpaar_urban_wohnung_01",
+      "active": true,
+      "review_status": "approved",
+      "asset_status": "planned",
+      "title": "Seniorenpaar urban",
+      "image_url": "/images/request-personas/seniorenpaar_urban_wohnung_01.jpg",
+      "thumbnail_url": "/images/request-personas/thumbs/seniorenpaar_urban_wohnung_01.jpg",
+      "alt_template": "Aelteres Paar im urbanen Wohnumfeld",
+      "tags": {
+        "persona": ["seniorenpaar"],
+        "environment": ["urban", "innenstadt"],
+        "object_focus": ["wohnung"],
+        "style": ["hochwertig", "editorial"],
+        "mood": ["ruhig", "wertig"],
+        "life_phase": ["downsizing", "altersgerecht"]
+      },
+      "signals": ["senior", "ruhig", "zentral", "barrierearm", "stadtwohnung"],
+      "negative_signals": ["familie_3plus", "anlage"],
+      "priority": 0.92,
+      "quality_score": 0.95,
+      "last_prompt": "Authentische Editorial-Fotografie fuer ein Immobilienportal. Aelteres Ehepaar in urbanem Wohnumfeld, passend zu hochwertiger Eigentumswohnung. Stil: ruhig, hochwertig, natuerlich, glaubwuerdig. Weiches Tageslicht, Querformat, Platz fuer Textoverlay. Keine Stockfoto-Anmutung, keine uebertriebenen Posen, keine Textelemente.",
+      "prompt_version": "v1",
+      "generation_notes": "gute Gesichter, ruhige Architektur, overlay-freundlich"
+    },
+    {
+      "id": "familie_2_kinder_laendlich_haus_01",
+      "active": true,
+      "review_status": "approved",
+      "asset_status": "planned",
+      "title": "Familie mit zwei Kindern laendlich",
+      "image_url": "/images/request-personas/familie_2_kinder_laendlich_haus_01.jpg",
+      "thumbnail_url": "/images/request-personas/thumbs/familie_2_kinder_laendlich_haus_01.jpg",
+      "alt_template": "Familie mit zwei Kindern im laendlichen Wohnumfeld",
+      "tags": {
+        "persona": ["familie_2_kinder"],
+        "environment": ["laendlich", "gruen", "dorf"],
+        "object_focus": ["haus"],
+        "style": ["bodenstaendig", "editorial"],
+        "mood": ["familiaer", "entspannt"],
+        "life_phase": ["familiengruendung"]
+      },
+      "signals": ["familie", "2 kinder", "garten", "ruhig", "laendlich"],
+      "negative_signals": ["investor", "innenstadt"],
+      "priority": 0.97,
+      "quality_score": 0.93,
+      "last_prompt": "Authentische Editorial-Fotografie fuer ein Immobilienportal. Familie mit zwei Kindern in laendlichem Wohnumfeld, passend zu Einfamilienhaus. Stil: familiaer, bodenstaendig, natuerlich. Weiches Tageslicht, echter Gartenkontext, Querformat, Platz fuer Textoverlay. Keine Stockfoto-Anmutung.",
+      "prompt_version": "v1",
+      "generation_notes": "familiaere Szene mit gruenem Umfeld"
+    },
+    {
+      "id": "paar_urban_modern_wohnung_01",
+      "active": true,
+      "review_status": "approved",
+      "asset_status": "planned",
+      "title": "Paar urban modern",
+      "image_url": "/images/request-personas/paar_urban_modern_wohnung_01.jpg",
+      "thumbnail_url": "/images/request-personas/thumbs/paar_urban_modern_wohnung_01.jpg",
+      "alt_template": "Paar in modernem urbanen Wohnumfeld",
+      "tags": {
+        "persona": ["paar"],
+        "environment": ["urban", "stadtrand"],
+        "object_focus": ["wohnung"],
+        "style": ["modern", "editorial"],
+        "mood": ["wertig", "ruhig"],
+        "life_phase": ["erste_wohnung"]
+      },
+      "signals": ["paar", "urban", "modern", "wohnung"],
+      "negative_signals": ["seniorenpaar", "anlage"],
+      "priority": 0.88,
+      "quality_score": 0.91,
+      "last_prompt": "Authentische Editorial-Fotografie fuer ein Immobilienportal. Junges Paar in urbanem Quartier, passend zu moderner Wohnung. Stil: modern, klar, hochwertig. Tageslicht, Stadtarchitektur im Hintergrund, Querformat, Platz fuer Textoverlay. Kein Werbefoto-Look.",
+      "prompt_version": "v1",
+      "generation_notes": "city vibe, clean framing"
+    },
+    {
+      "id": "investor_mehrfamilienhaus_01",
+      "active": true,
+      "review_status": "approved",
+      "asset_status": "planned",
+      "title": "Investor Mehrfamilienhaus",
+      "image_url": "/images/request-personas/investor_mehrfamilienhaus_01.jpg",
+      "thumbnail_url": "/images/request-personas/thumbs/investor_mehrfamilienhaus_01.jpg",
+      "alt_template": "Investorischer Kontext mit Mehrfamilienhaus-Fokus",
+      "tags": {
+        "persona": ["investor"],
+        "environment": ["urban", "innenstadt"],
+        "object_focus": ["mehrfamilienhaus", "anlage"],
+        "style": ["hochwertig", "editorial"],
+        "mood": ["serioes"],
+        "life_phase": ["kapitalanlage"]
+      },
+      "signals": ["investor", "anlage", "rendite", "mehrfamilienhaus", "kapitalanlage"],
+      "negative_signals": ["familie_2_kinder", "dorf"],
+      "priority": 0.94,
+      "quality_score": 0.96,
+      "last_prompt": "Authentische Editorial-Fotografie fuer ein Immobilienportal. Investorischer Kontext mit Fokus auf Mehrfamilienhaus oder Anlageobjekt. Stil: serioes, hochwertig, reduziert. Reale urbane Architektur, kein Klischee-Businessportrait, Querformat.",
+      "prompt_version": "v1",
+      "generation_notes": "businessnah, aber nicht stockig"
+    },
+    {
+      "id": "single_mann_city_apartment_01",
+      "active": true,
+      "review_status": "approved",
+      "asset_status": "planned",
+      "title": "Single-Mann City Apartment",
+      "image_url": "/images/request-personas/single_mann_city_apartment_01.jpg",
+      "thumbnail_url": "/images/request-personas/thumbs/single_mann_city_apartment_01.jpg",
+      "alt_template": "Single-Person im urbanen Wohnumfeld",
+      "tags": {
+        "persona": ["single"],
+        "environment": ["urban", "innenstadt"],
+        "object_focus": ["wohnung"],
+        "style": ["modern", "editorial"],
+        "mood": ["ruhig"],
+        "life_phase": ["erste_wohnung"]
+      },
+      "signals": ["single", "city", "apartment", "urban"],
+      "negative_signals": ["familie_3plus", "anlage"],
+      "priority": 0.85,
+      "quality_score": 0.9,
+      "last_prompt": "Authentisches Bewerbungs-Fotomotiv fuer ein Immobiliengesuch in einem Immobilienportal. Single-Person (männlich) sucht in urbanem Wohnumfeld, steht vor einen MFH mit Blick in die Kamera. Stil: modern, ruhig, glaubwuerdig, anonym ohne konkreten Ortsbezug, gesicht unkenntlich verpixelt. Querformat, keine Stockfoto-Anmutung.",
+      "prompt_version": "v1",
+      "generation_notes": ""
+    },
+    {
+      "id": "familie_1_kind_suburban_wohnung_01",
+      "active": true,
+      "review_status": "approved",
+      "asset_status": "planned",
+      "title": "Familie mit einem Kind suburban",
+      "image_url": "/images/request-personas/familie_1_kind_suburban_wohnung_01.jpg",
+      "thumbnail_url": "/images/request-personas/thumbs/familie_1_kind_suburban_wohnung_01.jpg",
+      "alt_template": "Familie mit einem Kind im suburbanen Wohnumfeld",
+      "tags": {
+        "persona": ["familie_1_kind"],
+        "environment": ["suburban", "stadtrand", "gruen"],
+        "object_focus": ["wohnung"],
+        "style": ["bodenstaendig", "editorial"],
+        "mood": ["familiaer"],
+        "life_phase": ["familiengruendung"]
+      },
+      "signals": ["familie", "kind", "ruhig", "stadtrand"],
+      "negative_signals": ["investor"],
+      "priority": 0.86,
+      "quality_score": 0.89,
+      "last_prompt": "Authentische Editorial-Fotografie fuer ein Immobilienportal. Familie mit einem Kind am Stadtrand, passend zu familienfreundlicher Wohnung. Stil: freundlich, ruhig, lebensnah, Querformat, viel Platz fuer Textoverlay.",
+      "prompt_version": "v1",
+      "generation_notes": ""
+    },
+    {
+      "id": "seniorenpaar_gruen_haus_01",
+      "active": true,
+      "review_status": "approved",
+      "asset_status": "planned",
+      "title": "Seniorenpaar im gruenen Umfeld",
+      "image_url": "/images/request-personas/seniorenpaar_gruen_haus_01.jpg",
+      "thumbnail_url": "/images/request-personas/thumbs/seniorenpaar_gruen_haus_01.jpg",
+      "alt_template": "Aelteres Paar im gruenen Wohnumfeld",
+      "tags": {
+        "persona": ["seniorenpaar"],
+        "environment": ["gruen", "suburban"],
+        "object_focus": ["haus"],
+        "style": ["klassisch", "editorial"],
+        "mood": ["ruhig", "entspannt"],
+        "life_phase": ["altersgerecht"]
+      },
+      "signals": ["senior", "ruhig", "gruen", "haus"],
+      "negative_signals": ["anlage"],
+      "priority": 0.84,
+      "quality_score": 0.9,
+      "last_prompt": "Authentische Editorial-Fotografie fuer ein Immobilienportal. Seniorenpaar in gruenem suburbanem Wohnumfeld, passend zu altersgerechtem Haus. Ruhige Bildsprache, natuerlich, glaubwuerdig, Querformat.",
+      "prompt_version": "v1",
+      "generation_notes": ""
+    },
+    {
+      "id": "paar_hochwertig_city_01",
+      "active": true,
+      "review_status": "approved",
+      "asset_status": "planned",
+      "title": "Paar hochwertige Stadtlage",
+      "image_url": "/images/request-personas/paar_hochwertig_city_01.jpg",
+      "thumbnail_url": "/images/request-personas/thumbs/paar_hochwertig_city_01.jpg",
+      "alt_template": "Paar in hochwertiger Stadtlage",
+      "tags": {
+        "persona": ["paar"],
+        "environment": ["urban", "innenstadt"],
+        "object_focus": ["wohnung"],
+        "style": ["hochwertig", "editorial"],
+        "mood": ["wertig"],
+        "life_phase": ["downsizing"]
+      },
+      "signals": ["paar", "hochwertig", "city", "zentral"],
+      "negative_signals": ["dorf", "familie_3plus"],
+      "priority": 0.87,
+      "quality_score": 0.92,
+      "last_prompt": "Authentische Editorial-Fotografie fuer ein Immobilienportal. Paar in hochwertiger Stadtlage, passend zu Eigentumswohnung oder Penthouse. Elegant, natuerlich, nicht ueberinszeniert, Querformat.",
+      "prompt_version": "v1",
+      "generation_notes": ""
+    },
+    {
+      "id": "familie_3plus_haus_garten_01",
+      "active": true,
+      "review_status": "approved",
+      "asset_status": "planned",
+      "title": "Grosse Familie Haus mit Garten",
+      "image_url": "/images/request-personas/familie_3plus_haus_garten_01.jpg",
+      "thumbnail_url": "/images/request-personas/thumbs/familie_3plus_haus_garten_01.jpg",
+      "alt_template": "Grosse Familie im Wohnumfeld mit Garten",
+      "tags": {
+        "persona": ["familie_3plus"],
+        "environment": ["laendlich", "gruen", "stadtrand"],
+        "object_focus": ["haus"],
+        "style": ["bodenstaendig", "editorial"],
+        "mood": ["familiaer"],
+        "life_phase": ["familiengruendung"]
+      },
+      "signals": ["familie", "3 kinder", "garten", "haus", "ruhig"],
+      "negative_signals": ["investor", "innenstadt"],
+      "priority": 0.93,
+      "quality_score": 0.91,
+      "last_prompt": "Authentische Editorial-Fotografie fuer ein Immobilienportal. Grosse Familie mit mehreren Kindern in gruenem Wohnumfeld, passend zu Haus mit Garten. Warm, alltagsnah, glaubwuerdig, Querformat.",
+      "prompt_version": "v1",
+      "generation_notes": ""
+    },
+    {
+      "id": "investor_wohn_geschaeftshaus_01",
+      "active": true,
+      "review_status": "approved",
+      "asset_status": "planned",
+      "title": "Investor Wohn- und Geschaeftshaus",
+      "image_url": "/images/request-personas/investor_wohn_geschaeftshaus_01.jpg",
+      "thumbnail_url": "/images/request-personas/thumbs/investor_wohn_geschaeftshaus_01.jpg",
+      "alt_template": "Investorischer Kontext mit Wohn- und Geschaeftshaus",
+      "tags": {
+        "persona": ["investor"],
+        "environment": ["urban"],
+        "object_focus": ["anlage", "mehrfamilienhaus"],
+        "style": ["hochwertig", "editorial"],
+        "mood": ["serioes"],
+        "life_phase": ["kapitalanlage"]
+      },
+      "signals": ["investor", "wohn und geschaeftshaus", "anlage", "rendite"],
+      "negative_signals": ["familie_1_kind", "dorf"],
+      "priority": 0.91,
+      "quality_score": 0.94,
+      "last_prompt": "Authentische Editorial-Fotografie fuer ein Immobilienportal. Professioneller Anlagekontext mit Wohn- und Geschaeftshaus-Fokus. Serioes, reduziert, hochwertige reale Architektur, Querformat.",
+      "prompt_version": "v1",
+      "generation_notes": ""
+    }
+  ]
+}

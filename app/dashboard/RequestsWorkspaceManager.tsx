@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import { matchRequestImage } from '@/lib/request-image-matching';
 import { createClient } from '@/utils/supabase/client';
 
 type VisibilityMode = 'partner_wide' | 'strict_local';
@@ -574,6 +575,36 @@ export default function RequestsWorkspaceManager(props: Props) {
     `Radius: ${selectedRadiusLabel}`,
     `Zielregionen: ${selectedLocation}`,
   ].join(' | ');
+  const selectedImageMatch = useMemo(
+    () =>
+      matchRequestImage({
+        requestType: selectedMode === '—' ? null : selectedMode,
+        objectType: selectedType === '—' ? null : selectedType,
+        objectSubtype: selectedSubtypeLabel === '—' ? null : selectedSubtypeLabel,
+        minRooms: selectedRoomsMin,
+        maxRooms: selectedRoomsMax,
+        minAreaSqm: selectedAreaMin,
+        maxAreaSqm: selectedAreaMax,
+        maxPrice: selectedBudget,
+        radiusKm: selectedRadius,
+        regionLabels: selectedLocation === '—' ? [] : selectedLocation.split(',').map((value) => value.trim()).filter(Boolean),
+        textContexts: [selectedRow?.title ?? '', selectedNote],
+      }),
+    [
+      selectedAreaMax,
+      selectedAreaMin,
+      selectedBudget,
+      selectedLocation,
+      selectedMode,
+      selectedNote,
+      selectedRadius,
+      selectedRoomsMax,
+      selectedRoomsMin,
+      selectedRow?.title,
+      selectedSubtypeLabel,
+      selectedType,
+    ],
+  );
 
   if (loading) return <FullscreenLoader show label="Gesuche werden geladen..." />;
 
@@ -729,11 +760,47 @@ export default function RequestsWorkspaceManager(props: Props) {
                     </div>
                   </div>
                 </div>
-                <div style={offerSummaryTopCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
-                  <div style={mediaSectionHintStyle}>Weiche Anforderungen und Hinweise aus Bemerkung/Notiz des CRM.</div>
-                  <div style={noteCardBodyStyle}>
-                    {selectedNote || 'Keine CRM-Notiz vorhanden.'}
+                <div style={{ display: 'grid', gap: '16px' }}>
+                  <div style={offerSummaryTopCardStyle}>
+                    <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
+                    <div style={mediaSectionHintStyle}>Weiche Anforderungen und Hinweise aus Bemerkung/Notiz des CRM.</div>
+                    <div style={noteCardBodyStyle}>
+                      {selectedNote || 'Keine CRM-Notiz vorhanden.'}
+                    </div>
+                  </div>
+                  <div style={offerSummaryTopCardStyle}>
+                    <div style={offerSummaryHeaderStyle}>Motiv-Match</div>
+                    <div style={mediaSectionHintStyle}>Zentrale Motivlogik fuer Portalpartner und Netzwerkpartner auf Basis von Kriterien und Notizsignalen.</div>
+                    <div style={{ display: 'grid', gap: '10px' }}>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Erkannte Persona</div>
+                        <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Umfeld</div>
+                        <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.environment.join(', ') || '—'}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Signale</div>
+                        <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.signals.slice(0, 6).join(', ') || '—'}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Gematchtes Motiv</div>
+                        <div style={offerSummaryValueStyle}>
+                          {selectedImageMatch.primary ? `${selectedImageMatch.primary.title} (${selectedImageMatch.primary.score})` : 'Kein Motiv gefunden'}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Asset-Status</div>
+                        <div style={offerSummaryValueStyle}>{selectedImageMatch.primary?.assetStatus ?? '—'}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Letzter Bildprompt</div>
+                        <div style={noteCardBodyStyle}>
+                          {selectedImageMatch.primary?.lastPrompt || 'Kein Prompt hinterlegt.'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

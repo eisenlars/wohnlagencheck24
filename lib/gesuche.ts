@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
+import { matchRequestImage } from "@/lib/request-image-matching";
 
 export type RequestMode = "kauf" | "miete";
 
@@ -22,6 +23,12 @@ export type RegionalRequest = {
   radiusKm: number | null;
   regionTargets: Array<{ city: string; district: string | null; label: string }>;
   updatedAt: string | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  imageTitle: string | null;
+  audiencePersona: string[];
+  audienceEnvironment: string[];
+  audienceSignals: string[];
 };
 
 export type RegionalRequestResult = {
@@ -101,6 +108,62 @@ function parseRegionTargetKeys(payload: Record<string, unknown>): string[] {
     .filter(Boolean);
 }
 
+function buildRegionalRequest(record: Record<string, unknown>, requestId: string, requestType: RequestMode): RegionalRequest {
+  const payload = record as Record<string, unknown>;
+  const regionTargets = parseRegionTargets(payload);
+  const title = String(record.title ?? "");
+  const description = String(record.short_description ?? record.long_description ?? payload.description ?? "").trim() || null;
+  const locationText = String(record.location_text ?? payload.location_text ?? "").trim() || null;
+  const objectType = payload.object_type ? String(payload.object_type) : null;
+  const objectSubtype = payload.object_subtype ? String(payload.object_subtype) : null;
+  const minRooms = toFiniteNumber(payload.min_rooms);
+  const maxRooms = toFiniteNumber(payload.max_rooms);
+  const minAreaSqm = toFiniteNumber(payload.min_area_sqm) ?? toFiniteNumber(payload.min_living_area_sqm);
+  const maxAreaSqm = toFiniteNumber(payload.max_area_sqm) ?? toFiniteNumber(payload.max_living_area_sqm);
+  const maxPrice = toFiniteNumber(payload.max_price);
+  const radiusKm = toFiniteNumber(payload.radius_km);
+  const imageMatch = matchRequestImage({
+    requestType,
+    objectType,
+    objectSubtype,
+    minRooms,
+    maxRooms,
+    minAreaSqm,
+    maxAreaSqm,
+    maxPrice,
+    radiusKm,
+    regionLabels: regionTargets.map((target) => target.label),
+    textContexts: [title, description ?? "", locationText ?? ""],
+  });
+
+  return {
+    id: requestId,
+    partnerId: String(record.partner_id ?? ""),
+    provider: String(record.provider ?? ""),
+    externalId: String(record.external_id ?? ""),
+    title,
+    description,
+    locationText,
+    requestType,
+    objectType,
+    objectSubtype,
+    minRooms,
+    maxRooms,
+    minAreaSqm,
+    maxAreaSqm,
+    maxPrice,
+    radiusKm,
+    regionTargets,
+    updatedAt: record.source_updated_at ? String(record.source_updated_at) : null,
+    imageUrl: imageMatch.primary?.imageUrl ?? null,
+    imageAlt: imageMatch.primary?.alt ?? null,
+    imageTitle: imageMatch.primary?.title ?? null,
+    audiencePersona: imageMatch.profile.persona,
+    audienceEnvironment: imageMatch.profile.environment,
+    audienceSignals: imageMatch.profile.signals,
+  };
+}
+
 async function resolveKreisAreaScope(
   bundeslandSlug: string,
   kreisSlug: string,
@@ -164,29 +227,8 @@ function mapRowsToRegionalRequests(
     if (!requestId || seen.has(requestId)) continue;
     const requestType = String(record.request_type ?? "").toLowerCase() === "miete" ? "miete" : "kauf";
     if (requestType !== mode) continue;
-    const payload = record as Record<string, unknown>;
-    const targets = parseRegionTargets(payload);
     seen.add(requestId);
-    out.push({
-      id: requestId,
-      partnerId: String(record.partner_id ?? ""),
-      provider: String(record.provider ?? ""),
-      externalId: String(record.external_id ?? ""),
-      title: String(record.title ?? ""),
-      description: String(record.short_description ?? record.long_description ?? "").trim() || null,
-      locationText: String(record.location_text ?? "").trim() || null,
-      requestType,
-      objectType: payload.object_type ? String(payload.object_type) : null,
-      objectSubtype: payload.object_subtype ? String(payload.object_subtype) : null,
-      minRooms: toFiniteNumber(payload.min_rooms),
-      maxRooms: toFiniteNumber(payload.max_rooms),
-      minAreaSqm: toFiniteNumber(payload.min_area_sqm) ?? toFiniteNumber(payload.min_living_area_sqm),
-      maxAreaSqm: toFiniteNumber(payload.max_area_sqm) ?? toFiniteNumber(payload.max_living_area_sqm),
-      maxPrice: toFiniteNumber(payload.max_price),
-      radiusKm: toFiniteNumber(payload.radius_km),
-      regionTargets: targets,
-      updatedAt: record.source_updated_at ? String(record.source_updated_at) : null,
-    });
+    out.push(buildRegionalRequest(record, requestId, requestType));
   }
   return out;
 }
@@ -300,26 +342,7 @@ export async function getRegionalRequestsForOrtslage(
     if (!matchesByKey && !matchesByTarget) continue;
     seen.add(requestId);
 
-    out.push({
-      id: requestId,
-      partnerId: String(record.partner_id ?? ""),
-      provider: String(record.provider ?? ""),
-      externalId: String(record.external_id ?? ""),
-      title: String(record.title ?? ""),
-      description: String(record.short_description ?? record.long_description ?? "").trim() || null,
-      locationText: String(record.location_text ?? "").trim() || null,
-      requestType,
-      objectType: payload.object_type ? String(payload.object_type) : null,
-      objectSubtype: payload.object_subtype ? String(payload.object_subtype) : null,
-      minRooms: toFiniteNumber(payload.min_rooms),
-      maxRooms: toFiniteNumber(payload.max_rooms),
-      minAreaSqm: toFiniteNumber(payload.min_area_sqm) ?? toFiniteNumber(payload.min_living_area_sqm),
-      maxAreaSqm: toFiniteNumber(payload.max_area_sqm) ?? toFiniteNumber(payload.max_living_area_sqm),
-      maxPrice: toFiniteNumber(payload.max_price),
-      radiusKm: toFiniteNumber(payload.radius_km),
-      regionTargets: targets,
-      updatedAt: record.source_updated_at ? String(record.source_updated_at) : null,
-    });
+    out.push(buildRegionalRequest(record, requestId, requestType));
   }
   const start = (page - 1) * pageSize;
   return {
