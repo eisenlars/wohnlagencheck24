@@ -41,6 +41,7 @@ type CrmSyncResultPayload = {
         slug?: string | null;
         parent_slug?: string | null;
         bundesland_slug?: string | null;
+        lookup_sources?: string[];
       }>;
       matched_scope?: {
         booking_id?: string | null;
@@ -48,6 +49,7 @@ type CrmSyncResultPayload = {
         area_name?: string | null;
         area_slug?: string | null;
         match_kind?: "exact_match" | "kreis_match" | null;
+        lookup_sources?: string[];
       } | null;
       final_reason?: string | null;
     } | null;
@@ -300,9 +302,17 @@ function formatAreaDebugAreas(areaDebug: NonNullable<NonNullable<CrmSyncResultPa
   }
   return areaDebug.candidate_areas
     .slice(0, 5)
-    .map((area) => joinNonEmpty([area.name ?? null, area.slug ? `(${area.slug})` : null], " "))
+    .map((area) => joinNonEmpty([
+      area.name ?? null,
+      area.slug ? `(${area.slug})` : null,
+      Array.isArray(area.lookup_sources) && area.lookup_sources.length > 0 ? `[${area.lookup_sources.join(", ")}]` : null,
+    ], " "))
     .filter(Boolean)
     .join(", ");
+}
+
+function formatLookupSources(sources: string[] | null | undefined): string {
+  return Array.isArray(sources) && sources.length > 0 ? sources.join(", ") : "—";
 }
 
 function readDebugField(line: NonNullable<CrmSyncResultPayload["lines"]>[number], key: string): string | null {
@@ -1329,6 +1339,7 @@ export default function AdminCrmIntegrationsPanel({
                         <p style={modalParagraphStyle}><strong>Signale:</strong> {formatAreaDebugInputSignals(areaDebug)}</p>
                         <p style={modalParagraphStyle}><strong>Kandidaten:</strong> {candidates}</p>
                         <p style={modalParagraphStyle}><strong>Gefundene Areas:</strong> {formatAreaDebugAreas(areaDebug)}</p>
+                        <p style={modalParagraphStyle}><strong>Match-Quelle:</strong> {formatLookupSources(areaDebug.matched_scope?.lookup_sources)}</p>
                         <p style={modalParagraphStyle}><strong>Match:</strong> {matchedScope}</p>
                         <p style={modalParagraphStyle}><strong>Resolver-Grund:</strong> {areaDebug.final_reason ?? "—"}</p>
                       </div>

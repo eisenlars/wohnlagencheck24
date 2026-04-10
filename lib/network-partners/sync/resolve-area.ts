@@ -36,6 +36,7 @@ type AreaCandidate = {
   slug: string | null;
   parent_slug: string | null;
   bundesland_slug: string | null;
+  lookup_sources: string[];
 };
 
 type ResolveAreaInput = {
@@ -117,6 +118,7 @@ function buildAreaDebug(args: {
   areaName?: string | null;
   areaSlug?: string | null;
   matchKind?: "exact_match" | "kreis_match" | null;
+  matchLookupSources?: string[];
   finalReason?: string | null;
 }): NetworkPartnerAreaDebug {
   return {
@@ -135,6 +137,7 @@ function buildAreaDebug(args: {
       slug: area.slug,
       parent_slug: area.parent_slug,
       bundesland_slug: area.bundesland_slug,
+      lookup_sources: area.lookup_sources,
     })),
     matched_scope: {
       booking_id: args.bookingId ?? null,
@@ -142,6 +145,7 @@ function buildAreaDebug(args: {
       area_name: args.areaName ?? null,
       area_slug: args.areaSlug ?? null,
       match_kind: args.matchKind ?? null,
+      lookup_sources: Array.isArray(args.matchLookupSources) ? args.matchLookupSources : [],
     },
     final_reason: args.finalReason ?? null,
   };
@@ -179,7 +183,19 @@ function postalEntryToAreaCandidate(entry: ReportPostalLookupEntry): AreaCandida
     slug: entry.areaSlug,
     parent_slug: entry.parentSlug,
     bundesland_slug: entry.bundeslandSlug,
+    lookup_sources: ["postal_lookup"],
   };
+}
+
+function mergeAreaCandidate(
+  target: Map<string, AreaCandidate>,
+  candidate: AreaCandidate,
+): void {
+  const existing = target.get(candidate.id);
+  target.set(candidate.id, {
+    ...candidate,
+    lookup_sources: Array.from(new Set([...(existing?.lookup_sources ?? []), ...candidate.lookup_sources])),
+  });
 }
 
 async function loadAreaCandidatesBySignals(
@@ -205,7 +221,7 @@ async function loadAreaCandidatesBySignals(
   if (postalCode && bookingDistrictTargets.length > 0) {
     const postalLookup = await loadReportPostalLookupForDistricts(bookingDistrictTargets);
     for (const entry of postalLookup.get(postalCode) ?? []) {
-      rows.set(entry.areaId, postalEntryToAreaCandidate(entry));
+      mergeAreaCandidate(rows, postalEntryToAreaCandidate(entry));
     }
   }
 
@@ -220,12 +236,13 @@ async function loadAreaCandidatesBySignals(
       const candidate = row as Record<string, unknown>;
       const id = asText(candidate.id);
       if (!id) continue;
-      rows.set(id, {
+      mergeAreaCandidate(rows, {
         id,
         name: asText(candidate.name),
         slug: asText(candidate.slug),
         parent_slug: asText(candidate.parent_slug),
         bundesland_slug: asText(candidate.bundesland_slug),
+        lookup_sources: ["slug_lookup"],
       });
     }
   }
@@ -241,12 +258,13 @@ async function loadAreaCandidatesBySignals(
       const candidate = row as Record<string, unknown>;
       const id = asText(candidate.id);
       if (!id) continue;
-      rows.set(id, {
+      mergeAreaCandidate(rows, {
         id,
         name: asText(candidate.name),
         slug: asText(candidate.slug),
         parent_slug: asText(candidate.parent_slug),
         bundesland_slug: asText(candidate.bundesland_slug),
+        lookup_sources: ["name_lookup"],
       });
     }
   }
@@ -319,6 +337,7 @@ export async function resolveAreaForNetworkPartnerPreview(
           areaName: area.name,
           areaSlug: area.slug,
           matchKind: "exact_match",
+          matchLookupSources: area.lookup_sources,
           finalReason: "exact_match",
         }),
       };
@@ -345,6 +364,7 @@ export async function resolveAreaForNetworkPartnerPreview(
           areaName: kreisBooking.area_name,
           areaSlug: kreisBooking.area_slug,
           matchKind: "kreis_match",
+          matchLookupSources: area.lookup_sources,
           finalReason: "matched_via_parent_slug",
         }),
       };

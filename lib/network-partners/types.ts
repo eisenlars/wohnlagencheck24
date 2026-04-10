@@ -581,6 +581,7 @@ export type NetworkPartnerAreaDebug = {
     slug: string | null;
     parent_slug: string | null;
     bundesland_slug: string | null;
+    lookup_sources: string[];
   }>;
   matched_scope: {
     booking_id: string | null;
@@ -588,6 +589,7 @@ export type NetworkPartnerAreaDebug = {
     area_name: string | null;
     area_slug: string | null;
     match_kind: "exact_match" | "kreis_match" | null;
+    lookup_sources: string[];
   };
   final_reason: string | null;
 };
