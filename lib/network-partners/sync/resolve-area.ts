@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/utils/supabase/admin";
-import type { PlacementCode } from "@/lib/network-partners/types";
+import type { NetworkPartnerAreaDebug, PlacementCode } from "@/lib/network-partners/types";
 
 export type NetworkPartnerPreviewBookingScope = {
   booking_id: string;
@@ -21,6 +21,7 @@ export type NetworkPartnerAreaResolution = {
   matched_area_name: string | null;
   matched_area_slug: string | null;
   reason: string | null;
+  debug: NetworkPartnerAreaDebug;
 };
 
 type AreaCandidate = {
@@ -100,6 +101,46 @@ function extractCandidateSlugs(input: ResolveAreaInput): string[] {
   return uniqueStrings(extractCandidateNames(input)).map((value) => normalizeSlug(value)).filter(Boolean);
 }
 
+function buildAreaDebug(args: {
+  input: ResolveAreaInput;
+  candidateNames: string[];
+  candidateSlugs: string[];
+  candidateAreas: AreaCandidate[];
+  bookingId?: string | null;
+  areaId?: string | null;
+  areaName?: string | null;
+  areaSlug?: string | null;
+  matchKind?: "exact_match" | "kreis_match" | null;
+  finalReason?: string | null;
+}): NetworkPartnerAreaDebug {
+  return {
+    input_signals: {
+      zip_code: asText(args.input.zipCode),
+      city: asText(args.input.city),
+      district: asText(args.input.district),
+      region: asText(args.input.region),
+      location: asText(args.input.location),
+    },
+    candidate_names: args.candidateNames,
+    candidate_slugs: args.candidateSlugs,
+    candidate_areas: args.candidateAreas.map((area) => ({
+      id: area.id,
+      name: area.name,
+      slug: area.slug,
+      parent_slug: area.parent_slug,
+      bundesland_slug: area.bundesland_slug,
+    })),
+    matched_scope: {
+      booking_id: args.bookingId ?? null,
+      area_id: args.areaId ?? null,
+      area_name: args.areaName ?? null,
+      area_slug: args.areaSlug ?? null,
+      match_kind: args.matchKind ?? null,
+    },
+    final_reason: args.finalReason ?? null,
+  };
+}
+
 async function loadAreaCandidatesBySignals(input: ResolveAreaInput): Promise<AreaCandidate[]> {
   const candidateNames = extractCandidateNames(input);
   const candidateSlugs = extractCandidateSlugs(input);
@@ -161,6 +202,8 @@ export async function resolveAreaForNetworkPartnerPreview(
   input: ResolveAreaInput,
 ): Promise<NetworkPartnerAreaResolution> {
   const bookingScopes = input.bookingScopes.filter((scope) => scope.placement_code === input.placementCode);
+  const candidateNames = extractCandidateNames(input);
+  const candidateSlugs = extractCandidateSlugs(input);
   if (bookingScopes.length === 0) {
     return {
       status: "not_booked",
@@ -169,6 +212,13 @@ export async function resolveAreaForNetworkPartnerPreview(
       matched_area_name: null,
       matched_area_slug: null,
       reason: "no_matching_booking_scope",
+      debug: buildAreaDebug({
+        input,
+        candidateNames,
+        candidateSlugs,
+        candidateAreas: [],
+        finalReason: "no_matching_booking_scope",
+      }),
     };
   }
 
@@ -181,6 +231,13 @@ export async function resolveAreaForNetworkPartnerPreview(
       matched_area_name: null,
       matched_area_slug: null,
       reason: "no_area_candidates",
+      debug: buildAreaDebug({
+        input,
+        candidateNames,
+        candidateSlugs,
+        candidateAreas,
+        finalReason: "no_area_candidates",
+      }),
     };
   }
 
@@ -194,6 +251,18 @@ export async function resolveAreaForNetworkPartnerPreview(
         matched_area_name: area.name,
         matched_area_slug: area.slug,
         reason: null,
+        debug: buildAreaDebug({
+          input,
+          candidateNames,
+          candidateSlugs,
+          candidateAreas,
+          bookingId: exactBooking.booking_id,
+          areaId: area.id,
+          areaName: area.name,
+          areaSlug: area.slug,
+          matchKind: "exact_match",
+          finalReason: "exact_match",
+        }),
       };
     }
   }
@@ -208,6 +277,18 @@ export async function resolveAreaForNetworkPartnerPreview(
         matched_area_name: kreisBooking.area_name,
         matched_area_slug: kreisBooking.area_slug,
         reason: "matched_via_parent_slug",
+        debug: buildAreaDebug({
+          input,
+          candidateNames,
+          candidateSlugs,
+          candidateAreas,
+          bookingId: kreisBooking.booking_id,
+          areaId: kreisBooking.area_id,
+          areaName: kreisBooking.area_name,
+          areaSlug: kreisBooking.area_slug,
+          matchKind: "kreis_match",
+          finalReason: "matched_via_parent_slug",
+        }),
       };
     }
   }
@@ -219,5 +300,12 @@ export async function resolveAreaForNetworkPartnerPreview(
     matched_area_name: null,
     matched_area_slug: null,
     reason: "area_found_but_not_booked",
+    debug: buildAreaDebug({
+      input,
+      candidateNames,
+      candidateSlugs,
+      candidateAreas,
+      finalReason: "area_found_but_not_booked",
+    }),
   };
 }

@@ -71,7 +71,7 @@ function finalizePreviewItem(
   status: NetworkPartnerPreviewSyncItemStatus,
   patch?: Partial<Pick<
     NetworkPartnerPreviewSyncItem,
-    "area_id" | "booking_id" | "matched_area_name" | "matched_area_slug" | "reason"
+    "area_id" | "booking_id" | "matched_area_name" | "matched_area_slug" | "reason" | "area_debug"
   >>,
 ): NetworkPartnerPreviewSyncItem {
   return {
@@ -82,6 +82,7 @@ function finalizePreviewItem(
     matched_area_name: patch?.matched_area_name ?? null,
     matched_area_slug: patch?.matched_area_slug ?? null,
     reason: patch?.reason ?? null,
+    area_debug: patch?.area_debug ?? null,
   };
 }
 

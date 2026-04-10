@@ -565,6 +565,33 @@ export type NetworkPartnerPreviewSyncItemStatus =
   | "unsupported_type"
   | "invalid_record";
 
+export type NetworkPartnerAreaDebug = {
+  input_signals: {
+    zip_code: string | null;
+    city: string | null;
+    district: string | null;
+    region: string | null;
+    location: string | null;
+  };
+  candidate_names: string[];
+  candidate_slugs: string[];
+  candidate_areas: Array<{
+    id: string;
+    name: string | null;
+    slug: string | null;
+    parent_slug: string | null;
+    bundesland_slug: string | null;
+  }>;
+  matched_scope: {
+    booking_id: string | null;
+    area_id: string | null;
+    area_name: string | null;
+    area_slug: string | null;
+    match_kind: "exact_match" | "kreis_match" | null;
+  };
+  final_reason: string | null;
+};
+
 export type NetworkPartnerPreviewSyncItem = {
   source_resource: "offers" | "references" | "requests";
   content_type: "property_offer" | "property_request" | null;
@@ -578,6 +605,7 @@ export type NetworkPartnerPreviewSyncItem = {
   matched_area_name: string | null;
   matched_area_slug: string | null;
   reason: string | null;
+  area_debug?: NetworkPartnerAreaDebug | null;
   normalized_payload: Record<string, unknown>;
   source_payload: Record<string, unknown>;
 };
@@ -620,6 +648,7 @@ export type NetworkPartnerWriteSyncLine = {
   content_item_id: string | null;
   status: NetworkPartnerWriteSyncLineStatus;
   reason: string | null;
+  area_debug?: NetworkPartnerAreaDebug | null;
 };
 
 export type NetworkPartnerWriteSyncResult = {

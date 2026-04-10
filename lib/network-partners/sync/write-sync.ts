@@ -110,6 +110,7 @@ export async function runNetworkPartnerWriteSync(input: {
         content_item_id: null,
         status: "skipped",
         reason: item.reason ?? item.status,
+        area_debug: item.area_debug ?? null,
       });
       continue;
     }
@@ -124,6 +125,7 @@ export async function runNetworkPartnerWriteSync(input: {
         content_item_id: null,
         status: "skipped",
         reason: "booking_scope_missing",
+        area_debug: item.area_debug ?? null,
       });
       continue;
     }
@@ -138,6 +140,7 @@ export async function runNetworkPartnerWriteSync(input: {
         content_item_id: null,
         status: "skipped",
         reason: "booking_scope_missing",
+        area_debug: item.area_debug ?? null,
       });
       continue;
     }
@@ -157,6 +160,7 @@ export async function runNetworkPartnerWriteSync(input: {
         content_item_id: upserted.content.id,
         status: upserted.action,
         reason: null,
+        area_debug: item.area_debug ?? null,
       });
     } catch (error) {
       errorCount += 1;
@@ -167,6 +171,7 @@ export async function runNetworkPartnerWriteSync(input: {
         content_item_id: null,
         status: "error",
         reason: error instanceof Error ? error.message : "write_sync_failed",
+        area_debug: item.area_debug ?? null,
       });
     }
   }
