@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     const userId = await requirePartnerUser(req);
     const admin = createAdminClient();
 
-    const [offersRes, overridesRes] = await Promise.all([
+    const [offersRes, overridesRes, areaTargetsRes] = await Promise.all([
       admin
         .from("partner_property_offers")
         .select("id, partner_id, source, external_id, offer_type, object_type, title, address, price, rent, area_sqm, rooms, image_url, raw, updated_at")
@@ -36,6 +36,10 @@ export async function GET(req: Request) {
         .from("partner_property_overrides")
         .select("*")
         .eq("partner_id", userId),
+      admin
+        .from("partner_offer_area_targets")
+        .select("offer_id, area_id, is_primary, match_source, match_confidence, score, matched_zip_code, matched_city, matched_region, areas(name)")
+        .eq("partner_id", userId),
     ]);
 
     if (offersRes.error) {
@@ -44,11 +48,15 @@ export async function GET(req: Request) {
     if (overridesRes.error) {
       return NextResponse.json({ error: overridesRes.error.message }, { status: 500 });
     }
+    if (areaTargetsRes.error) {
+      return NextResponse.json({ error: areaTargetsRes.error.message }, { status: 500 });
+    }
 
     return NextResponse.json({
       ok: true,
       offers: offersRes.data ?? [],
       overrides: overridesRes.data ?? [],
+      areaTargets: areaTargetsRes.data ?? [],
     });
   } catch (error) {
     if (error instanceof Error) {

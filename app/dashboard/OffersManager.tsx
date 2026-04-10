@@ -41,6 +41,21 @@ type OverrideRow = {
   image_alt_texts?: string[] | null;
 };
 
+type OfferAreaTargetRow = {
+  offer_id: string;
+  area_id: string;
+  is_primary?: boolean | null;
+  match_source?: string | null;
+  match_confidence?: 'high' | 'medium' | 'low' | null;
+  score?: number | null;
+  matched_zip_code?: string | null;
+  matched_city?: string | null;
+  matched_region?: string | null;
+  areas?: {
+    name?: string | null;
+  } | null;
+};
+
 type LlmIntegrationOption = {
   id: string;
   label: string;
@@ -364,6 +379,18 @@ function formatBooleanLabel(value: boolean | null | undefined): string {
   return value ? 'ja' : 'nein';
 }
 
+function formatMatchSourceLabel(value: string | null | undefined): string {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized.length > 0 ? normalized : '—';
+}
+
+function formatMatchConfidenceLabel(value: OfferAreaTargetRow['match_confidence']): string {
+  if (value === 'high') return 'hoch';
+  if (value === 'medium') return 'mittel';
+  if (value === 'low') return 'niedrig';
+  return '—';
+}
+
 export default function OffersManager(props: Props) {
   const {
     visibilityConfig = null,
@@ -377,6 +404,7 @@ export default function OffersManager(props: Props) {
   const supabase = supabaseRef.current;
   const [offers, setOffers] = useState<OfferRow[]>([]);
   const [overrides, setOverrides] = useState<OverrideRow[]>([]);
+  const [areaTargets, setAreaTargets] = useState<OfferAreaTargetRow[]>([]);
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -457,10 +485,12 @@ export default function OffersManager(props: Props) {
       const payload = await res.json().catch(() => null) as {
         offers?: OfferRow[];
         overrides?: OverrideRow[];
+        areaTargets?: OfferAreaTargetRow[];
       } | null;
       if (!res.ok) {
         setOffers([]);
         setOverrides([]);
+        setAreaTargets([]);
         setSelectedOfferId(null);
         setLoading(false);
         return;
@@ -468,8 +498,10 @@ export default function OffersManager(props: Props) {
 
       const offersData = Array.isArray(payload?.offers) ? payload.offers : [];
       const overridesData = Array.isArray(payload?.overrides) ? payload.overrides : [];
+      const areaTargetsData = Array.isArray(payload?.areaTargets) ? payload.areaTargets : [];
       setOffers(offersData);
       setOverrides(overridesData);
+      setAreaTargets(areaTargetsData);
       setSelectedOfferId(offersData[0]?.id ?? null);
       setLoading(false);
     }
@@ -498,6 +530,19 @@ export default function OffersManager(props: Props) {
   }, [offers, query, filterType]);
 
   const selectedOffer = offers.find((o) => o.id === selectedOfferId) ?? null;
+  const selectedOfferAreaTargets = useMemo(
+    () => areaTargets.filter((target) => target.offer_id === selectedOfferId),
+    [areaTargets, selectedOfferId],
+  );
+  const selectedVisibilityAreaId = String(visibilityConfig?.area_id ?? '').trim();
+  const selectedVisibilityAreaTarget = useMemo(
+    () => selectedOfferAreaTargets.find((target) => target.area_id === selectedVisibilityAreaId) ?? null,
+    [selectedOfferAreaTargets, selectedVisibilityAreaId],
+  );
+  const otherAreaTargets = useMemo(
+    () => selectedOfferAreaTargets.filter((target) => target.area_id !== selectedVisibilityAreaId),
+    [selectedOfferAreaTargets, selectedVisibilityAreaId],
+  );
   const selectedRaw = useMemo(
     () => (selectedOffer?.raw ?? {}) as Record<string, unknown>,
     [selectedOffer],
@@ -1181,6 +1226,56 @@ export default function OffersManager(props: Props) {
                     </div>
                   </div>
                 ) : null}
+                <div style={offerSummaryTopCardStyle}>
+                  <div style={offerSummaryHeaderStyle}>Ausspielungs-Debug</div>
+                  <div style={mediaSectionHintStyle}>
+                    Zeigt den lokalen Match fuer das aktuell gewaehlte Ausspielgebiet und macht die Match-Quelle sichtbar.
+                  </div>
+                  <div style={offerSummaryGridStyle}>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Aktuelles Gebiet</div>
+                      <div style={offerSummaryValueStyle}>{visibilityConfig?.areas?.name || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Lokaler Match</div>
+                      <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget ? 'ja' : 'nein'}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Match-Quelle</div>
+                      <div style={offerSummaryValueStyle}>{formatMatchSourceLabel(selectedVisibilityAreaTarget?.match_source)}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Confidence</div>
+                      <div style={offerSummaryValueStyle}>{formatMatchConfidenceLabel(selectedVisibilityAreaTarget?.match_confidence ?? null)}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Score</div>
+                      <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.score ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>PLZ</div>
+                      <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_zip_code || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Ort</div>
+                      <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_city || '—'}</div>
+                    </div>
+                    <div>
+                      <div style={offerSummaryLabelStyle}>Region</div>
+                      <div style={offerSummaryValueStyle}>{selectedVisibilityAreaTarget?.matched_region || '—'}</div>
+                    </div>
+                  </div>
+                  {otherAreaTargets.length > 0 ? (
+                    <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
+                      <div style={offerSummaryLabelStyle}>Weitere gematchte Gebiete</div>
+                      {otherAreaTargets.slice(0, 5).map((target) => (
+                        <div key={`${target.offer_id}-${target.area_id}`} style={mediaSectionHintStyle}>
+                          {(target.areas?.name ?? target.area_id)} · {formatMatchSourceLabel(target.match_source)} · Score {target.score ?? '—'}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             ) : null}
             <div style={workspaceTabsRowStyle}>
