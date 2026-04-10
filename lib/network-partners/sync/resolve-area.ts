@@ -150,20 +150,20 @@ function buildAreaDebug(args: {
 function extractBookingDistrictTargets(
   bookingScopes: NetworkPartnerPreviewBookingScope[],
 ): ReportPostalLookupTarget[] {
+  const entries = bookingScopes
+    .map((scope) => {
+      const bundeslandSlug = asText(scope.bundesland_slug);
+      const districtSlug =
+        scope.area_id.split("-").length <= 3
+          ? asText(scope.area_slug)
+          : asText(scope.parent_slug);
+      if (!bundeslandSlug || !districtSlug) return null;
+      return [`${bundeslandSlug}/${districtSlug}`, { bundeslandSlug, kreisSlug: districtSlug }] as const;
+    })
+    .filter((entry): entry is readonly [string, ReportPostalLookupTarget] => Boolean(entry));
+
   return Array.from(
-    new Map(
-      bookingScopes
-        .map((scope) => {
-          const bundeslandSlug = asText(scope.bundesland_slug);
-          const districtSlug =
-            scope.area_id.split("-").length <= 3
-              ? asText(scope.area_slug)
-              : asText(scope.parent_slug);
-          if (!bundeslandSlug || !districtSlug) return null;
-          return [`${bundeslandSlug}/${districtSlug}`, { bundeslandSlug, kreisSlug: districtSlug }] as const;
-        })
-        .filter((entry): entry is readonly [string, ReportPostalLookupTarget] => Boolean(entry)),
-    ).values(),
+    new Map(entries).values(),
   );
 }
 

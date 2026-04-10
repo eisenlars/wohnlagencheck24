@@ -700,18 +700,19 @@ export async function rebuildPublicOfferEntriesForPartner(
   ]);
   const visibleAreaIds = visibleAreaConfigs.map((row) => asText(row.area_id)).filter(Boolean);
   const offerMatchAreaIdsByVisibleAreaId = buildOfferMatchAreaIdsByVisibleAreaId(visibleAreaConfigs, offerAreaCandidates);
+  const postalLookupEntries = offerAreaCandidates
+    .filter((candidate) => asText(candidate.id).split("-").length <= 3)
+    .map((candidate) => {
+      const bundeslandSlug = asText(candidate.bundeslandSlug);
+      const kreisSlug = asText(candidate.slug);
+      if (!bundeslandSlug || !kreisSlug) return null;
+      return [`${bundeslandSlug}/${kreisSlug}`, { bundeslandSlug, kreisSlug }] as const;
+    })
+    .filter(
+      (entry): entry is readonly [string, { bundeslandSlug: string; kreisSlug: string }] => Boolean(entry),
+    );
   const postalLookupTargets = Array.from(
-    new Map(
-      offerAreaCandidates
-        .filter((candidate) => asText(candidate.id).split("-").length <= 3)
-        .map((candidate) => {
-          const bundeslandSlug = asText(candidate.bundeslandSlug);
-          const kreisSlug = asText(candidate.slug);
-          if (!bundeslandSlug || !kreisSlug) return null;
-          return [`${bundeslandSlug}/${kreisSlug}`, { bundeslandSlug, kreisSlug }] as const;
-        })
-        .filter((entry): entry is readonly [string, { bundeslandSlug: string; kreisSlug: string }] => Boolean(entry)),
-    ).values(),
+    new Map(postalLookupEntries).values(),
   );
   const postalLookupByZipCode = await loadReportPostalLookupForDistricts(postalLookupTargets);
   if (visibleAreaIds.length === 0) {
