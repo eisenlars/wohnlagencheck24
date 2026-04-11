@@ -247,7 +247,7 @@ export function RequestDetailPage(props: Props) {
             pagePath={listPath}
             regionLabel={breadcrumb.names?.regionName ?? request.title}
             request={{ id: request.id, title: request.title, objectType: request.objectType }}
-            context={breadcrumb.ctx}
+            context={breadcrumb.ctx ?? {}}
           />
         </div>
       </section>
@@ -351,7 +351,7 @@ export function RequestDetailPage(props: Props) {
               pagePath={listPath}
               regionLabel={breadcrumb.names?.regionName ?? request.title}
               request={{ id: request.id, title: request.title, objectType: request.objectType }}
-              context={breadcrumb.ctx}
+              context={breadcrumb.ctx ?? {}}
             />
           </div>
         </div>
