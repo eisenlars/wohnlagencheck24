@@ -7,7 +7,6 @@ import type { NetworkBillingOverview, NetworkBillingRunResponse, NetworkBillingR
 import {
   workflowHeaderStyle,
   workflowPanelCardStyle,
-  workflowTopCardStyle,
 } from '@/app/dashboard/workflow-ui';
 
 type BillingPayload = NetworkBillingOverview & {
@@ -127,25 +126,6 @@ export default function NetworkBillingWorkspace({
 
   return (
     <div style={{ width: '100%', display: 'grid', gap: 18 }}>
-      <section style={workflowTopCardStyle}>
-        <div style={{ display: 'grid', gap: 8 }}>
-          <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6 }}>
-            Netzwerkpartner-Plattform
-          </span>
-          <h1 style={{ margin: 0, color: '#fff', fontSize: 28, lineHeight: 1.2 }}>
-            {networkPartnerId ? `${networkPartnerName ?? 'Netzwerkpartner'}: Partnererlöse` : 'Partnererlöse'}
-          </h1>
-          <p style={{ margin: 0, color: 'rgba(255,255,255,0.9)', maxWidth: 780, lineHeight: 1.6 }}>
-            Diese Übersicht zeigt, welche Erlöse das Netzwerkpartner-Geschäft aktuell trägt und welches Potenzial bereits in gebuchten Leistungen steckt.
-          </p>
-          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', color: '#fff', fontWeight: 700 }}>
-            <span>Monatspreise: {formatCurrency(headlineTotals.monthlyGross)}</span>
-            <span>Portalfee: {formatCurrency(headlineTotals.monthlyFee)}</span>
-            <span>Netto: {formatCurrency(headlineTotals.monthlyNet)}</span>
-          </div>
-        </div>
-      </section>
-
       <section style={workflowPanelCardStyle}>
         <div style={workflowHeaderStyle}>
           <h2 style={{ margin: 0, fontSize: 20, color: '#0f172a' }}>

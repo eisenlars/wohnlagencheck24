@@ -203,8 +203,8 @@ export default function NetworkPartnerManagementWorkspace({
           }}
           style={{
             borderRadius: 999,
-            border: '1px solid #1d4ed8',
-            background: '#1d4ed8',
+            border: '1px solid rgb(72, 107, 122)',
+            background: 'rgb(72, 107, 122)',
             color: '#fff',
             padding: '12px 18px',
             fontWeight: 700,
@@ -267,8 +267,8 @@ export default function NetworkPartnerManagementWorkspace({
                         textAlign: 'left',
                         padding: '14px 16px',
                         borderRadius: 16,
-                        border: active ? '1px solid #1d4ed8' : '1px solid #e2e8f0',
-                        background: active ? '#eff6ff' : '#fff',
+                        border: active ? '1px solid rgb(72, 107, 122)' : '1px solid #e2e8f0',
+                        background: active ? 'rgba(72, 107, 122, 0.08)' : '#fff',
                         cursor: 'pointer',
                       }}
                     >
@@ -280,8 +280,8 @@ export default function NetworkPartnerManagementWorkspace({
                             padding: '4px 8px',
                             fontSize: 11,
                             fontWeight: 700,
-                            color: active ? '#1d4ed8' : '#475569',
-                            background: active ? '#dbeafe' : '#f1f5f9',
+                            color: active ? 'rgb(72, 107, 122)' : '#475569',
+                            background: active ? 'rgba(72, 107, 122, 0.12)' : '#f1f5f9',
                           }}
                         >
                           {formatStatusLabel(partner.status)}
@@ -389,8 +389,8 @@ export default function NetworkPartnerManagementWorkspace({
                           style={{
                             borderRadius: 999,
                             padding: '10px 14px',
-                            border: active ? '1px solid #1d4ed8' : '1px solid #cbd5e1',
-                            background: active ? '#1d4ed8' : '#fff',
+                            border: active ? '1px solid rgb(72, 107, 122)' : '1px solid #cbd5e1',
+                            background: active ? 'rgb(72, 107, 122)' : '#fff',
                             color: active ? '#fff' : '#334155',
                             fontWeight: 700,
                             cursor: 'pointer',
