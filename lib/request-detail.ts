@@ -107,7 +107,7 @@ async function fetchProjectedRequestRows(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("public_request_entries")
-    .select("request_id, partner_id, provider, external_id, title, seo_title, seo_description, seo_h1, short_description, long_description, location_text, request_type, object_type, min_rooms, max_price, region_targets, region_target_keys, source_updated_at")
+    .select("request_id, partner_id, provider, external_id, title, seo_title, seo_description, seo_h1, short_description, long_description, location_text, request_type, object_type, object_subtype, min_rooms, max_rooms, min_area_sqm, max_area_sqm, min_living_area_sqm, max_living_area_sqm, min_price, max_price, radius_km, region_targets, region_target_keys, source_updated_at")
     .in("visible_area_id", areaIds)
     .eq("locale", locale)
     .eq("request_id", requestId)

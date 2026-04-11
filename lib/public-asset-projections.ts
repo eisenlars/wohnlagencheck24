@@ -966,6 +966,7 @@ export async function rebuildPublicRequestEntriesForPartner(
         "external_id",
         "request_type",
         "object_type",
+        "object_subtype",
         "title",
         "seo_title",
         "seo_description",
@@ -977,7 +978,14 @@ export async function rebuildPublicRequestEntriesForPartner(
         "highlights",
         "image_alt_texts",
         "min_rooms",
+        "max_rooms",
+        "min_area_sqm",
+        "max_area_sqm",
+        "min_living_area_sqm",
+        "max_living_area_sqm",
+        "min_price",
         "max_price",
+        "radius_km",
         "region_targets",
         "region_target_keys",
         "is_live",
@@ -1029,8 +1037,16 @@ export async function rebuildPublicRequestEntriesForPartner(
     const override = overridesByKey.get(`${partnerId}::${provider}::${externalId}`);
     const requestType = asText(payload["request_type"]) || "kauf";
     const objectType = asNullableText(payload["object_type"]);
+    const objectSubtype = asNullableText(payload["object_subtype"]);
     const minRooms = asNumberOrNull(payload["min_rooms"]);
+    const maxRooms = asNumberOrNull(payload["max_rooms"]);
+    const minAreaSqm = asNumberOrNull(payload["min_area_sqm"]);
+    const maxAreaSqm = asNumberOrNull(payload["max_area_sqm"]);
+    const minLivingAreaSqm = asNumberOrNull(payload["min_living_area_sqm"]);
+    const maxLivingAreaSqm = asNumberOrNull(payload["max_living_area_sqm"]);
+    const minPrice = asNumberOrNull(payload["min_price"]);
     const maxPrice = asNumberOrNull(payload["max_price"]);
+    const radiusKm = asNumberOrNull(payload["radius_km"]);
     const description =
       asNullableText(payload["description"])
       ?? asNullableText(payload["long_description"])
@@ -1051,6 +1067,7 @@ export async function rebuildPublicRequestEntriesForPartner(
         external_id: externalId,
         request_type: requestType,
         object_type: objectType,
+        object_subtype: objectSubtype,
         title: asNullableText(override?.seo_h1) ?? asNullableText(override?.seo_title) ?? asNullableText(request.title),
         seo_title: asNullableText(override?.seo_title),
         seo_description: asNullableText(override?.seo_description),
@@ -1062,7 +1079,14 @@ export async function rebuildPublicRequestEntriesForPartner(
         highlights: asArrayJson(override?.highlights),
         image_alt_texts: asArrayJson(override?.image_alt_texts),
         min_rooms: minRooms,
+        max_rooms: maxRooms,
+        min_area_sqm: minAreaSqm,
+        max_area_sqm: maxAreaSqm,
+        min_living_area_sqm: minLivingAreaSqm,
+        max_living_area_sqm: maxLivingAreaSqm,
+        min_price: minPrice,
         max_price: maxPrice,
+        radius_km: radiusKm,
         region_targets: regionTargets,
         region_target_keys: regionTargetKeys,
         is_live: true,
@@ -1084,6 +1108,7 @@ export async function rebuildPublicRequestEntriesForPartner(
           external_id: externalId,
           request_type: requestType,
           object_type: objectType,
+          object_subtype: objectSubtype,
           title: translatedTitle,
           seo_title: asNullableText(translation.translated_seo_title),
           seo_description: asNullableText(translation.translated_seo_description),
@@ -1095,7 +1120,14 @@ export async function rebuildPublicRequestEntriesForPartner(
           highlights: asArrayJson(translation.translated_highlights),
           image_alt_texts: asArrayJson(translation.translated_image_alt_texts),
           min_rooms: minRooms,
+          max_rooms: maxRooms,
+          min_area_sqm: minAreaSqm,
+          max_area_sqm: maxAreaSqm,
+          min_living_area_sqm: minLivingAreaSqm,
+          max_living_area_sqm: maxLivingAreaSqm,
+          min_price: minPrice,
           max_price: maxPrice,
+          radius_km: radiusKm,
           region_targets: regionTargets,
           region_target_keys: regionTargetKeys,
           is_live: true,
@@ -1117,6 +1149,7 @@ export async function rebuildPublicRequestEntriesForPartner(
       "external_id",
       "request_type",
       "object_type",
+      "object_subtype",
       "title",
       "seo_title",
       "seo_description",
@@ -1128,7 +1161,14 @@ export async function rebuildPublicRequestEntriesForPartner(
       "highlights",
       "image_alt_texts",
       "min_rooms",
+      "max_rooms",
+      "min_area_sqm",
+      "max_area_sqm",
+      "min_living_area_sqm",
+      "max_living_area_sqm",
+      "min_price",
       "max_price",
+      "radius_km",
       "region_targets",
       "region_target_keys",
       "is_live",
