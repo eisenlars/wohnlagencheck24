@@ -57,6 +57,7 @@ export async function MietgesucheKreisPageContent({
       heading={`${texts.rent_requests} ${kreisName}`}
       requests={requests}
       mode="miete"
+      detailBasePath={listPath}
       pagination={{
         page: Math.max(page, 1),
         pageSize: PAGE_SIZE,

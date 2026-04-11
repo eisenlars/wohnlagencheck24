@@ -66,6 +66,7 @@ export async function MietgesucheOrtPageContent({
       heading={`${texts.rent_requests} ${ortName}`}
       requests={requests}
       mode="miete"
+      detailBasePath={listPath}
       pagination={{
         page: Math.max(page, 1),
         pageSize: PAGE_SIZE,

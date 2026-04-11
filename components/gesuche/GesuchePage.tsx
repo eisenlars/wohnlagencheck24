@@ -8,12 +8,14 @@ import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
 import { formatMetric } from "@/utils/format";
+import { slugifyRequestTitle } from "@/utils/slug";
 import { RequestOfferLeadButton } from "./RequestOfferLeadButton";
 
 type GesuchePageProps = {
   heading: string;
   requests: RegionalRequest[];
   mode: RequestMode;
+  detailBasePath?: string | null;
   pagination?: {
     page: number;
     pageSize: number;
@@ -46,7 +48,7 @@ type GesuchePageProps = {
 };
 
 export function GesuchePage(props: GesuchePageProps) {
-  const { heading, requests, mode, pagination, tabs, activeTabId, basePath, parentBasePath, ctx, names, texts, formatProfile, locale, availabilityNotice } = props;
+  const { heading, requests, mode, detailBasePath, pagination, tabs, activeTabId, basePath, parentBasePath, ctx, names, texts, formatProfile, locale, availabilityNotice } = props;
   const normalizedLocale = normalizePublicLocale(locale);
   const kaufPath = `${basePath}/immobiliengesuche`;
   const mietePath = `${basePath}/mietgesuche`;
@@ -103,6 +105,8 @@ export function GesuchePage(props: GesuchePageProps) {
     : 1;
   const headingCount = pagination?.total ?? requests.length;
   const currentListPath = mode === "kauf" ? kaufPath : mietePath;
+  const buildDetailHref = (request: RegionalRequest) =>
+    detailBasePath ? `${detailBasePath}/${request.id}_${slugifyRequestTitle(request.title)}` : null;
 
   return (
     <div className="container text-dark">
@@ -166,13 +170,25 @@ export function GesuchePage(props: GesuchePageProps) {
                       background: "#e2e8f0",
                     }}
                   >
-                    <Image
-                      src={request.imageUrl}
-                      alt={request.imageAlt ?? request.imageTitle ?? request.title}
-                      fill
-                      sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 33vw"
-                      style={{ objectFit: "cover" }}
-                    />
+                    {buildDetailHref(request) ? (
+                      <Link href={buildDetailHref(request)!} aria-label={request.title} style={{ display: "block", width: "100%", height: "100%" }}>
+                        <Image
+                          src={request.imageUrl}
+                          alt={request.imageAlt ?? request.imageTitle ?? request.title}
+                          fill
+                          sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 33vw"
+                          style={{ objectFit: "cover" }}
+                        />
+                      </Link>
+                    ) : (
+                      <Image
+                        src={request.imageUrl}
+                        alt={request.imageAlt ?? request.imageTitle ?? request.title}
+                        fill
+                        sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 33vw"
+                        style={{ objectFit: "cover" }}
+                      />
+                    )}
                   </div>
                 ) : null}
                 <div className="angebote-card-body">
@@ -183,7 +199,15 @@ export function GesuchePage(props: GesuchePageProps) {
                       <span>{formatUpdatedAt(request.updatedAt) ?? "—"}</span>
                     </span>
                   </div>
-                  <h2 className="h6 mb-2">{request.title}</h2>
+                  <h2 className="h6 mb-2">
+                    {buildDetailHref(request) ? (
+                      <Link href={buildDetailHref(request)!} style={{ color: "inherit", textDecoration: "none" }}>
+                        {request.title}
+                      </Link>
+                    ) : (
+                      request.title
+                    )}
+                  </h2>
                   {request.description ? (
                     <p className="mb-3" style={{ color: '#334155' }}>
                       {truncateText(request.description)}

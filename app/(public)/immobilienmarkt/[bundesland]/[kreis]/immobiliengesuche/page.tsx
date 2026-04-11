@@ -57,6 +57,7 @@ export async function ImmobiliengesucheKreisPageContent({
       heading={`${texts.buy_requests} ${kreisName}`}
       requests={requests}
       mode="kauf"
+      detailBasePath={listPath}
       pagination={{
         page: Math.max(page, 1),
         pageSize: PAGE_SIZE,

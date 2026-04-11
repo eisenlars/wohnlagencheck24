@@ -66,6 +66,7 @@ export async function ImmobiliengesucheOrtPageContent({
       heading={`${texts.buy_requests} ${ortName}`}
       requests={requests}
       mode="kauf"
+      detailBasePath={listPath}
       pagination={{
         page: Math.max(page, 1),
         pageSize: PAGE_SIZE,
