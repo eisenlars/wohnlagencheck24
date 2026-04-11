@@ -595,22 +595,6 @@ function buildOfferMatchAreaIdsByVisibleAreaId(
   return matchAreaIdsByVisibleAreaId;
 }
 
-function requestMatchesVisibleArea(
-  regionTargetKeys: string[],
-  regionTargets: Array<{ city: string; district: string | null; label: string }>,
-  allowedKeys: Set<string>,
-): boolean {
-  if (allowedKeys.size === 0) return false;
-  for (const key of regionTargetKeys) {
-    if (allowedKeys.has(asText(key).toLowerCase())) return true;
-  }
-  for (const target of regionTargets) {
-    const key = buildRegionTargetKey(target.city, target.district);
-    if (key && allowedKeys.has(key)) return true;
-  }
-  return false;
-}
-
 async function reconcileOfferAreaTargets(args: {
   admin: AdminClient;
   partnerId: string;
@@ -1024,7 +1008,6 @@ export async function rebuildPublicRequestEntriesForPartner(
   if (i18nRes.error) throw new Error(`partner_request_i18n lookup failed: ${i18nRes.error.message}`);
 
   const requests = (requestsRes.data ?? []) as RequestRow[];
-  const requestMatchKeysByVisibleAreaId = await loadRequestMatchKeysByVisibleAreaId(admin, visibleAreaConfigs);
   const overridesByKey = groupByKey(
     (overridesRes.data ?? []) as RequestOverrideRow[],
     (row) => `${asText(row.partner_id)}::${asText(row.source)}::${asText(row.external_id)}`,
@@ -1058,17 +1041,6 @@ export async function rebuildPublicRequestEntriesForPartner(
     for (const visibleAreaConfig of visibleAreaConfigs) {
       const visibleAreaId = asText(visibleAreaConfig.area_id);
       if (!visibleAreaId) continue;
-      const requestVisibilityMode = normalizeVisibilityMode(visibleAreaConfig.request_visibility_mode);
-      if (
-        requestVisibilityMode === "strict_local"
-        && !requestMatchesVisibleArea(
-          regionTargetKeys,
-          regionTargets,
-          requestMatchKeysByVisibleAreaId.get(visibleAreaId) ?? new Set<string>(),
-        )
-      ) {
-        continue;
-      }
 
       projectionRows.push({
         partner_id: partnerId,
