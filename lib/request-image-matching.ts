@@ -13,6 +13,7 @@ type RequestImageCatalogItem = {
   alt_template: string;
   tags: {
     persona: string[];
+    gender_presentation: string[];
     environment: string[];
     object_focus: string[];
     style: string[];
@@ -55,6 +56,7 @@ export type RequestImageMatchInput = {
 
 export type RequestAudienceProfile = {
   persona: string[];
+  genderPresentation: string[];
   environment: string[];
   objectFocus: string[];
   style: string[];
@@ -96,6 +98,8 @@ const POSITIVE_SIGNAL_GROUPS = {
   familie_1_kind: ["familie", "kind", "baby", "kinderzimmer", "familienfreundlich"],
   paar: ["paar", "ehepaar", "partner"],
   single: ["single", "allein", "student", "pendler", "erste wohnung"],
+  maennlich: ["single mann", "mann", "maennlich", "männlich", "herr", "junger mann"],
+  weiblich: ["single frau", "frau", "weiblich", "dame", "junge frau", "seniorin", "alleinstehende seniorin"],
   urban: ["urban", "city", "innenstadt", "zentral", "stadtwohnung", "city-lage"],
   suburban: ["stadtrand", "vorort", "suburban", "randlage"],
   laendlich: ["laendlich", "dorf", "doerflich", "land", "landlich"],
@@ -183,6 +187,13 @@ function inferEnvironment(text: string, regionLabels: string[], radiusKm: number
   return dedupe(tags);
 }
 
+function inferGenderPresentation(text: string): string[] {
+  const tags: string[] = [];
+  if (countMatches(text, POSITIVE_SIGNAL_GROUPS.maennlich) > 0) tags.push("maennlich");
+  if (countMatches(text, POSITIVE_SIGNAL_GROUPS.weiblich) > 0) tags.push("weiblich");
+  return dedupe(tags);
+}
+
 function inferStyle(text: string): string[] {
   const tags: string[] = ["editorial"];
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.modern) > 0) tags.push("modern");
@@ -240,6 +251,7 @@ function createCandidate(item: RequestImageCatalogItem, score: number): RequestI
     generationNotes: item.generation_notes,
     tags: {
       persona: item.tags.persona,
+      genderPresentation: item.tags.gender_presentation,
       environment: item.tags.environment,
       objectFocus: item.tags.object_focus,
       style: item.tags.style,
@@ -254,6 +266,7 @@ function createCandidate(item: RequestImageCatalogItem, score: number): RequestI
 function scoreItem(item: RequestImageCatalogItem, profile: RequestAudienceProfile): number {
   const positiveScore =
     item.tags.persona.filter((tag) => profile.persona.includes(tag)).length * 40 +
+    item.tags.gender_presentation.filter((tag) => profile.genderPresentation.includes(tag)).length * 5 +
     item.tags.object_focus.filter((tag) => profile.objectFocus.includes(tag)).length * 20 +
     item.tags.environment.filter((tag) => profile.environment.includes(tag)).length * 15 +
     item.tags.life_phase.filter((tag) => profile.lifePhase.includes(tag)).length * 8 +
@@ -289,6 +302,7 @@ export function matchRequestImage(input: RequestImageMatchInput): RequestImageMa
   const objectFocus = inferObjectFocus(String(input.objectType ?? ""), String(input.objectSubtype ?? ""));
   const persona = inferPersona(text, objectFocus, input.minRooms ?? null, input.maxRooms ?? null, input.minAreaSqm ?? null);
   const environment = inferEnvironment(text, input.regionLabels ?? [], input.radiusKm ?? null);
+  const genderPresentation = inferGenderPresentation(text);
   const style = inferStyle(text);
   const mood = inferMood(text, persona);
   const lifePhase = inferLifePhase(text, persona);
@@ -301,6 +315,7 @@ export function matchRequestImage(input: RequestImageMatchInput): RequestImageMa
     Math.min(signals.length, 6);
   const profile: RequestAudienceProfile = {
     persona,
+    genderPresentation,
     environment,
     objectFocus,
     style,

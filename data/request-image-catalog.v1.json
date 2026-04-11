@@ -15,6 +15,11 @@
       "familie_3plus",
       "investor"
     ],
+    "gender_presentation": [
+      "neutral",
+      "maennlich",
+      "weiblich"
+    ],
     "environment": [
       "urban",
       "suburban",
@@ -65,6 +70,7 @@
       "alt_template": "Aelteres Paar im urbanen Wohnumfeld",
       "tags": {
         "persona": ["seniorenpaar"],
+        "gender_presentation": ["neutral"],
         "environment": ["urban", "innenstadt"],
         "object_focus": ["wohnung"],
         "style": ["hochwertig", "editorial"],
@@ -90,6 +96,7 @@
       "alt_template": "Familie mit zwei Kindern im laendlichen Wohnumfeld",
       "tags": {
         "persona": ["familie_2_kinder"],
+        "gender_presentation": ["neutral"],
         "environment": ["laendlich", "gruen", "dorf"],
         "object_focus": ["haus"],
         "style": ["bodenstaendig", "editorial"],
@@ -115,6 +122,7 @@
       "alt_template": "Paar in modernem urbanen Wohnumfeld",
       "tags": {
         "persona": ["paar"],
+        "gender_presentation": ["neutral"],
         "environment": ["urban", "stadtrand"],
         "object_focus": ["wohnung"],
         "style": ["modern", "editorial"],
@@ -140,6 +148,7 @@
       "alt_template": "Investorischer Kontext mit Mehrfamilienhaus-Fokus",
       "tags": {
         "persona": ["investor"],
+        "gender_presentation": ["neutral"],
         "environment": ["urban", "innenstadt"],
         "object_focus": ["mehrfamilienhaus", "anlage"],
         "style": ["hochwertig", "editorial"],
@@ -165,6 +174,7 @@
       "alt_template": "Single-Person im urbanen Wohnumfeld",
       "tags": {
         "persona": ["single"],
+        "gender_presentation": ["maennlich"],
         "environment": ["urban", "innenstadt"],
         "object_focus": ["wohnung"],
         "style": ["modern", "editorial"],
@@ -175,7 +185,7 @@
       "negative_signals": ["familie_3plus", "anlage"],
       "priority": 0.85,
       "quality_score": 0.9,
-      "last_prompt": "Authentisches Bewerbungs-Fotomotiv fuer ein Immobiliengesuch in einem Immobilienportal. Single-Person (männlich) sucht in urbanem Wohnumfeld, steht vor einen MFH mit Blick in die Kamera. Stil: modern, ruhig, glaubwuerdig, anonym ohne konkreten Ortsbezug, gesicht unkenntlich verpixelt. Querformat, keine Stockfoto-Anmutung.",
+      "last_prompt": "Authentisches Bewerbungs-Fotomotiv fuer ein Immobiliengesuch in einem Immobilienportal. Single-Person (männlich) sucht in urbanem Wohnumfeld, steht vor einen städtischen MFH mit Blick in die Kamera, das Gesicht darf nicht erkennbar sein - verpixelt. Stil: modern, ruhig, glaubwuerdig, anonym ohne konkreten Ortsbezug,  Querformat, keine Stockfoto-Anmutung.",
       "prompt_version": "v1",
       "generation_notes": ""
     },
@@ -190,6 +200,7 @@
       "alt_template": "Familie mit einem Kind im suburbanen Wohnumfeld",
       "tags": {
         "persona": ["familie_1_kind"],
+        "gender_presentation": ["neutral"],
         "environment": ["suburban", "stadtrand", "gruen"],
         "object_focus": ["wohnung"],
         "style": ["bodenstaendig", "editorial"],
@@ -215,6 +226,7 @@
       "alt_template": "Aelteres Paar im gruenen Wohnumfeld",
       "tags": {
         "persona": ["seniorenpaar"],
+        "gender_presentation": ["neutral"],
         "environment": ["gruen", "suburban"],
         "object_focus": ["haus"],
         "style": ["klassisch", "editorial"],
@@ -240,6 +252,7 @@
       "alt_template": "Paar in hochwertiger Stadtlage",
       "tags": {
         "persona": ["paar"],
+        "gender_presentation": ["neutral"],
         "environment": ["urban", "innenstadt"],
         "object_focus": ["wohnung"],
         "style": ["hochwertig", "editorial"],
@@ -265,6 +278,7 @@
       "alt_template": "Grosse Familie im Wohnumfeld mit Garten",
       "tags": {
         "persona": ["familie_3plus"],
+        "gender_presentation": ["neutral"],
         "environment": ["laendlich", "gruen", "stadtrand"],
         "object_focus": ["haus"],
         "style": ["bodenstaendig", "editorial"],
@@ -290,6 +304,7 @@
       "alt_template": "Investorischer Kontext mit Wohn- und Geschaeftshaus",
       "tags": {
         "persona": ["investor"],
+        "gender_presentation": ["neutral"],
         "environment": ["urban"],
         "object_focus": ["anlage", "mehrfamilienhaus"],
         "style": ["hochwertig", "editorial"],
