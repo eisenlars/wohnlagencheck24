@@ -70,11 +70,13 @@ export default function NetworkPartnerContentDetailPage({ params }: NetworkPartn
     };
   }, [contentId]);
 
+  const contentTypeLabel = contentItem?.content_type === 'property_request' ? 'Gesuch' : 'Angebot';
+
   return (
     <NetworkPartnerShell
       activeSection="content"
-      title="Content bearbeiten"
-      description="Der Netzwerkpartner pflegt hier den eigenen Inhalt, ergänzt Übersetzungen und reicht den Datensatz in den Review ein."
+      title={`${contentTypeLabel} bearbeiten`}
+      description="Der Netzwerkpartner individualisiert hier den importierten Datensatz, ergänzt Übersetzungen und reicht ihn bei Bedarf in den Review ein."
     >
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
         <Link href="/network-partner/content" style={{ color: '#0f766e', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 }}>
@@ -89,7 +91,7 @@ export default function NetworkPartnerContentDetailPage({ params }: NetworkPartn
       ) : contentItem ? (
         <div style={{ display: 'grid', gap: 18 }}>
           <section style={{ display: 'grid', gap: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Inhalt</h3>
+            <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>{contentTypeLabel} individualisieren</h3>
             <ContentEditor
               bookings={bookings}
               contentItem={contentItem}
@@ -115,6 +117,9 @@ export default function NetworkPartnerContentDetailPage({ params }: NetworkPartn
 
           <section style={{ display: 'grid', gap: 12 }}>
             <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Übersetzungen</h3>
+            <p style={{ margin: 0, color: '#475569' }}>
+              Übersetzt werden nur die Sprachen, die der Portalpartner für die zugehörige Buchung vorgibt.
+            </p>
             <TranslationEditor contentItem={contentItem} />
           </section>
 

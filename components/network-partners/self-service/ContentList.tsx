@@ -6,9 +6,17 @@ import type { NetworkContentRecord } from '@/lib/network-partners/types';
 
 type ContentListProps = {
   contentItems: NetworkContentRecord[];
+  emptyHint?: string;
 };
 
-export default function ContentList({ contentItems }: ContentListProps) {
+function formatContentTypeLabel(contentType: NetworkContentRecord['content_type']): string {
+  if (contentType === 'property_offer') return 'Angebot';
+  if (contentType === 'property_request') return 'Gesuch';
+  if (contentType === 'company_profile') return 'Unternehmen';
+  return contentType;
+}
+
+export default function ContentList({ contentItems, emptyHint = 'Noch kein eigener Content vorhanden.' }: ContentListProps) {
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
@@ -32,7 +40,7 @@ export default function ContentList({ contentItems }: ContentListProps) {
                   <span style={{ fontSize: 12, color: '#64748b' }}>{item.slug}</span>
                 </div>
               </td>
-              <td style={{ padding: '12px' }}>{item.content_type}</td>
+              <td style={{ padding: '12px' }}>{formatContentTypeLabel(item.content_type)}</td>
               <td style={{ padding: '12px' }}>{item.area_id}</td>
               <td style={{ padding: '12px' }}>{item.booking_id}</td>
               <td style={{ padding: '12px' }}>{item.status}</td>
@@ -50,7 +58,7 @@ export default function ContentList({ contentItems }: ContentListProps) {
           {contentItems.length === 0 ? (
             <tr>
               <td colSpan={7} style={{ padding: '18px 12px', color: '#64748b' }}>
-                Noch kein eigener Content vorhanden.
+                {emptyHint}
               </td>
             </tr>
           ) : null}

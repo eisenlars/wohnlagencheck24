@@ -97,7 +97,7 @@ export default function TranslationEditor({ contentItem }: TranslationEditorProp
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       <div style={{ display: 'grid', gap: 6 }}>
-        <strong style={{ color: '#0f172a' }}>Pflichtsprachen: {requiredLocales.join(', ') || 'de'}</strong>
+        <strong style={{ color: '#0f172a' }}>Pflichtsprachen des Portalpartners: {requiredLocales.join(', ') || 'de'}</strong>
         {message ? <span style={{ color: '#166534', fontWeight: 600 }}>{message}</span> : null}
         {error ? <span style={{ color: '#b91c1c', fontWeight: 600 }}>{error}</span> : null}
       </div>
