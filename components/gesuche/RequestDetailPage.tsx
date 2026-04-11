@@ -48,6 +48,11 @@ function formatDateLabel(value: string | null | undefined, locale: string): stri
 export function RequestDetailPage(props: Props) {
   const { request, mode, texts, formatProfile, locale = "de", listPath, breadcrumb } = props;
   const isGerman = locale === "de";
+  const introText = request.description
+    ? request.description.length > 220
+      ? `${request.description.slice(0, 219).trimEnd()}…`
+      : request.description
+    : null;
   const labels = isGerman
     ? {
         profile: "Gesuchprofil",
@@ -146,31 +151,12 @@ export function RequestDetailPage(props: Props) {
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1.1fr) minmax(320px, 0.9fr)",
+          gridTemplateColumns: "minmax(0, 1.3fr) minmax(260px, 0.7fr)",
           gap: 24,
-          alignItems: "stretch",
+          alignItems: "start",
           marginBottom: 28,
         }}
       >
-        <div
-          style={{
-            position: "relative",
-            minHeight: 360,
-            borderRadius: 20,
-            overflow: "hidden",
-            background: "#dbe4ea",
-          }}
-        >
-          <Image
-            src={request.imageUrl ?? "/images/requests/default_request.jpg"}
-            alt={request.imageAlt ?? request.imageTitle ?? request.title}
-            fill
-            sizes="(max-width: 991px) 100vw, 55vw"
-            style={{ objectFit: "cover" }}
-            priority
-          />
-        </div>
-
         <div
           style={{
             border: "1px solid #dbe4ea",
@@ -206,9 +192,9 @@ export function RequestDetailPage(props: Props) {
             <h1 style={{ margin: "0 0 10px", fontSize: "clamp(2rem, 3vw, 2.8rem)", lineHeight: 1.08 }}>
               {request.title}
             </h1>
-            {request.description ? (
+            {introText ? (
               <p style={{ margin: 0, color: "#334155", fontSize: 16, lineHeight: 1.7 }}>
-                {request.description}
+                {introText}
               </p>
             ) : null}
           </div>
@@ -250,7 +236,66 @@ export function RequestDetailPage(props: Props) {
             context={breadcrumb.ctx ?? {}}
           />
         </div>
+
+        <aside
+          style={{
+            display: "grid",
+            gap: 18,
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              aspectRatio: "4 / 3",
+              borderRadius: 18,
+              overflow: "hidden",
+              background: "#dbe4ea",
+              border: "1px solid #dbe4ea",
+            }}
+          >
+            <Image
+              src={request.imageUrl ?? "/images/requests/default_request.jpg"}
+              alt={request.imageAlt ?? request.imageTitle ?? request.title}
+              fill
+              sizes="(max-width: 991px) 100vw, 28vw"
+              style={{ objectFit: "cover" }}
+              priority
+            />
+          </div>
+          <div
+            style={{
+              border: "1px solid #dbe4ea",
+              borderRadius: 18,
+              background: "#f8fbfd",
+              padding: 18,
+              color: "#475569",
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
+            {isGerman
+              ? "Das Motiv visualisiert den Suchtyp dezent und ergänzt das Gesuchprofil, ohne ein konkretes Objekt vorwegzunehmen."
+              : "The motif subtly visualizes the search profile and supports the request without implying a specific property."}
+          </div>
+        </aside>
       </section>
+
+      {request.description ? (
+        <section
+          style={{
+            border: "1px solid #dbe4ea",
+            borderRadius: 20,
+            background: "#fff",
+            padding: 24,
+            marginBottom: 28,
+          }}
+        >
+          <h2 style={{ marginTop: 0, marginBottom: 14 }}>{isGerman ? "Beschreibung" : "Description"}</h2>
+          <div style={{ color: "#334155", fontSize: 16, lineHeight: 1.8 }}>
+            {request.description}
+          </div>
+        </section>
+      ) : null}
 
       <section
         style={{
