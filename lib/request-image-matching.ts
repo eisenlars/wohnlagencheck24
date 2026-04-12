@@ -48,6 +48,7 @@ export type RequestImageMatchInput = {
   maxRooms?: number | null;
   minAreaSqm?: number | null;
   maxAreaSqm?: number | null;
+  minPrice?: number | null;
   maxPrice?: number | null;
   radiusKm?: number | null;
   regionLabels?: string[];

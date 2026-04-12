@@ -154,6 +154,7 @@ function buildRegionalRequest(record: Record<string, unknown>, requestId: string
     maxRooms,
     minAreaSqm,
     maxAreaSqm,
+    minPrice,
     maxPrice,
     radiusKm,
     regionTargets,
