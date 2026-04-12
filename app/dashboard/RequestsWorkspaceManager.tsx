@@ -161,10 +161,23 @@ function getRegionTargetLabels(payload: Record<string, unknown>): string[] {
     const city = String(target.city ?? '').trim();
     const district = String(target.district ?? '').trim();
     const label = String(target.label ?? '').trim();
-    const value = label || [city, district].filter(Boolean).join(' ');
+    const value = [city, district].filter(Boolean).join(' ') || label;
     if (value) labels.push(value);
   }
   return labels;
+}
+
+function getCompactLocationLabel(payload: Record<string, unknown>): string {
+  const rangeCenter = (payload.range_center as Record<string, unknown> | null) ?? null;
+  const ort = getPayloadText(payload, ['region', 'city', 'ort'])
+    || getPayloadText(rangeCenter ?? {}, ['ort', 'city']);
+  const plz = getPayloadText(payload, ['zip_code', 'postal_code', 'plz'])
+    || getPayloadText(rangeCenter ?? {}, ['plz', 'zip_code', 'postal_code']);
+  const compact = [ort, plz].filter(Boolean).join(' ');
+  if (compact) return compact;
+  const firstRegionTarget = getRegionTargetLabels(payload)[0];
+  if (firstRegionTarget) return firstRegionTarget;
+  return '—';
 }
 
 function buildDefaultForm(row: RawRequestRow, override?: OverrideRow | null): OverrideRow {
@@ -756,16 +769,29 @@ export default function RequestsWorkspaceManager(props: Props) {
           <div style={{ maxHeight: '60vh', overflowY: 'auto', marginTop: '12px' }}>
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
-              const regionText = getRegionTargetLabels(payload).join(', ') || getPayloadText(payload, ['region']);
+              const rowOverride = overrides.find(
+                (entry) =>
+                  entry.partner_id === row.partner_id &&
+                  entry.source === row.provider &&
+                  entry.external_id === row.external_id,
+              ) ?? null;
+              const rowIsReady = isRequestReadyForPublish(rowOverride);
+              const locationLabel = getCompactLocationLabel(payload);
               return (
                 <button
                   key={row.id}
                   onClick={() => setSelectedId(row.id)}
                   style={offerRowStyle(selectedId === row.id)}
                 >
-                  <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>{row.title || 'Gesuch'}</span>
+                  <span style={requestListTitleRowStyle}>
+                    <span style={{ fontWeight: 600 }}>{row.title || 'Gesuch'}</span>
+                    <span
+                      aria-hidden="true"
+                      style={requestListStatusDotStyle(rowIsReady)}
+                    />
+                  </span>
                   <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                    {`${getPayloadText(payload, ['request_type']) || '—'} · ${getPayloadText(payload, ['object_type']) || '—'} · ${regionText || row.external_id}`}
+                    {`${getPayloadText(payload, ['request_type']) || '—'} · ${getPayloadText(payload, ['object_type']) || '—'} · ${locationLabel !== '—' ? locationLabel : row.external_id}`}
                   </span>
                 </button>
               );
@@ -785,151 +811,158 @@ export default function RequestsWorkspaceManager(props: Props) {
               {(() => {
                 const isReady = isRequestReadyForPublish(selectedOverride);
                 return (
-              <div style={offerSummaryTopWrapStyle}>
-                <div style={offerSummaryTopCardStyle}>
-                  <div style={cardHeaderRowStyle}>
-                    <div style={offerSummaryHeaderStyle}>Überblick</div>
-                    <div style={statusBadgeStyle(isReady)}>
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          width: '10px',
-                          height: '10px',
-                          borderRadius: '999px',
-                          background: isReady ? '#16a34a' : '#dc2626',
-                          flex: '0 0 auto',
-                        }}
-                      />
-                      <span>{isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
-                    </div>
-                  </div>
-                  <div style={offerSummaryGridStyle}>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Gesuch-ID</div>
-                      <div style={offerSummaryValueStyle}>{selectedRow.id}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Quelle</div>
-                      <div style={offerSummaryValueStyle}>{selectedRow.provider} · {selectedRow.external_id}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Aktualisiert</div>
-                      <div style={offerSummaryValueStyle}>{formatDateLabel(selectedUpdatedAt)}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Vermarktung</div>
-                      <div style={offerSummaryValueStyle}>{selectedMarketing}</div>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gap: '16px' }}>
-                  <div style={offerSummaryTopCardStyle}>
-                    <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
-                    <div style={requestNoteBodyStyle}>
-                      {selectedNote || 'Keine CRM-Notiz vorhanden.'}
-                    </div>
-                  </div>
-                  <div style={offerSummaryTopCardStyle}>
-                    <div style={offerSummaryHeaderStyle}>Suchkriterien</div>
-                    <div style={offerSummaryGridStyle}>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Objektart</div>
-                        <div style={offerSummaryValueStyle}>{selectedType}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Objekt-Untertyp</div>
-                        <div style={offerSummaryValueStyle}>{selectedSubtypeLabel}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Budget</div>
-                        <div style={offerSummaryValueStyle}>{selectedBudgetLabel}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Fläche</div>
-                        <div style={offerSummaryValueStyle}>{selectedAreaLabel}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Zimmer</div>
-                        <div style={offerSummaryValueStyle}>{selectedRoomsLabel}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Radius</div>
-                        <div style={offerSummaryValueStyle}>{selectedRadiusLabel}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Zielregionen</div>
-                        <div style={offerSummaryValueStyle}>{selectedLocation}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={offerSummaryTopCardStyle}>
-                    <div style={offerSummaryHeaderStyle}>Motiv-Match</div>
-                    <div style={{ display: 'grid', gap: '10px' }}>
-                      {effectiveRequestImagePreview?.imageUrl ? (
-                        <div style={requestMatchPreviewWrapStyle}>
-                          <img
-                            src={effectiveRequestImagePreview.imageUrl}
-                            alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
-                            style={requestMatchPreviewImageStyle}
-                          />
+                  <>
+                    <div style={workspaceSectionStyle}>
+                      <div style={workspaceSectionHeaderStyle}>Importierte Daten</div>
+                      <div style={workspaceSectionSublineStyle}>Diese Informationen stammen direkt aus dem CRM und bilden die fachliche Grundlage.</div>
+                      <div style={offerSummaryTopStackStyle}>
+                        <div style={offerSummaryTopCardStyle}>
+                          <div style={cardHeaderRowStyle}>
+                            <div style={offerSummaryHeaderStyle}>Überblick</div>
+                            <div style={statusBadgeStyle(isReady)}>
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  width: '10px',
+                                  height: '10px',
+                                  borderRadius: '999px',
+                                  background: isReady ? '#16a34a' : '#dc2626',
+                                  flex: '0 0 auto',
+                                }}
+                              />
+                              <span>{isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
+                            </div>
+                          </div>
+                          <div style={offerSummaryGridStyle}>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Gesuch-ID</div>
+                              <div style={offerSummaryValueStyle}>{selectedRow.id}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Quelle</div>
+                              <div style={offerSummaryValueStyle}>{selectedRow.provider} · {selectedRow.external_id}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Aktualisiert</div>
+                              <div style={offerSummaryValueStyle}>{formatDateLabel(selectedUpdatedAt)}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Vermarktung</div>
+                              <div style={offerSummaryValueStyle}>{selectedMarketing}</div>
+                            </div>
+                          </div>
                         </div>
-                      ) : null}
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Erkannte Persona</div>
-                        <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Umfeld</div>
-                        <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.environment.join(', ') || '—'}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Signale</div>
-                        <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.signals.slice(0, 6).join(', ') || '—'}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Gematchtes Motiv</div>
-                        <div style={offerSummaryValueStyle}>
-                          {selectedRequestImageOverride
-                            ? `Manuell gewählt: ${selectedRequestImageOverride.title}`
-                            : selectedImageMatch.primary
-                              ? `${selectedImageMatch.primary.title} (${selectedImageMatch.primary.score})`
-                              : 'Kein Motiv gefunden'}
+                        <div style={offerSummaryTopCardStyle}>
+                          <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
+                          <div style={requestNoteBodyStyle}>
+                            {selectedNote || 'Keine CRM-Notiz vorhanden.'}
+                          </div>
+                        </div>
+                        <div style={offerSummaryTopCardStyle}>
+                          <div style={offerSummaryHeaderStyle}>Suchkriterien</div>
+                          <div style={offerSummaryGridStyle}>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Objektart</div>
+                              <div style={offerSummaryValueStyle}>{selectedType}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Objekt-Untertyp</div>
+                              <div style={offerSummaryValueStyle}>{selectedSubtypeLabel}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Budget</div>
+                              <div style={offerSummaryValueStyle}>{selectedBudgetLabel}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Fläche</div>
+                              <div style={offerSummaryValueStyle}>{selectedAreaLabel}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Zimmer</div>
+                              <div style={offerSummaryValueStyle}>{selectedRoomsLabel}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Zielregionen</div>
+                              <div style={offerSummaryValueStyle}>{selectedLocation}</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div style={{ display: 'grid', gap: '10px' }}>
-                        <div style={offerSummaryLabelStyle}>Alternative Bildauswahl</div>
-                        <button
-                          type="button"
-                          style={imageChoiceResetButtonStyle(!selectedRequestImageOverride)}
-                          onClick={() => void applyRequestImageSelection(null)}
-                        >
-                          Automatisches Matching nutzen
-                        </button>
-                        <div style={imageChoiceGridStyle}>
-                          {readyRequestImageChoices.map((item) => {
-                            const active = selectedRequestImageOverride?.id === item.id;
-                            return (
-                              <button
-                                key={item.id}
-                                type="button"
-                                style={imageChoiceCardStyle(active)}
-                                onClick={() => void applyRequestImageSelection(item.id)}
-                              >
+                    </div>
+
+                    <div style={workspaceSectionStyle}>
+                      <div style={workspaceSectionHeaderStyle}>Online-Gesuch erstellen</div>
+                      <div style={workspaceSectionSublineStyle}>Hier werden Motiv, Titel und Beschreibung für das öffentliche Gesuch kuratiert.</div>
+                      <div style={{ display: 'grid', gap: '16px' }}>
+                        <div style={offerSummaryTopCardStyle}>
+                          <div style={offerSummaryHeaderStyle}>Motiv-Match</div>
+                          <div style={{ display: 'grid', gap: '10px' }}>
+                            {effectiveRequestImagePreview?.imageUrl ? (
+                              <div style={requestMatchPreviewWrapStyle}>
                                 <img
-                                  src={item.thumbnail_url || item.image_url}
-                                  alt={item.alt_template || item.title}
-                                  style={imageChoiceImageStyle}
+                                  src={effectiveRequestImagePreview.imageUrl}
+                                  alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
+                                  style={requestMatchPreviewImageStyle}
                                 />
-                                <span style={imageChoiceTitleStyle}>{item.title}</span>
+                              </div>
+                            ) : null}
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Erkannte Persona</div>
+                              <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Umfeld</div>
+                              <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.environment.join(', ') || '—'}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Signale</div>
+                              <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.signals.slice(0, 6).join(', ') || '—'}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Gematchtes Motiv</div>
+                              <div style={offerSummaryValueStyle}>
+                                {selectedRequestImageOverride
+                                  ? `Manuell gewählt: ${selectedRequestImageOverride.title}`
+                                  : selectedImageMatch.primary
+                                    ? `${selectedImageMatch.primary.title} (${selectedImageMatch.primary.score})`
+                                    : 'Kein Motiv gefunden'}
+                              </div>
+                            </div>
+                            <div style={{ display: 'grid', gap: '10px' }}>
+                              <div style={offerSummaryLabelStyle}>Alternative Bildauswahl</div>
+                              <button
+                                type="button"
+                                style={imageChoiceResetButtonStyle(!selectedRequestImageOverride)}
+                                onClick={() => void applyRequestImageSelection(null)}
+                              >
+                                Automatisches Matching nutzen
                               </button>
-                            );
-                          })}
+                              <div style={imageChoiceGridStyle}>
+                                {readyRequestImageChoices.map((item) => {
+                                  const active = selectedRequestImageOverride?.id === item.id;
+                                  return (
+                                    <button
+                                      key={item.id}
+                                      type="button"
+                                      style={imageChoiceCardStyle(active)}
+                                      onClick={() => void applyRequestImageSelection(item.id)}
+                                    >
+                                      <img
+                                        src={item.thumbnail_url || item.image_url}
+                                        alt={item.alt_template || item.title}
+                                        style={imageChoiceImageStyle}
+                                      />
+                                      <span style={imageChoiceTitleStyle}>{item.title}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
+                  </>
                 );
               })()}
 
@@ -1361,6 +1394,23 @@ const offerRowStyle = (active: boolean): CSSProperties => ({
   gap: '4px',
 });
 
+const requestListTitleRowStyle: CSSProperties = {
+  fontWeight: 600,
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: '10px',
+};
+
+const requestListStatusDotStyle = (active: boolean): CSSProperties => ({
+  width: '10px',
+  height: '10px',
+  borderRadius: '999px',
+  backgroundColor: active ? '#16a34a' : '#dc2626',
+  flex: '0 0 auto',
+  marginTop: '3px',
+});
+
 const primaryButtonStyle: CSSProperties = {
   padding: '10px 14px',
   borderRadius: '10px',
@@ -1409,9 +1459,8 @@ const contentPreviewBodyStyle: CSSProperties = {
   whiteSpace: 'pre-wrap',
 };
 
-const offerSummaryTopWrapStyle: CSSProperties = {
+const offerSummaryTopStackStyle: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
   gap: '16px',
   marginBottom: '16px',
 };
@@ -1421,6 +1470,26 @@ const offerSummaryTopCardStyle: CSSProperties = {
   borderRadius: '14px',
   border: '1px solid #e2e8f0',
   padding: '14px',
+};
+
+const workspaceSectionStyle: CSSProperties = {
+  display: 'grid',
+  gap: '12px',
+  marginBottom: '18px',
+};
+
+const workspaceSectionHeaderStyle: CSSProperties = {
+  fontSize: '12px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  color: '#486b7a',
+  fontWeight: 700,
+};
+
+const workspaceSectionSublineStyle: CSSProperties = {
+  fontSize: '12px',
+  color: '#64748b',
+  lineHeight: 1.5,
 };
 
 const cardHeaderRowStyle: CSSProperties = {
@@ -1491,8 +1560,8 @@ const mediaSectionHintStyle: CSSProperties = {
 
 const requestNoteBodyStyle: CSSProperties = {
   color: '#334155',
-  fontSize: '12px',
-  lineHeight: 1.55,
+  fontSize: '11px',
+  lineHeight: 1.5,
   whiteSpace: 'pre-wrap',
 };
 
