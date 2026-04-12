@@ -130,7 +130,7 @@ export function GesuchePage(props: GesuchePageProps) {
         <section className="angebote-list mb-5">
           <div className="angebote-grid">
             {requests.map((request) => (
-              <article className="angebote-card" key={request.id}>
+              <article className="angebote-card" key={request.id} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
                 {request.imageUrl ? (
                   <div
                     style={{
@@ -162,7 +162,7 @@ export function GesuchePage(props: GesuchePageProps) {
                     )}
                   </div>
                 ) : null}
-                <div className="angebote-card-body">
+                <div className="angebote-card-body" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
                   <div className="angebote-card-meta" style={{ alignItems: "flex-start", gap: 12 }}>
                     <span className="angebote-pill">{formatObjectType(request)}</span>
                     <span style={{ marginLeft: "auto", textAlign: "right", color: "#475569", fontSize: "0.8rem", lineHeight: 1.35 }}>
@@ -182,7 +182,7 @@ export function GesuchePage(props: GesuchePageProps) {
                   <div style={{ color: "#334155", marginBottom: 18, lineHeight: 1.6 }}>
                     {request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified}
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: "auto" }}>
                     {buildDetailHref(request) ? (
                       <Link
                         href={buildDetailHref(request)!}
