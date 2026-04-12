@@ -1003,7 +1003,7 @@ export async function rebuildPublicRequestEntriesForPartner(
       .eq("is_active", true),
     admin
       .from("partner_request_overrides")
-      .select("partner_id, source, external_id, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts")
+      .select("partner_id, source, external_id, status, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts")
       .eq("partner_id", partnerId),
     admin
       .from("partner_request_i18n")
