@@ -107,6 +107,7 @@ type RequestOverrideRow = {
   partner_id?: string | null;
   source?: string | null;
   external_id?: string | null;
+  status?: string | null;
   seo_title?: string | null;
   seo_description?: string | null;
   seo_h1?: string | null;
