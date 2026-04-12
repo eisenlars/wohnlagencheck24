@@ -1051,6 +1051,13 @@ export async function rebuildPublicRequestEntriesForPartner(
       asNullableText(payload["description"])
       ?? asNullableText(payload["long_description"])
       ?? asNullableText(payload["short_description"]);
+    const overrideTitle = asNullableText(override?.seo_h1) ?? asNullableText(override?.seo_title);
+    const overrideDescription = asNullableText(override?.long_description) ?? asNullableText(override?.short_description);
+    const isRequestReady = Boolean(
+      overrideTitle &&
+      overrideDescription &&
+      asText(override?.status).toLowerCase() === "approved",
+    );
     const regionTargets = parseRegionTargets(payload);
     const regionTargetKeys = parseRegionTargetKeys(payload);
 
@@ -1068,12 +1075,12 @@ export async function rebuildPublicRequestEntriesForPartner(
         request_type: requestType,
         object_type: objectType,
         object_subtype: objectSubtype,
-        title: asNullableText(override?.seo_h1) ?? asNullableText(override?.seo_title) ?? asNullableText(request.title),
+        title: overrideTitle ?? asNullableText(request.title),
         seo_title: asNullableText(override?.seo_title),
         seo_description: asNullableText(override?.seo_description),
         seo_h1: asNullableText(override?.seo_h1),
-        short_description: asNullableText(override?.short_description) ?? description,
-        long_description: asNullableText(override?.long_description) ?? description,
+        short_description: overrideDescription ?? description,
+        long_description: overrideDescription ?? description,
         location_text: asNullableText(override?.location_text),
         features_text: asNullableText(override?.features_text),
         highlights: asArrayJson(override?.highlights),
@@ -1089,7 +1096,7 @@ export async function rebuildPublicRequestEntriesForPartner(
         radius_km: radiusKm,
         region_targets: regionTargets,
         region_target_keys: regionTargetKeys,
-        is_live: true,
+        is_live: isRequestReady,
         source_updated_at: asNullableText(request.source_updated_at) ?? asNullableText(request.updated_at),
         updated_at: rebuildTimestamp,
       });
@@ -1130,7 +1137,7 @@ export async function rebuildPublicRequestEntriesForPartner(
           radius_km: radiusKm,
           region_targets: regionTargets,
           region_target_keys: regionTargetKeys,
-          is_live: true,
+          is_live: isRequestReady,
           source_updated_at: asNullableText(request.source_updated_at) ?? asNullableText(request.updated_at),
           updated_at: rebuildTimestamp,
         });

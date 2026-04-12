@@ -100,8 +100,14 @@ export function RequestDetailPage(props: Props) {
         ? texts.apartment
         : request.objectType ?? texts.object_generic;
   const objectMetaLabel = request.objectSubtype ? `${objectLabel} · ${request.objectSubtype}` : objectLabel;
-  const budgetLabel = request.maxPrice !== null
-    ? `${formatMoney(request.maxPrice)}${mode === "miete" ? texts.per_month : ""}`
+  const budgetLabel = request.maxPrice !== null || request.minPrice !== null
+    ? `${
+        request.minPrice !== null && request.maxPrice !== null
+          ? `${formatMoney(request.minPrice)} bis ${formatMoney(request.maxPrice)}`
+          : request.minPrice !== null
+            ? `ab ${formatMoney(request.minPrice)}`
+            : `bis ${formatMoney(request.maxPrice)}`
+      }${mode === "miete" ? texts.per_month : ""}`
     : "—";
   const areaLabel =
     request.minAreaSqm !== null || request.maxAreaSqm !== null

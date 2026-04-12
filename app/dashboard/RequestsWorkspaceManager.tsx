@@ -113,6 +113,13 @@ function formatEuro(value: number | null): string {
   return `${new Intl.NumberFormat('de-DE').format(value)} €`;
 }
 
+function formatBudgetRange(minValue: number | null, maxValue: number | null): string {
+  if (minValue != null && maxValue != null) return `${formatEuro(minValue)} bis ${formatEuro(maxValue)}`;
+  if (minValue != null) return `ab ${formatEuro(minValue)}`;
+  if (maxValue != null) return `bis ${formatEuro(maxValue)}`;
+  return '—';
+}
+
 function formatDateLabel(value: string | null | undefined): string {
   const text = asText(value);
   if (!text) return '—';
@@ -174,6 +181,13 @@ function buildDefaultForm(row: RawRequestRow, override?: OverrideRow | null): Ov
     image_alt_texts: override?.image_alt_texts ?? [],
     status: override?.status ?? 'draft',
   };
+}
+
+function isRequestReadyForPublish(value: OverrideRow | null | undefined): boolean {
+  if (!value) return false;
+  const title = asText(value.seo_h1) || asText(value.seo_title);
+  const description = asText(value.long_description) || asText(value.short_description);
+  return Boolean(title && description);
 }
 
 export default function RequestsWorkspaceManager(props: Props) {
@@ -345,6 +359,7 @@ export default function RequestsWorkspaceManager(props: Props) {
     ).trim();
     const normalizedSeoTitle = String(payload.seo_title ?? '').trim() || normalizedTitle;
     const normalizedSeoDescription = String(payload.seo_description ?? '').trim() || normalizedDescription;
+    const nextStatus = normalizedTitle && normalizedDescription ? 'approved' : 'draft';
     const upsertPayload = {
       ...payload,
       seo_title: normalizedSeoTitle,
@@ -354,6 +369,7 @@ export default function RequestsWorkspaceManager(props: Props) {
       long_description: normalizedDescription,
       highlights: payload.highlights ?? [],
       image_alt_texts: payload.image_alt_texts ?? [],
+      status: nextStatus,
       last_updated: new Date().toISOString(),
     };
     const { data, error } = await supabase
@@ -377,6 +393,14 @@ export default function RequestsWorkspaceManager(props: Props) {
       );
       return [...filtered, data as OverrideRow];
     });
+    const rebuildRes = await fetch('/api/partner/public-projections/requests/rebuild', {
+      method: 'POST',
+    });
+    if (!rebuildRes.ok) {
+      setStatus('Gesuch-Overrides gespeichert, aber die öffentliche Projektion konnte nicht aktualisiert werden.');
+      setSaving(false);
+      return;
+    }
     setStatus('Gesuch-Overrides gespeichert.');
     setSaving(false);
   }
@@ -548,13 +572,14 @@ export default function RequestsWorkspaceManager(props: Props) {
   const selectedRoomsMax = asNumber(selectedPayload.max_rooms);
   const selectedAreaMin = asNumber(selectedPayload.min_area_sqm) ?? asNumber(selectedPayload.min_living_area_sqm);
   const selectedAreaMax = asNumber(selectedPayload.max_area_sqm) ?? asNumber(selectedPayload.max_living_area_sqm);
+  const selectedBudgetMin = asNumber(selectedPayload.min_price);
   const selectedBudget = asNumber(selectedPayload.max_price) ?? asNumber(selectedPayload.max_purchase_price) ?? asNumber(selectedPayload.max_rent);
   const selectedLocation = getRegionTargetLabels(selectedPayload).join(', ') || getPayloadText(selectedPayload, ['region']) || '—';
   const selectedUpdatedAt = selectedRow?.source_updated_at ?? selectedRow?.updated_at ?? null;
   const selectedRadius = asNumber(selectedPayload.radius_km);
   const selectedSubtypes = getPayloadList(selectedPayload, 'object_subtypes');
   const selectedNote = getPayloadText(selectedPayload, ['publicnote', 'note', 'description']);
-  const selectedBudgetLabel = formatEuro(selectedBudget);
+  const selectedBudgetLabel = formatBudgetRange(selectedBudgetMin, selectedBudget);
   const selectedRoomsLabel =
     selectedRoomsMin != null || selectedRoomsMax != null
       ? `${selectedRoomsMin ?? '—'} bis ${selectedRoomsMax ?? '—'}`
@@ -672,19 +697,32 @@ export default function RequestsWorkspaceManager(props: Props) {
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
               const regionText = getRegionTargetLabels(payload).join(', ') || getPayloadText(payload, ['region']);
-              const hasOverride = overrides.some(
+              const currentOverride = overrides.find(
                 (entry) =>
                   entry.partner_id === row.partner_id &&
                   entry.source === row.provider &&
                   entry.external_id === row.external_id,
-              );
+              ) ?? null;
+              const isReady = isRequestReadyForPublish(currentOverride);
               return (
                 <button
                   key={row.id}
                   onClick={() => setSelectedId(row.id)}
                   style={offerRowStyle(selectedId === row.id)}
                 >
-                  <span style={{ fontWeight: 600 }}>{row.title || 'Gesuch'}</span>
+                  <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '999px',
+                        background: isReady ? '#16a34a' : '#dc2626',
+                        flex: '0 0 auto',
+                      }}
+                    />
+                    <span>{row.title || 'Gesuch'}</span>
+                  </span>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>{regionText || row.external_id}</span>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>
                     {getPayloadText(payload, ['request_type']) || '—'} · {getPayloadText(payload, ['object_type']) || '—'}
@@ -692,9 +730,9 @@ export default function RequestsWorkspaceManager(props: Props) {
                   <span style={{ fontSize: '11px', color: '#475569' }}>
                     {getPayloadText(payload, ['description', 'short_description', 'long_description']).slice(0, 120) || 'Keine Beschreibung'}
                   </span>
-                  {hasOverride ? (
-                    <span style={{ fontSize: '11px', color: '#486b7a', fontWeight: 600 }}>Override aktiv</span>
-                  ) : null}
+                  <span style={{ fontSize: '11px', color: isReady ? '#166534' : '#b91c1c', fontWeight: 700 }}>
+                    {isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}
+                  </span>
                 </button>
               );
             })}

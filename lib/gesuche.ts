@@ -19,6 +19,7 @@ export type RegionalRequest = {
   maxRooms: number | null;
   minAreaSqm: number | null;
   maxAreaSqm: number | null;
+  minPrice: number | null;
   maxPrice: number | null;
   radiusKm: number | null;
   regionTargets: Array<{ city: string; district: string | null; label: string }>;
@@ -120,6 +121,7 @@ function buildRegionalRequest(record: Record<string, unknown>, requestId: string
   const maxRooms = toFiniteNumber(payload.max_rooms);
   const minAreaSqm = toFiniteNumber(payload.min_area_sqm) ?? toFiniteNumber(payload.min_living_area_sqm);
   const maxAreaSqm = toFiniteNumber(payload.max_area_sqm) ?? toFiniteNumber(payload.max_living_area_sqm);
+  const minPrice = toFiniteNumber(payload.min_price);
   const maxPrice = toFiniteNumber(payload.max_price);
   const radiusKm = toFiniteNumber(payload.radius_km);
   const imageMatch = matchRequestImage({
@@ -130,6 +132,7 @@ function buildRegionalRequest(record: Record<string, unknown>, requestId: string
     maxRooms,
     minAreaSqm,
     maxAreaSqm,
+    minPrice,
     maxPrice,
     radiusKm,
     regionLabels: regionTargets.map((target) => target.label),
@@ -210,6 +213,7 @@ async function fetchProjectedRequests(
     .select("request_id, partner_id, provider, external_id, title, short_description, long_description, location_text, request_type, object_type, object_subtype, min_rooms, max_rooms, min_area_sqm, max_area_sqm, min_living_area_sqm, max_living_area_sqm, min_price, max_price, radius_km, region_targets, region_target_keys, source_updated_at")
     .in("visible_area_id", areaIds)
     .eq("locale", locale)
+    .eq("is_live", true)
     .order("source_updated_at", { ascending: false })
     .limit(limit);
   if (error) return [];
