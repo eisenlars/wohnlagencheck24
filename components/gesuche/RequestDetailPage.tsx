@@ -7,7 +7,7 @@ import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import type { RequestMode } from "@/lib/gesuche";
 import type { RequestDetail } from "@/lib/request-detail";
 import { formatMetric } from "@/utils/format";
-import { RequestOfferLeadButton } from "./RequestOfferLeadButton";
+import { RequestOfferLeadInlineForm } from "./RequestOfferLeadInlineForm";
 
 type Props = {
   request: RequestDetail;
@@ -99,6 +99,7 @@ export function RequestDetailPage(props: Props) {
       : request.objectType === "wohnung"
         ? texts.apartment
         : request.objectType ?? texts.object_generic;
+  const objectMetaLabel = request.objectSubtype ? `${objectLabel} · ${request.objectSubtype}` : objectLabel;
   const budgetLabel = request.maxPrice !== null
     ? `${formatMoney(request.maxPrice)}${mode === "miete" ? texts.per_month : ""}`
     : "—";
@@ -168,7 +169,7 @@ export function RequestDetailPage(props: Props) {
                 fontWeight: 700,
               }}
             >
-              {objectLabel}
+              {objectMetaLabel}
             </span>
             <span style={{ marginLeft: "auto", color: "#475569", fontSize: 13 }}>
               <strong>{texts.updated_label}:</strong> {formatDateLabel(request.updatedAt, locale)}
@@ -179,23 +180,36 @@ export function RequestDetailPage(props: Props) {
             <h1 style={{ margin: "0 0 10px", fontSize: "clamp(2rem, 3vw, 2.8rem)", lineHeight: 1.08 }}>
               {request.title}
             </h1>
+            <div style={{ color: "#334155", fontSize: 16, lineHeight: 1.8 }}>
+              {request.description ?? "—"}
+            </div>
           </div>
+
+          <RequestOfferLeadInlineForm
+            locale={locale}
+            pagePath={listPath}
+            regionLabel={breadcrumb.names?.regionName ?? request.title}
+            request={{ id: request.id, title: request.title, objectType: request.objectType }}
+            context={breadcrumb.ctx ?? {}}
+          />
         </div>
 
         <aside
           style={{
             display: "grid",
-            gap: 18,
+            gap: 0,
+            border: "1px solid #dbe4ea",
+            borderRadius: 20,
+            background: "#fff",
+            overflow: "hidden",
           }}
         >
           <div
             style={{
               position: "relative",
               aspectRatio: "4 / 3",
-              borderRadius: 18,
               overflow: "hidden",
               background: "#dbe4ea",
-              border: "1px solid #dbe4ea",
             }}
           >
             <Image
@@ -207,52 +221,8 @@ export function RequestDetailPage(props: Props) {
               priority
             />
           </div>
-        </aside>
-      </section>
-
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 380px)",
-          gap: 24,
-          marginBottom: 32,
-        }}
-      >
-        <div
-          style={{
-            border: "1px solid #dbe4ea",
-            borderRadius: 20,
-            background: "#fff",
-            padding: 24,
-          }}
-        >
-          <h2 style={{ marginTop: 0, marginBottom: 14 }}>{labels.description}</h2>
-          <div style={{ color: "#334155", fontSize: 16, lineHeight: 1.8, marginBottom: 20 }}>
-            {request.description ?? "—"}
-          </div>
-          <RequestOfferLeadButton
-            label={texts.offer_property_to_request}
-            locale={locale}
-            pagePath={listPath}
-            regionLabel={breadcrumb.names?.regionName ?? request.title}
-            request={{ id: request.id, title: request.title, objectType: request.objectType }}
-            context={breadcrumb.ctx ?? {}}
-            className="btn btn-sm"
-            style={{
-              background: "#486b7a",
-              border: "1px solid #486b7a",
-              color: "#fff",
-              fontWeight: 700,
-            }}
-          />
-        </div>
-
-        <div style={{ display: "grid", gap: 20 }}>
           <div
             style={{
-              border: "1px solid #dbe4ea",
-              borderRadius: 20,
-              background: "#fff",
               padding: 24,
             }}
           >
@@ -288,7 +258,7 @@ export function RequestDetailPage(props: Props) {
               </div>
             </div>
           </div>
-        </div>
+        </aside>
       </section>
     </div>
   );
