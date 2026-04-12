@@ -15,6 +15,7 @@ create table if not exists public.partner_request_overrides (
   features_text text,
   highlights jsonb,
   image_alt_texts jsonb,
+  request_image_catalog_id text,
   status text default 'draft',
   last_updated timestamptz default now()
 );

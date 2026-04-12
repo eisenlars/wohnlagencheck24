@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
-import { matchRequestImage } from '@/lib/request-image-matching';
+import { getRequestImageCatalog, matchRequestImage } from '@/lib/request-image-matching';
 import { createClient } from '@/utils/supabase/client';
 
 type VisibilityMode = 'partner_wide' | 'strict_local';
@@ -53,6 +53,7 @@ type OverrideRow = {
   features_text?: string | null;
   highlights?: string[] | null;
   image_alt_texts?: string[] | null;
+  request_image_catalog_id?: string | null;
   status?: string | null;
   last_updated?: string | null;
 };
@@ -179,6 +180,7 @@ function buildDefaultForm(row: RawRequestRow, override?: OverrideRow | null): Ov
     features_text: override?.features_text ?? null,
     highlights: override?.highlights ?? [],
     image_alt_texts: override?.image_alt_texts ?? [],
+    request_image_catalog_id: override?.request_image_catalog_id ?? null,
     status: override?.status ?? 'draft',
   };
 }
@@ -366,8 +368,9 @@ export default function RequestsWorkspaceManager(props: Props) {
     ).trim();
     const normalizedSeoTitle = String(payload.seo_title ?? '').trim() || normalizedTitle;
     const normalizedSeoDescription = String(payload.seo_description ?? '').trim() || normalizedDescription;
+    const normalizedRequestImageCatalogId = asText(payload.request_image_catalog_id);
     const nextStatus = normalizedTitle && normalizedDescription ? 'approved' : 'draft';
-    const upsertPayload = {
+    const upsertPayload: Record<string, unknown> = {
       ...payload,
       seo_title: normalizedSeoTitle,
       seo_h1: normalizedTitle,
@@ -379,11 +382,30 @@ export default function RequestsWorkspaceManager(props: Props) {
       status: nextStatus,
       last_updated: new Date().toISOString(),
     };
-    const { data, error } = await supabase
-      .from('partner_request_overrides')
-      .upsert(upsertPayload, { onConflict: 'partner_id,source,external_id' })
-      .select('*')
-      .single();
+    if (normalizedRequestImageCatalogId) {
+      upsertPayload.request_image_catalog_id = normalizedRequestImageCatalogId;
+    } else if (selectedOverride?.request_image_catalog_id) {
+      upsertPayload.request_image_catalog_id = null;
+    } else {
+      delete upsertPayload.request_image_catalog_id;
+    }
+
+    async function executeUpsert(candidatePayload: Record<string, unknown>) {
+      return supabase
+        .from('partner_request_overrides')
+        .upsert(candidatePayload, { onConflict: 'partner_id,source,external_id' })
+        .select('*')
+        .single();
+    }
+
+    let { data, error } = await executeUpsert(upsertPayload);
+    if (error && String(error.message || '').includes('request_image_catalog_id')) {
+      delete upsertPayload.request_image_catalog_id;
+      ({ data, error } = await executeUpsert(upsertPayload));
+      if (!error) {
+        setStatus('Gesuch gespeichert. Hinweis: Die alternative Bildauswahl benötigt noch den SQL-Rollout für request_image_catalog_id.');
+      }
+    }
     if (error) {
       setStatus(`Speichern fehlgeschlagen (partner_request_overrides): ${error.message}`);
       setSaving(false);
@@ -637,6 +659,30 @@ export default function RequestsWorkspaceManager(props: Props) {
       selectedType,
     ],
   );
+  const requestImageCatalog = useMemo(() => getRequestImageCatalog(), []);
+  const readyRequestImageChoices = useMemo(
+    () => requestImageCatalog.items.filter((item) => item.active && item.asset_status === 'ready'),
+    [requestImageCatalog],
+  );
+  const selectedRequestImageOverrideId = asText(form?.request_image_catalog_id);
+  const selectedRequestImageOverride = useMemo(
+    () => readyRequestImageChoices.find((item) => item.id === selectedRequestImageOverrideId) ?? null,
+    [readyRequestImageChoices, selectedRequestImageOverrideId],
+  );
+  const effectiveRequestImagePreview = selectedRequestImageOverride
+    ? {
+        imageUrl: selectedRequestImageOverride.image_url,
+        alt: selectedRequestImageOverride.alt_template,
+        title: selectedRequestImageOverride.title,
+      }
+    : selectedImageMatch.primary;
+
+  async function applyRequestImageSelection(catalogId: string | null) {
+    if (!form) return;
+    const next = { ...form, request_image_catalog_id: catalogId };
+    setForm(next);
+    await saveOverride(next);
+  }
 
   if (loading) return <FullscreenLoader show label="Gesuche werden geladen..." />;
 
@@ -704,41 +750,19 @@ export default function RequestsWorkspaceManager(props: Props) {
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
               const regionText = getRegionTargetLabels(payload).join(', ') || getPayloadText(payload, ['region']);
-              const currentOverride = overrides.find(
-                (entry) =>
-                  entry.partner_id === row.partner_id &&
-                  entry.source === row.provider &&
-                  entry.external_id === row.external_id,
-              ) ?? null;
-              const isReady = isRequestReadyForPublish(currentOverride);
               return (
                 <button
                   key={row.id}
                   onClick={() => setSelectedId(row.id)}
                   style={offerRowStyle(selectedId === row.id)}
                 >
-                  <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '999px',
-                        background: isReady ? '#16a34a' : '#dc2626',
-                        flex: '0 0 auto',
-                      }}
-                    />
-                    <span>{row.title || 'Gesuch'}</span>
-                  </span>
+                  <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>{row.title || 'Gesuch'}</span>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>{regionText || row.external_id}</span>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>
                     {getPayloadText(payload, ['request_type']) || '—'} · {getPayloadText(payload, ['object_type']) || '—'}
                   </span>
                   <span style={{ fontSize: '11px', color: '#475569' }}>
                     {getPayloadText(payload, ['description', 'short_description', 'long_description']).slice(0, 120) || 'Keine Beschreibung'}
-                  </span>
-                  <span style={{ fontSize: '11px', color: isReady ? '#166534' : '#b91c1c', fontWeight: 700 }}>
-                    {isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}
                   </span>
                 </button>
               );
@@ -755,9 +779,27 @@ export default function RequestsWorkspaceManager(props: Props) {
             <div style={{ color: '#94a3b8' }}>Kein Gesuch ausgewählt.</div>
           ) : (
             <>
+              {(() => {
+                const isReady = isRequestReadyForPublish(selectedOverride);
+                return (
               <div style={offerSummaryTopWrapStyle}>
                 <div style={offerSummaryTopCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>Übertragene Felder</div>
+                  <div style={cardHeaderRowStyle}>
+                    <div style={offerSummaryHeaderStyle}>Überblick</div>
+                    <div style={statusBadgeStyle(isReady)}>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '999px',
+                          background: isReady ? '#16a34a' : '#dc2626',
+                          flex: '0 0 auto',
+                        }}
+                      />
+                      <span>{isReady ? 'Onlinefertig' : 'Nicht onlinefähig'}</span>
+                    </div>
+                  </div>
                   <div style={offerSummaryGridStyle}>
                     <div>
                       <div style={offerSummaryLabelStyle}>Gesuch-ID</div>
@@ -775,37 +817,42 @@ export default function RequestsWorkspaceManager(props: Props) {
                       <div style={offerSummaryLabelStyle}>Vermarktung</div>
                       <div style={offerSummaryValueStyle}>{selectedMarketing}</div>
                     </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Objektart</div>
-                      <div style={offerSummaryValueStyle}>{selectedType}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Objekt-Untertyp</div>
-                      <div style={offerSummaryValueStyle}>{selectedSubtypeLabel}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Budget</div>
-                      <div style={offerSummaryValueStyle}>{selectedBudgetLabel}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Fläche</div>
-                      <div style={offerSummaryValueStyle}>{selectedAreaLabel}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Zimmer</div>
-                      <div style={offerSummaryValueStyle}>{selectedRoomsLabel}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Radius</div>
-                      <div style={offerSummaryValueStyle}>{selectedRadiusLabel}</div>
-                    </div>
-                    <div>
-                      <div style={offerSummaryLabelStyle}>Zielregionen</div>
-                      <div style={offerSummaryValueStyle}>{selectedLocation}</div>
-                    </div>
                   </div>
                 </div>
                 <div style={{ display: 'grid', gap: '16px' }}>
+                  <div style={offerSummaryTopCardStyle}>
+                    <div style={offerSummaryHeaderStyle}>Suchkriterien</div>
+                    <div style={offerSummaryGridStyle}>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Objektart</div>
+                        <div style={offerSummaryValueStyle}>{selectedType}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Objekt-Untertyp</div>
+                        <div style={offerSummaryValueStyle}>{selectedSubtypeLabel}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Budget</div>
+                        <div style={offerSummaryValueStyle}>{selectedBudgetLabel}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Fläche</div>
+                        <div style={offerSummaryValueStyle}>{selectedAreaLabel}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Zimmer</div>
+                        <div style={offerSummaryValueStyle}>{selectedRoomsLabel}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Radius</div>
+                        <div style={offerSummaryValueStyle}>{selectedRadiusLabel}</div>
+                      </div>
+                      <div>
+                        <div style={offerSummaryLabelStyle}>Zielregionen</div>
+                        <div style={offerSummaryValueStyle}>{selectedLocation}</div>
+                      </div>
+                    </div>
+                  </div>
                   <div style={offerSummaryTopCardStyle}>
                     <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
                     <div style={mediaSectionHintStyle}>Weiche Anforderungen und Hinweise aus Bemerkung/Notiz des CRM.</div>
@@ -817,11 +864,11 @@ export default function RequestsWorkspaceManager(props: Props) {
                     <div style={offerSummaryHeaderStyle}>Motiv-Match</div>
                     <div style={mediaSectionHintStyle}>Zentrale Motivlogik fuer Portalpartner und Netzwerkpartner auf Basis von Kriterien und Notizsignalen.</div>
                     <div style={{ display: 'grid', gap: '10px' }}>
-                      {selectedImageMatch.primary?.imageUrl ? (
+                      {effectiveRequestImagePreview?.imageUrl ? (
                         <div style={requestMatchPreviewWrapStyle}>
                           <img
-                            src={selectedImageMatch.primary.imageUrl}
-                            alt={selectedImageMatch.primary.alt || selectedImageMatch.primary.title}
+                            src={effectiveRequestImagePreview.imageUrl}
+                            alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
                             style={requestMatchPreviewImageStyle}
                           />
                         </div>
@@ -841,23 +888,49 @@ export default function RequestsWorkspaceManager(props: Props) {
                       <div>
                         <div style={offerSummaryLabelStyle}>Gematchtes Motiv</div>
                         <div style={offerSummaryValueStyle}>
-                          {selectedImageMatch.primary ? `${selectedImageMatch.primary.title} (${selectedImageMatch.primary.score})` : 'Kein Motiv gefunden'}
+                          {selectedRequestImageOverride
+                            ? `Manuell gewählt: ${selectedRequestImageOverride.title}`
+                            : selectedImageMatch.primary
+                              ? `${selectedImageMatch.primary.title} (${selectedImageMatch.primary.score})`
+                              : 'Kein Motiv gefunden'}
                         </div>
                       </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Asset-Status</div>
-                        <div style={offerSummaryValueStyle}>{selectedImageMatch.primary?.assetStatus ?? '—'}</div>
-                      </div>
-                      <div>
-                        <div style={offerSummaryLabelStyle}>Letzter Bildprompt</div>
-                        <div style={noteCardBodyStyle}>
-                          {selectedImageMatch.primary?.lastPrompt || 'Kein Prompt hinterlegt.'}
+                      <div style={{ display: 'grid', gap: '10px' }}>
+                        <div style={offerSummaryLabelStyle}>Alternative Bildauswahl</div>
+                        <button
+                          type="button"
+                          style={imageChoiceResetButtonStyle(!selectedRequestImageOverride)}
+                          onClick={() => void applyRequestImageSelection(null)}
+                        >
+                          Automatisches Matching nutzen
+                        </button>
+                        <div style={imageChoiceGridStyle}>
+                          {readyRequestImageChoices.map((item) => {
+                            const active = selectedRequestImageOverride?.id === item.id;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                style={imageChoiceCardStyle(active)}
+                                onClick={() => void applyRequestImageSelection(item.id)}
+                              >
+                                <img
+                                  src={item.thumbnail_url || item.image_url}
+                                  alt={item.alt_template || item.title}
+                                  style={imageChoiceImageStyle}
+                                />
+                                <span style={imageChoiceTitleStyle}>{item.title}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+                );
+              })()}
 
               <div style={workspaceTabsRowStyle}>
                 <button type="button" onClick={() => setActiveTab('texts')} style={workspaceTabStyle(activeTab === 'texts')}>
@@ -1349,6 +1422,14 @@ const offerSummaryTopCardStyle: CSSProperties = {
   padding: '14px',
 };
 
+const cardHeaderRowStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  marginBottom: '10px',
+};
+
 const offerSummaryCardStyle: CSSProperties = {
   backgroundColor: '#f8fafc',
   borderRadius: '14px',
@@ -1414,6 +1495,19 @@ const noteCardBodyStyle: CSSProperties = {
   whiteSpace: 'pre-wrap',
 };
 
+const statusBadgeStyle = (active: boolean): CSSProperties => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '8px',
+  borderRadius: '999px',
+  padding: '6px 10px',
+  fontSize: '11px',
+  fontWeight: 700,
+  color: active ? '#166534' : '#b91c1c',
+  backgroundColor: active ? '#dcfce7' : '#fee2e2',
+  border: `1px solid ${active ? '#86efac' : '#fecaca'}`,
+});
+
 const requestMatchPreviewWrapStyle: CSSProperties = {
   borderRadius: '12px',
   overflow: 'hidden',
@@ -1427,3 +1521,48 @@ const requestMatchPreviewImageStyle: CSSProperties = {
   height: '180px',
   objectFit: 'cover',
 };
+
+const imageChoiceGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+  gap: '10px',
+};
+
+const imageChoiceCardStyle = (active: boolean): CSSProperties => ({
+  display: 'grid',
+  gap: '8px',
+  padding: '8px',
+  borderRadius: '12px',
+  border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
+  backgroundColor: active ? '#ecfeff' : '#fff',
+  cursor: 'pointer',
+  textAlign: 'left',
+});
+
+const imageChoiceImageStyle: CSSProperties = {
+  display: 'block',
+  width: '100%',
+  height: '88px',
+  objectFit: 'cover',
+  borderRadius: '8px',
+  backgroundColor: '#e2e8f0',
+};
+
+const imageChoiceTitleStyle: CSSProperties = {
+  fontSize: '11px',
+  fontWeight: 600,
+  color: '#0f172a',
+  lineHeight: 1.35,
+};
+
+const imageChoiceResetButtonStyle = (active: boolean): CSSProperties => ({
+  padding: '9px 12px',
+  borderRadius: '10px',
+  border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
+  backgroundColor: active ? '#ecfeff' : '#fff',
+  color: '#0f172a',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  textAlign: 'left',
+});

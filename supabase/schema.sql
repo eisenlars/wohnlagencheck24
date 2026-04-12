@@ -864,6 +864,7 @@ CREATE TABLE public.partner_property_overrides (
   features_text text,
   highlights jsonb,
   image_alt_texts jsonb,
+  request_image_catalog_id text,
   status text DEFAULT 'draft'::text,
   last_updated timestamp with time zone DEFAULT now(),
   answer_summary text,
