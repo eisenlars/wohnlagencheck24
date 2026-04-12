@@ -50,6 +50,7 @@ export type PortalSystemTextMap = {
   rooms_min: string;
   object_generic: string;
   offer_property_to_request: string;
+  details: string;
   offers_unavailable_title: string;
   offers_unavailable_body: string;
   requests_unavailable_title: string;
@@ -142,6 +143,7 @@ export const PORTAL_SYSTEM_TEXT_DEFAULTS: Record<string, PortalSystemTextMap> = 
     rooms_min: "Zimmer min.",
     object_generic: "Objekt",
     offer_property_to_request: "Objekt anbieten",
+    details: "Details",
     offers_unavailable_title: "Angebote noch nicht in dieser Sprache verfügbar",
     offers_unavailable_body: "Für diese Angebote liegen aktuell noch keine freigegebenen Übersetzungen in der gewählten Sprache vor.",
     requests_unavailable_title: "Gesuche noch nicht in dieser Sprache verfügbar",
@@ -224,6 +226,7 @@ export const PORTAL_SYSTEM_TEXT_DEFAULTS: Record<string, PortalSystemTextMap> = 
     rooms_min: "Rooms min.",
     object_generic: "Property",
     offer_property_to_request: "Offer property",
+    details: "Details",
     offers_unavailable_title: "Offers not yet available in this language",
     offers_unavailable_body: "There are currently no approved translations for these offers in the selected language.",
     requests_unavailable_title: "Requests not yet available in this language",

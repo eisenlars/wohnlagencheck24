@@ -5,6 +5,8 @@ import { useState, type CSSProperties, type FormEvent } from "react";
 type RequestOfferLeadButtonProps = {
   label: string;
   locale?: string;
+  className?: string;
+  style?: CSSProperties;
   pagePath: string;
   regionLabel: string;
   request: {
@@ -149,7 +151,12 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
 
   return (
     <>
-      <button type="button" className="btn btn-outline-dark btn-sm angebote-card-cta" onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className={props.className ?? "btn btn-outline-dark btn-sm angebote-card-cta"}
+        style={props.style}
+        onClick={() => setOpen(true)}
+      >
         {props.label}
       </button>
       {open ? (

@@ -7,7 +7,6 @@ import type { RegionalRequest, RequestMode } from "@/lib/gesuche";
 import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
-import { formatMetric } from "@/utils/format";
 import { slugifyRequestTitle } from "@/utils/slug";
 import { RequestOfferLeadButton } from "./RequestOfferLeadButton";
 
@@ -52,34 +51,6 @@ export function GesuchePage(props: GesuchePageProps) {
   const normalizedLocale = normalizePublicLocale(locale);
   const kaufPath = `${basePath}/immobiliengesuche`;
   const mietePath = `${basePath}/mietgesuche`;
-  const formatMoney = (value: number | null) => formatMetric(value, {
-    kind: "currency",
-    ctx: "kpi",
-    unit: "eur",
-    locale: normalizedLocale,
-    numberLocale: formatProfile.intlLocale,
-    currencyCode: formatProfile.currencyCode,
-    fractionDigits: 0,
-  });
-  const truncateText = (value: string | null, maxLength = 220) => {
-    const text = String(value ?? '').trim();
-    if (!text) return null;
-    if (text.length <= maxLength) return text;
-    return `${text.slice(0, maxLength - 1).trimEnd()}…`;
-  };
-  const formatAreaRange = (min: number | null, max: number | null) => {
-    if (min !== null && max !== null) return `${formatMetric(min, { kind: "flaeche", ctx: "kpi", unit: "none", locale: normalizedLocale, numberLocale: formatProfile.intlLocale, fractionDigits: 0 })} - ${formatMetric(max, { kind: "flaeche", ctx: "kpi", unit: "none", locale: normalizedLocale, numberLocale: formatProfile.intlLocale, fractionDigits: 0 })} m²`;
-    if (min !== null) return `${formatMetric(min, { kind: "flaeche", ctx: "kpi", unit: "none", locale: normalizedLocale, numberLocale: formatProfile.intlLocale, fractionDigits: 0 })} m²`;
-    if (max !== null) return `${formatMetric(max, { kind: "flaeche", ctx: "kpi", unit: "none", locale: normalizedLocale, numberLocale: formatProfile.intlLocale, fractionDigits: 0 })} m²`;
-    return null;
-  };
-  const formatRoomRange = (min: number | null, max: number | null) => {
-    const roomLabel = texts.rooms;
-    if (min !== null && max !== null) return `${formatMetric(min, { kind: "anzahl", ctx: "kpi", unit: "none", locale: normalizedLocale, numberLocale: formatProfile.intlLocale, fractionDigits: 0 })} - ${formatMetric(max, { kind: "anzahl", ctx: "kpi", unit: "none", locale: normalizedLocale, numberLocale: formatProfile.intlLocale, fractionDigits: 0 })} ${roomLabel}`;
-    if (min !== null) return `${formatMetric(min, { kind: "anzahl", ctx: "kpi", unit: "none", locale: normalizedLocale, numberLocale: formatProfile.intlLocale, fractionDigits: 0 })} ${roomLabel}`;
-    if (max !== null) return `${formatMetric(max, { kind: "anzahl", ctx: "kpi", unit: "none", locale: normalizedLocale, numberLocale: formatProfile.intlLocale, fractionDigits: 0 })} ${roomLabel}`;
-    return null;
-  };
   const formatUpdatedAt = (value: string | null) => {
     if (!value) return null;
     const date = new Date(value);
@@ -208,43 +179,48 @@ export function GesuchePage(props: GesuchePageProps) {
                       request.title
                     )}
                   </h2>
-                  {request.description ? (
-                    <p className="mb-3" style={{ color: '#334155' }}>
-                      {truncateText(request.description)}
-                    </p>
-                  ) : null}
-                  <div className="angebote-card-facts" style={{ marginBottom: 16 }}>
-                    {request.maxPrice !== null ? (
-                      <span>
-                        {formatMoney(request.maxPrice)}
-                        {mode === "miete" ? <span className="angebote-price-suffix">{texts.per_month}</span> : null}
-                      </span>
-                    ) : null}
-                    {formatAreaRange(request.minAreaSqm, request.maxAreaSqm) ? (
-                      <span>{formatAreaRange(request.minAreaSqm, request.maxAreaSqm)}</span>
-                    ) : null}
-                    {formatRoomRange(request.minRooms, request.maxRooms) ? (
-                      <span>{formatRoomRange(request.minRooms, request.maxRooms)}</span>
-                    ) : null}
-                    {request.radiusKm !== null ? <span>{`${request.radiusKm} km`}</span> : null}
-                    <span>{request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified}</span>
+                  <div style={{ color: "#334155", marginBottom: 18, lineHeight: 1.6 }}>
+                    {request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified}
                   </div>
-                  <RequestOfferLeadButton
-                    label={texts.offer_property_to_request}
-                    locale={normalizedLocale}
-                    pagePath={currentListPath}
-                    regionLabel={names?.regionName ?? heading}
-                    request={{
-                      id: request.id,
-                      title: request.title,
-                      objectType: request.objectType,
-                    }}
-                    context={{
-                      bundeslandSlug: ctx?.bundeslandSlug,
-                      kreisSlug: ctx?.kreisSlug,
-                      ortSlug: ctx?.ortSlug,
-                    }}
-                  />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    {buildDetailHref(request) ? (
+                      <Link
+                        href={buildDetailHref(request)!}
+                        className="btn btn-sm"
+                        style={{
+                          border: "1px solid #486b7a",
+                          color: "#486b7a",
+                          background: "#fff",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {texts.details}
+                      </Link>
+                    ) : null}
+                    <RequestOfferLeadButton
+                      label={texts.offer_property_to_request}
+                      locale={normalizedLocale}
+                      className="btn btn-sm"
+                      style={{
+                        background: "#486b7a",
+                        border: "1px solid #486b7a",
+                        color: "#fff",
+                        fontWeight: 700,
+                      }}
+                      pagePath={currentListPath}
+                      regionLabel={names?.regionName ?? heading}
+                      request={{
+                        id: request.id,
+                        title: request.title,
+                        objectType: request.objectType,
+                      }}
+                      context={{
+                        bundeslandSlug: ctx?.bundeslandSlug,
+                        kreisSlug: ctx?.kreisSlug,
+                        ortSlug: ctx?.ortSlug,
+                      }}
+                    />
+                  </div>
                 </div>
               </article>
             ))}
