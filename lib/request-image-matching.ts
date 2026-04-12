@@ -169,7 +169,11 @@ function inferPersona(text: string, objectFocus: string[], minRooms: number | nu
   if (objectFocus.includes("haus") && ((relevantRooms ?? 0) >= 5 || (minAreaSqm ?? 0) >= 140)) return ["familie_3plus"];
   if (objectFocus.includes("haus") && ((relevantRooms ?? 0) >= 4 || (minAreaSqm ?? 0) >= 110)) return ["familie_2_kinder"];
   if (objectFocus.includes("wohnung") && ((relevantRooms ?? 0) <= 2)) return ["single"];
-  return ["paar"];
+  return [];
+}
+
+function isExplicitPersona(profile: RequestAudienceProfile): boolean {
+  return profile.persona.length > 0;
 }
 
 function inferEnvironment(text: string, regionLabels: string[], radiusKm: number | null): string[] {
@@ -281,7 +285,12 @@ function scoreItem(item: RequestImageCatalogItem, profile: RequestAudienceProfil
       profile.objectFocus.includes(signal) ||
       profile.signals.includes(signal),
   ).length * 25;
-  return positiveScore - negativeScore + Math.round(item.priority * 10) + Math.round(item.quality_score * 10);
+  const personaPenalty =
+    !isExplicitPersona(profile) &&
+    item.tags.persona.some((tag) => ["single", "paar", "seniorenpaar", "familie_1_kind", "familie_2_kinder", "familie_3plus"].includes(tag))
+      ? 45
+      : 0;
+  return positiveScore - negativeScore - personaPenalty + Math.round(item.priority * 10) + Math.round(item.quality_score * 10);
 }
 
 export function getRequestImageCatalog(): RequestImageCatalog {
@@ -333,11 +342,29 @@ export function matchRequestImage(input: RequestImageMatchInput): RequestImageMa
     .slice(0, 3);
 
   const primary = candidates[0]
-    ? {
-        ...candidates[0],
-        imageUrl: candidates[0].imageUrl ?? DEFAULT_REQUEST_IMAGE_URL,
-        alt: candidates[0].imageUrl ? candidates[0].alt : DEFAULT_REQUEST_IMAGE_ALT,
-      }
+    ? (
+        !isExplicitPersona(profile) && candidates[0].score < 80
+          ? {
+              catalogId: "default_request",
+              title: "Standardmotiv Gesuch",
+              imageUrl: DEFAULT_REQUEST_IMAGE_URL,
+              thumbnailUrl: DEFAULT_REQUEST_IMAGE_URL,
+              alt: DEFAULT_REQUEST_IMAGE_ALT,
+              score: candidates[0].score,
+              assetStatus: "ready" as const,
+              lastPrompt: "",
+              promptVersion: "fallback",
+              generationNotes: "Automatisches Fallback bei neutralem Gesuch ohne belastbares Persona-Match.",
+              tags: {
+                ...profile,
+              },
+            }
+          : {
+              ...candidates[0],
+              imageUrl: candidates[0].imageUrl ?? DEFAULT_REQUEST_IMAGE_URL,
+              alt: candidates[0].imageUrl ? candidates[0].alt : DEFAULT_REQUEST_IMAGE_ALT,
+            }
+      )
     : {
         catalogId: "default_request",
         title: "Standardmotiv Gesuch",
