@@ -156,12 +156,21 @@ function inferObjectFocus(objectType: string, objectSubtype: string): string[] {
   return dedupe(tags);
 }
 
-function inferPersona(text: string, objectFocus: string[], minRooms: number | null, maxRooms: number | null, minAreaSqm: number | null): string[] {
+function inferPersona(
+  text: string,
+  genderPresentation: string[],
+  objectFocus: string[],
+  minRooms: number | null,
+  maxRooms: number | null,
+  minAreaSqm: number | null,
+): string[] {
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.investor) > 0) return ["investor"];
   const seniorPairMatches = countMatches(text, POSITIVE_SIGNAL_GROUPS.seniorenpaar);
   const seniorMatches = countMatches(text, POSITIVE_SIGNAL_GROUPS.senior);
   const pairMatches = countMatches(text, POSITIVE_SIGNAL_GROUPS.paar);
   if (seniorPairMatches > 0 || (seniorMatches > 0 && pairMatches > 0)) return ["seniorenpaar"];
+  if (seniorMatches > 0 && genderPresentation.includes("maennlich")) return ["senior_single_mann"];
+  if (seniorMatches > 0 && genderPresentation.includes("weiblich")) return ["senior_single_frau"];
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.familie_3plus) > 0) return ["familie_3plus"];
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.familie_2_kinder) > 0) return ["familie_2_kinder"];
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.familie_1_kind) > 0) return ["familie_1_kind"];
@@ -228,7 +237,12 @@ function inferLifePhase(text: string, persona: string[]): string[] {
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.erste_wohnung) > 0 || persona.includes("single")) tags.push("erste_wohnung");
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.familiengruendung) > 0 || persona.some((tag) => tag.startsWith("familie"))) tags.push("familiengruendung");
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.downsizing) > 0) tags.push("downsizing");
-  if (countMatches(text, POSITIVE_SIGNAL_GROUPS.altersgerecht) > 0 || persona.includes("seniorenpaar")) tags.push("altersgerecht");
+  if (
+    countMatches(text, POSITIVE_SIGNAL_GROUPS.altersgerecht) > 0 ||
+    persona.includes("seniorenpaar") ||
+    persona.includes("senior_single_mann") ||
+    persona.includes("senior_single_frau")
+  ) tags.push("altersgerecht");
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.kapitalanlage) > 0 || persona.includes("investor")) tags.push("kapitalanlage");
   return dedupe(tags);
 }
@@ -291,7 +305,7 @@ function scoreItem(item: RequestImageCatalogItem, profile: RequestAudienceProfil
   ).length * 25;
   const personaPenalty =
     !isExplicitPersona(profile) &&
-    item.tags.persona.some((tag) => ["single", "paar", "seniorenpaar", "familie_1_kind", "familie_2_kinder", "familie_3plus"].includes(tag))
+    item.tags.persona.some((tag) => ["single", "paar", "seniorenpaar", "senior_single_mann", "senior_single_frau", "familie_1_kind", "familie_2_kinder", "familie_3plus"].includes(tag))
       ? 45
       : 0;
   return positiveScore - negativeScore - personaPenalty + Math.round(item.priority * 10) + Math.round(item.quality_score * 10);
@@ -313,10 +327,10 @@ export function matchRequestImage(input: RequestImageMatchInput): RequestImageMa
       .filter(Boolean)
       .join(" "),
   );
-  const objectFocus = inferObjectFocus(String(input.objectType ?? ""), String(input.objectSubtype ?? ""));
-  const persona = inferPersona(text, objectFocus, input.minRooms ?? null, input.maxRooms ?? null, input.minAreaSqm ?? null);
-  const environment = inferEnvironment(text, input.regionLabels ?? [], input.radiusKm ?? null);
   const genderPresentation = inferGenderPresentation(text);
+  const objectFocus = inferObjectFocus(String(input.objectType ?? ""), String(input.objectSubtype ?? ""));
+  const persona = inferPersona(text, genderPresentation, objectFocus, input.minRooms ?? null, input.maxRooms ?? null, input.minAreaSqm ?? null);
+  const environment = inferEnvironment(text, input.regionLabels ?? [], input.radiusKm ?? null);
   const style = inferStyle(text);
   const mood = inferMood(text, persona);
   const lifePhase = inferLifePhase(text, persona);
