@@ -93,7 +93,8 @@ const DEFAULT_REQUEST_IMAGE_ALT = "Symbolbild für Immobiliengesuch";
 
 const POSITIVE_SIGNAL_GROUPS = {
   investor: ["investor", "kapitalanlage", "rendite", "anlage", "mfh", "mehrfamilienhaus", "wohn und geschaeftshaus"],
-  seniorenpaar: ["senior", "ruhestand", "barrierearm", "barrierefrei", "altersgerecht", "aufzug"],
+  seniorenpaar: ["seniorenpaar", "aelteres ehepaar", "älteres ehepaar", "rentnerehepaar"],
+  senior: ["senior", "ruhestand", "barrierearm", "barrierefrei", "altersgerecht", "aufzug", "seniorentauglich", "seniorengerecht"],
   familie_3plus: ["3 kinder", "drei kinder", "groesse familie", "grosse familie", "mehrere kinder"],
   familie_2_kinder: ["2 kinder", "zwei kinder", "familie mit zwei kindern"],
   familie_1_kind: ["familie", "kind", "baby", "kinderzimmer", "familienfreundlich"],
@@ -157,7 +158,10 @@ function inferObjectFocus(objectType: string, objectSubtype: string): string[] {
 
 function inferPersona(text: string, objectFocus: string[], minRooms: number | null, maxRooms: number | null, minAreaSqm: number | null): string[] {
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.investor) > 0) return ["investor"];
-  if (countMatches(text, POSITIVE_SIGNAL_GROUPS.seniorenpaar) > 0) return ["seniorenpaar"];
+  const seniorPairMatches = countMatches(text, POSITIVE_SIGNAL_GROUPS.seniorenpaar);
+  const seniorMatches = countMatches(text, POSITIVE_SIGNAL_GROUPS.senior);
+  const pairMatches = countMatches(text, POSITIVE_SIGNAL_GROUPS.paar);
+  if (seniorPairMatches > 0 || (seniorMatches > 0 && pairMatches > 0)) return ["seniorenpaar"];
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.familie_3plus) > 0) return ["familie_3plus"];
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.familie_2_kinder) > 0) return ["familie_2_kinder"];
   if (countMatches(text, POSITIVE_SIGNAL_GROUPS.familie_1_kind) > 0) return ["familie_1_kind"];
