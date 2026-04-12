@@ -79,6 +79,7 @@ type LlmOptionApiRow = {
 };
 
 type WorkspaceTab = 'texts' | 'seo' | 'criteria';
+type RequestListFilter = 'all' | 'kauf' | 'miete';
 
 type RegionTarget = {
   city?: string;
@@ -214,6 +215,7 @@ export default function RequestsWorkspaceManager(props: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<OverrideRow | null>(null);
   const [query, setQuery] = useState('');
+  const [listFilter, setListFilter] = useState<RequestListFilter>('all');
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
@@ -304,7 +306,7 @@ export default function RequestsWorkspaceManager(props: Props) {
       setRows(nextRows);
       setOverrides(Array.isArray(payload?.overrides) ? payload.overrides : []);
       setSelectedId(nextRows[0]?.id ?? null);
-      setStatus('Gesuche geladen.');
+      setStatus('');
       setLoading(false);
     }
     void load();
@@ -312,15 +314,17 @@ export default function RequestsWorkspaceManager(props: Props) {
 
   const filteredRows = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return rows;
     return rows.filter((row) => {
       const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
+      const requestType = getPayloadText(payload, ['request_type']).toLowerCase();
+      if (listFilter !== 'all' && requestType !== listFilter) return false;
       const regions = getRegionTargetLabels(payload).join(' ');
       const description = getPayloadText(payload, ['description', 'short_description', 'long_description', 'title']);
       const haystack = `${row.title ?? ''} ${row.external_id} ${row.provider} ${regions} ${description}`.toLowerCase();
+      if (!term) return true;
       return haystack.includes(term);
     });
-  }, [rows, query]);
+  }, [listFilter, rows, query]);
 
   const selectedRow = useMemo(
     () => rows.find((row) => row.id === selectedId) ?? null,
@@ -402,9 +406,7 @@ export default function RequestsWorkspaceManager(props: Props) {
     if (error && String(error.message || '').includes('request_image_catalog_id')) {
       delete upsertPayload.request_image_catalog_id;
       ({ data, error } = await executeUpsert(upsertPayload));
-      if (!error) {
-        setStatus('Gesuch gespeichert. Hinweis: Die alternative Bildauswahl benötigt noch den SQL-Rollout für request_image_catalog_id.');
-      }
+      if (!error) setStatus('Die alternative Bildauswahl benötigt noch den SQL-Rollout für request_image_catalog_id.');
     }
     if (error) {
       setStatus(`Speichern fehlgeschlagen (partner_request_overrides): ${error.message}`);
@@ -430,7 +432,7 @@ export default function RequestsWorkspaceManager(props: Props) {
       setSaving(false);
       return;
     }
-    setStatus('Gesuch-Overrides gespeichert.');
+    setStatus('');
     setSaving(false);
   }
 
@@ -479,7 +481,7 @@ export default function RequestsWorkspaceManager(props: Props) {
       const next = { ...form, [key]: optimized };
       setForm(next);
       await saveOverride(next);
-      setStatus('KI-Optimierung gespeichert.');
+      setStatus('');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'KI-Optimierung fehlgeschlagen.');
     } finally {
@@ -740,6 +742,11 @@ export default function RequestsWorkspaceManager(props: Props) {
       <div style={{ display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' }}>
         <section style={panelStyle}>
           <h3 style={panelTitleStyle}>Gesuche</h3>
+          <div style={requestListFilterRowStyle}>
+            <button type="button" onClick={() => setListFilter('all')} style={requestListFilterButtonStyle(listFilter === 'all')}>Alles</button>
+            <button type="button" onClick={() => setListFilter('kauf')} style={requestListFilterButtonStyle(listFilter === 'kauf')}>Kauf</button>
+            <button type="button" onClick={() => setListFilter('miete')} style={requestListFilterButtonStyle(listFilter === 'miete')}>Miete</button>
+          </div>
           <input
             placeholder="Suchen..."
             value={query}
@@ -757,12 +764,8 @@ export default function RequestsWorkspaceManager(props: Props) {
                   style={offerRowStyle(selectedId === row.id)}
                 >
                   <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>{row.title || 'Gesuch'}</span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>{regionText || row.external_id}</span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    {getPayloadText(payload, ['request_type']) || '—'} · {getPayloadText(payload, ['object_type']) || '—'}
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#475569' }}>
-                    {getPayloadText(payload, ['description', 'short_description', 'long_description']).slice(0, 120) || 'Keine Beschreibung'}
+                  <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                    {`${getPayloadText(payload, ['request_type']) || '—'} · ${getPayloadText(payload, ['object_type']) || '—'} · ${regionText || row.external_id}`}
                   </span>
                 </button>
               );
@@ -774,7 +777,7 @@ export default function RequestsWorkspaceManager(props: Props) {
         </section>
 
         <section style={panelStyle}>
-          <p style={{ marginTop: 0, marginBottom: 10, fontSize: 12, color: '#334155' }}>{status}</p>
+          {status ? <p style={{ marginTop: 0, marginBottom: 10, fontSize: 12, color: '#b91c1c' }}>{status}</p> : null}
           {!form || !selectedRow ? (
             <div style={{ color: '#94a3b8' }}>Kein Gesuch ausgewählt.</div>
           ) : (
@@ -821,6 +824,12 @@ export default function RequestsWorkspaceManager(props: Props) {
                 </div>
                 <div style={{ display: 'grid', gap: '16px' }}>
                   <div style={offerSummaryTopCardStyle}>
+                    <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
+                    <div style={requestNoteBodyStyle}>
+                      {selectedNote || 'Keine CRM-Notiz vorhanden.'}
+                    </div>
+                  </div>
+                  <div style={offerSummaryTopCardStyle}>
                     <div style={offerSummaryHeaderStyle}>Suchkriterien</div>
                     <div style={offerSummaryGridStyle}>
                       <div>
@@ -854,15 +863,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                     </div>
                   </div>
                   <div style={offerSummaryTopCardStyle}>
-                    <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
-                    <div style={mediaSectionHintStyle}>Weiche Anforderungen und Hinweise aus Bemerkung/Notiz des CRM.</div>
-                    <div style={noteCardBodyStyle}>
-                      {selectedNote || 'Keine CRM-Notiz vorhanden.'}
-                    </div>
-                  </div>
-                  <div style={offerSummaryTopCardStyle}>
                     <div style={offerSummaryHeaderStyle}>Motiv-Match</div>
-                    <div style={mediaSectionHintStyle}>Zentrale Motivlogik fuer Portalpartner und Netzwerkpartner auf Basis von Kriterien und Notizsignalen.</div>
                     <div style={{ display: 'grid', gap: '10px' }}>
                       {effectiveRequestImagePreview?.imageUrl ? (
                         <div style={requestMatchPreviewWrapStyle}>
@@ -1488,10 +1489,10 @@ const mediaSectionHintStyle: CSSProperties = {
   marginBottom: '12px',
 };
 
-const noteCardBodyStyle: CSSProperties = {
+const requestNoteBodyStyle: CSSProperties = {
   color: '#334155',
-  fontSize: '13px',
-  lineHeight: 1.6,
+  fontSize: '12px',
+  lineHeight: 1.55,
   whiteSpace: 'pre-wrap',
 };
 
@@ -1565,4 +1566,22 @@ const imageChoiceResetButtonStyle = (active: boolean): CSSProperties => ({
   fontWeight: 600,
   cursor: 'pointer',
   textAlign: 'left',
+});
+
+const requestListFilterRowStyle: CSSProperties = {
+  display: 'flex',
+  gap: '8px',
+  flexWrap: 'wrap',
+  marginBottom: '10px',
+};
+
+const requestListFilterButtonStyle = (active: boolean): CSSProperties => ({
+  padding: '8px 12px',
+  borderRadius: '999px',
+  border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
+  backgroundColor: active ? '#ecfeff' : '#fff',
+  color: active ? '#0f172a' : '#475569',
+  fontSize: '12px',
+  fontWeight: 700,
+  cursor: 'pointer',
 });
