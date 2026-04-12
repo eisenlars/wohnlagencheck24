@@ -63,10 +63,10 @@
       "id": "seniorenpaar_urban_wohnung_01",
       "active": true,
       "review_status": "approved",
-      "asset_status": "planned",
+      "asset_status": "ready",
       "title": "Seniorenpaar urban",
-      "image_url": "/images/request-personas/seniorenpaar_urban_wohnung_01.jpg",
-      "thumbnail_url": "/images/request-personas/thumbs/seniorenpaar_urban_wohnung_01.jpg",
+      "image_url": "/images/requests/seniorenpaar_urban_wohnung_01.jpg",
+      "thumbnail_url": "/images/requests/seniorenpaar_urban_wohnung_01.jpg",
       "alt_template": "Aelteres Paar im urbanen Wohnumfeld",
       "tags": {
         "persona": ["seniorenpaar"],
@@ -81,7 +81,7 @@
       "negative_signals": ["familie_3plus", "anlage"],
       "priority": 0.92,
       "quality_score": 0.95,
-      "last_prompt": "Authentische Editorial-Fotografie fuer ein Immobilienportal. Aelteres Ehepaar in urbanem Wohnumfeld, passend zu hochwertiger Eigentumswohnung. Stil: ruhig, hochwertig, natuerlich, glaubwuerdig. Weiches Tageslicht, Querformat, Platz fuer Textoverlay. Keine Stockfoto-Anmutung, keine uebertriebenen Posen, keine Textelemente.",
+      "last_prompt": "Authentisches Bewerbungs-Fotomotiv fuer ein Immobiliengesuch in einem Immobilienportal. Seniorenpaar in urbanem Wohnumfeld, passend zu hochwertiger Eigentumswohnung. Stil: ruhig, hochwertig, natuerlich, glaubwuerdig. Weiches Tageslicht, Querformat, keine Stockfoto-Anmutung, keine uebertriebenen Posen, keine Textelemente.",
       "prompt_version": "v1",
       "generation_notes": "gute Gesichter, ruhige Architektur, overlay-freundlich"
     },
