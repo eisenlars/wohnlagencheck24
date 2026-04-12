@@ -200,7 +200,18 @@ function getAllowedContentTypesForLevel(routeLevel: PublicRouteLevel): NetworkCo
   return ["company_profile", "property_offer", "property_request"];
 }
 
-async function listPublicContentRows(areaId: string): Promise<PublicContentRow[]> {
+function toDistrictAreaId(areaId: string): string | null {
+  const normalized = asText(areaId);
+  if (!normalized) return null;
+  const parts = normalized.split("-");
+  if (parts.length <= 3) return normalized;
+  return parts.slice(0, 3).join("-");
+}
+
+async function listPublicContentRows(areaIds: string[]): Promise<PublicContentRow[]> {
+  const normalizedAreaIds = Array.from(new Set(areaIds.map((areaId) => asText(areaId)).filter(Boolean)));
+  if (normalizedAreaIds.length === 0) return [];
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("network_content_items")
@@ -225,7 +236,7 @@ async function listPublicContentRows(areaId: string): Promise<PublicContentRow[]
       "network_partners(company_name)",
       "network_partner_bookings(status)",
     ].join(", "))
-    .eq("area_id", areaId)
+    .in("area_id", normalizedAreaIds)
     .eq("status", "live")
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
@@ -296,8 +307,22 @@ export async function loadPublicNetworkContentForArea(args: {
   }
 
   const nowIso = new Date().toISOString();
-  const baseRows = (await listPublicContentRows(args.areaId))
+  const districtAreaId = args.routeLevel === "ort" ? toDistrictAreaId(args.areaId) : null;
+  const lookupAreaIds = districtAreaId && districtAreaId !== args.areaId
+    ? [args.areaId, districtAreaId]
+    : [args.areaId];
+
+  const baseRows = (await listPublicContentRows(lookupAreaIds))
     .filter((row) => allowedContentTypes.includes(row.content_type))
+    .filter((row) => {
+      if (row.content_type === "property_offer") {
+        return row.area_id === args.areaId;
+      }
+      if (row.content_type === "property_request" && args.routeLevel === "ort" && districtAreaId) {
+        return row.area_id === args.areaId || row.area_id === districtAreaId;
+      }
+      return row.area_id === args.areaId;
+    })
     .filter((row) => row.booking_status === "active")
     .filter((row) => !row.expires_at || row.expires_at > nowIso);
 
