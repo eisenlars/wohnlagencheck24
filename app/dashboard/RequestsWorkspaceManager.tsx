@@ -817,6 +817,15 @@ export default function RequestsWorkspaceManager(props: Props) {
                     <div style={offerSummaryHeaderStyle}>Motiv-Match</div>
                     <div style={mediaSectionHintStyle}>Zentrale Motivlogik fuer Portalpartner und Netzwerkpartner auf Basis von Kriterien und Notizsignalen.</div>
                     <div style={{ display: 'grid', gap: '10px' }}>
+                      {selectedImageMatch.primary?.imageUrl ? (
+                        <div style={requestMatchPreviewWrapStyle}>
+                          <img
+                            src={selectedImageMatch.primary.imageUrl}
+                            alt={selectedImageMatch.primary.alt || selectedImageMatch.primary.title}
+                            style={requestMatchPreviewImageStyle}
+                          />
+                        </div>
+                      ) : null}
                       <div>
                         <div style={offerSummaryLabelStyle}>Erkannte Persona</div>
                         <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
@@ -1403,4 +1412,18 @@ const noteCardBodyStyle: CSSProperties = {
   fontSize: '13px',
   lineHeight: 1.6,
   whiteSpace: 'pre-wrap',
+};
+
+const requestMatchPreviewWrapStyle: CSSProperties = {
+  borderRadius: '12px',
+  overflow: 'hidden',
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#e2e8f0',
+};
+
+const requestMatchPreviewImageStyle: CSSProperties = {
+  display: 'block',
+  width: '100%',
+  height: '180px',
+  objectFit: 'cover',
 };
