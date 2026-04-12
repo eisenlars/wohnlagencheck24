@@ -170,11 +170,11 @@ function buildDefaultForm(row: RawRequestRow, override?: OverrideRow | null): Ov
     partner_id: row.partner_id,
     source: row.provider,
     external_id: row.external_id,
-    seo_title: override?.seo_title ?? '',
+    seo_title: override?.seo_title ?? override?.seo_h1 ?? '',
     seo_description: override?.seo_description ?? '',
-    seo_h1: override?.seo_h1 ?? '',
-    short_description: override?.short_description ?? '',
-    long_description: override?.long_description ?? '',
+    seo_h1: override?.seo_h1 ?? override?.seo_title ?? '',
+    short_description: override?.short_description ?? override?.long_description ?? '',
+    long_description: override?.long_description ?? override?.short_description ?? '',
     location_text: override?.location_text ?? null,
     features_text: override?.features_text ?? null,
     highlights: override?.highlights ?? [],
@@ -353,9 +353,16 @@ export default function RequestsWorkspaceManager(props: Props) {
     if (!payload) return;
     setSaving(true);
     setStatus('Speichere Gesuch-Overrides...');
-    const normalizedTitle = String(payload.seo_h1 ?? payload.seo_title ?? '').trim();
+    const normalizedTitle = String(
+      payload.seo_h1 ?? payload.seo_title ?? selectedOverride?.seo_h1 ?? selectedOverride?.seo_title ?? '',
+    ).trim();
     const normalizedDescription = String(
-      payload.long_description ?? payload.short_description ?? payload.seo_description ?? '',
+      payload.long_description
+      ?? payload.short_description
+      ?? selectedOverride?.long_description
+      ?? selectedOverride?.short_description
+      ?? payload.seo_description
+      ?? '',
     ).trim();
     const normalizedSeoTitle = String(payload.seo_title ?? '').trim() || normalizedTitle;
     const normalizedSeoDescription = String(payload.seo_description ?? '').trim() || normalizedDescription;
