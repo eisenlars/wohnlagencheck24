@@ -597,7 +597,7 @@ const contentPanelStyle: React.CSSProperties = {
 };
 
 const contentPanelBareStyle: React.CSSProperties = {
-  margin: '18px 24px 24px',
+  margin: '18px 40px 24px',
   display: 'grid',
   gap: 18,
   alignContent: 'start',
