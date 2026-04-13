@@ -874,12 +874,6 @@ export default function RequestsWorkspaceManager(props: Props) {
                           </div>
                         </div>
                         <div style={offerSummaryTopCardStyle}>
-                          <div style={offerSummaryHeaderStyle}>CRM-Notiz</div>
-                          <div style={requestNoteBodyStyle}>
-                            {selectedNote || 'Keine CRM-Notiz vorhanden.'}
-                          </div>
-                        </div>
-                        <div style={offerSummaryTopCardStyle}>
                           <div style={offerSummaryHeaderStyle}>Suchkriterien</div>
                           <div style={offerSummaryGridStyle}>
                             <div>
@@ -917,6 +911,12 @@ export default function RequestsWorkspaceManager(props: Props) {
                       <div style={onlineCreateGridStyle}>
                         <div style={offerSummaryTopCardStyle}>
                           <div style={offerSummaryHeaderStyle}>Textbearbeitung</div>
+                          <div style={textSourceNoteCardStyle}>
+                            <div style={offerSummaryLabelStyle}>CRM-Notiz</div>
+                            <div style={requestNoteBodyStyle}>
+                              {selectedNote || 'Keine CRM-Notiz vorhanden.'}
+                            </div>
+                          </div>
                           <div style={workspaceTabsRowStyle}>
                             <button type="button" onClick={() => setActiveTab('texts')} style={workspaceTabStyle(activeTab === 'texts')}>
                               Texte
@@ -1679,18 +1679,31 @@ const modalCloseButtonStyle: CSSProperties = {
 
 const requestListFilterRowStyle: CSSProperties = {
   display: 'flex',
-  gap: '8px',
+  rowGap: '8px',
+  columnGap: '8px',
   flexWrap: 'wrap',
-  marginBottom: '10px',
+  marginTop: '10px',
+  marginBottom: '12px',
 };
 
 const requestListFilterButtonStyle = (active: boolean): CSSProperties => ({
-  padding: '8px 12px',
+  flex: '1 1 0%',
+  padding: '6px 8px',
   borderRadius: '999px',
-  border: `1px solid ${active ? '#16a34a' : '#cbd5e1'}`,
-  backgroundColor: active ? '#16a34a' : '#f1f5f9',
-  color: active ? '#ffffff' : '#475569',
+  border: `1px solid ${active ? 'rgb(72, 107, 122)' : 'rgb(226, 232, 240)'}`,
+  backgroundColor: active ? 'rgb(72, 107, 122)' : 'rgb(248, 250, 252)',
+  color: active ? 'rgb(255, 255, 255)' : 'rgb(30, 41, 59)',
   fontSize: '12px',
-  fontWeight: 700,
+  fontWeight: 600,
   cursor: 'pointer',
 });
+
+const textSourceNoteCardStyle: CSSProperties = {
+  border: '1px solid #e2e8f0',
+  borderRadius: '12px',
+  backgroundColor: '#ffffff',
+  padding: '12px',
+  marginBottom: '14px',
+  display: 'grid',
+  gap: '8px',
+};
