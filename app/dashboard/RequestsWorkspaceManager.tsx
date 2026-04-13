@@ -80,6 +80,7 @@ type LlmOptionApiRow = {
 
 type WorkspaceTab = 'texts' | 'seo';
 type RequestListFilter = 'all' | 'haus' | 'wohnung';
+const REQUEST_LIST_PAGE_SIZE = 10;
 
 type RegionTarget = {
   city?: string;
@@ -161,23 +162,42 @@ function getRegionTargetLabels(payload: Record<string, unknown>): string[] {
     const city = String(target.city ?? '').trim();
     const district = String(target.district ?? '').trim();
     const label = String(target.label ?? '').trim();
-    const value = [city, district].filter(Boolean).join(' ') || label;
+    const value = label && !normalizeText(label).startsWith('umkreis')
+      ? label
+      : [city, district].filter(Boolean).join(' ');
     if (value) labels.push(value);
   }
-  return labels;
+  return dedupe(labels);
+}
+
+function getRangeCenterOrtLabel(payload: Record<string, unknown>): string {
+  const rangeCenter = (payload.range_center as Record<string, unknown> | null) ?? null;
+  return getPayloadText(rangeCenter ?? {}, ['ort', 'city']) || getPayloadText(payload, ['region', 'city', 'ort']);
+}
+
+function getRangeCenterFullLabel(payload: Record<string, unknown>): string {
+  const rangeCenter = (payload.range_center as Record<string, unknown> | null) ?? null;
+  const ort = getPayloadText(rangeCenter ?? {}, ['ort', 'city']) || getPayloadText(payload, ['region', 'city', 'ort']);
+  const plz = getPayloadText(rangeCenter ?? {}, ['plz', 'zip_code', 'postal_code'])
+    || getPayloadText(payload, ['zip_code', 'postal_code', 'plz']);
+  return [ort, plz].filter(Boolean).join(' ');
+}
+
+function getTargetRegionLabel(payload: Record<string, unknown>): string {
+  const regionLabels = getRegionTargetLabels(payload);
+  if (regionLabels.length > 0) return regionLabels.join(', ');
+  return getRangeCenterFullLabel(payload) || '—';
+}
+
+function getRadiusContextLabel(payload: Record<string, unknown>): string {
+  const radius = asNumber(payload.radius_km);
+  if (radius == null) return '—';
+  const ort = getRangeCenterOrtLabel(payload);
+  return ort ? `Umkreis ${radius} km um ${ort}` : `${radius} km`;
 }
 
 function getCompactLocationLabel(payload: Record<string, unknown>): string {
-  const rangeCenter = (payload.range_center as Record<string, unknown> | null) ?? null;
-  const ort = getPayloadText(payload, ['region', 'city', 'ort'])
-    || getPayloadText(rangeCenter ?? {}, ['ort', 'city']);
-  const plz = getPayloadText(payload, ['zip_code', 'postal_code', 'plz'])
-    || getPayloadText(rangeCenter ?? {}, ['plz', 'zip_code', 'postal_code']);
-  const compact = [ort, plz].filter(Boolean).join(' ');
-  if (compact) return compact;
-  const firstRegionTarget = getRegionTargetLabels(payload)[0];
-  if (firstRegionTarget) return firstRegionTarget;
-  return '—';
+  return getTargetRegionLabel(payload);
 }
 
 function buildDefaultForm(row: RawRequestRow, override?: OverrideRow | null): OverrideRow {
@@ -229,6 +249,7 @@ export default function RequestsWorkspaceManager(props: Props) {
   const [form, setForm] = useState<OverrideRow | null>(null);
   const [query, setQuery] = useState('');
   const [listFilter, setListFilter] = useState<RequestListFilter>('all');
+  const [listPage, setListPage] = useState(1);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
   const [imageInfoOpen, setImageInfoOpen] = useState(false);
   const [imageSelectionStatus, setImageSelectionStatus] = useState<string | null>(null);
@@ -341,6 +362,10 @@ export default function RequestsWorkspaceManager(props: Props) {
       return haystack.includes(term);
     });
   }, [listFilter, rows, query]);
+
+  useEffect(() => {
+    setListPage(1);
+  }, [listFilter, query, rows.length]);
 
   const selectedRow = useMemo(
     () => rows.find((row) => row.id === selectedId) ?? null,
@@ -630,7 +655,7 @@ export default function RequestsWorkspaceManager(props: Props) {
   const selectedAreaMax = asNumber(selectedPayload.max_area_sqm) ?? asNumber(selectedPayload.max_living_area_sqm);
   const selectedBudgetMin = asNumber(selectedPayload.min_price);
   const selectedBudget = asNumber(selectedPayload.max_price) ?? asNumber(selectedPayload.max_purchase_price) ?? asNumber(selectedPayload.max_rent);
-  const selectedLocation = getRegionTargetLabels(selectedPayload).join(', ') || getPayloadText(selectedPayload, ['region']) || '—';
+  const selectedLocation = getTargetRegionLabel(selectedPayload);
   const selectedUpdatedAt = selectedRow?.source_updated_at ?? selectedRow?.updated_at ?? null;
   const selectedRadius = asNumber(selectedPayload.radius_km);
   const selectedSubtypes = getPayloadList(selectedPayload, 'object_subtypes');
@@ -644,7 +669,7 @@ export default function RequestsWorkspaceManager(props: Props) {
     selectedAreaMin != null || selectedAreaMax != null
       ? `${selectedAreaMin ?? '—'} bis ${selectedAreaMax ?? '—'} m²`
       : '—';
-  const selectedRadiusLabel = selectedRadius != null ? `${selectedRadius} km` : '—';
+  const selectedRadiusLabel = getRadiusContextLabel(selectedPayload);
   const selectedSubtypeLabel = getPayloadText(selectedPayload, ['object_subtype']) || selectedSubtypes.join(', ') || '—';
   const selectedFactsPromptText = [
     `Vermarktung: ${selectedMarketing}`,
@@ -656,6 +681,12 @@ export default function RequestsWorkspaceManager(props: Props) {
     `Radius: ${selectedRadiusLabel}`,
     `Zielregionen: ${selectedLocation}`,
   ].join(' | ');
+  const listPageCount = Math.max(1, Math.ceil(filteredRows.length / REQUEST_LIST_PAGE_SIZE));
+  const currentListPage = Math.min(listPage, listPageCount);
+  const pagedRows = filteredRows.slice(
+    (currentListPage - 1) * REQUEST_LIST_PAGE_SIZE,
+    currentListPage * REQUEST_LIST_PAGE_SIZE,
+  );
   const selectedImageMatch = useMemo(
     () =>
       matchRequestImage({
@@ -797,7 +828,7 @@ export default function RequestsWorkspaceManager(props: Props) {
             <button type="button" onClick={() => setListFilter('wohnung')} style={requestListFilterButtonStyle(listFilter === 'wohnung')}>Wohnung</button>
           </div>
           <div style={{ maxHeight: '60vh', overflowY: 'auto', marginTop: '12px' }}>
-            {filteredRows.map((row) => {
+            {pagedRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
               const rowOverride = overrides.find(
                 (entry) =>
@@ -830,6 +861,29 @@ export default function RequestsWorkspaceManager(props: Props) {
               <div style={{ color: '#94a3b8', fontSize: '13px' }}>Keine Gesuche gefunden.</div>
             ) : null}
           </div>
+          {filteredRows.length > REQUEST_LIST_PAGE_SIZE ? (
+            <div style={requestListPagerStyle}>
+              <button
+                type="button"
+                style={requestListPagerButtonStyle(currentListPage <= 1)}
+                disabled={currentListPage <= 1}
+                onClick={() => setListPage((prev) => Math.max(1, prev - 1))}
+              >
+                Zurück
+              </button>
+              <span style={requestListPagerLabelStyle}>
+                Seite {currentListPage} / {listPageCount}
+              </span>
+              <button
+                type="button"
+                style={requestListPagerButtonStyle(currentListPage >= listPageCount)}
+                disabled={currentListPage >= listPageCount}
+                onClick={() => setListPage((prev) => Math.min(listPageCount, prev + 1))}
+              >
+                Weiter
+              </button>
+            </div>
+          ) : null}
         </section>
 
         <section style={panelStyle}>
@@ -904,6 +958,10 @@ export default function RequestsWorkspaceManager(props: Props) {
                             <div>
                               <div style={offerSummaryLabelStyle}>Zimmer</div>
                               <div style={offerSummaryValueStyle}>{selectedRoomsLabel}</div>
+                            </div>
+                            <div>
+                              <div style={offerSummaryLabelStyle}>Umkreis</div>
+                              <div style={offerSummaryValueStyle}>{selectedRadiusLabel}</div>
                             </div>
                             <div>
                               <div style={offerSummaryLabelStyle}>Zielregionen</div>
@@ -1721,6 +1779,32 @@ const requestListFilterButtonStyle = (active: boolean): CSSProperties => ({
   fontWeight: 600,
   cursor: 'pointer',
 });
+
+const requestListPagerStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '10px',
+  marginTop: '12px',
+};
+
+const requestListPagerButtonStyle = (disabled: boolean): CSSProperties => ({
+  padding: '7px 10px',
+  borderRadius: '10px',
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#fff',
+  color: '#334155',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.5 : 1,
+});
+
+const requestListPagerLabelStyle: CSSProperties = {
+  fontSize: '12px',
+  color: '#64748b',
+  fontWeight: 600,
+};
 
 const textSourceNoteCardStyle: CSSProperties = {
   border: '1px solid #e2e8f0',
