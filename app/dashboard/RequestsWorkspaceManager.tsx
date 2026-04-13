@@ -78,7 +78,7 @@ type LlmOptionApiRow = {
   global_provider_id?: string | null;
 };
 
-type WorkspaceTab = 'texts' | 'seo' | 'criteria';
+type WorkspaceTab = 'seo' | 'criteria';
 type RequestListFilter = 'all' | 'kauf' | 'miete';
 
 type RegionTarget = {
@@ -229,7 +229,7 @@ export default function RequestsWorkspaceManager(props: Props) {
   const [form, setForm] = useState<OverrideRow | null>(null);
   const [query, setQuery] = useState('');
   const [listFilter, setListFilter] = useState<RequestListFilter>('all');
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('seo');
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
@@ -691,6 +691,9 @@ export default function RequestsWorkspaceManager(props: Props) {
         title: selectedRequestImageOverride.title,
       }
     : selectedImageMatch.primary;
+  const currentRequestTitle = asText(form?.seo_h1) || asText(form?.seo_title);
+  const currentRequestDescription = asText(form?.long_description) || asText(form?.short_description);
+  const canSaveRequest = Boolean(currentRequestTitle && currentRequestDescription);
 
   async function applyRequestImageSelection(catalogId: string | null) {
     if (!form) return;
@@ -893,9 +896,22 @@ export default function RequestsWorkspaceManager(props: Props) {
                     <div style={workspaceSectionStyle}>
                       <div style={workspaceSectionHeaderStyle}>Online-Gesuch erstellen</div>
                       <div style={workspaceSectionSublineStyle}>Hier werden Motiv, Titel und Beschreibung für das öffentliche Gesuch kuratiert.</div>
-                      <div style={{ display: 'grid', gap: '16px' }}>
+                      <div style={onlineCreateGridStyle}>
                         <div style={offerSummaryTopCardStyle}>
-                          <div style={offerSummaryHeaderStyle}>Motiv-Match</div>
+                          <div style={offerSummaryHeaderStyle}>Textbearbeitung</div>
+                          <div style={{ display: 'grid', gap: '18px' }}>
+                            {renderTextField('Gesuch-Titel', 'seo_h1', {
+                              multiline: false,
+                              placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                            })}
+                            {renderTextField('Beschreibung', 'long_description', {
+                              multiline: true,
+                              placeholder: 'Beschreibung wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                            })}
+                          </div>
+                        </div>
+                        <div style={offerSummaryTopCardStyle}>
+                          <div style={offerSummaryHeaderStyle}>Motivwahl</div>
                           <div style={{ display: 'grid', gap: '10px' }}>
                             {effectiveRequestImagePreview?.imageUrl ? (
                               <div style={requestMatchPreviewWrapStyle}>
@@ -961,15 +977,47 @@ export default function RequestsWorkspaceManager(props: Props) {
                           </div>
                         </div>
                       </div>
+                      <div style={offerSummaryTopCardStyle}>
+                        <div style={offerSummaryHeaderStyle}>Gesuch-Zusammenfassung vor Speichern</div>
+                        <div style={requestSummaryGridStyle}>
+                          <div style={{ display: 'grid', gap: '14px' }}>
+                            <div style={contentPreviewCardStyle}>
+                              <div style={contentPreviewLabelStyle}>Gesuch-Titel</div>
+                              <div style={contentPreviewBodyStyle}>{currentRequestTitle || 'Kein Gesuch-Titel gepflegt.'}</div>
+                            </div>
+                            <div style={contentPreviewCardStyle}>
+                              <div style={contentPreviewLabelStyle}>Beschreibung</div>
+                              <div style={contentPreviewBodyStyle}>{currentRequestDescription || 'Keine Beschreibung gepflegt.'}</div>
+                            </div>
+                          </div>
+                          <div style={contentPreviewCardStyle}>
+                            <div style={contentPreviewLabelStyle}>Motiv</div>
+                            {effectiveRequestImagePreview?.imageUrl ? (
+                              <div style={{ display: 'grid', gap: '10px' }}>
+                                <div style={requestMatchPreviewWrapStyle}>
+                                  <img
+                                    src={effectiveRequestImagePreview.imageUrl}
+                                    alt={effectiveRequestImagePreview.alt || effectiveRequestImagePreview.title}
+                                    style={requestMatchPreviewImageStyle}
+                                  />
+                                </div>
+                                <div style={contentPreviewBodyStyle}>{effectiveRequestImagePreview.title || 'Motiv gewählt'}</div>
+                              </div>
+                            ) : (
+                              <div style={contentPreviewBodyStyle}>Kein Motiv gewählt.</div>
+                            )}
+                          </div>
+                        </div>
+                        <button onClick={() => void saveOverride()} disabled={saving || !canSaveRequest} style={primaryButtonStyle(saving || !canSaveRequest)}>
+                          {saving ? 'Speichern...' : 'Gesuch speichern'}
+                        </button>
+                      </div>
                     </div>
                   </>
                 );
               })()}
 
               <div style={workspaceTabsRowStyle}>
-                <button type="button" onClick={() => setActiveTab('texts')} style={workspaceTabStyle(activeTab === 'texts')}>
-                  Texte
-                </button>
                 <button type="button" onClick={() => setActiveTab('seo')} style={workspaceTabStyle(activeTab === 'seo')}>
                   SEO / GEO
                 </button>
@@ -977,36 +1025,6 @@ export default function RequestsWorkspaceManager(props: Props) {
                   Suchkriterien
                 </button>
               </div>
-
-              {activeTab === 'texts' ? (
-                <>
-                  <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
-                    {renderTextField('Gesuch-Titel', 'seo_h1', {
-                      multiline: false,
-                      placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                    })}
-                    {renderTextField('Beschreibung', 'long_description', {
-                      multiline: true,
-                      placeholder: 'Beschreibung wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                    })}
-                  </div>
-
-                  <div style={contentPreviewGridStyle}>
-                    <div style={contentPreviewCardStyle}>
-                      <div style={contentPreviewLabelStyle}>Gesuch-Titel</div>
-                      <div style={contentPreviewBodyStyle}>{form.seo_h1 || 'Kein Gesuch-Titel gepflegt.'}</div>
-                    </div>
-                    <div style={contentPreviewCardStyle}>
-                      <div style={contentPreviewLabelStyle}>Beschreibung</div>
-                      <div style={contentPreviewBodyStyle}>{form.long_description || 'Keine Beschreibung gepflegt.'}</div>
-                    </div>
-                  </div>
-
-                  <button onClick={() => void saveOverride()} disabled={saving} style={primaryButtonStyle}>
-                    {saving ? 'Speichern...' : 'Texte speichern'}
-                  </button>
-                </>
-              ) : null}
 
               {activeTab === 'seo' ? (
                 <>
@@ -1041,9 +1059,6 @@ export default function RequestsWorkspaceManager(props: Props) {
                     </div>
                   </div>
 
-                  <button onClick={() => void saveOverride()} disabled={saving} style={primaryButtonStyle}>
-                    {saving ? 'Speichern...' : 'SEO / GEO speichern'}
-                  </button>
                 </>
               ) : null}
 
@@ -1411,15 +1426,16 @@ const requestListStatusDotStyle = (active: boolean): CSSProperties => ({
   marginTop: '3px',
 });
 
-const primaryButtonStyle: CSSProperties = {
+const primaryButtonStyle = (disabled = false): CSSProperties => ({
   padding: '10px 14px',
   borderRadius: '10px',
   border: 'none',
-  backgroundColor: '#0f172a',
+  backgroundColor: disabled ? '#94a3b8' : '#0f172a',
   color: '#fff',
   fontWeight: 600,
-  cursor: 'pointer',
-};
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.7 : 1,
+});
 
 const previewCardStyle: CSSProperties = {
   backgroundColor: '#f8fafc',
@@ -1429,10 +1445,10 @@ const previewCardStyle: CSSProperties = {
   marginBottom: '16px',
 };
 
-const contentPreviewGridStyle: CSSProperties = {
+const requestSummaryGridStyle: CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: '14px',
+  gridTemplateColumns: 'minmax(0, 1.2fr) minmax(280px, 0.8fr)',
+  gap: '16px',
   marginBottom: '16px',
 };
 
@@ -1463,6 +1479,12 @@ const offerSummaryTopStackStyle: CSSProperties = {
   display: 'grid',
   gap: '16px',
   marginBottom: '16px',
+};
+
+const onlineCreateGridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1.2fr) minmax(320px, 0.8fr)',
+  gap: '16px',
 };
 
 const offerSummaryTopCardStyle: CSSProperties = {
