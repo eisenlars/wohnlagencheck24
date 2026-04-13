@@ -28,6 +28,8 @@ type NetworkPartnerShellProps = {
   centerHeaderContent?: boolean;
   hideHeaderLabel?: boolean;
   hideHeaderMeta?: boolean;
+  hideContentHeader?: boolean;
+  surfacelessContent?: boolean;
   children: ReactNode;
 };
 
@@ -157,6 +159,8 @@ export default function NetworkPartnerShell({
   centerHeaderContent = false,
   hideHeaderLabel = false,
   hideHeaderMeta = false,
+  hideContentHeader = false,
+  surfacelessContent = false,
   children,
 }: NetworkPartnerShellProps) {
   const router = useRouter();
@@ -312,24 +316,26 @@ export default function NetworkPartnerShell({
         )}
 
         <main style={contentStageStyle}>
-          <section style={contentHeaderStyle}>
-            <div style={contentHeaderTextBlockStyle(centerHeaderContent)}>
-              {hideHeaderLabel ? null : <span style={contentLabelStyle(centerHeaderContent)}>Netzwerkpartner-Bereich</span>}
-              <h1 style={{ margin: 0, color: '#0f172a', fontSize: 28, lineHeight: 1.2 }}>{title}</h1>
-              <p style={contentDescriptionStyle(centerHeaderContent)}>
-                {description}
-              </p>
-            </div>
-            {hideHeaderMeta ? null : (
-              <div style={contentMetaRowStyle}>
-                <span style={contentMetaBadgeStyle}>{networkPartner?.company_name ?? 'Netzwerkpartner'}</span>
-                <span style={contentMetaTextStyle}>Rolle: {role ?? '—'}</span>
-                <span style={contentMetaTextStyle}>Status: {networkPartner?.status ?? '—'}</span>
+          {hideContentHeader ? null : (
+            <section style={contentHeaderStyle}>
+              <div style={contentHeaderTextBlockStyle(centerHeaderContent)}>
+                {hideHeaderLabel ? null : <span style={contentLabelStyle(centerHeaderContent)}>Netzwerkpartner-Bereich</span>}
+                <h1 style={{ margin: 0, color: '#0f172a', fontSize: 28, lineHeight: 1.2 }}>{title}</h1>
+                <p style={contentDescriptionStyle(centerHeaderContent)}>
+                  {description}
+                </p>
               </div>
-            )}
-          </section>
+              {hideHeaderMeta ? null : (
+                <div style={contentMetaRowStyle}>
+                  <span style={contentMetaBadgeStyle}>{networkPartner?.company_name ?? 'Netzwerkpartner'}</span>
+                  <span style={contentMetaTextStyle}>Rolle: {role ?? '—'}</span>
+                  <span style={contentMetaTextStyle}>Status: {networkPartner?.status ?? '—'}</span>
+                </div>
+              )}
+            </section>
+          )}
 
-          <section style={contentPanelStyle}>
+          <section style={surfacelessContent ? contentPanelBareStyle : contentPanelStyle}>
             {children}
           </section>
         </main>
@@ -585,6 +591,13 @@ const contentPanelStyle: React.CSSProperties = {
   borderRadius: '18px',
   background: '#fff',
   padding: '24px',
+  display: 'grid',
+  gap: 18,
+  alignContent: 'start',
+};
+
+const contentPanelBareStyle: React.CSSProperties = {
+  margin: '18px 24px 24px',
   display: 'grid',
   gap: 18,
   alignContent: 'start',
