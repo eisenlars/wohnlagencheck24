@@ -70,6 +70,7 @@ create table if not exists public.public_request_entries (
   features_text text,
   highlights jsonb not null default '[]'::jsonb,
   image_alt_texts jsonb not null default '[]'::jsonb,
+  request_image_catalog_id text,
   min_rooms numeric,
   max_rooms numeric,
   min_area_sqm numeric,

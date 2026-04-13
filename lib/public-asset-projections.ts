@@ -8,6 +8,7 @@ import {
   loadReportPostalLookupForDistricts,
   normalizePostalCode,
 } from "@/lib/report-postal-lookup";
+import { getRequestImageCatalogItemById } from "@/lib/request-image-matching";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 type AdminClient = ReturnType<typeof createAdminClient>;
@@ -107,6 +108,7 @@ type RequestOverrideRow = {
   partner_id?: string | null;
   source?: string | null;
   external_id?: string | null;
+  request_image_catalog_id?: string | null;
   status?: string | null;
   seo_title?: string | null;
   seo_description?: string | null;
@@ -1003,7 +1005,7 @@ export async function rebuildPublicRequestEntriesForPartner(
       .eq("is_active", true),
     admin
       .from("partner_request_overrides")
-      .select("partner_id, source, external_id, status, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts")
+      .select("partner_id, source, external_id, request_image_catalog_id, status, seo_title, seo_description, seo_h1, short_description, long_description, location_text, features_text, highlights, image_alt_texts")
       .eq("partner_id", partnerId),
     admin
       .from("partner_request_i18n")
@@ -1054,6 +1056,8 @@ export async function rebuildPublicRequestEntriesForPartner(
       ?? asNullableText(payload["short_description"]);
     const overrideTitle = asNullableText(override?.seo_h1) ?? asNullableText(override?.seo_title);
     const overrideDescription = asNullableText(override?.long_description) ?? asNullableText(override?.short_description);
+    const requestImageCatalogId = asNullableText(override?.request_image_catalog_id);
+    const requestImageOverride = getRequestImageCatalogItemById(requestImageCatalogId);
     const isRequestReady = Boolean(
       overrideTitle &&
       overrideDescription &&
@@ -1086,6 +1090,7 @@ export async function rebuildPublicRequestEntriesForPartner(
         features_text: asNullableText(override?.features_text),
         highlights: asArrayJson(override?.highlights),
         image_alt_texts: asArrayJson(override?.image_alt_texts),
+        request_image_catalog_id: requestImageOverride?.id ?? null,
         min_rooms: minRooms,
         max_rooms: maxRooms,
         min_area_sqm: minAreaSqm,
@@ -1127,6 +1132,7 @@ export async function rebuildPublicRequestEntriesForPartner(
           features_text: asNullableText(translation.translated_features_text),
           highlights: asArrayJson(translation.translated_highlights),
           image_alt_texts: asArrayJson(translation.translated_image_alt_texts),
+          request_image_catalog_id: requestImageOverride?.id ?? null,
           min_rooms: minRooms,
           max_rooms: maxRooms,
           min_area_sqm: minAreaSqm,
@@ -1168,6 +1174,7 @@ export async function rebuildPublicRequestEntriesForPartner(
       "features_text",
       "highlights",
       "image_alt_texts",
+      "request_image_catalog_id",
       "min_rooms",
       "max_rooms",
       "min_area_sqm",

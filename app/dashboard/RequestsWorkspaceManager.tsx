@@ -230,6 +230,8 @@ export default function RequestsWorkspaceManager(props: Props) {
   const [query, setQuery] = useState('');
   const [listFilter, setListFilter] = useState<RequestListFilter>('all');
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
+  const [imageInfoOpen, setImageInfoOpen] = useState(false);
+  const [pendingRequestImageSelectionId, setPendingRequestImageSelectionId] = useState<string | null>(null);
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
@@ -684,13 +686,29 @@ export default function RequestsWorkspaceManager(props: Props) {
     () => readyRequestImageChoices.find((item) => item.id === selectedRequestImageOverrideId) ?? null,
     [readyRequestImageChoices, selectedRequestImageOverrideId],
   );
-  const effectiveRequestImagePreview = selectedRequestImageOverride
+  useEffect(() => {
+    setPendingRequestImageSelectionId(selectedRequestImageOverrideId || null);
+  }, [selectedRequestImageOverrideId, selectedId]);
+
+  const pendingRequestImageOverride = useMemo(
+    () => readyRequestImageChoices.find((item) => item.id === pendingRequestImageSelectionId) ?? null,
+    [pendingRequestImageSelectionId, readyRequestImageChoices],
+  );
+  const effectiveRequestImagePreview = pendingRequestImageOverride
+    ? {
+        imageUrl: pendingRequestImageOverride.image_url,
+        alt: pendingRequestImageOverride.alt_template,
+        title: pendingRequestImageOverride.title,
+      }
+    : selectedRequestImageOverride
     ? {
         imageUrl: selectedRequestImageOverride.image_url,
         alt: selectedRequestImageOverride.alt_template,
         title: selectedRequestImageOverride.title,
       }
     : selectedImageMatch.primary;
+  const hasPendingManualImageSelection = Boolean(pendingRequestImageSelectionId);
+  const hasPendingImageSelectionChange = (pendingRequestImageSelectionId ?? null) !== (selectedRequestImageOverrideId || null);
   const currentRequestTitle = asText(form?.seo_h1) || asText(form?.seo_title);
   const currentRequestDescription = asText(form?.long_description) || asText(form?.short_description);
   const canSaveRequest = Boolean(currentRequestTitle && currentRequestDescription);
@@ -947,7 +965,12 @@ export default function RequestsWorkspaceManager(props: Props) {
                           ) : null}
                         </div>
                         <div style={offerSummaryTopCardStyle}>
-                          <div style={offerSummaryHeaderStyle}>Motivwahl</div>
+                          <div style={cardHeaderRowStyle}>
+                            <div style={offerSummaryHeaderStyle}>Motivwahl</div>
+                            <button type="button" onClick={() => setImageInfoOpen(true)} style={infoLinkButtonStyle}>
+                              Info
+                            </button>
+                          </div>
                           <div style={{ display: 'grid', gap: '10px' }}>
                             {effectiveRequestImagePreview?.imageUrl ? (
                               <div style={requestMatchPreviewWrapStyle}>
@@ -958,46 +981,17 @@ export default function RequestsWorkspaceManager(props: Props) {
                                 />
                               </div>
                             ) : null}
-                            <div>
-                              <div style={offerSummaryLabelStyle}>Erkannte Persona</div>
-                              <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
-                            </div>
-                            <div>
-                              <div style={offerSummaryLabelStyle}>Umfeld</div>
-                              <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.environment.join(', ') || '—'}</div>
-                            </div>
-                            <div>
-                              <div style={offerSummaryLabelStyle}>Signale</div>
-                              <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.signals.slice(0, 6).join(', ') || '—'}</div>
-                            </div>
-                            <div>
-                              <div style={offerSummaryLabelStyle}>Gematchtes Motiv</div>
-                              <div style={offerSummaryValueStyle}>
-                                {selectedRequestImageOverride
-                                  ? `Manuell gewählt: ${selectedRequestImageOverride.title}`
-                                  : selectedImageMatch.primary
-                                    ? `${selectedImageMatch.primary.title} (${selectedImageMatch.primary.score})`
-                                    : 'Kein Motiv gefunden'}
-                              </div>
-                            </div>
                             <div style={{ display: 'grid', gap: '10px' }}>
                               <div style={offerSummaryLabelStyle}>Alternative Bildauswahl</div>
-                              <button
-                                type="button"
-                                style={imageChoiceResetButtonStyle(!selectedRequestImageOverride)}
-                                onClick={() => void applyRequestImageSelection(null)}
-                              >
-                                Automatisches Matching nutzen
-                              </button>
                               <div style={imageChoiceGridStyle}>
                                 {readyRequestImageChoices.map((item) => {
-                                  const active = selectedRequestImageOverride?.id === item.id;
+                                  const active = pendingRequestImageSelectionId === item.id;
                                   return (
                                     <button
                                       key={item.id}
                                       type="button"
                                       style={imageChoiceCardStyle(active)}
-                                      onClick={() => void applyRequestImageSelection(item.id)}
+                                      onClick={() => setPendingRequestImageSelectionId(item.id)}
                                     >
                                       <img
                                         src={item.thumbnail_url || item.image_url}
@@ -1008,6 +1002,27 @@ export default function RequestsWorkspaceManager(props: Props) {
                                     </button>
                                   );
                                 })}
+                              </div>
+                              <div style={imageChoiceActionsRowStyle}>
+                                <button
+                                  type="button"
+                                  style={imageChoicePrimaryButtonStyle(!hasPendingManualImageSelection || !hasPendingImageSelectionChange)}
+                                  disabled={!hasPendingManualImageSelection || !hasPendingImageSelectionChange}
+                                  onClick={() => void applyRequestImageSelection(pendingRequestImageSelectionId)}
+                                >
+                                  Bild wählen
+                                </button>
+                                <button
+                                  type="button"
+                                  style={imageChoiceResetButtonStyle(!selectedRequestImageOverride && !pendingRequestImageSelectionId)}
+                                  disabled={!selectedRequestImageOverride && !pendingRequestImageSelectionId}
+                                  onClick={() => {
+                                    setPendingRequestImageSelectionId(null);
+                                    void applyRequestImageSelection(null);
+                                  }}
+                                >
+                                  Automatisches Matching
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -1057,6 +1072,40 @@ export default function RequestsWorkspaceManager(props: Props) {
           )}
         </section>
       </div>
+      {imageInfoOpen ? (
+        <div style={modalOverlayStyle} role="dialog" aria-modal="true">
+          <div style={modalCardStyle}>
+            <div style={cardHeaderRowStyle}>
+              <div style={offerSummaryHeaderStyle}>Matching-Info</div>
+              <button type="button" onClick={() => setImageInfoOpen(false)} style={modalCloseButtonStyle}>
+                Schließen
+              </button>
+            </div>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              <div>
+                <div style={offerSummaryLabelStyle}>Erkannte Persona</div>
+                <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.persona.join(', ') || '—'}</div>
+              </div>
+              <div>
+                <div style={offerSummaryLabelStyle}>Umfeld</div>
+                <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.environment.join(', ') || '—'}</div>
+              </div>
+              <div>
+                <div style={offerSummaryLabelStyle}>Signale</div>
+                <div style={offerSummaryValueStyle}>{selectedImageMatch.profile.signals.slice(0, 6).join(', ') || '—'}</div>
+              </div>
+              <div>
+                <div style={offerSummaryLabelStyle}>Gematchtes Motiv</div>
+                <div style={offerSummaryValueStyle}>
+                  {selectedImageMatch.primary
+                    ? `${selectedImageMatch.primary.title} (${selectedImageMatch.primary.score})`
+                    : 'Kein Motiv gefunden'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1563,7 +1612,70 @@ const imageChoiceResetButtonStyle = (active: boolean): CSSProperties => ({
   fontWeight: 600,
   cursor: 'pointer',
   textAlign: 'left',
+  opacity: active ? 0.7 : 1,
 });
+
+const imageChoicePrimaryButtonStyle = (disabled: boolean): CSSProperties => ({
+  padding: '9px 12px',
+  borderRadius: '10px',
+  border: '1px solid transparent',
+  backgroundColor: disabled ? '#94a3b8' : '#486b7a',
+  color: '#fff',
+  fontSize: '12px',
+  fontWeight: 700,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  opacity: disabled ? 0.7 : 1,
+});
+
+const imageChoiceActionsRowStyle: CSSProperties = {
+  display: 'flex',
+  gap: '10px',
+  justifyContent: 'flex-end',
+  flexWrap: 'wrap',
+};
+
+const infoLinkButtonStyle: CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  color: '#486b7a',
+  fontSize: '12px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  padding: 0,
+};
+
+const modalOverlayStyle: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  backgroundColor: 'rgba(15, 23, 42, 0.45)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '24px',
+  zIndex: 70,
+};
+
+const modalCardStyle: CSSProperties = {
+  width: 'min(520px, 100%)',
+  borderRadius: '16px',
+  backgroundColor: '#fff',
+  border: '1px solid #e2e8f0',
+  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)',
+  padding: '18px',
+  display: 'grid',
+  gap: '14px',
+};
+
+const modalCloseButtonStyle: CSSProperties = {
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#fff',
+  color: '#334155',
+  borderRadius: '10px',
+  padding: '8px 12px',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
 
 const requestListFilterRowStyle: CSSProperties = {
   display: 'flex',

@@ -315,6 +315,13 @@ export function getRequestImageCatalog(): RequestImageCatalog {
   return catalog;
 }
 
+export function getRequestImageCatalogItemById(catalogId: string | null | undefined): RequestImageCatalogItem | null {
+  const id = String(catalogId ?? "").trim();
+  if (!id) return null;
+  const item = catalog.items.find((entry) => entry.id === id && entry.active);
+  return item ?? null;
+}
+
 export function matchRequestImage(input: RequestImageMatchInput): RequestImageMatchResult {
   const text = normalizeText(
     [

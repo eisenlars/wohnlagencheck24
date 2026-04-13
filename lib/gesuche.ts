@@ -1,6 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
-import { matchRequestImage } from "@/lib/request-image-matching";
+import { getRequestImageCatalogItemById, matchRequestImage } from "@/lib/request-image-matching";
 
 export type RequestMode = "kauf" | "miete";
 
@@ -124,6 +124,8 @@ function buildRegionalRequest(record: Record<string, unknown>, requestId: string
   const minPrice = toFiniteNumber(payload.min_price);
   const maxPrice = toFiniteNumber(payload.max_price);
   const radiusKm = toFiniteNumber(payload.radius_km);
+  const requestImageCatalogId = typeof payload.request_image_catalog_id === "string" ? payload.request_image_catalog_id : null;
+  const requestImageOverride = getRequestImageCatalogItemById(requestImageCatalogId);
   const imageMatch = matchRequestImage({
     requestType,
     objectType,
@@ -159,9 +161,9 @@ function buildRegionalRequest(record: Record<string, unknown>, requestId: string
     radiusKm,
     regionTargets,
     updatedAt: record.source_updated_at ? String(record.source_updated_at) : null,
-    imageUrl: imageMatch.primary?.imageUrl ?? null,
-    imageAlt: imageMatch.primary?.alt ?? null,
-    imageTitle: imageMatch.primary?.title ?? null,
+    imageUrl: requestImageOverride?.image_url ?? imageMatch.primary?.imageUrl ?? null,
+    imageAlt: requestImageOverride?.alt_template ?? imageMatch.primary?.alt ?? null,
+    imageTitle: requestImageOverride?.title ?? imageMatch.primary?.title ?? null,
     audiencePersona: imageMatch.profile.persona,
     audienceEnvironment: imageMatch.profile.environment,
     audienceSignals: imageMatch.profile.signals,
@@ -211,7 +213,7 @@ async function fetchProjectedRequests(
   const supabase = createClient();
   const { data, error } = await supabase
     .from("public_request_entries")
-    .select("request_id, partner_id, provider, external_id, title, short_description, long_description, location_text, request_type, object_type, object_subtype, min_rooms, max_rooms, min_area_sqm, max_area_sqm, min_living_area_sqm, max_living_area_sqm, min_price, max_price, radius_km, region_targets, region_target_keys, source_updated_at")
+    .select("request_id, partner_id, provider, external_id, title, short_description, long_description, location_text, request_type, object_type, object_subtype, request_image_catalog_id, min_rooms, max_rooms, min_area_sqm, max_area_sqm, min_living_area_sqm, max_living_area_sqm, min_price, max_price, radius_km, region_targets, region_target_keys, source_updated_at")
     .in("visible_area_id", areaIds)
     .eq("locale", locale)
     .eq("is_live", true)
