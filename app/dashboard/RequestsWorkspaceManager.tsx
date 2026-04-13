@@ -78,7 +78,7 @@ type LlmOptionApiRow = {
   global_provider_id?: string | null;
 };
 
-type WorkspaceTab = 'seo' | 'criteria';
+type WorkspaceTab = 'texts' | 'seo';
 type RequestListFilter = 'all' | 'kauf' | 'miete';
 
 type RegionTarget = {
@@ -229,7 +229,7 @@ export default function RequestsWorkspaceManager(props: Props) {
   const [form, setForm] = useState<OverrideRow | null>(null);
   const [query, setQuery] = useState('');
   const [listFilter, setListFilter] = useState<RequestListFilter>('all');
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('seo');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
@@ -899,16 +899,52 @@ export default function RequestsWorkspaceManager(props: Props) {
                       <div style={onlineCreateGridStyle}>
                         <div style={offerSummaryTopCardStyle}>
                           <div style={offerSummaryHeaderStyle}>Textbearbeitung</div>
-                          <div style={{ display: 'grid', gap: '18px' }}>
-                            {renderTextField('Gesuch-Titel', 'seo_h1', {
-                              multiline: false,
-                              placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                            })}
-                            {renderTextField('Beschreibung', 'long_description', {
-                              multiline: true,
-                              placeholder: 'Beschreibung wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                            })}
+                          <div style={workspaceTabsRowStyle}>
+                            <button type="button" onClick={() => setActiveTab('texts')} style={workspaceTabStyle(activeTab === 'texts')}>
+                              Texte
+                            </button>
+                            <button type="button" onClick={() => setActiveTab('seo')} style={workspaceTabStyle(activeTab === 'seo')}>
+                              SEO / GEO
+                            </button>
                           </div>
+                          {activeTab === 'texts' ? (
+                            <div style={{ display: 'grid', gap: '18px' }}>
+                              {renderTextField('Gesuch-Titel', 'seo_h1', {
+                                multiline: false,
+                                placeholder: 'Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                              })}
+                              {renderTextField('Beschreibung', 'long_description', {
+                                multiline: true,
+                                placeholder: 'Beschreibung wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                              })}
+                            </div>
+                          ) : null}
+                          {activeTab === 'seo' ? (
+                            <div style={{ display: 'grid', gap: '18px' }}>
+                              {renderTextField('SEO‑Titel', 'seo_title', {
+                                multiline: false,
+                                placeholder: 'SEO-Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                              })}
+                              {renderTextField('SEO‑Description', 'seo_description', {
+                                multiline: true,
+                                placeholder: 'SEO-Description wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
+                              })}
+                              <div style={previewCardStyle}>
+                                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                                  SEO‑Vorschau
+                                </div>
+                                <div style={{ fontWeight: 700, fontSize: '16px', marginTop: '6px' }}>
+                                  {form.seo_title || form.seo_h1 || selectedRow.title || 'SEO‑Titel'}
+                                </div>
+                                <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
+                                  {form.seo_description || form.long_description || 'SEO‑Description'}
+                                </div>
+                                <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
+                                  /immobiliengesuche/{form.external_id}_&lt;titel&gt;
+                                </div>
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                         <div style={offerSummaryTopCardStyle}>
                           <div style={offerSummaryHeaderStyle}>Motivwahl</div>
@@ -1017,108 +1053,6 @@ export default function RequestsWorkspaceManager(props: Props) {
                 );
               })()}
 
-              <div style={workspaceTabsRowStyle}>
-                <button type="button" onClick={() => setActiveTab('seo')} style={workspaceTabStyle(activeTab === 'seo')}>
-                  SEO / GEO
-                </button>
-                <button type="button" onClick={() => setActiveTab('criteria')} style={workspaceTabStyle(activeTab === 'criteria')}>
-                  Suchkriterien
-                </button>
-              </div>
-
-              {activeTab === 'seo' ? (
-                <>
-                  <div style={offerSummaryCardStyle}>
-                    <div style={offerSummaryHeaderStyle}>Snippet</div>
-                    <div style={mediaSectionHintStyle}>Suchmaschinen-Snippet und Antwortbausteine für das Gesuch.</div>
-                  </div>
-
-                  <div style={{ display: 'grid', gap: '18px', marginBottom: '16px' }}>
-                    {renderTextField('SEO‑Titel', 'seo_title', {
-                      multiline: false,
-                      placeholder: 'SEO-Titel wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                    })}
-                    {renderTextField('SEO‑Description', 'seo_description', {
-                      multiline: true,
-                      placeholder: 'SEO-Description wird bei Bedarf durch KI erzeugt oder manuell gepflegt.',
-                    })}
-                  </div>
-
-                  <div style={previewCardStyle}>
-                    <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
-                      SEO‑Vorschau
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: '16px', marginTop: '6px' }}>
-                      {form.seo_title || form.seo_h1 || selectedRow.title || 'SEO‑Titel'}
-                    </div>
-                    <div style={{ color: '#64748b', fontSize: '13px', marginTop: '6px' }}>
-                      {form.seo_description || form.long_description || 'SEO‑Description'}
-                    </div>
-                    <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '6px' }}>
-                      /immobiliengesuche/{form.external_id}_&lt;titel&gt;
-                    </div>
-                  </div>
-
-                </>
-              ) : null}
-
-              {activeTab === 'criteria' ? (
-                <div style={offerSummaryCardStyle}>
-                  <div style={offerSummaryHeaderStyle}>Suchkriterien</div>
-                  <div style={offerSummaryStackStyle}>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Gesuchstyp</div>
-                      <div style={offerSummaryValueStyle}>{selectedMode}</div>
-                    </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Vermarktung</div>
-                      <div style={offerSummaryValueStyle}>{selectedMarketing}</div>
-                    </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Objektart</div>
-                      <div style={offerSummaryValueStyle}>{selectedType}</div>
-                    </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Objekt-Untertyp</div>
-                      <div style={offerSummaryValueStyle}>{getPayloadText(selectedPayload, ['object_subtype']) || selectedSubtypes.join(', ') || '—'}</div>
-                    </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Zimmer</div>
-                      <div style={offerSummaryValueStyle}>
-                        {selectedRoomsMin != null || selectedRoomsMax != null
-                          ? `${selectedRoomsMin ?? '—'} bis ${selectedRoomsMax ?? '—'}`
-                          : '—'}
-                      </div>
-                    </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Fläche</div>
-                      <div style={offerSummaryValueStyle}>
-                        {selectedAreaMin != null || selectedAreaMax != null
-                          ? `${selectedAreaMin ?? '—'} bis ${selectedAreaMax ?? '—'} m²`
-                          : '—'}
-                      </div>
-                    </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Budget</div>
-                      <div style={offerSummaryValueStyle}>{formatEuro(selectedBudget)}</div>
-                    </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Radius</div>
-                      <div style={offerSummaryValueStyle}>{selectedRadius != null ? `${selectedRadius} km` : '—'}</div>
-                    </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Zielregionen</div>
-                      <div style={offerSummaryValueStyle}>{selectedLocation}</div>
-                    </div>
-                    <div style={offerSummaryStackRowStyle}>
-                      <div style={offerSummaryLabelStyle}>Zentrum</div>
-                      <div style={offerSummaryValueStyle}>
-                        {getPayloadText(selectedPayload, ['region']) || getPayloadText((selectedPayload.range_center as Record<string, unknown>) ?? {}, ['ort']) || '—'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
             </>
           )}
         </section>
@@ -1522,14 +1456,6 @@ const cardHeaderRowStyle: CSSProperties = {
   marginBottom: '10px',
 };
 
-const offerSummaryCardStyle: CSSProperties = {
-  backgroundColor: '#f8fafc',
-  borderRadius: '14px',
-  border: '1px solid #e2e8f0',
-  padding: '14px',
-  marginBottom: '16px',
-};
-
 const offerSummaryHeaderStyle: CSSProperties = {
   fontSize: '12px',
   textTransform: 'uppercase',
@@ -1558,26 +1484,6 @@ const offerSummaryValueStyle: CSSProperties = {
   color: '#0f172a',
   fontWeight: 600,
   lineHeight: 1.45,
-};
-
-const offerSummaryStackStyle: CSSProperties = {
-  display: 'grid',
-  gap: '10px',
-};
-
-const offerSummaryStackRowStyle: CSSProperties = {
-  display: 'flex',
-  justifyContent: 'space-between',
-  gap: '14px',
-  paddingBottom: '10px',
-  borderBottom: '1px solid #e2e8f0',
-};
-
-const mediaSectionHintStyle: CSSProperties = {
-  fontSize: '12px',
-  color: '#64748b',
-  lineHeight: 1.5,
-  marginBottom: '12px',
 };
 
 const requestNoteBodyStyle: CSSProperties = {
