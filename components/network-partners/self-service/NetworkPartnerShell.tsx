@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { createClient } from '@/utils/supabase/client';
 import { redirectIfUnauthorizedResponse } from '@/lib/auth/client-auth-redirect';
@@ -155,10 +155,13 @@ export default function NetworkPartnerShell({
 }: NetworkPartnerShellProps) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const utilityBarRef = useRef<HTMLElement | null>(null);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [networkPartner, setNetworkPartner] = useState<NetworkPartnerRecord | null>(null);
   const [role, setRole] = useState<NetworkPartnerRole | null>(null);
   const [lastLogin, setLastLogin] = useState<string | null>(null);
+  const [hoveredNavKey, setHoveredNavKey] = useState<ShellSection | null>(null);
+  const [hoveredNavTop, setHoveredNavTop] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -188,23 +191,42 @@ export default function NetworkPartnerShell({
     router.push(href);
   }
 
+  function updateHoveredNav(key: ShellSection, element: HTMLButtonElement) {
+    const utilityBarRect = utilityBarRef.current?.getBoundingClientRect();
+    const buttonRect = element.getBoundingClientRect();
+    setHoveredNavKey(key);
+    setHoveredNavTop(
+      utilityBarRect
+        ? buttonRect.top - utilityBarRect.top + buttonRect.height / 2
+        : null,
+    );
+  }
+
+  const hoveredNavItem = PRIMARY_NAV.find((item) => item.key === hoveredNavKey) ?? null;
+
   return (
     <div style={shellPageStyle}>
       <header style={dashboardHeaderStyle}>
-        <Link href="/network-partner" style={brandHeaderStyle} title="Zur Willkommensseite">
+        <Link
+          href="/network-partner"
+          className="brand-header"
+          style={{ margin: 0, cursor: 'pointer' }}
+          title="Zur Willkommensseite"
+        >
           <Image
             alt="Immobilienmarkt & Standortprofile"
             width={48}
             height={48}
             src="/logo/wohnlagencheck24.svg"
+            className="brand-icon"
             style={{ display: 'block' }}
             priority
           />
-          <span style={brandTextStyle}>
-            <span style={brandTitleStyle}>
+          <span className="brand-text">
+            <span className="brand-title">
               Wohnlagencheck<span style={{ color: '#ffe000' }}>24</span>
             </span>
-            <small style={brandSublineStyle}>DATA-DRIVEN. EXPERT-LED.</small>
+            <small>DATA-DRIVEN. EXPERT-LED.</small>
           </span>
         </Link>
 
@@ -246,26 +268,40 @@ export default function NetworkPartnerShell({
         </div>
       </header>
 
-      <div style={shellBodyStyle}>
+        <div style={shellBodyStyle}>
         {hidePrimaryNav ? null : (
-          <aside style={utilityBarStyle}>
+          <aside
+            ref={utilityBarRef}
+            style={utilityBarStyle}
+            onMouseLeave={() => {
+              setHoveredNavKey(null);
+              setHoveredNavTop(null);
+            }}
+          >
             <div style={toolIconsGroupStyle}>
               {PRIMARY_NAV.map((item) => {
                 const active = item.key === activeSection;
+                const hovered = item.key === hoveredNavKey;
                 return (
                   <button
                     key={item.key}
                     type="button"
                     onClick={() => navigateTo(item.href)}
-                    style={toolIconButtonStyle(active)}
+                    onMouseEnter={(event) => updateHoveredNav(item.key, event.currentTarget)}
+                    onFocus={(event) => updateHoveredNav(item.key, event.currentTarget)}
+                    style={toolIconButtonStyle(active, hovered)}
                     aria-label={item.label}
-                    title={item.label}
                   >
                     {item.icon}
                   </button>
                 );
               })}
             </div>
+            {hoveredNavItem && hoveredNavTop !== null ? (
+              <div style={utilityTooltipLayerStyle(hoveredNavTop)}>
+                <div style={utilityTooltipCardStyle}>{hoveredNavItem.label}</div>
+              </div>
+            ) : null}
           </aside>
         )}
 
@@ -328,35 +364,6 @@ const dashboardHeaderStyle: React.CSSProperties = {
   position: 'sticky',
   top: 0,
   zIndex: 40,
-};
-
-const brandHeaderStyle: React.CSSProperties = {
-  margin: 0,
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  textDecoration: 'none',
-};
-
-const brandTextStyle: React.CSSProperties = {
-  display: 'grid',
-  gap: 2,
-};
-
-const brandTitleStyle: React.CSSProperties = {
-  color: '#0f172a',
-  fontSize: 24,
-  fontWeight: 800,
-  letterSpacing: -0.02,
-  lineHeight: 1,
-};
-
-const brandSublineStyle: React.CSSProperties = {
-  color: '#64748b',
-  fontSize: 10,
-  letterSpacing: 1.4,
-  fontWeight: 700,
 };
 
 const dashboardStatusStyle: React.CSSProperties = {
@@ -459,20 +466,47 @@ const toolIconsGroupStyle: React.CSSProperties = {
   padding: '2px 0 8px',
 };
 
-const toolIconButtonStyle = (active: boolean): React.CSSProperties => ({
+const toolIconButtonStyle = (active: boolean, hovered = false): React.CSSProperties => ({
   width: '30px',
   height: '30px',
   borderRadius: '9px',
   border: active ? '1px solid #ffe000' : '1px solid rgba(255,255,255,0.92)',
   backgroundColor: active ? '#ffe000' : '#ffffff',
-  boxShadow: active ? '0 8px 18px rgba(15,23,42,0.18)' : 'none',
+  boxShadow: active
+    ? '0 8px 18px rgba(15,23,42,0.18)'
+    : hovered
+      ? '0 8px 18px rgba(15,23,42,0.14)'
+      : 'none',
   color: '#111111',
   cursor: 'pointer',
   transition: 'transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  transform: hovered ? 'translateX(1px)' : 'none',
 });
+
+const utilityTooltipLayerStyle = (top: number): React.CSSProperties => ({
+  position: 'absolute',
+  top: `${top}px`,
+  left: 'calc(100% + 10px)',
+  transform: 'translateY(-50%)',
+  pointerEvents: 'none',
+  zIndex: 60,
+});
+
+const utilityTooltipCardStyle: React.CSSProperties = {
+  minWidth: '168px',
+  maxWidth: '220px',
+  borderRadius: '12px',
+  background: '#ffe000',
+  color: '#111111',
+  boxShadow: '0 18px 36px rgba(15,23,42,0.18)',
+  padding: '10px 14px',
+  fontSize: '13px',
+  fontWeight: 700,
+  lineHeight: 1.35,
+};
 
 const contentStageStyle: React.CSSProperties = {
   flex: 1,
