@@ -79,7 +79,7 @@ type LlmOptionApiRow = {
 };
 
 type WorkspaceTab = 'texts' | 'seo';
-type RequestListFilter = 'all' | 'kauf' | 'miete';
+type RequestListFilter = 'all' | 'haus' | 'wohnung';
 
 type RegionTarget = {
   city?: string;
@@ -331,8 +331,8 @@ export default function RequestsWorkspaceManager(props: Props) {
     const term = query.trim().toLowerCase();
     return rows.filter((row) => {
       const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
-      const requestType = getPayloadText(payload, ['request_type']).toLowerCase();
-      if (listFilter !== 'all' && requestType !== listFilter) return false;
+      const objectType = getPayloadText(payload, ['object_type']).toLowerCase();
+      if (listFilter !== 'all' && objectType !== listFilter) return false;
       const regions = getRegionTargetLabels(payload).join(' ');
       const description = getPayloadText(payload, ['description', 'short_description', 'long_description', 'title']);
       const haystack = `${row.title ?? ''} ${row.external_id} ${row.provider} ${regions} ${description}`.toLowerCase();
@@ -776,17 +776,17 @@ export default function RequestsWorkspaceManager(props: Props) {
       <div style={{ display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' }}>
         <section style={panelStyle}>
           <h3 style={panelTitleStyle}>Gesuche</h3>
-          <div style={requestListFilterRowStyle}>
-            <button type="button" onClick={() => setListFilter('all')} style={requestListFilterButtonStyle(listFilter === 'all')}>Alles</button>
-            <button type="button" onClick={() => setListFilter('kauf')} style={requestListFilterButtonStyle(listFilter === 'kauf')}>Kauf</button>
-            <button type="button" onClick={() => setListFilter('miete')} style={requestListFilterButtonStyle(listFilter === 'miete')}>Miete</button>
-          </div>
           <input
             placeholder="Suchen..."
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             style={inputStyle}
           />
+          <div style={requestListFilterRowStyle}>
+            <button type="button" onClick={() => setListFilter('all')} style={requestListFilterButtonStyle(listFilter === 'all')}>Alle</button>
+            <button type="button" onClick={() => setListFilter('haus')} style={requestListFilterButtonStyle(listFilter === 'haus')}>Haus</button>
+            <button type="button" onClick={() => setListFilter('wohnung')} style={requestListFilterButtonStyle(listFilter === 'wohnung')}>Wohnung</button>
+          </div>
           <div style={{ maxHeight: '60vh', overflowY: 'auto', marginTop: '12px' }}>
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
@@ -1687,9 +1687,9 @@ const requestListFilterRowStyle: CSSProperties = {
 const requestListFilterButtonStyle = (active: boolean): CSSProperties => ({
   padding: '8px 12px',
   borderRadius: '999px',
-  border: `1px solid ${active ? '#0f766e' : '#cbd5e1'}`,
-  backgroundColor: active ? '#ecfeff' : '#fff',
-  color: active ? '#0f172a' : '#475569',
+  border: `1px solid ${active ? '#16a34a' : '#cbd5e1'}`,
+  backgroundColor: active ? '#16a34a' : '#f1f5f9',
+  color: active ? '#ffffff' : '#475569',
   fontSize: '12px',
   fontWeight: 700,
   cursor: 'pointer',
