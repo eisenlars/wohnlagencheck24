@@ -231,6 +231,7 @@ export default function RequestsWorkspaceManager(props: Props) {
   const [listFilter, setListFilter] = useState<RequestListFilter>('all');
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
   const [imageInfoOpen, setImageInfoOpen] = useState(false);
+  const [imageSelectionStatus, setImageSelectionStatus] = useState<string | null>(null);
   const [pendingRequestImageSelectionId, setPendingRequestImageSelectionId] = useState<string | null>(null);
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
@@ -369,11 +370,16 @@ export default function RequestsWorkspaceManager(props: Props) {
     setForm(buildDefaultForm(selectedRow, selectedOverride));
   }, [selectedOverride, selectedRow]);
 
+  useEffect(() => {
+    setImageSelectionStatus(null);
+  }, [selectedId]);
+
   async function saveOverride(nextForm?: OverrideRow) {
     const payload = nextForm ?? form;
     if (!payload) return;
     setSaving(true);
     setStatus('Speichere Gesuch-Overrides...');
+    setImageSelectionStatus(null);
     const normalizedTitle = String(
       payload.seo_h1 ?? payload.seo_title ?? selectedOverride?.seo_h1 ?? selectedOverride?.seo_title ?? '',
     ).trim();
@@ -421,10 +427,14 @@ export default function RequestsWorkspaceManager(props: Props) {
     if (error && String(error.message || '').includes('request_image_catalog_id')) {
       delete upsertPayload.request_image_catalog_id;
       ({ data, error } = await executeUpsert(upsertPayload));
-      if (!error) setStatus('Die alternative Bildauswahl benötigt noch den SQL-Rollout für request_image_catalog_id.');
+      if (!error) {
+        setStatus('');
+        setImageSelectionStatus('Die alternative Bildauswahl benötigt noch den SQL-Rollout für request_image_catalog_id.');
+      }
     }
     if (error) {
       setStatus(`Speichern fehlgeschlagen (partner_request_overrides): ${error.message}`);
+      setImageSelectionStatus(`Bildauswahl konnte nicht gespeichert werden: ${error.message}`);
       setSaving(false);
       return;
     }
@@ -708,7 +718,6 @@ export default function RequestsWorkspaceManager(props: Props) {
       }
     : selectedImageMatch.primary;
   const hasPendingManualImageSelection = Boolean(pendingRequestImageSelectionId);
-  const hasPendingImageSelectionChange = (pendingRequestImageSelectionId ?? null) !== (selectedRequestImageOverrideId || null);
   const currentRequestTitle = asText(form?.seo_h1) || asText(form?.seo_title);
   const currentRequestDescription = asText(form?.long_description) || asText(form?.short_description);
   const canSaveRequest = Boolean(currentRequestTitle && currentRequestDescription);
@@ -1006,8 +1015,8 @@ export default function RequestsWorkspaceManager(props: Props) {
                               <div style={imageChoiceActionsRowStyle}>
                                 <button
                                   type="button"
-                                  style={imageChoicePrimaryButtonStyle(!hasPendingManualImageSelection || !hasPendingImageSelectionChange)}
-                                  disabled={!hasPendingManualImageSelection || !hasPendingImageSelectionChange}
+                                  style={imageChoicePrimaryButtonStyle(!hasPendingManualImageSelection || saving)}
+                                  disabled={!hasPendingManualImageSelection || saving}
                                   onClick={() => void applyRequestImageSelection(pendingRequestImageSelectionId)}
                                 >
                                   Bild wählen
@@ -1024,6 +1033,11 @@ export default function RequestsWorkspaceManager(props: Props) {
                                   Automatisches Matching
                                 </button>
                               </div>
+                              {imageSelectionStatus ? (
+                                <div style={imageSelectionStatusStyle}>
+                                  {imageSelectionStatus}
+                                </div>
+                              ) : null}
                             </div>
                           </div>
                         </div>
@@ -1632,6 +1646,16 @@ const imageChoiceActionsRowStyle: CSSProperties = {
   gap: '10px',
   justifyContent: 'flex-end',
   flexWrap: 'wrap',
+};
+
+const imageSelectionStatusStyle: CSSProperties = {
+  borderRadius: '10px',
+  backgroundColor: '#fef2f2',
+  border: '1px solid #fecaca',
+  color: '#b91c1c',
+  padding: '10px 12px',
+  fontSize: '12px',
+  lineHeight: 1.45,
 };
 
 const infoLinkButtonStyle: CSSProperties = {
