@@ -25,6 +25,9 @@ type NetworkPartnerShellProps = {
   description: string;
   activeSection: ShellSection;
   hidePrimaryNav?: boolean;
+  centerHeaderContent?: boolean;
+  hideHeaderLabel?: boolean;
+  hideHeaderMeta?: boolean;
   children: ReactNode;
 };
 
@@ -151,6 +154,9 @@ export default function NetworkPartnerShell({
   description,
   activeSection,
   hidePrimaryNav = false,
+  centerHeaderContent = false,
+  hideHeaderLabel = false,
+  hideHeaderMeta = false,
   children,
 }: NetworkPartnerShellProps) {
   const router = useRouter();
@@ -307,18 +313,20 @@ export default function NetworkPartnerShell({
 
         <main style={contentStageStyle}>
           <section style={contentHeaderStyle}>
-            <div style={{ display: 'grid', gap: 8 }}>
-              <span style={contentLabelStyle}>Netzwerkpartner-Bereich</span>
+            <div style={contentHeaderTextBlockStyle(centerHeaderContent)}>
+              {hideHeaderLabel ? null : <span style={contentLabelStyle(centerHeaderContent)}>Netzwerkpartner-Bereich</span>}
               <h1 style={{ margin: 0, color: '#0f172a', fontSize: 28, lineHeight: 1.2 }}>{title}</h1>
-              <p style={{ margin: 0, color: '#475569', maxWidth: 920, lineHeight: 1.6 }}>
+              <p style={contentDescriptionStyle(centerHeaderContent)}>
                 {description}
               </p>
             </div>
-            <div style={contentMetaRowStyle}>
-              <span style={contentMetaBadgeStyle}>{networkPartner?.company_name ?? 'Netzwerkpartner'}</span>
-              <span style={contentMetaTextStyle}>Rolle: {role ?? '—'}</span>
-              <span style={contentMetaTextStyle}>Status: {networkPartner?.status ?? '—'}</span>
-            </div>
+            {hideHeaderMeta ? null : (
+              <div style={contentMetaRowStyle}>
+                <span style={contentMetaBadgeStyle}>{networkPartner?.company_name ?? 'Netzwerkpartner'}</span>
+                <span style={contentMetaTextStyle}>Rolle: {role ?? '—'}</span>
+                <span style={contentMetaTextStyle}>Status: {networkPartner?.status ?? '—'}</span>
+              </div>
+            )}
           </section>
 
           <section style={contentPanelStyle}>
@@ -523,13 +531,29 @@ const contentHeaderStyle: React.CSSProperties = {
   gap: 14,
 };
 
-const contentLabelStyle: React.CSSProperties = {
+const contentHeaderTextBlockStyle = (centered: boolean): React.CSSProperties => ({
+  display: 'grid',
+  gap: 8,
+  justifyItems: centered ? 'center' : 'start',
+  textAlign: centered ? 'center' : 'left',
+});
+
+const contentLabelStyle = (centered: boolean): React.CSSProperties => ({
   color: '#486b7a',
   fontSize: 12,
   fontWeight: 800,
   textTransform: 'uppercase',
   letterSpacing: 0.8,
-};
+  justifySelf: centered ? 'center' : 'start',
+});
+
+const contentDescriptionStyle = (centered: boolean): React.CSSProperties => ({
+  margin: 0,
+  color: '#475569',
+  maxWidth: centered ? 760 : 920,
+  lineHeight: 1.6,
+  textAlign: centered ? 'center' : 'left',
+});
 
 const contentMetaRowStyle: React.CSSProperties = {
   display: 'flex',

@@ -45,6 +45,9 @@ export default function NetworkPartnerHomePage() {
     <NetworkPartnerShell
       activeSection="home"
       hidePrimaryNav
+      centerHeaderContent
+      hideHeaderLabel
+      hideHeaderMeta
       title={networkPartner?.company_name ? `Willkommen ${networkPartner.company_name}` : 'Willkommen'}
       description="Hier verwaltest du deine Buchungen und Inhalte."
     >
@@ -53,15 +56,13 @@ export default function NetworkPartnerHomePage() {
         <p style={{ margin: 0, color: '#64748b' }}>Lädt...</p>
       ) : networkPartner ? (
         <div style={welcomeWrapStyle}>
-          <div style={welcomeCardStyle}>
-            <div style={welcomeGridStyle}>
-              {HOME_ACTIONS.map((action) => (
-                <Link key={action.href} href={action.href} style={welcomeActionStyle}>
-                  <div style={welcomeActionTitleStyle}>{action.title}</div>
-                  <div style={welcomeActionTextStyle}>{action.description}</div>
-                </Link>
-              ))}
-            </div>
+          <div style={welcomeGridStyle}>
+            {HOME_ACTIONS.map((action) => (
+              <Link key={action.href} href={action.href} style={welcomeActionStyle}>
+                <div style={welcomeActionTitleStyle}>{action.title}</div>
+                <div style={welcomeActionTextStyle}>{action.description}</div>
+              </Link>
+            ))}
           </div>
         </div>
       ) : (
@@ -106,20 +107,12 @@ const welcomeWrapStyle: React.CSSProperties = {
   padding: '20px 0 8px',
 };
 
-const welcomeCardStyle: React.CSSProperties = {
-  width: '100%',
-  maxWidth: 980,
-  border: '1px solid #dbeafe',
-  borderRadius: 24,
-  background: 'linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)',
-  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.08)',
-  padding: 28,
-};
-
 const welcomeGridStyle: React.CSSProperties = {
   display: 'grid',
   gap: 16,
   gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+  width: '100%',
+  maxWidth: 980,
 };
 
 const welcomeActionStyle: React.CSSProperties = {
