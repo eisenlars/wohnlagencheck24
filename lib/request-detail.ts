@@ -58,10 +58,9 @@ function parseRegionTargets(payload: Record<string, unknown>): Array<{ city: str
     if (!entry || typeof entry !== "object") continue;
     const obj = entry as Record<string, unknown>;
     const city = String(obj.city ?? "").trim();
+    const label = cleanRequestRegionTargetLabel(String(obj.label ?? "").trim(), city) || city;
     const districtRaw = String(obj.district ?? "").trim();
     const district = districtRaw.length > 0 ? districtRaw : null;
-    const label = cleanRequestRegionTargetLabel(String(obj.label ?? "").trim(), city)
-      || [city, district].filter(Boolean).join(" ");
     if (!city && !label) continue;
     out.push({ city, district, label });
   }
