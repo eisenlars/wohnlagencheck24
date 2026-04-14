@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import type { RequestMode } from "@/lib/gesuche";
 
 type Props = {
   locale?: string;
+  mode: RequestMode;
   pagePath: string;
   regionLabel: string;
   request: {
@@ -22,6 +24,7 @@ type SubmitState = "idle" | "submitting" | "success" | "error";
 
 export function RequestOfferLeadInlineForm(props: Props) {
   const locale = props.locale === "en" ? "en" : "de";
+  const isRental = props.mode === "miete";
   const [state, setState] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -47,14 +50,16 @@ export function RequestOfferLeadInlineForm(props: Props) {
         error: "The offer could not be sent right now.",
       }
     : {
-        title: "Objekt anbieten",
-        intro: "Biete dein Objekt direkt zu diesem Gesuch an.",
+        title: "Passt Ihre Immobilie?",
+        intro: isRental
+          ? "Sie möchten vermieten und Ihre Immobilie passt zu dieser Suchanfrage? Dann nehmen Sie hier Kontakt auf."
+          : "Sie möchten verkaufen und Ihre Immobilie passt zu dieser Suchanfrage? Dann nehmen Sie hier Kontakt auf.",
         name: "Name",
         email: "E-Mail",
         phone: "Telefon",
         propertyLocation: "Standort des Objekts",
         note: "Kurze Nachricht",
-        send: "Objekt anbieten",
+        send: isRental ? "Mietinteressenten kennenlernen" : "Interessenten kennenlernen",
         sending: "Wird gesendet...",
         success: "Dein Objektangebot wurde versendet.",
         error: "Das Objektangebot konnte gerade nicht versendet werden.",

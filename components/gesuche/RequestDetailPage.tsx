@@ -115,6 +115,9 @@ export function RequestDetailPage(props: Props) {
       ? `${request.minRooms !== null ? formatRooms(request.minRooms) : "—"} bis ${request.maxRooms !== null ? formatRooms(request.maxRooms) : "—"} ${texts.rooms}`
       : "—";
   const locationLabel = request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified;
+  const qualificationCopy = mode === "miete"
+    ? "Ein qualifiziertes Gesuch basiert auf präzisen Suchkriterien und reduziert Streuverlust im Vermietungsprozess. Eigentümer erhalten schneller passende Anfragen und vermeiden unnötige Besichtigungstermine."
+    : "Ein qualifiziertes Gesuch basiert auf präzisen Suchkriterien und reduziert Streuverlust im Vermarktungsprozess. Eigentümer erhalten schneller passende Anfragen und vermeiden unnötige Besichtigungstermine.";
 
   return (
     <div className="container text-dark">
@@ -186,10 +189,21 @@ export function RequestDetailPage(props: Props) {
             <div style={{ color: "#334155", fontSize: 16, lineHeight: 1.8 }}>
               {request.description ?? "—"}
             </div>
+            <div
+              style={{
+                marginTop: 14,
+                color: "#475569",
+                fontSize: 14,
+                lineHeight: 1.7,
+              }}
+            >
+              {qualificationCopy}
+            </div>
           </div>
 
           <RequestOfferLeadInlineForm
             locale={locale}
+            mode={mode}
             pagePath={listPath}
             regionLabel={breadcrumb.names?.regionName ?? request.title}
             request={{ id: request.id, title: request.title, objectType: request.objectType }}
