@@ -116,6 +116,11 @@ function dedupe(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+function isRadiusContextSegment(value: string): boolean {
+  const normalized = normalizeText(value);
+  return normalized.startsWith('umkreis') || /^\d+\s*km\s+um\b/.test(normalized);
+}
+
 function asNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string' && value.trim().length > 0) {
@@ -180,16 +185,15 @@ function getRegionTargetLabels(payload: Record<string, unknown>): string[] {
       .flatMap((value) => value.split(','))
       .map((part) => part.trim())
       .filter(Boolean)
-      .filter((part) => !normalizeText(part).startsWith('umkreis'));
+      .filter((part) => !isRadiusContextSegment(part));
     if (parts.length > 0) {
-      labels.push(dedupe(parts).join(' '));
+      labels.push(...parts);
       continue;
     }
     const fallback = [city, district]
       .filter(Boolean)
-      .filter((part) => !normalizeText(part).startsWith('umkreis'))
-      .join(' ');
-    if (fallback) labels.push(fallback);
+      .filter((part) => !isRadiusContextSegment(part));
+    if (fallback.length > 0) labels.push(...fallback);
   }
   return dedupe(labels);
 }
