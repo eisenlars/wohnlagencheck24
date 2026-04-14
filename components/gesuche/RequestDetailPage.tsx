@@ -192,12 +192,28 @@ export function RequestDetailPage(props: Props) {
             <div
               style={{
                 marginTop: 14,
-                color: "#475569",
-                fontSize: 14,
-                lineHeight: 1.7,
+                border: "1px solid #dbe4ea",
+                borderRadius: 14,
+                background: "#f8fafc",
+                padding: "16px 18px",
+                display: "grid",
+                gap: 8,
               }}
             >
-              {qualificationCopy}
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  color: "#486b7a",
+                }}
+              >
+                Warum dieses qualifizierte Gesuch für Eigentümer relevant ist
+              </div>
+              <div style={{ color: "#475569", fontSize: 14, lineHeight: 1.7 }}>
+                {qualificationCopy}
+              </div>
             </div>
           </div>
 
