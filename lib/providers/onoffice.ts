@@ -12,6 +12,7 @@ import type {
   RawRequest,
   ResourceSyncData,
 } from "@/lib/providers/types";
+import { cleanRequestRegionTargetLabel, isRadiusContextSegment } from "@/lib/request-region-targets";
 
 type OnOfficeRecord = {
   id?: number | string;
@@ -389,6 +390,7 @@ function parseRegionTargetsFromHint(hint: unknown, fallbackCity?: string | null)
       .filter(Boolean);
 
     for (const part of parts) {
+      if (isRadiusContextSegment(part)) continue;
       const tokens = part.split(/\s+/).filter(Boolean);
       if (tokens.length >= 2) add(toRegionTarget(tokens[0], tokens.slice(1).join(" ")));
       else {
@@ -1046,15 +1048,32 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCri
   const centerLat = toNumber(readSearchCriteriaRangeValue(record, "range_breitengrad"));
   const centerLng = toNumber(readSearchCriteriaRangeValue(record, "range_laengengrad"));
   const radiusKm = toNumber(readSearchCriteriaRangeValue(record, "range"));
+  const regionalSupplement = String(readSearchCriteriaFieldValue(record, "regionaler_zusatz") ?? "").trim() || null;
   const regionHint =
     [
-      String(readSearchCriteriaFieldValue(record, "regionaler_zusatz") ?? "").trim(),
+      regionalSupplement,
       centerOrt ? `Umkreis ${radiusKm ?? 0} km um ${centerOrt}` : "",
       centerPlz,
     ].filter(Boolean).join(", ")
     || String(meta.publicnote ?? "").trim();
   const fallbackCity = centerOrt;
-  const targets = parseRegionTargetsFromHint(regionHint, fallbackCity);
+  const targetCandidates = [
+    toRegionTarget(centerOrt ?? "", centerPlz),
+    ...parseRegionTargetsFromHint(regionalSupplement, fallbackCity),
+    ...parseRegionTargetsFromHint(meta.publicnote, fallbackCity),
+  ];
+  const seenTargetKeys = new Set<string>();
+  const targets = targetCandidates
+    .filter((target): target is RegionTarget => Boolean(target))
+    .map((target) => ({
+      ...target,
+      label: cleanRequestRegionTargetLabel(target.label, target.city) || target.city,
+    }))
+    .filter((target) => {
+      if (!target.city || !target.label || seenTargetKeys.has(target.key)) return false;
+      seenTargetKeys.add(target.key);
+      return true;
+    });
   const description =
     String(
       readSearchCriteriaFieldValue(record, "beschreibung")

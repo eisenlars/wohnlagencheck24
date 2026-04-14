@@ -8,7 +8,7 @@ function normalizeText(value: string): string {
     .trim();
 }
 
-function isRadiusContextSegment(value: string): boolean {
+export function isRadiusContextSegment(value: string): boolean {
   const normalized = normalizeText(value);
   return normalized.startsWith("umkreis") || /^\d+\s*km\s+um\b/.test(normalized);
 }

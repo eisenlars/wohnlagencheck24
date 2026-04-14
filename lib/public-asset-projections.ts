@@ -8,6 +8,7 @@ import {
   loadReportPostalLookupForDistricts,
   normalizePostalCode,
 } from "@/lib/report-postal-lookup";
+import { cleanRequestRegionTargetLabel } from "@/lib/request-region-targets";
 import { getRequestImageCatalogItemById } from "@/lib/request-image-matching";
 import { createAdminClient } from "@/utils/supabase/admin";
 
@@ -217,7 +218,7 @@ function parseRegionTargets(payload: Record<string, unknown>): Array<{ city: str
       const obj = entry as Record<string, unknown>;
       const city = asText(obj["city"]);
       const district = asNullableText(obj["district"]);
-      const label = asText(obj["label"]) || [city, district].filter(Boolean).join(" ");
+      const label = cleanRequestRegionTargetLabel(asText(obj["label"]), city) || city;
       return { city, district, label };
     })
     .filter((entry) => entry.city.length > 0 || entry.label.length > 0);
