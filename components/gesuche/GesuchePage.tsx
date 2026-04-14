@@ -1,3 +1,6 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -50,6 +53,7 @@ type GesuchePageProps = {
 export function GesuchePage(props: GesuchePageProps) {
   const { heading, requests, mode, detailBasePath, pagination, tabs, activeTabId, basePath, parentBasePath, ctx, names, texts, formatProfile, locale, availabilityNotice } = props;
   const normalizedLocale = normalizePublicLocale(locale);
+  const [filter, setFilter] = useState<"all" | "haus" | "wohnung">("all");
   const kaufPath = `${basePath}/immobiliengesuche`;
   const mietePath = `${basePath}/mietgesuche`;
   const formatUpdatedAt = (value: string | null) => {
@@ -72,6 +76,14 @@ export function GesuchePage(props: GesuchePageProps) {
   const currentListPath = mode === "kauf" ? kaufPath : mietePath;
   const buildDetailHref = (request: RegionalRequest) =>
     detailBasePath ? `${detailBasePath}/${request.id}_${slugifyRequestTitle(request.title)}` : null;
+  const filteredRequests = useMemo(
+    () =>
+      requests.filter((request) => {
+        if (filter === "all") return true;
+        return String(request.objectType ?? "").trim().toLowerCase() === filter;
+      }),
+    [filter, requests],
+  );
 
   return (
     <div className="container text-dark">
@@ -91,12 +103,6 @@ export function GesuchePage(props: GesuchePageProps) {
         />
       </div>
 
-      <div className="angebote-page-title">
-        <h1 className="angebote-page-title-text">
-          {availabilityNotice ? heading : `${headingCount} ${heading}`}
-        </h1>
-      </div>
-
       <div className="angebote-mode-toggle mb-5">
         <Link className={`angebote-mode-btn ${mode === "kauf" ? "is-active" : ""}`} href={kaufPath}>
           {texts.buy_requests}
@@ -106,7 +112,44 @@ export function GesuchePage(props: GesuchePageProps) {
         </Link>
       </div>
 
-      {requests.length === 0 ? (
+      <div className="angebote-page-title">
+        <h1 className="angebote-page-title-text">
+          {availabilityNotice ? heading : `${headingCount} ${heading}`}
+        </h1>
+      </div>
+
+      <section className="angebote-filter mb-4">
+        <div
+          className="angebote-filter-body"
+          role="group"
+          aria-label={texts.filter_object_type}
+          style={{ justifyContent: "center" }}
+        >
+          <button
+            type="button"
+            className={`angebote-filter-btn ${filter === "all" ? "is-active" : ""}`}
+            onClick={() => setFilter("all")}
+          >
+            {texts.all}
+          </button>
+          <button
+            type="button"
+            className={`angebote-filter-btn ${filter === "haus" ? "is-active" : ""}`}
+            onClick={() => setFilter("haus")}
+          >
+            {texts.house}
+          </button>
+          <button
+            type="button"
+            className={`angebote-filter-btn ${filter === "wohnung" ? "is-active" : ""}`}
+            onClick={() => setFilter("wohnung")}
+          >
+            {texts.apartment}
+          </button>
+        </div>
+      </section>
+
+      {filteredRequests.length === 0 ? (
         <div className="alert alert-light border text-muted">
           {availabilityNotice ? (
             <div style={{ display: "grid", gap: 10 }}>
@@ -123,7 +166,7 @@ export function GesuchePage(props: GesuchePageProps) {
       ) : (
         <section className="angebote-list mb-5">
           <div className="angebote-grid">
-            {requests.map((request) => (
+            {filteredRequests.map((request) => (
               <article className="angebote-card" key={request.id} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
                 {request.imageUrl ? (
                   <div
