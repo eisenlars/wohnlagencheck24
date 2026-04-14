@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { DatenschutzPageContent } from "@/app/(public)/(statisch)/datenschutz/page";
+import { DatenschutzPageContent } from "@/app/(public)/(statisch)/datenschutz/DatenschutzPageContent";
 import { parsePublicLocale } from "@/lib/public-locale-routing";
 
 export default async function LocalizedDatenschutzPage({

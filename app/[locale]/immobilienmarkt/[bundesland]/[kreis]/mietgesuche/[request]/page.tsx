@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { parsePublicLocale } from "@/lib/public-locale-routing";
-import { MietgesuchKreisDetailPageContent } from "@/app/(public)/immobilienmarkt/[bundesland]/[kreis]/mietgesuche/[request]/page";
+import { MietgesuchKreisDetailPageContent } from "@/app/(public)/immobilienmarkt/[bundesland]/[kreis]/mietgesuche/[request]/MietgesuchKreisDetailPageContent";
 
 type PageProps = {
   params: Promise<{ locale: string; bundesland: string; kreis: string; request: string }>;

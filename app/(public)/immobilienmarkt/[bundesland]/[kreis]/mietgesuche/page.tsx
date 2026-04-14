@@ -14,7 +14,7 @@ type ContentProps = { bundesland: string; kreis: string; page?: number; locale?:
 
 const PAGE_SIZE = 12;
 
-export async function MietgesucheKreisPageContent({
+async function MietgesucheKreisPageContent({
   bundesland,
   kreis,
   page = 1,

@@ -3,8 +3,10 @@ import { createHmac } from "node:crypto";
 import type {
   CrmSyncResource,
   CrmSyncTrigger,
+  OfferDocumentAsset,
   OfferDetailsSnapshot,
   OfferEnergySnapshot,
+  OfferMediaAsset,
   MappedOffer,
   PartnerIntegration,
   RawListing,
@@ -17,7 +19,7 @@ import { cleanRequestRegionTargetLabel, isRadiusContextSegment } from "@/lib/req
 type OnOfficeRecord = {
   id?: number | string;
   type?: string;
-  elements?: Record<string, unknown>;
+  elements?: Record<string, unknown> | unknown[];
 };
 
 type OnOfficeResponse = {
@@ -114,6 +116,60 @@ type RegionTarget = {
   key: string;
 };
 
+type OnOfficeEstatePictureEntry = {
+  fileId: string;
+  estateId: string;
+  type: string | null;
+  url: string | null;
+  title: string | null;
+  text: string | null;
+  originalName: string | null;
+  modified: number | null;
+};
+
+type OnOfficeEstateMediaBundle = {
+  image_url: string | null;
+  gallery: string[];
+  gallery_urls: string[];
+  gallery_assets: OfferMediaAsset[];
+  documents: OfferDocumentAsset[];
+  floorplan_url: string | null;
+  map_url: string | null;
+};
+
+type OnOfficeEstateMediaFetchResult = {
+  bundles: Map<string, OnOfficeEstateMediaBundle>;
+  requestCount: number;
+  pagesFetched: number;
+  assetCount: number;
+  coveredEstateCount: number;
+};
+
+const EMPTY_ONOFFICE_ESTATE_MEDIA: OnOfficeEstateMediaBundle = {
+  image_url: null,
+  gallery: [],
+  gallery_urls: [],
+  gallery_assets: [],
+  documents: [],
+  floorplan_url: null,
+  map_url: null,
+};
+
+const ONOFFICE_ESTATEPICTURE_CATEGORIES = [
+  "Titelbild",
+  "Foto",
+  "Foto_gross",
+  "Grundriss",
+  "Lageplan",
+  "Panorama",
+  "Epass_Skala",
+  "Expose",
+  "Link",
+  "Film-Link",
+  "Ogulo-Link",
+  "Objekt-Link",
+] as const;
+
 function buildOnOfficeHmacV2(
   args: { timestamp: string; token: string; resourceType: string; actionId: string },
   secret: string,
@@ -156,6 +212,7 @@ function buildOnOfficeGetRequest(
   secret: string,
   resourceType: string,
   parameters: Record<string, unknown>,
+  resourceId = "",
 ) {
   const timestamp = String(Math.floor(Date.now() / 1000));
   const hmac = buildOnOfficeHmacV2(
@@ -168,7 +225,7 @@ function buildOnOfficeGetRequest(
       actions: [
         {
           actionid: ACTION_GET,
-          resourceid: "",
+          resourceid: resourceId,
           resourcetype: resourceType,
           timestamp,
           hmac,
@@ -430,6 +487,274 @@ function extractImages(elements: Record<string, unknown>): string[] {
     return typeof url === "string" ? [url] : [];
   }
   return [];
+}
+
+function chunkItems<T>(items: T[], size: number): T[][] {
+  if (items.length === 0) return [];
+  const normalizedSize = Math.max(1, Math.floor(size));
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += normalizedSize) {
+    chunks.push(items.slice(index, index + normalizedSize));
+  }
+  return chunks;
+}
+
+function asTextOrNull(value: unknown): string | null {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : null;
+}
+
+function toFiniteInteger(value: unknown): number | null {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.trunc(parsed);
+}
+
+function extractOnOfficeEstateId(record: OnOfficeRecord): string {
+  const elements = (record.elements ?? {}) as Record<string, unknown>;
+  return String(elements["Id"] ?? record.id ?? "").trim();
+}
+
+function normalizeOnOfficeEstatePictureEntries(records: OnOfficeRecord[]): OnOfficeEstatePictureEntry[] {
+  const out: OnOfficeEstatePictureEntry[] = [];
+
+  for (const record of records) {
+    const rawElements = record.elements;
+    const entries = Array.isArray(rawElements)
+      ? rawElements
+      : rawElements && typeof rawElements === "object"
+        ? [rawElements]
+        : [];
+
+    for (const entry of entries) {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+      const file = entry as Record<string, unknown>;
+      const estateId = asTextOrNull(file.estateid ?? file.estateMainId);
+      const fileId = asTextOrNull(record.id ?? file.id);
+      const url = asTextOrNull(file.url);
+      if (!estateId || !fileId || !url) continue;
+      out.push({
+        fileId,
+        estateId,
+        type: asTextOrNull(file.type),
+        url,
+        title: asTextOrNull(file.title ?? file.titel),
+        text: asTextOrNull(file.text),
+        originalName: asTextOrNull(file.originalname ?? file.name),
+        modified: toFiniteInteger(file.modified),
+      });
+    }
+  }
+
+  return out;
+}
+
+function inferOnOfficeMediaImageKind(entry: OnOfficeEstatePictureEntry): OfferMediaAsset["kind"] | null {
+  const type = String(entry.type ?? "").trim().toLowerCase();
+  const combined = `${type} ${entry.title ?? ""} ${entry.originalName ?? ""} ${entry.url ?? ""}`.toLowerCase();
+  if (!entry.url) return null;
+  if (type.includes("grundriss") || combined.includes("floorplan") || combined.includes("grundriss")) {
+    return "floorplan";
+  }
+  if (
+    type.includes("lageplan")
+    || type.includes("stadtplan")
+    || combined.includes("lageplan")
+    || combined.includes("stadtplan")
+    || combined.includes("mikrolage")
+    || combined.includes("makrolage")
+  ) {
+    return "location_map";
+  }
+  if (
+    type.includes("expose")
+    || type.includes("link")
+    || type.includes("film")
+    || type.includes("ogulo")
+    || type.includes("objekt-link")
+  ) {
+    return "document";
+  }
+  return "image";
+}
+
+function inferOnOfficeDocumentKind(entry: OnOfficeEstatePictureEntry): OfferDocumentAsset["kind"] {
+  const type = String(entry.type ?? "").trim().toLowerCase();
+  const combined = `${type} ${entry.title ?? ""} ${entry.originalName ?? ""} ${entry.url ?? ""}`.toLowerCase();
+  if (type.includes("film") || combined.includes(".mp4") || combined.includes("video")) return "video";
+  if (type.includes("grundriss") || combined.includes("grundriss") || combined.includes("floorplan")) return "floorplan";
+  return "document";
+}
+
+function getOnOfficeMediaPosition(entry: OnOfficeEstatePictureEntry): number | null {
+  const type = String(entry.type ?? "").trim().toLowerCase();
+  if (type === "titelbild") return 0;
+  if (type === "foto") return 10;
+  if (type === "foto_gross") return 20;
+  if (type === "panorama") return 30;
+  if (type === "grundriss") return 100;
+  if (type === "lageplan" || type === "stadtplan") return 110;
+  return null;
+}
+
+function buildOnOfficeEstateMediaBundle(entries: OnOfficeEstatePictureEntry[]): OnOfficeEstateMediaBundle {
+  if (entries.length === 0) return EMPTY_ONOFFICE_ESTATE_MEDIA;
+
+  const sortedEntries = [...entries].sort((left, right) => {
+    const leftPosition = getOnOfficeMediaPosition(left);
+    const rightPosition = getOnOfficeMediaPosition(right);
+    if (leftPosition == null && rightPosition == null) {
+      return (left.title ?? left.url ?? "").localeCompare(right.title ?? right.url ?? "");
+    }
+    if (leftPosition == null) return 1;
+    if (rightPosition == null) return -1;
+    return leftPosition - rightPosition;
+  });
+
+  const seenGalleryUrls = new Set<string>();
+  const seenGalleryAssetUrls = new Set<string>();
+  const seenDocumentUrls = new Set<string>();
+  const gallery: string[] = [];
+  const galleryAssets: OfferMediaAsset[] = [];
+  const documents: OfferDocumentAsset[] = [];
+  let floorplanUrl: string | null = null;
+  let mapUrl: string | null = null;
+
+  for (const entry of sortedEntries) {
+    const url = entry.url;
+    if (!url) continue;
+    const mediaKind = inferOnOfficeMediaImageKind(entry);
+    const position = getOnOfficeMediaPosition(entry);
+
+    if (mediaKind === "image" || mediaKind === "floorplan" || mediaKind === "location_map") {
+      if (!seenGalleryAssetUrls.has(url)) {
+        seenGalleryAssetUrls.add(url);
+        galleryAssets.push({
+          url,
+          title: entry.title,
+          position,
+          kind: mediaKind,
+        });
+      }
+      if (mediaKind === "image" && !seenGalleryUrls.has(url)) {
+        seenGalleryUrls.add(url);
+        gallery.push(url);
+      }
+      if (mediaKind === "floorplan" && !floorplanUrl) floorplanUrl = url;
+      if (mediaKind === "location_map" && !mapUrl) mapUrl = url;
+      continue;
+    }
+
+    if (!seenDocumentUrls.has(url)) {
+      seenDocumentUrls.add(url);
+      documents.push({
+        url,
+        title: entry.title,
+        name: entry.originalName,
+        position,
+        kind: inferOnOfficeDocumentKind(entry),
+        is_exposee: true,
+        on_landing_page: true,
+      });
+    }
+  }
+
+  const imageUrl = galleryAssets.find((asset) => asset.kind === "image")?.url ?? gallery[0] ?? null;
+  return {
+    image_url: imageUrl,
+    gallery,
+    gallery_urls: gallery,
+    gallery_assets: galleryAssets,
+    documents,
+    floorplan_url: floorplanUrl,
+    map_url: mapUrl,
+  };
+}
+
+async function fetchOnOfficeEstateMedia(
+  integration: PartnerIntegration,
+  token: string,
+  secret: string,
+  records: OnOfficeRecord[],
+): Promise<OnOfficeEstateMediaFetchResult> {
+  const estateIds = Array.from(
+    new Set(
+      records
+        .map((record) => extractOnOfficeEstateId(record))
+        .filter(Boolean),
+    ),
+  );
+  if (estateIds.length === 0) {
+    return {
+      bundles: new Map<string, OnOfficeEstateMediaBundle>(),
+      requestCount: 0,
+      pagesFetched: 0,
+      assetCount: 0,
+      coveredEstateCount: 0,
+    };
+  }
+
+  const base = getOnOfficeApiBaseUrl(integration);
+  const entriesByEstateId = new Map<string, OnOfficeEstatePictureEntry[]>();
+  let requestCount = 0;
+  let pagesFetched = 0;
+
+  for (const estateChunk of chunkItems(estateIds, 50)) {
+    const body = buildOnOfficeGetRequest(token, secret, "estatepictures", {
+      estateids: estateChunk,
+      categories: [...ONOFFICE_ESTATEPICTURE_CATEGORIES],
+      size: "original",
+    });
+
+    const res = await fetchWithTimeout(base, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    requestCount += 1;
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`onOffice estatepictures fetch failed (${res.status}): ${text}`);
+    }
+
+    const json = (await res.json()) as OnOfficeResponse;
+    const actionStatus = json?.response?.results?.[0]?.status;
+    const actionErrorCode = Number(actionStatus?.errorcode ?? 0);
+    if (actionErrorCode !== 0) {
+      throw new Error(
+        `onOffice estatepictures action failed (${actionErrorCode}): ${String(actionStatus?.message ?? "Unbekannter Fehler")}`,
+      );
+    }
+
+    const recordsChunk = json?.response?.results?.[0]?.data?.records ?? [];
+    if (!Array.isArray(recordsChunk) || recordsChunk.length === 0) continue;
+    pagesFetched += 1;
+
+    for (const entry of normalizeOnOfficeEstatePictureEntries(recordsChunk)) {
+      const bucket = entriesByEstateId.get(entry.estateId) ?? [];
+      bucket.push(entry);
+      entriesByEstateId.set(entry.estateId, bucket);
+    }
+  }
+
+  const bundles = new Map<string, OnOfficeEstateMediaBundle>();
+  let assetCount = 0;
+  let coveredEstateCount = 0;
+  for (const estateId of estateIds) {
+    const bundle = buildOnOfficeEstateMediaBundle(entriesByEstateId.get(estateId) ?? []);
+    bundles.set(estateId, bundle);
+    assetCount += bundle.gallery_assets.length + bundle.documents.length;
+    if (bundle.gallery_assets.length > 0 || bundle.documents.length > 0) coveredEstateCount += 1;
+  }
+
+  return {
+    bundles,
+    requestCount,
+    pagesFetched,
+    assetCount,
+    coveredEstateCount,
+  };
 }
 
 function toIsoNow(): string {
@@ -711,9 +1036,11 @@ function mapEstateToOffer(
   partnerId: string,
   integration: PartnerIntegration,
   record: OnOfficeRecord,
+  media?: OnOfficeEstateMediaBundle,
 ): MappedOffer {
   const elements = (record.elements ?? {}) as Record<string, unknown>;
-  const gallery = extractImages(elements);
+  const mediaBundle = media ?? EMPTY_ONOFFICE_ESTATE_MEDIA;
+  const gallery = mediaBundle.gallery.length > 0 ? mediaBundle.gallery : extractImages(elements);
   const address = buildAddress(elements);
   const zipCode = String(elements["plz"] ?? "").trim() || null;
   const parsedLocation = splitOnOfficeCityDistrict(elements["ort"]);
@@ -783,7 +1110,7 @@ function mapEstateToOffer(
     area_sqm: toNumber(elements["wohnflaeche"]),
     rooms: toNumber(elements["anzahl_zimmer"]),
     address,
-    image_url: gallery[0] ?? null,
+    image_url: mediaBundle.image_url ?? gallery[0] ?? null,
     detail_url: buildDetailUrl(integration.detail_url_template, elements),
     is_top: false,
     updated_at: sourceUpdatedAt,
@@ -808,7 +1135,13 @@ function mapEstateToOffer(
       pricing,
       equipment,
       marketing,
+      image_url: mediaBundle.image_url ?? gallery[0] ?? null,
       gallery,
+      gallery_urls: mediaBundle.gallery_urls.length > 0 ? mediaBundle.gallery_urls : gallery,
+      gallery_assets: mediaBundle.gallery_assets,
+      documents: mediaBundle.documents,
+      floorplan_url: mediaBundle.floorplan_url,
+      map_url: mediaBundle.map_url,
       lat: elements["breitengrad"] ?? null,
       lng: elements["laengengrad"] ?? null,
       geaendert_am: elements["geaendert_am"] ?? null,
@@ -826,12 +1159,14 @@ function mapEstateToOffer(
 
 function mapEstateToReference(
   partnerId: string,
-  integration: PartnerIntegration,
+  _integration: PartnerIntegration,
   record: OnOfficeRecord,
   settings: OnOfficeResourceSettings,
+  media?: OnOfficeEstateMediaBundle,
 ): RawReference {
   const elements = (record.elements ?? {}) as Record<string, unknown>;
-  const gallery = extractImages(elements);
+  const mediaBundle = media ?? EMPTY_ONOFFICE_ESTATE_MEDIA;
+  const gallery = mediaBundle.gallery.length > 0 ? mediaBundle.gallery : extractImages(elements);
   const city = String(elements["ort"] ?? "").trim();
   const statusValue = readOnOfficeStatusValue(elements, settings.listing_status_field_key);
   const saleType =
@@ -866,7 +1201,13 @@ function mapEstateToReference(
       saleType === "reserviert"
         ? "Das Objekt ist aktuell reserviert."
         : `Das Objekt wurde erfolgreich ${saleType}.`,
-    image_url: gallery[0] ?? null,
+    image_url: mediaBundle.image_url ?? gallery[0] ?? null,
+    gallery,
+    gallery_urls: mediaBundle.gallery_urls.length > 0 ? mediaBundle.gallery_urls : gallery,
+    gallery_assets: mediaBundle.gallery_assets,
+    documents: mediaBundle.documents,
+    floorplan_url: mediaBundle.floorplan_url,
+    map_url: mediaBundle.map_url,
     geaendert_am: elements["geaendert_am"] ?? null,
     status: elements["status"] ?? null,
     status2: elements["status2"] ?? null,
@@ -1692,9 +2033,13 @@ export async function syncOnOfficeResources(
     const estates = estateResult.records;
     providerRequestCount += estateResult.requestCount;
     providerPagesFetched += estateResult.pagesFetched;
+    const estateMediaResult = await fetchOnOfficeEstateMedia(integration, token, secret, estates);
+    providerRequestCount += estateMediaResult.requestCount;
+    providerPagesFetched += estateMediaResult.pagesFetched;
     notes.push(`onOffice estate diagnostic: ${estates.length} Datensätze nach Angebotsfilter geladen.`);
     notes.push(formatOnOfficeDeltaNote("estate", estateResult.deltaWindow, cfg.listing_automation_mode, triggeredBy));
     notes.push(`onOffice estate paging: requests=${estateResult.requestCount}, pages=${estateResult.pagesFetched}`);
+    notes.push(`onOffice estate media: ${estateMediaResult.assetCount} praesentationsrelevante Assets fuer ${estateMediaResult.coveredEstateCount}/${estates.length} Angebote geladen.`);
     notes.push(`onOffice estate status-Werte: ${summarizeEstateFieldValues(estates, "status")}`);
     notes.push(`onOffice estate status-Verteilung: ${summarizeEstateFieldDistribution(estates, "status")}`);
     notes.push(`onOffice estate ${cfg.listing_status_field_key}-Werte: ${summarizeEstateFieldValues(estates, cfg.listing_status_field_key)}`);
@@ -1705,7 +2050,14 @@ export async function syncOnOfficeResources(
     notes.push(`onOffice estate reserviert-Verteilung: ${summarizeEstateFieldDistribution(estates, "reserviert")}`);
     notes.push(`onOffice estate veroeffentlichen-Werte: ${summarizeEstateFieldValues(estates, "veroeffentlichen")}`);
     notes.push(`onOffice estate veroeffentlichen-Verteilung: ${summarizeEstateFieldDistribution(estates, "veroeffentlichen")}`);
-    offers = estates.map((record) => mapEstateToOffer(integration.partner_id, integration, record));
+    offers = estates.map((record) =>
+      mapEstateToOffer(
+        integration.partner_id,
+        integration,
+        record,
+        estateMediaResult.bundles.get(extractOnOfficeEstateId(record)) ?? EMPTY_ONOFFICE_ESTATE_MEDIA,
+      ),
+    );
     listings = offers.map((offer) =>
       makeRawRowBase(
         offer.partner_id,
@@ -1724,9 +2076,13 @@ export async function syncOnOfficeResources(
     const referenceRecords = referenceResult.records;
     providerRequestCount += referenceResult.requestCount;
     providerPagesFetched += referenceResult.pagesFetched;
+    const referenceMediaResult = await fetchOnOfficeEstateMedia(integration, token, secret, referenceRecords);
+    providerRequestCount += referenceMediaResult.requestCount;
+    providerPagesFetched += referenceMediaResult.pagesFetched;
     notes.push(`onOffice reference diagnostic: ${referenceRecords.length} Datensätze nach Referenzfilter geladen.`);
     notes.push(formatOnOfficeDeltaNote("reference", referenceResult.deltaWindow, cfg.reference_automation_mode, triggeredBy));
     notes.push(`onOffice reference paging: requests=${referenceResult.requestCount}, pages=${referenceResult.pagesFetched}`);
+    notes.push(`onOffice reference media: ${referenceMediaResult.assetCount} praesentationsrelevante Assets fuer ${referenceMediaResult.coveredEstateCount}/${referenceRecords.length} Referenzen geladen.`);
     notes.push(`onOffice reference status-Werte: ${summarizeEstateFieldValues(referenceRecords, "status")}`);
     notes.push(`onOffice reference status-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "status")}`);
     notes.push(`onOffice reference status2-Werte: ${summarizeEstateFieldValues(referenceRecords, "status2")}`);
@@ -1741,7 +2097,15 @@ export async function syncOnOfficeResources(
     notes.push(`onOffice reference vermietet-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "vermietet")}`);
     notes.push(`onOffice reference veroeffentlichen-Werte: ${summarizeEstateFieldValues(referenceRecords, "veroeffentlichen")}`);
     notes.push(`onOffice reference veroeffentlichen-Verteilung: ${summarizeEstateFieldDistribution(referenceRecords, "veroeffentlichen")}`);
-    references = referenceRecords.map((record) => mapEstateToReference(integration.partner_id, integration, record, cfg));
+    references = referenceRecords.map((record) =>
+      mapEstateToReference(
+        integration.partner_id,
+        integration,
+        record,
+        cfg,
+        referenceMediaResult.bundles.get(extractOnOfficeEstateId(record)) ?? EMPTY_ONOFFICE_ESTATE_MEDIA,
+      ),
+    );
     referencesFetched = true;
   }
 

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { parsePublicLocale } from "@/lib/public-locale-routing";
-import { ImmobilienangeboteOrtPageContent } from "@/app/(public)/immobilienmarkt/[bundesland]/[kreis]/[ort]/immobilienangebote/page";
+import { ImmobilienangeboteOrtPageContent } from "@/app/(public)/immobilienmarkt/[bundesland]/[kreis]/[ort]/immobilienangebote/ImmobilienangeboteOrtPageContent";
 
 type PageProps = {
   params: Promise<{ locale: string; bundesland: string; kreis: string; ort: string }>;

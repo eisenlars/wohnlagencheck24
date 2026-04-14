@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export async function MietgesuchKreisDetailPageContent({
+async function MietgesuchKreisDetailPageContent({
   bundesland,
   kreis,
   requestParam,

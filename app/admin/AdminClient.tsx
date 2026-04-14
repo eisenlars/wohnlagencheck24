@@ -19,7 +19,7 @@ import {
   type MarketExplanationFaqEntryRecord,
   type MarketExplanationFaqEntryStatus,
   type MarketExplanationFaqI18nMetaViewRecord,
-} from "@/lib/market-explanation-faqs";
+} from "@/lib/market-explanation-faq-shared";
 import type {
   MarketExplanationStaticTextEntryRecord,
   MarketExplanationStaticTextEntryStatus,

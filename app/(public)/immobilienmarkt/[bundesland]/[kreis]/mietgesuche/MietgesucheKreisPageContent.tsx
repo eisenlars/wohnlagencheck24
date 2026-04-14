@@ -14,7 +14,7 @@ type ContentProps = { bundesland: string; kreis: string; page?: number; locale?:
 
 const PAGE_SIZE = 12;
 
-async function ImmobiliengesucheKreisPageContent({
+export async function MietgesucheKreisPageContent({
   bundesland,
   kreis,
   page = 1,
@@ -28,7 +28,7 @@ async function ImmobiliengesucheKreisPageContent({
   const { requests, sourceCount, total } = await getRegionalRequestsForKreis({
     bundeslandSlug: bundesland,
     kreisSlug: kreis,
-    mode: "kauf",
+    mode: "miete",
     page,
     pageSize: PAGE_SIZE,
     locale: normalizedLocale,
@@ -39,10 +39,10 @@ async function ImmobiliengesucheKreisPageContent({
   const kreisName = getRegionDisplayName({ meta, level: "kreis", fallbackSlug: kreis });
   const bundeslandName = asString(meta["bundesland_name"]) ?? formatRegionFallback(bundesland);
   const rawBasePath = `/immobilienmarkt/${bundesland}/${kreis}`;
-  const germanListPath = `${rawBasePath}/immobiliengesuche`;
+  const germanListPath = `${rawBasePath}/mietgesuche`;
   const basePath = localizeHref(rawBasePath);
-  const listPath = `${basePath}/immobiliengesuche`;
-  const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.kreis, { id: "immobiliengesuche", label: texts.buy_requests }];
+  const listPath = `${basePath}/mietgesuche`;
+  const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.kreis, { id: "mietgesuche", label: texts.rent_requests }];
   const availabilityNotice = normalizedLocale !== "de" && total === 0 && sourceCount > 0
     ? {
         title: texts.requests_unavailable_title,
@@ -54,9 +54,9 @@ async function ImmobiliengesucheKreisPageContent({
 
   return (
     <GesuchePage
-      heading={`${texts.buy_requests} ${kreisName}`}
+      heading={`${texts.rent_requests} ${kreisName}`}
       requests={requests}
-      mode="kauf"
+      mode="miete"
       detailBasePath={listPath}
       pagination={{
         page: Math.max(page, 1),
@@ -65,7 +65,7 @@ async function ImmobiliengesucheKreisPageContent({
         basePath: listPath,
       }}
       tabs={tabs}
-      activeTabId="immobiliengesuche"
+      activeTabId="mietgesuche"
       basePath={basePath}
       ctx={{ bundeslandSlug: bundesland, kreisSlug: kreis }}
       names={{ bundeslandName, kreisName, regionName: kreisName }}
@@ -77,10 +77,10 @@ async function ImmobiliengesucheKreisPageContent({
   );
 }
 
-export default async function ImmobiliengesucheKreisPage({ params, searchParams }: PageProps) {
+export default async function MietgesucheKreisPage({ params, searchParams }: PageProps) {
   const { bundesland, kreis } = await params;
   const rawPage = await (await searchParams)?.page;
   const parsedPage = rawPage ? Number(rawPage) : 1;
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-  return ImmobiliengesucheKreisPageContent({ bundesland, kreis, page, locale: "de" });
+  return MietgesucheKreisPageContent({ bundesland, kreis, page, locale: "de" });
 }

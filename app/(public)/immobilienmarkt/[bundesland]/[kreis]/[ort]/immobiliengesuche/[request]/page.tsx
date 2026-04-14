@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export async function ImmobiliengesuchOrtDetailPageContent({
+async function ImmobiliengesuchOrtDetailPageContent({
   bundesland,
   kreis,
   ort,

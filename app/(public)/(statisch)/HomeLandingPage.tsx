@@ -104,7 +104,7 @@ function renderMarkdown(md: string) {
 
 // app/(statisch)/page.tsx (Ausschnitt)
 
-async function HomeLandingPage({ locale = "de" }: { locale?: string }) {
+export async function HomeLandingPage({ locale = "de" }: { locale?: string }) {
   const bundeslaender = await getBundeslaender();
   const homeEntries = await loadPortalCmsEntriesByPage("home", locale);
   let latestBlog: BlogBlock | null = null;

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { ImpressumPageContent } from "@/app/(public)/(statisch)/impressum/page";
+import { ImpressumPageContent } from "@/app/(public)/(statisch)/impressum/ImpressumPageContent";
 import { parsePublicLocale } from "@/lib/public-locale-routing";
 
 export default async function LocalizedImpressumPage({

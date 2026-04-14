@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     kreisSlug: kreis,
     ortSlug: ort,
     requestId: id,
-    mode: "miete",
+    mode: "kauf",
     locale: "de",
   });
   if (!requestData) return {};
@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-async function MietgesuchOrtDetailPageContent({
+export async function ImmobiliengesuchOrtDetailPageContent({
   bundesland,
   kreis,
   ort,
@@ -62,7 +62,7 @@ async function MietgesuchOrtDetailPageContent({
     kreisSlug: kreis,
     ortSlug: ort,
     requestId: id,
-    mode: "miete",
+    mode: "kauf",
     locale: normalizedLocale,
   });
   if (!requestData) notFound();
@@ -78,22 +78,22 @@ async function MietgesuchOrtDetailPageContent({
   const rawBasePath = `/immobilienmarkt/${bundesland}/${kreis}/${ort}`;
   const rawParentBasePath = `/immobilienmarkt/${bundesland}/${kreis}`;
   const basePath = normalizedLocale === "de" ? rawBasePath : buildLocalizedHref(normalizedLocale, rawBasePath);
-  const listPath = `${basePath}/mietgesuche`;
-  const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.ort, { id: "mietgesuche", label: normalizedLocale === "de" ? "Mietgesuche" : "Rental requests" }];
+  const listPath = `${basePath}/immobiliengesuche`;
+  const tabs = [...IMMOBILIENMARKT_THEME.tabsByLevel.ort, { id: "immobiliengesuche", label: normalizedLocale === "de" ? "Kaufgesuche" : "Buy requests" }];
   const texts = await getPortalSystemTexts(normalizedLocale);
   const formatProfile = await loadPortalFormatProfile(normalizedLocale);
 
   return (
     <RequestDetailPage
       request={requestData}
-      mode="miete"
+      mode="kauf"
       texts={texts}
       formatProfile={formatProfile}
       locale={normalizedLocale}
       listPath={listPath}
       breadcrumb={{
         tabs,
-        activeTabId: "mietgesuche",
+        activeTabId: "immobiliengesuche",
         basePath,
         parentBasePath: normalizedLocale === "de" ? rawParentBasePath : buildLocalizedHref(normalizedLocale, rawParentBasePath),
         ctx: { bundeslandSlug: bundesland, kreisSlug: kreis, ortSlug: ort },
@@ -103,7 +103,7 @@ async function MietgesuchOrtDetailPageContent({
   );
 }
 
-export default async function MietgesuchOrtDetailPage({ params }: PageProps) {
+export default async function ImmobiliengesuchOrtDetailPage({ params }: PageProps) {
   const { bundesland, kreis, ort, request } = await params;
-  return MietgesuchOrtDetailPageContent({ bundesland, kreis, ort, requestParam: request, locale: "de" });
+  return ImmobiliengesuchOrtDetailPageContent({ bundesland, kreis, ort, requestParam: request, locale: "de" });
 }

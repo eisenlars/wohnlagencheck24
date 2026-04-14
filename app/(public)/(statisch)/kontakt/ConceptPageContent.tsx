@@ -9,7 +9,7 @@ import {
 import { loadPortalCmsEntriesByPage, resolvePortalCmsField } from "@/lib/portal-cms-reader";
 import { buildLocalizedHref } from "@/lib/public-locale-routing";
 
-async function ConceptPageContent({ locale = "de" }: { locale?: string }) {
+export async function ConceptPageContent({ locale = "de" }: { locale?: string }) {
   const bundeslaender = await getBundeslaender();
   const conceptEntries = await loadPortalCmsEntriesByPage("concept", locale);
   const homeEntries = await loadPortalCmsEntriesByPage("home", locale);

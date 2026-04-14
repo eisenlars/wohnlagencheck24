@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { HomeLandingPage } from "@/app/(public)/(statisch)/page";
+import { HomeLandingPage } from "@/app/(public)/(statisch)/HomeLandingPage";
 import { parsePublicLocale } from "@/lib/public-locale-routing";
 
 export default async function LocalizedHomePage({

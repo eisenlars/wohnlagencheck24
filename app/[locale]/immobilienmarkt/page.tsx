@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { ImmobilienmarktOverviewContent } from "@/app/(public)/immobilienmarkt/page";
+import { ImmobilienmarktOverviewContent } from "@/app/(public)/immobilienmarkt/ImmobilienmarktOverviewContent";
 import { parsePublicLocale } from "@/lib/public-locale-routing";
 
 export default async function LocalizedImmobilienmarktOverviewPage({

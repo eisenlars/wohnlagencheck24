@@ -13,7 +13,7 @@ import {
 } from "@/lib/area-visibility";
 import { buildLocalizedHref } from "@/lib/public-locale-routing";
 
-async function ImmobilienmarktOverviewContent({ locale = null }: { locale?: string | null }) {
+export async function ImmobilienmarktOverviewContent({ locale = null }: { locale?: string | null }) {
   const bundeslaenderRaw = await getBundeslaender();
   const bundeslaender = (
     await Promise.all(
