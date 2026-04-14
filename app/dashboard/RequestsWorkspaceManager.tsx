@@ -859,7 +859,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                   style={offerRowStyle(selectedId === row.id)}
                 >
                   <span style={requestListTitleRowStyle}>
-                    <span style={{ fontWeight: 600 }}>{row.title || 'Gesuch'}</span>
+                    <span style={requestListTitleTextStyle}>{row.title || 'Gesuch'}</span>
                     <span
                       aria-hidden="true"
                       style={requestListStatusDotStyle(rowIsReady)}
@@ -1462,6 +1462,16 @@ const requestListTitleRowStyle: CSSProperties = {
   alignItems: 'flex-start',
   justifyContent: 'space-between',
   gap: '10px',
+};
+
+const requestListTitleTextStyle: CSSProperties = {
+  fontWeight: 600,
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  lineHeight: 1.35,
 };
 
 const requestListStatusDotStyle = (active: boolean): CSSProperties => ({
