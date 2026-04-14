@@ -80,7 +80,9 @@ type LlmOptionApiRow = {
 
 type WorkspaceTab = 'texts' | 'seo';
 type RequestListFilter = 'all' | 'haus' | 'wohnung';
-const REQUEST_LIST_PAGE_SIZE = 10;
+const REQUEST_LIST_VISIBLE_ROWS = 10;
+const REQUEST_LIST_ROW_HEIGHT = 76;
+const REQUEST_LIST_ROW_GAP = 8;
 
 type RegionTarget = {
   city?: string;
@@ -272,7 +274,6 @@ export default function RequestsWorkspaceManager(props: Props) {
   const [form, setForm] = useState<OverrideRow | null>(null);
   const [query, setQuery] = useState('');
   const [listFilter, setListFilter] = useState<RequestListFilter>('all');
-  const [listPage, setListPage] = useState(1);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
   const [imageInfoOpen, setImageInfoOpen] = useState(false);
   const [imageSelectionStatus, setImageSelectionStatus] = useState<string | null>(null);
@@ -385,10 +386,6 @@ export default function RequestsWorkspaceManager(props: Props) {
       return haystack.includes(term);
     });
   }, [listFilter, rows, query]);
-
-  useEffect(() => {
-    setListPage(1);
-  }, [listFilter, query, rows.length]);
 
   const selectedRow = useMemo(
     () => rows.find((row) => row.id === selectedId) ?? null,
@@ -704,12 +701,6 @@ export default function RequestsWorkspaceManager(props: Props) {
     `Radius: ${selectedRadiusLabel}`,
     `Zielregionen: ${selectedLocation}`,
   ].join(' | ');
-  const listPageCount = Math.max(1, Math.ceil(filteredRows.length / REQUEST_LIST_PAGE_SIZE));
-  const currentListPage = Math.min(listPage, listPageCount);
-  const pagedRows = filteredRows.slice(
-    (currentListPage - 1) * REQUEST_LIST_PAGE_SIZE,
-    currentListPage * REQUEST_LIST_PAGE_SIZE,
-  );
   const selectedImageMatch = useMemo(
     () =>
       matchRequestImage({
@@ -850,8 +841,8 @@ export default function RequestsWorkspaceManager(props: Props) {
             <button type="button" onClick={() => setListFilter('haus')} style={requestListFilterButtonStyle(listFilter === 'haus')}>Haus</button>
             <button type="button" onClick={() => setListFilter('wohnung')} style={requestListFilterButtonStyle(listFilter === 'wohnung')}>Wohnung</button>
           </div>
-          <div style={{ maxHeight: '60vh', overflowY: 'auto', marginTop: '12px' }}>
-            {pagedRows.map((row) => {
+          <div style={requestListViewportStyle}>
+            {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
               const rowOverride = overrides.find(
                 (entry) =>
@@ -884,29 +875,6 @@ export default function RequestsWorkspaceManager(props: Props) {
               <div style={{ color: '#94a3b8', fontSize: '13px' }}>Keine Gesuche gefunden.</div>
             ) : null}
           </div>
-          {filteredRows.length > REQUEST_LIST_PAGE_SIZE ? (
-            <div style={requestListPagerStyle}>
-              <button
-                type="button"
-                style={requestListPagerButtonStyle(currentListPage <= 1)}
-                disabled={currentListPage <= 1}
-                onClick={() => setListPage((prev) => Math.max(1, prev - 1))}
-              >
-                Zurück
-              </button>
-              <span style={requestListPagerLabelStyle}>
-                Seite {currentListPage} / {listPageCount}
-              </span>
-              <button
-                type="button"
-                style={requestListPagerButtonStyle(currentListPage >= listPageCount)}
-                disabled={currentListPage >= listPageCount}
-                onClick={() => setListPage((prev) => Math.min(listPageCount, prev + 1))}
-              >
-                Weiter
-              </button>
-            </div>
-          ) : null}
         </section>
 
         <section style={panelStyle}>
@@ -1480,11 +1448,12 @@ const offerRowStyle = (active: boolean): CSSProperties => ({
   borderRadius: '10px',
   border: '1px solid #e2e8f0',
   backgroundColor: active ? '#f1f5f9' : '#fff',
-  marginBottom: '8px',
   cursor: 'pointer',
   display: 'flex',
   flexDirection: 'column',
   gap: '4px',
+  minHeight: `${REQUEST_LIST_ROW_HEIGHT}px`,
+  justifyContent: 'center',
 });
 
 const requestListTitleRowStyle: CSSProperties = {
@@ -1803,30 +1772,13 @@ const requestListFilterButtonStyle = (active: boolean): CSSProperties => ({
   cursor: 'pointer',
 });
 
-const requestListPagerStyle: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: '10px',
+const requestListViewportStyle: CSSProperties = {
+  display: 'grid',
+  gap: `${REQUEST_LIST_ROW_GAP}px`,
   marginTop: '12px',
-};
-
-const requestListPagerButtonStyle = (disabled: boolean): CSSProperties => ({
-  padding: '7px 10px',
-  borderRadius: '10px',
-  border: '1px solid #cbd5e1',
-  backgroundColor: '#fff',
-  color: '#334155',
-  fontSize: '12px',
-  fontWeight: 600,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  opacity: disabled ? 0.5 : 1,
-});
-
-const requestListPagerLabelStyle: CSSProperties = {
-  fontSize: '12px',
-  color: '#64748b',
-  fontWeight: 600,
+  maxHeight: `${REQUEST_LIST_VISIBLE_ROWS * REQUEST_LIST_ROW_HEIGHT + (REQUEST_LIST_VISIBLE_ROWS - 1) * REQUEST_LIST_ROW_GAP}px`,
+  overflowY: 'auto',
+  paddingRight: '4px',
 };
 
 const textSourceNoteCardStyle: CSSProperties = {
