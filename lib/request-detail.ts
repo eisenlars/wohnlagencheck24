@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
 import { getRequestImageCatalogItemById, matchRequestImage } from "@/lib/request-image-matching";
+import { cleanRequestRegionTargetLabel } from "@/lib/request-region-targets";
 import type { RegionalRequest, RequestMode } from "@/lib/gesuche";
 
 export type RequestDetail = RegionalRequest & {
@@ -59,7 +60,8 @@ function parseRegionTargets(payload: Record<string, unknown>): Array<{ city: str
     const city = String(obj.city ?? "").trim();
     const districtRaw = String(obj.district ?? "").trim();
     const district = districtRaw.length > 0 ? districtRaw : null;
-    const label = String(obj.label ?? "").trim() || [city, district].filter(Boolean).join(" ");
+    const label = cleanRequestRegionTargetLabel(String(obj.label ?? "").trim(), city)
+      || [city, district].filter(Boolean).join(" ");
     if (!city && !label) continue;
     out.push({ city, district, label });
   }
