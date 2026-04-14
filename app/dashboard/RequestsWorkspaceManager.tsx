@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import FullscreenLoader from '@/components/ui/FullscreenLoader';
+import { formatRequestModeLabel, formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from '@/lib/request-labels';
 import { getRequestImageCatalog, matchRequestImage } from '@/lib/request-image-matching';
 import { createClient } from '@/utils/supabase/client';
 
@@ -668,7 +669,7 @@ export default function RequestsWorkspaceManager(props: Props) {
 
   const selectedType = getPayloadText(selectedPayload, ['object_type']) || '—';
   const selectedMode = getPayloadText(selectedPayload, ['request_type']) || '—';
-  const selectedMarketing = getPayloadText(selectedPayload, ['marketing_type']) || '—';
+  const selectedMarketing = selectedMode;
   const selectedRoomsMin = asNumber(selectedPayload.min_rooms);
   const selectedRoomsMax = asNumber(selectedPayload.max_rooms);
   const selectedAreaMin = asNumber(selectedPayload.min_area_sqm) ?? asNumber(selectedPayload.min_living_area_sqm);
@@ -691,10 +692,19 @@ export default function RequestsWorkspaceManager(props: Props) {
       : '—';
   const selectedRadiusLabel = getRadiusContextLabel(selectedPayload);
   const selectedSubtypeLabel = getPayloadText(selectedPayload, ['object_subtype']) || selectedSubtypes.join(', ') || '—';
+  const selectedMarketingDisplay = formatRequestModeLabel(selectedMarketing);
+  const selectedTypeDisplay = selectedType === '—' ? '—' : formatRequestObjectTypeLabel(selectedType);
+  const selectedSubtypeDisplay = selectedSubtypeLabel === '—'
+    ? '—'
+    : selectedSubtypeLabel
+      .split(',')
+      .map((value) => formatRequestSubtypeLabel(value.trim()))
+      .filter(Boolean)
+      .join(', ');
   const selectedFactsPromptText = [
-    `Vermarktung: ${selectedMarketing}`,
-    `Objektart: ${selectedType}`,
-    `Objekt-Untertyp: ${selectedSubtypeLabel}`,
+    `Vermarktung: ${selectedMarketingDisplay}`,
+    `Objektart: ${selectedTypeDisplay}`,
+    `Objekt-Untertyp: ${selectedSubtypeDisplay}`,
     `Budget: ${selectedBudgetLabel}`,
     `Fläche: ${selectedAreaLabel}`,
     `Zimmer: ${selectedRoomsLabel}`,
@@ -866,7 +876,7 @@ export default function RequestsWorkspaceManager(props: Props) {
                     />
                   </span>
                   <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                    {`${getPayloadText(payload, ['request_type']) || '—'} · ${getPayloadText(payload, ['object_type']) || '—'} · ${locationLabel !== '—' ? locationLabel : row.external_id}`}
+                    {`${formatRequestModeLabel(getPayloadText(payload, ['request_type']) || '—')} · ${formatRequestObjectTypeLabel(getPayloadText(payload, ['object_type']) || null)} · ${locationLabel !== '—' ? locationLabel : row.external_id}`}
                   </span>
                 </button>
               );
@@ -921,22 +931,22 @@ export default function RequestsWorkspaceManager(props: Props) {
                               <div style={offerSummaryLabelStyle}>Aktualisiert</div>
                               <div style={offerSummaryValueStyle}>{formatDateLabel(selectedUpdatedAt)}</div>
                             </div>
-                            <div>
-                              <div style={offerSummaryLabelStyle}>Vermarktung</div>
-                              <div style={offerSummaryValueStyle}>{selectedMarketing}</div>
-                            </div>
                           </div>
                         </div>
                         <div style={offerSummaryTopCardStyle}>
                           <div style={offerSummaryHeaderStyle}>Suchkriterien</div>
                           <div style={offerSummaryGridStyle}>
                             <div>
+                              <div style={offerSummaryLabelStyle}>Vermarktung</div>
+                              <div style={offerSummaryValueStyle}>{selectedMarketingDisplay}</div>
+                            </div>
+                            <div>
                               <div style={offerSummaryLabelStyle}>Objektart</div>
-                              <div style={offerSummaryValueStyle}>{selectedType}</div>
+                              <div style={offerSummaryValueStyle}>{selectedTypeDisplay}</div>
                             </div>
                             <div>
                               <div style={offerSummaryLabelStyle}>Objekt-Untertyp</div>
-                              <div style={offerSummaryValueStyle}>{selectedSubtypeLabel}</div>
+                              <div style={offerSummaryValueStyle}>{selectedSubtypeDisplay}</div>
                             </div>
                             <div>
                               <div style={offerSummaryLabelStyle}>Budget</div>

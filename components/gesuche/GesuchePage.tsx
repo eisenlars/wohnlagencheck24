@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { TabItem } from "@/features/immobilienmarkt/sections/types";
 import type { RegionalRequest, RequestMode } from "@/lib/gesuche";
+import { formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from "@/lib/request-labels";
 import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
@@ -62,14 +63,9 @@ export function GesuchePage(props: GesuchePageProps) {
     }).format(date);
   };
   const formatObjectType = (request: RegionalRequest) => {
-    const baseLabel =
-      request.objectType === "haus"
-        ? texts.house
-        : request.objectType === "wohnung"
-          ? texts.apartment
-          : request.objectType ?? texts.object_generic;
-    const subtype = String(request.objectSubtype ?? "").trim().replace(/_/g, " ");
-    return subtype ? `${baseLabel} · ${subtype}` : baseLabel;
+    const baseLabel = formatRequestObjectTypeLabel(request.objectType, texts);
+    const subtype = formatRequestSubtypeLabel(request.objectSubtype);
+    return subtype !== "—" ? `${baseLabel} · ${subtype}` : baseLabel;
   };
   const totalPages = pagination
     ? Math.max(1, Math.ceil(pagination.total / pagination.pageSize))

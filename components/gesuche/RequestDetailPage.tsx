@@ -5,6 +5,7 @@ import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/Imm
 import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import type { RequestMode } from "@/lib/gesuche";
+import { formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from "@/lib/request-labels";
 import type { RequestDetail } from "@/lib/request-detail";
 import { formatMetric } from "@/utils/format";
 import { RequestOfferLeadInlineForm } from "./RequestOfferLeadInlineForm";
@@ -93,13 +94,9 @@ export function RequestDetailPage(props: Props) {
       fractionDigits: 0,
     });
 
-  const objectLabel =
-    request.objectType === "haus"
-      ? texts.house
-      : request.objectType === "wohnung"
-        ? texts.apartment
-        : request.objectType ?? texts.object_generic;
-  const objectMetaLabel = request.objectSubtype ? `${objectLabel} · ${request.objectSubtype}` : objectLabel;
+  const objectLabel = formatRequestObjectTypeLabel(request.objectType, texts);
+  const objectSubtypeLabel = formatRequestSubtypeLabel(request.objectSubtype);
+  const objectMetaLabel = objectSubtypeLabel !== "—" ? `${objectLabel} · ${objectSubtypeLabel}` : objectLabel;
   const budgetLabel = request.maxPrice !== null || request.minPrice !== null
     ? `${
         request.minPrice !== null && request.maxPrice !== null
@@ -240,7 +237,7 @@ export function RequestDetailPage(props: Props) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
                 <div style={{ color: "#64748b" }}>{labels.subtype}</div>
-                <div style={{ fontWeight: 600 }}>{request.objectSubtype ?? "—"}</div>
+                <div style={{ fontWeight: 600 }}>{objectSubtypeLabel}</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "180px minmax(0, 1fr)", gap: 12 }}>
                 <div style={{ color: "#64748b" }}>{mode === "miete" ? texts.warm_rent : texts.purchase_price}</div>
