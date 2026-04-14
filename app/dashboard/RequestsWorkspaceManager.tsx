@@ -176,10 +176,20 @@ function getRegionTargetLabels(payload: Record<string, unknown>): string[] {
     const city = String(target.city ?? '').trim();
     const district = String(target.district ?? '').trim();
     const label = String(target.label ?? '').trim();
-    const value = label && !normalizeText(label).startsWith('umkreis')
-      ? label
-      : [city, district].filter(Boolean).join(' ');
-    if (value) labels.push(value);
+    const parts = [label, city, district]
+      .flatMap((value) => value.split(','))
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .filter((part) => !normalizeText(part).startsWith('umkreis'));
+    if (parts.length > 0) {
+      labels.push(dedupe(parts).join(' '));
+      continue;
+    }
+    const fallback = [city, district]
+      .filter(Boolean)
+      .filter((part) => !normalizeText(part).startsWith('umkreis'))
+      .join(' ');
+    if (fallback) labels.push(fallback);
   }
   return dedupe(labels);
 }
