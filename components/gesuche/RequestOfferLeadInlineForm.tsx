@@ -112,22 +112,15 @@ export function RequestOfferLeadInlineForm(props: Props) {
   }
 
   return (
-    <div
-      style={{
-        borderTop: "1px solid #e2e8f0",
-        paddingTop: 20,
-        display: "grid",
-        gap: 14,
-      }}
-    >
+    <div className="request-offer-inline-block">
       <div>
         <h2 style={{ margin: "0 0 6px" }}>{copy.title}</h2>
         <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>{copy.intro}</p>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 14 }}>
+      <form onSubmit={handleSubmit} className="request-offer-form-grid">
         <div>
-          <label className="form-label" htmlFor={`inline_offer_name_${props.request.id}`}>{copy.name}</label>
+          <label className="form-label request-offer-required" htmlFor={`inline_offer_name_${props.request.id}`}>{copy.name}</label>
           <input
             id={`inline_offer_name_${props.request.id}`}
             className="form-control"
@@ -137,27 +130,30 @@ export function RequestOfferLeadInlineForm(props: Props) {
             required
           />
         </div>
-        <div>
-          <label className="form-label" htmlFor={`inline_offer_email_${props.request.id}`}>{copy.email}</label>
-          <input
-            id={`inline_offer_email_${props.request.id}`}
-            className="form-control"
-            type="email"
-            value={form.email}
-            onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-            autoComplete="email"
-            required
-          />
-        </div>
-        <div>
-          <label className="form-label" htmlFor={`inline_offer_phone_${props.request.id}`}>{copy.phone}</label>
-          <input
-            id={`inline_offer_phone_${props.request.id}`}
-            className="form-control"
-            value={form.phone}
-            onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
-            autoComplete="tel"
-          />
+        <div className="request-offer-contact-grid">
+          <div>
+            <label className="form-label request-offer-required" htmlFor={`inline_offer_email_${props.request.id}`}>{copy.email}</label>
+            <input
+              id={`inline_offer_email_${props.request.id}`}
+              className="form-control"
+              type="email"
+              value={form.email}
+              onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+              autoComplete="email"
+              required
+            />
+          </div>
+          <div>
+            <label className="form-label request-offer-required" htmlFor={`inline_offer_phone_${props.request.id}`}>{copy.phone}</label>
+            <input
+              id={`inline_offer_phone_${props.request.id}`}
+              className="form-control"
+              value={form.phone}
+              onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
+              autoComplete="tel"
+              required
+            />
+          </div>
         </div>
         <div>
           <label className="form-label" htmlFor={`inline_offer_location_${props.request.id}`}>{copy.propertyLocation}</label>
@@ -189,16 +185,8 @@ export function RequestOfferLeadInlineForm(props: Props) {
         ) : null}
         <button
           type="submit"
-          className="btn btn-sm"
+          className="btn btn-dark w-100 request-offer-submit"
           disabled={state === "submitting" || state === "success"}
-          style={{
-            background: "#486b7a",
-            border: "1px solid #486b7a",
-            color: "#fff",
-            fontWeight: 700,
-            justifySelf: "start",
-            minWidth: 180,
-          }}
         >
           {state === "submitting" ? copy.sending : copy.send}
         </button>

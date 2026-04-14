@@ -189,17 +189,7 @@ export function RequestDetailPage(props: Props) {
             <div style={{ color: "#334155", fontSize: 16, lineHeight: 1.8 }}>
               {request.description ?? "—"}
             </div>
-            <div
-              style={{
-                marginTop: 14,
-                border: "1px solid #dbe4ea",
-                borderRadius: 14,
-                background: "#f8fafc",
-                padding: "16px 18px",
-                display: "grid",
-                gap: 8,
-              }}
-            >
+            <div className="request-detail-benefit-box">
               <div
                 style={{
                   fontSize: 12,

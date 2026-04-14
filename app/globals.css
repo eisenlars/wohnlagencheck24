@@ -2409,6 +2409,50 @@ h6 {
   border-color: #111;
 }
 
+.request-detail-benefit-box {
+  margin-top: 1.5rem;
+  border: 1px solid #dbe4ea;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 16px 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.request-offer-inline-block {
+  display: grid;
+  gap: 14px;
+}
+
+.request-offer-form-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.request-offer-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.request-offer-required::after {
+  content: " *";
+  color: #9a3412;
+  font-weight: 700;
+}
+
+.request-offer-submit {
+  font-weight: 700;
+  padding: 0.9rem 1.4rem;
+  min-height: 52px;
+}
+
+@media (max-width: 768px) {
+  .request-offer-contact-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* --- Angebotsdetail --- */
 .offer-detail-hero {
   display: grid;

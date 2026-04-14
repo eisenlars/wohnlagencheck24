@@ -49,8 +49,6 @@ const headerStyle: CSSProperties = {
 
 const bodyStyle: CSSProperties = {
   padding: "1.25rem",
-  display: "grid",
-  gap: "0.85rem",
 };
 
 const footerStyle: CSSProperties = {
@@ -167,10 +165,10 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
               <span style={{ fontSize: "0.95rem", opacity: 0.92 }}>{props.request.title}</span>
             </div>
             <form onSubmit={handleSubmit}>
-              <div style={bodyStyle}>
+              <div style={bodyStyle} className="request-offer-form-grid">
                 <p style={{ margin: 0, color: "#475569" }}>{copy.intro}</p>
                 <div>
-                  <label className="form-label" htmlFor={`offer_name_${props.request.id}`}>{copy.name}</label>
+                  <label className="form-label request-offer-required" htmlFor={`offer_name_${props.request.id}`}>{copy.name}</label>
                   <input
                     id={`offer_name_${props.request.id}`}
                     className="form-control"
@@ -180,27 +178,30 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
                     required
                   />
                 </div>
-                <div>
-                  <label className="form-label" htmlFor={`offer_email_${props.request.id}`}>{copy.email}</label>
-                  <input
-                    id={`offer_email_${props.request.id}`}
-                    className="form-control"
-                    type="email"
-                    value={form.email}
-                    onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-                    autoComplete="email"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="form-label" htmlFor={`offer_phone_${props.request.id}`}>{copy.phone}</label>
-                  <input
-                    id={`offer_phone_${props.request.id}`}
-                    className="form-control"
-                    value={form.phone}
-                    onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
-                    autoComplete="tel"
-                  />
+                <div className="request-offer-contact-grid">
+                  <div>
+                    <label className="form-label request-offer-required" htmlFor={`offer_email_${props.request.id}`}>{copy.email}</label>
+                    <input
+                      id={`offer_email_${props.request.id}`}
+                      className="form-control"
+                      type="email"
+                      value={form.email}
+                      onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label request-offer-required" htmlFor={`offer_phone_${props.request.id}`}>{copy.phone}</label>
+                    <input
+                      id={`offer_phone_${props.request.id}`}
+                      className="form-control"
+                      value={form.phone}
+                      onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
+                      autoComplete="tel"
+                      required
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="form-label" htmlFor={`offer_location_${props.request.id}`}>{copy.propertyLocation}</label>
@@ -235,7 +236,7 @@ export function RequestOfferLeadButton(props: RequestOfferLeadButtonProps) {
                 <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setOpen(false)}>
                   {copy.cancel}
                 </button>
-                <button type="submit" className="btn btn-dark btn-sm" disabled={state === "submitting" || state === "success"}>
+                <button type="submit" className="btn btn-dark request-offer-submit" disabled={state === "submitting" || state === "success"}>
                   {state === "submitting" ? copy.sending : copy.send}
                 </button>
               </div>
