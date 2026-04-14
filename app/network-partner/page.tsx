@@ -47,6 +47,7 @@ export default function NetworkPartnerHomePage() {
       hidePrimaryNav
       hideContentHeader
       surfacelessContent
+      contentStagePadding="40px"
       title={networkPartner?.company_name ? `Willkommen ${networkPartner.company_name}` : 'Willkommen'}
       description="Hier verwaltest du deine Buchungen und Inhalte."
     >

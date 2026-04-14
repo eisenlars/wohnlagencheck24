@@ -30,6 +30,7 @@ type NetworkPartnerShellProps = {
   hideHeaderMeta?: boolean;
   hideContentHeader?: boolean;
   surfacelessContent?: boolean;
+  contentStagePadding?: string;
   children: ReactNode;
 };
 
@@ -161,6 +162,7 @@ export default function NetworkPartnerShell({
   hideHeaderMeta = false,
   hideContentHeader = false,
   surfacelessContent = false,
+  contentStagePadding = '0',
   children,
 }: NetworkPartnerShellProps) {
   const router = useRouter();
@@ -315,7 +317,7 @@ export default function NetworkPartnerShell({
           </aside>
         )}
 
-        <main style={contentStageStyle}>
+        <main style={{ ...contentStageStyle, padding: contentStagePadding }}>
           {hideContentHeader ? null : (
             <section style={contentHeaderStyle}>
               <div style={contentHeaderTextBlockStyle(centerHeaderContent)}>
@@ -597,7 +599,7 @@ const contentPanelStyle: React.CSSProperties = {
 };
 
 const contentPanelBareStyle: React.CSSProperties = {
-  margin: '18px 40px 24px',
+  margin: 0,
   display: 'grid',
   gap: 18,
   alignContent: 'start',
