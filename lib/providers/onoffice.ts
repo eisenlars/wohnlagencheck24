@@ -1056,11 +1056,8 @@ function mapSearchCriteriaToRequest(partnerId: string, record: OnOfficeSearchCri
       centerPlz,
     ].filter(Boolean).join(", ")
     || String(meta.publicnote ?? "").trim();
-  const fallbackCity = centerOrt;
   const targetCandidates = [
     toRegionTarget(centerOrt ?? "", centerPlz),
-    ...parseRegionTargetsFromHint(regionalSupplement, fallbackCity),
-    ...parseRegionTargetsFromHint(meta.publicnote, fallbackCity),
   ];
   const seenTargetKeys = new Set<string>();
   const targets = targetCandidates
