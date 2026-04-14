@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { TabItem } from "@/features/immobilienmarkt/sections/types";
 import type { RegionalRequest, RequestMode } from "@/lib/gesuche";
-import { formatRequestObjectTypeLabel, formatRequestSubtypeLabel } from "@/lib/request-labels";
+import { formatRequestObjectTypeLabel } from "@/lib/request-labels";
 import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { normalizePublicLocale } from "@/lib/public-locale-routing";
@@ -63,9 +63,7 @@ export function GesuchePage(props: GesuchePageProps) {
     }).format(date);
   };
   const formatObjectType = (request: RegionalRequest) => {
-    const baseLabel = formatRequestObjectTypeLabel(request.objectType, texts);
-    const subtype = formatRequestSubtypeLabel(request.objectSubtype);
-    return subtype !== "—" ? `${baseLabel} · ${subtype}` : baseLabel;
+    return formatRequestObjectTypeLabel(request.objectType, texts);
   };
   const totalPages = pagination
     ? Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
@@ -93,6 +91,12 @@ export function GesuchePage(props: GesuchePageProps) {
         />
       </div>
 
+      <div className="angebote-page-title">
+        <h1 className="angebote-page-title-text">
+          {availabilityNotice ? heading : `${headingCount} ${heading}`}
+        </h1>
+      </div>
+
       <div className="angebote-mode-toggle mb-5">
         <Link className={`angebote-mode-btn ${mode === "kauf" ? "is-active" : ""}`} href={kaufPath}>
           {texts.buy_requests}
@@ -100,12 +104,6 @@ export function GesuchePage(props: GesuchePageProps) {
         <Link className={`angebote-mode-btn ${mode === "miete" ? "is-active" : ""}`} href={mietePath}>
           {texts.rent_requests}
         </Link>
-      </div>
-
-      <div className="angebote-page-title">
-        <h1 className="angebote-page-title-text">
-          {availabilityNotice ? heading : `${headingCount} ${heading}`}
-        </h1>
       </div>
 
       {requests.length === 0 ? (
@@ -176,7 +174,7 @@ export function GesuchePage(props: GesuchePageProps) {
                     )}
                   </h2>
                   <div style={{ color: "#334155", marginBottom: 18, lineHeight: 1.6 }}>
-                    {request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified}
+                    {`Suchregion: ${request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified}`}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: "auto" }}>
                     {buildDetailHref(request) ? (
