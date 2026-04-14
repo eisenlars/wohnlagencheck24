@@ -28,6 +28,7 @@ import { buildI18nPromptWithExtras, getI18nStandardPrompt } from '@/lib/i18n-pro
 import { hashText } from '@/lib/text-hash';
 import { getTextKeyLabel } from '@/lib/text-key-labels';
 import { useSessionViewState } from '@/lib/ui/session-view-state';
+import { formatRequestModeLabel, formatRequestObjectTypeLabel } from '@/lib/request-labels';
 import {
   workflowActionButtonStyle,
   workflowAreaContentStackStyle,
@@ -595,6 +596,68 @@ type RequestTranslationItem = {
   translation_is_stale: boolean;
 };
 
+type RequestBaseline = {
+  translated_seo_title: string;
+  translated_seo_description: string;
+  translated_seo_h1: string;
+  translated_short_description: string;
+  translated_long_description: string;
+  translated_location_text: string;
+  translated_features_text: string;
+  translated_highlights: string[];
+  translated_image_alt_texts: string[];
+  translation_status: BlogTranslationStatus;
+};
+
+type RequestEditorTab = 'texts' | 'seo';
+
+type RequestFieldDefinition = {
+  key: string;
+  label: string;
+  tab: RequestEditorTab;
+  sourceKey: keyof RequestTranslationItem;
+  targetKey: keyof RequestBaseline;
+  multiline?: boolean;
+  placeholder?: string;
+};
+
+const REQUEST_FIELD_DEFINITIONS: RequestFieldDefinition[] = [
+  {
+    key: 'seo_h1',
+    label: 'Gesuch-Titel',
+    tab: 'texts',
+    sourceKey: 'source_seo_h1',
+    targetKey: 'translated_seo_h1',
+    placeholder: 'Gesuch-Titel in der Zielsprache',
+  },
+  {
+    key: 'long_description',
+    label: 'Beschreibung',
+    tab: 'texts',
+    sourceKey: 'source_long_description',
+    targetKey: 'translated_long_description',
+    multiline: true,
+    placeholder: 'Beschreibung in der Zielsprache',
+  },
+  {
+    key: 'seo_title',
+    label: 'SEO-Titel',
+    tab: 'seo',
+    sourceKey: 'source_seo_title',
+    targetKey: 'translated_seo_title',
+    placeholder: 'SEO-Titel in der Zielsprache',
+  },
+  {
+    key: 'seo_description',
+    label: 'SEO-Description',
+    tab: 'seo',
+    sourceKey: 'source_seo_description',
+    targetKey: 'translated_seo_description',
+    multiline: true,
+    placeholder: 'SEO-Description in der Zielsprache',
+  },
+];
+
 const I18N_MOCK_TRANSLATION = process.env.NEXT_PUBLIC_I18N_MOCK_TRANSLATION === '1';
 const I18N_VIEW_STATE_KEY_PREFIX = 'partner_i18n_view_state_v1';
 const DEFAULT_I18N_DOMAINS: I18nProductDomain[] = [
@@ -1088,6 +1151,7 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [propertyStatus, setPropertyStatus] = useState<string | null>(null);
   const [propertyStatusTone, setPropertyStatusTone] = useState<'success' | 'error' | null>(null);
   const [propertyEditorTab, setPropertyEditorTab] = useState<PropertyEditorTab>('texts');
+  const [requestEditorTab, setRequestEditorTab] = useState<RequestEditorTab>('texts');
   const [propertyAiKey, setPropertyAiKey] = useState<string | null>(null);
   const [propertyBulkAiRunning, setPropertyBulkAiRunning] = useState(false);
   const [referenceItems, setReferenceItems] = useState<ReferenceTranslationItem[]>([]);
@@ -1108,18 +1172,7 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [referenceStatus, setReferenceStatus] = useState<string | null>(null);
   const [referenceStatusTone, setReferenceStatusTone] = useState<'success' | 'error' | null>(null);
   const [requestItems, setRequestItems] = useState<RequestTranslationItem[]>([]);
-  const [requestBaselineById, setRequestBaselineById] = useState<Record<string, {
-    translated_seo_title: string;
-    translated_seo_description: string;
-    translated_seo_h1: string;
-    translated_short_description: string;
-    translated_long_description: string;
-    translated_location_text: string;
-    translated_features_text: string;
-    translated_highlights: string[];
-    translated_image_alt_texts: string[];
-    translation_status: BlogTranslationStatus;
-  }>>({});
+  const [requestBaselineById, setRequestBaselineById] = useState<Record<string, RequestBaseline>>({});
   const [requestLoading, setRequestLoading] = useState(false);
   const [requestSaving, setRequestSaving] = useState(false);
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
@@ -1144,6 +1197,10 @@ export default function InternationalizationManager({ config, availableLocales, 
   const selectedRequestItem = useMemo(
     () => requestItems.find((item) => item.request_id === selectedRequestId) ?? requestItems[0] ?? null,
     [requestItems, selectedRequestId],
+  );
+  const requestVisibleFieldDefinitions = useMemo(
+    () => REQUEST_FIELD_DEFINITIONS.filter((definition) => definition.tab === requestEditorTab),
+    [requestEditorTab],
   );
 
   useEffect(() => {
@@ -2563,30 +2620,15 @@ export default function InternationalizationManager({ config, availableLocales, 
   const requestHasEdits = useMemo(() => {
     if (!selectedRequestItem) return false;
     const baseline = requestBaselineById[selectedRequestItem.request_id];
+    const trackedDefinitions = REQUEST_FIELD_DEFINITIONS;
     if (!baseline) {
       return (
-        selectedRequestItem.translated_seo_title.trim().length > 0
-        || selectedRequestItem.translated_seo_description.trim().length > 0
-        || selectedRequestItem.translated_seo_h1.trim().length > 0
-        || selectedRequestItem.translated_short_description.trim().length > 0
-        || selectedRequestItem.translated_long_description.trim().length > 0
-        || selectedRequestItem.translated_location_text.trim().length > 0
-        || selectedRequestItem.translated_features_text.trim().length > 0
-        || selectedRequestItem.translated_highlights.length > 0
-        || selectedRequestItem.translated_image_alt_texts.length > 0
+        trackedDefinitions.some((definition) => String(selectedRequestItem[definition.targetKey] ?? '').trim().length > 0)
         || selectedRequestItem.translation_status !== 'draft'
       );
     }
     return (
-      selectedRequestItem.translated_seo_title !== baseline.translated_seo_title
-      || selectedRequestItem.translated_seo_description !== baseline.translated_seo_description
-      || selectedRequestItem.translated_seo_h1 !== baseline.translated_seo_h1
-      || selectedRequestItem.translated_short_description !== baseline.translated_short_description
-      || selectedRequestItem.translated_long_description !== baseline.translated_long_description
-      || selectedRequestItem.translated_location_text !== baseline.translated_location_text
-      || selectedRequestItem.translated_features_text !== baseline.translated_features_text
-      || JSON.stringify(selectedRequestItem.translated_highlights) !== JSON.stringify(baseline.translated_highlights)
-      || JSON.stringify(selectedRequestItem.translated_image_alt_texts) !== JSON.stringify(baseline.translated_image_alt_texts)
+      trackedDefinitions.some((definition) => selectedRequestItem[definition.targetKey] !== baseline[definition.targetKey])
       || selectedRequestItem.translation_status !== baseline.translation_status
     );
   }, [requestBaselineById, selectedRequestItem]);
@@ -2961,6 +3003,95 @@ export default function InternationalizationManager({ config, availableLocales, 
                 value={targetValue}
                 placeholder={definition.placeholder}
                 onChange={(e) => updatePropertyField(item.offer_id, definition.targetKey, e.target.value, false)}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function getRequestFieldText(
+    item: RequestTranslationItem,
+    key: keyof RequestTranslationItem,
+  ): string {
+    return String(item[key] ?? '');
+  }
+
+  function updateRequestField(
+    requestId: string,
+    key: keyof RequestTranslationItem,
+    nextValue: string,
+  ) {
+    setRequestItems((prev) => prev.map((item) => (
+      item.request_id !== requestId
+        ? item
+        : {
+            ...item,
+            [key]: nextValue,
+          }
+    )));
+  }
+
+  function getComputedRequestStatus(item: RequestTranslationItem): {
+    visual: PropertyComputedStatus;
+    label: string;
+  } {
+    const requiredDefinitions = REQUEST_FIELD_DEFINITIONS.filter((definition) => getRequestFieldText(item, definition.sourceKey).trim().length > 0);
+    const translatedCount = requiredDefinitions.filter((definition) => getRequestFieldText(item, definition.targetKey).trim().length > 0).length;
+    if (requiredDefinitions.length === 0 || translatedCount === 0) {
+      return { visual: 'open', label: 'Übersetzung offen' };
+    }
+    if (item.translation_is_stale || translatedCount < requiredDefinitions.length) {
+      return { visual: 'in_progress', label: 'Übersetzung in Arbeit' };
+    }
+    return { visual: 'translated', label: 'Übersetzt' };
+  }
+
+  function renderRequestFieldPair(
+    item: RequestTranslationItem,
+    definition: RequestFieldDefinition,
+  ) {
+    const sourceValue = getRequestFieldText(item, definition.sourceKey);
+    const targetValue = getRequestFieldText(item, definition.targetKey);
+
+    return (
+      <div key={`${item.request_id}-${definition.key}`} style={propertyFieldRowStyle}>
+        <div style={propertyFieldRowHeadStyle}>
+          <div style={propertyFieldTitleStyle}>{definition.label}</div>
+        </div>
+        <div style={propertyFieldPairGridStyle}>
+          <div style={propertyFieldColumnStyle}>
+            <div style={propertyFieldColumnLabelStyle}>Deutsch</div>
+            {definition.multiline ? (
+              <textarea
+                style={propertyReadonlyTextareaStyle}
+                value={sourceValue}
+                readOnly
+              />
+            ) : (
+              <input
+                style={propertyReadonlyInputStyle}
+                value={sourceValue}
+                readOnly
+              />
+            )}
+          </div>
+          <div style={propertyFieldColumnStyle}>
+            <div style={propertyFieldColumnLabelStyle}>Übersetzung</div>
+            {definition.multiline ? (
+              <textarea
+                style={propertyEditableTextareaStyle}
+                value={targetValue}
+                placeholder={definition.placeholder}
+                onChange={(e) => updateRequestField(item.request_id, definition.targetKey, e.target.value)}
+              />
+            ) : (
+              <input
+                style={propertyEditableInputStyle}
+                value={targetValue}
+                placeholder={definition.placeholder}
+                onChange={(e) => updateRequestField(item.request_id, definition.targetKey, e.target.value)}
               />
             )}
           </div>
@@ -4304,24 +4435,15 @@ export default function InternationalizationManager({ config, availableLocales, 
               </button>
             </div>
             <div style={blogListMetaStyle}>
-              Für Gesuche werden SEO-, Kurz- und Langtexte je Sprache separat gepflegt.
+              Für Gesuche werden hier die öffentlichen Zieltexte aus der Gesuche-Arbeitsfläche je Sprache gepflegt.
             </div>
             {requestItems.length === 0 ? (
               <div style={blogEmptyStateStyle}>Für diesen Partner sind aktuell keine Gesuche vorhanden.</div>
             ) : (
               <div style={blogListWrapStyle}>
                 {requestItems.map((item) => {
-                  const translated = Boolean(
-                    item.translated_seo_title.trim()
-                    || item.translated_seo_description.trim()
-                    || item.translated_seo_h1.trim()
-                    || item.translated_short_description.trim()
-                    || item.translated_long_description.trim()
-                    || item.translated_location_text.trim()
-                    || item.translated_features_text.trim()
-                    || item.translated_highlights.length > 0
-                    || item.translated_image_alt_texts.length > 0,
-                  );
+                  const translated = REQUEST_FIELD_DEFINITIONS.some((definition) => getRequestFieldText(item, definition.targetKey).trim().length > 0);
+                  const requestMetaLabel = `${formatRequestModeLabel(item.request_type || '—')} · ${formatRequestObjectTypeLabel(item.object_type || null)} · ${item.region_label || 'Ohne Zielregion'}`;
                   return (
                     <button
                       key={item.request_id}
@@ -4335,10 +4457,7 @@ export default function InternationalizationManager({ config, availableLocales, 
                           {item.translation_is_stale ? 'Veraltet' : translated ? 'Übersetzt' : 'Fehlt'}
                         </span>
                       </div>
-                      <div style={blogListSublineStyle}>{item.region_label || 'Ohne Zielregion'}</div>
-                      <div style={blogListMetaLineStyle}>
-                        {(item.request_type || 'Gesuch')} · {(item.object_type || 'Objekt')}
-                      </div>
+                      <div style={blogListMetaLineStyle}>{requestMetaLabel}</div>
                     </button>
                   );
                 })}
@@ -4353,32 +4472,22 @@ export default function InternationalizationManager({ config, availableLocales, 
                   <div>
                     <h3 style={sectionTabsIntroTitleStyle}>{selectedRequestItem.title || 'Ohne Titel'}</h3>
                     <p style={blogEditorIntroStyle}>
-                      Übersetze hier die Gesuchstexte, die aktuell über die deutschen Override-Felder ausgespielt werden. Die deutsche Bearbeitung bleibt im Bereich „Gesuche“.
+                      Übersetze hier genau die öffentlichen Zieltexte aus dem Bereich „Gesuche“. Die deutsche Bearbeitung bleibt im Gesuche-Arbeitsbereich.
                     </p>
                   </div>
-                  <span style={blogTranslationBadgeStyle(selectedRequestItem.translation_is_stale, Boolean(
-                    selectedRequestItem.translated_seo_title.trim()
-                    || selectedRequestItem.translated_seo_description.trim()
-                    || selectedRequestItem.translated_seo_h1.trim()
-                    || selectedRequestItem.translated_short_description.trim()
-                    || selectedRequestItem.translated_long_description.trim()
-                    || selectedRequestItem.translated_location_text.trim()
-                    || selectedRequestItem.translated_features_text.trim()
-                    || selectedRequestItem.translated_highlights.length > 0
-                    || selectedRequestItem.translated_image_alt_texts.length > 0,
-                  ))}>
-                    {selectedRequestItem.translation_is_stale ? 'Quelle geändert' : selectedRequestItem.translation_status}
+                  <span style={getPropertyStatusBadgeStyle(getComputedRequestStatus(selectedRequestItem).visual)}>
+                    {selectedRequestItem.translation_is_stale ? 'Quelle geändert' : getComputedRequestStatus(selectedRequestItem).label}
                   </span>
                 </div>
 
                 <div style={blogSummaryGridStyle}>
                   <div style={blogSummaryItemStyle}>
                     <span style={estimateLabelStyle}>Gesuchstyp</span>
-                    <strong>{selectedRequestItem.request_type || 'Nicht gesetzt'}</strong>
+                    <strong>{formatRequestModeLabel(selectedRequestItem.request_type || '—')}</strong>
                   </div>
                   <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Objekttyp</span>
-                    <strong>{selectedRequestItem.object_type || 'Nicht gesetzt'}</strong>
+                    <span style={estimateLabelStyle}>Objektart</span>
+                    <strong>{formatRequestObjectTypeLabel(selectedRequestItem.object_type || null)}</strong>
                   </div>
                   <div style={blogSummaryItemStyle}>
                     <span style={estimateLabelStyle}>Zielregion</span>
@@ -4386,222 +4495,89 @@ export default function InternationalizationManager({ config, availableLocales, 
                   </div>
                   <div style={blogSummaryItemStyle}>
                     <span style={estimateLabelStyle}>Übersetzungsstatus</span>
-                    <strong>{selectedRequestItem.translation_status}</strong>
+                    <strong>{getComputedRequestStatus(selectedRequestItem).label}</strong>
                   </div>
                 </div>
 
-                <div style={blogColumnGridStyle}>
-                  <div style={blogSourceCardStyle}>
-                    <div style={blogColumnHeadStyle}>Deutsch (Quelle)</div>
-                    <label style={fieldStyle}>
-                      SEO-Titel
-                      <input style={inputStyle} value={selectedRequestItem.source_seo_title} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Meta-Description
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_seo_description} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      H1
-                      <input style={inputStyle} value={selectedRequestItem.source_seo_h1} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Kurzbeschreibung
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_short_description} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Langbeschreibung
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_long_description} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Lage
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_location_text} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Ausstattung
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_features_text} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Highlights
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_highlights.join('\n')} readOnly />
-                    </label>
-                    <label style={fieldStyle}>
-                      Bild-Alt-Texte
-                      <textarea style={blogReadonlyTextareaStyle} value={selectedRequestItem.source_image_alt_texts.join('\n')} readOnly />
-                    </label>
-                  </div>
+                <div style={propertyTabBarStyle}>
+                  <button
+                    type="button"
+                    style={tabButtonStyle(requestEditorTab === 'texts')}
+                    onClick={() => setRequestEditorTab('texts')}
+                  >
+                    <span style={propertyTabLabelStyle}>Texte</span>
+                  </button>
+                  <button
+                    type="button"
+                    style={tabButtonStyle(requestEditorTab === 'seo')}
+                    onClick={() => setRequestEditorTab('seo')}
+                  >
+                    <span style={propertyTabLabelStyle}>SEO / GEO</span>
+                  </button>
+                </div>
 
-                  <div style={blogTargetCardStyle}>
-                    <div style={blogColumnHeadStyle}>Übersetzung</div>
-                    <label style={fieldStyle}>
-                      SEO-Titel
-                      <input
-                        style={inputStyle}
-                        value={selectedRequestItem.translated_seo_title}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_seo_title: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Meta-Description
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedRequestItem.translated_seo_description}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_seo_description: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      H1
-                      <input
-                        style={inputStyle}
-                        value={selectedRequestItem.translated_seo_h1}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_seo_h1: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Kurzbeschreibung
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedRequestItem.translated_short_description}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_short_description: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Langbeschreibung
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedRequestItem.translated_long_description}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_long_description: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Lage
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedRequestItem.translated_location_text}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_location_text: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Ausstattung
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedRequestItem.translated_features_text}
-                        onChange={(e) => {
-                          const next = e.target.value;
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_features_text: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Highlights
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedRequestItem.translated_highlights.join('\n')}
-                        onChange={(e) => {
-                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_highlights: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Bild-Alt-Texte
-                      <textarea
-                        style={blogTextareaStyle}
-                        value={selectedRequestItem.translated_image_alt_texts.join('\n')}
-                        onChange={(e) => {
-                          const next = e.target.value.split('\n').map((value) => value.trim()).filter(Boolean);
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id ? { ...item, translated_image_alt_texts: next } : item
-                          )));
-                        }}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      Status
-                      <select
-                        style={inputStyle}
-                        value={selectedRequestItem.translation_status}
-                        onChange={(e) => {
-                          const next = e.target.value as BlogTranslationStatus;
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id ? { ...item, translation_status: next } : item
-                          )));
-                        }}
-                      >
-                        <option value="draft">Entwurf</option>
-                        <option value="approved">Freigegeben</option>
-                        <option value="needs_review">Prüfen</option>
-                      </select>
-                    </label>
-                    <div style={blogActionRowStyle}>
-                      <button
-                        type="button"
-                        style={secondaryActionButtonStyle}
-                        onClick={() => {
-                          setRequestItems((prev) => prev.map((item) => (
-                            item.request_id === selectedRequestItem.request_id
-                              ? {
-                                  ...item,
-                                  translated_seo_title: item.source_seo_title,
-                                  translated_seo_description: item.source_seo_description,
-                                  translated_seo_h1: item.source_seo_h1,
-                                  translated_short_description: item.source_short_description,
-                                  translated_long_description: item.source_long_description,
-                                  translated_location_text: item.source_location_text,
-                                  translated_features_text: item.source_features_text,
-                                  translated_highlights: [...item.source_highlights],
-                                  translated_image_alt_texts: [...item.source_image_alt_texts],
-                                }
-                              : item
-                          )));
-                        }}
-                        disabled={requestSaving}
-                      >
-                        Deutsch übernehmen
-                      </button>
-                      <button
-                        type="button"
-                        style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
-                        onClick={() => void saveSelectedRequestItem()}
-                        disabled={!requestHasEdits || requestSaving}
-                      >
-                        {requestSaving ? 'Speichern …' : 'Gesuche-Übersetzung speichern'}
-                      </button>
-                    </div>
+                <div style={propertySectionIntroCardStyle}>
+                  <div style={blogColumnHeadStyle}>
+                    {requestEditorTab === 'texts' ? 'Texte übersetzen' : 'SEO / GEO übersetzen'}
+                  </div>
+                  <div style={propertySectionIntroTextStyle}>
+                    {requestEditorTab === 'texts'
+                      ? 'Übersetze hier den öffentlichen Gesuch-Titel und die Beschreibung aus dem Gesuche-Arbeitsbereich.'
+                      : 'Pflege hier die sprachspezifischen SEO-/GEO-Zieltexte für das öffentliche Gesuch.'}
+                  </div>
+                </div>
+
+                <div style={propertyFieldStackStyle}>
+                  {requestVisibleFieldDefinitions.map((definition) => renderRequestFieldPair(selectedRequestItem, definition))}
+                </div>
+
+                <div style={propertyStatusCardStyle}>
+                  <label style={fieldStyle}>
+                    Status
+                    <select
+                      style={inputStyle}
+                      value={selectedRequestItem.translation_status}
+                      onChange={(e) => {
+                        const next = e.target.value as BlogTranslationStatus;
+                        setRequestItems((prev) => prev.map((item) => (
+                          item.request_id === selectedRequestItem.request_id ? { ...item, translation_status: next } : item
+                        )));
+                      }}
+                    >
+                      <option value="draft">Entwurf</option>
+                      <option value="approved">Freigegeben</option>
+                      <option value="needs_review">Prüfen</option>
+                    </select>
+                  </label>
+                  <div style={blogActionRowStyle}>
+                    <button
+                      type="button"
+                      style={secondaryActionButtonStyle}
+                      onClick={() => {
+                        setRequestItems((prev) => prev.map((item) => (
+                          item.request_id === selectedRequestItem.request_id
+                            ? {
+                                ...item,
+                                translated_seo_title: item.source_seo_title,
+                                translated_seo_description: item.source_seo_description,
+                                translated_seo_h1: item.source_seo_h1,
+                                translated_long_description: item.source_long_description,
+                              }
+                            : item
+                        )));
+                      }}
+                      disabled={requestSaving}
+                    >
+                      Deutsch übernehmen
+                    </button>
+                    <button
+                      type="button"
+                      style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
+                      onClick={() => void saveSelectedRequestItem()}
+                      disabled={!requestHasEdits || requestSaving}
+                    >
+                      {requestSaving ? 'Speichern …' : 'Gesuche-Übersetzung speichern'}
+                    </button>
                   </div>
                 </div>
               </>
