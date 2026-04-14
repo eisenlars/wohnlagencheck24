@@ -74,6 +74,9 @@ export function GesuchePage(props: GesuchePageProps) {
     : 1;
   const headingCount = pagination?.total ?? requests.length;
   const currentListPath = mode === "kauf" ? kaufPath : mietePath;
+  const qualifiedHeading = mode === "miete"
+    ? `${headingCount} qualifizierte Mietgesuche ${names?.regionName ?? ""}`.trim()
+    : `${headingCount} qualifizierte Kaufgesuche ${names?.regionName ?? ""}`.trim();
   const buildDetailHref = (request: RegionalRequest) =>
     detailBasePath ? `${detailBasePath}/${request.id}_${slugifyRequestTitle(request.title)}` : null;
   const filteredRequests = useMemo(
@@ -114,7 +117,7 @@ export function GesuchePage(props: GesuchePageProps) {
 
       <div className="angebote-page-title">
         <h1 className="angebote-page-title-text">
-          {availabilityNotice ? heading : `${headingCount} ${heading}`}
+          {availabilityNotice ? heading : qualifiedHeading}
         </h1>
       </div>
 
