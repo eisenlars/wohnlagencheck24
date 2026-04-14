@@ -84,7 +84,6 @@ const REQUEST_LIST_PAGE_SIZE = 10;
 
 type RegionTarget = {
   city?: string;
-  district?: string | null;
   label?: string;
 };
 
@@ -179,21 +178,17 @@ function getRegionTargetLabels(payload: Record<string, unknown>): string[] {
     if (!entry || typeof entry !== 'object') continue;
     const target = entry as RegionTarget;
     const city = String(target.city ?? '').trim();
-    const district = String(target.district ?? '').trim();
     const label = String(target.label ?? '').trim();
-    const parts = [label, city, district]
-      .flatMap((value) => value.split(','))
+    const labelParts = label
+      .split(',')
       .map((part) => part.trim())
       .filter(Boolean)
       .filter((part) => !isRadiusContextSegment(part));
-    if (parts.length > 0) {
-      labels.push(...parts);
+    if (labelParts.length > 0) {
+      labels.push(...labelParts);
       continue;
     }
-    const fallback = [city, district]
-      .filter(Boolean)
-      .filter((part) => !isRadiusContextSegment(part));
-    if (fallback.length > 0) labels.push(...fallback);
+    if (city && !isRadiusContextSegment(city)) labels.push(city);
   }
   return dedupe(labels);
 }
