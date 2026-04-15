@@ -141,6 +141,10 @@ type Props = {
 };
 
 type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'equipment' | 'media' | 'energy';
+type OfferListFilter = 'all' | 'kauf' | 'miete';
+const OFFER_LIST_VISIBLE_ROWS = 8;
+const OFFER_LIST_ROW_HEIGHT = 104;
+const OFFER_LIST_ROW_GAP = 8;
 
 function formatProviderLabel(provider: string): string {
   const p = String(provider ?? '').toLowerCase();
@@ -300,6 +304,40 @@ function getEffectiveOfferObjectType(offer: OfferRow | null | undefined): string
   return rawObjectType || columnObjectType;
 }
 
+function getEffectiveOfferType(offer: OfferRow | null | undefined): OfferListFilter | '' {
+  const normalized = String(offer?.offer_type ?? '').trim().toLowerCase();
+  if (normalized === 'kauf') return 'kauf';
+  if (normalized === 'miete') return 'miete';
+  return '';
+}
+
+function getOfferLocationLabel(offer: OfferRow | null | undefined): string {
+  if (!offer) return '—';
+  const raw = (offer.raw ?? {}) as Record<string, unknown>;
+  const zipCode = readTextValue(raw.zip_code) ?? readTextValue(raw.plz) ?? readTextValue(raw.postal_code);
+  const city = readTextValue(raw.city) ?? readTextValue(raw.ort);
+  const locationLabel = [zipCode, city].filter(Boolean).join(' ');
+  if (locationLabel) return locationLabel;
+
+  const address = asText(offer.address);
+  if (!address) return '—';
+  const compactAddressMatch = address.match(/(\d{5})\s+(.+)$/);
+  if (compactAddressMatch) {
+    return `${compactAddressMatch[1]} ${compactAddressMatch[2].trim()}`;
+  }
+  return address;
+}
+
+function getOfferPreviewImageUrl(offer: OfferRow | null | undefined): string | null {
+  if (!offer) return null;
+  const direct = asText(offer.image_url);
+  if (direct) return direct;
+
+  const raw = (offer.raw ?? {}) as Record<string, unknown>;
+  const galleryAssets = parseGalleryAssets(raw.gallery_assets);
+  return galleryAssets.find((asset) => asset.kind === 'image')?.url ?? null;
+}
+
 function parseDetailsSnapshot(value: unknown): DetailsSnapshot | null {
   if (!value || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
@@ -410,7 +448,7 @@ export default function OffersManager(props: Props) {
   const [saving, setSaving] = useState(false);
   const [rewritingKey, setRewritingKey] = useState<string | null>(null);
   const [query, setQuery] = useState('');
-  const [filterType, setFilterType] = useState<string>('all');
+  const [filterType, setFilterType] = useState<OfferListFilter>('all');
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
@@ -508,20 +546,11 @@ export default function OffersManager(props: Props) {
     load();
   }, []);
 
-  const availableObjectTypes = useMemo(() => {
-    const types = new Set<string>();
-    for (const offer of offers) {
-      const objectType = getEffectiveOfferObjectType(offer);
-      if (objectType) types.add(objectType);
-    }
-    return Array.from(types).sort((left, right) => left.localeCompare(right, 'de'));
-  }, [offers]);
-
   const filteredOffers = useMemo(() => {
     const term = query.trim().toLowerCase();
     return offers.filter((offer) => {
       const matchesType =
-        filterType === 'all' ? true : getEffectiveOfferObjectType(offer) === filterType;
+        filterType === 'all' ? true : getEffectiveOfferType(offer) === filterType;
       const matchesQuery = term.length === 0
         ? true
         : `${offer.title ?? ''} ${offer.address ?? ''}`.toLowerCase().includes(term);
@@ -1089,30 +1118,43 @@ export default function OffersManager(props: Props) {
           onChange={(e) => setQuery(e.target.value)}
           style={inputStyle}
         />
-        <div style={{ display: 'flex', gap: '8px', marginTop: '10px', marginBottom: '12px' }}>
+        <div style={offerListFilterRowStyle}>
           <button
+            type="button"
             onClick={() => setFilterType('all')}
             style={filterButtonStyle(filterType === 'all')}
           >
             Alle
           </button>
-          {availableObjectTypes.map((objectType) => (
-            <button
-              key={objectType}
-              onClick={() => setFilterType(objectType)}
-              style={filterButtonStyle(filterType === objectType)}
-            >
-              {objectType}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => setFilterType('kauf')}
+            style={filterButtonStyle(filterType === 'kauf')}
+          >
+            Kauf
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterType('miete')}
+            style={filterButtonStyle(filterType === 'miete')}
+          >
+            Miete
+          </button>
         </div>
-        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+        <div style={offerListViewportStyle}>
           {filteredOffers.map((offer) => {
             const normalizedExternalId = (offer.external_id ?? '').trim();
             const normalizedSource = (offer.source ?? '').trim();
             const effectiveExternalIdForOffer =
               normalizedExternalId.length > 0 ? normalizedExternalId : offer.id;
             const effectiveSourceForOffer = normalizedSource.length > 0 ? normalizedSource : 'manual';
+            const previewImageUrl = getOfferPreviewImageUrl(offer);
+            const locationLabel = getOfferLocationLabel(offer);
+            const offerTypeLabel = getEffectiveOfferType(offer) === 'miete'
+              ? 'Miete'
+              : getEffectiveOfferType(offer) === 'kauf'
+                ? 'Kauf'
+                : 'Objekt';
             const hasOverride = overrides.some(
               (o) => o.external_id === effectiveExternalIdForOffer && o.source === effectiveSourceForOffer,
             );
@@ -1122,13 +1164,31 @@ export default function OffersManager(props: Props) {
                 onClick={() => setSelectedOfferId(offer.id)}
                 style={offerRowStyle(selectedOfferId === offer.id)}
               >
-                <span style={{ fontWeight: 600 }}>{offer.title || 'Objekt'}</span>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>{offer.address}</span>
-                {hasOverride ? (
-                  <span style={{ fontSize: '11px', color: '#486b7a', fontWeight: 600 }}>
-                    Override aktiv
+                <span style={offerRowMediaStyle}>
+                  {previewImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={previewImageUrl}
+                      alt={offer.title || 'Objektbild'}
+                      style={offerRowImageStyle}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span style={offerRowImagePlaceholderStyle}>Kein Bild</span>
+                  )}
+                </span>
+                <span style={offerRowContentStyle}>
+                  <span style={offerRowTitleStyle}>{offer.title || 'Objekt'}</span>
+                  <span style={offerRowMetaStyle}>
+                    {`${filterType !== 'all' ? '' : `${offerTypeLabel} · `}${locationLabel}`}
                   </span>
-                ) : null}
+                  {hasOverride ? (
+                    <span style={offerRowOverrideStyle}>
+                      Override aktiv
+                    </span>
+                  ) : null}
+                </span>
               </button>
             );
           })}
@@ -1922,15 +1982,26 @@ const textareaWrapperStyle: React.CSSProperties = {
 };
 
 const filterButtonStyle = (active: boolean): React.CSSProperties => ({
-  flex: 1,
-  padding: '6px 8px',
+  minWidth: '92px',
+  padding: '6px 14px',
   borderRadius: '999px',
   border: `1px solid ${active ? '#486b7a' : '#e2e8f0'}`,
   backgroundColor: active ? '#486b7a' : '#f8fafc',
   color: active ? '#fff' : '#1e293b',
   fontSize: '12px',
+  fontWeight: 600,
   cursor: 'pointer',
 });
+
+const offerListFilterRowStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: '8px',
+  flexWrap: 'wrap',
+  marginTop: '10px',
+  marginBottom: '12px',
+};
 
 const offerRowStyle = (active: boolean): React.CSSProperties => ({
   width: '100%',
@@ -1939,12 +2010,83 @@ const offerRowStyle = (active: boolean): React.CSSProperties => ({
   borderRadius: '10px',
   border: '1px solid #e2e8f0',
   backgroundColor: active ? '#f1f5f9' : '#fff',
-  marginBottom: '8px',
   cursor: 'pointer',
+  display: 'grid',
+  gridTemplateColumns: '112px minmax(0, 1fr)',
+  gap: '12px',
+  alignItems: 'center',
+  minHeight: `${OFFER_LIST_ROW_HEIGHT}px`,
+});
+
+const offerListViewportStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: `${OFFER_LIST_ROW_GAP}px`,
+  marginTop: '12px',
+  maxHeight: `${OFFER_LIST_VISIBLE_ROWS * OFFER_LIST_ROW_HEIGHT + (OFFER_LIST_VISIBLE_ROWS - 1) * OFFER_LIST_ROW_GAP}px`,
+  overflowY: 'auto',
+  paddingRight: '4px',
+};
+
+const offerRowMediaStyle: React.CSSProperties = {
+  display: 'flex',
+  width: '112px',
+  height: '84px',
+  borderRadius: '12px',
+  overflow: 'hidden',
+  backgroundColor: '#e2e8f0',
+  border: '1px solid #cbd5e1',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flex: '0 0 auto',
+};
+
+const offerRowImageStyle: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
+
+const offerRowImagePlaceholderStyle: React.CSSProperties = {
+  color: '#64748b',
+  fontSize: '11px',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+};
+
+const offerRowContentStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '4px',
-});
+  gap: '5px',
+  minWidth: 0,
+  justifyContent: 'center',
+};
+
+const offerRowTitleStyle: React.CSSProperties = {
+  fontWeight: 600,
+  color: '#0f172a',
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  lineHeight: 1.35,
+};
+
+const offerRowMetaStyle: React.CSSProperties = {
+  fontSize: '12px',
+  color: '#64748b',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  lineHeight: 1.4,
+};
+
+const offerRowOverrideStyle: React.CSSProperties = {
+  fontSize: '11px',
+  color: '#486b7a',
+  fontWeight: 700,
+};
 
 const primaryButtonStyle: React.CSSProperties = {
   padding: '10px 14px',
