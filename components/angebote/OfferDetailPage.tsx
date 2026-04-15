@@ -410,7 +410,8 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     { label: "Ausgestellt am", value: formatDateLabel(energySnapshot?.certificate_start_date) },
     { label: "Gültig bis", value: formatDateLabel(energySnapshot?.certificate_end_date) },
     { label: "Warmwasser enthalten", value: formatBooleanLabel(energySnapshot?.warm_water_included) },
-  ];
+  ].filter((item) => item.value !== "—");
+  const hasNarrativePanel = Boolean(description || locationText || featuresText);
 
   return (
     <div className="container text-dark">
@@ -454,7 +455,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         <aside className="offer-detail-cta">
           <div className="offer-detail-cta-card">
             <h2 className="h6 mb-2">{texts.interested_in_property}</h2>
-            <p className="small text-muted mb-3">
+            <p className="offer-detail-cta-note">
               {texts.partner_expose_provided}
             </p>
             {offer.detailUrl ? (
@@ -543,67 +544,79 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         )}
       </section>
 
-      {description ? (
-        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
-          <h2 className="h5 mb-3">{texts.property_description}</h2>
-          <p className="mb-0">{description}</p>
+      {hasNarrativePanel || highlights.length > 0 ? (
+        <section className="offer-detail-grid offer-detail-grid--balanced offer-detail-section">
+          {hasNarrativePanel ? (
+            <div className="offer-detail-panel offer-detail-panel--spacious">
+              {description ? (
+                <div className="offer-detail-panel-section">
+                  <span className="offer-detail-panel-kicker">{texts.property_description}</span>
+                  <h2 className="h5 mb-3">{texts.property_description}</h2>
+                  <p className="offer-detail-panel-copy mb-0">{description}</p>
+                </div>
+              ) : null}
+              {locationText ? (
+                <div className="offer-detail-panel-section">
+                  <h3 className="h6 mb-2">{texts.location_label}</h3>
+                  <p className="offer-detail-panel-copy mb-0">{locationText}</p>
+                </div>
+              ) : null}
+              {featuresText ? (
+                <div className="offer-detail-panel-section">
+                  <h3 className="h6 mb-2">{texts.features_label}</h3>
+                  <p className="offer-detail-panel-copy mb-0">{featuresText}</p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {highlights.length > 0 ? (
+            <div className="offer-detail-panel offer-detail-panel--spacious">
+              <span className="offer-detail-panel-kicker">{texts.highlights_label}</span>
+              <h2 className="h5 mb-3">{texts.highlights_label}</h2>
+              <ul className="offer-detail-list offer-detail-highlight-list">
+                {highlights.map((item, index) => (
+                  <li key={`${item}-${index}`}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
-      {locationText ? (
-        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
-          <h2 className="h5 mb-3">{texts.location_label}</h2>
-          <p className="mb-0">{locationText}</p>
+      {detailFacts.length > 0 || equipmentFacts.length > 0 ? (
+        <section className="offer-detail-grid offer-detail-section">
+          {detailFacts.length > 0 ? (
+            <div className="offer-detail-panel">
+              <h2 className="h5 mb-3">Objektdetails</h2>
+              <dl className="offer-detail-facts">
+                {detailFacts.map((item) => (
+                  <div key={item.label}>
+                    <dt>{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : null}
+
+          {equipmentFacts.length > 0 ? (
+            <div className="offer-detail-panel">
+              <h2 className="h5 mb-3">Ausstattung</h2>
+              <dl className="offer-detail-facts">
+                {equipmentFacts.map((item) => (
+                  <div key={item.label}>
+                    <dt>{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
-      {featuresText ? (
-        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
-          <h2 className="h5 mb-3">{texts.features_label}</h2>
-          <p className="mb-0">{featuresText}</p>
-        </section>
-      ) : null}
-
-      {highlights.length > 0 ? (
-        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
-          <h2 className="h5 mb-3">{texts.highlights_label}</h2>
-          <ul className="offer-detail-list">
-            {highlights.map((item, index) => (
-              <li key={`${item}-${index}`}>{item}</li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {detailFacts.length > 0 ? (
-        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
-          <h2 className="h5 mb-3">Objektdetails</h2>
-          <dl className="offer-detail-facts">
-            {detailFacts.map((item) => (
-              <div key={item.label}>
-                <dt>{item.label}</dt>
-                <dd>{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ) : null}
-
-      {equipmentFacts.length > 0 ? (
-        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
-          <h2 className="h5 mb-3">Ausstattung</h2>
-          <dl className="offer-detail-facts">
-            {equipmentFacts.map((item) => (
-              <div key={item.label}>
-                <dt>{item.label}</dt>
-                <dd>{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ) : null}
-
-      <section className="offer-detail-grid">
+      <section className="offer-detail-grid offer-detail-section">
         <div className="offer-detail-panel">
           <h3 className="h6 mb-3">{texts.floor_plan}</h3>
           {activeFloorplan ? (
@@ -687,35 +700,37 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         </div>
       </section>
 
-      <section className="offer-detail-grid">
-        <div className="offer-detail-panel">
-          <h3 className="h6 mb-3">{texts.features_label}</h3>
+      {features.length > 0 || energyFacts.length > 0 ? (
+        <section className="offer-detail-grid offer-detail-section">
           {features.length > 0 ? (
-            <ul className="offer-detail-list">
-              {features.map((item, index) => (
-                <li key={`${item}-${index}`}>{item}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="small text-muted mb-0">{texts.features_details_pending}</p>
-          )}
-        </div>
+            <div className="offer-detail-panel">
+              <h3 className="h6 mb-3">{texts.features_label}</h3>
+              <ul className="offer-detail-list">
+                {features.map((item, index) => (
+                  <li key={`${item}-${index}`}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
-        <div className="offer-detail-panel">
-          <h3 className="h6 mb-3">{texts.energy_label}</h3>
-          <dl className="offer-detail-energy">
-            {energyFacts.map((item) => (
-              <div key={item.label}>
-                <dt>{item.label}</dt>
-                <dd>{item.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
+          {energyFacts.length > 0 ? (
+            <div className="offer-detail-panel">
+              <h3 className="h6 mb-3">{texts.energy_label}</h3>
+              <dl className="offer-detail-energy">
+                {energyFacts.map((item) => (
+                  <div key={item.label}>
+                    <dt>{item.label}</dt>
+                    <dd>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {documentAssets.length > 0 ? (
-        <section className="offer-detail-panel" style={{ marginBottom: "2rem" }}>
+        <section className="offer-detail-panel offer-detail-section">
           <h2 className="h5 mb-3">Unterlagen</h2>
           <div className="offer-detail-documents">
             {documentAssets.map((asset, index) => {
@@ -749,7 +764,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         <div className="offer-detail-contact-card">
           <div>
             <h3 className="h6 mb-2">{texts.contact_request}</h3>
-            <p className="small text-muted mb-0">
+            <p className="small mb-0">
               {texts.contact_request_hint}
             </p>
           </div>
