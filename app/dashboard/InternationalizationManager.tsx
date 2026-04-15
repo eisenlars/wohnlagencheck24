@@ -4617,12 +4617,6 @@ export default function InternationalizationManager({ config, availableLocales, 
           <div style={blogEditorWrapStyle}>
             {selectedRequestItem ? (
               <>
-                <div style={blogEditorHeadStyle}>
-                  <div>
-                    <h3 style={sectionTabsIntroTitleStyle}>{selectedRequestItem.title || 'Ohne Titel'}</h3>
-                  </div>
-                </div>
-
                 <div style={requestOverviewCardStyle}>
                   <div style={requestOverviewHeadStyle}>
                     <div style={blogColumnHeadStyle}>Überblick</div>
