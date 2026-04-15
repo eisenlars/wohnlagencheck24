@@ -570,6 +570,7 @@ type RequestTranslationItem = {
   request_type: string;
   object_type: string;
   region_label: string;
+  source_note: string;
   source_updated_at: string | null;
   source_snapshot_hash: string;
   source_seo_title: string;
@@ -2000,6 +2001,7 @@ export default function InternationalizationManager({ config, availableLocales, 
         const translation = translationByRequestId.get(requestId);
         const description = getPayloadText(payload, ['description', 'long_description', 'title']);
         const regionLabel = getRegionTargetLabels(payload).join(', ') || getPayloadText(payload, ['region', 'location_text', 'location']);
+        const sourceNote = getPayloadText(payload, ['publicnote', 'note']);
         const features = getPayloadText(payload, ['features_text', 'features_note']);
         const highlights = toStringArray(payload.highlights);
         const imageAltTexts = toStringArray(payload.image_alt_texts);
@@ -2033,6 +2035,7 @@ export default function InternationalizationManager({ config, availableLocales, 
           request_type: getPayloadText(payload, ['request_type']),
           object_type: getPayloadText(payload, ['object_type']),
           region_label: regionLabel,
+          source_note: sourceNote,
           source_updated_at: request.source_updated_at ?? request.updated_at ?? null,
           source_snapshot_hash: sourceSnapshotHash,
           source_seo_title: sourceSeoTitle,
@@ -4617,31 +4620,47 @@ export default function InternationalizationManager({ config, availableLocales, 
                 <div style={blogEditorHeadStyle}>
                   <div>
                     <h3 style={sectionTabsIntroTitleStyle}>{selectedRequestItem.title || 'Ohne Titel'}</h3>
-                    <p style={blogEditorIntroStyle}>
-                      Übersetze hier genau die öffentlichen Zieltexte aus dem Bereich „Gesuche“. Die deutsche Bearbeitung bleibt im Gesuche-Arbeitsbereich.
-                    </p>
                   </div>
-                  <span style={getPropertyStatusBadgeStyle(getComputedRequestStatus(selectedRequestItem).visual)}>
-                    {selectedRequestItem.translation_is_stale ? 'Quelle geändert' : getComputedRequestStatus(selectedRequestItem).label}
-                  </span>
                 </div>
 
-                <div style={blogSummaryGridStyle}>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Gesuchstyp</span>
-                    <strong>{formatRequestModeLabel(selectedRequestItem.request_type || '—')}</strong>
+                <div style={requestOverviewCardStyle}>
+                  <div style={requestOverviewHeadStyle}>
+                    <div style={blogColumnHeadStyle}>Überblick</div>
+                    <div style={requestOverviewActionRowStyle}>
+                      <span style={getPropertyStatusBadgeStyle(getComputedRequestStatus(selectedRequestItem).visual)}>
+                        {selectedRequestItem.translation_is_stale ? 'Quelle geändert' : getComputedRequestStatus(selectedRequestItem).label}
+                      </span>
+                      <button
+                        type="button"
+                        style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
+                        onClick={() => void saveSelectedRequestItem()}
+                        disabled={!requestHasEdits || requestSaving}
+                      >
+                        {requestSaving ? 'Speichern …' : 'Übersetzung speichern'}
+                      </button>
+                    </div>
                   </div>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Objektart</span>
-                    <strong>{formatRequestObjectTypeLabel(selectedRequestItem.object_type || null)}</strong>
+
+                  <div style={requestOverviewMetaGridStyle}>
+                    <div style={blogSummaryItemStyle}>
+                      <span style={estimateLabelStyle}>Gesuche-ID</span>
+                      <strong>{selectedRequestItem.external_id || selectedRequestItem.request_id}</strong>
+                    </div>
+                    <div style={blogSummaryItemStyle}>
+                      <span style={estimateLabelStyle}>Quelle</span>
+                      <strong>{selectedRequestItem.source || 'Nicht gesetzt'}</strong>
+                    </div>
+                    <div style={blogSummaryItemStyle}>
+                      <span style={estimateLabelStyle}>Aktualisiert</span>
+                      <strong>{selectedRequestItem.source_updated_at ? new Date(selectedRequestItem.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}</strong>
+                    </div>
                   </div>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Zielregion</span>
-                    <strong>{selectedRequestItem.region_label || 'Nicht gesetzt'}</strong>
-                  </div>
-                  <div style={blogSummaryItemStyle}>
-                    <span style={estimateLabelStyle}>Übersetzungsstatus</span>
-                    <strong>{getComputedRequestStatus(selectedRequestItem).label}</strong>
+
+                  <div style={requestOverviewNoteCardStyle}>
+                    <span style={estimateLabelStyle}>CRM-Notiz</span>
+                    <div style={requestOverviewNoteTextStyle}>
+                      {selectedRequestItem.source_note || 'Keine CRM-Notiz vorhanden.'}
+                    </div>
                   </div>
                 </div>
 
@@ -4662,32 +4681,8 @@ export default function InternationalizationManager({ config, availableLocales, 
                   </button>
                 </div>
 
-                <div style={propertySectionIntroCardStyle}>
-                  <div style={blogColumnHeadStyle}>
-                    {requestEditorTab === 'texts' ? 'Texte übersetzen' : 'SEO / GEO übersetzen'}
-                  </div>
-                  <div style={propertySectionIntroTextStyle}>
-                    {requestEditorTab === 'texts'
-                      ? 'Übersetze hier den öffentlichen Gesuch-Titel und die Beschreibung aus dem Gesuche-Arbeitsbereich.'
-                      : 'Pflege hier die sprachspezifischen SEO-/GEO-Zieltexte für das öffentliche Gesuch.'}
-                  </div>
-                </div>
-
                 <div style={propertyFieldStackStyle}>
                   {requestVisibleFieldDefinitions.map((definition) => renderRequestFieldPair(selectedRequestItem, definition))}
-                </div>
-
-                <div style={propertyStatusCardStyle}>
-                  <div style={blogActionRowStyle}>
-                    <button
-                      type="button"
-                      style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
-                      onClick={() => void saveSelectedRequestItem()}
-                      disabled={!requestHasEdits || requestSaving}
-                    >
-                      {requestSaving ? 'Speichern …' : 'Gesuche-Übersetzung speichern'}
-                    </button>
-                  </div>
                 </div>
               </>
             ) : (
@@ -5201,6 +5196,53 @@ const blogSummaryItemStyle: React.CSSProperties = {
   borderRadius: 12,
   border: '1px solid #dbeafe',
   background: '#ffffff',
+};
+
+const requestOverviewCardStyle: React.CSSProperties = {
+  border: '1px solid #dbe5ea',
+  borderRadius: 14,
+  background: '#f8fafc',
+  padding: '16px',
+  display: 'grid',
+  gap: 12,
+};
+
+const requestOverviewHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 12,
+  alignItems: 'flex-start',
+  flexWrap: 'wrap',
+};
+
+const requestOverviewActionRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  gap: 10,
+  flexWrap: 'wrap',
+};
+
+const requestOverviewMetaGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+  gap: 10,
+};
+
+const requestOverviewNoteCardStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 8,
+  padding: 12,
+  borderRadius: 12,
+  border: '1px solid #dbeafe',
+  background: '#ffffff',
+};
+
+const requestOverviewNoteTextStyle: React.CSSProperties = {
+  fontSize: 13,
+  lineHeight: 1.55,
+  color: '#334155',
+  whiteSpace: 'pre-wrap',
 };
 
 const blogColumnGridStyle: React.CSSProperties = {
