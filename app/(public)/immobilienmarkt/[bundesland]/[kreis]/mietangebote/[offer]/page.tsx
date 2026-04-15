@@ -84,8 +84,8 @@ export default async function MietangebotDetailPage({ params }: PageProps) {
       formatProfile={formatProfile}
       pagePath={pagePath}
       advisor={{
-        name: advisor?.advisorName ?? null,
-        phone: advisor?.advisorPhone ?? null,
+        name: advisor?.brokerName ?? null,
+        phone: advisor?.brokerPhone ?? null,
         href: `${basePath}/immobilienmakler`,
       }}
       listPath={listPath}

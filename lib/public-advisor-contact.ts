@@ -16,18 +16,28 @@ export type PublicAdvisorContact = {
   advisorName: string | null;
   advisorEmail: string | null;
   advisorPhone: string | null;
+  brokerName: string | null;
+  brokerEmail: string | null;
+  brokerPhone: string | null;
 };
 
 function applyAdvisorOverrides(report: Report, overrides: Array<{ section_key: string; optimized_content: string | null }>): Report {
   if (overrides.length === 0) return report;
   const textBase = asRecord(report["text"]) ?? asRecord(asRecord(report.data)?.["text"]) ?? {};
   const beraterBase = asRecord(textBase["berater"]) ?? {};
+  const maklerBase = asRecord(textBase["makler"]) ?? {};
   const berater = { ...beraterBase };
+  const makler = { ...maklerBase };
 
   for (const entry of overrides) {
     const key = String(entry.section_key ?? "").trim();
-    if (!key.startsWith("berater_") && key !== "media_berater_avatar") continue;
-    berater[key] = String(entry.optimized_content ?? "");
+    if (key.startsWith("berater_") || key === "media_berater_avatar") {
+      berater[key] = String(entry.optimized_content ?? "");
+      continue;
+    }
+    if (key.startsWith("makler_") || key === "media_makler_logo") {
+      makler[key] = String(entry.optimized_content ?? "");
+    }
   }
 
   return {
@@ -35,6 +45,7 @@ function applyAdvisorOverrides(report: Report, overrides: Array<{ section_key: s
     text: {
       ...textBase,
       berater,
+      makler,
     },
   };
 }
@@ -75,6 +86,7 @@ export async function resolvePublicAdvisorContact(args: PublicAdvisorContactArgs
 
   const text = asRecord(reportWithOverrides["text"]) ?? asRecord(asRecord(reportWithOverrides.data)?.["text"]) ?? {};
   const berater = asRecord(text["berater"]) ?? {};
+  const makler = asRecord(text["makler"]) ?? {};
 
   return {
     areaId,
@@ -86,6 +98,16 @@ export async function resolvePublicAdvisorContact(args: PublicAdvisorContactArgs
       asString(berater["berater_telefon_mobil"]) ??
       asString(berater["berater_telefon_fest"]) ??
       asString(berater["berater_telefon"]) ??
+      "+49 351/287051-0",
+    brokerName: asString(makler["makler_name"]) ?? null,
+    brokerEmail:
+      asString(makler["makler_email"]) ??
+      asString(berater["berater_email"]) ??
+      "kontakt@wohnlagencheck24.de",
+    brokerPhone:
+      asString(makler["makler_telefon_mobil"]) ??
+      asString(makler["makler_telefon_fest"]) ??
+      asString(makler["makler_telefon"]) ??
       "+49 351/287051-0",
   };
 }
