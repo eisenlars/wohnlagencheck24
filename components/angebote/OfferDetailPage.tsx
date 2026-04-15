@@ -1,5 +1,7 @@
 'use client';
 
+import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { Offer, OfferMode, OfferOverrides } from "@/lib/angebote";
@@ -7,6 +9,7 @@ import type { PortalFormatProfile } from "@/lib/portal-format-config";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { formatMetric } from "@/utils/format";
 import { asRecord } from "@/utils/records";
+import { OfferInquiryInlineForm } from "./OfferInquiryInlineForm";
 
 type MediaAssetKind = "image" | "floorplan" | "location_map" | "document";
 
@@ -264,6 +267,7 @@ function formatDateLabel(value: string | null | undefined): string {
 
 export function OfferDetailPage(props: OfferDetailPageProps) {
   const { offer, mode, texts, formatProfile, breadcrumb, listPath } = props;
+  const isEnglish = String(formatProfile.locale).toLowerCase().startsWith("en");
   const priceLabel = mode === "miete" ? texts.warm_rent : texts.purchase_price;
   const priceSuffix = mode === "miete" ? texts.per_month : "";
   const formatCurrency = (value: number | null) => formatMetric(value, {
@@ -341,6 +345,14 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const activePhoto = photoAssets[resolvedPhotoIndex] ?? null;
   const activeFloorplan = floorplanAssets[resolvedFloorplanIndex] ?? null;
   const activeLocationMap = locationMapAssets[resolvedLocationMapIndex] ?? null;
+  const mediaTabs = [
+    { id: "images" as const, label: isEnglish ? "Images" : "Bilder", count: photoAssets.length },
+    { id: "floorplans" as const, label: texts.floor_plan, count: floorplanAssets.length },
+    { id: "maps" as const, label: texts.location_map, count: locationMapAssets.length },
+  ].filter((tab) => tab.count > 0);
+  const [activeMediaTab, setActiveMediaTab] = useState<"images" | "floorplans" | "maps">(
+    mediaTabs[0]?.id ?? "images",
+  );
   const features = Array.isArray(raw["features"]) ? (raw["features"] as string[]) : [];
   const energySnapshot = useMemo(() => parseEnergySnapshot(raw["energy"]), [raw]);
   const detailsSnapshot = useMemo(() => parseDetailsSnapshot(raw["details"]), [raw]);
@@ -412,6 +424,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     { label: "Warmwasser enthalten", value: formatBooleanLabel(energySnapshot?.warm_water_included) },
   ].filter((item) => item.value !== "—");
   const hasNarrativePanel = Boolean(description || locationText || featuresText);
+  const contactFormAnchor = "offer-contact-form";
 
   return (
     <div className="container text-dark">
@@ -427,6 +440,12 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           rootIconSrc="/logo/wohnlagencheck24.svg"
           texts={texts}
         />
+      </div>
+
+      <div className="offer-detail-back-link-wrap">
+        <Link href={listPath} className="offer-detail-back-link">
+          ← {texts.back_to_overview}
+        </Link>
       </div>
 
       <section className="offer-detail-hero">
@@ -456,92 +475,198 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           <div className="offer-detail-cta-card">
             <h2 className="h6 mb-2">{texts.interested_in_property}</h2>
             <p className="offer-detail-cta-note">
-              {texts.partner_expose_provided}
+              {texts.contact_request_hint}
             </p>
-            {offer.detailUrl ? (
-              <a
-                className="btn btn-dark w-100"
-                href={offer.detailUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {texts.to_partner_expose}
-              </a>
-            ) : (
-              <span className="text-muted small">{texts.no_expose_link_available}</span>
-            )}
-            <a className="btn btn-outline-dark w-100 mt-2" href={listPath}>
-              {texts.back_to_overview}
+            <a className="btn btn-dark w-100" href={`#${contactFormAnchor}`}>
+              {isEnglish ? "Go to contact form" : "Zum Kontaktformular"}
             </a>
+            <div className="offer-detail-cta-note offer-detail-cta-note--muted">
+              {isEnglish
+                ? "Additional modules such as financing requests can be added here later."
+                : "Weitere Module wie Finanzierungsanfragen koennen hier spaeter ergaenzt werden."}
+            </div>
           </div>
         </aside>
       </section>
 
-      <section className="offer-detail-gallery">
-        <h2 className="h5 mb-3">{texts.image_gallery}</h2>
-        {activePhoto ? (
-          <div className="offer-detail-slideshow">
-            <div className="offer-detail-slideshow-stage">
-              <button
-                type="button"
-                className="offer-detail-slideshow-nav"
-                onClick={() => setActivePhotoIndex((current) => (current <= 0 ? photoAssets.length - 1 : current - 1))}
-                aria-label="Vorheriges Bild anzeigen"
-              >
-                ‹
-              </button>
-              <div className="offer-detail-gallery-hero">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  key={activePhoto.url}
-                  src={activePhoto.url}
-                  alt={imageAltTexts[resolvedPhotoIndex] ?? activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
-                  loading="eager"
-                  decoding="async"
-                />
-              </div>
-              <button
-                type="button"
-                className="offer-detail-slideshow-nav"
-                onClick={() => setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1))}
-                aria-label="Nächstes Bild anzeigen"
-              >
-                ›
-              </button>
+      <section className="offer-detail-media offer-detail-section">
+        <div className="offer-detail-media-head">
+          <h2 className="h5 mb-0">{isEnglish ? "Media" : "Medien"}</h2>
+          {mediaTabs.length > 1 ? (
+            <div className="offer-detail-media-tabs" role="tablist" aria-label={isEnglish ? "Media categories" : "Medienkategorien"}>
+              {mediaTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`offer-detail-media-tab${tab.id === activeMediaTab ? " is-active" : ""}`}
+                  onClick={() => setActiveMediaTab(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
-            <div className="offer-detail-slideshow-meta">
-                <div className="offer-detail-slideshow-caption">
-                  {activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
-                </div>
-                <div className="offer-detail-slideshow-counter">
-                  {resolvedPhotoIndex + 1} / {photoAssets.length}
-                </div>
-              </div>
-              {photoAssets.length > 1 ? (
-                <div className="offer-detail-gallery-thumbs">
-                  {photoAssets.map((asset, index) => (
-                    <button
-                      key={`${asset.url}-${index}`}
-                      type="button"
-                      className={`offer-detail-gallery-thumb${index === resolvedPhotoIndex ? " is-active" : ""}`}
-                      onClick={() => setActivePhotoIndex(index)}
-                      aria-label={`Bild ${index + 1} anzeigen`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={asset.url}
-                        alt={imageAltTexts[index] ?? asset.title ?? `${title} Bild ${index + 1}`}
-                        loading="lazy"
-                        decoding="async"
-                      />
+          ) : null}
+        </div>
+
+        <div className="offer-detail-panel">
+          {activeMediaTab === "images" ? (
+            activePhoto ? (
+              <div className="offer-detail-slideshow">
+                <div className="offer-detail-slideshow-stage">
+                  <button
+                    type="button"
+                    className="offer-detail-slideshow-nav"
+                    onClick={() => setActivePhotoIndex((current) => (current <= 0 ? photoAssets.length - 1 : current - 1))}
+                    aria-label="Vorheriges Bild anzeigen"
+                  >
+                    ‹
                   </button>
-                ))}
+                  <div className="offer-detail-gallery-hero">
+                    <Image
+                      key={activePhoto.url}
+                      src={activePhoto.url}
+                      alt={imageAltTexts[resolvedPhotoIndex] ?? activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                      fill
+                      priority
+                      sizes="(max-width: 991px) 100vw, 72vw"
+                      style={{ objectFit: "contain" }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="offer-detail-slideshow-nav"
+                    onClick={() => setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1))}
+                    aria-label="Nächstes Bild anzeigen"
+                  >
+                    ›
+                  </button>
+                </div>
+                <div className="offer-detail-slideshow-meta">
+                  <div className="offer-detail-slideshow-caption">
+                    {activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                  </div>
+                  <div className="offer-detail-slideshow-counter">
+                    {resolvedPhotoIndex + 1} / {photoAssets.length}
+                  </div>
+                </div>
+                {photoAssets.length > 1 ? (
+                  <div className="offer-detail-gallery-thumbs">
+                    {photoAssets.map((asset, index) => (
+                      <button
+                        key={`${asset.url}-${index}`}
+                        type="button"
+                        className={`offer-detail-gallery-thumb${index === resolvedPhotoIndex ? " is-active" : ""}`}
+                        onClick={() => setActivePhotoIndex(index)}
+                        aria-label={`Bild ${index + 1} anzeigen`}
+                      >
+                        <div className="offer-detail-thumb-frame">
+                          <Image
+                            src={asset.url}
+                            alt={imageAltTexts[index] ?? asset.title ?? `${title} Bild ${index + 1}`}
+                            fill
+                            loading="lazy"
+                            sizes="84px"
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
-        ) : (
-          <div className="offer-detail-placeholder">{texts.no_images_available}</div>
-        )}
+            ) : (
+              <div className="offer-detail-placeholder">{texts.no_images_available}</div>
+            )
+          ) : null}
+
+          {activeMediaTab === "floorplans" ? (
+            activeFloorplan ? (
+              <div className="offer-detail-panel-media">
+                <div className="offer-detail-panel-media-frame is-floorplan">
+                  <Image
+                    key={activeFloorplan.url}
+                    src={activeFloorplan.url}
+                    alt={activeFloorplan.title ?? texts.floor_plan}
+                    fill
+                    loading="lazy"
+                    sizes="(max-width: 991px) 100vw, 72vw"
+                    style={{ objectFit: "contain" }}
+                  />
+                </div>
+                {floorplanAssets.length > 1 ? (
+                  <div className="offer-detail-panel-thumbs">
+                    {floorplanAssets.map((asset, index) => (
+                      <button
+                        key={`${asset.url}-${index}`}
+                        type="button"
+                        className={`offer-detail-panel-thumb${index === resolvedFloorplanIndex ? " is-active" : ""}`}
+                        onClick={() => setActiveFloorplanIndex(index)}
+                        aria-label={`Grundriss ${index + 1} anzeigen`}
+                      >
+                        <div className="offer-detail-thumb-frame">
+                          <Image
+                            src={asset.url}
+                            alt={asset.title ?? `${texts.floor_plan} ${index + 1}`}
+                            fill
+                            loading="lazy"
+                            sizes="84px"
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="offer-detail-placeholder">{texts.floor_plan_pending}</div>
+            )
+          ) : null}
+
+          {activeMediaTab === "maps" ? (
+            activeLocationMap ? (
+              <div className="offer-detail-panel-media">
+                <div className="offer-detail-panel-media-frame">
+                  <Image
+                    key={activeLocationMap.url}
+                    src={activeLocationMap.url}
+                    alt={activeLocationMap.title ?? texts.location_map}
+                    fill
+                    loading="lazy"
+                    sizes="(max-width: 991px) 100vw, 72vw"
+                    style={{ objectFit: "contain" }}
+                  />
+                </div>
+                {locationMapAssets.length > 1 ? (
+                  <div className="offer-detail-panel-thumbs">
+                    {locationMapAssets.map((asset, index) => (
+                      <button
+                        key={`${asset.url}-${index}`}
+                        type="button"
+                        className={`offer-detail-panel-thumb${index === resolvedLocationMapIndex ? " is-active" : ""}`}
+                        onClick={() => setActiveLocationMapIndex(index)}
+                        aria-label={`Lagegrafik ${index + 1} anzeigen`}
+                      >
+                        <div className="offer-detail-thumb-frame">
+                          <Image
+                            src={asset.url}
+                            alt={asset.title ?? `${texts.location_map} ${index + 1}`}
+                            fill
+                            loading="lazy"
+                            sizes="84px"
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="offer-detail-placeholder">{texts.location_map_pending}</div>
+            )
+          ) : null}
+        </div>
       </section>
 
       {hasNarrativePanel || highlights.length > 0 ? (
@@ -616,90 +741,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         </section>
       ) : null}
 
-      <section className="offer-detail-grid offer-detail-section">
-        <div className="offer-detail-panel">
-          <h3 className="h6 mb-3">{texts.floor_plan}</h3>
-          {activeFloorplan ? (
-            <div className="offer-detail-panel-media">
-              <div className="offer-detail-panel-media-frame is-floorplan">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  key={activeFloorplan.url}
-                  src={activeFloorplan.url}
-                  alt={activeFloorplan.title ?? texts.floor_plan}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              {floorplanAssets.length > 1 ? (
-                <div className="offer-detail-panel-thumbs">
-                  {floorplanAssets.map((asset, index) => (
-                    <button
-                      key={`${asset.url}-${index}`}
-                      type="button"
-                      className={`offer-detail-panel-thumb${index === resolvedFloorplanIndex ? " is-active" : ""}`}
-                      onClick={() => setActiveFloorplanIndex(index)}
-                      aria-label={`Grundriss ${index + 1} anzeigen`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={asset.url}
-                        alt={asset.title ?? `${texts.floor_plan} ${index + 1}`}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div className="offer-detail-placeholder">{texts.floor_plan_pending}</div>
-          )}
-        </div>
-
-        <div className="offer-detail-panel">
-          <h3 className="h6 mb-3">{texts.location_map}</h3>
-          {activeLocationMap ? (
-            <div className="offer-detail-panel-media">
-              <div className="offer-detail-panel-media-frame">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  key={activeLocationMap.url}
-                  src={activeLocationMap.url}
-                  alt={activeLocationMap.title ?? texts.location_map}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
-              {locationMapAssets.length > 1 ? (
-                <div className="offer-detail-panel-thumbs">
-                  {locationMapAssets.map((asset, index) => (
-                    <button
-                      key={`${asset.url}-${index}`}
-                      type="button"
-                      className={`offer-detail-panel-thumb${index === resolvedLocationMapIndex ? " is-active" : ""}`}
-                      onClick={() => setActiveLocationMapIndex(index)}
-                      aria-label={`Lagegrafik ${index + 1} anzeigen`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={asset.url}
-                        alt={asset.title ?? `${texts.location_map} ${index + 1}`}
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div className="offer-detail-placeholder">{texts.location_map_pending}</div>
-          )}
-        </div>
-      </section>
-
       {features.length > 0 || energyFacts.length > 0 ? (
         <section className="offer-detail-grid offer-detail-section">
           {features.length > 0 ? (
@@ -760,24 +801,20 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         </section>
       ) : null}
 
-      <section className="offer-detail-contact">
+      <section className="offer-detail-contact" id={contactFormAnchor}>
         <div className="offer-detail-contact-card">
-          <div>
-            <h3 className="h6 mb-2">{texts.contact_request}</h3>
-            <p className="small mb-0">
-              {texts.contact_request_hint}
-            </p>
-          </div>
-          {offer.detailUrl ? (
-            <a
-              className="btn btn-dark"
-              href={offer.detailUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {texts.request_now}
-            </a>
-          ) : null}
+          <OfferInquiryInlineForm
+            locale={formatProfile.locale}
+            pagePath={listPath}
+            regionLabel={breadcrumb.names?.regionName ?? title}
+            offer={{
+              id: offer.id,
+              title,
+              objectType: offer.objectType,
+              address: offer.address,
+            }}
+            context={breadcrumb.ctx ?? {}}
+          />
         </div>
       </section>
     </div>

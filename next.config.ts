@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "image.onoffice.de",
+      },
+      {
+        protocol: "https",
         hostname: "www.praxiswissen-immobilien.de",
       },
       {
