@@ -2384,6 +2384,15 @@ h6 {
   line-height: 1.35;
 }
 
+.offer-list-card .list-card__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  min-height: calc(1.35em * 3);
+}
+
 .list-card__title-link {
   color: inherit;
   text-decoration: none;
