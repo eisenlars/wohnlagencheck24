@@ -299,7 +299,7 @@ export function AngebotePage(props: AngebotePageProps) {
                   <strong className="angebote-fact-value">{formatRooms(activeTopOffer.rooms)}</strong>
                 </div>
               </div>
-              {activeTopOffer.detailUrl && activeTopDetailHref ? (
+              {activeTopDetailHref ? (
                 <a
                   className="btn btn-dark btn-sm mt-3 angebote-top-cta"
                   href={activeTopDetailHref}
@@ -442,7 +442,7 @@ export function AngebotePage(props: AngebotePageProps) {
                       <span>{`${formatArea(offer.areaSqm)} m²`}</span>
                       <span>{formatRooms(offer.rooms)} {texts.rooms}</span>
                     </div>
-                    {offer.detailUrl && detailHref ? (
+                    {detailHref ? (
                       <a
                         className="btn btn-outline-dark btn-sm angebote-card-cta list-card__cta"
                         href={detailHref}
