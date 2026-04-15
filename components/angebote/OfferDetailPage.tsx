@@ -72,6 +72,16 @@ type NarrativeSection = {
   items?: string[];
 };
 
+type FactItem = {
+  label: string;
+  value: string;
+};
+
+type FactGroup = {
+  title: string;
+  items: FactItem[];
+};
+
 type OfferDetailPageProps = {
   offer: Offer;
   overrides?: OfferOverrides | null;
@@ -468,24 +478,47 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         (realEstateTransferTax ?? 0) +
         (buyerCommissionCosts ?? 0)
       : null;
-  const detailFacts = [
-    detailsSnapshot?.usable_area_sqm != null ? { label: "Nutzfläche", value: `${formatArea(detailsSnapshot.usable_area_sqm)} m²` } : null,
-    detailsSnapshot?.plot_area_sqm != null ? { label: "Grundstück", value: `${formatArea(detailsSnapshot.plot_area_sqm)} m²` } : null,
-    detailsSnapshot?.bedrooms != null ? { label: "Schlafzimmer", value: formatRooms(detailsSnapshot.bedrooms) } : null,
-    detailsSnapshot?.bathrooms != null ? { label: "Badezimmer", value: formatRooms(detailsSnapshot.bathrooms) } : null,
-    detailsSnapshot?.floor != null ? { label: "Etage", value: String(detailsSnapshot.floor) } : null,
-    (detailsSnapshot?.construction_year ?? energySnapshot?.construction_year ?? energySnapshot?.year) != null
-      ? { label: "Baujahr", value: String(detailsSnapshot?.construction_year ?? energySnapshot?.construction_year ?? energySnapshot?.year) }
-      : null,
-    detailsSnapshot?.availability ? { label: "Verfügbarkeit", value: detailsSnapshot.availability } : null,
-  ].filter((item): item is { label: string; value: string } => Boolean(item));
+  const detailFactGroups = [
+    {
+      title: "Flächen",
+      items: [
+        offer.areaSqm != null ? { label: texts.living_area, value: `${formatArea(offer.areaSqm)} m²` } : null,
+        detailsSnapshot?.usable_area_sqm != null ? { label: "Nutzfläche", value: `${formatArea(detailsSnapshot.usable_area_sqm)} m²` } : null,
+        detailsSnapshot?.plot_area_sqm != null ? { label: "Grundstück", value: `${formatArea(detailsSnapshot.plot_area_sqm)} m²` } : null,
+      ].filter((item): item is FactItem => Boolean(item)),
+    },
+    {
+      title: "Zimmer und Räume",
+      items: [
+        offer.rooms != null ? { label: texts.rooms, value: formatRooms(offer.rooms) } : null,
+        detailsSnapshot?.bedrooms != null ? { label: "Schlafzimmer", value: formatRooms(detailsSnapshot.bedrooms) } : null,
+        detailsSnapshot?.bathrooms != null ? { label: "Badezimmer", value: formatRooms(detailsSnapshot.bathrooms) } : null,
+        detailsSnapshot?.floor != null ? { label: "Etage", value: String(detailsSnapshot.floor) } : null,
+      ].filter((item): item is FactItem => Boolean(item)),
+    },
+    {
+      title: "Objektzustand",
+      items: [
+        (detailsSnapshot?.construction_year ?? energySnapshot?.construction_year ?? energySnapshot?.year) != null
+          ? { label: "Baujahr", value: String(detailsSnapshot?.construction_year ?? energySnapshot?.construction_year ?? energySnapshot?.year) }
+          : null,
+        detailsSnapshot?.condition ? { label: "Zustand", value: detailsSnapshot.condition } : null,
+        detailsSnapshot?.availability ? { label: "Verfügbarkeit", value: detailsSnapshot.availability } : null,
+      ].filter((item): item is FactItem => Boolean(item)),
+    },
+    {
+      title: "Weitere Angaben",
+      items: [
+        detailsSnapshot?.parking ? { label: "Stellplatz", value: detailsSnapshot.parking } : null,
+        detailsSnapshot?.balcony != null ? { label: "Balkon", value: formatBooleanLabel(detailsSnapshot.balcony) } : null,
+        detailsSnapshot?.terrace != null ? { label: "Terrasse", value: formatBooleanLabel(detailsSnapshot.terrace) } : null,
+        detailsSnapshot?.garden != null ? { label: "Garten", value: formatBooleanLabel(detailsSnapshot.garden) } : null,
+        detailsSnapshot?.elevator != null ? { label: "Aufzug", value: formatBooleanLabel(detailsSnapshot.elevator) } : null,
+      ].filter((item): item is FactItem => Boolean(item)),
+    },
+  ].filter((group): group is FactGroup => group.items.length > 0);
   const equipmentFacts = [
-    detailsSnapshot?.condition ? { label: "Zustand", value: detailsSnapshot.condition } : null,
-    detailsSnapshot?.parking ? { label: "Stellplatz", value: detailsSnapshot.parking } : null,
-    detailsSnapshot?.balcony != null ? { label: "Balkon", value: formatBooleanLabel(detailsSnapshot.balcony) } : null,
-    detailsSnapshot?.terrace != null ? { label: "Terrasse", value: formatBooleanLabel(detailsSnapshot.terrace) } : null,
-    detailsSnapshot?.garden != null ? { label: "Garten", value: formatBooleanLabel(detailsSnapshot.garden) } : null,
-    detailsSnapshot?.elevator != null ? { label: "Aufzug", value: formatBooleanLabel(detailsSnapshot.elevator) } : null,
+    detailsSnapshot?.address_hidden != null ? { label: "Adresse verborgen", value: formatBooleanLabel(detailsSnapshot.address_hidden) } : null,
   ].filter((item): item is { label: string; value: string } => Boolean(item));
   const energyFacts = [
     { label: texts.energy_class, value: energySnapshot?.efficiency_class ?? "—" },
@@ -826,19 +859,26 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         </div>
       </section>
 
-      {detailFacts.length > 0 || equipmentFacts.length > 0 ? (
+      {detailFactGroups.length > 0 || equipmentFacts.length > 0 ? (
         <section className="offer-detail-grid offer-detail-section">
-          {detailFacts.length > 0 ? (
+          {detailFactGroups.length > 0 ? (
             <div className="offer-detail-panel">
               <h2 className="h5 mb-3">Objektdetails</h2>
-              <dl className="offer-detail-facts">
-                {detailFacts.map((item) => (
-                  <div key={item.label}>
-                    <dt>{item.label}</dt>
-                    <dd>{item.value}</dd>
-                  </div>
+              <div className="offer-detail-group-stack">
+                {detailFactGroups.map((group) => (
+                  <section key={group.title} className="offer-detail-fact-group">
+                    <h3 className="offer-detail-fact-group__title">{group.title}</h3>
+                    <dl className="offer-detail-facts">
+                      {group.items.map((item) => (
+                        <div key={item.label}>
+                          <dt>{item.label}</dt>
+                          <dd>{item.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </section>
                 ))}
-              </dl>
+              </div>
             </div>
           ) : null}
 
