@@ -409,6 +409,18 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const highlights =
     offer.highlights ?? (Array.isArray(raw["highlights"]) ? (raw["highlights"] as string[]) : []);
   const imageAltTexts = offer.imageAltTexts ?? [];
+  const commissionText =
+    readTextValue(raw["external_commission"]) ??
+    readTextValue(raw["internal_commission"]) ??
+    readTextValue(raw["courtage"]) ??
+    readTextValue(raw["courtage_note"]) ??
+    readTextValue(raw["makler_provision"]);
+  const isCommissionFree = asBoolean(raw["free_commission"]);
+  const displayPrice = mode === "miete" ? offer.rent : offer.price;
+  const pricePerSqm =
+    displayPrice != null && offer.areaSqm && Number.isFinite(offer.areaSqm) && offer.areaSqm > 0
+      ? displayPrice / offer.areaSqm
+      : null;
   const detailFacts = [
     detailsSnapshot?.usable_area_sqm != null ? { label: "Nutzfläche", value: `${formatArea(detailsSnapshot.usable_area_sqm)} m²` } : null,
     detailsSnapshot?.plot_area_sqm != null ? { label: "Grundstück", value: `${formatArea(detailsSnapshot.plot_area_sqm)} m²` } : null,
@@ -443,6 +455,16 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     { label: "Gültig bis", value: formatDateLabel(energySnapshot?.certificate_end_date) },
     { label: "Warmwasser enthalten", value: formatBooleanLabel(energySnapshot?.warm_water_included) },
   ].filter((item) => item.value !== "—");
+  const priceFacts = [
+    displayPrice != null ? { label: mode === "miete" ? texts.warm_rent : texts.purchase_price, value: formatCurrency(displayPrice) } : null,
+    pricePerSqm != null ? { label: "Preis pro m²", value: `${formatCurrency(pricePerSqm)} / m²` } : null,
+    mode === "kauf"
+      ? {
+          label: "Käuferprovision",
+          value: isCommissionFree ? "Provisionsfrei" : (commissionText ?? "Provision auf Anfrage"),
+        }
+      : null,
+  ].filter((item): item is { label: string; value: string } => Boolean(item));
   const contactFormAnchor = "offer-contact-form";
   const energyModalId = `offer-energy-modal-${offer.id}`;
   const [isEnergyModalOpen, setIsEnergyModalOpen] = useState(false);
@@ -754,7 +776,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           <div className="offer-detail-panel offer-detail-panel--spacious">
             {narrativeSections.map((section) => (
               <div key={section.title} className="offer-detail-panel-section">
-                <span className="offer-detail-panel-kicker">{section.kicker}</span>
                 <h2 className="h5 mb-3">{section.title}</h2>
                 {section.copy ? <p className="offer-detail-panel-copy mb-0">{section.copy}</p> : null}
                 {section.items ? (
@@ -771,8 +792,8 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
       ) : null}
 
       {features.length > 0 || energyFacts.length > 0 ? (
-        <section className="offer-detail-section">
-          <div className="offer-detail-panel offer-detail-energy-panel">
+        <section className="offer-detail-grid offer-detail-section">
+          <div className="offer-detail-panel offer-detail-panel--spacious">
             <div className="offer-detail-energy-panel__content">
               <h2 className="h5 mb-3">Energie und Bausubstanz</h2>
               {energyFacts.length > 0 ? (
@@ -812,6 +833,31 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
               >
                 Infos zum Energieverbrauch
               </button>
+            </div>
+          </div>
+          <div className="offer-detail-panel offer-detail-panel--spacious">
+            <div>
+              <h2 className="h5 mb-3">Preisdetails</h2>
+              {priceFacts.length > 0 ? (
+                <dl className="offer-detail-energy">
+                  {priceFacts.map((item) => (
+                    <div key={item.label}>
+                      <dt>{item.label}</dt>
+                      <dd>{item.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="offer-detail-panel-copy mb-0">Preisinformationen werden ergänzt.</p>
+              )}
+            </div>
+            <div className="offer-detail-panel-section">
+              <h3 className="h6 mb-2">Kaufnebenkosten</h3>
+              <p className="offer-detail-panel-copy mb-0">
+                {mode === "kauf"
+                  ? "Zusätzlich zum Kaufpreis können Grunderwerbsteuer, Notar- und Grundbuchkosten sowie eine mögliche Käuferprovision anfallen."
+                  : "Zusätzliche mietvertragliche Kosten und individuelle Konditionen können je nach Angebot gesondert anfallen."}
+              </p>
             </div>
           </div>
         </section>
