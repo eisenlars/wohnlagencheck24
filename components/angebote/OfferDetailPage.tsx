@@ -524,20 +524,15 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         <aside className="offer-detail-cta">
           <div className="offer-detail-cta-card">
             <h2 className="h6 mb-2">{texts.interested_in_property}</h2>
-            <p className="offer-detail-cta-note">
-              {advisor.name
-                ? `Direkter Kontakt zu ${advisor.name} fuer dieses Gebiet.`
-                : texts.contact_request_hint}
-            </p>
+            <p className="offer-detail-cta-note">Direkter Anbieterkontakt</p>
             {advisorPhoneHref && advisor.phone ? (
-              <a className="btn btn-dark w-100" href={advisorPhoneHref}>
+              <a className="btn btn-dark w-100 mb-2" href={advisorPhoneHref}>
                 {advisor.phone}
               </a>
-            ) : (
-              <a className="btn btn-dark w-100" href={`#${contactFormAnchor}`}>
-                {isEnglish ? "Go to contact form" : "Zum Kontaktformular"}
-              </a>
-            )}
+            ) : null}
+            <a className="btn btn-outline-dark w-100" href={`#${contactFormAnchor}`}>
+              {isEnglish ? "Go to contact form" : "Zum Kontaktformular"}
+            </a>
           </div>
         </aside>
       </section>
