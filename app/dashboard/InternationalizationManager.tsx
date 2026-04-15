@@ -4681,26 +4681,6 @@ export default function InternationalizationManager({ config, availableLocales, 
                   <div style={blogActionRowStyle}>
                     <button
                       type="button"
-                      style={secondaryActionButtonStyle}
-                      onClick={() => {
-                        setRequestItems((prev) => prev.map((item) => (
-                          item.request_id === selectedRequestItem.request_id
-                            ? {
-                                ...item,
-                                translated_seo_title: item.source_seo_title,
-                                translated_seo_description: item.source_seo_description,
-                                translated_seo_h1: item.source_seo_h1,
-                                translated_long_description: item.source_long_description,
-                              }
-                            : item
-                        )));
-                      }}
-                      disabled={requestSaving}
-                      >
-                        Deutsch übernehmen
-                      </button>
-                      <button
-                        type="button"
                       style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
                       onClick={() => void saveSelectedRequestItem()}
                       disabled={!requestHasEdits || requestSaving}
