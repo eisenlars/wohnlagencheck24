@@ -3160,50 +3160,7 @@ export default function InternationalizationManager({ config, availableLocales, 
       <div key={`${item.request_id}-${definition.key}`} style={propertyFieldRowStyle}>
         <div style={propertyFieldRowHeadStyle}>
           <div style={propertyFieldTitleStyle}>{definition.label}</div>
-          <div style={blogActionRowStyle}>
-            <button
-              type="button"
-              style={propertyFieldAiButtonStyle}
-              onClick={() => void runRequestFieldAi(item, definition, effectivePrompt)}
-              disabled={requestSaving || llmOptions.length === 0 || isBusy}
-            >
-              {isBusy ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
-            </button>
-            <button
-              type="button"
-              style={promptToggleStyle}
-              onClick={() => {
-                setRequestPromptOpenMap((prev) => ({
-                  ...prev,
-                  [fieldKey]: !prev[fieldKey],
-                }));
-              }}
-            >
-              {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
-            </button>
-          </div>
         </div>
-        {showPrompt ? (
-          <div style={promptPanelStyle}>
-            <div style={promptLabelStyle}>Standard-Prompt</div>
-            <div style={promptContentStyle}>{standardPrompt}</div>
-            <label style={promptInputLabelStyle}>
-              Eigener Prompt (optional)
-              <textarea
-                value={customPrompt}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setRequestCustomPromptMap((prev) => ({
-                    ...prev,
-                    [fieldKey]: next,
-                  }));
-                }}
-                style={promptInputStyle}
-                placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
-              />
-            </label>
-          </div>
-        ) : null}
         <div style={propertyFieldPairGridStyle}>
           <div style={propertyFieldColumnStyle}>
             <div style={propertyFieldColumnLabelStyle}>Deutsch</div>
@@ -3240,6 +3197,49 @@ export default function InternationalizationManager({ config, availableLocales, 
             )}
           </div>
         </div>
+        <div style={requestFieldActionRowStyle}>
+          <button
+            type="button"
+            style={propertyFieldAiButtonStyle}
+            onClick={() => void runRequestFieldAi(item, definition, effectivePrompt)}
+            disabled={requestSaving || llmOptions.length === 0 || isBusy}
+          >
+            {isBusy ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
+          </button>
+          <button
+            type="button"
+            style={requestPromptToggleStyle}
+            onClick={() => {
+              setRequestPromptOpenMap((prev) => ({
+                ...prev,
+                [fieldKey]: !prev[fieldKey],
+              }));
+            }}
+          >
+            {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+          </button>
+        </div>
+        {showPrompt ? (
+          <div style={promptPanelStyle}>
+            <div style={promptLabelStyle}>Standard-Prompt</div>
+            <div style={promptContentStyle}>{standardPrompt}</div>
+            <label style={promptInputLabelStyle}>
+              Eigener Prompt (optional)
+              <textarea
+                value={customPrompt}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setRequestCustomPromptMap((prev) => ({
+                    ...prev,
+                    [fieldKey]: next,
+                  }));
+                }}
+                style={promptInputStyle}
+                placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
+              />
+            </label>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -4678,23 +4678,6 @@ export default function InternationalizationManager({ config, availableLocales, 
                 </div>
 
                 <div style={propertyStatusCardStyle}>
-                  <label style={fieldStyle}>
-                    Status
-                    <select
-                      style={inputStyle}
-                      value={selectedRequestItem.translation_status}
-                      onChange={(e) => {
-                        const next = e.target.value as BlogTranslationStatus;
-                        setRequestItems((prev) => prev.map((item) => (
-                          item.request_id === selectedRequestItem.request_id ? { ...item, translation_status: next } : item
-                        )));
-                      }}
-                    >
-                      <option value="draft">Entwurf</option>
-                      <option value="approved">Freigegeben</option>
-                      <option value="needs_review">Prüfen</option>
-                    </select>
-                  </label>
                   <div style={blogActionRowStyle}>
                     <button
                       type="button"
@@ -4713,11 +4696,11 @@ export default function InternationalizationManager({ config, availableLocales, 
                         )));
                       }}
                       disabled={requestSaving}
-                    >
-                      Deutsch übernehmen
-                    </button>
-                    <button
-                      type="button"
+                      >
+                        Deutsch übernehmen
+                      </button>
+                      <button
+                        type="button"
                       style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
                       onClick={() => void saveSelectedRequestItem()}
                       disabled={!requestHasEdits || requestSaving}
@@ -4983,6 +4966,26 @@ const promptToggleStyle: React.CSSProperties = {
   fontWeight: 600,
   cursor: 'pointer',
   padding: 0,
+};
+
+const requestFieldActionRowStyle: React.CSSProperties = {
+  display: 'flex',
+  gap: 10,
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+};
+
+const requestPromptToggleStyle: React.CSSProperties = {
+  alignSelf: 'flex-start',
+  backgroundColor: 'rgb(255, 255, 255)',
+  border: '1px solid rgb(72, 107, 122)',
+  color: 'rgb(72, 107, 122)',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
+  padding: '9px 16px',
+  borderRadius: 8,
 };
 
 const promptPanelStyle: React.CSSProperties = {
