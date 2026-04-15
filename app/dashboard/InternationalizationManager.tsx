@@ -611,6 +611,7 @@ type RequestBaseline = {
 };
 
 type RequestEditorTab = 'texts' | 'seo';
+type RequestListFilter = 'all' | 'haus' | 'wohnung';
 
 type RequestFieldDefinition = {
   key: string;
@@ -1181,6 +1182,8 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [requestSaving, setRequestSaving] = useState(false);
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
   const [requestStatusTone, setRequestStatusTone] = useState<'success' | 'error' | null>(null);
+  const [requestListSearch, setRequestListSearch] = useState('');
+  const [requestListFilter, setRequestListFilter] = useState<RequestListFilter>('all');
   const [costInfoOpenClass, setCostInfoOpenClass] = useState<DisplayTextClass | null>(null);
   const isDistrict = isDistrictArea(config?.area_id ?? '');
   const channelMeta = I18N_CHANNEL_OPTIONS.find((item) => item.value === channel) ?? I18N_CHANNEL_OPTIONS[0];
@@ -1198,9 +1201,20 @@ export default function InternationalizationManager({ config, availableLocales, 
     () => referenceItems.find((item) => item.reference_id === selectedReferenceId) ?? referenceItems[0] ?? null,
     [referenceItems, selectedReferenceId],
   );
+  const filteredRequestItems = useMemo(() => {
+    const query = requestListSearch.trim().toLowerCase();
+    return requestItems.filter((item) => {
+      const objectType = String(item.object_type ?? '').trim().toLowerCase();
+      if (requestListFilter === 'haus' && objectType !== 'haus') return false;
+      if (requestListFilter === 'wohnung' && objectType !== 'wohnung') return false;
+      if (!query) return true;
+      const haystack = `${item.title} ${item.region_label} ${item.request_type} ${item.object_type}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [requestItems, requestListFilter, requestListSearch]);
   const selectedRequestItem = useMemo(
-    () => requestItems.find((item) => item.request_id === selectedRequestId) ?? requestItems[0] ?? null,
-    [requestItems, selectedRequestId],
+    () => filteredRequestItems.find((item) => item.request_id === selectedRequestId) ?? filteredRequestItems[0] ?? null,
+    [filteredRequestItems, selectedRequestId],
   );
   const requestVisibleFieldDefinitions = useMemo(
     () => REQUEST_FIELD_DEFINITIONS.filter((definition) => definition.tab === requestEditorTab),
@@ -1245,13 +1259,13 @@ export default function InternationalizationManager({ config, availableLocales, 
   }, [referenceItems, selectedReferenceId, setSelectedReferenceId]);
 
   useEffect(() => {
-    if (requestItems.length === 0) {
+    if (filteredRequestItems.length === 0) {
       if (selectedRequestId) setSelectedRequestId('');
       return;
     }
-    if (requestItems.some((item) => item.request_id === selectedRequestId)) return;
-    setSelectedRequestId(requestItems[0]?.request_id ?? '');
-  }, [requestItems, selectedRequestId, setSelectedRequestId]);
+    if (filteredRequestItems.some((item) => item.request_id === selectedRequestId)) return;
+    setSelectedRequestId(filteredRequestItems[0]?.request_id ?? '');
+  }, [filteredRequestItems, selectedRequestId, setSelectedRequestId]);
 
   function isMissingBlogI18nTable(error: unknown): boolean {
     const msg = String((error as { message?: string } | null)?.message ?? '').toLowerCase();
@@ -4574,39 +4588,42 @@ export default function InternationalizationManager({ config, availableLocales, 
           <aside style={blogListCardStyle}>
             <div style={blogListHeadStyle}>
               <h3 style={sectionTabsIntroTitleStyle}>Gesuche</h3>
-              <button
-                type="button"
-                style={secondaryActionButtonStyle}
-                onClick={() => void loadRequestItems()}
-                disabled={requestLoading || requestSaving}
-              >
-                Stand laden
-              </button>
             </div>
-            <div style={blogListMetaStyle}>
-              Für Gesuche werden hier die öffentlichen Zieltexte aus der Gesuche-Arbeitsfläche je Sprache gepflegt.
+            <input
+              placeholder="Suchen..."
+              value={requestListSearch}
+              onChange={(event) => setRequestListSearch(event.target.value)}
+              style={requestI18nSearchInputStyle}
+            />
+            <div style={requestI18nFilterRowStyle}>
+              <button type="button" onClick={() => setRequestListFilter('all')} style={requestI18nFilterButtonStyle(requestListFilter === 'all')}>Alle</button>
+              <button type="button" onClick={() => setRequestListFilter('haus')} style={requestI18nFilterButtonStyle(requestListFilter === 'haus')}>Haus</button>
+              <button type="button" onClick={() => setRequestListFilter('wohnung')} style={requestI18nFilterButtonStyle(requestListFilter === 'wohnung')}>Wohnung</button>
             </div>
             {requestItems.length === 0 ? (
               <div style={blogEmptyStateStyle}>Für diesen Partner sind aktuell keine Gesuche vorhanden.</div>
+            ) : filteredRequestItems.length === 0 ? (
+              <div style={requestI18nListEmptyStyle}>Keine Gesuche gefunden.</div>
             ) : (
               <div style={blogListWrapStyle}>
-                {requestItems.map((item) => {
+                {filteredRequestItems.map((item) => {
                   const translated = REQUEST_FIELD_DEFINITIONS.some((definition) => getRequestFieldText(item, definition.targetKey).trim().length > 0);
                   const requestMetaLabel = `${formatRequestModeLabel(item.request_type || '—')} · ${formatRequestObjectTypeLabel(item.object_type || null)} · ${item.region_label || 'Ohne Zielregion'}`;
                   return (
                     <button
                       key={item.request_id}
                       type="button"
-                      style={blogListRowStyle(selectedRequestItem?.request_id === item.request_id)}
+                      style={requestI18nListRowStyle(selectedRequestItem?.request_id === item.request_id)}
                       onClick={() => setSelectedRequestId(item.request_id)}
                     >
-                      <div style={blogListRowTopStyle}>
-                        <strong style={blogListHeadlineStyle}>{item.title || 'Ohne Titel'}</strong>
-                        <span style={blogTranslationBadgeStyle(item.translation_is_stale, translated)}>
-                          {item.translation_is_stale ? 'Veraltet' : translated ? 'Übersetzt' : 'Fehlt'}
-                        </span>
-                      </div>
-                      <div style={blogListMetaLineStyle}>{requestMetaLabel}</div>
+                      <span style={requestI18nTitleRowStyle}>
+                        <span style={requestI18nTitleTextStyle}>{item.title || 'Ohne Titel'}</span>
+                        <span
+                          aria-hidden="true"
+                          style={requestI18nStatusDotStyle(getComputedRequestStatus(item).visual === 'translated')}
+                        />
+                      </span>
+                      <span style={requestI18nMetaLineStyle}>{requestMetaLabel}</span>
                     </button>
                   );
                 })}
@@ -5263,6 +5280,91 @@ const requestOverviewNoteTextStyle: React.CSSProperties = {
 const requestOverviewFooterStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'flex-end',
+};
+
+const requestI18nSearchInputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 10px',
+  borderRadius: 8,
+  border: '1px solid rgb(226, 232, 240)',
+  fontSize: 13,
+};
+
+const requestI18nFilterRowStyle: React.CSSProperties = {
+  display: 'flex',
+  rowGap: 8,
+  columnGap: 8,
+  flexWrap: 'wrap',
+  marginTop: 10,
+  marginBottom: 12,
+};
+
+const requestI18nFilterButtonStyle = (active: boolean): React.CSSProperties => ({
+  flex: '1 1 0%',
+  padding: '6px 8px',
+  borderRadius: 999,
+  border: `1px solid ${active ? 'rgb(72, 107, 122)' : 'rgb(226, 232, 240)'}`,
+  backgroundColor: active ? 'rgb(72, 107, 122)' : 'rgb(248, 250, 252)',
+  color: active ? 'rgb(255, 255, 255)' : 'rgb(30, 41, 59)',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
+});
+
+const requestI18nListRowStyle = (active: boolean): React.CSSProperties => ({
+  width: '100%',
+  textAlign: 'left',
+  padding: 10,
+  borderRadius: 10,
+  border: '1px solid rgb(226, 232, 240)',
+  backgroundColor: active ? 'rgb(241, 245, 249)' : 'rgb(255, 255, 255)',
+  cursor: 'pointer',
+  display: 'flex',
+  flexDirection: 'column',
+  rowGap: 4,
+  columnGap: 4,
+  minHeight: 76,
+  justifyContent: 'center',
+});
+
+const requestI18nTitleRowStyle: React.CSSProperties = {
+  fontWeight: 600,
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  rowGap: 10,
+  columnGap: 10,
+};
+
+const requestI18nTitleTextStyle: React.CSSProperties = {
+  fontWeight: 600,
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  lineHeight: 1.35,
+};
+
+const requestI18nStatusDotStyle = (active: boolean): React.CSSProperties => ({
+  width: 10,
+  height: 10,
+  borderRadius: 999,
+  backgroundColor: active ? 'rgb(22, 163, 74)' : 'rgb(220, 38, 38)',
+  flex: '0 0 auto',
+  marginTop: 3,
+});
+
+const requestI18nMetaLineStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: 'rgb(100, 116, 139)',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+};
+
+const requestI18nListEmptyStyle: React.CSSProperties = {
+  color: '#94a3b8',
+  fontSize: 13,
 };
 
 const blogColumnGridStyle: React.CSSProperties = {
