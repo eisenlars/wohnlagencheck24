@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "images.propstack.de",
+      },
+      {
+        protocol: "https",
         hostname: "www.praxiswissen-immobilien.de",
       },
       {

@@ -2793,8 +2793,8 @@ h6 {
 }
 
 .offer-detail-gallery-thumbs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -2908,14 +2908,15 @@ h6 {
 }
 
 .offer-detail-panel-thumbs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
 .offer-detail-thumb-frame {
   position: relative;
   aspect-ratio: 1 / 1;
+  width: 84px;
   border-radius: 0.75rem;
   overflow: hidden;
 }
