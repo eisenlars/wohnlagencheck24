@@ -1154,6 +1154,9 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [requestEditorTab, setRequestEditorTab] = useState<RequestEditorTab>('texts');
   const [propertyAiKey, setPropertyAiKey] = useState<string | null>(null);
   const [propertyBulkAiRunning, setPropertyBulkAiRunning] = useState(false);
+  const [requestAiKey, setRequestAiKey] = useState<string | null>(null);
+  const [requestPromptOpenMap, setRequestPromptOpenMap] = useState<Record<string, boolean>>({});
+  const [requestCustomPromptMap, setRequestCustomPromptMap] = useState<Record<string, string>>({});
   const [referenceItems, setReferenceItems] = useState<ReferenceTranslationItem[]>([]);
   const [referenceBaselineById, setReferenceBaselineById] = useState<Record<string, {
     translated_seo_title: string;
@@ -3018,6 +3021,98 @@ export default function InternationalizationManager({ config, availableLocales, 
     return String(item[key] ?? '');
   }
 
+  function getRequestFieldPrompt(
+    item: RequestTranslationItem,
+    definition: RequestFieldDefinition,
+  ): string {
+    const displayClass: DisplayTextClass = definition.tab === 'seo' ? 'marketing' : 'general';
+    const basePrompt = getI18nStandardPrompt(displayClass, locale);
+    const localeLabel = normalizeLocaleLabel(locale);
+    const requestContext = [
+      `Gesuchstyp: ${formatRequestModeLabel(item.request_type || '—')}`,
+      `Objektart: ${formatRequestObjectTypeLabel(item.object_type || null)}`,
+      `Zielregion: ${item.region_label || 'Nicht gesetzt'}`,
+      `Zielsprache: ${localeLabel}`,
+    ].join('\n');
+
+    let fieldInstruction = `Feld: ${definition.label}. Uebersetze dieses Feld praezise, natuerlich und ohne neue Fakten in ${localeLabel}.`;
+    if (definition.key === 'seo_h1') {
+      fieldInstruction = `Feld: ${definition.label}. Uebersetze den oeffentlichen Gesuch-Titel praezise, natuerlich und suchintent-orientiert in ${localeLabel}. Keine neuen Fakten, keine kuenstlichen Keywords, keine zusaetzlichen Satzzeichen.`;
+    } else if (definition.key === 'long_description') {
+      fieldInstruction = `Feld: ${definition.label}. Uebersetze die oeffentliche Gesuchsbeschreibung fachlich exakt, natuerlich und gut lesbar in ${localeLabel}. Erhalte Bedeutung, Tonalitaet und Struktur. Keine neuen Fakten, keine Verkuerzungen, keine Interpretationen.`;
+    } else if (definition.key === 'seo_title') {
+      fieldInstruction = `Feld: ${definition.label}. Uebersetze den SEO-Titel praezise, klickstark und suchmaschinengeeignet in ${localeLabel}. Keine neuen Fakten, kein Keyword-Stuffing, keine generischen Werbephrasen.`;
+    } else if (definition.key === 'seo_description') {
+      fieldInstruction = `Feld: ${definition.label}. Uebersetze die SEO-Description als natuerliches Snippet in ${localeLabel}. Praezise, fachlich korrekt, suchmaschinengeeignet und ohne neue Fakten.`;
+    }
+
+    const extraPrompt = `${fieldInstruction}\n\nKontext zum Gesuch:\n${requestContext}`;
+    return buildI18nPromptWithExtras(basePrompt, extraPrompt);
+  }
+
+  async function rewriteRequestFieldViaAi(
+    item: RequestTranslationItem,
+    definition: RequestFieldDefinition,
+    prompt: string,
+  ): Promise<string> {
+    const selected = llmOptions.find((option) => option.id === selectedLlmOptionId) ?? null;
+    const sourceText = getRequestFieldText(item, definition.sourceKey).trim();
+    if (!sourceText) return '';
+    const res = await fetch('/api/ai-rewrite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: sourceText,
+        areaName: String(config.areas?.name ?? config.area_id),
+        type: definition.tab === 'seo' ? 'marketing' : 'general',
+        sectionLabel: `gesuch_${definition.key}`,
+        customPrompt: prompt,
+        mock_context: 'i18n',
+        target_locale: locale,
+        llm_integration_id: selected?.partner_integration_id ?? undefined,
+        llm_global_provider_id: selected?.global_provider_id ?? undefined,
+      }),
+    });
+    const payload = await res.json().catch(() => null) as { optimizedText?: string; error?: string } | null;
+    if (!res.ok || !String(payload?.optimizedText ?? '').trim()) {
+      throw new Error(String(payload?.error ?? `KI-Übersetzung fehlgeschlagen (${res.status})`));
+    }
+    return String(payload?.optimizedText ?? '').trim();
+  }
+
+  async function runRequestFieldAi(
+    item: RequestTranslationItem,
+    definition: RequestFieldDefinition,
+    prompt: string,
+  ) {
+    if (llmOptions.length === 0) {
+      setRequestStatus('Kein LLM für die Gesuche-Übersetzung verfügbar.');
+      setRequestStatusTone('error');
+      return;
+    }
+    const sourceText = getRequestFieldText(item, definition.sourceKey).trim();
+    if (!sourceText) {
+      setRequestStatus(`Für „${definition.label}“ ist keine deutsche Quelle vorhanden.`);
+      setRequestStatusTone('error');
+      return;
+    }
+    const aiKey = `${item.request_id}:${definition.key}`;
+    setRequestAiKey(aiKey);
+    setRequestStatus(null);
+    setRequestStatusTone(null);
+    try {
+      const translated = await rewriteRequestFieldViaAi(item, definition, prompt);
+      updateRequestField(item.request_id, definition.targetKey, translated);
+      setRequestStatus(`„${definition.label}“ wurde mit KI vorbereitet.`);
+      setRequestStatusTone('success');
+    } catch (error) {
+      setRequestStatus(error instanceof Error ? error.message : 'KI-Übersetzung fehlgeschlagen.');
+      setRequestStatusTone('error');
+    } finally {
+      setRequestAiKey(null);
+    }
+  }
+
   function updateRequestField(
     requestId: string,
     key: keyof RequestTranslationItem,
@@ -3054,12 +3149,61 @@ export default function InternationalizationManager({ config, availableLocales, 
   ) {
     const sourceValue = getRequestFieldText(item, definition.sourceKey);
     const targetValue = getRequestFieldText(item, definition.targetKey);
+    const fieldKey = `${item.request_id}:${definition.key}`;
+    const isBusy = requestAiKey === fieldKey;
+    const showPrompt = Boolean(requestPromptOpenMap[fieldKey]);
+    const customPrompt = requestCustomPromptMap[fieldKey] ?? '';
+    const standardPrompt = getRequestFieldPrompt(item, definition);
+    const effectivePrompt = customPrompt.trim() || standardPrompt;
 
     return (
       <div key={`${item.request_id}-${definition.key}`} style={propertyFieldRowStyle}>
         <div style={propertyFieldRowHeadStyle}>
           <div style={propertyFieldTitleStyle}>{definition.label}</div>
+          <div style={blogActionRowStyle}>
+            <button
+              type="button"
+              style={propertyFieldAiButtonStyle}
+              onClick={() => void runRequestFieldAi(item, definition, effectivePrompt)}
+              disabled={requestSaving || llmOptions.length === 0 || isBusy}
+            >
+              {isBusy ? '⏳ KI generiert Text...' : '✨ Text durch KI veredeln'}
+            </button>
+            <button
+              type="button"
+              style={promptToggleStyle}
+              onClick={() => {
+                setRequestPromptOpenMap((prev) => ({
+                  ...prev,
+                  [fieldKey]: !prev[fieldKey],
+                }));
+              }}
+            >
+              {showPrompt ? 'Prompt ausblenden' : 'Prompt anzeigen'}
+            </button>
+          </div>
         </div>
+        {showPrompt ? (
+          <div style={promptPanelStyle}>
+            <div style={promptLabelStyle}>Standard-Prompt</div>
+            <div style={promptContentStyle}>{standardPrompt}</div>
+            <label style={promptInputLabelStyle}>
+              Eigener Prompt (optional)
+              <textarea
+                value={customPrompt}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setRequestCustomPromptMap((prev) => ({
+                    ...prev,
+                    [fieldKey]: next,
+                  }));
+                }}
+                style={promptInputStyle}
+                placeholder="Eigenen Prompt eingeben (überschreibt den Standard-Prompt)"
+              />
+            </label>
+          </div>
+        ) : null}
         <div style={propertyFieldPairGridStyle}>
           <div style={propertyFieldColumnStyle}>
             <div style={propertyFieldColumnLabelStyle}>Deutsch</div>
@@ -3103,12 +3247,14 @@ export default function InternationalizationManager({ config, availableLocales, 
   return (
     <>
       <FullscreenLoader
-        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving || propertyLoading || propertySaving || Boolean(propertyAiKey) || propertyBulkAiRunning || referenceLoading || referenceSaving || requestLoading || requestSaving}
+        show={loading || saving || Boolean(rewritingKey) || blogLoading || blogSaving || propertyLoading || propertySaving || Boolean(propertyAiKey) || propertyBulkAiRunning || referenceLoading || referenceSaving || requestLoading || requestSaving || Boolean(requestAiKey)}
         label={
           requestLoading
             ? 'Gesuche-Übersetzungen werden geladen...'
             : requestSaving
               ? 'Gesuche-Übersetzung wird gespeichert...'
+            : requestAiKey
+              ? 'Gesuche-Feld wird mit KI übersetzt...'
           : referenceLoading
             ? 'Referenz-Übersetzungen werden geladen...'
             : referenceSaving
