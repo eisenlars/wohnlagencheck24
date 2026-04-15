@@ -2391,6 +2391,7 @@ h6 {
   line-clamp: 3;
   overflow: hidden;
   min-height: calc(1.35em * 3);
+  max-height: calc(1.35em * 3);
 }
 
 .list-card__title-link {
