@@ -392,6 +392,12 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const resolvedLocationMapIndex =
     activeLocationMapIndex < locationMapAssets.length ? activeLocationMapIndex : 0;
   const activePhoto = photoAssets[resolvedPhotoIndex] ?? null;
+  const previousPhotoIndex =
+    photoAssets.length > 1 ? (resolvedPhotoIndex <= 0 ? photoAssets.length - 1 : resolvedPhotoIndex - 1) : null;
+  const nextPhotoIndex =
+    photoAssets.length > 1 ? (resolvedPhotoIndex >= photoAssets.length - 1 ? 0 : resolvedPhotoIndex + 1) : null;
+  const previousPhoto = previousPhotoIndex != null ? photoAssets[previousPhotoIndex] ?? null : null;
+  const nextPhoto = nextPhotoIndex != null ? photoAssets[nextPhotoIndex] ?? null : null;
   const activeFloorplan = floorplanAssets[resolvedFloorplanIndex] ?? null;
   const activeLocationMap = locationMapAssets[resolvedLocationMapIndex] ?? null;
   const mediaTabs = [
@@ -688,23 +694,39 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             activePhoto ? (
               <div className="offer-detail-slideshow">
                 <div className="offer-detail-slideshow-stage">
+                  {previousPhoto ? (
+                    <button
+                      type="button"
+                      className="offer-detail-gallery-card offer-detail-gallery-card--secondary"
+                      onClick={() => setActivePhotoIndex(previousPhotoIndex ?? 0)}
+                      aria-label="Vorheriges Bild anzeigen"
+                    >
+                      <div className="offer-detail-gallery-hero offer-detail-gallery-hero--secondary">
+                        <Image
+                          key={`${previousPhoto.url}-previous`}
+                          src={previousPhoto.url}
+                          alt={imageAltTexts[previousPhotoIndex ?? 0] ?? previousPhoto.title ?? `${title} Bild ${(previousPhotoIndex ?? 0) + 1}`}
+                          fill
+                          loading="lazy"
+                          quality={56}
+                          sizes="(max-width: 991px) 100vw, 24vw"
+                          style={{ objectFit: "cover" }}
+                        />
+                      </div>
+                      <span className="offer-detail-gallery-card__hint">‹</span>
+                    </button>
+                  ) : (
+                    <div className="offer-detail-gallery-card offer-detail-gallery-card--empty" aria-hidden="true" />
+                  )}
                   <button
                     type="button"
-                    className="offer-detail-slideshow-nav"
-                    onClick={() => setActivePhotoIndex((current) => (current <= 0 ? photoAssets.length - 1 : current - 1))}
-                    aria-label="Vorheriges Bild anzeigen"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    type="button"
-                    className="offer-detail-gallery-stage-button"
+                    className="offer-detail-gallery-card offer-detail-gallery-card--active"
                     onClick={() => setIsGalleryLightboxOpen(true)}
                     aria-haspopup="dialog"
                     aria-controls={galleryLightboxId}
                     aria-label="Bildergalerie in Vollbild öffnen"
                   >
-                    <div className="offer-detail-gallery-hero">
+                    <div className="offer-detail-gallery-hero offer-detail-gallery-hero--active">
                       <Image
                         key={activePhoto.url}
                         src={activePhoto.url}
@@ -712,19 +734,35 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                         fill
                         priority
                         quality={72}
-                        sizes="(max-width: 991px) 100vw, 1100px"
+                        sizes="(max-width: 991px) 100vw, 52vw"
                         style={{ objectFit: "contain" }}
                       />
                     </div>
                   </button>
-                  <button
-                    type="button"
-                    className="offer-detail-slideshow-nav"
-                    onClick={() => setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1))}
-                    aria-label="Nächstes Bild anzeigen"
-                  >
-                    ›
-                  </button>
+                  {nextPhoto ? (
+                    <button
+                      type="button"
+                      className="offer-detail-gallery-card offer-detail-gallery-card--secondary"
+                      onClick={() => setActivePhotoIndex(nextPhotoIndex ?? 0)}
+                      aria-label="Nächstes Bild anzeigen"
+                    >
+                      <div className="offer-detail-gallery-hero offer-detail-gallery-hero--secondary">
+                        <Image
+                          key={`${nextPhoto.url}-next`}
+                          src={nextPhoto.url}
+                          alt={imageAltTexts[nextPhotoIndex ?? 0] ?? nextPhoto.title ?? `${title} Bild ${(nextPhotoIndex ?? 0) + 1}`}
+                          fill
+                          loading="lazy"
+                          quality={56}
+                          sizes="(max-width: 991px) 100vw, 24vw"
+                          style={{ objectFit: "cover" }}
+                        />
+                      </div>
+                      <span className="offer-detail-gallery-card__hint">›</span>
+                    </button>
+                  ) : (
+                    <div className="offer-detail-gallery-card offer-detail-gallery-card--empty" aria-hidden="true" />
+                  )}
                 </div>
                 <div className="offer-detail-slideshow-meta">
                   <div className="offer-detail-slideshow-caption">
@@ -734,31 +772,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                     {resolvedPhotoIndex + 1} / {photoAssets.length}
                   </div>
                 </div>
-                {photoAssets.length > 1 ? (
-                  <div className="offer-detail-gallery-thumbs">
-                    {photoAssets.map((asset, index) => (
-                      <button
-                        key={`${asset.url}-${index}`}
-                        type="button"
-                        className={`offer-detail-gallery-thumb${index === resolvedPhotoIndex ? " is-active" : ""}`}
-                        onClick={() => setActivePhotoIndex(index)}
-                        aria-label={`Bild ${index + 1} anzeigen`}
-                      >
-                        <div className="offer-detail-thumb-frame">
-                          <Image
-                            src={asset.url}
-                            alt={imageAltTexts[index] ?? asset.title ?? `${title} Bild ${index + 1}`}
-                            fill
-                            loading="lazy"
-                            quality={56}
-                            sizes="84px"
-                            style={{ objectFit: "cover" }}
-                          />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
               </div>
             ) : (
               <div className="offer-detail-placeholder">{texts.no_images_available}</div>

@@ -2735,9 +2735,30 @@ h6 {
 
 .offer-detail-slideshow-stage {
   display: grid;
-  grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.44fr) minmax(0, 0.78fr);
   gap: 1rem;
   align-items: stretch;
+}
+
+.offer-detail-gallery-card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.offer-detail-gallery-card--empty {
+  visibility: hidden;
+}
+
+.offer-detail-gallery-card__hint {
+  color: #475569;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
 }
 
 .offer-detail-slideshow-nav {
@@ -2778,7 +2799,15 @@ h6 {
   overflow: hidden;
   border: none;
   position: relative;
-  min-height: clamp(420px, 58vw, 760px);
+  min-height: clamp(190px, 22vw, 260px);
+}
+
+.offer-detail-gallery-hero--active {
+  min-height: clamp(240px, 28vw, 340px);
+}
+
+.offer-detail-gallery-hero--secondary {
+  min-height: clamp(190px, 22vw, 250px);
 }
 
 .offer-detail-gallery-hero img {
@@ -3193,8 +3222,15 @@ h6 {
     grid-template-columns: 1fr;
   }
 
-  .offer-detail-slideshow-nav {
-    min-height: 2.75rem;
+  .offer-detail-gallery-card--secondary,
+  .offer-detail-gallery-card--empty {
+    display: none;
+  }
+
+  .offer-detail-gallery-hero,
+  .offer-detail-gallery-hero--active,
+  .offer-detail-gallery-hero--secondary {
+    min-height: clamp(240px, 60vw, 340px);
   }
 
   .offer-detail-cta-card {
