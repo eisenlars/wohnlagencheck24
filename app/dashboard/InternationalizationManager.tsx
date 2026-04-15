@@ -4646,17 +4646,6 @@ export default function InternationalizationManager({ config, availableLocales, 
                       {selectedRequestItem.source_note || 'Keine CRM-Notiz vorhanden.'}
                     </div>
                   </div>
-
-                  <div style={requestOverviewFooterStyle}>
-                    <button
-                      type="button"
-                      style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
-                      onClick={() => void saveSelectedRequestItem()}
-                      disabled={!requestHasEdits || requestSaving}
-                    >
-                      {requestSaving ? 'Speichern …' : 'Übersetzung speichern'}
-                    </button>
-                  </div>
                 </div>
 
                 <div style={propertyTabBarStyle}>
@@ -4678,6 +4667,17 @@ export default function InternationalizationManager({ config, availableLocales, 
 
                 <div style={propertyFieldStackStyle}>
                   {requestVisibleFieldDefinitions.map((definition) => renderRequestFieldPair(selectedRequestItem, definition))}
+                </div>
+
+                <div style={requestOverviewFooterStyle}>
+                  <button
+                    type="button"
+                    style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
+                    onClick={() => void saveSelectedRequestItem()}
+                    disabled={!requestHasEdits || requestSaving}
+                  >
+                    {requestSaving ? 'Speichern …' : 'Übersetzung speichern'}
+                  </button>
                 </div>
               </>
             ) : (
