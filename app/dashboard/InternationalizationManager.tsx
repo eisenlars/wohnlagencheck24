@@ -4626,33 +4626,23 @@ export default function InternationalizationManager({ config, availableLocales, 
                 <div style={requestOverviewCardStyle}>
                   <div style={requestOverviewHeadStyle}>
                     <div style={blogColumnHeadStyle}>Überblick</div>
-                    <div style={requestOverviewActionRowStyle}>
-                      <span style={getPropertyStatusBadgeStyle(getComputedRequestStatus(selectedRequestItem).visual)}>
-                        {selectedRequestItem.translation_is_stale ? 'Quelle geändert' : getComputedRequestStatus(selectedRequestItem).label}
-                      </span>
-                      <button
-                        type="button"
-                        style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
-                        onClick={() => void saveSelectedRequestItem()}
-                        disabled={!requestHasEdits || requestSaving}
-                      >
-                        {requestSaving ? 'Speichern …' : 'Übersetzung speichern'}
-                      </button>
-                    </div>
+                    <span style={getPropertyStatusBadgeStyle(getComputedRequestStatus(selectedRequestItem).visual)}>
+                      {selectedRequestItem.translation_is_stale ? 'Quelle geändert' : getComputedRequestStatus(selectedRequestItem).label}
+                    </span>
                   </div>
 
                   <div style={requestOverviewMetaGridStyle}>
-                    <div style={blogSummaryItemStyle}>
-                      <span style={estimateLabelStyle}>Gesuche-ID</span>
-                      <strong>{selectedRequestItem.external_id || selectedRequestItem.request_id}</strong>
+                    <div style={requestOverviewMetaItemStyle}>
+                      <div style={requestOverviewMetaLabelStyle}>Gesuch-ID</div>
+                      <div style={requestOverviewMetaValueStyle}>{selectedRequestItem.external_id || selectedRequestItem.request_id}</div>
                     </div>
-                    <div style={blogSummaryItemStyle}>
-                      <span style={estimateLabelStyle}>Quelle</span>
-                      <strong>{selectedRequestItem.source || 'Nicht gesetzt'}</strong>
+                    <div style={requestOverviewMetaItemStyle}>
+                      <div style={requestOverviewMetaLabelStyle}>Quelle</div>
+                      <div style={requestOverviewMetaValueStyle}>{selectedRequestItem.source || 'Nicht gesetzt'}</div>
                     </div>
-                    <div style={blogSummaryItemStyle}>
-                      <span style={estimateLabelStyle}>Aktualisiert</span>
-                      <strong>{selectedRequestItem.source_updated_at ? new Date(selectedRequestItem.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}</strong>
+                    <div style={requestOverviewMetaItemStyle}>
+                      <div style={requestOverviewMetaLabelStyle}>Aktualisiert</div>
+                      <div style={requestOverviewMetaValueStyle}>{selectedRequestItem.source_updated_at ? new Date(selectedRequestItem.source_updated_at).toLocaleDateString('de-DE') : 'ohne Datum'}</div>
                     </div>
                   </div>
 
@@ -4661,6 +4651,17 @@ export default function InternationalizationManager({ config, availableLocales, 
                     <div style={requestOverviewNoteTextStyle}>
                       {selectedRequestItem.source_note || 'Keine CRM-Notiz vorhanden.'}
                     </div>
+                  </div>
+
+                  <div style={requestOverviewFooterStyle}>
+                    <button
+                      type="button"
+                      style={buttonPrimaryStyle(requestHasEdits && !requestSaving)}
+                      onClick={() => void saveSelectedRequestItem()}
+                      disabled={!requestHasEdits || requestSaving}
+                    >
+                      {requestSaving ? 'Speichern …' : 'Übersetzung speichern'}
+                    </button>
                   </div>
                 </div>
 
@@ -5229,6 +5230,26 @@ const requestOverviewMetaGridStyle: React.CSSProperties = {
   gap: 10,
 };
 
+const requestOverviewMetaItemStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 4,
+};
+
+const requestOverviewMetaLabelStyle: React.CSSProperties = {
+  fontSize: 10,
+  color: 'rgb(148, 163, 184)',
+  textTransform: 'uppercase',
+  fontWeight: 700,
+  marginBottom: 4,
+};
+
+const requestOverviewMetaValueStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: 'rgb(15, 23, 42)',
+  fontWeight: 600,
+  lineHeight: 1.45,
+};
+
 const requestOverviewNoteCardStyle: React.CSSProperties = {
   display: 'grid',
   gap: 8,
@@ -5243,6 +5264,11 @@ const requestOverviewNoteTextStyle: React.CSSProperties = {
   lineHeight: 1.55,
   color: '#334155',
   whiteSpace: 'pre-wrap',
+};
+
+const requestOverviewFooterStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'flex-end',
 };
 
 const blogColumnGridStyle: React.CSSProperties = {
