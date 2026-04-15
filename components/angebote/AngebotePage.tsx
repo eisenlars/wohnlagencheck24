@@ -64,6 +64,32 @@ function sanitizeImageUrl(value: string | null | undefined): string | null {
   }
 }
 
+function getTextValue(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function getCompactOfferLocation(offer: Offer | null | undefined): string | null {
+  if (!offer) return null;
+  const raw = (offer.raw ?? {}) as Record<string, unknown>;
+  const zipCode =
+    getTextValue(raw.zip_code) ??
+    getTextValue(raw.plz) ??
+    getTextValue(raw.postal_code);
+  const city =
+    getTextValue(raw.city) ??
+    getTextValue(raw.ort);
+  const compact = [zipCode, city].filter(Boolean).join(" ");
+  if (compact) return compact;
+
+  const address = getTextValue(offer.address);
+  if (!address) return null;
+  const match = address.match(/(\d{5})\s+(.+)$/);
+  if (!match) return address;
+  return `${match[1]} ${match[2].trim()}`;
+}
+
 export function AngebotePage(props: AngebotePageProps) {
   const {
     offersHeading,
@@ -146,6 +172,7 @@ export function AngebotePage(props: AngebotePageProps) {
   const buildDetailHref = (offer: Offer) =>
     detailBasePath ? `${detailBasePath}/${offer.id}_${slugifyOfferTitle(offer.title)}` : null;
   const activeTopImageUrl = sanitizeImageUrl(activeTopOffer?.imageUrl ?? null);
+  const activeTopLocation = getCompactOfferLocation(activeTopOffer);
   const activeTopDetailHref = activeTopOffer ? buildDetailHref(activeTopOffer) : null;
   const priceLabel = mode === "miete" ? texts.warm_rent : texts.purchase_price;
   const priceSuffix = mode === "miete" ? texts.per_month : "";
@@ -250,8 +277,8 @@ export function AngebotePage(props: AngebotePageProps) {
                 <span className="angebote-pill">{formatObjectType(activeTopOffer.objectType)}</span>
               </div>
               <h3 className="h5 mb-2">{activeTopOffer.title || texts.object_generic}</h3>
-              {activeTopOffer.address ? (
-                <p className="angebote-address mb-3">{activeTopOffer.address}</p>
+              {activeTopLocation ? (
+                <p className="angebote-address mb-3">{activeTopLocation}</p>
               ) : null}
               <div className="angebote-price-block">
                 <div>
@@ -352,6 +379,7 @@ export function AngebotePage(props: AngebotePageProps) {
           <div className="angebote-grid">
             {filteredOffers.map((offer) => {
               const imageUrl = sanitizeImageUrl(offer.imageUrl);
+              const locationLabel = getCompactOfferLocation(offer);
               const detailHref = buildDetailHref(offer);
               return (
                 <article className="angebote-card" key={offer.id}>
@@ -407,8 +435,8 @@ export function AngebotePage(props: AngebotePageProps) {
                       </span>
                     </div>
                     <h3 className="h6 mb-2">{offer.title || texts.object_generic}</h3>
-                    {offer.address ? (
-                      <p className="angebote-address mb-3">{offer.address}</p>
+                    {locationLabel ? (
+                      <p className="angebote-address mb-3">{locationLabel}</p>
                     ) : null}
                     <div className="angebote-card-facts">
                       <span>{`${formatArea(offer.areaSqm)} m²`}</span>
