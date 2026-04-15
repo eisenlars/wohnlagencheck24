@@ -2440,9 +2440,13 @@ h6 {
 }
 
 .request-list-card__action--primary {
-  background: #486b7a;
-  border: 1px solid #486b7a;
+  background: #111;
+  border: 1px solid #111;
   color: #fff;
+}
+
+.offer-list-card .list-card__facts {
+  margin-bottom: 1rem;
 }
 
 .angebote-price {
