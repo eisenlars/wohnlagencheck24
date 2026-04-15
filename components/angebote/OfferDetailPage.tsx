@@ -444,14 +444,21 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     [breadcrumb.ctx?.bundeslandSlug],
   );
   const buyerCommissionRate = isCommissionFree ? 0 : parsePercentValue(objectCommissionText);
+  const buyerCommissionDisplay = isCommissionFree
+    ? "Provisionsfrei"
+    : (objectCommissionText ?? "Auf Anfrage");
+  const buyerCommissionCalculationRate =
+    isCommissionFree
+      ? 0
+      : (buyerCommissionRate ?? purchaseCostRates.buyerCommissionDefaultRate);
   const notaryCosts = mode === "kauf" && displayPrice != null ? displayPrice * (purchaseCostRates.notaryRate / 100) : null;
   const landRegistryCosts =
     mode === "kauf" && displayPrice != null ? displayPrice * (purchaseCostRates.landRegistryRate / 100) : null;
   const realEstateTransferTax =
     mode === "kauf" && displayPrice != null ? displayPrice * (purchaseCostRates.realEstateTransferTaxRate / 100) : null;
   const buyerCommissionCosts =
-    mode === "kauf" && displayPrice != null && buyerCommissionRate != null
-      ? displayPrice * (buyerCommissionRate / 100)
+    mode === "kauf" && displayPrice != null
+      ? displayPrice * (buyerCommissionCalculationRate / 100)
       : null;
   const totalPurchaseCosts =
     mode === "kauf" && displayPrice != null
@@ -515,7 +522,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           : null,
         buyerCommissionCosts != null
           ? {
-              label: `Provision für Käufer (${formatPercentLabel(buyerCommissionRate ?? 0)})`,
+              label: `Provision für Käufer (${formatPercentLabel(buyerCommissionCalculationRate)})`,
               value: formatCurrency(buyerCommissionCosts),
             }
           : null,
@@ -920,11 +927,13 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
               <h2 className="h5 mb-3">Preisdetails</h2>
               {priceFacts.length > 0 ? (
                 <dl className="offer-detail-energy">
-                  {priceFacts.map((item) => (
+                  {[...priceFacts, ...(mode === "kauf" ? [{ label: "Käuferprovision", value: buyerCommissionDisplay }] : [])].map((item) => (
+                    item ? (
                     <div key={item.label}>
                       <dt>{item.label}</dt>
                       <dd>{item.value}</dd>
                     </div>
+                    ) : null
                   ))}
                 </dl>
               ) : (
@@ -1142,31 +1151,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                   ›
                 </button>
               </div>
-              {photoAssets.length > 1 ? (
-                <div className="offer-detail-gallery-thumbs">
-                  {photoAssets.map((asset, index) => (
-                    <button
-                      key={`${asset.url}-fullscreen-${index}`}
-                      type="button"
-                      className={`offer-detail-gallery-thumb${index === resolvedPhotoIndex ? " is-active" : ""}`}
-                      onClick={() => setActivePhotoIndex(index)}
-                      aria-label={`Bild ${index + 1} anzeigen`}
-                    >
-                      <div className="offer-detail-thumb-frame">
-                        <Image
-                          src={asset.url}
-                          alt={imageAltTexts[index] ?? asset.title ?? `${title} Bild ${index + 1}`}
-                          fill
-                          loading="lazy"
-                          quality={56}
-                          sizes="84px"
-                          style={{ objectFit: "cover" }}
-                        />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
             </div>
           </div>
         </div>

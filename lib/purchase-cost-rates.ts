@@ -2,12 +2,14 @@ export type PurchaseCostRates = {
   realEstateTransferTaxRate: number;
   notaryRate: number;
   landRegistryRate: number;
+  buyerCommissionDefaultRate: number;
 };
 
 const DEFAULT_PURCHASE_COST_RATES: PurchaseCostRates = {
   realEstateTransferTaxRate: 5.5,
   notaryRate: 1.5,
   landRegistryRate: 0.5,
+  buyerCommissionDefaultRate: 3.57,
 };
 
 const PURCHASE_COST_RATES_BY_BUNDESLAND: Record<string, PurchaseCostRates> = {
