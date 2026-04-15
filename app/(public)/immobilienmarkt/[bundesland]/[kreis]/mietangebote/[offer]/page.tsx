@@ -7,6 +7,7 @@ import { getOfferById } from "@/lib/angebote";
 import { getReportBySlugs } from "@/lib/data";
 import { loadPortalFormatProfile } from "@/lib/portal-format-config";
 import { getPortalSystemTexts } from "@/lib/portal-system-texts";
+import { resolvePublicAdvisorContact } from "@/lib/public-advisor-contact";
 import { formatRegionFallback, getRegionDisplayName } from "@/utils/regionName";
 import { asArray, asRecord, asString } from "@/utils/records";
 import { parseOfferParam } from "@/utils/slug";
@@ -66,12 +67,14 @@ export default async function MietangebotDetailPage({ params }: PageProps) {
     asString(meta["bundesland_name"]) ?? formatRegionFallback(bundesland);
   const basePath = `/immobilienmarkt/${bundesland}/${kreis}`;
   const listPath = `${basePath}/mietangebote`;
+  const pagePath = `${basePath}/mietangebote/${offer}`;
   const tabs = [
     ...IMMOBILIENMARKT_THEME.tabsByLevel.kreis,
     { id: "mietangebote", label: "Mietangebote" },
   ];
   const texts = await getPortalSystemTexts("de");
   const formatProfile = await loadPortalFormatProfile("de");
+  const advisor = await resolvePublicAdvisorContact({ bundeslandSlug: bundesland, kreisSlug: kreis });
 
   return (
     <OfferDetailPage
@@ -79,6 +82,12 @@ export default async function MietangebotDetailPage({ params }: PageProps) {
       mode="miete"
       texts={texts}
       formatProfile={formatProfile}
+      pagePath={pagePath}
+      advisor={{
+        name: advisor?.advisorName ?? null,
+        phone: advisor?.advisorPhone ?? null,
+        href: `${basePath}/immobilienmakler`,
+      }}
       listPath={listPath}
       breadcrumb={{
         tabs,

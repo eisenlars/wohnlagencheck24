@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { Offer, OfferMode, OfferOverrides } from "@/lib/angebote";
 import type { PortalFormatProfile } from "@/lib/portal-format-config";
@@ -64,12 +64,25 @@ type DetailsSnapshot = {
   address_hidden: boolean | null;
 };
 
+type NarrativeSection = {
+  kicker: string;
+  title: string;
+  copy?: string;
+  items?: string[];
+};
+
 type OfferDetailPageProps = {
   offer: Offer;
   overrides?: OfferOverrides | null;
   mode: OfferMode;
   texts: PortalSystemTextMap;
   formatProfile: PortalFormatProfile;
+  pagePath: string;
+  advisor: {
+    name: string | null;
+    phone: string | null;
+    href: string | null;
+  };
   breadcrumb: {
     tabs: { id: string; label: string }[];
     activeTabId: string;
@@ -258,6 +271,13 @@ function formatBooleanLabel(value: boolean | null | undefined): string {
   return value ? "Ja" : "Nein";
 }
 
+function toTelHref(value: string | null | undefined): string | null {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) return null;
+  const compact = normalized.replace(/[^+\d]/g, "");
+  return compact ? `tel:${compact}` : null;
+}
+
 function formatDateLabel(value: string | null | undefined): string {
   if (!value) return "—";
   const parsed = new Date(value);
@@ -266,7 +286,7 @@ function formatDateLabel(value: string | null | undefined): string {
 }
 
 export function OfferDetailPage(props: OfferDetailPageProps) {
-  const { offer, mode, texts, formatProfile, breadcrumb, listPath } = props;
+  const { offer, mode, texts, formatProfile, pagePath, advisor, breadcrumb, listPath } = props;
   const isEnglish = String(formatProfile.locale).toLowerCase().startsWith("en");
   const priceLabel = mode === "miete" ? texts.warm_rent : texts.purchase_price;
   const priceSuffix = mode === "miete" ? texts.per_month : "";
@@ -423,8 +443,38 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     { label: "Gültig bis", value: formatDateLabel(energySnapshot?.certificate_end_date) },
     { label: "Warmwasser enthalten", value: formatBooleanLabel(energySnapshot?.warm_water_included) },
   ].filter((item) => item.value !== "—");
-  const hasNarrativePanel = Boolean(description || locationText || featuresText);
   const contactFormAnchor = "offer-contact-form";
+  const energyModalId = `offer-energy-modal-${offer.id}`;
+  const [isEnergyModalOpen, setIsEnergyModalOpen] = useState(false);
+  const advisorPhoneHref = useMemo(() => toTelHref(advisor.phone), [advisor.phone]);
+  const brokerLinkHref =
+    advisor.href ??
+    (
+      breadcrumb.ctx?.bundeslandSlug && breadcrumb.ctx?.kreisSlug
+        ? `/immobilienmarkt/${breadcrumb.ctx.bundeslandSlug}/${breadcrumb.ctx.kreisSlug}/immobilienmakler`
+        : null
+    );
+  const narrativeSectionCandidates = [
+    description ? { kicker: texts.property_description, title: texts.property_description, copy: description } : null,
+    locationText ? { kicker: texts.location_label, title: texts.location_label, copy: locationText } : null,
+    featuresText ? { kicker: texts.features_label, title: texts.features_label, copy: featuresText } : null,
+    highlights.length > 0 ? { kicker: texts.highlights_label, title: texts.highlights_label, items: highlights } : null,
+  ];
+  const narrativeSections = narrativeSectionCandidates.reduce<NarrativeSection[]>((accumulator, item) => {
+    if (item) accumulator.push(item);
+    return accumulator;
+  }, []);
+
+  useEffect(() => {
+    if (!isEnergyModalOpen) return undefined;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsEnergyModalOpen(false);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isEnergyModalOpen]);
 
   return (
     <div className="container text-dark">
@@ -475,16 +525,19 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           <div className="offer-detail-cta-card">
             <h2 className="h6 mb-2">{texts.interested_in_property}</h2>
             <p className="offer-detail-cta-note">
-              {texts.contact_request_hint}
+              {advisor.name
+                ? `Direkter Kontakt zu ${advisor.name} fuer dieses Gebiet.`
+                : texts.contact_request_hint}
             </p>
-            <a className="btn btn-dark w-100" href={`#${contactFormAnchor}`}>
-              {isEnglish ? "Go to contact form" : "Zum Kontaktformular"}
-            </a>
-            <div className="offer-detail-cta-note offer-detail-cta-note--muted">
-              {isEnglish
-                ? "Additional modules such as financing requests can be added here later."
-                : "Weitere Module wie Finanzierungsanfragen koennen hier spaeter ergaenzt werden."}
-            </div>
+            {advisorPhoneHref && advisor.phone ? (
+              <a className="btn btn-dark w-100" href={advisorPhoneHref}>
+                {advisor.phone}
+              </a>
+            ) : (
+              <a className="btn btn-dark w-100" href={`#${contactFormAnchor}`}>
+                {isEnglish ? "Go to contact form" : "Zum Kontaktformular"}
+              </a>
+            )}
           </div>
         </aside>
       </section>
@@ -669,46 +722,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         </div>
       </section>
 
-      {hasNarrativePanel || highlights.length > 0 ? (
-        <section className="offer-detail-grid offer-detail-grid--balanced offer-detail-section">
-          {hasNarrativePanel ? (
-            <div className="offer-detail-panel offer-detail-panel--spacious">
-              {description ? (
-                <div className="offer-detail-panel-section">
-                  <span className="offer-detail-panel-kicker">{texts.property_description}</span>
-                  <h2 className="h5 mb-3">{texts.property_description}</h2>
-                  <p className="offer-detail-panel-copy mb-0">{description}</p>
-                </div>
-              ) : null}
-              {locationText ? (
-                <div className="offer-detail-panel-section">
-                  <h3 className="h6 mb-2">{texts.location_label}</h3>
-                  <p className="offer-detail-panel-copy mb-0">{locationText}</p>
-                </div>
-              ) : null}
-              {featuresText ? (
-                <div className="offer-detail-panel-section">
-                  <h3 className="h6 mb-2">{texts.features_label}</h3>
-                  <p className="offer-detail-panel-copy mb-0">{featuresText}</p>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {highlights.length > 0 ? (
-            <div className="offer-detail-panel offer-detail-panel--spacious">
-              <span className="offer-detail-panel-kicker">{texts.highlights_label}</span>
-              <h2 className="h5 mb-3">{texts.highlights_label}</h2>
-              <ul className="offer-detail-list offer-detail-highlight-list">
-                {highlights.map((item, index) => (
-                  <li key={`${item}-${index}`}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
       {detailFacts.length > 0 || equipmentFacts.length > 0 ? (
         <section className="offer-detail-grid offer-detail-section">
           {detailFacts.length > 0 ? (
@@ -741,32 +754,71 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         </section>
       ) : null}
 
-      {features.length > 0 || energyFacts.length > 0 ? (
-        <section className="offer-detail-grid offer-detail-section">
-          {features.length > 0 ? (
-            <div className="offer-detail-panel">
-              <h3 className="h6 mb-3">{texts.features_label}</h3>
-              <ul className="offer-detail-list">
-                {features.map((item, index) => (
-                  <li key={`${item}-${index}`}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+      {narrativeSections.length > 0 ? (
+        <section className="offer-detail-section">
+          <div className="offer-detail-panel offer-detail-panel--spacious">
+            {narrativeSections.map((section) => (
+              <div key={section.title} className="offer-detail-panel-section">
+                <span className="offer-detail-panel-kicker">{section.kicker}</span>
+                <h2 className="h5 mb-3">{section.title}</h2>
+                {section.copy ? <p className="offer-detail-panel-copy mb-0">{section.copy}</p> : null}
+                {section.items ? (
+                  <ul className="offer-detail-list offer-detail-highlight-list mb-0">
+                    {section.items.map((item, index) => (
+                      <li key={`${item}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-          {energyFacts.length > 0 ? (
-            <div className="offer-detail-panel">
-              <h3 className="h6 mb-3">{texts.energy_label}</h3>
-              <dl className="offer-detail-energy">
-                {energyFacts.map((item) => (
-                  <div key={item.label}>
-                    <dt>{item.label}</dt>
-                    <dd>{item.value}</dd>
-                  </div>
-                ))}
-              </dl>
+      {features.length > 0 || energyFacts.length > 0 ? (
+        <section className="offer-detail-section">
+          <div className="offer-detail-panel offer-detail-energy-panel">
+            <div className="offer-detail-energy-panel__content">
+              <h2 className="h5 mb-3">Energie und Bausubstanz</h2>
+              {energyFacts.length > 0 ? (
+                <dl className="offer-detail-energy">
+                  {energyFacts.map((item) => (
+                    <div key={item.label}>
+                      <dt>{item.label}</dt>
+                      <dd>{item.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="offer-detail-panel-copy mb-0">Energie- und Ausweisdaten werden ergänzt.</p>
+              )}
+              {features.length > 0 ? (
+                <div className="offer-detail-energy-panel__features">
+                  <h3 className="h6 mb-3">{texts.features_label}</h3>
+                  <ul className="offer-detail-list mb-0">
+                    {features.map((item, index) => (
+                      <li key={`${item}-${index}`}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+            <div className="offer-detail-energy-panel__cta">
+              <h3 className="h6 mb-2">Moechtest du Details zum Energieverbrauch?</h3>
+              <p className="offer-detail-cta-note mb-3">
+                Wir leiten deine Anfrage direkt an den zustaendigen Ansprechpartner fuer dieses Objekt weiter.
+              </p>
+              <button
+                type="button"
+                className="btn btn-outline-dark"
+                onClick={() => setIsEnergyModalOpen(true)}
+                aria-haspopup="dialog"
+                aria-controls={energyModalId}
+              >
+                Infos zum Energieverbrauch
+              </button>
+            </div>
+          </div>
         </section>
       ) : null}
 
@@ -805,7 +857,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         <div className="offer-detail-contact-card">
           <OfferInquiryInlineForm
             locale={formatProfile.locale}
-            pagePath={listPath}
+            pagePath={pagePath}
             regionLabel={breadcrumb.names?.regionName ?? title}
             offer={{
               id: offer.id,
@@ -817,6 +869,70 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
           />
         </div>
       </section>
+
+      {brokerLinkHref || advisor.name || advisor.phone ? (
+        <section className="offer-detail-section">
+          <div className="offer-detail-broker-teaser">
+            <div>
+              <span className="offer-detail-panel-kicker">Makler vor Ort</span>
+              <h2 className="h5 mb-2">{advisor.name ?? "Zustaendiger Ansprechpartner in der Region"}</h2>
+              <p className="offer-detail-panel-copy mb-0">
+                {advisor.phone
+                  ? `Telefonisch erreichbar unter ${advisor.phone}.`
+                  : "Weitere Informationen zum regionalen Ansprechpartner findest du auf der integrierten Maklerseite."}
+              </p>
+            </div>
+            {brokerLinkHref ? (
+              <Link href={brokerLinkHref} className="btn btn-outline-dark">
+                Zur Maklerseite
+              </Link>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {isEnergyModalOpen ? (
+        <div
+          className="offer-detail-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={energyModalId}
+          onClick={() => setIsEnergyModalOpen(false)}
+        >
+          <div className="offer-detail-modal__card" onClick={(event) => event.stopPropagation()}>
+            <div className="offer-detail-modal__header">
+              <div>
+                <span className="offer-detail-panel-kicker">Energie und Bausubstanz</span>
+                <h2 className="h5 mb-2" id={energyModalId}>Infos zum Energieverbrauch</h2>
+                <p className="offer-detail-panel-copy mb-0">
+                  Nutze das Kontaktformular fuer Rueckfragen zu Energieverbrauch, Energieausweis oder Bausubstanz.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="offer-detail-modal__close"
+                onClick={() => setIsEnergyModalOpen(false)}
+                aria-label="Dialog schliessen"
+              >
+                ×
+              </button>
+            </div>
+            <OfferInquiryInlineForm
+              locale={formatProfile.locale}
+              pagePath={pagePath}
+              regionLabel={breadcrumb.names?.regionName ?? title}
+              showHeader={false}
+              offer={{
+                id: `${offer.id}-energy`,
+                title,
+                objectType: offer.objectType,
+                address: offer.address,
+              }}
+              context={breadcrumb.ctx ?? {}}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

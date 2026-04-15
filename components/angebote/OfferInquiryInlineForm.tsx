@@ -6,6 +6,8 @@ type Props = {
   locale?: string;
   pagePath: string;
   regionLabel: string;
+  showHeader?: boolean;
+  introOverride?: string | null;
   offer: {
     id: string;
     title: string;
@@ -23,6 +25,7 @@ type SubmitState = "idle" | "submitting" | "success" | "error";
 
 export function OfferInquiryInlineForm(props: Props) {
   const locale = props.locale === "en" ? "en" : "de";
+  const showHeader = props.showHeader !== false;
   const [state, setState] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -109,10 +112,12 @@ export function OfferInquiryInlineForm(props: Props) {
 
   return (
     <div className="request-offer-inline-block">
-      <div>
-        <h2 style={{ margin: "0 0 6px" }}>{copy.title}</h2>
-        <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>{copy.intro}</p>
-      </div>
+      {showHeader ? (
+        <div>
+          <h2 style={{ margin: "0 0 6px" }}>{copy.title}</h2>
+          <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>{props.introOverride ?? copy.intro}</p>
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="request-offer-form-grid">
         <div>
