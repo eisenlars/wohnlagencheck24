@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ImmobilienmarktBreadcrumb } from "@/features/immobilienmarkt/shared/ImmobilienmarktBreadcrumb";
 import type { Offer, OfferMode, OfferOverrides } from "@/lib/angebote";
 import type { PortalFormatProfile } from "@/lib/portal-format-config";
+import { getPurchaseCostRates } from "@/lib/purchase-cost-rates";
 import type { PortalSystemTextMap } from "@/lib/portal-system-text-definitions";
 import { formatMetric } from "@/utils/format";
 import { asRecord } from "@/utils/records";
@@ -278,6 +279,23 @@ function toTelHref(value: string | null | undefined): string | null {
   return compact ? `tel:${compact}` : null;
 }
 
+function parsePercentValue(value: string | null | undefined): number | null {
+  const normalized = String(value ?? "").trim();
+  if (!normalized) return null;
+  if (/provisionsfrei/i.test(normalized)) return 0;
+  const match = normalized.match(/(\d{1,2}(?:[.,]\d{1,2})?)\s*%/);
+  if (!match) return null;
+  const parsed = Number(match[1].replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatPercentLabel(value: number): string {
+  return `${new Intl.NumberFormat("de-DE", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+    maximumFractionDigits: 2,
+  }).format(value)}%`;
+}
+
 function formatDateLabel(value: string | null | undefined): string {
   if (!value) return "—";
   const parsed = new Date(value);
@@ -358,6 +376,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
   const [activeLocationMapIndex, setActiveLocationMapIndex] = useState(0);
+  const [isGalleryLightboxOpen, setIsGalleryLightboxOpen] = useState(false);
   const resolvedPhotoIndex = activePhotoIndex < photoAssets.length ? activePhotoIndex : 0;
   const resolvedFloorplanIndex = activeFloorplanIndex < floorplanAssets.length ? activeFloorplanIndex : 0;
   const resolvedLocationMapIndex =
@@ -409,17 +428,38 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const highlights =
     offer.highlights ?? (Array.isArray(raw["highlights"]) ? (raw["highlights"] as string[]) : []);
   const imageAltTexts = offer.imageAltTexts ?? [];
-  const commissionText =
+  const objectCommissionText =
     readTextValue(raw["external_commission"]) ??
     readTextValue(raw["internal_commission"]) ??
     readTextValue(raw["courtage"]) ??
-    readTextValue(raw["courtage_note"]) ??
-    readTextValue(raw["makler_provision"]);
+    readTextValue(raw["courtage_note"]);
   const isCommissionFree = asBoolean(raw["free_commission"]);
   const displayPrice = mode === "miete" ? offer.rent : offer.price;
   const pricePerSqm =
     displayPrice != null && offer.areaSqm && Number.isFinite(offer.areaSqm) && offer.areaSqm > 0
       ? displayPrice / offer.areaSqm
+      : null;
+  const purchaseCostRates = useMemo(
+    () => getPurchaseCostRates(breadcrumb.ctx?.bundeslandSlug),
+    [breadcrumb.ctx?.bundeslandSlug],
+  );
+  const buyerCommissionRate = isCommissionFree ? 0 : parsePercentValue(objectCommissionText);
+  const notaryCosts = mode === "kauf" && displayPrice != null ? displayPrice * (purchaseCostRates.notaryRate / 100) : null;
+  const landRegistryCosts =
+    mode === "kauf" && displayPrice != null ? displayPrice * (purchaseCostRates.landRegistryRate / 100) : null;
+  const realEstateTransferTax =
+    mode === "kauf" && displayPrice != null ? displayPrice * (purchaseCostRates.realEstateTransferTaxRate / 100) : null;
+  const buyerCommissionCosts =
+    mode === "kauf" && displayPrice != null && buyerCommissionRate != null
+      ? displayPrice * (buyerCommissionRate / 100)
+      : null;
+  const totalPurchaseCosts =
+    mode === "kauf" && displayPrice != null
+      ? displayPrice +
+        (notaryCosts ?? 0) +
+        (landRegistryCosts ?? 0) +
+        (realEstateTransferTax ?? 0) +
+        (buyerCommissionCosts ?? 0)
       : null;
   const detailFacts = [
     detailsSnapshot?.usable_area_sqm != null ? { label: "Nutzfläche", value: `${formatArea(detailsSnapshot.usable_area_sqm)} m²` } : null,
@@ -458,15 +498,39 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const priceFacts = [
     displayPrice != null ? { label: mode === "miete" ? texts.warm_rent : texts.purchase_price, value: formatCurrency(displayPrice) } : null,
     pricePerSqm != null ? { label: "Preis pro m²", value: `${formatCurrency(pricePerSqm)} / m²` } : null,
-    mode === "kauf"
-      ? {
-          label: "Käuferprovision",
-          value: isCommissionFree ? "Provisionsfrei" : (commissionText ?? "Provision auf Anfrage"),
-        }
-      : null,
   ].filter((item): item is { label: string; value: string } => Boolean(item));
+  const purchaseCostFacts = mode === "kauf"
+    ? [
+        notaryCosts != null
+          ? {
+              label: `Notarkosten (${formatPercentLabel(purchaseCostRates.notaryRate)})`,
+              value: formatCurrency(notaryCosts),
+            }
+          : null,
+        realEstateTransferTax != null
+          ? {
+              label: `Grunderwerbsteuer (${formatPercentLabel(purchaseCostRates.realEstateTransferTaxRate)})`,
+              value: formatCurrency(realEstateTransferTax),
+            }
+          : null,
+        buyerCommissionCosts != null
+          ? {
+              label: `Provision für Käufer (${formatPercentLabel(buyerCommissionRate ?? 0)})`,
+              value: formatCurrency(buyerCommissionCosts),
+            }
+          : null,
+        landRegistryCosts != null
+          ? {
+              label: `Grundbucheintrag (${formatPercentLabel(purchaseCostRates.landRegistryRate)})`,
+              value: formatCurrency(landRegistryCosts),
+            }
+          : null,
+      ].filter((item): item is { label: string; value: string } => Boolean(item))
+    : [];
+  const hasPricingSection = priceFacts.length > 0 || purchaseCostFacts.length > 0 || mode === "kauf";
   const contactFormAnchor = "offer-contact-form";
   const energyModalId = `offer-energy-modal-${offer.id}`;
+  const galleryLightboxId = `offer-gallery-lightbox-${offer.id}`;
   const [isEnergyModalOpen, setIsEnergyModalOpen] = useState(false);
   const advisorPhoneHref = useMemo(() => toTelHref(advisor.phone), [advisor.phone]);
   const brokerLinkHref =
@@ -488,15 +552,16 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   }, []);
 
   useEffect(() => {
-    if (!isEnergyModalOpen) return undefined;
+    if (!isEnergyModalOpen && !isGalleryLightboxOpen) return undefined;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setIsEnergyModalOpen(false);
+        setIsGalleryLightboxOpen(false);
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isEnergyModalOpen]);
+  }, [isEnergyModalOpen, isGalleryLightboxOpen]);
 
   return (
     <div className="container text-dark">
@@ -591,17 +656,27 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                   >
                     ‹
                   </button>
-                  <div className="offer-detail-gallery-hero">
-                    <Image
-                      key={activePhoto.url}
-                      src={activePhoto.url}
-                      alt={imageAltTexts[resolvedPhotoIndex] ?? activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
-                      fill
-                      priority
-                      sizes="(max-width: 991px) 100vw, 72vw"
-                      style={{ objectFit: "contain" }}
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    className="offer-detail-gallery-stage-button"
+                    onClick={() => setIsGalleryLightboxOpen(true)}
+                    aria-haspopup="dialog"
+                    aria-controls={galleryLightboxId}
+                    aria-label="Bildergalerie in Vollbild öffnen"
+                  >
+                    <div className="offer-detail-gallery-hero">
+                      <Image
+                        key={activePhoto.url}
+                        src={activePhoto.url}
+                        alt={imageAltTexts[resolvedPhotoIndex] ?? activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                        fill
+                        priority
+                        quality={72}
+                        sizes="(max-width: 991px) 100vw, 1100px"
+                        style={{ objectFit: "contain" }}
+                      />
+                    </div>
+                  </button>
                   <button
                     type="button"
                     className="offer-detail-slideshow-nav"
@@ -635,6 +710,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                             alt={imageAltTexts[index] ?? asset.title ?? `${title} Bild ${index + 1}`}
                             fill
                             loading="lazy"
+                            quality={56}
                             sizes="84px"
                             style={{ objectFit: "cover" }}
                           />
@@ -656,12 +732,13 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                   <Image
                     key={activeFloorplan.url}
                     src={activeFloorplan.url}
-                    alt={activeFloorplan.title ?? texts.floor_plan}
-                    fill
-                    loading="lazy"
-                    sizes="(max-width: 991px) 100vw, 72vw"
-                    style={{ objectFit: "contain" }}
-                  />
+                      alt={activeFloorplan.title ?? texts.floor_plan}
+                      fill
+                      loading="lazy"
+                      quality={72}
+                      sizes="(max-width: 991px) 100vw, 72vw"
+                      style={{ objectFit: "contain" }}
+                    />
                 </div>
                 {floorplanAssets.length > 1 ? (
                   <div className="offer-detail-panel-thumbs">
@@ -679,6 +756,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                             alt={asset.title ?? `${texts.floor_plan} ${index + 1}`}
                             fill
                             loading="lazy"
+                            quality={56}
                             sizes="84px"
                             style={{ objectFit: "cover" }}
                           />
@@ -700,12 +778,13 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                   <Image
                     key={activeLocationMap.url}
                     src={activeLocationMap.url}
-                    alt={activeLocationMap.title ?? texts.location_map}
-                    fill
-                    loading="lazy"
-                    sizes="(max-width: 991px) 100vw, 72vw"
-                    style={{ objectFit: "contain" }}
-                  />
+                      alt={activeLocationMap.title ?? texts.location_map}
+                      fill
+                      loading="lazy"
+                      quality={72}
+                      sizes="(max-width: 991px) 100vw, 72vw"
+                      style={{ objectFit: "contain" }}
+                    />
                 </div>
                 {locationMapAssets.length > 1 ? (
                   <div className="offer-detail-panel-thumbs">
@@ -723,6 +802,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                             alt={asset.title ?? `${texts.location_map} ${index + 1}`}
                             fill
                             loading="lazy"
+                            quality={56}
                             sizes="84px"
                             style={{ objectFit: "cover" }}
                           />
@@ -791,11 +871,11 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         </section>
       ) : null}
 
-      {features.length > 0 || energyFacts.length > 0 ? (
+      {features.length > 0 || energyFacts.length > 0 || hasPricingSection ? (
         <section className="offer-detail-grid offer-detail-section">
-          <div className="offer-detail-panel offer-detail-panel--spacious">
-            <div className="offer-detail-energy-panel__content">
-              <h2 className="h5 mb-3">Energie und Bausubstanz</h2>
+            <div className="offer-detail-panel offer-detail-panel--spacious">
+              <div className="offer-detail-energy-panel__content">
+                <h2 className="h5 mb-3">Energie und Bausubstanz</h2>
               {energyFacts.length > 0 ? (
                 <dl className="offer-detail-energy">
                   {energyFacts.map((item) => (
@@ -851,14 +931,46 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                 <p className="offer-detail-panel-copy mb-0">Preisinformationen werden ergänzt.</p>
               )}
             </div>
-            <div className="offer-detail-panel-section">
-              <h3 className="h6 mb-2">Kaufnebenkosten</h3>
-              <p className="offer-detail-panel-copy mb-0">
-                {mode === "kauf"
-                  ? "Zusätzlich zum Kaufpreis können Grunderwerbsteuer, Notar- und Grundbuchkosten sowie eine mögliche Käuferprovision anfallen."
-                  : "Zusätzliche mietvertragliche Kosten und individuelle Konditionen können je nach Angebot gesondert anfallen."}
-              </p>
-            </div>
+            {mode === "kauf" ? (
+              <>
+                <div className="offer-detail-panel-section">
+                  <h3 className="h6 mb-2">Kaufnebenkosten</h3>
+                  {purchaseCostFacts.length > 0 ? (
+                    <dl className="offer-detail-energy">
+                      {purchaseCostFacts.map((item) => (
+                        <div key={item.label}>
+                          <dt>{item.label}</dt>
+                          <dd>{item.value}</dd>
+                        </div>
+                      ))}
+                      {totalPurchaseCosts != null ? (
+                        <div>
+                          <dt>Gesamtkosten</dt>
+                          <dd>{formatCurrency(totalPurchaseCosts)}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  ) : (
+                    <p className="offer-detail-panel-copy mb-0">Kaufnebenkosten werden ergänzt.</p>
+                  )}
+                </div>
+                <div className="offer-detail-panel-section">
+                  <p className="offer-detail-panel-copy mb-2">
+                    Der angezeigte Wert ist eine automatisch berechnete Schätzung von Wohnlagencheck24.
+                  </p>
+                  <p className="offer-detail-panel-copy mb-0">
+                    Bei den Angaben handelt es sich um ortsübliche Werte. Individuelle Kosten können abweichen.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="offer-detail-panel-section">
+                <h3 className="h6 mb-2">Kostenhinweis</h3>
+                <p className="offer-detail-panel-copy mb-0">
+                  Zusätzliche mietvertragliche Kosten und individuelle Konditionen können je nach Angebot gesondert anfallen.
+                </p>
+              </div>
+            )}
           </div>
         </section>
       ) : null}
@@ -971,6 +1083,91 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
               }}
               context={breadcrumb.ctx ?? {}}
             />
+          </div>
+        </div>
+      ) : null}
+
+      {isGalleryLightboxOpen && activePhoto ? (
+        <div
+          className="offer-detail-modal offer-detail-modal--gallery"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={galleryLightboxId}
+          onClick={() => setIsGalleryLightboxOpen(false)}
+        >
+          <div className="offer-detail-modal__card offer-detail-modal__card--gallery" onClick={(event) => event.stopPropagation()}>
+            <div className="offer-detail-modal__header offer-detail-modal__header--gallery">
+              <div>
+                <h2 className="h5 mb-1" id={galleryLightboxId}>Bildergalerie</h2>
+                <p className="offer-detail-panel-copy mb-0">
+                  {activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="offer-detail-modal__close"
+                onClick={() => setIsGalleryLightboxOpen(false)}
+                aria-label="Vollbildgalerie schliessen"
+              >
+                ×
+              </button>
+            </div>
+            <div className="offer-detail-lightbox">
+              <div className="offer-detail-lightbox__stage">
+                <button
+                  type="button"
+                  className="offer-detail-slideshow-nav"
+                  onClick={() => setActivePhotoIndex((current) => (current <= 0 ? photoAssets.length - 1 : current - 1))}
+                  aria-label="Vorheriges Bild anzeigen"
+                >
+                  ‹
+                </button>
+                <div className="offer-detail-lightbox__image">
+                  <Image
+                    key={`${activePhoto.url}-fullscreen`}
+                    src={activePhoto.url}
+                    alt={imageAltTexts[resolvedPhotoIndex] ?? activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                    fill
+                    quality={84}
+                    sizes="100vw"
+                    style={{ objectFit: "contain" }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="offer-detail-slideshow-nav"
+                  onClick={() => setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1))}
+                  aria-label="Nächstes Bild anzeigen"
+                >
+                  ›
+                </button>
+              </div>
+              {photoAssets.length > 1 ? (
+                <div className="offer-detail-gallery-thumbs">
+                  {photoAssets.map((asset, index) => (
+                    <button
+                      key={`${asset.url}-fullscreen-${index}`}
+                      type="button"
+                      className={`offer-detail-gallery-thumb${index === resolvedPhotoIndex ? " is-active" : ""}`}
+                      onClick={() => setActivePhotoIndex(index)}
+                      aria-label={`Bild ${index + 1} anzeigen`}
+                    >
+                      <div className="offer-detail-thumb-frame">
+                        <Image
+                          src={asset.url}
+                          alt={imageAltTexts[index] ?? asset.title ?? `${title} Bild ${index + 1}`}
+                          fill
+                          loading="lazy"
+                          quality={56}
+                          sizes="84px"
+                          style={{ objectFit: "cover" }}
+                        />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}

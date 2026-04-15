@@ -2773,11 +2773,10 @@ h6 {
 }
 
 .offer-detail-gallery-hero {
-  background: #f1f2f4;
+  background: #ffffff;
   border-radius: 1rem;
   overflow: hidden;
   border: none;
-  padding: 0.5rem;
   position: relative;
   min-height: clamp(320px, 46vw, 640px);
 }
@@ -2787,7 +2786,15 @@ h6 {
   height: 100%;
   object-fit: contain;
   display: block;
-  border-radius: 0.75rem;
+}
+
+.offer-detail-gallery-stage-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
 }
 
 .offer-detail-gallery-thumbs {
@@ -3088,12 +3095,28 @@ h6 {
   padding: 1.35rem;
 }
 
+.offer-detail-modal--gallery {
+  background: rgba(15, 23, 42, 0.84);
+}
+
+.offer-detail-modal__card--gallery {
+  width: min(1280px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  background: #0f172a;
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
 .offer-detail-modal__header {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
   align-items: flex-start;
   margin-bottom: 1rem;
+}
+
+.offer-detail-modal__header--gallery .offer-detail-panel-copy {
+  color: #cbd5e1;
 }
 
 .offer-detail-modal__close {
@@ -3109,6 +3132,32 @@ h6 {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.offer-detail-lightbox {
+  display: grid;
+  gap: 1rem;
+}
+
+.offer-detail-lightbox__stage {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+  gap: 1rem;
+  align-items: center;
+}
+
+.offer-detail-lightbox__image {
+  position: relative;
+  min-height: min(72vh, 860px);
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #020617;
+}
+
+.offer-detail-lightbox__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 @media (max-width: 992px) {
@@ -3139,5 +3188,13 @@ h6 {
 
   .offer-detail-contact-card {
     padding: 1.15rem;
+  }
+
+  .offer-detail-lightbox__stage {
+    grid-template-columns: 1fr;
+  }
+
+  .offer-detail-lightbox__image {
+    min-height: 52vh;
   }
 }
