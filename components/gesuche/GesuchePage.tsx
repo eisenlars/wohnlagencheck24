@@ -170,19 +170,11 @@ export function GesuchePage(props: GesuchePageProps) {
         <section className="angebote-list mb-5">
           <div className="angebote-grid">
             {filteredRequests.map((request) => (
-              <article className="angebote-card" key={request.id} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+              <article className="angebote-card list-card request-list-card" key={request.id}>
                 {request.imageUrl ? (
-                  <div
-                    style={{
-                      position: "relative",
-                      aspectRatio: "16 / 10",
-                      overflow: "hidden",
-                      borderBottom: "1px solid #e2e8f0",
-                      background: "#e2e8f0",
-                    }}
-                  >
+                  <div className="angebote-card-media list-card__media">
                     {buildDetailHref(request) ? (
-                      <Link href={buildDetailHref(request)!} aria-label={request.title} style={{ display: "block", width: "100%", height: "100%" }}>
+                      <Link href={buildDetailHref(request)!} aria-label={request.title} className="angebote-media-link">
                         <Image
                           src={request.imageUrl}
                           alt={request.imageAlt ?? request.imageTitle ?? request.title}
@@ -202,37 +194,31 @@ export function GesuchePage(props: GesuchePageProps) {
                     )}
                   </div>
                 ) : null}
-                <div className="angebote-card-body" style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-                  <div className="angebote-card-meta" style={{ alignItems: "flex-start", gap: 12 }}>
+                <div className="angebote-card-body list-card__body">
+                  <div className="angebote-card-meta list-card__meta request-list-card__meta">
                     <span className="angebote-pill">{formatObjectType(request)}</span>
-                    <span style={{ marginLeft: "auto", textAlign: "right", color: "#475569", fontSize: "0.8rem", lineHeight: 1.35 }}>
-                      <span style={{ display: "block", fontWeight: 600 }}>{texts.updated_label}</span>
+                    <span className="request-list-card__updated">
+                      <span className="request-list-card__updated-label">{texts.updated_label}</span>
                       <span>{formatUpdatedAt(request.updatedAt) ?? "—"}</span>
                     </span>
                   </div>
-                  <h2 className="h6 mb-2">
+                  <h2 className="h6 mb-2 list-card__title">
                     {buildDetailHref(request) ? (
-                      <Link href={buildDetailHref(request)!} style={{ color: "inherit", textDecoration: "none" }}>
+                      <Link href={buildDetailHref(request)!} className="list-card__title-link">
                         {request.title}
                       </Link>
                     ) : (
                       request.title
                     )}
                   </h2>
-                  <div style={{ color: "#334155", marginBottom: 18, lineHeight: 1.6 }}>
+                  <div className="list-card__subtitle request-list-card__subtitle">
                     {`Suchregion: ${request.regionTargets.map((target) => target.label).join(", ") || texts.region_not_specified}`}
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: "auto" }}>
+                  <div className="list-card__actions request-list-card__actions">
                     {buildDetailHref(request) ? (
                       <Link
                         href={buildDetailHref(request)!}
-                        className="btn btn-sm"
-                        style={{
-                          border: "1px solid #486b7a",
-                          color: "#486b7a",
-                          background: "#fff",
-                          fontWeight: 700,
-                        }}
+                        className="btn btn-sm request-list-card__action request-list-card__action--secondary"
                       >
                         {texts.details}
                       </Link>
@@ -240,13 +226,7 @@ export function GesuchePage(props: GesuchePageProps) {
                     <RequestOfferLeadButton
                       label={texts.offer_property_to_request}
                       locale={normalizedLocale}
-                      className="btn btn-sm"
-                      style={{
-                        background: "#486b7a",
-                        border: "1px solid #486b7a",
-                        color: "#fff",
-                        fontWeight: 700,
-                      }}
+                      className="btn btn-sm request-list-card__action request-list-card__action--primary"
                       pagePath={currentListPath}
                       regionLabel={names?.regionName ?? heading}
                       request={{

@@ -382,8 +382,8 @@ export function AngebotePage(props: AngebotePageProps) {
               const locationLabel = getCompactOfferLocation(offer);
               const detailHref = buildDetailHref(offer);
               return (
-                <article className="angebote-card" key={offer.id}>
-                  <div className="angebote-card-media">
+                <article className="angebote-card list-card offer-list-card" key={offer.id}>
+                  <div className="angebote-card-media list-card__media">
                     {detailHref ? (
                       <a href={detailHref} className="angebote-media-link">
                         {imageUrl ? (
@@ -426,25 +426,25 @@ export function AngebotePage(props: AngebotePageProps) {
                       </span>
                     ) : null}
                   </div>
-                  <div className="angebote-card-body">
-                    <div className="angebote-card-meta">
+                  <div className="angebote-card-body list-card__body">
+                    <div className="angebote-card-meta list-card__meta">
                       <span className="angebote-pill">{formatObjectType(offer.objectType)}</span>
                       <span className="angebote-price">
                         {formatCurrency(mode === "miete" ? offer.rent : offer.price)}
                         {priceSuffix ? <span className="angebote-price-suffix">{priceSuffix}</span> : null}
                       </span>
                     </div>
-                    <h3 className="h6 mb-2">{offer.title || texts.object_generic}</h3>
+                    <h3 className="h6 mb-2 list-card__title">{offer.title || texts.object_generic}</h3>
                     {locationLabel ? (
-                      <p className="angebote-address mb-3">{locationLabel}</p>
+                      <p className="angebote-address mb-3 list-card__subtitle">{locationLabel}</p>
                     ) : null}
-                    <div className="angebote-card-facts">
+                    <div className="angebote-card-facts list-card__facts">
                       <span>{`${formatArea(offer.areaSqm)} m²`}</span>
                       <span>{formatRooms(offer.rooms)} {texts.rooms}</span>
                     </div>
                     {offer.detailUrl && detailHref ? (
                       <a
-                        className="btn btn-outline-dark btn-sm angebote-card-cta"
+                        className="btn btn-outline-dark btn-sm angebote-card-cta list-card__cta"
                         href={detailHref}
                       >
                         {texts.to_expose}
