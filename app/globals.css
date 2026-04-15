@@ -2287,7 +2287,7 @@ h6 {
 .angebote-list .angebote-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.4rem;
+  gap: 1.6rem;
 }
 
 .angebote-card {
@@ -2309,7 +2309,7 @@ h6 {
 
 .angebote-card-media {
   position: relative;
-  height: 228px;
+  aspect-ratio: 16 / 10;
   background: #e5e7eb;
   overflow: hidden;
 }
@@ -2330,7 +2330,7 @@ h6 {
 }
 
 .angebote-card-body {
-  padding: 1.05rem 1.05rem 1.25rem;
+  padding: 1.15rem 1.15rem 1.35rem;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -2364,15 +2364,15 @@ h6 {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #5c6066;
-  margin-top: 0.2rem;
+  margin-top: 0.35rem;
 }
 
 .angebote-price {
   font-weight: 700;
   color: #111;
-  font-size: 1.05rem;
+  font-size: 1.12rem;
 }
 
 @media (max-width: 992px) {
