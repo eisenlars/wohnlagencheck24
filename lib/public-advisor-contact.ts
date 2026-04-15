@@ -86,6 +86,6 @@ export async function resolvePublicAdvisorContact(args: PublicAdvisorContactArgs
       asString(berater["berater_telefon_mobil"]) ??
       asString(berater["berater_telefon_fest"]) ??
       asString(berater["berater_telefon"]) ??
-      null,
+      "+49 351/287051-0",
   };
 }
