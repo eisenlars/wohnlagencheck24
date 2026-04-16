@@ -58,6 +58,7 @@ type LlmOptionApiRow = {
 };
 
 type WorkspaceTab = 'texts' | 'seo' | 'facts' | 'media';
+type ReferenceListFilter = 'all' | 'kauf' | 'miete';
 
 type ReferencesWorkspaceLoadDebug = {
   references: number;
@@ -132,6 +133,13 @@ function getReferenceLocationLabel(payload: Record<string, unknown>): string {
   const location = [zipCode, city].filter(Boolean).join(' ');
   if (location) return location;
   return getPayloadText(payload, ['location', 'location_text', 'district']) || '—';
+}
+
+function getReferenceOfferType(payload: Record<string, unknown>): ReferenceListFilter | '' {
+  const normalized = getPayloadText(payload, ['offer_type', 'vermarktungsart']).toLowerCase();
+  if (normalized === 'kauf') return 'kauf';
+  if (normalized === 'miete') return 'miete';
+  return '';
 }
 
 function getPayloadText(payload: Record<string, unknown>, keys: string[]): string {
@@ -500,6 +508,28 @@ const referenceOverviewGridStyle: CSSProperties = {
   columnGap: 12,
 };
 
+const referenceListFilterRowStyle: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: 8,
+  flexWrap: 'wrap',
+  marginTop: 10,
+  marginBottom: 12,
+};
+
+const filterButtonStyle = (active: boolean): CSSProperties => ({
+  minWidth: 92,
+  padding: '6px 14px',
+  borderRadius: '999px',
+  border: `1px solid ${active ? '#486b7a' : '#e2e8f0'}`,
+  backgroundColor: active ? '#486b7a' : '#f8fafc',
+  color: active ? '#fff' : '#1e293b',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
+});
+
 export default function ReferencesWorkspaceManager() {
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
@@ -513,6 +543,7 @@ export default function ReferencesWorkspaceManager() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<OverrideRow | null>(null);
   const [query, setQuery] = useState('');
+  const [filterType, setFilterType] = useState<ReferenceListFilter>('all');
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('texts');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
@@ -624,9 +655,9 @@ export default function ReferencesWorkspaceManager() {
 
   const filteredRows = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return rows;
     return rows.filter((row) => {
       const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
+      const matchesType = filterType === 'all' ? true : getReferenceOfferType(payload) === filterType;
       const haystack = [
         row.title,
         row.external_id,
@@ -636,9 +667,10 @@ export default function ReferencesWorkspaceManager() {
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      return haystack.includes(term);
+      const matchesQuery = term.length === 0 ? true : haystack.includes(term);
+      return matchesType && matchesQuery;
     });
-  }, [rows, query]);
+  }, [rows, query, filterType]);
 
   const selectedRow = useMemo(
     () => rows.find((row) => row.id === selectedId) ?? null,
@@ -1038,6 +1070,29 @@ export default function ReferencesWorkspaceManager() {
             onChange={(event) => setQuery(event.target.value)}
             style={searchInputStyle}
           />
+          <div style={referenceListFilterRowStyle}>
+            <button
+              type="button"
+              onClick={() => setFilterType('all')}
+              style={filterButtonStyle(filterType === 'all')}
+            >
+              Alle
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType('kauf')}
+              style={filterButtonStyle(filterType === 'kauf')}
+            >
+              Kauf
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterType('miete')}
+              style={filterButtonStyle(filterType === 'miete')}
+            >
+              Miete
+            </button>
+          </div>
           <div style={listWrapStyle}>
             {filteredRows.map((row) => {
               const payload = (row.normalized_payload ?? {}) as Record<string, unknown>;
