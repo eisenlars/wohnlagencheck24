@@ -2857,6 +2857,10 @@ h6 {
   z-index: 1;
 }
 
+.offer-detail-gallery-card--secondary .offer-detail-gallery-hero img {
+  filter: grayscale(1);
+}
+
 .offer-detail-gallery-thumbs {
   display: flex;
   flex-wrap: wrap;
@@ -2981,6 +2985,12 @@ h6 {
   overflow: hidden;
 }
 
+.offer-detail-panel-media-frame--interactive {
+  width: 100%;
+  border: 0;
+  cursor: zoom-in;
+}
+
 .offer-detail-panel-media-frame.is-floorplan {
   min-height: 340px;
 }
@@ -3044,14 +3054,6 @@ h6 {
 .offer-detail-fact-group + .offer-detail-fact-group {
   padding-top: 1.1rem;
   border-top: 1px solid #e2e8f0;
-}
-
-.offer-detail-fact-group__title {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 700;
-  line-height: 1.4;
-  color: #334155;
 }
 
 .offer-detail-facts div {
@@ -3143,6 +3145,10 @@ h6 {
 
 .offer-detail-contact-card p {
   color: #475569;
+}
+
+.offer-detail-contact-intro {
+  margin-bottom: 1rem;
 }
 
 .offer-detail-broker-teaser {

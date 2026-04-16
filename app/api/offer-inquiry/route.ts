@@ -24,6 +24,8 @@ type OfferInquiryPayload = {
   } | null;
   contact?: {
     name?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
     email?: string | null;
     phone?: string | null;
   } | null;
@@ -139,7 +141,8 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json().catch(() => ({}))) as OfferInquiryPayload;
     const locale = normalizePublicLocale(body.locale);
-    const senderName = asText(body.contact?.name);
+    const senderName = [asText(body.contact?.firstName), asText(body.contact?.lastName)].filter(Boolean).join(" ")
+      || asText(body.contact?.name);
     const senderEmail = asText(body.contact?.email).toLowerCase();
     const senderPhone = asText(body.contact?.phone);
     const propertyLocation = asText(body.inquiry?.location);

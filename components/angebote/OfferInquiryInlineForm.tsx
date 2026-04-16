@@ -29,7 +29,8 @@ export function OfferInquiryInlineForm(props: Props) {
   const [state, setState] = useState<SubmitState>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
     propertyLocation: props.offer.address ?? "",
@@ -40,7 +41,8 @@ export function OfferInquiryInlineForm(props: Props) {
     ? {
         title: "Contact form",
         intro: "Use this form to request further information or a viewing for this property.",
-        name: "Name",
+        firstName: "First name",
+        lastName: "Last name",
         email: "Email",
         phone: "Phone",
         propertyLocation: "Property location",
@@ -53,7 +55,8 @@ export function OfferInquiryInlineForm(props: Props) {
     : {
         title: "Kontaktformular",
         intro: "Nutze dieses Formular, um weitere Informationen oder einen Besichtigungstermin für dieses Objekt anzufragen.",
-        name: "Name",
+        firstName: "Vorname",
+        lastName: "Nachname",
         email: "E-Mail",
         phone: "Telefon",
         propertyLocation: "Standort des Objekts",
@@ -82,7 +85,8 @@ export function OfferInquiryInlineForm(props: Props) {
         offer: props.offer,
         context: props.context,
         contact: {
-          name: form.name.trim(),
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
           email: form.email.trim(),
           phone: form.phone.trim(),
         },
@@ -120,16 +124,29 @@ export function OfferInquiryInlineForm(props: Props) {
       ) : null}
 
       <form onSubmit={handleSubmit} className="request-offer-form-grid">
-        <div>
-          <label className="form-label request-offer-required" htmlFor={`offer_inquiry_name_${props.offer.id}`}>{copy.name}</label>
-          <input
-            id={`offer_inquiry_name_${props.offer.id}`}
-            className="form-control"
-            value={form.name}
-            onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-            autoComplete="name"
-            required
-          />
+        <div className="request-offer-contact-grid">
+          <div>
+            <label className="form-label request-offer-required" htmlFor={`offer_inquiry_first_name_${props.offer.id}`}>{copy.firstName}</label>
+            <input
+              id={`offer_inquiry_first_name_${props.offer.id}`}
+              className="form-control"
+              value={form.firstName}
+              onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
+              autoComplete="given-name"
+              required
+            />
+          </div>
+          <div>
+            <label className="form-label request-offer-required" htmlFor={`offer_inquiry_last_name_${props.offer.id}`}>{copy.lastName}</label>
+            <input
+              id={`offer_inquiry_last_name_${props.offer.id}`}
+              className="form-control"
+              value={form.lastName}
+              onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
+              autoComplete="family-name"
+              required
+            />
+          </div>
         </div>
         <div className="request-offer-contact-grid">
           <div>

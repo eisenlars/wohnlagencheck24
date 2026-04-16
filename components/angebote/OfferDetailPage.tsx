@@ -396,7 +396,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
   const [activeLocationMapIndex, setActiveLocationMapIndex] = useState(0);
-  const [isGalleryLightboxOpen, setIsGalleryLightboxOpen] = useState(false);
+  const [activeLightboxMedia, setActiveLightboxMedia] = useState<"images" | "floorplans" | "maps" | null>(null);
   const resolvedPhotoIndex = activePhotoIndex < photoAssets.length ? activePhotoIndex : 0;
   const resolvedFloorplanIndex = activeFloorplanIndex < floorplanAssets.length ? activeFloorplanIndex : 0;
   const resolvedLocationMapIndex =
@@ -410,6 +410,16 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const nextPhoto = nextPhotoIndex != null ? photoAssets[nextPhotoIndex] ?? null : null;
   const activeFloorplan = floorplanAssets[resolvedFloorplanIndex] ?? null;
   const activeLocationMap = locationMapAssets[resolvedLocationMapIndex] ?? null;
+  const lightboxAsset = activeLightboxMedia === "floorplans"
+    ? activeFloorplan
+    : activeLightboxMedia === "maps"
+      ? activeLocationMap
+      : activePhoto;
+  const lightboxTitle = activeLightboxMedia === "floorplans"
+    ? "Grundriss"
+    : activeLightboxMedia === "maps"
+      ? texts.location_map
+      : "Bildergalerie";
   const mediaTabs = [
     { id: "images" as const, label: isEnglish ? "Images" : "Bilder", count: photoAssets.length },
     { id: "floorplans" as const, label: texts.floor_plan, count: floorplanAssets.length },
@@ -443,6 +453,11 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const equipmentSnapshot = useMemo(() => asRecord(raw["equipment"]) ?? {}, [raw]);
 
   const title = offer.seoH1 || offer.title || texts.object_generic;
+  const lightboxCaption = activeLightboxMedia === "floorplans"
+    ? (activeFloorplan?.title ?? texts.floor_plan)
+    : activeLightboxMedia === "maps"
+      ? (activeLocationMap?.title ?? texts.location_map)
+      : (activePhoto?.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`);
   const description =
     offer.longDescription ??
     readTextValue(raw["long_description"]) ??
@@ -596,16 +611,16 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   }, []);
 
   useEffect(() => {
-    if (!isEnergyModalOpen && !isGalleryLightboxOpen) return undefined;
+    if (!isEnergyModalOpen && !activeLightboxMedia) return undefined;
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setIsEnergyModalOpen(false);
-        setIsGalleryLightboxOpen(false);
+        setActiveLightboxMedia(null);
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isEnergyModalOpen, isGalleryLightboxOpen]);
+  }, [activeLightboxMedia, isEnergyModalOpen]);
 
   return (
     <div className="container text-dark">
@@ -718,7 +733,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                 <button
                   type="button"
                   className="offer-detail-gallery-card offer-detail-gallery-card--active"
-                  onClick={() => setIsGalleryLightboxOpen(true)}
+                  onClick={() => setActiveLightboxMedia("images")}
                   aria-haspopup="dialog"
                   aria-controls={galleryLightboxId}
                   aria-label="Bildergalerie in Vollbild öffnen"
@@ -780,7 +795,14 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             {activeMediaTab === "floorplans" ? (
               activeFloorplan ? (
                 <div className="offer-detail-panel-media">
-                  <div className="offer-detail-panel-media-frame is-floorplan">
+                  <button
+                    type="button"
+                    className="offer-detail-panel-media-frame offer-detail-panel-media-frame--interactive is-floorplan"
+                    onClick={() => setActiveLightboxMedia("floorplans")}
+                    aria-haspopup="dialog"
+                    aria-controls={galleryLightboxId}
+                    aria-label="Grundriss in Vollbild öffnen"
+                  >
                     <Image
                       key={activeFloorplan.url}
                       src={activeFloorplan.url}
@@ -791,7 +813,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                         sizes="(max-width: 991px) 100vw, 72vw"
                         style={{ objectFit: "contain" }}
                       />
-                  </div>
+                  </button>
                   {floorplanAssets.length > 1 ? (
                     <div className="offer-detail-panel-thumbs">
                       {floorplanAssets.map((asset, index) => (
@@ -826,7 +848,14 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             {activeMediaTab === "maps" ? (
               activeLocationMap ? (
                 <div className="offer-detail-panel-media">
-                  <div className="offer-detail-panel-media-frame">
+                  <button
+                    type="button"
+                    className="offer-detail-panel-media-frame offer-detail-panel-media-frame--interactive"
+                    onClick={() => setActiveLightboxMedia("maps")}
+                    aria-haspopup="dialog"
+                    aria-controls={galleryLightboxId}
+                    aria-label="Lagekarte in Vollbild öffnen"
+                  >
                     <Image
                       key={activeLocationMap.url}
                       src={activeLocationMap.url}
@@ -837,7 +866,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                         sizes="(max-width: 991px) 100vw, 72vw"
                         style={{ objectFit: "contain" }}
                       />
-                  </div>
+                  </button>
                   {locationMapAssets.length > 1 ? (
                     <div className="offer-detail-panel-thumbs">
                       {locationMapAssets.map((asset, index) => (
@@ -880,7 +909,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
               <div className="offer-detail-group-stack">
                 {detailFactGroups.map((group) => (
                   <section key={group.title} className="offer-detail-fact-group">
-                    <h3 className="offer-detail-fact-group__title">{group.title}</h3>
                     <dl className="offer-detail-facts">
                       {group.items.map((item) => (
                         <div key={item.label}>
@@ -1070,6 +1098,9 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
 
       <section className="offer-detail-contact" id={contactFormAnchor}>
         <div className="offer-detail-contact-card">
+          <div className="offer-detail-contact-intro">
+            <h2 className="h5 mb-2">Sie wollen besichtigen oder haben Fragen zur Immobilie?</h2>
+          </div>
           <OfferInquiryInlineForm
             locale={formatProfile.locale}
             pagePath={pagePath}
@@ -1149,26 +1180,26 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
         </div>
       ) : null}
 
-      {isGalleryLightboxOpen && activePhoto ? (
+      {activeLightboxMedia && lightboxAsset ? (
         <div
           className="offer-detail-modal offer-detail-modal--gallery"
           role="dialog"
           aria-modal="true"
           aria-labelledby={galleryLightboxId}
-          onClick={() => setIsGalleryLightboxOpen(false)}
+          onClick={() => setActiveLightboxMedia(null)}
         >
           <div className="offer-detail-modal__card offer-detail-modal__card--gallery" onClick={(event) => event.stopPropagation()}>
             <div className="offer-detail-modal__header offer-detail-modal__header--gallery">
               <div>
-                <h2 className="h5 mb-1" id={galleryLightboxId}>Bildergalerie</h2>
+                <h2 className="h5 mb-1" id={galleryLightboxId}>{lightboxTitle}</h2>
                 <p className="offer-detail-panel-copy mb-0">
-                  {activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                  {lightboxCaption}
                 </p>
               </div>
               <button
                 type="button"
                 className="offer-detail-modal__close"
-                onClick={() => setIsGalleryLightboxOpen(false)}
+                onClick={() => setActiveLightboxMedia(null)}
                 aria-label="Vollbildgalerie schliessen"
               >
                 ×
@@ -1179,16 +1210,28 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                 <button
                   type="button"
                   className="offer-detail-slideshow-nav"
-                  onClick={() => setActivePhotoIndex((current) => (current <= 0 ? photoAssets.length - 1 : current - 1))}
-                  aria-label="Vorheriges Bild anzeigen"
+                  onClick={() => {
+                    if (activeLightboxMedia === "floorplans") {
+                      setActiveFloorplanIndex((current) => (current <= 0 ? floorplanAssets.length - 1 : current - 1));
+                      return;
+                    }
+                    if (activeLightboxMedia === "maps") {
+                      setActiveLocationMapIndex((current) => (current <= 0 ? locationMapAssets.length - 1 : current - 1));
+                      return;
+                    }
+                    setActivePhotoIndex((current) => (current <= 0 ? photoAssets.length - 1 : current - 1));
+                  }}
+                  aria-label="Vorheriges Medium anzeigen"
                 >
                   ‹
                 </button>
                 <div className="offer-detail-lightbox__image">
                   <Image
-                    key={`${activePhoto.url}-fullscreen`}
-                    src={activePhoto.url}
-                    alt={imageAltTexts[resolvedPhotoIndex] ?? activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
+                    key={`${lightboxAsset.url}-${activeLightboxMedia}-fullscreen`}
+                    src={lightboxAsset.url}
+                    alt={activeLightboxMedia === "images"
+                      ? (imageAltTexts[resolvedPhotoIndex] ?? lightboxAsset.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`)
+                      : (lightboxAsset.title ?? lightboxTitle)}
                     fill
                     quality={84}
                     sizes="100vw"
@@ -1198,8 +1241,18 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                 <button
                   type="button"
                   className="offer-detail-slideshow-nav"
-                  onClick={() => setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1))}
-                  aria-label="Nächstes Bild anzeigen"
+                  onClick={() => {
+                    if (activeLightboxMedia === "floorplans") {
+                      setActiveFloorplanIndex((current) => (current >= floorplanAssets.length - 1 ? 0 : current + 1));
+                      return;
+                    }
+                    if (activeLightboxMedia === "maps") {
+                      setActiveLocationMapIndex((current) => (current >= locationMapAssets.length - 1 ? 0 : current + 1));
+                      return;
+                    }
+                    setActivePhotoIndex((current) => (current >= photoAssets.length - 1 ? 0 : current + 1));
+                  }}
+                  aria-label="Nächstes Medium anzeigen"
                 >
                   ›
                 </button>
