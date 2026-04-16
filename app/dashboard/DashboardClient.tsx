@@ -2351,11 +2351,11 @@ export default function DashboardClient({
 
             {/* Die Forms nutzen nun die volle Breite des <main> Containers */}
             {activeMainTab === 'factors' ? (
-              <FactorForm ref={factorFormRef} key={`f-${effectiveSelectedConfig.id}`} config={effectiveSelectedConfig} />
+              <FactorForm ref={factorFormRef} key={`f-${effectiveSelectedConfig.area_id}`} config={effectiveSelectedConfig} />
             ) : activeMainTab === 'texts' && scopedContentAreaConfig ? (
               isAwaitingAdminApproval ? null : (
                 <TextEditorForm
-                  key={`t-${scopedContentAreaConfig.id}`}
+                  key={`t-${scopedContentAreaConfig.area_id}`}
                   config={scopedContentAreaConfig}
                   enableApproval
                   initialTabId={textFocusTarget?.tabId}
@@ -2371,21 +2371,21 @@ export default function DashboardClient({
               )
             ) : activeMainTab === 'marketing' && scopedContentAreaConfig ? (
               <TextEditorForm
-                key={`mkt-${scopedContentAreaConfig.id}`}
+                key={`mkt-${scopedContentAreaConfig.area_id}`}
                 config={scopedContentAreaConfig}
                 tableName="partner_marketing_texts"
                 enableApproval
               />
             ) : activeMainTab === 'local_site' && scopedContentAreaConfig ? (
               <TextEditorForm
-                key={`ls-${scopedContentAreaConfig.id}`}
+                key={`ls-${scopedContentAreaConfig.area_id}`}
                 config={scopedContentAreaConfig}
                 tableName="partner_local_site_texts"
                 enableApproval
               />
             ) : activeMainTab === 'blog' ? (
               <BlogManager
-                key={`blog-${effectiveSelectedConfig.id}`}
+                key={`blog-${effectiveSelectedConfig.area_id}`}
                 config={effectiveSelectedConfig}
                 onNavigateToTexts={(sectionKey) => {
                   openTextEditorAt(sectionKey);
