@@ -463,9 +463,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
     offer.longDescription ??
     readTextValue(raw["long_description"]) ??
     readTextValue(raw["description"]);
-  const locationText =
-    offer.locationText ??
-    readTextValue(raw["location"]);
   const featuresText =
     offer.featuresText ??
     readTextValue(raw["features_note"]);
@@ -593,16 +590,8 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const isAddressHidden = detailsSnapshot?.address_hidden === true;
   const displayAddress = isAddressHidden ? zipCityLabel : (offer.address ?? zipCityLabel);
   const inquiryLocation = displayAddress ?? zipCityLabel ?? "";
-  const brokerLinkHref =
-    advisor.href ??
-    (
-      breadcrumb.ctx?.bundeslandSlug && breadcrumb.ctx?.kreisSlug
-        ? `/immobilienmarkt/${breadcrumb.ctx.bundeslandSlug}/${breadcrumb.ctx.kreisSlug}/immobilienmakler`
-        : null
-    );
   const narrativeSectionCandidates = [
     description ? { kicker: texts.property_description, title: texts.property_description, copy: description } : null,
-    locationText ? { kicker: texts.location_label, title: texts.location_label, copy: locationText } : null,
     featuresText ? { kicker: texts.features_label, title: texts.features_label, copy: featuresText } : null,
     highlights.length > 0 ? { kicker: texts.highlights_label, title: texts.highlights_label, items: highlights } : null,
   ];
@@ -1133,27 +1122,6 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             />
         </div>
       </section>
-
-      {brokerLinkHref || advisor.name || advisor.phone ? (
-        <section className="offer-detail-section">
-          <div className="offer-detail-broker-teaser">
-            <div>
-              <span className="offer-detail-panel-kicker">Makler vor Ort</span>
-              <h2 className="h5 mb-2">{advisor.name ?? "Zustaendiger Ansprechpartner in der Region"}</h2>
-              <p className="offer-detail-panel-copy mb-0">
-                {advisor.phone
-                  ? `Telefonisch erreichbar unter ${advisor.phone}.`
-                  : "Weitere Informationen zum regionalen Ansprechpartner findest du auf der integrierten Maklerseite."}
-              </p>
-            </div>
-            {brokerLinkHref ? (
-              <Link href={brokerLinkHref} className="btn btn-outline-dark">
-                Zur Maklerseite
-              </Link>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
 
       {isEnergyModalOpen ? (
         <div
