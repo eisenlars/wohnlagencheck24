@@ -49,7 +49,6 @@ type AngebotePageProps = {
     ctaLabel: string;
   } | null;
 };
-const passthroughLoader = ({ src }: { src: string }) => src;
 
 function sanitizeImageUrl(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -241,10 +240,10 @@ export function AngebotePage(props: AngebotePageProps) {
                       alt={activeTopOffer.title}
                       fill
                       sizes="(max-width: 1200px) 100vw, 60vw"
-                      loader={passthroughLoader}
-                      unoptimized
+                      quality={68}
+                      priority
+                      fetchPriority="high"
                       style={{ objectFit: "cover" }}
-                      loading="lazy"
                     />
                   ) : (
                     <div className="angebote-top-placeholder">{texts.no_image_available}</div>
@@ -256,10 +255,8 @@ export function AngebotePage(props: AngebotePageProps) {
                   alt={activeTopOffer.title}
                   fill
                   sizes="(max-width: 1200px) 100vw, 60vw"
-                  loader={passthroughLoader}
-                  unoptimized
+                  quality={68}
                   style={{ objectFit: "cover" }}
-                  loading="lazy"
                 />
               ) : (
                 <div className="angebote-top-placeholder">{texts.no_image_available}</div>
@@ -391,9 +388,8 @@ export function AngebotePage(props: AngebotePageProps) {
                             src={imageUrl}
                             alt={offer.title}
                             fill
-                            sizes="(max-width: 1200px) 100vw, 33vw"
-                            loader={passthroughLoader}
-                            unoptimized
+                            sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 33vw"
+                            quality={60}
                             style={{ objectFit: "cover" }}
                             loading="lazy"
                           />
@@ -406,9 +402,8 @@ export function AngebotePage(props: AngebotePageProps) {
                         src={imageUrl}
                         alt={offer.title}
                         fill
-                        sizes="(max-width: 1200px) 100vw, 33vw"
-                        loader={passthroughLoader}
-                        unoptimized
+                        sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 33vw"
+                        quality={60}
                         style={{ objectFit: "cover" }}
                         loading="lazy"
                       />

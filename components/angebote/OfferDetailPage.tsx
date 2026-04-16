@@ -728,7 +728,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                         alt={imageAltTexts[previousPhotoIndex ?? 0] ?? previousPhoto.title ?? `${title} Bild ${(previousPhotoIndex ?? 0) + 1}`}
                         fill
                         loading="lazy"
-                        quality={56}
+                        quality={48}
                         sizes="(max-width: 991px) 100vw, 24vw"
                         style={{ objectFit: "cover" }}
                       />
@@ -753,7 +753,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                       alt={imageAltTexts[resolvedPhotoIndex] ?? activePhoto.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`}
                       fill
                       priority
-                      quality={72}
+                      quality={68}
                       sizes="(max-width: 991px) 100vw, 52vw"
                       style={{ objectFit: "cover" }}
                     />
@@ -773,7 +773,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                         alt={imageAltTexts[nextPhotoIndex ?? 0] ?? nextPhoto.title ?? `${title} Bild ${(nextPhotoIndex ?? 0) + 1}`}
                         fill
                         loading="lazy"
-                        quality={56}
+                        quality={48}
                         sizes="(max-width: 991px) 100vw, 24vw"
                         style={{ objectFit: "cover" }}
                       />
@@ -817,7 +817,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                         alt={activeFloorplan.title ?? texts.floor_plan}
                         fill
                         loading="lazy"
-                        quality={72}
+                        quality={64}
                         sizes="(max-width: 991px) 100vw, 72vw"
                         style={{ objectFit: "contain" }}
                       />
@@ -838,7 +838,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                               alt={asset.title ?? `${texts.floor_plan} ${index + 1}`}
                               fill
                               loading="lazy"
-                              quality={56}
+                              quality={42}
                               sizes="84px"
                               style={{ objectFit: "cover" }}
                             />
@@ -870,7 +870,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                         alt={activeLocationMap.title ?? texts.location_map}
                         fill
                         loading="lazy"
-                        quality={72}
+                        quality={64}
                         sizes="(max-width: 991px) 100vw, 72vw"
                         style={{ objectFit: "contain" }}
                       />
@@ -891,7 +891,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                               alt={asset.title ?? `${texts.location_map} ${index + 1}`}
                               fill
                               loading="lazy"
-                              quality={56}
+                              quality={42}
                               sizes="84px"
                               style={{ objectFit: "cover" }}
                             />
@@ -1246,7 +1246,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
                       ? (imageAltTexts[resolvedPhotoIndex] ?? lightboxAsset.title ?? `${title} Bild ${resolvedPhotoIndex + 1}`)
                       : (lightboxAsset.title ?? lightboxTitle)}
                     fill
-                    quality={84}
+                    quality={78}
                     sizes="100vw"
                     style={{ objectFit: "contain" }}
                   />
