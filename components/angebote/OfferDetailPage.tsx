@@ -87,6 +87,7 @@ type OfferDetailPageProps = {
   advisor: {
     name: string | null;
     phone: string | null;
+    logoUrl?: string | null;
     href: string | null;
   };
   breadcrumb: {
@@ -590,6 +591,7 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
   const isAddressHidden = detailsSnapshot?.address_hidden === true;
   const displayAddress = isAddressHidden ? zipCityLabel : (offer.address ?? zipCityLabel);
   const inquiryLocation = displayAddress ?? zipCityLabel ?? "";
+  const brokerLinkHref = advisor.href ?? null;
   const narrativeSectionCandidates = [
     description ? { kicker: texts.property_description, title: texts.property_description, copy: description } : null,
     featuresText ? { kicker: texts.features_label, title: texts.features_label, copy: featuresText } : null,
@@ -1122,6 +1124,31 @@ export function OfferDetailPage(props: OfferDetailPageProps) {
             />
         </div>
       </section>
+
+      {brokerLinkHref || advisor.name ? (
+        <section className="offer-detail-section">
+          <div className="offer-detail-broker-teaser">
+            <div className="d-flex align-items-center gap-3">
+              <Image
+                src={advisor.logoUrl ?? "/logo/wohnlagencheck24.svg"}
+                alt={advisor.name ?? "Maklerlogo"}
+                className="offer-detail-broker-teaser__logo"
+                width={96}
+                height={96}
+                unoptimized={Boolean(advisor.logoUrl)}
+              />
+              <div>
+                <h2 className="h5 mb-0">{advisor.name ?? "Makler in der Region"}</h2>
+              </div>
+            </div>
+            {brokerLinkHref ? (
+              <Link href={brokerLinkHref} className="btn btn-outline-dark">
+                Zur Maklerseite
+              </Link>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       {isEnergyModalOpen ? (
         <div

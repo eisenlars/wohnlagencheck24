@@ -19,6 +19,7 @@ export type PublicAdvisorContact = {
   brokerName: string | null;
   brokerEmail: string | null;
   brokerPhone: string | null;
+  brokerLogoUrl: string | null;
 };
 
 function applyAdvisorOverrides(report: Report, overrides: Array<{ section_key: string; optimized_content: string | null }>): Report {
@@ -109,5 +110,6 @@ export async function resolvePublicAdvisorContact(args: PublicAdvisorContactArgs
       asString(makler["makler_telefon_fest"]) ??
       asString(makler["makler_telefon"]) ??
       "+49 351/287051-0",
+    brokerLogoUrl: asString(makler["media_makler_logo"]) ?? null,
   };
 }

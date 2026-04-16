@@ -57,7 +57,6 @@ function buildRecipientText(args: {
   senderName: string;
   senderEmail: string;
   senderPhone: string;
-  propertyLocation: string;
   message: string;
 }) {
   if (args.locale === "en") {
@@ -80,7 +79,6 @@ function buildRecipientText(args: {
       `Phone: ${args.senderPhone || "-"}`,
       "",
       "Inquiry",
-      `Property location: ${args.propertyLocation || "-"}`,
       `Message: ${args.message || "-"}`,
     ].join("\n");
   }
@@ -104,7 +102,6 @@ function buildRecipientText(args: {
     `Telefon: ${args.senderPhone || "-"}`,
     "",
     "Anfrage",
-    `Standort des Objekts: ${args.propertyLocation || "-"}`,
     `Nachricht: ${args.message || "-"}`,
   ].join("\n");
 }
@@ -145,13 +142,12 @@ export async function POST(req: Request) {
       || asText(body.contact?.name);
     const senderEmail = asText(body.contact?.email).toLowerCase();
     const senderPhone = asText(body.contact?.phone);
-    const propertyLocation = asText(body.inquiry?.location);
     const message = asText(body.inquiry?.message);
     const bundeslandSlug = asText(body.context?.bundeslandSlug);
     const kreisSlug = asText(body.context?.kreisSlug);
     const ortSlug = asText(body.context?.ortSlug);
 
-    if (!senderName || !senderEmail || !propertyLocation || !message || !bundeslandSlug || !kreisSlug) {
+    if (!senderName || !senderEmail || !message || !bundeslandSlug || !kreisSlug) {
       return NextResponse.json({ ok: false, error: "INVALID_REQUEST" }, { status: 400 });
     }
 
@@ -199,7 +195,6 @@ export async function POST(req: Request) {
         senderName,
         senderEmail,
         senderPhone,
-        propertyLocation,
         message,
       }),
       replyTo: senderEmail,

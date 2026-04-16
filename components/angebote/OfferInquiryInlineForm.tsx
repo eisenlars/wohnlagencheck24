@@ -33,7 +33,6 @@ export function OfferInquiryInlineForm(props: Props) {
     lastName: "",
     email: "",
     phone: "",
-    propertyLocation: props.offer.address ?? "",
     note: "",
   });
 
@@ -45,7 +44,6 @@ export function OfferInquiryInlineForm(props: Props) {
         lastName: "Last name",
         email: "Email",
         phone: "Phone",
-        propertyLocation: "Property location",
         note: "Short message",
         send: "Send inquiry",
         sending: "Sending...",
@@ -59,7 +57,6 @@ export function OfferInquiryInlineForm(props: Props) {
         lastName: "Nachname",
         email: "E-Mail",
         phone: "Telefon",
-        propertyLocation: "Standort des Objekts",
         note: "Kurze Nachricht",
         send: "Anfrage senden",
         sending: "Wird gesendet...",
@@ -91,7 +88,6 @@ export function OfferInquiryInlineForm(props: Props) {
           phone: form.phone.trim(),
         },
         inquiry: {
-          location: form.propertyLocation.trim(),
           message: form.note.trim(),
         },
       }),
@@ -172,17 +168,6 @@ export function OfferInquiryInlineForm(props: Props) {
               required
             />
           </div>
-        </div>
-        <div>
-          <label className="form-label" htmlFor={`offer_inquiry_location_${props.offer.id}`}>{copy.propertyLocation}</label>
-          <input
-            id={`offer_inquiry_location_${props.offer.id}`}
-            className="form-control"
-            value={form.propertyLocation}
-            onChange={(event) => setForm((current) => ({ ...current, propertyLocation: event.target.value }))}
-            placeholder={locale === "en" ? "City, district or address" : "Ort, Stadtteil oder Adresse"}
-            required
-          />
         </div>
         <div>
           <label className="form-label" htmlFor={`offer_inquiry_note_${props.offer.id}`}>{copy.note}</label>

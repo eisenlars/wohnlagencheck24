@@ -89,6 +89,7 @@ export default async function ImmobilienangebotOrtDetailPage({ params }: PagePro
       advisor={{
         name: advisor?.brokerName ?? null,
         phone: advisor?.brokerPhone ?? null,
+        logoUrl: advisor?.brokerLogoUrl ?? null,
         href: `/immobilienmarkt/${bundesland}/${kreis}/immobilienmakler`,
       }}
       listPath={listPath}

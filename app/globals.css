@@ -3197,6 +3197,17 @@ h6 {
   border: 1px solid #dbe4ea;
 }
 
+.offer-detail-broker-teaser__logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 1rem;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  padding: 0.4rem;
+  flex-shrink: 0;
+}
+
 .offer-detail-modal {
   position: fixed;
   inset: 0;

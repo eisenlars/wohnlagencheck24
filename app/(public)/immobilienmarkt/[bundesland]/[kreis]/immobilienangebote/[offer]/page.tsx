@@ -86,6 +86,7 @@ export default async function ImmobilienangebotDetailPage({ params }: PageProps)
       advisor={{
         name: advisor?.brokerName ?? null,
         phone: advisor?.brokerPhone ?? null,
+        logoUrl: advisor?.brokerLogoUrl ?? null,
         href: `${basePath}/immobilienmakler`,
       }}
       listPath={listPath}
