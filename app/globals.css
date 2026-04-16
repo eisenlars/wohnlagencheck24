@@ -2799,7 +2799,7 @@ h6 {
   overflow: hidden;
   border: none;
   position: relative;
-  min-height: clamp(240px, 28vw, 320px);
+  min-height: clamp(320px, 37vw, 430px);
 }
 
 .offer-detail-gallery-hero--center {
@@ -3181,6 +3181,11 @@ h6 {
   margin-bottom: 1rem;
 }
 
+.offer-detail-contact-intro h2 {
+  font-size: clamp(1.45rem, 2.2vw, 1.95rem);
+  line-height: 1.2;
+}
+
 .offer-detail-broker-teaser {
   display: flex;
   justify-content: space-between;
@@ -3304,7 +3309,7 @@ h6 {
   .offer-detail-gallery-hero--center,
   .offer-detail-gallery-hero--edge-left,
   .offer-detail-gallery-hero--edge-right {
-    min-height: clamp(240px, 60vw, 340px);
+    min-height: clamp(280px, 68vw, 390px);
     border-radius: 1rem;
   }
 
