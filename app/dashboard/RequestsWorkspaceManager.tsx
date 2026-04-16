@@ -81,6 +81,10 @@ type LlmOptionApiRow = {
 
 type WorkspaceTab = 'texts' | 'seo';
 type RequestListFilter = 'all' | 'haus' | 'wohnung';
+type RequestWorkspaceLoadDebug = {
+  requests: number;
+  overrides: number;
+};
 const REQUEST_LIST_VISIBLE_ROWS = 10;
 const REQUEST_LIST_ROW_HEIGHT = 76;
 const REQUEST_LIST_ROW_GAP = 8;
@@ -279,6 +283,9 @@ export default function RequestsWorkspaceManager(props: Props) {
   const [imageInfoOpen, setImageInfoOpen] = useState(false);
   const [imageSelectionStatus, setImageSelectionStatus] = useState<string | null>(null);
   const [pendingRequestImageSelectionId, setPendingRequestImageSelectionId] = useState<string | null>(null);
+  const [requestLoadSummary, setRequestLoadSummary] = useState<string | null>(null);
+  const [requestLoadDebug, setRequestLoadDebug] = useState<RequestWorkspaceLoadDebug | null>(null);
+  const [requestDebugOpen, setRequestDebugOpen] = useState(false);
   const [promptOpenMap, setPromptOpenMap] = useState<Record<string, boolean>>({});
   const [customPromptMap, setCustomPromptMap] = useState<Record<string, string>>({});
   const [llmOptions, setLlmOptions] = useState<LlmIntegrationOption[]>([]);
@@ -350,6 +357,8 @@ export default function RequestsWorkspaceManager(props: Props) {
     async function load() {
       setLoading(true);
       setStatus('Lade Gesuche...');
+      setRequestLoadSummary(null);
+      setRequestLoadDebug(null);
       const res = await fetch('/api/partner/crm-assets/workspace?kind=requests', {
         method: 'GET',
         cache: 'no-store',
@@ -365,10 +374,16 @@ export default function RequestsWorkspaceManager(props: Props) {
         return;
       }
       const nextRows = Array.isArray(payload?.rows) ? payload.rows : [];
+      const nextOverrides = Array.isArray(payload?.overrides) ? payload.overrides : [];
       setRows(nextRows);
-      setOverrides(Array.isArray(payload?.overrides) ? payload.overrides : []);
+      setOverrides(nextOverrides);
       setSelectedId(nextRows[0]?.id ?? null);
       setStatus('');
+      setRequestLoadSummary(`${nextRows.length} Gesuche geladen`);
+      setRequestLoadDebug({
+        requests: nextRows.length,
+        overrides: nextOverrides.length,
+      });
       setLoading(false);
     }
     void load();
@@ -839,7 +854,18 @@ export default function RequestsWorkspaceManager(props: Props) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' }}>
         <section style={panelStyle}>
-          <h3 style={panelTitleStyle}>Gesuche</h3>
+          <div style={workspaceListHeaderRowStyle}>
+            <h3 style={panelTitleStyle}>{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
+            <button
+              type="button"
+              style={workspaceDebugInfoButtonStyle}
+              onClick={() => setRequestDebugOpen(true)}
+              disabled={!requestLoadDebug}
+              aria-label="Debug-Informationen anzeigen"
+            >
+              i
+            </button>
+          </div>
           <input
             placeholder="Suchen..."
             value={query}
@@ -1145,6 +1171,39 @@ export default function RequestsWorkspaceManager(props: Props) {
           )}
         </section>
       </div>
+      {requestDebugOpen && requestLoadDebug ? (
+        <div
+          style={modalOverlayStyle}
+          onClick={() => setRequestDebugOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setRequestDebugOpen(false);
+          }}
+        >
+          <div
+            style={workspaceDebugModalCardStyle}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="request-workspace-debug-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={cardHeaderRowStyle}>
+              <div id="request-workspace-debug-title" style={offerSummaryHeaderStyle}>Gesuche Debug</div>
+              <button
+                type="button"
+                onClick={() => setRequestDebugOpen(false)}
+                style={modalCloseButtonStyle}
+                aria-label="Debug-Modal schließen"
+              >
+                Schließen
+              </button>
+            </div>
+            <div style={workspaceDebugModalBodyStyle}>
+              <div>requests={requestLoadDebug.requests}</div>
+              <div>overrides={requestLoadDebug.overrides}</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {imageInfoOpen ? (
         <div style={modalOverlayStyle} role="dialog" aria-modal="true">
           <div style={modalCardStyle}>
@@ -1769,6 +1828,49 @@ const modalCloseButtonStyle: CSSProperties = {
   fontSize: '12px',
   fontWeight: 600,
   cursor: 'pointer',
+};
+
+const workspaceListHeaderRowStyle: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: '12px',
+  marginBottom: '12px',
+};
+
+const workspaceDebugInfoButtonStyle: CSSProperties = {
+  width: '24px',
+  height: '24px',
+  borderRadius: '999px',
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#ffffff',
+  color: '#486b7a',
+  fontSize: '13px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  flex: '0 0 auto',
+};
+
+const workspaceDebugModalCardStyle: CSSProperties = {
+  width: 'min(340px, 100%)',
+  borderRadius: '16px',
+  backgroundColor: '#fff',
+  border: '1px solid #e2e8f0',
+  boxShadow: '0 24px 60px rgba(15, 23, 42, 0.18)',
+  padding: '18px',
+  display: 'grid',
+  gap: '14px',
+};
+
+const workspaceDebugModalBodyStyle: CSSProperties = {
+  display: 'grid',
+  gap: '8px',
+  fontSize: '13px',
+  color: '#334155',
 };
 
 const requestListFilterRowStyle: CSSProperties = {

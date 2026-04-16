@@ -80,6 +80,12 @@ type VisibilityConfig = {
   };
 };
 
+type OffersWorkspaceLoadDebug = {
+  offers: number;
+  overrides: number;
+  areaTargets: number;
+};
+
 type GalleryAsset = {
   url: string;
   title: string | null;
@@ -458,6 +464,9 @@ export default function OffersManager(props: Props) {
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [activeFloorplanIndex, setActiveFloorplanIndex] = useState(0);
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<WorkspaceTab>('texts');
+  const [offerLoadSummary, setOfferLoadSummary] = useState<string | null>(null);
+  const [offerLoadDebug, setOfferLoadDebug] = useState<OffersWorkspaceLoadDebug | null>(null);
+  const [offerDebugOpen, setOfferDebugOpen] = useState(false);
   const llmOptionsRequestRef = useRef<Promise<LlmIntegrationOption[]> | null>(null);
 
   const ensureLlmOptions = useCallback(async (): Promise<LlmIntegrationOption[]> => {
@@ -516,6 +525,8 @@ export default function OffersManager(props: Props) {
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setOfferLoadSummary(null);
+      setOfferLoadDebug(null);
       const res = await fetch('/api/partner/offers/workspace', {
         method: 'GET',
         cache: 'no-store',
@@ -541,6 +552,12 @@ export default function OffersManager(props: Props) {
       setOverrides(overridesData);
       setAreaTargets(areaTargetsData);
       setSelectedOfferId(offersData[0]?.id ?? null);
+      setOfferLoadSummary(`${offersData.length} Angebote geladen`);
+      setOfferLoadDebug({
+        offers: offersData.length,
+        overrides: overridesData.length,
+        areaTargets: areaTargetsData.length,
+      });
       setLoading(false);
     }
     load();
@@ -1111,7 +1128,18 @@ export default function OffersManager(props: Props) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '420px minmax(0, 1fr)', gap: '20px' }}>
       <section style={panelStyle}>
-        <h3 style={panelTitleStyle}>Angebote</h3>
+        <div style={workspaceListHeaderRowStyle}>
+          <h3 style={panelTitleStyle}>{offerLoadSummary ?? '0 Angebote geladen'}</h3>
+          <button
+            type="button"
+            style={workspaceDebugInfoButtonStyle}
+            onClick={() => setOfferDebugOpen(true)}
+            disabled={!offerLoadDebug}
+            aria-label="Debug-Informationen anzeigen"
+          >
+            i
+          </button>
+        </div>
         <input
           placeholder="Suchen..."
           value={query}
@@ -1883,6 +1911,40 @@ export default function OffersManager(props: Props) {
         )}
       </section>
       </div>
+      {offerDebugOpen && offerLoadDebug ? (
+        <div
+          style={workspaceDebugModalOverlayStyle}
+          onClick={() => setOfferDebugOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setOfferDebugOpen(false);
+          }}
+        >
+          <div
+            style={workspaceDebugModalCardStyle}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="offers-workspace-debug-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={workspaceDebugModalHeadStyle}>
+              <strong id="offers-workspace-debug-title" style={workspaceDebugModalTitleStyle}>Angebote Debug</strong>
+              <button
+                type="button"
+                style={workspaceDebugModalCloseStyle}
+                onClick={() => setOfferDebugOpen(false)}
+                aria-label="Debug-Modal schließen"
+              >
+                ×
+              </button>
+            </div>
+            <div style={workspaceDebugModalBodyStyle}>
+              <div>offers={offerLoadDebug.offers}</div>
+              <div>overrides={offerLoadDebug.overrides}</div>
+              <div>areaTargets={offerLoadDebug.areaTargets}</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1905,6 +1967,83 @@ const panelTitleStyle: React.CSSProperties = {
   margin: '0 0 12px',
   fontSize: '16px',
   fontWeight: 700,
+};
+
+const workspaceListHeaderRowStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: '12px',
+  marginBottom: '12px',
+};
+
+const workspaceDebugInfoButtonStyle: React.CSSProperties = {
+  width: '24px',
+  height: '24px',
+  borderRadius: '999px',
+  border: '1px solid #cbd5e1',
+  backgroundColor: '#ffffff',
+  color: '#486b7a',
+  fontSize: '13px',
+  fontWeight: 700,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  flex: '0 0 auto',
+};
+
+const workspaceDebugModalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(15, 23, 42, 0.28)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1000,
+  padding: 20,
+};
+
+const workspaceDebugModalCardStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: 340,
+  borderRadius: 14,
+  border: '1px solid #dbe5ea',
+  background: '#ffffff',
+  boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
+  padding: 16,
+  display: 'grid',
+  gap: 12,
+};
+
+const workspaceDebugModalHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 12,
+};
+
+const workspaceDebugModalTitleStyle: React.CSSProperties = {
+  fontSize: 14,
+  color: '#0f172a',
+};
+
+const workspaceDebugModalCloseStyle: React.CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  color: '#64748b',
+  fontSize: 20,
+  lineHeight: 1,
+  cursor: 'pointer',
+  padding: 0,
+};
+
+const workspaceDebugModalBodyStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 8,
+  fontSize: 13,
+  color: '#334155',
 };
 
 const workspaceTabsRowStyle: React.CSSProperties = {
