@@ -610,6 +610,12 @@ type RequestBaseline = {
   translation_status: BlogTranslationStatus;
 };
 
+type RequestLoadDebug = {
+  requests: number;
+  overrides: number;
+  translations: number;
+};
+
 type RequestEditorTab = 'texts' | 'seo';
 type RequestListFilter = 'all' | 'haus' | 'wohnung';
 
@@ -1184,6 +1190,9 @@ export default function InternationalizationManager({ config, availableLocales, 
   const [requestStatusTone, setRequestStatusTone] = useState<'success' | 'error' | null>(null);
   const [requestListSearch, setRequestListSearch] = useState('');
   const [requestListFilter, setRequestListFilter] = useState<RequestListFilter>('all');
+  const [requestLoadSummary, setRequestLoadSummary] = useState<string | null>(null);
+  const [requestLoadDebug, setRequestLoadDebug] = useState<RequestLoadDebug | null>(null);
+  const [requestDebugOpen, setRequestDebugOpen] = useState(false);
   const [costInfoOpenClass, setCostInfoOpenClass] = useState<DisplayTextClass | null>(null);
   const isDistrict = isDistrictArea(config?.area_id ?? '');
   const channelMeta = I18N_CHANNEL_OPTIONS.find((item) => item.value === channel) ?? I18N_CHANNEL_OPTIONS[0];
@@ -1948,6 +1957,8 @@ export default function InternationalizationManager({ config, availableLocales, 
     setRequestLoading(true);
     setRequestStatus(null);
     setRequestStatusTone(null);
+    setRequestLoadSummary(null);
+    setRequestLoadDebug(null);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) throw new Error('Nicht angemeldet.');
@@ -2094,13 +2105,17 @@ export default function InternationalizationManager({ config, availableLocales, 
 
       setRequestItems(nextItems);
       setRequestBaselineById(nextBaseline);
-      setRequestStatus(nextItems.length === 0
-        ? `Keine Gesuche für den aktuellen Partner vorhanden. Debug: requests=${requests.length}, overrides=${overrideRows.length}, translations=${translationRows.length}, next=${nextItems.length}`
-        : `Gesuche-Übersetzungsstand für ${nextItems.length} Datensatz/Datensätze geladen. Debug: requests=${requests.length}, overrides=${overrideRows.length}, translations=${translationRows.length}`);
-      setRequestStatusTone('success');
+      setRequestLoadSummary(`${nextItems.length} Gesuche geladen`);
+      setRequestLoadDebug({
+        requests: requests.length,
+        overrides: overrideRows.length,
+        translations: translationRows.length,
+      });
     } catch (error) {
       setRequestItems([]);
       setRequestBaselineById({});
+      setRequestLoadSummary(null);
+      setRequestLoadDebug(null);
       setRequestStatus(error instanceof Error ? error.message : `Gesuche-Übersetzungen konnten nicht geladen werden: ${JSON.stringify(error)}`);
       setRequestStatusTone('error');
     } finally {
@@ -4583,11 +4598,20 @@ export default function InternationalizationManager({ config, availableLocales, 
       </div>
       ) : activeDomain === 'gesuche' && activeDomainMeta.enabled ? (
       <div style={editorCardStyle}>
-        {requestStatus ? <div style={requestStatusTone === 'error' ? statusErrorBoxStyle : statusSuccessBoxStyle}>{requestStatus}</div> : null}
+        {requestStatus && requestStatusTone === 'error' ? <div style={statusErrorBoxStyle}>{requestStatus}</div> : null}
         <div style={blogGridStyle}>
           <aside style={blogListCardStyle}>
             <div style={blogListHeadStyle}>
-              <h3 style={sectionTabsIntroTitleStyle}>Gesuche</h3>
+              <h3 style={sectionTabsIntroTitleStyle}>{requestLoadSummary ?? '0 Gesuche geladen'}</h3>
+              <button
+                type="button"
+                style={requestDebugInfoButtonStyle}
+                onClick={() => setRequestDebugOpen(true)}
+                disabled={!requestLoadDebug}
+                aria-label="Debug-Informationen anzeigen"
+              >
+                i
+              </button>
             </div>
             <input
               placeholder="Suchen..."
@@ -4702,6 +4726,40 @@ export default function InternationalizationManager({ config, availableLocales, 
             )}
           </div>
         </div>
+        {requestDebugOpen && requestLoadDebug ? (
+          <div
+            style={requestDebugModalOverlayStyle}
+            onClick={() => setRequestDebugOpen(false)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setRequestDebugOpen(false);
+            }}
+          >
+            <div
+              style={requestDebugModalCardStyle}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="request-debug-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div style={requestDebugModalHeadStyle}>
+                <strong id="request-debug-title" style={requestDebugModalTitleStyle}>Gesuche Debug</strong>
+                <button
+                  type="button"
+                  style={requestDebugModalCloseStyle}
+                  onClick={() => setRequestDebugOpen(false)}
+                  aria-label="Debug-Modal schließen"
+                >
+                  ×
+                </button>
+              </div>
+              <div style={requestDebugModalBodyStyle}>
+                <div>requests={requestLoadDebug.requests}</div>
+                <div>overrides={requestLoadDebug.overrides}</div>
+                <div>translations={requestLoadDebug.translations}</div>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
       ) : (
       <div style={editorCardStyle}>
@@ -5365,6 +5423,74 @@ const requestI18nMetaLineStyle: React.CSSProperties = {
 const requestI18nListEmptyStyle: React.CSSProperties = {
   color: '#94a3b8',
   fontSize: 13,
+};
+
+const requestDebugInfoButtonStyle: React.CSSProperties = {
+  width: 24,
+  height: 24,
+  borderRadius: 999,
+  border: '1px solid #cbd5e1',
+  background: '#ffffff',
+  color: '#486b7a',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+};
+
+const requestDebugModalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(15, 23, 42, 0.28)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1000,
+  padding: 20,
+};
+
+const requestDebugModalCardStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: 340,
+  borderRadius: 14,
+  border: '1px solid #dbe5ea',
+  background: '#ffffff',
+  boxShadow: '0 20px 50px rgba(15, 23, 42, 0.18)',
+  padding: 16,
+  display: 'grid',
+  gap: 12,
+};
+
+const requestDebugModalHeadStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 12,
+};
+
+const requestDebugModalTitleStyle: React.CSSProperties = {
+  fontSize: 14,
+  color: '#0f172a',
+};
+
+const requestDebugModalCloseStyle: React.CSSProperties = {
+  border: 'none',
+  background: 'transparent',
+  color: '#64748b',
+  fontSize: 20,
+  lineHeight: 1,
+  cursor: 'pointer',
+  padding: 0,
+};
+
+const requestDebugModalBodyStyle: React.CSSProperties = {
+  display: 'grid',
+  gap: 8,
+  fontSize: 13,
+  color: '#334155',
 };
 
 const blogColumnGridStyle: React.CSSProperties = {
